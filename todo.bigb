@@ -418,13 +418,6 @@ Instead, we should check the entire database.
 
 The question then is: is there a way to do this efficiently with a query, without bringing the entire Refs database into memory, notably conisdering inflections?
 
-=== Don't use helper synthetic AST nodes, render at render time instead
-{id=remove-synthetic-asts}
-{tag=File}
-{tag=Refactor}
-
-This is a hard refactor that likely will never be done. But so be it.
-
 === Add a `File:` prefix to `{file}` headers
 {tag=File}
 
@@ -1041,6 +1034,13 @@ The main issue with that is the possibly changing `_raw/js/matterjs/examples.htm
 Instead we should do the same handling as is currently done for `\a[]` and `\Image[]` on thes paths.
 
 == Closed issues
+
+=== Don't use helper synthetic AST nodes, render at render time instead
+{id=remove-synthetic-asts}
+{tag=File}
+{tag=Refactor}
+
+This is a hard refactor that likely will never be done. But so be it.
 
 === View article source on web
 {tag=Web}

@@ -526,19 +526,21 @@ img.profile-thumb {
 footer {
   margin-top: 10px;
   padding: 10px $toplevel-padding;
-  a {
-    $background-color: #00C;
-    color: $background-color;
-    text-decoration: none;
-    &:visited {
+  span {
+    &:not(:last-child) {
+      margin-right: 10px;
+    }
+    a {
+      $background-color: rgb(0, 0, 148);
       color: $background-color;
+      text-decoration: none;
+      &:visited {
+        color: $background-color;
+      }
+      &:hover {
+        text-decoration: underline;
+      }
     }
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-  div + div {
-    margin-top: 5px;
   }
 }
 

@@ -532,10 +532,6 @@ class Macro {
     }
   }
 
-  self_link(ast) {
-    return ` href="#${html_escape_attr(ast.id)}"`;
-  }
-
   toJSON() {
     const options = this.options;
     const ordered_options = {};
@@ -1515,14 +1511,6 @@ function html_convert_attrs(
   return ret;
 }
 
-function title_to_id(title) {
-  return title.toLowerCase()
-    .replace(/[^a-z0-9-]+/g, ID_SEPARATOR)
-    .replace(new RegExp('^' + ID_SEPARATOR + '+'), '')
-    .replace(new RegExp(ID_SEPARATOR + '+$'), '')
-  ;
-}
-
 /**
  * Same interface as html_convert_attrs, but automatically add the ID to the list
  * of arguments.
@@ -1588,6 +1576,10 @@ function html_convert_simple_elem(elem_name, options={}) {
   };
 }
 
+function html_elem(tag, content) {
+  return `<${tag}>${content}</${tag}>`;
+}
+
 function html_escape_attr(str) {
   return html_escape_content(str)
     .replace(/"/g, '&quot;')
@@ -1638,8 +1630,8 @@ function html_is_whitespace(string) {
   return true;
 }
 
-function html_elem(tag, content) {
-  return `<${tag}>${content}</${tag}>`;
+function html_self_link(ast) {
+  return ` href="#${html_escape_attr(ast.id)}"`;
 }
 
 /**
@@ -1671,7 +1663,7 @@ function macro_image_video_block_convert_function(content_func, source_func) {
     let ret = `<figure${figure_attrs}>\n`
     let href_prefix;
     if (ast.id !== undefined) {
-      href_prefix = this.self_link(ast);
+      href_prefix = html_self_link(ast);
     } else {
       href_prefix = undefined;
     }
@@ -2562,6 +2554,14 @@ function parse_error(state, message, line, column) {
     message, line, column));
 }
 
+function title_to_id(title) {
+  return title.toLowerCase()
+    .replace(/[^a-z0-9-]+/g, ID_SEPARATOR)
+    .replace(new RegExp('^' + ID_SEPARATOR + '+'), '')
+    .replace(new RegExp(ID_SEPARATOR + '+$'), '')
+  ;
+}
+
 /**
   * @param {AstNode} target_id_ast
   * @return {String} the href="..." that an \x cross reference to the given target_id_ast
@@ -2787,7 +2787,7 @@ const DEFAULT_MACRO_LIST = [
         level_int_capped = level_int;
       }
       let attrs = html_convert_attrs_id(ast, context, [], custom_args);
-      let ret = `<h${level_int_capped}${attrs}><a${this.self_link(ast)} title="link to this element">`;
+      let ret = `<h${level_int_capped}${attrs}><a${html_self_link(ast)} title="link to this element">`;
       let x_text_options = {
         show_caption_prefix: false,
       };

@@ -61,10 +61,8 @@ module.exports = (sequelize) => {
 
   Article.prototype.updateFavoriteCount = function() {
     let article = this
-
     return sequelize.models.User.count({ where: { favorites: { [Op.in]: [article.id] } } }).then(function(count) {
       article.favoritesCount = count
-
       return article.save()
     })
   }
@@ -74,8 +72,12 @@ module.exports = (sequelize) => {
       slug: this.slug,
       title: this.title,
       body: this.body,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
+      // Stringify here otherwise: `object` ("[object Date]") cannot be serialized as JSON.
+      // https://github.com/vercel/next.js/discussions/11498
+      // https://github.com/vercel/next.js/discussions/13696
+      // https://github.com/vercel/next.js/issues/11993
+      createdAt: this.createdAt.toISOString(),
+      updatedAt: this.updatedAt.toISOString(),
       tagList: this.tagList,
       favorited: user ? user.isFavorite(this.id) : false,
       favoritesCount: this.favoritesCount,

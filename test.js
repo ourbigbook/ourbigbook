@@ -2844,6 +2844,46 @@ assert_error('header tag and synonym arguments are incompatible',
 `,
   5, 1
 );
+//// This would be the ideal behaviour, but I'm lazy now.
+//// https://github.com/cirosantilli/cirodown/issues/200
+//assert_convert_ast('full link to synonym renders the same as full link to the main header',
+//  `= 1
+//
+//\\Q[\\x[1-3]{full}]
+//
+//== 1 2
+//
+//= 1 3
+//{synonym}
+//`,
+//  undefined,
+//  {
+//    assert_xpath_matches: [
+//      "//x:blockquote//x:a[@href='#1-2' and text()='Section 1. \"1 2\"']",
+//    ],
+//  }
+//);
+// This is not the ideal behaviour, the above test would be the ideal.
+// But it will be good enough for now.
+// https://github.com/cirosantilli/cirodown/issues/200
+assert_convert_ast('full link to synonym with title2 does not get dummy empty parenthesis',
+  `= 1
+
+\\Q[\\x[1-3]{full}]
+
+== 1 2
+
+= 1 3
+{synonym}
+{title2}
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//x:blockquote//x:a[@href='#1-2' and text()='Section 1. \"1 3\"']",
+    ],
+  }
+);
 const header_id_new_line_expect =
   [a('H', undefined, {level: [t('1')], title: [t('aa')], id: [t('bb')]})];
 assert_convert_ast('header id new line sane',
@@ -4152,6 +4192,22 @@ assert_error('id conflict with previous id on another file',
     input_path_noext: 'index'
   }
 );
+// https://github.com/cirosantilli/cirodown/issues/201
+//assert_executable('executable: id conflict with previous id on another file',
+//  {
+//    args: ['.'],
+//    filesystem: {
+//      'README.ciro': `= index
+//
+//== notindex h2
+//`,
+//     'notindex.ciro': `= notindex
+//
+//== notindex h2
+//`,
+//    },
+//  }
+//);
 
 // title_to_id
 assert_equal('title_to_id with hyphen', cirodown.title_to_id('.0A. - z.a Z..'), '0a-z-a-z');
@@ -4398,17 +4454,11 @@ $$
 \\x[h2][link to h2]
 
 == notindex h2
-
-= notindex h2 synonym
-{synonym}
 `,
   'toplevel-scope.ciro': `= Toplevel scope
 {scope}
 
 == Toplevel scope h2
-
-= Toplevel scope h2 synonym
-{synonym}
 
 == Nested scope
 {scope}

@@ -5975,7 +5975,7 @@ function x_text(ast, context, options={}) {
       const show_disambiguate = (disambiguate_arg !== undefined) && macro.options.show_disambiguate;
       if (
         show_disambiguate ||
-        title2_arg !== undefined ||
+        (title2_arg !== undefined && title2_arg.asts.length > 0) ||
         ast.title2s.length > 0
       ) {
         ret += ' (';

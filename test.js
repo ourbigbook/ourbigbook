@@ -10,7 +10,7 @@ const cirodown_nodejs = require('cirodown/nodejs');
 
 const convert_opts = {
   body_only: true,
-  split_headers: true,
+  split_headers: false,
 
   // Can help when debugging failures.
   //show_ast: true,

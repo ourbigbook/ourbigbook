@@ -24,16 +24,16 @@ const ArticleList = (props) => {
     pageCount > 480 ? Math.ceil(pageCount / DEFAULT_LIMIT) : Math.ceil(pageCount / DEFAULT_LIMIT) - 1;
   const router = useRouter();
   const { asPath, pathname, query } = router;
-  const { favorite, follow, tag, pid } = query;
+  const { favorite, follow, tag, uid } = query;
   let fetchURL = (() => {
     switch (props.what) {
       case 'favorites':
         return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&favorited=${encodeURIComponent(
-          String(pid)
+          String(uid)
         )}&offset=${page * DEFAULT_LIMIT}`
       case 'my-posts':
         return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&author=${encodeURIComponent(
-          String(pid)
+          String(uid)
         )}&offset=${page * DEFAULT_LIMIT}`;
       case 'tag':
         return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&tag=${encodeURIComponent(props.tag)}&offset=${

@@ -886,6 +886,7 @@ class Macro {
     }
   }
 }
+exports.Macro = Macro;
 
 // Macro names defined here are those that have magic properties, e.g.
 // headers are used by the 'toc'.

@@ -34,6 +34,8 @@ module.exports = (sequelize) => {
     {
       hooks: {
         beforeValidate: async (article, options) => {
+          console.error('beforeValidate');
+          console.error(article.body);
           let extra_returns = {};
           article.render = cirodown.convert(
             modifyEditorInput(article.title, article.body),

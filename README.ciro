@@ -4954,20 +4954,18 @@ createdb cirodown
 psql -c "CREATE ROLE cirodown_user with login password 'a'"
 psql -c 'GRANT ALL PRIVILEGES ON DATABASE cirodown TO cirodown_user'
 echo "SECRET=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)" >> .env
-npm run build
 ``
 
-Run:
-
+Run after every modification
 ``
+npm run build-prod
 npm run start-prod
 ``
-
-then visit the running website at: http://localhost:3000/
+and then visit the running website at: http://localhost:3000/
 
 To optionally nuke the database and create the demo data:
 ``
-NODE_ENV=production ./bin/generate-demo-data.js --force-production
+npm run seed-prod
 ``
 or alternatively to start from a clean database:
 ``

@@ -5,6 +5,7 @@ import { mutate } from "swr";
 
 import Label from "components/common/Label";
 import ListErrors from "components/common/ListErrors";
+import UserAPI from "lib/api/user";
 import { SERVER_BASE_URL } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 import routes from "routes";
@@ -51,9 +52,11 @@ const SettingsForm = () => {
       setErrors(data.errors.body);
     }
     if (data?.user) {
-      if (data.user?.image) {
-        data.user.effectiveImage = data.user.image;
+      const { data: profileData, status: profileStatus } = await UserAPI.get(data.user.username);
+      if (profileStatus !== 200) {
+        setErrors(profileData.errors);
       }
+      data.user.effectiveImage = profileData.profile.image;
       window.localStorage.setItem("user", JSON.stringify(data.user));
       mutate("user", data.user);
       Router.push(routes.userView(user.username));
@@ -67,7 +70,7 @@ const SettingsForm = () => {
           <input
             type="text"
             placeholder="URL of profile picture"
-            value={userInfo.image}
+            value={userInfo.image ? userInfo.image : ""}
             onChange={updateState("image")}
           />
         </Label>

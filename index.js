@@ -805,6 +805,7 @@ function clone_and_set(obj, key, value) {
   new_obj[key] = value;
   return new_obj;
 }
+exports.clone_and_set = clone_and_set;
 
 function closing_char(c) {
   if (c === START_POSITIONAL_ARGUMENT_CHAR)
@@ -829,6 +830,11 @@ function closing_token(token) {
  *
  * @options {Object}
  *          {IdProvider} external_ids
+ *          {boolean} render - if false, parse the input, but don't render it,
+ *              and return undefined.
+ *              The initial use case for this is to allow a faster and error-less
+ *              first pass when building an entire directory with internal cross file
+ *              references to extract IDs of each file.
  * @return {String}
  */
 function convert(
@@ -848,6 +854,7 @@ function convert(
   if (!('html_single_page' in options)) { options.html_single_page = false; }
   if (!('html_x_extension' in options)) { options.html_x_extension = true; }
   if (!('input_path' in options)) { options.input_path = undefined; }
+  if (!('render' in options)) { options.render = true; }
   if (!('show_ast' in options)) { options.show_ast = false; }
   if (!('show_parse' in options)) { options.show_parse = false; }
   if (!('show_tokenize' in options)) { options.show_tokenize = false; }
@@ -880,18 +887,21 @@ function convert(
   extra_returns.context = sub_extra_returns.context;
   extra_returns.ids = sub_extra_returns.ids;
   extra_returns.errors.push(...sub_extra_returns.errors);
-  let errors = [];
-  let context = Object.assign(
-    sub_extra_returns.context,
-    {
-      errors: errors,
-      extra_returns: extra_returns,
-      macros: macros,
-      options: options,
-    }
-  );
-  output = ast.convert(context);
-  extra_returns.errors.push(...errors);
+  let output;
+  if (options.render) {
+    let errors = [];
+    let context = Object.assign(
+      sub_extra_returns.context,
+      {
+        errors: errors,
+        extra_returns: extra_returns,
+        macros: macros,
+        options: options,
+      }
+    );
+    output = ast.convert(context);
+    extra_returns.errors.push(...errors);
+  }
   extra_returns.errors = extra_returns.errors.sort((a, b)=>{
     if (a.line < b.line)
       return -1;
@@ -903,8 +913,10 @@ function convert(
       return 1;
     return 0;
   });
-  if (output[output.length - 1] !== '\n') {
-    output += '\n';
+  if (output !== undefined) {
+    if (output[output.length - 1] !== '\n') {
+      output += '\n';
+    }
   }
   return output;
 }

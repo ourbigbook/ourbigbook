@@ -79,6 +79,21 @@ function cmd_get_stdout(cmd, args=[], options={}) {
   return ret;
 }
 
+function convert_files_in_directory(input_path, options, convert_input_options) {
+  for (const one_path of walk_files_recursively(input_path, DEFAULT_IGNORE_BASENAMES_SET)) {
+    convert_path_to_file(one_path, options, convert_input_options);
+  }
+}
+
+/** Extract IDs from all input files into the ID database, without fully conveting. */
+function convert_files_in_directory_extract_ids(input_path, options, convert_input_options) {
+  convert_files_in_directory(
+    input_path,
+    cirodown.clone_and_set(options, 'render', false),
+    convert_input_options
+  );
+}
+
 /** Convert input from a string to output and return the output as a string.
  *
  * Wraps cirodown.convert with CLI usage convenience.
@@ -120,9 +135,6 @@ function convert_input(input, options, convert_input_options={}) {
   for (const error of new_options.extra_returns.errors) {
     console.error(error.toString(convert_input_options.input_path));
   }
-  if (convert_input_options.cli_options.watch) {
-    console.log();
-  }
   convert_input_options.extra_returns = new_options.extra_returns;
   if (new_options.extra_returns.errors.length > 0) {
     convert_input_options.had_error = true;
@@ -137,6 +149,13 @@ function convert_input(input, options, convert_input_options={}) {
 function convert_path_to_file(input_path, options, convert_input_options={}) {
   let input_path_parse = path.parse(input_path);
   if (input_path_parse.ext === '.ciro') {
+    let message_prefix;
+    if (options.render) {
+      message_prefix = 'convert';
+    } else {
+      message_prefix = 'id_extract';
+    }
+    console.log(`${message_prefix} ${input_path}`);
     let output = convert_path(input_path, options, convert_input_options);
     let name = input_path_parse.name;
     if (input_path_parse.name in IO_RENAME_MAP) {
@@ -299,6 +318,7 @@ if (commander.helpMacros) {
     html_embed: commander.htmlEmbed,
     html_x_extension: html_x_extension,
     html_single_page: commander.htmlSinglePage,
+    render: true,
     show_ast: commander.showAstInside,
     show_parse: commander.showParse,
     show_tokens: commander.showTokensInside,
@@ -358,6 +378,9 @@ if (commander.helpMacros) {
       if (publish) {
         cli_error('--publish and --watch are incompatible');
       }
+      if (!input_path_is_file) {
+        convert_files_in_directory_extract_ids(inputPath, options, convert_input_options);
+      }
       let watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES});
       watcher.on('change', function(path) {
         convert_path_to_file(path, options, convert_input_options);
@@ -381,8 +404,8 @@ if (commander.helpMacros) {
           dry_run: commander.dryRun,
         }
 
-        // Clone the source to ensure that only git tracked changes get built and published.
         if (publish) {
+          // Clone the source to ensure that only git tracked changes get built and published.
           if (!fs.existsSync(path.join(inputPath, '.git'))) {
             cli_error('--publish must point to the root of a git repository');
           }
@@ -427,9 +450,8 @@ if (commander.helpMacros) {
         }
 
         // Do the actual conversion.
-        for (const path of walk_files_recursively(actual_input, DEFAULT_IGNORE_BASENAMES_SET)) {
-          convert_path_to_file(path, options, convert_input_options);
-        }
+        convert_files_in_directory_extract_ids(actual_input, options, convert_input_options);
+        convert_files_in_directory(actual_input, options, convert_input_options);
 
         // Publish the converted output if build succeeded.
         if (publish && !convert_input_options.had_error) {

@@ -8809,12 +8809,8 @@ OUTPUT_FORMATS_LIST.push(
             const c = components[components.length - 1][0]
             was_magic_uppercase = c === c.toUpperCase()
           }
+          const href_from_id = href
           if (!(
-            target_ast.first_toplevel_child ||
-            (
-              target_ast.validation_output[Macro.ID_ARGUMENT_NAME] &&
-              target_ast.validation_output[Macro.ID_ARGUMENT_NAME].given
-            ) ||
             (
               target_ast.macro_name === Macro.HEADER_MACRO_NAME &&
               target_ast.validation_output.file.given
@@ -8832,6 +8828,10 @@ OUTPUT_FORMATS_LIST.push(
             } else {
               disambiguate = ''
             }
+            const explicit_id = target_ast.first_toplevel_child || (
+              target_ast.validation_output[Macro.ID_ARGUMENT_NAME] &&
+              target_ast.validation_output[Macro.ID_ARGUMENT_NAME].given
+            )
             if (macro.options.id_prefix) {
               href = `${macro.options.id_prefix} ${href}`
             } else {
@@ -8874,7 +8874,7 @@ OUTPUT_FORMATS_LIST.push(
                 if (!plural_target || plural_target.id !== target_ast.id) {
                   const singular_id = `${target_scope}${magic_title_to_id(pluralize(href, 1))}${disambiguate_sep}`
                   const singular_target = context.db_provider.get(singular_id, context)
-                  if (!singular_target || singular_target.id !== target_ast.id) {
+                  if ((!singular_target || singular_target.id !== target_ast.id) && !explicit_id) {
                     // This can happen due to pluralize bugs:
                     // https://github.com/plurals/pluralize/issues/172
                     // Just bail out in those cases.
@@ -8885,35 +8885,39 @@ OUTPUT_FORMATS_LIST.push(
                 was_pluralized = true
               }
             }
-            if (disambiguate_arg) {
-              if (was_pluralized) {
-                // TODO https://github.com/cirosantilli/ourbigbook/issues/244
-                return ourbigbook_convert_simple_elem(ast, context)
-              }
-              href = `${href} (${disambiguate})`;
-            }
-            let target_scope = target_ast.scope
-            if (target_scope) {
-              if (ast.scope) {
-                const target_scope_split = target_scope.split(Macro.HEADER_SCOPE_SEPARATOR)
-                const scope_split = ast.scope.split(Macro.HEADER_SCOPE_SEPARATOR)
-                let last_common = 0
-                while (
-                  last_common < target_scope_split.length &&
-                  last_common < scope_split.length
-                ) {
-                  if (target_scope_split[last_common] !== scope_split[last_common]) {
-                    break
-                  }
-                  last_common++
+            if (explicit_id && magic_title_to_id(href) !== target_ast.id) {
+              href = href_from_id
+            } else {
+              if (disambiguate_arg) {
+                if (was_pluralized) {
+                  // TODO https://github.com/cirosantilli/ourbigbook/issues/244
+                  return ourbigbook_convert_simple_elem(ast, context)
                 }
-                target_scope = target_scope_split.slice(last_common).join(Macro.HEADER_SCOPE_SEPARATOR)
+                href = `${href} (${disambiguate})`;
               }
+              let target_scope = target_ast.scope
               if (target_scope) {
-                target_scope = `${target_scope}${Macro.HEADER_SCOPE_SEPARATOR}`
+                if (ast.scope) {
+                  const target_scope_split = target_scope.split(Macro.HEADER_SCOPE_SEPARATOR)
+                  const scope_split = ast.scope.split(Macro.HEADER_SCOPE_SEPARATOR)
+                  let last_common = 0
+                  while (
+                    last_common < target_scope_split.length &&
+                    last_common < scope_split.length
+                  ) {
+                    if (target_scope_split[last_common] !== scope_split[last_common]) {
+                      break
+                    }
+                    last_common++
+                  }
+                  target_scope = target_scope_split.slice(last_common).join(Macro.HEADER_SCOPE_SEPARATOR)
+                }
+                if (target_scope) {
+                  target_scope = `${target_scope}${Macro.HEADER_SCOPE_SEPARATOR}`
+                }
+                target_scope = target_scope.replaceAll(ID_SEPARATOR, ' ')
+                href = `${target_scope}${href}`
               }
-              target_scope = target_scope.replaceAll(ID_SEPARATOR, ' ')
-              href = `${target_scope}${href}`
             }
             if (is_absolute_xref(target_id, context)) {
               href = target_id[0] + href

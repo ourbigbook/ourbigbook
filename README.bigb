@@ -6676,6 +6676,16 @@ All lists of things will never be ISR'ed, as those can change constantly. One co
 * other search-like parameters
 which appear only in lists of things, will always be part of the GET query, and not params.
 
+It is a bit annoying that due to <scopes> being separated with `/`, we always have to put article names last in any URL to avoid ambiguities. E.g. it would be arguably nicer to have:
+``
+/go/donald-trump/linear-algebra/issues
+``
+rather than the current:
+``
+/go/issues/donald-trump/linear-algebra
+``
+but this produces ambiguity, what is `donald-trump` has an article with title `Issues` under scope `linear-algebra`?
+
 = OurBigBook Web directory structure
 {c}
 {parent=OurBigBook Web architecture}

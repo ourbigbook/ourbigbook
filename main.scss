@@ -1,14 +1,36 @@
 $paragraph_margin_bottom: #c6538c;
 
+@mixin hidden {
+  display: none;
+  // The advantage of this is that when you hover, the height can increase a bit
+  // due to | separators which are very tall, and it is not very nice to see the page move.
+  //
+  // However, with visibility when the screen width is small, it always takes up a newline,
+  // to it is even less acceptable.
+  //
+  // So instead we fix the header height for now.
+  //visibility: hidden;
+}
+@mixin visible {
+  display: inline;
+  //visibility: visible;
+}
+
 .cirodown {
 
 padding-left: 15px;
 padding-right: 15px;
 
 // Hide by default, show if last child of hovered element.
-.hide-hover:last-child { display: none; }
+.hide-hover:last-child {
+  @include hidden;
+}
+:hover > .hide-hover:last-child {
+  @include visible;
+}
 
-:hover > .hide-hover:last-child { display: inline; }
+// Highlight the element referred by the current hash
+// so that the user can easily know which one it is.
 :target {
   background-color: #FFFFCC;
 }
@@ -23,13 +45,16 @@ h1 a:visited, h2 a:visited, h3 a:visited, h4 a:visited, h5 a:visited, h6 a:visit
 }
 h1, h2, h3, h4, h5, h6 {
   font-size: 24px;
+  // Fix height so that height change due to high | on howver
+  // won't move bottom content down a bit.
+  height: 26px;
   margin-top: 20px;
 }
 h1 a + span, h2 a + span, h3 a + span, h4 a + span, h5 a + span, h6 a + span {
-  display: none;
+  @include hidden;
 }
 h1:hover a + span, h2:hover a + span, h3:hover a + span, h4:hover a + span, h5:hover a + span, h6:hover a  + span {
-  display: inline;
+  @include visible;
 }
 h1:hover span a:link, h2:hover span a:link, h3:hover span a:link, h4:hover span a:link, h5:hover span a:link, h6:hover span a:link,
 h1:hover span a:visited, h2:hover span a:visited, h3:hover span a:visited, h4:hover span a:visited, h5:hover span a:visited, h6:hover span a:visited {
@@ -42,10 +67,10 @@ figure {
 // Math.
 .katex { font-size: 1.5em; }
 .math-caption-container > :last-child {
-  display: none;
+  @include hidden;
 }
 .math-caption-container:hover > :last-child {
-  display: inline;
+  @include visible;
 }
 .math-container {
   align-items: center;
@@ -77,10 +102,10 @@ th, td {
   padding-right: 2px;
 }
 .table-caption-container > :last-child {
-  display: none;
+  @include hidden;
 }
 .table-caption-container:hover > :last-child {
-  display: inline;
+  @include visible;
 }
 .table-container {
   margin-bottom: $paragraph_margin_bottom;

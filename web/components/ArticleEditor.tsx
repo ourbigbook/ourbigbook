@@ -14,10 +14,10 @@ import routes from 'routes'
 import { AppContext } from 'lib'
 import { modifyEditorInput } from 'shared';
 
-function editorReducer(state, action) {
+async function editorReducer(state, action) {
   switch (action.type) {
     case "SET_TITLE":
-      action.cirodownEditorElem.current.cirodownEditor.setModifyEditorInput(
+      await action.cirodownEditorElem.current.cirodownEditor.setModifyEditorInput(
         oldInput => modifyEditorInput(action.text, oldInput))
       return {
         ...state,

@@ -21,7 +21,7 @@ function writeJson(outpath, jsonObj) {
   const packageJson = JSON.parse(fs.readFileSync('package.json').toString())
   const dependencies = packageJson.dependencies
   deleteProps(dependencies, [
-    'better-sqlite3',
+    'sqlite3',
     'chokidar',
     'commander',
     'fs-extra',

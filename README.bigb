@@ -5836,6 +5836,15 @@ This option is automatically implied when <Publish to GitHub Pages>[publishing t
 
 Only extract IDs to fill the <ID database>, don't render. This saves time if you only want to render a single file which has references to other files without getting any errors.
 
+= `--no-web-render`
+{parent=OurBigBook CLI options}
+
+Same as <`--no-render`>, but for the <--web> upload stage.
+
+Web upload consists of two stages:
+* extract local ids and render to split ourbigbook files. This can be disabled with <--no-render>
+* upload to web first on an <ID extraction> pass, and then a render pass. <`--no-web-render`> skips that render pass
+
 = `--outdir <outdir>`
 {id=outdir}
 {parent=OurBigBook CLI options}
@@ -7740,8 +7749,32 @@ To restore a dump to the secondary database:
 web/bin/pg_restore -d ourbigbook2 latest.dump
 ``
 
-= web/bin/psql
+= OurBigBook Web PostgreSQL utils
 {parent=OurBigBook Web PostgreSQL}
+
+= web/bin/pg-kill-queries
+{parent=OurBigBook Web PostgreSQL utils}
+{file}
+
+Kill all queries that are a currently running on PostgreSQL database.
+
+Useful in the sad cases that our recursive queries go infinite due to bugs.
+
+= Save and restore local PostgreSQL development database
+{parent=OurBigBook Web PostgreSQL utils}
+
+Save the psql database state as per https://stackoverflow.com/questions/37984733/postgresql-database-export-to-sql-file[] with our \a[web/bin/pg_dump] helper:
+``
+web/bin/pg_dump tmp.dump
+``
+Then to restore it later with \a[web/bin/pg_restore]:
+``
+web/bin/pg_restore tmp.dump
+``
+https://stackoverflow.com/questions/2732474/restore-a-postgres-backup-file-using-the-command-line
+
+= web/bin/psql
+{parent=OurBigBook Web PostgreSQL utils}
 {file}
 
 Helper that gives  `psql` PostgreSQL shell on the default database (`ourbigbook`).
@@ -7760,18 +7793,13 @@ or run an SQL query from CLI with:
 bin/psql -c 'select * from "Id"'
 ``
 
-= Save and restore local PostgreSQL development database
-{parent=OurBigBook Web PostgreSQL}
+= web/bin/pg-ls-queries
+{parent=OurBigBook Web PostgreSQL utils}
+{file}
 
-Save the psql database state as per https://stackoverflow.com/questions/37984733/postgresql-database-export-to-sql-file[] with our \a[web/bin/pg_dump] helper:
-``
-web/bin/pg_dump tmp.dump
-``
-Then to restore it later with \a[web/bin/pg_restore]:
-``
-web/bin/pg_restore tmp.dump
-``
-https://stackoverflow.com/questions/2732474/restore-a-postgres-backup-file-using-the-command-line
+List all queries that are a currently running on PostgreSQL database.
+
+Useful in the sad cases that our recursive queries go infinite due to bugs.
 
 = OurBigBook Web without Next.js
 {parent=OurBigBook Web development}

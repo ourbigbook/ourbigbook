@@ -3,6 +3,9 @@
 
 == Issues
 
+=== Option to add view on ourbigbook link on header metadata of CLI static renders
+{tag=web}
+
 === Reorder convert to move Article.destroySideEffect before File.destroy
 {id=4}
 {tag=web}

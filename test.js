@@ -1831,7 +1831,7 @@ assert_convert_ast('cross reference to non-included header in another file',
 );
 // TODO was working, but lazy now, will have to worry about
 // mock ID provider or modify index.js.
-//it('output_path_parts', ()=>{
+//it('output_path_parts', () => {
 //  const context = {options: {path_sep: '/'}};
 //
 //  // Non-split headers.
@@ -3477,6 +3477,8 @@ $$
 == Index scope
 {scope}
 
+=== Index scope child
+
 === Index scope 2
 {scope}
 
@@ -3658,9 +3660,13 @@ assert_executable(
       'index-scope.html': [
         xpath_header_split(1, 'index-scope', 'index.html#index-scope', cirodown.NOSPLIT_MARKER),
       ],
+      'index-scope/index-scope-child.html': [
+        // https://github.com/cirosantilli/cirodown/issues/159
+        xpath_header_split(1, 'index-scope-child', '../index.html#index-scope/index-scope-child', cirodown.NOSPLIT_MARKER),
+      ],
       'index-scope/index-scope-2.html': [
-        // TODO nested scopes not removing correctly, was giving ../index.html#index-scope-2
-        // //xpath_header_split(1, 'index-scope-2', '../index.html#index-scope/index-scope-2', cirodown.NOSPLIT_MARKER),
+        // https://github.com/cirosantilli/cirodown/issues/159
+        xpath_header_split(1, 'index-scope-2', '../index.html#index-scope/index-scope-2', cirodown.NOSPLIT_MARKER),
       ],
       'toplevel-scope.html': [
         xpath_header_split(2, 'nested-scope', 'toplevel-scope/nested-scope.html', cirodown.SPLIT_MARKER),
@@ -3676,8 +3682,8 @@ assert_executable(
         xpath_header_split(1, 'nested-scope', '../toplevel-scope.html#nested-scope', cirodown.NOSPLIT_MARKER),
       ],
       'toplevel-scope/nested-scope/nested-scope-2.html': [
-        // TODO nested scopes not removing correctly, was giving ../../toplevel-scope.html#nested-scope-2
-        // //xpath_header_split(1, 'nested-scope-2', '../../toplevel-scope.html#nested-scope/nested-scope-2', cirodown.NOSPLIT_MARKER),
+        // https://github.com/cirosantilli/cirodown/issues/159
+        xpath_header_split(1, 'nested-scope-2', '../../toplevel-scope.html#nested-scope/nested-scope-2', cirodown.NOSPLIT_MARKER),
       ],
 
       // Non converted paths.

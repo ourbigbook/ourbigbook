@@ -578,6 +578,82 @@ ab
   newline_between_arguments_expect
 );
 
+// Indentation auto-removal.
+// https://github.com/cirosantilli/cirodown/issues/25
+//assert_convert_ast('indentation auto-removal simple',
+//  `\\C[
+//  aa
+//  bb
+//]
+//`,
+//  [
+//    a('C', [t('aa\nbb\n')]),
+//  ]
+//);
+//assert_convert_ast('indentation auto-removal literal',
+//  `\\C[[
+//  aa
+//  bb
+//]]
+//`,
+//  [
+//    a('C', [t('aa\nbb\n')]),
+//  ]
+//);
+//assert_convert_ast('indentation auto-removal named',
+//  `\c[aa]{id=
+//  bb
+//  cc
+//}
+//`,
+//  [
+//    a('C', [t('aa\nbb\n')], {id: 'bb\ncc\n'}),
+//  ]
+//);
+//assert_convert_ast('indentation auto-removal with paragraph',
+//  `\\l[
+//  aa
+//
+//  bb
+//]
+//`,
+//  [
+//    a('ul', [
+//      a('l', [
+//        a('p', [t('aa')]),
+//        a('p', [t('bb\n')]),
+//      ]),
+//    ]),
+//  ]
+//);
+//assert_convert_ast('indentation auto-removal nested',
+//  `\\l[
+//  aa
+//  \\l[
+//    bb
+//  ]
+//]
+//`,
+//  [
+//    a('ul', [
+//      a('l', [
+//        t('aa\n'),
+//        a('ul', [
+//          a('l', [
+//            t('bb\n'),
+//          ]),
+//        ]),
+//      ]),
+//    ]),
+//  ]
+//);
+//assert_error('indentation auto-removal negative',
+//  `\\C[
+//  aa
+//bb
+//]
+//`, 3, 1);
+
 // Links.
 assert_convert_ast('link simple',
   'a \\a[http://example.com][example link] b\n',

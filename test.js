@@ -4673,8 +4673,8 @@ assert_lib('scope: hierarchy resolution works across files with directories and 
     assert_xpath: {
       'subdir/notindex.html': [
         "//x:div[@class='p']//x:a[@href='notindex2.html#notindex2-h2' and text()='index to notindex2 h2']",
-        "//x:div[@id='notindex-h2']//x:span[@class='test-tags']//x:a[@href='notindex2.html']",
-        "//x:div[@id='notindex-h2']//x:span[@class='test-tags']//x:a[@href='notindex2.html#notindex2-h2']",
+        "//x:div[@id='notindex-h2']//x:span[@class='tags']//x:a[@href='notindex2.html']",
+        "//x:div[@id='notindex-h2']//x:span[@class='tags']//x:a[@href='notindex2.html#notindex2-h2']",
       ],
       'subdir/notindex2.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#notindex-h2']`,
@@ -7457,7 +7457,7 @@ assert_cli('include: tags show on embed include',
     //},
     assert_xpath: {
       'out/html/index.html': [
-        "//*[contains(@class, 'h-nav')]//x:span[@class='test-tags']//x:a[@href='notindex2.html']",
+        "//*[contains(@class, 'h-nav')]//x:span[@class='tags']//x:a[@href='notindex2.html']",
       ],
     },
   }

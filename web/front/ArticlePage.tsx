@@ -1,4 +1,4 @@
-import { useRouter } from 'next/router'
+import Router, { useRouter } from 'next/router'
 import React from 'react'
 
 import CustomLink from 'front/CustomLink'
@@ -20,14 +20,13 @@ import { UserType } from 'front/types/UserType'
 
 export interface ArticlePageProps {
   article: ArticleType & IssueType;
-  articlesInSamePage: ArticleType[];
+  articlesInSamePage?: ArticleType[];
   comments?: CommentType[];
   commentsCount?: number;
   issueArticle?: ArticleType;
-  issuesCount: number;
+  issuesCount?: number;
   latestIssues?: IssueType[];
   loggedInUser?: UserType;
-  sameArticleByLoggedInUser?: string;
   topIssues?: IssueType[];
   topicArticleCount?: number;
 }
@@ -43,7 +42,6 @@ const ArticlePageHoc = (isIssue=false) => {
     topIssues,
     issuesCount,
     loggedInUser,
-    sameArticleByLoggedInUser,
     topicArticleCount,
   }: ArticlePageProps) => {
     const router = useRouter();
@@ -53,7 +51,7 @@ const ArticlePageHoc = (isIssue=false) => {
     React.useEffect(() =>
       // TODO here we would like to have a plaintext render of the title.
       // https://github.com/cirosantilli/ourbigbook/issues/250
-      setTitle(`${isIssue ? article.titleSource : article.file.titleSource} by ${displayAndUsernameText(author)}`)
+      setTitle(`${article.titleSource} by ${displayAndUsernameText(author)}`)
     )
 
     const showOthers = topicArticleCount !== undefined && topicArticleCount > 1
@@ -72,41 +70,19 @@ const ArticlePageHoc = (isIssue=false) => {
         <div className="article-page">
           <div className="content-not-ourbigbook article-meta">
             {isIssue &&
-              <>
+              <nav className="issue-nav">
                 <DiscussionAbout article={issueArticle} issue={article} />
                 <div className="see-all">
                   <CustomLink href={routes.issues(issueArticle.slug)}><SeeIcon /> See all ({issuesCount})</CustomLink>
                   {' '}
                   <CustomLink href={routes.issueNew(issueArticle.slug)}><NewArticleIcon /> Create new</CustomLink>
                 </div>
-              </>
+              </nav>
             }
             <div className="article-info">
               <UserLinkWithImage user={author} showUsername={true} showUsernameMobile={false} />
               {' '}
               <FollowUserButton {...{ user: author, loggedInUser, showUsername: false }} />
-              {' '}
-              {!isIssue &&
-                <span className="by-others">
-                  {(showCreateMyOwn) &&
-                    <>
-                      {' '}
-                      {sameArticleByLoggedInUser === undefined
-                        ? <CustomLink
-                            href={routes.articleNewFrom(article.slug)}
-                          >
-                            <NewArticleIcon /> Create my own version
-                          </CustomLink>
-                        : <CustomLink
-                            href={routes.article(sameArticleByLoggedInUser)}
-                          >
-                            <SeeIcon /> View mine
-                          </CustomLink>
-                      }
-                    </>
-                  }
-                </span>
-              }
             </div>
           </div>
           <div className="container page">

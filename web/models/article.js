@@ -34,6 +34,14 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: false,
       },
+      titleSource: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      titleSourceLine: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
       // Rendered full article.
       render: {
         type: DataTypes.TEXT,
@@ -108,7 +116,18 @@ module.exports = (sequelize) => {
       this.issueCount = parseInt(issueCount, 10)
     }
     this.topicCount = this.get('topicCount')
-    addToDictWithoutUndefined(ret, this, ['id', 'slug', 'topicId', 'titleRender', 'score', 'render', 'issueCount', 'topicCount'])
+    addToDictWithoutUndefined(ret, this, [
+      'id',
+      'slug',
+      'topicId',
+      'titleRender',
+      'titleSource',
+      'titleSourceLine',
+      'score',
+      'render',
+      'issueCount',
+      'topicCount'
+    ])
     if (this.createdAt) {
       ret.createdAt = this.createdAt.toISOString()
     }
@@ -228,58 +247,157 @@ module.exports = (sequelize) => {
 
   // Maybe try to merge into getArticle one day?
   Article.getArticlesInSamePage = async ({
+    loggedInUser,
     sequelize,
     slug,
   }) => {
+    if (false) {
     const articlesInSamePageAttrs = [
       'id',
       'score',
       'slug',
       'topicId',
     ]
+    const include = [
+      {
+        model: sequelize.models.File,
+        as: 'file',
+        required: true,
+        attributes: ['id'],
+        include: [
+          {
+            model: sequelize.models.User,
+            as: 'author',
+          },
+          {
+            model: sequelize.models.Article,
+            as: 'file',
+            required: true,
+            attributes: ['id'],
+            where: { slug },
+          }
+        ]
+      },
+      {
+        model: sequelize.models.Issue,
+        as: 'issues',
+      },
+      {
+        model: sequelize.models.Article,
+        as: 'sameTopic',
+        attributes: [],
+        required: true,
+        include: [{
+          model: sequelize.models.Topic,
+          as: 'article',
+          required: true,
+        }]
+      },
+    ]
+    // This is the part I don't know how to do here. Analogous for current user liked check.
+    // It works, but breaks "do I have my version check".
+    // https://github.com/cirosantilli/cirosantilli.github.io/blob/1be5cb8ef7c03d03e54069c6a5329f54e044de9c/nodejs/sequelize/raw/many_to_many.js#L351
+    //if (loggedInUser) {
+    //  include.push({
+    //    model: sequelize.models.Article,
+    //    as: 'sameTopic2',
+    //    //attributes: [],
+    //    required: true,
+    //    include: [{
+    //      model: sequelize.models.File,
+    //      as: 'file',
+    //      //attributes: [],
+    //      required: true,
+    //      include: [{
+    //        model: sequelize.models.User,
+    //        as: 'author',
+    //        attributes: ['id'],
+    //        required: false,
+    //        where: { id: loggedInUser.id },
+    //      }]
+    //    }],
+    //  })
+    //}
     return sequelize.models.Article.findAll({
       attributes: articlesInSamePageAttrs.concat([
         [sequelize.fn('COUNT', sequelize.col('issues.id')), 'issueCount'],
         [sequelize.col('sameTopic.article.articleCount'), 'topicCount'],
+        // This works for "do I have my version check".
+        //[sequelize.fn('max', sequelize.col('sameTopic2.file.author.id')), 'hasSameTopic'],
       ]),
       group: articlesInSamePageAttrs.map(a => `Article.${a}`),
-      include: [
-        {
-          model: sequelize.models.File,
-          as: 'file',
-          required: true,
-          attributes: ['id'],
-          include: [
-            {
-              model: sequelize.models.User,
-              as: 'author',
-            },
-            {
-              model: sequelize.models.Article,
-              as: 'file',
-              required: true,
-              attributes: ['id'],
-              where: { slug },
-            }
-          ]
-        },
-        {
-          model: sequelize.models.Issue,
-          as: 'issues',
-        },
-        {
-          model: sequelize.models.Article,
-          as: 'sameTopic',
-          attributes: [],
-          required: true,
-          include: [{
-            model: sequelize.models.Topic,
-            as: 'article',
-            required: true,
-          }]
-        },
-      ],
+      subQuery: false,
+      order: [['topicId', 'ASC']],
+      include,
     })
+    }
+
+    // For a minimal prototype of the difficult SameTopicByLoggedIn part:
+    // https://github.com/cirosantilli/cirosantilli.github.io/blob/1be5cb8ef7c03d03e54069c6a5329f54e044de9c/nodejs/sequelize/raw/many_to_many.js#L351
+    ;const [rows, meta] = await sequelize.query(`
+SELECT
+  "Article"."id" AS "id",
+  "Article"."score" AS "score",
+  "Article"."slug" AS "slug",
+  "Article"."topicId" AS "topicId",
+  "Article"."titleSource" AS "titleSource",
+  "File.Author"."id" AS "file.author.id",
+  "File.Author"."username" AS "file.author.username",
+  "SameTopic"."articleCount" AS "topicCount",
+  "ArticleSameTopicByLoggedIn"."id" AS "hasSameTopic",
+  "UserLikeArticle"."userId" AS "liked",
+  COUNT("issues"."id") AS "issueCount"
+FROM
+  "Article"
+  INNER JOIN "File" ON "Article"."fileId" = "File"."id"
+  LEFT OUTER JOIN "User" AS "File.Author" ON "File"."authorId" = "File.Author"."id"
+  INNER JOIN "Article" AS "ArticleSameFile"
+    ON "File"."id" = "ArticleSameFile"."fileId"
+    AND "ArticleSameFile"."slug" = :slug
+  INNER JOIN "Article" AS "ArticleSameTopic" ON "Article"."topicId" = "ArticleSameTopic"."topicId"
+  INNER JOIN "Topic" AS "SameTopic" ON "ArticleSameTopic"."id" = "SameTopic"."articleId"
+  LEFT OUTER JOIN (
+    SELECT "Article"."id", "Article"."topicId"
+    FROM "Article"
+    INNER JOIN "File"
+      ON "Article"."fileId" = "File"."id"
+      AND "File"."authorId" = :loggedInUserId
+  ) AS "ArticleSameTopicByLoggedIn"
+    ON "Article"."topicId" = "ArticleSameTopicByLoggedIn"."topicId"
+  LEFT OUTER JOIN "UserLikeArticle"
+    ON "UserLikeArticle"."articleId" = "Article"."id" AND
+       "UserLikeArticle"."userId" = :loggedInUserId
+  LEFT OUTER JOIN "Issue" AS "issues" ON "Article"."id" = "issues"."articleId"
+GROUP BY
+  "Article"."id",
+  "Article"."score",
+  "Article"."slug",
+  "Article"."topicId",
+  "Article"."titleSource",
+  "File.Author"."id",
+  "File.Author"."username",
+  "SameTopic"."articleCount",
+  "ArticleSameTopicByLoggedIn"."id",
+  "UserLikeArticle"."userId"
+ORDER BY "slug" ASC
+`,
+      {
+        replacements: {
+          loggedInUserId: loggedInUser ? loggedInUser.id : null,
+          slug,
+        }
+      }
+    )
+    for (const row of rows) {
+      row.hasSameTopic = row.hasSameTopic === null ? false : true
+      row.liked = row.liked === null ? false : true
+      row.issueCount = Number(row.issueCount)
+      row.author = {
+        id: row['file.author.id'],
+        username: row['file.author.username'],
+      }
+    }
+    return rows
   }
 
   Article.rerender = async (opts={}) => {

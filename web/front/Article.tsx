@@ -23,6 +23,7 @@ const Article = ({
   comments,
   commentsCount=0,
   isIssue=false,
+  issueArticle=undefined,
   issuesCount,
   latestIssues,
   loggedInUser,
@@ -76,6 +77,10 @@ const Article = ({
             continue
           }
         }
+        let mySlug
+        if (loggedInUser) {
+          mySlug = `${loggedInUser.username}/${curArticle.topicId}`
+        }
         ReactDOM.render(
           <>
             <LikeArticleButton {...{
@@ -88,10 +93,12 @@ const Article = ({
               <>
                 {' '}
                 {!isIndex &&
-                  <a className="issues" href={routes.topic(id)}><TopicIcon /> {curArticle.topicCount} {toplevel ? ' By Others' : ''}</a>
+                  <a className="by-others btn" href={routes.topic(id)} title="Articles by others on the same topic">
+                    <TopicIcon title={false} /> {curArticle.topicCount} {toplevel ? <> By Others<span className="mobile-hide"> On Same Topic</span></> : ''}
+                  </a>
                 }
                 {' '}
-                <a className="issues" href={routes.issues(`${curArticle.author.username}/${id}`)}><IssueIcon /> {isIndex ? issuesCount : curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
+                <a className="issues btn" href={routes.issues(curArticle.slug)}><IssueIcon /> {isIndex ? issuesCount : curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
               </>
             }
             {toplevel &&
@@ -115,26 +122,46 @@ const Article = ({
                 </span>
               </>
             }
-            {canEdit && <>
-              {' '}
-              <span>
-                {false && <>TODO: convert this a and all other injected links to Link. https://github.com/cirosantilli/ourbigbook/issues/274</> }
-                <a
-                  href={isIssue ? routes.issueEdit(issueArticle.slug, curArticle.number) : routes.articleEdit(curArticle.slug)}
-                  className="btn"
-                >
-                  <EditArticleIcon />{toplevel && <> <span className="shortcut">E</span>dit</>}
-                </a>
-                {false &&
-                  <button
-                    className="btn"
-                    onClick={handleDelete}
+            {canEdit
+              ?
+              <>
+                {' '}
+                <span>
+                  {false && <>TODO: convert this a and all other injected links to Link. https://github.com/cirosantilli/ourbigbook/issues/274</> }
+                  <a
+                    href={isIssue ? routes.issueEdit(issueArticle.slug, curArticle.number) : routes.articleEdit(curArticle.slug)}
+                    className="btn edit"
                   >
-                    <i className="ion-trash-a" /> Delete
-                  </button>
+                    <EditArticleIcon />{toplevel && <> <span className="shortcut">E</span>dit</>}
+                  </a>
+                </span>
+              </>
+              :
+              <>
+                {!isIssue &&
+                  <>
+                    {curArticle.hasSameTopic
+                      ? <>
+                          {article.slug !== mySlug &&
+                            <>
+                              {' '}
+                              <a href={routes.article(mySlug)} className="btn see" title="See my version of this topic">
+                                  {' '}<SeeIcon title={false}/>{toplevel ? ' See My Version' : ''}{' '}
+                              </a>
+                            </>
+                          }
+                        </>
+                      : <>
+                          {' '}
+                          <a href={routes.articleNew({ title: curArticle.titleSource })} className="btn new" title="Create my version of this topic">
+                            {' '}<NewArticleIcon title={false}/>{toplevel ? ' Create my own version' : ''}{' '}
+                          </a>
+                        </>
+                    }
+                  </>
                 }
-              </span>
-            </>}
+              </>
+            }
           </>,
           web
         );
@@ -199,7 +226,7 @@ const Article = ({
                   }}/>
                   { seeAllCreateNew }
                 </>
-              : <p>There are no discussion threads about this article yet.</p>
+              : <p>There are no discussions about this article yet.</p>
             }
           </>
       }

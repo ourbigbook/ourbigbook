@@ -16,10 +16,13 @@ import { webApi } from 'front/api'
 import routes from 'front/routes'
 import { AppContext, useCtrlEnterSubmit } from 'front'
 import { modifyEditorInput } from 'front/js';
+import { ArticleType } from 'front/types/ArticleType'
+import { IssueType } from 'front/types/IssueType'
 
 export interface EditorPageProps {
   article: ArticleType & IssueType;
   titleSource?: string;
+  titleSourceLine?: number;
 }
 
 export default function ArticleEditorPageHoc({
@@ -81,6 +84,7 @@ export default function ArticleEditorPageHoc({
                 ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`,
               }, convertOptions),
               handleSubmit,
+              initialLine: initialArticle ? initialArticle.titleSourceLine : undefined,
               modifyEditorInput: (oldInput) => modifyEditorInput(file.titleSource, oldInput),
               production: isProduction,
             },

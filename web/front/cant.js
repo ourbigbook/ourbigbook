@@ -24,7 +24,7 @@ const permissions = [
   }],
 
   // Issues
-  ['editIssue', (loggedInUser, issue) => loggedInUser.id !== issue.authorId],
+  ['editIssue', (loggedInUser, issue) => loggedInUser.username !== issue.author.username],
 
   // Comments
   ['deleteComment', (loggedInUser, comment) => true],

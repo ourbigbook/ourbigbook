@@ -3761,9 +3761,11 @@ exports.x_href = x_href;
 function x_href_parts(target_id_ast, context) {
   // href_path
   let href_path;
+  const target_input_path = target_id_ast.source_location.path;
   if (
     target_id_ast.source_location.path === undefined ||
-    context.toplevel_output_path === undefined
+    context.toplevel_output_path === undefined ||
+    context.include_path_set.has(target_input_path)
   ) {
     href_path = '';
   } else {
@@ -3792,7 +3794,6 @@ function x_href_parts(target_id_ast, context) {
 
   // fragment
   let fragment;
-  const target_input_path = target_id_ast.source_location.path;
   if (context.in_split_header) {
     fragment = '';
   } else {

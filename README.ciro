@@ -597,6 +597,53 @@ This allows to greatly improve the readability of long argument lists by having 
 
 TODO
 
+\h[5][Literal argument leading newline removal]
+
+If the very first character of a literal argument is a newline, then that character is ignored.
+
+For example:
+
+\C[[[
+\C[[
+a
+
+b
+]]
+]]]
+
+generates something like:
+
+\C[
+<pre><code>a
+
+b
+</code></pre>
+]
+
+instead of:
+
+\C[
+<pre><code>
+a
+
+b
+</code></pre>
+]
+
+This is extremely convenient to improve the readability of code blocks and similar constructs.
+
+If you absolutely need an opening newline, just add a second leading or trailing newline to the macro argument, e.g.:
+
+\C[[[
+\C[[
+
+a
+
+b
+
+]]
+]]]
+
 \h[5][Escape characters]
 
 For non-literal macro arguments, the rule is simple, you must escape all of:
@@ -641,52 +688,6 @@ Within literal blocks, you only need to escape constructs that would lead to amb
 ]
 
 \c[\[ first char was an open brace]
-
-\h[4][Argument leading and trailing newline removal]
-
-If the very first, or very last character of an argument is a newline, then that character is ignored.
-
-For example:
-
-\c[[
-\c[
-a
-
-b
-]
-]]
-
-generates something like:
-
-\c[
-<pre><code>a
-
-b</code></pre>
-]
-
-instead of:
-
-\c[
-<pre><code>
-a
-
-b
-</code></pre>
-]
-
-This is extremely convenient to improve the readability of code blocks and similar constructs.
-
-If you absolutely need an opening newline, just add a second leading or trailing newline to the macro argument, e.g.:
-
-\c[[
-\c[
-
-a
-
-b
-
-]
-]]
 
 \h[4][Argument automatic indentation removal]
 

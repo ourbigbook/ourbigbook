@@ -708,7 +708,7 @@ it('api: create an article and see it on global feed', async () => {
         // Maybe we could return the pre-existing article here.
         assertRows(data.articles, [])
 
-        // Also take this chance to check that /sha256 renderOutdated is correct.
+        // Also take this chance to check that /hash renderOutdated is correct.
         ;({data, status} = await test.webApi.articlesHash({ author: 'user0' }))
         assertStatus(status, data)
         assertRows(data.articles, [

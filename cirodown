@@ -395,7 +395,6 @@ function convert_path(base_path, input_path, options, convert_input_options) {
   }
   if ('db' in convert_input_options) {
     const ids = new_convert_input_options.extra_returns.ids;
-    const context = new_convert_input_options.extra_returns.context;
     const insert_id_stmt = convert_input_options.db.prepare(
       `INSERT INTO '${convert_input_options.ids_table_name}'
       (id, path, ast_json) VALUES (?, ?, ?);`
@@ -551,7 +550,7 @@ commander.option(
     'Useful to debug the program if conversion blow up on the next stages.',
   false
 );
-commander.option('--show-headers', 'print a simple text version of the headers to stdout', false);
+commander.option('--show-headers', 'https://cirosantilli.com/cirodown#show-headers', false);
 commander.option('--show-parse', 'print parsing internals to stderr', false);
 commander.option('--show-tokenize', 'print tokenization internals to stderr', false);
 commander.option('--show-tokens', 'print the token stream to stderr', false);

@@ -102,6 +102,8 @@ Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally pu
   * `inotifywait` watch rebuild server
   * cross file includes that work as links on multi output file mode, and true includes in single output file mode
   * cross file configuration files to factor out common page parts like headers and footers
+* advanced header/ID related features:
+  * \x[scope]
 * is written in JavaScript and therefore runs natively on the browser to allow live previews
 * helps you with the publishing:
   * `./cirodown --publish` helper for single command publishing to the configured target (default GitHub pages): \x[publish]
@@ -815,6 +817,50 @@ Sane equivalent:
 \H[3][My h3]{id=h3}
 ``
 
+=== ID-based header levels
+{title2=`{parent=<parent-id>}`}
+
+In addition to the basic way of specifying header levels with an explicit level number, as mentioned at \x[headers]{full}, Cirodown also supports a more indirect ID-based mechanism.
+
+For example, the following fixed level syntax:
+``
+= My h1
+
+== My h2 1
+
+== My h2 2
+
+=== My h3 2 1
+``
+is equivalent to the following ID-based version:
+``
+= My h1
+
+= My h2 1
+{parent=my-h1}
+
+= My h2 2
+{parent=my-h1}
+
+= My h3 2 1
+{parent=my-h2-h}
+``
+
+The main advantages of this syntax are felt when you have a huge document with \x[unlimited-header-levels][very large header depths]. In that case:
+* it becomes easy to get levels wrong with so many large level numbers to deal with. It is much harder to get an ID wrong.
+* when you want to move headers around to improve organization, things are quite painful without a refactoring tool (which we intend to provide in the \x[editor-with-preview]), as you need to fix up the levels of every single header.
+
+  If you are using the ID-based syntax however, you only have to move the chunk of headers, and change the `parent` argument of a single top-level header being moved.
+
+Note that when the `parent=` argument is given, the header level must be `1`, otherwise Cirodown assumes that something is weird and gives an error. E.g. the following gives an error:
+``
+= My h1
+
+== My h2
+{parent=my-h1}
+``
+because the second header has level `2` instead of the required `= My h2`.
+
 === Unlimited header levels
 
 There is no limit to how many levels we can have, for either sane or insane headers!
@@ -876,12 +922,18 @@ The expansion algorithm is optimized so that when you first click on the arrow o
 At the start, all nodes are showing, to facilitate Ctrl + F queries, and so when you first click on a node, it collapses the children of children, so you can see only the direct children the node of interest, without getting a gazillion of sub descendants shown first.
 
 The exact behaviour is:
-* if a node is closed (not showing children), open it (show children), and close all children.
+* if a node is closed (not showing children), open it (show children), and close all children (don't show children of children)
 
   This way, we see a summary of the node and direct children only.
 * if a node is open:
-  * if at least one child is open, close all children
-  * otherwise, open all children
+  * if all chilren are closed, open all children. This allows you to see the full subtree.
+  * if all chilren are open, close the node. Except for the toplevel "Table of Contents" node, since we never want to close that one.
+  * otherwise (there are both open and closed children), close all children to get an overview of the node
+
+As a result of the above rules, clicking on a node three times goes through a loop of basically all useful states:
+* node closed
+* node open and children closed
+* node open and children open
 
 Clicking on the link from a \x[headers]{p=0} up to the table of contents also automatically opens up the node for you in case it had been previously closed manually.
 
@@ -2774,11 +2826,11 @@ With great power comes great responsibility of course, but who cares!
 ===== `--show-headers`
 {id=show-headers}
 
-This is a nifty option to quicly see on the terminal what the header graph looks like!
+This nifty little option outputs to stderr what the header graph looks like!
 
-It is a bit like a \x[table-of-contents] in your terminal, for when you are not in the mood to open a browser or use the \x[editor-with-preview].
+It is a bit like a \x[table-of-contents] in your terminal, for when you need to have a look at the outline of the document to decide where to place a new header, but are not in the mood to open a browser or use the \x[editor-with-preview].
 
-Sample output:
+Sample output excerpt for this document:
 ``
 = h1  cirodown
 == h2 1 quick-start
@@ -2788,6 +2840,8 @@ Sample output:
 == h2 3 paragraphs
 == h2 4 links
 ``
+
+This option can also serve as a debug tool for header tree related features (confession: that was its original motivation!).
 
 ===== `--watch`
 {id=watch}

@@ -72,7 +72,7 @@ class AstNode {
     // the only difference is that non-headers are not connected as
     // children of their parent. But they still know who the parent is.
     // This was originally required for header scope resolution.
-    this.header_tree_node = undefined;
+    this.header_graph_node = options.header_graph_node;
     this.validation_error = undefined;
     this.validation_output = {};
 
@@ -295,17 +295,17 @@ class IdProvider {
 
   /**
    * @param {String} id
-   * @param {TreeNode} header_tree_node
+   * @param {TreeNode} header_graph_node
    * @return {Union[AstNode,undefined]}.
    *         undefined: ID not found
    *         Otherwise, the ast node for the given ID
    */
-  get(id, context, header_tree_node) {
+  get(id, context, header_graph_node) {
     if (id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
       return this.get_noscope(id.substr(1), context);
     } else {
-      if (header_tree_node !== undefined) {
-        let parent_scope_id = get_parent_scope_id(header_tree_node);
+      if (header_graph_node !== undefined) {
+        let parent_scope_id = get_parent_scope_id(header_graph_node);
         if (parent_scope_id !== undefined) {
           let resolved_scope_id = this.get_noscope(
             parent_scope_id + Macro.HEADER_SCOPE_SEPARATOR + id, context);
@@ -1211,8 +1211,7 @@ class TreeNode {
     this.children.push(child);
   }
 
-  /**
-   * E.g. get number 1.4.2.5 of a Section.
+  /** E.g. get number 1.4.2.5 of a Section.
    *
    * @return {String}
    */
@@ -1232,11 +1231,10 @@ class TreeNode {
     return indexes.reverse().slice(1 + offset).join('.');
   }
 
-
   toString() {
     const ret = [];
     let todo_visit;
-      // False for toplevel of the tree.
+    // False for toplevel of the tree.
     if (this.value === undefined) {
       todo_visit = this.children.slice();
     } else {
@@ -1280,6 +1278,103 @@ function array_equals(arr1, arr2) {
 
 function basename(str) {
   return str.substr(str.lastIndexOf(URL_SEP) + 1);
+}
+
+/** Calculate node ID and add it to the ID index. */
+function calculate_id(ast, context, id_provider, non_indexed_ids,
+  indexed_ids, macro_counts_visible, state
+) {
+  const macro_name = ast.macro_name;
+  const macro = context.macros[macro_name];
+  let index_id = true;
+  if (
+    // This can happen be false for included headers, and this is notably important
+    // for the toplevel header which gets its ID from the filename.
+    ast.id === undefined
+  ) {
+    const macro_id_arg = ast.args[Macro.ID_ARGUMENT_NAME];
+    if (macro_id_arg === undefined) {
+      let id_text = '';
+      let id_prefix = context.macros[ast.macro_name].id_prefix;
+      if (id_prefix !== '') {
+        id_text += id_prefix + ID_SEPARATOR
+      }
+      let title_arg = macro.options.get_title_arg(ast, context);
+      if (title_arg !== undefined) {
+        // ID from title.
+        // TODO correct unicode aware algorithm.
+        context.extra_returns.x_no_content_in_title_no_id = false;
+        id_text += title_to_id(convert_arg_noescape(title_arg, clone_and_set(context, 'in_title_no_id', true)));
+        if (context.extra_returns.x_no_content_in_title_no_id) {
+          const message = `x cross reference to id "${context.extra_returns.x_no_content_in_title_no_id_target}" ` +
+                          `without content used inside a title without an id, see: https://cirosantilli.com/cirodown#x-within-title-restrictions`;
+          title_arg.push(
+            new PlaintextAstNode(
+              context.extra_returns.x_no_content_in_title_no_id_line,
+              context.extra_returns.x_no_content_in_title_no_id_column,
+              ' ' + error_message_in_output(message)
+            )
+          );
+          parse_error(state, message,
+            context.extra_returns.x_no_content_in_title_no_id_line,
+            context.extra_returns.x_no_content_in_title_no_id_column);
+        } else {
+          ast.id = id_text;
+        }
+      }
+      if (ast.id === undefined && !macro.options.phrasing) {
+        // ID from element count.
+        if (ast.macro_count !== undefined) {
+          id_text += ast.macro_count;
+          index_id = false;
+          ast.id = id_text;
+        }
+      }
+    } else {
+      ast.id = convert_arg_noescape(macro_id_arg, context);
+    }
+    if (ast.id !== undefined && ast.header_graph_node) {
+      let parent_scope_id = get_parent_scope_id(ast.header_graph_node);
+      if (parent_scope_id !== undefined) {
+        ast.id = parent_scope_id + Macro.HEADER_SCOPE_SEPARATOR + ast.id
+      }
+    }
+  }
+  ast.index_id = index_id;
+  if (ast.id !== undefined && !ast.force_no_index) {
+    const previous_ast = id_provider.get(ast.id, context, ast.header_graph_node);
+    let input_path;
+    if (previous_ast === undefined) {
+      let non_indexed_id = non_indexed_ids[ast.id];
+      if (non_indexed_id !== undefined) {
+        input_path = options.input_path;
+        previous_ast = non_indexed_id;
+      }
+    } else {
+      input_path = previous_ast.input_path;
+    }
+    if (previous_ast === undefined) {
+      non_indexed_ids[ast.id] = ast;
+      if (index_id) {
+        indexed_ids[ast.id] = ast;
+      }
+    } else {
+      let message = `duplicate ID "${ast.id}", previous one defined at `;
+      if (input_path !== undefined) {
+        message += `file ${input_path} `;
+      }
+      message += `line ${previous_ast.line} colum ${previous_ast.column}`;
+      parse_error(state, message, ast.line, ast.column);
+    }
+    if (caption_number_visible(ast, context)) {
+      if (!(macro_name in macro_counts_visible)) {
+        macro_counts_visible[macro_name] = 0;
+      }
+      const macro_count = macro_counts_visible[macro_name] + 1;
+      macro_counts_visible[macro_name] = macro_count;
+      ast.macro_count_visible = macro_count;
+    }
+  }
 }
 
 function capitalize_first_letter(string) {
@@ -1596,19 +1691,19 @@ function error_message_in_output(msg, context) {
  *          If the node has a parent header with a scope, return the ID of that header.
  *          Otherwise, return undefined.
  */
-function get_parent_scope_id(header_tree_node) {
-  let cur_header_tree_node = header_tree_node.parent_node;
+function get_parent_scope_id(header_graph_node) {
+  let cur_header_graph_node = header_graph_node.parent_node;
   while (
     // Possible in case of mal-formed document e.g. with
     // non-integer header level.
-    cur_header_tree_node !== undefined &&
-    cur_header_tree_node.value !== undefined
+    cur_header_graph_node !== undefined &&
+    cur_header_graph_node.value !== undefined
   ) {
-    if (cur_header_tree_node.value.validation_output.scope.boolean) {
+    if (cur_header_graph_node.value.validation_output.scope.boolean) {
       // The ID of the first scoped parent already contains all further scopes prepended to it.
-      return cur_header_tree_node.value.id;
+      return cur_header_graph_node.value.id;
     }
-    cur_header_tree_node = cur_header_tree_node.parent_node;
+    cur_header_graph_node = cur_header_graph_node.parent_node;
   }
   return undefined;
 }
@@ -1633,6 +1728,10 @@ function html_attr(key, value) {
  */
 function html_attr_value(arg, context) {
   return convert_arg(arg, clone_and_set(context, 'html_is_attr', true));
+}
+
+function html_class_attr(classes) {
+  return html_attr('class', classes.join(' '))
 }
 
 function html_code(content, attrs) {
@@ -1973,20 +2072,28 @@ function parse(tokens, options, context, extra_returns={}) {
   //
   // Another possibility would be to do it in the middle of the initial parse,
   // but let's not complicate that further either, shall we?
+  context.headers_with_include = [];
+  context.header_graph = new TreeNode();
   extra_returns.debug_perf.post_process_start = globals.performance.now();
   let cur_header;
   let cur_header_level;
+  let first_header_level;
+  let first_header;
+  let header_graph_last_level;
   let toplevel_parent_arg = new AstArgument([], 1, 1);
   let todo_visit = [[toplevel_parent_arg, ast_toplevel]];
   // IDs that are indexed: you can link to those.
   let indexed_ids = {};
+  const macro_counts_visible = {};
   // Non-indexed-ids: auto-generated numeric ID's like p-1, p-2, etc.
   // It is not possible to link to them from inside the document, since links
   // break across versions.
   let non_indexed_ids = {};
+  const header_graph_stack = new Map();
+  const header_graph_id_stack = new Map();
   let id_provider;
   let local_id_provider = new DictIdProvider(indexed_ids);
-  let cur_header_tree_node;
+  let cur_header_graph_node;
   let is_first_header = true;
   if (options.id_provider !== undefined) {
     // Remove all remote IDs from the current file, to prevent false duplicates
@@ -2079,6 +2186,7 @@ function parse(tokens, options, context, extra_returns={}) {
               {
                 force_no_index: true,
                 from_include: true,
+                header_graph_node: cur_header_graph_node,
                 id: href,
                 input_path: ast.input_path,
               },
@@ -2189,14 +2297,31 @@ function parse(tokens, options, context, extra_returns={}) {
       ]);
     } else {
       if (macro_name === Macro.HEADER_MACRO_NAME) {
-        if (is_first_header) {
-          ast.id = options.toplevel_id;
-          is_first_header = false;
-        }
+        // Required by calculate_id.
+        validate_ast(ast, context);
+
         cur_header = ast;
         cur_header_level = parseInt(
           convert_arg_noescape(ast.args.level, context)
         ) + options.h_level_offset;
+        if (ast.validation_output.parent.given) {
+          if (cur_header_level !== 1) {
+            const message = `header has both parent and level != 1`;
+            ast.args[Macro.TITLE_ARGUMENT_NAME].push(
+              new PlaintextAstNode(ast.line, ast.column, ' ' + error_message_in_output(message)));
+            parse_error(state, message, ast.args.level.line, ast.args.level.column);
+          }
+          const parent_id = convert_arg_noescape(ast.args.parent, context)
+          const parent_tree_node = header_graph_id_stack.get(parent_id);
+          if (parent_tree_node === undefined) {
+            const message = `header parent either is a previous ID of a level, a future ID, or an invalid ID: ${parent_id}`;
+            ast.args[Macro.TITLE_ARGUMENT_NAME].push(
+              new PlaintextAstNode(ast.line, ast.column, ' ' + error_message_in_output(message)));
+            parse_error(state, message, ast.args.parent.line, ast.args.parent.column);
+          } else {
+            cur_header_level = parent_tree_node.value.level + 1;
+          }
+        }
         ast.level = cur_header_level;
         if ('level' in ast.args) {
           // Hack the level argument of the final AST to match for consistency.
@@ -2204,6 +2329,67 @@ function parse(tokens, options, context, extra_returns={}) {
             new PlaintextAstNode(ast.args.level.line, ast.args.level.column, ast.level.toString())],
             ast.args.level.line, ast.args.level.column);
         }
+
+        // Create the header tree.
+        if (ast.level === undefined) {
+          cur_header_level = parseInt(convert_arg_noescape(ast.args.level, context)) + options.h_level_offset;
+          ast.level = cur_header_level;
+        } else {
+          // Possible for included headers.
+          cur_header_level = ast.level;
+        }
+        if (is_first_header) {
+          ast.id = options.toplevel_id;
+          first_header = ast;
+          first_header_level = cur_header_level;
+          header_graph_last_level = cur_header_level - 1;
+          header_graph_stack.set(header_graph_last_level, context.header_graph);
+          is_first_header = false;
+        }
+        cur_header_graph_node = new TreeNode(ast, header_graph_stack.get(cur_header_level - 1));
+        if (cur_header_level - header_graph_last_level > 1) {
+          const message = `skipped a header level from ${header_graph_last_level} to ${ast.level}`;
+          ast.args[Macro.TITLE_ARGUMENT_NAME].push(
+            new PlaintextAstNode(ast.line, ast.column, ' ' + error_message_in_output(message)));
+          parse_error(state, message, ast.args.level.line, ast.args.level.column);
+        }
+        if (cur_header_level < first_header_level) {
+          parse_error(
+            state,
+            `header level ${cur_header_level} is smaller than the level of the first header of the document ${first_header_level}`,
+            ast.args.level.line,
+            ast.args.level.column
+          );
+        }
+        const parent_tree_node = header_graph_stack.get(cur_header_level - 1);
+        if (parent_tree_node !== undefined) {
+          parent_tree_node.add_child(cur_header_graph_node);
+        }
+        const old_graph_node = header_graph_stack.get(cur_header_level);
+        header_graph_stack.set(cur_header_level, cur_header_graph_node);
+        if (
+          // Possible on the first insert of a level.
+          old_graph_node !== undefined
+        ) {
+          if (
+            // Possible if the level is not an integer.
+            old_graph_node.value !== undefined
+          ) {
+            header_graph_id_stack.delete(old_graph_node.value.id);
+          }
+        }
+        header_graph_last_level = cur_header_level;
+        if (ast.includes.length > 0) {
+          context.headers_with_include.push(ast);
+        }
+        ast.header_graph_node = cur_header_graph_node;
+
+        // Must come after the header tree step is mostly done, because scopes influence ID,
+        // and they also depend on the parent node.
+        calculate_id(ast, context, id_provider, non_indexed_ids, indexed_ids, macro_counts_visible, state);
+
+        // Must come after calculate_id.
+        header_graph_id_stack.set(cur_header_graph_node.value.id, cur_header_graph_node);
       }
       // Push this node into the parent argument list.
       // This allows us to skip nodes, or push multiple nodes if needed.
@@ -2234,15 +2420,7 @@ function parse(tokens, options, context, extra_returns={}) {
   // Normally only the toplevel includer will enter this code section.
   if (!options.from_include) {
     const macro_counts = {};
-    const macro_counts_visible = {};
-    let header_graph_last_level;
-    const header_graph_stack = new Map();
-    let is_first_header = true;
-    let first_header_level;
-    let first_header;
-    context.headers_with_include = [];
     context.id_provider = id_provider;
-    context.header_graph = new TreeNode();
     context.has_toc = false;
     let toplevel_parent_arg = new AstArgument([], 1, 1);
 
@@ -2273,7 +2451,12 @@ function parse(tokens, options, context, extra_returns={}) {
         // This allows us to skip nodes, or push multiple nodes if needed.
         parent_arg.push(ast);
 
-        validate_ast(ast, context);
+        if (
+          // These had been validated earlier during header processing.
+          macro_name !== Macro.HEADER_MACRO_NAME
+        ) {
+          validate_ast(ast, context);
+        }
 
         // Loop over the child arguments. We do this rather than recurse into them
         // to be able to easily remove or add nodes to the tree during this AST
@@ -2507,48 +2690,10 @@ function parse(tokens, options, context, extra_returns={}) {
         const macro = context.macros[macro_name];
 
         if (macro_name === Macro.HEADER_MACRO_NAME) {
-          // Create the header tree.
-          if (ast.level === undefined) {
-            cur_header_level = parseInt(convert_arg_noescape(ast.args.level, context)) + options.h_level_offset;
-            ast.level = cur_header_level;
-          } else {
-            // Possible for included headers.
-            cur_header_level = ast.level;
-          }
-          if (is_first_header) {
-            first_header = ast;
-            is_first_header = false;
-            first_header_level = cur_header_level;
-            header_graph_last_level = cur_header_level - 1;
-            header_graph_stack[header_graph_last_level] = context.header_graph;
-          }
-          cur_header_tree_node = new TreeNode(ast, header_graph_stack[cur_header_level - 1]);
-          if (cur_header_level - header_graph_last_level > 1) {
-            const message = `skipped a header level from ${header_graph_last_level} to ${ast.level}`;
-            ast.args[Macro.TITLE_ARGUMENT_NAME].push(
-              new PlaintextAstNode(ast.line, ast.column, ' ' + error_message_in_output(message)));
-            parse_error(state, message, ast.args.level.line, ast.args.level.column);
-          }
-          if (cur_header_level < first_header_level) {
-            parse_error(
-              state,
-              `header level ${cur_header_level} is smaller than the level of the first header of the document ${first_header_level}`,
-              ast.args.level.line,
-              ast.args.level.column
-            );
-          }
-          let parent_tree_node = header_graph_stack[cur_header_level - 1];
-          if (parent_tree_node !== undefined) {
-            parent_tree_node.add_child(cur_header_tree_node);
-          }
-          header_graph_stack[cur_header_level] = cur_header_tree_node;
-          header_graph_last_level = cur_header_level;
-          if (ast.includes.length > 0) {
-            context.headers_with_include.push(ast);
-          }
-          ast.header_tree_node = cur_header_tree_node;
+          // TODO start with the toplevel.
+          cur_header_graph_node = ast.header_graph_node;
         } else {
-          ast.header_tree_node = new TreeNode(ast, cur_header_tree_node);;
+          ast.header_graph_node = new TreeNode(ast, cur_header_graph_node);
         }
 
         // Linear count of each macro type for macros that have IDs.
@@ -2560,96 +2705,11 @@ function parse(tokens, options, context, extra_returns={}) {
           macro_counts[macro_name] = macro_count;
           ast.macro_count = macro_count;
         }
-
-        // Calculate node ID and add it to the ID index.
-        let index_id = true;
-        // This condition can be false for included headers, and this is notably important
-        // for the toplevel header which gets its ID from the filename.
-        let id_text = undefined;
-        let macro_id_arg = ast.args[Macro.ID_ARGUMENT_NAME];
-        // ast.id is not undefined for the toplevel header of includes.
-        if (ast.id === undefined) {
-          if (macro_id_arg === undefined) {
-            let id_text = '';
-            let id_prefix = context.macros[ast.macro_name].id_prefix;
-            if (id_prefix !== '') {
-              id_text += id_prefix + ID_SEPARATOR
-            }
-            let title_arg = macro.options.get_title_arg(ast, context);
-            if (title_arg !== undefined) {
-              // ID from title.
-              // TODO correct unicode aware algorithm.
-              context.extra_returns.x_no_content_in_title_no_id = false;
-              id_text += title_to_id(convert_arg_noescape(title_arg, clone_and_set(context, 'in_title_no_id', true)));
-              if (context.extra_returns.x_no_content_in_title_no_id) {
-                const message = `x cross reference to id "${context.extra_returns.x_no_content_in_title_no_id_target}" ` +
-                                `without content used inside a title without an id, see: https://cirosantilli.com/cirodown#x-within-title-restrictions`;
-                title_arg.push(
-                  new PlaintextAstNode(
-                    context.extra_returns.x_no_content_in_title_no_id_line,
-                    context.extra_returns.x_no_content_in_title_no_id_column,
-                    ' ' + error_message_in_output(message)
-                  )
-                );
-                parse_error(state, message,
-                  context.extra_returns.x_no_content_in_title_no_id_line,
-                  context.extra_returns.x_no_content_in_title_no_id_column);
-              } else {
-                ast.id = id_text;
-              }
-            }
-            if (ast.id === undefined && !macro.options.phrasing) {
-              // ID from element count.
-              if (ast.macro_count !== undefined) {
-                id_text += ast.macro_count;
-                index_id = false;
-                ast.id = id_text;
-              }
-            }
-          } else {
-            ast.id = convert_arg_noescape(macro_id_arg, context);
-          }
-          if (ast.id !== undefined && ast.header_tree_node) {
-            let parent_scope_id = get_parent_scope_id(ast.header_tree_node);
-            if (parent_scope_id !== undefined) {
-              ast.id = parent_scope_id + Macro.HEADER_SCOPE_SEPARATOR + ast.id
-            }
-          }
-        }
-        ast.index_id = index_id;
-        if (ast.id !== undefined && !ast.force_no_index) {
-          const previous_ast = id_provider.get(ast.id, context, ast.header_tree_node);
-          let input_path;
-          if (previous_ast === undefined) {
-            let non_indexed_id = non_indexed_ids[ast.id];
-            if (non_indexed_id !== undefined) {
-              input_path = options.input_path;
-              previous_ast = non_indexed_id;
-            }
-          } else {
-            input_path = previous_ast.input_path;
-          }
-          if (previous_ast === undefined) {
-            non_indexed_ids[ast.id] = ast;
-            if (index_id) {
-              indexed_ids[ast.id] = ast;
-            }
-          } else {
-            let message = `duplicate ID "${ast.id}", previous one defined at `;
-            if (input_path !== undefined) {
-              message += `file ${input_path} `;
-            }
-            message += `line ${previous_ast.line} colum ${previous_ast.column}`;
-            parse_error(state, message, ast.line, ast.column);
-          }
-          if (caption_number_visible(ast, context)) {
-            if (!(macro_name in macro_counts_visible)) {
-              macro_counts_visible[macro_name] = 0;
-            }
-            const macro_count = macro_counts_visible[macro_name] + 1;
-            macro_counts_visible[macro_name] = macro_count;
-            ast.macro_count_visible = macro_count;
-          }
+        if (
+          // Header IDs already previously calculated for parent=.
+          macro_name !== Macro.HEADER_MACRO_NAME
+        ) {
+          calculate_id(ast, context, id_provider, non_indexed_ids, indexed_ids, macro_counts_visible, state);
         }
 
         // Push children to continue the search. We make the new argument be empty
@@ -2681,7 +2741,6 @@ function parse(tokens, options, context, extra_returns={}) {
     }
   }
 
-  extra_returns.debug_perf.post_process_end = globals.performance.now();
   return ast_toplevel;
 }
 
@@ -3229,7 +3288,7 @@ const INSANE_TH_START = '|| ';
 const INSANE_LIST_INDENT = '  ';
 const INSANE_HEADER_CHAR = '=';
 const TOC_ARROW_HTML = '<div class="arrow"><div></div></div>';
-const TOC_HAS_CHILD_HTML = ' class="has-child"';
+const TOC_HAS_CHILD_CLASS = 'has-child';
 const MAGIC_CHAR_ARGS = {
   '$': Macro.MATH_MACRO_NAME,
   '`': Macro.CODE_MACRO_NAME,
@@ -3604,7 +3663,7 @@ const DEFAULT_MACRO_LIST = [
         }
       }
       let parent_asts = [];
-      let parent_tree_node = ast.header_tree_node.parent_node;
+      let parent_tree_node = ast.header_graph_node.parent_node;
       // Undefined on toplevel.
       if (parent_tree_node !== undefined) {
         // May fail if there was a header skip error previously.
@@ -3627,17 +3686,20 @@ const DEFAULT_MACRO_LIST = [
       id_prefix: '',
       default_x_style_full: false,
       get_number: function(ast, context) {
-        let header_tree_node = ast.header_tree_node;
-        if (header_tree_node === undefined) {
+        let header_graph_node = ast.header_graph_node;
+        if (header_graph_node === undefined) {
           return undefined;
         } else {
-          return header_tree_node.get_nested_number(context.header_graph_top_level);
+          return header_graph_node.get_nested_number(context.header_graph_top_level);
         }
       },
       named_args: [
         new MacroArgument({
           name: 'c',
           boolean: true,
+        }),
+        new MacroArgument({
+          name: 'parent',
         }),
         new MacroArgument({
           name: 'scope',
@@ -3985,7 +4047,7 @@ const DEFAULT_MACRO_LIST = [
     [],
     function(ast, context) {
       let attrs = html_convert_attrs_id(ast, context);
-      let ret = `<div class="toc-container"${attrs}>\n<ul>\n<li${TOC_HAS_CHILD_HTML}><div class="title-div">`;
+      let ret = `<div class="toc-container"${attrs}>\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
       ret += `${TOC_ARROW_HTML}<a${x_href_attr(ast, context)}class="title">Table of contents</a></div>\n`;
       let todo_visit = [];
       let top_level = context.header_graph_top_level - 1;
@@ -4012,7 +4074,7 @@ const DEFAULT_MACRO_LIST = [
         let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, my_toc_id);
         ret += '<li';
         if (tree_node.children.length > 0) {
-          ret += TOC_HAS_CHILD_HTML;
+          ret += html_class_attr([TOC_HAS_CHILD_CLASS]);
         }
         // The inner <div></div> inside arrow is so that:
         // - outter div: takes up space to make clicking easy
@@ -4022,7 +4084,7 @@ const DEFAULT_MACRO_LIST = [
         let toc_href = html_attr('href', '#' + my_toc_id);
         ret += ` | <a${toc_href}>${UNICODE_LINK} link</a>`;
 
-        let parent_ast = target_id_ast.header_tree_node.parent_node.value;
+        let parent_ast = target_id_ast.header_graph_node.parent_node.value;
         if (
           // Possible on broken h1 level.
           parent_ast !== undefined
@@ -4209,7 +4271,7 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       const target_id = convert_arg_noescape(ast.args.href, context);
-      const target_id_ast = context.id_provider.get(target_id, context, ast.header_tree_node);
+      const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);
       let href;
       if (target_id_ast === undefined) {
         if (context.in_title_no_id) {

@@ -187,7 +187,7 @@ module.exports = (sequelize) => {
     await sequelize.transaction(async t => {
       await Promise.all([
         this.removeFavorite(article.id, { transaction: t }),
-        this.decrement('articleScoreSum', { transaction: t }),
+        article.getAuthor().then(author => author.decrement('articleScoreSum', { transaction: t })),
         article.decrement('score', { transaction: t }),
       ])
     })

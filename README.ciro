@@ -1270,6 +1270,19 @@ Notably, all headers inside that directory get the directory prepended to their 
 
 The toplevel directory is determined as described at: \x[the-toplevel-index-file].
 
+= Test scope 1
+{parent=scope}
+{scope}
+
+For fun and profit.
+
+= Test scope 2
+{parent=test-scope-1}
+{scope}
+
+= Not scoped
+{parent=test-scope-2}
+
 ==== Header `scope` argument of toplevel headers
 
 When \x[the-toplevel-header] is given the `scope` property Cirodown automatically uses the file path for the scope and heaves fragments untouched.
@@ -3453,6 +3466,7 @@ then `cirodown` walks up the filesystem tree looking for `cirodown.json`, e.g.:
 * is there a `./subdir/cirodown.json`?
 * otherwise, is there a `./cirodown.json`?
 * otherwise, is there a `../cirodown.json`?
+* otherwise, is there a `../../cirodown.json`?
 and so on.
 
 Then, in that case:

@@ -4007,13 +4007,20 @@ async function parse(tokens, options, context, extra_returns={}) {
       // https://github.com/cirosantilli/ourbigbook/issues/215
       const read_include_ret = await (options.read_include(href, input_dir));
       if (read_include_ret === undefined) {
-        let message = `could not find include: "${href}"`;
-        parse_error(
-          state,
-          message,
-          ast.source_location,
-        );
-        parent_arg.push(new PlaintextAstNode(message, ast.source_location));
+        if (
+          // On the local filesystem, this doesn't matter.
+          // But on the server it does, as we don't know about the other includes
+          // before they are processed.
+          context.options.render
+        ) {
+          let message = `could not find include: "${href}"`;
+          parse_error(
+            state,
+            message,
+            ast.source_location,
+          );
+          parent_arg.push(new PlaintextAstNode(message, ast.source_location));
+        }
       } else {
         const [include_path, include_content] = read_include_ret;
         if (options.include_path_set.has(include_path)) {

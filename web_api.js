@@ -32,10 +32,11 @@ class WebApi {
     )
   }
 
-  async articleCreate(article) {
+  async articleCreate(article, opts={}) {
+    const { render } = opts
     return this.req('post',
       `articles`,
-      { body: { article } },
+      { body: { article, render } },
     );
   }
 
@@ -67,10 +68,11 @@ class WebApi {
     return this.req('delete', `articles/like?id=${encodeURIComponent(slug)}`)
   }
 
-  async articleCreateOrUpdate(article, slug) {
+  async articleCreateOrUpdate(article, opts={}) {
+    const { render } = opts
     return this.req('put',
-      `articles?id=${encodeURIComponent(slug)}`,
-      { body: { article } },
+      `articles`,
+      { body: { article, render } },
     );
   }
 

@@ -20,10 +20,14 @@ async function convert({
   author,
   body,
   forceNew,
+  render,
   sequelize,
   title,
   transaction,
 }) {
+  if (render === undefined) {
+    render = true
+  }
   const id_provider = new SqliteIdProvider(sequelize)
   const file_provider = new SqliteFileProvider(sequelize, id_provider);
   const extra_returns = {};
@@ -60,6 +64,7 @@ async function convert({
         ext: '',
       }),
       remove_leading_at: true,
+      render,
       split_headers: true,
     }, convertOptions),
     extra_returns,
@@ -81,11 +86,10 @@ async function convert({
     id_provider,
     sequelize,
     path: filePath,
-    render: true,
+    render,
     title,
     transaction,
   })
-  const file = await sequelize.models.File.findOne({ where: { path: filePath }, transaction })
   const check_db_errors = await ourbigbook_nodejs_webpack_safe.check_db(
     sequelize,
     [input_path],
@@ -94,34 +98,39 @@ async function convert({
   if (check_db_errors.length > 0) {
     throw new ValidationError(check_db_errors)
   }
-  const articleArgs = []
-  for (const outpath in extra_returns.rendered_outputs) {
-    articleArgs.push({
-      fileId: file.id,
-      render: extra_returns.rendered_outputs[outpath].full,
-      slug: outpath.slice(ourbigbook.AT_MENTION_CHAR.length, -ourbigbook.HTML_EXT.length - 1),
-      title: extra_returns.rendered_outputs[outpath].title,
-      topicId: idid.slice(ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1),
+  if (render) {
+    const file = await sequelize.models.File.findOne({ where: { path: filePath }, transaction })
+    const articleArgs = []
+    for (const outpath in extra_returns.rendered_outputs) {
+      articleArgs.push({
+        fileId: file.id,
+        render: extra_returns.rendered_outputs[outpath].full,
+        slug: outpath.slice(ourbigbook.AT_MENTION_CHAR.length, -ourbigbook.HTML_EXT.length - 1),
+        title: extra_returns.rendered_outputs[outpath].title,
+        topicId: idid.slice(ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1),
+      })
+    }
+    await sequelize.models.Article.bulkCreate(
+      articleArgs,
+      { updateOnDuplicate: ['title', 'render', 'updatedAt'], transaction }
+    )
+    // Find here because upsert not yet supported in SQLite.
+    // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert
+    const articles = await sequelize.models.Article.findAll({
+      where: { slug: articleArgs.map(arg => arg.slug) },
+      include: {
+        model: sequelize.models.File,
+        as: 'file',
+      },
+      order: [['slug', 'ASC']],
     })
+    for (const article of articles) {
+      article.file.author = author
+    }
+    return articles
+  } else {
+    return []
   }
-  await sequelize.models.Article.bulkCreate(
-    articleArgs,
-    { updateOnDuplicate: ['title', 'render', 'updatedAt'], transaction }
-  )
-  // Find here because upsert not yet supported in SQLite.
-  // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert
-  const articles = await sequelize.models.Article.findAll({
-    where: { slug: articleArgs.map(arg => arg.slug) },
-    include: {
-      model: sequelize.models.File,
-      as: 'file',
-    },
-    order: [['slug', 'ASC']],
-  })
-  for (const article of articles) {
-    article.file.author = author
-  }
-  return articles
 }
 
 module.exports = {

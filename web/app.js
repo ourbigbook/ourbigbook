@@ -56,7 +56,11 @@ async function start(port, startNext, cb) {
     app.use(morgan('combined'))
   }
   app.use(bodyParser.urlencoded({ extended: false }))
-  app.use(bodyParser.json())
+  app.use(bodyParser.json({
+    // Happens due to our huge input files!
+    // https://stackoverflow.com/questions/19917401/error-request-entity-too-large
+    limit: '16mb'
+  }))
   app.use(require('method-override')())
 
   // Next handles anythiung outside of /api.

@@ -77,6 +77,15 @@ Literal block that renders as sane:
 
 \Q[[To be \i[or] maybe not.]]
 
+Literal block with escaped leading and trailing:
+
+\Q[[\[asdf\]]]
+
+\Q[\Q[asdf]]
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{{description=\{asdf\}}}
+
 Insane block together with paragraph:
 ``
 x = 1

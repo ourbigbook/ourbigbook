@@ -6,13 +6,13 @@
 {c}
 {synonym}
 
-The OurBigBook Project aims to create the ultimate tool to publish textbooks/https://ourbigbook.com/go/topic/personal-knowledge-base[personal knowledge bases]/https://ourbigbook.com/go/topic/zettelkasten[Zettelkasten]/https://ourbigbook.com/go/topic/digital-garden[digital gardens] in the https://ourbigbook.com/go/topic/learn-in-public[learn in public] philosophy.
+The OurBigBook Project aims to create the ultimate tool to publish textbooks/<#personal knowledge bases>/<#Zettelkasten>/<#digital gardens> in the <#learn in public> philosophy.
 
 \Image[logo.svg]
 {height=150}
 {title=<project logo>[Logo of] the OurBigBook Project}
 
-Mission: to live in a world where you can learn university-level https://ourbigbook.com/go/topic/mathematics[mathematics], https://ourbigbook.com/go/topic/physics[physics], https://ourbigbook.com/go/topic/chemistry[chemistry], https://ourbigbook.com/go/topic/biology[biology] and https://ourbigbook.com/go/topic/engineering[engineering] from perfect free open source books that anyone can write to get famous.
+Mission: to live in a world where you can learn university-level <#mathematics>, <#physics>, <#chemistry>, #biology and #engineering from perfect free open source books that anyone can write to get famous.
 
 How to get there: <OurBigBook Web>[create a website] that incentivizes learners (notably university students taking courses) to write freely licensed university-level natural science books in their own words for free. Their motivation for doing that are:
 * getting their knowledge globally recognized and thus better jobs
@@ -20,7 +20,7 @@ How to get there: <OurBigBook Web>[create a website] that incentivizes learners 
 * learning by teaching
 
 Notable features include:
-* focus on https://ourbigbook.com/go/topic/mindmeld[mind melding]/https://ourbigbook.com/go/topic/collective-intelligence[collective intelligence] via the <topics>[topics feature], which makes your articles easier for others to find with a sort-by upvote https://ourbigbook.com/go/topic/stack-overflow[Stack Overflow]-like view of multiple users articles on the same topic
+* focus on <#mindmeld>[mind melding]/<#collective intelligence> via the <topics>[topics feature], which makes your articles easier for others to find with a sort-by upvote <#Stack Overflow>-like view of multiple users articles on the same topic
 
   \Video[https://www.youtube.com/watch?v=54nxjC9BWTg]
   {title=<OurBigBook Web topics> demo}
@@ -4639,6 +4639,9 @@ This is because the number "Section 1.2" might already have been used in the cur
 {parent=x arguments}
 {tag=Boolean argument}
 
+= Magic link
+{synonym}
+
 This argument makes writing many internal links more convenient, and it was notably introduced because it serves as the sane version of <insane cross references>.
 
 If given e.g. as in:
@@ -4678,6 +4681,92 @@ the link treated magically as follows:
   * if the above failed, try singularizing the last word as in the <\x p argument> with `p=0` before doing <automatic ID from title> conversion. This gives `internal-reference`, which does exist, and so we use that.
 
 There may be some cases where you might still want to use <cross reference title inflection> however, see: <inflection vs magic>{full}.
+
+= Topic link
+{parent=x `magic` argument}
+{title2=`<#Black holes>`}
+
+If the target of a <magic link> starts with a hash sign `#`, then it is called a "topic link" and gets treated specially, pointing to a <OurBigBook Web topic>.
+
+For example, when rendering a <static website>, a link such as:
+``
+<#Albert Einstein>
+``
+which is equivalent to:
+``
+\x[#Albert Einstein]{magic}
+``
+would produce output similar to:
+``
+\a[https://ourbigbook.com/go/topic/john-smith][John Smith]
+``
+e.g.:
+\OurBigBookExample[[<#Albert Einstein>]]
+
+This allows static website creators to easily link to topics they might not have already written about which others may have covered.
+
+The <OurBigBook Web> instance linked to can be configured with <ourbigbook.json/web/host>.
+
+Those links also work on <OurBigBook Web> rendering of course, and point to the current Web instance.
+
+= Insane topic link
+{parnt=Ropic link}
+{title2=`#star`}
+
+If the topic contains just a single word without spaces, you can also just use the insane hash-only shortcut without the angle brackets `<>`, e.g.:
+``
+I like #dogs
+``
+is equivalent to:
+``
+I like <#dogs>
+``
+e.g.:
+\OurBigBookExample[[I like #dogs]]
+
+Word separation is similar to <Insane link parsing rules>, i.e.:
+* `#` can start from anywhere, including the middle of words, e.g.:
+  \OurBigBookExample[[
+  abc#mytopic
+  ]]
+  would produce a link immediately preceeded by the characters `abc`.
+* `#` ends at spaces, newlines, or at the end of <macro arguments>. Anything else gets included in the link, e.g. punctuation characters, etc.
+
+  Topic is `mytopic`:
+  \OurBigBookExample[[
+  #mytopic is cool
+  ]]
+
+  Topic is `mytopic,` with the comma:
+  \OurBigBookExample[[
+  #mytopic, is cool
+  ]]
+  So you likely would have had instead used the sane syntax in this case with `<#mytopic>,` to avoid that.
+
+= Topic link pluralization
+{parent=Topic link}
+
+Unlike local links, it is not possible to automatically determine the exact pluralization of a <topic link> because:
+* it would require communicating with the <OurBigBook Web> API, which we could in principle do, but we would rather not have static builds depend on Web instances
+* topics can be written by multiple authors, and there could be both plural and singular versions of each topic ID, which makes it hard to determine which one is "correct"
+
+Therefore, it is up to authors to specifically specify the desired pluralization of their topic links:
+* by default, topic IDs are automatically singularized, e.g.:
+  ``
+  <#Many Dogs>
+  ``
+  renders something like:
+  ``
+  \a[https://ourbigbook.com/go/topic/many-dog][Many Dogs]
+  ``
+* to prevent this automatic singularization, use <`\x` `p` argument> with `{p=1}`, e.g.:
+  ``
+  <#Many Dogs>{p=1}
+  ``
+  renders something like:
+  ``
+  \a[https://ourbigbook.com/go/topic/many-dogs][Many Dogs]
+  ``
 
 = `\x` `p` argument
 {parent=x arguments}
@@ -5233,6 +5322,7 @@ But in <literal arguments>[non-literal macro arguments], you have to use a backs
   * `<` (open angle brackets, less than sign): <insane macro shortcut> for <insane cross references>
   * `$` (dollar sign): <insane macro shortcut> for <mathematics>
   * \c[[`]] (backtick): <insane macro shortcut> for <code blocks>
+  * `#` (hash): <insane topic links>
 
 Furthermore, only at:
 * at the start of the document
@@ -6224,7 +6314,7 @@ Skip the database sanity check that is normally done after the <ID extraction> s
 
 This was originally added to speed up, originally added to speed up the <web upload> development loop, when we knew that there were no errors in the database after a local conversion, and wanted to get to the upload phase faster, but the DB check can take several seconds for a large input.
 
-But it then later also found usage with <parallel builds> followed by a <--check-db>
+But it then later also found usage with <parallel builds> followed by a <--check-db-only>.
 
 = `--no-db`
 {parent=OurBigBook CLI options}
@@ -6550,7 +6640,7 @@ out/publish/out/local
 = `--publish-target github-pages`
 {parent=`--publish-target`}
 
-Publish to https://ourbigbook.com/go/topic/github-pages[GitHub Pages]. See also: <Publish to GitHub Pages>{full}.
+Publish to <#GitHub Pages>. See also: <Publish to GitHub Pages>{full}.
 
 = `--publish-target local`
 {parent=`--publish-target`}
@@ -7517,6 +7607,17 @@ Select the default host used for
 * <static website> where it is used, e.g. <linkFromHeaderMeta>
 Defaults to `ourbigbook.com`, the <OurBigBook.com>[reference Web instance].
 
+= `hostCapitalized`
+{parent=`web`}
+
+Capitalized version of <`host`>, e.g. `OurBigBook.com`.
+
+Default:
+* if <`host`> is given, use it
+* otherwise, `OurBigBook.com`
+
+Shows up on <linkFromHeaderMeta> as a potentially more human readable version of the hostname.
+
 = `linkFromHeaderMeta`
 {parent=`web`}
 
@@ -7791,7 +7892,7 @@ But we can see that there are 3 articles in total about "Fundamental theorem of 
 {provider=github}
 {height=600}
 {description=
-After clicking that button, we reach https://ourbigbook.com/go/topic/fundamental-theorem-of-calculus[the "Fundamental theorem of calculus" topic page].
+After clicking that button, we reach <#fundamental theorem of calculus>[the "Fundamental theorem of calculus" topic page].
 
 Here we see that there are 3 articles in total. The one by Mr. Trump has 1 vote, while the others have zero, so Trump's appears on top. So maybe that is the best one!
 
@@ -8783,7 +8884,7 @@ To keep things slightly saner, the <web/bin/normalize>{file} script can be used 
 = Nested set
 {parent=OurBigBook Web database}
 
-The "nested set index" is an index explicitly maintained by our codebase that allows quickly fetching pages for <OurBigBook Web dynamic article tree> in https://ourbigbook.com/go/topic/pre-order-depth-first-search[pre-order depth first], i.e. the conventional order in which  the table of contents and articlees appear in a book. See also: https://stackoverflow.com/questions/4048151/what-are-the-options-for-storing-hierarchical-data-in-a-relational-database
+The "nested set index" is an index explicitly maintained by our codebase that allows quickly fetching pages for <OurBigBook Web dynamic article tree> in <#pre-order depth first>, i.e. the conventional order in which  the table of contents and articlees appear in a book. See also: https://stackoverflow.com/questions/4048151/what-are-the-options-for-storing-hierarchical-data-in-a-relational-database
 
 This technique is also called "closure table" by some authors.
 
@@ -10585,7 +10686,7 @@ We are thinking about the following layout:
   * logo below text centered
 We are planning on using a clear green on white color scheme to reflect the current website CSS.
 
-TODO ideas: understand what students wear, and the copy it with our logo. E.g. for https://ourbigbook.com/go/topic/oxbridge[Oxbridge], one could design https://ourbigbook.com/go/topic/oxbridge[college puffer jackets].
+TODO ideas: understand what students wear, and the copy it with our logo. E.g. for <#Oxbridge>, one could design <#college puffer jackets>[college puffer jackets].
 
 = tshirtstudio.com
 {parent=Clothing}

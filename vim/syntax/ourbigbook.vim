@@ -16,6 +16,7 @@ syntax match ourbigbookArgumentNameEqualsParent '=' contained nextgroup=ourbigbo
 highlight ourbigbookDelimiter          gui=bold cterm=bold term=bold
 highlight ourbigbookDelimiterX         gui=bold cterm=bold term=bold
 highlight link ourbigbookMacroXAngle           Label
+highlight link ourbigbookMacroXAngleBeforeHash Label
 highlight link ourbigbookDelimiterXAngleClose  Label
 highlight ourbigbookArgumentNameEquals gui=bold cterm=bold term=bold
 highlight link ourbigbookArgumentName Label
@@ -50,10 +51,16 @@ syntax match ourbigbookMacro /\\[a-zA-Z0-9_]\+/ contains=@NoSpell
 " syntax errors so frequent in that case due to lowercasing.
 syntax match ourbigbookMacroX '\\\(a\|x\|[Ii]mage\)\>' nextgroup=ourbigbookDelimiterX contains=@NoSpell
 syntax match ourbigbookMacroXAngle '<' nextgroup=ourbigbookArgumentXAngle contains=@NoSpell
+syntax match ourbigbookMacroXAngleBeforeHash '<\(#\)\@\=' nextgroup=ourbigbookMacroXHashSane contains=@NoSpell
+syntax match ourbigbookMacroXHashSane '#' contained nextgroup=ourbigbookArgumentXAngle contains=@NoSpell
 syntax match ourbigbookArgumentX /[^\]]\+/ contained contains=@NoSpell
+syntax match ourbigbookArgumentXAngleOrHash /[^>]\+/ contained nextgroup=ourbigbookDelimiterXAngleClose contains=@NoSpell
 syntax match ourbigbookArgumentXAngle /[^>]\+/ contained nextgroup=ourbigbookDelimiterXAngleClose contains=@NoSpell
 syntax match ourbigbookDelimiterXAngleClose '>' contained contains=@NoSpell
 syntax match ourbigbookArgumentParent /[^}]\+/ contained contains=@NoSpell
+" Insane link.
+syntax match ourbigbookMacroXHashInsane '#' nextgroup=ourbigbookArgumentXInsane contains=@NoSpell
+syntax match ourbigbookArgumentXInsane '[^[{\] \n]\+' contained contains=@NoSpell
 
 highlight link ourbigbookMacro  Label
 highlight link ourbigbookMacroX Label
@@ -62,8 +69,11 @@ syntax match ourbigbookUrl 'https\?://[^[{\] \n]\+' contains=@NoSpell
 highlight link ourbigbookUrl            Special
 highlight link ourbigbookArgumentX      Special
 highlight link ourbigbookArgumentXAngle Special
+highlight link ourbigbookArgumentXInsane Special
 highlight link ourbigbookArgumentParent Special
+highlight link ourbigbookMacroXHashInsane Label
+highlight link ourbigbookMacroXHashSane Label
 
 " Backslash escapes of magic chars.
-syntax match ourbigbookNone /\\[<$`[\]{}]/
+syntax match ourbigbookNone /\\[<$`[\]{}]#/
 highlight link ourbigbookNone NONE

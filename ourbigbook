@@ -1697,7 +1697,7 @@ if (cli.helpMacros) {
         if (ourbigbook_json.web && ourbigbook_json.web.host) {
           host = ourbigbook_json.web.host
         } else {
-          host = OURBIGBOOK_JSON_DEFAULT.web.host
+          host = ourbigbook.OURBIGBOOK_JSON_DEFAULT.web.host
         }
         webUrl = `https://${host}`
       }

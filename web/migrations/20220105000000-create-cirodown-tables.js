@@ -65,13 +65,13 @@ module.exports = {
             type: DataTypes.TEXT,
             allowNull: false,
           },
-          transaction,
         },
         {
           indexes: [
             { fields: ['idid'], },
             { fields: ['path'], },
           ],
+          transaction,
         }
       ),
       queryInterface.createTable(

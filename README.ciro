@@ -238,13 +238,29 @@ paragraphs]
 
 === Insane link parsing rules
 
-Insane links must be preceded by either:
-* the start of the document
-* the start of a \x[positional-vs-named-arguments][positional or named argument] (e.g. `\P[http://example.com]` or `Image[xi.png]{description=http://example.com}`) that not marked with `elide_link_only` (which is the case for example for `href` of `a`)
-* space ` ` char
-* newline `\n` char
-
-The recognized protocols are the ones shown at: \x[known-url-protocols]{full}.
+Insane start at any of the recognized protocols are the ones shown at: \x[known-url-protocols]{full}.
+* `http://`
+* `https://`
+absolutely anywhere if not escaped, e.g.:
+``
+ahttp://example.com
+``
+renders something like:
+``
+a <a href="http://example.com">
+``
+To prevent expansion, you have to escape the protocol with a backslash `\\`, e.g.:
+``
+\http://example.com
+``
+Empty domains like:
+``
+http://
+``
+don't becomes links however. But this one does:
+``
+http://a
+``
 
 Insane links end when either the end of the document or one of the following characters is found:
 * space ` `
@@ -252,13 +268,13 @@ Insane links end when either the end of the document or one of the following cha
 * open or close square bracket `[` or `]`
 * open or close curly braces `{` or `}`
 
-As a consequence, of those rules, it is impossible to have an insane link followed immediately by a period, e.g.:
+As a consequence, to have an insane link followed immediately by a punctuation like a period you should use an empty argument as in:
 \CirodownExample[[
-Check out this website: http://example.com.
+Check out this website: http://example.com[].
 ]]
-You must instead use the sane syntax for that:
+otherwise the punctuation will go in it. Another common use case is:
 \CirodownExample[[
-Check out this website: \a[http://example.com].
+As mentioned on the tutorial (http://example.com[see this link]).
 ]]
 
 If you want your link to include one of the terminating characters, e.g. `]`, all characters can be escaped with a backslash, e.g.:
@@ -276,14 +292,6 @@ This magic can be observed with \x[help-macros] by seeing that the `href` argume
 ``
 "elide_link_only": true,
 ``
-
-TODO it is currently impossible to prevent autolinks from expanding, we can either go with an empty macro solution, or with a literal text solution:
-\C[[[
-\CirodownExample[[
-Literal URL \empty[]http://example.com but why?
-Literal URL \text[[http://example.com]] but why?
-]]
-]]]
 
 == Internal cross references
 {title2=`\x`}

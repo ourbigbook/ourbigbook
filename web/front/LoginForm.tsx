@@ -40,11 +40,23 @@ const LoginForm = ({ register = false }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    let recaptchaToken
+    if (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
+      recaptchaToken = await new Promise((resolve, reject) => {
+        grecaptcha.ready(function() {
+          grecaptcha.execute(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY, {action: 'submit'}).then(function(token) {
+            resolve(token)
+          });
+        });
+      })
+    }
     try {
       let data, status;
       if (register) {
-        ({ data, status } = await webApi.userCreate({ displayName, username, email, password }));
-        Router.push(routes.userVerify(data.user.email))
+        ({ data, status } = await webApi.userCreate({ displayName, username, email, password }, recaptchaToken));
+        if (status === 200) {
+          Router.push(routes.userVerify(data.user.email))
+        }
       } else {
         ({ data, status } = await webApi.userLogin({ username, password }));
         if (!data.verified) {
@@ -120,6 +132,9 @@ const LoginForm = ({ register = false }) => {
           {`${register ? REGISTER_ACTION : LOGIN_ACTION}`}
         </button>
       </form>
+      {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY &&
+        <script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`}></script>
+      }
     </>
   );
 };

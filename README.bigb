@@ -6222,7 +6222,7 @@ Setup:
 createdb ourbigbook
 psql -c "CREATE ROLE ourbigbook_user with login password 'a'"
 psql -c 'GRANT ALL PRIVILEGES ON DATABASE ourbigbook TO ourbigbook_user'
-echo "SECRET=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)" >> .env
+echo "SECRET=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)" >> web/.env
 ``
 
 Run after every modification
@@ -6395,9 +6395,62 @@ This is something that should be merged into Sequelize itself, or at least asked
 = OurBigBook Web email sending
 {parent=OurBigBook Web deployment}
 
-In development mode, emails are all logged to the server stdout.
+In development mode, emails are all logged to the server stdout and not actually sent, unless you run as:
+``
+OURBIGBOOK_SEND_EMAIL=1 npm run dev
+``
+This can be used to test the email integration locally.
 
-This is particularly important to know about for verifying the creation of new test users: the verification link should appear in your terminal.
+Some research of different methods is shown at: https://cirosantilli.com/send-free-emails-from-heroku
+
+= OurBigBook Web email sending with Sendgrid
+{parent=OurBigBook Web email sending}
+
+* ensure that you have a working email address in the hosted domain such as `ciro@ourbigbook.com`. E.g. on our <custom domain name setup> with Porkbun, we achieved this by redirecting `ciro@ourbigbook` to Ciro's personal email initially.
+* create Sendgrid account
+* create a single sender. We used:
+  * From Name: Ciro
+  * From Email Address: ciro@ourbigbook.com
+  * Reply to: ciro@ourbigbook.com
+* it would also be a good idea to setup:
+  * two factor authentication
+  * verify your domain. This means setting up three `CNAME` records given by Sendgrid on your DNS provider, e.g. Porkbun.
+* integrate using web API
+  * create an API key, and then save it on Heroku:
+    ``
+    heroku config:set -a ourbigbook SENDGRID_API_KEY=thekey
+    ``
+    Also set it locally to be able to test email sending integratio locally:
+    ``
+    echo ourbigbook SENDGRID_API_KEY=thekey >> web/.env
+    ``
+    Then, to veryfi that the email sending is actually working run;
+    ``
+    OURBIGBOOK_SEND_EMAIL=1 npm run dev
+    ``
+    and try to register some of your real emails. You should actually receive the email at this step. The email appears as sent from:
+    ``
+    ciro@ourbigbook.com via sendgrid.net
+    ``
+    gmail accepted the email under promotions wihtout domain verification, but outlook sent it to spam. Make sure to click "it is not spam" in that case.
+
+= OurBigBook Web reCAPTCHA setup
+{parent=OurBigBook Web deployment}
+
+Go to https://www.google.com/recaptcha/about/[], setup a new domain, and save the values given e.g. to Heroku for <Heroku deployment>:
+``
+heroku config:set -a ourbigbook RECAPTCHA_SECRET_KEY=secret_key
+heroku config:set -a ourbigbook NEXT_PUBLIC_RECAPTCHA_SITE_KEY=site_key
+``
+
+Aditionally, also setup a separate localhost reCAPTCHA to test that it is working:
+``
+echo ourbigbook RECAPTCHA_SECRET_KEY=secret_localhost_key >> web/.env
+echo ourbigbook NEXT_PUBLIC_RECAPTCHA_SITE_KEY=site_localhost_key >> web/.env
+``
+Although it is possible to use a single reCAPTCHA for both production and development, Google recommends having separate ones.
+
+If the `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` variable is not set, then reCAPTCHA is simply not used in the website.
 
 = Heroku deployment
 {c}
@@ -6419,6 +6472,9 @@ heroku config:set -a ourbigbook SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head 
 heroku config:set -a ourbigbook OURBIGBOOK_DEMO_USER_PASSWORD="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 20)"
 # You can get it later to login with the demo users from the Heroku web interface
 ``
+To finish things off, you must now:
+* setup <OurBigBook Web email sending>, e.g. with <OurBigBook Web email sending with Sendgrid>. We haven't found a free method integrated with Heroku currently, so using this separate Sendgrid setup initially.
+* setup reCAPTCHA: <OurBigBook Web reCAPTCHA setup>
 
 Additionally, you also need to setup the PostgreSQL test database for both OurBigBook CLI and OurBigBook Web as documented at: <test system> and <local run as identical to deployment as possible>, because we will be running tests on PostgreSQL before pushing:
 ``
@@ -6501,6 +6557,10 @@ heroku domains:add ourbigbook.com
 heroku domains
 ``
 and we removed all other `ALIAS`/`CNAME` records from Porkbun.
+
+Next, we setup forwarding from `ciro@ourbigbook.com` to Ciro Santilli's personal gmail accont. This is done in part because it appears that we are required to provide a from address for <OurBigBook Web email sending with Sendgrid>, and that email has to be verified. Having Porkbun host it costs 2\$/month, and we are trying to use as much free stuff as possible until there are actual users on the website.
+
+Note that if you try to test from your own personal account, the redirect automatically skips sending as it notices that it would redirect to the sender. To test it you have to use some secondary email account instead.
 
 = Staging deployment
 {parent=Heroku deployment}

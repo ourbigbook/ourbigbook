@@ -184,6 +184,8 @@ class AstNode {
   }
 
   /**
+   * Convert this AST node to an output string.
+   *
    * @param {Object} context
    *        If a call will change this object, it must first make a copy,
    *        otherwise future calls to non descendants would also be affected by the change.
@@ -205,7 +207,7 @@ class AstNode {
    * @param {Object} context
    * @return {String}
    */
-  async convert(context) {
+  async render(context) {
     if (context === undefined) {
       context = {};
     }
@@ -550,7 +552,7 @@ class IdProvider {
    *         For example, on a local ID database cache, this would clear
    *         all IDs from the cache.
    */
-  clear(input_path_noext_renamed) { throw 'unimplemented'; }
+  clear(input_path_noext_renamed) { throw new Error('unimplemented'); }
 
   /**
    * @param {String} id
@@ -620,7 +622,7 @@ class IdProvider {
     for (const all_ret of all_rets) {
       const from_ast = await this.get(all_ret.from_id, context);
       if (from_ast === undefined) {
-        throw 'parent ID of include not in database, not sure how this can happen so throwing';
+        throw new Error('parent ID of include not in database, not sure how this can happen so throwing');
       } else {
         ret.push(from_ast);
       }
@@ -2156,13 +2158,13 @@ async function convert(
     // First render.
     context.extra_returns.rendered_outputs = {};
     perf_print(context, 'render_pre')
-    output = await ast.convert(context);
+    output = await ast.render(context);
     context.katex_macros = Object.assign({}, context.options.katex_macros);
     if (context.toplevel_output_path !== undefined) {
       context.extra_returns.rendered_outputs[context.toplevel_output_path] = output;
     }
 
-  perf_print(context, 'split_render_pre')
+    perf_print(context, 'split_render_pre')
     // Split header conversion.
     if (context.options.split_headers) {
       const content = ast.args.content;
@@ -2238,7 +2240,7 @@ async function convert_arg(arg, context) {
   let converted_arg = '';
   if (arg !== undefined) {
     for (const ast of arg) {
-      converted_arg += await ast.convert(context);
+      converted_arg += await ast.render(context);
     }
   }
   return converted_arg;
@@ -2322,7 +2324,7 @@ async function convert_header(cur_arg_list, context, has_toc) {
 
     // Do the conversion.
     context.extra_returns.rendered_outputs[output_path] =
-      await ast_toplevel.convert(context);
+      await ast_toplevel.render(context);
   }
 }
 
@@ -5869,7 +5871,7 @@ const DEFAULT_MACRO_LIST = [
             'c': new AstArgument(),
           },
         );
-        tag_ids_html_array.push(await x_ast.convert(new_context));
+        tag_ids_html_array.push(await x_ast.render(new_context));
       }
       const tag_ids_html = 'Tags: ' + tag_ids_html_array.join(', ');
       if (!first_header && tag_ids_html_array.length > 0) {
@@ -6560,7 +6562,7 @@ const DEFAULT_MACRO_LIST = [
               );
               const new_context = clone_and_set(context, 'validate_ast', true);
               new_context.source_location = ast.source_location;
-              body += await incoming_ul_ast.convert(new_context);
+              body += await incoming_ul_ast.render(new_context);
             }
           }
 
@@ -6931,7 +6933,7 @@ async function create_link_list(context, ast, id, title, target_ids, body) {
     const incoming_ul_ast = new AstNode(AstType.MACRO, 'Ul', ulArgs)
     const new_context = clone_and_set(context, 'validate_ast', true);
     new_context.source_location = ast.source_location;
-    ret += await incoming_ul_ast.convert(new_context);
+    ret += await incoming_ul_ast.render(new_context);
   }
   return ret
 }

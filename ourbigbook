@@ -2310,7 +2310,7 @@ if (cli.helpMacros) {
             nonOurbigbookOptions.dont_ignore_path_regexps,
             inputPath
           )) {
-            console.error(`skipping conversion of "${inputPath}" because it is ignored: ;`);
+            console.error(`skipping conversion of "${inputPath}" because it is ignored`)
           } else {
             output = await convert_path_to_file(inputPath, ourbigbook_options, nonOurbigbookOptions);
           }

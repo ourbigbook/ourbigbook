@@ -52,6 +52,7 @@
   "scripts": {
     "browserify": "npx browserify --outfile cirodown.js --standalone cirodown index.js",
     "build": "cd web && npm run build",
+    "deploy": "git push heroku master",
     "dev": "cd web && npm run dev",
     "heroku-prebuild": "cd web && npm install",
     "prepublishOnly": "./prepublishOnly",

@@ -207,6 +207,19 @@ function getSequelize(toplevelDir, toplevelBasename) {
     onDelete: 'SET NULL',
   })
   File.hasMany(Article, {
+    // This name is a bad idea as it breaks SQLite case insensitive madness due to conflice with File...
+    // https://stackoverflow.com/questions/50926312/how-to-make-column-names-case-sensitive-of-sqlite3-in-python
+    // const rows = await File.findAll(
+    //   {
+    //     include: [
+    //       {
+    //         model: Article,
+    //         as: 'file',
+    //       },
+    //     ],
+    //   }
+    // )
+    // More complex further nested queries may survive because they have more prefixes that differentiate between them.
     as: 'file',
     foreignKey: 'fileId'
   })
@@ -352,14 +365,15 @@ async function normalize({
   if (usernames === undefined) {
     usernames = []
   }
+  const { Article, Comment, Issue, File, User } = sequelize.models
   if (usernames.length === 0) {
-    usernames = (await sequelize.models.User.findAll({
+    usernames = (await User.findAll({
       attributes: ['username'],
       order: [['username', 'ASC']],
       transaction,
     })).map(u => u.username)
   } else {
-    const users = await sequelize.models.User.findAll({ where: { username: usernames }})
+    const users = await User.findAll({ where: { username: usernames }})
     const usernameSet = new Set(users.map(u => u.username))
     for (const username of usernames) {
       if (!usernameSet.has(username)) {
@@ -373,11 +387,11 @@ async function normalize({
     for (const username of usernames) {
       if (what === 'nested-set') {
         if (fix) {
-          await sequelize.models.Article.updateNestedSets(username, { transaction })
+          await Article.updateNestedSets(username, { transaction })
         }
-        const articles = await sequelize.models.Article.treeFindInOrder({ username, transaction })
+        const articles = await Article.treeFindInOrder({ username, transaction })
         if (check) {
-          const nestedSetsFromRefs = await sequelize.models.Article.getNestedSetsFromRefs(username, { transaction })
+          const nestedSetsFromRefs = await Article.getNestedSetsFromRefs(username, { transaction })
           for (let i = 0; i < nestedSetsFromRefs.length; i++) {
             const article = articles[i]
             const fromRef = nestedSetsFromRefs[i]
@@ -402,26 +416,26 @@ async function normalize({
       ) {
         let parentModel, childModel, as, emptyThrough
         if (what === 'article-issue-count') {
-          parentModel = sequelize.models.Article
-          childModel = sequelize.models.Issue
+          parentModel = Article
+          childModel = Issue
           as = 'issues'
           checkField = 'issueCount'
           emptyThrough = false
         } else if(what === 'article-follower-count') {
-          parentModel = sequelize.models.Article
-          childModel = sequelize.models.User
+          parentModel = Article
+          childModel = User
           as = 'followers'
           checkField = 'followerCount'
           emptyThrough = true
         } else if (what === 'issue-comment-count') {
-          parentModel = sequelize.models.Issue
-          childModel = sequelize.models.Comment
+          parentModel = Issue
+          childModel = Comment
           as = 'comments'
           checkField = 'commentCount'
           emptyThrough = false
         } else if (what === 'issue-follower-count') {
-          parentModel = sequelize.models.Issue
-          childModel = sequelize.models.User
+          parentModel = Issue
+          childModel = User
           as = 'followers'
           checkField = 'followerCount'
           emptyThrough = true
@@ -439,16 +453,16 @@ async function normalize({
         const include = [
           includeChild,
         ]
-        if (parentModel === sequelize.models.Issue) {
+        if (parentModel === Issue) {
           // Ideally, but PostgreSQL won't let us due to GROUP BY.
           //include.push({
-          //  model: sequelize.models.Article,
+          //  model: Article,
           //  as: 'article',
           //  attributes: ['slug'],
           //})
           slugAttr = 'number'
           include.push({
-            model: sequelize.models.User,
+            model: User,
             as: 'author',
             where: { username },
             required: true,
@@ -457,13 +471,13 @@ async function normalize({
         } else {
           slugAttr = 'slug'
           include.push({
-            model: sequelize.models.File,
+            model: File,
             as: 'file',
             attributes: [],
             subQuery: false,
             required: true,
             include: {
-              model: sequelize.models.User,
+              model: User,
               as: 'author',
               where: { username },
               required: true,
@@ -484,16 +498,16 @@ async function normalize({
           order: [['id', 'ASC']],
           transaction,
         })
-        if (parentModel === sequelize.models.Issue) {
+        if (parentModel === Issue) {
           const countsArticle = await parentModel.findAll({
             include: [
               {
-                model: sequelize.models.Article,
+                model: Article,
                 as: 'article',
                 attributes: ['slug'],
               },
               {
-                model: sequelize.models.User,
+                model: User,
                 as: 'author',
                 where: { username },
                 required: true,
@@ -543,13 +557,13 @@ async function normalize({
         what === 'follow-authored-articles'
       ) {
         const [articles, user] = await Promise.all([
-          sequelize.models.Article.getArticles({
+          Article.getArticles({
             author: username,
             count: false,
             sequelize,
             transaction,
           }),
-          sequelize.models.User.findOne({
+          User.findOne({
             where: { username },
             transaction,
           }),
@@ -568,13 +582,13 @@ async function normalize({
         what === 'follow-authored-issues'
       ) {
         const [{ rows: issues }, user] = await Promise.all([
-          sequelize.models.Issue.getIssues({
+          Issue.getIssues({
             author: username,
             includeArticle: true,
             sequelize,
             transaction,
           }),
-          sequelize.models.User.findOne({
+          User.findOne({
             where: { username },
             transaction,
           }),
@@ -588,6 +602,43 @@ async function normalize({
           }
           await Promise.all(promises)
         }
+      } else if (
+        what === 'file-has-article'
+      ) {
+        // Check that all files have articles. This could fail notably due to a bug in the complex synonym renaming mechanism.
+        // TODO known to not work on SQLite due to case insensitive, se need to change the as: 'file" to as: 'article' in the join..
+        const rows = await File.findAll({
+          attributes: [
+            'id',
+            'path',
+            [sequelize.fn('COUNT', sequelize.col('file.id')), 'count'],
+          ],
+          include: [
+            {
+              model: Article,
+              as: 'file',
+              required: false,
+              attributes: [],
+            },
+            {
+              model: User,
+              as: 'author',
+              required: true,
+              attributes: [],
+              where: { username },
+            },
+          ],
+          group: ['File.id'],
+          order: [[sequelize.col('count'), 'DESC']],
+          having: sequelize.where(sequelize.fn('COUNT', sequelize.col('file.id')), 0)
+        })
+        for (const row of rows) {
+          console.error(row.path)
+          if (fix)
+            await row.destroy()
+        }
+        if (check && rows.length)
+          throw new Error(`there were files without a corresponding article`)
       } else if (
         what === 'topic-count' ||
         what === 'user-follower-count'

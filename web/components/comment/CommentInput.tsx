@@ -44,11 +44,11 @@ const CommentInput = () => {
   if (!loggedInUser) {
     return (
       <>
-        <CustomLink href="/user/login" as="/user/login">
+        <CustomLink href="/user/login">
           Sign in
         </CustomLink>
         {' '}or{' '}
-        <CustomLink href="/user/register" as="/user/register">
+        <CustomLink href="/user/register">
           sign up
         </CustomLink>
         {' '}to add comments on this article.

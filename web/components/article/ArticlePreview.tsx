@@ -26,8 +26,7 @@ const ArticlePreview = ({ article }) => {
       </td>
       <td className="expand title">
         <CustomLink
-          href="/article/[pid]"
-          as={`/article/${preview.slug}`}
+          href={`/article/${preview.slug}`}
           className="preview-link"
         >
           {preview.title}

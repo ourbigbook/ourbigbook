@@ -20,13 +20,12 @@ const Navbar = () => {
       </CustomLink>
       <div className="navbar-list">
         <Maybe test={loggedInUser}>
-          <NavLink href="/editor" as="/editor">
+          <NavLink href="/editor">
             <i className="ion-compose" />
             &nbsp;New
           </NavLink>
           <NavLink
             href={`/profile/${loggedInUser?.username}`}
-            as={`/profile/${loggedInUser?.username}`}
             onClick={handleClick}
             className="profile"
           >
@@ -39,10 +38,10 @@ const Navbar = () => {
           </NavLink>
         </Maybe>
         <Maybe test={!loggedInUser}>
-          <NavLink href="/user/login" as="/user/login">
+          <NavLink href="/user/login">
             Sign in
           </NavLink>
-          <NavLink href="/user/register" as="/user/register">
+          <NavLink href="/user/register">
             Sign up
           </NavLink>
         </Maybe>

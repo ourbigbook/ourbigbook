@@ -6100,7 +6100,7 @@ We also have a shortcut for `npm link` and `npm link cirodown`:
 npm run link
 ``
 
-`npm link link` produces symlinks so that any changes made to the Git source tree will automatically be visible globally, see also: https://stackoverflow.com/questions/28440893/install-a-locally-developed-npm-package-globally The symlink structure looks like:
+`npm run link` produces symlinks so that any changes made to the Git source tree will automatically be visible globally, see also: https://stackoverflow.com/questions/28440893/install-a-locally-developed-npm-package-globally The symlink structure looks like:
 ``
 /home/ciro/cirodown/node_modules/cirodown -> /home/ciro/.nvm/versions/node/v14.17.0/lib/node_modules/cirodown -> /home/ciro/cirodown
 ``

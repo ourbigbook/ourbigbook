@@ -16,6 +16,11 @@ export const getServerSidePropsIndexHoc = (what): MyGetServerSideProps => {
       let loggedInQuery
       let whatEffective = what
       const pageNum = typeof page === 'undefined' ? 0 : parseInt(page, 10) - 1
+      if (isNaN(pageNum)) {
+        return {
+          notFound: true
+        }
+      }
       if (!loggedInUser) {
         if (what === 'latest-followed') {
           whatEffective = 'latest'

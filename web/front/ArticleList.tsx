@@ -26,6 +26,10 @@ export type ArticleListProps = {
 const ArticleList = ({
   articles,
   articlesCount,
+  comments,
+  commentsCount,
+  isIssue,
+  issueArticle,
   loggedInUser,
   page,
   paginationUrlFunc,
@@ -35,6 +39,7 @@ const ArticleList = ({
   const router = useRouter();
   const { asPath, pathname, query } = router;
   const { like, follow, tag, uid } = query;
+
 
   if (articles.length === 0) {
     let message;
@@ -60,9 +65,11 @@ const ArticleList = ({
       case 'latest':
         message = (<>
           There are no articles on this website yet.
-          {loggedInUser && <> Why don't you <a href={routes.articleNew()}>create a new one</a>?</>}
+          Why don't you <a href={routes.articleNew()}>create a new one</a>?
         </>)
         break
+      case 'issues':
+        message = 'There are no issues for this article'
       default:
         message = 'There are no articles matching this search'
     }
@@ -87,25 +94,26 @@ const ArticleList = ({
           </thead>
           <tbody>
             {articles?.map((article, i) => (
-              <tr key={article.slug}>
+              <tr key={isIssue ? article.number : article.slug}>
                 <td className="shrink center">
                   <LikeArticleButton {...{
                     article,
+                    isIssue,
                     loggedInUser,
                     showText: false,
                   }} />
                 </td>
                 <td className="expand title">
                   <CustomLink
-                    href={routes.articleView(article.slug)}
+                    href={isIssue ? routes.issueView(issueArticle.slug, article.number) : routes.articleView(article.slug)}
                     className="preview-link"
                   >
-                    {article.title}
+                    {article.titleRender}
                   </CustomLink>
                 </td>
                 {showAuthor &&
                   <td className="shrink">
-                    <UserLinkWithImage showUsername={false} user={article.file.author} />
+                    <UserLinkWithImage showUsername={false} user={article.author} />
                   </td>
                 }
                 <td className="shrink">{formatDate(article.createdAt)}</td>
@@ -115,13 +123,15 @@ const ArticleList = ({
           </tbody>
         </table>
       </div>
-      <Pagination {...{
-        articlesCount,
-        articlesPerPage: articleLimit,
-        showPagesMax: 10,
-        currentPage: page,
-        urlFunc: paginationUrlFunc,
-      }} />
+      {paginationUrlFunc &&
+        <Pagination {...{
+          articlesCount,
+          articlesPerPage: articleLimit,
+          showPagesMax: 10,
+          currentPage: page,
+          urlFunc: paginationUrlFunc,
+        }} />
+      }
     </div>
   );
 };

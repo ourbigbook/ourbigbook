@@ -27,7 +27,7 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       // Rendered title.
-      title: {
+      titleRender: {
         type: DataTypes.TEXT,
         allowNull: false,
       },
@@ -54,7 +54,12 @@ module.exports = (sequelize) => {
   )
 
   Article.prototype.getAuthor = async function() {
-    const file = await this.getFile({ include: [ { model: sequelize.models.User, as: 'author' } ]})
+    let file
+    if (this.file === undefined || this.file.author === undefined) {
+      file = await this.getFile({ include: [ { model: sequelize.models.User, as: 'author' } ]})
+    } else {
+      file = this.file
+    }
     return file.author
   }
 
@@ -68,13 +73,15 @@ module.exports = (sequelize) => {
       id: this.id,
       slug: this.slug,
       topicId: this.topicId,
-      title: this.title,
+      titleRender: this.titleRender,
       createdAt: this.createdAt.toISOString(),
       updatedAt: this.updatedAt.toISOString(),
       liked,
       score: this.score,
+      // Putting it here rather than in the more consistent file.author
+      // to improve post serialization polymorphism with issues.
+      author,
       file: {
-        author,
         title: this.file.title,
         body: this.file.body,
         path: this.file.path,
@@ -182,7 +189,7 @@ module.exports = (sequelize) => {
       include: [ { model: sequelize.models.File, as: 'file' } ],
     })) {
       if (opts.log) {
-        console.error(`authorId=${article.file.authorId} title=${article.title}`);
+        console.error(`authorId=${article.file.authorId} title=${article.titleRender}`);
       }
       await article.convert()
       await article.save()

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # https://docs.ourbigbook.com/ourbigbook-web-postgresql-setup
 set -eu
-script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+script_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 db="${1:-ourbigbook}"
 user=ourbigbook_user
 psql -c "DROP DATABASE IF EXISTS \"$db\""

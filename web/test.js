@@ -3508,6 +3508,12 @@ it('api: synonym rename', async () => {
     ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus', previousSiblingId: '@user0/derivative' }))
     assertStatus(status, data)
 
+    // Sanity: the File object exists.
+    {
+      const file = await sequelize.models.File.findOne({ where: { path: '@user0/calculus.bigb' } })
+      assert.notStrictEqual(file, null)
+    }
+
     // Rename Calculus to Calculus 3
     article = createArticleArg({
       i: 0,
@@ -3523,6 +3529,12 @@ it('api: synonym rename', async () => {
     })
     ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
     assertStatus(status, data)
+
+    // The File object was removed.
+    {
+      const file = await sequelize.models.File.findOne({ where: { path: '@user0/calculus.bigb' } })
+      assert.strictEqual(file, null)
+    }
 
     // Current tree state:
     // * 0 user0/Index
@@ -3743,6 +3755,12 @@ it('api: synonym rename', async () => {
       assertStatus(status, data)
       assert.strictEqual(data.titleRender, 'Derivative issue 0')
 
+      // Sanity: the File object exists
+      {
+        const file = await sequelize.models.File.findOne({ where: { path: '@user0/derivative.bigb' } })
+        assert.notStrictEqual(file, null)
+      }
+
       // Rename derivative to calculus-3, triggering an article merge
       // of user0/derivative to user/calculus-3.
       article = createArticleArg({
@@ -3762,6 +3780,12 @@ it('api: synonym rename', async () => {
       })
       ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: undefined }))
       assertStatus(status, data)
+
+      // The File object was removed.
+      {
+        const file = await sequelize.models.File.findOne({ where: { path: '@user0/derivative.bigb' } })
+        assert.strictEqual(file, null)
+      }
 
       // Current tree state:
       // * 0 user0/Index

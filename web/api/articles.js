@@ -114,6 +114,10 @@ router.get('/hash', auth.optional, async function(req, res, next) {
         'path',
         'hash',
         [
+          sequelize.fn('length', sequelize.col('bodySource')),
+          'bodySourceLen',
+        ],
+        [
           // NULL: never converted
           sequelize.literal('"Render"."outdated" IS NULL OR "Render"."outdated"'),
           // TODO do it like this instead. Patience ran out. Second line ignored in generated query.
@@ -130,7 +134,12 @@ router.get('/hash', auth.optional, async function(req, res, next) {
     })
     const articlesJson = []
     for (const file of files) {
-      articlesJson.push({ path: file.path, hash: file.hash, renderOutdated: !!file.get('renderOutdated') })
+      articlesJson.push({
+        cleanupIfDeleted: file.get('bodySourceLen') !== 0,
+        hash: file.hash,
+        path: file.path,
+        renderOutdated: !!file.get('renderOutdated'),
+      })
     }
     return res.json({ articles: articlesJson, articlesCount: filesCount })
   } catch(error) {
@@ -257,7 +266,7 @@ async function createOrUpdateArticle(req, res, opts) {
     missingName = 'bodySource'
   }
   if (missingName) {
-    throw new lib.ValidationError(`param "${missingName}" is mandatory when not rendering or when "path" to an existing article is not given`)
+    throw new lib.ValidationError(`param "${missingName}" is mandatory when not rendering or when "path" to an existing article is not given. path="${path}"`)
   }
 
   // Render.

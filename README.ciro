@@ -1305,6 +1305,8 @@ parses exactly like:
 \li[bb]
 ``
 
+The children are always added as arguments of the `content` argument of the implicit parent.
+
 If present, the `auto_parent` macro property determines which auto-parent gets added to those macros.
 
 \h[4][`remove_whitespace_children` macro argument property]

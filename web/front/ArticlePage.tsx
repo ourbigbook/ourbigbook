@@ -8,7 +8,7 @@ import UserLinkWithImage from 'front/UserLinkWithImage'
 import FollowUserButton from 'front/FollowUserButton'
 import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import Article from 'front/Article'
-import { AppContext, DiscussionAbout, NewArticleIcon, SeeIcon, TimeIcon, TopicIcon, useEEdit, UserIcon } from 'front'
+import { AppContext, DiscussionAbout, NewArticleIcon, IssueIcon, SeeIcon, TimeIcon, TopicIcon, useEEdit, UserIcon } from 'front'
 import { webApi } from 'front/api'
 import { cant } from 'front/cant'
 import fetcher from 'front/fetcher'
@@ -73,20 +73,27 @@ const ArticlePageHoc = (isIssue=false) => {
           <div className="content-not-ourbigbook article-meta">
             {isIssue &&
               <nav className="issue-nav">
-                <DiscussionAbout article={issueArticle} issue={article} />
-                <div className="see-all">
-                  <CustomLink href={routes.issues(issueArticle.slug)}><SeeIcon /> See All ({issuesCount})</CustomLink>
-                  {' '}
-                  <CustomLink className="btn" href={routes.issueNew(issueArticle.slug)}><NewArticleIcon /> New Discussion</CustomLink>
-                </div>
+                <DiscussionAbout article={issueArticle} />
               </nav>
             }
             <div className="article-info">
+              {isIssue &&
+                <span className="h2 inline">
+                  #{article.number}
+                  {' '}
+                </span>
+              }
               by
               {' '}
               <UserLinkWithImage user={author} showUsername={true} showUsernameMobile={false} />
-              {' '}
-              <FollowUserButton {...{ user: author, loggedInUser, showUsername: false }} />
+              {isIssue &&
+                <>
+                  {' '}
+                  <CustomLink href={routes.issues(issueArticle.slug)} className="btn"><IssueIcon /> See All ({issuesCount})</CustomLink>
+                  {' '}
+                  <CustomLink className="btn" href={routes.issueNew(issueArticle.slug)}><NewArticleIcon /> New Discussion</CustomLink>
+                </>
+              }
             </div>
           </div>
           <div className="container page">

@@ -39,9 +39,10 @@ const Article = ({
   if (!isIssue) {
     seeAllCreateNew = <>
       {latestIssues.length > 0 &&
-        <span className="see-all">
-          <CustomLink href={routes.issues(article.slug)}><SeeIcon /> See All ({ article.issueCount })</CustomLink>{' '}
-        </span>
+        <>
+          <CustomLink href={routes.issues(article.slug)} className="btn small"><SeeIcon /> See All ({ article.issueCount })</CustomLink>
+          {' '}
+        </>
       }
       {loggedInUser
         ? <CustomLink className="btn small" href={routes.issueNew(article.slug)}><NewArticleIcon /> New Discussion</CustomLink>
@@ -165,9 +166,9 @@ const Article = ({
                     }
                   </>
                 : <>
-                    {!isIssue &&
+                    {!(isIssue || isIndex) &&
                       <>
-                        {(curArticle.hasSameTopic || isIndex)
+                        {(curArticle.hasSameTopic)
                           ? <>
                               {article.slug !== mySlug &&
                                 <>

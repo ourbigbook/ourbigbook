@@ -63,16 +63,17 @@ export function IssueBy(
 }
 
 export function DiscussionAbout(
-  { article, issue }:
-  { article?: ArticleType; issue?: IssueType }
+  { article, children, issue, }:
+  { article?: ArticleType; issue?: IssueType, children?: React.ReactNode }
 ) {
   const inner = <>
       <IssueIcon />{' '}
       Discussion{issue ? ` #${issue.number}` : ''} on {' '}
       <ArticleBy {...{article, issue}} />
+      {children}
     </>
   if (issue) {
-    return <div className="h2">{ inner }</div>
+    return <span className="h2">{ inner }</span>
   } else {
     return <h1 className="h2">{ inner }</h1>
   }

@@ -487,6 +487,9 @@ class Macro {
     if (!('toplevel_link' in options)) {
       options.toplevel_link = true;
     }
+    if (!('xss_safe' in options)) {
+      options.xss_safe = true;
+    }
     this.name = name;
     this.positional_args = positional_args;
     {
@@ -1377,6 +1380,14 @@ function convert(
     if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
   // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
   if (!('toplevel_id' in options)) { options.toplevel_id = undefined; }
+  if (options.xss_unsafe === undefined) {
+    const xss_unsafe = cirodown_json['xss-unsafe'];
+    if (xss_unsafe !== undefined) {
+      options.xss_unsafe = xss_unsafe;
+    } else {
+      options.xss_unsafe = false;
+    }
+  }
   const macros = macro_list_to_macros();
   extra_returns.errors = [];
   let sub_extra_returns;
@@ -2941,6 +2952,11 @@ function validate_ast(ast, context) {
       }
     }
   }
+  if (!macro.options.xss_safe && !context.options.xss_unsafe) {
+    ast.validation_error = [
+      `XSS unsafe macro "${macro_name}" used in safe mode: https://cirosantilli.com/cirodown#xss-unsafe`,
+      ast.line, ast.column];
+  }
 }
 exports.validate_ast = validate_ast;
 
@@ -3776,6 +3792,21 @@ const DEFAULT_MACRO_LIST = [
     },
     {
       phrasing: true,
+    }
+  ),
+  new Macro(
+    'Passthrough',
+    [
+      new MacroArgument({
+        name: 'content',
+      }),
+    ],
+    function(ast, context) {
+      return convert_arg_noescape(ast.args.content, context);
+    },
+    {
+      phrasing: true,
+      xss_safe: false,
     }
   ),
   new Macro(

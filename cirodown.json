@@ -10,5 +10,6 @@
     "not-readme-redirect-test": "not-readme",
     "quick-start-redirect-test": "quick-start"
   },
-  "template": "main.liquid.html"
+  "template": "main.liquid.html",
+  "xss-unsafe": true
 }

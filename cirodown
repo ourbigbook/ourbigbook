@@ -526,6 +526,7 @@ commander.option(
 commander.option('--stdout', 'print output to stdout instead of saving to a file', false);
 commander.option('--template <template>', 'http://cirosantilli.com/cirodown#template');
 commander.option('-w, --watch', 'http://cirosantilli.com/cirodown#watch', false);
+commander.option('--xss-unsafe', 'https://cirosantilli.com/cirodown#xss-unsafe');
 let inputPath;
 commander.arguments(
   '[input_path]',
@@ -576,6 +577,7 @@ if (commander.helpMacros) {
     show_tokens: commander.showTokensInside,
     show_tokenize: commander.showTokenize,
     template_vars: {},
+    xss_unsafe: commander.xssUnsafe,
   };
   if (commander.template !== undefined) {
     options.template = fs.readFileSync(commander.template).toString();

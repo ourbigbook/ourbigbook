@@ -35,14 +35,17 @@ window.onload = function() {
         }
       }
       // Open or close all children.
-      if (all_children_open && was_open && !parent_li.classList.contains('toplevel')) {
-        parent_li.classList.add(CLOSE_CLASS);
+      if (!was_open) {
+        parent_li.classList.remove(CLOSE_CLASS);
       } else {
+        if (all_children_closed && !parent_li.classList.contains('toplevel')) {
+          parent_li.classList.add(CLOSE_CLASS);
+        }
         for (const toc_arrow_child of parent_li.childNodes) {
           if (toc_arrow_child.tagName === 'UL') {
             for (const toc_arrow_child_2 of toc_arrow_child.childNodes) {
               if (toc_arrow_child_2.tagName === 'LI') {
-                if (was_open && all_children_closed) {
+                if (all_children_closed) {
                   toc_arrow_child_2.classList.remove(CLOSE_CLASS);
                 } else {
                   toc_arrow_child_2.classList.add(CLOSE_CLASS);

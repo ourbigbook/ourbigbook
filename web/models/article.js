@@ -2,6 +2,8 @@ const cirodown = require('cirodown')
 const slug = require('slug')
 const { DataTypes, Op } = require('sequelize')
 
+const { modifyEditorInput } = require('../lib/shared')
+
 module.exports = (sequelize) => {
   const Article = sequelize.define(
     'Article',
@@ -66,7 +68,7 @@ module.exports = (sequelize) => {
       favorited,
       favoritesCount,
       author,
-      render: cirodown.convert('= ' + this.title + '\n\n' + this.body, {body_only: true}),
+      render: cirodown.convert(modifyEditorInput(this.title, this.body), {body_only: true}),
     }
   }
   return Article

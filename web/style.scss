@@ -55,7 +55,7 @@ button, a.btn {
 }
 
 form {
-  input, textarea {
+  input, textarea.not-monaco {
     background-color: $background-color;
     border-radius: 3px;
     border: 1px solid gray;
@@ -116,26 +116,32 @@ div.article-meta {
 }
 
 div.editor-page {
+  $title-font-size: 24px;
   height: 100%;
   overflow: hidden;
   form.editor-form {
+    //display: flex;
+    //flex-flow: column;
     height: 100%;
     div.title-and-actions {
       display: flex;
-      font-size: 24px;
+      font-size: $title-font-size;
       input.title {
         flex: 1 1 auto;
+        margin-bottom: 0;
       }
       div.actions {
-        display: flex;
         flex: 0 0 auto;
-        height: 100%;
         margin-left: auto;
         button {
+          font-size: $title-font-size * 0.75;
           height: 100%;
           margin-left: 5px;
         }
       }
+    }
+    div.cirodown-editor {
+      //flex-grow: 1;
     }
   }
 }

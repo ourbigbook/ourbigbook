@@ -369,5 +369,13 @@ Body 0 1.
       { title: 'Title 0 0 hacked', slug: 'user0/title-0-0-hacked', render: /Body 0 0 hacked\./ },
       { title: 'Title 0 1', slug: 'user0/title-0-1', render: /Body 0 1\./ },
     ])
+
+    // Topic shows only one subarticle.
+    ;({data, status} = await test.webApi.articleAll({ topicId: 'title-0-0' }))
+    assert.strictEqual(status, 200)
+    sortByKey(data.articles, 'slug')
+    assertRows(data.articles, [
+      { title: 'Title 0 0', slug: 'user0/title-0-0', render: /Body 0 0\./ },
+    ])
   })
 })

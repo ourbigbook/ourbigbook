@@ -8,7 +8,7 @@ const {
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 
 const { ValidationError } = require('./api/lib')
-const { convertOptions } = require('./front/config')
+const { convertOptions, convertOptionsJson } = require('./front/config')
 const { modifyEditorInput } = require('./front/js')
 
 // This does the type of stuff that OurBigBook CLI does for CLI
@@ -44,12 +44,12 @@ async function convert({
       id_provider,
       file_provider,
       input_path,
-      ourbigbook_json: {
+      ourbigbook_json: Object.assign({
         h: {
           splitDefault: true,
           splitDefaultNotToplevel: true,
         },
-      },
+      }, convertOptionsJson),
       read_include: ourbigbook_nodejs_webpack_safe.read_include({
         exists: async (inpath) => {
           const suf = ourbigbook.Macro.HEADER_SCOPE_SEPARATOR + ourbigbook.INDEX_BASENAME_NOEXT
@@ -111,12 +111,15 @@ async function convert({
         render: extra_returns.rendered_outputs[outpath].full,
         slug: outpath.slice(ourbigbook.AT_MENTION_CHAR.length, -ourbigbook.HTML_EXT.length - 1),
         title: extra_returns.rendered_outputs[outpath].title,
-        topicId: idid.slice(ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1),
+        topicId: outpath.slice(
+          ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1,
+          -ourbigbook.HTML_EXT.length - 1
+        ),
       })
     }
     await sequelize.models.Article.bulkCreate(
       articleArgs,
-      { updateOnDuplicate: ['title', 'render', 'updatedAt'], transaction }
+      { updateOnDuplicate: ['title', 'render', 'topicId', 'updatedAt'], transaction }
     )
     // Find here because upsert not yet supported in SQLite.
     // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert

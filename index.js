@@ -4685,18 +4685,21 @@ async function parse(tokens, options, context, extra_returns={}) {
   // Check for ID conflicts.
   if (options.id_provider !== undefined) {
     const ignore_paths = Array.from(context.include_path_set).filter(x => x !== undefined)
-    const id_conflict_asts = await options.id_provider.get_noscope_entries(
-      Object.keys(include_options.indexed_ids),
-      ignore_paths
-    );
-    for (const other_ast of id_conflict_asts) {
-      const message = duplicate_id_error_message(
-        other_ast.id,
-        other_ast.source_location.path,
-        other_ast.source_location.line,
-        other_ast.source_location.column,
-      )
-      parse_error(state, message, include_options.indexed_ids[other_ast.id].source_location);
+    const ids = Object.keys(include_options.indexed_ids)
+    if (ids.length) {
+      const id_conflict_asts = await options.id_provider.get_noscope_entries(
+        ids,
+        ignore_paths
+      );
+      for (const other_ast of id_conflict_asts) {
+        const message = duplicate_id_error_message(
+          other_ast.id,
+          other_ast.source_location.path,
+          other_ast.source_location.line,
+          other_ast.source_location.column,
+        )
+        parse_error(state, message, include_options.indexed_ids[other_ast.id].source_location);
+      }
     }
   }
 

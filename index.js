@@ -6079,9 +6079,13 @@ function x_child_db_effective_id(target_id, context, ast) {
   }
 }
 
-function x_get_target_ast(ast, context) {
-  const href_arg = ast.args.href
-  const target_id = convert_id_arg(href_arg, context);
+function x_get_target_ast_base({
+  context,
+  do_magic_title_to_id,
+  do_singularize,
+  scope,
+  target_id,
+}) {
   if (context.options.magic_leading_at && target_id[0] === AT_MENTION_CHAR) {
     return [html_attr('href', WEB_URL + target_id.substr(1)), target_id];
   }
@@ -6089,17 +6093,31 @@ function x_get_target_ast(ast, context) {
     return [html_attr('href', WEB_URL + 'go/topic/' + target_id.substr(1)), target_id];
   }
   let target_id_eff
-  if (ast.validation_output.magic.boolean) {
+  if (do_magic_title_to_id) {
     target_id_eff = magic_title_to_id(target_id)
   } else {
     target_id_eff = target_id
   }
-  let target_ast = context.db_provider.get(target_id_eff, context, ast.scope);
-  if (ast.validation_output.magic.boolean && !target_ast) {
+  let target_ast = context.db_provider.get(target_id_eff, context, scope);
+  if (do_singularize && !target_ast) {
     target_id_eff = magic_title_to_id(pluralize(target_id, 1))
-    target_ast = context.db_provider.get(target_id_eff, context, ast.scope);
+    target_ast = context.db_provider.get(target_id_eff, context, scope);
   }
-  return { href_arg, target_id: target_id_eff, target_ast }
+  return { target_id: target_id_eff, target_ast }
+}
+
+function x_get_target_ast(ast, context) {
+  const href_arg = ast.args.href
+  const target_id = convert_id_arg(href_arg, context);
+  const ret = x_get_target_ast_base({
+    context,
+    do_magic_title_to_id: ast.validation_output.magic.boolean,
+    do_singularize: ast.validation_output.magic.boolean,
+    scope: ast.scope,
+    target_id,
+  })
+  ret.href_arg = href_arg
+  return ret
 }
 
 /**
@@ -6669,6 +6687,24 @@ const INSANE_STARTS_TO_MACRO_NAME = {
   [INSANE_TD_START]: Macro.TD_MACRO_NAME,
   [INSANE_TH_START]: Macro.TH_MACRO_NAME,
 };
+const MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS = [
+  `\\${ESCAPE_CHAR}`,
+  START_POSITIONAL_ARGUMENT_CHAR,
+  `\\${END_POSITIONAL_ARGUMENT_CHAR}`,
+  START_NAMED_ARGUMENT_CHAR,
+  END_NAMED_ARGUMENT_CHAR,
+  INSANE_X_START,
+  INSANE_CODE_CHAR,
+  INSANE_MATH_CHAR,
+].join('')
+const MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS_REGEX = new RegExp(`([${MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS}])`, 'g')
+const MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS = [
+  '\\* ',
+  '=',
+  '\\|\\|',
+  '\\|',
+].join('|')
+const MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS_REGEX = new RegExp(`(^|\n)(${MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS})`, 'g')
 const INSANE_STARTS_MACRO_NAMES = new Set(Object.values(INSANE_STARTS_TO_MACRO_NAME))
 const AstType = make_enum([
   // An in-output error message.
@@ -8514,6 +8550,168 @@ ${delim}${attrs === '' ? '' : '\n'}${attrs}${newline}`
   }
 }
 
+function ourbigbook_get_x_href({
+  ast,
+  context,
+  target_ast,
+  target_id,
+  href,
+  c,
+  p,
+  magic,
+  scope,
+  for_header_parent,
+}) {
+  href = href.replaceAll(ID_SEPARATOR, ' ')
+  if (p) {
+    const href_plural = pluralize(href, 2)
+    let target_ast_plural = context.db_provider.get(magic_title_to_id(href_plural), context)
+    if (
+      // When we have \x without magic to a destination that exists
+      // in both plural and singular, we can't use the magic plural,
+      // or it will resolve to plural rather than the correct singular.
+      !magic &&
+      target_ast &&
+      target_ast_plural
+    ) {
+      return { override_href: `<${href}>${ourbigbook_convert_args(ast, context, { skip: new Set(['c', 'href', 'magic']) }).join('')}` }
+    }
+    href = href_plural
+    if (target_ast_plural) {
+      target_ast = target_ast_plural
+    }
+  }
+  if (!target_ast) {
+    return { override_href: `${ourbigbook_convert_simple_elem(ast, context)} ${render_error_x_undefined(ast, context, target_id)}` }
+  }
+  let was_magic_plural, was_magic_uppercase
+  if (magic && !for_header_parent) {
+    const href_singular = pluralize(href, 1)
+    if (!target_ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME] && href !== href_singular) {
+      was_magic_plural = true
+    }
+    const components = href.split(Macro.HEADER_SCOPE_SEPARATOR)
+    const c = components[components.length - 1][0]
+    was_magic_uppercase = c === c.toUpperCase()
+  }
+  const href_from_id = href
+  if (!(
+    (
+      target_ast.macro_name === Macro.HEADER_MACRO_NAME &&
+      target_ast.validation_output.file.given
+    )
+  )) {
+    const macro = context.macros[target_ast.macro_name];
+    const title_arg = macro.options.get_title_arg(target_ast, context);
+    href = render_arg(title_arg, clone_and_set(context, 'id_conversion', true));
+    href = href.replaceAll(Macro.HEADER_SCOPE_SEPARATOR, ' ')
+    let was_pluralized
+    let disambiguate
+    const disambiguate_arg = target_ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
+    if (disambiguate_arg) {
+      disambiguate = render_arg(disambiguate_arg, clone_and_set(context, 'id_conversion', true))
+    } else {
+      disambiguate = ''
+    }
+    const explicit_id = target_ast.first_toplevel_child || (
+      target_ast.validation_output[Macro.ID_ARGUMENT_NAME] &&
+      target_ast.validation_output[Macro.ID_ARGUMENT_NAME].given
+    )
+    if (macro.options.id_prefix) {
+      href = `${macro.options.id_prefix} ${href}`
+    } else {
+      const first_ast = title_arg.get(0);
+      if (!(
+        (
+          target_ast.macro_name === Macro.HEADER_MACRO_NAME &&
+          target_ast.validation_output.c.boolean
+        ) ||
+        (
+          first_ast &&
+          first_ast.node_type !== AstType.PLAINTEXT
+        ) ||
+        for_header_parent
+      )) {
+        if (c || was_magic_uppercase) {
+          href = href[0].toUpperCase() + href.substring(1)
+        } else {
+          href = href[0].toLowerCase() + href.substring(1)
+        }
+      }
+      if (
+        was_magic_plural ||
+        p
+      ) {
+        const href_plural = pluralize(href, 2)
+        let disambiguate_sep
+        if (disambiguate) {
+          disambiguate_sep = ID_SEPARATOR + disambiguate
+        } else {
+          disambiguate_sep = ''
+        }
+        let target_scope = target_ast.scope
+        if (target_scope) {
+          target_scope = `${target_scope}${Macro.HEADER_SCOPE_SEPARATOR}`
+        } else {
+          target_scope = ''
+        }
+        const plural_id = `${target_scope}${magic_title_to_id(href_plural)}${disambiguate_sep}`
+        const plural_target = context.db_provider.get(plural_id, context)
+        if (!plural_target || plural_target.id !== target_ast.id) {
+          const singular_id = `${target_scope}${magic_title_to_id(pluralize(href, 1))}${disambiguate_sep}`
+          const singular_target = context.db_provider.get(singular_id, context)
+          if ((!singular_target || singular_target.id !== target_ast.id) && !explicit_id) {
+            // This can happen due to pluralize bugs:
+            // https://github.com/plurals/pluralize/issues/172
+            // Just bail out in those cases.
+            return { override_href: ourbigbook_convert_simple_elem(ast, context) }
+          }
+        }
+        href = href_plural
+        was_pluralized = true
+      }
+    }
+    if (explicit_id && magic_title_to_id(href) !== target_ast.id) {
+      href = href_from_id
+    } else {
+      if (disambiguate_arg) {
+        if (was_pluralized) {
+          // TODO https://github.com/cirosantilli/ourbigbook/issues/244
+          return { override_href: ourbigbook_convert_simple_elem(ast, context) }
+        }
+        href = `${href} (${disambiguate})`;
+      }
+      let target_scope = target_ast.scope
+      if (target_scope) {
+        if (ast.scope) {
+          const target_scope_split = target_scope.split(Macro.HEADER_SCOPE_SEPARATOR)
+          const scope_split = ast.scope.split(Macro.HEADER_SCOPE_SEPARATOR)
+          let last_common = 0
+          while (
+            last_common < target_scope_split.length &&
+            last_common < scope_split.length
+          ) {
+            if (target_scope_split[last_common] !== scope_split[last_common]) {
+              break
+            }
+            last_common++
+          }
+          target_scope = target_scope_split.slice(last_common).join(Macro.HEADER_SCOPE_SEPARATOR)
+        }
+        if (target_scope) {
+          target_scope = `${target_scope}${Macro.HEADER_SCOPE_SEPARATOR}`
+        }
+        target_scope = target_scope.replaceAll(ID_SEPARATOR, ' ')
+        href = `${target_scope}${href}`
+      }
+    }
+    if (is_absolute_xref(target_id, context)) {
+      href = target_id[0] + href
+    }
+  }
+    return { href }
+}
+
 function ourbigbook_li(marker) {
   return function(ast, context) {
     if (!ast.args.content || Object.keys(ast.args).length !== 1) {
@@ -8647,6 +8845,7 @@ function ourbigbook_prefer_literal(ast, context, ast_arg, arg, open, close) {
 function ourbigbook_convert_args(ast, context, options={}) {
   const ret = options.ret || []
   const skip = options.skip || new Set()
+  const modify_callbacks = options.modify_callbacks || {}
   const macro = context.macros[ast.macro_name]
   const named_args = Macro.COMMON_ARGNAMES.concat(macro.options.named_args.map(arg => arg.name)).filter(
     (argname) => !skip.has(argname) && ast.validation_output[argname].given
@@ -8656,8 +8855,11 @@ function ourbigbook_convert_args(ast, context, options={}) {
     const ret_arg = []
     const argname = arg.name
     if (!skip.has(argname) && ast.validation_output[argname].given) {
-      const { delim_repeat, has_newline, rendered_arg } = ourbigbook_prefer_literal(
+      let { delim_repeat, has_newline, rendered_arg } = ourbigbook_prefer_literal(
         ast, context, ast.args[argname], arg, START_POSITIONAL_ARGUMENT_CHAR, END_POSITIONAL_ARGUMENT_CHAR)
+      if (argname in modify_callbacks) {
+        rendered_arg = modify_callbacks[argname](ast, context, rendered_arg)
+      }
       ret_arg.push(START_POSITIONAL_ARGUMENT_CHAR.repeat(delim_repeat))
       if (arg.remove_whitespace_children) {
         ret_arg.push('\n')
@@ -8693,8 +8895,11 @@ function ourbigbook_convert_args(ast, context, options={}) {
     for (const ast_arg of ast_args) {
       const ret_arg = []
       const macro_arg = macro.name_to_arg[argname]
-      const { delim_repeat, has_newline, rendered_arg } = ourbigbook_prefer_literal(
+      let { delim_repeat, has_newline, rendered_arg } = ourbigbook_prefer_literal(
         ast, context, ast_arg, arg, START_NAMED_ARGUMENT_CHAR, END_NAMED_ARGUMENT_CHAR)
+      if (argname in modify_callbacks) {
+        rendered_arg = modify_callbacks[argname](ast, context, rendered_arg)
+      }
       let skip_val = false
       if (macro_arg.boolean) {
         const argstr_default = macro_arg.default === undefined ? '0' : '1'
@@ -8772,7 +8977,45 @@ OUTPUT_FORMATS_LIST.push(
         'comment': ourbigbook_convert_simple_elem,
         [Macro.HEADER_MACRO_NAME]: function(ast, context) {
           const newline = ast.is_last_in_argument() ? '' : '\n\n'
-          const args_string = ourbigbook_convert_args(ast, context, { skip: new Set(['level', 'title']) }).join('')
+          function modify_callback(ast, context, rendered_arg) {
+            const { target_ast, target_id } = x_get_target_ast_base({
+              context,
+              do_magic_title_to_id: true,
+              do_singularize: false,
+              scope: ast.scope,
+              target_id: rendered_arg,
+            })
+            const href = ourbigbook_get_x_href({
+              ast,
+              context,
+              href: rendered_arg,
+              target_id,
+              target_ast,
+              c: false,
+              p: false,
+              magic: true,
+              scope: ast.scope,
+              for_header_parent: true,
+            }).href
+            // Return only some whitelisted characters to prevent creating new elements
+            // or breaking out of parent=} argument. Maybe one day we can force parent=
+            // to be always literal. But this would require changing the tokenizer somehow,
+            // not sure it would be super easy.
+            return href.replace(MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS_REGEX, ' ').replace(MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS_REGEX, '$1').replace(/ +/g, ' ').replace(/^ | $/g, '')
+
+          }
+          const args_string = ourbigbook_convert_args(
+            ast,
+            context,
+            {
+              skip: new Set(['level', 'title']),
+              modify_callbacks: {
+                'child': modify_callback,
+                'parent': modify_callback,
+                'tag': modify_callback,
+              }
+            }
+          ).join('')
           return `${INSANE_HEADER_CHAR.repeat(ast.validation_output.level.positive_nonzero_integer)} ${render_arg(ast.args.title, context)}${args_string ? '\n' : '' }${args_string}${newline}`
         },
         [Macro.INCLUDE_MACRO_NAME]: ourbigbook_convert_simple_elem,
@@ -8798,7 +9041,7 @@ OUTPUT_FORMATS_LIST.push(
           if (context.in_literal) {
             return text
           } else {
-            return text.replace(/([\\[\]{}<`$])/g, '\\$1').replace(/(^|\n)(\* |=|\|\||\|)/g, '$1\\$2')
+            return text.replace(MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS_REGEX, '\\$1').replace(MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS_REGEX, '$1\\$2')
           }
         },
         'passthrough': ourbigbook_convert_simple_elem,
@@ -8813,155 +9056,22 @@ OUTPUT_FORMATS_LIST.push(
         [Macro.TR_MACRO_NAME]: ourbigbook_ul,
         'Ul': ourbigbook_ul,
         [Macro.X_MACRO_NAME]: function(ast, context) {
-          let href = render_arg(ast.args.href, context)
-          let { href_arg, target_id, target_ast } = x_get_target_ast(ast, context)
-          href = href.replaceAll(ID_SEPARATOR, ' ')
-          if (ast.validation_output.p.boolean) {
-            const href_plural = pluralize(href, 2)
-            let target_ast_plural = context.db_provider.get(magic_title_to_id(href_plural), context)
-            if (
-              // When we have \x without magic to a destination that exists
-              // in both plural and singular, we can't use the magic plural,
-              // or it will resolve to plural rather than the correct singular.
-              !ast.validation_output.magic.boolean &&
-              target_ast &&
-              target_ast_plural
-            ) {
-              return `<${href}>${ourbigbook_convert_args(ast, context, { skip: new Set(['c', 'href', 'magic']) }).join('')}`
-            }
-            href = href_plural
-            if (target_ast_plural) {
-              target_ast = target_ast_plural
-            }
-          }
-          if (!target_ast) {
-            return `${ourbigbook_convert_simple_elem(ast, context)} ${render_error_x_undefined(ast, context, target_id)}`
-          }
-          let was_magic_plural, was_magic_uppercase
-          const href_singular = pluralize(href, 1)
-          if (ast.validation_output.magic.boolean) {
-            if (!target_ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME] && href !== href_singular) {
-              was_magic_plural = true
-            }
-            const components = href.split(Macro.HEADER_SCOPE_SEPARATOR)
-            const c = components[components.length - 1][0]
-            was_magic_uppercase = c === c.toUpperCase()
-          }
-          const href_from_id = href
-          if (!(
-            (
-              target_ast.macro_name === Macro.HEADER_MACRO_NAME &&
-              target_ast.validation_output.file.given
-            )
-          )) {
-            const macro = context.macros[target_ast.macro_name];
-            const title_arg = macro.options.get_title_arg(target_ast, context);
-            href = render_arg(title_arg, clone_and_set(context, 'id_conversion', true));
-            href = href.replaceAll(Macro.HEADER_SCOPE_SEPARATOR, ' ')
-            let was_pluralized
-            let disambiguate
-            const disambiguate_arg = target_ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
-            if (disambiguate_arg) {
-              disambiguate = render_arg(disambiguate_arg, clone_and_set(context, 'id_conversion', true))
-            } else {
-              disambiguate = ''
-            }
-            const explicit_id = target_ast.first_toplevel_child || (
-              target_ast.validation_output[Macro.ID_ARGUMENT_NAME] &&
-              target_ast.validation_output[Macro.ID_ARGUMENT_NAME].given
-            )
-            if (macro.options.id_prefix) {
-              href = `${macro.options.id_prefix} ${href}`
-            } else {
-              const first_ast = title_arg.get(0);
-              if (!(
-                (
-                  target_ast.macro_name === Macro.HEADER_MACRO_NAME &&
-                  target_ast.validation_output.c.boolean
-                ) ||
-                (
-                  first_ast &&
-                  first_ast.node_type !== AstType.PLAINTEXT
-                )
-              )) {
-                if (ast.validation_output.c.boolean || was_magic_uppercase) {
-                  href = href[0].toUpperCase() + href.substring(1)
-                } else {
-                  href = href[0].toLowerCase() + href.substring(1)
-                }
-              }
-              if (
-                was_magic_plural ||
-                ast.validation_output.p.boolean
-              ) {
-                const href_plural = pluralize(href, 2)
-                let disambiguate_sep
-                if (disambiguate) {
-                  disambiguate_sep = ID_SEPARATOR + disambiguate
-                } else {
-                  disambiguate_sep = ''
-                }
-                let target_scope = target_ast.scope
-                if (target_scope) {
-                  target_scope = `${target_scope}${Macro.HEADER_SCOPE_SEPARATOR}`
-                } else {
-                  target_scope = ''
-                }
-                const plural_id = `${target_scope}${magic_title_to_id(href_plural)}${disambiguate_sep}`
-                const plural_target = context.db_provider.get(plural_id, context)
-                if (!plural_target || plural_target.id !== target_ast.id) {
-                  const singular_id = `${target_scope}${magic_title_to_id(pluralize(href, 1))}${disambiguate_sep}`
-                  const singular_target = context.db_provider.get(singular_id, context)
-                  if ((!singular_target || singular_target.id !== target_ast.id) && !explicit_id) {
-                    // This can happen due to pluralize bugs:
-                    // https://github.com/plurals/pluralize/issues/172
-                    // Just bail out in those cases.
-                    return ourbigbook_convert_simple_elem(ast, context)
-                  }
-                }
-                href = href_plural
-                was_pluralized = true
-              }
-            }
-            if (explicit_id && magic_title_to_id(href) !== target_ast.id) {
-              href = href_from_id
-            } else {
-              if (disambiguate_arg) {
-                if (was_pluralized) {
-                  // TODO https://github.com/cirosantilli/ourbigbook/issues/244
-                  return ourbigbook_convert_simple_elem(ast, context)
-                }
-                href = `${href} (${disambiguate})`;
-              }
-              let target_scope = target_ast.scope
-              if (target_scope) {
-                if (ast.scope) {
-                  const target_scope_split = target_scope.split(Macro.HEADER_SCOPE_SEPARATOR)
-                  const scope_split = ast.scope.split(Macro.HEADER_SCOPE_SEPARATOR)
-                  let last_common = 0
-                  while (
-                    last_common < target_scope_split.length &&
-                    last_common < scope_split.length
-                  ) {
-                    if (target_scope_split[last_common] !== scope_split[last_common]) {
-                      break
-                    }
-                    last_common++
-                  }
-                  target_scope = target_scope_split.slice(last_common).join(Macro.HEADER_SCOPE_SEPARATOR)
-                }
-                if (target_scope) {
-                  target_scope = `${target_scope}${Macro.HEADER_SCOPE_SEPARATOR}`
-                }
-                target_scope = target_scope.replaceAll(ID_SEPARATOR, ' ')
-                href = `${target_scope}${href}`
-              }
-            }
-            if (is_absolute_xref(target_id, context)) {
-              href = target_id[0] + href
-            }
-          }
           // Remove any > from the ref. There's currently no way to escape them, would cut argument short.
+          let { target_id, target_ast } = x_get_target_ast(ast, context)
+          let { href, override_href } = ourbigbook_get_x_href({
+            ast,
+            context,
+            target_ast,
+            target_id,
+            href: render_arg(ast.args.href, context),
+            c: ast.validation_output.c.boolean,
+            p: ast.validation_output.p.boolean,
+            magic: ast.validation_output.magic.boolean,
+            scope: ast.scope,
+          })
+          if (override_href) {
+            return override_href
+          }
           href = href.replace(/[ >]+/g, ' ')
           return `<${href}>${ourbigbook_convert_args(ast, context, { skip: new Set(['c', 'href', 'magic', 'p']) }).join('')}`
         },

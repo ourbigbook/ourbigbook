@@ -22,6 +22,16 @@ npm install cirodown
 ./api_hello.js
 ]]
 
+Play with it in a still crappy \x[editor-with-preview][live browser editor] (currently only works from a clone):
+
+\C[[
+git clone https://github.com/cirosantilli/cirodown-template
+cd cirodown-template
+npm install
+./build
+xdg-open editor.html
+]]
+
 For a minimal but convenient project template with a \c[.gitignore] and \c[package.json], consider:
 
 \C[[
@@ -1238,7 +1248,7 @@ Default: for a GitHub repository called `my-tutorial`, append the `-media` suffi
 
 Further rationale at: \x[where-to-store-images].
 
-\h[3][Editor and preview]
+\h[3][Editor with preview]
 
 TODO
 

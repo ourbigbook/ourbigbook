@@ -1791,34 +1791,6 @@ function convert(
     extra_returns.debug_perf.render_pre = globals.performance.now();
     // Split header conversion.
     if (options.split_headers) {
-      function convert_header(cur_arg_list, context) {
-        if (cur_arg_list.length > 0) {
-          context = Object.assign({}, context);
-          const options = Object.assign({}, context.options);
-          context.options = options;
-          const header_ast = cur_arg_list[0];
-          const header_graph_node = header_ast.header_graph_node;
-          const header_graph_node_old_parent = header_graph_node.parent_node;
-          // Add a new toplevel parent.
-          header_graph_node.parent_node = new HeaderTreeNode();
-          const ast_toplevel = new AstNode(
-            AstType.MACRO,
-            Macro.TOPLEVEL_MACRO_NAME,
-            {
-              'content': new AstArgument(cur_arg_list, header_ast.source_location)
-            },
-            header_ast.source_location,
-          );
-          options.toplevel_id = header_ast.id;
-          context.in_split_headers = true;
-          const output_path = output_path_from_ast(header_ast, context);
-          context.toplevel_output_path = output_path;
-          context.extra_returns.rendered_outputs[output_path] =
-            ast_toplevel.convert(context);
-          // Restore the original header_graph_node state.
-          header_graph_node.parent_node = header_graph_node_old_parent;
-        }
-      }
       const content = ast.args.content;
       // Gather up each header (must be a direct child of toplevel)
       // and all elements that belong to that header (up to the next header).
@@ -1906,6 +1878,35 @@ function convert_arg(arg, context) {
  */
 function convert_arg_noescape(arg, context={}) {
   return convert_arg(arg, clone_and_set(context, 'html_escape', false));
+}
+
+function convert_header(cur_arg_list, context) {
+  if (cur_arg_list.length > 0) {
+    context = Object.assign({}, context);
+    const options = Object.assign({}, context.options);
+    context.options = options;
+    const header_ast = cur_arg_list[0];
+    const header_graph_node = header_ast.header_graph_node;
+    const header_graph_node_old_parent = header_graph_node.parent_node;
+    // Add a new toplevel parent.
+    header_graph_node.parent_node = new HeaderTreeNode();
+    const ast_toplevel = new AstNode(
+      AstType.MACRO,
+      Macro.TOPLEVEL_MACRO_NAME,
+      {
+        'content': new AstArgument(cur_arg_list, header_ast.source_location)
+      },
+      header_ast.source_location,
+    );
+    options.toplevel_id = header_ast.id;
+    context.in_split_headers = true;
+    const output_path = output_path_from_ast(header_ast, context);
+    context.toplevel_output_path = output_path;
+    context.extra_returns.rendered_outputs[output_path] =
+      ast_toplevel.convert(context);
+    // Restore the original header_graph_node state.
+    header_graph_node.parent_node = header_graph_node_old_parent;
+  }
 }
 
 /**

@@ -6829,32 +6829,43 @@ const DEFAULT_MACRO_LIST = [
       }
 
       // Calculate tag_ids_html
-      const tag_ids = context.id_provider.get_refs_to_as_ids(
-        REFS_TABLE_X_CHILD, ast.id);
-      const new_context = clone_and_set(context, 'validate_ast', true);
-      new_context.source_location = ast.source_location;
-      // This is needed because in case of an an undefined \\x with {parent},
-      // the undefined target would render as a link on the parent, leading
-      // to an error that happens on the header, which is before the actual
-      // root cause.
-      new_context.ignore_errors = true;
       const tag_ids_html_array = [];
-      for (const target_id of Array.from(tag_ids).sort()) {
-        const x_ast = new AstNode(
-          AstType.MACRO,
-          Macro.X_MACRO_NAME,
-          {
-            'href': new AstArgument(
-              [
-                new PlaintextAstNode(target_id),
-              ],
-            ),
-            'c': new AstArgument(),
-          },
-        );
-        tag_ids_html_array.push(x_ast.render(new_context));
+      let tag_ids_html
+      const showTags = !ast.from_include || context.options.embed_includes
+      if (showTags) {
+        const tag_ids = context.id_provider.get_refs_to_as_ids(
+          REFS_TABLE_X_CHILD, ast.id);
+        const new_context = clone_and_set(context, 'validate_ast', true);
+        new_context.source_location = ast.source_location;
+        // This is needed because in case of an an undefined \\x with {parent},
+        // the undefined target would render as a link on the parent, leading
+        // to an error that happens on the header, which is before the actual
+        // root cause.
+        new_context.ignore_errors = true;
+        for (const target_id of Array.from(tag_ids).sort()) {
+          const x_ast = new AstNode(
+            AstType.MACRO,
+            Macro.X_MACRO_NAME,
+            {
+              'href': new AstArgument(
+                [
+                  new PlaintextAstNode(target_id),
+                ],
+              ),
+              'c': new AstArgument(),
+            },
+          );
+          tag_ids_html_array.push(x_ast.render(new_context));
+        }
+        tag_ids_html = ''
+        if (context.options.add_test_instrumentation) {
+          tag_ids_html += '<span class="test-tags">'
+        }
+        tag_ids_html += `<span title="tags" class="fa-solid-900">\u{f02c}</span> tags: ` + tag_ids_html_array.join(', ');
+        if (context.options.add_test_instrumentation) {
+          tag_ids_html += '</span>'
+        }
       }
-      const tag_ids_html = `<span title="tags" class="fa-solid-900">\u{f02c}</span> tags: ` + tag_ids_html_array.join(', ');
 
       // Calculate header_meta and header_meta2
       let header_meta = [];
@@ -6901,11 +6912,13 @@ const DEFAULT_MACRO_LIST = [
       if (header_has_meta) {
         ret += `</nav>\n`;
       }
-      if (children !== undefined) {
-        ret += header_check_child_tag_exists(ast, context, children, 'child')
-      }
-      if (tags !== undefined) {
-        ret += header_check_child_tag_exists(ast, context, tags, 'tag')
+      if (showTags) {
+        if (children !== undefined) {
+          ret += header_check_child_tag_exists(ast, context, children, 'child')
+        }
+        if (tags !== undefined) {
+          ret += header_check_child_tag_exists(ast, context, tags, 'tag')
+        }
       }
       return ret;
     },

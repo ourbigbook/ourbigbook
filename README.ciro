@@ -3844,9 +3844,15 @@ Keep in mind that certain things can never be embedded, e.g.:
 {parent=cirodown-executable-options}
 
 Generate one of the template repositories locally:
-* `cirodown --generate default`: https://github.com/cirosantilli/cirodown-template
-* `cirodown --generate simple`: https://github.com/cirosantilli/cirodown-template-simple
-* `cirodown --generate subdir`: https://github.com/cirosantilli/cirodown-template-subdir
+* `cirodown --generate default`:
+  * https://github.com/cirosantilli/cirodown-template
+  * https://cirosantilli.com/cirodown-template
+* `cirodown --generate simple`:
+  * https://github.com/cirosantilli/cirodown-template-simple
+  * https://cirosantilli.com/cirodown-template-simple
+* `cirodown --generate subdir`:
+  * https://github.com/cirosantilli/cirodown-template-subdir
+  * https://cirosantilli.com/cirodown-template-subdir
 
 End users almost never want this, because it means that to have a sane setup you need to:
 * install Cirodown globally with `npm install -g cirodown`

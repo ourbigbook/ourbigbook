@@ -277,18 +277,6 @@ Gotta try to make a minimal test reproduction for this mess.
 
 https://cirosantilli.com/brazilian-music-split doesn't have nosplit
 
-=== Blowup with unclosed image followed by math
-
-``
-= Index
-
-\Image[qwer
-
-$$
-asdf
-$$
-``
-
 === Like and unlike requests are very slow
 {tag=Performance}
 {tag=Web}
@@ -1123,6 +1111,18 @@ The main issue with that is the possibly changing `_raw/js/matterjs/examples.htm
 Instead we should do the same handling as is currently done for `\a[]` and `\Image[]` on thes paths.
 
 == Closed issues
+
+=== Blowup with unclosed image followed by math
+
+``
+= Index
+
+\Image[qwer
+
+$$
+asdf
+$$
+``
 
 === Ordered list lost when rendering to bigb output format
 {tag=`bigb` output format}

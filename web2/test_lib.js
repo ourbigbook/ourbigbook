@@ -66,6 +66,9 @@ async function generateDemoData(params) {
       title: `My title ${i}`,
       authorId: users[userIdx].id,
       createdAt: date,
+      // TODO not taking effect, don't know how to do it from bulkCrate, only with instances:
+      // https://stackoverflow.com/questions/42519583/sequelize-updating-updatedat-manually
+      // https://github.com/sequelize/sequelize/issues/3759
       updatedAt: date,
       body: `== h2
 

@@ -840,25 +840,65 @@ const parse = function(tokens, options, extra_returns={}) {
   let todo_visit = [ast];
   while (todo_visit.length > 0) {
     const node = todo_visit.shift();
-    for (const arg_name in node.args) {
-      const arg = node.args[arg_name];
-      let paragraph_indexes = [];
-      for (let i = 0; i < arg.length; i++) {
-        const ast_node = arg[i];
-        if (ast_node.node_type === AstType.PARAGRAPH) {
-          paragraph_indexes.push(i);
-        }
-        todo_visit.push(ast_node);
-      }
-      if (paragraph_indexes.length > 0) {
+    if (node.node_type === AstType.MACRO) {
+      for (const arg_name in node.args) {
+        let arg = node.args[arg_name];
+
+        // Add ul and table implicit parents.
         let new_arg = [];
-        let paragraph_start = 0;
-        for (const paragraph_index of paragraph_indexes) {
-          parse_add_paragraph(state, new_arg, arg, paragraph_start, paragraph_index);
-          paragraph_start = paragraph_index + 1;
+        for (let i = 0; i < arg.length; i++) {
+          let child_node = arg[i];
+          let new_child_node;
+          if (node.macro_name !== 'ul' && child_node.macro_name === 'l') {
+            let start_l_index = i;
+            let start_l_node = child_node;
+            i++;
+            while (i < arg.length && arg[i].macro_name === 'l') {
+              i++;
+            }
+            new_child_node = new AstNode(
+              AstType.MACRO,
+              'ul',
+              {
+                'content': arg.slice(start_l_index, i),
+              },
+              start_l_node.line,
+              start_l_node.column,
+            )
+            i--;
+          } else {
+            new_child_node = child_node;
+          }
+          new_arg.push(new_child_node);
         }
-        parse_add_paragraph(state, new_arg, arg, paragraph_start, arg.length);
-        node.args[arg_name] = new_arg;
+        arg = new_arg;
+
+        // Add paragraphs.
+        let paragraph_indexes = [];
+        for (let i = 0; i < arg.length; i++) {
+          const child_node = arg[i];
+          if (child_node.node_type === AstType.PARAGRAPH) {
+            paragraph_indexes.push(i);
+          }
+        }
+        if (paragraph_indexes.length > 0) {
+          new_arg = [];
+          let paragraph_start = 0;
+          for (const paragraph_index of paragraph_indexes) {
+            parse_add_paragraph(state, new_arg, arg, paragraph_start, paragraph_index);
+            paragraph_start = paragraph_index + 1;
+          }
+          parse_add_paragraph(state, new_arg, arg, paragraph_start, arg.length);
+          arg = new_arg;
+        }
+
+        // Push children to continue the search.
+        for (const child_node of arg) {
+          todo_visit.push(child_node);
+        }
+
+        // Update the argument.
+        node.args[arg_name] = arg;
       }
     }
   }
@@ -1100,7 +1140,7 @@ const convert = function(
   extra_returns.errors.push(...sub_extra_returns.errors);
   options.extra_returns = {};
   output = ast.convert(options, false);
-  extra_returns.errors.push(...sub_extra_returns.errors);
+  extra_returns.errors.push(...options.extra_returns.errors);
   if (output[output.length - 1] !== '\n') {
     output += '\n';
   }

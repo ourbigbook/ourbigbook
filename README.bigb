@@ -5211,7 +5211,7 @@ firefox china.html
 
 The `--dry-run` option is a good way to debug <publish>[`--publish` option], as it builds the publish output files without doing any git commands that would be annoying to revert. So after doing:
 ``
-./ourbigbook --dry-run --publish .
+ourbigbook --dry-run --publish .
 ``
 you can just go and inspect the generated HTML to see what would get pushed at:
 ``

@@ -3,12 +3,20 @@ import React from 'react'
 import { ErrorIcon } from 'front'
 
 const ErrorList = ({ errors }) => {
-  if (errors.length) {
-    return <div className="error-messages">
-      {errors.map((e, i) => <div key={i}><ErrorIcon /> {e}</div>)}
-    </div>
-  } else {
+  let inner
+  if (errors instanceof Array) {
+    if (errors.length) {
+      inner = <>{errors.map((e, i) => <div key={i}><ErrorIcon /> {e}</div>)}</>
+    }
+  } else if (typeof errors === 'string') {
+    inner = errors
+  }
+  if (inner === undefined) {
     return <></>
+  } else {
+    return <div className="error-messages">
+      {inner}
+    </div>
   }
 }
 

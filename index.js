@@ -151,6 +151,7 @@ class AstNode {
    *        - {bool} in_caption_number_visible
    *        - {Set[AstNode]} x_parents: set of all parent x elements.
    * @param {Object} context
+   * @return {String}
    */
   convert(context) {
     if (context === undefined) {
@@ -179,6 +180,9 @@ class AstNode {
     }
     if (!('x_parents' in context)) {
       context.x_parents = new Set();
+    }
+    if (this.from_include && context.in_split_headers) {
+      return '';
     }
     const macro = context.macros[this.macro_name];
     let out;

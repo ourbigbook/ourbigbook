@@ -354,6 +354,9 @@ function assert_executable(
     if (!('expect_filesystem_xpath' in options)) {
       options.expect_filesystem_xpath = {};
     }
+    if (!('expect_filesystem_not_xpath' in options)) {
+      options.expect_filesystem_not_xpath = {};
+    }
     if (!('expect_exists' in options)) {
       options.expect_exists = [];
     }
@@ -396,6 +399,15 @@ function assert_executable(
       const html = fs.readFileSync(fullpath).toString(cirodown_nodejs.ENCODING);
       for (const xpath_expr of options.expect_filesystem_xpath[relpath]) {
         assert_xpath_matches(xpath_expr, html, {message: assert_msg_xpath});
+      }
+    }
+    for (const relpath in options.expect_filesystem_not_xpath) {
+      const assert_msg_xpath = `path: ${relpath}\n\n` + assert_msg;
+      const fullpath = path.join(tmpdir, relpath);
+      assert.ok(fs.existsSync(fullpath), assert_msg_xpath);
+      const html = fs.readFileSync(fullpath).toString(cirodown_nodejs.ENCODING);
+      for (const xpath_expr of options.expect_filesystem_not_xpath[relpath]) {
+        assert_xpath_matches(xpath_expr, html, {message: assert_msg_xpath, count: 0});
       }
     }
     for (const relpath of options.expect_exists) {
@@ -2943,6 +2955,8 @@ $$
 \\newcommand{\\mycmd}[0]{hello}
 $$
 
+\\Include[included-by-index]
+
 == h2
 
 $$
@@ -2977,6 +2991,10 @@ $$
 === Nested scope 2
 {scope}
 `,
+  'included-by-index.ciro': `= Included by index
+
+== Included by index h2
+`,
   'subdir/index.ciro': `= Subdir index
 
 \\x[index][link to toplevel]
@@ -3006,8 +3024,18 @@ assert_executable(
         "//x:a[@href='subdir/index.html#index-h2' and text()='link to subdir index h2']",
         "//x:a[@href='subdir/notindex.html' and text()='link to subdir notindex']",
         "//x:a[@href='subdir/notindex.html#notindex-h2' and text()='link to subdir notindex h2']",
+
+        // ToC entries of includes point directly to the separate file, not to the plceholder header.
+        // e.g. `included-by-index.html` instead of `#included-by-index`.
+        //"//*[@id='toc']//x:a[@href='included-by-index.html' and text()='h1 2']",
+
+        "//x:h2[@id='included-by-index']",
         "//x:h2[@id='index-scope']//x:a[@href='index-scope.html' and text()='split']",
         "//x:h3[@id='index-scope/index-scope-2']//x:a[@href='index-scope/index-scope-2.html' and text()='split']",
+      ],
+      'index-split.html': [
+        // ToC entries of includes point directly to the separate file.
+        //"//*[@id='toc']//x:a[@href='included-by-index.html' and text()='h1 2']",
       ],
       'notindex.html': [
         "//x:h1[@id='notindex']",
@@ -3072,7 +3100,14 @@ assert_executable(
         // TODO nested scopes not removing correctly, was giving ../../toplevel-scope.html#nested-scope-2
         //"//x:h1[@id='nested-scope-2']//x:a[@href='../../toplevel-scope.html#nested-scope/nested-scope-2' and text()='nosplit']",
       ],
-    }
+    },
+    expect_filesystem_not_xpath: {
+      'index-split.html': [
+        // Included header placeholders are removed from split headers.
+        "//x:h1[@id='included-by-index']",
+        "//x:h2[@id='included-by-index']",
+      ],
+    },
   }
 );
 assert_executable(

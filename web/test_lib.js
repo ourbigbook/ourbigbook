@@ -4,6 +4,7 @@
 const path = require('path')
 const perf_hooks = require('perf_hooks')
 
+const cirodown = require('cirodown')
 const models = require('./models')
 
 const now = perf_hooks.performance.now
@@ -45,6 +46,122 @@ const userData = [
   ['Richard Nixon', 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Richard_Nixon_presidential_portrait_%281%29.jpg/160px-Richard_Nixon_presidential_portrait_%281%29.jpg', 'waterg8'],
   ['Moses', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Guido_Reni_-_Moses_with_the_Tables_of_the_Law_-_WGA19289.jpg/220px-Guido_Reni_-_Moses_with_the_Tables_of_the_Law_-_WGA19289.jpg', 'seasplitter010'],
 ]
+
+const articleData = [
+  ['Mathematics', [
+    ['Algebra', [
+      ['Linear algebra', [
+        ['Vector space', []],
+      ]],
+      ['Abstract algebra', []],
+    ]],
+    ['Calculus', [
+      ['Derivative', []],
+      ['Integral', [
+        ['Fundamental theorem of calculus', [
+          ['Proof of the fundamental theorem of calculus', []],
+        ]],
+      ]],
+    ]],
+  ]],
+  ['Natural science', [
+    ['Physics', [
+      ['Quantum mechanics', [
+        ['Schrödinger equation', [
+          ['Schrödinger equation solution for the hydrogen atom', [
+            ['Atomic orbital', [
+              ['Principal quantum number', []],
+              ['Azimuthal quantum number', []],
+              ['Magnetic quantum number', []],
+            ]],
+          ], '{c}'],
+        ], '{c}'],
+        ['Quantum mechanics experiment', [
+          ['Emission spectrum', [
+            ['Rydberg formula', [], '{c}'],
+            ['Fine structure', [
+              ['Hyperfine structure', []],
+            ]],
+          ]],
+          ['Double-slit experiment', []],
+        ]],
+      ]],
+      ['Special relativity', [
+        ['Lorentz transformation', [
+          ['Time dilation', []],
+        ], '{c}'],
+      ]],
+    ]],
+    ['Chemistry', [
+      ['Chemical element', [
+        ['Hydrogen', [
+          ['Water', []],
+        ]],
+        ['Helium', []],
+        ['Carbon', [
+          ['Carbon-14', []],
+        ]],
+      ]],
+      ['Organic chemistry', [
+      ]],
+    ]],
+    ['Biology', [
+      ['Molecular biology', [
+        ['DNA', [], '{c}'],
+        ['Protein', []],
+      ]],
+      ['Cell biology', [
+        ['Organelle', [
+          ['Mitochondrion', []],
+          ['Ribosome', [
+            ['Ribosome large subunit', []],
+            ['Ribosome small subunit', []],
+          ]],
+        ]],
+      ]],
+    ]],
+  ]],
+]
+
+class ArticleDataProvider {
+  constructor(articleData) {
+    this.i = 0
+    this.todo_visit = articleData.slice()
+    this.head = undefined
+  }
+
+  get() {
+    while (this.todo_visit.length !== 0) {
+      let entry = this.todo_visit[this.todo_visit.length - 1];
+      let title = entry[0]
+      let children = entry[1]
+
+      let finishedSubtrees = false
+      let done = false
+      for (const child of children) {
+        if (child === this.head) {
+          finishedSubtrees = true
+          done = true
+          break
+        }
+        if (done) {
+          break
+        }
+      }
+      let isLeaf = children.length === 0
+      if (finishedSubtrees || isLeaf) {
+        this.todo_visit.pop()
+        this.head = entry
+        return entry
+      } else {
+        for (let i = children.length - 1; i >= 0; i--) {
+          this.todo_visit.push(children[i]);
+        }
+      }
+    }
+    return undefined
+  }
+}
 
 async function generateDemoData(params) {
   // Input Param defaults.
@@ -111,20 +228,48 @@ async function generateDemoData(params) {
   printTime()
 
   console.error('Article');
+  const articleDataProviders = {}
   const articleArgs = [];
   let dateI = 0
   for (let i = 0; i < nArticlesPerUser; i++) {
     for (let userIdx = 0; userIdx < nUsers; userIdx++) {
+      let authorId = users[userIdx].id
+      let articleDataProvider
+      if (authorId in articleDataProviders) {
+        articleDataProvider = articleDataProviders[authorId]
+      } else {
+        articleDataProvider = new ArticleDataProvider(articleData)
+        articleDataProviders[authorId] = articleDataProvider
+      }
       const date = addDays(date0, dateI)
       dateI++
-      const title = `My title ${i * (userIdx + 1)}`
+      const articleDataEntry = articleDataProvider.get()
+      let title, extra, children
+      if (articleDataEntry === undefined) {
+        title = `My title ${i * (userIdx + 1)}`
+        children = []
+      } else {
+        title = articleDataEntry[0]
+        children = articleDataEntry[1]
+        extra = articleDataEntry[2]
+      }
+      if (extra === undefined) {
+        extra = ''
+      } else {
+        extra += '\n\n'
+      }
+      if (children.length > 0) {
+        includesString = '\n\n' + children.map(child => `\\Include[${cirodown.title_to_id(child[0])}]`).join('\n')
+      } else {
+        includesString = ''
+      }
       const articleArg = {
         title,
-        authorId: users[userIdx].id,
+        authorId,
         createdAt: date,
         // TODO not taking effect. Appears to be because of the hook.
         updatedAt: date,
-        body: `\\i[Italic]
+        body: `${extra}\\i[Italic]
 
 \\b[Bold]
 
@@ -175,42 +320,47 @@ Table:
 
 | c
 | 3
-| 3.3
+| 3.3${includesString}
 
 == ${title} h2
 
+Text in h2.
+
 === ${title} h3
+
+Text in h3.
 `,
       }
       articleArgs.push(articleArg)
     }
   }
-  // Sort first by topic id, and then by user id to mix up votes a little:
-  // otherwise user0 gets all votes, then user1, and so on.
-  articleArgs.sort((a, b) => {
-    if (a.title < b.title) {
-      return -1
-    } else if(a.title > b.title) {
-      return 1
-    } else if(a.authorId < b.authorIdtitle) {
-      return -1
-    } else if(a.authorId > b.authorIdtitle) {
-      return 1
-    } else {
-      return 0;
-    }
-  })
+  //// Sort first by topic id, and then by user id to mix up votes a little:
+  //// otherwise user0 gets all votes, then user1, and so on.
+  //articleArgs.sort((a, b) => {
+  //  if (a.title < b.title) {
+  //    return -1
+  //  } else if(a.title > b.title) {
+  //    return 1
+  //  } else if(a.authorId < b.authorIdtitle) {
+  //    return -1
+  //  } else if(a.authorId > b.authorIdtitle) {
+  //    return 1
+  //  } else {
+  //    return 0;
+  //  }
+  //})
   const articles = []
-  let articleIds = 0
+  let articleId = 0
   for (const articleArg of articleArgs) {
-    console.error(`${articleIds} authorId=${articleArg.authorId} title=${articleArg.title}`);
+    console.error(`${articleId} authorId=${articleArg.authorId} title=${articleArg.title}`);
     const article = await new sequelize.models.Article(articleArg)
     await article.save()
     articles.push(article)
-    articleIds++
+    articleId++
   }
   // TODO This was livelocking (taking a very long time, live querries)
   // due to update_database_after_convert on the hook it would be good to investigate it.
+  // Just convereted to the regular for loop above instead.
   //const articles = await sequelize.models.Article.bulkCreate(
   //  articleArgs,
   //  {

@@ -950,7 +950,7 @@ Wikimedia Commons is another great possibility to upload your images to:
 {source=https://commons.wikimedia.org/wiki/File:Gel_electrophoresis_insert_comb.jpg}
 ]]
 
-TODO https://github.com/cirosantilli/cirodown/issues/31 Cirodown likes Wikimedia Commons so much that we can even automatically parse the image URL to automatically deduce the source for you, so the above image renders the same without the `source` argument:
+TODO https://github.com/cirosantilli/cirodown/issues/31 Cirodown likes Wikimedia Commons so much that we automatically parse the image URL and if it is from Wikimedia Commons, automatically deduce the `source` for you. So the above image renders the same without the `source` argument:
 \cirodown_example[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
 ]]
@@ -1001,14 +1001,26 @@ Commons is better than YouTube if your content is on-topic there because:
 * it allows download of the videos: \a[https://www.quora.com/Can-I-download-Creative-Commons-licensed-YouTube-videos-to-edit-them-and-use-them].
 * it makes it easier for other users to find and re-use your videos
 
-If your video does not fit the above Wikimedia Commons requirements, YouTube is your next best bet. You just have to mark the video with the `youtube` \x[boolean-named-arguments][boolean named argument]. Here is an example: \x[sample-video-from-youtube].
+If your video does not fit the above Wikimedia Commons requirements, YouTube could be a good bet. Cirodown https://github.com/cirosantilli/cirodown/issues/50[automatically detects YouTube URLs] for you, so the following should just work:
+\cirodown_example[[
+\Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
+{id=sample-video-from-youtube-implicit-youtube}
+{title=Nice sample video embedded from YouTube implicit from `youtube.com` URL}
+]]
+The `youtu.be` domain hack URLs also work;
+\cirodown_example[[
+\Video[https://youtu.be/YeFzeNAHEhU?t=38]
+{id=sample-video-from-youtube-implicit-youtu-be}
+{title=Nice sample video embedded from YouTube implicit from `youtu.be` URL}
+]]
+Alternatively, you can reach the same result in a more explicit and minimal way with the `youtube` and `start` \x[boolean-named-arguments][boolean named argument]:
 \cirodown_example[[
 \Video[YeFzeNAHEhU]{youtube}
-{id=sample-video-from-youtube}
-{title=Nice sample video embedded from YouTube}
+{id=sample-video-from-youtube-explicit}
+{title=Nice sample video embedded from YouTube with explicit `youtube` argument}
 {start=38}
 ]]
-When this option is given, the Video address should only to contain the YouTube video ID, which shows in the YouTube URL for the video as:
+When this argument is given, the Video address should only to contain the YouTube video ID, which shows in the YouTube URL for the video as:
 ``
 https://www.youtube.com/watch?v=<video-id>
 ``

@@ -5378,12 +5378,6 @@ ln -s .. node_modules/cirodown
 npm run build-assets
 ./cirodown .
 ``
-TODO: this fails the Sass conversion with:
-``
-Error: Can't find stylesheet to import.
-  ╷
-1 │ @import 'cirodown/cirodown.common.scss';
-``
 
 = Test system
 {parent=developing-cirodown}
@@ -5662,7 +5656,7 @@ On Ubuntu 20.04 \a[https://cirosantilli.com/linux-kernel-module-cheat/#p51][Leno
 
 On P51:
 
-* `cirodown . && time cirodown -S --debug-perf README.ciro` on  clean https://github.com/cirosantilli/cirosantilli.github.io/commit/14a14d394ae3c5da87b1c0b4ca5eddd9f5b6d9ca[]:
+* `time cirodown --no-render . && time cirodown -S --debug-perf README.ciro` on  clean https://github.com/cirosantilli/cirosantilli.github.io/commit/14a14d394ae3c5da87b1c0b4ca5eddd9f5b6d9ca[]:
 
   * cirodown 39e633f08b2abce10331b884c04d70dbe6d4565a before moving Cirodown to Sequelize: 14s
     ``
@@ -5714,30 +5708,34 @@ On P51:
           );
     ``
 
-  * cirodown 8e6a4311f7debd079721412e1ea5d647cc1c2941 after: 41s OMG gotta debug perf now:
+  * cirodown 8e6a4311f7debd079721412e1ea5d647cc1c2941 after, OMG gotta debug perf now:
     ``
+    real    0m29.595s
+    user    0m34.095s
+    sys     0m4.427s
+
     convert README.ciro
     perf start_convert undefined
-    perf tokenize_pre 410.3085770010948
-    perf tokenize_post 2236.80140100047
-    perf parse_start 2237.828757997602
-    perf post_process_start 2870.72047900036
-    perf post_process_end 12055.895303998142
-    perf split_render_pre 16380.794255997986
-    perf render_pre 12056.192405998707
-    perf render_post 39951.003741998225
+    perf tokenize_pre 411.71094800531864
+    perf tokenize_post 2265.3646410033107
+    perf parse_start 2266.436312004924
+    perf post_process_start 2905.8304330036044
+    perf post_process_end 12113.761793002486
+    perf split_render_pre 16534.5258340016
+    perf render_pre 12114.092462003231
+    perf render_post 40937.611143000424
     perf end_convert undefined
-    perf convert_input_end 41041.28074499965
-    perf convert_path_pre_sqlite 41041.34596800059
-    perf convert_path_pre_sqlite_transaction 41142.7285909988
-    perf convert_path_post_sqlite_transaction 41737.56839099899
-    perf convert_path_end 41737.69377699867
-    convert README.ciro finished in 41334.14421400055 ms
-    perf convert_path_to_file_end 41737.86982999742
+    perf convert_input_end 42042.85608199984
+    perf convert_path_pre_sqlite 42042.92515899986
+    perf convert_path_pre_sqlite_transaction 42147.847070001066
+    perf convert_path_post_sqlite_transaction 42732.242132000625
+    perf convert_path_end 42732.35991900414
+    convert README.ciro finished in 42327.62727500498 ms
+    perf convert_path_to_file_end 42732.534088000655
 
-    real    0m41.784s
-    user    0m44.889s
-    sys     0m6.754s
+    real    0m42.779s
+    user    0m46.530s
+    sys     0m6.945s
     ``
 
     `sqlite3 out/db.sqlite3 .schema`

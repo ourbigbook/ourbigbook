@@ -963,7 +963,7 @@ assert_lib_ast('list with multiline paragraph insane',
     ]),
   ]
 );
-// https://github.com/cirosantilli/ourbigbook/issues/54
+// https://github.com/ourbigbook/ourbigbook/issues/54
 assert_lib_ast('insane list with literal no error',
   `* aa
 
@@ -1009,7 +1009,7 @@ assert_lib_ast('insane list with literal with double newline is not an error',
     ]),
   ]
 );
-// https://github.com/cirosantilli/ourbigbook/issues/53
+// https://github.com/ourbigbook/ourbigbook/issues/53
 assert_lib_ast('insane list with element with newline separated arguments',
   `* aa
 
@@ -1055,7 +1055,7 @@ assert_lib_ast('insane list at start of positional argument with newline',
       a('Ul', [
         a('L', [t('bb')]),
         // TODO get rid of that newline
-        // https://github.com/cirosantilli/ourbigbook/issues/245
+        // https://github.com/ourbigbook/ourbigbook/issues/245
         a('L', [t('cc\n')]),
       ]),
     ]),
@@ -1125,7 +1125,7 @@ assert_lib_ast('insane list at start of named argument without newline',
   ]
 );
 //assert_lib_ast('insane list at end of named argument without newline',
-//  // TODO https://github.com/cirosantilli/ourbigbook/issues/246
+//  // TODO https://github.com/ourbigbook/ourbigbook/issues/246
 //  `\\Image[http://example.com]
 //{description=
 //* bb
@@ -1183,7 +1183,7 @@ assert_lib_ast('asterisk in the middle of line does not need to be escaped',
   'a * b',
   [a('P', [t('a * b')])],
 );
-// https://github.com/cirosantilli/ourbigbook/issues/81
+// https://github.com/ourbigbook/ourbigbook/issues/81
 assert_lib_ast('insane list immediately inside insane list',
   `* * aa
   * bb
@@ -1326,7 +1326,7 @@ assert_lib_ast('insane table inside insane list inside insane table',
     ]),
   ]
 );
-// https://github.com/cirosantilli/ourbigbook/issues/81
+// https://github.com/ourbigbook/ourbigbook/issues/81
 assert_lib_ast('insane table immediately inside insane list',
   `* | 00
   | 01
@@ -1892,7 +1892,7 @@ assert_lib_ast('p with id before', '\\P{id=ab}[cd]\n',
   [a('P', [t('cd')], {id: [t('ab')]})]);
 assert_lib_ast('p with id after', '\\P[cd]{id=ab}\n',
   [a('P', [t('cd')], {id: [t('ab')]})]);
-// https://github.com/cirosantilli/ourbigbook/issues/101
+// https://github.com/ourbigbook/ourbigbook/issues/101
 assert_lib_error('named argument given multiple times',
   '\\P[ab]{id=cd}{id=ef}', 1, 14);
 assert_lib_error(
@@ -2677,7 +2677,7 @@ assert_lib_ast('x: cross reference to non-included ids in another file',
       "//x:div[@class='p']//x:a[@href='' and text()='notindex']",
       "//x:a[@href='#bb' and text()='bb']",
       "//x:blockquote//x:a[@href='#bb' and text()='Section 1. \"bb\"']",
-      // https://github.com/cirosantilli/ourbigbook/issues/94
+      // https://github.com/ourbigbook/ourbigbook/issues/94
       "//x:a[@href='include-two-levels.html' and text()='ee']",
       "//x:a[@href='include-two-levels.html#gg' and text()='gg']",
       "//x:a[@href='#bb' and text()='bb to bb']",
@@ -2692,7 +2692,7 @@ assert_lib_ast('x: cross reference to non-included ids in another file',
         "//x:a[@href='include-two-levels.html' and text()='ee']",
         "//x:a[@href='include-two-levels.html#gg' and text()='gg']",
         "//x:a[@href='notindex.html#bb' and text()='bb']",
-        // https://github.com/cirosantilli/ourbigbook/issues/130
+        // https://github.com/ourbigbook/ourbigbook/issues/130
         "//x:blockquote//x:a[@href='notindex.html#bb' and text()='Section 1. \"bb\"']",
         // Link to the split version.
         xpath_header_split(1, 'notindex', 'notindex.html', ourbigbook.NOSPLIT_MARKER_TEXT),
@@ -2712,7 +2712,7 @@ assert_lib_ast('x: cross reference to non-included ids in another file',
     },
     convert_before: [
       'include-two-levels.bigb',
-      // https://github.com/cirosantilli/ourbigbook/issues/116
+      // https://github.com/ourbigbook/ourbigbook/issues/116
       'include-two-levels-subdir/index.bigb',
     ],
     convert_opts: { split_headers: true },
@@ -2900,13 +2900,13 @@ assert_lib('x: splitDefault false and splitDefaultNotToplevel true',
       'index-h2.html': [
         "//x:div[@class='p']//x:a[@href='index.html' and text()='index h2 to index']",
         "//x:div[@class='p']//x:a[@href='index.html#index-h2' and text()='index h2 to index h2']",
-        // https://github.com/cirosantilli/ourbigbook/issues/271
+        // https://github.com/ourbigbook/ourbigbook/issues/271
         xpath_header_split(1, 'index-h2', 'index.html#index-h2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'notindex-h2.html': [
         "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to index']",
         "//x:div[@class='p']//x:a[@href='index.html#index-h2' and text()='notindex h2 to index h2']",
-        // https://github.com/cirosantilli/ourbigbook/issues/271
+        // https://github.com/ourbigbook/ourbigbook/issues/271
         xpath_header_split(1, 'notindex-h2', 'notindex.html#notindex-h2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
     },
@@ -2939,7 +2939,7 @@ assert_lib('x: splitDefault false and splitDefaultNotToplevel true',
 );
 assert_lib(
   'x: header splitDefault argument',
-  // https://github.com/cirosantilli/ourbigbook/issues/131
+  // https://github.com/ourbigbook/ourbigbook/issues/131
   {
     convert_dir: true,
     convert_opts: { split_headers: true },
@@ -3138,7 +3138,7 @@ assert_lib(
   }
 );
 assert_lib('x: cross reference to non-included image in another file',
-  // https://github.com/cirosantilli/ourbigbook/issues/199
+  // https://github.com/ourbigbook/ourbigbook/issues/199
   {
     convert_dir: true,
     filesystem: {
@@ -3187,7 +3187,7 @@ assert_lib_ast('x: cross reference with link inside it does not blow up',
   ],
 );
 assert_lib('x: to image in another file that has x title in another file',
-  // https://github.com/cirosantilli/ourbigbook/issues/198
+  // https://github.com/ourbigbook/ourbigbook/issues/198
   {
     convert_dir: true,
     filesystem: {
@@ -3252,7 +3252,7 @@ assert_lib('x: to image in another file that has x title in another file',
 //  //);
 //});
 // Internal cross references \x
-// https://github.com/cirosantilli/ourbigbook/issues/213
+// https://github.com/ourbigbook/ourbigbook/issues/213
 assert_lib_ast('x: cross reference magic simple sane',
   `= Notindex
 
@@ -3611,7 +3611,7 @@ assert_lib(
 );
 
 // Infinite recursion.
-// failing https://github.com/cirosantilli/ourbigbook/issues/34
+// failing https://github.com/ourbigbook/ourbigbook/issues/34
 assert_lib_error('cross reference from header title to following header is not allowed',
   `= \\x[h2] aa
 
@@ -3851,7 +3851,7 @@ assert_lib_ast('scope: with parent breakout with no leading slash',
   a('H', undefined, {level: [t('3')], title: [t('h5')]}, {id: 'h5'}),
 ]
 );
-// https://github.com/cirosantilli/ourbigbook/issues/120
+// https://github.com/ourbigbook/ourbigbook/issues/120
 assert_lib_ast('scope: nested with parent',
   `= h1
 {scope}
@@ -3909,7 +3909,7 @@ assert_lib_ast('scope: nested internal cross references resolves progressively',
   a('P', [a('x', undefined, {href: [t('h1-1')]})]),
 ]
 );
-// https://github.com/cirosantilli/ourbigbook/issues/100
+// https://github.com/ourbigbook/ourbigbook/issues/100
 assert_lib_error('scope: broken parent still generates a header ID',
   `= h1
 
@@ -3973,7 +3973,7 @@ assert_lib_ast('scope: cross reference to toplevel scoped split header',
   },
 );
 assert_lib_ast('scope: cross reference to non-toplevel scoped split header',
-  // https://github.com/cirosantilli/ourbigbook/issues/173
+  // https://github.com/ourbigbook/ourbigbook/issues/173
   `= tmp
 
 == tmp 2
@@ -4031,7 +4031,7 @@ assert_lib_ast('scope: cross reference to non-included file with toplevel scope'
       "//x:div[@class='p']//x:a[@href='toplevel-scope.html#h2' and text()='h2']",
     ],
     assert_xpath: {
-      // TODO https://github.com/cirosantilli/ourbigbook/issues/139
+      // TODO https://github.com/ourbigbook/ourbigbook/issues/139
       //'notindex-split.html': [
       //  "//x:a[@href='toplevel-scope.html#image-h1' and text()='image h1']",
       //  "//x:a[@href='toplevel-scope/h2.html#image-h2' and text()='image h2']",
@@ -4164,13 +4164,13 @@ assert_lib(
         //`//x:h2[@id='_incoming-links']/following:://x:a[@href='#h2']`,
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='']`,
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='#h2']`,
-        // https://github.com/cirosantilli/ourbigbook/issues/155
+        // https://github.com/ourbigbook/ourbigbook/issues/155
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='#h2-2']`,
       ],
       'h2.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
-        // https://github.com/cirosantilli/ourbigbook/issues/155
+        // https://github.com/ourbigbook/ourbigbook/issues/155
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-2']`,
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-3']`,
@@ -4186,11 +4186,11 @@ assert_lib(
       ],
       'scope/scope-1.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html']`,
-        // https://github.com/cirosantilli/ourbigbook/issues/173
+        // https://github.com/ourbigbook/ourbigbook/issues/173
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html#scope/scope-2']`,
       ],
       'scope/scope-2.html': [
-        // https://github.com/cirosantilli/ourbigbook/issues/173
+        // https://github.com/ourbigbook/ourbigbook/issues/173
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='../index.html#scope/scope-3']`,
       ],
       'notindex.html': [
@@ -4290,7 +4290,7 @@ assert_lib('x leading slash to escape scopes works across files',
   }
 );
 // TODO This test can only work after:
-// https://github.com/cirosantilli/ourbigbook/issues/188
+// https://github.com/ourbigbook/ourbigbook/issues/188
 // There is no other way to test this currently, as we can't have scopes
 // across source files, and since scope is a boolean, and therefore can only
 // match the header's ID itself. The functionality has in theory been implemented
@@ -4323,7 +4323,7 @@ assert_lib('x leading slash to escape scopes works across files',
 //  }
 //);
 assert_lib('scope: hierarchy resolution works across files with directories and not magic',
-  // https://github.com/cirosantilli/ourbigbook/issues/229
+  // https://github.com/ourbigbook/ourbigbook/issues/229
   {
     convert_dir: true,
     convert_opts: {
@@ -4387,7 +4387,7 @@ assert_lib('scope: hierarchy resolution works across files with directories and 
   }
 );
 assert_lib('scope: link from non subdir scope to subdir scope works',
-  // https://github.com/cirosantilli/ourbigbook/issues/284
+  // https://github.com/ourbigbook/ourbigbook/issues/284
   {
     convert_dir: true,
     filesystem: {
@@ -4624,7 +4624,7 @@ assert_lib_ast('header: 7 sane',
   header_7_expect
 );
 assert_lib_ast('header: 7 insane',
-  // https://github.com/cirosantilli/ourbigbook/issues/32
+  // https://github.com/ourbigbook/ourbigbook/issues/32
   `= 1
 
 == 2
@@ -4779,7 +4779,7 @@ assert_lib_error('header: synonym without preceeding header fails gracefully',
   4, 1
 );
 //// This would be the ideal behaviour, but I'm lazy now.
-//// https://github.com/cirosantilli/ourbigbook/issues/200
+//// https://github.com/ourbigbook/ourbigbook/issues/200
 //assert_lib_ast('full link to synonym renders the same as full link to the main header',
 //  `= 1
 //
@@ -4799,7 +4799,7 @@ assert_lib_error('header: synonym without preceeding header fails gracefully',
 //);
 // This is not the ideal behaviour, the above test would be the ideal.
 // But it will be good enough for now.
-// https://github.com/cirosantilli/ourbigbook/issues/200
+// https://github.com/ourbigbook/ourbigbook/issues/200
 assert_lib_ast('header: full link to synonym with title2 does not get dummy empty parenthesis',
   `= 1
 
@@ -4819,7 +4819,7 @@ assert_lib_ast('header: full link to synonym with title2 does not get dummy empt
   }
 );
 assert_lib('header: synonym basic',
-  // https://github.com/cirosantilli/ourbigbook/issues/114
+  // https://github.com/ourbigbook/ourbigbook/issues/114
   {
     convert_opts: {
       split_headers: true,
@@ -4874,7 +4874,7 @@ assert_lib('header: synonym basic',
   }
 );
 assert_lib('header: synonym in splitDefault',
-  // https://github.com/cirosantilli/ourbigbook/issues/225
+  // https://github.com/ourbigbook/ourbigbook/issues/225
   {
     convert_opts: {
       split_headers: true,
@@ -5382,7 +5382,7 @@ assert_lib_ast('header: id of first header comes from header title if index',
   },
 );
 assert_lib_error('header: empty include in header title fails gracefully',
-  // https://github.com/cirosantilli/ourbigbook/issues/195
+  // https://github.com/ourbigbook/ourbigbook/issues/195
   `= tmp
 
 == \\Include
@@ -5471,7 +5471,7 @@ assert_lib_ast('code: inline insane simple',
     ]),
   ]
 );
-// https://github.com/cirosantilli/ourbigbook/issues/171
+// https://github.com/ourbigbook/ourbigbook/issues/171
 assert_lib_ast('code: inline insane with only a backslash',
   'a `\\` d\n',
   [
@@ -5784,7 +5784,7 @@ assert_lib('word count descendant from include without embed includes',
 );
 
 // Toc
-// https://github.com/cirosantilli/ourbigbook/issues/143
+// https://github.com/ourbigbook/ourbigbook/issues/143
 assert_lib_ast('header with insane paragraph in the content does not blow up',
   `\\H[1][a
 
@@ -5876,7 +5876,7 @@ assert_lib_ast('toc: split headers have correct table of contents',
         "//*[@id='_toc']//x:a[@href='notindex.html#h1-2-1-1' and text()='1.1. h1 2 1 1']",
 
         // We have gone a bit back and forth on split vs nosplit here.
-        // Related: https://github.com/cirosantilli/ourbigbook/issues/146
+        // Related: https://github.com/ourbigbook/ourbigbook/issues/146
         `//*[@id='_toc']//*[@id='_toc/h1-2-1']//x:a[@href='#_toc' and text()=' h1 2']`,
         `//*[@id='_toc']//*[@id='_toc/h1-2-1-1']//x:a[@href='#_toc/h1-2-1' and text()=' h1 2 1']`,
 
@@ -6412,7 +6412,7 @@ bb
     input_path_noext: 'notindex',
   },
 );
-// https://github.com/cirosantilli/ourbigbook/issues/74
+// https://github.com/ourbigbook/ourbigbook/issues/74
 assert_lib_ast('include: cross reference to embed include header',
   `= aa
 
@@ -6460,7 +6460,7 @@ bb
   ]),
   include_opts
 );
-// https://github.com/cirosantilli/ourbigbook/issues/35
+// https://github.com/ourbigbook/ourbigbook/issues/35
 assert_lib_ast('include: simple no paragraph',
   `= aa
 
@@ -6497,7 +6497,7 @@ bb
   ]),
   include_opts
 );
-// https://github.com/cirosantilli/ourbigbook/issues/23
+// https://github.com/ourbigbook/ourbigbook/issues/23
 assert_lib_error('include: with error reports error on the include source',
   `= aa
 
@@ -6550,7 +6550,7 @@ assert_lib_error('include: circular dependency 1 -> 2 <-> 3',
   ourbigbook.clone_and_set(include_opts, 'has_error', true)
 );
 assert_lib_ast('include without parent header with embed includes',
-  // https://github.com/cirosantilli/ourbigbook/issues/73
+  // https://github.com/ourbigbook/ourbigbook/issues/73
   `\\Include[include-one-level-1]
 \\Include[include-one-level-2]
 `,
@@ -6574,7 +6574,7 @@ assert_lib_ast('include without parent header with embed includes',
   },
 );
 assert_lib_ast('include: without parent header without embed includes',
-  // https://github.com/cirosantilli/ourbigbook/issues/73
+  // https://github.com/ourbigbook/ourbigbook/issues/73
   `aa
 
 \\Include[include-one-level-1]
@@ -6612,7 +6612,7 @@ assert_lib_ast('include: without parent header without embed includes',
   },
 );
 assert_lib_error('include: to file that exists in header title fails gracefully',
-  // https://github.com/cirosantilli/ourbigbook/issues/195
+  // https://github.com/ourbigbook/ourbigbook/issues/195
   `= tmp
 
 == \\Include[tmp2]
@@ -6661,7 +6661,7 @@ assert_lib('include: relative include in subdirectory',
 == Notindex h2`,
       's1/notindex2.bigb': `= Notindex2
 `,
-      // https://github.com/cirosantilli/ourbigbook/issues/214
+      // https://github.com/ourbigbook/ourbigbook/issues/214
       'top.bigb': `= Top
 `,
     },
@@ -6671,7 +6671,7 @@ assert_lib('include: relative include in subdirectory',
         "//*[@id='_toc']//x:a[@href='s1/notindex.html' and @data-test='0' and text()='1. Notindex']",
         "//*[@id='_toc']//x:a[@href='s1/notindex2.html' and @data-test='1' and text()='1.1. Notindex2']",
         "//*[@id='_toc']//x:a[@href='s1/notindex.html#notindex-h2' and @data-test='2' and text()='1.2. Notindex h2']",
-        // https://github.com/cirosantilli/ourbigbook/issues/214
+        // https://github.com/ourbigbook/ourbigbook/issues/214
         //"//*[@id='_toc']//x:a[@href='../top.html' and @data-test='2' and text()='2. Top']",
       ],
     },
@@ -6813,7 +6813,7 @@ Hello world
   }
 );
 assert_lib('include: subdir index.bigb outputs to subdir.html when there is no toplevel header',
-  // https://github.com/cirosantilli/ourbigbook/issues/247
+  // https://github.com/ourbigbook/ourbigbook/issues/247
   {
     filesystem: {
       'subdir/index.bigb': `Hello world
@@ -6869,7 +6869,7 @@ assert_lib('include: tags show on embed include',
   }
 );
 assert_lib(
-  // https://github.com/cirosantilli/ourbigbook/issues/123
+  // https://github.com/ourbigbook/ourbigbook/issues/123
   'include: includers should show as a parents of the includee',
   {
     convert_dir: true,
@@ -6993,7 +6993,7 @@ assert_lib_error('id conflict with later autogenerated id',
 \\P[bb]`,
   1, 1
 );
-// https://github.com/cirosantilli/ourbigbook/issues/4
+// https://github.com/ourbigbook/ourbigbook/issues/4
 assert_lib_ast('id autogeneration nested',
   '\\Q[\\P[aa]]\n\n\\P[bb]\n',
   [
@@ -7047,7 +7047,7 @@ assert_lib_ast('id autogeneration with disambiguate',
 assert_lib_error('id autogeneration with undefined reference in title fails gracefully',
   `= \\x[reserved_undefined]
 `, 1, 3);
-// https://github.com/cirosantilli/ourbigbook/issues/45
+// https://github.com/ourbigbook/ourbigbook/issues/45
 assert_lib_ast('id autogeneration with nested elements does an id conversion and works',
   `= ab \`cd\` ef
 
@@ -7089,7 +7089,7 @@ assert_lib_error('id conflict with previous id on the same file',
   },
 );
 assert_lib_ast('id conflict with id on another file simple',
-  // https://github.com/cirosantilli/ourbigbook/issues/201
+  // https://github.com/ourbigbook/ourbigbook/issues/201
   `= index
 
 == notindex h2
@@ -7165,7 +7165,7 @@ bbb
 assert_lib_error('toplevel explicit content',
   `[]`, 1, 1,
 );
-// https://github.com/cirosantilli/ourbigbook/issues/10
+// https://github.com/ourbigbook/ourbigbook/issues/10
 assert_lib_error('explicit toplevel macro',
   `\\toplevel`, 1, 1,
 );
@@ -7216,7 +7216,7 @@ it(`lib: x does not blow up without ID provider`, async function () {
 // TODO
 const bigb_input = fs.readFileSync(path.join(__dirname, 'test_bigb_output.bigb'), ourbigbook_nodejs_webpack_safe.ENCODING)
 assert_lib('bigb output: format is unchanged for the preferred format',
-  // https://github.com/cirosantilli/ourbigbook/issues/83
+  // https://github.com/ourbigbook/ourbigbook/issues/83
   {
     stdin: bigb_input,
     assert_bigb_stdout: bigb_input,
@@ -7337,7 +7337,7 @@ Named multiline second
 assert_lib_stdin('bigb output: nested sane list followed by paragraph',
   // This was leading to an AST change because the input has inner list as
   // `ccc\n` but the output only `ccc`. But lazy to fix now, what we want is the
-  // input to parse as `ccc` without the `\n`: https://github.com/cirosantilli/ourbigbook/issues/245
+  // input to parse as `ccc` without the `\n`: https://github.com/ourbigbook/ourbigbook/issues/245
   `aaa
 
 * bbb
@@ -7525,7 +7525,7 @@ assert_lib('bigb output: x to disambiguate',
 `,
     },
     convert_dir: true,
-    // TODO maybe https://github.com/cirosantilli/ourbigbook/issues/244
+    // TODO maybe https://github.com/ourbigbook/ourbigbook/issues/244
     assert_bigb: {
       'index.bigb': `= Index
 
@@ -7555,7 +7555,7 @@ assert_lib('bigb output: x to plural disambiguate',
 `,
     },
     convert_dir: true,
-    // TODO maybe https://github.com/cirosantilli/ourbigbook/issues/244
+    // TODO maybe https://github.com/ourbigbook/ourbigbook/issues/244
     assert_bigb: {
       'index.bigb': `= Index
 
@@ -8283,11 +8283,11 @@ assert_cli(
         "//x:blockquote[text()='A Ourbigbook example!']",
 
         // We have gone back and forth on split vs nosplit here a bit.
-        // Related: https://github.com/cirosantilli/ourbigbook/issues/146
+        // Related: https://github.com/ourbigbook/ourbigbook/issues/146
         "//*[@id='_toc']//x:a[@href='index.html#h2' and text()='2. h2']",
         // ToC entries of includes always point directly to the separate file.
         "//*[@id='_toc']//x:a[@href='included-by-index.html' and text()='1. Included by index']",
-        // TODO This is more correct with the `1. `. Maybe wait for https://github.com/cirosantilli/ourbigbook/issues/126
+        // TODO This is more correct with the `1. `. Maybe wait for https://github.com/ourbigbook/ourbigbook/issues/126
         // to make sure we don't have to rewrite everything.
         //"//*[@id='_toc']//x:a[@href='included-by-index-split.html' and text()='1. Included by index']",
       ],
@@ -8342,11 +8342,11 @@ assert_cli(
         xpath_header_split(1, 'index-scope', 'index.html#index-scope', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'index-scope/index-scope-child.html': [
-        // https://github.com/cirosantilli/ourbigbook/issues/159
+        // https://github.com/ourbigbook/ourbigbook/issues/159
         xpath_header_split(1, 'index-scope-child', '../index.html#index-scope/index-scope-child', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'index-scope/index-scope-2.html': [
-        // https://github.com/cirosantilli/ourbigbook/issues/159
+        // https://github.com/ourbigbook/ourbigbook/issues/159
         xpath_header_split(1, 'index-scope-2', '../index.html#index-scope/index-scope-2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'toplevel-scope.html': [
@@ -8363,7 +8363,7 @@ assert_cli(
         xpath_header_split(1, 'nested-scope', '../toplevel-scope.html#nested-scope', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'toplevel-scope/nested-scope/nested-scope-2.html': [
-        // https://github.com/cirosantilli/ourbigbook/issues/159
+        // https://github.com/ourbigbook/ourbigbook/issues/159
         xpath_header_split(1, 'nested-scope-2', '../../toplevel-scope.html#nested-scope/nested-scope-2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
 
@@ -8572,7 +8572,7 @@ assert_cli(
   }
 );
 assert_cli(
-  // https://github.com/cirosantilli/ourbigbook/issues/114
+  // https://github.com/ourbigbook/ourbigbook/issues/114
   'synonym to outdir generates correct redirct without outdir',
   {
     args: ['--split-headers', '.'],
@@ -8647,7 +8647,7 @@ const MAKE_GIT_REPO_PRE_EXEC = [
   ['git', ['init']],
   ['git', ['add', '.']],
   ['git', ['commit', '-m', '0']],
-  ['git', ['remote', 'add', 'origin', 'git@github.com:cirosantilli/ourbigbook-generate.git']],
+  ['git', ['remote', 'add', 'origin', 'git@github.com:ourbigbook/ourbigbook-generate.git']],
 ]
 assert_cli(
   '--generate min followed by publish conversion does not blow up',
@@ -9314,7 +9314,7 @@ assert_cli('id conflict with id on another file simple',
   }
 );
 assert_cli(
-  // https://github.com/cirosantilli/ourbigbook/issues/241
+  // https://github.com/ourbigbook/ourbigbook/issues/241
   'fixing a header parent bug on a file in the include chain does not blow up afterwards',
   {
     args: ['.'],

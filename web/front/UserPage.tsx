@@ -68,7 +68,7 @@ export default function UserPage({
   let paginationUrlFunc
   switch (what) {
     case 'following':
-      paginationUrlFunc = page => routes.userFollowing(user.username, { page })
+      paginationUrlFunc = page => routes.userFollows(user.username, { page })
       break
     case 'followed':
       paginationUrlFunc = page => routes.userFollowed(user.username, { page })
@@ -115,7 +115,6 @@ export default function UserPage({
         </h1>
         <div className="user-actions">
           <FollowUserButton {...{ loggedInUser, user, showUsername: false }}/>
-          {' '}
           <CustomLink className="btn" href={routes.issueNew(`${user.username}`)}>
             <IssueIcon /> Message
           </CustomLink>
@@ -128,7 +127,9 @@ export default function UserPage({
             </CustomLink>
           </Maybe>
           {isCurrentUser &&
-            <LogoutButton />
+            <>
+              <LogoutButton />
+            </>
           }
         </div>
         {user.admin && <h2><i className="ion-star" /> <a href={`${config.docsUrl}/ourbigbook-web-admin`}>{config.appName} admin</a> <i className="ion-star" /> </h2>}
@@ -169,7 +170,7 @@ export default function UserPage({
             <LikeIcon /> Received likes
           </CustomLink>
           <CustomLink
-            href={routes.userFollowing(username)}
+            href={routes.userFollows(username)}
             className={`tab-item${what === 'following' ? ' active' : ''}`}
           >
             <UserIcon /> Follows
@@ -181,7 +182,7 @@ export default function UserPage({
             <UserIcon /> Followed by
           </CustomLink>
           <CustomLink
-            href={routes.userFollowingArticle(username)}
+            href={routes.userFollowsArticle(username)}
             className={`tab-item${what === 'followed-articles' ? ' active' : ''}`}
           >
             <ArticleIcon /> Follows

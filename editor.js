@@ -49,7 +49,7 @@ class OurbigbookEditor {
 
     monaco.languages.register({ id: 'ourbigbook' });
     // TODO replace with our own tokenizer output:
-    // https://github.com/cirosantilli/ourbigbook/issues/106
+    // https://github.com/ourbigbook/ourbigbook/issues/106
     monaco.languages.setMonarchTokensProvider('ourbigbook', {
       macroName: /[a-zA-Z0-9_]+/,
       tokenizer: {

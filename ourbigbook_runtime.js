@@ -102,7 +102,7 @@ export function ourbigbook_runtime(toplevel) {
   }
 
   // Video click to play.
-  // https://github.com/cirosantilli/ourbigbook/issues/122
+  // https://github.com/ourbigbook/ourbigbook/issues/122
   const videos = toplevel.getElementsByTagName('video');
   for(const video of videos) {
     const parentNode = video.parentNode;

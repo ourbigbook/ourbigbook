@@ -825,6 +825,7 @@ WHERE
           convertOptionsExtra,
           forceNew: false,
           path: ourbigbook.path_splitext(file.path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR).slice(1).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR))[0],
+          parentId: this.file.toplevelId.to[0].from.idid,
           render: true,
           sequelize,
           titleSource: file.titleSource,
@@ -1532,17 +1533,42 @@ LIMIT ${limit}` : ''}
     while (true) {
       const articles = await sequelize.models.Article.findAll({
         where,
-        include: [{
-          model: sequelize.models.File,
-          as: 'file',
-          required: true,
-          include: [{
+        subQuery: false,
+        include: [
+          {
+            model: sequelize.models.File,
+            as: 'file',
+            subQuery: false,
             required: true,
-            model: sequelize.models.User,
-            as: 'author',
-            where: authorWhere,
-          }]
-        }],
+            include: [
+              {
+                model: sequelize.models.User,
+                as: 'author',
+                subQuery: false,
+                required: true,
+                where: authorWhere,
+              },
+              {
+                model: sequelize.models.Id,
+                as: 'toplevelId',
+                subQuery: false,
+                required: true,
+                include: [{
+                  model: sequelize.models.Ref,
+                  as: 'to',
+                  subQuery: false,
+                  where: { type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT] },
+                  include: [{
+                    model: sequelize.models.Id,
+                    as: 'from',
+                    subQuery: false,
+                    required: true,
+                  }],
+                }],
+              }
+            ],
+          },
+        ],
         order: [['slug', 'ASC']],
         offset,
         limit: config.maxArticlesInMemory,

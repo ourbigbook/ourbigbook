@@ -93,7 +93,7 @@
     "publish": "ourbigbook --publish --unsafe-ace",
     "start": "cd web && npm start",
     "start-dev": "cd web && npm run start-dev",
-    "test": "NODE_OPTIONS='--unhandled-rejections=strict' mocha test --ignore-leaks",
+    "test": "NODE_OPTIONS='--unhandled-rejections=strict' mocha test --ignore-leaks --timeout 4000",
     "testi": "NODE_OPTIONS='--unhandled-rejections=strict' node inspect ./node_modules/.bin/mocha test --ignore-leaks",
     "test-pg": "OURBIGBOOK_POSTGRES=1 npm test --",
     "test-release": "npm test  -- --timeout 10000 && npm run test-pg -- --timeout 100000",

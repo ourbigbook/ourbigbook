@@ -66,7 +66,7 @@ const articleData = [
         ['Fundamental theorem of calculus', [
           ['Proof of the fundamental theorem of calculus', []],
         ]],
-        [['$L^p$ space'], []],
+        ['My $L^p$ space', []],
       ]],
     ]],
   ]],
@@ -143,7 +143,8 @@ From the fundamental theorem of calculus, we understand that this is because the
 
 As an added bonus, a mention of Newton's rule would also be very useful.
 `],
-  ['1 + 1 = 3, not 2 as mentioned', 'I can\'t believe you got such a basic fact wrong!'],
+  ['$\\sqrt{1 + 1} = 3$, not 2 as mentioned', 'I can\'t believe you got such a basic fact wrong!'],
+  ['The code `f(x) + 1` should be `f(x) + 2`', 'Zero indexing always gets me too.'],
 ]
 const commentData = [
   'Thanks, you\'re totally right, I\'ll look into it!',
@@ -348,7 +349,7 @@ async function generateDemoData(params) {
           includesString = ''
           refsString = ''
         }
-        const id_noscope = ourbigbook.title_to_id(title)
+        const id_noscope = ourbigbook.title_to_id(await ourbigbook.convert(title, { output_format: ourbigbook.OUTPUT_FORMAT_ID }))
         const articleArg = {
           title,
           authorId,

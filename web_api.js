@@ -5,15 +5,21 @@ const axios = require('axios')
 const { WEB_API_PATH } = require('./index')
 
 // https://stackoverflow.com/questions/8135132/how-to-encode-url-parameters/50288717#50288717
-const encodeGetParams = p =>
-  Object.entries(p).filter(kv => kv[1] !== undefined).map(kv => kv.map(encodeURIComponent).join("=")).join("&");
-
-articleGetQuery = ({ limit, page, topicId }) => {
-  let offset
-  if (page !== undefined && limit !== undefined) {
-    offset = page * limit
+function encodeGetParams(p) {
+  let ret = Object.entries(p).filter(kv => kv[1] !== undefined).map(kv => kv.map(encodeURIComponent).join("=")).join("&");
+  if (ret) {
+    ret = '?' + ret
   }
-  return encodeGetParams({ limit, offset, topicId })
+  return ret
+}
+
+articleGetQuery = (opts) => {
+  opts = Object.assign({}, opts)
+  if (opts.page !== undefined && opts.limit !== undefined) {
+    opts.offset = opts.page * opts.limit
+  }
+  delete opts.page
+  return encodeGetParams(opts)
 }
 
 class WebApi {
@@ -31,13 +37,7 @@ class WebApi {
   }
 
   async articleAll(opts={}) {
-    return this.req('get', `articles?${articleGetQuery(opts)}`)
-  }
-
-  async articleByAuthor(author, page=0, limit=5) {
-    return this.req('get',
-      `articles?author=${encodeURIComponent(author)}&${articleGetQuery({ limit, page })}`
-    )
+    return this.req('get', `articles${articleGetQuery(opts)}`)
   }
 
   async articleCreate(article, opts={}) {
@@ -56,14 +56,8 @@ class WebApi {
     return this.req('post', `articles/like?id=${slug}`)
   }
 
-  async articleLikedBy(author, page) {
-    return this.req('get',
-      `articles?liked=${encodeURIComponent(author)}&${articleGetQuery({ limit: 10, page })}`
-    )
-  }
-
-  async articleFeed(page, limit=10) {
-    return this.req('get', `articles/feed?${articleGetQuery({ limit, page })}`)
+  async articleFeed(opts={}) {
+    return this.req('get', `articles/feed${articleGetQuery(opts)}`)
   }
 
   async articleGet(slug) {

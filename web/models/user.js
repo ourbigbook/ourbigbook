@@ -137,6 +137,7 @@ module.exports = (sequelize) => {
       followerCount: this.followerCount,
       score: this.score,
       admin: this.admin,
+      createdAt: this.createdAt.toISOString(),
     }
     if (loggedInUser) {
       ret.following = await loggedInUser.hasFollow(this.id)

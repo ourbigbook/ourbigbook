@@ -518,7 +518,7 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
           sass.renderSync({
             data: fs.readFileSync(path.join(base_path, input_path), convert_input_options.encoding),
             outputStyle: 'compressed',
-            includePaths: [path.join(convert_input_options.cirodown_json_dir, 'node_modules')],
+            includePaths: [path.join(convert_input_options.cirodown_json_dir_toplevel, 'node_modules')],
           }).css
         );
       } else {
@@ -973,6 +973,9 @@ A link to another file: \\x[and-now-an-include]
   // but rather used only by this cirodown executable.
   let convert_input_options = {
     cirodown_json_dir: cirodown_json_dir,
+    // The other gets hacked during publishing, but we need the original
+    // one as well to find node_modules for Sass includePaths
+    cirodown_json_dir_toplevel: cirodown_json_dir,
     commander: commander,
     encoding: cirodown_nodejs.ENCODING,
     external_css_and_js: false,

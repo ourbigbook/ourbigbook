@@ -841,6 +841,17 @@ Instead we should do the same handling as is currently done for `\a[]` and `\Ima
 
 == Closed issues
 
+=== Benchmark and optimize disk usage
+
+Test repo source code size during tests: 7.2 MiB
+
+Full ToC removal with hack:
+``
+ function renderTocFromEntryList({ add_test_instrumentation, entry_list, descendant_count_html, tocIdPrefix }) {
++  return ''
+``
+Test repo output size: 216.6 MB -> 121.8 MB
+
 === Web upload fails when renaming a header to a synonym
 {tag=Web upload}
 

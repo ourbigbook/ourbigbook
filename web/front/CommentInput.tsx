@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router'
-import React, { useEffect }from 'react'
+import React from 'react'
 
 import { SignupOrLogin, useConfirmExitPage } from 'front'
 import { hasReachedMaxItemCount } from 'front/js';
@@ -18,23 +18,26 @@ const CommentInput = ({
 }) => {
   const router = useRouter();
   const slug = slugFromRouter(router)
-  const [body, setBody] = React.useState("");
+  const [body, setBody] = React.useState('');
   const [isLoading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState([]);
   const submitButton = React.useRef(null);
-  function changeBody(body) {
-    setBody(body);
-    if (submitButton.current) {
+  function updateSubmitButton(body) {
+    const e = submitButton.current
+    if (e) {
       if (body) {
-        submitButton.current.classList.remove('disabled');
+        e.classList.remove('disabled')
+        e.removeAttribute('title')
       } else {
-        submitButton.current.classList.add('disabled');
+        e.classList.add('disabled')
+        e.title = 'Comment body cannot be empty'
       }
     }
   }
-  useEffect(() => {
-    changeBody('')
-  }, [])
+  function changeBody(body) {
+    setBody(body)
+    updateSubmitButton(body)
+  }
   useConfirmExitPage(body === '')
   const handleChange = e => {
     e.stopPropagation()
@@ -97,7 +100,14 @@ const CommentInput = ({
             alt="author profile image"
           />
           {' '}
-          <button className="btn" type="submit" ref={submitButton}>
+          <button
+            className="btn"
+            type="submit"
+            ref={(elem) => {
+              submitButton.current = elem
+              updateSubmitButton(body)
+            }}
+          >
             <span className="disable-part">Post Comment</span>
           </button>
         </div>

@@ -426,7 +426,10 @@ let macro_list = [
 <title>${convert_arg(title, options, is_attr)}</title>
 <style>
 code {
-  background-color: 111111;
+  background-color: #EEEEEE;
+}
+pre {
+  background-color: #EEEEEE;
 }
 </style>
 <body>

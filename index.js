@@ -1182,7 +1182,7 @@ exports.Macro = Macro;
 
 // Macro names defined here are those that have magic properties, e.g.
 // headers are used by the 'toc'.
-Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME = 'OurbigbookExample';
+Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME = 'OurBigBookExample';
 Macro.CODE_MACRO_NAME = 'c';
 // Add arguments common to all macros.
 Macro.DISAMBIGUATE_ARGUMENT_NAME = 'disambiguate';
@@ -2842,7 +2842,7 @@ function convert_init_context(options={}, extra_returns={}) {
     if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
     if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
 
-  // Internalish options that may get modified by sub-includes/OurbigbookExample in order
+  // Internalish options that may get modified by sub-includes/OurBigBookExample in order
   // to forward state back up. Maybe we should move them to a subdict to make this clearer
   // (moving to extra_returns feels bad because they are also input), but lazy.
   //
@@ -4205,50 +4205,54 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
       }
     } else if (macro_name === Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME) {
-      parent_arg.push(...[
-        new AstNode(
-          AstType.MACRO,
-          Macro.CODE_MACRO_NAME.toUpperCase(),
-          {'content': ast.args.content},
-          ast.source_location,
-        ),
-        new AstNode(
-          AstType.MACRO,
-          Macro.PARAGRAPH_MACRO_NAME,
-          {
-            'content': new AstArgument(
-              [
-                new PlaintextAstNode(
-                  'which renders as:',
-                  ast.source_location,
-                )
-              ],
-              ast.source_location
-            ),
-          },
-          ast.source_location,
-        ),
-        new AstNode(
-          AstType.MACRO,
-          'Q',
-          {
-            'content': await parse_include(
-              render_arg_noescape(ast.args.content, context),
-              clone_and_set(options, 'from_ourbigbook_example', true),
-              0,
-              options.input_path,
-              undefined,
-              {
-                start_line: ast.source_location.line + 1,
-                errors: extra_returns.errors,
-              }
-            )
-          },
-          ast.source_location,
-        ),
-      ]);
+      if (options.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
+        parent_arg.push(ast)
+      } else {
+        parent_arg.push(...[
+          new AstNode(
+            AstType.MACRO,
+            Macro.CODE_MACRO_NAME.toUpperCase(),
+            {'content': ast.args.content},
+            ast.source_location,
+          ),
+          new AstNode(
+            AstType.MACRO,
+            Macro.PARAGRAPH_MACRO_NAME,
+            {
+              'content': new AstArgument(
+                [
+                  new PlaintextAstNode(
+                    'which renders as:',
+                    ast.source_location,
+                  )
+                ],
+                ast.source_location
+              ),
+            },
+            ast.source_location,
+          ),
+          new AstNode(
+            AstType.MACRO,
+            'Q',
+            {
+              'content': await parse_include(
+                render_arg_noescape(ast.args.content, context),
+                clone_and_set(options, 'from_ourbigbook_example', true),
+                0,
+                options.input_path,
+                undefined,
+                {
+                  start_line: ast.source_location.line + 1,
+                  errors: extra_returns.errors,
+                }
+              )
+            },
+            ast.source_location,
+          ),
+        ]);
+      }
     } else {
-      // Not OurbigbookExample.
+      // Not OurBigBookExample.
       if (macro_name === Macro.HEADER_MACRO_NAME) {
         if (is_first_header) {
           ast.id = context.toplevel_id
@@ -6792,6 +6796,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        ourbigbook_output_prefer_literal: true,
       }),
     ],
     {
@@ -8359,6 +8364,9 @@ function ourbigbook_convert_args(ast, context, options={}) {
       const { delim_repeat, rendered_arg } = ourbigbook_prefer_literal(
         ast, context, arg, START_POSITIONAL_ARGUMENT_CHAR, END_POSITIONAL_ARGUMENT_CHAR)
       ret.push(START_POSITIONAL_ARGUMENT_CHAR.repeat(delim_repeat))
+      if (delim_repeat > 1) {
+        ret.push('\n')
+      }
       if (arg.remove_whitespace_children) {
         ret.push('\n')
       }
@@ -8486,7 +8494,17 @@ OUTPUT_FORMATS_LIST.push(
         [Macro.TH_MACRO_NAME]: ourbigbook_li(INSANE_TH_START),
         [Macro.TR_MACRO_NAME]: ourbigbook_ul,
         'Ul': ourbigbook_ul,
-        [Macro.X_MACRO_NAME]: ourbigbook_convert_simple_elem,
+        [Macro.X_MACRO_NAME]: function(ast, context) {
+          let href = render_arg(ast.args.href, context)
+          href = href.replaceAll(ID_SEPARATOR, ' ')
+          if (ast.validation_output.c.boolean) {
+            href = href[0].toUpperCase() + href.substring(1)
+          }
+          if (ast.validation_output.p.boolean) {
+            href = pluralize(href, 2)
+          }
+          return `<${href}>${ourbigbook_convert_args(ast, context, { skip: new Set(['c', 'href', 'magic', 'p']) }).join('')}`
+        },
         'Video': ourbigbook_convert_simple_elem,
       }
     }

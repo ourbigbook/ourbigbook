@@ -238,7 +238,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
   // because we want to first fetch everything
   // and populate the ID cache with the include entry points that have proper header_tree_node.
   // Only then are we ready for linking up the rest of the tree.
-  build_header_tree(starting_ids_to_asts, fetch_header_tree_ids_rows, { context }) {
+  build_header_tree(fetch_header_tree_ids_rows, { context }) {
     const asts = []
     for (const row of fetch_header_tree_ids_rows) {
       const ast = this.row_to_ast(row, context)
@@ -306,6 +306,71 @@ ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
       } }
     )
     return rows
+  }
+
+  // Recursively fetch all ancestors of a given ID from the database.
+  async fetch_ancestors(toplevel_id) {
+    if (toplevel_id) {
+      ;const [rows, meta] = await this.sequelize.query(`SELECT * FROM "${this.sequelize.models.Id.tableName}"
+  INNER JOIN (
+  WITH RECURSIVE
+    tree_search (to_id, level, from_id) AS (
+      SELECT
+        to_id,
+        0,
+        from_id
+      FROM "${this.sequelize.models.Ref.tableName}"
+      WHERE to_id = :toplevel_id AND type = :type
+
+      UNION ALL
+
+      SELECT
+        ts.from_id,
+        ts.level + 1,
+        t.from_id
+      FROM "${this.sequelize.models.Ref.tableName}" t, tree_search ts
+      WHERE t.to_id = ts.from_id AND type = :type
+    )
+    SELECT * FROM tree_search
+    ORDER BY level DESC
+  ) AS "RecRefs"
+  ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."from_id"
+  `,
+        { replacements: {
+          toplevel_id,
+          type: this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_PARENT],
+        } }
+      )
+      return rows
+    } else {
+      return []
+    }
+  }
+
+  fetch_ancestors_build_tree(rows, context) {
+    const asts = []
+    let parent_ast
+    for (const row of rows) {
+      let ast = this.id_cache[row.idid]
+      if (!ast) {
+        ast = this.add_row_to_id_cache(row, context)
+      }
+      if (ast.synonym === undefined) {
+        let parent_ast_header_tree_node
+        if (parent_ast) {
+          parent_ast_header_tree_node = parent_ast.header_tree_node
+        }
+        ast.header_tree_node = new cirodown.HeaderTreeNode(ast, parent_ast_header_tree_node);
+        if (parent_ast) {
+          if (ast.macro_name === cirodown.Macro.HEADER_MACRO_NAME) {
+            parent_ast_header_tree_node.add_child(ast.header_tree_node);
+          }
+        }
+        cirodown.propagate_numbered(ast, context)
+        parent_ast = ast
+      }
+    }
+    return asts
   }
 
   row_to_ast(row, context) {

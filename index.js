@@ -4473,6 +4473,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   }
 
   let fetch_header_tree_ids_rows
+  let fetch_ancestors_rows
   const prefetch_file_ids = new Set()
   if (!options.from_include) {
     // Ast post process pass 2
@@ -4911,7 +4912,8 @@ async function parse(tokens, options, context, extra_returns={}) {
         get_noscopes_base_fetch,
         get_refs_to_fetch,
         get_refs_to_fetch_reverse,
-        fetch_header_tree_ids_rows
+        fetch_header_tree_ids_rows,
+        fetch_ancestors_rows,
       ] = await Promise.all([
         options.id_provider.get_noscopes_base_fetch(
           Array.from(prefetch_ids),
@@ -4955,6 +4957,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         options.id_provider.fetch_header_tree_ids(
           options.include_hrefs,
         ),
+        options.id_provider.fetch_ancestors(context.toplevel_id, context),
       ])
     }
 
@@ -5017,7 +5020,9 @@ async function parse(tokens, options, context, extra_returns={}) {
     let build_header_tree_asts
     if (options.id_provider !== undefined) {
       build_header_tree_asts = context.options.id_provider.build_header_tree(
-        options.include_hrefs, fetch_header_tree_ids_rows, { context })
+        fetch_header_tree_ids_rows, { context })
+      context.options.id_provider.fetch_ancestors_build_tree(
+        fetch_ancestors_rows, context)
     }
 
     if (context.options.file_provider !== undefined) {
@@ -7444,10 +7449,12 @@ const DEFAULT_MACRO_LIST = [
               if (cur_ast === undefined) {
                 break
               }
+              ancestors.push(cur_ast);
             }
             if (ancestors.length !== 0) {
               // TODO factor this out more with real headers.
-              body += `<div>${html_hide_hover_link('#ancestors')}<h2 id="#ancestors"><a href="#ancestors">Ancestors</a></h2></div>\n`;
+              const id = 'ancestors'
+              body += `<div>${html_hide_hover_link('#ancestors')}<h2 id="#${id}"><a href="#ancestors">Ancestors</a></h2></div>\n`;
               const ancestor_id_asts = [];
               for (const ancestor of ancestors) {
                 //let counts_str;
@@ -7494,12 +7501,16 @@ const DEFAULT_MACRO_LIST = [
                   },
                 ));
               }
+              const ulArgs = {
+                'content': new AstArgument(ancestor_id_asts)
+              }
+              if (context.options.add_test_instrumentation) {
+                ulArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(id)]
+              }
               const incoming_ul_ast = new AstNode(
                 AstType.MACRO,
                 'Ul',
-                {
-                  'content': new AstArgument(ancestor_id_asts)
-                },
+                ulArgs,
               );
               const new_context = clone_and_set(context, 'validate_ast', true);
               new_context.source_location = ast.source_location;

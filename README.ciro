@@ -6175,7 +6175,17 @@ There are two types of test in our test suite:
   * their titles are prefixed with `executable: `
   * they tend to be a lot slower than the API test
   * can test functionality that is done outside of the `cirodown.convert` JavaScript API, notably stuff prevent in cirodown, so they are more end to end
-  * don't do any mocking, and could therefore be more representative. However, as of 2022, we have basically eliminated all the hard database access mocking and are using the main database methods directly. So all that has to be mocked is basically stuff done in the cirodown executable itself.
+  * don't do any mocking, and could therefore be more representative.
+
+    However, as of 2022, we have basically eliminated all the hard database access mocking and are using the main database methods directly.
+
+    So all that has to be mocked is basically stuff done in the cirodown executable itself.
+
+    This means that except for more specific options, the key functionality of cirodown, which is to convert multiple paths, can be done very well in a non executable test.
+
+    The only major difference is that instead of passing command line arguments like in `cirodown .` to convert multiple files in a directory, you have to use `convert_before` and `convert_before_norender` and specify conversion order one by one.
+
+    This test robustness is new as of 2022, and many tests were previously written with executable that would now also work as unit tests, and we generally want that to be the case to make the tests go faster.
   * work by creating an actual physical filesystem under `out/test/<normalized-test-title>` with the Cirodown files and other files like `cirodown.json`, and then running the executable on that directory.
 
     `npm test` first deletes the `out/test` directory before running the tests. After running, the generated files are kept so you can inspect them to help debug any issues.

@@ -361,6 +361,9 @@ function assert_executable(
     if (!('assert_xpath' in options)) {
       options.assert_xpath = {};
     }
+    if (!('assert_not_xpath' in options)) {
+      options.assert_not_xpath = {};
+    }
     if (!('assert_xpath_stdout' in options)) {
       options.assert_xpath_stdout = [];
     }
@@ -369,9 +372,6 @@ function assert_executable(
     }
     if (!('filesystem' in options)) {
       options.filesystem = {};
-    }
-    if (!('expect_filesystem_not_xpath' in options)) {
-      options.expect_filesystem_not_xpath = {};
     }
     if (!('expect_exit_status' in options)) {
       options.expect_exit_status = 0;
@@ -438,12 +438,12 @@ function assert_executable(
         assert_xpath_main(xpath_expr, html, {message: assert_msg_xpath});
       }
     }
-    for (const relpath in options.expect_filesystem_not_xpath) {
+    for (const relpath in options.assert_not_xpath) {
       const assert_msg_xpath = `path should not match xpath: ${relpath}\n\n` + assert_msg;
       const fullpath = path.join(tmpdir, relpath);
       assert.ok(fs.existsSync(fullpath), assert_msg_xpath);
       const html = fs.readFileSync(fullpath).toString(cirodown_nodejs.ENCODING);
-      for (const xpath_expr of options.expect_filesystem_not_xpath[relpath]) {
+      for (const xpath_expr of options.assert_not_xpath[relpath]) {
         assert_xpath_main(xpath_expr, html, {message: assert_msg_xpath, count: 0});
       }
     }
@@ -4137,6 +4137,71 @@ assert_convert_ast('the toc is added before the first h1 when there are multiple
     a('H', undefined, {level: [t('1')], title: [t('h2')]}),
   ],
 )
+assert_convert_ast('ancestors list shows after toc',
+  `= Index
+
+\\Include[notindex]
+
+== h2
+
+=== h3
+
+==== h4
+`,
+  undefined,
+  {
+    filesystem: {
+      'notindex.ciro': `= Notindex
+
+\\Include[notindex2]
+`,
+      'notindex2.ciro': `= Notindex 2
+
+\\Include[notindex3]
+`,
+      'notindex3.ciro': `= Notindex 2
+`
+    },
+    convert_before_norender: ['index.ciro', 'notindex.ciro', 'notindex2.ciro', 'notindex3.ciro'],
+    convert_before: ['notindex.ciro', 'notindex2.ciro', 'notindex3.ciro'],
+    input_path_noext: 'index',
+    extra_convert_opts: {
+      body_only: false,
+      split_headers: true,
+    },
+    assert_xpath: {
+      'h2.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+      ],
+      'h3.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html#h2']`,
+      ],
+      'h4.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html#h2']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html#h3']`,
+      ],
+      'notindex.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+      ],
+      'notindex2.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
+      ],
+      'notindex3.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html']`,
+      ],
+    },
+    assert_not_xpath: {
+      'index.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']`,
+      ],
+    },
+  }
+);
 
 // Math. Minimal testing since this is mostly factored out with code tests.
 assert_convert_ast('math inline sane',
@@ -5312,7 +5377,7 @@ assert_executable(
       'scss.css': [],
       'cirodown.json': [],
     },
-    expect_filesystem_not_xpath: {
+    assert_not_xpath: {
       'split.html': [
         // Included header placeholders are removed from split headers.
         xpath_header(1, 'included-by-index'),
@@ -5381,7 +5446,7 @@ assert_executable(
   'included-by-index.ciro': `= Included by index
 `,
     },
-    expect_filesystem_not_xpath: {
+    assert_not_xpath: {
       'included-by-index.html': [
         `//x:h2[@id='incoming-links']`,
       ],
@@ -5930,7 +5995,7 @@ assert_executable(
         "//x:style[contains(text(),'.cirodown{')]",
       ],
     },
-    expect_filesystem_not_xpath: {
+    assert_not_xpath: {
       'index.html': [
         // The way that we import other sheets.
         "//x:style[contains(text(),'@import ')]",
@@ -6342,7 +6407,7 @@ assert_executable(
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html#h2']`,
       ],
     },
-    expect_filesystem_not_xpath: {
+    assert_not_xpath: {
       'no-incoming.html': [
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']`,
       ],
@@ -6562,6 +6627,52 @@ assert_executable(
     assert_xpath: {
       'index.html': [
         "//x:div[@class='p' and text()='asdf']",
+      ],
+    },
+  }
+);
+assert_executable('executable: cross file ancestors',
+  {
+    // After we pre-convert everything, we convert just one file to ensure that the ancestors are coming
+    // purely from the database, and not from a cache shared across several input files.
+    args: ['--add-test-instrumentation', 'notindex3.ciro'],
+    filesystem: {
+      'index.ciro': `= Index
+
+\\Include[notindex]
+`,
+      'notindex.ciro': `= Notindex
+
+\\Include[notindex2]
+`,
+      'notindex2.ciro': `= Notindex 2
+
+\\Include[notindex3]
+`,
+      'notindex3.ciro': `= Notindex 2
+`
+    },
+    pre_exec: [
+      // First we pre-convert everything.
+      ['cirodown', ['--add-test-instrumentation', '.']],
+    ],
+    assert_xpath: {
+      'notindex.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+      ],
+      'notindex2.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
+      ],
+      'notindex3.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html']`,
+      ],
+    },
+    assert_not_xpath: {
+      'index.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']`,
       ],
     },
   }

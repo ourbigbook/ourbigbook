@@ -39,8 +39,6 @@ const ArticleList = ({
   const router = useRouter();
   const { asPath, pathname, query } = router;
   const { like, follow, tag, uid } = query;
-
-
   if (articles.length === 0) {
     let message;
     let voice;
@@ -85,6 +83,11 @@ const ArticleList = ({
             <tr>
               <th className="shrink center">Score</th>
               <th className="expand">Title</th>
+              {isIssue &&
+                <th className="shrink">
+                  #
+                </th>
+              }
               {showAuthor &&
                 <th className="shrink">Author</th>
               }
@@ -114,6 +117,11 @@ const ArticleList = ({
                     />
                   </CustomLink>
                 </td>
+                {isIssue &&
+                  <td className="shrink">
+                    #{article.number}
+                  </td>
+                }
                 {showAuthor &&
                   <td className="shrink">
                     <UserLinkWithImage showUsername={false} user={article.author} />

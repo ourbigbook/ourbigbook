@@ -48,9 +48,9 @@ const ArticleAPI = {
   unfavorite: (slug) =>
     axios.delete(`${SERVER_BASE_URL}/articles/${slug}/favorite`),
 
-  update: async (article, token) => {
+  update: async (article, pid, token) => {
     const { data, status } = await axios.put(
-      `${SERVER_BASE_URL}/articles/${article.slug}`,
+      `${SERVER_BASE_URL}/articles/${pid}`,
       JSON.stringify({ article }),
       {
         headers: {

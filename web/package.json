@@ -1,7 +1,7 @@
 {
-  "name": "conduit-node",
-  "version": "1.0.0",
-  "description": "conduit on node",
+  "name": "cirodown-backend",
+  "version": "0.0.1",
+  "description": "cirodown backend",
   "main": "app.js",
   "scripts": {
     "back": "nodemon --unhandled-rejections=strict ./app.js",

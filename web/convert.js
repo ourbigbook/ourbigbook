@@ -314,6 +314,13 @@ async function convertArticle({
         oldRef.to_id_index !== to_id_index
       )
     )
+    //const whereAuthorInclude = {
+    //  model: sequelize.models.File,
+    //  as: 'file',
+    //  where: {
+    //    authorId: author.id,
+    //  },
+    //}
     if (
       // Fails only for the index page which has no parent.
       parentId !== undefined
@@ -343,10 +350,15 @@ async function convertArticle({
         !oldRef
       ) {
         let ancestorUpdateIndexWhere
+        //if (previousSiblingRef && parentArticle) {
+        //  ancestorUpdateIndexWhere = { [sequelize.Sequelize.Op.lte]: parentArticle.nestedSetIndex }
+        //} else {
+        //  ancestorUpdateIndexWhere = { [sequelize.Sequelize.Op.lt]: nestedSetIndex }
+        //}
         if (previousSiblingRef && parentArticle) {
-          ancestorUpdateIndexWhere = { [sequelize.Sequelize.Op.lte]: parentArticle.nestedSetIndex }
+          ancestorUpdateIndexWhere = `<= ${parentArticle.nestedSetIndex}`
         } else {
-          ancestorUpdateIndexWhere = { [sequelize.Sequelize.Op.lt]: nestedSetIndex }
+          ancestorUpdateIndexWhere = `< ${nestedSetIndex}`
         }
         // Create space to insert the article at.
         await Promise.all([
@@ -360,28 +372,84 @@ async function convertArticle({
             transaction,
           }),
           // Increase nested set index and next sibling of all nodes that come after.
-          sequelize.models.Article.update(
+          // We need a raw query because Sequelize does not support UPDATE with JOIN:
+          // https://github.com/sequelize/sequelize/issues/3957
+          await sequelize.query(`
+UPDATE "Article" SET
+  "nestedSetIndex" = "nestedSetIndex" + :nestedSetSize,
+  "nestedSetNextSibling" = "nestedSetNextSibling" + :nestedSetSize
+WHERE
+  "nestedSetIndex" >= :nestedSetIndex AND
+  "id" IN (
+    SELECT "Article"."id" from "Article"
+    INNER JOIN "File"
+      ON "Article"."fileId" = "File"."id"
+    INNER JOIN "User"
+      ON "File"."authorId" = "User"."id"
+    WHERE "User"."username" = :authorUsername
+  )
+`,
             {
-              nestedSetIndex: sequelize.where(sequelize.col('nestedSetIndex'), '+', nestedSetSize),
-              nestedSetNextSibling: sequelize.where(sequelize.col('nestedSetNextSibling'), '+', nestedSetSize),
-            },
-            {
-              where: {
-                nestedSetIndex: { [sequelize.Sequelize.Op.gte]: nestedSetIndex },
-              },
-              sideEffects: false,
               transaction,
-            }
-          ),
-          // Increase nested set next sibling of ancestors. Their index is unchanged.
-          sequelize.models.Article.increment('nestedSetNextSibling', {
-            where: {
-              nestedSetIndex: ancestorUpdateIndexWhere,
-              nestedSetNextSibling: { [sequelize.Sequelize.Op.gte]: nestedSetIndex },
+              replacements: {
+                authorUsername: author.username,
+                nestedSetIndex,
+                nestedSetSize,
+              },
             },
-            by: nestedSetSize,
-            transaction,
-          }),
+          ),
+          // This is the non raw version that works except for the user selection from the JOIN.
+          //sequelize.models.Article.update(
+          //  {
+          //    nestedSetIndex: sequelize.where(sequelize.col('nestedSetIndex'), '+', nestedSetSize),
+          //    nestedSetNextSibling: sequelize.where(sequelize.col('nestedSetNextSibling'), '+', nestedSetSize),
+          //  },
+          //  {
+          //    //where: {
+          //    //  nestedSetIndex: { [sequelize.Sequelize.Op.gte]: nestedSetIndex },
+          //    //},
+          //    subQuery: false,
+          //    include: [whereAuthorInclude],
+          //    sideEffects: false,
+          //    transaction,
+          //  }
+          //),
+
+          // Increase nested set next sibling of ancestors. Their index is unchanged.
+          //sequelize.models.Article.increment('nestedSetNextSibling', {
+          //  where: {
+          //    nestedSetIndex: ancestorUpdateIndexWhere,
+          //    nestedSetNextSibling: { [sequelize.Sequelize.Op.gte]: nestedSetIndex },
+          //  },
+          //  subQuery: false,
+          //  include: [whereAuthorInclude],
+          //  by: nestedSetSize,
+          //  transaction,
+          //}),
+          await sequelize.query(`
+UPDATE "Article" SET
+  "nestedSetNextSibling" = "nestedSetNextSibling" + :nestedSetSize
+WHERE
+  "nestedSetIndex" ${ancestorUpdateIndexWhere} AND
+  "nestedSetNextSibling" >= :nestedSetIndex AND
+  "id" IN (
+    SELECT "Article"."id" from "Article"
+    INNER JOIN "File"
+      ON "Article"."fileId" = "File"."id"
+    INNER JOIN "User"
+      ON "File"."authorId" = "User"."id"
+    WHERE "User"."username" = :authorUsername
+  )
+`,
+            {
+              transaction,
+              replacements: {
+                authorUsername: author.username,
+                nestedSetIndex,
+                nestedSetSize,
+              },
+            },
+          ),
         ])
         //{
         //  console.error('post create space');
@@ -507,28 +575,64 @@ async function convertArticle({
           include: {
             model: sequelize.models.File,
             as: 'file',
+            include: {
+              model: sequelize.models.User,
+              as: 'author',
+            },
           },
           order: [['slug', 'ASC']],
           transaction,
         }),
         articleMoved
           // Move all descendants of an existing article to their new position.
-          ? sequelize.models.Article.update(
+          //? sequelize.models.Article.update(
+          //    {
+          //      nestedSetIndex: sequelize.where(sequelize.col('nestedSetIndex'), '+', nestedSetDelta),
+          //      nestedSetNextSibling: sequelize.where(sequelize.col('nestedSetNextSibling'), '+', nestedSetDelta),
+          //      depth: sequelize.where(sequelize.col('depth'), '+', depthDelta),
+          //    },
+          //    {
+          //      where: {
+          //        nestedSetIndex: {
+          //          [sequelize.Sequelize.Op.gte]: oldNestedSetIndex,
+          //          [sequelize.Sequelize.Op.lt]: oldNestedSetNextSibling,
+          //        },
+          //      },
+          //      subQuery: false,
+          //      include: [whereAuthorInclude],
+          //      sideEffects: false,
+          //      transaction,
+          //    }
+          //  )
+          ? await sequelize.query(`
+UPDATE "Article" SET
+  "nestedSetIndex" = "nestedSetIndex" + :nestedSetDelta,
+  "nestedSetNextSibling" = "nestedSetNextSibling" + :nestedSetDelta,
+  "depth" = "depth" + :depthDelta
+WHERE
+  "nestedSetIndex" >= :oldNestedSetIndex AND
+  "nestedSetIndex" < :oldNestedSetNextSibling AND
+  "id" IN (
+    SELECT "Article"."id" from "Article"
+    INNER JOIN "File"
+      ON "Article"."fileId" = "File"."id"
+    INNER JOIN "User"
+      ON "File"."authorId" = "User"."id"
+    WHERE "User"."username" = :authorUsername
+  )
+`,
               {
-                nestedSetIndex: sequelize.where(sequelize.col('nestedSetIndex'), '+', nestedSetDelta),
-                nestedSetNextSibling: sequelize.where(sequelize.col('nestedSetNextSibling'), '+', nestedSetDelta),
-                depth: sequelize.where(sequelize.col('depth'), '+', depthDelta),
-              },
-              {
-                where: {
-                  nestedSetIndex: {
-                    [sequelize.Sequelize.Op.gte]: oldNestedSetIndex,
-                    [sequelize.Sequelize.Op.lt]: oldNestedSetNextSibling,
-                  },
-                },
-                sideEffects: false,
                 transaction,
-              }
+                replacements: {
+                  authorUsername: author.username,
+                  depthDelta,
+                  nestedSetDelta,
+                  nestedSetIndex,
+                  nestedSetSize,
+                  oldNestedSetIndex,
+                  oldNestedSetNextSibling,
+                },
+              },
             )
           : null
         ,
@@ -546,18 +650,47 @@ async function convertArticle({
           // Close up nested set space from which we moved the subtree out.
           ? Promise.all([
             // Reduce nested set index and next sibling of all nodes that come after.
-            sequelize.models.Article.update(
+            //sequelize.models.Article.update(
+            //  {
+            //    nestedSetIndex: sequelize.where(sequelize.col('nestedSetIndex'), '-', nestedSetSize),
+            //    nestedSetNextSibling: sequelize.where(sequelize.col('nestedSetNextSibling'), '-', nestedSetSize),
+            //  },
+            //  {
+            //    where: {
+            //      nestedSetIndex: { [sequelize.Sequelize.Op.gt]: oldNestedSetIndex },
+            //    },
+            //    sideEffects: false,
+            //    transaction,
+            //    subQuery: false,
+            //    include: [whereAuthorInclude],
+            //  },
+            //),
+            sequelize.query(`
+UPDATE "Article" SET
+  "nestedSetIndex" = "nestedSetIndex" - :nestedSetSize,
+  "nestedSetNextSibling" = "nestedSetNextSibling" - :nestedSetSize
+WHERE
+  "nestedSetIndex" > :oldNestedSetIndex AND
+  "id" IN (
+    SELECT "Article"."id" from "Article"
+    INNER JOIN "File"
+      ON "Article"."fileId" = "File"."id"
+    INNER JOIN "User"
+      ON "File"."authorId" = "User"."id"
+    WHERE "User"."username" = :authorUsername
+  )
+`,
               {
-                nestedSetIndex: sequelize.where(sequelize.col('nestedSetIndex'), '-', nestedSetSize),
-                nestedSetNextSibling: sequelize.where(sequelize.col('nestedSetNextSibling'), '-', nestedSetSize),
-              },
-              {
-                where: {
-                  nestedSetIndex: { [sequelize.Sequelize.Op.gt]: oldNestedSetIndex },
-                },
-                sideEffects: false,
                 transaction,
-              }
+                replacements: {
+                  authorUsername: author.username,
+                  depthDelta,
+                  nestedSetIndex,
+                  nestedSetSize,
+                  oldNestedSetIndex,
+                  oldNestedSetNextSibling,
+                },
+              },
             ),
             parentArticle
               ? // Reduce nested set next sibling of ancestors. Index is unchanged.

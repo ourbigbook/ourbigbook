@@ -9,10 +9,10 @@ import getLoggedInUser from "lib/utils/getLoggedInUser";
 
 const IndexPage = () => {
   const loggedInUser = getLoggedInUser()
-  const [tab, setTab] = React.useState(loggedInUser ? 'feed' : 'global')
+  const [tab, setTab] = React.useState(loggedInUser ? 'followed-latest' : 'global-latest')
   const [tag, setTag] = React.useState()
   React.useEffect(() => {
-    setTab(loggedInUser ? 'feed' : 'global')
+    setTab(loggedInUser ? 'followed-latest' : 'global-latest')
   }, [loggedInUser])
   return (
     <>

@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize')
 
 const api_lib = require('../api/lib')
-const front = require('../front/js')
+const config = require('../front/config')
 
 module.exports = (sequelize) => {
   const Issue = sequelize.define(
@@ -36,7 +36,6 @@ module.exports = (sequelize) => {
         as: 'comments',
         order: [['number', 'DESC']],
         include: [{ model: sequelize.models.User, as: 'author' }],
-        limit: front.DEFAULT_LIMIT,
       })
       order = [[
         'comments', 'number', 'DESC'
@@ -46,6 +45,7 @@ module.exports = (sequelize) => {
       where: { number },
       include,
       order,
+      limit: config.articleLimit,
     })
   }
 

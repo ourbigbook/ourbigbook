@@ -4,6 +4,7 @@ const Op = require('sequelize').Op
 const auth = require('../auth')
 const convert = require('../convert')
 const lib = require('./lib')
+const config = require('../front/config')
 
 function getOrder(req) {
   let sort = req.query.sort;
@@ -29,7 +30,7 @@ router.get('/', auth.optional, async function(req, res, next) {
       const [{count: articlesCount, rows: articles}, user] = await Promise.all([
         sequelize.models.Article.getArticles({
           sequelize,
-          limit: lib.validateParam(req.query, 'limit', lib.validatePositiveInteger, 20),
+          limit: lib.validateParam(req.query, 'limit', lib.validatePositiveInteger, config.articleLimit),
           offset: lib.validateParam(req.query, 'offset', lib.validatePositiveInteger, 0),
           author: req.query.author,
           likedBy: req.query.likedBy,

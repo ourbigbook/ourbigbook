@@ -3,6 +3,7 @@ import React from 'react'
 import Comment from 'front/Comment'
 import CommentInput from 'front/CommentInput'
 import { CommentType } from 'front/types/CommentType'
+import IssueSummary from 'front/IssueSummary'
 
 // This also worked. But using the packaged one reduces the need to replicate
 // or factor out the webpack setup of the ourbigbook package.

@@ -219,6 +219,14 @@ it('api: create an article and see it on global feed', async () => {
       { title: 'Index', slug: 'user1' },
     ])
 
+    // Test global feed paging.
+    ;({data, status} = await test.webApi.articleAll({ limit: 2, page: 1 }))
+    assert.strictEqual(status, 200)
+    sortByKey(data.articles, 'slug')
+    assertRows(data.articles, [
+      { title: 'Index', slug: 'user1' },
+    ])
+
     if (testNext) {
       ;({data, status} = await test.sendJsonHttp(
         'GET',

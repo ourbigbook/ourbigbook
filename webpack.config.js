@@ -45,16 +45,8 @@ module.exports = {
       //},
       // Fonts.
       {
-        test: /\.(woff2)$/i,
+        test: /\.(woff|eot|ttf|otf|woff2)$/i,
         type: 'asset/resource',
-      },
-      {
-        // All the font formats that we don't want must come here, if they don't blowups.
-        // https://stackoverflow.com/questions/37667444/is-there-a-way-to-ignore-a-file-type-with-webpack/39886771#39886771
-        // KaTeX ships all formats in existence. We are not ultra backwards compatible, so we ship just woff2 for now.
-        // This reduced the size of assets from abou 2MB to about 1MB.
-        test: /\.(woff|eot|ttf|otf)$/i,
-        loader: 'ignore-loader'
       },
     ],
   },

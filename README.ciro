@@ -2,98 +2,118 @@
 
 Markup language + static site generator to write complex structured wikis/books/blogs, that is \x[saner] and \x[design-goals][more powerful] than Markdown and Asciidoctor, with reference implementation in JavaScript.
 
+* https://cirosantilli.com[]: showcase demo document with more interesting content, and primary inspiration for Cirodown development
+* https://github.com/cirosantilli/cirosantilli.github.io[]: source of the above showcase document
 * \x[design-goals]{full}: feature overview
 * https://github.com/cirosantilli/cirodown[]: Cirodown source code
 * https://github.com/cirosantilli/cirodown/blob/master/README.ciro[]: source for this document
 * https://cirosantilli.com/cirodown[]: rendered version of this document
 * https://cirosantilli.com/cirodown/editor[]: live in-browser demo
-* https://cirosantilli.com[]: showcase demo document with more interesting content, and primary inspiration for Cirodown development
-* https://github.com/cirosantilli/cirosantilli.github.io[]: source of the above showcase document
+* https://cirosantilli.com/cirodown-template[]: good template to get started, see \x[getting-started]{full}
 
 = Quick start
 {parent=cirodown}
 
-Live in-browser demo: https://cirosantilli.com/cirodown/editor
+= Play with the template
+{parent=quick-start}
+
+Learn the syntax basics in 5 minutes: https://cirosantilli.com/cirodown/editor[].
+
+Play with a Cirodown template locally:
+``
+git clone https://github.com/cirosantilli/cirodown-template
+cd cirodown-template
+npm install
+npx cirodown .
+firefox index.html
+``
+That template can be seen live at: http://cirosantilli.com/cirodown-generate-multifile/
+
+To deploy it on your own you can just fork the repository https://github.com/cirosantilli/cirodown-template to your own https://github.com/johndoe/cirodown-template and then:
+``
+git remote set-url origin git@github.com:johndoe/cirodown-template.git
+npx cirodown --publish
+``
+and it should now be visible at: https://johndoe.github.io/cirodown-template
+
+If you want to publish to your root page https://johndoe.github.io instead of https://johndoe.github.io/cirodown-template you need to rename the `master` branch to `dev` as mentioned at \x[publish-to-github-pages-root-page]:
+``
+git remote set-url origin git@github.com:johndoe/johndoe.github.io.git
+
+# Rename master to dev, and delete the old master.
+git checkout -b dev
+git push origin dev:dev
+git branch -D master
+git push --delete origin master
+
+npx cirodown --publish
+``
+
+The following files of the template control the global style of the output, and you are free to edit them:
+* `main.liquid.html`: global HTML template. Documented at \x[template], and set in that repository with 
+  ``
+  "template": "main.liquid.html"
+  ``
+  in `cirodown.json`
+* `main.scss`: https://sass-lang.com/[Sass] file that gets converted to raw CSS `main.css` by `npx cirodown .`.
+
+  Sass is just much more convenient to write than raw CSS.
+
+  That file gets included into the global HTML template inside `main.liquid.html` at:
+  ``
+  <link rel="stylesheet" href="{{ root_relpath }}main.css">
+  ``
+
+= Important command line options
+{parent=quick-start}
+
+When you run:
+``
+npx cirodown .
+``
+it converts all files in the current directory separately, e.g.:
+* `README.ciro` to `index.html`, since `README` is a magic name that we want to show on the root URL
+* `not-readme.ciro` to `not-readme.html`, as this one is a regular name unlike `README`
+* `main.scss` to `main.css`
+
+If one of the input files starts getting too large, usually the toplevel `README.ciro` in which you dump everything by default like Ciro does, you can speed up development and just compile files individually with either:
+``
+npx cirodown README.ciro
+npx cirodown not-readme.ciro
+``
+When dealing with large files, you might also be interested in the following amazing options:
+* \x[split-headers]
+* \x[h-splitdefault-argument]
+
+To produce a single standalone output file that contains everything in a directory run:
+``
+npx cirodown --embed-resources --embed-includes README.ciro
+xdg-open index.html
+``
+You can now just give `index.html` to any reader and they should be able to view it offline without installing anything. The flags are:
+* \x[embed-includes]: without this, `\Include[not-readme]` shows as a link to the file `not-readme.html` which comes from `not-readme.ciro` With the flag, `not-readme.ciro` output gets embedded into the output `index.html` directly
+* \x[embed-resources]: by default, we link to CSS and JavaScript that lives inside `node_modules`. With this flag, that CSS and JavaScript is copied inline into the document instead. One day we will try to handle \x[image]{p} that way as well
+
+= Useless knowledge
+{parent=quick-start}
 
 Install the NPM package globally and use it from the command line for a quick conversion:
 ``
 npm install -g cirodown
 printf 'ab\ncd\n' | cirodown --body-only
 ``
-or https://stackoverflow.com/questions/9679932/how-to-use-package-installed-locally-in-node-modules[install in a single directory and run locally from it]:
+or to a file:
 ``
-printf '{}\n' > package.json
-npm install --save cirodown
-printf 'ab\ncd\n' | npx cirodown --body-only
+printf 'ab\ncd\n' | cirodown > tmp.html
 ``
-or install the latest master globally on your machine:
-``
-git clone https://github.com/cirosantilli/cirodown
-cd cirodown
-npm link
-npm link cirodown
-./build-sass
-``
-You can now run the `cirodown` command from any directory in your computer. Furthermore, this produces a symlink so that any changes made to the Git source tree will automaticlly be used, see also: https://stackoverflow.com/questions/28440893/install-a-locally-developed-npm-package-globally
+You almost never want to do this except when \x[developing-cirodown], as it won't be clear what version of `cirodown` the document should be compiled with. Just be a good infant and use Cirodown \x[play-with-the-template][with the template] that contains a `package.json` via `npx`, OK?
 
-To start a new project with a minimal sane template \x[generate][use `--generate`] and then \x[publish-to-github-pages][publish it to GitHub with `--publish`]:
-``
-mkdir -p cirodown-generate
-cd cirodown-generate
-cirodown --generate
-git init
-git remote add origin git@github.com:cirosantilli/cirodown-generate.git
-git add .
-git commit -m 'First commit'
-cirodown --publish
-``
-Or to start with a more complex template suitable for multifile projects use \x[generate-multifile][use `--generate-multifile`] instead:
-``
-cirodown --generate-multifile
-``
-Previews of the output of those templates can be seen at:
-* `--generate`:
-  * live: http://cirosantilli.com/cirodown-generate/
-  * source: https://github.com/cirosantilli/cirodown-generate
-* `--generate-multifile`
-  * live:
-    * http://cirosantilli.com/cirodown-generate-multifile/
-    * http://cirosantilli.com/cirodown-generate-multifile/not-readme
-  * source: https://github.com/cirosantilli/cirodown-generate-multifile
-
-Render all `.ciro` files from the master of this project to separate files, e.g. `README.ciro` to `index.html`, `not-readme.ciro` to `not-readme.html` and so on:
-``
-./cirodown .
-xdg-open index.html
-xdg-open not-readme.html
-``
-or render README.ciro and all \x[include]{p} into a single HTML page with \x[embed-includes] and view it (e.g. both `README.ciro` and `not-readme.ciro` will be included in `index.html`):
-``
-./cirodown --embed-includes .
-xdg-open index.html
-``
-or render instead as one fully offline standalone HTML file that can be given directly to readers by adding \x[embed-resources] as well:
-``
-./cirodown --embed-resources --embed-includes README.ciro
-``
-and give `index.html` to the reader.
+To run master globally for development see: \x[run-cirodown-master]{full}.
 
 Try out the JavaScript API with \a[api_hello.js]:
 ``
 npm install cirodown
 ./api_hello.js
-``
-
-The `npm link` commands allow you to make changes to the code without re-installing the package all the time for development! Try hacking \a[cirodown] to see it. Just remember that if you add a new dependency, you must redo the symlinking business:
-``
-npm install <dependency>
-npm link
-npm link cirodown
-``
-Asked if there is a better way at: https://stackoverflow.com/questions/59389027/how-to-interactively-test-the-executable-of-an-npm-node-js-package-during-develo[]. The symlink business can be undone with:
-``
-npm unlink
-rm node_modules/cirodown
 ``
 
 = Design goals
@@ -1212,7 +1232,7 @@ renders something like:
 
 I like to say \a[#gnu-debugger][GDB] because it is shorter than \x[#gnu-debugger][GNU Debugger].
 ``
-Furthermore, if `--split-headers` is used, a nother file is generated:
+Furthermore, if `--split-headers` is used, another file is generated:
 ``
 gdb.html
 ``
@@ -3647,18 +3667,20 @@ Keep in mind that certain things can never be embedded, e.g.:
 = `--generate`
 {parent=cirodown-executable-options}
 
-Generate a simple repository template for a new project.
+Generate the repository template present at: https://github.com/cirosantilli/cirodown-template-simple
 
-This includes common files that almost all projects will want to have, e.g.:
-* `package.json` specifying the Cirodown version
-* `.gitignore` to prevent output from being committed accidentally
-
-The output provides a hello world setup that is immediately ready to be published e.g. \x[publish-to-github-pages][to GitHub pages].
+End users almost never want this, because it means that to have a sane setup you need to:
+* install Cirodown globally with `npm install -g cirodown`
+* generate the template
+* then install Cirodown locally again with `npm install`
+so maybe we should just get rid of that option and just ensure that we can provide an up-to-date working template for the latest relase.
 
 = `--generate-multifile`
 {parent=cirodown-executable-options}
 
-Like \x[generate][`--generate`], but generate a more complex template that serves as a good starting point for a multifile website.
+Generate the repository template present at: https://github.com/cirosantilli/cirodown-template
+
+Like \x[generate], but generate a more complex template that serves as a good starting point for a multifile website.
 
 = `--help-macros`
 {parent=cirodown-executable-options}
@@ -4531,6 +4553,38 @@ error: tmp.ciro:5:3: cross reference to unknown id: "b"
 = Developing Cirodown
 {parent=cirodown}
 
+= Run Cirodown master
+{parent=cirodown}
+
+Install master globally on your machine:
+``
+git clone https://github.com/cirosantilli/cirodown
+cd cirodown
+npm link
+npm link cirodown
+npm run build-assets
+``
+You can now run the `cirodown` command from any directory in your computer, for example to convert the cirodown documentation itself:
+``
+cirodown .
+``
+
+`npm link` produces a symlink so that any changes made to the Git source tree will automatically be visible globally, see also: https://stackoverflow.com/questions/28440893/install-a-locally-developed-npm-package-globally
+
+As mentioned at \x[useless-knowledge], most users don't want global installations of Cirodown. But this can be handy during development, as you can immediately see how your changes to Cirodown source code affect your complex example of interest. For example, Ciro developed a lot of Cirodown by hacking https://github.com/cirosantilli/cirosantilli.github.io directly with Cirodown `master`.
+
+Just remember that if you add a new dependency, you must redo the symlinking business:
+``
+npm install <dependency>
+npm link
+npm link cirodown
+``
+Asked if there is a better way at: https://stackoverflow.com/questions/59389027/how-to-interactively-test-the-executable-of-an-npm-node-js-package-during-develo[]. The symlink business can be undone with:
+``
+npm unlink
+rm node_modules/cirodown
+``
+
 = Test system
 {parent=developing-cirodown}
 
@@ -4824,10 +4878,22 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 = Release procedure
 {parent=developing-cirodown}
 
-Make sure tests pass:
+= Pre-release testing
+{parent=release-procedure}
+
+Make sure that \x[test-system][the tests] pass:
 ``
 npm test
 ``
+
+Check that this repository renders fine:
+``
+cirodown -S .
+xdg-open index.html
+``
+
+= Do the release
+{parent=release-procedure}
 
 Manually update the \a[package.json] version:
 ``
@@ -4840,6 +4906,11 @@ git add -u
 t=0.7.0
 git commit -m "$t"
 git tag -m "$t" "$t"
+``
+
+Update the templates:
+
+``
 git push --follow-tags
 npm publish
 ``

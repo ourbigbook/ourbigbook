@@ -4597,9 +4597,6 @@ Nuke the database and generate a demo database:
 = Dependency organization
 {parent=heroku-deployment}
 
-= Dependency organization
-{parent=heroku-deployment}
-
 On the toplevel we have:
 * `.`: Cirodown package
 * `web`: \x[dynamic-website] package that depends on the local Cirodown package through relative path `..`

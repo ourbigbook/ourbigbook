@@ -983,7 +983,8 @@ function convert(
     options = {};
   }
   if (!('body_only' in options)) { options.body_only = false; }
-  if (!('css' in options)) { options.css = ''; }
+  if (!('template_vars' in options)) { options.template_vars = {}; }
+  if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
   if (!('from_include' in options)) { options.from_include = false; }
   if (!('include_path_set' in options)) { options.include_path_set = new Set(); }
   if (!('id_provider' in options)) {
@@ -2692,9 +2693,9 @@ const DEFAULT_MACRO_LIST = [
         const { Liquid } = require('liquidjs');
         const render_env = {
           body: body,
-          style: context.options.css,
           title: convert_arg(title, context),
         };
+        Object.assign(render_env, context.options.template_vars);
         ret = (new Liquid()).parseAndRenderSync(template, render_env);
       }
       return ret;

@@ -2685,6 +2685,17 @@ assert_convert_ast('toplevel scope gets removed from IDs in the file',
     ],
   }
 );
+assert_convert_ast('x leading slash to escape scopes works across files',
+  `\\x[/notindex]`,
+  undefined,
+  {
+    convert_before: ['notindex.ciro'],
+    filesystem: {
+     'notindex.ciro': `= Notindex
+`,
+    },
+  }
+);
 
 // Headers.
 assert_convert_ast('header simple',

@@ -3910,11 +3910,12 @@ async function parse(tokens, options, context, extra_returns={}) {
   const line_to_id_array = [];
   context.line_to_id = function(line) {
     let index = binary_search(line_to_id_array,
-      [line, undefined], binary_search_line_to_id_array_fn);
+      [line + 1, undefined], binary_search_line_to_id_array_fn);
     if (index < 0) {
       index = -(index + 1)
     }
-    if (index == line_to_id_array.length) {
+    index -= 1
+    if (index === line_to_id_array.length) {
       if (line_to_id_array.length > 0) {
         index = line_to_id_array.length - 1;
       } else {

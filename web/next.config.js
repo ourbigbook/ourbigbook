@@ -3,7 +3,7 @@
 module.exports = {
   eslint: {
     // Next.js 11 enables it by defualt, which is great. Being naughty until I get
-    // the patience to fix i itt.
+    // the patience to fix i it.
     ignoreDuringBuilds: true,
   },
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {

@@ -3174,11 +3174,17 @@ $$
 
 \\x[h2][link to toplevel subheader]
 
+\\Include[subdir/included-by-subdir-index]
+
 == Index h2
 `,
   'subdir/notindex.ciro': `= Subdir notindex
 
 == Notindex h2
+`,
+  'subdir/included-by-subdir-index.ciro': `= Included by subdir index
+
+== Included by subdir index h2
 `,
   'cirodown.json': `{}\n`,
 };

@@ -3,6 +3,13 @@
 
 == Issues
 
+=== Store auto-formated bigb source on web
+{tag=Bug}
+
+We are auto-formatting locally for splitting and to get rid of includes.
+
+So we need to also format on web in order for content caching to work.
+
 === Header followed by paragraph without blank line does not split correctly
 {tag=Bug}
 

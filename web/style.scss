@@ -124,7 +124,7 @@ div.article-page {
       .username {
         font-size: 1.4em;
         img.profile-thumb {
-          $size: 3.0em;
+          $size: 1.5em;
           height: $size;
           width: $size;
         }
@@ -136,7 +136,7 @@ div.article-page {
         font-size: 1.5em;
       }
     }
-    div.article-actions {
+    div.article-info-3 {
       margin-bottom: 10px;
       button, a.btn {
         margin-right: 3px;

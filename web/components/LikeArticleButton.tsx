@@ -23,7 +23,7 @@ const LikeArticleButton = ({
     buttonTextMaybe = 'Like'
   }
   if (showText) {
-    buttonText = ' ' + buttonTextMaybe + ' Article '
+    buttonText = ' ' + buttonTextMaybe
   } else {
     buttonText = ''
   }

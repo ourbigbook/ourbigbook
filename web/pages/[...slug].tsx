@@ -102,6 +102,7 @@ const ArticlePage = ({
         <div className="banner content-not-cirodown">
           <div className="article-meta">
             <div className="article-info">
+              { 'Author: ' }
               <UserLinkWithImage user={article.author} />
               {' '}
               <FollowUserButtonContext.Provider value={{
@@ -109,22 +110,6 @@ const ArticlePage = ({
               }}>
                 <FollowUserButton user={article.author} showUsername={false} />
               </FollowUserButtonContext.Provider>
-              <Maybe test={canModify}>
-                <span>
-                  <CustomLink
-                    href={routes.articleEdit(article.slug)}
-                    className="btn"
-                  >
-                    <i className="ion-edit" /> Edit
-                  </CustomLink>
-                  <button
-                    className="btn"
-                    onClick={handleDelete}
-                  >
-                    <i className="ion-trash-a" /> Delete
-                  </button>
-                </span>
-              </Maybe>
             </div>
             <div className="article-info article-info-2">
               {topicArticleCount > 1 &&
@@ -141,7 +126,7 @@ const ArticlePage = ({
               }}>
                 <LikeArticleButton
                   article={article}
-                  showText={false}
+                  showText={true}
                 />
               </LikeArticleButtonContext.Provider>
               {' Created: '}
@@ -156,6 +141,23 @@ const ArticlePage = ({
                   </span>
                 </>
               }
+              <Maybe test={canModify}>
+                {' '}
+                <span>
+                  <CustomLink
+                    href={routes.articleEdit(article.slug)}
+                    className="btn"
+                  >
+                    <i className="ion-edit" /> Edit
+                  </CustomLink>
+                  <button
+                    className="btn"
+                    onClick={handleDelete}
+                  >
+                    <i className="ion-trash-a" /> Delete
+                  </button>
+                </span>
+              </Maybe>
             </div>
           </div>
         </div>

@@ -8,6 +8,7 @@ import CustomLink from 'front/CustomLink'
 import { cant } from 'front/cant'
 import { formatDate } from 'front/date'
 import UserLinkWithImage from 'front/UserLinkWithImage'
+import ourbigbook from 'ourbigbook'
 
 const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
   const router = useRouter();
@@ -18,7 +19,7 @@ const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
     await webApi.commentDelete((slug as string[]).join('/'), issueNumber, comment.number)
     setComments(comments => comments.filter(comment => comment.id !== id))
   };
-  const targetId = `comment${config.idSep}${comment.number}`
+  const targetId = `${config.commentIdPrefix}${comment.number}`
   return (
     <div className="comment" id={targetId}>
       <div className="comment-header">

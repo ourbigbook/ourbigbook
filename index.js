@@ -112,7 +112,7 @@ class AstNode {
     // For elements that have an id.
     // {String} or undefined.
     // Includes scope. Ideally, we should remove that requirement to not duplicate.
-    // the information. // But it will require a large hard refactor... lazy.
+    // the information. But it will require a large hard refactor... lazy.
     this.id = options.id;
 
     // Current running scope. This is inherited from the scope of the ancestor headers.
@@ -775,11 +775,7 @@ class IdProvider {
       ) {
         let parent_scope_id = calculate_scope(header_tree_node.parent_node.ast, context);
         if (parent_scope_id !== undefined) {
-          let resolved_scope_id = this.get_noscope(
-            parent_scope_id + Macro.HEADER_SCOPE_SEPARATOR + id, context);
-          if (resolved_scope_id !== undefined) {
-            return resolved_scope_id;
-          }
+          parent_scope_id += Macro.HEADER_SCOPE_SEPARATOR
           for (let i = parent_scope_id.length - 1; i > 0; i--) {
             if (parent_scope_id[i] === Macro.HEADER_SCOPE_SEPARATOR) {
               let resolved_scope_id = this.get_noscope(

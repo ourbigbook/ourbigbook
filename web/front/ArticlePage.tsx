@@ -72,7 +72,9 @@ const ArticlePageHoc = (isIssue) => {
                 <CustomLink
                   href={routes.topicArticlesTop(article.topicId)}
                 >
-                  <i className="ion-ios-people" /> {topicArticleCount - 1}<span className="mobile-hide"> article{topicArticleCount - 1 > 1 ? 's' : ''}</span> by other authors<span className="mobile-hide"> about "{article.titleRender}"</span>
+                  <i className="ion-ios-people" /> {topicArticleCount - 1}<span className="mobile-hide"> article{
+                    topicArticleCount - 1 > 1 ? 's' : ''}</span> by others<span className="mobile-hide"> about "<span
+                     className="ourbigbook-title" dangerouslySetInnerHTML={{ __html: article.titleRender }} />"</span>
                 </CustomLink>
               }
               {showOthers && showCreateMyOwn && <>{' '}</> }

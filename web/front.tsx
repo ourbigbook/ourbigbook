@@ -21,7 +21,7 @@ export function decapitalize(s) {
 }
 
 export function DiscussionAbout({ article }) {
-  return <h1>Discussion: <a href={routes.articleView(article.slug)}>"{ article.titleRender }" by { article.author.displayName }</a></h1>
+  return <h1>Discussion: <a href={routes.articleView(article.slug)}>"<span className="comment-body ourbigbook-title" dangerouslySetInnerHTML={{ __html: article.titleRender }} />" by { article.author.displayName }</a></h1>
 }
 
 export function slugFromArray(arr, { username }: { username?: boolean } = {}) {

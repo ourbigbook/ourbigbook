@@ -2213,7 +2213,7 @@ assert_lib_ast('link: auto insane space start and end',
       t(' b'),
     ]),
   ]
-);
+)
 assert_lib_ast('link: simple to local file that exists',
   'a \\a[local-path.txt] b\n',
   [
@@ -3546,7 +3546,7 @@ assert_lib_ast('x: cross reference magic insane to scope',
     ],
   }
 );
-assert_lib_ast('cross reference magic insane to header file argument',
+assert_lib_ast('x: cross reference magic insane to header file argument',
   `= Notindex
 
 <path/to/my_file.jpg>{file}
@@ -3564,6 +3564,66 @@ assert_lib_ast('cross reference magic insane to header file argument',
     },
   }
 );
+assert_lib_ast('x: topic link: basic insane',
+  `a #Dogs b\n`,
+  [
+    a('P', [
+      t('a '),
+      a('x', undefined, {
+        href: [t('#Dogs')],
+        magic: [],
+      }),
+      t(' b'),
+    ]),
+  ],
+  {
+    assert_xpath_stdout: [
+      "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/dog' and text()='Dogs']",
+    ]
+  },
+)
+assert_lib_ast('x: topic link: insane escape',
+  'a \\#Dogs b\n',
+  [
+    a('P', [
+      t('a #Dogs b'),
+    ]),
+  ],
+)
+assert_lib('x: topic link: sane',
+  {
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': `= tmp
+
+\\x[#Without Magic]
+
+\\x[#With Magic]{magic}
+
+\\x[#With Magic And Content][My Content]{magic}
+
+\\x[#Many Dogs]{magic}
+
+\\x[#Many Cats]{magic}{p=1}
+
+<#With Magic Insane>
+
+== Without Magic
+{id=\\#Without Magic}
+`
+    },
+    assert_xpath: {
+      'index.html': [
+        "//x:div[@class='p']//x:a[@href='##Without Magic' and text()='without Magic']",
+        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/with-magic' and text()='With Magic']",
+        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/with-magic-and-content' and text()='My Content']",
+        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/with-magic-insane' and text()='With Magic Insane']",
+        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/many-dog' and text()='Many Dogs']",
+        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/many-cats' and text()='Many Cats']",
+      ],
+    },
+  },
+)
 assert_lib_ast('x: cross reference c simple',
   `= Tmp
 

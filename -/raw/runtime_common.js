@@ -1,0 +1,289 @@
+/** This files contains functionality that is shared between
+ * ourbigbook_runtime and the main conversion codebase.
+ *
+ * The main goal of having this separate file is to prevent the
+ * entire conversion codebase from going into the runtime code
+ * to reduce what readers need to download each time.
+ *
+ * Maybe there is a way to get webpack to do that pruning for us,
+ * but let's just be dumb this time.
+ */
+
+const lodash = require('lodash')
+
+const AT_MENTION_CHAR = '@'
+exports.AT_MENTION_CHAR = AT_MENTION_CHAR
+const GREEK_MAP = {
+  '\u{03b1}': 'alpha',
+  '\u{0391}': 'Alpha',
+  '\u{03b2}': 'beta',
+  '\u{0392}': 'Beta',
+  '\u{03b3}': 'gamma',
+  '\u{0393}': 'Gamma',
+  '\u{03b4}': 'delta',
+  '\u{0394}': 'Delta',
+  '\u{03b5}': 'epsilon',
+  '\u{0395}': 'Epsilon',
+  '\u{03b6}': 'zeta',
+  '\u{0396}': 'Zeta',
+  '\u{03b7}': 'eta',
+  '\u{0397}': 'Eta',
+  '\u{03b8}': 'theta',
+  '\u{0398}': 'Theta',
+  '\u{03b9}': 'iota',
+  '\u{0399}': 'Iota',
+  '\u{03ba}': 'kappa',
+  '\u{039a}': 'Kappa',
+  '\u{03bb}': 'lambda',
+  '\u{039b}': 'Lambda',
+  '\u{03bc}': 'mu',
+  '\u{039c}': 'Mu',
+  '\u{03bd}': 'nu',
+  '\u{039d}': 'Nu',
+  '\u{03be}': 'xi',
+  '\u{039e}': 'Xi',
+  '\u{03bf}': 'omicron',
+  '\u{039f}': 'Omicron',
+  '\u{03c0}': 'pi',
+  '\u{03a0}': 'Pi',
+  '\u{03c1}': 'rho',
+  '\u{03a1}': 'Rho',
+  '\u{03c3}': 'sigma',
+  '\u{03a3}': 'Sigma',
+  '\u{03c4}': 'tau',
+  '\u{03a4}': 'Tau',
+  '\u{03c5}': 'upsilon',
+  '\u{03a5}': 'Upsilon',
+  '\u{03c6}': 'phi',
+  '\u{03a6}': 'Phi',
+  '\u{03c7}': 'chi',
+  '\u{03a7}': 'Chi',
+  '\u{03c8}': 'psi',
+  '\u{03a8}': 'Psi',
+  '\u{03c9}': 'omega',
+  '\u{03a9}': 'Omega',
+}
+const HEADER_SCOPE_SEPARATOR = '/'
+exports.HEADER_SCOPE_SEPARATOR = HEADER_SCOPE_SEPARATOR
+const NORMALIZE_PUNCTUATION_CHARACTER_MAP = {
+  '%': 'percent',
+  '&': 'and',
+  '+': 'plus',
+  '@': 'at',
+  '\u{2212}': 'minus',
+}
+const ID_SEPARATOR = '-'
+exports.ID_SEPARATOR = ID_SEPARATOR
+
+const THEME_ATTRIBUTE = 'data-ourbigbook-theme'
+exports.THEME_ATTRIBUTE = THEME_ATTRIBUTE
+const THEME_DARK = 'dark'
+exports.THEME_DARK = THEME_DARK
+const THEME_LIGHT = 'light'
+exports.THEME_LIGHT = THEME_LIGHT
+const THEME_STORAGE_KEY = 'ourbigbook-theme'
+exports.THEME_STORAGE_KEY = THEME_STORAGE_KEY
+const THEME_TOGGLE_CLASS = 'ourbigbook-theme-toggle'
+exports.THEME_TOGGLE_CLASS = THEME_TOGGLE_CLASS
+const THEME_TOGGLE_ICON_CLASS = 'ourbigbook-theme-toggle-icon'
+exports.THEME_TOGGLE_ICON_CLASS = THEME_TOGGLE_ICON_CLASS
+const THEME_TOGGLE_LABEL_CLASS = 'ourbigbook-theme-toggle-label'
+exports.THEME_TOGGLE_LABEL_CLASS = THEME_TOGGLE_LABEL_CLASS
+
+const TOC_STATE_CLOSED = 'closed'
+exports.TOC_STATE_CLOSED = TOC_STATE_CLOSED
+const TOC_STATE_OPEN = 'open'
+exports.TOC_STATE_OPEN = TOC_STATE_OPEN
+const TOC_STATE_SUMMARIZED = 'summarized'
+exports.TOC_STATE_SUMMARIZED = TOC_STATE_SUMMARIZED
+
+function tocClickNextState(parentClosed, directChildren) {
+  if (parentClosed) {
+    return TOC_STATE_OPEN
+  }
+  if (directChildren.every(child => !child.hasChildren || child.closed)) {
+    return TOC_STATE_CLOSED
+  }
+  return TOC_STATE_SUMMARIZED
+}
+exports.tocClickNextState = tocClickNextState
+
+function getStoredTheme(storage=window.localStorage) {
+  try {
+    return storage.getItem(THEME_STORAGE_KEY) === THEME_DARK ? THEME_DARK : THEME_LIGHT
+  } catch (_) {
+    return THEME_LIGHT
+  }
+}
+exports.getStoredTheme = getStoredTheme
+
+function themeToggleLabel(theme) {
+  return theme === THEME_DARK ? 'Light theme' : 'Dark theme'
+}
+exports.themeToggleLabel = themeToggleLabel
+
+function themeToggleIcon(theme) {
+  // Font Awesome solid sun and moon.
+  return String.fromCharCode(theme === THEME_DARK ? 0xf185 : 0xf186)
+}
+exports.themeToggleIcon = themeToggleIcon
+
+function updateThemeToggleButtons(theme, doc=document) {
+  for (const button of doc.getElementsByClassName(THEME_TOGGLE_CLASS)) {
+    if (button.getElementsByClassName) {
+      const icons = button.getElementsByClassName(THEME_TOGGLE_ICON_CLASS)
+      const labels = button.getElementsByClassName(THEME_TOGGLE_LABEL_CLASS)
+      if (icons.length && labels.length) {
+        icons[0].textContent = themeToggleIcon(theme)
+        labels[0].textContent = themeToggleLabel(theme)
+        continue
+      }
+    }
+    button.textContent = `${themeToggleIcon(theme)} ${themeToggleLabel(theme)}`
+  }
+}
+exports.updateThemeToggleButtons = updateThemeToggleButtons
+
+function setTheme(theme, { doc=document, persist=true, storage=window.localStorage }={}) {
+  if (theme === THEME_DARK) {
+    doc.documentElement.setAttribute(THEME_ATTRIBUTE, THEME_DARK)
+  } else {
+    theme = THEME_LIGHT
+    doc.documentElement.removeAttribute(THEME_ATTRIBUTE)
+  }
+  if (persist) {
+    try {
+      storage.setItem(THEME_STORAGE_KEY, theme)
+    } catch (_) {}
+  }
+  updateThemeToggleButtons(theme, doc)
+  const giscusTheme = theme === THEME_DARK ? 'dark_high_contrast' : 'light'
+  const giscusScript = doc.querySelector('script[src="https://giscus.app/client.js"]')
+  if (giscusScript) {
+    giscusScript.setAttribute('data-theme', giscusTheme)
+  }
+  const giscusFrame = doc.querySelector('iframe.giscus-frame')
+  if (giscusFrame && giscusFrame.contentWindow) {
+    giscusFrame.contentWindow.postMessage({
+      giscus: { setConfig: { theme: giscusTheme } },
+    }, 'https://giscus.app')
+  }
+  return theme
+}
+exports.setTheme = setTheme
+
+function toggleTheme(opts={}) {
+  const doc = opts.doc || document
+  const current = doc.documentElement.getAttribute(THEME_ATTRIBUTE) === THEME_DARK
+    ? THEME_DARK
+    : THEME_LIGHT
+  return setTheme(current === THEME_DARK ? THEME_LIGHT : THEME_DARK, opts)
+}
+exports.toggleTheme = toggleTheme
+
+function themeInitJavaScript() {
+  return `(function(){try{if(localStorage.getItem('${THEME_STORAGE_KEY}')==='${THEME_DARK}')document.documentElement.setAttribute('${THEME_ATTRIBUTE}','${THEME_DARK}')}catch(e){}})()`
+}
+exports.themeInitJavaScript = themeInitJavaScript
+
+function themeToggleHtml() {
+  return `<button type="button" class="${THEME_TOGGLE_CLASS}" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ${THEME_TOGGLE_ICON_CLASS}" aria-hidden="true">&#xf186;</span> <span class="${THEME_TOGGLE_LABEL_CLASS}">${themeToggleLabel(THEME_LIGHT)}</span></button>`
+}
+exports.themeToggleHtml = themeToggleHtml
+
+/** https://stackoverflow.com/questions/14313183/javascript-regex-how-do-i-check-if-the-string-is-ascii-only/14313213#14313213 */
+function isAscii(str) {
+  return /^[\x00-\x7F]*$/.test(str);
+}
+
+// https://docs.ourbigbook.com#ascii-normalization
+function normalizeLatinCharacter(c) {
+  c = lodash.deburr(c)
+  if (c in GREEK_MAP) {
+    return ID_SEPARATOR + GREEK_MAP[c] + ID_SEPARATOR
+  }
+  switch(c) {
+    // en-dash
+    case '\u{2013}':
+    // em-dash
+    case '\u{2014}':
+      return ID_SEPARATOR
+  }
+  return c
+}
+
+function normalizePunctuationCharacter(c) {
+  if (c in NORMALIZE_PUNCTUATION_CHARACTER_MAP) {
+    return ID_SEPARATOR + NORMALIZE_PUNCTUATION_CHARACTER_MAP[c] + ID_SEPARATOR
+  } else {
+    return c
+  }
+}
+
+/** A good default-ish title-to-id. Ideally we should also
+ * record the convert options in a Js variable and use those exact same options here
+ * to get a more precise search. But this will be good enough for now. */
+function titleToId(title, options={}) {
+  let {
+    keepScopeSep,
+    magic,
+    normalizeLatin,
+    normalizePunctuation,
+    removeLeadingAt,
+  } = options
+  if (keepScopeSep === undefined) {
+    keepScopeSep = false
+  }
+  if (magic === undefined) {
+    magic = true
+  }
+  if (normalizeLatin === undefined) {
+    normalizeLatin = true
+  }
+  if (normalizePunctuation === undefined) {
+    normalizePunctuation = true
+  }
+  if (removeLeadingAt === undefined) {
+    removeLeadingAt = true
+  }
+  const new_chars = []
+  let first = true
+  for (let c of title) {
+    if (normalizeLatin) {
+      c = normalizeLatinCharacter(c)
+    }
+    if (
+      normalizePunctuation &&
+      !(
+        first &&
+        c === AT_MENTION_CHAR &&
+        magic &&
+        removeLeadingAt
+      )
+    ) {
+      c = normalizePunctuationCharacter(c)
+    }
+    c = c.toLowerCase()
+    const scope_sep = keepScopeSep ? HEADER_SCOPE_SEPARATOR : ''
+    const ok_chars_regexp = new RegExp(`[a-z0-9-${scope_sep}]`)
+    if (
+      !isAscii(c) ||
+      ok_chars_regexp.test(c)
+    ) {
+      new_chars.push(c)
+    } else {
+      new_chars.push(ID_SEPARATOR)
+    }
+    first = false
+  }
+  return new_chars.join('')
+    .replace(new RegExp(ID_SEPARATOR + '+', 'g'), ID_SEPARATOR)
+    .replace(new RegExp('^' + ID_SEPARATOR + '+'), '')
+    .replace(new RegExp(ID_SEPARATOR + '+$'), '')
+}
+exports.titleToId = titleToId
+
+/* After this timeout, assume use stopped typing and start making network requests / error messages.
+ * This is to reduce flickering and the number of network requests. */
+const USER_FINISHED_TYPING_MS = 200
+exports.USER_FINISHED_TYPING_MS = USER_FINISHED_TYPING_MS

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -eu
+publish_out_dir="$1"
+npm run build-assets
+
+# Hack the editor resources to work on the deployment.
+#
+# It is just too sweet to not have to rebuild this HTML from a proper template
+# when hacking the editor locally.
+#
+# The other alternative would be to keep deployed resources under _obb/
+# but that makes all users' repos ugly.
+#
+# So hack it is. That's how we do things around here.
+editor="${publish_out_dir}/editor.html"
+#sed -i 's/href="_obb\/ourbigbook.css"/href="ourbigbook.css"/' "$editor"
+#sed -i 's/src="_obb\/ourbigbook.js"/src="ourbigbook.js"/' "$editor"
+#sed -i 's/src="_obb\/ourbigbook_runtime.js"/src="ourbigbook_runtime.js"/' "$editor"

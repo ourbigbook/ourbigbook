@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>List - Ciro Santilli</title>
+<meta property="og:title" content="List - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/-/raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/list">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="-/raw/main.css">
+<link rel="icon" href="-/raw/logo-circle.svg" type="image/svg+xml">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="-/raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="-/raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="list"><div class="notnav"><h1><a href="">List <span class="meta">(<code>* </code>, <code>\L</code>, <code>\Ul</code>, <code>\Ol</code>)</span></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a></div><div class="nav"><span class="tags"> Tags: <a href=".#macro-with-shorthand-syntax">Macro with shorthand syntax</a></span><a class="nosplit" href=".#list"></a><span class="metrics"><span class="wcntr"> Words: 345</span></span></div></nav></div><div class="p" id="-/1609"><a href=".#macro-shorthand-syntax">Shorthand</a> with <code>* </code> (asterisk space):<div class="code" id="-/1610"><div><pre><code>* a
+* b
+* c</code></pre></div></div><div class="p" id="-/1611">which renders as:</div><div><blockquote id="-/1612"><div class="list"><ul id="-/1613"><li id="-/1614">a</li><li id="-/1615">b</li><li id="-/1616">c</li></ul></div></blockquote></div></div><div class="p" id="-/1617">Equivalent saner with <a href=".#auto-parent">implicit <code>ul</code> container</a>:<div class="code" id="-/1618"><div><pre><code>\L[a]
+\L[b]
+\L[c]</code></pre></div></div><div class="p" id="-/1619">which renders as:</div><div><blockquote id="-/1620"><div class="list"><ul id="-/1621"><li id="-/1622">a</li><li id="-/1623">b</li><li id="-/1624">c</li></ul></div></blockquote></div></div><div class="p" id="-/1625">Equivalent fully sane with explicit container:<div class="code" id="-/1626"><div><pre><code>\Ul[
+\L[a]
+\L[b]
+\L[c]
+]</code></pre></div></div><div class="p" id="-/1627">which renders as:</div><div><blockquote id="-/1628"><div class="list"><ul id="-/1629"><li id="-/1630">a</li><li id="-/1631">b</li><li id="-/1632">c</li></ul></div></blockquote></div></div><div class="p" id="-/1633">The explicit container is required if you want to pass extra arguments properties to the <code>ul</code> list macro, e.g. a title and an ID: <a href="#list-my-id">Ul 1</a>:<div class="code" id="-/1634"><div><pre><code>\Ul
+{id=list-my-id}
+[
+\L[a]
+\L[b]
+\L[c]
+]</code></pre></div></div><div class="p" id="-/1635">which renders as:</div><div><blockquote id="-/1636"><div class="list"><div id="list-my-id"><div><div class="caption"><a href="#list-my-id"><span class="caption-prefix">Ul 1</span></a></div><ul><li id="-/1637">a</li><li id="-/1638">b</li><li id="-/1639">c</li></ul></div></div></div></blockquote></div>This is the case because without the explicit container in an implicit <code>ul</code> list, the arguments would stick to the last list item instead of the list itself.</div><div class="p" id="-/1640">It is also required if you want ordered lists:<div class="code" id="-/1641"><div><pre><code>\Ol[
+\L[first]
+\L[second]
+\L[third]
+]</code></pre></div></div><div class="p" id="-/1642">which renders as:</div><div><blockquote id="-/1643"><div class="list"><ol id="-/1644"><li id="-/1645">first</li><li id="-/1646">second</li><li id="-/1647">third</li></ol></div></blockquote></div></div><div class="p" id="-/1648">Shorthand nested list with two space indentation:<div class="code" id="-/1649"><div><pre><code>* a
+  * a1
+  * a2
+  * a2
+* b
+* c</code></pre></div></div><div class="p" id="-/1650">which renders as:</div><div><blockquote id="-/1651"><div class="list"><ul id="-/1652"><li id="-/1653">a<div class="list"><ul id="-/1654"><li id="-/1655">a1</li><li id="-/1656">a2</li><li id="-/1657">a2</li></ul></div></li><li id="-/1658">b</li><li id="-/1659">c</li></ul></div></blockquote></div>The indentation must always be exactly equal to two spaces, anything else leads to errors or unintended output.</div><div class="p" id="-/1660">Equivalent saner nested lists with implicit containers:<div class="code" id="-/1661"><div><pre><code>\L[
+a
+\L[a1]
+\L[a2]
+\L[a2]
+]
+\L[b]
+\L[c]</code></pre></div></div><div class="p" id="-/1662">which renders as:</div><div><blockquote id="-/1663"><div class="list"><ul id="-/1664"><li id="-/1665">a<div class="list"><ul id="-/1666"><li id="-/1667">a1</li><li id="-/1668">a2</li><li id="-/1669">a2</li></ul></div></li><li id="-/1670">b</li><li id="-/1671">c</li></ul></div></blockquote></div></div><div class="p" id="-/1672">Shorthand list item with a paragraph inside of it:<div class="code" id="-/1673"><div><pre><code>* a
+* I have
+
+  Multiple paragraphs.
+
+  * And
+  * also
+  * a
+  * list
+* c</code></pre></div></div><div class="p" id="-/1674">which renders as:</div><div><blockquote id="-/1675"><div class="list"><ul id="-/1676"><li id="-/1677">a</li><li id="-/1678"><div class="p" id="-/1679">I have</div><div class="p" id="-/1680">Multiple paragraphs.</div><div class="list"><ul id="-/1681"><li id="-/1682">And</li><li id="-/1683">also</li><li id="-/1684">a</li><li id="-/1685">list</li></ul></div></li><li id="-/1686">c</li></ul></div></blockquote></div></div><div class="p" id="-/1687">Equivalent sane version:<div class="code" id="-/1688"><div><pre><code>\L[a]
+\L[
+I have
+
+Multiple paragraphs.
+
+\L[And]
+\L[also]
+\L[a]
+\L[list]
+]
+\L[c]</code></pre></div></div><div class="p" id="-/1689">which renders as:</div><div><blockquote id="-/1690"><div class="list"><ul id="-/1691"><li id="-/1692">a</li><li id="-/1693"><div class="p" id="-/1694">I have</div><div class="p" id="-/1695">Multiple paragraphs.</div><div class="list"><ul id="-/1696"><li id="-/1697">And</li><li id="-/1698">also</li><li id="-/1699">a</li><li id="-/1700">list</li></ul></div></li><li id="-/1701">c</li></ul></div></blockquote></div></div><div class="p" id="-/1702">Shorthand lists may be escaped with a backslash as usual:<div class="code" id="-/1703"><div><pre><code>\* paragraph starting with an asterisk.</code></pre></div></div><div class="p" id="-/1704">which renders as:</div><div><blockquote id="-/1705"><div class="p" id="-/1706">* paragraph starting with an asterisk.</div></blockquote></div></div><div class="p" id="-/1707">You can also start shorthand lists immediately at the start of a <a href=".#positional-vs-named-arguments">positional or named argument</a>, e.g.:<div class="code" id="-/1708"><div><pre><code>\P[* a
+* b
+* c
+]</code></pre></div></div><div class="p" id="-/1709">which renders as:</div><div><blockquote id="-/1710"><div class="p" id="-/1711"><div class="list"><ul id="-/1712"><li id="-/1713">a</li><li id="-/1714">b</li><li id="-/1715">c</li></ul></div></div></blockquote></div></div><div class="p" id="-/1716">And now a list outside of <a href=".#ourbigbookexample"><code>\OurBigBookExample</code></a> to test how it looks directly under <a href=".#toplevel">the <code>\Toplevel</code> implicit macro</a>:</div><div class="list"><ul id="-/1717"><li id="-/1718">a</li><li id="-/1719">b</li><li id="-/1720">c</li></ul></div><h2 id="-/ancestors"><a href="#-/ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="-/incoming-links"><a href="#-/incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(6)</span></a></h2><div class="list"><ul><li><a href=".#argument-leading-and-trailing-newline-removal">Argument leading and trailing newline removal</a></li><li><a href=".#auto-parent"><code>Auto_parent</code> macro property</a></li><li><a href=".#escape-characters">Escape characters</a></li><li><a href=".#macro-with-shorthand-syntax">Macro with shorthand syntax</a></li><li><a href=".#ourbigbook-markup-quick-start">OurBigBook Markup quick start</a></li><li><a href=".#table">Table</a></li></ul></div></main>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="-/dir">Website source code</a></div>
+<div>Source code for this page: <a href="-/file/index.bigb">index.bigb</a></div>
+
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+</footer>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

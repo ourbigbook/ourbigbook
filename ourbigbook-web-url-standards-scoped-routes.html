@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>OurBigBook Web URL standards: scoped routes - Ciro Santilli</title>
+<meta property="og:title" content="OurBigBook Web URL standards: scoped routes - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/-/raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/ourbigbook-web-url-standards-scoped-routes">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="-/raw/main.css">
+<link rel="icon" href="-/raw/logo-circle.svg" type="image/svg+xml">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="-/raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="-/raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ourbigbook-web-url-standards-scoped-routes"><div class="notnav"><h1><a href="">OurBigBook Web URL standards: scoped routes</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-web"> OurBigBook Web</a><a href=".#ourbigbook-web-development"> OurBigBook Web development</a><a href=".#ourbigbook-web-architecture"> OurBigBook Web architecture</a><a href=".#ourbigbook-web-url-standards"> OurBigBook Web URL standards</a></div><div class="nav"><a class="nosplit" href=".#ourbigbook-web-url-standards-scoped-routes"></a><span class="metrics"><span class="wcntr"> Words: 378</span></span></div></nav></div><div class="p" id="-/4935">Browser URLs use <code>/-/</code> to separate a user or article <a href=".#element-id">ID</a> from page actions:<div class="list"><ul id="-/4936"><li id="-/4937">global pages: <code>/-/users</code>, <code>/-/articles</code>, <code>/-/files</code></li><li id="-/4938">user pages: <code>/username/-/articles</code>, <code>/username/-/files</code>, <code>/username/-/settings</code></li><li id="-/4939">article pages: <code>/username/my/article/-/discussions</code>, <code>/username/my/article/-/edit</code></li><li id="-/4940">individual <a href=".#ourbigbook-web-discussions">discussions</a>: <code>/username/my/article/-/discussion/1</code></li></ul></div></div><div class="p" id="-/4941">For the user's home article, discussions and comments use <code>/username/-/home/discussions</code> and <code>/username/-/home/comments</code>. This distinguishes them from <code>/username/-/discussions</code> and <code>/username/-/comments</code>, which list content authored by that user. The previous <code>/username/-/article/discussions</code> and <code>/username/-/article/comments</code> URLs permanently redirect to these home article URLs.</div><div class="p" id="-/4942">The <code>-</code> path component is a <a href=".#reserved-id">reserved ID</a> in both article IDs and uploaded file paths, to prevent ambiguity. <code>go</code> remains a reserved username. Old <code>/go/</code> URLs permanently redirect to their new locations, preserving query parameters. Ordinary article URLs and <a href=".#ourbigbook-web-api-standards"><code>/api</code> routes</a> keep their existing forms.</div><div class="p" id="-/4943">File URLs use the same namespace on <a href=".#p-publish">static websites</a> and <a href=".#ourbigbook-web">OurBigBook Web</a>:<div class="list"><ul id="-/4944"><li id="-/4945"><code>/-/file/path</code>: <a href=".#file-output-directory">file preview page</a>; on web, <code>/username/-/file/path</code></li><li id="-/4946"><code>/-/raw/path</code>: <a href=".#raw-directory">original file bytes</a>; on web, <code>/username/-/raw/path</code></li><li id="-/4947"><code>/-/dir/path</code>: <a href=".#dir-directory">directory listing</a>; on web, <code>/username/-/dir/path</code></li></ul></div>Static runtime assets and the <a href=".#browser-editor-with-preview">standalone editor</a> use the <a href=".#obb-directory"><code>/-/obb/</code> directory</a>. Static file preview pages retain their usual <code>.html</code> extension when enabled. Temporary element anchors use <code>#-/1</code>, <code>#-/2</code> and so on. Named page anchors use the same namespace: <code>#-/toc</code>, <code>#-/ancestors</code>, <code>#-/incoming-links</code>, <code>#-/synonyms</code>, <code>#-/tagged</code>, <code>#-/comments</code>, <code>#-/comment-1</code>, and <code>#-/metadata</code>.</div><div class="p" id="-/4948">The web migration <code>21000101000041-reserved-path-namespace.js</code> updates stored file article IDs, references, cached AST paths and local profile image URLs. It preserves uploaded bytes, storage paths, source text and rendered HTML. It runs through the normal <a href=".#ourbigbook-web-database-migration-setup">deployment migration setup</a>; locally, run <code>cd web &amp;&amp; ./bin/sync-db.js</code>. Legacy web <code>/_file/</code>, <code>/_raw/</code> and <code>/_dir/</code> URLs redirect permanently to the new paths.</div><div class="p" id="-/4949">After migrating, rerender articles, discussions and comments to regenerate their links and anchors from source:<div class="code" id="-/4950"><div><pre><code>web/bin/rerender-articles.js
+web/bin/rerender-issues.js
+web/bin/rerender-comments.js</code></pre></div></div>See <a href=".#-/file/web/bin/rerender-articles.js">web/bin/rerender-articles.js</a> for rerender options. Named anchors and comment scopes need no database transformation; <code>21000101000042-named-anchor-namespace.js</code> is retained as a no-op for migration history compatibility.</div><div class="p" id="-/4951">Regenerate static websites with the updated <a href=".#ourbigbook-cli">OurBigBook CLI</a> and <a href=".#force-render"><code>--force-render</code></a> to publish the new paths and temporary anchors. If you keep <code>.bigb</code> sources under <code>_file/</code>, move that source directory to the <a href=".#file-input-directory"><code>-/file/</code> directory</a> before rebuilding. The CLI invalidates cached legacy file IDs automatically, and existing <a href=".#internal-link"><code>\x[_file/path]</code> source references</a> still resolve. Old static URLs require redirects configured on the host if they must remain available.</div><h2 id="-/ancestors"><a href="#-/ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-web-url-standards">OurBigBook Web URL standards</a></li><li><a href=".#ourbigbook-web-architecture">OurBigBook Web architecture</a></li><li><a href=".#ourbigbook-web-development">OurBigBook Web development</a></li><li><a href=".#ourbigbook-web">OurBigBook Web</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="-/synonyms"><a href="#-/synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#ourbigbook-web-url-standards-scoped-routes">OurBigBook Web URL standards: article ID comes last due to slash</a></li></ul></div></main>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="-/dir">Website source code</a></div>
+<div>Source code for this page: <a href="-/file/index.bigb">index.bigb</a></div>
+
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+</footer>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,14 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+	"files.exclude": {
+		"_out": false,
+		"dist": false,
+	},
+	"search.exclude": {
+		"_out": true,
+		"dist": true,
+		"web/.next": true
+	},
+	// Turn off tsc task auto detection since we have the necessary tasks as npm scripts
+	"typescript.tsc.autoDetect": "off"
+}

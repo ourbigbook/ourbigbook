@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>web/pages/[uid]/_file/[...path].tsx - Ciro Santilli</title>
+<meta property="og:title" content="web/pages/[uid]/_file/[...path].tsx - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/-/raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/-/file/web/pages/[uid]/_file/[...path].tsx">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../../-/raw/logo-circle.svg" type="image/svg+xml">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../../../../" class="brand"><img src="../../../../../../-/raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../../-/raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/web/pages/[uid]/_file/[...path].tsx"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">web/pages/[uid]/_file/[...path].tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../../../-/dir">(root)</a> / <a href="../../../../../-/dir/web">web</a> / <a href="../../../../../-/dir/web/pages">pages</a> / <a href="../../../../../-/dir/web/pages/%5Buid%5D">[uid]</a> / <a href="../../../../../-/dir/web/pages/%5Buid%5D/_file">_file</a> / <a href="../../../../../-/raw/web/pages/%5Buid%5D/_file/%5B...path%5D.tsx">[...path].tsx</a></b></div></nav></div><div class="p"><b>web/pages/[uid]/_file/[...path].tsx</b></div><div class="code"><div><pre><code>import React from 'react'
+import { useRouter } from 'next/router'
+
+import { DeleteIcon, MyHead, SeeIcon, UnlistedIcon } from 'front'
+import { webApi } from 'front/api'
+import ArticlePageHoc, { ArticlePageProps } from 'front/ArticlePage'
+import { cant } from 'front/cant'
+import { FileDirectoryHeader } from 'front/DirPage'
+import routes from 'front/routes'
+import { UserType } from 'front/types/UserType'
+
+export { getServerSidePropsFile as getServerSideProps } from 'back/FilePage'
+
+const ArticlePage = ArticlePageHoc()
+
+function FileDeleteButton({ username, path }: { username: string; path: string }) {
+  const router = useRouter()
+  const [deleting, setDeleting] = React.useState(false)
+  const [error, setError] = React.useState('')
+  const pending = React.useRef(false)
+  async function handleDelete() {
+    if (pending.current || !confirm(`Delete ${username}/${path}? This cannot be undone.`)) return
+    pending.current = true
+    setDeleting(true)
+    setError('')
+    try {
+      await webApi.uploadDelete(`${username}/${path}`)
+      // Deleting the last file may remove its parent directory too. The root always exists.
+      await router.push(routes.dir(username))
+    } catch (error) {
+      setError(error.response?.status === 403 ? 'Only admins can delete files.' : 'Could not delete the file. Please try again.')
+    } finally {
+      pending.current = false
+      setDeleting(false)
+    }
+  }
+  return &lt;span&gt;
+    &lt;button type="button" onClick={handleDelete} disabled={deleting}&gt;
+      &lt;DeleteIcon /&gt; {deleting ? 'Deleting…' : 'Delete file'}
+    &lt;/button&gt;
+    {error &amp;&amp; &lt;p role="alert"&gt;{error}&lt;/p&gt;}
+  &lt;/span&gt;
+}
+
+interface FileUpload { username: string; path: string; list: boolean }
+
+function FileActions({ upload, loggedInUser }: { upload: FileUpload; loggedInUser?: UserType }) {
+  const [listed, setListed] = React.useState(upload.list)
+  const [saving, setSaving] = React.useState(false)
+  const [error, setError] = React.useState('')
+  React.useEffect(() =&gt; { setListed(upload.list) }, [upload.list])
+  async function toggleList() {
+    if (saving || (listed &amp;&amp; !confirm('Unlist this file? It will remain accessible by direct URL.'))) return
+    setSaving(true)
+    setError('')
+    try {
+      await webApi.uploadUpdate(`${upload.username}/${upload.path}`, { list: !listed })
+      setListed(!listed)
+    } catch (error) {
+      setError('Could not change file visibility. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+  return &lt;div className="file-actions content-not-ourbigbook"&gt;
+    {!listed &amp;&amp; &lt;&gt;&lt;span className="pill"&gt;&lt;UnlistedIcon /&gt; Unlisted&lt;/span&gt;{' '}&lt;/&gt;}
+    {!cant.editUpload(loggedInUser, upload.username) &amp;&amp; &lt;&gt;
+      &lt;button type="button" className="modal" onClick={toggleList} disabled={saving}&gt;
+        {listed ? &lt;&gt;&lt;UnlistedIcon /&gt; Unlist&lt;/&gt; : &lt;&gt;&lt;SeeIcon /&gt; List&lt;/&gt;}
+      &lt;/button&gt;{' '}
+    &lt;/&gt;}
+    {!cant.deleteUpload(loggedInUser) &amp;&amp; &lt;FileDeleteButton username={upload.username} path={upload.path} /&gt;}
+    {error &amp;&amp; &lt;p role="alert"&gt;{error}&lt;/p&gt;}
+  &lt;/div&gt;
+}
+
+export default function FilePage(props: ArticlePageProps &amp; { fileUpload?: FileUpload; filePreview?: { author: UserType; path: string; render: string } }) {
+  const { filePreview } = props
+  const actions = props.fileUpload &amp;&amp; &lt;FileActions key={`${props.fileUpload.username}/${props.fileUpload.path}`} upload={props.fileUpload} loggedInUser={props.loggedInUser} /&gt;
+  if (!filePreview) return &lt;&gt;{actions}&lt;ArticlePage {...props} /&gt;&lt;/&gt;
+  return &lt;&gt;
+    &lt;MyHead title={`${filePreview.author.username}/${filePreview.path}`} /&gt;
+    &lt;div className="dir-page file-page content-not-ourbigbook"&gt;
+      &lt;FileDirectoryHeader author={filePreview.author} path={filePreview.path} isFile={true} /&gt;
+      {actions}
+      &lt;div className="file-content ourbigbook" dangerouslySetInnerHTML={{ __html: filePreview.render }} /&gt;
+    &lt;/div&gt;
+  &lt;/&gt;
+}
+</code></pre></div></div></main>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../../../../-/dir">Website source code</a></div>
+
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,148 @@
+@import 'ourbigbook.common.scss';
+
+.ourbigbook-editor {
+  display: flex;
+  flex-direction: column;
+  /* https://stackoverflow.com/questions/12989931/body-height-100-displaying-vertical-scrollbar/46847795#46847795
+   * 20 == 2x 10px padding (top + bottom). */
+  height: 100%;
+  .editor-xref-dialog {
+    background-color: $background-color;
+    color: $color;
+    border: 1px solid $button-border-color;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-family: $font-family;
+    width: 640px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+    overflow: auto;
+    padding: 20px;
+    &::backdrop { background: rgba(0, 0, 0, .5); }
+    h2 { margin: 0 0 16px; }
+    input, select {
+      background-color: $background-color;
+      color: $color;
+      border: 1px solid $button-border-color;
+      box-sizing: border-box;
+      display: block;
+      font: inherit;
+      padding: 6px;
+      width: 100%;
+    }
+    input { margin-top: 6px; }
+    .editor-xref-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 16px;
+    }
+    button {
+      background-color: $button-background-color;
+      color: $button-color;
+      border: 1px solid $button-border-color;
+      border-radius: 3px;
+      font: inherit;
+      padding: 4px 10px;
+      cursor: pointer;
+      &:disabled {
+        background-color: $button-disabled-background-color;
+        color: $button-disabled-color;
+        cursor: default;
+      }
+    }
+  }
+  .editor-panes {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+  .editor-toolbar {
+    align-items: center;
+    background-color: $button-background-color;
+    border: 1px solid $button-border-color;
+    border-radius: 3px;
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    font-family: $font-family;
+    gap: 4px;
+    margin-bottom: 5px;
+    padding: 4px;
+    .editor-toolbar-group {
+      align-items: center;
+      display: flex;
+      gap: 2px;
+      &:not(:first-child) {
+        border-left: 1px solid $button-border-color;
+        padding-left: 4px;
+      }
+    }
+    button, select {
+      background-color: $button-background-color;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      color: $button-color;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 24px;
+      min-height: 30px;
+      min-width: 30px;
+      padding: 2px 6px;
+      &:hover:not(:disabled) {
+        background-color: $code-background-color;
+      }
+      &:focus-visible {
+        outline: 2px solid $a-color;
+        outline-offset: 1px;
+      }
+      &:disabled {
+        background-color: $button-disabled-background-color;
+        color: $button-disabled-color;
+        cursor: default;
+      }
+    }
+  }
+  .errorDecoration {
+    background: red;
+    width: 4px !important;
+    margin-left: 3px;
+  }
+  .input {
+    align-items: center;
+    flex: 1 0 auto;
+    height: 100%;
+    margin: 0 5px 0 0;
+    overflow: hidden;
+    width: 50%;
+  }
+  .output {
+    align-items: center;
+    flex: 1 1 auto;
+    height: 100%;
+    margin: 0 0 0 5px;
+    overflow: auto;
+    width: 50%;
+  }
+  .errors {
+    flex: 1 1 auto;
+    height: 100%;
+    overflow: auto;
+    .title {
+      color: $ourbigbook-error-color;
+      font-weight: bold;
+    }
+    &.has-error {
+      padding: 0 1em;
+      width: 50%;
+    }
+    .error {
+      margin-bottom: 0.5em;
+      .loc {
+        cursor: pointer;
+        font-weight: bold;
+      }
+    }
+  }
+}

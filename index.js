@@ -2564,7 +2564,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      let img_attrs = html_convert_attrs(ast, context, ['src', 'alt']);
+      let img_attrs = html_convert_attrs(ast, context, ['src']);
       let figure_attrs = html_convert_attrs_id(ast, context);
       let ret = `<figure${figure_attrs}>\n`
       let href_prefix;
@@ -2572,6 +2572,23 @@ const DEFAULT_MACRO_LIST = [
         href_prefix = this.self_link(ast);
       } else {
         href_prefix = undefined;
+      }
+      let description;
+      if (ast.args.description === undefined) {
+        description = '';
+      } else {
+        description = '. ' + convert_arg(ast.args.description, context);
+      }
+      let source
+      if (ast.args.source === undefined) {
+        source = '';
+      } else {
+        source = `<a ${html_attr('href', convert_arg(ast.args.source, context))}>Source</a>.`;
+        if (description === '') {
+          source = '. ' + source;
+        } else {
+          source = ' ' + source;
+        }
       }
       let src = html_attr('href', convert_arg(ast.args.src, context));
       let alt_arg;
@@ -2594,7 +2611,7 @@ const DEFAULT_MACRO_LIST = [
       ret += `<a${src}><img${img_attrs}${alt}>`;
       ret += `</a>\n`;
       if (has_caption) {
-        ret += `<figcaption>${Macro.x_text(ast, context, {href_prefix: href_prefix})}</figcaption>\n`;
+        ret += `<figcaption>${Macro.x_text(ast, context, {href_prefix: href_prefix})}${description}${source}</figcaption>\n`;
       }
       ret += '</figure>\n';
       return ret;

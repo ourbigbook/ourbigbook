@@ -846,14 +846,23 @@ My paragraph 1.
 
 My paragraph 2.
 `,
-[
-  a('h', undefined, {level: [t('1')], title: [t('My header 1')]}),
-  a('p', [t('My paragraph 1.')]),
-  a('h', undefined, {level: [t('2')], title: [t('My header 2')]}),
-  a('p', [t('My paragraph 2.')]),
-]
+  [
+    a('h', undefined, {level: [t('1')], title: [t('My header 1')]}),
+    a('p', [t('My paragraph 1.')]),
+    a('h', undefined, {level: [t('2')], title: [t('My header 2')]}),
+    a('p', [t('My paragraph 2.')]),
+  ]
 );
-assert_convert_ast('header 7',
+const header_7_expect = [
+  a('h', undefined, {level: [t('1')], title: [t('1')]}),
+  a('h', undefined, {level: [t('2')], title: [t('2')]}),
+  a('h', undefined, {level: [t('3')], title: [t('3')]}),
+  a('h', undefined, {level: [t('4')], title: [t('4')]}),
+  a('h', undefined, {level: [t('5')], title: [t('5')]}),
+  a('h', undefined, {level: [t('6')], title: [t('6')]}),
+  a('h', undefined, {level: [t('7')], title: [t('7')]}),
+];
+assert_convert_ast('header 7 sane',
   `\\h[1][1]
 
 \\h[2][2]
@@ -868,15 +877,35 @@ assert_convert_ast('header 7',
 
 \\h[7][7]
 `,
-[
-  a('h', undefined, {level: [t('1')], title: [t('1')]}),
-  a('h', undefined, {level: [t('2')], title: [t('2')]}),
-  a('h', undefined, {level: [t('3')], title: [t('3')]}),
-  a('h', undefined, {level: [t('4')], title: [t('4')]}),
-  a('h', undefined, {level: [t('5')], title: [t('5')]}),
-  a('h', undefined, {level: [t('6')], title: [t('6')]}),
-  a('h', undefined, {level: [t('7')], title: [t('7')]}),
-]
+  header_7_expect
+);
+// https://github.com/cirosantilli/cirodown/issues/32
+assert_convert_ast('header 7 insane',
+  `= 1
+
+== 2
+
+=== 3
+
+==== 4
+
+===== 5
+
+====== 6
+
+======= 7
+`,
+  header_7_expect
+);
+const header_id_new_line_expect =
+  [a('h', undefined, {level: [t('1')], title: [t('aa')], id: [t('bb')]})];
+assert_convert_ast('header id new line sane',
+  '\\h[1][aa]\n{id=bb}',
+  header_id_new_line_expect,
+);
+assert_convert_ast('header id new line insane',
+  '= aa\n{id=bb}',
+  header_id_new_line_expect,
 );
 assert_error('header must be an integer letters', '\\h[a][b]\n', 1, 3);
 assert_error('header h2 must be an integer toc',

@@ -38,13 +38,13 @@ html, body {
 </head>
 <body>
 <div id="container">
-<div id="input" contenteditable="true" style="white-space:pre-wrap">\h[1][Cirodown hello world]
+<div id="input" contenteditable="true" style="white-space:pre-wrap">= Cirodown hello world
 
 Welcome to Cirodown! Here's the table of contents:
 
 \toc
 
-\h[2][Paragraphs and stuff]
+== Paragraphs, code, math
 
 My first paragraph is amazing!
 
@@ -75,42 +75,7 @@ $$
 {title=This is my favorite equation in the entire world!!!}
 {id=my-favorite-equation}
 
-\h[2][References and headers]
-
-Ciro loves headers!
-
-Reference to a header: \x[paragraphs-and-stuff]. Or if you want to show the section id: \x[paragraphs-and-stuff]{style=full}.
-
-Reference to the following image: \x[fig-my-xi-chrysanthemum].
-
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-{title=Xi Chrysanthemum is a very nice image}
-{id=fig-my-xi-chrysanthemum}
-{source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
-
-\h[3][Unlimited header levels?!]
-
-\h[4][My h4]
-
-\h[5][My h5]
-
-\h[6][My h6]
-
-\h[7][My h7]
-
-\h[8][My h8]
-
-\h[9][My h9]
-
-\h[10][My h10]
-
-\h[11][My h11]
-
-\h[12][My h12]
-
-\h[13][My h13]
-
-\h[2][Lists, tables, quotation]
+== Lists, tables, quotation
 
 Meh, the usual. Insane list:
 * first item
@@ -146,6 +111,41 @@ And a quotation:
 \q[To be or not to be!
 
 Cirodown is the answer.]
+
+== References, headers, images
+
+Ciro loves headers and headers!
+
+Reference to a header: \x[paragraphs-and-stuff]. Or if you want to show the section id: \x[paragraphs-and-stuff]{style=full}.
+
+Reference to the following image: \x[fig-my-xi-chrysanthemum].
+
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+{title=Xi Chrysanthemum is a very nice image}
+{id=fig-my-xi-chrysanthemum}
+{source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
+
+=== Unlimited header levels?!
+
+==== My h4
+
+===== My h5
+
+====== My h6
+
+\h[7][My h7]
+
+\h[8][My h8]
+
+\h[9][My h9]
+
+\h[10][My h10]
+
+\h[11][My h11]
+
+\h[12][My h12]
+
+\h[13][My h13]
 </div>
 <div id="output" class="cirodown">
 </div>

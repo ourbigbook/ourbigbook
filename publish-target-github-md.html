@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>--publish-target github-md - Ciro Santilli</title>
+<meta property="og:title" content="--publish-target github-md - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/publish-target-github-md">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="icon" href="_raw/logo-circle.svg" type="image/svg+xml">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="publish-target-github-md"><div class="notnav"><h1><a href=""><code>--publish-target github-md</code></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-cli"> OurBigBook CLI</a><a href=".#ourbigbook-cli-options"> OurBigBook CLI options</a><a href=".#publish-target"> <code>--publish-target</code></a></div><div class="nav"><a class="nosplit" href=".#publish-target-github-md"></a><span class="metrics"><span class="wcntr"> Words: 264</span></span></div></nav></div><div class="p" id="_3484">This output target publishes Markdown to be viewed directly in a GitHub repository.</div><div class="p" id="_3485">Sample usage:<div class="code" id="_3486"><div><pre><code>ourbigbook --publish --publish-target github-md</code></pre></div></div></div><div class="p" id="_3487">Some demos:<div class="list"><ul id="_3488"><li id="_3489"><a href="https://github.com/ourbigbook/docs-md">github.com/ourbigbook/docs-md</a>: a render of this documentation</li><li id="_3490"><a href="https://github.com/cirosantilli/cirosantilli.github.io-md">github.com/cirosantilli/cirosantilli.github.io-md</a>: a render of <a href="https://github.com/cirosantilli/cirosantilli.github.io">github.com/cirosantilli/cirosantilli.github.io</a></li></ul></div></div><div class="p" id="_3491">The generated Markdown should be seen primarily as an output format which attempts to render as closely as possible to the corresponding HTML, not as a directly editable canonical input format, as it contains several constructs which are present only to render nicely.</div><div class="p" id="_3492">Both nonsplit <code>.md</code> documents and the <code>.md</code> files produced by <a href=".#split-headers"><code>-S</code>, <code>--split-headers</code></a> are included, cross-file links target those Markdown files, and generated <code>index.md</code> files are named <code>README.md</code> so directory landing pages work naturally on GitHub.</div><div class="p" id="_3493">GitHub documents a general formatted-text preview threshold of approximately 2 MB: <a href="https://docs.github.com/repositories/creating-and-managing-repositories/repository-limits#text-limits">docs.github.com/repositories/creating-and-managing-repositories/repository-limits#text-limits</a> However, repository landing pages truncate README files at 512 KiB: <a href="https://github.com/orgs/community/discussions/23920">github.com/orgs/community/discussions/23920</a> Because this target produces README files, it conservatively applies the lower 512 KiB limit to every generated Markdown file. Where a safe header boundary exists, an oversized nonsplit page is automatically replaced by its split-header version. Its table of contents links included source files to their canonical nonsplit <code>.md</code> pages rather than their <code>-split.md</code> alternates. If the recursive table of contents would still make a split page too large, only its first child level is included. A single header section that remains too large cannot be split safely, so publication continues with a warning asking for another child header. For testing or a more conservative threshold, <code>githubMarkdownMaxBytes</code> may be set under the <code>github-md</code> target. Values above the GitHub limit are capped at the built-in limit.</div><div class="p" id="_3494">The OurBigBook documentation configures this target to publish to <a href="https://github.com/ourbigbook/docs-md">github.com/ourbigbook/docs-md</a> using <a href=".#ourbigbook-json/target"><code>target</code></a>.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href=".#publish-target"><code>--publish-target</code></a></li><li><a href=".#ourbigbook-cli-options">OurBigBook CLI options</a></li><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+</footer>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,25 @@
+
+#!/usr/bin/env bash
+
+set -eux
+
+outdir=_out/wikibot-llm
+
+for in in "$outdir/oai_in_"*; do
+  i="${in#$outdir/oai_in_}"
+  i="${i%.jsonl}"
+  echo "$i"
+
+  BATCH_ID="$(cat "$outdir/oai_batch_id_$i")"
+  res="$(
+  curl https://api.openai.com/v1/batches/$BATCH_ID \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -H "Content-Type: application/json"
+  )"
+  OUTPUT_FILE_ID="$(printf '%s' "$res" | jq -r .output_file_id)"
+  
+  curl https://api.openai.com/v1/files/$OUTPUT_FILE_ID/content \
+    -H "Authorization: Bearer $OPENAI_API_KEY" > "$outdir/oai_out_$i.jsonl"
+done
+
+cat "$outdir"/oai_out_*.jsonl > "$outdir/oai_out.jsonl"

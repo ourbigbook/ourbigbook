@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>web/pages/go/settings/[uid]/index.tsx - Ciro Santilli</title>
+<meta property="og:title" content="web/pages/go/settings/[uid]/index.tsx - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/_file/web/pages/go/settings/[uid]/index.tsx">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../../_raw/main.css">
+<link rel="icon" href="../../../../../../_raw/logo-circle.svg" type="image/svg+xml">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../../../../" class="brand"><img src="../../../../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="file/web/pages/go/settings/[uid]/index.tsx"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">web/pages/go/settings/[uid]/index.tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../../../_dir">(root)</a> / <a href="../../../../../_dir/web">web</a> / <a href="../../../../../_dir/web/pages">pages</a> / <a href="../../../../../_dir/web/pages/go">go</a> / <a href="../../../../../_dir/web/pages/go/settings">settings</a> / <a href="../../../../../_dir/web/pages/go/settings/%5Buid%5D">[uid]</a> / <a href="../../../../../_raw/web/pages/go/settings/%5Buid%5D/index.tsx">index.tsx</a></b></div></nav></div><div class="p"><b>web/pages/go/settings/[uid]/index.tsx</b></div><div class="code"><div><pre><code>import Router from 'next/router'
+import React from 'react'
+
+import lodash from 'lodash'
+
+import {
+  allowedImageContentTypes,
+  allowedImageContentTypesArr,
+  allowedImageContentTypesSimplifiedArr,
+  contactUrl,
+  docsUrl,
+  docsAccountLockingUrl,
+  profilePictureMaxUploadSize,
+} from 'front/config'
+import CustomImage from 'front/CustomImage'
+import Label from 'front/Label'
+import MapErrors from 'front/MapErrors'
+import {
+  addCommasToInteger,
+  AppContext,
+  ErrorIcon,
+  HelpIcon,
+  LockIcon,
+  MyHead,
+  OkIcon,
+  SettingsIcon,
+  setupUserLocalStorage,
+  useCtrlEnterSubmit
+} from 'front'
+import { webApi } from 'front/api'
+import routes from 'front/routes'
+import { CommonPropsType } from 'front/types/CommonPropsType'
+import { UserType } from 'front/types/UserType'
+import { displayAndUsernameText } from 'front/user'
+import { formatNumberApprox } from 'ourbigbook'
+
+const maxArticlesLabel = "Maximum number of articles, issues and comments (maxArticles)"
+const maxArticleSizeLabel = "Maximum article/issue/comment size (maxArticleSize)"
+const maxUploadsLabel = "Maximum number of uploads (maxUploads)"
+const maxUploadSizeLabel = "Maximum upload size (maxUploadSize)"
+const maxIssuesPerMinuteLabel = "Maximum issues/comments per minute (maxIssuesPerMinute)"
+const maxIssuesPerHourLabel = "Maximum issues/comments per hour (maxIssuesPerHour)"
+const title = "Account settings"
+
+interface SettingsProps extends CommonPropsType {
+  user?: UserType;
+}
+
+const Settings = ({
+  user: user0,
+  loggedInUser,
+}: SettingsProps) =&gt; {
+  const [isLoading, setLoading] = React.useState(false);
+  const [errors, setErrors] = React.useState([]);
+  const { setLoggedInUserEffectiveImage } = React.useContext(AppContext)
+  const username = user0.username
+  const [userInfo, setUserInfo] = React.useState(lodash.pick(
+    user0,
+    [
+      'displayName',
+      'email',
+      'emailNotifications',
+      'hideArticleDates',
+      'password',
+    ]
+  ))
+  const canSetEmail = !cant.setUserEmail(loggedInUser, user0)
+  const needsEmailVerification = !loggedInUser.admin
+  const [emailState, setEmailState] = React.useState({ email: user0.email, pendingEmail: user0.pendingEmail, waitMs: user0.emailChangeWaitMs || 0 })
+  const [emailWaitMs, setEmailWaitMs] = React.useState(emailState.waitMs)
+  const [emailSending, setEmailSending] = React.useState(false)
+  const [emailActionError, setEmailActionError] = React.useState('')
+  React.useEffect(() =&gt; {
+    const started = Date.now()
+    const update = () =&gt; setEmailWaitMs(Math.max(0, emailState.waitMs - (Date.now() - started)))
+    update()
+    const timer = window.setInterval(update, 1000)
+    return () =&gt; window.clearInterval(timer)
+  }, [emailState])
+  const emailWaitText = emailWaitMs &gt;= 3600000 ? `${Math.ceil(emailWaitMs / 3600000)}h`
+    : emailWaitMs &gt;= 60000 ? `${Math.ceil(emailWaitMs / 60000)}m` : `${Math.ceil(emailWaitMs / 1000)}s`
+  const applyEmailState = (user) =&gt; {
+    setEmailState({ email: user.email, pendingEmail: user.pendingEmail, waitMs: user.emailChangeWaitMs || 0 })
+    setUserInfo(state =&gt; ({ ...state, email: user.email }))
+    setEmailCheck(null)
+  }
+  const resendEmailChange = async () =&gt; {
+    if (emailSending || isLoading || emailWaitMs &gt; 0) return
+    setEmailSending(true)
+    setEmailActionError('')
+    try {
+      const { data, status } = await webApi.userRequestEmailChange(username)
+      if (status === 200) applyEmailState(data.user)
+      else {
+        setEmailActionError(typeof data.errors === 'string' ? data.errors : Object.values(data.errors || {}).flat().join(' ') || 'Could not send the verification email.')
+        if (status === 429) {
+          const current = await webApi.user(username)
+          if (current.status === 200) setEmailState({ email: current.data.email, pendingEmail: current.data.pendingEmail, waitMs: current.data.emailChangeWaitMs || 0 })
+        }
+      }
+    } catch {
+      setEmailActionError('Could not send the verification email.')
+    } finally {
+      setEmailSending(false)
+    }
+  }
+  const email = userInfo.email || ''
+  const [emailCheck, setEmailCheck] = React.useState&lt;{ email: string; error: string|null }|null&gt;(null)
+  const emailUnchanged = email === emailState.email
+  const emailError = !email ? 'Email is required.' : emailCheck?.email === email ? emailCheck.error : null
+  const checkingEmail = canSetEmail &amp;&amp; !!email &amp;&amp; !emailUnchanged &amp;&amp; emailCheck?.email !== email
+  const emailValid = !canSetEmail || (!emailError &amp;&amp; !checkingEmail)
+  React.useEffect(() =&gt; {
+    if (!canSetEmail || emailUnchanged || !email) return
+    let active = true
+    const timer = window.setTimeout(async () =&gt; {
+      try {
+        const { data, status } = await webApi.userCheckEmail(username, email)
+        const error = status === 200 &amp;&amp; data.available === true ? null
+          : status === 422 &amp;&amp; data.errors
+            ? (typeof data.errors === 'string' ? data.errors : Object.values(data.errors).flat().join(' '))
+            : 'Could not check this email.'
+        if (active) setEmailCheck({ email, error })
+      } catch {
+        if (active) setEmailCheck({ email, error: 'Could not check this email.' })
+      }
+    }, 250)
+    return () =&gt; { active = false; window.clearTimeout(timer) }
+  }, [canSetEmail, email, emailUnchanged, username])
+  const profileImageRef = React.useRef&lt;HTMLImageElement|null&gt;(null)
+  const updateState = (field) =&gt; (e) =&gt; {
+    if (field === 'email') { setEmailCheck(null); setEmailActionError('') }
+    const state = userInfo;
+    const newState = { ...state, [field]: e.target.value };
+    setUserInfo(newState);
+  }
+  const handleSubmit = async (e) =&gt; {
+    e.preventDefault()
+    if (isLoading || emailSending || !emailValid) return
+    setLoading(true)
+    const user = { ...userInfo }
+    if (!user.password) {
+      delete user.password
+    }
+    const { data, status } = await webApi.userUpdate(user0.username, user)
+    setLoading(false)
+    if (status === 200) {
+      if (
+        data.user &amp;&amp;
+        // Possible for admin edits.
+        data.user.username === loggedInUser.username
+      ) {
+        await setupUserLocalStorage(data.user, setErrors)
+      }
+      if (needsEmailVerification &amp;&amp; data.user.pendingEmail &amp;&amp; !emailUnchanged) {
+        applyEmailState(data.user)
+        return
+      }
+      Router.push(routes.user(data.user.username))
+    } else {
+      setErrors(data.errors)
+      if (canSetEmail &amp;&amp; data.errors?.email) {
+        setEmailCheck({ email, error: String(data.errors.email) })
+      }
+    }
+  }
+
+  // Limits.
+  const [userInfoLimits, setUserInfoLimits] = React.useState(lodash.pick(
+    user0,
+    [
+      'locked',
+      'maxArticles',
+      'maxArticleSize',
+      'maxUploads',
+      'maxUploadSize',
+      'maxIssuesPerHour',
+      'maxIssuesPerMinute',
+    ]
+  ))
+  const updateStateLimits = (field) =&gt; (e) =&gt; {
+    const state = userInfoLimits
+    const newState = { ...state, [field]: e.target.value }
+    setUserInfoLimits(newState)
+  }
+  const handleSubmitLimits = async (e) =&gt; {
+    e.preventDefault()
+    setLoading(true)
+    const { data, status } = await webApi.userUpdate(user0.username, userInfoLimits)
+    setLoading(false)
+    if (status === 200) {
+      Router.push(routes.user(data.user.username))
+    } else {
+      setErrors(data.errors)
+    }
+  }
+
+  const emailNotificationsForArticleAnnouncementRef = React.useRef(null)
+  const cantSetUserLimit = !!cant.setUserLimits(loggedInUser)
+  return &lt;&gt;
+    &lt;MyHead title={`${title} - ${displayAndUsernameText(userInfo)}`} /&gt;
+    &lt;div className="settings-page content-not-ourbigbook"&gt;
+      &lt;h1&gt;&lt;SettingsIcon /&gt; {title}&lt;/h1&gt;
+      &lt;&gt;
+        &lt;MapErrors errors={errors} /&gt;
+        &lt;form onSubmit={handleSubmit}&gt;
+          &lt;Label label="Username"&gt;
+            &lt;input
+              type="text"
+              disabled={true}
+              placeholder="Username"
+              value={user0.username}
+              title="Cannot be currently modified"
+              autoComplete="username"
+              //onChange={updateState("username")}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label="Display name"&gt;
+            &lt;input
+              type="text"
+              placeholder="Display name"
+              value={userInfo.displayName}
+              onChange={updateState("displayName")}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label="Profile picture"&gt;
+            &lt;span
+              className="profile-picture-container"
+              onClick={() =&gt; {
+                const input = document.createElement('input')
+                input.type = 'file'
+                input.accept = allowedImageContentTypesArr.join(',')
+                input.onchange = e =&gt; { 
+                  var file = (e.target as HTMLInputElement).files[0]
+                  if (file.size &gt; profilePictureMaxUploadSize) {
+                    alert(`File too large: ${addCommasToInteger(file.size)} bytes. Maximum allowed size: ${formatNumberApprox(profilePictureMaxUploadSize)}B`)
+                  } else if (!allowedImageContentTypes.has(file.type)) {
+                    alert(`File type not allowed: ${file.type.split('/')[1]}. Allowed types: ${allowedImageContentTypesSimplifiedArr.join(', ')}`)
+                  } else {
+                    var reader = new FileReader()
+                    reader.readAsDataURL(file)
+                    reader.onload = async (readerEvent) =&gt; {
+                      const { data, status } = await webApi.userUpdateProfilePicture(
+                        user0.username,
+                        readerEvent.target.result,
+                      )
+                      if (status === 200) {
+                        profileImageRef.current.src = data.imageDataUrl
+                        if (user0.username === loggedInUser.username) {
+                          setLoggedInUserEffectiveImage(data.imageDataUrl)
+                        }
+                      } else {
+                        let msg = `Upload failed with status: ${status}`
+                        if (data.errors) {
+                          msg += `. Error message: ${data.errors[0]}`
+                        }
+                        alert(msg)
+                      }
+                    }
+                  }
+                }
+                input.click()
+              }}
+            &gt;
+              &lt;CustomImage
+                className="profile-picture"
+                imgRef={profileImageRef}
+                src={user0.effectiveImage}
+              /&gt;
+              &lt;span className="profile-picture-caption"&gt;Click to update&lt;/span&gt;
+            &lt;/span&gt;
+          &lt;/Label&gt;
+          &lt;Label label={&lt;&gt;Email {canSetEmail &amp;&amp; !emailUnchanged &amp;&amp; &lt;span role="status" aria-live="polite"&gt;
+            {emailError ? &lt;span id="email-check-error" className="error-messages"&gt;&lt;ErrorIcon /&gt; {emailError}&lt;/span&gt;
+              : checkingEmail ? 'Checking…' : &lt;OkIcon title="Email available" /&gt;}
+          &lt;/span&gt;}
+            {canSetEmail &amp;&amp; needsEmailVerification &amp;&amp; !emailUnchanged &amp;&amp; &lt;span className="email-change-note"&gt;
+              {' '}A verification email will be sent to the new email after you submit.
+            &lt;/span&gt;}
+            {emailUnchanged &amp;&amp; emailState.pendingEmail &amp;&amp; &lt;span className="email-change-note"&gt;
+              {' '}&lt;HelpIcon title="Your current email stays active until you verify the new address." /&gt; Check your new email &lt;b&gt;{emailState.pendingEmail}&lt;/b&gt; to verify it.
+            &lt;/span&gt;}
+            {canSetEmail &amp;&amp; (emailState.pendingEmail || (needsEmailVerification &amp;&amp; !emailUnchanged)) &amp;&amp; &lt;span role="status" aria-live="polite"&gt;
+              {' '}{emailSending ? 'Sending…' : emailWaitMs &gt; 0 ? `You can send a new email in ${emailWaitText}.`
+                : emailUnchanged &amp;&amp; emailState.pendingEmail &amp;&amp; &lt;button type="button" disabled={isLoading}
+                    onClick={resendEmailChange}&gt;
+                    Re-send
+                  &lt;/button&gt;}
+            &lt;/span&gt;}
+            {emailActionError &amp;&amp; &lt;span className="error-messages" role="alert"&gt; &lt;ErrorIcon /&gt; {emailActionError}&lt;/span&gt;}
+          &lt;/&gt;}&gt;
+            &lt;input
+              type="email"
+              placeholder="Email"
+              value={userInfo.email}
+              onChange={updateState("email")}
+              required
+              disabled={!canSetEmail}
+              title={!canSetEmail ? 'You cannot change this email address' : undefined}
+              aria-invalid={!!emailError}
+              aria-describedby={canSetEmail &amp;&amp; !emailUnchanged &amp;&amp; emailError ? 'email-check-error' : undefined}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label="Password"&gt;
+            &lt;input
+              type="password"
+              placeholder="New Password"
+              value={userInfoLimits.password}
+              onChange={updateState("password")}
+              autoComplete="new-password"
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label="Email notifications" inline={true}&gt;
+            &lt;input
+              type="checkbox"
+              defaultChecked={userInfoLimits.emailNotifications}
+              onChange={() =&gt; {
+                setUserInfo((state) =&gt; {
+                  const newState = !state.emailNotifications
+                  const emailNotificationsForArticleAnnouncementElem = emailNotificationsForArticleAnnouncementRef.current
+                  if (emailNotificationsForArticleAnnouncementElem) {
+                    emailNotificationsForArticleAnnouncementElem.disabled = !newState
+                  }
+                  return {
+                    ...state,
+                    emailNotifications: newState
+                  }}
+                )
+              }}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label="Email notifications for article announcements" inline={true}&gt;
+            &lt;input
+              type="checkbox"
+              defaultChecked={userInfo.emailNotificationsForArticleAnnouncement}
+              ref={emailNotificationsForArticleAnnouncementRef}
+              onChange={() =&gt; setUserInfo((state) =&gt; { return {
+                ...state,
+                emailNotificationsForArticleAnnouncement: !state.emailNotificationsForArticleAnnouncement
+              }})}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label
+            label="Hide article dates"
+            inline={true}
+            helpUrl={`${docsUrl}/ourbigbook-web-hide-article-dates`}
+          &gt;
+            &lt;input
+              type="checkbox"
+              defaultChecked={userInfo.hideArticleDates}
+              onChange={() =&gt; setUserInfo((state) =&gt; { return {
+                ...state,
+                hideArticleDates: !state.hideArticleDates
+              }})}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;button
+            className="btn"
+            type="submit"
+            disabled={isLoading || emailSending || !emailValid || (needsEmailVerification &amp;&amp; !emailUnchanged &amp;&amp; emailWaitMs &gt; 0)}
+          &gt;
+            &lt;OkIcon /&gt; Update settings
+          &lt;/button&gt;
+        &lt;/form&gt;
+        &lt;h2&gt;&lt;LockIcon /&gt; Limits&lt;/h2&gt;
+        {cantSetUserLimit &amp;&amp;
+          &lt;p&gt;You must &lt;a href={contactUrl}&gt;&lt;b&gt;ask an admin&lt;/b&gt;&lt;/a&gt; to change the following limits for you:&lt;/p&gt;
+        }
+        &lt;form onSubmit={handleSubmitLimits}&gt;
+          &lt;Label label={maxArticlesLabel}&gt;
+            &lt;input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxArticles}
+              onChange={updateStateLimits("maxArticles")}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label={maxArticleSizeLabel}&gt;
+            &lt;input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxArticleSize}
+              onChange={updateStateLimits("maxArticleSize")}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label={maxUploadsLabel}&gt;
+            &lt;input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxUploads}
+              onChange={updateStateLimits("maxUploads")}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label={maxUploadSizeLabel}&gt;
+            &lt;input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxUploadSize}
+              onChange={updateStateLimits("maxUploadSize")}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label={maxIssuesPerMinuteLabel}&gt;
+            &lt;input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxIssuesPerMinute}
+              onChange={updateStateLimits("maxIssuesPerMinute")}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label={maxIssuesPerHourLabel}&gt;
+            &lt;input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxIssuesPerHour}
+              onChange={updateStateLimits("maxIssuesPerHour")}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label
+            label="Account locked"
+            helpUrl={docsAccountLockingUrl}
+            inline={true}
+          &gt;
+            &lt;input
+              disabled={cantSetUserLimit}
+              type="checkbox"
+              defaultChecked={userInfoLimits.locked}
+              onChange={() =&gt; setUserInfoLimits((state) =&gt; { return {
+                ...state,
+                locked: !state.locked
+              }})}
+            /&gt;
+            {' '}
+          &lt;/Label&gt;
+          &lt;button
+            className="btn"
+            type="submit"
+            disabled={isLoading}
+          &gt;
+            &lt;OkIcon /&gt; Update limits
+          &lt;/button&gt;
+        &lt;/form&gt;
+        &lt;h2&gt;&lt;HelpIcon /&gt; Extra information&lt;/h2&gt;
+        &lt;p&gt;Signup IP: &lt;b&gt;{user0.ip || 'not set'}&lt;/b&gt;&lt;/p&gt;
+        &lt;p&gt;Nested set needs update (nestedSetNeedsUpdate): &lt;b&gt;{user0.nestedSetNeedsUpdate.toString()}&lt;/b&gt;&lt;/p&gt;
+        {loggedInUser.admin &amp;&amp;
+          &lt;p&gt;Verified: &lt;b&gt;{user0.verified.toString()}&lt;/b&gt;&lt;/p&gt;
+        }
+      &lt;/&gt;
+    &lt;/div&gt;
+  &lt;/&gt;
+};
+
+export default Settings;
+
+import { getLoggedInUser } from 'back'
+import { cant } from 'front/cant'
+
+export async function getServerSideProps(context) {
+  const { params: { uid }, req, res } = context
+  if (
+    typeof uid === 'string'
+  ) {
+    const sequelize = req.sequelize
+    const [loggedInUser, user] = await Promise.all([
+      getLoggedInUser(req, res),
+      sequelize.models.User.findOne({
+        where: { username: uid },
+      }),
+    ])
+    if (!user) { return { notFound: true } }
+    const props: SettingsProps = {}
+    if (!loggedInUser) {
+      return {
+        redirect: {
+          destination: routes.userNew(),
+          permanent: false,
+        }
+      }
+    }
+    if (cant.viewUserSettings(loggedInUser, user)) {
+      return { notFound: true }
+    } else {
+      ;[props.user, props.loggedInUser] = await Promise.all([
+        user.toJson(loggedInUser),
+        loggedInUser.toJson(loggedInUser),
+      ])
+    }
+    return { props }
+  } else {
+    return { notFound: true }
+  }
+}
+</code></pre></div></div></main>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../../../../_dir">Website source code</a></div>
+
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

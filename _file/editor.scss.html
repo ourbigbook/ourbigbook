@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>editor.scss - Ciro Santilli</title>
+<meta property="og:title" content="editor.scss - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/_file/editor.scss">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="icon" href="../_raw/logo-circle.svg" type="image/svg+xml">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="file/editor.scss"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">editor.scss</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../_dir">(root)</a> / <a href="../_raw/editor.scss">editor.scss</a></b></div></nav></div><div class="p"><b>editor.scss</b></div><div class="code"><div><pre><code>@import 'ourbigbook.common.scss';
+
+.ourbigbook-editor {
+  display: flex;
+  flex-direction: column;
+  /* https://stackoverflow.com/questions/12989931/body-height-100-displaying-vertical-scrollbar/46847795#46847795
+   * 20 == 2x 10px padding (top + bottom). */
+  height: 100%;
+  .editor-xref-dialog {
+    background-color: $background-color;
+    color: $color;
+    border: 1px solid $button-border-color;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-family: $font-family;
+    width: 640px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+    overflow: auto;
+    padding: 20px;
+    &amp;::backdrop { background: rgba(0, 0, 0, .5); }
+    h2 { margin: 0 0 16px; }
+    input, select {
+      background-color: $background-color;
+      color: $color;
+      border: 1px solid $button-border-color;
+      box-sizing: border-box;
+      display: block;
+      font: inherit;
+      padding: 6px;
+      width: 100%;
+    }
+    input { margin-top: 6px; }
+    .editor-xref-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 16px;
+    }
+    button {
+      background-color: $button-background-color;
+      color: $button-color;
+      border: 1px solid $button-border-color;
+      border-radius: 3px;
+      font: inherit;
+      padding: 4px 10px;
+      cursor: pointer;
+      &amp;:disabled {
+        background-color: $button-disabled-background-color;
+        color: $button-disabled-color;
+        cursor: default;
+      }
+    }
+  }
+  .editor-panes {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+  .editor-toolbar {
+    align-items: center;
+    background-color: $button-background-color;
+    border: 1px solid $button-border-color;
+    border-radius: 3px;
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    font-family: $font-family;
+    gap: 4px;
+    margin-bottom: 5px;
+    padding: 4px;
+    .editor-toolbar-group {
+      align-items: center;
+      display: flex;
+      gap: 2px;
+      &amp;:not(:first-child) {
+        border-left: 1px solid $button-border-color;
+        padding-left: 4px;
+      }
+    }
+    button, select {
+      background-color: $button-background-color;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      color: $button-color;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 24px;
+      min-height: 30px;
+      min-width: 30px;
+      padding: 2px 6px;
+      &amp;:hover:not(:disabled) {
+        background-color: $code-background-color;
+      }
+      &amp;:focus-visible {
+        outline: 2px solid $a-color;
+        outline-offset: 1px;
+      }
+      &amp;:disabled {
+        background-color: $button-disabled-background-color;
+        color: $button-disabled-color;
+        cursor: default;
+      }
+    }
+  }
+  .errorDecoration {
+    background: red;
+    width: 4px !important;
+    margin-left: 3px;
+  }
+  .input {
+    align-items: center;
+    flex: 1 0 auto;
+    height: 100%;
+    margin: 0 5px 0 0;
+    overflow: hidden;
+    width: 50%;
+  }
+  .output {
+    align-items: center;
+    flex: 1 1 auto;
+    height: 100%;
+    margin: 0 0 0 5px;
+    overflow: auto;
+    width: 50%;
+  }
+  .errors {
+    flex: 1 1 auto;
+    height: 100%;
+    overflow: auto;
+    .title {
+      color: $ourbigbook-error-color;
+      font-weight: bold;
+    }
+    &amp;.has-error {
+      padding: 0 1em;
+      width: 50%;
+    }
+    .error {
+      margin-bottom: 0.5em;
+      .loc {
+        cursor: pointer;
+        font-weight: bold;
+      }
+    }
+  }
+}
+</code></pre></div></div></main>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+
+import os
+import argparse
+import sqlite3
+import shutil
+
+parser = argparse.ArgumentParser()
+parser.add_argument('out')
+parser.add_argument('ins', nargs='+')
+args = parser.parse_args()
+
+shutil.copyfile(args.ins[0], args.out)
+con = sqlite3.connect(args.out)
+cur = con.cursor()
+tables = list(map(lambda e: e[0], cur.execute("SELECT name FROM sqlite_master WHERE type='table'")))
+table_to_pk_col = {}
+table_to_insert = {}
+table_to_cols = {}
+table_to_pk_count = {}
+table_to_col_to_foreign = {}
+for table in tables:
+    col_to_foreign = {}
+    table_to_col_to_foreign[table] = col_to_foreign
+    cols = cur.execute(f'pragma foreign_key_list({table})').fetchall()
+    for col in cols:
+        col_name = col[3]
+        target_table = col[2]
+        col_to_foreign[col_name] = target_table
+for table in tables:
+    cols = cur.execute(f'pragma table_info({table})').fetchall()
+    table_to_cols[table] = cols
+    table_to_pk_count[table] = cur.execute(f'select count(*) from {table}').fetchone()[0]
+    for row in cols:
+        col_name = row[1]
+        type_ = row[2]
+        pk = row[5]
+        if type_ == 'INTEGER' and pk != 0:
+            if table in table_to_pk_col:
+                del table_to_pk_col[table]
+            else:
+                table_to_pk_col[table] = col_name
+def inc_str(table, col):
+    if table in table_to_col_to_foreign:
+        col_to_foreign = table_to_col_to_foreign[table]
+        if col in col_to_foreign:
+            return f'+{table_to_pk_count[col_to_foreign[col]]}'
+    return ''
+for db2 in args.ins[1:]:
+    cur.execute(f"attach '{db2}' as 'db2'")
+    table_to_pk_count_inc = {}
+    for table in tables:
+        table_to_insert = {
+            table: ','.join(list(map(
+                lambda c: 'NULL' if c[1] == table_to_pk_col.get(table, None) else \
+                    c[1] + inc_str(table, c[1]),
+                table_to_cols[table]
+            ))) for table in tables
+        }
+        cur.execute(f"insert into {table} select {table_to_insert[table]} from db2.{table}")
+        table_to_pk_count_inc[table] = cur.rowcount
+    for table in tables:
+        table_to_pk_count[table] += table_to_pk_count_inc[table]
+    con.commit()
+    cur.execute("detach database db2")

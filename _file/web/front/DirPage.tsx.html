@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>web/front/DirPage.tsx - Ciro Santilli</title>
+<meta property="og:title" content="web/front/DirPage.tsx - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/_file/web/front/DirPage.tsx">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="icon" href="../../../_raw/logo-circle.svg" type="image/svg+xml">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="file/web/front/DirPage.tsx"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">web/front/DirPage.tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/front">front</a> / <a href="../../../_raw/web/front/DirPage.tsx">DirPage.tsx</a></b></div></nav></div><div class="p"><b>web/front/DirPage.tsx</b></div><div class="code"><div><pre><code>import React from 'react'
+import Link from 'next/link'
+
+import { encodeUrlPath, formatDate, URL_SEP } from 'ourbigbook'
+
+import {
+  DirectoryIcon,
+  FileIcon,
+  ImageIcon,
+  LargestIcon,
+  MyHead,
+  TimeIcon,
+  UserIcon,
+  uploadPathWithoutUser,
+} from 'front'
+import UserLinkWithImage from 'front/UserLinkWithImage'
+
+import { CommonPropsType } from 'front/types/CommonPropsType'
+import { UploadDirectoryEntryType } from 'front/types/UploadDirectoryType'
+import { UploadEntryType, UploadIndexType } from 'front/types/UploadType'
+import Pagination from 'front/Pagination'
+import { articleLimit } from 'front/config'
+import { UserType } from 'front/types/UserType'
+import { dir } from 'front/routes'
+
+export interface DirPageProps extends CommonPropsType {
+  author: UserType;
+  uploadDirectory: UploadDirectoryEntryType;
+  childDirectories: UploadDirectoryEntryType[];
+  childFiles: UploadEntryType[];
+}
+
+export function FileList({ files, filesCount, page, username }: { files: UploadIndexType[]; filesCount: number; page: number; username?: string }) {
+  return &lt;div className="list-nav-container"&gt;
+    {files.length === 0 ? &lt;div className="article-preview content-not-ourbigbook"&gt;There are no files to show.&lt;/div&gt; :
+      &lt;div className="list-container content-not-ourbigbook"&gt;
+        &lt;table className="list file-list"&gt;
+          &lt;thead&gt;&lt;tr&gt;
+            &lt;th&gt;&lt;FileIcon /&gt; Path&lt;/th&gt;
+            {username === undefined &amp;&amp; &lt;th&gt;&lt;UserIcon /&gt; Author&lt;/th&gt;}
+            &lt;th&gt;&lt;ImageIcon /&gt; Preview&lt;/th&gt;
+            &lt;th&gt;&lt;LargestIcon title="Size" /&gt; Size (bytes)&lt;/th&gt;
+            &lt;th&gt;&lt;TimeIcon /&gt; Created&lt;/th&gt;
+            &lt;th&gt;&lt;TimeIcon /&gt; Updated&lt;/th&gt;
+          &lt;/tr&gt;&lt;/thead&gt;
+          &lt;tbody&gt;{files.map(file =&gt; {
+            const path = username &amp;&amp; file.path.startsWith(`${username}/`) ? file.path.slice(username.length + 1) : file.path
+            return &lt;tr key={file.path}&gt;
+              &lt;td className="file-path"&gt;{file.url ? &lt;a href={file.url}&gt;{path}&lt;/a&gt; : path}&lt;/td&gt;
+              {username === undefined &amp;&amp; &lt;td className="shrink"&gt;{file.author
+                ? &lt;UserLinkWithImage user={file.author} showUsername={false} /&gt; : 'Unknown'}&lt;/td&gt;}
+              &lt;td className="file-preview"&gt;{file.previewUrl &amp;&amp; &lt;a href={file.url}&gt;&lt;img src={file.previewUrl} alt={path} loading="lazy" /&gt;&lt;/a&gt;}&lt;/td&gt;
+              &lt;td className="shrink right"&gt;{file.size.toLocaleString('en-US')}&lt;/td&gt;
+              &lt;td className="shrink"&gt;&lt;time dateTime={file.createdAt} title={file.createdAt}&gt;{formatDate(file.createdAt)}&lt;/time&gt;&lt;/td&gt;
+              &lt;td className="shrink"&gt;&lt;time dateTime={file.updatedAt} title={file.updatedAt}&gt;{formatDate(file.updatedAt)}&lt;/time&gt;&lt;/td&gt;
+            &lt;/tr&gt;
+          })}&lt;/tbody&gt;
+        &lt;/table&gt;
+      &lt;/div&gt;}
+    &lt;Pagination currentPage={page} itemsCount={filesCount} itemsPerPage={articleLimit} what="files" /&gt;
+  &lt;/div&gt;
+}
+
+export function DirectoryEntries({ author, childDirectories, childFiles }: Pick&lt;DirPageProps, 'author' | 'childDirectories' | 'childFiles'&gt;) {
+  if (!childDirectories.length &amp;&amp; !childFiles.length) return &lt;p&gt;This directory is empty.&lt;/p&gt;
+  return &lt;ul&gt;
+    {childDirectories.map(e =&gt; {
+      const p = e.path.substring(e.path.lastIndexOf(URL_SEP) + 1)
+      return &lt;li key={p}&gt;
+        &lt;Link href={dir(author.username, uploadPathWithoutUser(e.path))}&gt;{p}/&lt;/Link&gt;
+      &lt;/li&gt;
+    })}
+    {childFiles.map(e =&gt; {
+      const p = e.path.substring(e.path.lastIndexOf(URL_SEP) + 1)
+      return &lt;li key={p}&gt;
+        &lt;a href={`/${author.username}/_file/${encodeUrlPath(uploadPathWithoutUser(e.path))}`}&gt;{p}&lt;/a&gt;
+      &lt;/li&gt;
+    })}
+  &lt;/ul&gt;
+}
+
+const DirPageHoc = (isIssue=false) =&gt; {
+  return function DirPage ({
+    author,
+    childDirectories,
+    childFiles,
+    uploadDirectory,
+  }: DirPageProps) {
+    const pathNoUsername = uploadPathWithoutUser(uploadDirectory.path)
+    return &lt;&gt;
+      &lt;MyHead title={`${author.username}${URL_SEP}${pathNoUsername}${pathNoUsername ? URL_SEP : ''}`} /&gt;
+      &lt;div className="dir-page content-not-ourbigbook"&gt;
+        &lt;h1&gt;
+          &lt;DirectoryIcon /&gt;
+          {' '}
+          {(() =&gt; {
+            const ret = []
+            const pathSplit = pathNoUsername ? pathNoUsername.split(URL_SEP) : []
+            let curp = ''
+            let i = 0
+            for (const p of [author.username, ...pathSplit]) {
+              ret.push(
+                &lt;Link href={dir(author.username, curp)} key={i}&gt;{p}&lt;/Link&gt;,
+                &lt;span className="meta" key={-i-1}&gt;{URL_SEP}&lt;/span&gt;
+              )
+              if (i !== 0) {
+                curp += URL_SEP
+              }
+              curp += pathSplit[i]
+              i++
+            }
+            return ret
+          })()}
+        &lt;/h1&gt;
+        &lt;div className="article-info"&gt;
+          by
+          {' '}
+          &lt;UserLinkWithImage user={author} showUsername={true} /&gt;
+        &lt;/div&gt;
+        &lt;DirectoryEntries {...{ author, childDirectories, childFiles }} /&gt;
+      &lt;/div&gt;
+    &lt;/&gt;
+  }
+}
+
+export default DirPageHoc
+</code></pre></div></div></main>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

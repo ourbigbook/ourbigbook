@@ -4,9 +4,10 @@ import Head from "next/head";
 import React from "react";
 import useSWR  from "swr";
 
-// TODO use the one from dist.
-import cirodown_runtime from 'cirodown/cirodown_runtime.js';
-//import { cirodown_runtime } from 'cirodown/dist/cirodown_runtime.js';
+// This also worked. But using the packaged one reduces the need to replicate
+// or factor out the webpack setup of the cirodown package.
+//import { cirodown_runtime } from 'cirodown/cirodown_runtime.js';
+import { cirodown_runtime } from 'cirodown/dist/cirodown_runtime.js';
 
 import ArticleMeta from "components/article/ArticleMeta";
 import Comment from "components/comment/Comment";

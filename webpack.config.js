@@ -57,6 +57,7 @@ module.exports = {
   optimization: {
     minimizer: [
       new CssMinimizerPlugin(),
+      // Minimizes the JavaScript.
       new TerserPlugin(),
     ],
     minimize: true,
@@ -64,6 +65,7 @@ module.exports = {
   output: {
     clean: false,
     filename: '[name].js',
+    globalObject: 'this',
     library: '[name]',
     libraryTarget: 'umd',
     path: distDir,

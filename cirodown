@@ -613,26 +613,6 @@ function generate_redirects(
   }
 }
 
-/**
- * @return {String} full Git SHA of the source.
- */
-function git_ls_files(input_path) {
-  const ret = cmd_get_stdout(
-    'git',
-    ['-C', input_path, 'ls-files'],
-    {
-      show_cmd: false,
-      throw_on_error: true
-    }
-  )
-  ret.replace(/\n$/, '')
-  if (ret === '') {
-    return []
-  } else {
-    return ret.split('\n')
-  }
-}
-
 /** Return Set of branches in the repository. Hax. */
 function git_branches(input_path) {
   const str = cmd_get_stdout('git', ['branch', '-a']).replace(/\n$/, '')
@@ -661,12 +641,39 @@ function git_is_in_repo(input_path) {
 /**
  * @return {String} full Git SHA of the source.
  */
+function git_ls_files(input_path) {
+  const ret = cmd_get_stdout(
+    'git',
+    ['-C', input_path, 'ls-files'],
+    {
+      show_cmd: false,
+      throw_on_error: true
+    }
+  )
+  ret.replace(/\n$/, '')
+  if (ret === '') {
+    return []
+  } else {
+    return ret.split('\n')
+  }
+}
+
+/**
+ * @return {String} full Git SHA of the source.
+ */
 function git_sha(input_path, src_branch) {
   const args = ['-C', input_path, 'log', '-n1', '--pretty=%H'];
   if (src_branch !== undefined) {
     args.push(src_branch);
   }
   return cmd_get_stdout('git', args, {show_cmd: false, throw_on_error: true}).slice(0, -1);
+}
+
+function git_toplevel(input_path) {
+  return cmd_get_stdout('git', ['rev-parse', '--show-toplevel'], {
+    show_cmd: false,
+    throw_on_error: true
+  }).slice(0, -1);
 }
 
 // https://stackoverflow.com/questions/9355403/deleting-duplicates-on-sorted-array/61974900#61974900
@@ -983,6 +990,9 @@ if (commander.helpMacros) {
     outdir: outdir,
     publish: publish,
   };
+  let input_git_toplevel;
+  let subdir_relpath;
+  let publish_tmpdir;
   if (inputPath === undefined) {
     // Input from stdin.
     title = 'stdin';
@@ -994,7 +1004,6 @@ if (commander.helpMacros) {
     }
     let tmpdir = path.join(outdir, TMP_DIRNAME);
     let publish_dir;
-    let publish_out_dir;
     let cmd_options = {
       dry_run: commander.dryRun,
       throw_on_error: true,
@@ -1007,14 +1016,15 @@ if (commander.helpMacros) {
       }
       input_path_is_file = false;
       if (publish) {
+        input_git_toplevel = git_toplevel(inputPath);
+        subdir_relpath = path.relative(input_git_toplevel, inputPath);
         publish_dir = path.join(tmpdir, 'publish');
         publish_git_dir = path.join(publish_dir, '.git');
         if (fs.existsSync(publish_git_dir)) {
           // This cleanup has to be done before the database initialization.
           cmd_get_stdout('git', ['-C', publish_dir, 'clean', '-x', '-d', '-f'], cmd_options);
         }
-        tmpdir = path.join(publish_dir, TMP_DIRNAME);
-        publish_out_dir = path.join(publish_dir, TMP_DIRNAME);
+        publish_tmpdir = path.join(publish_dir, subdir_relpath, TMP_DIRNAME);
       }
     }
 
@@ -1037,7 +1047,7 @@ if (commander.helpMacros) {
 
     // Setup the ID database.
     if (commander.db) {
-      convert_input_options.db_path = path.join(tmpdir, 'db.sqlite3');
+      convert_input_options.db_path = path.join(publish_tmpdir, 'db.sqlite3');
       convert_input_options.ids_table_name = 'ids';
       convert_input_options.includes_table_name = 'includes';
       convert_input_options.files_table_name = 'files';
@@ -1079,13 +1089,9 @@ if (commander.helpMacros) {
 
         if (publish) {
           // Clone the source to ensure that only git tracked changes get built and published.
-          if (!fs.existsSync(path.join(inputPath, '.git'))) {
-            cli_error('--publish must point to the root of a git repository');
+          if (!git_is_in_repo(inputPath)) {
+            cli_error('--publish must point to a path inside a git repository');
           }
-          // TODO https://github.com/cirosantilli/cirodown/issues/160
-          //if (!git_is_in_repo(inputPath)) {
-          //  cli_error('--publish must point to a path inside a git repository');
-          //}
           remote_url = cmd_get_stdout('git', ['-C', inputPath, 'config', '--get', 'remote.origin.url'], cmd_options).slice(0, -1);
           src_branch = cmd_get_stdout('git', ['-C', inputPath, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options).slice(0, -1);
           if (commander.dryRun) {
@@ -1115,23 +1121,26 @@ if (commander.helpMacros) {
             cmd_get_stdout('git', ['-C', publish_dir, 'pull'], cmd_options);
             cmd_get_stdout('git', ['-C', publish_dir, 'submodule', 'update', '--init'], cmd_options);
           } else {
-            cmd_get_stdout('git', ['clone', '--recursive', inputPath, publish_dir],
+            cmd_get_stdout('git', ['clone', '--recursive', input_git_toplevel, publish_dir],
               cirodown.clone_and_set(cmd_options, 'dry_run', false));
           }
 
           // Set some variables especially for publishing.
-          actual_input_dir = publish_dir;
+          actual_input_dir = path.join(publish_dir, subdir_relpath);
           convert_input_options.cirodown_json_dir = actual_input_dir;
-          publish_out_publish_dir = path.join(publish_out_dir, 'publish');
+          publish_out_publish_dir = path.join(publish_tmpdir, 'publish');
           convert_input_options.out_css_path = path.join(publish_out_publish_dir, cirodown_nodejs.DIST_CSS_BASENAME);
           convert_input_options.out_js_path = path.join(publish_out_publish_dir, cirodown_nodejs.DIST_JS_BASENAME);
           convert_input_options.external_css_and_js = true;
           // Remove all files from the gh-pages repository in case some were removed from the original source.
           if (
-            fs.existsSync(path.join(publish_out_publish_dir, '.git')) &&
-            git_ls_files(publish_out_publish_dir).length > 0
+            fs.existsSync(path.join(publish_out_publish_dir, '.git'))
           ) {
-            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'rm', '-r', '-f', '.'], cmd_options);
+            if (git_ls_files(publish_out_publish_dir).length > 0) {
+              cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'rm', '-r', '-f', '.'], cmd_options);
+            }
+          } else {
+            fs.mkdirSync(publish_out_publish_dir, {recursive: true});
           }
         } else {
           actual_input_dir = inputPath;

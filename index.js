@@ -168,9 +168,9 @@ class AstNode {
       for (let arg_name in cur_ast.args) {
         let arg = cur_ast.args[arg_name];
         let new_arg = [];
-        for (let macro of arg) {
-          let new_ast = new AstNode(AstType[macro.node_type], macro.macro_name,
-            macro.args, macro.line, macro.column, {text: macro.text});
+        for (let ast of arg) {
+          let new_ast = new AstNode(AstType[ast.node_type], ast.macro_name,
+            ast.args, ast.line, ast.column, {text: ast.text});
           new_arg.push(new_ast);
           nodes.push(new_ast);
         }
@@ -183,7 +183,7 @@ class AstNode {
   toJSON() {
     return {
       macro_name: this.macro_name,
-      node_type:  this.node_type.toString(),
+      node_type:  symbol_to_string(this.node_type),
       line:       this.line,
       column:     this.column,
       text:       this.text,
@@ -2625,6 +2625,12 @@ function render_error(context, message, line, column) {
   context.errors.push(new ErrorMessage(message, line, column));
 }
 
+// Fuck JavaScript? Can't find a built-in way to get the symbol string without the "Symbol(" part.
+// https://stackoverflow.com/questions/30301728/get-the-description-of-a-es6-symbol
+function symbol_to_string(symbol) {
+  return symbol.toString().slice(7, -1);
+}
+
 function title_to_id(title) {
   return title.toLowerCase()
     .replace(/[^a-z0-9-]+/g, ID_SEPARATOR)
@@ -2743,11 +2749,17 @@ function x_text(ast, context, options={}) {
   if (!('quote' in options)) {
     options.quote = false;
   }
+  if (!('fixed_capitalization' in options)) {
+    options.fixed_capitalization = true;
+  }
   if (!('href_prefix' in options)) {
     options.href_prefix = undefined;
   }
   if (!('force_separator' in options)) {
     options.force_separator = false;
+  }
+  if (!('from_x' in options)) {
+    options.from_x = false;
   }
   if (!('show_caption_prefix' in options)) {
     options.show_caption_prefix = true;
@@ -2795,6 +2807,26 @@ function x_text(ast, context, options={}) {
   if (title_arg !== undefined) {
     if (style_full && options.quote) {
       ret += html_escape_context(context, `"`);
+    }
+    let first_ast = title_arg[0];
+    if (
+      ast.macro_name === Macro.HEADER_MACRO_NAME &&
+      !ast.validation_output.c.boolean &&
+      !style_full &&
+      options.from_x &&
+      first_ast.node_type === AstType.PLAINTEXT
+    ) {
+      // https://stackoverflow.com/questions/41474986/how-to-clone-a-javascript-es6-class-instance
+      title_arg = new AstArgument(title_arg, title_arg.line, title_arg.column);
+      title_arg[0] = new PlaintextAstNode(first_ast.line, first_ast.column, first_ast.text);
+      let txt = title_arg[0].text;
+      let first_c = txt[0];
+      if (options.capitalize) {
+        first_c = first_c.toUpperCase();
+      } else {
+        first_c = first_c.toLowerCase();
+      }
+      title_arg[0].text = first_c + txt.substring(1);
     }
     ret += convert_arg(title_arg, context);
     if (style_full && options.quote) {
@@ -3193,6 +3225,12 @@ const DEFAULT_MACRO_LIST = [
           return header_tree_node.get_nested_number(context.header_graph_top_level);
         }
       },
+      named_args: [
+        new MacroArgument({
+          name: 'c',
+          boolean: true,
+        }),
+      ],
     }
   ),
   new Macro(
@@ -3673,6 +3711,8 @@ const DEFAULT_MACRO_LIST = [
         }
         let x_text_options = {
           caption_prefix_span: false,
+          capitalize: ast.validation_output.c.boolean,
+          from_x: true,
           quote: true,
         };
         if (ast.validation_output.full.given) {
@@ -3693,6 +3733,10 @@ const DEFAULT_MACRO_LIST = [
     },
     {
       named_args: [
+        new MacroArgument({
+          name: 'c',
+          boolean: true,
+        }),
         new MacroArgument({
           name: 'full',
           boolean: true,

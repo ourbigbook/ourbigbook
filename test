@@ -87,3 +87,20 @@ it('code', ()=>{assert_convert(
   'a \\c[b c] d\n',
   'a <code>b c</code> d\n'
 )});
+it('code multiline', ()=>{assert_convert(
+  `a
+
+\\c[
+b
+c
+]
+
+d
+`,
+  `<p>a</p>
+<p><code>b
+c
+</code></p>
+<p>d</p>
+`
+)});

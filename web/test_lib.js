@@ -4,6 +4,8 @@
 const path = require('path')
 const perf_hooks = require('perf_hooks')
 
+const lodash = require('lodash')
+
 const cirodown = require('cirodown')
 const models = require('./models')
 
@@ -47,7 +49,7 @@ const userData = [
   ['Moses', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Guido_Reni_-_Moses_with_the_Tables_of_the_Law_-_WGA19289.jpg/220px-Guido_Reni_-_Moses_with_the_Tables_of_the_Law_-_WGA19289.jpg', 'seasplitter010'],
 ]
 
-const articleData = [['Index', [
+const articleData = [
   ['Mathematics', [
     ['Algebra', [
       ['Linear algebra', [
@@ -121,14 +123,38 @@ const articleData = [['Index', [
       ]],
     ]],
   ]],
-]]]
+]
 
 class ArticleDataProvider {
-  constructor(articleData) {
+  constructor(articleData, userIdx) {
     this.i = 0
-    // These store the current tree transversal state across .get calls.
+
+    //// Cut up the tree a bit differently for each user so that we won't get
+    //// the exact same articles for each user.
+    //const todo_visit_top = lodash.cloneDeep(articleData)
+    //let todo_visit = todo_visit_top
+    //let globalI = 0
+    //while (todo_visit.length > 0) {
+    //  let entry = todo_visit.pop()
+    //  let childrenOrig = entry[1]
+    //  let children = childrenOrig.slice()
+    //  for (let i = children.length - 1; i >= 0; i--) {
+    //    if (((globalI + i) % userIdx) < userIdx / 2) {
+    //      todo_visit.push(children[i]);
+    //    } else {
+    //      childrenOrig.splice(i, 1)
+    //    }
+    //  }
+    //  globalI++
+    //}
+    //this.todo_visit = todo_visit_top
+
+    //// These store the current tree transversal state across .get calls.
     this.todo_visit = articleData.slice()
     this.head = undefined
+    // Set of all entries we visited that don't have a parent.
+    // We will want to include those from the toplevel index.
+    this.toplevelSet = new Set()
   }
 
   // Post order depth first transversal to ensure that we create all includees
@@ -145,6 +171,10 @@ class ArticleDataProvider {
         this.todo_visit.pop()
         this.head = entry
         this.i++
+        for (const child of children) {
+          this.toplevelSet.delete(child[0])
+        }
+        this.toplevelSet.add(title)
         return entry
       } else {
         for (let i = children.length - 1; i >= 0; i--) {
@@ -188,13 +218,16 @@ async function generateDemoData(params) {
     if (image) {
       userArg.image = image
     }
-    if (i % 2 === 0) {
-      userArg.bio = `My bio ${i}`
-    }
     sequelize.models.User.setPassword(userArg, 'asdf')
     userArgs.push(userArg)
   }
-  const users = await sequelize.models.User.bulkCreate(userArgs)
+  const users = await sequelize.models.User.bulkCreate(
+    userArgs,
+    {
+      validate: true,
+      individualHooks: true,
+    }
+  )
   printTime()
 
   console.error('UserFollowUser');
@@ -204,19 +237,6 @@ async function generateDemoData(params) {
       await (users[i].addFollowSideEffects(users[(i + 1 + j) % nUsers]))
     }
   }
-
-  //const followArgs = []
-  //for (let i = 0; i < nUsers; i++) {
-  //  const userId = users[i].id
-  //  let nFollowsPerUserEffective = nUsers < nFollowsPerUser ? nUsers : nFollowsPerUser
-  //  for (var j = 0; j < nFollowsPerUserEffective; j++) {
-  //    followArgs.push({
-  //      userId: userId,
-  //      followId: users[(i + 1 + j) % nUsers].id,
-  //    })
-  //  }
-  //}
-  //await sequelize.models.UserFollowUser.bulkCreate(followArgs)
 
   printTime()
 
@@ -231,7 +251,7 @@ async function generateDemoData(params) {
       if (authorId in articleDataProviders) {
         articleDataProvider = articleDataProviders[authorId]
       } else {
-        articleDataProvider = new ArticleDataProvider(articleData)
+        articleDataProvider = new ArticleDataProvider(articleData, userIdx)
         articleDataProviders[authorId] = articleDataProvider
       }
       const date = addDays(date0, dateI)
@@ -255,7 +275,7 @@ async function generateDemoData(params) {
       if (children.length > 0) {
         const ids = children.map(child => cirodown.title_to_id(child[0]))
         includesString = '\n\n' + ids.map(id => `\\Include[${id}]`).join('\n')
-        refsString = 'Sample internal links to other sections: ' + ids.map(id => `\\x[${id}]`).join('\n') + '\n\n'
+        refsString = 'Internal links: ' + ids.map(id => `\\x[${id}]`).join(', ') + '\n\n'
       } else {
         includesString = ''
         refsString = ''
@@ -266,7 +286,9 @@ async function generateDemoData(params) {
         createdAt: date,
         // TODO not taking effect. Appears to be because of the hook.
         updatedAt: date,
-        body: `${extra}${refsString}\\i[Italic]
+        body: `${extra}This is a section about ${title}!
+
+${refsString}\\i[Italic]
 
 \\b[Bold]
 
@@ -369,6 +391,28 @@ An YouTube video: \\x[video-sample-youtube-video].
   //    individualHooks: true,
   //  }
   //)
+
+  // Now we update the index pages.
+  for (let userIdx = 0; userIdx < nUsers; userIdx++) {
+    const user = users[userIdx]
+    const articleDataProvider = articleDataProviders[user.id]
+    const ids = []
+    for (const title of articleDataProvider.toplevelSet) {
+      ids.push(cirodown.title_to_id(title))
+    }
+    const includesString = '\n' + ids.map(id => `\\Include[${id}]`).join('\n')
+    const article = await sequelize.models.Article.findOne({ where: { slug: user.username } })
+    article.body += includesString
+    await article.save()
+
+    // TODO get working. Looks like all values that are not updated are
+    // not present in the hook (unlike during initial create()), which breaks it.
+    //await sequelize.models.Article.update(
+    //  { body: sequelize.fn('concat', sequelize.col('body'), includesString), },
+    //  { where: { slug: username } },
+    //)
+  }
+
   printTime()
 
   console.error('Like');

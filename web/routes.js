@@ -16,7 +16,8 @@ module.exports = {
   userEdit: () => `/${ESCAPE_USERNAME}/settings`,
   userLogin: () => `/${ESCAPE_USERNAME}/login`,
   userNew: () => `/${ESCAPE_USERNAME}/register`,
-  userView: (uid, page) => page === undefined || page === 1 ? `/${uid}` : `/${ESCAPE_USERNAME}/user/${uid}/top/${page}`,
+  userView: (uid, page) => `/${uid}`,
+  userViewTop: (uid, page) => `/${ESCAPE_USERNAME}/user/${uid}/top${getPage(page)}`,
   userViewLikes: (uid, page) => `/${ESCAPE_USERNAME}/user/${uid}/likes${getPage(page)}`,
   userViewLatest: (uid, page) => `/${ESCAPE_USERNAME}/user/${uid}/latest${getPage(page)}`,
   topicArticlesTop: (id, page) => {

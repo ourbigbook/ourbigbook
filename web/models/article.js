@@ -57,6 +57,7 @@ module.exports = (sequelize) => {
     {
       hooks: {
         beforeValidate: async (article, options) => {
+          const transaction = options.transaction
           let extra_returns = {};
           const author = await article.getAuthor()
           const id = cirodown.title_to_id(article.title)
@@ -79,7 +80,7 @@ module.exports = (sequelize) => {
                   } else {
                     idid = inpath
                   }
-                  return (await sequelize.models.Id.count({ where: { idid } })) > 0
+                  return (await sequelize.models.Id.count({ where: { idid }, transaction })) > 0
                 },
                 // Only needed for --embed-includes, which is not implemented on the dynamic website for now.
                 read: (inpath) => '',
@@ -94,19 +95,21 @@ module.exports = (sequelize) => {
               extra_returns.errors.map(e => e.toString()))
             throw new ValidationError(errsNoDupes, 422)
           }
+          const idid = extra_returns.context.header_tree.children[0].ast.id
           await update_database_after_convert({
             extra_returns,
             id_provider,
             sequelize,
-            path: id,
+            path: idid,
             render: true,
+            transaction,
           })
           // https://github.com/sequelize/sequelize/issues/8586#issuecomment-422877555
           options.fields.push('render');
-          article.topicId = id
+          article.topicId = idid.slice(cirodown.AT_MENTION_CHAR.length + author.username.length + 1)
           options.fields.push('topicId')
           if (!article.slug) {
-            article.slug = Article.makeSlug(author.username, id)
+            article.slug = `${idid.slice(cirodown.AT_MENTION_CHAR.length)}`
             options.fields.push('slug')
           }
         }
@@ -142,8 +145,14 @@ module.exports = (sequelize) => {
     }
   }
 
-  Article.makeSlug = (uid, pid) => {
-    return `${uid}/${pid}`
+  Article.prototype.saveSideEffects = async function() {
+    await sequelize.transaction(async (transaction) => {
+      return this.save({ transaction })
+    })
+  }
+
+  Article.prototype.isToplevelIndex = function(user) {
+    return this.slug === user.username
   }
 
   // Helper for common queries.

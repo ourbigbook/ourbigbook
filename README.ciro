@@ -693,15 +693,21 @@ Here is one without a description but with an ID so we can link to it: \x[fig-my
 
 We must use \x[cross-reference-style][`style=full`] here because otherwise the link text would be empty and not show at all.
 
-If the image has neither ID nor title, then it just gets a generic caption, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
+If the image has neither ID nor title, then it does not get a caption at all, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
 \cirodown_example[[
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 ]]
-The image does however get an automatically generated ID based on its image number so that readers can link to it on the rendered version, e.g. as:
+The image does however get an automatically generated ID based on its image number, and it is possible for readers to link to that ID on the rendered version, e.g. as:
 ``
 #fig-123
 ``
-This link is of course not stable across document revisions, since if an image is added before that one, the link will break. This kind of image is discouraged, because in paged output formats like PDF, it could float away from the text that refers to the image.
+This link is of course not stable across document revisions however, since if an image is added before that one, the link will break. This kind of image is discouraged, because in paged output formats like PDF, it could float away from the text that refers to the image.
+
+We can also see that such an image does not increment the Figure count:
+\cirodown_example[[
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+{id=fig-my-xi-chrysanthemum-3}
+]]
 
 And this is how you make an inline image inline one with lower case `i`:
 \cirodown_example[[
@@ -819,6 +825,19 @@ The distinction between inline `c` and block `C` code blocks is needed because i
 
 We could have chosen to do some magic to differentiate between them, e.g. checking if the block is the only element in a paragraph, but we decided not to do that to keep the language saner.
 
+\Comment[[[[
+TODO implement.
+We can have cross references to code blocks as for other elements such as \x[images]:
+\cirodown_example[[[
+See this awesome code \x[my-code]:
+``
+ab
+cd
+``
+{id=my-code}
+]]]
+]]]]
+
 \h[2][Mathematics `$`, `$$`, `\m` and `\M`]
 {id=math}
 
@@ -870,7 +889,8 @@ Equation IDs and titles and linking to equations works identically to \x[images]
 \cirodown_example[[
 $$
 \sqrt{1 + 1}
-$${title=My first insane equation}
+$$
+{title=My first insane equation}
 ]]
 and the sane equivalent \x[eq-my-first-sane-equation]:
 \cirodown_example[[[
@@ -920,7 +940,7 @@ $$
 \h[2][Tables `\table`, `\tr`, `\th` and `\td`]
 {id=tables}
 
-Similar to lists.
+Similar to \x[lists][lists].
 
 \x[auto-parent][Implicit container] with optional indentation to improve readability:
 \cirodown_example[[
@@ -957,6 +977,7 @@ Explicit container to add further properties: \x[table-my-table].
 ]
 ]
 ]]
+The rules of when the caption shows up or not are the same as described for \x[images].
 
 \h[2][Quotations `\q`]
 {id=quotations}
@@ -995,6 +1016,19 @@ My inline \comment[[inside comment]] is awesome.
 
 \comment[[inside comment]] inline at the start.
 ]]]
+
+\h[2][`cirodown_example`]
+
+Shows both the Cirodown code and its rendered output, e.g.:
+\cirodown_example[[[
+\cirodown_example[[
+Some `ineline` code.
+]]
+]]]
+
+Its input should be thought of as a literal code string, and it then injects the rendered output in the document.
+
+This macro is used extensively in the Cirodown documentation.
 
 \h[2][Cirodown syntax]
 

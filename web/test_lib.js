@@ -210,101 +210,102 @@ async function generateDemoData(params) {
   const nArticles = nUsers * nArticlesPerUser
   const sequelize = models.getSequelize(directory, basename);
   await models.sync(sequelize, { force: true })
+  if (!params.empty) {
 
-  printTimeNow = now()
-  console.error('User');
-  const userArgs = [];
-  for (let i = 0; i < nUsers; i++) {
-    let [displayName, image] = userData[i % userData.length]
-    let username = cirodown.title_to_id(displayName)
-    if (i >= userData.length) {
-      username = `user${i}`
-      displayName = `User${i}`
-      image = undefined
+    printTimeNow = now()
+    console.error('User');
+    const userArgs = [];
+    for (let i = 0; i < nUsers; i++) {
+      let [displayName, image] = userData[i % userData.length]
+      let username = cirodown.title_to_id(displayName)
+      if (i >= userData.length) {
+        username = `user${i}`
+        displayName = `User${i}`
+        image = undefined
+      }
+      const userArg = {
+        username,
+        displayName,
+        email: `user${i}@mail.com`,
+      }
+      if (image) {
+        userArg.image = image
+      }
+      sequelize.models.User.setPassword(userArg, 'asdf')
+      userArgs.push(userArg)
     }
-    const userArg = {
-      username,
-      displayName,
-      email: `user${i}@mail.com`,
+    const users = []
+    for (const userArg of userArgs) {
+      const user = await sequelize.models.User.create(userArg)
+      users.push(user)
     }
-    if (image) {
-      userArg.image = image
-    }
-    sequelize.models.User.setPassword(userArg, 'asdf')
-    userArgs.push(userArg)
-  }
-  const users = []
-  for (const userArg of userArgs) {
-    const user = await sequelize.models.User.create(userArg)
-    users.push(user)
-  }
-  // TODO started livelocking after we started creating index articles on hooks.
-  //const users = await sequelize.models.User.bulkCreate(
-  //  userArgs,
-  //  {
-  //    validate: true,
-  //    individualHooks: true,
-  //  }
-  //)
-  printTime()
+    // TODO started livelocking after we started creating index articles on hooks.
+    //const users = await sequelize.models.User.bulkCreate(
+    //  userArgs,
+    //  {
+    //    validate: true,
+    //    individualHooks: true,
+    //  }
+    //)
+    printTime()
 
-  console.error('UserFollowUser');
-  for (let i = 0; i < nUsers; i++) {
-    let nFollowsPerUserEffective = nUsers < nFollowsPerUser ? nUsers : nFollowsPerUser
-    for (var j = 0; j < nFollowsPerUserEffective; j++) {
-      await (users[i].addFollowSideEffects(users[(i + 1 + j) % nUsers]))
+    console.error('UserFollowUser');
+    for (let i = 0; i < nUsers; i++) {
+      let nFollowsPerUserEffective = nUsers < nFollowsPerUser ? nUsers : nFollowsPerUser
+      for (var j = 0; j < nFollowsPerUserEffective; j++) {
+        await (users[i].addFollowSideEffects(users[(i + 1 + j) % nUsers]))
+      }
     }
-  }
 
-  printTime()
+    printTime()
 
-  console.error('Article');
-  const articleDataProviders = {}
-  const articleArgs = [];
-  let dateI = 0
-  for (let i = 0; i < nArticlesPerUser; i++) {
-    for (let userIdx = 0; userIdx < nUsers; userIdx++) {
-      let authorId = users[userIdx].id
-      let articleDataProvider
-      if (authorId in articleDataProviders) {
-        articleDataProvider = articleDataProviders[authorId]
-      } else {
-        articleDataProvider = new ArticleDataProvider(articleData, userIdx)
-        articleDataProviders[authorId] = articleDataProvider
-      }
-      const date = addDays(date0, dateI)
-      dateI++
-      const articleDataEntry = articleDataProvider.get()
-      let title, extra, children
-      if (articleDataEntry === undefined) {
-        title = `My title ${i * (userIdx + 1)}`
-        children = []
-      } else {
-        title = articleDataEntry[0]
-        children = articleDataEntry[1]
-        extra = articleDataEntry[2]
-      }
-      if (extra === undefined) {
-        extra = ''
-      } else {
-        extra += '\n\n'
-      }
-      let includesString, refsString
-      if (children.length > 0) {
-        const ids = children.map(child => cirodown.title_to_id(child[0]))
-        includesString = '\n\n' + ids.map(id => `\\Include[${id}]`).join('\n')
-        refsString = 'Internal links: ' + ids.map(id => `\\x[${id}]`).join(', ') + '\n\n'
-      } else {
-        includesString = ''
-        refsString = ''
-      }
-      const articleArg = {
-        title,
-        authorId,
-        createdAt: date,
-        // TODO not taking effect. Appears to be because of the hook.
-        updatedAt: date,
-        body: `${extra}This is a section about ${title}!
+    console.error('Article');
+    const articleDataProviders = {}
+    const articleArgs = [];
+    let dateI = 0
+    for (let i = 0; i < nArticlesPerUser; i++) {
+      for (let userIdx = 0; userIdx < nUsers; userIdx++) {
+        let authorId = users[userIdx].id
+        let articleDataProvider
+        if (authorId in articleDataProviders) {
+          articleDataProvider = articleDataProviders[authorId]
+        } else {
+          articleDataProvider = new ArticleDataProvider(articleData, userIdx)
+          articleDataProviders[authorId] = articleDataProvider
+        }
+        const date = addDays(date0, dateI)
+        dateI++
+        const articleDataEntry = articleDataProvider.get()
+        let title, extra, children
+        if (articleDataEntry === undefined) {
+          title = `My title ${i * (userIdx + 1)}`
+          children = []
+        } else {
+          title = articleDataEntry[0]
+          children = articleDataEntry[1]
+          extra = articleDataEntry[2]
+        }
+        if (extra === undefined) {
+          extra = ''
+        } else {
+          extra += '\n\n'
+        }
+        let includesString, refsString
+        if (children.length > 0) {
+          const ids = children.map(child => cirodown.title_to_id(child[0]))
+          includesString = '\n\n' + ids.map(id => `\\Include[${id}]`).join('\n')
+          refsString = 'Internal links: ' + ids.map(id => `\\x[${id}]`).join(', ') + '\n\n'
+        } else {
+          includesString = ''
+          refsString = ''
+        }
+        const articleArg = {
+          title,
+          authorId,
+          createdAt: date,
+          // TODO not taking effect. Appears to be because of the hook.
+          updatedAt: date,
+          body: `${extra}This is a section about ${title}!
 
 ${refsString}\\i[Italic]
 
@@ -370,124 +371,125 @@ An YouTube video: \\x[video-sample-youtube-video].
 
 \\Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
 {title=Sample YouTube video.}${includesString}
-`,
+  `,
+        }
+        articleArgs.push(articleArg)
       }
-      articleArgs.push(articleArg)
     }
-  }
-  //// Sort first by topic id, and then by user id to mix up votes a little:
-  //// otherwise user0 gets all votes, then user1, and so on.
-  //articleArgs.sort((a, b) => {
-  //  if (a.title < b.title) {
-  //    return -1
-  //  } else if(a.title > b.title) {
-  //    return 1
-  //  } else if(a.authorId < b.authorIdtitle) {
-  //    return -1
-  //  } else if(a.authorId > b.authorIdtitle) {
-  //    return 1
-  //  } else {
-  //    return 0;
-  //  }
-  //})
-  const articles = []
-  let articleId = 0
-  for (const articleArg of articleArgs) {
-    console.error(`${articleId} authorId=${articleArg.authorId} title=${articleArg.title}`);
-    const article = new sequelize.models.Article(articleArg)
-    await article.save()
-    articles.push(article)
-    articleId++
-  }
-  // TODO This was livelocking (taking a very long time, live querries)
-  // due to update_database_after_convert on the hook it would be good to investigate it.
-  // Just convereted to the regular for loop above instead.
-  //const articles = await sequelize.models.Article.bulkCreate(
-  //  articleArgs,
-  //  {
-  //    validate: true,
-  //    individualHooks: true,
-  //  }
-  //)
-
-  // Now we update the index pages.
-  for (let userIdx = 0; userIdx < nUsers; userIdx++) {
-    const user = users[userIdx]
-    const articleDataProvider = articleDataProviders[user.id]
-    const ids = []
-    for (const title of articleDataProvider.toplevelSet) {
-      ids.push(cirodown.title_to_id(title))
+    //// Sort first by topic id, and then by user id to mix up votes a little:
+    //// otherwise user0 gets all votes, then user1, and so on.
+    //articleArgs.sort((a, b) => {
+    //  if (a.title < b.title) {
+    //    return -1
+    //  } else if(a.title > b.title) {
+    //    return 1
+    //  } else if(a.authorId < b.authorIdtitle) {
+    //    return -1
+    //  } else if(a.authorId > b.authorIdtitle) {
+    //    return 1
+    //  } else {
+    //    return 0;
+    //  }
+    //})
+    const articles = []
+    let articleId = 0
+    for (const articleArg of articleArgs) {
+      console.error(`${articleId} authorId=${articleArg.authorId} title=${articleArg.title}`);
+      const article = new sequelize.models.Article(articleArg)
+      await article.save()
+      articles.push(article)
+      articleId++
     }
-    const includesString = '\n' + ids.map(id => `\\Include[${id}]`).join('\n')
-    const article = await sequelize.models.Article.findOne({ where: { slug: user.username } })
-    article.body += includesString
-    await article.save()
-
-    // TODO get working. Looks like all values that are not updated are
-    // not present in the hook (unlike during initial create()), which breaks it.
-    //await sequelize.models.Article.update(
-    //  { body: sequelize.fn('concat', sequelize.col('body'), includesString), },
-    //  { where: { slug: username } },
+    // TODO This was livelocking (taking a very long time, live querries)
+    // due to update_database_after_convert on the hook it would be good to investigate it.
+    // Just convereted to the regular for loop above instead.
+    //const articles = await sequelize.models.Article.bulkCreate(
+    //  articleArgs,
+    //  {
+    //    validate: true,
+    //    individualHooks: true,
+    //  }
     //)
-  }
 
-  // Update all pages to make them render references such as parent references
-  // which were missed at initial creation time.
-  console.error('Article update');
-  let i = 0
-  for (const article of articles) {
-    console.error(`${i} authorId=${article.authorId} title=${article.title}`);
-    await article.save()
-    i++
-  }
-  //await sequelize.models.Article.update({}, { where: {}, individualHooks: true})
+    // Now we update the index pages.
+    for (let userIdx = 0; userIdx < nUsers; userIdx++) {
+      const user = users[userIdx]
+      const articleDataProvider = articleDataProviders[user.id]
+      const ids = []
+      for (const title of articleDataProvider.toplevelSet) {
+        ids.push(cirodown.title_to_id(title))
+      }
+      const includesString = '\n' + ids.map(id => `\\Include[${id}]`).join('\n')
+      const article = await sequelize.models.Article.findOne({ where: { slug: user.username } })
+      article.body += includesString
+      await article.save()
 
-  printTime()
+      // TODO get working. Looks like all values that are not updated are
+      // not present in the hook (unlike during initial create()), which breaks it.
+      //await sequelize.models.Article.update(
+      //  { body: sequelize.fn('concat', sequelize.col('body'), includesString), },
+      //  { where: { slug: username } },
+      //)
+    }
 
-  console.error('Like');
-  let articleIdx = 0
-  for (let i = 0; i < nUsers; i++) {
-    const user = users[i]
-    for (let j = 0; j < nLikesPerUser; j++) {
-      const article = articles[(i * j) % nArticles];
-      if (article.authorId !== user.id) {
-        await user.addLikeSideEffects(article)
+    // Update all pages to make them render references such as parent references
+    // which were missed at initial creation time.
+    console.error('Article update');
+    let i = 0
+    for (const article of articles) {
+      console.error(`${i} authorId=${article.authorId} title=${article.title}`);
+      await article.save()
+      i++
+    }
+    //await sequelize.models.Article.update({}, { where: {}, individualHooks: true})
+
+    printTime()
+
+    console.error('Like');
+    let articleIdx = 0
+    for (let i = 0; i < nUsers; i++) {
+      const user = users[i]
+      for (let j = 0; j < nLikesPerUser; j++) {
+        const article = articles[(i * j) % nArticles];
+        if (article.authorId !== user.id) {
+          await user.addLikeSideEffects(article)
+        }
       }
     }
-  }
 
-  // 0.5s faster than the addLikeSideEffects version, total run 7s.
-  //let articleIdx = 0
-  //const likeArgs = []
-  //for (let i = 0; i < nUsers; i++) {
-  //  const userId = users[i].id
-  //  for (var j = 0; j < nLikesPerUser; j++) {
-  //    likeArgs.push({
-  //      userId: userId,
-  //      articleId: articles[articleIdx % nArticles].id,
-  //    })
-  //    articleIdx += 1
-  //  }
-  //}
-  //await sequelize.models.UserLikeArticle.bulkCreate(likeArgs)
-  printTime()
+    // 0.5s faster than the addLikeSideEffects version, total run 7s.
+    //let articleIdx = 0
+    //const likeArgs = []
+    //for (let i = 0; i < nUsers; i++) {
+    //  const userId = users[i].id
+    //  for (var j = 0; j < nLikesPerUser; j++) {
+    //    likeArgs.push({
+    //      userId: userId,
+    //      articleId: articles[articleIdx % nArticles].id,
+    //    })
+    //    articleIdx += 1
+    //  }
+    //}
+    //await sequelize.models.UserLikeArticle.bulkCreate(likeArgs)
+    printTime()
 
-  console.error('Comment');
-  const commentArgs = [];
-  let commentIdx = 0;
-  for (let i = 0; i < nArticles; i++) {
-    for (var j = 0; j < (i % (nMaxCommentsPerArticle + 1)); j++) {
-      const commentArg = {
-        body: `my comment ${commentIdx}`,
-        articleId: articles[i].id,
-        authorId: users[commentIdx % nUsers].id,
+    console.error('Comment');
+    const commentArgs = [];
+    let commentIdx = 0;
+    for (let i = 0; i < nArticles; i++) {
+      for (var j = 0; j < (i % (nMaxCommentsPerArticle + 1)); j++) {
+        const commentArg = {
+          body: `my comment ${commentIdx}`,
+          articleId: articles[i].id,
+          authorId: users[commentIdx % nUsers].id,
+        }
+        commentArgs.push(commentArg)
+        commentIdx += 1
       }
-      commentArgs.push(commentArg)
-      commentIdx += 1
     }
+    const comments = await sequelize.models.Comment.bulkCreate(commentArgs)
+    printTime()
   }
-  const comments = await sequelize.models.Comment.bulkCreate(commentArgs)
-  printTime()
 
   return sequelize
 }

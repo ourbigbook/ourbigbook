@@ -7594,13 +7594,24 @@ const OUTPUT_FORMATS_LIST = [
           let ret = '';
           // Div that contains h + on hover span.
           ret += `<div class="h"${id_attr}>`;
+
+          // Self link.
           let self_link_context
+          let self_link_ast
           if (context.options.split_headers) {
-            self_link_context = clone_and_set(context, 'to_split_headers', true)
+            if (ast.from_include && !context.options.embed_includes) {
+              self_link_ast = context.id_provider.get(ast.id, context)
+              self_link_context = context
+            } else {
+              self_link_context = clone_and_set(context, 'to_split_headers', true)
+              self_link_ast = ast
+            }
           } else {
             self_link_context = context
+            self_link_ast = ast
           }
-          ret += `<h${level_int_capped}${attrs}><a${x_href_attr(ast, self_link_context)}>`;
+          ret += `<h${level_int_capped}${attrs}><a${x_href_attr(self_link_ast, self_link_context)}>`;
+
           let x_text_options = {
             show_caption_prefix: false,
             style_full: true,

@@ -260,6 +260,10 @@ div.h {
   }
   .hover-meta {
     @include hidden;
+    > :not(:last-child) {
+      margin-right: $sep-width;
+    }
+    margin-left: $sep-width;
   }
   @media only screen and (min-width: $max-mobile-width + 1) {
     &:hover .hover-meta {
@@ -288,10 +292,9 @@ nav.h-nav {
     img.logo {
       height: 1em;
     }
-    // TODO to get rid of sep
-    //> *:not(:last) {
-    //  margin-right: $sep-width
-    //}
+    > :not(:last-child) {
+      margin-right: $sep-width
+    }
   }
   a {
     &.u::before {

@@ -2,6 +2,20 @@ const router = require('express').Router()
 const passport = require('passport')
 const auth = require('../auth')
 
+async function authenticate(req, res, next) {
+  passport.authenticate('local', { session: false }, async function(err, user, info) {
+    if (err) {
+      return next(err)
+    }
+    if (user) {
+      user.token = user.generateJWT()
+      return res.json({ user: await user.toJson(user) })
+    } else {
+      return res.status(422).json(info)
+    }
+  })(req, res, next)
+}
+
 // Preload user profile on routes with ':username'
 router.param('username', function(req, res, next, username) {
   req.app.get('sequelize').models.User.findOne({ where: { username: username } })
@@ -24,17 +38,7 @@ router.post('/login', async function(req, res, next) {
     if (!req.body.user.password) {
       return res.status(422).json({ errors: { password: "can't be blank" } })
     }
-    passport.authenticate('local', { session: false }, async function(err, user, info) {
-      if (err) {
-        return next(err)
-      }
-      if (user) {
-        user.token = user.generateJWT()
-        return res.json({ user: await user.toJson(user) })
-      } else {
-        return res.status(422).json(info)
-      }
-    })(req, res, next)
+    await authenticate(req, res, next)
   } catch(error) {
     next(error);
   }
@@ -64,10 +68,11 @@ router.post('/users', async function(req, res, next) {
   try {
     let user = new (req.app.get('sequelize').models.User)()
     user.username = req.body.user.username
+    user.displayName = req.body.user.displayName
     user.email = req.body.user.email
     req.app.get('sequelize').models.User.setPassword(user, req.body.user.password)
     await user.save()
-    return res.json({ user: await user.toJson() })
+    await authenticate(req, res, next)
   } catch(error) {
     next(error);
   }

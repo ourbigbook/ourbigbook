@@ -53,11 +53,11 @@ const UserAPI = {
     }
   },
 
-  register: async (username, email, password) => {
+  register: async (displayName, username, email, password) => {
     try {
       const response = await axios.post(
         `${SERVER_BASE_URL}/users`,
-        JSON.stringify({ user: { username, email, password } }),
+        JSON.stringify({ user: { displayName, username, email, password } }),
         {
           headers: {
             "Content-Type": "application/json",

@@ -10,15 +10,21 @@ const LoginForm = ({ register = false }) => {
   const [isLoading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState([]);
   let username, setUsername;
+  let displayName, setDisplayName;
   if (register) {
     [username, setUsername] = React.useState("");
+    [displayName, setDisplayName] = React.useState("");
   }
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
-  let handleUsernameChange;
+  let handleUsernameChange, handleDisplayNameChange;
   if (register) {
     handleUsernameChange = React.useCallback(
       (e) => setUsername(e.target.value),
+      []
+    );
+    handleDisplayNameChange = React.useCallback(
+      (e) => setDisplayName(e.target.value),
       []
     );
   }
@@ -36,7 +42,7 @@ const LoginForm = ({ register = false }) => {
     try {
       let data, status;
       if (register) {
-        ({ data, status } = await UserAPI.register(username, email, password));
+        ({ data, status } = await UserAPI.register(displayName, username, email, password));
       } else {
         ({ data, status } = await UserAPI.login(email, password));
       }
@@ -63,9 +69,9 @@ const LoginForm = ({ register = false }) => {
             <Label label="Display name">
               <input
                 type="text"
-                placeholder="Username"
-                value={username}
-                onChange={handleUsernameChange}
+                placeholder="Display name"
+                value={displayName}
+                onChange={handleDisplayNameChange}
               />
             </Label>
             <Label label="Username">

@@ -149,6 +149,7 @@ async function start(port, startNext, cb) {
     await nextApp.prepare()
   }
   await sequelize.authenticate()
+
   // Just a convenience DB create so we don't have to force new users to do it manually.
   await models.sync(sequelize)
   return new Promise((resolve, reject) => {

@@ -3,28 +3,14 @@
 
 == Issues
 
-=== Links to synonym header have fragment
-{tag=Bug}
-{tag=Web}
+=== Reorder convert to move Article.destroySideEffect before File.destroy
+{id=4}
+{tag=web}
+{tag=Refactor}
 
-E.g. from https://ourbigbook.com/cirosantilli/ciro-santilli[]:
-``
-<Python>
-``
-renders as:
-``
-/cirosantilli/python-programming-language#cirosantilli/python-programming-language
-``
-instead of the desired:
-``
-/cirosantilli/python-programming-language
-``
+=== List synonyms on metadata section
 
-However the link to the non-synonym header:
-``
-<Python (programming language)>
-``
-renders correctly without the fragment
+Both web and CLI.
 
 === Move all header metadata from source to HTML in Web
 {tag=Web}
@@ -56,10 +42,15 @@ is broken. The singular version `getArticle` however is not.
 
 === Id, Ref and File foreign normalization
 {id=ref-file-normalization}
+{tag=DB}
 
+We've started noticing this as we went along and became more familiar with proper database design:
 * Ref.from_id and to_id should point to Id
-* File should be removed when deleted: https://github.com/ourbigbook/ourbigbook/issues/216 Currently this can only happen locally.
-* Id.path should point to File
+* File should be removed when deleted: https://github.com/ourbigbook/ourbigbook/issues/216 Currently this can only happen locally. Edit: will also start happening on upstream with synonym moves.
+* toplevel_id
+  * File.toplevel_id should point to an Id object via primary key. Currently done via idid text.
+  * Id.toplevel_id should point to an Id object. No links at all apparently.
+* Article.topicId should point to Topic.id, not be TEXT
 
 We could then consider removing several `Ref.destroy` and `Id.destroy` `ON CASCADE` with `File` and `Id`, rather than manually.
 
@@ -241,7 +232,7 @@ It is not perfectly elegant to use `<>` for this, especially locally, since it m
 {tag=Web}
 {tag=Topic}
 
-=== Delete articles
+=== Delete article
 {tag=Web}
 
 This is a bit hard to to properly as it requires checking that a billion dependant objects are also deleted:
@@ -289,7 +280,11 @@ We have recently implemented SHA-256 skips when article content hasn't changed.
 
 But we also need to check if the parent or previous sibling has changed, and if it has then update that.
 
-Likey just return parent and previous sibling on the /sha256 endpoint. Ideally we should also have a way to change the tree without re-render, though we could start with re-render for simplicity.
+We could just return parent and previous sibling on the /sha256 endpoint.
+
+Or we need to add that information to the SHA.
+
+Ideally we should also have a way to change the tree without re-render, though we could start with re-render for simplicity.
 
 === Pass previousSiblingId on web upload
 {tag=Web}
@@ -764,6 +759,31 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== Links to synonym header have fragment
+{tag=Bug}
+{tag=Web}
+
+E.g. from https://ourbigbook.com/cirosantilli/ciro-santilli[]:
+``
+<Python>
+``
+renders as:
+``
+/cirosantilli/python-programming-language#cirosantilli/python-programming-language
+``
+instead of the desired:
+``
+/cirosantilli/python-programming-language
+``
+
+However the link to the non-synonym header:
+``
+<Python (programming language)>
+``
+renders correctly without the fragment
+
+OK, this was also reproducible on CLI, links to toplevel synonyms had fragments, just it is infinitely more visible on web where everything is toplevel.
 
 === Put raw files in a separate magic prefix
 {tag=File}
@@ -1478,6 +1498,10 @@ Can be fixed later at: <word count on web>.
 Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
 
 == Tags
+
+=== DB
+
+Database specific tasks, usually refactoring.
 
 === File
 

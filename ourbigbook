@@ -107,8 +107,18 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, non_o
     );
     const ourbigbook_paths_converted = new_non_ourbigbook_options.ourbigbook_paths_converted
     const [,,file_rows] = await Promise.all([
-      sequelize.models.Id.destroy({
-        where: { path: { [Op.not]: ourbigbook_paths_converted } } }),
+      // https://cirosantilli.com/delete-with-join-sql
+      sequelize.models.Id.findAll({
+        attributes: ['id'],
+        include: [
+          {
+            model: sequelize.models.File,
+            as: 'idDefinedAt',
+            where: { path: { [Op.not]: ourbigbook_paths_converted } },
+            attributes: [],
+          },
+        ],
+      }).then(ids => sequelize.models.Id.destroy({ where: { id: ids.map(id => id.id ) } })),
       sequelize.models.Ref.findAll({
         attributes: ['id'],
         include: [
@@ -785,7 +795,7 @@ async function create_db(ourbigbook_options, non_ourbigbook_options) {
     { force: cli.clearDb },
   )
   non_ourbigbook_options.sequelize = sequelize;
-  non_ourbigbook_options.db_provider = new ourbigbook_nodejs_webpack_safe.SqliteDbProvider(sequelize);
+  non_ourbigbook_options.db_provider = new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize);
   perf_print('create_db_end', ourbigbook_options)
 }
 

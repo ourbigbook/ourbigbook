@@ -34,7 +34,7 @@
     "css-minimizer-webpack-plugin": "3.0.2",
     "js-beautify": "1.14.7",
     "mini-css-extract-plugin": "2.1.0",
-    "mocha": "9.1.3",
+    "mocha": "10.2.0",
     "mocha-list-tests": "1.0.2",
     "monaco-editor": "0.20.0",
     "node-polyfill-webpack-plugin": "1.1.4",

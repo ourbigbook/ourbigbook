@@ -3647,7 +3647,8 @@ function parse(tokens, options, context, extra_returns={}) {
           }
           if (message) {
             parse_error(state, message, ast.source_location);
-            //ret += error_message_in_output(message, context);
+            ast.args[Macro.TITLE_ARGUMENT_NAME].push(
+              new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location));
           }
         }
 

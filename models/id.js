@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize')
 
 module.exports = (sequelize) => {
-  const Id = sequelize.define(
+  return sequelize.define(
     'Id',
     {
       // Don't use `id` because that is the default pk column.
@@ -25,5 +25,4 @@ module.exports = (sequelize) => {
       ],
     }
   )
-  return Id
 }

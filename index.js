@@ -4198,7 +4198,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                 context,
                 ast
               )
-              x_child_db_add_from_id(target_id_effective, context, ast.id, INCLUDES_TABLE_NAME_X_CHILD);
+              x_child_db_add_from_id(target_id_effective, context, ast.id, REFS_TABLE_X_CHILD);
             }
           }
           const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
@@ -4209,7 +4209,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                 context,
                 ast
               )
-              x_child_db_add_from_id(ast.id, context, target_id_effective, INCLUDES_TABLE_NAME_X_CHILD);
+              x_child_db_add_from_id(ast.id, context, target_id_effective, REFS_TABLE_X_CHILD);
             }
           }
         } else {
@@ -4242,7 +4242,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               parent_id !== undefined
             ) {
               // Update xref database for incoming links.
-              const from_ids = x_child_db_add_from_id(target_id_effective, context, parent_id, INCLUDES_TABLE_NAME_X);
+              const from_ids = x_child_db_add_from_id(target_id_effective, context, parent_id, REFS_TABLE_X);
 
               // Update xref database for child/parent relationships.
               {
@@ -4255,7 +4255,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                   fromid = target_id_effective;
                 }
                 if (toid !== undefined) {
-                  x_child_db_add_from_id(toid, context, fromid, INCLUDES_TABLE_NAME_X_CHILD);
+                  x_child_db_add_from_id(toid, context, fromid, REFS_TABLE_X_CHILD);
                 }
               }
             }
@@ -5255,14 +5255,10 @@ async function x_text(ast, context, options={}) {
 const AT_MENTION_CHAR = '@';
 const HASHTAG_CHAR = '#';
 const WEBSITE_URL = 'https://ourbigbook.com/';
-const INCLUDES_TABLE_NAME_X = 'X';
-exports.INCLUDES_TABLE_NAME_X = INCLUDES_TABLE_NAME_X;
-const INCLUDES_TABLE_NAME_X_CHILD = 'X_CHILD';
-exports.INCLUDES_TABLE_NAME_X_CHILD = INCLUDES_TABLE_NAME_X_CHILD;
-const INCLUDES_TABLE_NAMES = [
-  INCLUDES_TABLE_NAME_X,
-  INCLUDES_TABLE_NAME_X_CHILD,
-];
+const REFS_TABLE_X = 'X';
+exports.REFS_TABLE_X = REFS_TABLE_X;
+const REFS_TABLE_X_CHILD = 'X_CHILD';
+exports.REFS_TABLE_X_CHILD = REFS_TABLE_X_CHILD;
 const END_NAMED_ARGUMENT_CHAR = '}';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';
 const ESCAPE_CHAR = '\\';
@@ -5834,7 +5830,7 @@ const DEFAULT_MACRO_LIST = [
         }
       }
       const tag_ids = await context.id_provider.get_from_header_ids_of_xrefs_to(
-        INCLUDES_TABLE_NAME_X_CHILD, ast.id);
+        REFS_TABLE_X_CHILD, ast.id);
       const new_context = clone_and_set(context, 'validate_ast', true);
       new_context.source_location = ast.source_location;
       // This is needed because in case of an an undefined \\x with {parent},
@@ -6467,7 +6463,7 @@ const DEFAULT_MACRO_LIST = [
         // Footer metadata.
         if (context.toplevel_ast !== undefined) {
           {
-            let target_ids = await context.id_provider.get_from_header_ids_of_xrefs_to(INCLUDES_TABLE_NAME_X_CHILD, context.toplevel_ast.id, true);
+            let target_ids = await context.id_provider.get_from_header_ids_of_xrefs_to(REFS_TABLE_X_CHILD, context.toplevel_ast.id, true);
             body += await create_link_list(context, ast, 'tagged', 'Tagged', target_ids)
           }
 
@@ -6552,7 +6548,7 @@ const DEFAULT_MACRO_LIST = [
           }
 
           {
-            let target_ids = await context.id_provider.get_from_header_ids_of_xrefs_to(INCLUDES_TABLE_NAME_X, context.toplevel_ast.id);
+            let target_ids = await context.id_provider.get_from_header_ids_of_xrefs_to(REFS_TABLE_X, context.toplevel_ast.id);
             body += await create_link_list(context, ast, 'incoming-links', 'Incoming links', target_ids)
           }
         }

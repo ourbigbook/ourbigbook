@@ -21,7 +21,7 @@ class AstNode {
    * @param {Object} attrs
    *                 {boolean} has_paragraph_siblings: is the macro surrounded directly by \n\n paragraphs
    */
-  constructor(node_type, macro_name, args, line, column, attrs={}) {
+  constructor(node_type, macros, macro_name, args, line, column, attrs={}) {
     this.node_type = node_type;
     this.macro_name = macro_name;
     this.args = args;
@@ -39,7 +39,7 @@ class AstNode {
         } else {
           // Default arguments not given to ''.
           this.args[arg_name] = [new AstNode(
-            AstType.PLAINTEXT, 'plaintext', '', this.line, this.column)];
+            AstType.PLAINTEXT, macros, 'plaintext', '', this.line, this.column)];
         }
       }
     }
@@ -604,10 +604,7 @@ function convert(
   if (!('show_parse'    in options)) { options.show_parse    = false; }
   if (!('show_tokenize' in options)) { options.show_tokenize = false; }
   if (!('show_tokens'   in options)) { options.show_tokens   = false; }
-  const macros = {};
-  for (const macro of DEFAULT_MACRO_LIST) {
-    macros[macro.name] = macro;
-  }
+  macros = macro_list_to_macros();
   extra_returns.errors = [];
   let sub_extra_returns;
   sub_extra_returns = {};
@@ -743,7 +740,8 @@ function html_convert_attrs_id(
       id_text += id_prefix + ID_SEPARATOR
     }
     id_text += title_to_id(convert_arg(ast.args.title, clone_and_set(context, 'html_is_attr', true)));
-    custom_args.id = [new AstNode(AstType.PLAINTEXT, 'plaintext', id_text, ast.line, ast.column)];
+    custom_args.id = [new AstNode(AstType.PLAINTEXT, context.macros,
+      'plaintext', id_text, ast.line, ast.column)];
   }
   return html_convert_attrs(ast, context, arg_names, custom_args);
 }
@@ -819,6 +817,14 @@ function katex_convert(ast, context) {
 }
 katex_convert.macros = {};
 
+function macro_list_to_macros() {
+  const macros = {};
+  for (const macro of DEFAULT_MACRO_LIST) {
+    macros[macro.name] = macro;
+  }
+  return macros;
+}
+
 // https://stackoverflow.com/questions/44447847/enums-in-javascript-with-es6/49709701#49709701
 function make_enum(arr) {
   let obj = {};
@@ -889,6 +895,7 @@ function parse(tokens, macros, options, extra_returns={}) {
                 }
                 new_child_node = new AstNode(
                   AstType.MACRO,
+                  state.macros,
                   auto_parent_name,
                   {
                     'content': arg.slice(start_auto_child_index, i),
@@ -958,6 +965,7 @@ function parse_add_paragraph(
     new_arg.push(
       new AstNode(
         AstType.MACRO,
+        state.macros,
         'p',
         {
           'content': slice
@@ -1074,18 +1082,20 @@ function parse_macro(state) {
     if (macro_type === AstType.ERROR) {
       return new AstNode(
         macro_type,
+        state.macros,
         'plaintext',
         in_output_error(unknown_macro_message),
         state.token.line,
         state.token.column
       );
     } else {
-      return new AstNode(macro_type, macro_name, args, macro_line, macro_column);
+      return new AstNode(macro_type, macros, macro_name, args, macro_line, macro_column);
     }
   } else if (state.token.type === TokenType.PLAINTEXT) {
     // Non-recursive case.
     let node = new AstNode(
       AstType.PLAINTEXT,
+      state.macros,
       'plaintext',
       state.token.value,
       state.token.line,
@@ -1097,6 +1107,7 @@ function parse_macro(state) {
   } else if (state.token.type === TokenType.PARAGRAPH) {
     let node = new AstNode(
       AstType.PARAGRAPH,
+      state.macros,
       undefined,
       undefined,
       state.token.line,
@@ -1112,6 +1123,7 @@ function parse_macro(state) {
     );
     let node = new AstNode(
       AstType.PLAINTEXT,
+      state.macros,
       'plaintext',
       in_output_error('unexpected token'),
       state.token.line,
@@ -1417,7 +1429,8 @@ const DEFAULT_MACRO_LIST = [
             context.errors.push(new ErrorMessage(message, line, column));
           }
         }
-        title = [new AstNode(AstType.PLAINTEXT, 'plaintext', text_title, ast.line, ast.column)];
+        title = [new AstNode(AstType.PLAINTEXT, context.macros,
+          'plaintext', text_title, ast.line, ast.column)];
       }
       let ret = '';
       if (!context.options.body_only) {
@@ -1526,11 +1539,6 @@ pre {
     }
   ),
 ];
-// Macros indexed by their name.
-let macros = {};
-for (const macro of DEFAULT_MACRO_LIST) {
-  macros[macro.name] = macro;
-}
 
 if (require.main === module) {
   // CLI options.
@@ -1567,7 +1575,7 @@ if (require.main === module) {
 
   // Action.
   if (program.helpMacros) {
-    console.log(JSON.stringify(macros, null, 2));
+    console.log(JSON.stringify(macro_list_to_macros(), null, 2));
   } else {
     const encoding = 'utf8';
     let input;

@@ -2,13 +2,13 @@
 
 A Markup language to write multipage or single page HTML / PDF books, blogs, etc. that is \x[saner][saner] and more powerful than Markdown and Asciidoctor, but still nicer to write than XML and JSON, with reference implementation in JavaScript.
 
-The source for this document is at: \a[https://github.com/cirosantilli/cirodown/blob/master/README.ciro] and a rendered version can be seen at: \a[https://cirosantilli.com/cirodown] and a live in-browser demo at: \a[https://cirosantilli.com/cirodown/editor].
+The source for this document is at: https://github.com/cirosantilli/cirodown/blob/master/README.ciro and a rendered version can be seen at: https://cirosantilli.com/cirodown and a live in-browser demo at: \a[https://cirosantilli.com/cirodown/editor].
 
 \toc
 
 \h[2][Quick start]
 
-Live in-browser demo: \a[https://cirosantilli.com/cirodown/editor]
+Live in-browser demo: https://cirosantilli.com/cirodown/editor
 
 Alternatively, you can clone and run it locally with:
 ``
@@ -104,7 +104,7 @@ Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally pu
 
 Originally, Cirodown was is meant to be both saner and more powerful than Markdown and Asciidoctor.
 
-But alas, as Ciro started implementing and using it, he started to bring some Markdown \x[insane-macro-shortcuts][insanity he missed back in], 
+But alas, as Ciro started implementing and using it, he started to bring some Markdown \x[insane-macro-shortcuts][insanity he missed back in].
 
 And so this "degraded" slightly into a language slightly saner than Asciidoctor but with an amazing Node.js implementation that makes it better for book writing and website publishing.
 
@@ -197,14 +197,20 @@ One major advantage of this, is that when writing documentation, you often want 
 \h[2][Links `\a`]
 {id=links}
 
-Autolink (link text is the same as the link):
+\x[insane-macro-shortcuts][Insane] autolink (link text is the same as the link):
 \cirodown_example[[
-\a[http://example.com]
+The website http://example.com is cool.
+]]
+Exact parsing rules described at: \x[insane-link-parsing-rules]{style=full}.
+
+Equivalent sane version:
+\cirodown_example[[
+The website \a[http://example.com] is cool.
 ]]
 
-Link with custom text:
+Custom text:
 \cirodown_example[[
-\a[http://example.com][my custom link text]
+The website \a[http://example.com][example.com] is cool.
 ]]
 
 Link with multiple paragraphs inside it:
@@ -212,6 +218,26 @@ Link with multiple paragraphs inside it:
 \a[http://example.com][Multiple
 
 paragraphs]
+]]
+
+\h[3][Insane link parsing rules]
+
+\l[must be preceeded by a space ` `, newline `\n` or the start of the document]
+\l[the recognized protocols are: `http` and `https`]
+\l[ends at space ` `, newline `\n` or the end of the document]
+
+As a consequence, of those rules, it is impossible to have an insane link followed immediately by a period, e.g.:
+\cirodown_example[[
+Check out this website: http://example.com.
+]]
+You must instead use the sane syntax for that:
+\cirodown_example[[
+Check out this website: \a[http://example.com].
+]]
+
+Also note that the `http://example.com` inside `\a[http://example.com]` is not treated as an insane autolink itself because `h` is preceeded by `[h]`. If you wrote it with a space as in: `\a[ http://example.com]` then it would be expanded, which is likely not what you want:
+\cirodown_example[[
+\a[ http://example.com]
 ]]
 
 \h[2][Internal cross references `\x`]
@@ -734,7 +760,7 @@ Then, if one day the media repository ever blows up GitHub's limit, you can just
 
 The reason why images should be kept in a separate repository is that images are hundreds or thousands of times larger than hand written text.
 
-Therefore, images could easily fill up the maximum repository size you are allowed: \a[https://webapps.stackexchange.com/questions/45254/file-size-and-storage-limits-on-github#84746] and then what will you do when GitHub comes asking you to reduce the repository size?
+Therefore, images could easily fill up the maximum repository size you are allowed: https://webapps.stackexchange.com/questions/45254/file-size-and-storage-limits-on-github#84746 and then what will you do when GitHub comes asking you to reduce the repository size?
 
 \a[https://git-lfs.github.com/][Git LFS] is one approach to deal with this, but we feel that it adds too much development overhead.
 
@@ -859,7 +885,7 @@ $$\sqrt{1 + 1}$$
 
 \h[3][Math defines across blocks]
 
-TODO superior `\newcommand` version pending upstream tag bump: \a[https://github.com/KaTeX/KaTeX/pull/2091]
+TODO superior `\newcommand` version pending upstream tag bump: https://github.com/KaTeX/KaTeX/pull/2091
 
 First here is an invisible block (with `{show=0}`) defining with a `\newcommand` definition after this paragraph:
 
@@ -978,6 +1004,7 @@ My inline \comment[[inside comment]] is awesome.
 
 Certain commonly used macros have insane macro shortcuts that do not start with backslash (`\`):
 \l[\x[paragraphs]: `\n\n` (double newline)]
+\l[\x[links]: `a http://exmaple.com b` (space followed by `http://`)]
 \l[\x[math]: `$`, described at: \x[insane-code-and-math-shortcuts]]
 \l[\x[code]: \c[[`]], described at: \x[insane-code-and-math-shortcuts]]
 
@@ -1611,7 +1638,7 @@ Publishing only happens if the build has no errors.
 
 The first step is of course to create the GitHub repository that will contain your GitHub pages as usual.
 
-Then, if you want to publish your root user page, which appears at `/` (e.g. \a[https://github.com/cirosantilli/cirosantilli.github.io] for the user `cirosantilli`), GitHub annoyingly forces you to use the `master` branch for the HTML output:
+Then, if you want to publish your root user page, which appears at `/` (e.g. https://github.com/cirosantilli/cirosantilli.github.io for the user `cirosantilli`), GitHub annoyingly forces you to use the `master` branch for the HTML output:
 \l[https://github.com/isaacs/github/issues/212]
 \l[https://stackoverflow.com/questions/31439951/how-can-i-use-a-branch-other-than-master-for-user-github-pages]
 
@@ -1632,7 +1659,7 @@ git branch -D master
 git push --delete origin master
 ``
 
-You then will also want to set your default repository branch to `dev` in the settings for that repository: \a[https://help.github.com/en/github/administering-a-repository/setting-the-default-branch]
+You then will also want to set your default repository branch to `dev` in the settings for that repository: https://help.github.com/en/github/administering-a-repository/setting-the-default-branch
 
 For non-root GitHub pages, no special setup is needed, `cirodown` automatically populates the `gh-pages` branch for you.
 
@@ -1930,13 +1957,12 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[local downloads and single HTML page with image / script embeds]
 \l[image management: upload to separate media directory]
 \l[handle ID calculation from title if title has HTML elements, e.g. headers with code. Use that for the title as well. This has to be done with a context argument that makes implementing macros output just the text without tags]
-\l[autolinks http]
 \l[paragraphs rendered as divs, can show anything inside e.g. lists, code blocks]
 \l[create mechanism to link to the GitHub blob view of in-tree source files that are not added to GitHub pages, e.g. `\file`]
 \l[avoid infinite recursion with xref]
 \l[parse_error: add in document error message, currently only to stderr]
 \l[LaTeX output]
-\l[infinite xref header recursion: \a[https://github.com/asciidoctor/asciidoctor/issues/3543] Solution: forbid x in titles, pass down context from parent.]
+\l[infinite xref header recursion: https://github.com/asciidoctor/asciidoctor/issues/3543 Solution: forbid x in titles, pass down context from parent.]
 \l[on the AST, put contents of headers inside headers]
 \l[parallel build across files on `./cirodown .`]
 \l[includes without double newline between them]

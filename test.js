@@ -570,7 +570,7 @@ assert_convert_ast('link simple',
     ]),
   ]
 );
-assert_convert_ast('link auto',
+assert_convert_ast('link auto sane',
   'a \\a[http://example.com] b\n',
   [
     a('p', [
@@ -578,6 +578,33 @@ assert_convert_ast('link auto',
       a('a', undefined, {'href': [t('http://example.com')]}),
       t(' b'),
     ]),
+  ]
+);
+assert_convert_ast('link auto insane space',
+  'a http://example.com b\n',
+  [
+    a('p', [
+      t('a '),
+      a('a', undefined, {'href': [t('http://example.com')]}),
+      t(' b'),
+    ]),
+  ]
+);
+assert_convert_ast('link auto insane start',
+  'http://example.com\n',
+  [a('p', [a('a', undefined, {'href': [t('http://example.com')]})])],
+);
+assert_convert_ast('link auto insane newline',
+  `a
+
+http://example.com
+
+b
+`,
+  [
+    a('p', [t('a')]),
+    a('p', [a('a', undefined, {'href': [t('http://example.com')]})]),
+    a('p', [t('b')]),
   ]
 );
 assert_convert_ast('link with multiple paragraphs',

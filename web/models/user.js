@@ -157,7 +157,7 @@ module.exports = (sequelize) => {
       username: this.username,
       displayName: this.displayName,
       image: this.image,
-      effectiveImage: this.image || 'https://static.productionready.io/images/smiley-cyrus.jpg',
+      effectiveImage: this.image || config.defaultProfileImage,
       followerCount: this.followerCount,
       score: this.score,
       admin: this.admin,

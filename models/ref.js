@@ -8,16 +8,16 @@ module.exports = (sequelize) => {
   const Ref = sequelize.define(
     'Ref',
     {
+      type: {
+        type: DataTypes.SMALLINT,
+        allowNull: false,
+      },
       from_id: {
         type: DataTypes.TEXT,
         allowNull: false,
       },
       to_id: {
         type: DataTypes.TEXT,
-        allowNull: false,
-      },
-      type: {
-        type: DataTypes.SMALLINT,
         allowNull: false,
       },
       defined_at: {

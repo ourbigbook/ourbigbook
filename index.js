@@ -4994,10 +4994,19 @@ async function parse(tokens, options, context, extra_returns={}) {
         header_file_preview_asts_next = undefined
 
         if (ast.file && context.options.output_format !== OUTPUT_FORMAT_OURBIGBOOK) {
+          let type, content
+          if (ast.file.match(media_provider_type_youtube_re)) {
+            type = 'video'
+          } else {
+            const indir = context.options.input_path === undefined ? '.' : path.dirname(context.options.input_path)
+            ;({ type, content } = context.options.read_file(
+              path.join(indir, ast.file), context))
+          }
+
           // TODO move to render https://docs.ourbigbook.com/todo/remove-synthetic-asts
           const is_about_asts = [
             new AstNode(AstType.PARAGRAPH),
-            new PlaintextAstNode(`This section is about the file: `),
+            new PlaintextAstNode(`This section is about the ${type}: `),
             new AstNode(AstType.MACRO, 'b', {
               content: new AstArgument([
                 new AstNode(AstType.MACRO,
@@ -5052,9 +5061,6 @@ async function parse(tokens, options, context, extra_returns={}) {
           } else {
             const protocol = protocol_get(ast.file)
             if (protocol === null || protocol === 'file') {
-              const indir = context.options.input_path === undefined ? '.' : path.dirname(context.options.input_path)
-              const { type, content } = context.options.read_file(
-                path.join(indir, ast.file), context)
               if (
                 content !== undefined
               ) {

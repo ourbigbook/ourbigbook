@@ -319,6 +319,15 @@ See the relevant specific section:
     ======== h8
     ``
   * generate lists of <incoming links> between internal headers: it shows every internal link coming into the current page
+* automatic file upload and directory listing of non OurBigBook files: <`_raw` directory>, e.g.:
+  * link to a file:
+    \OurBigBookExample[[
+    The file \a[index.js] is cool.
+    ]]
+  * link to a directory:
+    \OurBigBookExample[[
+    The directory \a[file_demo] is cooler.
+    ]]
 * is written in JavaScript and therefore runs natively on the browser to allow live previews as shown at: https://docs.ourbigbook.com/editor[]
 * helps you with the publishing:
   * `ourbigbook --publish` publishes in a single command to the configured target (default GitHub pages): <publish>{full}
@@ -867,6 +876,8 @@ Implemented at: https://github.com/ourbigbook/ourbigbook/issues/87[] as `relativ
 
 <OurBigBook> places output files that are not the output of `.bigb` to `.html` conversion (i.e. `.html` output files) under the `_raw/` prefix of the output.
 
+Additionally, directory listing as also generated for all directories, allowing users to browse all source files.
+
 <Internal links> then automatically add the `_raw/` prefix to every link.
 
 For example, consider an input directory that contains:
@@ -902,6 +913,17 @@ the following files would exist in the output directory:
 * `_raw/myfile.c`: a copy of the input file `myfile.c`
 * `_raw/myimg.png`: a copy of the input file `myimg.c`
 and all links/image references would work and automtically point to the correct locations under `_raw`.
+
+Some live examples:
+* link to a file:
+
+  \OurBigBookExample[[
+  The file \a[index.js] is cool.
+  ]]
+* link to a directory:
+  \OurBigBookExample[[
+  The directory \a[file_demo] is cooler.
+  ]]
 
 The reason why a `_raw` prefix is needed it to avoid naming conflicts with OurBigBook outputs, e.g. suppose we had the files:
 * `configure`

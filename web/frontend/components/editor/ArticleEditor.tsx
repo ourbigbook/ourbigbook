@@ -77,7 +77,7 @@ export default function makeArticleEditor(isnew: boolean = false) {
       if (status !== 200) {
         setErrors(data.errors);
       }
-      Router.push(`/`);
+      Router.push(`/article/${data.article.slug}`);
     };
     return (
       <div className="editor-page">

@@ -147,9 +147,8 @@ router.post('/', auth.required, function(req, res, next) {
         return res.sendStatus(401)
       }
 
-      let article = new req.app.get('sequelize').models.Article(req.body.article)
+      let article = req.app.get('sequelize').models.Article.build(req.body.article)
       article.AuthorId = user.id
-
       return article.save().then(article => {
         return res.json({ article: article.toJSONFor(user, user) })
       })

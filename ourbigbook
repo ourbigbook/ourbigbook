@@ -808,7 +808,7 @@ cli_parser.option('-p --publish', 'https://docs.ourbigbook.com#publish', false);
 cli_parser.option('-P, --publish-commit <commit-message>', 'https://docs.ourbigbook.com#publish-commit');
 cli_parser.option('--publish-target <target>', 'https://docs.ourbigbook.com#publish-target', PUBLISH_TARGETS['github-pages']);
 cli_parser.option('--format-source', 'https://docs.ourbigbook.com#format-source');
-cli_parser.option('-S, --split-headers', 'https://docs.ourbigbook.com#split-headers', false);
+cli_parser.option('-S, --split-headers', 'https://docs.ourbigbook.com#split-headers', undefined);
 cli_parser.option('--stdout', 'also print output to stdout in addition to saving to a file https://docs.ourbigbook.com#stdout', false);
 cli_parser.option('--template <template>', 'https://docs.ourbigbook.com#template');
 cli_parser.option('-w, --watch', 'https://docs.ourbigbook.com#watch', false);
@@ -958,7 +958,11 @@ if (cli.helpMacros) {
     }
   } else {
     html_x_extension = cli.htmlXExtension === false ? false : undefined;
-    split_headers = cli.splitHeaders;
+  }
+  if (cli.splitHeaders === undefined) {
+    cli.splitHeaders = false
+  } else {
+    split_headers = cli.splitHeaders
   }
 
   // Options that will be passed directly to ourbigbook.convert().

@@ -1,6 +1,9 @@
+import Router, { useRouter } from 'next/router'
 import React from 'react'
+import useSWR, { trigger } from 'swr'
 
 import CustomLink from 'components/CustomLink'
+import ArticleAPI from 'lib/api/article'
 import getLoggedInUser from 'lib/utils/getLoggedInUser'
 import { formatDate } from 'lib/utils/date'
 import LikeArticleButton, { LikeArticleButtonContext } from 'components/LikeArticleButton'
@@ -8,7 +11,6 @@ import routes from 'routes'
 
 const ArticleInfo = ({
   article,
-  comments,
 }) => {
   const loggedInUser = getLoggedInUser()
   const canModify =

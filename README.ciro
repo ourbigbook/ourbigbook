@@ -700,14 +700,14 @@ And now a list outside of \x[cirodown-example] to test how it looks directly und
 \l[b]
 \l[c]
 
-\h[2][Images `\image`]
+\h[2][Images (`\Image` and `\image`)]
 {id=images}
 
-A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' `Image` can be seen at \x[fig-my-xi-chrysanthemum].
+A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' `Image` can be seen at \x[fig-my-test-image].
 \cirodown_example[[
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-{title=Xi Chrysanthemum is a very nice image}
-{id=fig-my-xi-chrysanthemum}
+{title=My test image is a very nice image}
+{id=fig-my-test-image}
 {source=https://github.com/cirosantilli/media/blob/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg}
 {description=This image is amazing because it highlight's Xi's beauty and honesty.}
 ]]
@@ -715,10 +715,10 @@ This exemplifies the following parameters:
 \l[`description`: similar to `title`, but allow for further explanations without them appearing in \x[internal-cross-references][cross references] to the image]
 \l[`source`: a standardized way to credit an image by linking to a URL that contains further image metadata]
 
-Here is one without a description but with an ID so we can link to it: \x[fig-my-xi-chrysanthemum-2]{full}.
+Here is one without a description but with an ID so we can link to it: \x[fig-my-test-image-2]{full}.
 \cirodown_example[[
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-{id=fig-my-xi-chrysanthemum-2}
+{id=fig-my-test-image-2}
 ]]
 We must use \x[cross-reference-style][`full`] here because otherwise the link text would be empty and not show at all.
 
@@ -735,19 +735,19 @@ This link is of course not stable across document revisions however, since if an
 We can also see that such an image does not increment the Figure count:
 \cirodown_example[[
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-{id=fig-my-xi-chrysanthemum-3}
+{id=fig-my-test-image-3}
 ]]
 
 And this is how you make an inline image inline one with lower case `i`:
 \cirodown_example[[
-My inline \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg][Xi Chrysanthemum] is awesome.
+My inline \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg][test image] is awesome.
 ]]
 Inline images can't have captions.
 
 The `description` can have multiple paragraphs just like any other element, but we don't recommend this style because it makes it hard for readers to see what is part of the image caption and what is part of the next paragraph.
 \cirodown_example[[
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-{id=fig-my-xi-chrysanthemum-description-paragraphs}
+{id=fig-my-test-image-description-paragraphs}
 {title=Title of the figure}
 {source=https://github.com/cirosantilli/media/blob/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg}
 {description=Description paragraph 1.
@@ -762,7 +762,7 @@ Maybe we could improve this with some CSS styling, but generally when you want m
 And now an image outside of \x[cirodown-example] to test how it looks directly under \x[toplevel]:
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-{id=fig-my-xi-chrysanthemum-toplevel}
+{id=fig-my-test-image-toplevel}
 
 \h[3][Where to store images]
 
@@ -884,6 +884,30 @@ cd
 {id=my-code}
 ]]]
 ]]]]
+
+\h[2][Videos (`\Video` and `\video`)]
+{id=videos}
+
+Very analogous to \x[images], only differences will be documented here.
+
+First, \x[where-to-store-images] becomes even more critical here since videos are even larger than images. Arguably, the only reasonable option is to sell your soul to YouTube with the `youtube` \x[boolean-named-arguments][boolean named argument]. Here is an example: \x[sample-video-from-youtube].
+\cirodown_example[[
+\Video[YeFzeNAHEhU]{youtube}
+{id=sample-video-from-youtube}
+{title=Nice sample video embedded from YouTube}
+]]
+When this option is given, the Video address should only to contain the YouTube video ID, which shows in the YouTube URL for the video as:
+``
+https://www.youtube.com/watch?v=<video-id>
+``
+
+But you can also use raw video files from any location that can serve them of course, e.g. here is one stored in this repository: \x[sample-video-in-repository].
+\cirodown_example[[
+\Video[video.mp4]
+{id=sample-video-in-repository}
+{title=Nice sample video stored in this repository}
+{source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
+]]
 
 \h[2][Mathematics `$`, `$$`, `\m` and `\M`]
 {id=math}

@@ -1469,6 +1469,59 @@ function macro_list_to_macros() {
 }
 exports.macro_list_to_macros = macro_list_to_macros;
 
+function macro_image_video_convert_function(content_func) {
+  return function(ast, context) {
+    let rendered_attrs = html_convert_attrs(ast, context, ['src']);
+    let figure_attrs = html_convert_attrs_id(ast, context);
+    let ret = `<figure${figure_attrs}>\n`
+    let href_prefix;
+    if (ast.id !== undefined) {
+      href_prefix = this.self_link(ast);
+    } else {
+      href_prefix = undefined;
+    }
+    let description = convert_arg(ast.args.description, context);
+    if (description !== '') {
+      description = '. ' + description;
+    }
+    let source
+    if (ast.args.source === undefined) {
+      source = '';
+    } else {
+      source = `<a ${html_attr('href', convert_arg(ast.args.source, context))}>Source</a>.`;
+      if (description === '') {
+        source = '. ' + source;
+      } else {
+        source = ' ' + source;
+      }
+    }
+    let src = convert_arg(ast.args.src, context);
+    let alt_arg;
+    const has_caption = ast.id !== undefined && ast.index_id;
+    if (ast.args.alt === undefined) {
+      if (has_caption) {
+        alt_arg = undefined;
+      } else {
+        alt_arg = ast.args.src;
+      }
+    } else {
+      alt_arg = ast.args.alt;
+    }
+    let alt;
+    if (alt_arg === undefined) {
+      alt = '';
+    } else {
+      alt = html_attr('alt', html_escape_attr(convert_arg(alt_arg, context)));;
+    }
+    ret += content_func(ast, context, src, rendered_attrs, alt);
+    if (has_caption) {
+      ret += `<figcaption>${Macro.x_text(ast, context, {href_prefix: href_prefix})}${description}${source}</figcaption>\n`;
+    }
+    ret += '</figure>\n';
+    return ret;
+  };
+}
+
 // https://stackoverflow.com/questions/44447847/enums-in-javascript-with-es6/49709701#49709701
 function make_enum(arr) {
   let obj = {};
@@ -2310,6 +2363,28 @@ const TokenType = make_enum([
   'NAMED_ARGUMENT_END',
   'NAMED_ARGUMENT_NAME',
 ]);
+const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [
+  new MacroArgument({
+    name: Macro.TITLE_ARGUMENT_NAME,
+  }),
+  new MacroArgument({
+    name: 'description',
+  }),
+  new MacroArgument({
+    name: 'source',
+    elide_link_only: true,
+  }),
+];
+const MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS = [
+  new MacroArgument({
+    name: 'src',
+    elide_link_only: true,
+    mandatory: true,
+  }),
+  new MacroArgument({
+    name: 'alt',
+  }),
+];
 const DEFAULT_MACRO_LIST = [
   new Macro(
     Macro.LINK_MACRO_NAME,
@@ -2599,83 +2674,42 @@ const DEFAULT_MACRO_LIST = [
   ),
   new Macro(
     'Image',
-    [
-      new MacroArgument({
-        name: 'src',
-        elide_link_only: true,
-        mandatory: true,
-      }),
-      new MacroArgument({
-        name: 'alt',
-      }),
-    ],
-    function(ast, context) {
-      let img_attrs = html_convert_attrs(ast, context, ['src']);
-      let figure_attrs = html_convert_attrs_id(ast, context);
-      let ret = `<figure${figure_attrs}>\n`
-      let href_prefix;
-      if (ast.id !== undefined) {
-        href_prefix = this.self_link(ast);
+    MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
+    macro_image_video_convert_function(function (ast, context, src, rendered_attrs, alt) {
+      return `<a${html_attr('href', src)}><img${rendered_attrs}${alt}></a>\n`;
+    }),
+    Object.assign(
+      {
+        caption_prefix: 'Figure',
+        id_prefix: 'fig',
+        named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS,
+      },
+    ),
+  ),
+  new Macro(
+    'Video',
+    MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
+    macro_image_video_convert_function(function (ast, context, src, rendered_attrs, alt) {
+      if ('youtube' in ast.args) {
+        return `<iframe width="560" height="315" src="https://www.youtube.com/embed/${src}" ` +
+               `frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; ` +
+               `picture-in-picture" allowfullscreen></iframe>`;
       } else {
-        href_prefix = undefined;
+        return `<video${rendered_attrs} controls>${alt}</video>\n`;
       }
-      let description = convert_arg(ast.args.description, context);
-      if (description !== '') {
-        description = '. ' + description;
-      }
-      let source
-      if (ast.args.source === undefined) {
-        source = '';
-      } else {
-        source = `<a ${html_attr('href', convert_arg(ast.args.source, context))}>Source</a>.`;
-        if (description === '') {
-          source = '. ' + source;
-        } else {
-          source = ' ' + source;
-        }
-      }
-      let src = html_attr('href', convert_arg(ast.args.src, context));
-      let alt_arg;
-      const has_caption = ast.id !== undefined && ast.index_id;
-      if (ast.args.alt === undefined) {
-        if (has_caption) {
-          alt_arg = undefined;
-        } else {
-          alt_arg = ast.args.src;
-        }
-      } else {
-        alt_arg = ast.args.alt;
-      }
-      let alt;
-      if (alt_arg === undefined) {
-        alt = '';
-      } else {
-        alt = html_attr('alt', html_escape_attr(convert_arg(alt_arg, context)));;
-      }
-      ret += `<a${src}><img${img_attrs}${alt}>`;
-      ret += `</a>\n`;
-      if (has_caption) {
-        ret += `<figcaption>${Macro.x_text(ast, context, {href_prefix: href_prefix})}${description}${source}</figcaption>\n`;
-      }
-      ret += '</figure>\n';
-      return ret;
-    },
-    {
-      caption_prefix: 'Figure',
-      id_prefix: 'fig',
-      named_args: [
-        new MacroArgument({
-          name: Macro.TITLE_ARGUMENT_NAME,
-        }),
-        new MacroArgument({
-          name: 'description',
-        }),
-        new MacroArgument({
-          name: 'source',
-          elide_link_only: true,
-        }),
-      ],
-    }
+    }),
+    Object.assign(
+      {
+        caption_prefix: 'Video',
+        id_prefix: 'video',
+        named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS.concat(
+          new MacroArgument({
+            name: 'youtube',
+            boolean: true,
+          }),
+        ),
+      },
+    ),
   ),
   new Macro(
     'image',
@@ -2986,7 +3020,7 @@ const DEFAULT_MACRO_LIST = [
       if (content_arg === undefined) {
         let x_text_options = {
           caption_prefix_span: false,
-          style_full: ast.args.full !== undefined,
+          style_full: 'full' in ast.args,
           quote: true,
         };
         content = Macro.x_text(target_id_ast, context, x_text_options);

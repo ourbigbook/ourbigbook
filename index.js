@@ -257,8 +257,8 @@ class AstNode {
     if (!('html_is_attr' in context)) {
       context.html_is_attr = false;
     }
-    if (!('id_provider' in context)) {
-      context.id_provider = {};
+    if (!('db_provider' in context)) {
+      context.db_provider = {};
     }
     if (!('id_conversion' in context)) {
       context.id_conversion = false;
@@ -398,8 +398,8 @@ class AstNode {
     // Refs not defined from outside in the current .bigb file + include_path_set
     // but which were explicitly requested, e.g. we request it for all headers
     // to look for external include parents
-    if (context.options.id_provider) {
-      const parents_from_db = context.options.id_provider.get_refs_to_as_ids(
+    if (context.options.db_provider) {
+      const parents_from_db = context.options.db_provider.get_refs_to_as_ids(
         REFS_TABLE_PARENT,
         this.id,
       )
@@ -424,7 +424,7 @@ class AstNode {
     const header_parent_ids = this.get_header_parent_ids(context);
     for (const header_parent_id of header_parent_ids) {
       if (header_parent_id !== undefined) {
-        ret.push(context.id_provider.get(header_parent_id, context));
+        ret.push(context.db_provider.get(header_parent_id, context));
       }
     }
     return ret
@@ -438,7 +438,7 @@ class AstNode {
       if (cur_id === undefined) {
         return false;
       }
-      cur_ast = context.id_provider.get(cur_id, context)
+      cur_ast = context.db_provider.get(cur_id, context)
       if (cur_ast.id === ancestor_id) {
         return true;
       }
@@ -789,22 +789,6 @@ class ErrorMessage {
   }
 }
 
-class FileProvider {
-  /* Get entry by path.
-   * @return Object
-   *        - path {String}: source path
-   *        - toplevel_id {String}
-   */
-  get(path) {
-    return this.get_path_entry(path);
-  }
-
-  get_path_entry(path) { throw new Error('unimplemented'); }
-
-  async get_path_entry_fetch(path, context) { throw new Error('unimplemented'); }
-}
-exports.FileProvider = FileProvider;
-
 function is_absolute_xref(id, context) {
   return id[0] === Macro.HEADER_SCOPE_SEPARATOR ||
       (context.options.magic_leading_at && id[0] === AT_MENTION_CHAR)
@@ -826,7 +810,7 @@ function resolve_absolute_xref(id, context) {
  * - browser: HTTP requests
  * - local: sqlite database
  */
-class IdProvider {
+class DbProvider {
   /**
    * @return remove all IDs from this ID provider for the given path.
    *         For example, on a local ID database cache, this would clear
@@ -907,27 +891,31 @@ class IdProvider {
     const entries = this.get_refs_to(type, to_id, reversed)
     return new Set(entries.map(e => e.id))
   }
-}
-exports.IdProvider = IdProvider;
 
-/** IdProvider that first tries id_provider_1 and then id_provider_2.
+  get_file(path) { throw new Error('unimplemented'); }
+
+  async fetch_files(path, context) { throw new Error('unimplemented'); }
+}
+exports.DbProvider = DbProvider;
+
+/** DbProvider that first tries db_provider_1 and then db_provider_2.
  *
  * The initial use case for this is to transparently use either IDs defined
  * in the current document, or IDs defined externally.
  */
-class ChainedIdProvider extends IdProvider {
-  constructor(id_provider_1, id_provider_2) {
+class ChainedDbProvider extends DbProvider {
+  constructor(db_provider_1, db_provider_2) {
     super();
-    this.id_provider_1 = id_provider_1;
-    this.id_provider_2 = id_provider_2;
+    this.db_provider_1 = db_provider_1;
+    this.db_provider_2 = db_provider_2;
   }
 
   get_noscope_base(id) {
-    let ret = this.id_provider_1.get_noscope_base(id);
+    let ret = this.db_provider_1.get_noscope_base(id);
     if (ret !== undefined) {
       return ret;
     }
-    ret = this.id_provider_2.get_noscope_base(id);
+    ret = this.db_provider_2.get_noscope_base(id);
     if (ret !== undefined) {
       return ret;
     }
@@ -935,16 +923,20 @@ class ChainedIdProvider extends IdProvider {
   }
 
   get_refs_to(type, to_id, reverse=false) {
-    return this.id_provider_1.get_refs_to(type, to_id, reverse).concat(
-      this.id_provider_2.get_refs_to(type, to_id, reverse))
+    return this.db_provider_1.get_refs_to(type, to_id, reverse).concat(
+      this.db_provider_2.get_refs_to(type, to_id, reverse))
+  }
+
+  get_file(path) {
+    return this.db_provider_1.get_file(path) || this.db_provider_2.get_file(path)
   }
 }
 
 /** ID provider from a dict.
  * The initial use case is to represent locally defined IDs, and inject
- * them into ChainedIdProvider together with externally defined IDs.
+ * them into ChainedDbProvider together with externally defined IDs.
  */
-class DictIdProvider extends IdProvider {
+class DictDbProvider extends DbProvider {
   constructor(dict, refs_to) {
     super();
     this.dict = dict;
@@ -973,6 +965,10 @@ class DictIdProvider extends IdProvider {
       }
     }
     return ret
+  }
+
+  get_file(path) {
+    return null
   }
 }
 
@@ -2400,7 +2396,7 @@ function closing_token(token) {
  * The CLI interface basically just feeds this.
  *
  * @param {Object} options
- *          {IdProvider} external_ids
+ *          {DbProvider} external_ids
  *          {Function[String] -> [string,string]} read_include(id) -> [file_name, content]
  *          {Number} h_include_level_offset - add this offset to the levels of every header
  *          {boolean} render - if false, parse the input, but don't render it,
@@ -2783,6 +2779,7 @@ function convert_init_context(options={}, extra_returns={}) {
   options = Object.assign({}, options);
   if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
   if (!('body_only' in options)) { options.body_only = false; }
+  if (!('db_provider' in options)) { options.db_provider = undefined; }
   if (!('ourbigbook_json' in options)) { options.ourbigbook_json = {}; }
     const ourbigbook_json = options.ourbigbook_json;
     {
@@ -2829,7 +2826,6 @@ function convert_init_context(options={}, extra_returns={}) {
       }
     }
   if (!('embed_includes' in options)) { options.embed_includes = false; }
-  if (!('file_provider' in options)) { options.file_provider = undefined; }
   // Check if file exists.
   if (!('fs_exists_sync' in options)) { options.fs_exists_sync }
   if (!('from_include' in options)) { options.from_include = false; }
@@ -2848,7 +2844,6 @@ function convert_init_context(options={}, extra_returns={}) {
     options.h_parse_level_offset = 0;
   }
   if (!('magic_leading_at' in options)) { options.magic_leading_at = true; }
-  if (!('id_provider' in options)) { options.id_provider = undefined; }
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('katex_macros' in options)) { options.katex_macros = {}; }
   if (!('log' in options)) { options.log = {}; }
@@ -3024,8 +3019,8 @@ function convert_init_context(options={}, extra_returns={}) {
  * so that we don't have to fake a complex context. */
 function convert_x_href(target_id, options) {
   const context = convert_init_context(options);
-  context.id_provider = options.id_provider;
-  const target_id_ast = context.id_provider.get(target_id, context);
+  context.db_provider = options.db_provider;
+  const target_id_ast = context.db_provider.get(target_id, context);
   if (target_id_ast === undefined) {
     return undefined
   } else {
@@ -3091,7 +3086,7 @@ function format_number_approx(num, digits) {
 // Get all possible IDs due to walking up scope resolution
 // into the given ids array.
 //
-// This very slightly duplicates the resolution code in IdProvider.get,
+// This very slightly duplicates the resolution code in DbProvider.get,
 // but it was not trivial to factor them out, so just going for this now.
 function get_all_possible_scope_resolutions(current_scope, id, context) {
   let ids = []
@@ -3283,9 +3278,9 @@ function get_parent_argument_ast(ast, context, prev_header, include_options) {
     prev_header !== undefined
   ) {
     if (is_absolute_xref(parent_id, context)) {
-      parent_ast = context.id_provider.get_noscope(resolve_absolute_xref(parent_id, context), context);
+      parent_ast = context.db_provider.get_noscope(resolve_absolute_xref(parent_id, context), context);
     } else {
-      // We can't use context.id_provider.get here because we don't know who
+      // We can't use context.db_provider.get here because we don't know who
       // the parent node is, because scope can affect that choice.
       // https://docs.ourbigbook.com#id-based-header-levels-and-scope-resolution
       let sorted_keys = [...include_options.header_tree_stack.keys()].sort((a, b) => a - b);
@@ -3321,7 +3316,7 @@ function header_check_child_tag_exists(ast, context, childrenOrTags, type) {
   let ret = ''
   for (let child of childrenOrTags) {
     const target_id = render_arg_noescape(child.args.content, context)
-    const target_id_ast = context.id_provider.get(target_id, context, ast.header_tree_node.ast.scope)
+    const target_id_ast = context.db_provider.get(target_id, context, ast.header_tree_node.ast.scope)
     if (target_id_ast === undefined) {
       let message = `unknown ${type} id: "${target_id}"`
       render_error(context, message, child.source_location)
@@ -3854,7 +3849,7 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
   let custom_split_suffix;
   const [dirname, basename] = path_split(input_path, context.options.path_sep);
   const renamed_basename_noext = rename_basename(noext(basename));
-  const ast = context.id_provider.get(id, context);
+  const ast = context.db_provider.get(id, context);
 
   // We are the first header, or something that comes before it.
   let first_header_or_before = false;
@@ -4064,20 +4059,20 @@ async function parse(tokens, options, context, extra_returns={}) {
     false: {},
     true: {},
   };
-  let local_id_provider = new DictIdProvider(
+  let local_db_provider = new DictDbProvider(
     options.indexed_ids,
     context.refs_to,
   );
-  let id_provider;
-  if (options.id_provider !== undefined) {
-    id_provider = new ChainedIdProvider(
-      local_id_provider,
-      options.id_provider
+  let db_provider;
+  if (options.db_provider !== undefined) {
+    db_provider = new ChainedDbProvider(
+      local_db_provider,
+      options.db_provider
     );
   } else {
-    id_provider = local_id_provider;
+    db_provider = local_db_provider;
   }
-  context.id_provider = id_provider;
+  context.db_provider = db_provider;
   options.include_path_set.add(options.input_path);
   let header_file_preview_ast, header_file_preview_ast_next
   const title_ast_ancestors = []
@@ -4858,7 +4853,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             // This only happens in the following cases
             // * \x are validated before for magic stuff
             // * when you have include without embed,
-            //   where we do a context.id_provider.get, and we set the attributes to it
+            //   where we do a context.db_provider.get, and we set the attributes to it
             //   and the thing comes out of serialization validated.
             !ast.validated
           ) {
@@ -5249,7 +5244,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       perf_print(context, 'db_queries')
 
       let id_conflict_asts = []
-      if (options.id_provider !== undefined) {
+      if (options.db_provider !== undefined) {
         const prefetch_ids = new Set()
         for (const ref of options.refs_to_h) {
           prefetch_ids.add(ref.target_id)
@@ -5277,7 +5272,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           fetch_header_tree_ids_rows,
           fetch_ancestors_rows,
         ] = await Promise.all([
-          options.id_provider.get_noscopes_base_fetch(
+          options.db_provider.get_noscopes_base_fetch(
             Array.from(prefetch_ids),
             new Set(),
             context,
@@ -5286,7 +5281,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           // TODO merge the following two refs fetch into one single DB query. Lazy now.
           // Started prototype at: https://github.com/cirosantilli/ourbigbook/tree/merge-ref-cache
           // The annoying part is deciding what needs to go in which direction of the cache.
-          options.id_provider.get_refs_to_fetch(
+          options.db_provider.get_refs_to_fetch(
             [
               // These are needed to render each header.
               // Shows on parents.
@@ -5304,7 +5299,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             },
           ),
           // This is needed to generate the "tagged" at the end of each output file.
-          options.id_provider.get_refs_to_fetch(
+          options.db_provider.get_refs_to_fetch(
             [
               REFS_TABLE_X_CHILD,
             ],
@@ -5316,10 +5311,10 @@ async function parse(tokens, options, context, extra_returns={}) {
             }
           ),
 
-          options.id_provider.fetch_header_tree_ids(
+          options.db_provider.fetch_header_tree_ids(
             options.include_hrefs,
           ),
-          options.id_provider.fetch_ancestors(context.toplevel_id, context),
+          options.db_provider.fetch_ancestors(context.toplevel_id, context),
         ])
       };
 
@@ -5329,7 +5324,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       // This is hair pulling stuff. There has to be a better way...
       for (const href in options.include_hrefs) {
         const header_ast = options.include_hrefs[href]
-        const target_id_ast = context.id_provider.get(href, context, header_ast.scope);
+        const target_id_ast = context.db_provider.get(href, context, header_ast.scope);
         if (target_id_ast === undefined) {
           let message = `ID in include not found on database: "${href}", ` +
             `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
@@ -5380,18 +5375,20 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
       }
       let build_header_tree_asts
-      if (options.id_provider !== undefined) {
-        build_header_tree_asts = context.options.id_provider.build_header_tree(
+      if (options.db_provider !== undefined) {
+        build_header_tree_asts = context.options.db_provider.build_header_tree(
           fetch_header_tree_ids_rows, { context })
-        context.options.id_provider.fetch_ancestors_build_tree(
+        context.options.db_provider.fetch_ancestors_build_tree(
           fetch_ancestors_rows, context)
       }
 
-      if (context.options.file_provider !== undefined) {
+      if (context.options.db_provider !== undefined) {
         const prefetch_files = new Set()
-        // TODO convert this to a join with the above queries. Lazy.
+
+        // TODO I tried to do this as a JOIN from inside get_refs_to_fetch to replace these fetches,
+        // but then if I remove these, some tests start to fail. Understand why and remove this one day.
         for (const prefetch_file_id of prefetch_file_ids) {
-          const prefetch_ast = context.id_provider.get_noscope(prefetch_file_id, context)
+          const prefetch_ast = context.db_provider.get_noscope(prefetch_file_id, context)
           if (
             // Possible in some error cases.
             prefetch_ast !== undefined
@@ -5399,13 +5396,14 @@ async function parse(tokens, options, context, extra_returns={}) {
             prefetch_files.add(prefetch_ast.source_location.path)
           }
         }
-        if (options.id_provider !== undefined) {
+
+        if (options.db_provider !== undefined) {
           for (const ast of build_header_tree_asts) {
             prefetch_files.add(ast.source_location.path)
           }
         }
         if (prefetch_files.size) {
-          await context.options.file_provider.get_path_entry_fetch(Array.from(prefetch_files), context)
+          await context.options.db_provider.fetch_files(Array.from(prefetch_files), context)
         }
       }
 
@@ -5415,7 +5413,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         // numbering with the local parent.
         // This code will likely be removed if we do:
         // https://github.com/cirosantilli/ourbigbook/issues/188
-        const cached_ast = context.id_provider.get(ast.id, context)
+        const cached_ast = context.db_provider.get(ast.id, context)
         if (
           // Possible in error cases and TODO apparently some non-error too.
           cached_ast !== undefined
@@ -5986,7 +5984,7 @@ ${ast.toString()}`)
 exports.validate_ast = validate_ast
 
 function x_child_db_effective_id(target_id, context, ast) {
-  const target_id_ast = context.id_provider.get(target_id, context, ast.scope);
+  const target_id_ast = context.db_provider.get(target_id, context, ast.scope);
   if (
     target_id_ast === undefined
   ) {
@@ -6023,10 +6021,10 @@ function x_get_href_content(ast, context) {
   } else {
     target_id_eff = target_id
   }
-  let target_id_ast = context.id_provider.get(target_id_eff, context, ast.scope);
+  let target_id_ast = context.db_provider.get(target_id_eff, context, ast.scope);
   if (ast.validation_output.magic.boolean && !target_id_ast) {
     target_id_eff = magic_title_to_id(pluralize(target_id, 1))
-    target_id_ast = context.id_provider.get(target_id_eff, context, ast.scope);
+    target_id_ast = context.db_provider.get(target_id_eff, context, ast.scope);
   }
 
   // href
@@ -6291,9 +6289,9 @@ function x_href_parts(target_id_ast, context) {
     ) {
       toplevel_ast = context.toplevel_ast;
     } else {
-      const file_provider_ret = context.options.file_provider.get(target_input_path);
-      if (file_provider_ret) {
-        toplevel_ast = context.id_provider.get(file_provider_ret.toplevel_id, context);
+      const get_file_ret = context.options.db_provider.get_file(target_input_path);
+      if (get_file_ret) {
+        toplevel_ast = context.db_provider.get(get_file_ret.toplevel_id, context);
       } else {
         // The only way this can happen is if we are in the current file, and it hasn't
         // been added to the file db yet.
@@ -7464,7 +7462,7 @@ function create_link_list(context, ast, id, title, target_ids, body) {
     const target_id_asts = [];
     ret += `<div>${html_hide_hover_link('#' + id)}<h2 id="${id}"><a href="#${id}">${title}</a></h2></div>\n`;
     for (const target_id of Array.from(target_ids).sort()) {
-      let target_ast = context.id_provider.get(target_id, context);
+      let target_ast = context.db_provider.get(target_id, context);
       if (
         // Possible when user sets an invalid ID on \x with child \x[invalid]{child}.
         // The error is caught elsewhere.
@@ -7643,7 +7641,7 @@ const OUTPUT_FORMATS_LIST = [
           let self_link_ast
           if (context.options.split_headers) {
             if (ast.from_include && !context.options.embed_includes) {
-              self_link_ast = context.id_provider.get(ast.id, context)
+              self_link_ast = context.db_provider.get(ast.id, context)
               self_link_context = context
             } else {
               self_link_context = clone_and_set(context, 'to_split_headers', true)
@@ -7738,7 +7736,7 @@ const OUTPUT_FORMATS_LIST = [
           let tag_ids_html
           const showTags = !ast.from_include || context.options.embed_includes
           if (showTags) {
-            const tag_ids = context.id_provider.get_refs_to_as_ids(
+            const tag_ids = context.db_provider.get_refs_to_as_ids(
               REFS_TABLE_X_CHILD, ast.id);
             const new_context = clone_and_set(context, 'validate_ast', true);
             new_context.source_location = ast.source_location;
@@ -7961,7 +7959,7 @@ const OUTPUT_FORMATS_LIST = [
               ret += html_class_attr([TOC_HAS_CHILD_CLASS]);
             }
             ret += '>'
-            let target_id_ast = context.id_provider.get(tree_node.ast.id, context);
+            let target_id_ast = context.db_provider.get(tree_node.ast.id, context);
             if (
               // Can happen in test error cases:
               // - cross reference from header title without ID to previous header is not allowed
@@ -8063,7 +8061,7 @@ const OUTPUT_FORMATS_LIST = [
           // Footer metadata.
           if (context.toplevel_ast !== undefined) {
             {
-              const target_ids = context.id_provider.get_refs_to_as_ids(
+              const target_ids = context.db_provider.get_refs_to_as_ids(
                 REFS_TABLE_X_CHILD, context.toplevel_ast.id, true);
               body += create_link_list(context, ast, 'tagged', 'Tagged', target_ids)
             }
@@ -8147,7 +8145,7 @@ const OUTPUT_FORMATS_LIST = [
             }
 
             {
-              const target_ids = context.id_provider.get_refs_to_as_ids(REFS_TABLE_X, context.toplevel_ast.id);
+              const target_ids = context.db_provider.get_refs_to_as_ids(REFS_TABLE_X, context.toplevel_ast.id);
               body += create_link_list(context, ast, 'incoming-links', 'Incoming links', target_ids)
             }
           }
@@ -8719,8 +8717,8 @@ OUTPUT_FORMATS_LIST.push(
               // in both plural and singular, we can't use the magic plural,
               // or it will resolve to plural rather than the correct singular.
               !ast.validation_output.magic.boolean &&
-              context.id_provider.get(href, context) &&
-              context.id_provider.get(href_plural, context)
+              context.db_provider.get(href, context) &&
+              context.db_provider.get(href_plural, context)
             ) {
               return `<${href}>${ourbigbook_convert_args(ast, context, { skip: new Set(['c', 'href', 'magic']) }).join('')}`
             } else {

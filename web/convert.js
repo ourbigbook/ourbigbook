@@ -4,8 +4,7 @@ const ourbigbook = require('ourbigbook')
 const {
   update_database_after_convert,
   remove_duplicates_sorted_array,
-  SqliteFileProvider,
-  SqliteIdProvider,
+  SqliteDbProvider,
 } = require('ourbigbook/nodejs_webpack_safe')
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 
@@ -31,8 +30,7 @@ async function convert({
   if (render === undefined) {
     render = true
   }
-  const id_provider = new SqliteIdProvider(sequelize)
-  const file_provider = new SqliteFileProvider(sequelize, id_provider);
+  const db_provider = new SqliteDbProvider(sequelize)
   const extra_returns = {};
   body = body.replace(/\n+$/, '')
   const input = modifyEditorInput(title, body).new
@@ -43,8 +41,7 @@ async function convert({
   await ourbigbook.convert(
     input,
     lodash.merge({
-      id_provider,
-      file_provider,
+      db_provider,
       input_path,
       ourbigbook_json: {
         h: {
@@ -88,7 +85,7 @@ async function convert({
     authorId: author.id,
     body,
     extra_returns,
-    id_provider,
+    db_provider,
     sequelize,
     path: filePath,
     render,

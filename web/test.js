@@ -2756,6 +2756,8 @@ it('api: article tree: single user', async () => {
           { parentId: '@user0/mathematics', previousSiblingId: undefined }
         ))
         assertStatus(status, data)
+        // Ancestors placeholder is present.
+        assert_xpath("//x:div[@class='nav ancestors']", data.articles[0].h1Render)
 
         // Current tree state:
         // * Index
@@ -2809,6 +2811,9 @@ it('api: article tree: single user', async () => {
           { parentId: undefined }
         ))
         assertStatus(status, data)
+
+        // Ancestors placeholder is when neither parentId nor previousSiblingId are given.
+        assert_xpath("//x:div[@class='nav ancestors']", data.articles[0].h1Render)
 
         // Current tree state:
         // * Index

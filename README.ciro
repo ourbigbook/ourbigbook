@@ -76,6 +76,8 @@ The "more powerful than Asciidoctor" part is only partially true, since Asciidoc
 
 The difference is mostly that Cirodown is completely and entirely focused on making amazing scientific books, and so will have key features for that application out-of-the box.
 
+Another advantage over Asciidoctor is that the reference implementation of Cirodown is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with \a[https://github.com/opal/opal][Opal], but who wants to deal with that layer of complexity?
+
 \h2
 [id=paragraphs]
 [Paragraphs \c[\p]]

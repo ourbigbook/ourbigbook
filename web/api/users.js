@@ -34,13 +34,13 @@ router.param('username', function(req, res, next, username) {
 router.post('/login', async function(req, res, next) {
   try {
     if (!req.body.user) {
-      return res.status(422).json({ errors: { user: "can't be blank" } })
+      throw new lib.ValidationError('user cannot be empty')
     }
     if (!req.body.user.email) {
-      return res.status(422).json({ errors: { email: "can't be blank" } })
+      throw new lib.ValidationError({ email: 'cannot be empty' })
     }
     if (!req.body.user.password) {
-      return res.status(422).json({ errors: { password: "can't be blank" } })
+      throw new lib.ValidationError({ password: 'cannot be empty' })
     }
     await authenticate(req, res, next)
   } catch(error) {
@@ -70,10 +70,19 @@ router.get('/users/:username', auth.optional, async function(req, res, next) {
 // Create a new user.
 router.post('/users', async function(req, res, next) {
   try {
-    let user = new (req.app.get('sequelize').models.User)()
     if (!req.body.user) {
-      return res.status(422).json({ errors: { user: "can't be blank" } })
+      throw new lib.ValidationError('user cannot be empty')
     }
+    if (!req.body.user.username) {
+      throw new lib.ValidationError({ username: 'cannot be empty' })
+    }
+    if (!req.body.user.email) {
+      throw new lib.ValidationError({ email: 'cannot be empty' })
+    }
+    if (!req.body.user.password) {
+      throw new lib.ValidationError({ password: 'cannot be empty' })
+    }
+    let user = new (req.app.get('sequelize').models.User)()
     user.username = req.body.user.username
     user.displayName = req.body.user.displayName
     user.email = req.body.user.email

@@ -2376,8 +2376,8 @@ function convert_init_context(options={}, extra_returns={}) {
         }
       }
       {
-        if (!('lint' in cirodown_json)) { cirodown_json['lint'] = {}; }
-        const lint = cirodown_json['lint']
+        if (!('lint' in cirodown_json)) { cirodown_json.lint = {}; }
+        const lint = cirodown_json.lint
         if (!('h-parent' in lint)) { lint['h-parent'] = undefined; }
       }
     }

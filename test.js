@@ -2458,6 +2458,71 @@ d
 ]
 );
 
+// lint h-parent
+assert_no_error('header parent works with cirodown.json lint h-parent = parent and no includes',
+  `= 1
+
+= 2
+{parent=1}
+`,
+  { extra_convert_opts: { cirodown_json: { lint: { 'h-parent': 'parent', } } } }
+);
+assert_error('header number fails with cirodown.json lint h-parent = parent',
+  `= 1
+
+== 2
+`,
+  3, 1, undefined,
+  { extra_convert_opts: { cirodown_json: { lint: { 'h-parent': 'parent', } } } }
+);
+assert_no_error('header number works with cirodown.json lint h-parent = number',
+  `= 1
+
+== 2
+`,
+  { extra_convert_opts: { cirodown_json: { lint: { 'h-parent': 'number', } } } }
+);
+assert_error('header parent fails with cirodown.json lint h-parent = number',
+  `= 1
+
+= 2
+{parent=1}
+`,
+  3, 1, undefined,
+  { extra_convert_opts: { cirodown_json: { lint: { 'h-parent': 'number', } } } }
+);
+assert_no_error('header parent works with cirodown.json lint h-parent = parent and includes with parent',
+  `= 1
+
+= 2
+{parent=1}
+
+\\Include[include-two-levels-parent]
+`,
+  {
+    extra_convert_opts: {
+      cirodown_json: { lint: { 'h-parent': 'parent', } },
+      embed_includes: true,
+    }
+  }
+);
+assert_error('header parent fails with cirodown.json lint h-parent = parent and includes with number',
+  `= 1
+
+= 2
+{parent=1}
+
+\\Include[include-two-levels]
+`,
+  5, 1, 'include-two-levels.ciro',
+  {
+    extra_convert_opts: {
+      cirodown_json: { lint: { 'h-parent': 'parent', } },
+      embed_includes: true,
+    }
+  }
+);
+
 // Toc
 assert_convert_ast('second explicit toc is removed',
   `a

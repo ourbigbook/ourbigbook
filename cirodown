@@ -332,8 +332,10 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
     let output = convert_path(base_path, input_path, options, new_convert_input_options);
     let t1 = performance.now();
     console.log(`${message} finished in ${t1 - t0} ms`);
-
     fs.writeFileSync(output_path, output);
+    if (new_convert_input_options.had_error) {
+      convert_input_options.had_error = true;
+    }
   } else {
     if (options.render) {
       if (input_path_parse.ext === SASS_EXT) {

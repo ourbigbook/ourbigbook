@@ -45,7 +45,7 @@ The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> i
 * https://OurBigBook.com[]: reference <OurBigBook Web> instance
 * donate to the OurBigBook Project: <donate>
 * https://twitter.com/OurBigBook[]: announcements. Other official accounts at: <official accounts>{full}
-* https://cirosantilli.com/ourbigbook-com[]: further rationale behind the project
+* https://cirosantilli.com/ourbigbook-com[]: further rationale behind the project by the founder <Ciro Santilli> 
 * https://cirosantilli.com[]: showcase static demo document with interesting content, published with <OurBigBook CLI>. Primary inspiration for OurBigBook development.
   * https://cirosantilli.com/oxford-nanopore-river-bacteria[]: a self-contained tutorial style part of the above. Note how internal links integrate seamlessly into the more global topic of biology, e.g. when talking about DNA we link to the global topic https://cirosantilli.com/dna[].
   * https://github.com/cirosantilli/cirosantilli.github.io[] and https://github.com/cirosantilli/cirosantilli.github.io/blob/dev/oxford-nanopore-river-bacteria.bigb[]: source of the above showcase documents
@@ -63,8 +63,8 @@ The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> i
 {parent=OurBigBook}
 
 You can donate to the <OurBigBook Project> to sponsor its development in the following ways:
-* https://cirosantilli.com/sponsor[]: give money directly to Ciro Santilli, who is currently the sole maintainer and developer of the project. If things ever grow in scope we will set up a foundation and register a charity for it. One may dream.
-* by project merchandise, see: <merchandise>{full}
+* https://cirosantilli.com/sponsor[]: give money directly to <Ciro Santilli>, who is the project founder and current lead. If things ever take off we will set up a legal entity to make things cleaner. One may dream. Related: <Project governance>{full}.
+* buy project merchandise, see: <merchandise>{full}
 We are happy to discuss paid contracts to implement specific features, to get in touch see: <contact>.
 
 = Quick start
@@ -501,7 +501,7 @@ Less related but of interest, similar philosophy to what Ciro wants, but no expl
 = Motivation
 {parent=Design goals}
 
-Ciro Santilli developed OurBigBook to perfectly satisfy his writing style, which is basically "create one humongous document where you document everything you know about a subject so everyone can understand it, and just keep adding to it".
+<Ciro Santilli> developed OurBigBook to perfectly satisfy his writing style, which is basically "create one humongous document where you document everything you know about a subject so everyone can understand it, and just keep adding to it".
 
 https://cirosantilli.com[] is the first major document that he has created in OurBigBook.
 
@@ -2101,7 +2101,7 @@ And any links from the tutorial, back to the main massive README will link back 
 
 This feature was implemented at: https://github.com/ourbigbook/ourbigbook/issues/131
 
-Note that this huge README style is not recommended however. Ciro Santilli used to do it, but moved away from it. The currently recommended approach is to manually create not too large subtrees in each page. This way, readers can easily view several nearby sections without having to load a new page every time.
+Note that this huge README style is not recommended however. <Ciro Santilli> used to do it, but moved away from it. The currently recommended approach is to manually create not too large subtrees in each page. This way, readers can easily view several nearby sections without having to load a new page every time.
 
 = `\H` `splitSuffix` argument
 {parent=H arguments}
@@ -9180,17 +9180,17 @@ Some research of different methods is shown at: https://cirosantilli.com/send-fr
   * From Name: OurBigBook.com
   * From Email Address: `notification@ourbigbook.com`
   * Reply to: `notification@ourbigbook.com`
-* we disabled their "link tracking" feature, which was turned on by default. While it is fund to track clicks, it is basically useless for transactional email, and it parse HTML and replaces the links with their tracking links, making things less clear for end users. It is also harder to debug.
+* we disabled their "link tracking" feature, which was turned on by default. While it is fun to track clicks, it is basically useless for transactional email, and it parse HTML and replaces the links with their tracking links, making things less clear for end users. It is also harder to debug.
 * integrate using web API
   * create an API key, and then save it on Heroku:
     ``
     heroku config:set -a ourbigbook SENDGRID_API_KEY=thekey
     ``
-    Also set it locally to be able to test email sending integratio locally:
+    Also set it locally to be able to test email sending integration locally:
     ``
     echo ourbigbook SENDGRID_API_KEY=thekey >> web/.env
     ``
-    Then, to veryfi that the email sending is actually working run;
+    Then, to verify that the email sending is actually working run;
     ``
     OURBIGBOOK_SEND_EMAIL=1 npm run dev
     ``
@@ -9198,7 +9198,7 @@ Some research of different methods is shown at: https://cirosantilli.com/send-fr
     ``
     ciro@ourbigbook.com via sendgrid.net
     ``
-    gmail accepted the email under promotions wihtout domain verification, but outlook sent it to spam. Make sure to click "it is not spam" in that case.
+    gmail accepted the email under promotions without domain verification, but outlook sent it to spam. Make sure to click "it is not spam" in that case.
 
 = OurBigBook Web reCAPTCHA setup
 {parent=OurBigBook Web deployment}
@@ -9315,7 +9315,7 @@ The 10k rows of the free plan are easy to reach, this procedure can be used to u
 = Custom domain name setup
 {parent=Heroku deployment}
 
-The domain `ourbigbook.com` was leased from: https://porkbun.com/[]. Unfortunatly, HTTPS on Heroku with a custom domain requires using a paying tier, so we upgraded from the free tier to the cheapest paid tier, "Hobby Project", to start with: https://stackoverflow.com/questions/52185560/heroku-set-ssl-certificates-on-free-plan
+The domain `ourbigbook.com` was leased from: https://porkbun.com/[]. Unfortunately, HTTPS on Heroku with a custom domain requires using a paying tier, so we upgraded from the free tier to the cheapest paid tier, "Hobby Project", to start with: https://stackoverflow.com/questions/52185560/heroku-set-ssl-certificates-on-free-plan
 
 On the Porkbun web UI, we added a DNS record of type :
 ``
@@ -9328,7 +9328,7 @@ heroku domains
 ``
 and we removed all other `ALIAS`/`CNAME` records from Porkbun.
 
-Next, we setup forwarding from `ciro@ourbigbook.com` to Ciro Santilli's personal gmail accont. This is done in part because it appears that we are required to provide a from address for <OurBigBook Web email sending with Sendgrid>, and that email has to be verified. Having Porkbun host it costs 2\$/month, and we are trying to use as much free stuff as possible until there are actual users on the website.
+Next, we setup forwarding from `ciro@ourbigbook.com` to <Ciro Santilli>'s personal gmail account. This is done in part because it appears that we are required to provide a from address for <OurBigBook Web email sending with Sendgrid>, and that email has to be verified. Having Porkbun host it costs 2\$/month, and we are trying to use as much free stuff as possible until there are actual users on the website.
 
 Note that if you try to test from your own personal account, the redirect automatically skips sending as it notices that it would redirect to the sender. To test it you have to use some secondary email account instead.
 
@@ -10826,6 +10826,28 @@ There is currently no legal incorporated entity.
 
 These will likely change if the project ever gets any traction, but for now things are being ran in an informal manner only.
 
+= Team
+{parent=Project governance}
+
+= Ciro Santilli
+{c}
+{parent=Team}
+
+<Ciro Santilli> is the founder and Absolute Magnanimous All Powerful Eternal Ruler (AMAPER) of the OurBigBook Project.
+
+Ciro is a passionate about free education that allows learners to progress as fast as they want and of <#User Generated Content>, which allows anyone to be the teacher.
+
+* Homepage: https://cirosantilli.com
+* LinkedIn: https://www.linkedin.com/in/cirosantilli
+* Twitter: https://twitter.com/cirosantilli
+* Stack Overflow; https://stackoverflow.com/users/895245
+* GitHub: https://github.com/cirosantilli
+
+\Image[merch/tshirtstudio/hoodie-front.jpg]
+{title=<Ciro Santilli> wearing the <tshirtstudio.com>[Sacred OurBigBook Project Hoodie]!}
+{height=800}
+{provider=github}
+
 = OurBigBook Admin
 {parent=Project governance}
 
@@ -11038,7 +11060,7 @@ Some rationale:
 * the lowercase `b` followed by uppercase `B` gives the idea of big and small
 * the small `o` looks a bit like a degree symbol, which feels sciency. It also contributes to the idea of small to big: `o` is smallest, `b` a bit larger, and `B` actually big
 * keep the same clear on black feeling as the default CSS output
-* yellow, green and blue are the colors of Brazil, where Ciro Santilli was born!
+* yellow, green and blue are the colors of Brazil, where <Ciro Santilli> was born!
 
 It might be cool if we were able to come up with something that looks more like an actual book though instead of just using a boring lettermark.
 

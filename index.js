@@ -1152,8 +1152,8 @@ function capitalize_first_letter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-function caption_number_visible(ast, context, index_id) {
-  return index_id || context.macros[ast.macro_name].options.caption_number_visible(
+function caption_number_visible(ast, context) {
+  return ast.index_id || context.macros[ast.macro_name].options.caption_number_visible(
     ast, clone_and_set(context, 'in_caption_number_visible', true));
 }
 
@@ -1654,23 +1654,21 @@ function macro_image_video_block_convert_function(ast, context) {
     href_prefix = undefined;
   }
   let description = convert_arg(ast.args.description, context);
+  let force_separator = false;
   if (description !== '') {
-    description = '. ' + description;
+    description = ' ' + description;
+    force_separator = true;
   }
   let {error_message, source, source_type, src} = macro_image_video_source(ast, context);
   if (error_message !== undefined) {
     return error_message;
   }
   if (source !== '') {
-    source = `<a ${html_attr('href', source)}>Source</a>.`;
-    if (description === '') {
-      source = '. ' + source;
-    } else {
-      source = ' ' + source;
-    }
+    force_separator = true;
+    source = ` <a ${html_attr('href', source)}>Source</a>.`;
   }
   let alt_arg;
-  const has_caption = ast.id !== undefined && caption_number_visible(ast, context, ast.id);
+  const has_caption = (ast.id !== undefined) && caption_number_visible(ast, context);
   if (ast.args.alt === undefined) {
     if (has_caption) {
       alt_arg = undefined;
@@ -1688,7 +1686,8 @@ function macro_image_video_block_convert_function(ast, context) {
   }
   ret += context.macros[ast.macro_name].options.content_func(ast, context, src, rendered_attrs, alt, source_type);
   if (has_caption) {
-    ret += `<figcaption>${x_text(ast, context, {href_prefix: href_prefix})}${description}${source}</figcaption>\n`;
+    ret += `<figcaption>${x_text(ast, context, {href_prefix:
+      href_prefix, force_separator: force_separator})}${description}${source}</figcaption>\n`;
   }
   ret += '</figure>\n';
   return ret;
@@ -2382,7 +2381,7 @@ function parse(tokens, macros, options, context, extra_returns={}) {
             message += `line ${previous_ast.line} colum ${previous_ast.column}`;
             parse_error(state, message, ast.line, ast.column);
           }
-          if (caption_number_visible(ast, context, index_id)) {
+          if (caption_number_visible(ast, context)) {
             if (!(macro_name in macro_counts_visible)) {
               macro_counts_visible[macro_name] = 0;
             }
@@ -2700,6 +2699,9 @@ function x_text(ast, context, options={}) {
   if (!('href_prefix' in options)) {
     options.href_prefix = undefined;
   }
+  if (!('force_separator' in options)) {
+    options.force_separator = false;
+  }
   if (!('show_caption_prefix' in options)) {
     options.show_caption_prefix = true;
   }
@@ -2733,13 +2735,18 @@ function x_text(ast, context, options={}) {
       ret += `</a>`
     }
   }
+  if (
+    (
+      (Macro.TITLE_ARGUMENT_NAME in ast.args && style_full) ||
+      options.force_separator
+    ) && number !== undefined) {
+    ret += html_escape_context(context, `. `);
+  }
   if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
     if (style_full) {
-      if (number !== undefined) {
-        ret += html_escape_context(context, `. `);
-      }
-      if (options.quote)
+      if (options.quote) {
         ret += html_escape_context(context, `"`);
+      }
     }
     ret += convert_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context);
     if (style_full && options.quote) {

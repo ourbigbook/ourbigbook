@@ -11,6 +11,7 @@
     "katex": "cirosantilli/KaTeX#branch-7e359f0f8d2dffeb2edec8a20aba283c074bee6f",
     "liquidjs": "9.11.7",
     "normalize.css": "8.0.1",
+    "pluralize": "^8.0.0",
     "sass": "1.23.7"
   },
   "devDependencies": {

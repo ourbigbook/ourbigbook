@@ -436,7 +436,7 @@ For capitalization, both headers and cross reference macros have the `c` \x[bool
 
   Using this option is required when you are starting a sentence with a non-proper noun.
 
-TODO: handle pluralization, e.g. https://github.com/blakeembrey/pluralize
+For pluralization, cross reference macros have the `p` \x[boolean-named-arguments][boolean named argument] which stands for "pluralize". If given, this automatically pluralizes the last word of the target title by using the https://github.com/blakeembrey/pluralize library. If the pluralization is any more complex than to modify the last word of the title, you must do it manually however.
 
 With those rules in mind, the previous Cirodown example can be written with less repetition as:
 ``
@@ -450,7 +450,7 @@ Cute animal.
 
 This is the natural enemy of a \x[dog].
 
-\x[dog][Dogs] are cute, but they are still the enemy.
+\x[dog]{p} are cute, but they are still the enemy.
 
 One example of a cat is \x[Felix the Cat].
 
@@ -502,6 +502,10 @@ Now for a live example for quick and dirty interactive testing.
 
 \cirodown_example[[
 \x[not-readme]{c}
+]]
+
+\cirodown_example[[
+\x[inflection-example-not-proper]{p}
 ]]
 
 \cirodown_example[[
@@ -1671,6 +1675,20 @@ And with multiple paragraphs.
 and it was great.
 ]]
 
+== Bold `\b`
+{id=bold}
+
+\cirodown_example[[
+Some \b[bold] text.
+]]
+
+== Italic `\i`
+{id=italic}
+
+\cirodown_example[[
+Some \i[italic] text.
+]]
+
 == Comments
 
 The `Comment` and `comment` macros are regular macros that does not produce any output. Capitalization is explained at: \x[macro-capitalization-for-block-vs-inline].
@@ -2729,3 +2747,5 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 Less related but of interest:
 * http://www.uprtcl.io/
 * https://libretexts.org
+* https://physics.info/
+* https://hypertextbook.com/

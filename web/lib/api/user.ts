@@ -1,7 +1,7 @@
-import axios from "axios";
+import axios from 'axios'
 
-import { SERVER_BASE_URL } from "lib/utils/constant";
-import { addAuthHeader } from "./lib"
+import { SERVER_BASE_URL } from 'lib/utils/constant'
+import { addAuthHeader } from './lib'
 
 const UserAPI = {
   current: async () => {

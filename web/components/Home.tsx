@@ -1,16 +1,16 @@
-import React from "react";
-import useSWR  from "swr";
+import React from 'react'
+import useSWR  from 'swr'
 
-import ArticleList from "components/ArticleList";
-import CustomLink from "components/CustomLink"
-import ErrorMessage from "components/ErrorMessage";
-import Maybe from "components/Maybe";
-import TabList from "components/TabList";
-import getLoggedInUser from "lib/utils/getLoggedInUser";
-import routes from "routes";
-import useMin from "front/api/useMin";
-import { APP_NAME, ABOUT_HREF, DEFAULT_LIMIT, SERVER_BASE_URL } from "lib/utils/constant";
-import fetcher from "lib/utils/fetcher";
+import ArticleList from 'components/ArticleList'
+import CustomLink from 'components/CustomLink'
+import ErrorMessage from 'components/ErrorMessage'
+import Maybe from 'components/Maybe'
+import TabList from 'components/TabList'
+import getLoggedInUser from 'lib/utils/getLoggedInUser'
+import routes from 'routes'
+import useMin from 'front/api/useMin'
+import { APP_NAME, ABOUT_HREF, DEFAULT_LIMIT, SERVER_BASE_URL } from 'lib/utils/constant'
+import fetcher from 'lib/utils/fetcher'
 
 const Home = ({ articles, articlesCount, page, what }) => {
   const loggedInUser = getLoggedInUser()

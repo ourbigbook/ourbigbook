@@ -1,16 +1,16 @@
-import Router from "next/router";
-import React from "react";
-import { mutate } from "swr";
+import Router from 'next/router'
+import React from 'react'
+import { mutate } from 'swr'
 
-import Label from "components/Label";
-import ListErrors from "components/ListErrors";
-import LogoutButton from "components/LogoutButton";
+import Label from 'components/Label'
+import ListErrors from 'components/ListErrors'
+import LogoutButton from 'components/LogoutButton'
 import { AppContext } from 'lib'
-import UserAPI from "lib/api/user";
-import checkLogin from "lib/utils/checkLogin";
-import getLoggedInUser from "lib/utils/getLoggedInUser";
-import storage from "lib/utils/storage";
-import routes from "routes";
+import UserAPI from 'lib/api/user'
+import checkLogin from 'lib/utils/checkLogin'
+import getLoggedInUser from 'lib/utils/getLoggedInUser'
+import storage from 'lib/utils/storage'
+import routes from 'routes'
 
 const Settings = () => {
   const [isLoading, setLoading] = React.useState(false);

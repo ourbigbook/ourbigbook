@@ -1,30 +1,30 @@
 import Router, { useRouter } from 'next/router'
-import React from "react";
-import useSWR, { trigger } from "swr";
+import React from 'react'
+import useSWR, { trigger } from 'swr'
 
 // This also worked. But using the packaged one reduces the need to replicate
 // or factor out the webpack setup of the cirodown package.
 //import { cirodown_runtime } from 'cirodown/cirodown_runtime.js';
 import { cirodown_runtime } from 'cirodown/dist/cirodown_runtime.js';
 
-import Comment from "components/Comment";
-import CommentInput from "components/CommentInput";
-import CustomLink from "components/CustomLink";
-import LikeArticleButton, { LikeArticleButtonContext } from "components/LikeArticleButton";
-import LoadingSpinner from "components/LoadingSpinner";
-import Maybe from "components/Maybe";
-import UserLinkWithImage from "components/UserLinkWithImage";
-import FollowUserButton, { FollowUserButtonContext } from "components/FollowUserButton";
-import { displayAndUsernameText } from "front/user"
+import Comment from 'components/Comment'
+import CommentInput from 'components/CommentInput'
+import CustomLink from 'components/CustomLink'
+import LikeArticleButton, { LikeArticleButtonContext } from 'components/LikeArticleButton'
+import LoadingSpinner from 'components/LoadingSpinner'
+import Maybe from 'components/Maybe'
+import UserLinkWithImage from 'components/UserLinkWithImage'
+import FollowUserButton, { FollowUserButtonContext } from 'components/FollowUserButton'
+import { displayAndUsernameText } from 'front/user'
 import { AppContext } from 'lib'
-import ArticleAPI from "lib/api/article";
-import CommentAPI from "lib/api/comment";
-import { formatDate } from "lib/utils/date";
-import { ArticleType } from "lib/types/articleType";
-import { CommentType } from "lib/types/commentType";
-import fetcher from "lib/utils/fetcher";
-import getLoggedInUser from "lib/utils/getLoggedInUser";
-import routes from "routes";
+import ArticleAPI from 'lib/api/article'
+import CommentAPI from 'lib/api/comment'
+import { formatDate } from 'lib/utils/date'
+import { ArticleType } from 'lib/types/articleType'
+import { CommentType } from 'lib/types/commentType'
+import fetcher from 'lib/utils/fetcher'
+import getLoggedInUser from 'lib/utils/getLoggedInUser'
+import routes from 'routes'
 
 interface ArticlePageProps {
   article: ArticleType;
@@ -184,6 +184,6 @@ export default ArticlePage;
 
 // Server only.
 
-import { getStaticPathsArticle, getStaticPropsArticle } from "lib/article";
+import { getStaticPathsArticle, getStaticPropsArticle } from 'lib/article'
 export const getStaticPaths = getStaticPathsArticle;
 export const getStaticProps = getStaticPropsArticle(true, true);

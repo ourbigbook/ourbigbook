@@ -1,10 +1,10 @@
 /* A link to a user profile that includes a small profile picture. */
 
-import CustomLink from "components/CustomLink";
-import CustomImage from "components/CustomImage";
-import { User } from "lib/types/userType";
-import routes from "routes";
-import { DisplayAndUsername } from "front/user"
+import CustomLink from 'components/CustomLink'
+import CustomImage from 'components/CustomImage'
+import { User } from 'lib/types/userType'
+import routes from 'routes'
+import { DisplayAndUsername } from 'front/user'
 
 const UserLinkWithImage = ({ user }: { user: User }) => {
   if (!user) return null;

@@ -1,5 +1,5 @@
-import Router from "next/router";
-import { mutate, trigger } from "swr";
+import Router from 'next/router'
+import { mutate, trigger } from 'swr'
 
 const LogoutButton = () => {
   const handleLogout = async (e) => {

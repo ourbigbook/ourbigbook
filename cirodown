@@ -413,6 +413,7 @@ commander.option('--help-macros', 'print the metadata of all macros to stdout in
 commander.option('--html-embed', 'http://cirosantilli.com/cirodown#html-embed', false);
 commander.option('--html-single-page', 'http://cirosantilli.com/cirodown#html-single-page', false);
 commander.option('--no-html-x-extension', 'http://cirosantilli.com/cirodown#no-html-x-extension');
+commander.option('--no-db', 'ignore the ID database, mostly for testing https://cirosantilli.com/cirosantilli#internal-cross-file-references-internals');
 commander.option('--outdir <outdir>', 'if the output would be saved to a file e.g. when building a directory, use this directory as the root');
 commander.option('-o, --outfile <outfile>', 'http://cirosantilli.com/cirodown#outfile');
 commander.option('--output-format <output-format>', 'output format');
@@ -622,41 +623,43 @@ A link to another file: \\x[and-now-an-include]
 
     // Setup the ID database.
     fs.mkdirSync(tmpdir, {recursive: true});
-    const db_path = path.join(tmpdir, 'db.sqlite3');
-    const ids_table_name = 'ids';
-    const includes_table_name = 'includes';
-    const db = new better_sqlite3(db_path);
-    if (
-      db.prepare(`SELECT name
-      FROM sqlite_master
-      WHERE type='table' AND name='${ids_table_name}'
-      `).get() === undefined
-    ) {
-      db.prepare(`
-        CREATE TABLE '${ids_table_name}' (
-          id TEXT PRIMARY KEY,
-          path TEXT,
-          ast_json TEXT
-        )`
-      ).run();
+    if (commander.db) {
+      const db_path = path.join(tmpdir, 'db.sqlite3');
+      const ids_table_name = 'ids';
+      const includes_table_name = 'includes';
+      const db = new better_sqlite3(db_path);
+      if (
+        db.prepare(`SELECT name
+        FROM sqlite_master
+        WHERE type='table' AND name='${ids_table_name}'
+        `).get() === undefined
+      ) {
+        db.prepare(`
+          CREATE TABLE '${ids_table_name}' (
+            id TEXT PRIMARY KEY,
+            path TEXT,
+            ast_json TEXT
+          )`
+        ).run();
+      }
+      if (
+        db.prepare(`SELECT name
+        FROM sqlite_master
+        WHERE type='table' AND name='${includes_table_name}'
+        `).get() === undefined
+      ) {
+        db.prepare(`
+          CREATE TABLE '${includes_table_name}' (
+            from_id TEXT,
+            from_path TEXT,
+            to_id TEXT
+          )`
+        ).run();
+      }
+      convert_input_options.db = db;
+      convert_input_options.ids_table_name = ids_table_name;
+      convert_input_options.includes_table_name = includes_table_name;
     }
-    if (
-      db.prepare(`SELECT name
-      FROM sqlite_master
-      WHERE type='table' AND name='${includes_table_name}'
-      `).get() === undefined
-    ) {
-      db.prepare(`
-        CREATE TABLE '${includes_table_name}' (
-          from_id TEXT,
-          from_path TEXT,
-          to_id TEXT
-        )`
-      ).run();
-    }
-    convert_input_options.db = db;
-    convert_input_options.ids_table_name = ids_table_name;
-    convert_input_options.includes_table_name = includes_table_name;
     if (commander.watch) {
       if (publish) {
         cli_error('--publish and --watch are incompatible');

@@ -384,6 +384,10 @@ function convert_path(base_path, input_path, options, convert_input_options) {
   let input_path_noext_renamed = path.join(input_path_parse.dir, input_path_basename_noext_renamed);
   new_convert_input_options.input_path_noext_renamed = input_path_noext_renamed;
   let output = convert_input(input, new_options, new_convert_input_options);
+  const context = new_convert_input_options.extra_returns.context;
+  if (convert_input_options.commander.showHeaders) {
+    console.error(context.header_graph.toString());
+  }
 
   // Update the Sqlite databse with results from the conversion.
   if (convert_input_options.commander.debugPerf) {
@@ -547,6 +551,7 @@ commander.option(
     'Useful to debug the program if conversion blow up on the next stages.',
   false
 );
+commander.option('--show-headers', 'print a simple text version of the headers to stdout', false);
 commander.option('--show-parse', 'print parsing internals to stderr', false);
 commander.option('--show-tokenize', 'print tokenization internals to stderr', false);
 commander.option('--show-tokens', 'print the token stream to stderr', false);

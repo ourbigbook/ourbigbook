@@ -95,7 +95,8 @@ const ArticleList = () => {
             <th>Score</th>
             <th>Author</th>
             <th>Title</th>
-            <th>Published</th>
+            <th>Created</th>
+            <th>Updated</th>
           </tr>
         </thead>
         <tbody>

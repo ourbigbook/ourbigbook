@@ -542,18 +542,6 @@ exports.FileProvider = FileProvider;
  * - local: sqlite database
  */
 class IdProvider {
-  constructor() {
-    // Ignore IDs from this path.
-    // Motivation: ignore database for the current file, to avoid having
-    // false duplicates from the current file that is being rendered
-    // and IDs in that file from the database.
-    this.ignore_path = undefined
-  }
-
-  setIgnorePath(ignore_path) {
-    this.ignore_path = ignore_path
-  }
-
   /**
    * @return remove all IDs from this ID provider for the given path.
    *         For example, on a local ID database cache, this would clear
@@ -569,6 +557,8 @@ class IdProvider {
    *         Otherwise, the ast node for the given ID
    */
   async get(id, context, header_graph_node) {
+    console.error('IdProvider.get');
+    console.error(this.constructor);
     if (id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
       return this.get_noscope(id.substr(1), context);
     } else {
@@ -602,6 +592,7 @@ class IdProvider {
 
   /** Like get, but do not resolve scope. */
   async get_noscope(id, context) {
+    console.error('IdProvider.get_noscope');
     const ast = await this.get_noscope_entry(id);
     if (ast) {
       if (context !== undefined) {
@@ -615,13 +606,18 @@ class IdProvider {
 
   async get_noscope_entry(id) { throw new Error('unimplemented'); }
 
+  /** Array of Database entry-like objects. */
+  async get_refs_to(type, to_id, reversed=false) { throw new Error('unimplemented'); }
+
   /**
+   * TODO this should be done as single JOIN.
+   *
    * @param {String} id
    * @return {Array[AstNode]}: all header nodes that have the given ID
    *                           as a parent includer.
    */
-  async get_includes(to_id, context) {
-    let all_rets = await this.get_includes_entries(to_id);
+  async get_refs_to_as_asts(type, to_id, context) {
+    let all_rets = await this.get_refs_to(type, to_id);
     let ret = [];
     for (const all_ret of all_rets) {
       const from_ast = await this.get(all_ret.from_id, context);
@@ -634,10 +630,11 @@ class IdProvider {
     return ret;
   }
 
-  async get_includes_entries(to_id) { throw new Error('unimplemented'); }
-
-  /** Set of IDs. */
-  async get_from_header_ids_of_xrefs_to(type, to_id) { throw new Error('unimplemented'); }
+  /** @return Set[string] the IDs that reference the given AST .*/
+  async get_refs_to_as_ids(type, to_id, reversed) {
+    const entries = await get_refs_to(type, to_id, reversed)
+    return new Set(entries.map(e => e.from_id))
+  }
 }
 exports.IdProvider = IdProvider;
 
@@ -654,6 +651,7 @@ class ChainedIdProvider extends IdProvider {
   }
 
   async get_noscope_entry(id) {
+    console.error('ChainedIdProvider.get_noscope_entry');
     let ret;
     ret = await this.id_provider_1.get_noscope_entry(id);
     if (ret !== undefined) {
@@ -666,20 +664,12 @@ class ChainedIdProvider extends IdProvider {
     return undefined;
   }
 
-  async get_includes(id, context) {
+  async get_refs_to(type, to_id, reverse=false) {
     const arrs = await Promise.all([
-      this.id_provider_1.get_includes(id, context),
-      this.id_provider_2.get_includes(id, context),
+      this.id_provider_1.get_refs_to(type, to_id, reverse),
+      this.id_provider_2.get_refs_to(type, to_id, reverse),
     ])
     return (arrs[0]).concat(arrs[1])
-  }
-
-  async get_from_header_ids_of_xrefs_to(type, to_id, reverse=false) {
-    const sets = await Promise.all([
-      this.id_provider_1.get_from_header_ids_of_xrefs_to(type, to_id, reverse),
-      this.id_provider_2.get_from_header_ids_of_xrefs_to(type, to_id, reverse),
-    ])
-    return new Set([...sets[0], ...sets[1]])
   }
 }
 
@@ -698,18 +688,14 @@ class DictIdProvider extends IdProvider {
     return this.dict[id];
   }
 
-  async get_includes(id, context) {
-    return [];
-  }
-
-  async get_from_header_ids_of_xrefs_to(type, to_id, reverse=false) {
+  async get_refs_to(type, to_id, reverse=false) {
     const from_ids_reverse = this.xref_from_to_dict[reverse]
     if (from_ids_reverse !== undefined) {
       const from_ids_type = from_ids_reverse[to_id];
       if (from_ids_type !== undefined) {
         const from_ids = from_ids_type[type];
         if (from_ids !== undefined) {
-          return new Set(Object.keys(from_ids));
+          return from_ids;
         }
       }
     }
@@ -3344,8 +3330,8 @@ async function parse(tokens, options, context, extra_returns={}) {
     include_options.is_first_global_header = true;
   }
   // Format:
-  // Set defined_ats  = xref_from_to_dict[false][to_id][type][from_ids]
-  // Set to_ids = xref_from_to_dict[true][from_id][type][to_ids]
+  // from_ids = xref_from_to_dict[false][to_id][type]
+  // to_ids = xref_from_to_dict[to][from_id][type]
   context.xref_from_to_dict = {
     false: {},
     true: {},
@@ -3360,10 +3346,10 @@ async function parse(tokens, options, context, extra_returns={}) {
       local_id_provider,
       options.id_provider
     );
+    options.id_provider.setIgnorePath(options.input_path)
   } else {
     id_provider = local_id_provider;
   }
-  options.id_provider.setIgnorePath(options.input_path)
   context.id_provider = id_provider;
   context.include_path_set.add(options.input_path);
   while (todo_visit.length > 0) {
@@ -4811,15 +4797,10 @@ function x_child_db_add_from_id_or_to(reverse, toid, context, fromid, relation_t
   if (relation_type in from_ids) {
     from_ids_relation_type = from_ids[relation_type]
   } else {
-    from_ids_relation_type = {}
+    from_ids_relation_type = new Set()
     from_ids[relation_type] = from_ids_relation_type
   }
-  let from_ids_relation_type_fromid = from_ids_relation_type[fromid]
-  if (from_ids_relation_type_fromid === undefined) {
-    from_ids_relation_type_fromid = new Set()
-    from_ids[relation_type] = from_ids_relation_type
-  }
-  from_ids_relation_type_fromid.add(context.options.input_path)
+  from_ids_relation_type.add(fromid);
 }
 
 async function x_child_db_effective_id(target_id, context, ast) {
@@ -5281,6 +5262,8 @@ async function x_text(ast, context, options={}) {
 const AT_MENTION_CHAR = '@';
 const HASHTAG_CHAR = '#';
 const WEBSITE_URL = 'https://ourbigbook.com/';
+const REFS_TABLE_INCLUDE = 'INCLUDE';
+exports.REFS_TABLE_INCLUDE = REFS_TABLE_INCLUDE;
 const REFS_TABLE_X = 'X';
 exports.REFS_TABLE_X = REFS_TABLE_X;
 const REFS_TABLE_X_CHILD = 'X_CHILD';
@@ -5798,7 +5781,9 @@ const DEFAULT_MACRO_LIST = [
         ) {
           parent_asts.push(parent_tree_node.value);
         }
-        parent_asts.push(...(await context.id_provider.get_includes(ast.id, context)));
+        console.error('header render');
+        console.error(context.id_provider.constructor);
+        parent_asts.push(...(await context.id_provider.get_refs_to_as_asts(REFS_TABLE_INCLUDE, ast.id, context)));
         parent_links = [];
         for (const parent_ast of parent_asts) {
           let parent_href = await x_href_attr(parent_ast, context);
@@ -5856,7 +5841,7 @@ const DEFAULT_MACRO_LIST = [
           header_meta.push(descendant_count_html);
         }
       }
-      const tag_ids = await context.id_provider.get_from_header_ids_of_xrefs_to(
+      const tag_ids = await context.id_provider.get_refs_to_as_ids(
         REFS_TABLE_X_CHILD, ast.id);
       const new_context = clone_and_set(context, 'validate_ast', true);
       new_context.source_location = ast.source_location;
@@ -6490,7 +6475,7 @@ const DEFAULT_MACRO_LIST = [
         // Footer metadata.
         if (context.toplevel_ast !== undefined) {
           {
-            let target_ids = await context.id_provider.get_from_header_ids_of_xrefs_to(REFS_TABLE_X_CHILD, context.toplevel_ast.id, true);
+            const target_ids = await context.id_provider.get_refs_to_as_ids(REFS_TABLE_X_CHILD, context.toplevel_ast.id, true);
             body += await create_link_list(context, ast, 'tagged', 'Tagged', target_ids)
           }
 
@@ -6501,7 +6486,7 @@ const DEFAULT_MACRO_LIST = [
             while (true) {
               let parent_ast = await cur_ast.get_header_parent(context);
               if (parent_ast === undefined) {
-                const include_asts = await context.id_provider.get_includes(cur_ast.id, context);
+                const include_asts = await context.id_provider.get_refs_to_as_ids(REFS_TABLE_INCLUDE, cur_ast.id);
                 if (include_asts.length === 0) {
                   break;
                 } {
@@ -6575,7 +6560,7 @@ const DEFAULT_MACRO_LIST = [
           }
 
           {
-            let target_ids = await context.id_provider.get_from_header_ids_of_xrefs_to(REFS_TABLE_X, context.toplevel_ast.id);
+            const target_ids = await context.id_provider.get_refs_to_as_ids(REFS_TABLE_X, context.toplevel_ast.id);
             body += await create_link_list(context, ast, 'incoming-links', 'Incoming links', target_ids)
           }
         }

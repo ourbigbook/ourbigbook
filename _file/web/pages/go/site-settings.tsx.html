@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>site-settings.tsx - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../../" class="brand"><img src="../../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="site-settings.tsx"><div class="notnav"><h1><a href="">web/pages/go/site-settings.tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../../_dir/">(root)</a> / <a href="../../../../_dir/web">web</a> / <a href="../../../../_dir/web/pages">pages</a> / <a href="../../../../_dir/web/pages/go">go</a> / <a href="../../../../_raw/web/pages/go/site-settings.tsx">site-settings.tsx</a></b></div></nav></div><div class="p"><b>web/pages/go/site-settings.tsx</b></div><div class="code"><div><pre><code>import Router from 'next/router'
+import React, { useRef } from 'react'
+
+import { cant } from 'front/cant'
+import {
+  docsAdminUrl,
+  networkSlowMs,
+} from 'front/config'
+import {
+  USER_FINISHED_TYPING_MS
+} from 'ourbigbook/runtime_common'
+import ErrorList from 'front/ErrorList'
+import Label from 'front/Label'
+import MapErrors from 'front/MapErrors'
+import {
+  disableButton,
+  enableButton,
+  MyHead,
+  SettingsIcon,
+  useCtrlEnterSubmit,
+  useConfirmExitPage,
+  PinnedArticleIcon,
+} from 'front'
+import { webApi } from 'front/api'
+import routes from 'front/routes'
+import { CommonPropsType } from 'front/types/CommonPropsType'
+import { SiteType } from 'front/types/SiteType'
+
+interface SiteSettingsProps extends CommonPropsType {
+  site: SiteType
+}
+
+function getArticleErrors(pinnedArticle, exists) {
+  let newPinnedArticleOks, newPinnedArticleErrors
+  if (pinnedArticle) {
+    if (exists) {
+      newPinnedArticleErrors = []
+      newPinnedArticleOks = [`Article exists`]
+    } else {
+      newPinnedArticleErrors = [`Article does not exist`]
+    }
+  } else {
+    newPinnedArticleErrors = []
+    newPinnedArticleOks = [`No pinned article`]
+  }
+  return [newPinnedArticleErrors, newPinnedArticleOks]
+}
+
+export default function SiteSettings({
+  loggedInUser,
+  site,
+}: SiteSettingsProps) {
+  const [loading, setLoading] = React.useState(false)
+  const [errors, setErrors] = React.useState([])
+  if (site.pinnedArticle === undefined) {
+    site.pinnedArticle = ''
+  }
+  const [siteInfo, setSiteInfo] = React.useState(site)
+  const [_, pinnedArticleOksInit] = getArticleErrors(site.pinnedArticle, true)
+  const [pinnedArticleOks, setPinnedArticleOks] = React.useState(pinnedArticleOksInit)
+  const [pinnedArticleErrors, setPinnedArticleErrors] = React.useState([])
+  const [pinnedArticleLoading, setPinnedArticleLoading] = React.useState(false)
+  const [pinnedArticleCheckDone, setPinnedArticleCheckDone] = React.useState(true)
+  const pinnedArticleI = React.useRef(0)
+  let pinnedArticleIClosure = pinnedArticleI.current
+  const [formChanged, setFormChanged] = React.useState(false)
+  const updateState = (field) =&gt; async (e) =&gt; {
+    const val = e.target.value
+    let pinnedArticle
+    if (field === 'pinnedArticle') {
+      pinnedArticle = val
+      setPinnedArticleCheckDone(false)
+      setFormChanged(site.pinnedArticle !== pinnedArticle)
+      pinnedArticleI.current++
+    }
+    setSiteInfo({ ...siteInfo, [field]: val })
+    if (pinnedArticle) {
+      setTimeout(() =&gt; {
+        if (pinnedArticleIClosure + 1 === pinnedArticleI.current) {
+          let done = false
+          setTimeout(() =&gt; {
+            if (!done) { setPinnedArticleLoading(true) }
+          }, networkSlowMs)
+          webApi.article(pinnedArticle).then(ret =&gt; {
+            if (pinnedArticleIClosure + 1 === pinnedArticleI.current) {
+              const articleExists = !!ret.data
+              setPinnedArticleLoading(false)
+              const [newPinnedArticleErrors, newPinnedArticleOks] = getArticleErrors(
+                pinnedArticle,
+                articleExists
+              )
+              setPinnedArticleErrors(newPinnedArticleErrors)
+              setPinnedArticleOks(newPinnedArticleOks)
+              setPinnedArticleCheckDone(true)
+              done = true
+            }
+          })
+        }
+      }, USER_FINISHED_TYPING_MS)
+    } else {
+      // Empty is always valid, so we make no request.
+      const [newPinnedArticleErrors, newPinnedArticleOks] = getArticleErrors(
+        pinnedArticle,
+        true
+      )
+      setPinnedArticleErrors(newPinnedArticleErrors)
+      setPinnedArticleOks(newPinnedArticleOks)
+      setPinnedArticleCheckDone(true)
+    }
+  }
+  const handleSubmit = async (e) =&gt; {
+    if (pinnedArticleErrors.length !== 0) {
+      return
+    }
+    e.preventDefault()
+    setLoading(true)
+    const { data, status } = await webApi.siteSettingsUpdate(siteInfo)
+    setLoading(false)
+    if (status === 200) {
+      Router.push(routes.siteSettings())
+    } else {
+      setErrors(data.errors)
+    }
+    setFormChanged(false)
+  }
+  useCtrlEnterSubmit(handleSubmit)
+  useConfirmExitPage(!formChanged)
+  const title = 'Site settings'
+  const canUpdate = !cant.updateSiteSettings(loggedInUser)
+  const submitElem = useRef(null)
+  if (submitElem.current) {
+    if (pinnedArticleCheckDone &amp;&amp; pinnedArticleErrors.length === 0) {
+      enableButton(submitElem.current)
+    } else {
+      disableButton(submitElem.current)
+    }
+  }
+  return &lt;&gt;
+    &lt;MyHead title={title} /&gt;
+    &lt;div className="settings-page content-not-ourbigbook"&gt;
+      &lt;h1&gt;&lt;SettingsIcon /&gt; {title}&lt;/h1&gt;
+      &lt;p&gt;This page contains global settings that affect the entire website. It can only be edited by &lt;a href={`${docsAdminUrl}`}&gt;admins&lt;/a&gt;.&lt;/p&gt;
+      &lt;MapErrors errors={errors} /&gt;
+      &lt;form onSubmit={handleSubmit}&gt;
+        &lt;Label label={&lt;&gt;&lt;PinnedArticleIcon /&gt; Pinned article&lt;/&gt;} &gt;
+          &lt;input
+            type="text"
+            placeholder={"(currently empty) Sample value: \"user0/article0\". Empty for don't pin any."}
+            value={siteInfo.pinnedArticle}
+            onChange={updateState('pinnedArticle')}
+            disabled={!canUpdate}
+          /&gt;
+        &lt;/Label&gt;
+        &lt;ErrorList
+          errors={pinnedArticleErrors}
+          loading={pinnedArticleLoading}
+          oks={pinnedArticleOks}
+        /&gt;
+        {(canUpdate) &amp;&amp;
+          &lt;&gt;
+            &lt;button
+              className="btn"
+              type="submit"
+              ref={submitElem}
+            &gt;
+              Update settings
+            &lt;/button&gt;
+            {formChanged &amp;&amp; &lt;&gt;
+              {' '}
+              &lt;span&gt;Unsaved changes&lt;/span&gt;
+            &lt;/&gt;}
+          &lt;/&gt;
+        }
+      &lt;/form&gt;
+    &lt;/div&gt;
+  &lt;/&gt;
+}
+
+import { getLoggedInUser } from 'back'
+
+export async function getServerSideProps(context) {
+  const { req, res } = context
+  const sequelize = req.sequelize
+  const [loggedInUser, site] = await Promise.all([
+    getLoggedInUser(req, res),
+    sequelize.models.Site.findOne(),
+  ])
+  const [siteJson, loggedInUserJson] = await Promise.all([
+    site.toJson(loggedInUser),
+    loggedInUser ? loggedInUser.toJson(loggedInUser) : null,
+  ])
+  return {
+    props: {
+      loggedInUser: loggedInUserJson,
+      site: siteJson,
+    }
+  }
+}
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/pages/go/";
+</script>
+<script src="../../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

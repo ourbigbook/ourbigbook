@@ -161,6 +161,20 @@ List with ID:
 ]
 {id=my-list}
 
+Thight list:
+* aaa
+* bbb
+and another:
+* ccc
+* ddd
+done.
+
+Nested and tight:
+* aaa
+  * bbb
+  * ccc
+  ddd
+
 Table:
 
 || header 1

@@ -319,7 +319,12 @@ class AstNode {
       } else {
         output_format = context.options.output_format;
       }
-      const convert_function = macro.convert_funcs[output_format];
+      let convert_function
+      if (context.options.xss_safe) {
+        convert_function = macro.options.xss_safe_alt[output_format];
+      } else {
+        convert_function = macro.convert_funcs[output_format];
+      }
       if (convert_function === undefined) {
         const message = `output format ${context.options.output_format} not defined for macro ${this.macro_name}`;
         render_error(context, message, this.source_location);
@@ -785,9 +790,22 @@ class FileProvider {
 }
 exports.FileProvider = FileProvider;
 
+function is_absolute_xref(id, context) {
+  return id[0] === Macro.HEADER_SCOPE_SEPARATOR ||
+      (context.options.magic_leading_at && id[0] === AT_MENTION_CHAR)
+}
+
+function resolve_absolute_xref(id, context) {
+  if (context.options.ref_prefix) {
+    return context.options.ref_prefix + id
+  } else {
+    return id.substr(1)
+  }
+}
+
 /** Interface to retrieving the nodes of IDs defined in external files.
- *
- * We need the abstraction because IDs will come from widely different locations
+*
+* We need the abstraction because IDs will come from widely different locations
  * between browser and local Node.js operation:
  *
  * - browser: HTTP requests
@@ -811,8 +829,8 @@ class IdProvider {
    *         Otherwise, the ast node for the given ID
    */
   get(id, context, current_scope) {
-    if (id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
-      return this.get_noscope(id.substr(1), context);
+    if (is_absolute_xref(id, context)) {
+      return this.get_noscope(resolve_absolute_xref(id, context), context);
     } else {
       if (current_scope !== undefined) {
         current_scope += Macro.HEADER_SCOPE_SEPARATOR
@@ -1077,6 +1095,9 @@ class Macro {
     }
     if (!('xss_safe' in options)) {
       options.xss_safe = true;
+    }
+    if (!('xss_safe_alt' in options)) {
+      options.xss_safe_alt = undefined;
     }
     this.name = name;
     this.positional_args = positional_args;
@@ -2756,6 +2777,17 @@ function convert_init_context(options={}, extra_returns={}) {
   if (!('path_sep' in options)) { options.path_sep = undefined; }
   if (!('read_include' in options)) { options.read_include = () => undefined; }
   if (!('read_file' in options)) { options.read_file = () => undefined; }
+  if (!('ref_prefix' in options)) {
+    // This option started as a hack as a easier to implement workaround for:
+    // https://github.com/cirosantilli/ourbigbook/issues/229
+    // to allow tagged and incoming links to work at all on OurBigBook Web.
+    // That specific usage should be removed.
+    //
+    // However, we later found another usage for it, which should not be removed:
+    // it is necessary to resolve absolute references like \x[/top-id] correctly to
+    // \x[@username/top-id] in Web.
+    options.ref_prefix = '';
+  }
   if (!('remove_leading_at' in options)) { options.remove_leading_at = false; }
   if (!('render' in options)) { options.render = true; }
   if (!('start_line' in options)) { options.start_line = 1; }
@@ -3043,7 +3075,7 @@ function check_and_update_local_link({
       } else {
         check_path = path.join(input_path_directory, href)
       }
-      if (!context.options.fs_exists_sync(check_path)) {
+      if (context.options.fs_exists_sync && !context.options.fs_exists_sync(check_path)) {
         error = `link to inexistent local file: ${href}`;
         render_error(context, error, source_location);
       }
@@ -3139,8 +3171,8 @@ function get_parent_argument_ast(ast, context, prev_header, include_options) {
     // Happens for the first header
     prev_header !== undefined
   ) {
-    if (parent_id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
-      parent_ast = context.id_provider.get_noscope(parent_id.substr(1), context);
+    if (is_absolute_xref(parent_id, context)) {
+      parent_ast = context.id_provider.get_noscope(resolve_absolute_xref(parent_id, context), context);
     } else {
       // We can't use context.id_provider.get here because we don't know who
       // the parent node is, because scope can affect that choice.
@@ -3178,7 +3210,7 @@ function header_check_child_tag_exists(ast, context, childrenOrTags, type) {
   let ret = ''
   for (let child of childrenOrTags) {
     const target_id = render_arg_noescape(child.args.content, context)
-    const target_id_ast = context.id_provider.get(target_id, context, ast.header_tree_node)
+    const target_id_ast = context.id_provider.get(target_id, context, ast.header_tree_node.ast.scope)
     if (target_id_ast === undefined) {
       let message = `unknown ${type} id: "${target_id}"`
       render_error(context, message, child.source_location)
@@ -5022,7 +5054,12 @@ async function parse(tokens, options, context, extra_returns={}) {
       if (options.id_provider !== undefined) {
         const prefetch_ids = new Set()
         for (const ref of options.add_refs_to_h) {
-          prefetch_ids.add(ref.target_id)
+          const ast = ref.ast
+          const id = ref.target_id
+          const ids = push_scope_resolution(ast.scope, id, context)
+          for (const id of ids) {
+            prefetch_ids.add(id)
+          }
         }
         for (const ref of options.add_refs_to_x) {
           const ast = ref.ast
@@ -5033,8 +5070,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           // level. Previously, we would do a query, go up, query, go up,
           // interactively until found, but that is not possible anymore that
           // we have grouped all queries at one point.
-          let ids = []
-          push_scope_resolution(ids, ast.scope, id)
+          const ids = push_scope_resolution(ast.scope, id, context)
 
           // We need the target IDs of any x to render it.
           for (const id of ids) {
@@ -5101,7 +5137,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           ),
           options.id_provider.fetch_ancestors(context.toplevel_id, context),
         ])
-      }
+      };
 
       // Reconcile the dummy include header with our actual knowledge from the DB, e.g.:
       // * patch the ID of the include headers.
@@ -5609,9 +5645,10 @@ exports.propagate_numbered = propagate_numbered
 //
 // This very slightly duplicates the resolution code in IdProvider.get,
 // but it was not trivial to factor them out, so just going for this now.
-function push_scope_resolution(ids, current_scope, id) {
-  if (id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
-    ids.push(id.substr(1))
+function push_scope_resolution(current_scope, id, context) {
+  let ids = []
+  if (is_absolute_xref(id, context)) {
+    ids.push(resolve_absolute_xref(id, context))
   } else {
     if (current_scope !== undefined) {
       current_scope += Macro.HEADER_SCOPE_SEPARATOR
@@ -5623,6 +5660,7 @@ function push_scope_resolution(ids, current_scope, id) {
     }
     ids.push(id)
   }
+  return ids
 }
 
 // Fuck JavaScript? Can't find a built-in way to get the symbol string without the "Symbol(" part.
@@ -5765,7 +5803,12 @@ ${ast.toString()}`)
       }
     }
   }
-  if (!macro.options.xss_safe && !context.options.unsafe_xss && !ast.xss_safe) {
+  if (
+    !macro.options.xss_safe &&
+    !macro.options.xss_safe_alt &&
+    !context.options.unsafe_xss &&
+    !ast.xss_safe
+  ) {
     ast.validation_error = [
       `XSS unsafe macro "${macro_name}" used in safe mode: https://cirosantilli.com/ourbigbook#unsafe-xss`,
       ast.source_location
@@ -5777,11 +5820,20 @@ exports.validate_ast = validate_ast
 function x_child_db_effective_id(target_id, context, ast) {
   const target_id_ast = context.id_provider.get(target_id, context, ast.scope);
   if (
-    // Can happen if it is in another files that was not extracted yet.
     target_id_ast === undefined
   ) {
+    // Can happen if it is in another files that was not extracted yet.
     // Then in that case, we can't do scope resolution. But since we are in another file,
     // we must be using the full scope regardless, so it will be correct.
+    // Edit: not true considering subdirectories: https://github.com/cirosantilli/ourbigbook/issues/229
+    // which we are now hackily working around options.ref_prefix.
+    // This usage should be removed once we implement that correctly.
+    if (
+      context.options.ref_prefix &&
+      !(is_absolute_xref(target_id, context))
+    ) {
+      target_id = context.options.ref_prefix + Macro.HEADER_SCOPE_SEPARATOR + target_id
+    }
     return target_id
   } else {
     return target_id_ast.id
@@ -5882,7 +5934,7 @@ function x_href(target_id_ast, context) {
 //
 // Some desired sample outcomes:
 //
-// id='ourbigbook'             -> ['',       'index-split']
+// id='ourbigbook'           -> ['',       'index-split']
 // id='quick-start'          -> ['',       'quick-start']
 // id='not-readme'           -> ['',       'not-readme-split']
 // id='h2-in-not-the-readme' -> ['',       'h2-in-not-the-readme']
@@ -6879,6 +6931,10 @@ const DEFAULT_MACRO_LIST = [
               ),
               'c': new AstArgument(),
             },
+            ast.source_location,
+            {
+              scope: ast.scope,
+            }
           );
           tag_ids_html_array.push(x_ast.render(new_context));
         }
@@ -7211,11 +7267,16 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       return html_code(
         render_arg(ast.args.content, context),
-        {'class': 'ourbigbook-js-canvas-demo'}
+        { 'class': 'ourbigbook-js-canvas-demo' }
       );
     },
     {
       xss_safe: false,
+      xss_safe_alt: {
+        [OUTPUT_FORMAT_HTML]: (ast, context) => {
+          return html_code(render_arg(ast.args.content, context));
+        }
+      }
     }
   ),
   new Macro(

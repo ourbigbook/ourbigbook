@@ -1998,6 +1998,12 @@ So for example, the following automatic IDs would be generated: \x[table-example
 |
 | true
 | This is the effect of \x[ourbigbook-json/punctuation-normalization].
+
+| I \i[love] dogs.
+| i-love-dogs
+|
+|
+| `love` is extracted from the italic tags `<i>love</i>` with \x[id-output-format] conversion.
 ]
 
 For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the OurBigBook file without extension instead of from the `title` argument.
@@ -3729,6 +3735,8 @@ or:
 {title=\x[myimage1][my content 1].}
 ``
 
+A closely related limitation is the simplistic approach to \x[x-id-output-format].
+
 = Internal cross file reference
 {parent=internal-cross-reference}
 
@@ -5153,7 +5161,7 @@ We decided to expose this format from the CLI just for fun, as it posed no extra
 And it also was a good start generalizing OurBigBook to multiple outputs, as this is a simple format. 
 
 The conversion is very simplistic, it basically just pastes the `content` of most macros. Important exceptions to that include:
-* `\x` uses `href` if a content is not given. Previously, if `\x` didn't have a content, we were actually rendering the `\x` to calculate the ID. But then we noticed that doing so would require another parse pass, so we just went for this simpler approach. This is closely linked to \x[x-within-title-restrictions].
+* `\x`: see \x[x-id-output-format]
 
 So for example if we had:
 ``
@@ -5169,6 +5177,39 @@ then the image ID would be `image-my-nice-title`:
 * `title`: note how we use the `href` `title` instead of what is actually rendered, `Title with more`, because `\x` is treated somewhat specially for performance reasons
 
 Stuff that is primarily non-textual like \x[image]{p} is just completely removed. We could put effort in outputting their title correctly, but meh, not worth the effort.
+
+= `\x` `id` output format
+{parent=id-output-format}
+
+`\x` uses `href` if the content is not given explicitly.
+
+Previously, if `\x` didn't have a content, we were actually rendering the `\x` to calculate the ID. But then we noticed that doing so would require another parse pass, so we just went for this simpler approach. This is closely linked to \x[x-within-title-restrictions].
+
+For example in:
+
+``
+= Animal
+
+\x[image-i-like-dog]
+
+\Image[dog.jpg]
+{title=I like \x[dog]{p}}
+
+== Dog hacked
+``
+note that the ID of the image is `image-i-like-dog`, i.e. `\x[dog]` is not expanded to `Dog hacked`, the `href` is used directly.
+
+If you wanted `image-i-like-dog-hacked` instaead, you would need to explicitly give it as in:
+``
+= Animal
+
+\x[image-i-like-dog-hacked]
+
+\Image[dog.jpg]
+{title=I like \x[dog][dog hacked]}
+
+== Dog hacked
+``
 
 = Unimplemented output formats
 {parent=id-output-format}
@@ -6173,7 +6214,7 @@ This is something that should be merged into Sequelize itself, or at least asked
 * \a[web/pages]: Next.js URL entry points
 * \a[web/front] and \a[web/front.tsx]: files that can be imported from either front-end of backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
 * \a[web/back] and \a[web/back.ts]: files that can be imported only from backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
-* \a[web_api]: helpers to access the OurBigBook HTTP REST API. These have to be outside of `web/` because \x[ourbigbook-cli] uses them e.g. for syncing local files to the server, and OurBigBook CLI cannot depend on OurBigBook Web components, only the other way around, otherwise we could create circular dependencies. That exact same JavaScript code is also used from the front-end! The infinite joys of homomorphic JS.
+* \a[web_api.js]: helpers to access the OurBigBook HTTP REST API. These have to be outside of `web/` because \x[ourbigbook-cli] uses them e.g. for syncing local files to the server, and OurBigBook CLI cannot depend on OurBigBook Web components, only the other way around, otherwise we could create circular dependencies. That exact same JavaScript code is also used from the front-end! The infinite joys of homomorphic JS.
 
 = web/bin/rerender-articles.js
 {file}
@@ -6743,7 +6784,7 @@ Overview of files it contains:
 = Conversion process overview
 {parent=developing-ourbigbook}
 
-Conversion follows the following steps:
+A conversion follows the following steps done for each file to be converted:
 * tokenizer. Reads the input and converts it to a linear list of tokens.
 * parser. Reads the list of tokens and converts it into an \x[abstract-syntax-tree]. Parse can be called multiple times recursively when doing things like.
 * ast post process pass 1.
@@ -6771,6 +6812,8 @@ Conversion follows the following steps:
 
   This step is skipped when using the \x[no-render] option, or during ID extraction.
 
+  TODO it is intended that it should not be possible for there to be rendering errors once the previous steps have concluded successfully. This is currently not the case for at least one known scenario however: \x[internal-cross-reference]{p} that are not defined.
+
   Sub-steps include:
   * DB queries: this is the first thing we do during the rendering step.
 
@@ -6793,8 +6836,19 @@ Conversion follows the following steps:
 
     As an added bonus, it also allows us to clearly see the impact of database queries when using \x[log-perf].
 
-    We call this joining up of small querries into big ones "query bundling".
-* and after rendering is finally done, we then save the database changes back to the DB so that the conversion of other files will pick them up. Just like for the SELECT, we do a single query per database to reduce the roundrips.
+    We call this joining up of small queries into big ones "query bundling".
+* at the every end of the conversion, we then save the database changes calculated during parsing and post processing back to the DB so that the conversion of other files will pick them up.
+
+  Just like for the SELECT, we do a single large INSERT/UPDATE query per database to reduce the round trips.
+
+Conversion of a directory with multiple input files works as follows:
+* do one conversion pass without render
+* do a global database check for all files that have been parsed which checks in one go for:
+  * duplicate IDs
+  * references from one non-header title to another non-header title as mentioned at \x[x-within-title-restrictions]
+  Ideally, failure of any of the above checks should lead to the database not being updated with new values, but that is not the case as of writing.
+* do one conversion pass with render. To speed up conversion, we might at some point start storing a parsed JSON after the first conversion pass, and then just deserialize it and convert the deserialized output directly without re-parsing. 
+The two pass approach is required to resolve \x[internal-cross-reference]{p}
 
 = Abstract syntax tree
 {parent=conversion-process-overview}

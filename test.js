@@ -3042,17 +3042,34 @@ assert_convert_ast('x leading slash to escape scopes works across files',
 assert_convert_ast('scopes hierarchy resolution works across files with directories',
   `= Notindex
 
+\\x[notindex2][index to notindex2]
+
 \\x[notindex2-h2][index to notindex2 h2]
+
+== Notindex h2
+{tag=notindex2}
+{tag=notindex2-h2}
 `,
   undefined,
   {
     assert_xpath: {
       'subdir/notindex.html': [
         "//x:div[@class='p']//x:a[@href='notindex2.html#notindex2-h2' and text()='index to notindex2 h2']",
-      ]
+        "//*[contains(@class, 'h-nav')]//x:span[@class='test-tags']//x:a[@href='notindex2.html#notindex2-h2']",
+      ],
+      'subdir/notindex2.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#notindex-h2']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
+      ],
     },
+    convert_before_norender: ['subdir/notindex.bigb', 'subdir/notindex2.bigb'],
     convert_before: ['subdir/notindex2.bigb'],
-    extra_convert_opts: { split_headers: true },
+    extra_convert_opts: {
+      // Get rid of this and fix:
+      // https://github.com/cirosantilli/ourbigbook/issues/229
+      split_headers: true,
+      ref_prefix: 'subdir',
+    },
     filesystem: {
      'subdir/notindex2.bigb': `= Notindex2
 

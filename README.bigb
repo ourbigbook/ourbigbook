@@ -6251,10 +6251,11 @@ This section will eventually be moved into the website itself. We'll just likely
 
 * Global:
   * Ctrl + Enter: submit the current form, e.g. save/create artiles or comments, login, register
-  * N: create a new article
+  * TODO N: create a new article. This requires making sure that all input fields and textareas don't propagate N key events. We did that as a one off for E in comment textareas.
 * Page specific:
   * Article page (and for Index page on user page):
     * E: edit the page
+    * L: like or unlike the page. This would require moving like state out of the Like button, which is a bit annoying.
 
 = Step debug the dynamic website
 {parent=ourbigbook-web}

@@ -52,7 +52,7 @@ const ArticleInfo = ({
           href={routes.articleEdit(article.slug)}
           className="btn"
         >
-          <i className="ion-edit" /> Edit
+          <i className="ion-edit" /> <span className="shortcut">E</span>dit
         </CustomLink>
         {false &&
           <button

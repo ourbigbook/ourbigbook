@@ -161,6 +161,17 @@ module.exports = (sequelize) => {
         },
         depth: this.depth + 1,
       },
+      include: [{
+        model: sequelize.models.File,
+        as: 'file',
+        required: true,
+        include: [{
+          model: sequelize.models.User,
+          as: 'author',
+          where: { username: this.file.author.username },
+          required: true,
+        }]
+      }]
     })
   }
 
@@ -246,10 +257,19 @@ module.exports = (sequelize) => {
     sequelize,
     slug,
   }) {
-    const fileInclude = [{
-      model: sequelize.models.User,
-      as: 'author',
-    }]
+    const fileInclude = [
+      {
+        model: sequelize.models.User,
+        as: 'author',
+      },
+      {
+        model: sequelize.models.LastRender,
+        where: {
+          type: sequelize.models.LastRender.Types[ourbigbook.OUTPUT_FORMAT_HTML],
+        },
+        required: false,
+      },
+    ]
     if (includeParentAndPreviousSibling) {
       // Behold.
       // TODO reimplement with the nested index information instead of this megajoin.

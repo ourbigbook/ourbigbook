@@ -449,6 +449,9 @@ function assert_cli(
     if (!('args' in options)) {
       options.args = [];
     }
+    if (!('assert_bigb' in options)) {
+      options.assert_bigb = {};
+    }
     if (!('assert_xpath' in options)) {
       options.assert_xpath = {};
     }
@@ -525,7 +528,7 @@ function assert_cli(
           args = common_args.concat(args)
         }
         const out = child_process.spawnSync(cmd, args, {cwd: cwd});
-        assert.strictEqual(out.status, status, exec_assert_message(out, cmd, args, cwd));
+        assert.strictEqual(out.status, status, 'bad exit status\n' + exec_assert_message(out, cmd, args, cwd));
       }
     }
     const cmd = 'ourbigbook'
@@ -558,13 +561,20 @@ function assert_cli(
       assert.ok(fs.existsSync(fullpath), assert_msg_xpath);
       const html = fs.readFileSync(fullpath).toString(ourbigbook_nodejs_webpack_safe.ENCODING);
       for (const xpath_expr of options.assert_not_xpath[relpath]) {
-        assert_xpath(xpath_expr, html, {message: assert_msg_xpath, count: 0});
+        assert_xpath(xpath_expr, html, { message: assert_msg_xpath, count: 0 });
       }
     }
     for (const relpath of options.expect_exists) {
       const fullpath = path.join(tmpdir, relpath);
       assert.ok(fs.existsSync(fullpath), exec_assert_message(
         out, cmd, args, cwd, 'path should exist: ' + relpath));
+    }
+    for (const relpath in options.assert_bigb) {
+      const assert_msg_bigb = `path should contain: ${relpath}\n\n` + assert_msg;
+      const fullpath = path.join(tmpdir, relpath);
+      assert.ok(fs.existsSync(fullpath), `path does not exist: ${fullpath}`);
+      const content = fs.readFileSync(fullpath).toString(ourbigbook_nodejs_webpack_safe.ENCODING);
+      assert.strictEqual(options.assert_bigb[relpath], content, { message: assert_msg_bigb });
     }
     if (!ourbigbook_nodejs_front.postgres) {
       for (const relpath of options.expect_exists_sqlite) {
@@ -9427,9 +9437,48 @@ assert_cli(
     assert_xpath: {
       'myproj/out/publish/out/publish/index.html': [
         "//x:a[@href='https://raw.githubusercontent.com/cirosantilli/myproj-media/master/myimg.png']//x:img[@src='https://raw.githubusercontent.com/cirosantilli/myproj-media/master/myimg.png']",
-
       ],
     },
   }
 );
 
+assert_cli(
+  'timestamps are tracked separately for different --output-format',
+  {
+    args: ['--output-format', 'bigb', '.'],
+    filesystem: {
+      'notindex.bigb': `Hello \\i[world]!
+`,
+      'ourbigbook.json': `{
+  "outputOutOfTree": true
+}
+`,
+    },
+    pre_exec: [
+      {
+        cmd: ['ourbigbook', ['--output-format', 'html', '.']],
+      },
+      {
+        cmd: ['ourbigbook', ['--output-format', 'bigb', '.']],
+      },
+      {
+        filesystem_update: {
+          'notindex.bigb': `Hello \\i[world2]!
+`,
+        }
+      },
+      {
+        cmd: ['ourbigbook', ['--output-format', 'html', '.']],
+      },
+    ],
+    assert_xpath: {
+      'out/html/notindex.html': [
+        "//x:i[text()='world2']",
+      ],
+    },
+    assert_bigb: {
+      'out/bigb/notindex.bigb': `Hello \\i[world2]!
+`,
+    },
+  }
+);

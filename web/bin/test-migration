@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+set -eu
+
+d="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/tmp/test-migration"
+rm -rf "$d"
+mkdir -p "$d"
+
+git add migrations
+git commit --amend --no-edit
+
+# Cean from scratch sanity check.
+rm -f db.sqlite3
+./bin/generate-demo-data.js --clear "$@"
+sqlite3 db.sqlite3 .schema > "$d/new-clean.sqlite3.schema"
+
+# Go back to old DB.
+git checkout HEAD~
+rm -f db.sqlite3
+./bin/generate-demo-data.js --clear "$@"
+sqlite3 db.sqlite3 .schema > "$d/old.sqlite3.schema"
+
+# Migrate.
+git checkout -
+./bin/sync-db.js "$@"
+sqlite3 db.sqlite3 .schema > "$d/new-migration.sqlite3.schema"
+
+# Compare the above.
+sort "$d/old.sqlite3.schema"           > "$d/old.sqlite3.schema.sort"
+sort "$d/new-clean.sqlite3.schema"     > "$d/new-clean.sqlite3.schema.sort"
+sort "$d/new-migration.sqlite3.schema" > "$d/new-migration.sqlite3.schema.sort"
+diff -u "$d/old.sqlite3.schema.sort" "$d/new-clean.sqlite3.schema.sort" || true
+diff="$(diff -u "$d/new-clean.sqlite3.schema.sort" "$d/new-migration.sqlite3.schema.sort" || true)"
+echo
+echo "$diff"
+if [ ! -z "$diff" ]; then
+  echo 'error: Clean DB and migrated are different'
+  exit 1
+fi

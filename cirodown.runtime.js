@@ -388,5 +388,5 @@ class CirodownCanvasDemo {
 //   https://stackoverflow.com/questions/46992463/es6-module-support-in-chrome-62-chrome-canary-64-does-not-work-locally-cors-er
 // - let webpack pick it up. Globals are not picked up by default.
 //   https://stackoverflow.com/questions/37656592/define-global-variable-with-webpack
-window.cirodown_runtime = cirodown_runtime;
+//window.cirodown_runtime = cirodown_runtime;
 //export { cirodown_runtime }

@@ -33,7 +33,6 @@ const DEFAULT_IGNORE_BASENAMES = [
   cirodown_nodejs.PACKAGE_SASS_BASENAME,
 ];
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
-const ENCODING = 'utf8';
 
 class SqliteIdProvider extends cirodown.IdProvider {
   constructor(convert_input_options) {
@@ -135,14 +134,14 @@ function cmd_get_stdout(cmd, args=[], options={}) {
     if (out.status != 0 && options.throw_on_error) {
       let msg = `cmd: \n${cmd_str}\n`;
       if (out.stdout !== null) {
-        msg += `stdout: \n${out.stdout.toString(ENCODING)}\n`;
+        msg += `stdout: \n${out.stdout.toString(cirodown_nodejs.ENCODING)}\n`;
       }
       if (out.stderr !== null) {
-        msg += `stdout: \n${out.stdout.toString(ENCODING)}\n`;
+        msg += `stdout: \n${out.stdout.toString(cirodown_nodejs.ENCODING)}\n`;
       }
       throw msg;
     }
-    ret = out.stdout.toString(ENCODING);
+    ret = out.stdout.toString(cirodown_nodejs.ENCODING);
   }
   return ret;
 }
@@ -191,12 +190,16 @@ function convert_input(input, options, convert_input_options={}) {
   // the user did not explicitly request full embedding, inline all CSS.
   // Otherwise, include and external CSS to make each page lighter.
   if (convert_input_options.commander.htmlEmbed) {
-    new_options.template_vars.style = fs.readFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH, ENCODING);
+    new_options.template_vars.style = fs.readFileSync(
+      cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH,
+      cirodown_nodejs.ENCODING
+    );
     let scripts_str = '';
     for (const script_path of cirodown_nodejs.JS_LOCAL_INCLUDES) {
       scripts_str += `<script>${fs.readFileSync(script_path)}</script>\n`
     }
-    scripts_str += `<script>${fs.readFileSync(cirodown_nodejs.PACKAGE_OUT_JS_LOCAL_PATH, ENCODING)}</script>\n`;
+    scripts_str += `<script>${fs.readFileSync(
+      cirodown_nodejs.PACKAGE_OUT_JS_LOCAL_PATH, cirodown_nodejs.ENCODING)}</script>\n`;
     new_options.template_vars.post_body = scripts_str;
   } else {
     let includes_str = ``;
@@ -627,7 +630,7 @@ if (commander.helpMacros) {
         }
       }
       if (found !== undefined) {
-        return [found, fs.readFileSync(found, ENCODING)];
+        return [found, fs.readFileSync(found, cirodown_nodejs.ENCODING)];
       };
       return undefined;
     },
@@ -688,7 +691,10 @@ if (commander.helpMacros) {
 
     // Generate .gitignore. Reuse our gitignore up to the first blank line.
     let gitignore_new = '';
-    const gitignore = fs.readFileSync(cirodown_nodejs.GITIGNORE_PATH, ENCODING);
+    const gitignore = fs.readFileSync(
+      cirodown_nodejs.GITIGNORE_PATH,
+      cirodown_nodejs.ENCODING
+    );
     for (const line of gitignore.split('\n')) {
       if (line === '') {
         break;
@@ -735,7 +741,7 @@ A link to another file: \\x[and-now-an-include]
    * but rather used only by this cirodown executable. */
   let convert_input_options = {
     commander: commander,
-    encoding: ENCODING,
+    encoding: cirodown_nodejs.ENCODING,
     external_css_and_js: false,
     had_error: false,
     out_css_path: cirodown_nodejs.PACKAGE_OUT_CSS_LOCAL_PATH,
@@ -744,7 +750,7 @@ A link to another file: \\x[and-now-an-include]
   };
   if (inputPath === undefined) {
     title = 'stdin';
-    input = fs.readFileSync(0, ENCODING);
+    input = fs.readFileSync(0, cirodown_nodejs.ENCODING);
     output = convert_input(input, options, convert_input_options);
   } else {
     if (!fs.existsSync(inputPath)) {
@@ -968,7 +974,10 @@ A link to another file: \\x[and-now-an-include]
       }
     }
   }
-  if (output !== undefined && commander.stdout) {
+  if (
+    inputPath === undefined ||
+    (output !== undefined && commander.stdout)
+  ) {
     process.stdout.write(output);
   }
   if (!commander.watch) {

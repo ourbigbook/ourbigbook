@@ -19,21 +19,27 @@ export function getStaticPropsArticle(revalidate?, addComments?) {
         notFound: true
       }
     }
-    let comments;
+    const [articleJson, topicArticleCount] = await Promise.all([
+      await article.toJson(),
+      await sequelize.models.Article.count({
+        where: { topicId: article.topicId },
+      }),
+    ])
+    const ret: any = {
+      props: {
+        article: articleJson,
+        topicArticleCount,
+      },
+    }
     if (addComments) {
-      comments = await article.getComments({
+      const comments = await article.getComments({
         order: [['createdAt', 'DESC']],
         include: [{ model: sequelize.models.User, as: 'author' }],
       })
-    }
-    const ret: any = {
-      props: { article: await article.toJson() },
+      ret.props.comments = await Promise.all(comments.map(comment => comment.toJson()))
     }
     if (revalidate !== undefined) {
       ret.revalidate = revalidate
-    }
-    if (addComments) {
-      ret.props.comments = await Promise.all(comments.map(comment => comment.toJson()))
     }
     return ret;
   }

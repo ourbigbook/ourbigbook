@@ -28,6 +28,7 @@ import routes from "routes";
 interface ArticlePageProps {
   article: ArticleType;
   comments: CommentType[];
+  topicArticleCount: number;
 }
 
 function renderRefCallback(elem) {
@@ -36,7 +37,11 @@ function renderRefCallback(elem) {
   }
 }
 
-const ArticlePage = ({ article, comments }: ArticlePageProps) => {
+const ArticlePage = ({
+  article,
+  comments,
+  topicArticleCount,
+}: ArticlePageProps) => {
   const loggedInUser = getLoggedInUser()
   const canModify =
     loggedInUser && loggedInUser?.username === article?.author?.username;
@@ -120,11 +125,13 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
               </Maybe>
             </div>
             <div className="article-info article-info-2">
-              <CustomLink
-                href={routes.topicArticlesView(article.topicId)}
-              >
-                <i className="ion-ios-people" /> Top articles by other authors about the same topic
-              </CustomLink>
+              {topicArticleCount > 1 &&
+                <CustomLink
+                  href={routes.topicArticlesView(article.topicId)}
+                >
+                  <i className="ion-ios-people" /> Top articles by other authors about the same topic ({topicArticleCount})
+                </CustomLink>
+              }
             </div>
             <div className="article-actions">
               <FavoriteArticleButtonContext.Provider value={{

@@ -10080,6 +10080,28 @@ assert_cli(
   }
 );
 assert_cli(
+  'raw: root directory listing in publish does not show publish',
+  {
+    args: ['--dry-run', '--publish'],
+    pre_exec: MAKE_GIT_REPO_PRE_EXEC,
+    filesystem: {
+      'README.bigb': `= Index
+`,
+      'not-ignored.txt': ``,
+      'ourbigbook.json': `{
+  "outputOutOfTree": true
+}
+`,
+    },
+    assert_not_xpath: {
+      [`out/publish/out/github-pages/${ourbigbook.DIR_PREFIX}/index.html`]: [
+        // ../ not added to root listing.
+        "//x:a[text()='..']",
+      ],
+    },
+  }
+);
+assert_cli(
   'json: ignore is used in publish',
   {
     args: ['--dry-run', '--publish'],

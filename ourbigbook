@@ -393,11 +393,9 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
   const is_directory = fs.lstatSync(input_path).isDirectory()
   let full_path = path.resolve(input_path);
   let input_path_parse = path.parse(input_path);
-  let path_relative_to_ourbigbook_json;
   let input_path_relative_to_ourbigbook_json;
   if (non_ourbigbook_options.ourbigbook_json_dir !== undefined) {
-    path_relative_to_ourbigbook_json = path.relative(non_ourbigbook_options.ourbigbook_json_dir, input_path_parse.dir);
-    input_path_relative_to_ourbigbook_json = path.join(path_relative_to_ourbigbook_json, input_path_parse.base);
+    input_path_relative_to_ourbigbook_json = path.relative(non_ourbigbook_options.ourbigbook_json_dir, input_path);
   }
   const sequelize = non_ourbigbook_options.sequelize
   let new_options

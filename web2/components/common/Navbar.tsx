@@ -5,6 +5,7 @@ import CustomImage from "components/common/CustomImage";
 import CustomLink from "components/common/CustomLink";
 import Maybe from "components/common/Maybe";
 import NavLink from "components/common/NavLink";
+import { APP_NAME } from "lib/utils/constant";
 import { usePageDispatch } from "lib/context/PageContext";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 
@@ -20,7 +21,7 @@ const Navbar = () => {
     <nav className="navbar navbar-light">
       <div className="container">
         <CustomLink href="/" as="/" onClick={handleClick} className="navbar-brand">
-          conduit
+          {APP_NAME.toLowerCase()}
         </CustomLink>
         <ul className="nav navbar-nav pull-xs-right">
           <NavbarItem>

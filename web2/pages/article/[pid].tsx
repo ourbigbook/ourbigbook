@@ -3,6 +3,8 @@ import React from "react";
 import { useRouter } from 'next/router'
 import useSWR  from "swr";
 
+import { cirodown_runtime } from 'cirodown/cirodown.runtime.js';
+
 import ArticleMeta from "components/article/ArticleMeta";
 import Comment from "components/comment/Comment";
 import CommentInput from "components/comment/CommentInput";
@@ -43,12 +45,11 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
     setFavorited(article.favorited);
   }, [article.favorited])
 
-  const markup = { __html: marked(article.body) };
+  const markup = { __html: article.render };
   return (
     <div className="article-page">
       <div className="banner">
         <div className="container">
-          <h1>{article.title}</h1>
           <FavoriteArticleButtonContext.Provider value={{
             favorited, setFavorited, favoritesCount, setFavoritesCount
           }}>
@@ -63,7 +64,7 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
       <div className="container page">
         <div className="row article-content">
           <div className="col-md-12">
-            <div dangerouslySetInnerHTML={markup} />
+            <div dangerouslySetInnerHTML={markup} className="cirodown" />
             <ul className="tag-list">
               {article.tagList?.map((tag) => (
                 <li className="tag-default tag-pill tag-outline" key={tag}>{tag}</li>
@@ -72,17 +73,6 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
           </div>
         </div>
         <hr />
-        <div className="article-actions">
-          <FavoriteArticleButtonContext.Provider value={{
-            favorited, setFavorited, favoritesCount, setFavoritesCount
-          }}>
-            <FollowUserButtonContext.Provider value={{
-              following, setFollowing
-            }}>
-              <ArticleMeta article={article}/>
-            </FollowUserButtonContext.Provider>
-          </FavoriteArticleButtonContext.Provider>
-        </div>
         <div className="row">
           <div className="col-xs-12 col-md-8 offset-md-2">
             <div>

@@ -1,3 +1,4 @@
+const cirodown = require('cirodown')
 const slug = require('slug')
 const { DataTypes, Op } = require('sequelize')
 
@@ -17,10 +18,6 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       title: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      description: {
         type: DataTypes.STRING,
         allowNull: false,
       },
@@ -62,7 +59,6 @@ module.exports = (sequelize) => {
     return {
       slug: this.slug,
       title: this.title,
-      description: this.description,
       body: this.body,
       createdAt: this.createdAt.toISOString(),
       updatedAt: this.updatedAt.toISOString(),
@@ -70,6 +66,7 @@ module.exports = (sequelize) => {
       favorited,
       favoritesCount,
       author,
+      render: cirodown.convert('= ' + this.title + '\n\n' + this.body, {body_only: true}),
     }
   }
   return Article

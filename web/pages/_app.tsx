@@ -9,12 +9,6 @@ import 'cirodown/cirodown.scss';
 import 'katex/dist/katex.css';
 import "styles.scss";
 
-if (typeof window !== "undefined") {
-  require("lazysizes/plugins/attrchange/ls.attrchange.js");
-  require("lazysizes/plugins/respimg/ls.respimg.js");
-  require("lazysizes");
-}
-
 const MyApp = ({ Component, pageProps }) => (
   <>
     <Head>

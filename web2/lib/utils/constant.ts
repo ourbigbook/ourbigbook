@@ -1,7 +1,7 @@
 const configShared = require('../../config/shared')
 
 export const SERVER_BASE_URL = configShared.apiPath;
-export const APP_NAME = `Conduit`;
+export const APP_NAME = `Cirodown`;
 export const ARTICLE_QUERY_MAP = {
   "tab=feed": `${SERVER_BASE_URL}/articles/feed`,
   "tab=tag": `${SERVER_BASE_URL}/articles/tag`

@@ -28,15 +28,15 @@ it('feed shows articles by followers', async ()=>{
     nFollowsPerUser: 2,
   })
 
-  const user0 = await sequelize.models.User.findOne({where: {username: 'user0'}})
+  const user0 = await sequelize.models.User.findOne({where: {email: 'user0@mail.com'}})
 
   // getArticlesByFollowedAndCount
   const {count, rows} = await user0.findAndCountArticlesByFollowed(1, 4)
   //assert.strictEqual(user0ArticlesByFollowed[].title, 'My title 10')
-  assert.strictEqual(rows[0].title, 'My title 9')
-  assert.strictEqual(rows[1].title, 'My title 6')
-  assert.strictEqual(rows[2].title, 'My title 5')
-  assert.strictEqual(rows[3].title, 'My title 2')
+  assert.strictEqual(rows[0].title, 'My title 4')
+  assert.strictEqual(rows[1].title, 'My title 3')
+  assert.strictEqual(rows[2].title, 'My title 2')
+  assert.strictEqual(rows[3].title, 'My title 0')
   //assert.strictEqual(user0ArticlesByFollowed[4].title, 'My title 1')
   assert.strictEqual(rows.length, 4)
   assert.strictEqual(count, 6)

@@ -75,10 +75,17 @@ function doStart(app) {
         // The fuller errors can be helpful during development.
         console.error(err);
       }
-      return res.status(422).json({
-        errors: err.errors.map(errItem => errItem.message)
-      })
-    } else if (err instanceof apilib.ValidationError) {
+      const errors = {}
+      for (let errItem of err.errors) {
+        let errorsForColumn = errors[errItem.path]
+        if (errorsForColumn === undefined) {
+          errorsForColumn = []
+          errors[errItem.path] = errorsForColumn
+        }
+        errorsForColumn.push(errItem.message)
+      }
+      return res.status(422).json({ errors })
+    } else if (err instanceof lib.ValidationError) {
       return res.status(err.status).json({
         errors: err.errors,
       })

@@ -928,10 +928,13 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[toc]
 \l[figure numbers, header numbers]
 \l[xref full]
+\l[implement image description and source]
 \l[indentation skip]
+\l[h7 etc.]
 \l[correct ID generation algorithm to be Unicode robust]
 \l[LaTeX output]
 \l[local downloads and single HTML page with image / script embeds]
+\l[self links on images, headers, etc.]
 
 \h[3][Related projects]
 

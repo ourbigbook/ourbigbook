@@ -1,5 +1,4 @@
 const cirodown = require('cirodown')
-const slug = require('slug')
 const { DataTypes, Op } = require('sequelize')
 
 const { modifyEditorInput } = require('../lib/shared')
@@ -24,15 +23,29 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       body: {
-        type: DataTypes.STRING(65536),
+        type: DataTypes.STRING(2**20),
+        allowNull: false,
+      },
+      render: {
+        type: DataTypes.STRING(2**20),
         allowNull: false,
       },
     },
     {
       hooks: {
-        beforeValidate: (article, options) => {
+        beforeValidate: async (article, options) => {
+          let extra_returns = {};
+          article.render = cirodown.convert(
+            modifyEditorInput(article.title, article.body),
+            {
+              body_only: true,
+            },
+            extra_returns,
+          )
+          const id = extra_returns.context.header_graph.children[0].value.id
+          const author = await article.getAuthor()
           if (!article.slug) {
-            article.slug = slug(article.title) + '-' + ((Math.random() * Math.pow(36, 6)) | 0).toString(36)
+            article.slug = `${author.username}/${id}`
           }
         }
       },
@@ -68,7 +81,7 @@ module.exports = (sequelize) => {
       favorited,
       favoritesCount,
       author,
-      render: cirodown.convert(modifyEditorInput(this.title, this.body), {body_only: true}),
+      render: this.render,
     }
   }
   return Article

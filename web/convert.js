@@ -46,6 +46,9 @@ async function convert({
     const parentIdRow = await sequelize.models.Id.findOne({
       where: { idid: parentId },
     })
+    if (!parentIdRow) {
+      throw new ValidationError(`${parentIdRow}`)
+    }
     const context = ourbigbook.convert_init_context()
     const parentH1Ast = ourbigbook.AstNode.fromJSON(parentIdRow.ast_json, context)
     parentH1Ast.id = parentIdRow.idid

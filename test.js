@@ -5790,37 +5790,37 @@ assert_lib_ast('toc: split headers have correct table of contents',
     assert_xpath_stdout: [
       // There is a self-link to the Toc.
       "//*[@id='_toc']",
-      "//*[@id='_toc']//x:a[@href='#_toc' and text()='Table of contents']",
+      "//*[@id='_toc']//x:a[@href='#_toc' and text()=' Table of contents']",
 
       // ToC links have parent toc entry links.
       // Toplevel entries point to the ToC toplevel.
-      `//*[@id='_toc']//*[@id='_toc-h1-1']//x:a[@href='#_toc' and text()=' h1']`,
-      `//*[@id='_toc']//*[@id='_toc-h1-2']//x:a[@href='#_toc' and text()=' h1']`,
+      `//*[@id='_toc']//*[@id='_toc/h1-1']//x:a[@href='#_toc' and text()=' h1']`,
+      `//*[@id='_toc']//*[@id='_toc/h1-2']//x:a[@href='#_toc' and text()=' h1']`,
       // Inner entries point to their parent entries.
-      `//*[@id='_toc']//*[@id='_toc-h1-2-1']//x:a[@href='#_toc-h1-2' and text()=' h1 2']`,
+      `//*[@id='_toc']//*[@id='_toc/h1-2-1']//x:a[@href='#_toc/h1-2' and text()=' h1 2']`,
 
       // The ToC numbers look OK.
       "//*[@id='_toc']//x:a[@href='#h1-2' and text()='2. h1 2']",
 
       // The headers have ToC links.
-      `${xpath_header(2, 'h1-1')}//x:a[@href='#_toc-h1-1' and text()=' toc']`,
-      `${xpath_header(2, 'h1-2')}//x:a[@href='#_toc-h1-2' and text()=' toc']`,
-      `${xpath_header(3, 'h1-2-1')}//x:a[@href='#_toc-h1-2-1' and text()=' toc']`,
+      `${xpath_header(2, 'h1-1')}//x:a[@href='#_toc/h1-1' and text()=' toc']`,
+      `${xpath_header(2, 'h1-2')}//x:a[@href='#_toc/h1-2' and text()=' toc']`,
+      `${xpath_header(3, 'h1-2-1')}//x:a[@href='#_toc/h1-2-1' and text()=' toc']`,
 
       // Descendant count.
       "//*[@id='_toc']//*[@class='title-div']//*[@class='descendant-count' and text()='4']",
-      "//*[@id='_toc']//*[@id='_toc-h1-2']//*[@class='descendant-count' and text()='2']",
+      "//*[@id='_toc']//*[@id='_toc/h1-2']//*[@class='descendant-count' and text()='2']",
     ],
     assert_xpath: {
       'notindex-split.html': [
         // Split output files get their own ToCs.
         "//*[@id='_toc']",
-        "//*[@id='_toc']//x:a[@href='#_toc' and text()='Table of contents']",
+        "//*[@id='_toc']//x:a[@href='#_toc' and text()=' Table of contents']",
       ],
       'h1-2.html': [
         // Split output files get their own ToCs.
         "//*[@id='_toc']",
-        "//*[@id='_toc']//x:a[@href='#_toc' and text()='Table of contents']",
+        "//*[@id='_toc']//x:a[@href='#_toc' and text()=' Table of contents']",
 
         // The Toc entries of split output headers automatically cull out a level
         // of the full number tree. E.g this entry is `2.1` on the toplevel ToC,
@@ -5830,18 +5830,18 @@ assert_lib_ast('toc: split headers have correct table of contents',
 
         // We have gone a bit back and forth on split vs nosplit here.
         // Related: https://github.com/cirosantilli/ourbigbook/issues/146
-        `//*[@id='_toc']//*[@id='_toc-h1-2-1']//x:a[@href='#_toc' and text()=' h1 2']`,
-        `//*[@id='_toc']//*[@id='_toc-h1-2-1-1']//x:a[@href='#_toc-h1-2-1' and text()=' h1 2 1']`,
+        `//*[@id='_toc']//*[@id='_toc/h1-2-1']//x:a[@href='#_toc' and text()=' h1 2']`,
+        `//*[@id='_toc']//*[@id='_toc/h1-2-1-1']//x:a[@href='#_toc/h1-2-1' and text()=' h1 2 1']`,
 
         // Descendant count.
         "//*[@id='_toc']//*[@class='title-div']//*[@class='descendant-count' and text()='2']",
-        "//*[@id='_toc']//*[@id='_toc-h1-2-1']//*[@class='descendant-count' and text()='1']",
+        "//*[@id='_toc']//*[@id='_toc/h1-2-1']//*[@class='descendant-count' and text()='1']",
       ],
     },
     assert_not_xpath: {
       // A node without no children headers has no ToC,
       // as it would just be empty and waste space.
-      'h1-2-1-1.html': ["//*[text()='Table of contents']"],
+      'h1-2-1-1.html': ["//*[text()=' Table of contents']"],
     },
     convert_opts: { split_headers: true },
     input_path_noext: 'notindex',

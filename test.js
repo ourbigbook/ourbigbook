@@ -5868,6 +5868,59 @@ Named multiline second
     }
   },
 );
+assert_convert_ast('bigb output: nested sane list followed by paragraph',
+  // TODO this was leading to an AST change because the input has inner list as
+  // `ccc\n` but the output only `ccc`. But lazy to fix now, maybe what we want is the
+  // input to parse as `ccc` without the `\n`.
+  `aaa
+
+* bb
+  \\Ul[
+  * ccc
+  ]
+
+ddd
+`,
+  undefined,
+  {
+    bigb: `aaa
+
+* bb
+  * ccc
+
+ddd
+`
+  },
+);
+
+
+assert_convert_ast('bigb output: checks target IDs to decide between plural or not on converting non magic to magic links',
+  `= Index
+
+\\x[dog]
+
+\\x[dog]{p}
+`,
+  undefined,
+  {
+    convert_before: ['notindex.bigb', 'index.bigb'],
+    filesystem: {
+      'notindex.bigb': `= Notindex
+
+== Dog
+
+== Dogs
+`,
+    },
+    input_path_noext: 'index',
+    bigb: `= Index
+
+<dog>
+
+<dog>{p}
+`,
+  }
+);
 
 // ourbigbook executable tests.
 assert_executable(

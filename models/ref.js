@@ -13,18 +13,16 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       from_id: {
+        // TODO should link to Id.id instead of being TEXT
+        // https://docs.ourbigbook.com/todo#ref-file-normalization
         type: DataTypes.TEXT,
         allowNull: false,
       },
       to_id: {
+        // TODO should link to Id.id instead of being TEXT
+        // https://docs.ourbigbook.com/todo#ref-file-normalization
         type: DataTypes.TEXT,
         allowNull: false,
-      },
-      defined_at: {
-        type: DataTypes.TEXT,
-        // Possible e.g. on Web where the parent ref is not strictly defined in any source code,
-        // but rather via the UI.
-        //allowNull: false,
       },
       defined_at_line: {
         type: DataTypes.INTEGER,
@@ -39,7 +37,10 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       to_id_index: {
-        // Child index for parent references.
+        // Child index for header parent references.
+        // Can be NULL for non-parent references, or non header references.
+        // We should also ideally populate those cases, but there hasn't been
+        // a compelling use case yet.
         type: DataTypes.INTEGER,
         allowNull: true,
       },
@@ -63,6 +64,7 @@ module.exports = (sequelize) => {
     [ourbigbook.REFS_TABLE_X_CHILD]: 2,
     // https://github.com/ourbigbook/ourbigbook/issues/198
     [ourbigbook.REFS_TABLE_X_TITLE_TITLE]: 3,
+    [ourbigbook.REFS_TABLE_SYNONYM]: 4,
   };
   return Ref;
 }

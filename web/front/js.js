@@ -92,7 +92,24 @@ function modifyEditorInput(title, body) {
   return { offset: 1 + offsetOffset, new: ret };
 }
 
+function typecastBoolean(s) {
+  let b
+  let ok = true
+  if (s === 'true') {
+    b = true
+  } else if (s === 'false') {
+    b = true
+  } else {
+    ok = false
+  }
+  return [b, ok]
+}
+
 /**
+ * Typecast string to integer. Typically used to typecast
+ * URL GET parameters to types with error checking. This is unlike
+ * JSON bodies which are clearly typed already.
+ * 
  * @param {string} s
  * @returns {[number, boolean]}
  */
@@ -108,6 +125,14 @@ function isNonNegativeInteger(i) {
 
 function isPositiveInteger(i) {
   return i > 0
+}
+
+// Elements either match cb, or is an array where each type matches cb.
+function isTypeOrArrayOf(cb) {
+  return (a) => {
+    if (cb(a)) return true
+    return isArrayOf(cb)(a)
+  }
 }
 
 function isArrayOf(cb) {
@@ -158,7 +183,9 @@ module.exports = {
   isPositiveInteger,
   isSmallerOrEqualTo,
   isString,
+  isTypeOrArrayOf,
   isTruthy,
   modifyEditorInput,
+  typecastBoolean,
   typecastInteger,
 }

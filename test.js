@@ -4286,6 +4286,50 @@ assert_lib(
   }
 );
 assert_lib(
+  'cross reference incoming links from other file min notindex to index',
+  {
+    convert_opts: {
+      split_headers: true,
+    },
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': `= Index
+`,
+      'notindex.bigb': `= Notindex
+
+\\x[index]
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
+      ],
+    },
+  }
+);
+assert_lib(
+  'cross reference incoming links from other file min index to notindex',
+  {
+    convert_opts: {
+      split_headers: true,
+    },
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': `= Index
+
+\\x[notindex]
+`,
+      'notindex.bigb': `= Notindex
+`,
+    },
+    assert_xpath: {
+      'notindex.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
+      ],
+    },
+  }
+);
+assert_lib(
   // We can have confusion between singular and plural here unless proper resolution is done.
   'cross reference incoming links and other children with magic',
   {
@@ -8322,6 +8366,7 @@ Goodbye world.
 `,
 };
 assert_cli(
+  // This is a big catch-all and should likely be split.
   'input from directory with ourbigbook.json produces several output files',
   {
     args: ['--split-headers', '.'],
@@ -10230,6 +10275,19 @@ assert_cli(
   '--web-dry on simple repository',
   {
     args: ['--web', '--web-dry', '.'],
+    filesystem: {
+      'README.bigb': `= Index
+`,
+      'ourbigbook.json': `{
+}
+`,
+    },
+  }
+);
+assert_cli(
+  '--web-dry on single file',
+  {
+    args: ['--web', '--web-dry', 'README.bigb'],
     filesystem: {
       'README.bigb': `= Index
 `,

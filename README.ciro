@@ -1618,7 +1618,7 @@ debugger;
 to where you want to break in the code, and then:
 
 \C[[
-node inspect ./node_modules/.bin/mocha test --ignore-leaks "-g" "p with id before"
+node inspect ./node_modules/.bin/mocha test --ignore-leaks -g 'p with id before'
 ]]
 
 \h[3][Overview of files in this repository]
@@ -1706,7 +1706,6 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[paragraphs rendered as divs, can show anything inside e.g. lists, code blocks]
 \l[create mechanism to link to the GitHub blob view of in-tree source files that are not added to GitHub pages, e.g. \c[\\file]]
 \l[avoid infinite recursion with xref]
-\l[update tests to test the AST output rather than HTML. HTML too complex and variable]
 \l[parse_error: add in document error message, currently only to stderr]
 \l[LaTeX output]
 \l[infinite xref header recursion: \a[https://github.com/asciidoctor/asciidoctor/issues/3543] Solution: forbid x in titles, pass down context from parent.]

@@ -5674,12 +5674,12 @@ It is highly recommended that you use the exact same Node.js and NPM versions as
 
 First time setup:
 ``
-cd cirodown
-npm install
-npm run build-assets
-cd web/
-npm install
-./bin/generate-demo-data.js
+cd cirodown &&
+npm install &&
+npm run build-assets &&
+cd web/ &&
+npm install &&
+./bin/generate-demo-data.js --users 2 --articles-per-user 10
 ``
 where:
 * `npm run build-assets` needs to be re-run if any assets (e.g. CSS or Js file mentioned at \x[overview-of-files-in-this-repository]) on the `./cirodown/` toplevel are modified. No need to re-run it for changes under `web/`.

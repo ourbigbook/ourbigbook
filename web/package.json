@@ -13,7 +13,7 @@
     "deploy": "git push -f heroku master",
     "dev": "NODE_OPTIONS='--unhandled-rejections=strict' nodemon -w . -w ../index.js ./app.js",
     "devi": "NODE_OPTIONS='--unhandled-rejections=strict' node inspect ./app.js",
-    "postinstall": "cd .. && npm link cirodown",
+    "postinstall": "cd .. && npm run link",
     "migrate": "sequelize-cli db:migrate --debug",
     "seed-prod": "./prod.sh ./bin/generate-demo-data.js --force-production",
     "start": "cd .. && ls -l && ls -l node_modules && rm -rf my_node_modules && mkdir -p my_node_modules && ln -s .. my_node_modules/cirodown && export NODE_PATH=\"${NODE_PATH}:$(pwd)/my_node_modules\" && cd web && ls -l && ls -l node_modules && node --unhandled-rejections=strict ./app.js",

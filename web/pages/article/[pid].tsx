@@ -3,6 +3,7 @@ import { css, jsx } from '@emotion/react'
 import styled from "@emotion/styled";
 import React from "react";
 import Head from "next/head";
+import { GetStaticProps, GetStaticPaths } from 'next'
 
 import cirodown from 'cirodown';
 import { cirodown_runtime } from 'cirodown/cirodown.runtime.js';
@@ -15,6 +16,7 @@ import { ArticleType } from "lib/types/articleType";
 import CustomImage from "components/common/CustomImage";
 import CustomLink from "components/common/CustomLink";
 import { formatDate } from "lib/utils";
+import sequelize from "lib/db";
 
 function ArticleMeta({ article }) {
   if (!article) return;
@@ -51,13 +53,14 @@ function ArticleMeta({ article }) {
   );
 };
 
-export default class ArticlePage extends React.Component {
-  article: ArticleType;
+type Props = {
+  article: ArticleType,
   pid: string;
+}
 
+export default class ArticlePage extends React.Component<Props, {}> {
   constructor(props) {
     super(props);
-    this.renderRefCallback = this.renderRefCallback.bind(this);
   }
 
   render() {
@@ -84,34 +87,31 @@ export default class ArticlePage extends React.Component {
     );
   }
 
-  renderRefCallback() {
-    cirodown_runtime(this.cirodownElem);
+  renderRefCallback(elem) {
+    cirodown_runtime(elem);
   }
 }
 
-export async function getStaticPaths() {
-  return { paths: [], fallback: true };
+export const getStaticPaths: GetStaticPaths = async () => {
+  return {
+    fallback: true,
+    paths: (await sequelize.models.Article.findAll()).map(
+      article => {
+        return {
+          params: {
+            pid: article.slug,
+          }
+        }
+      }
+    ),
+  }
 }
 
-export async function getStaticProps({ params }) {
-  const { pid } = params;
-  try {
-    const { data } = await ArticleAPI.get(pid);
-    return {
-      props: {
-        article: data?.article,
-        pid,
-      },
-      revalidate: 1,
-    };
-  } catch (error) {
-    console.error(`Get Article id ${pid} error: `, error);
-    return {
-      props: {
-        article: {},
-        pid,
-      },
-      revalidate: 1,
-    };
-  }
+export const getStaticProps: GetStaticProps = async ({ params: { pid } }) => {
+  const article = await sequelize.models.Article.findOne({
+    where: { slug: pid },
+    include: [{ model: sequelize.models.User, as: 'Author' }],
+  });
+  const articleJson = article.toJSONFor(article.Author);
+  return { props: { article: articleJson } };
 }

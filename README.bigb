@@ -4579,13 +4579,22 @@ and the `id` gets assigned to the header rather than the trailing code element.
 = Escape characters
 {parent=macro-argument-syntax}
 
-For \x[literal-arguments][non-literal macro arguments], you have to use a backslash to escape:
+For \x[literal-arguments][non-literal macro arguments], you have to use a backslash to escapeevery single:
 * `\`: backslashes start macros
 * `\` and `\`: open and close \x[positional-vs-named-arguments][positional macro arguments]
 * `\` and `\`: open and close \x[positional-vs-named-arguments][optional macro arguments]
 * `<` (open angle brackets, less than sign): \x[insane-macro-shortcut] for \x[insane-internal-cross-reference]{p}
 * `$` (dollar sign): \x[insane-macro-shortcut] for \x[mathematics]
 * \c[[`]] (backtick): \x[insane-macro-shortcut] for \x[code-block]{p}
+
+Furthermore, only at:
+* at the start of the document
+* after a newline
+* at the start of a new argument
+you must also escape:
+* `* ` for insane <lists>
+* `| ` and `|| ` for insane <tables>
+* `= ` for insane <headers>
 
 The escape rules for literal arguments are described at: \x[literal-arguments]{full}.
 

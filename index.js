@@ -6809,6 +6809,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        ourbigbook_output_prefer_literal: true,
       }),
     ],
     {
@@ -8332,11 +8333,10 @@ function ourbigbook_ul(ast, context) {
   }
 }
 
-function ourbigbook_prefer_literal(ast, context, arg, open, close) {
+function ourbigbook_prefer_literal(ast, context, ast_arg, arg, open, close) {
   let rendered_arg
   let delim_repeat
   const argname = arg.name
-  const ast_arg = ast.args[argname]
   if (
     arg.ourbigbook_output_prefer_literal &&
     ast_arg.asts.length === 1 &&
@@ -8364,12 +8364,12 @@ function ourbigbook_convert_args(ast, context, options={}) {
   const named_args = Macro.COMMON_ARGNAMES.concat(macro.options.named_args.map(arg => arg.name)).filter(
     (argname) => !skip.has(argname) && ast.validation_output[argname].given
   )
-  let i = 0
+  let argname_idx = 0
   for (const arg of macro.positional_args) {
     const argname = arg.name
     if (!skip.has(argname) && ast.validation_output[argname].given) {
       const { delim_repeat, rendered_arg } = ourbigbook_prefer_literal(
-        ast, context, arg, START_POSITIONAL_ARGUMENT_CHAR, END_POSITIONAL_ARGUMENT_CHAR)
+        ast, context, ast.args[argname], arg, START_POSITIONAL_ARGUMENT_CHAR, END_POSITIONAL_ARGUMENT_CHAR)
       ret.push(START_POSITIONAL_ARGUMENT_CHAR.repeat(delim_repeat))
       if (arg.remove_whitespace_children) {
         ret.push('\n')
@@ -8395,45 +8395,62 @@ function ourbigbook_convert_args(ast, context, options={}) {
       if (
         !macro.options.phrasing
         && (
-          i !== macro.positional_args.length - 1 ||
+          argname_idx !== macro.positional_args.length - 1 ||
           named_args.length > 0
         )
       ) {
         ret.push('\n')
       }
     }
-    i++
+    argname_idx++
   }
-  i = 0
+  argname_idx = 0
   for (const argname of named_args) {
     const arg = macro.named_args[argname]
     const validation_output = ast.validation_output[argname]
-    const macro_arg = macro.name_to_arg[argname]
-    const { delim_repeat, rendered_arg } = ourbigbook_prefer_literal(
-      ast, context, arg, START_NAMED_ARGUMENT_CHAR, END_NAMED_ARGUMENT_CHAR)
-    let skip_val = false
-    if (macro_arg.boolean) {
-      const argstr_default = macro_arg.default === undefined ? '0' : '1'
-      const argstr_eff = validation_output.boolean ? '1' : '0'
-      if (argstr_default === argstr_eff) {
-        continue
+    let ast_args
+    if (arg.multiple) {
+      ast_args = ast.args[argname].asts.map(ast => ast.args.content)
+    } else {
+      ast_args = [ast.args[argname]]
+    }
+    let multiple_idx = 0
+    for (const ast_arg of ast_args) {
+      const macro_arg = macro.name_to_arg[argname]
+      const { delim_repeat, rendered_arg } = ourbigbook_prefer_literal(
+        ast, context, ast_arg, arg, START_NAMED_ARGUMENT_CHAR, END_NAMED_ARGUMENT_CHAR)
+      let skip_val = false
+      if (macro_arg.boolean) {
+        const argstr_default = macro_arg.default === undefined ? '0' : '1'
+        const argstr_eff = validation_output.boolean ? '1' : '0'
+        if (argstr_default === argstr_eff) {
+          continue
+        }
+        skip_val = validation_output.boolean
+      } else if(rendered_arg === '') {
+        skip_val = true
       }
-      skip_val = validation_output.boolean
-    } else if(rendered_arg === '') {
-      skip_val = true
+      ret.push(
+        START_NAMED_ARGUMENT_CHAR.repeat(delim_repeat) +
+        argname
+      )
+      if (!skip_val) {
+        ret.push(NAMED_ARGUMENT_EQUAL_CHAR + rendered_arg)
+      }
+      ret.push(END_NAMED_ARGUMENT_CHAR.repeat(delim_repeat))
+      if (
+        !macro.options.phrasing &&
+        !context.in_paragraph &&
+        (
+          argname_idx !== named_args.length - 1 ||
+          multiple_idx !== ast_args.length - 1
+        )
+      ) {
+        ret.push('\n')
+      }
+      multiple_idx++
     }
-    ret.push(
-      START_NAMED_ARGUMENT_CHAR.repeat(delim_repeat) +
-      argname
-    )
-    if (!skip_val) {
-      ret.push(NAMED_ARGUMENT_EQUAL_CHAR + rendered_arg)
-    }
-    ret.push(END_NAMED_ARGUMENT_CHAR.repeat(delim_repeat))
-    if (!macro.options.phrasing && i !== named_args.length - 1 && !context.in_paragraph) {
-      ret.push('\n')
-    }
-    i++
+    argname_idx++
   }
   return ret
 }
@@ -8498,7 +8515,7 @@ OUTPUT_FORMATS_LIST.push(
           if (context.in_literal) {
             return text
           } else {
-            return text.replace(/([\\[\]{}<`$])/g, '\\$1')
+            return text.replace(/([\\[\]{}<`$])/g, '\\$1').replace(/(^|\n)(\* |=|\|\||\|)/g, '$1\\$2')
           }
         },
         'passthrough': ourbigbook_convert_simple_elem,

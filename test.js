@@ -81,12 +81,17 @@ function assert_convert_func(input_string, expected_output) {
   }
 }
 
-function assert_error_func(input_string, line, column) {
-  let extra_returns = {};
-  let output = cirodown.convert(input_string, convert_opts, extra_returns);
+function assert_error_func(input_string, line, column, path, options={}) {
+  if (!('extra_convert_opts' in options)) {
+    options.extra_convert_opts = {};
+  }
+  const new_convert_opts = Object.assign({}, convert_opts);
+  Object.assign(new_convert_opts, options.extra_convert_opts);
+  const extra_returns = {};
+  const output = cirodown.convert(input_string, new_convert_opts, extra_returns);
   assert.ok(extra_returns.errors.length >= 1);
-  let error = extra_returns.errors[0];
-  assert.deepStrictEqual(error.source_location, new cirodown.SourceLocation(line, column));
+  const error = extra_returns.errors[0];
+  assert.deepStrictEqual(error.source_location, new cirodown.SourceLocation(line, column, path));
 }
 
 /** For stuff that is hard to predict the exact output of, which is most of the HTML,
@@ -107,8 +112,8 @@ function assert_convert(description, input, output) {
 
 /** Assert that the conversion fails in a controlled way, giving correct
  * error line and column, and without throwing an exception. */
-function assert_error(description, input, line, column) {
-  it(description, ()=>{assert_error_func(input, line, column);});
+function assert_error(description, input, line, column, path, extra_convert_opts) {
+  it(description, ()=>{assert_error_func(input, line, column, path, extra_convert_opts);});
 }
 
 /** For stuff that is hard to predict the exact output of, just check the
@@ -1646,12 +1651,12 @@ const include_opts = {extra_convert_opts: {
       ret = `= cc
 
 dd
-`
+`;
     } else if (input_path === 'include-one-level-2') {
       ret = `= ee
 
 ff
-`
+`;
     } else if (input_path === 'include-two-levels') {
       ret = `= ee
 
@@ -1660,6 +1665,11 @@ ff
 == gg
 
 hh
+`;
+    } else if (input_path === 'include-with-error') {
+      ret = `= bb
+
+\\reserved_undefined
 `
     } else {
       throw new Error(`unknown lnclude path: ${input_path}`);
@@ -1771,6 +1781,17 @@ bb
     a('H', undefined, {level: [t('2')], title: [t('cc')]}),
     a('P', [t('dd')]),
   ]),
+  include_opts
+);
+// https://github.com/cirosantilli/cirodown/issues/23
+assert_error('include with error',
+  `= aa
+
+bb
+
+\\Include[include-with-error]
+`,
+  3, 1, 'include-with-error.ciro',
   include_opts
 );
 // TODO https://github.com/cirosantilli/cirodown/issues/73

@@ -1850,7 +1850,7 @@ function convert_arg_noescape(arg, context={}) {
  *        - {Number} start_line
  *        - {Array} errors
  * @return {AstArgument}*/
-function convert_include(input_string, convert_options, cur_header_level, input_path, href, options) {
+function convert_include(input_string, convert_options, cur_header_level, input_path, href, options={}) {
   convert_options = Object.assign({}, convert_options);
   convert_options.from_include = true;
   convert_options.h_level_offset = cur_header_level;
@@ -1870,9 +1870,7 @@ function convert_include(input_string, convert_options, cur_header_level, input_
   );
   // Forward the include_path_set back. This is needed because convert
   // clones that input by default to prevent inputs from being modified.
-  for (let include_path of convert_extra_returns.context.include_path_set) {
-    convert_options.include_path_set.add(include_path);
-  }
+  convert_options.include_path_set.add(...convert_extra_returns.context.include_path_set);
   if (options.errors !== undefined) {
     options.errors.push(...convert_extra_returns.errors);
   }

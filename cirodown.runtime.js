@@ -1,4 +1,4 @@
-// https://cirosantilli.com/cirodown#insane-link-parsing-rules#build-sass
+// https://cirosantilli.com/cirodown#insane-link-parsing-rules
 
 // tablesort
 window.onload = function() {

@@ -1514,12 +1514,12 @@ Have a look at this amazing image: \x[image-my-test-image-2].
 ]]
 This works because \x[cross-reference-full-argument][`full` is the default cross reference style for `Image`], otherwise the link text would be empty since there is no `title`, and cirodown would raise an error.
 
-Cirodown can optionally deduce the title from the basename of the `src` argument if the `title_from_src` \x[boolean-named-arguments][boolean named argument] is given, or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
+Cirodown can optionally deduce the title from the basename of the `src` argument if the `titleFromSrc` \x[boolean-named-arguments][boolean named argument] is given, or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
 \CirodownExample[[
 Have a look at this amazing image: \x[image-tank-man-standing-in-front-of-some-tanks].
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title_from_src}
+{titleFromSrc}
 ]]
 
 If the image has neither ID nor title, then it does not get a caption at all, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
@@ -1620,10 +1620,10 @@ Cirodown likes Wikimedia Commons so much that we automatically parse the image U
 \Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
 ]]
 
-And like for non-Wikimedia images, you can automatically generate a `title` from the `src` by setting the `title_from_src` \x[boolean-named-arguments][boolean named argument] or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
+And like for non-Wikimedia images, you can automatically generate a `title` from the `src` by setting the `titleFromSrc` \x[boolean-named-arguments][boolean named argument] or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
 \CirodownExample[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
-{title_from_src}
+{titleFromSrc}
 ]]
 
 And a quick test for a more complex thumb resized URL:
@@ -1736,10 +1736,10 @@ But you can also use raw video files from any location that can serve them of co
 {start=3}
 ]]
 
-And as for images, setting `title_from_src` automatically calculates a title for you:
+And as for images, setting `titleFromSrc` automatically calculates a title for you:
 \CirodownExample[[
 \Video[Tank_man_side_hopping_in_front_of_some_tanks.mp4]
-{title_from_src}
+{titleFromSrc}
 {source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
 ]]
 
@@ -3165,7 +3165,7 @@ Properties that are valid for every provider:
   The first character of the macros are case insensitive and must be given as lower case. Therefore e.g.:
   * `image` applies to both `image` and `Image`
   * giving `Image` is an error because that starts with an upper case character
-* `title-from-src` (`bool`): extract the `title` argument from the `src` by default for media such as \x[images] and \x[videos] as if `title_from_src` had been given, see also: \x[image-id]
+* `title-from-src` (`bool`): extract the `title` argument from the `src` by default for media such as \x[images] and \x[videos] as if the `titleFromSrc` macro argument had been given, see also: \x[image-id]
 
 Direct children of media-providers and subproperties that are valid only for them specifically:
 * `local`: tracked in the current Git repository as mentioned at \x[store-images-inside-the-repository-itself]{full}

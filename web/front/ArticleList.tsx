@@ -76,20 +76,20 @@ const ArticleList = ({
     </div>;
   }
   return (
-    <div className="article-list-nav-container">
-      <div className="article-list-container">
-        <table className="article-list">
+    <div className="list-nav-container">
+      <div className="list-container">
+        <table className="list">
           <thead>
             <tr>
               <th className="shrink center">Score</th>
               <th className="expand">Title</th>
+              {showAuthor &&
+                <th className="shrink">Author</th>
+              }
               {isIssue &&
                 <th className="shrink">
                   #
                 </th>
-              }
-              {showAuthor &&
-                <th className="shrink">Author</th>
               }
               <th className="shrink">Created</th>
               <th className="shrink">Updated</th>
@@ -117,14 +117,18 @@ const ArticleList = ({
                     />
                   </CustomLink>
                 </td>
-                {isIssue &&
-                  <td className="shrink">
-                    #{article.number}
-                  </td>
-                }
                 {showAuthor &&
                   <td className="shrink">
                     <UserLinkWithImage showUsername={false} user={article.author} />
+                  </td>
+                }
+                {isIssue &&
+                  <td className="shrink">
+                    <CustomLink
+                      href={isIssue ? routes.issueView(issueArticle.slug, article.number) : routes.articleView(article.slug)}
+                    >
+                      #{article.number}
+                    </CustomLink>
                   </td>
                 }
                 <td className="shrink">{formatDate(article.createdAt)}</td>
@@ -136,11 +140,10 @@ const ArticleList = ({
       </div>
       {paginationUrlFunc &&
         <Pagination {...{
-          articlesCount,
-          articlesPerPage: articleLimit,
           currentPage: page,
-          isIssue,
-          showPagesMax: 10,
+          what: isIssue ? 'threads' : 'articles',
+          itemsCount: articlesCount,
+          itemsPerPage: articleLimit,
           urlFunc: paginationUrlFunc,
         }} />
       }

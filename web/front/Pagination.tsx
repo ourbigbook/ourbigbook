@@ -5,9 +5,9 @@ import Maybe from 'front/Maybe'
 export type PaginationPropsUrlFunc = (number) => string;
 
 export interface PaginationProps {
-  articlesCount: number;
-  articlesPerPage: number;
-  showPagesMax: number;
+  itemsCount: number;
+  itemsPerPage: number;
+  showPagesMax?: number;
   currentPage: number;
   urlFunc: PaginationPropsUrlFunc;
 }
@@ -36,17 +36,20 @@ export const getRange = (start, end) => {
 
 
 const Pagination = ({
-  articlesCount,
-  articlesPerPage,
-  isIssue,
-  showPagesMax,
   currentPage,
+  itemsCount,
+  itemsPerPage,
+  showPagesMax,
   urlFunc,
+  what,
 }: PaginationProps) => {
+  if (showPagesMax === undefined) {
+    showPagesMax = 10
+  }
   // - totalPages
   // - firstPage: 0-indexed
   // - lastPage: 0-indexed, inclusive
-  const totalPages = Math.ceil(articlesCount / articlesPerPage)
+  const totalPages = Math.ceil(itemsCount / itemsPerPage)
   if (currentPage > totalPages) {
     currentPage = totalPages;
   }
@@ -70,7 +73,7 @@ const Pagination = ({
     }
   }
 
-  const pages = articlesCount > 0 ? getRange(firstPage, lastPage) : [];
+  const pages = itemsCount > 0 ? getRange(firstPage, lastPage) : [];
   return (
     <nav>
       <ul className="pagination">
@@ -99,7 +102,7 @@ const Pagination = ({
           <PaginationItem href={urlFunc(totalPages)}>{`>>`}</PaginationItem>
         </Maybe>
         <span className="page-item total">
-          Total {isIssue ? 'threads' : 'articles'}: {articlesCount}
+          Total {what} {itemsCount}
         </span>
       </ul>
     </nav>

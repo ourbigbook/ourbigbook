@@ -1,22 +1,51 @@
 #!/usr/bin/env node
 
+const child_process = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
 const cirodown = require('cirodown');
 const chokidar = require('chokidar');
 const commander = require('commander');
+const git_url_parse = require("git-url-parse");
 
 const DEFAULT_IGNORE_BASENAMES = [
   '.git',
   'node_modules',
+  'out',
 ];
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
+const ENCODING = 'utf8';
+const IO_RENAME_MAP = {
+  README: 'index',
+}
 
 /** Report an error with the CLI usage and exit in error. */
 function cli_error(message) {
   console.error(`error: ${message}`);
   process.exit(1);
+}
+
+function cmd_get_stdout(cmd, args=[], options={}) {
+  if (!('dry_run' in options)) {
+    options.dry_run = false;
+  }
+  let out;
+  const cmd_str = ([cmd].concat(args)).join(' ');
+  console.log(cmd_str);
+  if (!options.dry_run) {
+    out = child_process.spawnSync(cmd, args);
+  }
+  let ret;
+  if (options.dry_run) {
+    ret = '';
+  } else {
+    if (out.status != 0) {
+      throw `cmd: \n${cmd_str}\nstdout: ${out.stdout.toString(ENCODING)}\nstderr: ${out.stderr.toString(ENCODING)}\n`;
+    }
+    ret = out.stdout.toString(ENCODING);
+  }
+  return ret;
 }
 
 /** Convert input from a string to output and return the output as a string.
@@ -46,6 +75,9 @@ function convert_input(input, options, convert_input_options={}) {
   for (const error of new_options.extra_returns.errors) {
     console.error(error.toString(convert_input_options.input_path));
   }
+  if (convert_input_options.cli_options.watch) {
+    console.log();
+  }
   if (new_options.extra_returns.errors.length > 0) {
     convert_input_options.had_error = true;
   }
@@ -60,7 +92,11 @@ function convert_path_to_file(input_path, options, convert_input_options={}) {
   let input_path_parse = path.parse(input_path);
   if (input_path_parse.ext === '.ciro') {
     let output = convert_path(input_path, options, convert_input_options);
-    let output_path = path.join(input_path_parse.dir, input_path_parse.name) + '.html';
+    let name = input_path_parse.name;
+    if (input_path_parse.name in IO_RENAME_MAP) {
+      name = IO_RENAME_MAP[name];
+    }
+    let output_path = path.join(input_path_parse.dir, name) + '.html';
     if (convert_input_options.cli_options.outdir) {
       fs.mkdirSync(convert_input_options.cli_options.outdir, {recursive: true});
       output_path = path.join(convert_input_options.cli_options.outdir, output_path);
@@ -113,10 +149,12 @@ function* walk_files_recursively(file_or_dir, skip_basenames) {
 
 // CLI options.
 commander.option('--body-only', 'output only the content inside the HTLM body element', false);
+commander.option('--dry-run', "don't run most external commands, see: https://github.com/cirosantilli/linux-kernel-module-cheat/tree/6d0a900f4c3c15e65d850f9d29d63315a6f976bf#dry-run-to-get-commands-for-your-project", false);
 commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown/#', false);
 commander.option('--html-embed', 'TODO embed all external resources like images and linked CSS into a single HTML file', false);
 commander.option('--outdir <outdir>', 'if the output would be saved to a file e.g. when building a directory, use this directory as the root');
 commander.option('--output-format', 'output format');
+commander.option('--publish', "http://cirosantilli.com/cirodown#publish");
 commander.option('--show-ast', 'print the AST to stderr');
 commander.option(
   '--show-ast-inside',
@@ -148,7 +186,6 @@ commander.parse(process.argv);
 if (commander.helpMacros) {
   console.log(JSON.stringify(macro_list_to_macros(), null, 2));
 } else {
-  const encoding = 'utf8';
   let input;
   let title;
   let output;
@@ -161,16 +198,19 @@ if (commander.helpMacros) {
   };
   let convert_input_options = {
     cli_options: commander,
-    encoding: encoding,
+    encoding: ENCODING,
     had_error: false,
     multifile: true,
   };
   if (inputPath === undefined) {
+    if (commander.publish) {
+      cli_error('--publish is incompatible with input from stdin');
+    }
     if (commander.watch) {
-      cli_error('--watch is incompatible from input from stdin');
+      cli_error('--watch is incompatible with input from stdin');
     }
     title = 'stdin';
-    input = fs.readFileSync(0, encoding);
+    input = fs.readFileSync(0, ENCODING);
     convert_input_options.multifile = false;
     output = convert_input(input, options, convert_input_options);
   } else {
@@ -178,6 +218,9 @@ if (commander.helpMacros) {
       cli_error(`input_path does not exist: "${inputPath}"`);
     }
     if (commander.watch) {
+      if (commander.publish) {
+        cli_error('--publish and --watch are incompatible');
+      }
       let watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES, ignoreInitial: true});
       watcher.on('change', function(path) {
         convert_path_to_file(path, options, convert_input_options);
@@ -186,11 +229,92 @@ if (commander.helpMacros) {
       });
     } else {
       if (fs.lstatSync(inputPath).isFile()) {
+        if (commander.publish) {
+          cli_error('--publish must take a directory as input, not a file');
+        }
         convert_input_options.multifile = false;
         output = convert_path(inputPath, options, convert_input_options);
       } else {
-        for (const path of walk_files_recursively(inputPath, DEFAULT_IGNORE_BASENAMES_SET)) {
+        let actual_input;
+        let publish_branch;
+        let publish_dir = path.join(inputPath, 'out', 'publish');
+        let remote_url;
+        let src_branch;
+        let cmd_options = {
+          dry_run: commander.dryRun,
+        }
+
+        // Clone the source to ensure that only git tracked changes get built and published.
+        if (commander.publish) {
+          if (!fs.existsSync(path.join(inputPath, '.git'))) {
+            cli_error('--publish must point to the root of a git repository');
+          }
+          remote_url = cmd_get_stdout('git', ['-C', inputPath, 'config', '--get', 'remote.origin.url'], cmd_options).slice(0, -1);
+          src_branch = cmd_get_stdout('git', ['-C', inputPath, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options).slice(0, -1);
+          if (commander.dryRun) {
+            remote_url = 'git@github.com:cirosantilli/cirodown.git';
+            src_branch = 'master';
+          }
+          const parsed_remote_url = git_url_parse(remote_url);
+          if (parsed_remote_url.source !== 'github.com') {
+            cli_error('only know how  to publish to origin == github.com currently, please send a patch');
+          }
+          let remote_url_path_components = parsed_remote_url.pathname.split(path.sep);
+          if (remote_url_path_components[2].startsWith(remote_url_path_components[1] + '.github.io')) {
+            publish_branch = 'master';
+          } else {
+            publish_branch = 'gh-pages';
+          }
+          if (src_branch === publish_branch) {
+            cli_error(`source and publish branches are the same: ${publish_branch}`);
+          }
+          fs.mkdirSync(publish_dir, {recursive: true});
+          if (!fs.existsSync(path.join(publish_dir, '.git'))) {
+            cmd_get_stdout('git', ['clone', '--recursive', inputPath, publish_dir], cmd_options);
+          } else {
+            cmd_get_stdout('git', ['-C', publish_dir, 'checkout', '--', '.'], cmd_options);
+            cmd_get_stdout('git', ['-C', publish_dir, 'clean', '-x', '-d', '-f'], cmd_options);
+            cmd_get_stdout('git', ['-C', publish_dir, 'pull'], cmd_options);
+            cmd_get_stdout('git', ['-C', publish_dir, 'submodule', 'update', '--init'], cmd_options);
+          }
+
+          // Set some variables especially for publishing.
+          actual_input = publish_dir;
+          commander.outdir = path.join(publish_dir, 'out', 'publish');
+        } else {
+          actual_input = inputPath;
+        }
+
+        // Do the actual conversion.
+        for (const path of walk_files_recursively(actual_input, DEFAULT_IGNORE_BASENAMES_SET)) {
           convert_path_to_file(path, options, convert_input_options);
+        }
+
+        // Publish the converted output if build succeeded.
+        if (commander.publish && !convert_input_options.had_error) {
+          // Push the original source.
+          cmd_get_stdout('git', ['-C', inputPath, 'push'], cmd_options);
+          if (!fs.existsSync(path.join(commander.outdir, '.git'))) {
+            cmd_get_stdout('git', ['-C', commander.outdir, 'init'], cmd_options);
+            if (publish_branch !== 'master') {
+              // https://stackoverflow.com/questions/42871542/how-to-create-a-git-repository-with-the-default-branch-name-other-than-master
+              cmd_get_stdout('git', ['-C', commander.outdir, 'checkout', '-b', publish_branch], cmd_options);
+            }
+            cmd_get_stdout('git', ['-C', commander.outdir, 'remote', 'add', 'origin', remote_url], cmd_options);
+            cmd_get_stdout('git', ['-C', commander.outdir, 'fetch', 'origin'], cmd_options);
+            cmd_get_stdout('git', ['-C', commander.outdir, 'reset', `origin/${publish_branch}`], cmd_options);
+          }
+          gemfile_content = "gem 'github-pages', group: :jekyll_plugins\n";
+          if (!commander.dryRun) {
+            fs.writeFileSync(path.join(commander.outdir, 'Gemfile'), gemfile_content);
+          }
+          cmd_get_stdout('git', ['-C', commander.outdir, 'add', '.'], cmd_options);
+          source_commit = cmd_get_stdout('git', ['-C', inputPath, 'log', '-n1', '--pretty=%H', src_branch], cmd_options).slice(0, -1);
+          if (commander.dryRun) {
+            source_commit = '0000111122223333444455556666777788889999';
+          }
+          cmd_get_stdout('git', ['-C', commander.outdir, 'commit', '-m', source_commit], cmd_options);
+          cmd_get_stdout('git', ['-C', commander.outdir, 'push', 'origin', `${publish_branch}:${publish_branch}`], cmd_options);
         }
       }
     }

@@ -7,6 +7,8 @@
 {id=2}
 {tag=File}
 
+Edit: implemented the `_index` thing. But actually, would be saner with a separate `_dir/` prefix for directories. Otherwise a recursive wget/zip would not work out of box which makes me sad.
+
 E.g. `subdir/index.html` which would show up under `_raw/subdir/index.html` gets overriden by the directory listing of `subdir/` which goes to the same location.
 
 One possibility would be to add an underscore: `_raw/subdir/_index.html` for the file. And another underscore for `_index.html` and so on.

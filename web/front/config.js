@@ -37,7 +37,6 @@ if (ourbigbook_nodejs_front.postgres) {
     storage: 'db.sqlite3',
   }
 }
-console.error('dbSettings: ' + require('util').inspect(dbSettings));
 
 module.exports = {
   apiPath: '/' + ourbigbook.WEB_API_PATH,

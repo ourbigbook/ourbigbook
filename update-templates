@@ -44,7 +44,7 @@ update-template() (
     git commit --date '2000-01-01T00:00:00+0000' -m 'Create template'
   git remote add origin "git@github.com:ourbigbook/${dirname}.git"
   if ! $dry_run; then
-  git push -f
+    git push -f
     if [ -n "$subdir" ]; then cd "$subdir"; fi
     npx ourbigbook --publish
     if [ -n "$subdir" ]; then cd -; fi

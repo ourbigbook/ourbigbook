@@ -934,6 +934,24 @@ assert_convert_ast('escape insane list',
   '\\* a',
   [a('P', [t('* a')])],
 );
+// https://github.com/cirosantilli/cirodown/issues/81
+assert_convert_ast('insane list immediately inside insane list',
+  `* * aa
+  * bb
+  * cc
+`,
+  [
+    a('Ul', [
+      a('L', [
+        a('Ul', [
+          a('L', [t('aa')]),
+          a('L', [t('bb')]),
+          a('L', [t('cc')]),
+        ]),
+      ]),
+    ]),
+  ]
+);
 
 // Table.
 const tr_with_explicit_table_expect = [
@@ -1057,6 +1075,31 @@ assert_convert_ast('insane table inside insane list inside insane table',
         a('Td', [t('11')]),
       ]),
     ]),
+  ]
+);
+// https://github.com/cirosantilli/cirodown/issues/81
+assert_convert_ast('insane table immediately inside insane list',
+  `* | 00
+  | 01
+
+  | 10
+  | 11
+`,
+  [
+    a('Ul', [
+      a('L', [
+        a('Table', [
+          a('Tr', [
+            a('Td', [t('00')]),
+            a('Td', [t('01')]),
+          ]),
+          a('Tr', [
+            a('Td', [t('10')]),
+            a('Td', [t('11')]),
+          ]),
+        ]),
+      ]),
+    ])
   ]
 );
 assert_convert_ast('insane table body with empty cell and no space',

@@ -2087,6 +2087,14 @@ Insane lists may be escaped with a backslash as usual:
 \* paragraph starting with an asterisk.
 ]]
 
+You can also start insane lists immediately at the start of a \x[positional-vs-named-arguments][positional or named argument], e.g.:
+\CirodownExample[[
+\P[* a
+* b
+* c
+]
+]]
+
 And now a list outside of \x[cirodownexample] to test how it looks directly under \x[toplevel]:
 
 \L[a]

@@ -95,9 +95,26 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: false,
       },
+      verified: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      verificationCode: {
+        type: DataTypes.STRING(1024),
+        allowNull: false,
+      },
+      verificationCodeSent: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
     },
     {
       hooks: {
+        beforeValidate: (user, options) => {
+          user.verificationCode = crypto.randomBytes(sequelize.models.User.tableAttributes.verificationCode.type.options.length / 2).toString('hex')
+          options.fields.push('verificationCode');
+        },
         afterCreate: async (user, options) => {
           // Create the index page for the user.
           return convert.convertArticle({

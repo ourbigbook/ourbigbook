@@ -917,6 +917,14 @@ The `_dir` directory tree contains file listings of files in the `_raw` director
 
 We originally wanted to place these listings under `_raw` itself, but this leads to unsolvable conflicts when there are files called `index.html` present vs the index.
 
+= `_file` output directory
+{parent=a `external` argument}
+
+= `_file` directory
+{synonym}
+
+Analogous to the <`_raw` directory>, but for the <`\H` `file` argument>.
+
 = `_raw` directory
 {parent=a `external` argument}
 
@@ -1338,7 +1346,21 @@ After the initial header however, you must not skip a header level, e.g. the fol
 = The toplevel header
 {parent=Header}
 
-If the document has only a single header of the highest level, e.g. like the following has only a single `h2`:
+The toplevel header of a OurBigBook file is its first header and the one with the lowest level, e.g. in a document with recommended syntax:
+``
+= Animal
+
+== Dog
+
+=== Bull Terrier
+
+== Cat
+``
+the header `= Animal` is the tolevel header.
+
+Being the toplevel header gives a header some special handling described in child sections of the section and elsewhere throughout this documentation.
+
+The toplevel header is only defined if the document has only a single header of the highest level. e.g. like the following has only a single `h2`:
 ``
 == My 2
 
@@ -1346,7 +1368,6 @@ If the document has only a single header of the highest level, e.g. like the fol
 
 === My 3 2
 ``
-then this has some magical effects.
 
 = The toplevel header IDs don't show
 {parent=The toplevel header}
@@ -1479,18 +1500,25 @@ for example:
 An explanation of what this file is about.
 ``
 renders a bit like:
-``
+```
 = path/to/myfile.c
-{id=file/path/to/myfile.c}
+{id=_file/path/to/myfile.c}
 
 An explanation of what this file is about.
 
-\a[path/to/myfile.c][View file]
+\a[path/to/myfile.c]
+
 ``
+// Contents of path/to/myfile.c
+int main() {
+  return 1;
+}
+``
+```
 so note how:
 * <automatic ID from title> does not normalize the path, e.g. it does not convert `/` to `-`.
 
-  Also, a `_file/` prefix is automatically added to the ID. This is needed with <split headers> to avoid a collision between:
+  Also, a <_file output directory>[`_file/` prefix] is automatically added to the ID. This is needed with <split headers> to avoid a collision between:
   * `path/to/myfile.c`: the actual file
   * `_file/path/to/myfile.c`: the metadata about that file. Note that locally the `.html` extension is added as in `file/path/to/myfile.c.html` which avoids the collision. But on a server deployment, the `.html` is not present, and there would be a conflict if we didn't add that `file/` prefix.
 * a link to the is added automatically, since users won't be able to click it from the header, as clicking on the header will just link to the header itself
@@ -1514,16 +1542,40 @@ which renders something like:
 The video \x[tank-man-by-cnn-1989] is very useful.
 
 = Tank Man by CNN (1989)
-{id=https://www.youtube.com/watch?v=YeFzeNAHEhU}
-
-\a[https://www.youtube.com/watch?v=YeFzeNAHEhU][View file]
-
-An explanation of what this video is about.
+{id=_file/https://www.youtube.com/watch?v=YeFzeNAHEhU}
 
 \Video[https://www.youtube.com/watch?v=YeFzeNAHEhU]
+
+An explanation of what this video is about.
 ``
 
 To make <internal cross references> to `{file}` headers, use the <`\x` `file` argument>.
+
+= `\H` `file` argument toplevel header
+{parent=H file argument}
+
+To create a separate file with the <`\H` `file` argument> set on the <toplevel header>, you must put it under the special <`_file` input directory>. For example:
+``
+_file/path/to/myfile.txt.bigb
+``
+could contain something like:
+``
+= myfile.txt
+{file}
+
+Description of my amazing file.
+``
+and it would be associated to the file:
+``
+path/to/myfile.txt
+``
+
+The content of the header `= myfile.txt` is arbitrary, as it can be fully inferenced from the file path `_file/path/to/myfile.txt.bigb`. TODO add linting for it. Perhaps we should make adding a header be optional and auto-generate that header instead. But having at least an optional header is good as a way of being able to set header properties like <tags>.
+
+= `_file` input directory
+{parent=H file argument}
+
+See: <`\H` `file` argument toplevel header>{full}.
 
 = `\H` `file` argument demo
 {parent=H file argument}
@@ -2284,6 +2336,9 @@ Note how we added the synonym to the title only when it is not just a simple fle
 {c}
 {parent=H arguments}
 {tag=multiple argument}
+
+= Tag
+{synonym}
 
 Same as <\x child argument> but in the opposite direction, e.g.:
 ``
@@ -6974,6 +7029,7 @@ Defined variables:
   ``
   <link rel="shortcut icon" href="{{ raw_relpath }}/logo.svg" />
   ``
+* `file_relpath`: similar to `raw_relpath`, but link to the <_file output directory> instead
 * `style`: default OurBigBook stylesheets
 * `title`
 

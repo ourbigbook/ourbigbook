@@ -281,69 +281,6 @@ function convert_input(input, options, convert_input_options={}) {
   return output;
 }
 
-/** Convert filetypes that cirodown knows how to convert, and just copy those that we don't, e.g.:
- *
- * * .ciro to .html
- * * .scss to .css
- *
- * @param {string} input_path - path relative to the base_path, e.g. `./cirodown subdir` gives:
- *   base_path: "subdir" and input_path "index.ciro" amongst other files.
- *
- * The output file name is derived from the input file name with the output extension.
- */
-function convert_path_to_file(base_path, input_path, options, convert_input_options={}) {
-  let input_path_parse = path.parse(input_path);
-  if (input_path_parse.ext === cirodown.CIRODOWN_EXT) {
-    let message_prefix;
-    if (options.render) {
-      message_prefix = 'convert';
-    } else {
-      message_prefix = 'extract_ids';
-    }
-    let message = `${message_prefix} ${input_path}`;
-    console.log(message);
-    const new_convert_input_options = Object.assign({}, convert_input_options);
-    let t0 = performance.now();
-    convert_path(path.join(base_path, input_path), options, new_convert_input_options);
-    let t1 = performance.now();
-    console.log(`${message} finished in ${t1 - t0} ms`);
-    if (new_convert_input_options.had_error) {
-      convert_input_options.had_error = true;
-    }
-  } else {
-    let output_name = input_path_parse.name;
-    let output_path_noext = path.join(input_path_parse.dir, output_name);
-    if (options.outfile === undefined) {
-      output_path_noext = path.join(convert_input_options.outdir, output_path_noext);
-    } else {
-      output_path_noext = options.outfile;
-    }
-    fs.mkdirSync(path.dirname(output_path_noext), {recursive: true});
-    if (options.render) {
-      if (input_path_parse.ext === SASS_EXT) {
-        console.log(`sass ${input_path}`);
-        fs.writeFileSync(
-          output_path_noext + '.css',
-          sass.renderSync({
-            data: fs.readFileSync(input_path, convert_input_options.encoding),
-            outputStyle: 'compressed',
-          }).css
-        );
-      } else {
-        // Otherwise, just copy the file over if needed.
-        const output_path = output_path_noext + input_path_parse.ext;
-        if (output_path !== input_path) {
-          console.log(`copy ${input_path}`);
-          fs.copyFileSync(input_path, output_path);
-        }
-      }
-    }
-  }
-  if (convert_input_options.commander.debugPerf) {
-    console.error(`perf convert_path_to_file_end ${performance.now()}`);
-  }
-}
-
 /** Convert cirodown input from a path to string output and return the output as a string.
  *
  * @return {String}
@@ -376,6 +313,13 @@ function convert_path(input_path, options, convert_input_options) {
     } else {
       new_options.toplevel_parent_scope = path_relative_to_cirodown_json;
     }
+  }
+  if (!convert_input_options.commander.htmlEmbed) {
+    let root_relpath = path.relative(input_path_parse.dir, options.cirodown_json_dir)
+    if (root_relpath !== '') {
+      root_relpath += cirodown.URL_SEP;
+    }
+    new_options.template_vars.root_relpath = root_relpath;
   }
   new_options.toplevel_id = toplevel_id;
   new_convert_input_options.input_path = input_path;
@@ -439,6 +383,69 @@ function convert_path(input_path, options, convert_input_options) {
     console.error(`perf convert_path_end ${performance.now()}`);
   }
   return output;
+}
+
+/** Convert filetypes that cirodown knows how to convert, and just copy those that we don't, e.g.:
+ *
+ * * .ciro to .html
+ * * .scss to .css
+ *
+ * @param {string} input_path - path relative to the base_path, e.g. `./cirodown subdir` gives:
+ *   base_path: "subdir" and input_path "index.ciro" amongst other files.
+ *
+ * The output file name is derived from the input file name with the output extension.
+ */
+function convert_path_to_file(base_path, input_path, options, convert_input_options={}) {
+  let input_path_parse = path.parse(input_path);
+  if (input_path_parse.ext === cirodown.CIRODOWN_EXT) {
+    let message_prefix;
+    if (options.render) {
+      message_prefix = 'convert';
+    } else {
+      message_prefix = 'extract_ids';
+    }
+    let message = `${message_prefix} ${input_path}`;
+    console.log(message);
+    const new_convert_input_options = Object.assign({}, convert_input_options);
+    let t0 = performance.now();
+    convert_path(path.join(base_path, input_path), options, new_convert_input_options);
+    let t1 = performance.now();
+    console.log(`${message} finished in ${t1 - t0} ms`);
+    if (new_convert_input_options.had_error) {
+      convert_input_options.had_error = true;
+    }
+  } else {
+    let output_name = input_path_parse.name;
+    let output_path_noext = path.join(input_path_parse.dir, output_name);
+    if (options.outfile === undefined) {
+      output_path_noext = path.join(convert_input_options.outdir, output_path_noext);
+    } else {
+      output_path_noext = options.outfile;
+    }
+    fs.mkdirSync(path.dirname(output_path_noext), {recursive: true});
+    if (options.render) {
+      if (input_path_parse.ext === SASS_EXT) {
+        console.log(`sass ${input_path}`);
+        fs.writeFileSync(
+          output_path_noext + '.css',
+          sass.renderSync({
+            data: fs.readFileSync(input_path, convert_input_options.encoding),
+            outputStyle: 'compressed',
+          }).css
+        );
+      } else {
+        // Otherwise, just copy the file over if needed.
+        const output_path = output_path_noext + input_path_parse.ext;
+        if (output_path !== input_path) {
+          console.log(`copy ${input_path}`);
+          fs.copyFileSync(input_path, output_path);
+        }
+      }
+    }
+  }
+  if (convert_input_options.commander.debugPerf) {
+    console.error(`perf convert_path_to_file_end ${performance.now()}`);
+  }
 }
 
 function generate_redirects(

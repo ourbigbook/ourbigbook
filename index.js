@@ -2312,14 +2312,17 @@ function html_convert_attrs_id(
 ) {
   let id = ast.id;
   if (id !== undefined) {
-    if (context.toplevel_ast !== undefined && ast.id !== context.toplevel_ast.id) {
-      id = remove_toplevel_scope(id, context.toplevel_ast, context)
+    if (context.toplevel_ast !== undefined) {
+      if (ast.id === context.toplevel_ast.id) {
+        if (ast.scope !== undefined) {
+          id = id.substr(ast.scope.length + 1);
+        }
+      } else {
+        id = remove_toplevel_scope(id, context.toplevel_ast, context);
+      }
     }
     custom_args[Macro.ID_ARGUMENT_NAME] = [
-        new PlaintextAstNode(
-          ast.source_location,
-          id
-        )
+        new PlaintextAstNode(ast.source_location, id),
     ];
   }
   return html_convert_attrs(ast, context, arg_names, custom_args);
@@ -3122,6 +3125,8 @@ function parse(tokens, options, context, extra_returns={}) {
           }
           if (options.toplevel_parent_scope !== undefined) {
             ast.scope = options.toplevel_parent_scope;
+            // We skip calculation of scoped IDs, so gotta do it here.
+            ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id;
           }
           ast.is_first_header_in_input_file = true;
           is_first_header = false;
@@ -4554,6 +4559,7 @@ const MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS = [
 // https://cirosantilli.com/cirodown#known-url-protocols
 const KNOWN_URL_PROTOCOLS = new Set(['http://', 'https://']);
 const URL_SEP = '/';
+exports.URL_SEP = URL_SEP;
 const MACRO_WITH_MEDIA_PROVIDER = new Set(['image', 'video']);
 const DEFAULT_MACRO_LIST = [
   new Macro(

@@ -2679,7 +2679,9 @@ function convert_init_context(options={}, extra_returns={}) {
           }
         }
       }
-      if (!('numbered' in cirodown_json)) { cirodown_json.numbered = true; }
+      if (!('h' in cirodown_json)) { cirodown_json.h = {}; }
+      if (!('numbered' in cirodown_json.h)) { cirodown_json.h.numbered = true; }
+      if (!('splitDefault' in cirodown_json.h)) { cirodown_json.h.splitDefault = false; }
       {
         if (!('lint' in cirodown_json)) { cirodown_json.lint = {}; }
         const lint = cirodown_json.lint
@@ -4100,6 +4102,8 @@ async function parse(tokens, options, context, extra_returns={}) {
           ast.split_default = ast.validation_output.splitDefault.boolean;
         } else if (options.cur_header !== undefined) {
           ast.split_default = options.cur_header.split_default;
+        } else {
+          ast.split_default = options.cirodown_json.h.splitDefault;
         }
 
         if (is_synonym) {
@@ -4557,11 +4561,12 @@ async function parse(tokens, options, context, extra_returns={}) {
           // but the descendants to follow what they would actually render in the output as so they will show correctly on ToC.
           header_ast.add_argument('numbered', new AstArgument(
             [
-              new PlaintextAstNode(context.options.cirodown_json.numbered ? '1' : '0', header_ast.source_location),
+              new PlaintextAstNode(context.options.cirodown_json.h.numbered ? '1' : '0', header_ast.source_location),
             ],
             header_ast.source_location,
           ))
         }
+        header_ast.splitDefault = target_id_ast.splitDefault
         propagate_numbered(header_ast, context)
         header_ast.set_source_location(target_id_ast.source_location)
         header_ast.header_tree_node.update_ancestor_counts(target_id_ast.header_tree_node_word_count)
@@ -5501,7 +5506,7 @@ function propagate_numbered(ast, context) {
     //  ast.numbered = parent_asts.some(ast => ast.numbered)
     //} else {
 
-    ast.numbered = context.options.cirodown_json.numbered
+    ast.numbered = context.options.cirodown_json.h.numbered
   } else {
     const parent_ast = parent_tree_node.ast
     if (parent_ast.validation_output.numbered.given) {

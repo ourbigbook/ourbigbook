@@ -2076,8 +2076,8 @@ function convert(
     }
 
     // For non-split header toplevel conversion.
-    let outpath;
     if (context.options.outfile === undefined) {
+      let outpath;
       if (context.options.input_path !== undefined) {
         let id;
         if (context.options.toplevel_id === undefined) {
@@ -2099,10 +2099,8 @@ function convert(
           )[0];
         }
       }
-    } else {
-      outpath = context.options.outfile;
+      context.toplevel_output_path = outpath;
     }
-    context.toplevel_output_path = outpath;
 
     // First render.
     context.extra_returns.rendered_outputs = {};
@@ -2446,6 +2444,7 @@ function convert_init_context(options={}, extra_returns={}) {
     macros: macro_list_to_macros(),
     options: options,
     synonym_headers: new Set(),
+    toplevel_output_path: options.outfile,
   };
 
   return context;

@@ -3977,7 +3977,7 @@ to where you want to break in the code, and then:
 ``
 node inspect ./node_modules/.bin/mocha test --ignore-leaks -g 'p with id before'
 ``
-TODO breaks in `index.js` not working on Cirodown 628faa258a584c85ddeacef7e79b7bdb0c919e27 Node v14.15.3, but breaks on `test.js` did work on same setup... why, why why.
+TODO breaks in `index.js` not working on Cirodown 628faa258a584c85ddeacef7e79b7bdb0c919e27 Node v14.15.3, but breaks on `test.js` did work on same setup... why, why why: https://stackoverflow.com/questions/41028932/run-node-inspector-with-mocha
 
 === Overview of files in this repository
 

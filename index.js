@@ -91,8 +91,8 @@ class AstNode {
         let arg = cur_ast.args[arg_name];
         let new_arg = [];
         for (let macro of arg) {
-          let new_ast = new AstNode(AstType[json.node_type], json.macro_name,
-            json.args, json.line, json.column, json.text);
+          let new_ast = new AstNode(AstType[macro.node_type], macro.macro_name,
+            macro.args, macro.line, macro.column, macro.text);
           new_arg.push(new_ast);
           nodes.push(new_ast);
         }
@@ -234,7 +234,11 @@ class Macro {
    *                 the same parent auto_parent into a node with auto_parent type. E.g.,
    *                 to group list items into ul.
    *        {Set[String]} auto_parent_skip - don't do auto parent generation if the parent is one of these types.
-   *        {Function[AstNode, Object]} -> Bool if true, then an ID should not be automatically given
+   *        {Function[AstNode, Object] -> String} get_number - return the number that shows on on full references
+   *                 as a string, e.g. "123" in "Figure 123." or "1.2.3" in "Section 1.2.3.".
+   *                 A return of undefined means that the number is not available, e.g. this is current limitation
+   *                 of cross references to other files (could be implemented).
+   *        {Function[AstNode, Object] -> Bool} macro_counts_ignore - if true, then an ID should not be automatically given
    *                 to this node. This is usually the case for nodes that are not visible in the final output,
    *                 otherwise that would confuse readers.
    */
@@ -369,6 +373,7 @@ class Macro {
       options.style = XStyle.full;
     }
     let ret = ``;
+    let number;
     if (options.style === XStyle.full) {
       if (options.show_caption_prefix) {
         if (options.caption_prefix_span) {
@@ -376,14 +381,19 @@ class Macro {
         }
         ret += `${context.macros[ast.macro_name].options.caption_prefix} `;
       }
-      ret += context.macros[ast.macro_name].options.get_number(ast, context);
+      number = context.macros[ast.macro_name].options.get_number(ast, context);
+      if (number !== undefined) {
+        ret += number;
+      }
       if (options.show_caption_prefix && options.caption_prefix_span) {
         ret += `</span>`;
       }
     }
     if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
       if (options.style === XStyle.full) {
-        ret += html_escape_context(context, `. `);
+        if (number !== undefined) {
+          ret += html_escape_context(context, `. `);
+        }
         if (options.quote)
           ret += html_escape_context(context, `"`);
       }
@@ -834,7 +844,9 @@ function convert(
   if (!('id_provider' in options)) {
     options.id_provider = undefined;
   }
+  if (!('html_embed' in options)) { options.html_embed = false; }
   if (!('html_single_page' in options)) { options.html_single_page = false; }
+  if (!('html_x_extension' in options)) { options.html_x_extension = true; }
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('show_ast' in options)) { options.show_ast = false; }
   if (!('show_parse' in options)) { options.show_parse = false; }
@@ -1186,18 +1198,18 @@ function parse(tokens, macros, options, extra_returns={}) {
     // Calculate node ID and add it to the ID index.
     let index_id = true;
     let id_text = undefined;
-    if (Macro.ID_ARGUMENT_NAME in ast.args) {
-      ast.id = convert_arg_noescape(ast.args[Macro.ID_ARGUMENT_NAME], id_context);
-    } else {
+    let macro_arg = ast.args[Macro.ID_ARGUMENT_NAME];
+    if (macro_arg === undefined) {
       let id_text = '';
       let id_prefix = macros[ast.macro_name].id_prefix;
       if (id_prefix !== '') {
         id_text += id_prefix + ID_SEPARATOR
       }
-      if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
+      let title_arg = ast.args[Macro.TITLE_ARGUMENT_NAME];
+      if (title_arg !== undefined) {
         // ID from title.
         // TODO correct unicode aware algorithm.
-        id_text += title_to_id(convert_arg_noescape(ast.args[Macro.TITLE_ARGUMENT_NAME], id_context));
+        id_text += title_to_id(convert_arg_noescape(title_arg, id_context));
         ast.id = id_text;
       } else if (!macro.properties.phrasing) {
         // ID from element count.
@@ -1207,14 +1219,17 @@ function parse(tokens, macros, options, extra_returns={}) {
           ast.id = id_text;
         }
       }
+    } else {
+      ast.id = convert_arg_noescape(macro_arg, id_context);
     }
     if (ast.id !== undefined) {
       const id_provider_get = id_provider.get(ast.id);
       let previous_ast = undefined;
       if (id_provider_get === undefined) {
-        if (ast.id in non_indexed_ids) {
+        let non_indexed_id = non_indexed_ids[ast.id];
+        if (non_indexed_id !== undefined) {
           input_path = options.input_path;
-          previous_ast = non_indexed_ids[ast.id];
+          previous_ast = non_indexed_id;
         }
       } else {
         [input_path, previous_ast] = id_provider_get;
@@ -1230,7 +1245,6 @@ function parse(tokens, macros, options, extra_returns={}) {
           message += `file ${input_path} `;
         }
         message += `line ${previous_ast.line} colum ${previous_ast.column}`;
-        console.log(ast.args);
         parse_error(state, message, ast.line, ast.column);
       }
     }
@@ -1737,7 +1751,12 @@ const DEFAULT_MACRO_LIST = [
       caption_prefix: 'Section',
       id_prefix: '',
       get_number: function(ast, context) {
-        return ast.header_tree_node.get_nested_number(context.header_graph_top_level);
+        let header_tree_node = ast.header_tree_node;
+        if (header_tree_node === undefined) {
+          return undefined;
+        } else {
+          return header_tree_node.get_nested_number(context.header_graph_top_level);
+        }
       },
       x_style: XStyle.short,
     }
@@ -2159,6 +2178,9 @@ const DEFAULT_MACRO_LIST = [
           href_path = '';
         } else {
           href_path = target_input_path;
+          if (context.options.html_x_extension) {
+            href_path += '.html';
+          }
         }
         let href = html_attr('href', href_path + '#' + html_escape_attr(target_id));
         return `<a${href}${attrs}>${content}</a>`;

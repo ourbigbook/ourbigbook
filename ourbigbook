@@ -101,7 +101,7 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, non_o
 // Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
 async function check_db(non_ourbigbook_options) {
   const sequelize = non_ourbigbook_options.sequelize
-  if (sequelize) {
+  if (sequelize && non_ourbigbook_options.commander.render) {
     const error_messages = await ourbigbook_nodejs_webpack_safe.check_db(
       sequelize, non_ourbigbook_options.ourbigbook_paths_converted)
     if (error_messages.length > 0) {

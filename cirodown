@@ -811,11 +811,11 @@ if (commander.helpMacros) {
     output_format: commander.outputFormat,
     outfile: commander.outfile,
     path_sep: path.sep,
-    read_include: cirodown_nodejs_webpack_safe.read_include(
-      (inpath) => fs.existsSync(path.join(cirodown_json_dir, inpath)),
-      (inpath) => fs.readFileSync(path.join(cirodown_json_dir, inpath), cirodown_nodejs.ENCODING),
-      cirodown.Macro.HEADER_SCOPE_SEPARATOR,
-    ),
+    read_include: cirodown_nodejs_webpack_safe.read_include({
+      exists: (inpath) => fs.existsSync(path.join(cirodown_json_dir, inpath)),
+      read: (inpath) => fs.readFileSync(path.join(cirodown_json_dir, inpath), cirodown_nodejs.ENCODING),
+      path_sep: cirodown.Macro.HEADER_SCOPE_SEPARATOR,
+    }),
     // Part of considering file previews for source code.
     //read_file: (readpath, context) => {
     //  readpath = path.join(path.dirname(context.options.input_path), readpath)

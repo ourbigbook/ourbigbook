@@ -1,6 +1,7 @@
 const path = require('path')
 
 const cirodown = require('cirodown')
+const cirodown_nodejs_webpack_safe = require('cirodown/nodejs_webpack_safe')
 const { DataTypes, Op } = require('sequelize')
 
 const { modifyEditorInput } = require('../shared')
@@ -66,16 +67,22 @@ module.exports = (sequelize) => {
               id_provider,
               input_path: `${cirodown.AT_MENTION_CHAR}${author.username}/${id}${cirodown.CIRODOWN_EXT}`,
               path_sep: path.sep,
-              read_include: (id) => {
-                const included_article = sequelize.models.Article.findOne({
-                  where: { slug: Article.makeSlug(author.username, id) } }) 
-                let found = undefined;
-                if (included_article) {
-                  return [id, included_article.body]
-                } else {
-                  return undefined
-                }
-              },
+              read_include: cirodown_nodejs_webpack_safe.read_include({
+                exists: async (inpath) => {
+                  const suf = cirodown.Macro.HEADER_SCOPE_SEPARATOR + cirodown.INDEX_BASENAME_NOEXT
+                  let idid
+                  if (inpath.endsWith(suf)) {
+                    idid = inpath.slice(0, -suf.length)
+                  } else {
+                    idid = inpath
+                  }
+                  return (await sequelize.models.Id.count({ where: { idid } })) > 0
+                },
+                // Only needed for --embed-includes, which is not implemented on the dynamic website for now.
+                read: (inpath) => '',
+                path_sep: cirodown.Macro.HEADER_SCOPE_SEPARATOR,
+                ext: '',
+              }),
             },
             extra_returns,
           )

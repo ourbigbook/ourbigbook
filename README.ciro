@@ -99,9 +99,13 @@ Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally pu
   \l[cross file configuration files to factor out common page parts like headers and footers]
 ]
 
-It is meant to be both saner and more powerful than Markdown and Asciidoctor.
+Originally, Cirodown It is meant to be both saner and more powerful than Markdown and Asciidoctor.
+
+But alas, as Ciro started implementing and using it, it degraded slightly into a language slightly saner than Asciidoctor but with an amazing Node.js implementation that makes it better for book writing and website publishing.
 
 The tradeoff for those features is that the language is slightly heavier to read and write.
+
+Initially things were very sane, but Ciro started to bring some Markdown insanity he missed back in. But hopefully starting from a saner point will still produce a saner end result.
 
 It is intended that this will be an acceptable downside as Cirodown will be used primarily large complex content such as books rather than forum posts, and will therefore primarily written either:
 
@@ -1398,6 +1402,23 @@ cirodown --publish-commit 'my amazing change' .
 
 With great power comes great responsibility of course, but who cares!
 
+\h[5][\c[--outfile <outfie>]]
+{id=outfile}
+
+Save the output to a given file instead of outputting to stdout:
+
+\C[[
+./cirodown --outfile not-readme.html not-readme.ciro
+]]
+
+The generated output is slightly different than that of:
+
+\C[[
+./cirodown not-readme.ciro > not-readme.html
+]]
+
+because with \c[--outfile] we know where the output is going, and so we can generate relative includes to default CSS/JavaScript files.
+
 \h[5][\c[--help-macros]]
 {id=help-macros}
 
@@ -1699,7 +1720,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \h[2][Related projects]
 
-\l[\a[https://github.com/rstudio/bookdown], \a[https://bookdown.org/]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: \a[https://bookdown.org/yihui/bookdown/pandoc.html], thus will never run on browser without huge translation layers. But does have an obscene ammount of output formats however.]
+\l[\a[https://github.com/rstudio/bookdown], \a[https://bookdown.org/]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: \a[https://bookdown.org/yihui/bookdown/pandoc.html], thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.]
 \l[\a[https://gohugo.io/][Hugo]. Pretty good, similar feature set to ours. But Go based, so hard on browser, and adds adhoc features on top of markdown once again]
 
 Less related but of interest:

@@ -29,6 +29,10 @@ $toplevel-horizontal-padding-mobile: 5px;
   //visibility: hidden;
 }
 
+@mixin img-border {
+  border: 5px solid $color;
+}
+
 @mixin multiline-caption {
   border-left: 1px solid $color;
   padding-left: 8px;
@@ -207,10 +211,16 @@ nav.h-nav {
 img {
   background-color: white;
   @include responsive-img;
+  &.border {
+    @include img-border;
+  }
 }
 
 iframe {
   @include responsive-img;
+  &.border {
+    @include img-border;
+  }
 }
 
 // Math.
@@ -430,6 +440,9 @@ th[role=columnheader]:not(.no-sort):after {
 
 video {
   @include responsive-img;
+  &.border {
+    @include img-border;
+  }
 }
 }
 

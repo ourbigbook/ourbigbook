@@ -95,11 +95,12 @@ const Article = ({
                 {' '}
                 {!isIndex &&
                   <a className="by-others btn" href={routes.topic(id)} title="Articles by others on the same topic">
-                    <TopicIcon title={false} /> {curArticle.topicCount} {toplevel ? <> By Others<span className="mobile-hide"> On Same Topic</span></> : ''}
+                    <TopicIcon title={false} /> {curArticle.topicCount}{toplevel ? <> By Others<span className="mobile-hide"> On Same Topic</span></> : ''}
                   </a>
                 }
                 {' '}
-                <a className="issues btn" href={routes.issues(curArticle.slug)}><IssueIcon /> {isIndex ? issuesCount : curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
+                <a className="issues btn" href={routes.issues(curArticle.slug)} title="Discussions">
+                  <IssueIcon title={false} /> {isIndex ? issuesCount : curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
               </>
             }
             {toplevel &&

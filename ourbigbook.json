@@ -14,7 +14,7 @@
   "media-providers": {
     "github": {
       "path": "../media",
-      "remote": "cirosantilli/media"
+      "remote": "cirosantilli/ourbigbook-media"
     }
   },
   "outputOutOfTree": true,

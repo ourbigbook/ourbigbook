@@ -16,4 +16,6 @@ Non-toplevel: \x[internal-cross-references].
 
 \h[2][Not the README another include]
 
+Here we include another file from this file to see if recursive includes work from the toplevel:
+
 \include[included-by-not-readme]

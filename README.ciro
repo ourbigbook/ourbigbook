@@ -2122,9 +2122,11 @@ $${show=0}
 We make it invisible because this block only contains KaTeX definitions, and should not render to anything.
 
 Then the second math block uses those definitions:
+\CirodownExample[[
 $$
 \foo
 $$
+]]
 
 Analogously with `\def`, definition:
 \CirodownExample[[

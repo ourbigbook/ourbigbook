@@ -9896,161 +9896,164 @@ ${delim}${attrs === '' ? '' : '\n'}${attrs}${newline}`
 /** Get the preferred x href for the ourbigbook output format of an \x. */
 function ourbigbookGetXHref({
   ast,
+  c,
   context,
+  file,
+  for_header_parent,
+  href,
+  magic,
+  p,
+  scope,
   target_ast,
   target_id,
-  href,
-  c,
-  p,
-  magic,
-  scope,
-  for_header_parent,
 }) {
-  href = href.replaceAll(ID_SEPARATOR, ' ')
-  if (p) {
-    const href_plural = pluralizeWrap(href, 2)
-    let target_ast_plural = context.db_provider.get(magicTitleToId(href_plural), context)
-    if (
-      // When we have \x without magic to a destination that exists
-      // in both plural and singular, we can't use the magic plural,
-      // or it will resolve to plural rather than the correct singular.
-      !magic &&
-      target_ast &&
-      target_ast_plural
-    ) {
-      return { override_href: `<${href}>${ourbigbookConvertArgs(ast, context, { skip: new Set(['c', 'href', 'magic']) }).join('')}` }
+  if (!file) {
+    href = href.replaceAll(ID_SEPARATOR, ' ')
+    if (p) {
+      const href_plural = pluralizeWrap(href, 2)
+      let target_ast_plural = context.db_provider.get(magicTitleToId(href_plural), context)
+      if (
+        // When we have \x without magic to a destination that exists
+        // in both plural and singular, we can't use the magic plural,
+        // or it will resolve to plural rather than the correct singular.
+        !magic &&
+        target_ast &&
+        target_ast_plural
+      ) {
+        return { override_href: `<${href}>${ourbigbookConvertArgs(ast, context, { skip: new Set(['c', 'href', 'magic']) }).join('')}` }
+      }
+      href = href_plural
+      if (target_ast_plural) {
+        target_ast = target_ast_plural
+      }
     }
-    href = href_plural
-    if (target_ast_plural) {
-      target_ast = target_ast_plural
+    if (!target_ast) {
+      return { override_href: `${ourbigbookConvertSimpleElem(ast, context)} ${renderErrorXUndefined(ast, context, target_id)}` }
     }
-  }
-  if (!target_ast) {
-    return { override_href: `${ourbigbookConvertSimpleElem(ast, context)} ${renderErrorXUndefined(ast, context, target_id)}` }
-  }
-  let was_magic_plural, was_magic_uppercase
-  if (magic && !for_header_parent) {
-    const href_singular = pluralizeWrap(href, 1)
-    if (!target_ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME] && href !== href_singular) {
-      was_magic_plural = true
+    let was_magic_plural, was_magic_uppercase
+    if (magic && !for_header_parent) {
+      const href_singular = pluralizeWrap(href, 1)
+      if (!target_ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME] && href !== href_singular) {
+        was_magic_plural = true
+      }
+      const components = href.split(Macro.HEADER_SCOPE_SEPARATOR)
+      const c = components[components.length - 1][0]
+      was_magic_uppercase = c === c.toUpperCase()
     }
-    const components = href.split(Macro.HEADER_SCOPE_SEPARATOR)
-    const c = components[components.length - 1][0]
-    was_magic_uppercase = c === c.toUpperCase()
-  }
-  const href_from_id = href
-  if (!(
-    (
-      target_ast.macro_name === Macro.HEADER_MACRO_NAME &&
-      target_ast.validation_output.file.given
-    )
-  )) {
-    const macro = context.macros[target_ast.macro_name];
-    const title_arg = macro.options.get_title_arg(target_ast, context);
-    href = renderArg(title_arg, cloneAndSet(context, 'id_conversion', true));
-    href = href.replaceAll(Macro.HEADER_SCOPE_SEPARATOR, ' ')
-    let was_pluralized
-    let disambiguate
-    const disambiguate_arg = target_ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
-    if (disambiguate_arg) {
-      disambiguate = renderArg(disambiguate_arg, cloneAndSet(context, 'id_conversion', true))
-    } else {
-      disambiguate = ''
-    }
-    const explicit_id = target_ast.first_toplevel_child || (
-      target_ast.validation_output[Macro.ID_ARGUMENT_NAME] &&
-      target_ast.validation_output[Macro.ID_ARGUMENT_NAME].given
-    )
-    if (macro.options.id_prefix) {
-      href = `${macro.options.id_prefix} ${href}`
-    } else {
-      const first_ast = title_arg.get(0);
-      if (!(
-        (
-          target_ast.macro_name === Macro.HEADER_MACRO_NAME &&
-          target_ast.validation_output.c.boolean
-        ) ||
-        (
-          first_ast &&
-          first_ast.node_type !== AstType.PLAINTEXT
-        ) ||
-        for_header_parent
-      )) {
-        if (c || was_magic_uppercase) {
-          href = href[0].toUpperCase() + href.substring(1)
-        } else {
-          href = href[0].toLowerCase() + href.substring(1)
+    const href_from_id = href
+    if (!(
+      (
+        target_ast.macro_name === Macro.HEADER_MACRO_NAME &&
+        target_ast.validation_output.file.given
+      )
+    )) {
+      const macro = context.macros[target_ast.macro_name];
+      const title_arg = macro.options.get_title_arg(target_ast, context);
+      href = renderArg(title_arg, cloneAndSet(context, 'id_conversion', true));
+      href = href.replaceAll(Macro.HEADER_SCOPE_SEPARATOR, ' ')
+      let was_pluralized
+      let disambiguate
+      const disambiguate_arg = target_ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
+      if (disambiguate_arg) {
+        disambiguate = renderArg(disambiguate_arg, cloneAndSet(context, 'id_conversion', true))
+      } else {
+        disambiguate = ''
+      }
+      const explicit_id = target_ast.first_toplevel_child || (
+        target_ast.validation_output[Macro.ID_ARGUMENT_NAME] &&
+        target_ast.validation_output[Macro.ID_ARGUMENT_NAME].given
+      )
+      if (macro.options.id_prefix) {
+        href = `${macro.options.id_prefix} ${href}`
+      } else {
+        const first_ast = title_arg.get(0);
+        if (!(
+          (
+            target_ast.macro_name === Macro.HEADER_MACRO_NAME &&
+            target_ast.validation_output.c.boolean
+          ) ||
+          (
+            first_ast &&
+            first_ast.node_type !== AstType.PLAINTEXT
+          ) ||
+          for_header_parent
+        )) {
+          if (c || was_magic_uppercase) {
+            href = href[0].toUpperCase() + href.substring(1)
+          } else {
+            href = href[0].toLowerCase() + href.substring(1)
+          }
+        }
+        if (
+          was_magic_plural ||
+          p
+        ) {
+          const href_plural = pluralizeWrap(href, 2)
+          let disambiguate_sep
+          if (disambiguate) {
+            disambiguate_sep = ID_SEPARATOR + disambiguate
+          } else {
+            disambiguate_sep = ''
+          }
+          let target_scope = target_ast.scope
+          if (target_scope) {
+            target_scope = `${target_scope}${Macro.HEADER_SCOPE_SEPARATOR}`
+          } else {
+            target_scope = ''
+          }
+          const plural_id = `${target_scope}${magicTitleToId(href_plural, context)}${disambiguate_sep}`
+          const plural_target = context.db_provider.get(plural_id, context)
+          if (!plural_target || plural_target.id !== target_ast.id) {
+            const singular_id = `${target_scope}${magicTitleToId(pluralizeWrap(href, 1), context)}${disambiguate_sep}`
+            const singular_target = context.db_provider.get(singular_id, context)
+            if ((!singular_target || singular_target.id !== target_ast.id) && !explicit_id) {
+              // This can happen due to pluralize bugs:
+              // https://github.com/plurals/pluralize/issues/172
+              // Just bail out in those cases.
+              return { override_href: ourbigbookConvertSimpleElem(ast, context) }
+            }
+          }
+          href = href_plural
+          was_pluralized = true
         }
       }
-      if (
-        was_magic_plural ||
-        p
-      ) {
-        const href_plural = pluralizeWrap(href, 2)
-        let disambiguate_sep
-        if (disambiguate) {
-          disambiguate_sep = ID_SEPARATOR + disambiguate
-        } else {
-          disambiguate_sep = ''
+      if (explicit_id && magicTitleToId(href, context) !== target_ast.id) {
+        href = href_from_id
+      } else {
+        if (disambiguate_arg) {
+          if (was_pluralized) {
+            // TODO https://github.com/ourbigbook/ourbigbook/issues/244
+            return { override_href: ourbigbookConvertSimpleElem(ast, context) }
+          }
+          href = `${href} (${disambiguate})`;
         }
         let target_scope = target_ast.scope
         if (target_scope) {
-          target_scope = `${target_scope}${Macro.HEADER_SCOPE_SEPARATOR}`
-        } else {
-          target_scope = ''
-        }
-        const plural_id = `${target_scope}${magicTitleToId(href_plural, context)}${disambiguate_sep}`
-        const plural_target = context.db_provider.get(plural_id, context)
-        if (!plural_target || plural_target.id !== target_ast.id) {
-          const singular_id = `${target_scope}${magicTitleToId(pluralizeWrap(href, 1), context)}${disambiguate_sep}`
-          const singular_target = context.db_provider.get(singular_id, context)
-          if ((!singular_target || singular_target.id !== target_ast.id) && !explicit_id) {
-            // This can happen due to pluralize bugs:
-            // https://github.com/plurals/pluralize/issues/172
-            // Just bail out in those cases.
-            return { override_href: ourbigbookConvertSimpleElem(ast, context) }
-          }
-        }
-        href = href_plural
-        was_pluralized = true
-      }
-    }
-    if (explicit_id && magicTitleToId(href, context) !== target_ast.id) {
-      href = href_from_id
-    } else {
-      if (disambiguate_arg) {
-        if (was_pluralized) {
-          // TODO https://github.com/ourbigbook/ourbigbook/issues/244
-          return { override_href: ourbigbookConvertSimpleElem(ast, context) }
-        }
-        href = `${href} (${disambiguate})`;
-      }
-      let target_scope = target_ast.scope
-      if (target_scope) {
-        if (ast.scope) {
-          const target_scope_split = target_scope.split(Macro.HEADER_SCOPE_SEPARATOR)
-          const scope_split = ast.scope.split(Macro.HEADER_SCOPE_SEPARATOR)
-          let last_common = 0
-          while (
-            last_common < target_scope_split.length &&
-            last_common < scope_split.length
-          ) {
-            if (target_scope_split[last_common] !== scope_split[last_common]) {
-              break
+          if (ast.scope) {
+            const target_scope_split = target_scope.split(Macro.HEADER_SCOPE_SEPARATOR)
+            const scope_split = ast.scope.split(Macro.HEADER_SCOPE_SEPARATOR)
+            let last_common = 0
+            while (
+              last_common < target_scope_split.length &&
+              last_common < scope_split.length
+            ) {
+              if (target_scope_split[last_common] !== scope_split[last_common]) {
+                break
+              }
+              last_common++
             }
-            last_common++
+            target_scope = target_scope_split.slice(last_common).join(Macro.HEADER_SCOPE_SEPARATOR)
           }
-          target_scope = target_scope_split.slice(last_common).join(Macro.HEADER_SCOPE_SEPARATOR)
+          if (target_scope) {
+            target_scope = `${target_scope}${Macro.HEADER_SCOPE_SEPARATOR}`
+          }
+          target_scope = target_scope.replaceAll(ID_SEPARATOR, ' ')
+          href = `${target_scope}${href}`
         }
-        if (target_scope) {
-          target_scope = `${target_scope}${Macro.HEADER_SCOPE_SEPARATOR}`
-        }
-        target_scope = target_scope.replaceAll(ID_SEPARATOR, ' ')
-        href = `${target_scope}${href}`
       }
-    }
-    if (isAbsoluteXref(target_id, context)) {
-      href = target_id[0] + href
+      if (isAbsoluteXref(target_id, context)) {
+        href = target_id[0] + href
+      }
     }
   }
   return { href, override_href: undefined }
@@ -10464,14 +10467,15 @@ OUTPUT_FORMATS_LIST.push(
           let override_href
           ;({ href, override_href } = ourbigbookGetXHref({
             ast,
+            c: ast.validation_output.c.boolean,
             context,
+            file: ast.validation_output.file.given,
+            href,
+            magic,
+            p: ast.validation_output.p.boolean,
+            scope: ast.scope,
             target_ast,
             target_id,
-            href,
-            c: ast.validation_output.c.boolean,
-            p: ast.validation_output.p.boolean,
-            magic,
-            scope: ast.scope,
           }))
           if (override_href) {
             return override_href

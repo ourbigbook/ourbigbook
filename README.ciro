@@ -130,7 +130,7 @@ Furthermore, the default install of Chromium on Ubuntu 21.04 uses Snap and block
 * https://askubuntu.com/questions/1214346/as-a-user-is-there-any-way-to-change-the-confinement-of-a-snap-package
 One workaround is to use \x[embed-resources], but this of course generates larger outputs.
 
-To run master globally for development see: \x[run-cirodown-master]{full}. This one actually works despite the dotfile thing since your development path is normally outside of dotfiles.
+To run master globally from source for development see: \x[run-cirodown-master]{full}. This one actually works despite the dotfile thing since your development path is normally outside of dotfiles.
 
 Try out the JavaScript API with \a[api_hello.js]:
 ``
@@ -4357,6 +4357,16 @@ cirodown --outdir my_outdir .
 ``
 The output would also be placed in `my_outdir/test.html`.
 
+This option also relocates \x[the-out-directory] to the target destination, e.g.:
+``
+cirodown --outdir my_outdir test.ciro
+``
+would generate:
+``
+my_outdir/out
+``
+This means that the source tree remains completely clean, and every output and temporary cache is put strictly under the selected `--outdir`.
+
 = `--outfile <outfie>`
 {id=outfile}
 {parent=cirodown-executable-options}
@@ -4673,11 +4683,8 @@ and so on.
 
 If we reach the root path `/` and no `cirodown.json` is found, then we understand that there is no `cirodown.json` file present.
 
-= `cirodown.json` schema
-{parent=cirodown-json}
-
 = `ignore`
-{parent=cirodown-json-schema}
+{parent=cirodown-json}
 
 List of paths relative to the \x[project-toplevel-directory] that \x[cirodown-executable] will ignore.
 
@@ -4702,12 +4709,13 @@ converts it because it was explicitly requested.
 TODO: also ignore during \x[watch].
 
 = `cirodown.json` `id`
-{parent=cirodown-json-schema}
+{id=id}
+{parent=cirodown-json}
 
 Dictionary of options that control \x[automatic-id-from-title] generation.
 
 = `id` `normalize` `latin`
-{parent=cirodown-json-id}
+{parent=id}
 
 If `true`, does \x[cirodown-json/latin-normalization] on the title.
 
@@ -4732,7 +4740,7 @@ Bibliography:
 * https://github.com/cirosantilli/cirodown/issues/162
 
 = `id` `normalize` `punctuation`
-{parent=cirodown-json-id}
+{parent=id}
 
 If `true`, does \x[punctuation-normalization] on the title.
 
@@ -4751,7 +4759,7 @@ Dashes are added around the signs if needed, e.g.:
 * `Q&A`: `q-and-a`
 
 = `lint`
-{parent=cirodown-json-schema}
+{parent=cirodown-json}
 
 Dictionary of lint options to enable. Cirodown tries to be strict about forcing specific styles by default, e.g. forbids triple newline paragraph. But sometimes we just can't bear it :-)
 
@@ -4772,7 +4780,7 @@ Possible values:
 * `tag`: forbids \x[header]{p} from using the \x[h-child-argument]. They should instead use the \x[h-tag-argument].
 
 = `media-providers`
-{parent=cirodown-json-schema}
+{parent=cirodown-json}
 
 The `media-providers` entry of `cirodown.json` specifies properties of how media such as \x[image]{p} and \x[video]{p} are retrieved and rendered.
 
@@ -4811,14 +4819,45 @@ Direct children of media-providers and subproperties that are valid only for the
 See also: https://github.com/cirosantilli/cirodown/issues/40
 
 = `numbered`
-{parent=cirodown-json-schema}
+{parent=cirodown-json}
 
 Sets the default \x[h-numbered-argument] argument of the toplevel headers of each file.
 
 Note that since the option is inherited by descendants, this also affects every other header.
 
+= `outputOutOfTree`
+{parent=cirodown-json}
+
+Default: `false`
+
+If `true` place the HTML output under \x[the-out-directory] at `out/html`.
+
+For example:
+``
+cirodown hello.ciro
+``
+would be placed under:
+``
+out/html/hello.html
+``
+instead of `./hello.html`.
+
+Advantages:
+* the source tree becomes cleaner, especially when using \x[split-headers] which can produce hundreds of output files from a single input file
+* if you want to track several `.html` source files in-tree, you don't need to add an exception to each of of them on the `.gitignore` as:
+  ``
+  *.html
+  !/main.liquid.html
+  ``
+Disadvantages:
+* you have to type more to open each output file on the terminal
+
+This option is always forced to `false` when \x[outdir] is given.
+
+Implemented at: https://github.com/cirosantilli/cirodown/issues/163
+
 = `prepublish`
-{parent=cirodown-json-schema}
+{parent=cirodown-json}
 
 Path of a script that gets executed before running \x[publish][`cirodown --publish`].
 
@@ -4834,7 +4873,7 @@ The script arguments are:
 If the `prepublish` script returns with a non-zero exit value, the publish is aborted.
 
 = `redirects`
-{parent=cirodown-json-schema}
+{parent=cirodown-json}
 
 You are generally better using the newer \x[h-synonym-argument] feature instead of `redirects`, as that concentrates more header specific data in the .ciro files it belongs.
 
@@ -5073,7 +5112,7 @@ This is something that should be merged into sequelize itself, or at least asked
 * \a[web/app.js]: server executable entry point, can also be used programatically from Node.js
 * \a[web/models]: Sequelize database models. Most changes in this folder require the creation of a corresponding \a[web/migrations]
 * \a[web/migrations]: database migrations
-* \a[web/page]: Next.js pages URL entry points
+* \a[web/pages]: Next.js pages URL entry points
 * \a[web/front]: files that can be imported from either front-end of backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
 * `\a[web/back]`: files that can be imported only from backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
 

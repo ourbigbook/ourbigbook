@@ -1015,11 +1015,24 @@ if (commander.helpMacros) {
     }
     process.exit(0);
   }
+  let tmpdir
+  if (
+    // Possible on intput from stdin.
+    outdir !== undefined
+  ) {
+    tmpdir = path.join(outdir, TMP_DIRNAME);
+    if (
+      commander.outdir === undefined &&
+      cirodown_json.outputOutOfTree
+    ) {
+      outdir = path.join(tmpdir, 'html')
+    }
+  }
   // Options that are not directly passed to cirodown.convert
   // but rather used only by this cirodown executable.
   let convert_input_options = {
-    cirodown_json_dir: cirodown_json_dir,
-    commander: commander,
+    cirodown_json_dir,
+    commander,
     db_options: {},
     encoding: cirodown_nodejs.ENCODING,
     external_css_and_js: false,
@@ -1027,8 +1040,8 @@ if (commander.helpMacros) {
     log: convert_input_options_log,
     out_css_path: cirodown_nodejs.DIST_CSS_PATH,
     out_js_path: cirodown_nodejs.DIST_JS_PATH,
-    outdir: outdir,
-    publish: publish,
+    outdir,
+    publish,
   };
   if (convert_input_options_log.db) {
     convert_input_options.db_options.verbose = console.log;
@@ -1045,7 +1058,6 @@ if (commander.helpMacros) {
     if (!fs.existsSync(inputPath)) {
       cli_error(`input_path does not exist: "${inputPath}"`);
     }
-    let tmpdir = path.join(outdir, TMP_DIRNAME);
     let publish_dir;
     let cmd_options = {
       dry_run: commander.dryRun,

@@ -4704,3 +4704,39 @@ assert_executable(
   }
 );
 
+assert_executable(
+  'executable: cirodown.json: outputOutOfTree',
+  {
+    args: ['-S', '.'],
+    filesystem: {
+      'README.ciro': `= Index
+
+== h2
+`,
+      'notindex.ciro': `= Notindex
+
+== Notindex h2
+`,
+      'cirodown.json': `{
+  "outputOutOfTree": true
+}
+`,
+    },
+    expect_exists: [
+      'out/html/index.html',
+      'out/html/split.html',
+      'out/html/h2.html',
+      'out/html/notindex.html',
+      'out/html/notindex-h2.html',
+      'out/db.sqlite3',
+    ],
+    expect_not_exists: [
+      'index.html',
+      'split.html',
+      'h2.html',
+      'notindex.html',
+      'notindex-h2.html',
+      'out/html/out',
+    ]
+  }
+);

@@ -36,6 +36,7 @@ const sequelize = await test_lib.generateDemoData({
   nLikesPerUser: commander.likesPerUser,
   nFollowsPerUser: commander.followsPerUser,
   nUsers: commander.users,
+  verbose: true,
 })
 await sequelize.close()
 })()

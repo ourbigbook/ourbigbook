@@ -21,8 +21,9 @@
     "start": "node --unhandled-rejections=strict ./app.js",
     "start-dev": "NEXT_PUBLIC_NODE_ENV=development NODE_ENV_NEXT_SERVER_ONLY=production node --unhandled-rejections=strict ./app.js",
     "start-prod": "./prod.sh npm start",
-    "test": "mocha test --ignore-leaks test.js",
-    "test-api": "./realworld/api/run-api-tests.sh"
+    "test": "NODE_ENV=test mocha test --ignore-leaks test.js",
+    "test-api": "./realworld/api/run-api-tests.sh",
+    "test-pg": "CIRODOWN_POSTGRES=true npm test --"
   },
   "repository": {
     "type": "git",

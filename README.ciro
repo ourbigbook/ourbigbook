@@ -5965,6 +5965,42 @@ where `i` stands for `inspect` as in `node inspect`.
 
 This pauses at the start of execution. So just run `c` and normal execution resumes until the `debugger;` statement is reached.
 
+= Dynamic website unit tests
+{parent=dynamic-website}
+
+All our tests are all located inside \a[test.js].
+
+They can be run with:
+``
+cd web
+npm test
+``
+
+The dynamic website tests also uses Mocha just like \x[test-system][those of the command line executable], so similar patterns apply, e.g. to run just a single test:
+``
+npm test -- -g 'substring of test title'
+``
+or to show database queries being done in the tests:
+``
+DEBUG='*:sql:*' npm test
+``
+
+To run the tests on PostgreSQL intead of SQLite, first setup as in \x[local-run-as-identical-to-deployment-as-possible], and then:
+``
+npm run test-pg
+``
+
+Note that this will erase all data present in the database used. In order to point to a custom database use:
+....
+DATABASE_URL_TEST=postgres://realworld_next_user:a@localhost:5432/realworld_next_test npm run test-pg
+....
+We don't use `DATABASE_URL` when running tests as a safegard to reduce the likelyhood of accidentaly nuking the production database.
+
+The tests include two broad classes of tests:
+* API tests: launch the server on a random port, and run API commands, thus testing the entire backend
+* smaller unit tests that only call certain functions directly
+* TODO: create frontend tests: https://github.com/cirosantilli/node-express-sequelize-nextjs-realworld-example-app/issues/11
+
 = Editor support
 {parent=tooling}
 

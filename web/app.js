@@ -18,8 +18,17 @@ const apilib = require('./api/lib')
 const models = require('./models')
 const config = require('./front/config')
 
-function doStart(app) {
-  const sequelize = models.getSequelize(__dirname);
+async function start(port, startNext, cb) {
+  const app = express()
+  let nextApp
+  let nextHandle
+  if (startNext) {
+    nextApp = next({ dev: !config.isProductionNext })
+    nextHandle = nextApp.getRequestHandler()
+  }
+
+  const sequelize = models.getSequelize(__dirname)
+  app.set('sequelize', sequelize)
   passport.use(
     new passport_local.Strategy(
       {
@@ -93,32 +102,33 @@ function doStart(app) {
     return next(err)
   })
 
-  if (!module.parent) {
-    (async () => {
-      try {
-        await sequelize.authenticate();
-        app.set('sequelize', sequelize)
-        start();
-      } catch (e) {
-        console.error(e);
-        process.exit(1)
-      }
-    })()
+  if (startNext) {
+    await nextApp.prepare()
   }
-}
-
-function start(cb) {
-  const server = app.listen(config.port, function() {
-    console.log('Backend listening on: http://localhost:' + config.port)
-    cb && cb(server)
+  await sequelize.authenticate()
+  // Just a convenience DB create so we don't have to force new users to do it manually.
+  await models.sync(sequelize)
+  return new Promise((resolve, reject) => {
+    const server = app.listen(port, async function () {
+      try {
+        cb && (await cb(server))
+      } catch (e) {
+        reject(e)
+        this.close()
+        throw e
+      }
+    })
+    server.on('close', async function () {
+      await sequelize.close()
+      resolve()
+    })
   })
 }
 
-const app = express()
-const nextApp = next({ dev: !config.isProductionNext })
-const nextHandle = nextApp.getRequestHandler()
-nextApp.prepare().then(() => {
-  doStart(app)
-})
+if (require.main === module) {
+  start(config.port, true, (server) => {
+    console.log('Listening on: http://localhost:' + server.address().port)
+  })
+}
 
-module.exports = { app, start }
+module.exports = { start }

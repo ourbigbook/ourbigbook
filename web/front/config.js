@@ -9,6 +9,13 @@ if (process.env.NEXT_PUBLIC_NODE_ENV === undefined) {
 const API_PATH_COMPONENT = 'api'
 const escapeUsername = 'go'
 
+let databaseUrl
+if (process.env.NODE_ENV === 'test') {
+  databaseUrl = process.env.DATABASE_URL_TEST
+} else {
+  databaseUrl = process.env.DATABASE_URL
+}
+
 module.exports = {
   apiPath: '/' + API_PATH_COMPONENT,
   convertOptions: {
@@ -57,7 +64,9 @@ module.exports = {
     storage: 'db.sqlite3',
   },
   production: {
-    url: process.env.DATABASE_URL || 'postgres://cirodown_user:a@localhost:5432/cirodown',
+    url:
+      databaseUrl ||
+      'postgres://cirodown_user:a@localhost:5432/cirodown',
     dialect: 'postgres',
     dialectOptions: {
       // https://stackoverflow.com/questions/27687546/cant-connect-to-heroku-postgresql-database-from-local-node-app-with-sequelize

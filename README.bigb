@@ -9710,6 +9710,8 @@ The following support is provided:
 
     Mnemonic: "Header search".
 
+A simple way to develop is to edit the Vundle repository directly under `~/.vim/bundle/ourbigbook`.
+
 = Browser editor with preview
 {parent=Editor support}
 

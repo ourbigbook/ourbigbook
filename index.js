@@ -2173,18 +2173,6 @@ function convert(
     extra_returns.debug_perf.render_pre = globals.performance.now();
     output = ast.convert(context);
     context.katex_macros = Object.assign({}, context.options.katex_macros);
-
-    // We render a second time because indexing operations such as \x[...]{child}
-    // for per-section incoming links
-    // are only indexed at render time. But headers before that \x might need that
-    // parent list. This does add a bit of time. One option would be to have a fast
-    // render mode that disables this. That could be the default render mode, and
-    // publish would override it. But does not seem to be worth implementation cost
-    // right now. Maybe later.
-    extra_returns.debug_perf.render_2_pre = globals.performance.now();
-    context.katex_macros = Object.assign({}, context.options.katex_macros);
-    output = ast.convert(context);
-    context.katex_macros = Object.assign({}, context.options.katex_macros);
     if (context.toplevel_output_path !== undefined) {
       context.extra_returns.rendered_outputs[context.toplevel_output_path] = output;
     }
@@ -3851,6 +3839,7 @@ function parse(tokens, options, context, extra_returns={}) {
           include_options.header_graph_id_stack.set(cur_header_graph_node.value.id, cur_header_graph_node);
         }
       }
+
       // Push this node into the parent argument list.
       // This allows us to skip nodes, or push multiple nodes if needed.
       parent_arg.push(ast);
@@ -4203,14 +4192,47 @@ function parse(tokens, options, context, extra_returns={}) {
           if (cur_header_graph_node !== undefined) {
             ast.scope = calculate_scope(cur_header_graph_node.value, context);
           }
-        }
 
-        if (
-          // Header IDs already previously calculated for parent=.
-          macro_name !== Macro.HEADER_MACRO_NAME
-        ) {
+          // Header IDs already previously calculated for parent= so we don't redo it in that case.
           calculate_id(ast, context, include_options.non_indexed_ids, include_options.indexed_ids, macro_counts,
             macro_counts_visible, state, false, line_to_id_array);
+
+          if (macro_name === Macro.X_MACRO_NAME) {
+            const target_id = convert_arg_noescape(ast.args.href, context);
+            const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);
+            let target_id_effective;
+            if (
+              // Can happen if it is in another files that was extracted yet.
+              target_id_ast === undefined
+            ) {
+              target_id_effective = target_id
+            } else {
+              target_id_effective = target_id_ast.id
+            }
+            const parent_id = ast.get_header_parent_id();
+            if (
+              // Happens on some special elements e.g. the ToC.
+              parent_id !== undefined
+            ) {
+              // Update xref database for incoming links.
+              const from_ids = add_from_id(target_id_effective, context, parent_id, INCLUDES_TABLE_NAME_X);
+
+              // Update xref database for child/parent relationships.
+              {
+                let toid, fromid;
+                if (ast.validation_output.child.boolean) {
+                  fromid = parent_id;
+                  toid = target_id_effective;
+                } else if (ast.validation_output.parent.boolean) {
+                  toid = parent_id;
+                  fromid = target_id_effective;
+                }
+                if (toid !== undefined) {
+                  add_from_id(toid, context, fromid, INCLUDES_TABLE_NAME_X_CHILD);
+                }
+              }
+            }
+          }
         }
 
         // Push children to continue the search. We make the new argument be empty
@@ -4699,36 +4721,11 @@ exports.validate_ast = validate_ast;
  */
 function x_get_href_content(ast, context) {
   const target_id = convert_arg_noescape(ast.args.href, context);
-
-  const parent_id = ast.get_header_parent_id();
-  if (
-    // Happens on some special elements e.g. the ToC.
-    parent_id !== undefined
-  ) {
-    // Update xref database for incoming links.
-    const from_ids = add_from_id(target_id, context, parent_id, INCLUDES_TABLE_NAME_X);
-
-    // Update xref database for child/parent relationships.
-    {
-      let toid, fromid;
-      if (ast.validation_output.child.boolean) {
-        fromid = parent_id;
-        toid = target_id;
-      } else if (ast.validation_output.parent.boolean) {
-        toid = parent_id;
-        fromid = target_id;
-      }
-      if (toid !== undefined) {
-        add_from_id(toid, context, fromid, INCLUDES_TABLE_NAME_X_CHILD);
-      }
-    }
-  }
-
   if (target_id[0] === AT_MENTION_CHAR) {
     return [html_attr('href', WEBSITE_URL + target_id.substr(1)), target_id];
   }
   if (target_id[0] === HASHTAG_CHAR) {
-    return [html_attr('href', WEBSITE_URL + 'notuser/' + target_id.substr(1)), target_id];
+    return [html_attr('href', WEBSITE_URL + 'go/topic/' + target_id.substr(1)), target_id];
   }
   const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);
 
@@ -5161,7 +5158,7 @@ function x_text(ast, context, options={}) {
 // Dynamic website stuff.
 const AT_MENTION_CHAR = '@';
 const HASHTAG_CHAR = '#';
-const WEBSITE_URL = 'https://hostname.com/';
+const WEBSITE_URL = 'https://ourbigbook.com/';
 const INCLUDES_TABLE_NAME_X = 'X';
 exports.INCLUDES_TABLE_NAME_X = INCLUDES_TABLE_NAME_X;
 const INCLUDES_TABLE_NAME_X_CHILD = 'X_CHILD';
@@ -6321,8 +6318,7 @@ const DEFAULT_MACRO_LIST = [
 <title>{{ title }}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>{{ style }}</style>
-{{ head }}
-</head>
+{{ head }}</head>
 <body class="cirodown">
 {{ body }}
 {{ post_body }}</body>

@@ -4,6 +4,7 @@
     "cirodown.scss",
     "cirodown_runtime.js",
     "template",
+    "tmp",
     "web"
   ],
   "media-providers": {

@@ -64,7 +64,6 @@
     "eslint-config-next": "11.0.1",
     "eslint-plugin-prettier": "2.6.0",
     "mocha": "6.2.2",
-    "newman": "5.2.3",
     "nodemon": "1.11.0",
     "prettier": "1.12.1",
     "sequelize-cli": "6.2.0",

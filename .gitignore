@@ -1,10 +1,6 @@
-*.css
-*.html
-!/ourbigbook.liquid.html
+/out
 .sass-cache
 node_modules
-/out
-_raw
 
 # Custom ignores. Everything above this section, gets automatically parsed
 # and used by the default template generation!

@@ -2,6 +2,7 @@
   "ignore": [
     "cirodown.common.scss",
     "cirodown.scss",
+    "editor.scss",
     "cirodown_runtime.js",
     "template",
     "tmp",

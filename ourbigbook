@@ -15,7 +15,7 @@ const commander = require('commander');
 const is_installed_globally = require('is-installed-globally');
 const readCb = require('read');
 const { Liquid } = require('liquidjs');
-const { Op, Sequelize } = require('sequelize')
+const { DataTypes, Op, Sequelize } = require('sequelize')
 
 const ourbigbook = require('ourbigbook');
 const ourbigbook_nodejs = require('ourbigbook/nodejs');
@@ -291,7 +291,7 @@ async function convert_input(input, ourbigbook_options, non_ourbigbook_options={
   // Finally, do the conversion!
   const output = await ourbigbook.convert(input, new_options, new_options.extra_returns);
   if (non_ourbigbook_options.post_convert_callback) {
-    non_ourbigbook_options.post_convert_callback(non_ourbigbook_options.input_path, new_options.extra_returns )
+    await non_ourbigbook_options.post_convert_callback(non_ourbigbook_options.input_path, new_options.extra_returns)
   }
   if (non_ourbigbook_options.log.tokens) {
     console.error('tokens:');
@@ -364,17 +364,12 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
         if (
           ourbigbook_options.render
         ) {
-          if (
-            // Web can currently only operate with in memory data structures that come out of a render.
-            !non_ourbigbook_options.commander.web
-          ) {
-            timestamp_skip = non_ourbigbook_options.commander.renderTimestamp &&
-              file_row.last_render !== null &&
-              file_row.last_render > mtime &&
-              // Some day we might have one timestamp per output format.
-              // But lazy now, just never use timestamp for --format-source.
-              !non_ourbigbook_options.commander.formatSource
-          }
+          timestamp_skip = non_ourbigbook_options.commander.renderTimestamp &&
+            file_row.last_render !== null &&
+            file_row.last_render > mtime &&
+            // Some day we might have one timestamp per output format.
+            // But lazy now, just never use timestamp for --format-source.
+            !non_ourbigbook_options.commander.formatSource
         } else {
           timestamp_skip = file_row.last_parse !== null && file_row.last_parse > mtime
         }
@@ -725,9 +720,10 @@ commander.option('--template <template>', 'https://docs.ourbigbook.com#template'
 commander.option('-w, --watch', 'https://docs.ourbigbook.com#watch', false);
 // Originally added for testing, this allows the test filesystems to be put under the repository iteslf,
 // otherwise they would pickup our toplevel ourbigbook.json.
-commander.option('-W, --web', 'Sync to ourbigbook web', false);
+commander.option('-W, --web', 'sync to ourbigbook web https://docs.ourbigbook.com/#web', false);
+commander.option('--web-id <id>', 'Upload only the selected ID. It must belong to a file being converted. https://docs.ourbigbook.com/#web-id', false);
 commander.option('--web-url <url>', 'Set a custom sync URL for --web', false);
-commander.option('--web-username <username>', 'Set username from CLI', false);
+commander.option('--web-user <username>', 'Set username from CLI', false);
 commander.option('--unsafe-ace', 'https://docs.ourbigbook.com#unsafe-ace', false);
 commander.option('--unsafe-xss', 'https://docs.ourbigbook.com#unsafe-xss');
 let inputPath;
@@ -1103,8 +1099,8 @@ if (commander.helpMacros) {
         username = host_row.username
       } else {
         let err, password
-        if (commander.webUsername) {
-          username = commander.webUsername
+        if (commander.webUser) {
+          username = commander.webUser
         } else {
           ;[err, username] = await read({ prompt: 'Username: ' })
         }
@@ -1126,12 +1122,31 @@ if (commander.helpMacros) {
       ourbigbook_options.split_headers = true
       ourbigbook_options.render_include = false
       const titleRegex = new RegExp(`${ourbigbook.INSANE_HEADER_CHAR} (.*)`)
-      // TODO don't keep all into memory like this. This would require:
-      // - make convert_directory_extract_ids_and_render itself follow pre-order include paths rather than linear.
-      //   Otherwise we get parentId undefined on web.
-      const id_to_article = {}
-      let index_id
-      non_ourbigbook_options.post_convert_callback = (inpath, extra_returns) => {
+      // We create this quick and dirty separate database to store information for upload.
+      // Technically much of this information is part of Article, but factoring that would be risky/hard,
+      // it is not worth it.
+      //
+      // Adding this cache because I had an unminimizable error on the main document, and we have to save some time
+      // or else I can't minimize it, this way we can skip the initial bigb split render conversion and go
+      // straight to upload.
+      const sequelizeWeb = new Sequelize({
+        dialect: 'sqlite',
+        storage: path.join(non_ourbigbook_options.outdir, 'web.sqlite'),
+        logging: false,
+      })
+      const sequelizeWebArticle = sequelizeWeb.define('Article', {
+        idid: { type: DataTypes.TEXT, unique: true },
+        title: { type: DataTypes.TEXT },
+        body: { type: DataTypes.TEXT },
+        inpath: { type: DataTypes.TEXT },
+        parentId: { type: DataTypes.TEXT },
+      });
+      const sequelizeWebIndexId = sequelizeWeb.define('IndexId', {
+        idid: { type: DataTypes.TEXT },
+        uniqueHack: { type: DataTypes.INTEGER, unique: true },
+      });
+      await sequelizeWeb.sync()
+      non_ourbigbook_options.post_convert_callback = async (inpath, extra_returns) => {
         if (extra_returns.errors.length === 0) {
           const rendered_outputs = extra_returns.rendered_outputs
           for (let inpath in rendered_outputs) {
@@ -1161,6 +1176,7 @@ if (commander.helpMacros) {
               }
               let addId
               let addSubdir
+              let isToplevelIndex = false
               const header_ast = rendered_outputs_entry.header_ast
               if (ourbigbook.INDEX_FILE_BASENAMES_NOEXT.has(inpathParse.name)) {
                 if (inpathParse.dir) {
@@ -1179,7 +1195,8 @@ if (commander.helpMacros) {
                   }
                 } else {
                   title = 'Index'
-                  index_id = header_ast.id
+                  await sequelizeWebIndexId.upsert({ idid: header_ast.id, uniqueHack: 0 })
+                  isToplevelIndex = true
                 }
                 inpath = `index.${ourbigbook.OURBIGBOOK_EXT}`
               } else {
@@ -1226,27 +1243,72 @@ if (commander.helpMacros) {
                 }
                 article.parentId = parentId
               }
-              id_to_article[header_ast.id] = article
+              let id_to_article_key
+              if (isToplevelIndex) {
+                id_to_article_key = ''
+              } else {
+                id_to_article_key = header_ast.id
+              }
+              article.idid = id_to_article_key
+              await sequelizeWebArticle.upsert(article)
             }
           }
         }
       }
-      console.error(`Local conversion for header split`);
-      await convert_directory_extract_ids_and_render(
-        inputPath,
-        ourbigbook_options,
-        non_ourbigbook_options,
-      );
-      const header_tree = await non_ourbigbook_options.db_provider.fetch_header_tree_ids([index_id])
-      console.error(`\nUpload`);
-      for (const render of [false, true]) {
+      let treeToplevelId
+      let treeDefinedAt
+      if (input_path_is_file) {
+        await convert_path_to_file(inputPath, ourbigbook_options, non_ourbigbook_options);
+        treeToplevelId = (await non_ourbigbook_options.sequelize.models.File.findOne({ where: { path: inputPath } })).toplevel_id
+        treeDefinedAt = inputPath
+      } else {
+        // TODO non toplevel directory not supported yet.
+        await convert_directory_extract_ids_and_render(
+          inputPath,
+          ourbigbook_options,
+          non_ourbigbook_options,
+        );
+        treeToplevelId = (await sequelizeWebIndexId.findAll())[0].idid
+      }
+      let header_tree = []
+      if (input_path_is_file || commander.webId) {
+        let toPush
+        if (commander.webId) {
+          toPush = commander.webId
+        } else {
+          toPush = treeToplevelId
+        }
+        header_tree.push({ to_id: toPush })
+      } else {
+        // Fake an index entry at the end so that the index will get rendered.
+        // It is not otherwise present as it has no parents.
+        header_tree.push({ to_id: '' })
+      }
+      if (!commander.webId) {
+        header_tree = header_tree.concat(await non_ourbigbook_options.db_provider.fetch_header_tree_ids(
+          [treeToplevelId],
+          {
+            // By following reverse order we don't have to worry about setting up previousSiblingId:
+            // we just use the fact that the API automatically inserts as first sibling when not given.
+            // TODO actually add siblings later on, as that will allow updating the page tree.
+            to_id_index_order: 'DESC',
+            definedAt: treeDefinedAt,
+          }
+        ))
+      }
+      console.error('\nUpload');
+      const dorender = [false]
+      if (commander.render) {
+        dorender.push(true)
+      }
+      for (const render of dorender) {
         // This ordering ensures parents come before children.
         for (const header_tree_entry of header_tree) {
           const id = header_tree_entry.to_id
-          const article = id_to_article[id]
+          const article = await sequelizeWebArticle.findOne({ where: { idid: id } })
           if (
             // Can fail for synonyms.
-            article !== undefined
+            article !== null
           ) {
             let pref
             if (render) {
@@ -1262,12 +1324,14 @@ if (commander.helpMacros) {
                 {
                   path: ourbigbook.path_splitext(article.inpath)[0],
                   render,
-                  parentId: article.parentId,
+                  parentId: article.parentId === null ? undefined : article.parentId,
                 }
               ))
             } catch(err) {
               handleWebApiErr(err)
             }
+            //console.log(require('child_process').execSync(`printf 'count '; sqlite3 /home/ciro/bak/git/ourbigbook/web/db.sqlite3 "select to_id_index,from_id,to_id,defined_at from Ref where from_id = '@barack-obama' and type = 0 order by to_id_index" | wc -l`).toString())
+            //console.log(require('child_process').execSync(`sqlite3 /home/ciro/bak/git/ourbigbook/web/db.sqlite3 "select to_id_index,from_id,to_id,defined_at from Ref where from_id = '@barack-obama' and type = 0 order by to_id_index"`).toString())
             if (status !== 200) {
               console.error(`error status: ${status}`);
               const errors = data.errors

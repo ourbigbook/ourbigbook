@@ -244,29 +244,8 @@ while (todo_visit.length > 0) {
 
 class ArticleDataProvider {
   constructor(articleData, userIdx) {
-    this.i = 0
-
-    //// Cut up the tree a bit differently for each user so that we won't get
-    //// the exact same articles for each user.
-    //const todo_visit_top = lodash.cloneDeep(articleData)
-    //let todo_visit = todo_visit_top
-    //let globalI = 0
-    //while (todo_visit.length > 0) {
-    //  let entry = todo_visit.pop()
-    //  let childrenOrig = entry[1]
-    //  let children = childrenOrig.slice()
-    //  for (let i = children.length - 1; i >= 0; i--) {
-    //    if (((globalI + i) % userIdx) < userIdx / 2) {
-    //      todo_visit.push(children[i]);
-    //    } else {
-    //      childrenOrig.splice(i, 1)
-    //    }
-    //  }
-    //  globalI++
-    //}
-    //this.todo_visit = todo_visit_top
-
     // These store the current tree transversal state across .get calls.
+    this.gen = 0
     this.todo_visit = articleData.slice()
     // Set of all entries we visited that don't have a parent.
     // We will want to include those from the toplevel index.
@@ -275,17 +254,26 @@ class ArticleDataProvider {
 
   // Pre order depth first transversal to ensure that parents are created before children.
   get() {
+    if (this.todo_visit.length === 0) {
+      this.todo_visit = articleData.slice()
+      this.gen++
+    }
     while (this.todo_visit.length !== 0) {
       let entry = this.todo_visit.pop();
+      entry = Object.assign({}, entry)
       let title = entry[0]
+      if (this.gen > 0) {
+        title = `${title} v${this.gen}`
+        entry[0] = title
+      }
       let children = entry[1]
       for (let i = 0; i < children.length; i++) {
         this.todo_visit.push(children[i]);
       }
       this.toplevelTitleToEntry[title] = entry
+      this.globalI++
       return entry
     }
-    return undefined
   }
 }
 

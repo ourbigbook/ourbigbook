@@ -53,7 +53,7 @@ const Settings = () => {
     if (data.user) {
       await setupUserLocalStorage(data.user, setErrors)
     }
-    Router.push(routes.userView(loggedInUser.username));
+    Router.push(routes.user(loggedInUser.username));
   };
   useCtrlEnterSubmit(handleSubmit)
   const title = 'Account settings'

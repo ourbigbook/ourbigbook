@@ -25,38 +25,60 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       }
       const [order, pageNum, err] = getOrderAndPage(req, query.page)
       if (err) { res.statusCode = 422 }
-      let author, likedBy
-      if (what !== 'home') {
-        switch (what) {
-          case 'likes':
-            likedBy = uid
-            break
-          case 'user-articles':
-            author = uid
-            break
-          default:
-            throw new Error(`Unknown search: ${what}`)
-        }
+      let author, likedBy, following, followedBy, itemType
+      switch (what) {
+        case 'following':
+          following = uid
+          itemType = 'user'
+          break
+        case 'followed':
+          followedBy = uid
+          itemType = 'user'
+          break
+        case 'home':
+          itemType = null
+          break
+        case 'likes':
+          likedBy = uid
+          itemType = 'article'
+          break
+        case 'user-articles':
+          author = uid
+          itemType = 'article'
+          break
+        default:
+          throw new Error(`Unknown search: ${what}`)
       }
-      const articlesPromise = what === 'home' ? [] : sequelize.models.Article.getArticles({
+      const articlesPromise = itemType === 'article' ? sequelize.models.Article.getArticles({
         sequelize,
         limit: articleLimit,
         offset: pageNum * articleLimit,
         order,
         author,
         likedBy,
-      })
-      ;const [
+      }) : []
+      const usersPromise = itemType === 'user' ? sequelize.models.User.getUsers({
+        followedBy,
+        following,
+        limit: articleLimit,
+        offset: pageNum * articleLimit,
+        order,
+        sequelize,
+      }) : []
+      const [
         articles,
         userJson,
         authoredArticleCount,
+        users,
       ] = await Promise.all([
         articlesPromise,
         user.toJson(loggedInUser),
         user.countAuthoredArticles(),
+        usersPromise,
       ])
       const props: UserPageProps = {
         authoredArticleCount,
+        itemType,
         order,
         page: pageNum,
         user: userJson,
@@ -65,16 +87,19 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       if (loggedInUser) {
         props.loggedInUser = await loggedInUser.toJson()
       }
-      if (what === 'home') {
+      if (itemType === 'user') {
+        props.users = await Promise.all(users.rows.map(user => user.toJson(loggedInUser)))
+        props.usersCount = users.count
+      } else if (itemType === 'article') {
+        props.articles = await Promise.all(articles.rows.map(article => article.toJson(loggedInUser)))
+        props.articlesCount = articles.count
+      } else {
         const articleContext = Object.assign({}, context, { params: { slug: [ uid ] } })
         const articleProps = await (getServerSidePropsArticleHoc({
           includeIssues: true, loggedInUserCache: loggedInUser })(articleContext))
         if ('props' in articleProps) {
           Object.assign(props, articleProps.props)
         }
-      } else {
-        props.articles = await Promise.all(articles.rows.map(article => article.toJson(loggedInUser)))
-        props.articlesCount = articles.count
       }
       return { props }
     } else {

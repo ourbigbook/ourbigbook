@@ -1,6 +1,7 @@
 const router = require('express').Router()
 const passport = require('passport')
 const auth = require('../auth')
+const lib = require('./lib')
 
 async function authenticate(req, res, next) {
   passport.authenticate('local', { session: false }, async function(err, user, info) {
@@ -111,12 +112,24 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
   }
 })
 
+// Follow
+
+async function validateFollow(req, res, user, isFollow) {
+  if (await user.hasFollow(req.user) === isFollow) {
+    throw new lib.ValidationError(
+      [`User '${user.username}' ${isFollow ? 'already follows' : 'does not follow'} user '${req.user.username}'`],
+      403,
+    )
+  }
+}
+
 router.post('/users/:username/follow', auth.required, async function(req, res, next) {
   try {
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
     if (!user) {
       return res.sendStatus(401)
     }
+    await validateFollow(req, res, user, true)
     await user.addFollowSideEffects(req.user)
     const newUser = await req.app.get('sequelize').models.User.findOne({
       where: { username: user.username } })
@@ -132,6 +145,7 @@ router.delete('/users/:username/follow', auth.required, async function(req, res,
     if (!user) {
       return res.sendStatus(401)
     }
+    await validateFollow(req, res, user, false)
     await user.removeFollowSideEffects(req.user)
     const newUser = await req.app.get('sequelize').models.User.findOne({
       where: { username: user.username } })

@@ -78,7 +78,7 @@ const Settings = () => {
               onChange={updateState("displayName")}
             />
           </Label>
-          <Label label="Profile picture">
+          <Label label="UserPage picture">
             <input
               type="text"
               placeholder="URL of profile picture"

@@ -14,9 +14,9 @@ const updateOptions = () => {
   }
 };
 
-export default function Fetcher(isFallback = false) {
+export default function fetcher(doFetch=true) {
   return async (url) => {
-    if (!isFallback) {
+    if (doFetch) {
       const { data } = await axios.get(url, updateOptions());
       return data;
     }

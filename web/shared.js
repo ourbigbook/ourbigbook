@@ -15,3 +15,5 @@ function modifyEditorInput(title, body) {
   return ret;
 }
 exports.modifyEditorInput = modifyEditorInput
+
+exports.minPath = 'min'

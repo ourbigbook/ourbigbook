@@ -10,12 +10,12 @@ import routes from "routes";
 export const FollowUserButtonContext = React.createContext(undefined);
 
 const FollowUserButton = ({
-  profile,
+  user,
   showUsername,
 }) => {
   const loggedInUser = getLoggedInUser()
   const { following, setFollowing, followerCount, setFollowerCount } = React.useContext(FollowUserButtonContext);
-  const { username } = profile;
+  const { username } = user;
   const isCurrentUser = loggedInUser && username === loggedInUser?.username;
   const handleClick = (e) => {
     e.preventDefault();

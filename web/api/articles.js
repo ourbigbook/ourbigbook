@@ -23,13 +23,15 @@ async function setArticleTags(req, article, tagList) {
 }
 
 function getOrder(req) {
-  let order;
   let sort = req.query.sort;
   if (sort) {
     if (sort === 'createdAt' || sort === 'score') {
       return sort
     } else {
-      return false
+      throw new lib.ValidationError(
+        [`Invalid sort value: '${sort}'`],
+        422,
+      )
     }
   } else {
     return 'createdAt'
@@ -54,45 +56,18 @@ router.param('comment', function(req, res, next, id) {
 router.get('/', auth.optional, async function(req, res, next) {
   try {
     if (req.query.id === undefined) {
-      let where = {}
-      const limit = lib.validateParam(req.query, 'limit', lib.validatePositiveInteger, 20)
-      const offset = lib.validateParam(req.query, 'offset', lib.validatePositiveInteger, 0)
-      const authorInclude = {
-        model: req.app.get('sequelize').models.User,
-        as: 'author',
-      }
-      if (req.query.author) {
-        authorInclude.where = {username: req.query.author}
-      }
-      const include = [authorInclude]
-      if (req.query.liked) {
-        include.push({
-          model: req.app.get('sequelize').models.User,
-          as: 'likedBy',
-          where: {username: req.query.liked},
-        })
-      }
-      if (req.query.topicId) {
-        where.topicId = req.query.topicId
-      }
-      if (req.query.tag) {
-        include.push({
-          model: req.app.get('sequelize').models.Tag,
-          as: 'tags',
-          where: {name: req.query.tag},
-        })
-      }
-      const order = getOrder(req)
-      if (!order) return res.sendStatus(422)
+      const sequelize = req.app.get('sequelize')
       const [{count: articlesCount, rows: articles}, user] = await Promise.all([
-        req.app.get('sequelize').models.Article.findAndCountAll({
-          where: where,
-          order: [[order, 'DESC']],
-          limit: Number(limit),
-          offset: Number(offset),
-          include: include,
+        sequelize.models.Article.getArticles({
+          sequelize,
+          limit: lib.validateParam(req.query, 'limit', lib.validatePositiveInteger, 20),
+          offset: lib.validateParam(req.query, 'offset', lib.validatePositiveInteger, 0),
+          author: req.query.author,
+          likedBy: req.query.likedBy,
+          topicId: req.query.topicId,
+          order: getOrder(req),
         }),
-        req.payload ? req.app.get('sequelize').models.User.findByPk(req.payload.id) : null
+        req.payload ? sequelize.models.User.findByPk(req.payload.id) : null
       ])
       return res.json({
         articles: await Promise.all(articles.map(function(article) {
@@ -102,10 +77,8 @@ router.get('/', auth.optional, async function(req, res, next) {
       })
     } else {
       const article = await lib.getArticle(req, res)
-      if (article) {
-        const user = req.payload ? await req.app.get('sequelize').models.User.findByPk(req.payload.id) : null
-        return res.json({ article: await article.toJson(user) })
-      }
+      const user = req.payload ? await req.app.get('sequelize').models.User.findByPk(req.payload.id) : null
+      return res.json({ article: await article.toJson(user) })
     }
   } catch(error) {
     next(error);
@@ -127,7 +100,6 @@ router.get('/feed', auth.required, async function(req, res, next) {
       return res.sendStatus(401)
     }
     const order = getOrder(req)
-    if (!order) return res.sendStatus(422)
     const {count: articlesCount, rows: articles} = await user.findAndCountArticlesByFollowed(offset, limit, order)
     const articlesJson = await Promise.all(articles.map((article) => {
       return article.toJson(user)
@@ -167,29 +139,27 @@ router.post('/', auth.required, async function(req, res, next) {
 router.put('/', auth.required, async function(req, res, next) {
   try {
     const article = await lib.getArticle(req, res)
-    if (article) {
-      const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
-      if (article.authorId.toString() === req.payload.id.toString()) {
-        if (typeof req.body.article.title !== 'undefined') {
-          article.title = req.body.article.title
-        }
-        if (typeof req.body.article.description !== 'undefined') {
-          article.description = req.body.article.description
-        }
-        if (typeof req.body.article.body !== 'undefined') {
-          article.body = req.body.article.body
-        }
-        const tagList = req.body.article.tagList
-        await Promise.all([
-          (typeof tagList === 'undefined')
-            ? null
-            : setArticleTags(req, article, tagList),
-          article.save()
-        ])
-        return res.json({ article: await article.toJson(user) })
-      } else {
-        return res.sendStatus(403)
+    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
+    if (article.authorId.toString() === req.payload.id.toString()) {
+      if (typeof req.body.article.title !== 'undefined') {
+        article.title = req.body.article.title
       }
+      if (typeof req.body.article.description !== 'undefined') {
+        article.description = req.body.article.description
+      }
+      if (typeof req.body.article.body !== 'undefined') {
+        article.body = req.body.article.body
+      }
+      const tagList = req.body.article.tagList
+      await Promise.all([
+        (typeof tagList === 'undefined')
+          ? null
+          : setArticleTags(req, article, tagList),
+        article.save()
+      ])
+      return res.json({ article: await article.toJson(user) })
+    } else {
+      return res.sendStatus(403)
     }
   } catch(error) {
     next(error);
@@ -200,41 +170,60 @@ router.put('/', auth.required, async function(req, res, next) {
 router.delete('/', auth.required, async function(req, res, next) {
   try {
     const article = await lib.getArticle(req, res)
-    if (article) {
-      const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-      if (!user) {
-        return res.sendStatus(401)
-      }
-      if (article.author.id.toString() === req.payload.id.toString()) {
-        return article.destroy().then(function() {
-          return res.sendStatus(204)
-        })
-      } else {
-        return res.sendStatus(403)
-      }
+    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
+    if (!user) {
+      return res.sendStatus(401)
+    }
+    if (article.author.id.toString() === req.payload.id.toString()) {
+      return article.destroy().then(function() {
+        return res.sendStatus(204)
+      })
+    } else {
+      return res.sendStatus(403)
     }
   } catch(error) {
     next(error);
   }
 })
 
-function likeValidation(req, res, user, article, likeUnlike) {
-  if (!user) { return res.status(401).send('Login required') }
-  if (!article) { return res.status(404).send('Article not found') }
-  if (article.author.id === user.id) { return res.status(401).send(`A user cannot ${likeUnlike} their own article`) }
+// Lies.
+
+async function validateLike(req, res, user, article, isLike) {
+  if (!user) {
+    throw new lib.ValidationError(
+      ['Login required'],
+      401,
+    )
+  }
+  if (!article) {
+    throw new lib.ValidationError(
+      ['Article not found'],
+      404,
+    )
+  }
+  if (article.author.id === user.id) {
+    throw new lib.ValidationError(
+      [`A user cannot ${isLike ? 'like' : 'unlike'} their own article`],
+      403,
+    )
+  }
+  if (await user.hasLike(article) === isLike) {
+    throw new lib.ValidationError(
+      [`User '${user.username}' ${isLike ? 'already likes' : 'does not like'} article '${article.slug}'`],
+      403,
+    )
+  }
 }
 
 // Like an article
 router.post('/like', auth.required, async function(req, res, next) {
   try {
     const article = await lib.getArticle(req, res)
-    if (article) {
-      const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-      if (likeValidation(req, res, user, article, 'like')) return
-      await user.addLikeSideEffects(article)
-      const newArticle = await lib.getArticle(req, res)
-      return res.json({ article: await newArticle.toJson(user) })
-    }
+    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
+    await validateLike(req, res, user, article, true)
+    await user.addLikeSideEffects(article)
+    const newArticle = await lib.getArticle(req, res)
+    return res.json({ article: await newArticle.toJson(user) })
   } catch(error) {
     next(error);
   }
@@ -244,13 +233,11 @@ router.post('/like', auth.required, async function(req, res, next) {
 router.delete('/like', auth.required, async function(req, res, next) {
   try {
     const article = await lib.getArticle(req, res)
-    if (article) {
-      const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
-      if (likeValidation(req, res, user, article, 'like')) return
-      await user.removeLikeSideEffects(article)
-      const newArticle = await lib.getArticle(req, res)
-      return res.json({ article: await newArticle.toJson(user) })
-    }
+    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
+    await validateLike(req, res, user, article, false)
+    await user.removeLikeSideEffects(article)
+    const newArticle = await lib.getArticle(req, res)
+    return res.json({ article: await newArticle.toJson(user) })
   } catch(error) {
     next(error);
   }

@@ -1,4 +1,5 @@
 const router = require('express').Router()
+const { minPath }  = require('../shared')
 
 // heroku bootstrap
 router.get('/', function(req, res) {
@@ -7,6 +8,6 @@ router.get('/', function(req, res) {
 router.use('/', require('./users'))
 router.use('/articles', require('./articles'))
 router.use('/comments', require('./comments'))
-router.use('/tags', require('./tags'))
+router.use(`/${minPath}`, require('./min'))
 
 module.exports = router

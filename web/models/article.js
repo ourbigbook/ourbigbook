@@ -1,7 +1,7 @@
 const cirodown = require('cirodown')
 const { DataTypes, Op } = require('sequelize')
 
-const { modifyEditorInput } = require('../lib/shared')
+const { modifyEditorInput } = require('../shared')
 
 module.exports = (sequelize) => {
   const Article = sequelize.define(
@@ -65,7 +65,7 @@ module.exports = (sequelize) => {
           }
         }
       },
-      // TODO for sorting by latest.
+      // TODO updatedAt lazy to create migration now.
       indexes: [
         { fields: ['createdAt'], },
         { fields: ['topicId'], },
@@ -82,19 +82,18 @@ module.exports = (sequelize) => {
     } else {
       authorPromise = new Promise(resolve => {resolve(this.author)})
     }
-    const [tags, liked, author] = await Promise.all([
-      this.getTags(),
+    const [liked, author] = await Promise.all([
       user ? user.hasLike(this.id) : false,
       authorPromise.then(author => author.toJson(user)),
     ])
     return {
+      id: this.id,
       slug: this.slug,
       topicId: this.topicId,
       title: this.title,
       body: this.body,
       createdAt: this.createdAt.toISOString(),
       updatedAt: this.updatedAt.toISOString(),
-      tagList: tags.map(tag => tag.name),
       liked,
       score: this.score,
       author,
@@ -104,6 +103,36 @@ module.exports = (sequelize) => {
 
   Article.makeSlug = (uid, pid) => {
     return `${uid}/${pid}`
+  }
+
+  // Helper for common queries.
+  Article.getArticles = async ({ sequelize, limit, offset, author, likedBy, topicId, order }) => {
+    let where = {}
+    const authorInclude = {
+      model: sequelize.models.User,
+      as: 'author',
+    }
+    if (author) {
+      authorInclude.where = { username: author }
+    }
+    const include = [authorInclude]
+    if (likedBy) {
+      include.push({
+        model: sequelize.models.User,
+        as: 'likedBy',
+        where: {username: likedBy},
+      })
+    }
+    if (topicId) {
+      where.topicId = topicId
+    }
+    return sequelize.models.Article.findAndCountAll({
+      where: where,
+      order: [[order, 'DESC']],
+      limit: Number(limit),
+      offset: Number(offset),
+      include: include,
+    })
   }
 
   return Article

@@ -5,7 +5,7 @@ import CustomImage from "components/CustomImage";
 import CustomLink from "components/CustomLink";
 import Maybe from "components/Maybe";
 import { LOGIN_ACTION, REGISTER_ACTION } from "lib"
-import { APP_NAME } from "lib/utils/constant";
+import { APP_NAME, ABOUT_HREF } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 import routes from "routes";
 
@@ -18,9 +18,8 @@ interface NavLinkProps {
 
 const NavLink = ({ href, onClick, children, className }: NavLinkProps) => {
   const router = useRouter();
-  const { asPath } = router;
   const classes = ['nav-link']
-  if (encodeURIComponent(asPath) === encodeURIComponent(href)) {
+  if (encodeURIComponent(router.asPath) === encodeURIComponent(href)) {
     classes.push('active')
   }
   if (className) {
@@ -41,25 +40,12 @@ const NavLink = ({ href, onClick, children, className }: NavLinkProps) => {
 const Navbar = () => {
   const loggedInUser = getLoggedInUser()
   const router = useRouter();
-  const { asPath } = router;
-
-  // We want to reset global page state when clicking this from
-  // the page itself, but we want fast page switches without full
-  // refresh otherwise.
-  let HomeLinkType
-  if (asPath === routes.home()) {
-    console.error('equal');
-    HomeLinkType = 'a'
-  } else {
-    HomeLinkType = CustomLink
-  }
-
   return (
     <nav className="navbar">
-      <HomeLinkType href={routes.home()} className="navbar-brand">
+      <CustomLink href={routes.home()} className="navbar-brand">
         {APP_NAME}
-      </HomeLinkType>
-      <a href="https://cirosantilli.com/ourbigbook-com">About this website</a>
+      </CustomLink>
+      <a href={ABOUT_HREF}>About this website</a>
       <div className="navbar-list">
         <Maybe test={loggedInUser}>
           <NavLink href={routes.articleNew()}>

@@ -5067,6 +5067,16 @@ We also have a custom setup where, if the database is not initialized, we first:
 * manually fill in the `SequelizeMeta` migration tracking table with all available migrations to tell sequelize that all migrations have been done up to this point
 This is something that should be merged into sequelize itself, or at least asked on Stack Overflow, but lazy now.
 
+= Dynamic website directory structure
+{parent=dynamic-website}
+
+* \a[web/app.js]: server executable entry point, can also be used programatically from Node.js
+* \a[web/models]: Sequelize database models. Most changes in this folder require the creation of a corresponding \a[web/migrations]
+* \a[web/migrations]: database migrations
+* \a[web/page]: Next.js pages URL entry points
+* \a[web/front]: files that can be imported from either front-end of backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
+* `\a[web/back]`: files that can be imported only from backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
+
 = Step debug the dynamic website
 {parent=dynamic-website}
 

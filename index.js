@@ -2221,7 +2221,7 @@ async function convert(
       output += '\n';
     }
   }
-  extra_returns.debug_perf.end = globals.performance.now();
+  extra_returns.debug_perf.end_convert = globals.performance.now();
   return output;
 }
 exports.convert = convert;
@@ -2367,7 +2367,7 @@ async function convert_include(
 
 function convert_init_context(options={}, extra_returns={}) {
   extra_returns.debug_perf = {};
-  extra_returns.debug_perf.start = globals.performance.now();
+  extra_returns.debug_perf.start_convert = globals.performance.now();
   options = Object.assign({}, options);
   if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
   if (!('body_only' in options)) { options.body_only = false; }

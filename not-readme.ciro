@@ -13,6 +13,8 @@ A test child link to another section: \x[not-readme-2]{child}.
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {title=Figure in not the README without explicit id}
 
+=== h3 in not the README
+
 == Some references back to the README
 
 Toplevel: \x[cirodown].

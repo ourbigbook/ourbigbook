@@ -1675,6 +1675,8 @@ function convert(
   if (!('id_provider' in options)) { options.id_provider = undefined; }
   if (!('include_path_set' in options)) { options.include_path_set = new Set(); }
   if (!('input_path' in options)) { options.input_path = undefined; }
+  // Override the default calculated output file for the main input.
+  if (!('outfile' in options)) { options.outfile = undefined; }
   if (!('output_format' in options)) { options.output_format = OUTPUT_FORMAT_HTML; }
   if (!('path_sep' in options)) { options.path_sep = undefined; }
   if (!('render' in options)) { options.render = true; }
@@ -1810,7 +1812,7 @@ function convert(
           options.toplevel_id = header_ast.id;
           context.options = options;
           context.in_html_split_header = true;
-          context.toplevel_output_path = output_path(options.input_path, options.toplevel_id, context);
+          context.toplevel_output_path = output_path;
           context.extra_returns.rendered_outputs[output_path] =
             ast_toplevel.convert(context_copy);
           // Restore the original header_graph_node state.
@@ -1834,9 +1836,17 @@ function convert(
       context.katex_macros = {};
     }
     // Non-split header toplevel conversion.
-    const output_path = output_path(options.input_path, options.toplevel_id, context);
+    let outpath;
+    if (options.outfile !== undefined) {
+      outpath = options.outfile;
+    } else if (options.input_path !== undefined) {
+      outpath = output_path(options.input_path, options.toplevel_id, context);
+    }
+    context.toplevel_output_path = outpath;
     output = ast.convert(context);
-    context.extra_returns.rendered_outputs[output_path] = output;
+    if (outpath !== undefined) {
+      context.extra_returns.rendered_outputs[outpath] = output;
+    }
     extra_returns.debug_perf.render_post = globals.performance.now();
     extra_returns.errors.push(...context.errors);
   }
@@ -2370,9 +2380,10 @@ function object_subset(source_object, keys) {
  * subdir/subdir-h2
  */
 function output_path(input_path, id, context={}) {
-  const [dirname, basename] = output_path_parts(input_path, id, context={});
-  return path_join(dirname, basename + '.' + HTML, context.options.path_sep);
+  const [dirname, basename] = output_path_parts(input_path, id, context);
+  return path_join(dirname, basename + '.' + HTML_EXT, context.options.path_sep);
 }
+exports.output_path = output_path
 
 /** Helper for when we have an actual AstNode. */
 function output_path_from_ast(ast, context) {
@@ -3483,7 +3494,7 @@ function parse_error(state, message, source_location) {
 }
 
 function path_join(dirname, basename, sep) {
-  ret = dirname;
+  let ret = dirname;
   if (ret !== '') {
     ret += sep;
   }
@@ -3748,22 +3759,40 @@ function x_href(target_id_ast, context) {
 exports.x_href = x_href;
 
 function x_href_parts(target_id_ast, context) {
-  const target_input_path = target_id_ast.source_location.path;
-  let [target_output_path_dirname, target_output_path_basename] = output_path_from_ast(target_id_ast, context);
-  if (context.options.html_x_extension) {
-    target_output_path_basename += '.' + HTML;
-  } else if (target_output_path_basename === INDEX_BASENAME_NOEXT) {
-    target_output_path_basename = '';
+  // href_path
+  let href_path;
+  if (
+    target_id_ast.source_location.path === undefined ||
+    context.toplevel_output_path === undefined
+  ) {
+    href_path = '';
+  } else {
+    const [toplevel_output_path_dirname, toplevel_output_path_basename] =
+      path_split(context.toplevel_output_path, context.options.path_sep);
+    let [target_output_path_dirname, target_output_path_basename] = output_path_parts(
+      target_id_ast.source_location.path, target_id_ast.id, context);
+    const href_path_dirname_rel = path.relative(
+      toplevel_output_path_dirname, target_output_path_dirname);
+    if (
+      // Same output path.
+      href_path_dirname_rel === '' &&
+      target_output_path_basename === toplevel_output_path_basename
+    ) {
+      target_output_path_basename = '';
+    } else {
+      if (context.options.html_x_extension) {
+        target_output_path_basename += '.' + HTML_EXT;
+      } else if (target_output_path_basename === INDEX_BASENAME_NOEXT) {
+        target_output_path_basename = '';
+      }
+    }
+    href_path = path_join(href_path_dirname_rel,
+      target_output_path_basename, context.options.path_sep);
   }
-  // TODO differentiate between local path sep and URL sep depending on output target.
-  const target_output_path = path_join(
-    target_output_path_dirname,
-    target_output_path_basename,
-    context.options.path_sep
-  );
-  const href_path = path.relative(context.toplevel_output_path, target_output_path);
 
+  // fragment
   let fragment;
+  const target_input_path = target_id_ast.source_location.path;
   if (context.in_html_split_header) {
     fragment = '';
   } else {
@@ -3793,6 +3822,8 @@ function x_href_parts(target_id_ast, context) {
       }
     }
   }
+
+  // return
   return [html_escape_attr(href_path), html_escape_attr(fragment)];
 }
 

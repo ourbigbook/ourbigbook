@@ -1,5 +1,5 @@
 const router = require('express').Router()
-const auth = require('../auth')
+const auth = require('./auth')
 const Op = require('sequelize').Op
 
 // Preload article objects on routes with ':article'

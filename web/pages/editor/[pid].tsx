@@ -1,15 +1,10 @@
 import makeArticleEditor from "../../components/editor/ArticleEditor";
 
+import { getStaticPropsArticle } from "lib/article";
+
 // Backend.
 import sequelize from "lib/db";
 
-export async function getServerSideProps({ params: { pid } }) {
-  const article = await sequelize.models.Article.findOne({
-    where: { slug: pid },
-    include: [{ model: sequelize.models.User, as: 'Author' }],
-  });
-  const articleJson = article.toJSONFor(article.Author);
-  return { props: { article: articleJson } };
-};
+export const getServerSideProps = getStaticPropsArticle;
 
 export default makeArticleEditor();

@@ -1,8 +1,10 @@
-const router = require('express').Router()
+const config = require('../config')
+const express = require('express')
 const Sequelize = require('sequelize')
 
+const router = require('express').Router()
 router.get('/', function(req, res) {
-  res.json({message: 'backend is up'})
+  res.json({message: 'the backend is up'})
 });
 router.use('/', require('./users'))
 router.use('/profiles', require('./profiles'))

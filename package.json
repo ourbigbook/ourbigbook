@@ -55,5 +55,5 @@
     "sass": "./build-sass",
     "test": "mocha test --ignore-leaks"
   },
-  "version": "0.5.0"
+  "version": "0.6.0"
 }

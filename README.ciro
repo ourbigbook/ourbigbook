@@ -1666,6 +1666,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[parallel build across files on \c[./cirodown .]]
 \l[includes without double newline between them]
 \l[link from first toplevel header of document to parents determined by includes]
+\l[proper reporting of which source file error is in when including, add a source field to the AST in addition to line and column]
 
 \h[2][Related projects]
 

@@ -57,11 +57,16 @@ header {
       }
       &:hover {
         color: $navbar-background-color;
-        background-color:  $brandname-color;
+        background-color:  $navbar-non-brandname-color;
       }
     }
     .icon {
       color: $color;
+    }
+    &:hover {
+      .icon {
+        color: $navbar-background-color;
+      }
     }
   }
 }

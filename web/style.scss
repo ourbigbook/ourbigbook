@@ -1,13 +1,19 @@
 @import '../ourbigbook.common.scss';
 
-$border-radius: 10px;
-$heart-background-hover-color: #FF1493;
-$icon-color: $color;
+// Colors
 $like-button-inactive-color: white;
-$like-button-active-color: #FF1493;
-$tab-bar-active-color: $color;
+// Less bright than $like-button-hover-color otherwise too much glare.
+$like-button-active-color: #BB1070;
+$like-button-hover-color: #FF1493;
+
+$border-radius: 10px;
 $toplevel-padding: 20px;
 $toplevel-padding-mobile: 5px;
+
+// Derived parameters
+$heart-background-hover-color: #FF1493;
+$icon-color: $color;
+$tab-bar-active-color: $color;
 
 html {
 height: 100%;
@@ -64,22 +70,25 @@ button, a.btn {
       background-color: #181818;
       color: $button-fg-color;
       i.ion-heart {
-        color: $like-button-active-color;
+        color: $like-button-hover-color;
       }
     }
     &:hover, &.active {
-      background-color: #BB1070;
-      color: $like-button-inactive-color;
       i.ion-heart {
         color: white;
       }
-      //border-color: $button-bg-color;
+    }
+    &:not(:hover).active {
+      background-color: $like-button-active-color;
     }
     &:hover:not(.active) {
-      border-color: white;
-      background-color: $heart-background-hover-color;
+      border-color: $color;
+      &.modal {
+        background-color: $like-button-hover-color;
+      }
     }
   }
+      //background-color: #BB1070;
   &.disabled, &:disabled {
     cursor: default;
     background-color: #444;
@@ -171,9 +180,6 @@ div.list-container {
         &.bold {
           font-weight: bold;
         }
-      }
-      th {
-        color: $h-color;
       }
       &:nth-child(even) {
         background-color: $table-even-background-color;
@@ -402,7 +408,7 @@ i.ion-star {
   color: yellow;
 }
 i.ion-heart {
-  color: $like-button-active-color;
+  color: $like-button-hover-color;
 }
 
 span.shortcut {
@@ -579,7 +585,7 @@ span.shortcut {
   div.user-actions {
     margin-bottom: 1em;
     >:not(:last-child) {
-      margin-right: 2px
+      margin-right: 0.5ch;
     }
   }
   .user-img {
@@ -630,9 +636,18 @@ nav.navbar {
   $font-size: 24px;
   /* https://stackoverflow.com/questions/5078239/how-do-i-remove-the-space-between-inline-block-elements */
   display: flex;
-  height: $font-size * 1.2;
+  height: $font-size * 1.8;
+  @media only screen and (max-width: $max-mobile-width) {
+    height: $font-size * 1.2;
+  }
   flex: 0 0 auto;
-  margin-bottom: 20px;
+  margin-bottom: 1.4em;
+  @media only screen and (max-width: $max-mobile-width) {
+    margin-bottom: 1em;
+  }
+  .brand-group {
+    display: flex;
+  }
   .navbar-list {
     display: flex;
     margin-left: auto;
@@ -680,14 +695,13 @@ nav.navbar {
       padding-left: 5px;
     }
     &.brand {
-      $brand-color: $brandname-color;
-      color: $brand-color;
+      color: $brandname-color;
       &:hover, &.active {
         color: $navbar-background-color;
-        background-color: $brand-color;
+        background-color: $navbar-non-brandname-color;
       }
     }
-    @media only screen and (max-width: $max-mobile-width) {
+    @media only screen and (max-width: $max-mobile-width + 40px) {
       // TODO don't hardcode this width, autohide when there is no more room:
       // https://stackoverflow.com/questions/43547430/how-can-i-completely-hide-elements-that-overflow-their-container-vertically
       &.about, &.donate {
@@ -696,6 +710,11 @@ nav.navbar {
     }
     .icon {
       color: $icon-color;
+    }
+    &:hover {
+      .icon {
+        color: $navbar-background-color;
+      }
     }
   }
   &>:first-child {

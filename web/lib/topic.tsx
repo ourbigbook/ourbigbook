@@ -29,20 +29,23 @@ export const TopicHoc = (tab) => {
           <div className="user-info">
             <h1>{topicId}</h1>
           </div>
-          <div className="tab-list">
-            <CustomLink
-              href={routes.topicArticlesView(topicId)}
-              className={`tab-item${tab === 'articles' ? ' active' : ''}`}
-            >
-              Top Articles
-            </CustomLink>
-            <CustomLink
-              href={routes.topicUsersView(topicId)}
-              className={`tab-item${tab === 'users' ? ' active' : ''}`}
-            >
-              Top Authors (TODO implement)
-            </CustomLink>
-          </div>
+          {false && <>
+            { /* Maybe one day, but initially, best article == best user. */ }
+            <div className="tab-list">
+              <CustomLink
+                href={routes.topicArticlesView(topicId)}
+                className={`tab-item${tab === 'articles' ? ' active' : ''}`}
+              >
+                Top Articles
+              </CustomLink>
+              <CustomLink
+                href={routes.topicUsersView(topicId)}
+                className={`tab-item${tab === 'users' ? ' active' : ''}`}
+              >
+                Top Authors (TODO implement)
+              </CustomLink>
+            </div>
+          </>}
           <ArticleList what={'topic-' + tab} topicId={topicId}/>
         </div>
       </>

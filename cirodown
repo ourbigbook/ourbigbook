@@ -682,15 +682,15 @@ A link to another file: \\x[and-now-an-include]
 
           // Set some variables especially for publishing.
           actual_input = publish_dir;
-          convert_input_options.outdir = path.join(publish_out_dir, 'publish');
-          convert_input_options.out_css_path = path.join(convert_input_options.outdir, cirodown_nodejs.PACKAGE_OUT_CSS_BASENAME);
+          outdir = path.join(publish_out_dir, 'publish');
+          convert_input_options.out_css_path = path.join(outdir, cirodown_nodejs.PACKAGE_OUT_CSS_BASENAME);
           convert_input_options.include_contains_external = true;
           // Remove all files from the gh-pages repository in case some were removed from the original source.
-          cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'rm', '-r', '-f', '.'], cmd_options);
+          cmd_get_stdout('git', ['-C', outdir, 'rm', '-r', '-f', '.'], cmd_options);
         } else {
           actual_input = inputPath;
-          convert_input_options.outdir = outdir;
         }
+        convert_input_options.outdir = outdir;
 
         // Do the actual conversion.
         convert_files_in_directory_extract_ids(actual_input, options, convert_input_options);

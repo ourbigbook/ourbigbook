@@ -5786,6 +5786,10 @@ If you have determined that a bug is PostgreSQL specific, and it is easier to de
 CIRODOWN_POSTGRES=true ./bin/generate-demo-data.js
 CIRODOWN_POSTGRES=true npm run dev
 ``
+or shortcut for the run:
+``
+npm run dev-pg
+``
 
 = Heroku deployment
 {c}

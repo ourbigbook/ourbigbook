@@ -99,9 +99,17 @@ Static wiki generator and lightweight markup language to write complex structure
       * locally, a link `\x[not-readme]` would render as `<a href="not-readme.html">` and `not-readme.ciro` produces `not-readme.html`
       * when publishing, `\x[not-readme]` would render as `<a  href="not-readme">` and `not-readme.ciro` also produces `not-readme.html`, which the server converts to just `http://my-website.com/not-readme`
   * cross file configuration files to factor out common page parts like headers, footers and other metadata, e.g.:
-    * `main.liquid.html`: https://github.com/Shopify/liquid[Liquid template] used for all pages
-    * `main.scss`: CSS stylesheet generated from https://sass-lang.com/[SASS] input
-    * `cirodown.tex`: global LaTeX math definitions
+    * `main.liquid.html`: https://github.com/Shopify/liquid[Liquid template] used for all pages, see example at: \x[play-with-the-template]{full}
+    * `main.scss`: CSS stylesheet generated from https://sass-lang.com/[SASS] input, see example at: \x[play-with-the-template]{full}
+    * `cirodown.tex`: global LaTeX math definitions, e.g.:
+      ``
+      \newcommand{\abs}[1]{\left|#1\right|}
+      ``
+      and then you can use:
+      ``
+      $\abs{x}$
+      ``
+      in any .ciro file of the project.
     * \x[cirodown-json]: per repository configuration options
   * \x[table-of-contents] that crosses input files (TODO https://github.com/cirosantilli/cirodown/issues/126[])
   * check that local files and images linked to actually exist: \x[a-check-argument]. E.g.:
@@ -120,6 +128,17 @@ Static wiki generator and lightweight markup language to write complex structure
     ``
     would automatically add a preview of the image on the output.
 * advanced header/ID related features:
+  * \x[id-based-header-levels]:
+    ``
+    = Furry animal
+
+    I like \x[furry-animal]{p}, especially my cat, here is his photo: \x[image-my-cat].
+
+    == Cat
+
+    \Image[My_cat.jpg]
+    {title=My cat.}
+    ``
   * \x[scope]{p} either with directories or with within a single file:
     ``
     See the important conclusion of my experiment: \x[report-of-my-experiment/conclusion]
@@ -171,6 +190,29 @@ Static wiki generator and lightweight markup language to write complex structure
     ``
     <h1>User interface (UI)</h1>
     ``
+  * \x[h-disambiguate-argument][header disambiguation], e.g.:
+    ``
+    My favorite fruits are \x[apple-fruit]{p}!
+
+    My favorite least favorite brand is is \x[apple-company]! \x[apple] computers are too expensive.
+
+    == Apple
+    {disambiguate=fruit}
+
+    == Apple
+    {c}
+    {disambiguate=company}
+
+    = Apple
+    {c}
+    {synonym}
+    ``
+    which renders something like:
+    * `\x[apple-fruit]{p}`: `<a href="apple-fruit">apples</a>`
+    * `\x[apple-company]`: `<a href="apple-company">Apple</a>`
+    * `\x[apple]`: also `<a href="apple-company">Apple</a>` because of the synonym
+    * `== Apple\n{disambiguate=fruit}`: `<h2 id="apple-fruit">Apple (fruit)</h2>`
+    * `== Apple\n{disambiguate=company}`: `<h2 id="apple-company">Apple (company)</h2>`
   * tags are regular headers: \x[h-child-argument], \x[x-child-argument]
     ``
     = Animal
@@ -209,16 +251,6 @@ Static wiki generator and lightweight markup language to write complex structure
     ======= h7
 
     ======== h8
-    ``
-  * \x[id-based-header-levels]:
-    ``
-    = Animal
-
-    = Dog
-    {parent=animal}
-
-    = Husky
-    {parent=dog}
     ``
   * generate lists of \x[incoming-links] between internal headers: it shows every internal link coming into the current page
 * is written in JavaScript and therefore runs natively on the browser to allow live previews as shown at: https://cirosantilli.com/cirodown/editor[]

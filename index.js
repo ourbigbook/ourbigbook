@@ -1549,8 +1549,8 @@ function macro_image_video_block_convert_function(content_func, source_func) {
       return convert_arg(ast.args.source, context);
     }
   }
-  return function(ast, context) {
-    let rendered_attrs = html_convert_attrs(ast, context, ['src', 'height', 'width']);
+  return function(ast, context, validation_output) {
+    let rendered_attrs = html_convert_attrs(ast, context, ['height', 'width']);
     let figure_attrs = html_convert_attrs_id(ast, context);
     let ret = `<figure${figure_attrs}>\n`
     let href_prefix;
@@ -1564,7 +1564,7 @@ function macro_image_video_block_convert_function(content_func, source_func) {
       description = '. ' + description;
     }
     let src = convert_arg(ast.args.src, context);
-    let source = source_func(ast, context, src);
+    let source = source_func(ast, context, validation_output, src);
     if (source !== '') {
       source = `<a ${html_attr('href', source)}>Source</a>.`;
       if (description === '') {
@@ -1590,7 +1590,7 @@ function macro_image_video_block_convert_function(content_func, source_func) {
     } else {
       alt = html_attr('alt', html_escape_attr(convert_arg(alt_arg, context)));;
     }
-    ret += content_func(ast, context, src, rendered_attrs, alt);
+    ret += content_func(ast, context, validation_output, src, rendered_attrs, alt);
     if (has_caption) {
       ret += `<figcaption>${Macro.x_text(ast, context, {href_prefix: href_prefix})}${description}${source}</figcaption>\n`;
     }
@@ -2749,8 +2749,8 @@ const DEFAULT_MACRO_LIST = [
   new Macro(
     'Image',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
-    macro_image_video_block_convert_function(function (ast, context, src, rendered_attrs, alt) {
-      return `<a${html_attr('href', src)}><img${rendered_attrs}${alt}></a>\n`;
+    macro_image_video_block_convert_function(function (ast, context, validation_output, src, rendered_attrs, alt) {
+      return `<a${html_attr('href', src)}><img${html_attr('src', src)}${rendered_attrs}${alt}></a>\n`;
     }),
     Object.assign(
       {
@@ -3114,16 +3114,29 @@ const DEFAULT_MACRO_LIST = [
     'Video',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
     macro_image_video_block_convert_function(
-      function (ast, context, src, rendered_attrs, alt) {
+      function (ast, context, validation_output, src, rendered_attrs, alt) {
         if ('youtube' in ast.args) {
-          return `<iframe width="560" height="${DEFAULT_MEDIA_HEIGHT}" src="https://www.youtube.com/embed/${src}" ` +
+          let start;
+          if ('start' in ast.args) {
+            start = `?start=${validation_output['start']['positive_nonzero_integer']}`;
+          } else {
+            start = '';
+          }
+          return `<iframe width="560" height="${DEFAULT_MEDIA_HEIGHT}" src="https://www.youtube.com/embed/${src}${start}" ` +
                 `frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; ` +
                 `picture-in-picture" allowfullscreen></iframe>`;
         } else {
-          return `<video${rendered_attrs} controls>${alt}</video>\n`;
+          let start;
+          if ('start' in ast.args) {
+            // https://stackoverflow.com/questions/5981427/start-html5-video-at-a-particular-position-when-loading
+            start = `#t=${validation_output['start']['positive_nonzero_integer']}`;
+          } else {
+            start = '';
+          }
+          return `<video${html_attr('src', src + start)}${rendered_attrs} controls>${alt}</video>\n`;
         }
       },
-      function (ast, context, src) {
+      function (ast, context, validation_output, src) {
         if ('source' in ast.args) {
           return convert_arg(ast.args.source, context);
         } else if ('youtube' in ast.args) {
@@ -3138,6 +3151,10 @@ const DEFAULT_MACRO_LIST = [
         caption_prefix: 'Video',
         id_prefix: 'video',
         named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS.concat(
+          new MacroArgument({
+            name: 'start',
+            positive_nonzero_integer: true,
+          }),
           new MacroArgument({
             name: 'youtube',
             boolean: true,

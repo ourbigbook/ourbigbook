@@ -10,6 +10,7 @@ var assert_convert = function(input_string, expected_output) {
   let output = cirodown.convert(
     input_string,
     {
+      body_only: true,
       show_ast: true,
       show_input: true,
       show_output: true,

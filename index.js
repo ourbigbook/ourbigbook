@@ -670,6 +670,7 @@ class Tokenizer {
     this.extra_returns = extra_returns;
     this.extra_returns.errors = [];
     this.i = 0;
+    this.in_insane_header = false;
     this.line = start_line;
     this.list_level = 0;
     this.tokens = [];
@@ -749,7 +750,8 @@ class Tokenizer {
   consume_optional_newline_after_argument() {
     if (
       !this.is_end() &&
-      this.cur_c === '\n'
+      this.cur_c === '\n' &&
+      !this.in_insane_header
     ) {
       const peek = this.peek();
       if (
@@ -825,15 +827,14 @@ class Tokenizer {
     let unterminated_literal = false;
     let start_line;
     let start_column;
-    let in_insane_header = false;
     while (!this.is_end()) {
       this.log_debug('tokenize loop');
       this.log_debug('this.i: ' + this.i);
       this.log_debug('this.line: ' + this.line);
       this.log_debug('this.column: ' + this.column);
       this.log_debug('this.cur_c: ' + this.cur_c);
-      if (in_insane_header && this.cur_c === '\n') {
-        in_insane_header = false;
+      if (this.in_insane_header && this.cur_c === '\n') {
+        this.in_insane_header = false;
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
         this.consume_optional_newline_after_argument()
       }
@@ -1047,7 +1048,7 @@ class Tokenizer {
             this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
             for (let i = 0; i <= new_header_level; i++)
               this.consume();
-            in_insane_header = true;
+            this.in_insane_header = true;
             done = true;
           }
         }
@@ -1063,7 +1064,7 @@ class Tokenizer {
     }
 
     // Close any open headers at the end of the document.
-    if (in_insane_header) {
+    if (this.in_insane_header) {
       this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
     }
 

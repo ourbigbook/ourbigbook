@@ -1606,6 +1606,13 @@ and this non-recommended mixed style:
 ``
 This allows to greatly improve the readability of long argument lists by having them one per line.
 
+There is one exception to this however: inside an \x[headers][insane header], any newline is interpreted as the end of the insane header. This is why the following works as expected:
+``
+== My header 2 `some code`
+{id=asdf}
+``
+and the `id` gets assigned to the header rather than the trailing code element.
+
 ==== Escape characters
 
 For \x[literal-arguments][non-literal macro arguments], you have to use a backslash to escape:

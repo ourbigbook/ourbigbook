@@ -2553,6 +2553,23 @@ function link_get_href_content(ast, context) {
   return [href, content];
 }
 
+// If in split header mode, link to the nosplit version.
+// If in the nosplit mode, link to the split version.
+function link_to_split_opposite(ast, context) {
+  let content;
+  let title;
+  if (context.in_split_headers) {
+    content = NOSPLIT_MARKER;
+    title = 'view all headers in a single page';
+  } else {
+    content = SPLIT_MARKER;
+    title = 'view one header per page';
+  }
+  let other_context = clone_and_set(context, 'to_split_headers', !context.in_split_headers);
+  let other_href = x_href_attr(ast, other_context);
+  return `<a${html_attr('title', title)}${other_href}>${content}</a>`;
+}
+
 /**
  * @return {Object} dict of macro name to macro
  */
@@ -4851,19 +4868,7 @@ const DEFAULT_MACRO_LIST = [
         ret += ` | <a${parent_href}${html_attr('title', 'parent header')}>\u2191 parent "${parent_body}"</a>`;
       }
       if (context.options.split_headers) {
-        // Link to the other split/non-split version.
-        let content;
-        let title;
-        if (context.in_split_headers) {
-          content = NOSPLIT_MARKER;
-          title = 'view all headers in a single page';
-        } else {
-          content = SPLIT_MARKER;
-          title = 'view one header per page';
-        }
-        let other_context = clone_and_set(context, 'to_split_headers', !context.in_split_headers);
-        let other_href = x_href_attr(ast, other_context);
-        ret += ` | <a${html_attr('title', title)}${other_href}>${content}</a>`;
+        ret += ` | ${link_to_split_opposite(ast, context)}`;
       }
       ret += `</span>`;
       ret += `</h${level_int_capped}>\n`;
@@ -5316,7 +5321,6 @@ const DEFAULT_MACRO_LIST = [
 
         let toc_href = html_attr('href', '#' + my_toc_id);
         ret += ` | <a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
-
         let parent_ast = target_id_ast.get_header_parent(context);
         if (
           // Possible on broken h1 level.
@@ -5335,7 +5339,7 @@ const DEFAULT_MACRO_LIST = [
           let parent_body = convert_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
           ret += ` | <a${parent_href}${html_attr('title', 'parent ToC entry')}>\u2191 parent "${parent_body}"</a>`;
         }
-
+        ret += ` | ${link_to_split_opposite(target_id_ast, context)}`;
         ret += `</span></div>`;
         if (tree_node.children.length > 0) {
           for (let i = tree_node.children.length - 1; i >= 0; i--) {

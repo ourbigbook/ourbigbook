@@ -106,6 +106,9 @@ module.exports = (sequelize) => {
         { fields: ['nestedSetIndex'], },
         // For parent searches.
         { fields: ['nestedSetIndex', 'nestedSetNextSibling'], },
+        // Immensely speeds up certain foreign important key joins... OMG.
+        // https://stackoverflow.com/questions/970562/postgres-and-indexes-on-foreign-keys-and-primary-keys
+        { fields: ['fileId'], },
       ],
     }
   )

@@ -2820,6 +2820,7 @@ function convert_init_context(options={}, extra_returns={}) {
       }
       if (!('h' in ourbigbook_json)) { ourbigbook_json.h = {}; }
       if (!('numbered' in ourbigbook_json.h)) { ourbigbook_json.h.numbered = true; }
+      if (!('openLinksOnNewTabs' in ourbigbook_json)) { ourbigbook_json.openLinksOnNewTabs = false; }
       if (!('splitDefault' in ourbigbook_json.h)) { ourbigbook_json.h.splitDefault = false; }
       if (!('splitDefaultNotToplevel' in ourbigbook_json.h)) { ourbigbook_json.h.splitDefaultNotToplevel = false; }
       {
@@ -7791,7 +7792,10 @@ const OUTPUT_FORMATS_LIST = [
           }
           const check = ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined
           const relative = ast.validation_output.relative.given ? ast.validation_output.relative.boolean : undefined
-          const attrs = html_render_attrs_id(ast, context);
+          let attrs = html_render_attrs_id(ast, context);
+          if (context.options.ourbigbook_json.openLinksOnNewTabs) {
+            attrs += ' target="_blank"'
+          }
           return get_link_html({
             attrs,
             check,
@@ -8601,7 +8605,23 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
               counts_str = `\nword count: ${counts[0]}\ndescendant word count: ${counts[2]}\ndescendant count: ${counts[1]}`;
             }
             const attrs = html_render_attrs_id(ast, context);
-            return `<a${href}${attrs}${html_attr('title', 'internal link' + counts_str)}>${content}</a>`;
+
+            // It would be cleaner to pass this up from x_href_parts. But lazy.
+            let target = ''
+            if (context.options.ourbigbook_json.openLinksOnNewTabs && href) {
+              const splitFragment = href.split('#')
+              let href_path, fragment
+              if (splitFragment.length > 1) {
+                ;[href_path, fragment] = splitFragment
+              } else {
+                href_path = href
+              }
+              if (href_path !== '') {
+                target = ' target="_blank"'
+              }
+            }
+
+            return `<a${href}${attrs}${html_attr('title', 'internal link' + counts_str)}${target}>${content}</a>`;
           } else {
             return content;
           }

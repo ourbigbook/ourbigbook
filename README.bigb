@@ -6100,6 +6100,11 @@ Note that since the option is inherited by descendants, this can also affect the
 
 https://github.com/cirosantilli/ourbigbook/issues/188 contains a proposal to instead inherit this property across <includes>.
 
+= `openLinksOnNewTabs`
+{parent=ourbigbook.json}
+
+Make every link to something that is not on the current page open on a new tab instead of the current one, i.e. add `target="_blank"` to such links.
+
 = `splitDefault`
 {parent=h}
 

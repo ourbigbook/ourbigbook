@@ -6622,7 +6622,7 @@ function renderTocFromEntryList({ add_test_instrumentation, entry_list, descenda
     tocIdPrefix = ''
   }
   let ret = `<div id="${tocIdPrefix}${Macro.TOC_ID}" class="toc-container"><ul><li${htmlClassAttr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`
-  ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc" href="#${tocIdPrefix}${Macro.TOC_ID}">${TOC_MARKER_SYMBOL} Table of contents</a>`
+  ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc" href="#${tocIdPrefix}${Macro.TOC_ID}"> Table of contents</a>`
   if (descendant_count_html) {
     ret += `<span class="hover-metadata">${descendant_count_html}</span>`
   }
@@ -9055,7 +9055,7 @@ const OUTPUT_FORMATS_LIST = [
                 wiki += '_(' + (renderArg(ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME], context)).replace(/ /g, '_')  + ')'
               }
             }
-            wiki_link = `<a href="https://en.wikipedia.org/wiki/${htmlEscapeAttr(wiki)}"><span class="fa-brands-400" title="Wikipedia">\u{f266}</span> wiki</a>`;
+            wiki_link = `<a href="https://en.wikipedia.org/wiki/${htmlEscapeAttr(wiki)}" class="wiki"></a>`;
           }
 
           let ourbigbookLink
@@ -9131,14 +9131,7 @@ const OUTPUT_FORMATS_LIST = [
               );
               tag_ids_html_array.push(x_ast.render(new_context));
             }
-            tag_ids_html = ''
-            if (context.options.add_test_instrumentation) {
-              tag_ids_html += '<span class="test-tags">'
-            }
-            tag_ids_html += `${TAGS_MARKER} tags: ` + tag_ids_html_array.join(', ');
-            if (context.options.add_test_instrumentation) {
-              tag_ids_html += '</span>'
-            }
+            tag_ids_html = `<span class="tags"> tags: ${tag_ids_html_array.join(', ')}</span>`
           }
 
           let toc_link_html;
@@ -9158,7 +9151,7 @@ const OUTPUT_FORMATS_LIST = [
                 id = id.slice(fixedScopeRemoval)
               }
               const toc_href = htmlAttr('href', '#' + htmlEscapeAttr(tocId(id)));
-              toc_link_html = `<a${toc_href} class="toc"${htmlAttr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`
+              toc_link_html = `<a${toc_href} class="toc"></a>`
             }
           }
 
@@ -9190,7 +9183,8 @@ const OUTPUT_FORMATS_LIST = [
             for (const parent_ast of parent_asts) {
               const parent_href = xHrefAttr(parent_ast, context);
               const parent_content = renderArg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-              parent_links.push(`<a${parent_href}${htmlAttr('title', 'parent header')}>${HTML_PARENT_MARKER} ${parent_content}</a>`);
+              // .u for Up
+              parent_links.push(`<a${parent_href} class="u"> ${parent_content}</a>`);
             }
             parent_links = parent_links.join(HEADER_MENU_ITEM_SEP);
             if (parent_links) {
@@ -9199,7 +9193,7 @@ const OUTPUT_FORMATS_LIST = [
           }
           if (first_header) {
             if (checkHasToc(context)) {
-              header_meta.push(`<a${htmlAttr('href', `#${context.options.tocIdPrefix}${Macro.TOC_ID}`)} class="toc">${TOC_MARKER}</a>`);
+              header_meta.push(`<a${htmlAttr('href', `#${context.options.tocIdPrefix}${Macro.TOC_ID}`)} class="toc"></a>`);
             }
           } else {
             if (toc_link_html) {

@@ -147,6 +147,19 @@ export function ourbigbook_runtime(toplevel) {
   for (const e of toplevel.querySelectorAll('a.nosplit')) {
     e.title = 'view all headers in a single page'
   }
+  for (const e of toplevel.querySelectorAll('.h-nav .toc')) {
+    e.title = 'table of contents entry for this header'
+  }
+  for (const e of toplevel.querySelectorAll('.h-nav .u')) {
+    // .u for Up
+    e.title = 'parent header'
+  }
+  for (const e of toplevel.querySelectorAll('.h-nav .wiki')) {
+    e.title = 'Wikipedia article about the same topic as this header'
+  }
+  for (const e of toplevel.querySelectorAll('.h-nav .tags')) {
+    e.title = 'tags this header is tagged with'
+  }
 
   const ourbigbook_canvas_demo_elems = toplevel.getElementsByClassName('ourbigbook-js-canvas-demo');
   const ourbigbook_canvas_demo_weakmap = new WeakMap();

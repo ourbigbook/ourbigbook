@@ -1269,8 +1269,10 @@ if (cli.helpMacros) {
         parentId: { type: DataTypes.TEXT },
         sha256: { type: DataTypes.TEXT },
       });
+      // Just to store the ID of the index.
       const sequelizeWebIndexId = sequelizeWeb.define('IndexId', {
         idid: { type: DataTypes.TEXT },
+        // upsert helper.
         uniqueHack: { type: DataTypes.INTEGER, unique: true },
       });
       await sequelizeWeb.sync()
@@ -1404,7 +1406,11 @@ if (cli.helpMacros) {
           ourbigbook_options,
           non_ourbigbook_options,
         );
-        treeToplevelId = (await sequelizeWebIndexId.findAll())[0].idid
+        const index = (await sequelizeWebIndexId.findAll())[0]
+        if (index === undefined) {
+          cli_error('a toplevel index is mandatory for web uploads')
+        }
+        treeToplevelId = index.idid
       }
       if (non_ourbigbook_options.had_error) {
         process.exit(1);

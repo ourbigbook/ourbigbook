@@ -11,6 +11,7 @@ var assert_convert = function(input_string, expected_output) {
     input_string,
     {
       body_only: true,
+      show_tokens: true,
       show_parse: true,
     },
     extra_returns
@@ -45,9 +46,9 @@ assert_convert('a\\{b\n', '<p>a{b</p>\n')
 assert_convert('a\\}b\n', '<p>a}b</p>\n')
 
 // Links.
-assert_convert('a \\a{http://example.com}{example link} b\n', '<p>a <a href="http://example.com">example link</a></p>\n')
-assert_convert('a \\a{http://example.com}{} b\n', '<p>a <a href="http://example.com">http://example.com</a></p>\n')
-assertconvert(
-  '\\a{http://example.com}{Multiple\n\nparagraphs}',
-  '<p>a <a href="http://example.com"><p>Multiple</p>\n<p>paragraphs</p></a></p>\n'
+assert_convert('a \\a[http://example.com][example link] b\n', '<p>a <a href="http://example.com">example link</a> b</p>\n')
+assert_convert('a \\a[http://example.com][] b\n', '<p>a <a href="http://example.com">http://example.com</a> b</p>\n')
+assert_convert(
+  '\\a[http://example.com][Multiple\n\nparagraphs]',
+  '<p><a href="http://example.com"><p>Multiple</p>\n<p>paragraphs</p></a></p>\n'
 )

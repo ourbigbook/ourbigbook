@@ -1,6 +1,5 @@
 import { useRouter } from 'next/router'
 import React from 'react'
-import useSWR from 'swr'
 
 import CustomLink from 'front/CustomLink'
 import LoadingSpinner from 'front/LoadingSpinner'
@@ -34,13 +33,6 @@ const ArticlePage = ({
   topicArticleCount,
 }: ArticlePageProps) => {
   const router = useRouter();
-
-  // We fetch comments so that the new posted comment will appear immediately after posted.
-  // Note that we cannot calculate the exact new comment element because we need the server datetime.
-  const { data: commentApi, error: commentError } = useSWR(webApi.commentUrl(article?.slug), fetcher(!router.isFallback));
-  if (commentApi !== undefined) {
-    comments = commentApi.comments
-  }
 
   const { setTitle } = React.useContext(AppContext)
   React.useEffect(() =>

@@ -6,7 +6,7 @@ import { webApi } from 'front/api'
 import { formatDate } from 'front/date'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 
-const Comment = ({ comment, loggedInUser }) => {
+const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
   const canModify =
     loggedInUser && loggedInUser?.username === comment?.author?.username;
   const router = useRouter();
@@ -15,6 +15,7 @@ const Comment = ({ comment, loggedInUser }) => {
   } = router;
   const handleDelete = async (commentId) => {
     await webApi.commentDelete(pid, commentId)
+    setComments(comments => comments.filter(comment => comment.id !== id))
   };
   return (
     <div className="comment">

@@ -1595,6 +1595,7 @@ function convert(
   if (!('from_include' in options)) { options.from_include = false; }
   if (!('html_embed' in options)) { options.html_embed = false; }
   if (!('html_single_page' in options)) { options.html_single_page = false; }
+  if (!('html_split_header' in options)) { options.html_split_header = false; }
   if (!('html_x_extension' in options)) { options.html_x_extension = true; }
   if (!('h_level_offset' in options)) { options.h_level_offset = 0; }
   if (!('id_provider' in options)) { options.id_provider = undefined; }
@@ -1701,13 +1702,50 @@ function convert(
   extra_returns.errors.push(...sub_extra_returns.errors);
   let output;
   if (options.render) {
-    context.extra_returns = extra_returns;
-    // Convert the toplevel.
     extra_returns.debug_perf.render_pre = globals.performance.now();
+    // Split header conversion.
+    if (options.html_split_header) {
+      function convert_header(cur_arg_list, context) {
+        if (cur_arg_list.length > 0) {
+          const context_copy = Object.assign({}, context);
+          const header_graph_node = cur_arg_list[0].header_graph_node;
+          const header_graph_node_real_parent = header_graph_node.parent_node;
+          header_graph_node.parent_node = undefined;
+          const ast_toplevel = new AstNode(
+            AstType.MACRO,
+            Macro.TOPLEVEL_MACRO_NAME,
+            {'content': new AstArgument(cur_arg_list,
+              cur_arg_list[0].line, cur_arg_list[0].column)},
+            cur_arg_list[0].line,
+            cur_arg_list[0].column,
+          );
+          context.extra_returns.html_split_header[cur_arg_list[0].id] =
+            ast_toplevel.convert(context);
+          header_graph_node.parent_node = header_graph_node_real_parent;
+        }
+      }
+      context.extra_returns.html_split_header = {};
+      const content = ast.args.content;
+      let cur_arg_list = [];
+      for (const child_ast of content) {
+        const macro_name = child_ast.macro_name;
+        if (macro_name === Macro.HEADER_MACRO_NAME) {
+          convert_header(cur_arg_list, context);
+          cur_arg_list = [];
+        }
+        cur_arg_list.push(child_ast);
+      }
+      convert_header(cur_arg_list, context);
+      // Because the following conversion would redefine them.
+      context.katex_macros = {};
+    }
+    // Non-split header toplevel conversion.
     output = ast.convert(context);
     extra_returns.debug_perf.render_post = globals.performance.now();
     extra_returns.errors.push(...context.errors);
   }
+  // Sort errors that might have been produced on different conversion
+  // stages by line.
   extra_returns.errors = extra_returns.errors.sort((a, b)=>{
     if (a.line < b.line)
       return -1;
@@ -2174,20 +2212,24 @@ function parse(tokens, options, context, extra_returns={}) {
     tokens: tokens,
   };
   // Get toplevel arguments such as {title=}, see https://cirosantilli.com/cirodown#toplevel
-  const ast_toplevel_args = parse_argument_list(state, Macro.TOPLEVEL_MACRO_NAME, AstType.MACRO);
+  const ast_toplevel_args = parse_argument_list(
+    state, Macro.TOPLEVEL_MACRO_NAME, AstType.MACRO);
   if ('content' in ast_toplevel_args) {
     parse_error(state, `the toplevel arguments cannot contain an explicit content argument`, 1, 1);
   }
 
   // Inject a maybe paragraph token after those arguments.
-  const paragraph_token = new Token(TokenType.PARAGRAPH, undefined, state.token.line, state.token.column);
+  const paragraph_token = new Token(TokenType.PARAGRAPH,
+    undefined, state.token.line, state.token.column);
   tokens.splice(state.i, 0, paragraph_token);
   state.token = paragraph_token;
 
-  // Parse the main part of the document as the content argument toplevel argument.
-  const ast_toplevel_content_arg = parse_argument(state, state.token.line, state.token.column);
+  // Parse the main part of the document as the content
+  // argument toplevel argument.
+  const ast_toplevel_content_arg = parse_argument(
+    state, state.token.line, state.token.column);
 
-  // Create the toplevel argument itself.
+  // Create the toplevel macro itself.
   const ast_toplevel = new AstNode(
     AstType.MACRO,
     Macro.TOPLEVEL_MACRO_NAME,

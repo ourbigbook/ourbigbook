@@ -200,6 +200,9 @@ function a(macro_name, content, extra_args={}, extra_props={}) {
 /** Shortcut to create plaintext nodes for ast_arg_has_subset, we have too many of those. */
 function t(text) { return {'macro_name': 'plaintext', 'text': text}; }
 
+// Empty document.
+assert_convert_ast('empty document', '', []);
+
 // Paragraphs.
 assert_convert_ast('one paragraph implicit', 'ab\n',
   [a('P', [t('ab')])],

@@ -1,4 +1,10 @@
-/* Shared across local cirodown and web. */
+// Shared across local cirodown and web.
+//
+// Also distributed with the NPM package so that users can harmonize
+// their design with Cirodown defaults.
+//
+// This file is intended to be used with @import. This means that
+// it contains only variables and mixins, and no actual style definitions.
 
 // Light
 $a-color: #0000EE;

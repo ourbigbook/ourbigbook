@@ -638,6 +638,33 @@ function generate_redirects(
 /**
  * @return {String} full Git SHA of the source.
  */
+function git_ls_files(input_path) {
+  const ret = cmd_get_stdout(
+    'git',
+    ['-C', input_path, 'ls-files'],
+    {
+      show_cmd: false,
+      throw_on_error: true
+    }
+  )
+  ret.replace(/\n$/, '')
+  if (ret === '') {
+    return []
+  } else {
+    return ret.split('\n')
+  }
+}
+
+/** Return Set of branches in the repository. Hax. */
+function git_branches(input_path) {
+  const str = cmd_get_stdout('git', ['branch', '-a']).replace(/\n$/, '')
+  const arr = (str === '') ? [] : str.split('\n');
+  return new Set(arr.map(s => s.substring(2)));
+}
+
+/**
+ * @return {String} full Git SHA of the source.
+ */
 function git_sha(input_path, src_branch) {
   const args = ['-C', input_path, 'log', '-n1', '--pretty=%H'];
   if (src_branch !== undefined) {
@@ -686,8 +713,8 @@ commander.option('--dry-run-push', "don't run git push commands https://github.c
 commander.option('--embed-includes', 'http://cirosantilli.com/cirodown#embed-include', false);
 commander.option('--embed-resources', 'http://cirosantilli.com/cirodown#embed-resources', false);
 commander.option('--generate', 'http://cirosantilli.com/cirodown#generate', false);
-commander.option('--generate-redirects', 'http://cirosantilli.com/cirodown#redirects', false);
 commander.option('--generate-multifile', 'http://cirosantilli.com/cirodown#generate-multifile', false);
+commander.option('--generate-redirects', 'http://cirosantilli.com/cirodown#redirects', false);
 commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown/#', false);
 commander.option('-l, --log <log...>', 'http://cirosantilli.com/cirodown#log');
 commander.option('--no-html-x-extension', 'http://cirosantilli.com/cirodown#no-html-x-extension');
@@ -726,7 +753,7 @@ if (commander.helpMacros) {
   let cirodown_json = {};
   let input_dir;
   if (inputPath === undefined) {
-    if (publish || commander.watch) {
+    if (publish || commander.watch || commander.generate || commander.generateMultifile) {
       inputPath = '.';
     }
   }
@@ -1086,7 +1113,10 @@ A link to another file: \\x[and-now-an-include]
           convert_input_options.out_js_path = path.join(publish_out_publish_dir, cirodown_nodejs.DIST_JS_BASENAME);
           convert_input_options.external_css_and_js = true;
           // Remove all files from the gh-pages repository in case some were removed from the original source.
-          if (fs.existsSync(path.join(publish_out_publish_dir, '.git'))) {
+          if (
+            fs.existsSync(path.join(publish_out_publish_dir, '.git')) &&
+            git_ls_files(publish_out_publish_dir).length > 0
+          ) {
             cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'rm', '-r', '-f', '.'], cmd_options);
           }
         } else {
@@ -1122,9 +1152,13 @@ A link to another file: \\x[and-now-an-include]
             cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'remote', 'set-url', 'origin', remote_url], cmd_options);
           }
           // Ensure that we are up-to-date with the upstream gh-pages if one exists.
-          // TODO may fail on initial one, do a check for that.
           cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'fetch', 'origin'], cmd_options);
-          cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'reset', `origin/${publish_branch}`], cmd_options);
+          cmd_get_stdout(
+            'git',
+            ['-C', publish_out_publish_dir, 'reset', `origin/${publish_branch}`],
+            // Fails on the first commit in an empty repository.
+            cirodown.clone_and_set(cmd_options, 'throw_on_error', false)
+          );
 
           // Generate special files needed for GitHub pages.
           gemfile_content = "gem 'github-pages', group: :jekyll_plugins\n";

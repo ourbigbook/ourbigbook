@@ -962,7 +962,7 @@ So for example, the following automatic IDs would be generated: \x[table-example
 
 | É你
 | é你
-| The Latin https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, is converted to its lower case form `é` as per the \x[javascript-case-conversion]. The Chines `你` is left untouched as Chinese characters have no case.
+| The Latin https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, is converted to its lower case form `é` as per the \x[javascript-case-conversion]. The Chinese `你` is left untouched as Chinese characters have no case.
 ]
 
 For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the Cirodown file without extension instead of from the `title` argument.

@@ -2630,7 +2630,9 @@ assert_convert_ast('cross reference to embed include header',
     a('Toc'),
   ].concat(include_two_levels_ast_args),
   Object.assign({
-    assert_xpath_matches: ["//x:a[@href='#include-two-levels' and text()='ee']"]},
+    assert_xpath_matches: [
+      "//x:div[@class='p']//x:a[@href='#include-two-levels' and text()='ee']",
+    ]},
     include_opts
   ),
 );
@@ -3455,7 +3457,7 @@ assert_executable(
 
 \\x[notindex-h2][toplevel to notindex h2]
 
-== h2
+== H2
 
 \\x[toplevel][h2 to toplevel]
 
@@ -3504,6 +3506,9 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='toplevel to notindex']",
         // A child of a nosplit also becomes nosplit by default.
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='toplevel to notindex h2']",
+
+        // The toplevel split header does not get a numerical prefix.
+        "//x:h1[@id='toplevel']//x:a[@href='' and text()='Toplevel']",
       ],
       'nosplit.html': [
         "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
@@ -3521,6 +3526,10 @@ assert_executable(
         // Images.
         "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='toplevel to my image h2']",
         "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
+
+        // Headers.
+        "//x:h1[@id='toplevel']//x:a[@href='' and text()='Toplevel']",
+        "//x:h2[@id='h2']//x:a[@href='#h2' and text()='1. H2']",
       ],
       'h2.html': [
         "//x:div[@class='p']//x:a[@href='index.html' and text()='h2 to toplevel']",
@@ -3528,6 +3537,9 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='h2 to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
         "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
+
+        // The toplevel split header does not get a numerical prefix.
+        "//x:h1[@id='h2']//x:a[@href='' and text()='H2']",
       ],
       'notindex.html': [
         // Link so the split one of index because that's the default of that page.
@@ -3545,25 +3557,36 @@ assert_executable(
         // Images.
         "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='notindex to my image h2']",
         "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='notindex h2 to my image h2']",
+
+        // Headers.
+        "//x:h1[@id='notindex']//x:a[@href='' and text()='Notindex']",
+        "//x:h2[@id='notindex-h2']//x:a[@href='#notindex-h2' and text()='1. Notindex h2']",
       ],
       'notindex-split.html': [
         "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to toplevel']",
         "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex to h2']",
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='notindex to notindex']",
 
-        // TODO. Although external links to this header would to to its default which is nosplit,
+        // Link from split to another header inside the same nonsplit page.
+        // Although external links to this header would to to its default which is nosplit,
         // mabe when we are inside it in split mode (a rarer use case) then we should just remain
         // inside of split mode.
         //"//x:div[@class='p']//x:a[@href='notindex-h2.html' and text()='notindex to notindex h2']",
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='notindex to notindex h2']",
+
+        // The toplevel split header does not get a numerical prefix.
+        "//x:h1[@id='notindex']//x:a[@href='' and text()='Notindex']",
       ],
       'notindex-h2.html': [
         "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to toplevel']",
         "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex h2 to h2']",
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='notindex h2 to notindex h2']",
 
-        // TODO same question as above.
+        // Link from split to another header inside the same nonsplit page.
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='notindex h2 to notindex']",
+
+        // The toplevel split header does not get a numerical prefix.
+        //"//x:h1[@id='notindex-h2']//x:a[@href='' and text()='Notindex h2']",
       ],
     }
   }

@@ -4222,9 +4222,11 @@ Possibilities we could reuse:
 = Dynamic website
 {parent=tooling}
 
-The dynamic website is located under \a[web/].
+An implementation of: https://cirosantilli.com/write-free-books-to-get-famous-website
 
-Its was originally forked from the following starter boilerplate: https://github.com/cirosantilli/node-express-sequelize-realworld-example-app
+The source of the dynamic website is located under \a[web/].
+
+It was originally forked from the following starter boilerplate: https://github.com/cirosantilli/node-express-sequelize-realworld-example-app
 
 = Local development server
 {parent=dynamic-website}

@@ -582,6 +582,12 @@ assert_convert_ast('table inside list inside table',
     ]),
   ]
 );
+assert_convert_ast('implicit table escape', '\\| a\n',
+  [a('p', [t('| a')])],
+);
+assert_convert_ast("pipe space in middle of line don't need escape", 'a | b\n',
+  [a('p', [t('a | b')])],
+);
 assert_convert_ast('auto_parent consecutive implicit tr and l',
   `\\tr[\\td[ab]]
 \\l[cd]

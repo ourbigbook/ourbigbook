@@ -4833,6 +4833,7 @@ Manually update the \a[package.json] version:
 ``
 vim package.json
 ``
+
 Create a tag to match, push and release the package:
 ``
 git add -u
@@ -4841,4 +4842,12 @@ git commit -m "$t"
 git tag -m "$t" "$t"
 git push --follow-tags
 npm publish
+``
+
+After publishing:
+``
+cd ~
+# Get rid of the npm link development version.
+npm uninstall -g cirodown
+npm install -g cirodown
 ``

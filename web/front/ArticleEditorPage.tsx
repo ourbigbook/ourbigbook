@@ -108,7 +108,9 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
       } else {
         ({ data, status } = await webApi.articleCreateOrUpdate(
           file,
-          slugFromRouter(router),
+          {
+            path: slugFromRouter(router),
+          }
         ));
       }
       setLoading(false);

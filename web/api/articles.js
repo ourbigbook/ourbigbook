@@ -100,21 +100,18 @@ router.put('/', auth.required, async function(req, res, next) {
 async function createOrUpdateArticle(req, res, opts) {
   const sequelize = req.app.get('sequelize')
   const user = await sequelize.models.User.findByPk(req.payload.id);
-  const articleData = req.body.article
+  lib.validateParamMandatory(req, 'body')
+  const articleData = lib.validateParamMandatory(req.body, 'article')
+  const title = lib.validateParamMandatory(articleData, 'title')
   const render = lib.validateParam(req.body, 'render', lib.validateTrueOrFalse, true)
-  if (!articleData) {
-    throw new lib.ValidationError({ article: 'cannot be empty' })
-  }
-  if (!articleData.title) {
-    throw new lib.ValidationError({ article: { title: 'cannot be empty' } })
-  }
   const articles = await convert.convert({
     author: user,
     body: articleData.body,
     forceNew: opts.forceNew,
     sequelize,
+    path: req.body.path,
     render,
-    title: articleData.title,
+    title,
   })
   return res.json({ articles: await Promise.all(articles.map(article => article.toJson(user))) })
 }

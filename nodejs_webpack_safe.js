@@ -17,6 +17,8 @@ const ourbigbook = require('./index');
 const ourbigbook_nodejs_front = require('./nodejs_front');
 const models = require('./models')
 
+const ENCODING = 'utf8'
+
 // DB options that have to be given to both ourbigbook CLI and dynamic website.
 // These must be used for both for consistency, e.g. freezeTableName would lead
 // to different able names in the database, which could break manually written queries.
@@ -647,6 +649,23 @@ async function check_db(sequelize, paths_converted, transaction) {
   return error_messages
 }
 
+function preload_katex(tex_path) {
+  let katex_macros = {};
+  if (fs.existsSync(tex_path)) {
+    require('katex').renderToString(
+      fs.readFileSync(tex_path, ENCODING),
+      {
+        globalGroup: true,
+        macros: katex_macros,
+        output: 'html',
+        strict: 'error',
+        throwOnError: true,
+      }
+    );
+  }
+  return katex_macros
+}
+
 function read_include({exists, read, path_sep, ext}) {
   function join(...parts) {
     return parts.join(path_sep)
@@ -718,9 +737,10 @@ module.exports = {
   create_sequelize,
   db_options,
   destroy_sequelize,
+  preload_katex,
   read_include,
   remove_duplicates_sorted_array,
   update_database_after_convert,
-  ENCODING: 'utf8',
+  ENCODING,
   TMP_DIRNAME: 'out',
 }

@@ -20,16 +20,21 @@ export function decapitalize(s) {
   return s[0].toLowerCase() + s.slice(1)
 }
 
-export function slugFromArray(arr) {
-  return arr.join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
+export function slugFromArray(arr, opts) {
+  const { username } = opts
+  if (username === undefined) {
+    username = true
+  }
+  const start = username ? 0 : 1
+  return arr.slice(start).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
 }
 
-export function slugFromRouter(router) {
+export function slugFromRouter(router, opts) {
   let arr = router.query.slug
   if (!arr) {
     return router.query.uid
   }
-  return slugFromArray(arr)
+  return slugFromArray(arr, opts)
 }
 
 export const AppContext = React.createContext<{

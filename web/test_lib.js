@@ -278,18 +278,17 @@ async function generateDemoData(params) {
 
     if (verbose) console.error('Article');
     const articleDataProviders = {}
+    for (let userIdx = 0; userIdx < nUsers; userIdx++) {
+      let authorId = users[userIdx].id
+      articleDataProvider = new ArticleDataProvider(articleData, userIdx)
+      articleDataProviders[authorId] = articleDataProvider
+    }
     const articleArgs = [];
     let dateI = 0
     for (let i = 0; i < nArticlesPerUser; i++) {
       for (let userIdx = 0; userIdx < nUsers; userIdx++) {
         let authorId = users[userIdx].id
-        let articleDataProvider
-        if (authorId in articleDataProviders) {
-          articleDataProvider = articleDataProviders[authorId]
-        } else {
-          articleDataProvider = new ArticleDataProvider(articleData, userIdx)
-          articleDataProviders[authorId] = articleDataProvider
-        }
+        const articleDataProvider = articleDataProviders[authorId]
         const date = addDays(date0, dateI)
         dateI++
         const articleDataEntry = articleDataProvider.get()
@@ -478,6 +477,7 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
       for (let j = 0; j < nLikesPerUser; j++) {
         const article = articles[(i * j) % nArticles];
         if (
+          article &&
           article.file.authorId !== user.id &&
           !await user.hasLike(article)
         ) {
@@ -505,7 +505,7 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     if (verbose) console.error('Comment');
     const commentArgs = [];
     let commentIdx = 0;
-    sequelize.models.Comment.destroy({ where: { authorId: users.map(user => user.id) } })
+    await sequelize.models.Comment.destroy({ where: { authorId: users.map(user => user.id) } })
     for (let i = 0; i < nArticles; i++) {
       for (var j = 0; j < (i % (nMaxCommentsPerArticle + 1)); j++) {
         const commentArg = {

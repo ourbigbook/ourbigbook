@@ -3,13 +3,12 @@
 A Markup language to write complex structured HTML wikis/books that is \x[saner] and more powerful than Markdown and Asciidoctor, with reference implementation in JavaScript:
 
 * \x[design-goals]{full}: feature overview
+* https://github.com/cirosantilli/cirodown[]: Cirodown source code
 * https://github.com/cirosantilli/cirodown/blob/master/README.ciro[]: source for this document
 * https://cirosantilli.com/cirodown[]: rendered version of this document
 * https://cirosantilli.com/cirodown/editor[]: live in-browser demo
-* https://cirosantilli.com[]: showcase demo document with more interesting content, and initial inspiration for Cirodown
-* https://github.com/cirosantilli/cirosantilli.github.io[]: source of the above document
-
-If Mark had his Down, why can't Ciro have his own? ;-)
+* https://cirosantilli.com[]: showcase demo document with more interesting content, and primary inspiration for Cirodown development
+* https://github.com/cirosantilli/cirosantilli.github.io[]: source of the above showcase document
 
 == Quick start
 
@@ -3388,6 +3387,11 @@ Defined variables:
   giving the desired:
   ``
   <link rel="stylesheet" type="text/css" href="../main.css">
+  ``
+
+  And if the output path were instead just `myohterfile.html`, `root_replath` expands to an empty string, giving again the correct:
+  ``
+  <link rel="stylesheet" type="text/css" href="main.css">
   ``
 * `style`: default Cirodown stylesheets
 * `title`

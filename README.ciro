@@ -543,6 +543,12 @@ The `title2` argument can be given to any element that has the `title` argument.
 
 Its usage is a bit like the `description=` argument of \x[images], allowing you to add some extra content to the header without affecting its ID.
 
+Therefore, its primary use cases are:
+* give acronyms, or other short names names of fuller titles such as mathematical/programming notation
+* give the header in different languages
+
+When you do want to affect the ID to remove ambiguities, use \x[the-disambiguate-argument] instead of `title2`.
+
 Unlike `description=` however, `title2` shows up on all \x[cross-reference-full-argument][`full`] references, including appearances in the \x[table-of-contents].
 
 For example, given the Cirodown input:
@@ -582,6 +588,83 @@ Section 2. "Orthogonal group (O(n))"
 ``
 
 Parenthesis are added automatically around all rendered `title2`.
+
+=== The `disambiguate` argument
+
+Sometimes the short version of a name is ambiguous, and you need to add some extra text to make both its title and ID unique.
+
+For example, the word "Python" could either refer to:
+* the programming language: https://en.wikipedia.org/wiki/Python_(programming_language)
+* the genus of snakes: https://en.wikipedia.org/wiki/Python_(genus)
+
+The `disambiguate` \x[positional-vs-named-arguments][name argument], which is automatically defined for all macros, helps you deal more neatly with such problems.
+
+Have a look at this example:
+``
+My favorite snakes are \x[python-genus]{p}!
+
+My favorite programming language is \x[python-programming-language]!
+
+\x[python-genus]{full}
+
+\x[python-programming-language]{full}
+
+== Python
+{disambiguate=genus}
+
+== Python
+{c}
+{disambiguate=programming language}
+{title2=.py}
+{wiki}
+``
+which renders as:
+\Q[
+My favorite snakes are \x[python-genus]{p}!
+
+My favorite programming language is \x[python-programming-language]!
+
+\x[python-genus]{full}
+
+\x[python-programming-language]{full}
+
+= Python
+{disambiguate=genus}
+{parent=the-disambiguate-argument}
+
+= Python
+{c}
+{disambiguate=programming language}
+{parent=the-disambiguate-argument}
+{title2=.py}
+{wiki}
+]
+from which we observe how `disambiguate`:
+* gets added to the ID after conversion following the same rules as \x[automatic-id-from-title]
+* shows up on the header between parenthesis, much like Wikipedia, as well as in \x[cross-reference-full-argument][`full` cross references]
+* does not show up on non-`full` references. This makes it much more likely that you will be able to reuse the title automatically on a cross reference without `content`: we wouldn't want to say "My favorite programming language is Python (programming language)" all the time, would we?
+* gets added to the default \x[header-wiki-argument] inside parenthesis, following Wikipedia convention, therefore increasing the likelihood that you will be able to go with the default Wikipedia value
+
+Besides disambiguating headers, the `disambiguate` argument has a second related application: disambiguating IDs of images. For example:
+\CirodownExample[[
+\x[image-the-title-of-my-disambiguate-image]{full=0}
+
+\x[image-the-title-of-my-disambiguate-image-2]{full=0}
+
+\x[image-the-title-of-my-disambiguate-image]{full}
+
+\x[image-the-title-of-my-disambiguate-image-2]{full}
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=The title of my disambiguate image.}
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=The title of my disambiguate image.}
+{disambiguate=2}
+]]
+Note that unlike for headers, `disambiguate` does not appear on the title of images at all. It serves only to create an unique ID that can be later referred to. Headers are actually the only case where `disambiguate` shows up on the visible rendered output.
+
+This use case is even more useful when `title-from-src` is enable by default for the \x[media-providers] entry, so you don't have to repeat titles several times over and over.
 
 === `\x` within `title` restrictions
 
@@ -1429,7 +1512,7 @@ Have a look at this amazing image: \x[image-my-test-image-2].
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {id=image-my-test-image-2}
 ]]
-This works because \x[cross-reference-full-argument][`full` is the default cross referene style for `Image`], otherwise the link text would be empty since there is no `title`, and cirodown would raise an error.
+This works because \x[cross-reference-full-argument][`full` is the default cross reference style for `Image`], otherwise the link text would be empty since there is no `title`, and cirodown would raise an error.
 
 Cirodown can optionally deduce the title from the basename of the `src` argument if the `title_from_src` \x[boolean-named-arguments][boolean named argument] is given, or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
 \CirodownExample[[
@@ -3076,6 +3159,14 @@ The general format of `media-providers` looks like:
 }
 ``
 
+Properties that are valid for every provider:
+* `default-for`: use this provider as the default for the given types of listed macros.
+
+  The first character of the macros are case insensitive and must be given as lower case. Therefore e.g.:
+  * `image` applies to both `image` and `Image`
+  * giving `Image` is an error because that starts with an upper case character
+* `title-from-src` (`bool`): extract the `title` argument from the `src` by default for media such as \x[images] and \x[videos] as if `title_from_src` had been given, see also: \x[image-id]
+
 Direct children of media-providers and subproperties that are valid only for them specifically:
 * `local`: tracked in the current Git repository as mentioned at \x[store-images-inside-the-repository-itself]{full}
   * `path`: location of the cloned local repository relative to the root the main repository
@@ -3083,13 +3174,6 @@ Direct children of media-providers and subproperties that are valid only for the
   * `path`: same as for `local`
   * `remote`: `<github-username>/<repo-name>`
 * `youtube`: YouTube \x[videos][videos]
-
-Properties that are valid for every provider:
-* `default-for`: use this provider as the default for the given types of listed macros.
-
-  The first character of the macros are case insensitive and must be given as lower case. Therefore e.g.:
-  * `image` applies to both `image` and `Image`
-  * giving `Image` is an error because that starts with an upper case character
 
 See also: https://github.com/cirosantilli/cirodown/issues/40
 

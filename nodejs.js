@@ -80,11 +80,13 @@ class SqliteIdProvider extends cirodown.IdProvider {
   }
 
   add_row_to_id_cache(row) {
-    const ast = cirodown.AstNode.fromJSON(row.ast_json)
-    ast.input_path = row.path
-    ast.id = row.idid
-    this.id_cache[ast.id] = ast
-    return ast
+    if (row !== null) {
+      const ast = cirodown.AstNode.fromJSON(row.ast_json)
+      ast.input_path = row.path
+      ast.id = row.idid
+      this.id_cache[ast.id] = ast
+      return ast
+    }
   }
 
   async get_noscopes_base_fetch(ids, ignore_paths_set) {

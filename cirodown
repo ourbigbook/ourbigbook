@@ -65,9 +65,7 @@ class SqliteFileProvider extends cirodown.FileProvider {
     })
     for (const row of rows) {
       this.get_path_entry_cache[row.path] = row
-      if (row.Id !== null) {
-        this.id_provider.add_row_to_id_cache(row.Id)
-      }
+      this.id_provider.add_row_to_id_cache(row.Id)
     }
   }
 

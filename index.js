@@ -2052,7 +2052,7 @@ function macro_image_video_block_convert_function(ast, context) {
     ast, context, src, rendered_attrs, alt, media_provider_type, is_url);
   if (has_caption) {
     ret += `<figcaption>${x_text(ast, context, {href_prefix:
-      href_prefix, force_separator: force_separator})}${description}${source}</figcaption>\n`;
+      href_prefix, force_separator: force_separator})}${source}${description}</figcaption>\n`;
   }
   ret += '</figure>\n';
   return ret;

@@ -6,7 +6,7 @@
 {c}
 {synonym}
 
-The OurBigBook Project aims to create the ultimate tool to publish textbooks/<#personal knowledge bases>/<#Zettelkasten>/<#digital gardens> in the <#learn in public> philosophy, and to be our best shot yet at the final real-world <#Encyclopedia Galactica> by allowing effective <#mindmeld>[mind melding]/<#collective intelligence>.
+The OurBigBook Project is creating the ultimate tool to publish textbooks/<#personal knowledge bases>/<#Zettelkasten>/<#digital gardens> in the <#learn in public> philosophy, and to be our best shot yet at the final real-world <#Encyclopedia Galactica> by allowing effective <#mindmeld>[mind melding]/<#collective intelligence>.
 
 \Image[logo.svg]
 {height=150}
@@ -29,7 +29,9 @@ Notable features:
   {disambiguate=intro}
   {height=700}
   {width=700}
-* you can store all your data locally in a <OurBigBook Markup>[plaintext markup format] that can be edited locally and published in various ways, including as a <static website>
+* you can store all your data locally in a <OurBigBook Markup>[plaintext markup format] that can be edited locally and published either:
+  * to <OurBigBook.com> to get awesome multi-user features like <OurBigBook Web topics>
+  * as a <static website>, which you can host yourself for free on many external providers like GitHub Pages, and remain in full control
 
   \Video[https://www.youtube.com/watch?v=Ghvlztiu6rI]
   {title=Edit locally and publish demo}
@@ -8000,7 +8002,9 @@ More subjective rationale, motivation and planning aspects of the project are do
 {c}
 {parent=OurBigBook Web}
 
-<OurBigBook Web> is a bit like Wikipedia, but where each user can have their own version of each page, and it <can my OurBigBook.com content be edited or removed by other users?>[cannot be edited by others without permission].
+<OurBigBook Web> is a bit like <#Wikipedia>, but where each user can have their own version of each page, and it <can my OurBigBook.com content be edited or removed by other users?>[cannot be edited by others without permission].
+
+And it is also a bit like <#Obsidian>, because you can also edit your notes in plaintext markup files and publish either on OurBigBook.com or as a static HTML website on your own domain.
 
 The goal of the <OurBigBook Project> is to make university students write perfect natural sciences books for free as they are trying to learn for their lectures.
 
@@ -9602,12 +9606,12 @@ web/bin/normalize -c -u barack-obama article-issue-count
 
 Print the full correct normalized state with `-p`:
 ``
-web/bin/normalize -f -u issue-follower-count
+web/bin/normalize -f -u barack-obama issue-follower-count
 ``
 
 Fix the counts of issue follower if any are wrong with `-f`, thus potentially altering the database:
 ``
-web/bin/normalize -f -u issue-follower-count
+web/bin/normalize -f -u barack-obama ssue-follower-count
 ``
 
 = web/bin/rerender-articles.js

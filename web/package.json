@@ -8,7 +8,6 @@
     "build": "cd frontend && npm run build",
     "dev": "concurrently --kill-others 'npm run front --' 'npm run back --'",
     "front": "cd frontend && npm start",
-    "heroku-postbuild": "npm run build",
     "preinstall": "cd frontend && npm install",
     "start": "node --unhandled-rejections=strict ./app.js"
   },
@@ -48,6 +47,5 @@
     "nodemon": "^1.11.0",
     "prettier": "^1.12.1",
     "sqlite3": "^4.0.0"
-  },
-  "cacheDirectories": ["node_modules", "frontend/node_modules"]
+  }
 }

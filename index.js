@@ -318,6 +318,7 @@ Macro.HEADER_MACRO_NAME = 'h';
 Macro.ID_ARGUMENT_NAME = 'id';
 Macro.LINK_SELF = `(link ${String.fromCodePoint(0x1F517)})`;
 Macro.TITLE_ARGUMENT_NAME = 'title';
+Macro.TOC_MACRO_NAME = 'toc';
 Macro.TOC_PREFIX = 'toc-'
 
 class Token {
@@ -735,6 +736,7 @@ function convert(
   let context = {
     errors: errors,
     extra_returns: extra_returns,
+    has_toc: sub_extra_returns.has_toc,
     header_graph: sub_extra_returns.header_graph,
     ids: sub_extra_returns.ids,
     macros: macros,
@@ -987,6 +989,7 @@ function parse(tokens, macros, options, extra_returns={}) {
   let header_graph_last_level = 0;
   extra_returns.header_graph = new TreeNode();
   let header_graph_stack = {0: extra_returns.header_graph};
+  extra_returns.has_toc = false;
   while (todo_visit.length > 0) {
     const node = todo_visit.shift();
     const macro_name = node.macro_name;
@@ -1037,6 +1040,10 @@ function parse(tokens, macros, options, extra_returns={}) {
       }
       header_graph_stack[level] = new_tree_node;
       header_graph_last_level = level;
+    }
+
+    if (macro_name === Macro.TOC_MACRO_NAME) {
+      extra_returns.has_toc = true;
     }
 
     // Loop over the child arguments.
@@ -1468,7 +1475,9 @@ const DEFAULT_MACRO_LIST = [
       let toc_href = html_attr('href', '#' + Macro.TOC_PREFIX + ast.id);
       ret += this.x_text(ast, context, {show_caption_prefix: false});
       ret += `</a>`;
-      ret += `<span> <a${toc_href}>(toc \u2191)</a></span>`;
+      if (context.has_toc) {
+        ret += `<span> <a${toc_href}>(toc \u2191)</a></span>`;
+      }
       ret += `</h${level}>\n`;
       return ret;
     },
@@ -1685,7 +1694,7 @@ const DEFAULT_MACRO_LIST = [
     html_convert_simple_elem('td'),
   ),
   new Macro(
-    'toc',
+    Macro.TOC_MACRO_NAME,
     [],
     function(ast, context) {
       let ret = `<div class="toc-container">\n`;

@@ -3245,6 +3245,7 @@ function convert_init_context(options={}, extra_returns={}) {
   perf_print(context, 'start_convert')
   return context;
 }
+exports.convert_init_context = convert_init_context
 
 /* Like x_href, but called with options as convert,
  * so that we don't have to fake a complex context. */
@@ -8463,16 +8464,16 @@ const OUTPUT_FORMATS_LIST = [
           let header_meta = [];
           let header_meta2 = [];
           if (file_link_html !== undefined) {
-            header_meta2.push(file_link_html);
+            header_meta.push(file_link_html);
           }
           if (wiki_link !== undefined) {
-            header_meta2.push(wiki_link);
+            header_meta.push(wiki_link);
           }
           if (!first_header && parent_links !== undefined) {
-            header_meta2.push(parent_links);
+            header_meta.push(parent_links);
           }
           if (tag_ids_html_array.length) {
-            header_meta2.push(tag_ids_html);
+            header_meta.push(tag_ids_html);
           }
           if (first_header) {
             if (parent_links !== '') {

@@ -3507,7 +3507,7 @@ assert_lib_ast('x: cross reference magic insane to header file argument',
   undefined,
   {
     assert_xpath_stdout: [
-      "//x:div[@class='p']//x:a[@href='#_file/path/to/my_file.jpg' and text()='path/to/my_file.jpg']",
+      `//x:div[@class='p']//x:a[@href='#${ourbigbook.FILE_PREFIX}/path/to/my_file.jpg' and text()='path/to/my_file.jpg']`,
     ],
     filesystem: {
       'path/to/my_file.jpg': '',
@@ -5540,10 +5540,10 @@ assert_lib('header: file argument ignores text files on nosplit if they are too 
       'index.html': [
         `//x:pre//x:code[text()='aaaa']`,
       ],
-      '_file/small.txt.html': [
+      [`${ourbigbook.FILE_PREFIX}/small.txt.html`]: [
         `//x:pre//x:code[text()='aaaa']`,
       ],
-      '_file/big.txt.html': [
+      [`${ourbigbook.FILE_PREFIX}/big.txt.html`]: [
         // TODO we want this to show. https://docs.ourbigbook.com/todo/render-large-files-on-split-headers
         //`//x:pre//x:code[starts-with(text(), 'bbbb')]`,
       ],
@@ -11033,6 +11033,43 @@ assert_cli(
 }
 `,
     },
+  }
+)
+// ignores
+assert_cli(
+  'json: ignoreConvert: ignores files for convertion but adds them on listings',
+  {
+    args: ['.'],
+    filesystem: {
+      'README.bigb': `= Index
+`,
+      'bigb-ignored.bigb': `= Bigb ignored
+`,
+      'scss-ignored.scss': ``,
+      'subdir-ignored/style.scss': ``,
+      'ourbigbook.json': `{
+  "ignoreConvert": [
+    "bigb-ignored\\\\.bigb",
+    "scss-ignored\\\\.scss",
+    "subdir-ignored"
+  ],
+  "dontIgnore": [
+    "subdir-dont/.*\\\\.ignore"
+  ]
+}
+`,
+    },
+    assert_exists: [
+      `out/html/${ourbigbook.DIR_PREFIX}/index.html`,
+      `out/html/${ourbigbook.RAW_PREFIX}/bigb-ignored.bigb`,
+      `out/html/${ourbigbook.RAW_PREFIX}/scss-ignored.scss`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir-ignored/style.scss`,
+    ],
+    assert_not_exists: [
+      `out/html/bigb-ignored.html`,
+      `out/html/${ourbigbook.RAW_PREFIX}/scss-ignored.css`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir-ignored/style.css.`,
+    ],
   }
 )
 assert_cli(

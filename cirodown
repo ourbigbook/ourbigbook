@@ -20,7 +20,7 @@ const cirodown_nodejs = require('cirodown/nodejs');
 const CIRODOWN_EXT = '.ciro';
 const CIRODOWN_JSON = 'cirodown.json';
 const SASS_EXT = '.scss';
-const OUT_DIRNAME = 'out';
+const TMP_DIRNAME = 'out';
 const DEFAULT_IGNORE_BASENAMES = [
   '.git',
   '.gitignore',
@@ -29,7 +29,7 @@ const DEFAULT_IGNORE_BASENAMES = [
   'node_modules',
   'package-lock.json',
   'package.json',
-  OUT_DIRNAME,
+  TMP_DIRNAME,
   cirodown_nodejs.PACKAGE_SASS_BASENAME,
 ];
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
@@ -471,13 +471,13 @@ if (commander.helpMacros) {
       // Not in a git repo.
     }
   }
+  let outdir;
+  if (commander.outdir === undefined) {
+    outdir = '.';
+  } else {
+    outdir = commander.outdir;
+  }
   if (commander.generate || commander.generateMultifile) {
-    let outdir;
-    if (commander.outdir !== undefined) {
-      outdir = commander.outdir;
-    } else {
-      outdir = '.';
-    }
     fs.mkdirSync(outdir, {recursive: true});
 
     // Generate package.json.
@@ -553,7 +553,7 @@ A link to another file: \\x[and-now-an-include]
       cli_error(`input_path does not exist: "${inputPath}"`);
     }
     let input_path_is_file;
-    let outdir;
+    let tmpdir;
     let publish_dir;
     let publish_out_dir;
     let cmd_options = {
@@ -562,19 +562,19 @@ A link to another file: \\x[and-now-an-include]
     }
     if (fs.lstatSync(inputPath).isFile()) {
       input_path_is_file = true;
-      outdir = OUT_DIRNAME;
+      tmpdir = TMP_DIRNAME;
     } else {
       input_path_is_file = false;
-      outdir = path.join(inputPath, OUT_DIRNAME);
+      tmpdir = path.join(inputPath, TMP_DIRNAME);
       if (publish) {
-        publish_dir = path.join(outdir, 'publish');
+        publish_dir = path.join(tmpdir, 'publish');
         publish_git_dir = path.join(publish_dir, '.git');
         if (fs.existsSync(publish_git_dir)) {
           // This cleanup has to be done before the database initialization.
           cmd_get_stdout('git', ['-C', publish_dir, 'clean', '-x', '-d', '-f'], cmd_options);
         }
-        outdir = path.join(publish_dir, OUT_DIRNAME);
-        publish_out_dir = path.join(publish_dir, OUT_DIRNAME);
+        tmpdir = path.join(publish_dir, TMP_DIRNAME);
+        publish_out_dir = path.join(publish_dir, TMP_DIRNAME);
       }
       if (commander.outfile !== undefined) {
         cli_error(`--outfile given but multiple output files must be generated, maybe you want --outdir?`);
@@ -582,8 +582,8 @@ A link to another file: \\x[and-now-an-include]
     }
 
     // Setup the ID database.
-    fs.mkdirSync(outdir, {recursive: true});
-    const db_path = path.join(outdir, 'db.sqlite3');
+    fs.mkdirSync(tmpdir, {recursive: true});
+    const db_path = path.join(tmpdir, 'db.sqlite3');
     const ids_table_name = 'ids';
     const includes_table_name = 'includes';
     const db = new better_sqlite3(db_path);
@@ -618,7 +618,6 @@ A link to another file: \\x[and-now-an-include]
     convert_input_options.db = db;
     convert_input_options.ids_table_name = ids_table_name;
     convert_input_options.includes_table_name = includes_table_name;
-
     if (commander.watch) {
       if (publish) {
         cli_error('--publish and --watch are incompatible');
@@ -690,7 +689,7 @@ A link to another file: \\x[and-now-an-include]
           cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'rm', '-r', '-f', '.'], cmd_options);
         } else {
           actual_input = inputPath;
-          convert_input_options.outdir = commander.outdir;
+          convert_input_options.outdir = outdir;
         }
 
         // Do the actual conversion.
@@ -738,6 +737,44 @@ A link to another file: \\x[and-now-an-include]
           cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'commit', '-m', source_commit], cmd_options);
           cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'push', 'origin', `${publish_branch}:${publish_branch}`], cmd_options);
         }
+      }
+    }
+    // Generate redirects.
+    // https://cirosantilli.com/cirodown#redirects
+    if (!input_path_is_file) {
+      const id_provider = new SqliteIdProvider(convert_input_options);
+      for (let redirect_src_id in cirodown_json.redirects) {
+        const redirect_target_id = cirodown_json.redirects[redirect_src_id];
+        const redirect_href = cirodown.x_href(
+          id_provider.get(redirect_target_id), {
+            // This will need changing when we do:
+            // https://github.com/cirosantilli/cirodown/issues/44
+            // The simple solution is to just make all redirects point
+            // to the index in that case.
+            include_path_set: new Set(),
+            options: {
+              input_path: redirect_src_id,
+              html_x_extension: html_x_extension,
+            }
+          }
+        );
+        // https://stackoverflow.com/questions/10178304/what-is-the-best-approach-for-redirection-of-old-pages-in-jekyll-and-github-page/36848440#36848440
+        fs.writeFileSync(path.join(outdir, redirect_src_id + '.html'),
+`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Redirecting...</title>
+<link rel="canonical" href="${redirect_href}"/>
+<meta http-equiv="refresh" content="0;url=${redirect_href}" />
+</head>
+<body>
+<h1>Redirecting...</h1>
+<a href="${redirect_href}">Click here if you are not redirected.<a>
+<script>location='${redirect_href}'</script>
+</body>
+</html>
+`);
       }
     }
   }

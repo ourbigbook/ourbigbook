@@ -1,4 +1,8 @@
 {
-    "prepublish": "prepublish",
-    "template": "main.liquid.html"
+  "prepublish": "prepublish",
+  "redirects": {
+    "not-readme-redirect-test": "not-readme",
+    "quick-start-redirect-test": "quick-start"
+  },
+  "template": "main.liquid.html"
 }

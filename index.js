@@ -485,76 +485,6 @@ class Macro {
       named_args: this.named_args,
     }
   }
-
-  /** Calculate the text of a cross reference, or the text
-   * that the caption text that cross references can refer to, e.g.
-   * "Table 123. My favorite table". Both are done in a single function
-   * so that style_full references will show very siimlar to the caption
-   * they refer to.
-   *
-   * @param {Object} options
-   *   @param {Object} href_prefix rendered string containing the href="..."
-   *   part of a link to self to be applied e.g. to <>Figure 1<>, of undefined
-   *   if this link should not be given.
-   */
-  static x_text(ast, context, options={}) {
-    if (!('caption_prefix_span' in options)) {
-      options.caption_prefix_span = true;
-    }
-    if (!('quote' in options)) {
-      options.quote = false;
-    }
-    if (!('href_prefix' in options)) {
-      options.href_prefix = undefined;
-    }
-    if (!('show_caption_prefix' in options)) {
-      options.show_caption_prefix = true;
-    }
-    const macro = context.macros[ast.macro_name];
-    let style_full;
-    if ('style_full' in options) {
-      style_full = options.style_full;
-    } else {
-      style_full = macro.options.default_x_style_full;
-    }
-    let ret = ``;
-    let number;
-    if (style_full) {
-      if (options.href_prefix !== undefined) {
-        ret += `<a${options.href_prefix}>`
-      }
-      if (options.show_caption_prefix) {
-        if (options.caption_prefix_span) {
-          ret += `<span class="caption-prefix">`;
-        }
-        ret += `${macro.options.caption_prefix} `;
-      }
-      number = macro.options.get_number(ast, context);
-      if (number !== undefined) {
-        ret += number;
-      }
-      if (options.show_caption_prefix && options.caption_prefix_span) {
-        ret += `</span>`;
-      }
-      if (options.href_prefix !== undefined) {
-        ret += `</a>`
-      }
-    }
-    if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
-      if (style_full) {
-        if (number !== undefined) {
-          ret += html_escape_context(context, `. `);
-        }
-        if (options.quote)
-          ret += html_escape_context(context, `"`);
-      }
-      ret += convert_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-      if (style_full && options.quote) {
-        ret += html_escape_context(context, `"`);
-      }
-    }
-    return ret;
-  }
 }
 // Macro names defined here are those that have magic properties, e.g.
 // headers are used by the 'toc'.
@@ -1673,7 +1603,7 @@ function macro_image_video_block_convert_function(ast, context) {
   }
   ret += macro.options.content_func(ast, context, src, rendered_attrs, alt, source_type);
   if (has_caption) {
-    ret += `<figcaption>${Macro.x_text(ast, context, {href_prefix: href_prefix})}${description}${source}</figcaption>\n`;
+    ret += `<figcaption>${x_text(ast, context, {href_prefix: href_prefix})}${description}${source}</figcaption>\n`;
   }
   ret += '</figure>\n';
   return ret;
@@ -1829,7 +1759,7 @@ function parse(tokens, macros, options, extra_returns={}) {
               show_caption_prefix: false,
               style_full: false,
             };
-            header_node_title = Macro.x_text(target_id_ast, id_context, x_text_options);
+            header_node_title = x_text(target_id_ast, id_context, x_text_options);
           }
           // Don't merge into a single file, render as a dummy header and an xref link instead.
           new_child_nodes = [
@@ -2650,7 +2580,79 @@ function x_href(target_id_ast, context) {
       href_path += '.html';
     }
   }
-  return html_attr('href', href_path + '#' + html_escape_attr(target_id_ast.id));
+  return html_escape_attr(href_path) + '#' + html_escape_attr(target_id_ast.id);
+}
+exports.x_href = x_href;
+
+/**
+ * Calculate the text of a cross reference, or the text
+ * that the caption text that cross references can refer to, e.g.
+ * "Table 123. My favorite table". Both are done in a single function
+ * so that style_full references will show very siimlar to the caption
+ * they refer to.
+ *
+ * @param {Object} options
+ * @param {Object} href_prefix rendered string containing the href="..."
+ *   part of a link to self to be applied e.g. to <>Figure 1<>, of undefined
+ *   if this link should not be given.
+ */
+function x_text(ast, context, options={}) {
+  if (!('caption_prefix_span' in options)) {
+    options.caption_prefix_span = true;
+  }
+  if (!('quote' in options)) {
+    options.quote = false;
+  }
+  if (!('href_prefix' in options)) {
+    options.href_prefix = undefined;
+  }
+  if (!('show_caption_prefix' in options)) {
+    options.show_caption_prefix = true;
+  }
+  const macro = context.macros[ast.macro_name];
+  let style_full;
+  if ('style_full' in options) {
+    style_full = options.style_full;
+  } else {
+    style_full = macro.options.default_x_style_full;
+  }
+  let ret = ``;
+  let number;
+  if (style_full) {
+    if (options.href_prefix !== undefined) {
+      ret += `<a${options.href_prefix}>`
+    }
+    if (options.show_caption_prefix) {
+      if (options.caption_prefix_span) {
+        ret += `<span class="caption-prefix">`;
+      }
+      ret += `${macro.options.caption_prefix} `;
+    }
+    number = macro.options.get_number(ast, context);
+    if (number !== undefined) {
+      ret += number;
+    }
+    if (options.show_caption_prefix && options.caption_prefix_span) {
+      ret += `</span>`;
+    }
+    if (options.href_prefix !== undefined) {
+      ret += `</a>`
+    }
+  }
+  if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
+    if (style_full) {
+      if (number !== undefined) {
+        ret += html_escape_context(context, `. `);
+      }
+      if (options.quote)
+        ret += html_escape_context(context, `"`);
+    }
+    ret += convert_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+    if (style_full && options.quote) {
+      ret += html_escape_context(context, `"`);
+    }
+  }
+  return ret;
 }
 
 const END_NAMED_ARGUMENT_CHAR = '}';
@@ -2881,7 +2883,7 @@ const DEFAULT_MACRO_LIST = [
         show_caption_prefix: false,
       };
       x_text_options.style_full = level_int !== context.header_graph_top_level;
-      ret += Macro.x_text(ast, context, x_text_options);
+      ret += x_text(ast, context, x_text_options);
       ret += `</a>`;
       ret += `<span> `;
       if (level_int !== context.header_graph_top_level) {
@@ -2901,7 +2903,7 @@ const DEFAULT_MACRO_LIST = [
       }
       parent_asts.push(...context.id_provider.get_includes(ast.id));
       for (const parent_ast of parent_asts) {
-        let parent_href = x_href(parent_ast, context);
+        let parent_href = html_attr('href', x_href(parent_ast, context));
         let parent_body = convert_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
         ret += ` | <a${parent_href}>\u2191 parent "${parent_body}"</a>`;
       }
@@ -2968,7 +2970,7 @@ const DEFAULT_MACRO_LIST = [
         ret += `<div class="math-container"${attrs}>`;
         if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
           ret += `<div class="math-caption-container">\n`;
-          ret += `<span class="math-caption">${Macro.x_text(ast, context, {href_prefix: href})}</span>`;
+          ret += `<span class="math-caption">${x_text(ast, context, {href_prefix: href})}</span>`;
           ret += `</div>\n`;
         }
         ret += `<div class="math-equation">\n`
@@ -3164,7 +3166,7 @@ const DEFAULT_MACRO_LIST = [
         let href = html_attr('href', '#' + html_escape_attr(ast.id));
         if (ast.id !== undefined && ast.index_id) {
           ret += `<div class="table-caption-container">\n`;
-          ret += `<span class="table-caption">${Macro.x_text(ast, context, {href_prefix: href})}</span>`;
+          ret += `<span class="table-caption">${x_text(ast, context, {href_prefix: href})}</span>`;
           ret += `</div>\n`;
         }
       }
@@ -3214,7 +3216,7 @@ const DEFAULT_MACRO_LIST = [
           ret += `</li>\n`;
         }
         let target_ast = tree_node.value;
-        let content = Macro.x_text(target_ast, context, {style_full: true, show_caption_prefix: false});
+        let content = x_text(target_ast, context, {style_full: true, show_caption_prefix: false});
         let target_id = html_escape_attr(target_ast.id);
         let href = html_attr('href', '#' + target_id);
         let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, Macro.TOC_PREFIX + target_id);
@@ -3378,7 +3380,7 @@ const DEFAULT_MACRO_LIST = [
         if (ast.validation_output.full.given) {
           x_text_options.style_full = ast.validation_output.full.boolean;
         }
-        content = Macro.x_text(target_id_ast, context, x_text_options);
+        content = x_text(target_id_ast, context, x_text_options);
         if (content === ``) {
           let message = `empty cross reference body: "${target_id}"`;
           render_error(context, message, ast.line, ast.column);
@@ -3388,7 +3390,7 @@ const DEFAULT_MACRO_LIST = [
         content = convert_arg(content_arg, context);
       }
       const attrs = html_convert_attrs_id(ast, context);
-      const href = x_href(target_id_ast, context);
+      const href = html_attr('href', x_href(target_id_ast, context));
       return `<a${href}${attrs}>${content}</a>`;
     },
     {

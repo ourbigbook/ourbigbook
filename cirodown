@@ -28,13 +28,13 @@ class AstNode {
     this.column = column;
     // {String} or undefined.
     this.id = undefined;
-    const macro = macros[this.macro_name];
+    this.macro = macros[this.macro_name];
 
     // Set all non-given arguments to empty plaintext nodes by default,
     // and store which args were given or not.
     this.args_given = new Set();
     if (this.node_type === AstType.MACRO) {
-      for (const arg_name in macro.name_to_arg) {
+      for (const arg_name in this.macro.name_to_arg) {
         if (arg_name in this.args) {
           this.args_given.add(arg_name);
         } else {
@@ -186,6 +186,9 @@ class Macro {
     if (!('caption_prefix' in options)) {
       options.caption_prefix = capitalize_first_letter(name);
     }
+    if (!('x_style' in options)) {
+      options.x_style = 'full';
+    }
     this.name = name;
     this.positional_args = positional_args;
     {
@@ -265,6 +268,37 @@ class Macro {
       named_args: this.named_args,
       properties: this.properties,
     }
+  }
+
+  x_text(ast, context, options={}) {
+    if (!('quote' in options)) {
+      options.quote = false;
+    }
+    if (!('show_caption_prefix' in options)) {
+      options.show_caption_prefix = true;
+    }
+    if (!('style' in options)) {
+      options.style = 'full';
+    }
+    let ret = ``;
+    if (options.style === 'full') {
+      if (options.show_caption_prefix) {
+        ret += `${ast.macro.options.caption_prefix} `;
+      }
+      ret += ast.macro_count;
+    }
+    if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
+      if (options.style === 'full') {
+        ret += html_escape_context(context, `. `);
+        if (options.quote)
+          ret += html_escape_context(context, `"`);
+      }
+      ret += convert_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+      if (options.style === 'full' && options.quote) {
+        ret += html_escape_context(context, `"`);
+      }
+    }
+    return ret;
   }
 }
 Macro.ID_ARGUMENT_NAME = 'id'
@@ -711,7 +745,7 @@ function convert_arg(arg, context) {
  * @param {Array[AstNode]} arg
  * @return {String}
  */
-function convert_id_arg(arg, context={}) {
+function convert_arg_noescape(arg, context={}) {
   return convert_arg(arg, clone_and_set(context, 'html_escape', false));
 }
 
@@ -798,6 +832,13 @@ function html_convert_attrs_id(
   return html_convert_attrs(ast, context, arg_names, custom_args);
 }
 
+function html_escape_attr(str) {
+  return html_escape_content(str)
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+  ;
+}
+
 function html_escape_content(str) {
   return str
     .replace(/&/g, '&amp;')
@@ -806,11 +847,16 @@ function html_escape_content(str) {
   ;
 }
 
-function html_escape_attr(str) {
-  return html_escape_content(str)
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-  ;
+function html_escape_context(context, str) {
+  if (context.html_escape) {
+    if (context.html_is_attr) {
+      return html_escape_attr(str);
+    } else {
+      return html_escape_content(str);
+    }
+  } else {
+    return str;
+  }
 }
 
 /** Helper for the most common HTML function type that does "nothing magic":
@@ -906,7 +952,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     // Calculate node ID and add it to the ID index.
     let id_context = {'macros': macros};
     if (node.arg_given(Macro.ID_ARGUMENT_NAME)) {
-      node.id = convert_id_arg(node.args[Macro.ID_ARGUMENT_NAME], id_context);
+      node.id = convert_arg_noescape(node.args[Macro.ID_ARGUMENT_NAME], id_context);
     } else if (node.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
       // TODO correct unicode aware algorithm.
       let id_text = '';
@@ -914,7 +960,7 @@ function parse(tokens, macros, options, extra_returns={}) {
       if (id_prefix !== '') {
         id_text += id_prefix + ID_SEPARATOR
       }
-      id_text += title_to_id(convert_id_arg(node.args.title, id_context));
+      id_text += title_to_id(convert_arg_noescape(node.args.title, id_context));
       node.id = id_text;
     }
     if (node.id !== undefined) {
@@ -1344,11 +1390,12 @@ const DEFAULT_MACRO_LIST = [
         custom_args = {};
       }
       let attrs = html_convert_attrs_id(ast, context, [], custom_args);
-      let title = convert_arg(ast.args.title, context);
-      return `<h${level}${attrs}><a${this.self_link(ast)}>${title}</a></h${level}>\n`;
+      return `<h${level}${attrs}><a${this.self_link(ast)}>${this.x_text(ast, context, {show_caption_prefix: false})}</a></h${level}>\n`;
     },
     {
+      caption_prefix: 'Section',
       id_prefix: '',
+      x_style: 'short',
     }
   ),
   new Macro(
@@ -1420,12 +1467,7 @@ const DEFAULT_MACRO_LIST = [
         ret += `</a>`;
       }
       ret += `\n`;
-      ret += `<figcaption>${this.options.caption_prefix} ${ast.macro_count})`;
-      if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
-        let figcaption_content = convert_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-        ret += ` ${figcaption_content}`;
-      }
-      ret += `</figcaption>\n`;
+      ret += `<figcaption>${this.x_text(ast, context)}</figcaption>\n`;
       ret += '</figure>\n';
       return ret;
     },
@@ -1478,15 +1520,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      if (context.html_escape) {
-        if (context.html_is_attr) {
-          return html_escape_attr(ast.args);
-        } else {
-          return html_escape_content(ast.args);
-        }
-      } else {
-        return ast.args;
-      }
+      return html_escape_context(context, ast.args);
     },
     {
       properties: {
@@ -1575,21 +1609,26 @@ const DEFAULT_MACRO_LIST = [
 <link href="https://netdna.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet"/>
 
 <style>
-/* Minimal table styling. */
 .katex { font-size: 1.5em; }
 body {
   padding-left: 15px;
   padding-right: 15px;
 }
-caption {
-  caption-side: bottom;
-  color: black;
-  text-align: left;
-}
+
+
+// Headers are links to self, but we want them always black.
 h1 a:link, h2 a:link, h3 a:link, h4 a:link, h5 a:link, h6 a:link,
 h1 a:visited, h2 a:visited, h3 a:visited, h4 a:visited, h5 a:visited, h6 a:visited {
   color: black;
 }
+
+// Tables
+// https://tex.stackexchange.com/questions/3243/why-should-a-table-caption-be-placed-above-the-table
+caption {
+  color: black;
+  text-align: left;
+}
+// Add borders!
 table {
   border-collapse: collapse;
 }
@@ -1655,18 +1694,26 @@ th, td {
     ],
     function(ast, context) {
       let content_arg;
-      let target_id = convert_id_arg(ast.args.href, context);
+      let target_id = convert_arg_noescape(ast.args.href, context);
       if (target_id in context.ids) {
         target_id_ast = context.ids[target_id];
         let content;
         if (ast.arg_given('content')) {
           content = convert_arg(ast.args.content, context);
-        } else if (target_id_ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
-          content = convert_arg(target_id_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
         } else {
-          let message = `cross reference without content to target without title: "${target_id}"`;
-          this.error(context, message, ast.line, ast.column);
-          return error_message_in_output(message);
+          let x_text_options = {
+            style: target_id_ast.macro.options.x_style,
+            quote: true,
+          };
+          if (ast.arg_given('style')) {
+            x_text_options.style = convert_arg_noescape(ast.args.style, context);
+          }
+          content = this.x_text(target_id_ast, context, x_text_options);
+          if (content === ``) {
+            let message = `empty cross reference body: "${target_id}"`;
+            this.error(context, message, ast.line, ast.column);
+            return error_message_in_output(message);
+          }
         }
         let attrs = html_convert_attrs_id(ast, context);
         let href = html_attr('href', '#' + html_escape_attr(target_id));
@@ -1680,6 +1727,7 @@ th, td {
     {
       named_args: [
         new MacroArgument({
+          // TODO restrict to valid choices.
           name: 'style',
         }),
       ],

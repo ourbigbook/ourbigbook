@@ -3056,7 +3056,7 @@ function parse_argument_list(state, macro_name, macro_type) {
     if (arg_name in args) {
       // https://github.com/cirosantilli/cirodown/issues/101
       parse_error(state,
-        `named argument ${arg_name} given multiple times`,
+        `named argument "${arg_name}" given multiple times`,
         open_token.line,
         open_token.column
       );

@@ -612,8 +612,7 @@ class FileProvider {
 
   async get_path_entry(path) { throw new Error('unimplemented'); }
 
-  /* Get entry by ID. */
-  async get_id(id) { throw new Error('unimplemented'); }
+  async get_path_entry_fetch(path) { throw new Error('unimplemented'); }
 }
 exports.FileProvider = FileProvider;
 
@@ -4652,10 +4651,9 @@ async function parse(tokens, options, context, extra_returns={}) {
     const ids = Object.keys(include_options.indexed_ids)
     let id_conflict_asts_promise
     if (ids.length) {
-      id_conflict_asts_promise = options.id_provider.get_noscopes_base(
+      id_conflict_asts_promise = options.id_provider.get_noscopes_base_fetch(
         ids,
         context.include_path_set,
-        { use_db: true },
       )
     } else {
       id_conflict_asts_promise = true
@@ -4663,10 +4661,8 @@ async function parse(tokens, options, context, extra_returns={}) {
 
     const [id_conflict_asts,,,] = await Promise.all([
       id_conflict_asts_promise,
-      options.id_provider.get_noscopes_base(
-        prefetch_ids,
-        undefined,
-        { use_db: true },
+      options.id_provider.get_noscopes_base_fetch(
+        Array.from(prefetch_ids),
       ),
 
       // TODO merge these two into one single DB query. Lazy now.

@@ -50,7 +50,9 @@ module.exports = {
   appName: `OurBigBook.com`,
   buttonActiveClass: 'active',
   defaultProfileImage: `https://static.productionready.io/images/smiley-cyrus.jpg`,
+  // Default.
   articleLimit: 20,
+  // Max allowed to be set by user.
   articleLimitMax: 20,
   defaultUserScoreTitle: 'Sum of likes of all articles authored by user',
   /** @type {boolean | 'blocking'} */
@@ -71,6 +73,8 @@ module.exports = {
   isProductionNext: process.env.NODE_ENV_NEXT_SERVER_ONLY === undefined ?
     (isProduction) :
     (process.env.NODE_ENV_NEXT_SERVER_ONLY === 'production'),
+  // Per user limit defaults.
+  maxArticleTitleSize: 1024,
   maxArticleSize: 100000,
   maxArticles: 1000,
   secret: isProduction ? process.env.SECRET : 'secret',

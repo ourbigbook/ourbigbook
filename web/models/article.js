@@ -14,11 +14,11 @@ module.exports = (sequelize) => {
     {
       // E.g. `johnsmith/mathematics`.
       slug: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
         unique: {
           message: 'The article ID must be unique.'
         },
-      set(v) {
+        set(v) {
           this.setDataValue('slug', v.toLowerCase())
         },
         allowNull: false,
@@ -26,7 +26,7 @@ module.exports = (sequelize) => {
       // E.g. for `johnsmith/mathematics` this is just the `mathematics`.
       // Can't be called just `id`, sequelize complains that it is not a primary key with that name.
       topicId: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
         allowNull: false,
       },
       // Rendered title.
@@ -37,6 +37,12 @@ module.exports = (sequelize) => {
       titleSource: {
         type: DataTypes.TEXT,
         allowNull: false,
+        validate: {
+          len: {
+            args: [1, config.maxArticleTitleSize],
+            msg: `Titles can have at most ${config.maxArticleTitleSize} characters`
+          },
+        }
       },
       titleSourceLine: {
         type: DataTypes.INTEGER,

@@ -1,6 +1,7 @@
 const router = require('express').Router()
 
 const auth = require('../auth')
+const config = require('../front/config')
 const { cant } = require('../front/cant')
 const front = require('../front/js')
 const { convertIssue, convertComment } = require('../convert')

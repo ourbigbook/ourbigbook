@@ -266,6 +266,12 @@ class AstNode {
     if (!('ignore_errors' in context)) {
       context.ignore_errors = false;
     }
+    if (!('in_literal' in context)) {
+      context.in_literal = false;
+    }
+    if (!('li_depth' in context)) {
+      context.li_depth = 0;
+    }
     if (!('katex_macros' in context)) {
       context.katex_macros = {};
     }
@@ -434,6 +440,10 @@ class AstNode {
         return true;
       }
     }
+  }
+
+  is_last_in_argument() {
+    return this.parent_argument_index === this.parent_argument.length() - 1
   }
 
   /** Manual implementation. There must be a better way, but I can't find it...
@@ -967,6 +977,7 @@ class MacroArgument {
    * @param {String} name
    */
   constructor(options) {
+    options = Object.assign({}, options)
     if (!('elide_link_only' in options)) {
       // If the only thing contained in this argument is a single
       // Macro.LINK_MACRO_NAME macro, AST post processing instead extracts
@@ -996,6 +1007,9 @@ class MacroArgument {
       // https://cirosantilli.com/ourbigbook#multiple-argument
       options.multiple = false;
     }
+    if (!('ourbigbook_output_prefer_literal' in options)) {
+      options.ourbigbook_output_prefer_literal = false
+    }
     if (!('positive_nonzero_integer' in options)) {
       options.positive_nonzero_integer = false;
     }
@@ -1012,6 +1026,7 @@ class MacroArgument {
     this.name = options.name;
     this.positive_nonzero_integer = options.positive_nonzero_integer;
     this.remove_whitespace_children = options.remove_whitespace_children;
+    this.ourbigbook_output_prefer_literal = options.ourbigbook_output_prefer_literal;
   }
 }
 
@@ -6733,6 +6748,7 @@ const DEFAULT_MACRO_LIST = [
       new MacroArgument({
         name: 'content',
         count_words: true,
+        ourbigbook_output_prefer_literal: true,
       }),
     ],
     {
@@ -6760,6 +6776,7 @@ const DEFAULT_MACRO_LIST = [
       new MacroArgument({
         name: 'content',
         count_words: true,
+        ourbigbook_output_prefer_literal: true,
       }),
     ],
     {
@@ -6916,6 +6933,7 @@ const DEFAULT_MACRO_LIST = [
       new MacroArgument({
         name: 'content',
         count_words: true,
+        ourbigbook_output_prefer_literal: true,
       }),
     ],
     {
@@ -6948,6 +6966,7 @@ const DEFAULT_MACRO_LIST = [
       new MacroArgument({
         name: 'content',
         count_words: true,
+        ourbigbook_output_prefer_literal: true,
       }),
     ],
     {
@@ -7406,104 +7425,6 @@ function create_link_list(context, ast, id, title, target_ids, body) {
     ret += incoming_ul_ast.render(new_context);
   }
   return ret
-}
-
-function ourbigbook_code_math_inline(c) {
-  return function(ast, context) {
-    const content = render_arg(ast.args.content, context)
-    if (content.indexOf(c) === -1) {
-      return `${c}${content}${c}`
-    } else {
-      return ourbigbook_convert_simple_elem(ast, context)
-    }
-  }
-}
-
-function ourbigbook_code_math_block(c) {
-  return function(ast, context) {
-    const content = render_arg(ast.args.content, context)
-    let found = true
-    let delim = c + c
-    while (content.indexOf(c) !== -1) {
-      delim += c
-    }
-    return `${delim}
-${content}${delim}
-
-`
-  }
-}
-
-function ourbigbook_ul(ast, context) {
-  if (!ast.args.content || Object.keys(ast.args).length !== 1) {
-    return ourbigbook_convert_simple_elem(ast, context)
-  } else {
-    return `${render_arg(ast.args.content, context)}\n`
-  }
-}
-
-function ourbigbook_convert_args(ast, context, options={}) {
-  const ret = options.ret || []
-  const skip = options.skip || new Set()
-  const macro = context.macros[ast.macro_name]
-  for (const arg of macro.positional_args) {
-    const argname = arg.name
-    if (!skip.has(argname) && ast.validation_output[argname].given) {
-      ret.push(START_POSITIONAL_ARGUMENT_CHAR)
-      if (arg.remove_whitespace_children) {
-        ret.push('\n')
-      }
-      ret.push(
-        render_arg(ast.args[argname], context) +
-        END_POSITIONAL_ARGUMENT_CHAR
-      )
-      if (!macro.options.phrasing) {
-        ret.push('\n')
-      }
-    }
-  }
-  for (const argname of Macro.COMMON_ARGNAMES.concat(macro.options.named_args.map(arg => arg.name))) {
-    const arg = macro.named_args[argname]
-    const validation_output = ast.validation_output[argname]
-    if (!skip.has(argname) && validation_output.given) {
-      const macro_arg = macro.name_to_arg[argname]
-      const argstr = render_arg(ast.args[argname], context)
-      let skip_val = false
-      if (macro_arg.boolean) {
-        const argstr_default = macro_arg.default === undefined ? '0' : '1'
-        const argstr_eff = validation_output.boolean ? '1' : '0'
-        if (argstr_default === argstr_eff) {
-          continue
-        }
-        skip_val = validation_output.boolean
-      } else if(argstr === '') {
-        skip_val = true
-      }
-      ret.push(
-        START_NAMED_ARGUMENT_CHAR +
-        argname
-      )
-      if (!skip_val) {
-        ret.push(NAMED_ARGUMENT_EQUAL_CHAR + argstr)
-      }
-      ret.push(END_NAMED_ARGUMENT_CHAR)
-      if (!macro.options.phrasing) {
-        ret.push('\n')
-      }
-    }
-  }
-  return ret
-}
-
-function ourbigbook_convert_simple_elem(ast, context) {
-  const ret = []
-  ret.push(ESCAPE_CHAR + ast.macro_name)
-  const macro = context.macros[ast.macro_name]
-  ourbigbook_convert_args(ast, context, { ret })
-  if (!macro.options.phrasing) {
-    ret.push('\n')
-  }
-  return ret.join('')
 }
 
 class OutputFormat {
@@ -8342,6 +8263,151 @@ const OUTPUT_FORMATS_LIST = [
       }
     }
   ),
+]
+
+function ourbigbook_code_math_inline(c) {
+  return function(ast, context) {
+    const content = render_arg(ast.args.content, clone_and_set(context, 'in_literal', true))
+    if (content.indexOf(c) === -1) {
+      return `${c}${content}${c}`
+    } else {
+      return ourbigbook_convert_simple_elem(ast, context)
+    }
+  }
+}
+
+function ourbigbook_code_math_block(c) {
+  return function(ast, context) {
+    const content = render_arg(ast.args.content, clone_and_set(context, 'in_literal', true))
+    let delim = c + c
+    while (content.indexOf(delim) !== -1) {
+      delim += c
+    }
+    return `${delim}
+${content}${delim}
+
+`
+  }
+}
+
+function ourbigbook_li(marker) {
+  return function(ast, context) {
+    if (!ast.args.content || Object.keys(ast.args).length !== 1) {
+      return ourbigbook_convert_simple_elem(ast, context)
+    } else {
+      context.li_depth++
+      const content = render_arg(ast.args.content, context)
+      context.li_depth--
+      const content_indent = content.replace(/\n(.)/g, '\n  $1')
+      const newline_before = context.li_depth > 0 && ast.parent_argument_index === 0 ? '\n' : ''
+      const newline = ast.is_last_in_argument() ? '' : '\n'
+      return `${newline_before}${marker}${content_indent}${newline}`
+    }
+  }
+}
+
+function ourbigbook_ul(ast, context) {
+  if (!ast.args.content || Object.keys(ast.args).length !== 1) {
+    return ourbigbook_convert_simple_elem(ast, context)
+  } else {
+    const newline = ast.is_last_in_argument() ? '' : '\n\n'
+    return `${render_arg(ast.args.content, context)}${newline}`
+  }
+}
+
+function ourbigbook_prefer_literal(ast, context, arg, open, close) {
+  let rendered_arg
+  let delim_repeat
+  const argname = arg.name
+  const ast_arg = ast.args[argname]
+  if (
+    arg.ourbigbook_output_prefer_literal &&
+    ast_arg.asts.length === 1 &&
+    ast_arg.asts[0].node_type === AstType.PLAINTEXT
+  ) {
+    rendered_arg = render_arg(ast_arg, clone_and_set(context, 'in_literal', true))
+    delim_repeat = 2
+    while (
+      rendered_arg.indexOf(open.repeat(delim_repeat)) !== -1 ||
+      rendered_arg.indexOf(close.repeat(delim_repeat)) !== -1
+    ) {
+      delim_repeat++
+    }
+  } else {
+    delim_repeat = 1
+    rendered_arg = render_arg(ast_arg, context)
+  }
+  return { delim_repeat, rendered_arg }
+}
+
+function ourbigbook_convert_args(ast, context, options={}) {
+  const ret = options.ret || []
+  const skip = options.skip || new Set()
+  const macro = context.macros[ast.macro_name]
+  for (const arg of macro.positional_args) {
+    const argname = arg.name
+    if (!skip.has(argname) && ast.validation_output[argname].given) {
+      const { delim_repeat, rendered_arg } = ourbigbook_prefer_literal(
+        ast, context, arg, START_POSITIONAL_ARGUMENT_CHAR, END_POSITIONAL_ARGUMENT_CHAR)
+      ret.push(START_POSITIONAL_ARGUMENT_CHAR.repeat(delim_repeat))
+      if (arg.remove_whitespace_children) {
+        ret.push('\n')
+      }
+      ret.push(
+        rendered_arg +
+        END_POSITIONAL_ARGUMENT_CHAR.repeat(delim_repeat)
+      )
+      if (!macro.options.phrasing) {
+        ret.push('\n')
+      }
+    }
+  }
+  for (const argname of Macro.COMMON_ARGNAMES.concat(macro.options.named_args.map(arg => arg.name))) {
+    const arg = macro.named_args[argname]
+    const validation_output = ast.validation_output[argname]
+    if (!skip.has(argname) && validation_output.given) {
+      const macro_arg = macro.name_to_arg[argname]
+      const { delim_repeat, rendered_arg } = ourbigbook_prefer_literal(
+        ast, context, arg, START_NAMED_ARGUMENT_CHAR, END_NAMED_ARGUMENT_CHAR)
+      let skip_val = false
+      if (macro_arg.boolean) {
+        const argstr_default = macro_arg.default === undefined ? '0' : '1'
+        const argstr_eff = validation_output.boolean ? '1' : '0'
+        if (argstr_default === argstr_eff) {
+          continue
+        }
+        skip_val = validation_output.boolean
+      } else if(rendered_arg === '') {
+        skip_val = true
+      }
+      ret.push(
+        START_NAMED_ARGUMENT_CHAR.repeat(delim_repeat) +
+        argname
+      )
+      if (!skip_val) {
+        ret.push(NAMED_ARGUMENT_EQUAL_CHAR + rendered_arg)
+      }
+      ret.push(END_NAMED_ARGUMENT_CHAR.repeat(delim_repeat))
+      if (!macro.options.phrasing) {
+        ret.push('\n')
+      }
+    }
+  }
+  return ret
+}
+
+function ourbigbook_convert_simple_elem(ast, context) {
+  const ret = []
+  ret.push(ESCAPE_CHAR + ast.macro_name)
+  const macro = context.macros[ast.macro_name]
+  ourbigbook_convert_args(ast, context, { ret })
+  if (!macro.options.phrasing && !ast.is_last_in_argument()) {
+    ret.push('\n')
+  }
+  return ret.join('')
+}
+
+OUTPUT_FORMATS_LIST.push(
   new OutputFormat(
     OUTPUT_FORMAT_OURBIGBOOK,
     {
@@ -8364,17 +8430,11 @@ const OUTPUT_FORMATS_LIST = [
         'comment': ourbigbook_convert_simple_elem,
         [Macro.HEADER_MACRO_NAME]: function(ast, context) {
           return `${INSANE_HEADER_CHAR.repeat(ast.validation_output.level.positive_nonzero_integer)} ${render_arg(ast.args.title, context)}
-    ${ourbigbook_convert_args(ast, context, { skip: new Set(['level', 'title']) }).join('')}
-    `
+${ourbigbook_convert_args(ast, context, { skip: new Set(['level', 'title']) }).join('')}
+`
         },
         [Macro.INCLUDE_MACRO_NAME]: ourbigbook_convert_simple_elem,
-        [Macro.LIST_ITEM_MACRO_NAME]: function(ast, context) {
-          if (!ast.args.content || Object.keys(ast.args).length !== 1) {
-            return ourbigbook_convert_simple_elem(ast, context)
-          } else {
-            return `* ${render_arg(ast.args.content, context)}\n`
-          }
-        },
+        [Macro.LIST_ITEM_MACRO_NAME]: ourbigbook_li(INSANE_LIST_START),
         [Macro.MATH_MACRO_NAME.toUpperCase()]: ourbigbook_code_math_block(INSANE_MATH_CHAR),
         [Macro.MATH_MACRO_NAME]: ourbigbook_code_math_inline(INSANE_MATH_CHAR),
         'i': ourbigbook_convert_simple_elem,
@@ -8386,27 +8446,37 @@ const OUTPUT_FORMATS_LIST = [
           if (!ast.args.content || Object.keys(ast.args).length !== 1) {
             return ourbigbook_convert_simple_elem(ast, context)
           } else {
-            return `${render_arg(ast.args.content, context)}\n\n`
+            const rendered_arg = render_arg(ast.args.content, context)
+            const newline = ast.is_last_in_argument() ? '' : '\n\n'
+            return `${rendered_arg}${newline}`
           }
         },
-        [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) { return ast.text },
+        [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) {
+          const text = ast.text
+          if (context.in_literal) {
+            return text
+          } else {
+            return text.replace(/([\\[\]{}<`$])/g, '\\$1')
+          }
+        },
         'passthrough': ourbigbook_convert_simple_elem,
         'Q': ourbigbook_convert_simple_elem,
         'sub': ourbigbook_convert_simple_elem,
         'sup': ourbigbook_convert_simple_elem,
         [Macro.TABLE_MACRO_NAME]: ourbigbook_ul,
-        [Macro.TD_MACRO_NAME]: ourbigbook_convert_simple_elem,
+        [Macro.TD_MACRO_NAME]: ourbigbook_li(INSANE_TD_START),
         [Macro.TOC_MACRO_NAME]: function(ast, context) { return '' },
         [Macro.TOPLEVEL_MACRO_NAME]: id_convert_simple_elem(),
-        [Macro.TH_MACRO_NAME]: ourbigbook_convert_simple_elem,
-        [Macro.TR_MACRO_NAME]: ourbigbook_convert_simple_elem,
+        [Macro.TH_MACRO_NAME]: ourbigbook_li(INSANE_TH_START),
+        [Macro.TR_MACRO_NAME]: ourbigbook_ul,
         'Ul': ourbigbook_ul,
         [Macro.X_MACRO_NAME]: ourbigbook_convert_simple_elem,
         'Video': ourbigbook_convert_simple_elem,
       }
     }
-  ),
-]
+  )
+)
+
 const OUTPUT_FORMATS = {}
 exports.OUTPUT_FORMATS = OUTPUT_FORMATS
 for (const output_format of OUTPUT_FORMATS_LIST) {

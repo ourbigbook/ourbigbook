@@ -4,7 +4,7 @@ A Markup language to write multipage or single page HTML / PDF books, blogs, etc
 
 The source for this document is at: https://github.com/cirosantilli/cirodown/blob/master/README.ciro and a rendered version can be seen at: https://cirosantilli.com/cirodown and a live in-browser demo at: https://cirosantilli.com/cirodown/editor[].
 
-\toc
+\Toc
 
 == Quick start
 
@@ -167,19 +167,19 @@ The difference is mostly that Cirodown is completely and entirely focused on mak
 Another advantage over Asciidoctor is that the reference implementation of Cirodown is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with https://github.com/opal/opal[Opal], but who wants to deal with that layer of complexity?
 
 == Paragraphs
-{title2=`\p`}
+{title2=`\P`}
 
 OK, this is too common, so we opted for some \x[insane-macro-shortcuts][insanity] here: double newline is a paragraph!
-\cirodown_example[[
+\CirodownExample[[
 Paragraph 1.
 
 Paragraph 2.
 ]]
 
-Equivalently however, you can use an explicit `\p` macros as well, which is required for example to add properties to a paragraph, e.g.:
-\cirodown_example[[
-\p{id=paragraph-1}[Paragraph 1]
-\p{id=paragraph-2}[Paragraph 2]
+Equivalently however, you can use an explicit `\P` macros as well, which is required for example to add properties to a paragraph, e.g.:
+\CirodownExample[[
+\P{id=paragraph-1}[Paragraph 1]
+\P{id=paragraph-2}[Paragraph 2]
 ]]
 
 Paragraphs are created automatically inside \x[macro-argument-syntax][macro argument] whenever a double newline appears.
@@ -187,7 +187,7 @@ Paragraphs are created automatically inside \x[macro-argument-syntax][macro argu
 Note that Cirodown paragraphs render in HTML as `div` with `class="p"` and not as `p`. This means that you can add basically anything inside them, e.g. a list:
 ``
 My favorite list is:
-\ul[
+\Ul[
 \li[aa]
 \li[bb]
 ]
@@ -201,36 +201,36 @@ One major advantage of this, is that when writing documentation, you often want 
 {title2=`\a`}
 
 \x[insane-macro-shortcuts][Insane] autolink (link text is the same as the link):
-\cirodown_example[[
+\CirodownExample[[
 The website http://example.com is cool. See also:
 
-\q[http://example.com/2]
+\Q[http://example.com/2]
 ]]
 Exact parsing rules described at: \x[insane-link-parsing-rules]{full}.
 
 Equivalent sane version:
-\cirodown_example[[[
+\CirodownExample[[[
 The website \a[http://example.com] is cool.
 
-\q[\a[http://example.com/2]]
+\Q[\a[http://example.com/2]]
 ]]]
 
 Insane link with custom text:
-\cirodown_example[[
+\CirodownExample[[
 The website http://example.com[example.com] is cool.
 ]]
 Equivalent sane version:
-\cirodown_example[[
+\CirodownExample[[
 The website \a[http://example.com][example.com] is cool.
 ]]
 If the custom text is empty, an autolink is generated. This is often useful if you want your link to be followed by punctuation:
-\cirodown_example[[
+\CirodownExample[[
 The website is really cool: http://example.com[].
 ]]
 This could also be achieved with the sane syntax of course, but this pattern saves a tiny bit of typing.
 
 Link with multiple paragraphs inside it:
-\cirodown_example[[
+\CirodownExample[[
 \a[http://example.com][Multiple
 
 paragraphs]
@@ -240,7 +240,7 @@ paragraphs]
 
 Insane links must be preceded by either:
 * the start of the document
-* the start of a \x[positional-vs-named-arguments][positional or named argument] (e.g. `\p[http://example.com]` or `Image[xi.png]{description=http://example.com}`) that not marked with `elide_link_only` (which is the case for example for `href` of `a`)
+* the start of a \x[positional-vs-named-arguments][positional or named argument] (e.g. `\P[http://example.com]` or `Image[xi.png]{description=http://example.com}`) that not marked with `elide_link_only` (which is the case for example for `href` of `a`)
 * space ` ` char
 * newline `\n` char
 
@@ -253,22 +253,22 @@ Insane links end when either the end of the document or one of the following cha
 * open or close curly braces `{` or `}`
 
 As a consequence, of those rules, it is impossible to have an insane link followed immediately by a period, e.g.:
-\cirodown_example[[
+\CirodownExample[[
 Check out this website: http://example.com.
 ]]
 You must instead use the sane syntax for that:
-\cirodown_example[[
+\CirodownExample[[
 Check out this website: \a[http://example.com].
 ]]
 
 If you want your link to include one of the terminating characters, e.g. `]`, all characters can be escaped with a backslash, e.g.:
-\cirodown_example[[
+\CirodownExample[[
 Hello http://example.com/\]a\}b\\c\ d world.
 ]]
 
 Note that the `http://example.com` inside `\a[http://example.com]` only works because we do some post-processing magic that prevents its expansion, otherwise the link would expand twice:
-\cirodown_example[[
-\p[http://example.com]
+\CirodownExample[[
+\P[http://example.com]
 
 \a[http://example.com]
 ]]
@@ -279,7 +279,7 @@ This magic can be observed with \x[help-macros] by seeing that the `href` argume
 
 TODO it is currently impossible to prevent autolinks from expanding, we can either go with an empty macro solution, or with a literal text solution:
 \C[[[
-\cirodown_example[[
+\CirodownExample[[
 Literal URL \empty[]http://example.com but why?
 Literal URL \text[[http://example.com]] but why?
 ]]
@@ -293,12 +293,12 @@ Every macro in Cirodown can have an optional `id` and many also have a reserved 
 When a macro in the document has a `title` argument but no `id` argument given, get an auto-generated ID from the title: \x[automatic-id-from-title].
 
 For macros that do have an ID, derived from `title` or not, you can write a cross reference to it, e.g.:
-\cirodown_example[[
+\CirodownExample[[
 See this \x[internal-cross-references] awesome section.
 ]]
 
 An explicit link body can be given just as for regular HTTP \x[links] as:
-\cirodown_example[[
+\CirodownExample[[
 See this \x[internal-cross-references][ awesome section].
 ]]
 
@@ -347,7 +347,7 @@ h3 Cat (parent section: Mammals)
 ``
 so note how "Dog" has a list of extra parents including "Cute animals", but Cat does not, due to the `child=1`.
 
-This property does not affect how the \x[table-of-contents][`\toc`] is rendered. We could insert elements sections there multiple times, but it has the downside that browser Ctrl + F searches would hit the same thing multiple times on the table of contents, which might make finding things harder.
+This property does not affect how the \x[table-of-contents][`\Toc`] is rendered. We could insert elements sections there multiple times, but it has the downside that browser Ctrl + F searches would hit the same thing multiple times on the table of contents, which might make finding things harder.
 ``
 == My title{id=my-id}
 
@@ -371,12 +371,12 @@ Read this \x[my-id][My title].
 {id=cross-reference-full-argument}
 
 To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` \x[boolean-named-arguments][boolean named argument] to the cross reference, for example:
-\cirodown_example[[
+\CirodownExample[[
 \x[cross-reference-full-argument]{full}.
 ]]
 
 `{full}` is not needed for cross references to most macros besides \x[headers], which use `full` by default as seen by the `default_x_style_full` macro property in \x[help-macros]. This is for example the case for \x[images]. You can force this to be disabled with `{full=0}`:
-\cirodown_example[[
+\CirodownExample[[
 Compare \x[image-my-test-image]{full=0} vs \x[image-my-test-image]{full=1}.
 ]]
 
@@ -384,7 +384,7 @@ Compare \x[image-my-test-image]{full=0} vs \x[image-my-test-image]{full=1}.
 {id=cross-reference-full-argument-internal-cross-file-references}
 
 For example in the following \x[internal-cross-file-references][internal cross file reference]:
-\cirodown_example[[
+\CirodownExample[[
 \x[h2-in-not-the-readme]{full}.
 ]]
 we get just something like:
@@ -468,67 +468,67 @@ Now for a live example for quick and dirty interactive testing.
 
 ===== Cross reference title inflection example
 
-\cirodown_example[[
+\CirodownExample[[
 \x[inflection-example-not-proper]
 ]]
 
-\cirodown_example[[
+\CirodownExample[[
 \x[inflection-example-not-proper]{c}
 ]]
 
-\cirodown_example[[
+\CirodownExample[[
 \x[inflection-example-not-proper]{full}
 ]]
 
-\cirodown_example[[
+\CirodownExample[[
 \x[inflection-example-proper]
 ]]
 
-\cirodown_example[[
+\CirodownExample[[
 \x[inflection-example-proper]{c}
 ]]
 
-\cirodown_example[[
+\CirodownExample[[
 \x[inflection-example-not-proper-lower]
 ]]
 
-\cirodown_example[[
+\CirodownExample[[
 \x[inflection-example-not-proper-lower]{c}
 ]]
 
-\cirodown_example[[
+\CirodownExample[[
 \x[inflection-example-proper-lower]
 ]]
 
-\cirodown_example[[
+\CirodownExample[[
 \x[not-readme]
 ]]
 
-\cirodown_example[[
+\CirodownExample[[
 \x[not-readme]{c}
 ]]
 
-\cirodown_example[[
+\CirodownExample[[
 \x[inflection-example-not-proper]{p}
 ]]
 
-\cirodown_example[[
+\CirodownExample[[
 \x[inflection-plural-examples]
 ]]
 
-\cirodown_example[[
+\CirodownExample[[
 \x[inflection-plural-examples]{p}
 ]]
 
-\cirodown_example[[
+\CirodownExample[[
 \x[inflection-plural-examples]{p=0}
 ]]
 
-\cirodown_example[[
+\CirodownExample[[
 \x[inflection-plural-examples]{p=1}
 ]]
 
-\cirodown_example[[
+\CirodownExample[[
 \x[not-the-readme-header-with-fixed-case]
 ]]
 
@@ -556,10 +556,10 @@ For example, given the Cirodown input:
 ``
 The toc:
 
-\toc
+\Toc
 
 == Quotation
-{title2=`\q`}
+{title2=`\Q`}
 
 == Orthogonal group
 {title2=$O(n)$}
@@ -574,10 +574,10 @@ the rendered output looks like:
 ``
 The toc:
 
-* Quotation \q
+* Quotation \Q
 * Orthogonal group $O(n)$
 
-== Quotation `\q`
+== Quotation `\Q`
 
 == Orthogonal group $O(n)$
 
@@ -668,33 +668,33 @@ or:
 === Internal cross file references
 
 Reference to the first header of another file:
-\cirodown_example[[
+\CirodownExample[[
 \x[not-readme]
 ]]
 
 Reference to the first header of another file that is a second inclusion:
-\cirodown_example[[
+\CirodownExample[[
 \x[included-by-not-readme]
 ]]
 
 Reference to another header of another file, with \x[cross-reference-full-argument][`full`]:
-\cirodown_example[[
+\CirodownExample[[
 \x[h2-in-not-the-readme]{full}.
 ]]
 Note that when `full` is used with references in another file in \x[html-single-page][multi page mode], the number is not rendered as explained at: \x[cross-reference-full-argument-internal-cross-file-references]{full}.
 
 Reference to an image in another file:
-\cirodown_example[[
+\CirodownExample[[
 \x[image-not-readme-xi]{full}.
 ]]
 
 Reference to an image in another file:
-\cirodown_example[[
+\CirodownExample[[
 \x[image-figure-in-not-the-readme-without-explicit-id]{full}.
 ]]
 
 Remember that the \x[the-toplevel-header][ID of the toplevel header] is automatically derived from its file name, that's why we have to use:
-\cirodown_example[[
+\CirodownExample[[
 \x[not-readme]
 ]]
 instead of:
@@ -742,34 +742,34 @@ Note how those rules leave non ASCII Unicode characters untouched, as capitaliza
 
 So for example, the following automatic IDs would be generated: \x[table-examples-of-automatically-generated-ids].
 
-\table{title=Examples of automatically generated IDs.}
+\Table{title=Examples of automatically generated IDs.}
 [
-\tr[
-  \th[title]
-  \th[id]
-  \th[comments]
+\Tr[
+  \Th[title]
+  \Th[id]
+  \Th[comments]
 ]
-\tr[
-  \td[My favorite title]
-  \td[my-favorite-title]
-  \td
+\Tr[
+  \Td[My favorite title]
+  \Td[my-favorite-title]
+  \Td
 ]
-\tr[
-  \td[Ciro's markdown is awesome]
-  \td[ciro-s-markdown-is-awesome]
-  \td
+\Tr[
+  \Td[Ciro's markdown is awesome]
+  \Td[ciro-s-markdown-is-awesome]
+  \Td
 ]
-\tr[
-  \td[The École Polytechnique]
-  \td[the-École-polytechnique]
-  \td[We leave the non ASCII uppercase https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, untouched by default]
+\Tr[
+  \Td[The École Polytechnique]
+  \Td[the-École-polytechnique]
+  \Td[We leave the non ASCII uppercase https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, untouched by default]
 ]
 ]
 
 For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the Cirodown file without extension instead of from the `title` argument.
 
 == Headers
-{title2=`\h`}
+{title2=`\H`}
 
 \x[insane-macro-shortcuts][Insane] with `= ` (equal sign space):
 ``
@@ -783,11 +783,11 @@ Insane headers end at the first newline found. They cannot therefore contain raw
 
 Equivalent sane:
 ``
-\h[1][My h1]
+\H[1][My h1]
 
-\h[2][My h2]
+\H[2][My h2]
 
-\h[3][My h3]
+\H[3][My h3]
 ``
 
 Custom ID for \x[internal-cross-references] on insane headers:
@@ -804,11 +804,11 @@ Custom ID for \x[internal-cross-references] on insane headers:
 
 Sane equivalent:
 ``
-\h[1][My h1]{id=h1}
+\H[1][My h1]{id=h1}
 
-\h[2][My h2]{id=h2}
+\H[2][My h2]{id=h2}
 
-\h[3][My h3]{id=h3}
+\H[3][My h3]{id=h3}
 ``
 
 === Unlimited header levels
@@ -838,28 +838,28 @@ but it just didn't feel as good, and is a bit harder to type than just smashing 
 
 ======= My h7
 
-\h[8][My h8]
+\H[8][My h8]
 
-\h[9][My h9]
+\H[9][My h9]
 
-\h[10][My h10]
+\H[10][My h10]
 
-\h[11][My h11]
+\H[11][My h11]
 
-\h[12][My h12]
+\H[12][My h12]
 
-\h[13][My h13]
+\H[13][My h13]
 
 === Table of contents
-{title2=`\toc`}
+{title2=`\Toc`}
 
 Only one ToC shows per document.
 
 Any ToC besides the first one is ignored. TODO make it into an error instead?
 
-The ToC ignores `\h[1]` by default, as we encourage that header level to appear only once and represent the main title under which the entire document goes.
+The ToC ignores `\H[1]` by default, as we encourage that header level to appear only once and represent the main title under which the entire document goes.
 
-`\toc` from \x[includes] are ignored.
+`\Toc` from \x[includes] are ignored.
 
 === Header `scope` argument
 {id=scope}
@@ -959,11 +959,11 @@ Some quick interactive cross file link tests:
 
 Arguably, the language would be even saner if we did:
 ``
-\h[My h1][
+\H[My h1][
 
 Paragraph.
 
-\h[My h2][]
+\H[My h2][]
 ]
 ``
 rather than having explicit levels.
@@ -971,15 +971,15 @@ rather than having explicit levels.
 But we chose not to do it like most markups available because it leads to too many nesting levels, and hard to determine where you are without tooling.
 
 === Includes
-{title2=`\include`}
+{title2=`\Include`}
 
-The `\include` macro allows including an external Cirodown headers under the current header.
+The `\Include` macro allows including an external Cirodown headers under the current header.
 
 It exists to allow optional single page HTML output while still retaining the ability to:
 * split up large input files into multiple files to make renders faster during document development
 * suggest an optional custom output split with one HTML output per Cirodown input, in order to avoid extremely large HTML pages which could be slow to load
 
-`\include` takes one mandatory argument, which is the relative path without extension to the `.ciro` file that you want to include.
+`\Include` takes one mandatory argument, which is the relative path without extension to the `.ciro` file that you want to include.
 
 Things would have been a bit more clean if the argument would take the ID of the header you want to include rather than the filename, which is analogous to how \x[internal-cross-references][`\x`] works, but that would mean that a single page build would require an initial parse to determine IDs, so we are just going with the easier option of pointing out the file name directly.
 
@@ -998,17 +998,17 @@ Otherwise, the following effects happen:
 
 Here is an example of inclusion of the files `not-readme.ciro` and `not-readme-2.ciro`.
 
-\include[not-readme]
+\Include[not-readme]
 
-\include[not-readme-2]
+\Include[not-readme-2]
 
-\include[not-readme-with-scope]
+\Include[not-readme-with-scope]
 
 === Skipping header levels
 
-The very first header of a document can be of any level, although we highly recommend your document to start with a `\h[1]`, and to contain exactly just one `\h[1]`, as this has implications such as:
-* `\h[1]` is used for the document title: \x[html-document-title]
-* `\h[1]` does not show on the \x[table-of-contents]
+The very first header of a document can be of any level, although we highly recommend your document to start with a `\H[1]`, and to contain exactly just one `\H[1]`, as this has implications such as:
+* `\H[1]` is used for the document title: \x[html-document-title]
+* `\H[1]` does not show on the \x[table-of-contents]
 
 After the initial header however, you must not skip a header level, e.g. the following would give an error because it skips level 3:
 ``
@@ -1074,54 +1074,54 @@ rather than:
 ``#README.ciro``
 
 == Lists
-{title2=`\l`}
+{title2=(`* `, `\L`, `\Ul`, `\Ol`)}
 
 \x[insane-macro-shortcuts][Insane] with `* ` (asterisk space):
-\cirodown_example[[
+\CirodownExample[[
 * a
 * b
 * c
 ]]
 
 Equivalent saner with \x[auto-parent][implicit `ul` container]:
-\cirodown_example[[
-\l[a]
-\l[b]
-\l[c]
+\CirodownExample[[
+\L[a]
+\L[b]
+\L[c]
 ]]
 
 Equivalent fully sane with explicit container:
-\cirodown_example[[
-\ul[
-\l[a]
-\l[b]
-\l[c]
+\CirodownExample[[
+\Ul[
+\L[a]
+\L[b]
+\L[c]
 ]
 ]]
 
 The explicit container is required if you want to pass extra arguments properties to the `ul` list macro, e.g. a title and an ID: \x[list-my-id]{full}:
-\cirodown_example[[
-\ul
+\CirodownExample[[
+\Ul
 {id=list-my-id}
 [
-\l[a]
-\l[b]
-\l[c]
+\L[a]
+\L[b]
+\L[c]
 ]
 ]]
 This is the case because without the explicit container in an implicit `ul` list, the arguments would stick to the last list item instead of the list itself.
 
 It is also required if you want ordered lists:
-\cirodown_example[[
-\ol[
-\l[first]
-\l[second]
-\l[third]
+\CirodownExample[[
+\Ol[
+\L[first]
+\L[second]
+\L[third]
 ]
 ]]
 
 Insane nested list with two space indentation:
-\cirodown_example[[
+\CirodownExample[[
 * a
   * a1
   * a2
@@ -1132,19 +1132,19 @@ Insane nested list with two space indentation:
 The indentation must always be exactly equal to two spaces, anything else leads to errors or unintended output.
 
 Equivalent saner nested lists with implicit containers:
-\cirodown_example[[
-\l[
+\CirodownExample[[
+\L[
 a
-\l[a1]
-\l[a2]
-\l[a2]
+\L[a1]
+\L[a2]
+\L[a2]
 ]
-\l[b]
-\l[c]
+\L[b]
+\L[c]
 ]]
 
 Insane list item with a paragraph inside of it:
-\cirodown_example[[
+\CirodownExample[[
 * a
 * I have
 
@@ -1158,37 +1158,37 @@ Insane list item with a paragraph inside of it:
 ]]
 
 Equivalent sane version:
-\cirodown_example[[
-\l[a]
-\l[
+\CirodownExample[[
+\L[a]
+\L[
 I have
 
 Multiple paragraphs.
 
-\l[And]
-\l[also]
-\l[a]
-\l[list]
+\L[And]
+\L[also]
+\L[a]
+\L[list]
 ]
-\l[c]
+\L[c]
 ]]
 
 Insane lists may be escaped with a backslash as usual:
-\cirodown_example[[
+\CirodownExample[[
 \* paragraph starting with an asterisk.
 ]]
 
 And now a list outside of \x[cirodown-example] to test how it looks directly under \x[toplevel]:
 
-\l[a]
-\l[b]
-\l[c]
+\L[a]
+\L[b]
+\L[c]
 
 == Images
 {title2=(`\Image` and `\image`)}
 
-A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' `Image` showcasing most of the image properties \x[image-my-test-image].
-\cirodown_example[[
+A block image with \x[block-vs-inline-macros][capital] 'i' `Image` showcasing most of the image properties \x[image-my-test-image].
+\CirodownExample[[
 Have a look at this amazing image: \x[image-my-test-image].
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
@@ -1205,13 +1205,13 @@ This exemplifies the following parameters:
 For further discussion on the effects of ID see: \x[image-id][full].
 
 And this is how you make an inline image inline one with lower case `i`:
-\cirodown_example[[
+\CirodownExample[[
 My inline \image[Tank_man_standing_in_front_of_some_tanks.jpg][test image] is awesome.
 ]]
 Inline images can't have captions.
 
 The `description` can have multiple paragraphs just like any other element, but we don't recommend this style because it makes it hard for readers to see what is part of the image caption and what is part of the next paragraph.
-\cirodown_example[[
+\CirodownExample[[
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {id=image-my-test-image-description-paragraphs}
 {title=The title of my image.}
@@ -1240,7 +1240,7 @@ By default, we fix image heights to `height=315`, and let the `width` be calcula
 {id=image-id}
 
 Here is an image without a description but with an ID so we can link to it: \x[image-my-test-image-2].
-\cirodown_example[[
+\CirodownExample[[
 Have a look at this amazing image: \x[image-my-test-image-2].
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
@@ -1249,7 +1249,7 @@ Have a look at this amazing image: \x[image-my-test-image-2].
 This works because \x[cross-reference-full-argument][`full` is the default cross referene style for `Image`], otherwise the link text would be empty since there is no `title`, and cirodown would raise an error.
 
 Cirodown can optionally deduce the title from the basename of the `src` argument if the `title_from_src` \x[boolean-named-arguments][boolean named argument] is given, or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
-\cirodown_example[[
+\CirodownExample[[
 Have a look at this amazing image: \x[image-tank-man-standing-in-front-of-some-tanks].
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
@@ -1257,7 +1257,7 @@ Have a look at this amazing image: \x[image-tank-man-standing-in-front-of-some-t
 ]]
 
 If the image has neither ID nor title, then it does not get a caption at all, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
-\cirodown_example[[
+\CirodownExample[[
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 ]]
 The image does however get an automatically generated ID based on its image number, and it is possible for readers to link to that ID on the rendered version, e.g. as:
@@ -1267,14 +1267,14 @@ The image does however get an automatically generated ID based on its image numb
 This link is of course not stable across document revisions however, since if an image is added before that one, the link will break. This kind of image is discouraged, because in paged output formats like PDF, it could float away from the text that refers to the image.
 
 We can also see that such an image does not increment the Figure count:
-\cirodown_example[[
+\CirodownExample[[
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]{id=image-my-test-image-count-before}
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]{id=image-my-test-image-count-after}
 ]]
 
 If the image has any visible metadata such as `source` or `description` however, then the caption does show and the Figure count gets incremented:
-\cirodown_example[[
+\CirodownExample[[
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]{description=This is the description of my image.}
 ]]
@@ -1291,7 +1291,7 @@ With this setup, no further action is needed. For example, with a file structure
 ./Tank_man_standing_in_front_of_some_tanks.jpg
 ``
 just use the image from \C[README.ciro] as:
-\cirodown_example[[
+\CirodownExample[[
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 ]]
 
@@ -1304,7 +1304,7 @@ In this approach, you create a separate GitHub repository in addition to the mai
 This approach is more suitable than \x[store-images-inside-the-repository-itself] if you are going to have a lot of images.
 
 When using this approach, you could of course just point directly to the final image URL, e.g. as in:
-\cirodown_example[[
+\CirodownExample[[
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 ]]
 but Cirodown allows you use configurations that allow you to enter just the image basename: `Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg` which we will cover next.
@@ -1315,7 +1315,7 @@ In order to get this to work, the recommended repository setup is:
 The directory and repository names are not mandatory, but if you place media in `data/media` and name its repository by adding the `*-media` suffix, then `cirodown` will handle everything for you without any further configuration in \x[media-providers].
 
 This particular documentation repository does have a different setup as can be seen from its \a[cirodown.json]. Then, when everything is setup correctly, we can refer to images simply as:
-\cirodown_example[[
+\CirodownExample[[
 \Image[Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]{provider=github}
 ]]
 In this example, we also needed to set `{provider=github}` explicitly since it was not set as the default image provider in our `cirodown.json`. In most projects however, all of your images will be in the default repository, so this won't be needed.
@@ -1344,29 +1344,29 @@ https://git-lfs.github.com/[Git LFS] is one approach to deal with this, but we f
 ==== Store images in Wikimedia Commons
 
 Wikimedia Commons is another great possibility to upload your images to:
-\cirodown_example[[
+\CirodownExample[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
 {source=https://commons.wikimedia.org/wiki/File:Gel_electrophoresis_insert_comb.jpg}
 ]]
 
 Cirodown likes Wikimedia Commons so much that we automatically parse the image URL and if it is from Wikimedia Commons, automatically deduce the `source` for you. So the above image renders the same without the `source` argument:
-\cirodown_example[[
+\CirodownExample[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
 ]]
 
 And like for non-Wikimedia images, you can automatically generate a `title` from the `src` by setting the `title_from_src` \x[boolean-named-arguments][boolean named argument] or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
-\cirodown_example[[
+\CirodownExample[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
 {title_from_src}
 ]]
 
 And a quick test for a more complex thumb resized URL:
-\cirodown_example[[
+\CirodownExample[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
 ]]
 
 If you really absolutely want to turn off the `source`, you can explicitly set:
-\cirodown_example[[
+\CirodownExample[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
 {source=}
 ]]
@@ -1414,14 +1414,14 @@ In the case of videos, \x[where-to-store-images] becomes even more critical sinc
 * \x[store-images-inside-the-repository-itself]
 * \x[store-images-in-a-separate-media-repository]
 As a result, then https://commons.wikimedia.org[Wikimedia Commons] is one of the best options \x[store-images-in-wikimedia-commons][much like for images]:
-\cirodown_example[[
+\CirodownExample[[
 \Video[https://upload.wikimedia.org/wikipedia/commons/8/85/Vacuum_pump_filter_cut_and_place_in_eppendorf.webm]
 {id=sample-video-in-wikimedia-commons}
 {title=Nice sample video stored in Wikimedia Commons.}
 {start=5}
 ]]
 We also handle more complex transcoded video URLs just fine:
-\cirodown_example[[
+\CirodownExample[[
 \Video[https://upload.wikimedia.org/wikipedia/commons/transcoded/1/19/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv.480p.vp9.webm]
 {id=sample-video-in-wikimedia-commons-transcoded}
 {title=Nice sample video stored in Wikimedia Commons transcoded.}
@@ -1432,19 +1432,19 @@ Commons is better than YouTube if your content is on-topic there because:
 * it makes it easier for other users to find and re-use your videos
 
 If your video does not fit the above Wikimedia Commons requirements, YouTube could be a good bet. Cirodown https://github.com/cirosantilli/cirodown/issues/50[automatically detects YouTube URLs] for you, so the following should just work:
-\cirodown_example[[
+\CirodownExample[[
 \Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
 {id=sample-video-from-youtube-implicit-youtube}
 {title=Nice sample video embedded from YouTube implicit from `youtube.com` URL.}
 ]]
 The `youtu.be` domain hack URLs also work;
-\cirodown_example[[
+\CirodownExample[[
 \Video[https://youtu.be/YeFzeNAHEhU?t=38]
 {id=sample-video-from-youtube-implicit-youtu-be}
 {title=Nice sample video embedded from YouTube implicit from `youtu.be` URL.}
 ]]
 Alternatively, you can reach the same result in a more explicit and minimal way by setting `{provider=youtube}` and the `start` arguments:
-\cirodown_example[[
+\CirodownExample[[
 \Video[YeFzeNAHEhU]{provider=youtube}
 {id=sample-video-from-youtube-explicit}
 {title=Nice sample video embedded from YouTube with explicit `youtube` argument.}
@@ -1462,7 +1462,7 @@ Remember that you can also enable the `youtube` provider by default on your \x[c
 ``
 
 But you can also use raw video files from any location that can serve them of course, e.g. here is one stored in this repository: \x[sample-video-in-repository].
-\cirodown_example[[
+\CirodownExample[[
 \Video[Tank_man_side_hopping_in_front_of_some_tanks.mp4]
 {id=sample-video-in-repository}
 {title=Nice sample video stored in this repository.}
@@ -1471,7 +1471,7 @@ But you can also use raw video files from any location that can serve them of co
 ]]
 
 And as for images, setting `title_from_src` automatically calculates a title for you:
-\cirodown_example[[
+\CirodownExample[[
 \Video[Tank_man_side_hopping_in_front_of_some_tanks.mp4]
 {title_from_src}
 {source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
@@ -1497,11 +1497,11 @@ Both of this cases could be worked around with JavaScript:
 {id=code}
 
 Inline code (code that should appear in the middle of a paragraph rather than on its own line) is done with a single backtick (\c[[`]]) \x[insane-macro-shortcuts][insane macro shortcut]:
-\cirodown_example[[
+\CirodownExample[[
 My inline `x = 'hello\n'` is awesome.
 ]]
 and block code (code that should appear on their own line) is done with two or more backticks (\c[[``]]):
-\cirodown_example[[
+\CirodownExample[[
 ``
 f() {
   return 'hello\n';
@@ -1510,11 +1510,11 @@ f() {
 ]]
 
 The sane version of inline code is a lower case `c`:
-\cirodown_example[[[
+\CirodownExample[[[
 My inline \c[[x = 'hello\n']] is awesome.
 ]]]
 and the sane version of block math is with an upper case `C`:
-\cirodown_example[[[
+\CirodownExample[[[
 \C[[
 f() {
   return 'hello\n';
@@ -1522,10 +1522,10 @@ f() {
 ]]
 ]]]
 
-The capital vs lower case theme is also used in other elements, see: \x[macro-capitalization-for-block-vs-inline].
+The capital vs lower case theme is also used in other elements, see: \x[block-vs-inline-macros].
 
 If the content of the sane code block has many characters that you would need to \x[escape-characters][escape], you will often want to use \x[literal-arguments], which work just like the do for any other argument. For example:
-\cirodown_example[[[[
+\CirodownExample[[[[
 \C[[[
 A paragraph.
 
@@ -1540,7 +1540,7 @@ A paragraph.
 ]]]]
 Note that the initial newline is skipped automatically in code blocks, just as for any other element, due to: \x[argument-leading-newline-removal], so you don't have to worry about it.
 
-The distinction between inline `c` and block `C` code blocks is needed because in HTML, https://stackoverflow.com/questions/5371787/can-i-have-a-pre-tag-inside-a-p-tag-in-tumblr/58603596#58603596[`pre` cannot go inside `p`].
+The distinction between inline `\c` and block `\C` code blocks is needed because in HTML, https://stackoverflow.com/questions/5371787/can-i-have-a-pre-tag-inside-a-p-tag-in-tumblr/58603596#58603596[`pre` cannot go inside `P`].
 
 We could have chosen to do some magic to differentiate between them, e.g. checking if the block is the only element in a paragraph, but we decided not to do that to keep the language saner.
 
@@ -1555,7 +1555,7 @@ Hello
 \Comment[[[[
 TODO implement.
 We can have cross references to code blocks as for other elements such as \x[images]:
-\cirodown_example[[[
+\CirodownExample[[[
 See this awesome code \x[my-code]:
 ``
 ab
@@ -1566,7 +1566,7 @@ cd
 ]]]]
 
 Block code can have a title, e.g. see this one: \x[code-my-nice-code]{full}:
-\cirodown_example[[
+\CirodownExample[[
 ``
 ab
 cd
@@ -1581,11 +1581,11 @@ cd
 Via https://katex.org/[KaTeX] server side, oh yes!
 
 Inline math is done with the dollar sign (`$`) \x[insane-macro-shortcuts][insane macro shortcut]:
-\cirodown_example[[
+\CirodownExample[[
 My inline $\sqrt{1 + 1}$ is awesome.
 ]]
 and block math is done with two or more dollar signs (`$$`):
-\cirodown_example[[
+\CirodownExample[[
 $$
 \sqrt{1 + 1} \\
 \sqrt{1 + 1}
@@ -1593,21 +1593,21 @@ $$
 ]]
 
 The sane version of inline math is a lower case `m`:
-\cirodown_example[[[
+\CirodownExample[[[
 My inline \m[[\sqrt{1 + 1}]] is awesome.
 ]]]
 and the sane version of block math is with an upper case `M`:
-\cirodown_example[[[
+\CirodownExample[[[
 \M[[
 \sqrt{1 + 1} \\
 \sqrt{1 + 1}
 ]]
 ]]]
 
-The capital vs lower case theme is also used in other elements, see: \x[macro-capitalization-for-block-vs-inline].
+The capital vs lower case theme is also used in other elements, see: \x[block-vs-inline-macros].
 
 In the sane syntax, \x[escape-characters][as with any other argument], you have to either escape any closing square brackets `]` with a backslash `\`:
-\cirodown_example[[
+\CirodownExample[[
 My inline \m[1 - \[1 + 1\] = -1] is awesome.
 ]]
 or with the equivalent double open and close:
@@ -1616,21 +1616,21 @@ My inline \m[[1 - [1 + 1] = -1]] is awesome.
 ``
 
 HTML escaping happens as you would expect, e.g. < shows fine in:
-\cirodown_example[[
+\CirodownExample[[
 $$
 1 < 2
 $$
 ]]
 
 Equation IDs and titles and linking to equations works identically to \x[images], see that section for full details. Here is one equation reference example that links to the following insane syntax equation: \x[eq-my-first-insane-equation]:
-\cirodown_example[[
+\CirodownExample[[
 $$
 \sqrt{1 + 1}
 $$
 {title=My first insane equation.}
 ]]
 and the sane equivalent \x[eq-my-first-sane-equation]:
-\cirodown_example[[[
+\CirodownExample[[[
 \M{title=My first sane equation.}[[
 \sqrt{1 + 1}
 ]]
@@ -1642,7 +1642,7 @@ $$\sqrt{1 + 1}$$
 === Math defines across blocks
 
 First here is an invisible block (with `{show=0}`) defining with a `\newcommand` definition after this paragraph:
-\cirodown_example[[
+\CirodownExample[[
 $$
 \newcommand{\foo}[0]{bar}
 $${show=0}
@@ -1655,34 +1655,34 @@ $$
 $$
 
 Analogously with `\def`, definition:
-\cirodown_example[[
+\CirodownExample[[
 $$
 \gdef\foogdef{bar}
 $${show=0}
 ]]
 and the second block using it:
-\cirodown_example[[
+\CirodownExample[[
 $$
 \foogdef
 $$
 ]]
 
 And just to test that `{show=1}` actually shows, although it is useless, and that `{show=0}` skips incrementing the equation count:
-\cirodown_example[[
+\CirodownExample[[
 $$1 + 1$${show=1}
 $$2 + 2$${show=0}
 $$3 + 3$${show=1}
 ]]
 
 == Tables
-{title2=(`|| `, `| `, `\table`, `\tr`, `\th` and `\td`)}
+{title2=(`|| `, `| `, `\Table`, `\Tr`, `\Th` and `\Td`)}
 
 The \x[insane-code-and-math-shortcuts][insane] syntax marks:
 * headers with `|| ` (pipe, pipe space) at the start of a line
 * regular cells with `| ` (pipe, space) at the start of a line
 * separates rows with double newline
 For example:
-\cirodown_example[[
+\CirodownExample[[
 || Header 1
 || Header 2
 
@@ -1693,7 +1693,7 @@ For example:
 | 2 2
 ]]
 Empty cells are allowed without the trailing space however:
-\cirodown_example[[
+\CirodownExample[[
 | 1 1
 |
 | 1 3
@@ -1704,27 +1704,27 @@ Empty cells are allowed without the trailing space however:
 ]]
 
 Equivalent fully explicit version:
-\cirodown_example[[
-\table[
-\tr[
-  \th[Header 1]
-  \th[Header 2]
+\CirodownExample[[
+\Table[
+\Tr[
+  \Th[Header 1]
+  \Th[Header 2]
 ]
-\tr[
-  \td[1 1]
-  \td[1 2]
+\Tr[
+  \Td[1 1]
+  \Td[1 2]
 ]
-\tr[
-  \td[2 1]
-  \td[2 2]
+\Tr[
+  \Td[2 1]
+  \Td[2 2]
 ]
 ]
 ]]
-Any white space indentation inside an explicit `\tr` can make the code more readable, and is automatically removed from final output due to \x[remove-whitespace-children] which is set for `\table`.
+Any white space indentation inside an explicit `\Tr` can make the code more readable, and is automatically removed from final output due to \x[remove-whitespace-children] which is set for `\Table`.
 
 To pass further arguments to an implicit table such as `title` or `id`, you need to use an explicit `table` macro as in: \x[table-my-table].
-\cirodown_example[[
-\table
+\CirodownExample[[
+\Table
 {title=My table title.}
 {id=table-my-table}
 [
@@ -1741,7 +1741,7 @@ To pass further arguments to an implicit table such as `title` or `id`, you need
 The rules of when the caption shows up or not are the same as described for \x[images].
 
 Multiple source lines, including paragraphs, can be added to a single cell with insane syntax by indenting the cell with exactly two spaces just as for \x[lists], e.g.:
-\cirodown_example[[
+\CirodownExample[[
 || h1
 || h2
 || h3
@@ -1759,7 +1759,7 @@ Multiple source lines, including paragraphs, can be added to a single cell with 
 | 23
 ]]
 Arbitrarily complex nested constructs may be used, e.g. a table inside a list inside table:
-\cirodown_example[[
+\CirodownExample[[
 | 00
 | 01
 
@@ -1778,26 +1778,26 @@ Arbitrarily complex nested constructs may be used, e.g. a table inside a list in
 
 And now a table outside of \x[cirodown-example] to test how it looks directly under \x[toplevel]:
 
-\table{title=My table title.}
+\Table{title=My table title.}
 [
-\tr[
-  \th[Header 1]
-  \th[Header 2]
+\Tr[
+  \Th[Header 1]
+  \Th[Header 2]
 ]
-\tr[
-  \td[1 1]
-  \td[1 2]
+\Tr[
+  \Td[1 1]
+  \Td[1 2]
 ]
-\tr[
-  \td[2 1]
-  \td[2 2]
+\Tr[
+  \Td[2 1]
+  \Td[2 2]
 ]
 ]
 
 === Table sorting
 
 JavaScript interactive on-click table sorting is enabled by default, try it out by clicking on the header row:
-\cirodown_example[[
+\CirodownExample[[
 || String col
 || Integer col
 || Float col
@@ -1817,13 +1817,13 @@ JavaScript interactive on-click table sorting is enabled by default, try it out 
 Powered by: https://github.com/tristen/tablesort
 
 == Quotations
-{title2=`\q`}
+{title2=`\Q`}
 
 With `q`:
-\cirodown_example[[
+\CirodownExample[[
 And so he said:
 
-\q[
+\Q[
 Something very smart
 
 And with multiple paragraphs.
@@ -1835,14 +1835,14 @@ and it was great.
 == Bold
 {title2=`\b`}
 
-\cirodown_example[[
+\CirodownExample[[
 Some \b[bold] text.
 ]]
 
 == Italic
 {title2=`\i`}
 
-\cirodown_example[[
+\CirodownExample[[
 Some \i[italic] text.
 ]]
 
@@ -1854,7 +1854,7 @@ Dumps its contents directly into the rendered output.
 This construct is not XSS safe, see: \x[xss-unsafe]{full}.
 
 Here for example we define a paragraph in raw HTML:
-\cirodown_example[[[
+\CirodownExample[[[
 \Passthrough[[
 <p>Hello <b>raw</b> HTML!</p>
 ]]
@@ -1862,10 +1862,10 @@ Here for example we define a paragraph in raw HTML:
 
 == Comments
 
-The `Comment` and `comment` macros are regular macros that does not produce any output. Capitalization is explained at: \x[macro-capitalization-for-block-vs-inline].
+The `Comment` and `comment` macros are regular macros that does not produce any output. Capitalization is explained at: \x[block-vs-inline-macros]{full}.
 
 You will therefore mostly want to use it with a \x[literal-arguments][literal argument], which will, as for any other macro, ignore any macros inside of it.
-\cirodown_example[[[
+\CirodownExample[[[
 Before comment.
 
 \Comment[[
@@ -1876,18 +1876,18 @@ After comment.
 ]]]
 
 And an inline one:
-\cirodown_example[[[
+\CirodownExample[[[
 My inline \comment[[inside comment]] is awesome.
 
 \comment[[inside comment]] inline at the start.
 ]]]
 
-== `cirodown_example`
+== `CirodownExample`
 {id=cirodown-example}
 
 Shows both the Cirodown code and its rendered output, e.g.:
-\cirodown_example[[[
-\cirodown_example[[
+\CirodownExample[[[
+\CirodownExample[[
 Some `ineline` code.
 ]]
 ]]]
@@ -1918,7 +1918,7 @@ The style recommendation is: use the insane version which is shorter, unless you
 The insane code and math shortcuts work very analogously and are therefore described together in this section.
 
 The insane inline code syntax:
-\cirodown_example[[
+\CirodownExample[[
 a `b c` d
 ]]
 and is equivalent to the sane:
@@ -1927,7 +1927,7 @@ a \c[[b c]] d
 ``
 
 The insane block code:
-\cirodown_example[[
+\CirodownExample[[
 a
 
 ``
@@ -1959,13 +1959,13 @@ For example, an insane code block with an id can be written as:
 a `b c`{id=ef} g
 ``
 because that is the same as:
-\cirodown_example[[
+\CirodownExample[[
 a \c[b c]{id=ef} g
 ]]
 So we see that the `b c` argument is the very first argument of `\c`.
 
 Extra arguments must come after the insane opening, e.g. the following does not work:
-\cirodown_example[[
+\CirodownExample[[
 a {id=ef}`b c` g
 ]]
 
@@ -1974,7 +1974,7 @@ This restriction things easy to parse for humans and machines alike.
 ==== Escapes in insane macro shortcuts
 
 Literal backticks and dollar signs can be produced witha backslash escape as in:
-\cirodown_example[[
+\CirodownExample[[
 a \` \$ b
 ]]
 
@@ -1985,14 +1985,14 @@ The design reason for that is because multiple backticks produce block code.
 The upside is that then you don't have to escape anything else, e.g. backslashes (`\`) are rendered literally.
 
 The only way to do it is to use the sane syntax instead:
-\cirodown_example[[[
+\CirodownExample[[[
 a \c[[b ` c]] d
 
 a \m[[\sqrt{\$4}]] d
 ]]]
 
 Within block code and math, you can just add more separators:
-\cirodown_example[[
+\CirodownExample[[
 ```
 code with two backticks
 ``
@@ -2048,10 +2048,10 @@ The order of positional arguments must of course be fixed, but named arguments c
 
 The following are therefore all equivalent:
 ``
-\h[1][My asdf]{id=asdf qwer}{scope}
-\h[1][My asdf]{scope}{id=asdf qwer}
-\h{id=asdf qwer}{scope}[1][My asdf]
-\h{scope}[1]{id=asdf qwer}[My asdf]
+\H[1][My asdf]{id=asdf qwer}{scope}
+\H[1][My asdf]{scope}{id=asdf qwer}
+\H{id=asdf qwer}{scope}[1][My asdf]
+\H{scope}[1]{id=asdf qwer}[My asdf]
 ``
 
 Just like named arguments, positional arguments are never mandatory.
@@ -2063,7 +2063,7 @@ Most positional arguments will default to an empty string if not given.
 However, some positional arguments can have special effects if not given.
 
 For example, an anchor with the first positional argument present (the URL), but not the second positional argument (the link text) as in:
-\cirodown_example[[
+\CirodownExample[[
 \a[http://example.com]
 ]]
 has the special effect of generating automatic links as in:
@@ -2091,15 +2091,15 @@ Name arguments marked in \x[help-macros] as `boolean: true` must either:
 * not be given, in which case the default value is the `default` from \x[help-macros], or `0` if such default is not given
 
 For example, \x[cross-reference-full-argument][the `full` argument] of \x[internal-cross-references] is correctly written as:
-\cirodown_example[[
+\CirodownExample[[
 \x[boolean-named-arguments]{full}
 ]]
 without the `=` sign, or equivalently:
-\cirodown_example[[
+\CirodownExample[[
 \x[boolean-named-arguments]{full=1}
 ]]
 The `full=0` version is useful in the case of reference targets that unlike \x[headers] expand the title on the cross reference by default, e.g. \x[images]:
-\cirodown_example[[
+\CirodownExample[[
 \x[boolean-named-arguments]{full=1}
 ]]
 
@@ -2127,7 +2127,7 @@ In literal arguments, Cirodown is not parsed, and the entire argument is conside
 Therefore, you cannot have nested content, but it makes it extremely convenient to write \x[code] or \x[mathematics].
 
 For example, a multiline code block with double open and double close square brackets inside can be enclosed in triple square brackets:
-\cirodown_example[[[
+\CirodownExample[[[
 A literal argument looks like this in Cirodown:
 
 \C[[
@@ -2142,7 +2142,7 @@ And another paragraph.
 ]]]
 
 The same works for inline code:
-\cirodown_example[[[
+\CirodownExample[[[
 The program \c[[puts("]");]] is very complex.
 ]]]
 
@@ -2213,29 +2213,29 @@ b
 This is extremely convenient to improve the readability of code blocks and similar constructs.
 
 The newline is however considered if it would be part of some \x[insane-macro-shortcuts]{p=0}. For example, we can start an \x[lists][insane list] inside a \x[quotations]{p=0} as in:
-\cirodown_example[[
-\q[
+\CirodownExample[[
+\Q[
 * a
 * b
 ]
 ]]
-where the insane list requires a leading newline `\n* ` to work. That newline is not ignored, even though it comes immediately after the `\q[` opening.
+where the insane list requires a leading newline `\n* ` to work. That newline is not ignored, even though it comes immediately after the `\Q[` opening.
 
 ==== Argument newlines between arguments removal
 
 The macro name and the first argument, and two consecutive arguments, can be optionally separated by exactly one newline character, e.g.:
 ``
-\h[2]
+\H[2]
 {scope}
 [Design goals]
 ``
 is equivalent to:
 ``
-\h[2]{scope}[Design goals]
+\H[2]{scope}[Design goals]
 ``
 and this non-recommended mixed style:
 ``
-\h[2]{scope}
+\H[2]{scope}
 [Design goals]
 ``
 This allows to greatly improve the readability of long argument lists by having them one per line.
@@ -2265,15 +2265,15 @@ This is good for short arguments of regular text, but for longer blocks of \x[co
 
 Some sequences of macros such as `l` from \x[lists] and `tr` from \x[tables] automatically generate implicit parents, e.g.:
 ``
-\ul[
-\l[aa]
-\l[bb]
+\Ul[
+\L[aa]
+\L[bb]
 ]
 ``
 parses exactly like:
 ``
-\l[aa]
-\l[bb]
+\L[aa]
+\L[bb]
 ``
 
 The children are always added as arguments of the `content` argument of the implicit parent.
@@ -2287,42 +2287,44 @@ In HTML, certain elements such as `<ul>` cannot have any `text` nodes in them, a
 
 A similar concept applies to Cirodown, e.g.:
 ``
-\ul[
-\l[aa]
-\l[bb]
+\Ul[
+\L[aa]
+\L[bb]
 ]
 ``
 does not parse as:
 ``
-\ul[\l[aa]<NEWLINE>\l[bb]<NEWLINE>]
+\Ul[\L[aa]<NEWLINE>\L[bb]<NEWLINE>]
 ``
 but rather as:
 ``
-\ul[\l[aa]\l[bb]]
+\Ul[\L[aa]\L[bb]]
 ``
 because the `content` argument of `ul` is marked with `remove_whitespace_children` and automatically removes any whitespace children (such as a newline) as a result.
 
 This also applies to consecutive sequences of \x[auto-parent] macros, e.g.:
 ``
-\l[aa]
-\l[bb]
+\L[aa]
+\L[bb]
 ``
 also does not include the newline between the list items.
 
 The definition of whitespace is the same as the ASCII whitespace definition of HTML5: ` \r\n\f\t`.
 
-=== Macro capitalization for block vs inline
+=== Block vs inline macros
 
-This is just a naming convention without any magic attached to it. It is currently used for macros such as:
+Every Cirodown macro is either block or inline:
+* a block macro is one that takes up the entire line when rendered
+
+  All block macros start with a capital letter, e.g. `\H` for \x[headers].
+* and an inline macro is one that goes inside of a line.
+
+  Every inline macro starts with a lowercase letter e.g. `\a` for \x[links].
+
+Some macros have both a block and an inline version, and like any other macro, those are differentiated by capitalization:
 * \x[mathematics]
 * \x[code]
 * \x[comments]
-
-The naming convention is as follows:
-* if there is both an inline and block version of something, use the capitalization to distinguish between them
-* otherwise, just name it lowercase, even if it is block
-
-Maybe it would be saner to go "block if and only if uppercase", and automate that in the code. But it means more shift pressing...
 
 === Plaintext conversion
 
@@ -2331,7 +2333,7 @@ In some cases, we want to extract plaintext versions of complex nested elements.
 TODO implement:
 ``
 For example, when the \x[internal-cross-references][ID of a node is derived from its title], we don't want the default element to have complex HTML tags on it:
-\cirodown_example[[
+\CirodownExample[[
 \x[title-with-code]
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
@@ -2843,7 +2845,7 @@ as per: https://stackoverflow.com/questions/41380137/list-all-mocha-tests-withou
 
 Run just one test by name:
 ``
-npm test -- 'one paragraph'
+npm test -- -g 'one paragraph'
 ``
 as per: https://stackoverflow.com/questions/10832031/how-to-run-a-single-test-with-mocha TODO: what if the test name is a substring?
 
@@ -2886,12 +2888,12 @@ Everything that you need to write Cirodown tooling, is present in the main API.
 
 All tooling will be merged into one single repo.
 
-=== The `\toplevel` implicit macro
+=== The `\Toplevel` implicit macro
 {id=toplevel}
 
-Every Cirodown document is implicitly put inside a `\toplevel` document and:
-* any optionally given arguments at the very beginning of the document will be treated as arguments of the `\toplevel` macro
-* anything else will be put inside the `content` argument of the `\toplevel` macro
+Every Cirodown document is implicitly put inside a `\Toplevel` document and:
+* any optionally given arguments at the very beginning of the document will be treated as arguments of the `\Toplevel` macro
+* anything else will be put inside the `content` argument of the `\Toplevel` macro
 
 E.g., a Cirodown document that contains:
 ``
@@ -2902,19 +2904,19 @@ And now, some content!
 
 is morally equivalent to:
 ``
-\toplevel{title=My favorite title.}
+\Toplevel{title=My favorite title.}
 [
 And now, some content!
 ]
 ``
-In terms of HTML, the `\toplevel` element corresponds to the `<html>`, `<head>`, `<header>` and `<footer>` elements of a document.
+In terms of HTML, the `\Toplevel` element corresponds to the `<html>`, `<head>`, `<header>` and `<footer>` elements of a document.
 
-Trying to use the `\toplevel` macro explicitly in a document leads to an error.
+Trying to use the `\Toplevel` macro explicitly in a document leads to an error.
 
 ==== HTML document title
 
 * if the `title` argument of `toplevel` is given, use that
-* otherwise, if the document has a `\h[1]`, use the title of the first such header
+* otherwise, if the document has a `\H[1]`, use the title of the first such header
 * otherwise use a dummy value
 
 === CSS

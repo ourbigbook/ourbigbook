@@ -365,7 +365,10 @@ function convert_path(input_path, options, convert_input_options) {
       new_options.toplevel_parent_scope = path_relative_to_cirodown_json;
     }
   }
-  if (!convert_input_options.commander.htmlEmbed) {
+  // TODO htmlEmbed was split into embedIncludes and embedResources.
+  // This was likely meant to beembedIncludes, but I don't have a filing test if this is commented out
+  // so not sure.
+  if (!convert_input_options.commander.embedIncludes) {
     let root_relpath = path.relative(input_path_parse.dir, convert_input_options.cirodown_json_dir)
     if (root_relpath !== '') {
       root_relpath += cirodown.URL_SEP;

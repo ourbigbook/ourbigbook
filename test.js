@@ -3753,19 +3753,47 @@ assert_executable(
     ],
   }
 );
-// --embed-resources
 assert_executable(
-  'executable: --embed-resources',
+  'executable: --embed-resources actually embeds resources',
   {
     args: ['--embed-resources', '.'],
     filesystem: {
       'README.ciro': `= Index
 `,
     },
+    expect_filesystem_xpath: {
+      'index.html': [
+        // The start of a minified CSS rule from cirodown.scss.
+        "//x:style[contains(text(),'.cirodown{')]",
+      ],
+    },
     expect_filesystem_not_xpath: {
       'index.html': [
+        // The way that we import other sheets.
         "//x:style[contains(text(),'@import ')]",
       ],
     }
+  }
+);
+assert_executable(
+  // at cross reference to non-included header in another file
+  // we havea commented out stub for this withotu executable:
+  // but it would require generalizing the test system a bit,
+  // and we are lazy right now.
+  'executable: reference to subdir with --embed-includes',
+  {
+    args: ['--embed-includes', 'README.ciro'],
+    filesystem: {
+      'README.ciro': `= Index
+
+\\x[subdir/h2]
+
+\\Include[subdir]
+`,
+      'subdir/index.ciro': `= Subdir
+
+== h2
+`,
+    },
   }
 );

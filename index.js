@@ -234,7 +234,7 @@ class AstNode {
    *                 - {AstArgument} 'title': the title of the element linked to
    *        - {bool} in_caption_number_visible
    *        - {Set[AstNode]} x_parents: set of all parent x elements.
-   *        - {String} root_relpath_scope_shift - relative path introduced due to a scope in split header mode
+   *        - {String} root_relpath_shift - relative path introduced due to a scope in split header mode
    * @param {Object} context
    * @return {String}
    */
@@ -2417,6 +2417,9 @@ async function convert(
             clone_and_set(context, 'to_split_headers', false)
           ))[0];
         }
+        if (outpath !== undefined) {
+          context.options.template_vars.root_relpath = get_root_relpath(outpath, context);
+        }
       }
       context.toplevel_output_path = outpath;
     }
@@ -2582,14 +2585,10 @@ function convert_header(cur_arg_list, context, has_toc) {
     context.toplevel_ast = first_ast;
 
     // root_relpath
-    const [output_path_dir, output_path_basename] =
-      path_split(output_path, context.options.path_sep);
     options.template_vars = Object.assign({}, options.template_vars);
-    let new_root_relpath = path.relative(output_path_dir, '.')
-    if (new_root_relpath !== '') {
-        new_root_relpath += context.options.path_sep;
-    }
-    context.root_relpath_scope_shift = path.relative(options.template_vars.root_relpath, new_root_relpath)
+    const new_root_relpath = get_root_relpath(output_path, context)
+    context.root_relpath_shift = path.relative(options.template_vars.root_relpath,
+      path.join(context.root_relpath_shift, new_root_relpath))
     options.template_vars.root_relpath = new_root_relpath
 
     // Do the conversion.
@@ -2792,6 +2791,7 @@ function convert_init_context(options={}, extra_returns={}) {
   //   Otherwise, derive the ID from the title.
   //   https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
   options.toplevel_id = undefined;
+  let root_relpath_shift
   if (options.input_path !== undefined) {
     const [input_dir, basename] = path_split(options.input_path, options.path_sep)
     const [basename_noext, ext] = path_splitext(basename)
@@ -2803,6 +2803,7 @@ function convert_init_context(options={}, extra_returns={}) {
         // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
         options.toplevel_id = input_dir;
         options.toplevel_has_scope = true
+        root_relpath_shift = input_dir
       }
       options.isindex = true
     } else {
@@ -2814,16 +2815,9 @@ function convert_init_context(options={}, extra_returns={}) {
     } else {
       options.toplevel_parent_scope = input_dir
     }
-    // TODO htmlEmbed was split into embedIncludes and embedResources.
-    // This was likely meant to be embedIncludes, but I don't have a filing test if this is commented out
-    // so not sure.
-    if (!options.embed_includes) {
-      let root_relpath = path.relative(input_dir, '')
-      if (root_relpath !== '') {
-        root_relpath += URL_SEP;
-      }
-      options.template_vars.root_relpath = root_relpath;
-    }
+  }
+  if (root_relpath_shift === undefined) {
+    root_relpath_shift = ''
   }
 
   if (options.unsafe_xss === undefined) {
@@ -2847,7 +2841,10 @@ function convert_init_context(options={}, extra_returns={}) {
     in_header: false,
     macros: macro_list_to_macros(),
     options,
-    root_relpath_scope_shift: '',
+    // Shifts in local \a links due to either:
+    // - scope + split headers e.g. scope/notindex.html
+    // - subdirectories
+    root_relpath_shift,
     synonym_headers: new Set(),
     toplevel_id: options.toplevel_id,
     // Output path for the current rendering.
@@ -3025,7 +3022,7 @@ function check_and_update_local_link({
       )
     )
   ) {
-    href = path.join(context.root_relpath_scope_shift, href);
+    href = path.join(context.root_relpath_shift, href);
   }
   return { href, error }
 }
@@ -3115,6 +3112,19 @@ function get_parent_argument_ast(ast, context, prev_header, include_options) {
     }
   }
   return [parent_id, parent_ast];
+}
+
+function get_root_relpath(output_path, context) {
+  // TODO htmlEmbed was split into embedIncludes and embedResources.
+  // This was likely meant to be embedIncludes, but I don't have a filing test if this is commented out
+  // so not sure.
+  const [output_path_dir, output_path_basename] =
+    path_split(output_path, context.options.path_sep);
+  let root_relpath = path.relative(output_path_dir, '.')
+  if (root_relpath !== '') {
+    root_relpath += URL_SEP;
+  }
+  return root_relpath
 }
 
 // Ensure that all children and tag targets exist. This is for error checking only.
@@ -3681,6 +3691,13 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
       dirname_ret = dirname;
       basename_ret = renamed_basename_noext;
     }
+  }
+
+  const [dir_dir, dir_base] = path_split(dirname_ret, context.options.path_sep);
+  if (basename_ret === INDEX_BASENAME_NOEXT && dirname) {
+    const [dir_dir, dir_base] = path_split(dirname, context.options.path_sep);
+    dirname_ret = dir_dir
+    basename_ret = dir_base
   }
 
   // Add -split, -nosplit or custom suffixes to basename_ret.

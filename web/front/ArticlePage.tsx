@@ -20,18 +20,19 @@ import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
 
 export interface ArticlePageProps {
-  article: ArticleType|IssueType;
-  comments: CommentType[];
-  commentsCount: number;
-  issue?: IssueType[];
-  issues?: IssueType[];
+  article: ArticleType & IssueType;
+  comments?: CommentType[];
+  commentsCount?: number;
+  issueArticle?: ArticleType;
   issuesCount?: number;
+  latestIssues?: IssueType[];
   loggedInUser?: UserType;
   sameArticleByLoggedInUser?: string;
+  topIssues?: IssueType[];
   topicArticleCount: number;
 }
 
-const ArticlePageHoc = (isIssue) => {
+const ArticlePageHoc = (isIssue=false) => {
   return ({
     article,
     comments,

@@ -17,7 +17,7 @@ export const getServerSidePropsIssueIndexHoc = (what): MyGetServerSideProps => {
           includeIssues: true,
           limit: 5,
           sequelize,
-          slug: slug.join('/'),
+          slug: (slug as string[]).join('/'),
           include: [{
             model: sequelize.models.File,
             as: 'file',

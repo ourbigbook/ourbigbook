@@ -5,7 +5,7 @@ export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
   return async ({ params: { slug, number: numberString }, req, res }) => {
     if (slug instanceof Array) {
       const sequelize = req.sequelize
-      const number = parseInt(numberString, 10)
+      const number = parseInt(numberString as string, 10)
       if (isNaN(number)) {
         return {
           notFound: true

@@ -32,10 +32,13 @@ const LOG_OPTIONS = new Set([
   'tokens',
 ]);
 const SASS_EXT = '.scss';
+// TODO get rid of this/most of this, and instead use the actual gitignore.
+// https://github.com/cirosantilli/ourbigbook/issues/253
 const DEFAULT_IGNORE_BASENAMES = [
   '.git',
   '.gitignore',
   '.sass-cache',
+  '.venv',
   'main.liquid.html',
   'node_modules',
   'package-lock.json',

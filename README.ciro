@@ -3,7 +3,7 @@
 Markup language + static site generator to write complex structured wikis/books/blogs, that is \x[saner] and \x[design-goals][more powerful] than Markdown and Asciidoctor, with reference implementation in JavaScript.
 
 * https://cirosantilli.com[]: showcase demo document with interesting content. Primary inspiration for Cirodown development.
-  * https://cirosantilli.com/oxford-nanopore-river-bacteria[]: a tutorial style part of the above. Note how internal links integrate seamlessly into the more global topic of biology.
+  * https://cirosantilli.com/oxford-nanopore-river-bacteria[]: a self-contained tutorial style part of the above. Note how internal links integrate seamlessly into the more global topic of biology, e.g. when talking about DNA we link to the global topic https://cirosantilli.com/dna[].
   * https://github.com/cirosantilli/cirosantilli.github.io[] and https://github.com/cirosantilli/cirosantilli.github.io/blob/dev/oxford-nanopore-river-bacteria.ciro[]: source of the above showcase documents
 * \x[design-goals]{full}: feature overview
 * https://github.com/cirosantilli/cirodown[]: Cirodown source code

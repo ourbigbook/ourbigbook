@@ -3753,3 +3753,19 @@ assert_executable(
     ],
   }
 );
+// --embed-resources
+assert_executable(
+  'executable: --embed-resources',
+  {
+    args: ['--embed-resources', '.'],
+    filesystem: {
+      'README.ciro': `= Index
+`,
+    },
+    expect_filesystem_not_xpath: {
+      'index.html': [
+        "//x:style[contains(text(),'@import ')]",
+      ],
+    }
+  }
+);

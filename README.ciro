@@ -121,12 +121,14 @@ printf 'ab\ncd\n' | cirodown > tmp.html
 ``
 You almost never want to do this except when \x[developing-cirodown], as it won't be clear what version of `cirodown` the document should be compiled with. Just be a good infant and use Cirodown \x[play-with-the-template][with the template] that contains a `package.json` via `npx`, OK?
 
-TODO mention `snap` confinement:
+Furthermore, the default install of Chromium on Ubuntu 21.04 uses Snap and blocks access to dotfiles. For example, in a sane NVM install, our global CSS would live under `/home/ciro/.nvm/versions/node/v14.17.0/lib/node_modules/cirodown/dist/cirodown.css`, which gets blocked because of the `.nvm` part:
+* https://forum.snapcraft.io/t/dot-files/7062
+* https://bugs.launchpad.net/snapd/+bug/1607067
 * https://superuser.com/questions/1546550/chromium-81-wont-display-dotfiles-anymore
 * https://askubuntu.com/questions/1184357/why-cant-chromium-suddenly-access-any-partition-except-for-home
 * https://askubuntu.com/questions/1214346/as-a-user-is-there-any-way-to-change-the-confinement-of-a-snap-package
 
-To run master globally for development see: \x[run-cirodown-master]{full}.
+To run master globally for development see: \x[run-cirodown-master]{full}. This one actually works despite the dotfile thing since your development path is normally outside of dotfiles.
 
 Try out the JavaScript API with \a[api_hello.js]:
 ``

@@ -14,6 +14,7 @@ mocha-list-tests|\
 parse5|\
 webpack-dev-server|\
 xmldom|\
+xmlserializer|\
 xpath\
 )\"/d" package.json
 # npm link is broken on Heroku. I don't care why.

@@ -59,19 +59,24 @@ class SqliteIdProvider extends cirodown.IdProvider {
       return undefined;
     } else {
       const ast = cirodown.AstNode.fromJSON(get_ret.ast_json);
-      return [get_ret.path, ast];
+      ast.input_path = get_ret.path;
+      ast.id = id;
+      return ast;
     }
   }
 
   get_includes(to_id) {
-    let get_ret = this.get_includes_stmt.get(to_id);
-    // TODO return array.
-    //if (get_ret === undefined) {
-    //  return undefined;
-    //} else {
-    //  const ast = cirodown.AstNode.fromJSON(get_ret.ast_json);
-    //  return [get_ret.path, ast];
-    //}
+    let all_rets = this.get_includes_stmt.all(to_id);
+    let ret = [];
+    for (const all_ret of all_rets) {
+      const from_ast = this.get(all_ret.from_id);
+      if (from_ast === undefined) {
+        throw 'parent ID of include not in database, not sure how this can happen so throwing';
+      } else {
+        ret.push(from_ast);
+      }
+    }
+    return ret;
   }
 }
 

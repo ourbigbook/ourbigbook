@@ -169,6 +169,7 @@ function assert_convert_ast(
     })
     new_convert_opts.id_provider = new cirodown_nodejs.SqliteIdProvider(sequelize);
     new_convert_opts.file_provider = new MockFileProvider();
+    const rendered_outputs = {}
     for (const input_path of options.convert_before) {
       const extra_returns = {};
       const input_string = filesystem[input_path];
@@ -177,6 +178,7 @@ function assert_convert_ast(
       dependency_convert_opts.input_path = input_path;
       dependency_convert_opts.toplevel_id = path.parse(input_path).ext;
       await cirodown.convert(input_string, dependency_convert_opts, extra_returns);
+      Object.assign(rendered_outputs, extra_returns.rendered_outputs)
       assert.strictEqual(extra_returns.errors.length, 0)
       await Promise.all([
         new_convert_opts.id_provider.update(extra_returns, sequelize),
@@ -189,6 +191,7 @@ function assert_convert_ast(
     }
     const extra_returns = {};
     const output = await cirodown.convert(input_string, new_convert_opts, extra_returns);
+    Object.assign(rendered_outputs, extra_returns.rendered_outputs)
     if (new_convert_opts.input_path !== undefined) {
       await new_convert_opts.id_provider.update(extra_returns, sequelize)
       await new_convert_opts.file_provider.update(new_convert_opts.input_path, extra_returns)
@@ -278,14 +281,14 @@ function assert_convert_ast(
       assert_xpath_matches(xpath_expr, output, { count: 0 });
     }
     for (const key in options.assert_xpath_split_headers) {
-      const output = extra_returns.rendered_outputs[key];
+      const output = rendered_outputs[key];
       assert.notStrictEqual(output, undefined, `${key} not in ${Object.keys(extra_returns.rendered_outputs)}`);
       for (const xpath_expr of options.assert_xpath_split_headers[key]) {
         assert_xpath_matches(xpath_expr, output, {message: key});
       }
     }
     for (const key in options.assert_not_xpath_split_headers) {
-      const output = extra_returns.rendered_outputs[key];
+      const output = rendered_outputs[key];
       assert.notStrictEqual(output, undefined);
       for (const xpath_expr of options.assert_not_xpath_split_headers[key]) {
         assert_xpath_matches(xpath_expr, output, {
@@ -3131,6 +3134,36 @@ assert_convert_ast('header numbered cirodown.json',
       ],
     },
     extra_convert_opts: { cirodown_json: { numbered: false } }
+  },
+);
+assert_convert_ast('header numbered=0 in cirodown.json works across source files and on table of contents',
+  `= Index
+
+\\Include[notindex]
+
+== H2
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//*[@id='toc']//x:a[@href='notindex.html' and text()='Notindex']",
+      "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
+      "//*[@id='toc']//x:a[@href='#h2' and text()='H2']",
+    ],
+    assert_xpath_split_headers: {
+      'notindex.html': [
+        "//*[@id='toc']//x:a[@href='#notindex-h2' and text()='Notindex h2']",
+      ],
+    },
+
+    convert_before: ['notindex.ciro'],
+    extra_convert_opts: { cirodown_json: { numbered: false } },
+    filesystem: {
+      'notindex.ciro': `= Notindex
+
+== Notindex h2
+`,
+    },
   },
 );
 assert_convert_ast('header file argument works',

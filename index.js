@@ -4553,6 +4553,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     // Reconcile the dummy include header with our actual knowledge from the DB, e.g.:
     // * patch the ID of the include headers.
     // Has to be deferred here after DB fetch obviously because we need he DB data.
+    // This is hair pulling stuff. There has to be abetter way...
     for (const href in options.include_hrefs) {
       const target_id_ast = context.id_provider.get(href, context);
       const header_ast = options.include_hrefs[href]
@@ -4564,6 +4565,17 @@ async function parse(tokens, options, context, extra_returns={}) {
           parse_error(state, message, header_ast.source_location);
         }
       } else {
+        if (target_id_ast.is_first_header_in_input_file) {
+          // We want the rendered placeholder to use its parent numbered, so as to follow the includer's numbering scheme,
+          // but the descendants to follow what they would actually render in the output as so they will show correctly on ToC.
+          header_ast.add_argument('numbered', new AstArgument(
+            [
+              new PlaintextAstNode(context.options.cirodown_json.numbered ? '1' : '0', header_ast.source_location),
+            ],
+            header_ast.source_location,
+          ))
+        }
+        propagate_numbered(header_ast, context)
         header_ast.set_source_location(target_id_ast.source_location)
         header_ast.header_tree_node.update_ancestor_counts(target_id_ast.header_tree_node_word_count)
         for (const argname in target_id_ast.args) {
@@ -5468,13 +5480,17 @@ function propagate_numbered(ast, context) {
   // numbered propagation to children.
   // Note that the property only affects descendants, but not the node itself.
   const parent_tree_node = ast.header_tree_node.parent_node
-  if (parent_tree_node === undefined || parent_tree_node.ast === undefined) {
+  if (
+    parent_tree_node === undefined ||
+    parent_tree_node.ast === undefined
+  ) {
     // Try getting parents from \Include.
     // https://github.com/cirosantilli/cirodown/issues/188
     //const parent_asts = ast.get_header_parent_asts(context)
     //if (parent_asts.length > 0) {
     //  ast.numbered = parent_asts.some(ast => ast.numbered)
     //} else {
+
     ast.numbered = context.options.cirodown_json.numbered
   } else {
     const parent_ast = parent_tree_node.ast

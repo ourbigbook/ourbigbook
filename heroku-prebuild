@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 set -eux
 env | sort
-./heroku-prebuild.js
+#./heroku-prebuild.js
 cd web && npm install

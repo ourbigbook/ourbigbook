@@ -20,6 +20,7 @@
     "cirodown",
     "index.js",
     "nodejs.js",
+    "out/index.js",
     "out/main.embed.min.css",
     "out/main.min.css"
   ],

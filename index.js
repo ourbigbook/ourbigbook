@@ -44,9 +44,6 @@ class AstNode {
     if (!(Macro.ID_ARGUMENT_NAME in options)) {
       options.id = undefined;
     }
-    if (!('level' in options)) {
-      options.level = undefined;
-    }
     if (!('parent_node' in options)) {
       options.parent_node = undefined;
     }
@@ -81,7 +78,7 @@ class AstNode {
     this.parent_node = options.parent_node;
     // AstArgument
     this.parent_argument = undefined;
-    // {TreeNode} that points to the element.
+    // {HeaderTreeNode} that points to the element.
     // This is used for both headers and non headers:
     // the only difference is that non-headers are not connected as
     // children of their parent. But they still know who the parent is.
@@ -99,9 +96,6 @@ class AstNode {
     // This was added to the tree from an include.
     this.from_include = options.from_include;
 
-    // Header only fields.
-    // {Number}
-    this.level = options.level;
     // Includes under this header.
     this.includes = [];
 
@@ -125,7 +119,7 @@ class AstNode {
    *                 content that is passed for an external tool for processing, for example
    *                 Math equations to KaTeX, In that case, the arguments need to be passed as is,
    *                 otherwise e.g. `1 < 2` would escape the `<` to `&lt;` and KaTeX would receive bad input.
-   *        - {TreeNode} header_graph - TreeNode graph containing AstNode headers
+   *        - {HeaderTreeNode} header_graph - HeaderTreeNode graph containing AstNode headers
    *        - {Object} ids - map of document IDs to their description:
    *                 - 'prefix': prefix to add for a  full reference, e.g. `Figure 1`, `Section 2`, etc.
    *                 - {AstArgument} 'title': the title of the element linked to
@@ -347,7 +341,7 @@ class IdProvider {
 
   /**
    * @param {String} id
-   * @param {TreeNode} header_graph_node
+   * @param {HeaderTreeNode} header_graph_node
    * @return {Union[AstNode,undefined]}.
    *         undefined: ID not found
    *         Otherwise, the ast node for the given ID
@@ -1301,10 +1295,10 @@ class Tokenizer {
   }
 }
 
-class TreeNode {
+class HeaderTreeNode {
   /**
    * @param {AstNode} value
-   * @param {TreeNode} parent_node
+   * @param {HeaderTreeNode} parent_node
    */
   constructor(value, parent_node) {
     this.value = value;
@@ -1322,6 +1316,18 @@ class TreeNode {
       cur_node.descendant_count += 1;
       cur_node = cur_node.parent_node;
     }
+  }
+
+  /** @return {Number} How deep this node is relative to
+   * the to of the root of the tree. */
+  get_level() {
+    let level = 0;
+    let cur_node = this.parent_node;
+    while (cur_node !== undefined) {
+      level++;
+      cur_node = cur_node.parent_node;
+    }
+    return level;
   }
 
   /** E.g. get number 1.4.2.5 of a Section.
@@ -1355,8 +1361,8 @@ class TreeNode {
     }
     while (todo_visit.length > 0) {
       const cur_node = todo_visit.pop();
-      const value = cur_node.value;
-      ret.push(`${INSANE_HEADER_CHAR.repeat(value.level)} h${value.level} ${cur_node.get_nested_number(1)} ${value.id}`);
+      const level = cur_node.get_level();
+      ret.push(`${INSANE_HEADER_CHAR.repeat(level)} h${level} ${cur_node.get_nested_number(1)} ${cur_node.value.id}`);
       todo_visit.push(...cur_node.children.reverse());
     }
     return ret.join('\n');
@@ -1776,12 +1782,15 @@ function convert(
           const context_copy = Object.assign({}, context);
           const header_graph_node = cur_arg_list[0].header_graph_node;
           const header_graph_node_real_parent = header_graph_node.parent_node;
-          header_graph_node.parent_node = undefined;
+          // Add a new toplevel parent.
+          header_graph_node.parent_node = new HeaderTreeNode();
           const ast_toplevel = new AstNode(
             AstType.MACRO,
             Macro.TOPLEVEL_MACRO_NAME,
-            {'content': new AstArgument(cur_arg_list,
-              cur_arg_list[0].source_location)},
+            {
+              'content': new AstArgument(cur_arg_list,
+              cur_arg_list[0].source_location)
+            },
             cur_arg_list[0].source_location,
           );
           context.extra_returns.html_split_header[cur_arg_list[0].id] =
@@ -2384,7 +2393,7 @@ function parse(tokens, options, context, extra_returns={}) {
   // Another possibility would be to do it in the middle of the initial parse,
   // but let's not complicate that further either, shall we?
   context.headers_with_include = [];
-  context.header_graph = new TreeNode();
+  context.header_graph = new HeaderTreeNode();
   extra_returns.debug_perf.post_process_start = globals.performance.now();
   let prev_header;
   let cur_header_level;
@@ -2541,7 +2550,7 @@ function parse(tokens, options, context, extra_returns={}) {
             // and all includes and headers must be parsed concurrently since includes get
             // injected under the last header.
             validate_ast(header_ast, context);
-            header_ast.header_graph_node = new TreeNode(header_ast, cur_header_graph_node);
+            header_ast.header_graph_node = new HeaderTreeNode(header_ast, cur_header_graph_node);
             cur_header_graph_node.add_child(header_ast.header_graph_node);
             new_child_nodes = [
               header_ast,
@@ -2702,14 +2711,13 @@ function parse(tokens, options, context, extra_returns={}) {
           if (parent_tree_node === undefined) {
             parent_tree_node_error = true;
           } else {
-            cur_header_level = parent_tree_node.value.level + 1;
+            cur_header_level = parent_tree_node.get_level() + 1;
           }
         }
-        ast.level = cur_header_level;
         if ('level' in ast.args) {
           // Hack the level argument of the final AST to match for consistency.
           ast.args.level = new AstArgument([
-            new PlaintextAstNode(ast.args.level.source_location, ast.level.toString())],
+            new PlaintextAstNode(ast.args.level.source_location, cur_header_level.toString())],
             ast.args.level.source_location);
         }
 
@@ -2725,7 +2733,7 @@ function parse(tokens, options, context, extra_returns={}) {
           include_options.header_graph_stack.set(header_graph_last_level, context.header_graph);
           include_options.is_first_global_header = false;
         }
-        cur_header_graph_node = new TreeNode(ast, include_options.header_graph_stack.get(cur_header_level - 1));
+        cur_header_graph_node = new HeaderTreeNode(ast, include_options.header_graph_stack.get(cur_header_level - 1));
         let header_level_skip_error;
         if (cur_header_level - header_graph_last_level > 1) {
           header_level_skip_error = header_graph_last_level;
@@ -2775,7 +2783,7 @@ function parse(tokens, options, context, extra_returns={}) {
           parse_error(state, message, ast.args.parent.source_location);
         }
         if (header_level_skip_error !== undefined) {
-          const message = `skipped a header level from ${header_level_skip_error} to ${ast.level}`;
+          const message = `skipped a header level from ${header_level_skip_error} to ${cur_header_level}`;
           ast.args[Macro.TITLE_ARGUMENT_NAME].push(
             new PlaintextAstNode(ast.source_location, ' ' + error_message_in_output(message)));
           parse_error(state, message, ast.args.level.source_location);
@@ -3116,7 +3124,7 @@ function parse(tokens, options, context, extra_returns={}) {
           // TODO start with the toplevel.
           cur_header_graph_node = ast.header_graph_node;
         } else {
-          ast.header_graph_node = new TreeNode(ast, cur_header_graph_node);
+          ast.header_graph_node = new HeaderTreeNode(ast, cur_header_graph_node);
         }
 
         if (
@@ -4198,7 +4206,7 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       let custom_args;
-      let level_int = ast.level;
+      let level_int = ast.header_graph_node.get_level();
       if (typeof level_int !== 'number') {
         throw new Error('header level is not an integer after validation');
       }
@@ -4688,7 +4696,10 @@ const DEFAULT_MACRO_LIST = [
           parent_ast !== undefined
         ) {
           let parent_href_target;
-          if (parent_ast.level === context.header_graph_top_level) {
+          if (
+            parent_ast.header_graph !== undefined &&
+            parent_ast.header_graph.get_level() === context.header_graph_top_level
+          ) {
             parent_href_target = x_href(parent_ast, context);
           } else {
             parent_href_target = '#' + toc_id(parent_ast, context);

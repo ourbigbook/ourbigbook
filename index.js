@@ -2641,8 +2641,34 @@ function parse(tokens, options, context, extra_returns={}) {
             // Happens for the first header
             prev_header !== undefined
           ) {
-            const parent_ast = context.id_provider.get(
-              parent_id, context, prev_header.header_graph_node);
+            let parent_ast;
+            if (parent_id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
+              parent_ast = id_provider.get_noscope(parent_id.substr(1), context);
+            } else {
+              // We can't use context.id_provider.get here because we don't know who
+              // the parent node is, because scope can affect that choice.
+              // https://cirosantilli.com/cirodown#id-based-header-levels-and-scope-resolution
+              let sorted_keys = [...include_options.header_graph_stack.keys()].sort((a, b) => a - b);
+              let largest_level = sorted_keys[sorted_keys.length - 1];
+              for (let level = largest_level; level > 0; level--) {
+                let ast = include_options.header_graph_stack.get(level).value;
+                let ast_id_len = ast.id.length;
+                let parent_id_len = parent_id.length;
+                if (
+                  ast.id.endsWith(parent_id) &&
+                  (
+                    ast_id_len == parent_id_len ||
+                    (
+                      ast_id_len > parent_id_len &&
+                      ast.id[ast_id_len - parent_id_len - 1] === Macro.HEADER_SCOPE_SEPARATOR
+                    )
+                  )
+                ) {
+                  parent_ast = ast;
+                  break;
+                }
+              }
+            }
             if (parent_ast !== undefined) {
               parent_tree_node = include_options.header_graph_id_stack.get(parent_ast.id);
             }

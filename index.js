@@ -379,7 +379,7 @@ class AstNode {
         this.id !== undefined &&
         macro.toplevel_link
       ) {
-        out = OUTPUT_FORMATS[context.options.output_format].toplevel_child_modifier(this, context, out);
+        out = OUTPUT_FORMATS[context.options.output_format].toplevelChildModifier(this, context, out);
         if (render_pre) {
           out = render_pre + out
         }
@@ -8832,10 +8832,10 @@ class OutputFormat {
     this.id = id
     this.ext = opts.ext
     this.convert_funcs = opts.convert_funcs
-    if ('toplevel_child_modifier' in opts) {
-      this.toplevel_child_modifier = opts.toplevel_child_modifier
+    if ('toplevelChildModifier' in opts) {
+      this.toplevelChildModifier = opts.toplevelChildModifier
     } else {
-      this.toplevel_child_modifier = (ast, context, out) => out
+      this.toplevelChildModifier = (ast, context, out) => out
     }
   }
 }
@@ -8844,7 +8844,7 @@ const OUTPUT_FORMATS_LIST = [
     OUTPUT_FORMAT_HTML,
     {
       ext: HTML_EXT,
-      toplevel_child_modifier: function(ast, context, out) {
+      toplevelChildModifier: function(ast, context, out) {
         let href
         if (ast) {
           href = xHref(ast, context)

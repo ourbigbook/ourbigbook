@@ -211,6 +211,18 @@ assert_convert_ast('three paragraphs',
     a('p', [t('p3')]),
   ]
 );
+assert_convert_ast('insane paragraph at start of sane quote',
+  '\\q[\n\naa]\n',
+  [
+    a('q', [
+      a('p', [t('aa')])]
+    ),
+  ]
+);
+assert_convert_ast('sane quote without inner paragraph',
+  '\\q[aa]\n',
+  [a('q', [t('aa')])],
+);
 assert_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
 
 // List.
@@ -312,7 +324,7 @@ assert_convert_ast('list with paragraph insane',
       ]),
     ]),
   ]
-)
+);
 assert_convert_ast('list with multiline paragraph insane',
   `* aa
 
@@ -327,7 +339,7 @@ assert_convert_ast('list with multiline paragraph insane',
       ]),
     ]),
   ]
-)
+);
 // https://github.com/cirosantilli/cirodown/issues/54
 assert_convert_ast('insane list with literal no error',
   `* aa
@@ -345,7 +357,7 @@ assert_convert_ast('insane list with literal no error',
       ]),
     ]),
   ]
-)
+);
 assert_error('insane list with literal with error',
   `* aa
 
@@ -355,7 +367,7 @@ cc
   \`\`
 `,
   4, 1
-)
+);
 assert_convert_ast('insane list with literal with double newline is not an error',
   `* aa
 
@@ -373,7 +385,7 @@ assert_convert_ast('insane list with literal with double newline is not an error
       ]),
     ]),
   ]
-)
+);
 // https://github.com/cirosantilli/cirodown/issues/53
 assert_convert_ast('insane list with element with newline separated arguments',
   `* aa
@@ -391,7 +403,39 @@ assert_convert_ast('insane list with element with newline separated arguments',
       ]),
     ]),
   ]
-)
+);
+assert_convert_ast('insane list inside paragraph',
+  `aa
+* bb
+* cc
+dd
+`,
+  [
+    a('p', [
+      t('aa'),
+      a('ul', [
+        a('l', [t('bb')]),
+        a('l', [t('cc\n')]),
+      ]),
+      t('dd'),
+    ]),
+  ]
+);
+assert_convert_ast('insane list at start of sane quote',
+  `\\q[
+* bb
+* cc
+]
+`,
+  [
+    a('q', [
+      a('ul', [
+        a('l', [t('bb')]),
+        a('l', [t('cc\n')]),
+      ]),
+    ]),
+  ]
+);
 assert_convert_ast('nested list insane',
   `* aa
   * bb
@@ -408,11 +452,11 @@ assert_convert_ast('nested list insane',
       ]),
     ]),
   ]
-)
+);
 assert_convert_ast('escape insane list',
   '\\* a',
   [a('p', [t('* a')])],
-)
+);
 
 // Table.
 const tr_with_explicit_table_expect = [
@@ -474,6 +518,69 @@ assert_convert_ast('tr with implicit table',
 gh
 `,
   tr_with_explicit_table_expect
+);
+assert_convert_ast('fully implicit table',
+  `ab
+
+|| cd
+|| ef
+
+| 00
+| 01
+
+| 10
+| 11
+
+gh
+`,
+  tr_with_explicit_table_expect
+);
+assert_convert_ast('table inside list inside table',
+  `| 00
+| 01
+
+  * l1
+  * l2
+
+    | 20
+    | 21
+
+    | 30
+    | 31
+
+| 10
+| 11
+`,
+  [
+    a('table', [
+      a('tr', [
+        a('td', [t('00')]),
+        a('td', [
+          a('p', [t('01')]),
+          a('ul', [
+            a('l', [t('l1')]),
+            a('l', [
+              a('p', [t('l2')]),
+              a('table', [
+                a('tr', [
+                  a('td', [t('20')]),
+                  a('td', [t('21')]),
+                ]),
+                a('tr', [
+                  a('td', [t('30')]),
+                  a('td', [t('31')]),
+                ]),
+              ]),
+            ]),
+          ]),
+        ]),
+      ]),
+      a('tr', [
+        a('td', [t('10')]),
+        a('td', [t('11')]),
+      ]),
+    ]),
+  ]
 );
 assert_convert_ast('auto_parent consecutive implicit tr and l',
   `\\tr[\\td[ab]]

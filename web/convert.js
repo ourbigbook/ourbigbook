@@ -102,6 +102,9 @@ async function convert({
     }, convertOptions, convertOptionsExtra),
     extra_returns,
   )
+  if (perf) {
+    console.error(`perf: convert.after_convert: ${performance.now() - t0} ms`);
+  }
   if (extra_returns.errors.length > 0) {
     const errsNoDupes = remove_duplicates_sorted_array(
       extra_returns.errors.map(e => e.toString()))
@@ -168,7 +171,6 @@ async function convertArticle({
         // to show fine under a single page.
         fixedScopeRemoval: ourbigbook.AT_MENTION_CHAR.length,
         h_web_metadata: true,
-        perf,
         prefixNonIndexedIdsWithParentId: true,
       },
       forceNew,
@@ -450,6 +452,7 @@ async function convertArticle({
           // For the moving of existing articles however, we leave the space opening up to the Article.treeMoveRangeTo function instead.
           await sequelize.models.Article.treeOpenSpace({
             parentNestedSetIndex: newNestedSetIndexParent,
+            perf,
             nestedSetIndex: newNestedSetIndex,
             parentId: newParentId,
             shiftNestedSetBy: nestedSetSize,
@@ -586,6 +589,7 @@ async function convertArticle({
               oldNestedSetIndexParent,
               oldParentId,
               old_to_id_index,
+              perf,
               transaction,
               username: author.username,
             })
@@ -705,7 +709,7 @@ async function convertArticle({
     }
   })
   if (perf) {
-    console.error(`convertArticle finished in ${performance.now() - t0} ms`);
+    console.error(`perf: convertArticle finished in ${performance.now() - t0} ms`);
   }
   return { articles, extra_returns }
 }

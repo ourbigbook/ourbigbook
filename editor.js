@@ -1,4 +1,13 @@
-function cirodown_editor(input_elem, output_elem, initial_content, monaco, cirodown) {
+function cirodown_editor(root_elem, initial_content, monaco, cirodown, cirodown_runtime) {
+  // Create input and output elems.
+  const input_elem = document.createElement('div');
+  input_elem.classList.add('input');
+  const output_elem = document.createElement('div');
+  output_elem.classList.add('output');
+  output_elem.classList.add('cirodown');
+  root_elem.appendChild(input_elem);
+  root_elem.appendChild(output_elem);
+
   monaco.languages.register({ id: 'cirodown' });
   // TODO replace with our own tokenizer output:
   // https://github.com/cirosantilli/cirodown/issues/106

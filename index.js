@@ -330,7 +330,7 @@ class AstNode {
       return ' '
     }
     const macro = context.macros[this.macro_name];
-    let out, render_pre;
+    let out, render_pre, render_post
     if (this.validation_error === undefined) {
       let output_format;
       if (context.id_conversion) {
@@ -358,6 +358,7 @@ class AstNode {
         }
         out = convert_function(this, context, opts);
         render_pre = opts.extra_returns.render_pre
+        render_post = opts.extra_returns.render_post
       }
     } else {
       renderError(
@@ -382,6 +383,9 @@ class AstNode {
         out = OUTPUT_FORMATS[context.options.output_format].toplevelChildModifier(this, context, out);
         if (render_pre) {
           out = render_pre + out
+        }
+        if (render_post) {
+          out = out + render_post
         }
       }
     }
@@ -409,7 +413,7 @@ class AstNode {
   }
 
   /** Get all ancestors Asts of this Ast ordered from nearest to furthest.
-   * @return {List[AstNode}.
+   * @return {List[AstNode]}.
    */
   ancestors(context) {
     const ancestors = [];
@@ -2896,7 +2900,7 @@ function renderArgNoescape(arg, context={}) {
 
 /* Convert a list of asts.
  *
- * The simplest type of conversion os to convert
+ * The simplest type of conversion is to convert
  * a single Toplevel element all the way down.
  *
  * This function adds a dummy Toplevel to a list of AstNodes, and
@@ -2905,6 +2909,11 @@ function renderArgNoescape(arg, context={}) {
  * Applications for this include:
  * - --split-headers
  * - \H toplevel argument
+ *
+ * @param {List[Ast]} asts
+ * @param {boolean} first_toplevel
+ * @param {Number} header_count
+ * @param {boolean} split
  */
 function renderAstList({ asts, context, first_toplevel, header_count, split }) {
   if (
@@ -3454,6 +3463,10 @@ function convertInitContext(options={}, extra_returns={}) {
     // - subdirectories
     root_relpath_shift,
     perf_prev: 0,
+    // List[String]
+    // This HTML is added before the next header is rendered, or at the end of conversion after
+    // the tailing toc if there are no header following. It is then automatically cleared.
+    renderBeforeNextHeader: [],
     skipOutputEntry: false,
     // Set of all the headers that have synonym set on them.
     // Originally used to generate redirects to the heade they point to.
@@ -4139,7 +4152,12 @@ function htmlSelfLink(ast, context) {
 function htmlTitleAndDescription(ast, context) {
   let title_and_description = ``
   let { description, force_separator, multiline_caption } = getDescription(ast.args.description, context)
-  const href = htmlSelfLink(ast, context)
+  let href
+  if (ast.id) {
+    href = htmlSelfLink(ast, context)
+  } else {
+    href = ''
+  }
   if (ast.index_id || ast.validation_output.description.given) {
     const { full: title, inner } = xTextBase(ast, context, {
       href_prefix: href,
@@ -4719,7 +4737,6 @@ async function parse(tokens, options, context, extra_returns={}) {
   }
   context.db_provider = db_provider;
   options.include_path_set.add(options.input_path);
-  let header_file_preview_asts, header_file_preview_asts_next
   const title_ast_ancestors = []
   const header_title_ast_ancestors = []
   const header_ids = []
@@ -5271,130 +5288,6 @@ async function parse(tokens, options, context, extra_returns={}) {
           options.header_tree_id_stack.set(cur_header_tree_node.ast.id, cur_header_tree_node);
         }
 
-        // Handle the H file argument previews.
-        header_file_preview_asts = header_file_preview_asts_next
-        header_file_preview_asts_next = undefined
-
-        if (ast.file && context.options.output_format !== OUTPUT_FORMAT_OURBIGBOOK) {
-          let type, content
-          if (ast.file.match(media_provider_type_youtube_re)) {
-            type = 'video'
-          } else {
-            const indir = context.options.input_path === undefined ? '.' : path.dirname(context.options.input_path)
-            ;({ type, content } = context.options.read_file(
-              path.join(indir, ast.file), context))
-          }
-
-          // TODO move to render https://docs.ourbigbook.com/todo/remove-synthetic-asts
-          const is_about_asts = [
-            new AstNode(AstType.PARAGRAPH),
-            new PlaintextAstNode(`This section is about the ${type}: `),
-            new AstNode(AstType.MACRO, 'b', {
-              content: new AstArgument([
-                new AstNode(AstType.MACRO,
-                  Macro.LINK_MACRO_NAME,
-                  {
-                    content: new AstArgument(),
-                    href: new AstArgument(
-                      [new PlaintextAstNode(ast.file)],
-                    ),
-                  }
-                ),
-              ])
-            }),
-            new AstNode(AstType.PARAGRAPH)
-          ]
-          for (const a of is_about_asts) {
-            a.set_source_location(ast.source_location)
-          }
-          parent_arg_push_after.push(...is_about_asts)
-
-          if (IMAGE_EXTENSIONS.has(pathSplitext(ast.file)[1])) {
-            const newast = new AstNode(
-              AstType.MACRO,
-              'Image',
-              {
-                'src': new AstArgument(
-                  [
-                    new PlaintextAstNode(ast.file)
-                  ],
-                ),
-              },
-            )
-            newast.set_source_location(ast.source_location)
-            parent_arg_push_after.push(newast)
-          } else if (
-            VIDEO_EXTENSIONS.has(pathSplitext(ast.file)[1]) ||
-            ast.file.match(media_provider_type_youtube_re)
-          ) {
-            const newast = new AstNode(
-              AstType.MACRO,
-              'Video',
-              {
-                'src': new AstArgument(
-                  [
-                    new PlaintextAstNode(ast.file)
-                  ],
-                ),
-              },
-            )
-            newast.set_source_location(ast.source_location)
-            parent_arg_push_after.push(newast)
-          } else {
-            const protocol = protocolGet(ast.file)
-            if (protocol === null || protocol === 'file') {
-              if (
-                content !== undefined
-              ) {
-                // https://stackoverflow.com/questions/1677644/detect-non-printable-characters-in-javascript
-                const bold_file_ast = new AstNode(AstType.MACRO, 'b', {
-                  content: new AstArgument([
-                    new PlaintextAstNode(`${ast.file}`),
-                  ])
-                })
-                let no_preview_msg
-                if (/[\x00]/.test(content)) {
-                  no_preview_msg = ` it is a binary file (contains \\x00) of unsupported type (e.g. not an image).`
-                } else if (
-                  content.length > FILE_PREVIEW_MAX_SIZE
-                ) {
-                  no_preview_msg = `it is too large (> ${FILE_PREVIEW_MAX_SIZE} bytes)`
-                }
-                if (no_preview_msg) {
-                  header_file_preview_asts_next = [
-                    bold_file_ast,
-                    new PlaintextAstNode(` was not rendered because ${no_preview_msg}`, ast.source_location),
-                  ]
-                } else {
-                  header_file_preview_asts_next = [
-                    bold_file_ast,
-                    new AstNode(AstType.PARAGRAPH, undefined, undefined),
-                    new AstNode(
-                      AstType.MACRO,
-                      Macro.CODE_MACRO_NAME.toUpperCase(),
-                      {
-                        content: new AstArgument(
-                          [
-                            new PlaintextAstNode(content)
-                          ],
-                        ),
-                      },
-                    )
-                  ]
-                }
-              }
-            }
-          }
-          if (header_file_preview_asts_next) {
-            for (const a of header_file_preview_asts_next) {
-              a.set_source_location(ast.source_location)
-            }
-          }
-        }
-        if (header_file_preview_asts) {
-          parent_arg_push_before.push(...header_file_preview_asts);
-        }
-
         if (parent_arg_push_before.length) {
           parent_arg_push_before = parent_arg_push_before.concat([new AstNode(
             AstType.PARAGRAPH, undefined, undefined, ast.source_location)
@@ -5507,9 +5400,6 @@ async function parse(tokens, options, context, extra_returns={}) {
         arg.reset()
       }
     }
-  }
-  if (header_file_preview_asts_next) {
-    ast_toplevel.args.content.push(...header_file_preview_asts_next)
   }
   if (context.options.log['ast-pp-simple']) {
     console.error('ast-pp-simple: after pass 1');
@@ -8938,6 +8828,8 @@ const OUTPUT_FORMATS_LIST = [
           let attrs = htmlRenderAttrs(ast, context, [], custom_args)
           let id_attr = htmlRenderAttrsId(ast, context);
           let ret = '';
+          ret += context.renderBeforeNextHeader.map(s => htmlToplevelChildModifierById(s)).join('')
+          context_old.renderBeforeNextHeader = []
           let hasToc = false
           if (
             level_int !== context.header_tree_top_level ||
@@ -9242,6 +9134,114 @@ const OUTPUT_FORMATS_LIST = [
           }
           // Variables we want permanently modify the context.
           context_old.toc_was_rendered = context.toc_was_rendered
+
+          // {file} handling
+          const renderPostAsts = []
+          const renderPostAstsContext = cloneAndSet(context, 'validateAst', true);
+          renderPostAstsContext.source_location = ast.source_location;
+          if (ast.file && context.options.output_format) {
+            let type, content
+            if (ast.file.match(media_provider_type_youtube_re)) {
+              type = 'video'
+            } else {
+              const indir = context.options.input_path === undefined ? '.' : path.dirname(context.options.input_path)
+              ;({ type, content } = context.options.read_file(
+                path.join(indir, ast.file), context))
+            }
+            renderPostAsts.push(new AstNode(AstType.MACRO, Macro.PARAGRAPH_MACRO_NAME, {
+              content: new AstArgument([
+                new PlaintextAstNode(`This section is about the ${type}: `),
+                new AstNode(AstType.MACRO, 'b', {
+                  content: new AstArgument([
+                    new AstNode(AstType.MACRO,
+                      Macro.LINK_MACRO_NAME,
+                      {
+                        content: new AstArgument(),
+                        href: new AstArgument(
+                          [new PlaintextAstNode(ast.file)],
+                        ),
+                      }
+                    ),
+                  ])
+                }),
+              ])
+            }))
+            if (IMAGE_EXTENSIONS.has(pathSplitext(ast.file)[1])) {
+              renderPostAsts.push(new AstNode(
+                AstType.MACRO,
+                'Image',
+                {
+                  'src': new AstArgument(
+                    [
+                      new PlaintextAstNode(ast.file)
+                    ],
+                  ),
+                },
+              ))
+            } else if (
+              VIDEO_EXTENSIONS.has(pathSplitext(ast.file)[1]) ||
+              ast.file.match(media_provider_type_youtube_re)
+            ) {
+              renderPostAsts.push(new AstNode(
+                AstType.MACRO,
+                'Video',
+                {
+                  'src': new AstArgument(
+                    [
+                      new PlaintextAstNode(ast.file)
+                    ],
+                  ),
+                },
+              ))
+            } else {
+              // Plaintext file. Possibly embed into HTML.
+              const protocol = protocolGet(ast.file)
+              if (protocol === null || protocol === 'file') {
+                if (
+                  content !== undefined
+                ) {
+                  // https://stackoverflow.com/questions/1677644/detect-non-printable-characters-in-javascript
+                  const bold_file_ast = new AstNode(AstType.MACRO, 'b', {
+                    content: new AstArgument([
+                      new PlaintextAstNode(`${ast.file}`),
+                    ])
+                  })
+                  let no_preview_msg
+                  if (/[\x00]/.test(content)) {
+                    no_preview_msg = ` it is a binary file (contains \\x00) of unsupported type (e.g. not an image).`
+                  } else if (
+                    content.length > FILE_PREVIEW_MAX_SIZE
+                  ) {
+                    no_preview_msg = `it is too large (> ${FILE_PREVIEW_MAX_SIZE} bytes)`
+                  }
+                  if (no_preview_msg) {
+                    context_old.renderBeforeNextHeader.push(new AstNode(AstType.MACRO, Macro.PARAGRAPH_MACRO_NAME, {
+                      content: new AstArgument([
+                        bold_file_ast,
+                        new PlaintextAstNode(` was not rendered because ${no_preview_msg}`),
+                      ])
+                    }).render(renderPostAstsContext))
+                  } else {
+                    context_old.renderBeforeNextHeader.push(new AstNode(AstType.MACRO, Macro.PARAGRAPH_MACRO_NAME, {
+                      content: new AstArgument([
+                        bold_file_ast
+                      ])
+                    }).render(renderPostAstsContext))
+                    context_old.renderBeforeNextHeader.push(new AstNode(
+                      AstType.MACRO,
+                      Macro.CODE_MACRO_NAME.toUpperCase(), {
+                        content: new AstArgument([ new PlaintextAstNode(content)]),
+                      },
+                    ).render(renderPostAstsContext))
+                  }
+                }
+              }
+            }
+          }
+          if (renderPostAsts.length) {
+            opts.extra_returns.render_post = renderPostAsts.map(a => htmlToplevelChildModifierById(a.render(renderPostAstsContext))).join('')
+          }
+
           return ret;
         },
         [Macro.INCLUDE_MACRO_NAME]: unconvertible,
@@ -9363,6 +9363,7 @@ const OUTPUT_FORMATS_LIST = [
           if (context.options.render_metadata) {
             body += renderToc(context)
           }
+          body += context.renderBeforeNextHeader.map(s => htmlToplevelChildModifierById(s)).join('')
           if (
             context.toplevel_ast !== undefined &&
             context.options.render_metadata

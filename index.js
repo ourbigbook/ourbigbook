@@ -64,9 +64,6 @@ class AstNode {
     if (!('header_parent_ids' in options)) {
       options.header_parent_ids = [];
     }
-    if (!('header_child_ids' in options)) {
-      options.header_child_ids = [];
-    }
     if (!('is_first_header_in_input_file' in options)) {
       // Either the first header on a regular toplevel input,
       // or the first header inside an included include.
@@ -153,7 +150,6 @@ class AstNode {
     // So we just store the IDs here and not on header_graph_node as that
     // alone is already useful.
     this.header_parent_ids = options.header_parent_ids;
-    this.header_child_ids = options.header_child_ids;
 
     this.validation_error = undefined;
     this.validation_output = {};
@@ -402,21 +398,11 @@ class AstNode {
     let cur_ast = this;
     const ancestor_id = ancestor.id;
     while (true) {
-      let cur_ids = cur_ast.get_header_parent_ids(context)
-      let cur_id
-      for (const id of cur_ids) {
-        cur_ast = context.id_provider.get(id, context)
-        if (
-          cur_ast !== undefined &&
-          context.options.include_path_set.has(cur_ast.source_location.path)
-        ) {
-          cur_id = id
-          break
-        }
-      }
+      let cur_id = cur_ast.get_local_header_parent_id()
       if (cur_id === undefined) {
         return false;
       }
+      cur_ast = context.id_provider.get(cur_id, context)
       if (cur_ast.id === ancestor_id) {
         return true;
       }
@@ -1849,6 +1835,7 @@ class HeaderTreeNode {
     return ret.join('\n');
   }
 }
+exports.HeaderTreeNode = HeaderTreeNode
 
 /** Add an entry to the data structures that keep the map of incoming
  * and outgoing \x and \x {child} links. */
@@ -4321,6 +4308,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     console.error();
   }
 
+  let fetch_header_tree_ids_rows
   if (!options.from_include) {
     perf_print(context, 'db_queries')
 
@@ -4359,7 +4347,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         id_conflict_asts_promise = []
       }
 
-      ;[id_conflict_asts,,,] = await Promise.all([
+      ;[id_conflict_asts,,,,fetch_header_tree_ids_rows] = await Promise.all([
         id_conflict_asts_promise,
         options.id_provider.get_noscopes_base_fetch(
           Array.from(prefetch_ids),
@@ -4809,6 +4797,9 @@ async function parse(tokens, options, context, extra_returns={}) {
         target_id_ast.header_graph_node = header_ast.header_graph_node
         target_id_ast.header_parent_ids = []
       }
+    }
+    if (options.id_provider !== undefined) {
+      context.options.id_provider.build_header_tree(options.include_hrefs, fetch_header_tree_ids_rows)
     }
 
     // Check for ID conflicts.
@@ -5406,11 +5397,6 @@ function x_get_href_content(ast, context) {
     return [html_attr('href', WEBSITE_URL + 'go/topic/' + target_id.substr(1)), target_id];
   }
   const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);
-  //console.error('target_id_ast');
-  //console.error(target_id_ast.id);
-  //console.error(target_id_ast.header_parent_ids);
-  //console.trace();
-  //console.error();
 
   // href
   let href;

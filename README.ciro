@@ -3,6 +3,7 @@
 Markup language + static site generator to write complex structured wikis/books/blogs, that is \x[saner] and \x[design-goals][more powerful] than Markdown and Asciidoctor, with reference implementation in JavaScript.
 
 * https://cirosantilli.com[]: showcase demo document with interesting content. Primary inspiration for Cirodown development.
+  * https://cirosantilli.com/oxford-nanopore-river-bacteria[]: a tutorial style part of the above. Note how internal links integrate seamlessly into the more global topic of biology.
 * https://github.com/cirosantilli/cirosantilli.github.io[]: source of the above showcase document
 * \x[design-goals]{full}: feature overview
 * https://github.com/cirosantilli/cirodown[]: Cirodown source code
@@ -36,7 +37,7 @@ npx cirodown --publish
 ``
 and it should now be visible at: https://johndoe.github.io/cirodown-template
 
-Then, everytime you make a change you can publish the new version with:
+Then, every time you make a change you can publish the new version with:
 ``
 git add .
 git commit --message 'hacked stuff'
@@ -329,6 +330,26 @@ Link with multiple paragraphs inside it:
 paragraphs]
 ]]
 
+= `\a` `check` argument
+{parent=link}
+
+If `{check=0}` is given, it disables the local file existence check that is done by default for \x[relative-link]{p}.
+
+For example, https://github.com/cirosantilli/cirosantilli.github.io/blob/da296c3c933704484d5cd1a42754f60ec00f672b/README.ciro was rendered at https://cirosantilli.com[], and contains links to https://cirosantilli.com/markdown-style-guide[], whose source lives in a separate non-Cirodown repository: https://github.com/cirosantilli/markdown-style-guide/
+
+Therefore, if we did from `README.ciro`:
+``
+See this awesome style guide: \a[markdown-style-guide]
+``
+we do not want Cirodown do check that the file `markdown-style-guide` exists in the local filesystem.
+
+For this reason, we have instead to write:
+``
+See this awesome style guide: \a[markdown-style-guide]{check=0}
+``
+
+The general lesson is clear: in a server, paths could be re-routed to anything, including content that lies outside of a Cirodown project.
+
 = `\a` `ref` argument
 {parent=link}
 
@@ -336,6 +357,64 @@ Analogous to the \x[x-ref-argument], e.g.:
 \CirodownExample[[
 Trump said this and that.https://en.wikipedia.org/wiki/Donald_Trump_Access_Hollywood_tape#Trump's_responses{ref}https://web.archive.org/web/20161007210105/https://www.donaldjtrump.com/press-releases/statement-from-donald-j.-trump{ref}
 ]]
+
+= Relative link
+{parent=link}
+
+A relative link is a link that points to a resource that will be present a final URL relative to the input `.ciro` file.
+
+For example, it is often the case in computer programming tutorials that we want to refer to source files in the current directory.
+
+So from our `README.ciro`, we could want to write something like:
+\CirodownExample[[
+Have a look at this amazing source file: \a[index.js].
+]]
+and here `\a[cirodown]` is a relative link.
+
+A non-relative link is something like:
+\CirodownExample[[
+This is great website: https://cirosantilli.com
+]]
+which points to an absolute URL.
+
+A link being relative has the following effects
+* Cirodown checks that the file actually exists in the local filesystem, and gives an error otherwise.
+
+  For example, in the programming tutorial use case, as you start documenting several source files, it is almost inevitable getting wrong paths due to renames or typos without this type of error checking
+
+  This check can be disabled with the \x[a-check-argument].
+* the correct relative path to the file is used when using nested \x[scope]{p} with \x[split-headers]. For example, if we have:
+  ``
+  = h1
+
+  == h2
+  {scope}
+
+  === h3
+
+  \a[index.js]
+  ``
+  then in split header mode, `h3` will be rendered to `h2/h3.html`.
+
+  Therefore, if we didn't do anything about it, the link to `index.js` would render as `href="index.js"` and thus point to `h2/index.js` instead of the correct `index.js`.
+
+  Instead, Cirodown automatically converts it to the correct `href="../index.js"`
+
+Cirodown considers a link relative by default by if does not start with a protocol, that is if the regular expression `^[a-zA-Z]+://` does not match. For example, the following are not relative links:
+* `http://cirosantilli.com`
+* `https://cirosantilli.com`
+* `file:///etc/fstab`
+* `ftp://cirosantilli.com`
+And the following however are considered relative links by default:
+* `index.js`
+* `../index.js`
+* `path/to/index.js`
+* `/path/to/index.js`. It might be a bit weird to consider this one as relative, but the rationale is that it would be complicated to cover path conversions of of different operating systems, so we are just taking the simpler protocol check approach to start with.
+* `//path/to/index.js`. This one is tricky, Web browsers would consider this as a https://stackoverflow.com/questions/28446314/why-use-protocol-relative-urls-at-all[protocol-relative URL], which could be absolute or not depending on if you are viewing the file locally through `file://` or on a website `https://`.
+
+  To start with we are just going to keep it here, and let users use the same workarounds as for `/path/to/index.js` to make it do what they want.
+
+Implemented at: https://github.com/cirosantilli/cirodown/issues/87[].
 
 = Insane link parsing rules
 {parent=link}
@@ -1059,7 +1138,7 @@ For fun and profit.
 {parent=test-scope-1}
 {scope}
 
-Let's break this local link: \a[cirodown]{local}.
+Let's break this local link: \a[cirodown].
 
 = Not scoped
 {parent=test-scope-2}
@@ -3252,7 +3331,7 @@ These arguments marked with the `mandatory: true` \x[help-macros] argument prope
 Name arguments marked in \x[help-macros] as `boolean: true` must either:
 * take no value and no `=` sign, in which case the value is implicitly set to `1`
 * take value exactly `0` or `1`
-* not be given, in which case the default value is the `default` from \x[help-macros], or `0` if such default is not given
+* not be given, in which case a custom per-macro default is used. Tha value is the `default` from \x[help-macros], or `0` if such default is not given
 
 For example, \x[x-full-argument][the `full` argument] of \x[internal-cross-reference]{p} is correctly written as:
 \CirodownExample[[
@@ -4267,8 +4346,8 @@ The HTML files are generated whenever a directory compilation is required, e.g. 
 The sources must be toplevel headers for now, because it is harder to implement redirections from `#someid` as that would require JavaScript: https://github.com/cirosantilli/cirodown/issues/48[].
 
 This feature can be seen live on this document by visiting our tests:
-* \a[not-readme-redirect-test]: redirects to \x[not-readme]
-* \a[quick-start-redirect-test]: redirects to \x[quick-start]
+* \a[not-readme-redirect-test]{check=0}: redirects to \x[not-readme]
+* \a[quick-start-redirect-test]{check=0}: redirects to \x[quick-start]
 
 To quickly test bugs in redirect generation, you may use the `--generate-redirects` flag as:
 ``

@@ -369,6 +369,9 @@ function assert_executable(
     if (!('expect_filesystem_not_xpath' in options)) {
       options.expect_filesystem_not_xpath = {};
     }
+    if (!('expect_exit_status' in options)) {
+      options.expect_exit_status = 0;
+    }
     if (!('expect_exists' in options)) {
       options.expect_exists = [];
     }
@@ -400,7 +403,7 @@ function assert_executable(
       input: options.stdin,
     });
     const assert_msg = exec_assert_message(out, 'cirodown', options.args, tmpdir);
-    assert.strictEqual(out.status, 0, assert_msg);
+    assert.strictEqual(out.status, options.expect_exit_status, assert_msg);
     for (const xpath_expr of options.expect_stdout_xpath) {
       assert_xpath_matches(
         xpath_expr,
@@ -3806,6 +3809,106 @@ assert_executable(
 
 == Notindex h2
 `,
+    },
+  }
+);
+
+// executable: link:
+assert_executable(
+  'executable: link: relative reference to nonexistent file leads to failure',
+  {
+    args: ['--embed-includes', 'README.ciro'],
+    filesystem: {
+      'README.ciro': `\\a[i-dont-exist]
+`,
+    },
+    expect_exit_status: 1,
+  }
+);
+assert_executable(
+  "executable: link: relative reference to existent files do not lead to failure",
+  {
+    args: ['--embed-includes', 'README.ciro'],
+    filesystem: {
+      'README.ciro': `\\a[i-exist]`,
+      'i-exist': ``,
+    },
+  }
+);
+assert_executable(
+  "executable: link: check=0 prevents existence checks",
+  {
+    args: ['--embed-includes', 'README.ciro'],
+    filesystem: {
+      'README.ciro': `\\a[i-dont-exist]{check=0}
+`,
+    },
+  }
+);
+assert_executable(
+  "executable: link: relative links are corrected for different output paths with scope and split-headers",
+  {
+    args: ['--split-headers', '.'],
+    filesystem: {
+      'README.ciro': `= Index
+
+== h2
+{scope}
+
+=== h3
+
+\\a[i-exist][h3 i-exist]
+
+\\a[subdir/i-exist-subdir][h3 i-exist-subdir]
+
+\\a[https://cirosantilli.com][h3 abs]
+`,
+      'subdir/README.ciro': `= Subdir
+
+\\a[../i-exist][subdir i-exist]
+
+\\a[i-exist-subdir][subdir i-exist-subdir]
+
+== subdir h2
+{scope}
+
+=== subdir h3
+
+\\a[../i-exist][subdir h3 i-exist]
+
+\\a[i-exist-subdir][subdir h3 i-exist-subdir]
+`,
+      'subdir/not-readme.ciro': `= Subdir Not Readme
+
+\\a[../i-exist][subdir not readme i-exist]
+
+\\a[i-exist-subdir][subdir not readme i-exist-subdir]
+`,
+      'i-exist': ``,
+      'subdir/i-exist-subdir': ``,
+    },
+    expect_filesystem_xpath: {
+      'index.html': [
+        "//x:a[@href='i-exist' and text()='h3 i-exist']",
+        "//x:a[@href='subdir/i-exist-subdir' and text()='h3 i-exist-subdir']",
+        "//x:a[@href='https://cirosantilli.com' and text()='h3 abs']",
+      ],
+      'h2/h3.html': [
+        "//x:a[@href='../i-exist' and text()='h3 i-exist']",
+        "//x:a[@href='https://cirosantilli.com' and text()='h3 abs']",
+      ],
+      'subdir/index.html': [
+        "//x:a[@href='../i-exist' and text()='subdir i-exist']",
+        "//x:a[@href='i-exist-subdir' and text()='subdir i-exist-subdir']",
+      ],
+      'subdir/subdir-h2/subdir-h3.html': [
+        "//x:a[@href='../../i-exist' and text()='subdir h3 i-exist']",
+        "//x:a[@href='../i-exist-subdir' and text()='subdir h3 i-exist-subdir']",
+      ],
+      'subdir/not-readme.html': [
+        "//x:a[@href='../i-exist' and text()='subdir not readme i-exist']",
+        "//x:a[@href='i-exist-subdir' and text()='subdir not readme i-exist-subdir']",
+      ],
     },
   }
 );

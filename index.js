@@ -195,6 +195,7 @@ class AstNode {
    *                 - {AstArgument} 'title': the title of the element linked to
    *        - {bool} in_caption_number_visible
    *        - {Set[AstNode]} x_parents: set of all parent x elements.
+   *        - {String} root_relpath_scope_shift - relative path introduced due to a scope in split header mode
    * @param {Object} context
    * @return {String}
    */
@@ -2283,14 +2284,15 @@ function convert_header(cur_arg_list, context, has_toc) {
     context.toplevel_ast = first_ast;
 
     // root_relpath
-    const [output_path_dirname, output_path_basename] =
+    const [output_path_dir, output_path_basename] =
       path_split(output_path, context.options.path_sep);
     options.template_vars = Object.assign({}, options.template_vars);
-    options.template_vars.root_relpath = path.relative(
-      output_path_dirname, '.');
-    if (options.template_vars.root_relpath !== '') {
-        options.template_vars.root_relpath += context.options.path_sep;
+    let new_root_relpath = path.relative(output_path_dir, '.')
+    if (new_root_relpath !== '') {
+        new_root_relpath += context.options.path_sep;
     }
+    context.root_relpath_scope_shift = path.relative(options.template_vars.root_relpath, new_root_relpath)
+    options.template_vars.root_relpath = new_root_relpath
 
     // Do the conversion.
     context.extra_returns.rendered_outputs[output_path] =
@@ -2446,31 +2448,31 @@ function convert_init_context(options={}, extra_returns={}) {
   //   https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
   options.toplevel_id = undefined;
   if (options.input_path !== undefined) {
-    const [dirname, basename] = path_split(options.input_path, options.path_sep)
+    const [input_dir, basename] = path_split(options.input_path, options.path_sep)
     const [basename_noext, ext] = path_splitext(basename)
     let toplevel_id;
     if (INDEX_FILE_BASENAMES_NOEXT.has(basename_noext)) {
-      if (dirname === '') {
+      if (input_dir === '') {
         // https://cirosantilli.com/cirodown#the-toplevel-index-file
         toplevel_id = undefined;
       } else {
         // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
-        toplevel_id = dirname;
+        toplevel_id = input_dir;
         options.toplevel_has_scope = true;
       }
     } else {
       toplevel_id = basename_noext;
-      if (dirname === '') {
+      if (input_dir === '') {
         options.toplevel_parent_scope = undefined;
       } else {
-        options.toplevel_parent_scope = dirname;
+        options.toplevel_parent_scope = input_dir;
       }
     }
     // TODO htmlEmbed was split into embedIncludes and embedResources.
     // This was likely meant to be embedIncludes, but I don't have a filing test if this is commented out
     // so not sure.
     if (!options.embed_includes) {
-      let root_relpath = path.relative(dirname, '')
+      let root_relpath = path.relative(input_dir, '')
       if (root_relpath !== '') {
         root_relpath += URL_SEP;
       }
@@ -2496,6 +2498,7 @@ function convert_init_context(options={}, extra_returns={}) {
     include_path_set: new Set(options.include_path_set),
     macros: macro_list_to_macros(),
     options: options,
+    root_relpath_scope_shift: '',
     synonym_headers: new Set(),
     toplevel_id: options.toplevel_id,
     toplevel_output_path: options.outfile,
@@ -4378,6 +4381,10 @@ function path_splitext(str) {
   }
 }
 
+function protocol_is_given(src) {
+  return /^[a-zA-Z]+:\/\//.test(src)
+}
+
 function protocol_is_known(src) {
   for (const known_url_protocol of KNOWN_URL_PROTOCOLS) {
     if (src.startsWith(known_url_protocol)) {
@@ -5285,13 +5292,23 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       let [href, content] = link_get_href_content(ast, context);
-      if (
-        ast.validation_output.local.boolean &&
-        !context.options.fs_exists_sync(href)
-      ) {
-        const message = `link to inexistent local file: ${href}`;
-        render_error(context, message, ast.source_location);
-        content = error_message_in_output(message, context) + content;
+
+      // Handle relative links:
+      // * check existence
+      // * modify paths to account for scope + --split-headers
+      const is_relative_link = !protocol_is_given(href)
+      if (is_relative_link) {
+        if (
+          ast.validation_output.check.boolean &&
+          !context.options.fs_exists_sync(
+            path.join(dirname(context.options.input_path, context.options.path_sep), href)
+          )
+        ) {
+          const message = `link to inexistent local file: ${href}`;
+          render_error(context, message, ast.source_location);
+          content = error_message_in_output(message, context) + content;
+        }
+        href = path.join(context.root_relpath_scope_shift, href);
       }
       if (ast.validation_output.ref.boolean) {
         content = '*';
@@ -5306,8 +5323,9 @@ const DEFAULT_MACRO_LIST = [
     {
       named_args: [
         new MacroArgument({
-          name: 'local',
+          name: 'check',
           boolean: true,
+          default: '1',
         }),
         new MacroArgument({
           name: 'ref',

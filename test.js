@@ -296,7 +296,7 @@ function assert_convert_ast(
     }
     for (const key in options.assert_xpath_split_headers) {
       const output = extra_returns.rendered_outputs[key];
-      assert.notStrictEqual(output, undefined);
+      assert.notStrictEqual(output, undefined, `${key} not in ${Object.keys(extra_returns.rendered_outputs)}`);
       for (const xpath_expr of options.assert_xpath_split_headers[key]) {
         assert_xpath_matches(xpath_expr, output, {message: key});
       }
@@ -1612,7 +1612,7 @@ assert_error('cross reference undefined errors show after other errors',
 == b
 `, 5, 1);
 assert_convert_ast('cross reference to non-included header in another file',
-  `= aa
+  `= Notindex
 
 \\x[notindex]
 
@@ -1626,16 +1626,16 @@ assert_convert_ast('cross reference to non-included header in another file',
 
 == bb
 
-\\x[notindex][notindex2]
+\\x[notindex][bb to notindex]
 
-\\x[bb][bb2]
+\\x[bb][bb to bb]
 
-\\x[image-bb][image bb 2]
+\\x[image-bb][bb to image bb]
 
 \\Image[bb.png]{title=bb}
 `,
   [
-    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('H', undefined, {level: [t('1')], title: [t('Notindex')]}),
     a('P', [a('x', undefined, {href: [t('notindex')]})]),
     a('P', [a('x', undefined, {href: [t('bb')]})]),
     a('P', [a('x', undefined, {href: [t('include-two-levels')]})]),
@@ -1653,9 +1653,9 @@ assert_convert_ast('cross reference to non-included header in another file',
     //a('P', [a('x', undefined, {href: [t('include-two-levels-subdir/h2')]})]),
     a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('bb')]}),
-    a('P', [a('x', [t('notindex2')], {href: [t('notindex')]})]),
-    a('P', [a('x', [t('bb2')], {href: [t('bb')]})]),
-    a('P', [a('x', [t('image bb 2')], {href: [t('image-bb')]})]),
+    a('P', [a('x', [t('bb to notindex')], {href: [t('notindex')]})]),
+    a('P', [a('x', [t('bb to bb')], {href: [t('bb')]})]),
+    a('P', [a('x', [t('bb to image bb')], {href: [t('image-bb')]})]),
     a(
       'Image',
       undefined,
@@ -1669,12 +1669,12 @@ assert_convert_ast('cross reference to non-included header in another file',
     assert_xpath_matches: [
       // Empty URL points to start of the document, which is exactly what we want.
       // https://stackoverflow.com/questions/5637969/is-an-empty-href-valid
-      "//x:div[@class='p']//x:a[@href='' and text()='aa']",
+      "//x:div[@class='p']//x:a[@href='' and text()='notindex']",
       "//x:a[@href='#bb' and text()='bb']",
       // https://github.com/cirosantilli/cirodown/issues/94
       "//x:a[@href='include-two-levels.html' and text()='ee']",
       "//x:a[@href='include-two-levels.html#gg' and text()='gg']",
-      "//x:a[@href='#bb' and text()='bb2']",
+      "//x:a[@href='#bb' and text()='bb to bb']",
       "//x:a[@href='#image-bb' and text()='image bb 1']",
 
       // Links to the split versions.
@@ -1683,23 +1683,23 @@ assert_convert_ast('cross reference to non-included header in another file',
     ],
     assert_xpath_split_headers: {
       'notindex-split.html': [
-        "//x:a[@href='include-two-levels-split.html' and text()='ee']",
-        "//x:a[@href='gg.html' and text()='gg']",
-        "//x:a[@href='bb.html' and text()='bb']",
+        "//x:a[@href='include-two-levels.html' and text()='ee']",
+        "//x:a[@href='include-two-levels.html#gg' and text()='gg']",
+        "//x:a[@href='notindex.html#bb' and text()='bb']",
         // Link to the split version.
         `//x:h1[@id='notindex']//x:a[@href='notindex.html' and text()='${cirodown.NOSPLIT_MARKER}']`,
         // Internal cross reference inside split header.
-        "//x:a[@href='bb.html#image-bb' and text()='image bb 1']",
+        "//x:a[@href='notindex.html#image-bb' and text()='image bb 1']",
       ],
       'bb.html': [
         // Cross-page split-header parent link.
-        `//x:h1//x:a[@href='notindex-split.html' and text()='${cirodown.PARENT_MARKER} \"aa\"']`,
-        "//x:a[@href='notindex-split.html' and text()='notindex2']",
-        "//x:a[@href='' and text()='bb2']",
+        `//x:h1//x:a[@href='notindex.html' and text()='${cirodown.PARENT_MARKER} \"Notindex\"']`,
+        "//x:a[@href='notindex.html' and text()='bb to notindex']",
+        "//x:a[@href='notindex.html#bb' and text()='bb to bb']",
         // Link to the split version.
         `//x:h1[@id='bb']//x:a[@href='notindex.html#bb' and text()='${cirodown.NOSPLIT_MARKER}']`,
         // Internal cross reference inside split header.
-        "//x:a[@href='#image-bb' and text()='image bb 2']",
+        "//x:a[@href='#image-bb' and text()='bb to image bb']",
       ],
     },
     convert_before: [
@@ -2055,27 +2055,27 @@ assert_error('broken parent still generates a header ID',
 `, 6, 1
 );
 assert_convert_ast('cross reference to scoped split header',
-  `= aa
+  `= Notindex
 {scope}
 
 == bb
 
-\\x[cc][cc2]
+\\x[cc][bb to cc]
 
-\\x[image-bb][image bb 1]
+\\x[image-bb][bb to image bb]
 
 \\Image[bb.png]{title=bb}
 
 == cc
 
-\\x[image-bb][image bb 2]
+\\x[image-bb][cc to image bb]
 `,
   [
-    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('H', undefined, {level: [t('1')], title: [t('Notindex')]}),
     a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('bb')]}),
-    a('P', [a('x', [t('cc2')], {href: [t('cc')]})]),
-    a('P', [a('x', [t('image bb 1')], {href: [t('image-bb')]})]),
+    a('P', [a('x', [t('bb to cc')], {href: [t('cc')]})]),
+    a('P', [a('x', [t('bb to image bb')], {href: [t('image-bb')]})]),
     a(
       'Image',
       undefined,
@@ -2085,21 +2085,21 @@ assert_convert_ast('cross reference to scoped split header',
       },
     ),
     a('H', undefined, {level: [t('2')], title: [t('cc')]}),
-    a('P', [a('x', [t('image bb 2')], {href: [t('image-bb')]})]),
+    a('P', [a('x', [t('cc to image bb')], {href: [t('image-bb')]})]),
   ],
   {
     assert_xpath_matches: [
       // Not `#notindex/image-bb`.
       // https://cirosantilli.com/cirodown#header-scope-argument-of-toplevel-headers
-      "//x:a[@href='#image-bb' and text()='image bb 1']",
+      "//x:a[@href='#image-bb' and text()='bb to image bb']",
     ],
     assert_xpath_split_headers: {
       'notindex/bb.html': [
-        "//x:a[@href='cc.html' and text()='cc2']",
-        "//x:a[@href='#image-bb' and text()='image bb 1']",
+        "//x:a[@href='../notindex.html#cc' and text()='bb to cc']",
+        "//x:a[@href='#image-bb' and text()='bb to image bb']",
       ],
       'notindex/cc.html': [
-        "//x:a[@href='bb.html#image-bb' and text()='image bb 2']",
+        "//x:a[@href='../notindex.html#image-bb' and text()='cc to image bb']",
       ],
     },
     input_path_noext: 'notindex',
@@ -2129,10 +2129,11 @@ assert_convert_ast('cross reference to non-included file with toplevel scope',
       "//x:div[@class='p']//x:a[@href='toplevel-scope.html#h2' and text()='h2']",
     ],
     assert_xpath_split_headers: {
-      'notindex-split.html': [
-        "//x:a[@href='toplevel-scope.html#image-h1' and text()='image h1']",
-        "//x:a[@href='toplevel-scope/h2.html#image-h2' and text()='image h2']",
-      ],
+      // TODO https://github.com/cirosantilli/cirodown/issues/139
+      //'notindex-split.html': [
+      //  "//x:a[@href='toplevel-scope.html#image-h1' and text()='image h1']",
+      //  "//x:a[@href='toplevel-scope/h2.html#image-h2' and text()='image h2']",
+      //],
     },
     convert_before: ['toplevel-scope'],
     input_path_noext: 'notindex',
@@ -2530,8 +2531,8 @@ assert_convert_ast('split headers have correct table of contents',
         // The Toc entries of split output headers automatically cull out a level
         // of the full number tree. E.g this entry is `2.1` on the toplevel ToC,
         // but on this sub-ToC it is just `1.`.
-        "//*[@id='toc']//x:a[@href='h1-2-1.html' and text()='1. h1 2 1']",
-        "//*[@id='toc']//x:a[@href='h1-2-1-1.html' and text()='1.1. h1 2 1 1']",
+        "//*[@id='toc']//x:a[@href='notindex.html#h1-2-1' and text()='1. h1 2 1']",
+        "//*[@id='toc']//x:a[@href='notindex.html#h1-2-1-1' and text()='1.1. h1 2 1 1']",
 
         // ToC links in split headers have parent toc entry links.
         `//*[@id='toc']//*[@id='toc-h1-2-1']//x:a[@href='#toc' and text()='${cirodown.PARENT_MARKER} \"h1 2\"']`,
@@ -3449,6 +3450,8 @@ assert_executable(
 
 \\x[toplevel][toplevel to toplevel]
 
+\\x[image-my-image-toplevel][toplevel to my image toplevel]
+
 \\x[h2][toplevel to h2]
 
 \\x[image-my-image-h2][toplevel to my image h2]
@@ -3457,9 +3460,13 @@ assert_executable(
 
 \\x[notindex-h2][toplevel to notindex h2]
 
+\\Image[img.jpg]{title=My image toplevel}
+
 == H2
 
 \\x[toplevel][h2 to toplevel]
+
+\\x[image-my-image-toplevel][h2 to my image toplevel]
 
 \\x[h2][h2 to h2]
 
@@ -3475,6 +3482,8 @@ assert_executable(
 
 \\x[toplevel][notindex to toplevel]
 
+\\x[image-my-image-toplevel][notindex to my image toplevel]
+
 \\x[h2][notindex to h2]
 
 \\x[image-my-image-h2][notindex to my image h2]
@@ -3483,9 +3492,13 @@ assert_executable(
 
 \\x[notindex-h2][notindex to notindex h2]
 
+\\Image[img.jpg]{title=My image notindex}
+
 == Notindex h2
 
 \\x[toplevel][notindex h2 to toplevel]
+
+\\x[image-my-image-toplevel][notindex h2 to my image toplevel]
 
 \\x[h2][notindex h2 to h2]
 
@@ -3494,6 +3507,8 @@ assert_executable(
 \\x[notindex][notindex h2 to notindex]
 
 \\x[notindex-h2][notindex h2 to notindex h2]
+
+\\Image[img.jpg]{title=My image notindex h2}
 `,
     },
     expect_filesystem_xpath: {
@@ -3501,7 +3516,6 @@ assert_executable(
       'index.html': [
         "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
         "//x:div[@class='p']//x:a[@href='h2.html' and text()='toplevel to h2']",
-        "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='toplevel to my image h2']",
         // That one is nosplit by default.
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='toplevel to notindex']",
         // A child of a nosplit also becomes nosplit by default.
@@ -3509,6 +3523,13 @@ assert_executable(
 
         // The toplevel split header does not get a numerical prefix.
         "//x:h1[@id='toplevel']//x:a[@href='' and text()='Toplevel']",
+
+        // Images.
+        "//x:div[@class='p']//x:a[@href='#image-my-image-toplevel' and text()='toplevel to my image toplevel']",
+        "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='toplevel to my image h2']",
+
+        // Spilt/nosplit.
+        `//x:h1[@id='toplevel']//x:a[@href='nosplit.html' and text()='${cirodown.NOSPLIT_MARKER}']`,
       ],
       'nosplit.html': [
         "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
@@ -3524,22 +3545,33 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
 
         // Images.
+        "//x:div[@class='p']//x:a[@href='#image-my-image-toplevel' and text()='toplevel to my image toplevel']",
         "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='toplevel to my image h2']",
+        "//x:div[@class='p']//x:a[@href='#image-my-image-toplevel' and text()='h2 to my image toplevel']",
         "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
 
         // Headers.
         "//x:h1[@id='toplevel']//x:a[@href='' and text()='Toplevel']",
         "//x:h2[@id='h2']//x:a[@href='#h2' and text()='1. H2']",
+
+        // Spilt/nosplit.
+        `//x:h1[@id='toplevel']//x:a[@href='index.html' and text()='${cirodown.SPLIT_MARKER}']`,
       ],
       'h2.html': [
         "//x:div[@class='p']//x:a[@href='index.html' and text()='h2 to toplevel']",
         "//x:div[@class='p']//x:a[@href='' and text()='h2 to h2']",
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='h2 to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
-        "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
 
         // The toplevel split header does not get a numerical prefix.
         "//x:h1[@id='h2']//x:a[@href='' and text()='H2']",
+
+        // Images.
+        "//x:div[@class='p']//x:a[@href='index.html#image-my-image-toplevel' and text()='h2 to my image toplevel']",
+        "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
+
+        // Spilt/nosplit.
+        `//x:h1[@id='toplevel']//x:a[@href='nosplit.html' and text()='${cirodown.NOSPLIT_MARKER}']`,
       ],
       'notindex.html': [
         // Link so the split one of index because that's the default of that page.

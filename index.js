@@ -822,7 +822,20 @@ class Tokenizer {
             // Insane autolink.
             this.push_token(TokenType.MACRO_NAME, Macro.LINK_MACRO_NAME, this.line, this.column);
             this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
-            while (this.consume_plaintext_char() && !(this.cur_c == ' ' || this.cur_c == '\n')) {}
+            let link_text = '';
+            while (this.consume_plaintext_char()) {
+              if (
+                this.cur_c == ' ' ||
+                this.cur_c == '\n' ||
+                this.cur_c == END_POSITIONAL_ARGUMENT_CHAR ||
+                this.cur_c == END_NAMED_ARGUMENT_CHAR
+              ) {
+                break;
+              }
+              if (this.cur_c === ESCAPE_CHAR) {
+                this.consume();
+              }
+            }
             this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
             done = true;
           }

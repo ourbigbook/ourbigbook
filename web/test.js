@@ -1746,29 +1746,7 @@ it('api: resource limits', async () => {
 })
 
 async function assertNestedSets(sequelize, expect) {
-  const articles = await sequelize.models.Article.findAll({
-    include: [
-      {
-        model: sequelize.models.File,
-        as: 'file',
-        include: [
-          {
-            model: sequelize.models.User,
-            as: 'author',
-          },
-        ],
-      },
-    ],
-    order: [
-      [
-        { model: sequelize.models.File, as: 'file' },
-        { model: sequelize.models.User, as: 'author' },
-        'username',
-        'ASC'
-      ],
-      ['nestedSetIndex', 'ASC'],
-    ],
-  })
+  const articles = await sequelize.models.Article.findNestedSets()
   //console.error(articles.map(a => [a.nestedSetIndex, a.nestedSetNextSibling, a.slug]));
   assertRows(articles, expect)
 }

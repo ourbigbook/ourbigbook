@@ -41,6 +41,8 @@ router.get('/', auth.optional, async function(req, res, next) {
 })
 
 // TODO do proper GraphQL one day and get rid of this.
+// TODO also return parentId and previousSiblingId here:
+// https://docs.ourbigbook.com/don-t-skip-parent-previous-sibling-updates-on-web-uploads
 router.get('/sha256', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')

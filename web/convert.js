@@ -527,11 +527,6 @@ WHERE
               },
             ),
           ])
-          //{
-          //  console.error('post create space');
-          //  const articles = await sequelize.models.Article.findAll({ order: [['nestedSetIndex', 'ASC']] })
-          //  console.error(articles.map(a => [a.nestedSetIndex, a.nestedSetNextSibling, a.slug]));
-          //}
           if (nestedSetIndex < oldNestedSetIndex) {
             // We just opened up space behind the subtree that we are about to move.
             // So the old tree have moved up.
@@ -774,11 +769,6 @@ WHERE
           ])
           : null
         ])
-      //{
-      //  console.error('post remove space');
-      //  const articles = await sequelize.models.Article.findAll({ order: [['nestedSetIndex', 'ASC']] })
-      //  console.error(articles.map(a => [a.nestedSetIndex, a.nestedSetNextSibling, a.slug]));
-      //}
     } else {
       articles = []
     }

@@ -962,9 +962,10 @@ function resolve_absolute_xref(id, context) {
   }
 }
 
-/** Interface to retrieving the nodes of IDs defined in external files.
-*
-* We need the abstraction because IDs will come from widely different locations
+/** 
+ * Interface to retrieving the nodes of IDs defined in external files.
+ *
+ * We need the abstraction because IDs will come from widely different locations
  * between browser and local Node.js operation:
  *
  * - browser: HTTP requests

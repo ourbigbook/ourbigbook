@@ -2,18 +2,20 @@
 
 // https://docs.ourbigbook.com/ourbigbook-web-admin
 
-const assert = require('assert')
 const path = require('path')
 
-let args
-const commander = require('commander');
-const program = commander.program
-program.argument('<username>', 'username');
-program.action((..._args) => { args = _args })
-program.parse(process.argv);
-const [username] = args
+const commander = require('commander')
 
 const models = require('../models')
+
+// CLI arguments
+const program = commander.program
+program.allowExcessArguments(false)
+program.argument('<username>', 'username')
+program.parse(process.argv);
+const [username] = program.processedArgs
+
+// main
 const sequelize = models.getSequelize(path.dirname(__dirname));
 (async () => {
 await sequelize.models.User.update(

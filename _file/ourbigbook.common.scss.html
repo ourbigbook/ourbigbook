@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>ourbigbook.common.scss - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ourbigbook.common.scss"><div class="notnav"><h1><a href="">ourbigbook.common.scss</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../_dir/">(root)</a> / <a href="../_raw/ourbigbook.common.scss">ourbigbook.common.scss</a></b></div></nav></div><div class="p"><b>ourbigbook.common.scss</b></div><div class="code"><div><pre><code>@use 'sass:math';
+
+// Shared across local ourbigbook and web.
+//
+// Also distributed with the NPM package so that users can harmonize
+// their design with Ourbigbook defaults.
+//
+// This file is intended to be used with @import. This means that
+// it contains only variables and mixins, and no actual style definitions.
+
+// Light
+//$a-color: #0000EE;
+//$a-color-visited: rgb(85, 26, 139);
+//$background-color: white;
+//$code-background-color: #eeeeee;
+//$color: black;
+//$target-background-color: #FFFFCC;
+
+// Dark.
+$a-color: #99CCFF;
+$background-color: #181818;
+// color-discreet was too dim, and $color was too bright and distracting. Let's try this then.
+$brandname-color: #CCCCCC;
+$code-background-color: #333333;
+$color: #EEEEEE;
+$color-discreet: #BBBBBB;
+$color-slightly-discreet: #DDD;
+$h-color: #DDDD00;
+$navbar-background-color: #000;
+// To make non-brand items a bit less visible than the brand.
+$table-border-color: #444444;
+$table-even-background-color: #222222;
+$table-head-background-color: #121212;
+$target-background-color: #442222;
+$ourbigbook-error-color: #F55;
+$ourbigbook-ok-color: #5F5;
+
+$caption-margin-vert: 0.4em;
+$font-family: Arial, Helvetica, sans-serif;
+// Optimal font size:
+// https://ux.stackexchange.com/questions/211/is-there-an-optimal-font-size
+$font-size: 16px;
+$header-font-size: 24px;
+// Without this, hover on ToC makes ToC move around. Maybe we should scope to ToC only?
+// TODO find proper way to do it without this random value.
+$icon-font-size: .95em;
+$line-height: 1.4;
+$max-mobile-width: 635px;
+$sep-width: 1ch;
+$table-padding-sides: 10px;
+$table-padding-top: 10px;
+$toplevel-horizontal-padding-mobile: 5px;
+$toplevel-horizontal-padding-left: 20px;
+$toplevel-horizontal-padding-right: 15px;
+
+// Derived parameters.
+// #FFAAFF was a reasonable value. But modern websites don't do this anymore.
+$a-color-visited: $a-color;
+$h1-font-size: $header-font-size * 1.5;
+$p-margin-vert: $font-size*0.6;
+$navbar-color-discrete: $color-discreet;
+$navbar-non-brandname-color: $a-color;
+$footer-color: $color;
+
+@font-face { font-family: fa-brands-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-brands-400.woff2); }
+@font-face { font-family: fa-regular-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2); }
+@font-face { font-family: fa-solid-900; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2); }
+
+/** This is just the minimal generic-looking body style. We use it to make
+ * web style look like rendered ourbigbook by default. In those cases, ourbigbook-title
+ * would also work I think, but including that large mixin a bunch of times would generate
+ * much larger CSS output.
+ */
+@mixin ourbigbook-body {
+  background-color: $background-color;
+  color: $color;
+  font-family: $font-family;
+  font-size: $font-size;
+  a {
+    color: $a-color;
+    text-decoration: none;
+    &amp;:hover {
+      text-decoration: underline;
+    }
+    &amp;.selflink::before {
+      @include link-icon;
+      font-size: $font-size;
+      position: absolute;
+      left: -0.1em;
+    }
+  }
+  .fa-regular-400, .fa-brands-400, .fa-solid-900 {
+    font-size: $icon-font-size;
+  }
+  .fa-regular-400 {
+    font-family: fa-regular-400;
+  }
+  .fa-brands-400 {
+    font-family: fa-brands-400;
+  }
+  .fa-solid-900 {
+    font-family: fa-solid-900;
+  }
+}
+
+@mixin file-icon {
+  font-family: "fa-solid-900";
+  font-weight: 900;
+  font-size: $icon-font-size;
+  // up arrow https://fontawesome.com/v5/icons/file?f=classic&amp;s=solid
+  content: "\f15b";
+}
+
+@mixin h-common {
+  box-sizing: border-box;
+  display: inline-block;
+  font-size: $header-font-size;
+  font-weight: bold;
+  width: 100%;
+  h1, h2, h3, h4, h5, h6 {
+    &gt; a:first-child {
+      color: $h-color;
+      &amp;:visited {
+        color: $h-color;
+      }
+    }
+    display: inline;
+    margin: 0;
+    // To make `word-wrap: break-word;` work, otherwise it does not take effect.
+    overflow-wrap: break-word;
+  }
+}
+
+@mixin h-meta {
+  .meta {
+    color: $color-slightly-discreet;
+  }
+}
+
+@mixin h1-only {
+  font-size: $h1-font-size;
+}
+
+@mixin input {
+  background-color: $background-color;
+  border-radius: 3px;
+  border: 1px solid gray;
+  box-sizing: border-box;
+  color: white;
+  padding: 0.3em 0.5em;
+  width: 100%;
+  &amp;[disabled] {
+    background-color: rgb(50, 50, 50);
+  }
+  &amp;[type=checkbox] {
+    width: auto;
+  }
+  &amp;:focus {
+    outline: none;
+    border-color: #CCC;
+  }
+  &amp;::placeholder {
+    color: #AAA;
+  }
+  // Unable to make it work for password fields.
+  // https://stackoverflow.com/questions/55131944/how-to-remove-blue-background-on-chrome-autocomplete
+}
+
+@mixin link-icon {
+  font-family: "fa-solid-900";
+  font-weight: 900;
+  font-size: $icon-font-size;
+  // link https://fontawesome.com/v5/icons/link?f=classic&amp;s=solid
+  content: "\f0c1";
+}
+
+@mixin search {
+  display: inline-block;
+  margin-right: 1ch;
+  width: 30ch;
+}
+
+@mixin pre {
+  background-color: $code-background-color;
+  margin: 0;
+  padding: 8px 8px;
+  overflow-x: auto;
+}
+
+@mixin hidden {
+  display: none;
+  // The advantage of this is that when you hover, the height can increase a bit
+  // due to | separators which are very tall on certain fonts, and it is not very
+  // nice to see the page move.
+  //
+  // However, with visibility when the screen width is small, it always takes up a newline,
+  // to it is even less acceptable.
+  //
+  // So instead we fix the header height for now.
+  //
+  // https://github.com/ourbigbook/ourbigbook/issues/98
+  //visibility: hidden;
+}
+
+@mixin hide-hover {
+  position: absolute;
+  left: 0;
+}
+
+@mixin img-border {
+  border: 5px solid $color;
+  box-sizing: border-box;
+}
+
+@mixin multiline-caption {
+  border-left: 1px solid $color;
+  padding-left: 8px;
+}
+
+@mixin responsive-img {
+  @media only screen and (max-width: $max-mobile-width) {
+    height: auto;
+    width: 100%;
+  }
+}
+
+// This should be added to all elements that can show up at toplevel,
+// e.g. notably the output of block macros.
+@mixin toplevel-elem {
+  margin-bottom: $p-margin-vert;
+  // We need both top and bottom because of block elements can always appear inside paragraph next to text e.g.:
+  // ``
+  // My math
+  // $$
+  // 1 + 1
+  // $$
+  // ``
+  margin-top: $p-margin-vert;
+}
+
+@mixin up-arrow-icon {
+  font-family: "fa-solid-900";
+  font-weight: 900;
+  font-size: $icon-font-size;
+  // up arrow https://fontawesome.com/v5/icons/arrow-up?f=classic&amp;s=solid
+  content: "\f062";
+}
+
+// CSS border triangles.
+// https://css-tricks.com/snippets/css/css-triangle/
+$toc-arrow-color: $color-discreet;
+$toc-arrow-width: 0.7em;
+@mixin toc-arrow {
+  color: blue;
+  display: inline;
+  &gt; * {
+    display: inline-block;
+    height: 0;
+    margin-right: 0.6 * $toc-arrow-width;
+    vertical-align: middle;
+    width: 0;
+  }
+}
+@mixin toc-hover-highlight-arrow {
+  @media only screen and (min-width: $max-mobile-width + 1) {
+    &amp;:hover {
+      background-color: $target-background-color;
+    }
+    &amp;:hover &gt; * {
+      background-color: $target-background-color;
+    }
+  }
+}
+
+@mixin visible {
+  display: inline;
+  //visibility: visible;
+}
+
+@mixin ourbigbook-main {
+  @include ourbigbook-body;
+  @include ourbigbook-title;
+
+  // Produces the margin on all toplevel elements.
+  // The on-hover links will show up in that margin.
+  &gt; * {
+    @media only screen and (max-width: $max-mobile-width) {
+      padding-left: $toplevel-horizontal-padding-mobile;
+      padding-right: $toplevel-horizontal-padding-mobile;
+    }
+    @media only screen and (min-width: $max-mobile-width + 1) {
+      padding-left: $toplevel-horizontal-padding-left;
+      padding-right: $toplevel-horizontal-padding-right;
+    }
+    // For on-hover links.
+    // https://stackoverflow.com/questions/10487292/position-absolute-but-relative-to-parent
+    position: relative;
+  }
+}
+
+// Contains all the style that is required to render titles correctly,
+// which is most of all the styles that we have sine titles can contain
+// a lot of different elements. It just doesn't contain some things which
+// apply to OurBigBook content outside of titles only.
+@mixin ourbigbook-title {
+
+line-height: $line-height;
+padding-left: 0;
+// Helps prevent the horizontal scrollbar on mobile.
+word-wrap: break-word;
+
+a {
+  &amp;.split {
+    &amp;::after {
+      content: " Split";
+    }
+    &amp;::before {
+      color: $color;
+      content: "\f042";
+      font-family: "fa-solid-900";
+      font-weight: 900;
+      font-size: $icon-font-size;
+      // adjust https://fontawesome.com/v5/icons/adjust?f=classic&amp;s=solid
+    }
+  }
+  &amp;.nosplit {
+    &amp;::after {
+      content: " Nosplit";
+    }
+    &amp;::before {
+      color: $color;
+      content: "\f111";
+      font-family: "fa-solid-900";
+      font-weight: 900;
+      font-size: $icon-font-size;
+      // circle https://fontawesome.com/v5/icons/circle?f=classic&amp;s=solid
+    }
+  }
+  &amp;:visited {
+    color: $a-color-visited;
+  }
+  &amp;.toc {
+    color: $a-color;
+    &amp;::before {
+      color: $color;
+      font-family: "fa-solid-900";
+      font-weight: 900;
+      font-size: $icon-font-size;
+      // TOC_MARKER_SYMBOL
+      // list https://fontawesome.com/v5/icons/list?f=classic&amp;s=solid
+      content: "\f03a";
+    }
+  }
+}
+
+span {
+  &amp;.wcnt::before, &amp;.wcntr::before {
+    font-family: "fa-regular-400";
+    font-weight: 400;
+    font-size: $icon-font-size;
+    // comment https://fontawesome.com/v5/icons/comment?f=classic&amp;s=solid
+    content: "\f075";
+  }
+  &amp;.dcnt::before {
+    font-family: "fa-solid-900";
+    font-weight: 900;
+    font-size: $icon-font-size;
+    // book https://fontawesome.com/v5/icons/book?f=classic&amp;s=solid
+    content: "\f02d";
+  }
+}
+
+.caption {
+  // By default assume captions are at bottom and so need a margin top.
+  // Items that have caption on top need to override this.
+  margin-top: $caption-margin-vert;
+}
+
+.caption-prefix {
+  font-weight: bold;
+}
+
+// Hide by default, show if first child of hovered element.
+.hide-hover {
+  @include hide-hover;
+  &amp;:first-child {
+    @include hidden;
+  }
+}
+// We remove margins on narrow screens, so there's no space for the link.
+@media only screen and (min-width: $max-mobile-width + 1) {
+  @media(hover: hover) and (pointer: fine) {
+    &gt; :hover &gt; .hide-hover:first-child {
+      @include visible;
+    }
+  }
+}
+
+// Highlight the element referred by the current hash
+// so that the user can easily know which one it is.
+:target, .target {
+  background-color: $target-background-color;
+}
+
+blockquote {
+  border-left: 2px solid $color;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 10px;
+  @include toplevel-elem;
+}
+
+code {
+  background-color: $code-background-color;
+}
+
+div.code {
+  @include toplevel-elem;
+}
+
+// Figures.
+div.figure {
+  margin: $p-margin-vert 0;
+  @include toplevel-elem;
+  figure {
+    // Override weird browser defaults.
+    margin: 0;
+  }
+  &amp;.multiline {
+    @include multiline-caption;
+  }
+  figcaption {
+    margin-top: $caption-margin-vert;
+  }
+}
+
+// Wraps "floating elements" such as images, so ensure they will not create a global scrollbar.
+// Related issue: https://docs.ourbigbook.com/todo/vertical-scrollbar-when-image-title-contains-math-underscore
+div.float-wrap {
+  overflow-x: auto;
+  width: 100%;
+  // https://docs.ourbigbook.com#background-color-of-transparent-images
+  img {
+    background-color: white;
+    // Otherwise we get some extra vertical space related to line height, shorthand!
+    // https://stackoverflow.com/questions/38091547/height-of-div-is-greater-than-image
+    vertical-align: middle;
+    @include responsive-img;
+  }
+}
+
+div.p {
+  @include toplevel-elem;
+}
+
+div.h {
+  // Also show header metadata when the header is selected as the current #fragment.
+  &amp;:target .hover-meta {
+    @include visible;
+  }
+  @include toplevel-elem;
+  &amp;.top {
+    margin-bottom: $p-margin-vert * 1.5;
+  }
+  div.notnav {
+    @include h-common;
+    h1 {
+      @include h1-only;
+    }
+    h2, h3, h4, h5, h6 {
+      font-size: $header-font-size;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      div.number {
+        color: $color;
+        display: inline;
+      }
+    }
+  }
+  .hover-meta {
+    @include hidden;
+    &gt; :not(:last-child) {
+      margin-right: $sep-width;
+    }
+    margin-left: $sep-width;
+  }
+  @media only screen and (min-width: $max-mobile-width + 1) {
+    &amp;:hover .hover-meta {
+      @include visible;
+    }
+  }
+  nav.h-nav {
+    div.nav {
+      font-weight: bold;
+      margin-top: 0.2em;
+      &amp;:before {
+        // Downwards Arrow with Tip Rightwards: https://www.compart.com/en/unicode/U+21B3
+        content: "\21b3";
+        padding-right: 0.5ch;
+      }
+      img.logo {
+        height: 1em;
+      }
+      &gt; :not(:last-child) {
+        margin-right: $sep-width
+      }
+      &amp;.file {
+        &gt; :first-child::before {
+          @include file-icon;
+        }
+      }
+      &amp;.ancestors {
+        // Other ancestors.
+        &gt; :not(:first-child)::before {
+          color: $color;
+          font-family: "fa-solid-900";
+          font-weight: 900;
+          font-size: $icon-font-size;
+          // right arrow https://fontawesome.com/v5/icons/arrow-right?f=classic&amp;s=solid
+          content: "\f061";
+        }
+      }
+    }
+    a {
+      // u for Up
+      &amp;.u::before {
+        @include up-arrow-icon;
+        color: $color;
+      }
+      &amp;.wiki {
+        &amp;::before {
+          color: $color;
+          font-family: "fa-brands-400";
+          font-weight: bold;
+          font-size: $icon-font-size;
+          // Wikipedia w https://fontawesome.com/v5/icons/wikipedia-w?f=brands&amp;s=solid
+          content: "\f266";
+        }
+        &amp;::after {
+          content: " Wiki"
+        }
+      }
+    }
+    span.tags::before {
+      font-family: "fa-solid-900";
+      font-weight: 900;
+      font-size: $icon-font-size;
+      // tags https://fontawesome.com/v5/icons/tags?f=classic&amp;s=solid
+      content: "\f02c";
+    }
+    .toc::after {
+      content: " Toc";
+    }
+  }
+}
+
+
+div.list {
+  @include toplevel-elem;
+}
+
+// Tables
+div.table {
+  overflow-x: auto;
+  @include toplevel-elem;
+  &amp;.multiline {
+    @include multiline-caption;
+  }
+  table {
+    $table_border: 1px solid $table-border-color;
+    border: $table_border;
+    border-collapse: collapse;
+    margin: math.div($p-margin-vert, 2) 0;
+    thead {
+      background-color: $table-head-background-color;
+    }
+    tr {
+      th, td {
+        border: $table_border;
+        padding: $table-padding-top $table-padding-sides;
+      }
+      &amp;:nth-child(even) {
+        background-color: $table-even-background-color;
+      }
+    }
+  }
+  .caption {
+    margin-bottom: $caption-margin-vert;
+    margin-top: 0;
+  }
+}
+
+// For autogenerated headers such as Incoming Links and Synonyms
+h1, h2, h3, h4, h5, h6 {
+  margin-bottom: $p-margin-vert;
+  margin-top: $p-margin-vert;
+  a {
+    @include h-meta;
+    color: $h-color;
+    &amp;:visited {
+      color: $h-color;
+    }
+  }
+}
+
+hr {
+  @include toplevel-elem;
+}
+
+img {
+  &amp;.inline {
+    max-width: 100%;
+    // This would have two good effects:
+    // 1) inline images have proportional height when crushed by viewport
+    // 2) allow width= to take effect.
+    // But it would also make height= not be obeyed for reasons we don't fully understand
+    // So let's just let them be crushed for now and keep height= working.
+    //height: 100%;
+  }
+  &amp;.border {
+    @include img-border;
+  }
+}
+nav {
+  img {
+    // Undo responsive-img width ==100 for navigation images, otherwise
+    // the OurBigBook.com image becomes huge and breaks the navigation.
+    width: auto;
+  }
+}
+
+iframe {
+  @include responsive-img;
+  box-sizing: border-box;
+  &amp;.border {
+    @include img-border;
+  }
+}
+
+input {
+  @include input;
+  // Currently &lt;input&gt; is only used for ToC search.
+  @include search;
+  @media only screen and (max-width: $max-mobile-width) {
+    &amp;:not(:focus) {
+      padding-left: 0.2em;
+      padding-right: 0.2em;
+      width: 3ch;
+    }
+  }
+}
+
+// Math.
+// https://stackoverflow.com/questions/50896041/katex-font-size/57355836#57355836
+.katex { font-size: 1.5em; }
+div.math {
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: clip;
+  @include toplevel-elem;
+  .equation {
+    align-items: center;
+    display: flex;
+    &gt; :nth-child(1) {
+      flex-grow: 9;
+    }
+    &gt; :nth-child(2) {
+      flex-grow: 1;
+      text-align: right;
+    }
+  }
+  div.number {
+    margin-left: 1.5em;
+  }
+}
+
+.metrics &gt; :not(:first-child)  {
+  margin-left: 0.5em;
+}
+
+pre {
+  @include pre;
+}
+
+.multiline {
+  @include multiline-caption;
+}
+
+ol, ul {
+  padding-left: 30px;
+  li {
+    // https://github.com/ourbigbook/ourbigbook/issues/68
+    &amp;:not(:last-child) {
+      margin-bottom: $p-margin-vert;
+    }
+    &amp;:not(:first-child) {
+      margin-top: $p-margin-vert;
+    }
+  }
+}
+
+// Table of contents.
+.toc-container {
+  line-height: $line-height * 0.9;
+  overflow-x: auto;
+
+  // On mobile, this would make:
+  // - prevent squishing of very to the right elements which:
+  //   - makes them more readable
+  //   - prevents large useless vertical displacement
+  // But it also makes the very first elements of small tocs
+  // require horizontal scroll so it doesn't feel like it's worth it :-(
+  // What we want is to check is: is the element's absolute position more than 80%
+  // to the right of the screen? Then we should just nowrap.
+  //white-space: nowrap;
+
+  // Don't wrap lines after level 5 on mobile.
+  // Very deep toc items just take up vertical space and are completely unreadable.
+  // Work around that on mobile by not wrapping lines after a certain level.
+  // Users can still read by horizontal scrolling if they really want to.
+  @media only screen and (max-width: $max-mobile-width) {
+    li { li { li { li { li { li { li {
+      white-space: nowrap;
+    } } } } } } }
+  }
+  ul {
+    list-style-type: none;
+    li {
+      // https://github.com/ourbigbook/ourbigbook/issues/68
+      $toc-sep: 0.3em;
+      margin-bottom: $toc-sep;
+      margin-top: $toc-sep;
+      // .n for Number
+      // i because it's short.
+      i.n {
+        color: $color;
+        font-style: normal;
+        display: inline;
+      }
+      @media only screen and (min-width: $max-mobile-width + 1) {
+        div:hover span.not-arrow span.hover-metadata {
+          @include visible;
+        }
+      }
+      div:target span.not-arrow span.hover-metadata {
+        @include visible;
+      }
+      // Current
+      .c::before {
+        color: $color;
+        @include link-icon;
+      }
+      .c::after {
+        content: " Link";
+      }
+      // Up
+      .u::before {
+        color: $color;
+        @include up-arrow-icon;
+      }
+
+      div {
+        display: flex;
+        span.not-arrow {
+          span.hover-metadata {
+            @include hidden;
+            &gt; a {
+              margin-left: $sep-width;
+            }
+          }
+        }
+        // Take up space on LIs that don't have an arrow.
+        &amp;.arrow {
+          @include toc-arrow;
+          &amp; &gt; * {
+            border-left: $toc-arrow-width solid transparent;
+            border-right: $toc-arrow-width solid transparent;
+            border-top: $toc-arrow-width solid transparent;
+          }
+        }
+      }
+      // Right arrow for open LIs.
+      &amp;.has-child &gt; div &gt; div.arrow {
+        @include toc-arrow;
+        @include toc-hover-highlight-arrow;
+        &amp; &gt; * {
+          border-left: $toc-arrow-width solid transparent;
+          border-right: $toc-arrow-width solid transparent;
+          border-top: $toc-arrow-width solid $toc-arrow-color;
+        }
+      }
+      &amp;.close {
+        ul {
+          display: none;
+        }
+        // Down arrow for closed LIs.
+        &amp;.has-child &gt; div &gt; div.arrow {
+          @include toc-arrow;
+          @include toc-hover-highlight-arrow;
+          &amp; &gt; * {
+            border-top: $toc-arrow-width solid transparent;
+            border-bottom: $toc-arrow-width solid transparent;
+            border-left: $toc-arrow-width solid $toc-arrow-color;
+          }
+        }
+      }
+    }
+  }
+  &gt; ul {
+    padding-left: 0px;
+    margin-top: 0;
+    margin-bottom: 0;
+    &gt; li &gt; ul {
+      padding-left: 0px;
+      * {
+        // Ignore special background on code blocks.
+        // TODO this was enabled at one point not sure why, seems to be at
+        // f8fc9eacfa794b95c1d9982a04b62603e6d0bb83
+        //background-color: $background-color;
+      }
+    }
+  }
+  .title {
+    color: $h-color;
+    font-size: $header-font-size;
+    font-weight: bold;
+    margin-right: 1ch;
+  }
+  .metrics {
+    padding-left: $sep-width;
+  }
+  @media only screen and (max-width: $max-mobile-width) {
+    .metrics {
+      display: none;
+    }
+  }
+
+  // Override the default URL fragment behaviour, only color the toc title when the ToC
+  // is targeted, otherwise it is too annoying. Especially because the first thing
+  // you want to do on a ToC is to click that nice big link. And then the entire ToC becomes
+  // red and unreadable (especially due to link colors) and then it requires some thinking to how
+  // to make it stop being red (remove #fragment from URL manually or find another ID on page).
+  // So we just take the solution that prevents the user from shooting themselves.
+  background-color: $background-color;
+  div:target {
+    background-color: $target-background-color;
+  }
+  div:target * {
+    background-color: $target-background-color;
+  }
+  &amp;:target div.title-div {
+    background-color: $target-background-color;
+  }
+}
+
+// Titles of non-header things like images, videos, quotes and code.
+div.title {
+  display: inline;
+  font-weight: bold;
+}
+
+span.sep {
+  display: inline-block;
+  width: $sep-width;
+}
+
+sup.ref {
+  // https://stackoverflow.com/questions/6900124/how-to-make-certain-text-not-selectable-with-css
+  user-select: none;
+}
+
+// Overrides for the tablesort.css
+// https://raw.githubusercontent.com/tristen/tablesort/5.2.1/tablesort.css
+th[role=columnheader]:not(.no-sort):after {
+  border-color: $color transparent;
+}
+
+video {
+  @include responsive-img;
+  &amp;.border {
+    @include img-border;
+  }
+}
+.icon:not(.icon-heart) {
+  color: $color;
+}
+}
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>\H synonym argument - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="h-synonym-argument"><div class="notnav"><h1><a href=""><code>\H</code> <code>synonym</code> argument</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#header"> Header</a><a href=".#h-arguments"> <code>\H</code> arguments</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#h-synonym-argument"></a><span class="metrics"><span class="wcntr"> Words: 671</span><span class="dcnt"> Articles: 4</span></span></div></nav></div><div class="p" id="_1066">This option is similar to <a href=".#h-title2-argument"><code>\H</code> <code>title2</code> argument</a> but it additionally:<div class="list"><ul id="_1067"><li id="_1068">creates a new ID that you can refer to, and renders it with the alternate chosen title</li><li id="_1069">the rendered ID on <a href=".#internal-link">internal links</a> is the same as what it is a synonym for</li><li id="_1070">the synonym header is not rendered at all, including in the <a href=".#table-of-contents">table of contents</a></li><li id="_1071">when using <a href=".#split-headers"><code>-S</code>, <code>--split-headers</code></a>, a redirect output file is generated from the synonym to the main ID</li></ul></div></div><div class="p" id="_1072">Example:<div class="code" id="_1073"><div><pre><code>= Parent
+
+== GNU Debugger
+{c}
+
+= GDB
+{c}
+{synonym}
+
+I like to say \x[gdb] because it is shorter than \x[gnu-debugger].</code></pre></div></div>renders something like:<div class="code" id="_1074"><div><pre><code>= GNU Debugger
+
+I like to say \a[#gnu-debugger][GDB] because it is shorter than \x[#gnu-debugger][GNU Debugger].</code></pre></div></div>Furthermore, if <a href=".#split-headers"><code>-S</code>, <code>--split-headers</code></a> is used, another file is generated:<div class="code" id="_1075"><div><pre><code>gdb.html</code></pre></div></div>which contains a redirection from <code>gdb.html</code> to <code>gnu-debugger.html</code>.</div><div class="p" id="_1076">Implemented at: <a href="https://github.com/ourbigbook/ourbigbook/issues/114">github.com/ourbigbook/ourbigbook/issues/114</a></div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"></input><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 671</span><span class="dcnt"> 4</span></span></span></span></div><ul><li class="has-child"><div id="_toc/h-title-argument"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#h-title-argument"><code>\H</code> <code>title</code> argument</a><span class="hover-metadata"><a class="nosplit" href=".#h-title-argument"></a><a href="#_toc" class="u"> <code>\H</code> <code>synonym</code> argument</a><span class="metrics"><span class="wcntr"> 417</span><span class="dcnt"> 1</span></span></span></span></div><ul><li><div id="_toc/automatic-id-from-title"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#automatic-id-from-title">Automatic ID from title</a><span class="hover-metadata"><a class="nosplit" href=".#automatic-id-from-title"></a><a href="#_toc/h-title-argument" class="u"> <code>\H</code> <code>title</code> argument</a><span class="metrics"><span class="wcntr"> 381</span></span></span></span></div></li></ul><li><div id="_toc/id-target-from-title"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#id-target-from-title">ID target from title</a><span class="hover-metadata"><a class="nosplit" href=".#id-target-from-title"></a><a href="#_toc" class="u"> <code>\H</code> <code>synonym</code> argument</a><span class="metrics"><span class="wcntr"> 24</span></span></span></span></div></li><li><div id="_toc/h-title2-argument-of-a-synonym-header"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#h-title2-argument-of-a-synonym-header"><code>\H</code> <code>title2</code> argument of a synonym header</a><span class="hover-metadata"><a class="nosplit" href=".#h-title2-argument-of-a-synonym-header"></a><a href="#_toc" class="u"> <code>\H</code> <code>synonym</code> argument</a><span class="metrics"><span class="wcntr"> 104</span></span></span></span></div></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#h-arguments"><code>\H</code> arguments</a></li><li><a href=".#header">Header</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(5)</span></a></h2><div class="list"><ul><li><a href=".#h-title2-argument"><code>\H</code> <code>title2</code> argument</a></li><li><a href=".#internal-link-title-inflection">Internal link title inflection</a></li><li><a href=".#ourbigbook-json/redirects"><code>redirects</code></a></li><li><a href=".#ourbigbook-markup-quick-start">OurBigBook Markup quick start</a></li><li><a href=".#the-home-article">The home article</a></li></ul></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#h-synonym-argument">Synonym</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>OurBigBook Web page renaming - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ourbigbook-web-page-renaming"><div class="notnav"><h1><a href="">OurBigBook Web page renaming</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-web"> OurBigBook Web</a><a href=".#ourbigbook-web-user-manual"> OurBigBook Web user manual</a></div><div class="nav"><a class="nosplit" href=".#ourbigbook-web-page-renaming"></a><span class="metrics"><span class="wcntr"> Words: 147</span></span></div></nav></div><div class="p" id="_3993">The current setup works as follows.</div><div class="p" id="_3994">Suppose you have a page titled:<div class="code" id="_3995"><div><pre><code>Calculus</code></pre></div></div>and therefore with an ID <code>calculus</code> that appears under: <a href="https://ourbigbook.com/barack-obama/calculus">ourbigbook.com/barack-obama/calculus</a></div><div class="p" id="_3996">Suppose you want to rename it to "Calculus 2" to have an ID of <code>calculus-2</code>.</div><div class="p" id="_3997">The procedure is:<div class="list"><ul id="_3998"><li id="_3999">set title to <code>Caculus 2</code></li><li id="_4000"><div class="p" id="_4001">set <code>Calculus</code> as a <a href=".#h-synonym-argument">synonym</a> of the article, but adding to the top of the article body:</div><div class="code" id="_4002"><div><pre><code>Calculus
+{synonym}</code></pre></div></div></li></ul></div></div><div class="p" id="_4003">As a result of this:<div class="list"><ul id="_4004"><li id="_4005">the page will now be hosted under <a href="https://ourbigbook.com/barack-obama/calculus">ourbigbook.com/barack-obama/calculus</a></li><li id="_4006"><a href="https://ourbigbook.com/barack-obama/calculus-2">ourbigbook.com/barack-obama/calculus-2</a> becomes a redirect to <a href="https://ourbigbook.com/barack-obama/calculus">ourbigbook.com/barack-obama/calculus</a></li><li id="_4007">articles that point with an <a href=".#internal-link">internal link</a> to <code>calculus</code> are unmodified, and still link to: <a href="https://ourbigbook.com/barack-obama/calculus">ourbigbook.com/barack-obama/calculus</a>. But that link works due to the redirect.</li></ul></div></div><div class="p" id="_4008">This is not super user friendly, and could be made better by:<div class="list"><ul id="_4009"><li id="_4010">moving <code>synonym</code> from source to widgets: <a href="todo#web-header-metadata-to-widgets">move all header metadata from source to HTML in Webs</a></li><li id="_4011">actually update all references on other files to the new value. This could be done e.g. by creating a worker thread, and mark all references as outdated.</li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-web-user-manual">OurBigBook Web user manual</a></li><li><a href=".#ourbigbook-web">OurBigBook Web</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#local-header-deletion-on-web-upload">Local header deletion on web upload</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>OurBigBook Markup quick start - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ourbigbook-markup-quick-start"><div class="notnav"><h1><a href="">OurBigBook Markup quick start</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a></div><div class="nav"><a class="nosplit" href=".#ourbigbook-markup-quick-start"></a><span class="metrics"><span class="wcntr"> Words: 854</span></span></div></nav></div><div class="p" id="_372"><a href=".#paragraph">Paragraphs</a> are made by simplifying adding an empty line, e.g.:<div class="code" id="_373"><div><pre><code>My first paragraph.
+
+And now my second paragraph.
+
+Third one to finish.</code></pre></div></div><div class="p" id="_374">which renders as:</div><div><blockquote id="_375"><div class="p" id="_376">My first paragraph.</div><div class="p" id="_377">And now my second paragraph.</div><div class="p" id="_378">Third one to finish.</div></blockquote></div></div><div class="p" id="_379"><a href=".#header">Headers</a> are created by starting the line with equal signs. The more equal signs the deeper you are, e.g.:<div class="code" id="_380"><div><pre><code>= Animal
+
+== Mammal
+
+=== Dog
+
+=== Cat
+
+== Bird
+
+=== Pigeon
+
+=== Chicken</code></pre></div></div>On <a href=".#ourbigbook-web">OurBigBook Web</a>, the toplevel header of each page goes into a separate title box, so there things would just look like:<div class="list"><ul id="_381"><li id="_382">title box: "Animal"</li><li id="_383">body:<div class="code" id="_384"><div><pre><code>== Mammal
+
+=== Dog
+
+=== Cat
+
+== Bird
+
+=== Pigeon
+
+=== Chicken</code></pre></div></div></li></ul></div></div><div class="p" id="_385">You can can use any header as a <a href=".#h-tag-argument">tag</a> of any other header, e.g.:<div class="code" id="_386"><div><pre><code>= Animal
+
+== Dog
+{tag=Cute animal}
+
+== Turtle
+{tag=Ugly animal}
+
+== Animal cuteness
+
+=== Cute animal
+
+=== Ugly animal</code></pre></div></div></div><div class="p" id="_387">Headers have several powerful features that you can read more about under <a href=".#h-arguments"><code>\H</code> arguments</a>, e.g. <a href=".#h-synonym-argument"><code>\H</code> <code>synonym</code> argument</a> and <a href=".#disambiguate-argument"><code>\H</code> <code>disambiguate</code> argument</a>.</div><div class="p" id="_388">To <a href=".#internal-link">link to any of your other pages</a>, you can use angle brackets (less than/greater than) signs:<div class="code" id="_389"><div><pre><code>I have a &lt;cute animal&gt;. &lt;Birds&gt; are too noisy.</code></pre></div></div>Note how <a href=".#internal-link-title-inflection">capitalization and pluralization generally just work</a>.</div><div class="p" id="_390">To use a custom link text on a reference, use the following syntax:<div class="code" id="_391"><div><pre><code>I have a &lt;cute animal&gt;[furry animal]. &lt;Birds&gt;[feathery animals] are too noisy.</code></pre></div></div></div><div class="p" id="_392">External links can be input directly as:<div class="code" id="_393"><div><pre><code>This is a great website: https://example.com
+
+I really like https://example.com[this website].</code></pre></div></div><div class="p" id="_394">which renders as:</div><div><blockquote id="_395"><div class="p" id="_396">This is a great website: <a href="https://example.com">example.com</a></div><div class="p" id="_397">I really like <a href="https://example.com">this website</a>.</div></blockquote></div></div><div class="p" id="_398"><a href=".#code-block">Code blocks</a> are done with backticks <code>`</code>. With just one backtick, you get a code block inside the text:<div class="code" id="_399"><div><pre><code>The function call `f(x + 1, "abc")` is wrong.</code></pre></div></div><div class="p" id="_400">which renders as:</div><div><blockquote id="_401"><div class="p" id="_402">The function call <code>f(x + 1, "abc")</code> is wrong.</div></blockquote></div>and with two ore more backticks you get a code block on its own line, and possibly with multiple code lines:<div class="code" id="_403"><div><pre><code>The function:
+``
+function f(x, s) {
+  return x + s
+}
+``
+is wrong.</code></pre></div></div><div class="p" id="_404">which renders as:</div><div><blockquote id="_405"><div class="p" id="_406">The function:<div class="code" id="_407"><div><pre><code>function f(x, s) {
+  return x + s
+}</code></pre></div></div>is wrong.</div></blockquote></div></div><div class="p" id="_408"><a href=".#mathematics">Mathematics</a> syntax is very similar to code blocks, you can just enter you LaTeX code in it:<div class="code" id="_409"><div><pre><code>The number $\sqrt{2}$ is irrational.
+
+The same goes for:
+$$
+\frac{1}{\sqrt{2}}
+$$</code></pre></div></div><div class="p" id="_410">which renders as:</div><div><blockquote id="_411"><div class="p" id="_412">The number <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.04em;vertical-align:-0.1328em;"></span><span class="mord sqrt"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9072em;"><span class="svg-align" style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord" style="padding-left:0.833em;"><span class="mord">2</span></span></span><span style="top:-2.8672em;"><span class="pstrut" style="height:3em;"></span><span class="hide-tail" style="min-width:0.853em;height:1.08em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="1.08em" viewBox="0 0 400000 1080" preserveAspectRatio="xMinYMin slice"><path d="M95,702
+c-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14
+c0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54
+c44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10
+s173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429
+c69,-144,104.5,-217.7,106.5,-221
+l0 -0
+c5.3,-9.3,12,-14,20,-14
+H400000v40H845.2724
+s-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7
+c-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z
+M834 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1328em;"><span></span></span></span></span></span></span></span></span> is irrational.</div><div class="p" id="_413">The same goes for:<div class="math" id="_414"><div><div class="equation"><div><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.3831em;vertical-align:-0.538em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.8451em;"><span style="top:-2.551em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord sqrt mtight"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9128em;"><span class="svg-align" style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mtight" style="padding-left:0.833em;"><span class="mord mtight">2</span></span></span><span style="top:-2.8728em;"><span class="pstrut" style="height:3em;"></span><span class="hide-tail mtight" style="min-width:0.853em;height:1.08em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="1.08em" viewBox="0 0 400000 1080" preserveAspectRatio="xMinYMin slice"><path d="M95,702
+c-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14
+c0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54
+c44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10
+s173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429
+c69,-144,104.5,-217.7,106.5,-221
+l0 -0
+c5.3,-9.3,12,-14,20,-14
+H400000v40H845.2724
+s-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7
+c-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z
+M834 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1272em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.394em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.538em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></div><div class="number"><a href="#_414">(1)</a></div></div></div></div></div></blockquote></div></div><div class="p" id="_415">We also have <a href=".#built-in-latex-macros">a bunch of predefined macros from popular packages</a>, e.g. <code>\dv</code> from the <a href="https://mirrors.ibiblio.org/CTAN/macros/latex/contrib/physics/physics.pdf"><code>physics</code> package</a> for derivatives:<div class="code" id="_416"><div><pre><code>$$
+\dv{x^2}{x} = 2x
+$$</code></pre></div></div><div class="p" id="_417">which renders as:</div><div><blockquote id="_418"><div class="math" id="_419"><div><div class="equation"><div><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.3629em;vertical-align:-0.345em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0179em;"><span style="top:-2.655em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">d</span><span class="mord mathnormal mtight">x</span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.394em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">d</span><span class="mord mtight"><span class="mord mathnormal mtight">x</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8913em;"><span style="top:-2.931em;margin-right:0.0714em;"><span class="pstrut" style="height:2.5em;"></span><span class="sizing reset-size3 size1 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.345em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">2</span><span class="mord mathnormal">x</span></span></span></span></div><div class="number"><a href="#_419">(2)</a></div></div></div></div></blockquote></div></div><div class="p" id="_420">You can <a href=".#internal-link">refer</a> to specific equations like this:<div class="code" id="_421"><div><pre><code>As shown in &lt;equation Very important equation&gt;, this is true.
+
+$$
+\frac{1}{\sqrt{2}}
+$$
+{title=Very important equation}</code></pre></div></div><div class="p" id="_422">which renders as:</div><div><blockquote id="_423"><div class="p" id="_424">As shown in <a href="#equation-very-important-equation">Equation 3. "Very important equation"</a>, this is true.</div><div class="math" id="equation-very-important-equation"><div><div class="equation"><div><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.3831em;vertical-align:-0.538em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.8451em;"><span style="top:-2.551em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord sqrt mtight"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9128em;"><span class="svg-align" style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mtight" style="padding-left:0.833em;"><span class="mord mtight">2</span></span></span><span style="top:-2.8728em;"><span class="pstrut" style="height:3em;"></span><span class="hide-tail mtight" style="min-width:0.853em;height:1.08em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="1.08em" viewBox="0 0 400000 1080" preserveAspectRatio="xMinYMin slice"><path d="M95,702
+c-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14
+c0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54
+c44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10
+s173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429
+c69,-144,104.5,-217.7,106.5,-221
+l0 -0
+c5.3,-9.3,12,-14,20,-14
+H400000v40H845.2724
+s-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7
+c-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z
+M834 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1272em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.394em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.538em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></div><div class="number"><a href="#equation-very-important-equation">(3)</a></div></div><div class="caption"><a href="#equation-very-important-equation"><span class="caption-prefix">Equation 3. </span></a><div class="title">Very important equation</div>. </div></div></div></blockquote></div></div><div class="p" id="_425"><a href=".#image">Images</a> and <a href=".#video">videos</a> are also easy to add and <a href=".#internal-link">refer</a> to:<div class="code" id="_426"><div><pre><code>As shown at &lt;image Cute chicken chick&gt;, chicks are cute.
+
+\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/H%C3%BChnerk%C3%BCken_02.jpg/800px-H%C3%BChnerk%C3%BCken_02.jpg?20200716091201]
+{title=Cute chicken chick}
+
+\Video[https://www.youtube.com/watch?v=j_fl4xoGTKU]
+{title=Top Down 2D Continuous Game by Ciro Santilli (2018)}</code></pre></div></div><div class="p" id="_427">which renders as:</div><div><blockquote id="_428"><div class="p" id="_429">As shown at <a href="#image-cute-chicken-chick">Figure 20. "Cute chicken chick"</a>, chicks are cute.</div><div class="figure"><figure id="image-cute-chicken-chick"><div class="float-wrap"><a href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/H%C3%BChnerk%C3%BCken_02.jpg/800px-H%C3%BChnerk%C3%BCken_02.jpg?20200716091201"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/H%C3%BChnerk%C3%BCken_02.jpg/800px-H%C3%BChnerk%C3%BCken_02.jpg?20200716091201" loading="lazy" height="315"></a></div><figcaption><a href="#image-cute-chicken-chick"><span class="caption-prefix">Figure 20. </span></a><div class="title">Cute chicken chick</div>. <a href="https://commons.wikimedia.org/wiki/File:H%C3%BChnerk%C3%BCken_02.jpg?20200716091201">Source</a>. </figcaption></figure></div><div class="figure"><figure id="video-top-down-2d-continuous-game-by-ciro-santilli-2018"><div class="float-wrap"><iframe width="560" height="315" loading="lazy" src="https://www.youtube.com/embed/j_fl4xoGTKU" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><figcaption><a href="#video-top-down-2d-continuous-game-by-ciro-santilli-2018"><span class="caption-prefix">Video 5. </span></a><div class="title">Top Down 2D Continuous Game by Ciro Santilli (2018)</div> <a href="https://www.youtube.com/watch?v=j_fl4xoGTKU">Source</a>. </figcaption></figure></div></blockquote></div></div><div class="p" id="_430">Images can take a bunch of options, about which you can read more about at <a href=".#image-argument">image arguments</a>. Most should be self explanatory, here is an image with a bunch of useful arguments:<div class="code" id="_431"><div><pre><code>\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/H%C3%BChnerk%C3%BCken_02.jpg/800px-H%C3%BChnerk%C3%BCken_02.jpg?20200716091201]
+{title=Ultra cute chicken chick}
+{description=
+The chicken is yellow, and the hand is brown.
+
+The background is green.
+}
+{border}
+{height=400}
+{source=https://commons.wikimedia.org/wiki/File:H%C3%BChnerk%C3%BCken_02.jpg}</code></pre></div></div><div class="p" id="_432">which renders as:</div><div><blockquote id="_433"><div class="figure"><figure id="image-ultra-cute-chicken-chick" class="multiline"><div class="float-wrap"><a href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/H%C3%BChnerk%C3%BCken_02.jpg/800px-H%C3%BChnerk%C3%BCken_02.jpg?20200716091201"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/H%C3%BChnerk%C3%BCken_02.jpg/800px-H%C3%BChnerk%C3%BCken_02.jpg?20200716091201" loading="lazy" height="400"  class="border"></a></div><figcaption><a href="#image-ultra-cute-chicken-chick"><span class="caption-prefix">Figure 21. </span></a><div class="title">Ultra cute chicken chick</div>. <a href="https://commons.wikimedia.org/wiki/File:H%C3%BChnerk%C3%BCken_02.jpg">Source</a>. <div class="p" id="_434">The chicken is yellow, and the hand is brown.</div><div class="p" id="_435">The background is green.</div></figcaption></figure></div></blockquote></div></div><div class="p" id="_436"><a href=".#list">Lists</a> are written by starting the line with an asterisk <code>*</code>:<div class="code" id="_437"><div><pre><code>* first item
+* second item
+* and the third</code></pre></div></div><div class="p" id="_438">which renders as:</div><div><blockquote id="_439"><div class="list"><ul id="_440"><li id="_441">first item</li><li id="_442">second item</li><li id="_443">and the third</li></ul></div></blockquote></div></div><div class="p" id="_444">A nested list:<div class="code" id="_445"><div><pre><code>* first item
+  * first item version 1
+  * first item version 2
+    * first item version 2 1
+    * first item version 2 2
+* second item
+* and the third</code></pre></div></div><div class="p" id="_446">which renders as:</div><div><blockquote id="_447"><div class="list"><ul id="_448"><li id="_449">first item<div class="list"><ul id="_450"><li id="_451">first item version 1</li><li id="_452">first item version 2<div class="list"><ul id="_453"><li id="_454">first item version 2 1</li><li id="_455">first item version 2 2</li></ul></div></li></ul></div></li><li id="_456">second item</li><li id="_457">and the third</li></ul></div></blockquote></div></div><div class="p" id="_458">Lists items can contain any markup, e.g. paragraphs. You just need to keep the same number of spaces, e.g.:<div class="code" id="_459"><div><pre><code>* first item.
+
+  Second paragraph of first item.
+
+  And a third one.
+* second item
+  * second item v1
+
+    Another paragraph in second item v1
+  * second item v2</code></pre></div></div><div class="p" id="_460">which renders as:</div><div><blockquote id="_461"><div class="list"><ul id="_462"><li id="_463"><div class="p" id="_464">first item.</div><div class="p" id="_465">Second paragraph of first item.</div><div class="p" id="_466">And a third one.</div></li><li id="_467">second item<div class="list"><ul id="_468"><li id="_469"><div class="p" id="_470">second item v1</div><div class="p" id="_471">Another paragraph in second item v1</div></li><li id="_472">second item v2</li></ul></div></li></ul></div></blockquote></div></div><div class="p" id="_473"><a href=".#table">Tables</a> are not very different from lists. We use double pipes for headers <code>||</code>, and a single pipe <code>|</code> for regular rows:<div class="code" id="_474"><div><pre><code>|| City
+|| Sales
+
+| Salt Lake City
+| 124,00
+
+| New York
+| 1,000,000</code></pre></div></div><div class="p" id="_475">which renders as:</div><div><blockquote id="_476"><div class="table" id="_477"><div><table><thead><tr id="_478"><th id="_479">City</th><th id="_480">Sales</th></tr></thead><tbody><tr id="_481"><td id="_482">Salt Lake City</td><td id="_483">124,00</td></tr><tr id="_484"><td id="_485">New York</td><td id="_486">1,000,000</td></tr></tbody></table></div></div></blockquote></div></div><div class="p" id="_487">To add a title we need to use an explicit <code>\Table</code> macro as in:<div class="code" id="_488"><div><pre><code>See &lt;table Sales per city&gt; for more information.
+
+\Table
+{title=Sales per city}
+[
+|| City
+|| Sales
+
+| Salt Lake City
+| 124,00
+
+| New York
+| 1,000,000
+]</code></pre></div></div><div class="p" id="_489">which renders as:</div><div><blockquote id="_490"><div class="p" id="_491">See <a href="#table-sales-per-city">Table 1. "Sales per city"</a> for more information.</div><div class="table" id="table-sales-per-city"><div><div class="caption"><a href="#table-sales-per-city"><span class="caption-prefix">Table 1. </span></a><div class="title">Sales per city</div>. </div><table><thead><tr id="_492"><th id="_493">City</th><th id="_494">Sales</th></tr></thead><tbody><tr id="_495"><td id="_496">Salt Lake City</td><td id="_497">124,00</td></tr><tr id="_498"><td id="_499">New York</td><td id="_500">1,000,000</td></tr></tbody></table></div></div></blockquote></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(2)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#quick-start">Quick start</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

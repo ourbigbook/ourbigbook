@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>\x magic argument - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="x-magic-argument"><div class="notnav"><h1><a href=""><code>\x</code> <code>magic</code> argument</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#internal-link"> Internal link</a><a href=".#x-arguments"> <code>\x</code> arguments</a></div><div class="nav"><a href="#_toc" class="toc"></a><span class="tags"> Tags: <a href=".#boolean-argument">Boolean argument</a></span><a class="nosplit" href=".#x-magic-argument"></a><span class="metrics"><span class="wcntr"> Words: 383</span><span class="dcnt"> Articles: 1</span></span></div></nav></div><div class="p" id="_2488">This argument makes writing many <a href=".#internal-link">internal links</a> more convenient, and it was notably introduced because it serves as the sane version of <a href=".#shorthand-internal-link">shorthand internal links</a>.</div><div class="p" id="_2489">If given e.g. as in:<div class="code" id="_2490"><div><pre><code>= Internal reference
+
+\x[Internal references]{magic}</code></pre></div></div>the link treated magically as follows:<div class="list"><ul id="_2491"><li id="_2492"><div class="p" id="_2493">content capitalization and pluralization are detected from the string, and implicitly set the <a href=".#x-c-argument"><code>\x</code> <code>c</code> argument</a> and <a href=".#x-p-argument"><code>\x</code> <code>p</code> argument</a>. In the example:<div class="list"><ul id="_2494"><li id="_2495"><code>{c}</code> capitalization is set because <code>Internal references</code> starts with an upper case character <code>I</code></li><li id="_2496"><code>{p}</code> pluralization is set because <code>Internal references</code> ends in a plural word</li></ul></div>In this simple example, the content therefore will be exactly <code>Internal references</code> as in the source. But note that this does not necessarily need to be the case, e.g. if we had done:<div class="code" id="_2497"><div><pre><code>\x[Internal Reference]{magic}</code></pre></div></div>then the content would be:<div class="code" id="_2498"><div><pre><code>Internal reference</code></pre></div></div>without capital <code>R</code>, i.e. everything except capitalization and pluralization is ignored. This forgiving way of doing things means that writers don't need to remember the exact ideal capitalization of everything, which is very hard to remember.</div><div class="p" id="_2499">It also means that any more complex elements will be automatically rendered as usual, e.g. if we had:<div class="code" id="_2500"><div><pre><code>= \i[Internal] reference
+
+\x[internal reference]{magic}</code></pre></div></div>then the output would still contain the <code>&lt;i&gt;</code> italic tag.</div><div class="p" id="_2501">If we had a scope as in <code>\x[my scope/Internal references]</code>, then each scope part is checked separately. E.g. in this case we would have upper case <code>Internal references</code>, even though <code>my scope</code> is lowercase, and so <code>{c}</code> would be set.</div></li><li id="_2502">the ID is calculated as follows:<div class="list"><ul id="_2503"><li id="_2504"><div class="p" id="_2505"><a href=".#automatic-id-from-title">automatic ID from title</a> conversion is performed, with you exception: forwards slashs <code>/</code> are kept, in order to make <a href=".#h-scope-argument">scopes</a> work.</div><div class="p" id="_2506">In our case, there aren't any slashes <code>/</code>, so it just gives <code>internal-references</code>. But if instead we had e.g.: <code>\x[my scope/internal reference]{magic}</code>, then we would reach <code>my-scope/internal-reference</code> and not <code>my-scope-internal-reference</code>.</div></li><li id="_2507">if there is a match to an existing ID use it. <code>internal-references</code> in the plural does not match, so go to the next step</li><li id="_2508">if the above failed, try singularizing the last word as in the <a href=".#x-p-argument"><code>\x</code> <code>p</code> argument</a> with <code>p=0</code> before doing <a href=".#automatic-id-from-title">automatic ID from title</a> conversion. This gives <code>internal-reference</code>, which does exist, and so we use that.</li></ul></div></li></ul></div></div><div class="p" id="_2509">There may be some cases where you might still want to use <a href=".#internal-link-title-inflection">internal link title inflection</a> however, see: <a href=".#inflection-vs-magic">Section "Inflection vs magic"</a>.</div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"></input><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 383</span><span class="dcnt"> 1</span></span></span></span></div><ul><li><div id="_toc/shorthand-magic-link"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#shorthand-magic-link">Shorthand magic link</a><span class="hover-metadata"><a class="nosplit" href=".#shorthand-magic-link"></a><a href="#_toc" class="u"> <code>\x</code> <code>magic</code> argument</a><span class="metrics"><span class="wcntr"> 24</span></span></span></span></div></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#x-arguments"><code>\x</code> arguments</a></li><li><a href=".#internal-link">Internal link</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(5)</span></a></h2><div class="list"><ul><li><a href=".#conversion-process-overview">Conversion process overview</a></li><li><a href=".#inflection-vs-magic">Inflection vs magic</a></li><li><a href=".#internal-link-title-inflection">Internal link title inflection</a></li><li><a href=".#shorthand-cross-reference">Shorthand cross reference</a></li><li><a href=".#x-id-output-format"><code>\x</code> <code>id</code> output format</a></li></ul></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#x-magic-argument">Magic link</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

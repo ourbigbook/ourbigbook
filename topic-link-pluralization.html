@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Topic link pluralization - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="topic-link-pluralization"><div class="notnav"><h1><a href="">Topic link pluralization</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#internal-link"> Internal link</a><a href=".#x-arguments"> <code>\x</code> arguments</a><a href=".#x-topic-argument"> <code>\x</code> <code>topic</code> argument</a></div><div class="nav"><a class="nosplit" href=".#topic-link-pluralization"></a><span class="metrics"><span class="wcntr"> Words: 148</span></span></div></nav></div><div class="p" id="_2573">Unlike local links, it is not possible to automatically determine the exact pluralization of a <a href=".#x-topic-argument">topic link</a> because:<div class="list"><ul id="_2574"><li id="_2575">it would require communicating with the <a href=".#ourbigbook-web">OurBigBook Web</a> API, which we could in principle do, but we would rather not have static builds depend on Web instances</li><li id="_2576">topics can be written by multiple authors, and there could be both plural and singular versions of each topic ID, which makes it hard to determine which one is "correct"</li></ul></div></div><div class="p" id="_2577">Therefore, it is up to authors to specifically specify the desired pluralization of their topic links:<div class="list"><ul id="_2578"><li id="_2579">by default, topic IDs are automatically singularized, e.g.:<div class="code" id="_2580"><div><pre><code>&lt;#Many Dogs&gt;</code></pre></div></div>renders something like:<div class="code" id="_2581"><div><pre><code>\a[https://ourbigbook.com/go/topic/many-dog][Many Dogs]</code></pre></div></div></li><li id="_2582">to prevent this automatic singularization, use <a href=".#x-p-argument"><code>\x</code> <code>p</code> argument</a> with <code>{p}</code>, e.g.:<div class="code" id="_2583"><div><pre><code>&lt;#Many Dogs&gt;{p}</code></pre></div></div>renders something like:<div class="code" id="_2584"><div><pre><code>\a[https://ourbigbook.com/go/topic/many-dogs][Many Dogs]</code></pre></div></div>This is unfortunately always necessary for uncountable nouns such as "mathematics":<div class="code" id="_2585"><div><pre><code>I like #mathematics{p}</code></pre></div></div><div class="p" id="_2586">which renders as:</div><div><blockquote id="_2587"><div class="p" id="_2588">I like <a href="https://ourbigbook.com/go/topic/mathematics">mathematics</a></div></blockquote></div>since our underlying pluralization library <a href=".#blakeembrey-pluralize">blakeembrey/pluralize</a> cannot handle uncountable nouns reliably.</li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(6)</span></a></h2><div class="list"><ol><li><a href=".#x-topic-argument"><code>\x</code> <code>topic</code> argument</a></li><li><a href=".#x-arguments"><code>\x</code> arguments</a></li><li><a href=".#internal-link">Internal link</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

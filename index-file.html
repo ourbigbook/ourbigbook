@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Index file - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="index-file"><div class="notnav"><h1><a href="">Index file</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-cli"> OurBigBook CLI</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#index-file"></a><span class="metrics"><span class="wcntr"> Words: 795</span><span class="dcnt"> Articles: 4</span></span></div></nav></div><div class="p" id="_3060">An index file is a file with basename <code>index.bigb</code>.</div><div class="p" id="_3061">Those basenames have the following magic properties:<div class="list"><ul id="_3062"><li id="_3063">the default output file name for an index file in HTML output is either:<div class="list"><ul id="_3064"><li id="_3065"><code>index.html</code> when in the <a href=".#project-toplevel-directory">project toplevel directory</a>. E.g. <code>index.bigb</code> renders to <code>index.html</code>. Note that GitHub and many other static website hosts then automatically hide the <code>index.html</code> part from the URL, so that your <code>index.bigb</code> hosted at <code>http://example.com</code> will be accessible simply under <code>http://example.com</code> and not <code>http://example.com/index.html</code></li><li id="_3066"><div class="p" id="_3067">the name of the subdirectory in which it is located when not in the <a href=".#project-toplevel-directory">project toplevel directory</a>. E.g. <code>mysubdir/index.bigb</code> outputs to <code>mysubdir.html</code></div><div class="p" id="_3068">Previously, we had placed the output in <code>mysubdir/index.html</code>, but this is not as nice as it makes GitHub pages produce URLs with a trailing slash as <code>mysubdir/</code>, which is ugly, see also: <a href="https://stackoverflow.com/questions/5948659/when-should-i-use-a-trailing-slash-in-my-url">stackoverflow.com/questions/5948659/when-should-i-use-a-trailing-slash-in-my-url</a></div></li></ul></div></li><li id="_3069">the default <a href=".#the-toplevel-header">toplevel header</a> ID of an index files is derived from the parent directory basename rather than from the source file basename</li></ul></div></div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"></input><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 795</span><span class="dcnt"> 4</span></span></span></span></div><ul><li class="has-child"><div id="_toc/project-toplevel-directory"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#project-toplevel-directory">Project toplevel directory</a><span class="hover-metadata"><a class="nosplit" href=".#project-toplevel-directory"></a><a href="#_toc" class="u"> Index file</a><span class="metrics"><span class="wcntr"> 642</span><span class="dcnt"> 3</span></span></span></span></div><ul><li class="has-child"><div id="_toc/the-toplevel-index-file"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#the-toplevel-index-file">The toplevel index file</a><span class="hover-metadata"><a class="nosplit" href=".#the-toplevel-index-file"></a><a href="#_toc/project-toplevel-directory" class="u"> Project toplevel directory</a><span class="metrics"><span class="wcntr"> 430</span><span class="dcnt"> 2</span></span></span></span></div><ul><li><div id="_toc/the-home-article"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#the-home-article">The home article</a><span class="hover-metadata"><a class="nosplit" href=".#the-home-article"></a><a href="#_toc/the-toplevel-index-file" class="u"> The toplevel index file</a><span class="metrics"><span class="wcntr"> 237</span></span></span></span></div></li><li><div id="_toc/the-current-working-directory-does-not-matter-when-there-is-a-ourbigbook-json"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#the-current-working-directory-does-not-matter-when-there-is-a-ourbigbook-json">The current working directory does not matter when there is a <code>ourbigbook.json</code></a><span class="hover-metadata"><a class="nosplit" href=".#the-current-working-directory-does-not-matter-when-there-is-a-ourbigbook-json"></a><a href="#_toc/the-toplevel-index-file" class="u"> The toplevel index file</a><span class="metrics"><span class="wcntr"> 178</span></span></span></span></div></li></ul></li></ul></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(2)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(2)</span></a></h2><div class="list"><ul><li><a href=".#the-id-of-the-first-header-is-derived-from-the-filename">The ID of the first header is derived from the filename</a></li><li><a href=".#the-toplevel-index-file">The toplevel index file</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

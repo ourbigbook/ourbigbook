@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Positional vs named arguments - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="positional-vs-named-arguments"><div class="notnav"><h1><a href="">Positional vs named arguments <span class="meta">(<code>[...]</code> vs <code>{key=...}</code>)</span></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#ourbigbook-markup-syntax"> OurBigBook Markup syntax</a><a href=".#macro-argument"> Macro argument</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#positional-vs-named-arguments"></a><span class="metrics"><span class="wcntr"> Words: 392</span><span class="dcnt"> Articles: 4</span></span></div></nav></div><div class="p" id="_2671">Every argument in OurBigBook is either positional or named.</div><div class="p" id="_2672">For example, in a <a href=".#header">header</a> definition with an ID:<div class="code" id="_2673"><div><pre><code>= My asdf
+{id=asdf qwer}
+{scope}</code></pre></div></div>which is equivalent to the <a href=".#macro-shorthand-syntax">explicit</a> version:<div class="code" id="_2674"><div><pre><code>\H[1][My asdf]
+{id=asdf qwer}
+{scope}</code></pre></div></div>we have:<div class="list"><ul id="_2675"><li id="_2676">two positional argument: <code>[1]</code> and <code>[My asdf]</code>. Those are surrounded by square brackets <code>[]</code> and have no name</li><li id="_2677"><div class="p" id="_2678">two named arguments: <code>{id=asdf qwer}</code> and <code>{scope}</code>.</div><div class="p" id="_2679">The first one has name <code>id</code>, followed by the separator <code>=</code>, followed by the value <code>asdf qwer</code>.</div><div class="p" id="_2680">The separator <code>=</code> always is optional. If not given, it is equivalent to an empty value, e.g.:<div class="code" id="_2681"><div><pre><code>{id=}</code></pre></div></div>is the same as:<div class="code" id="_2682"><div><pre><code>{id}</code></pre></div></div></div></li></ul></div></div><div class="p" id="_2683">You can determine if a macro is positional or named by using <a href=".#help-macros"><code>--help-macros</code></a>. Its output contains something like:<div class="code" id="_2684"><div><pre><code>  "h": {
+    "name": "h",
+    "positional_args": [
+      {
+        "name": "level"
+      },
+      {
+        "name": "content"
+      }
+    ],
+    "named_args": {
+      "id": {
+        "name": "id"
+      }
+      "scope": {
+        "name": "scope"
+      }
+    },</code></pre></div></div>and so we see that <code>level</code> and the <a href=".#content-argument"><code>content</code> argument</a> are positional arguments, and <code>id</code> and <code>scope</code> are named arguments.</div><div class="p" id="_2685">Generally, positional arguments are few (otherwise it would be hard to know which is which is which), and are almost always used for a given element so that they save us from typing the name too many times.</div><div class="p" id="_2686">The order of positional arguments must of course be fixed, but named arguments can go anywhere. We can even mix positional and named arguments however we want, although this is not advised for clarity.</div><div class="p" id="_2687">The following are therefore all equivalent:<div class="code" id="_2688"><div><pre><code>\H[1][My asdf]{id=asdf qwer}{scope}
+\H[1][My asdf]{scope}{id=asdf qwer}
+\H{id=asdf qwer}{scope}[1][My asdf]
+\H{scope}[1]{id=asdf qwer}[My asdf]</code></pre></div></div></div><div class="p" id="_2689">Just like named arguments, positional arguments are never mandatory.</div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"></input><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 392</span><span class="dcnt"> 4</span></span></span></span></div><ul><li class="has-child"><div id="_toc/positional-argument"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#positional-argument">Positional argument</a><span class="hover-metadata"><a class="nosplit" href=".#positional-argument"></a><a href="#_toc" class="u"> Positional vs named arguments</a><span class="metrics"><span class="wcntr"> 121</span><span class="dcnt"> 2</span></span></span></span></div><ul><li><div id="_toc/positional-argument-default-values"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#positional-argument-default-values">Positional argument default values</a><span class="hover-metadata"><a class="nosplit" href=".#positional-argument-default-values"></a><a href="#_toc/positional-argument" class="u"> Positional argument</a><span class="metrics"><span class="wcntr"> 82</span></span></span></span></div></li><li><div id="_toc/mandatory-positional-arguments"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#mandatory-positional-arguments">Mandatory positional arguments</a><span class="hover-metadata"><a class="nosplit" href=".#mandatory-positional-arguments"></a><a href="#_toc/positional-argument" class="u"> Positional argument</a><span class="metrics"><span class="wcntr"> 37</span></span></span></span></div></li></ul><li><div id="_toc/named-argument"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#named-argument">Named argument</a><span class="hover-metadata"><a class="nosplit" href=".#named-argument"></a><a href="#_toc" class="u"> Positional vs named arguments</a><span class="metrics"><span class="wcntr"> 2</span></span></span></span></div></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href=".#macro-argument">Macro argument</a></li><li><a href=".#ourbigbook-markup-syntax">OurBigBook Markup syntax</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(5)</span></a></h2><div class="list"><ul><li><a href=".#escape-characters">Escape characters</a></li><li><a href=".#list">List</a></li><li><a href=".#named-argument">Named argument</a></li><li><a href=".#positional-argument">Positional argument</a></li><li><a href=".#saner">Saner</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

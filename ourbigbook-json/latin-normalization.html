@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title><code>ourbigbook.json</code> / Latin normalization - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="latin-normalization"><div class="notnav"><h1><a href="../#ourbigbook-json"><code>ourbigbook.json</code></a><span class="meta"> / </span><a href="">Latin normalization</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="../#ourbigbook-cli"> OurBigBook CLI</a><a href="../#ourbigbook-json"> <code>ourbigbook.json</code></a><a href="../#ourbigbook-json/id"> <code>ourbigbook.json</code> <code>id</code></a><a href="../#ourbigbook-json/id-normalize-latin"> <code>id</code> <code>normalize</code> <code>latin</code></a></div><div class="nav"><a class="nosplit" href="../#ourbigbook-json/latin-normalization"></a><span class="metrics"><span class="wcntr"> Words: 199</span></span></div></nav></div><div class="p" id="_3632">ASCII normalization is a custom OurBigBook defined normalization that converts many characters that look like Latin characters into Latin characters.</div><div class="p" id="_3633">For now, we are using the <code>deburr</code> method of Lodash: <a href="https://lodash.com/docs/4.17.15#deburr">lodash.com/docs/4.17.15#deburr</a>, which only affects Latin-like characters.</div><div class="p" id="_3634">In addition to <code>deburr</code> we also convert:<div class="list"><ul id="_3635"><li id="_3636">en-dash and em-dash to simple ASCII dash <code>-</code>. Wikipedia Loves en-dashes in their article titles!</li><li id="_3637">greek letters are replaced with their standard latin names, e.g. <code>α</code> to <code>alpha</code></li></ul></div></div><div class="p" id="_3638">One notable effect is that it converts variants of ASCII letters to ASCII letters. E.g. <code>é</code> to <code>e</code> removing the accent.</div><div class="p" id="_3639">This operation is kind of a superset of Unicode normalization acting only on Latin-like characters, where Unicode basically only removes things like diacritics.</div><div class="p" id="_3640">OurBigBook normalization on the other also does other natural transformations that Unicode does not do, e.g. <code>æ</code> to <code>ae</code> as encoded by <code>deburr</code> and further custom replacements.</div><div class="p" id="_3641">TODO <code>lodash.deburr</code>:<div class="list"><ul id="_3642"><li id="_3643">only deals with Unicode blocks "<a href="https://en.wikipedia.org/wiki/Latin-1_Supplement">Latin-1 Supplement</a>" and "<a href="https://en.wikipedia.org/wiki/Latin_Extended-B">Latin Extended-A</a>", notably missing <a href="https://en.wikipedia.org/wiki/Latin_Extended-B">Latin Extended-B</a>, <a href="https://en.wikipedia.org/wiki/Latin_Extended-C">C</a> and <a href="https://en.wikipedia.org/wiki/Latin_Extended-D">D</a>, which contain some important characters. Pull requests have been ignored:<div class="list"><ul id="_3644"><li id="_3645"><a href="https://github.com/lodash/lodash/issues/4530">github.com/lodash/lodash/issues/4530</a></li><li id="_3646"><a href="https://github.com/lodash/lodash/pull/5491">github.com/lodash/lodash/pull/5491</a></li></ul></div>so maybe we should just code our own on top.</li><li id="_3647">misses some candidates in <a href="https://en.wikipedia.org/wiki/Letterlike_Symbols">letterlike symbols</a></li><li id="_3648"><a href="https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode#Mathematical_Operators_block">mathematical operators block</a></li></ul></div></div><div class="p" id="_3649">Bibliography:<div class="list"><ul id="_3650"><li id="_3651"><a href="https://stackoverflow.com/questions/990904/remove-accents-diacritics-in-a-string-in-javascript">stackoverflow.com/questions/990904/remove-accents-diacritics-in-a-string-in-javascript</a></li><li id="_3652"><a href="https://github.com/ourbigbook/ourbigbook/issues/162">github.com/ourbigbook/ourbigbook/issues/162</a></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href="../#ourbigbook-json/id-normalize-latin"><code>id</code> <code>normalize</code> <code>latin</code></a></li><li><a href="../#ourbigbook-json/id"><code>ourbigbook.json</code> <code>id</code></a></li><li><a href="../#ourbigbook-json"><code>ourbigbook.json</code></a></li><li><a href="../#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(2)</span></a></h2><div class="list"><ul><li><a href="../#automatic-id-from-title">Automatic ID from title</a></li><li><a href="../#ourbigbook-json/id-normalize-latin"><code>id</code> <code>normalize</code> <code>latin</code></a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "ourbigbook-json/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>\H title2 argument - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="h-title2-argument"><div class="notnav"><h1><a href=""><code>\H</code> <code>title2</code> argument</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#header"> Header</a><a href=".#h-arguments"> <code>\H</code> arguments</a></div><div class="nav"><span class="tags"> Tags: <a href=".#multiple-argument"><code>multiple</code> argument</a></span><a class="nosplit" href=".#h-title2-argument"></a><span class="metrics"><span class="wcntr"> Words: 200</span></span></div></nav></div><div class="p" id="_1164">The <code>title2</code> argument can be given to any element that has the <code>title</code> argument.</div><div class="p" id="_1165">Its usage is a bit like the <code>description=</code> argument of <a href=".#image">images</a>, allowing you to add some extra content to the header without affecting its ID.</div><div class="p" id="_1166">Unlike <code>description=</code> however, <code>title2</code> shows up on all <a href=".#x-full-argument"><code>full</code></a> references, including appearances in the <a href=".#table-of-contents">table of contents</a>, which make it more searchable.</div><div class="p" id="_1167">Its primary use cases are:<div class="list"><ul id="_1168"><li id="_1169"><div class="p" id="_1170">give acronyms, or other short names names of fuller titles such as mathematical/programming notation</div><div class="p" id="_1171">One primary reason to not use the acronyms as the main section name is to avoid possible ID ambiguities with other acronyms.</div></li><li id="_1172">give the header in different languages</li></ul></div></div><div class="p" id="_1173">For example, given the OurBigBook input:<div class="code" id="_1174"><div><pre><code>= Toplevel
+
+The Toc follows:
+
+== North Atlantic Treaty Organization
+{c}
+{title2=NATO}
+
+\x[north-atlantic-treaty-organization]
+
+\x[north-atlantic-treaty-organization]{full}</code></pre></div></div>the rendered output looks like:<div class="code" id="_1175"><div><pre><code>= Toplevel
+
+The ToC follows:
+
+* North Atlantic Treaty Organization (NATO)
+
+== North Atlantic Treaty Organization (NATO)
+
+North Atlantic Treaty Organization
+
+Section 1. "North Atlantic Treaty Organization (NATO)"</code></pre></div></div></div><div class="p" id="_1176">Related alternatives to <code>title2</code> include:<div class="list"><ul id="_1177"><li id="_1178"><a href=".#disambiguate-argument"><code>\H</code> <code>disambiguate</code> argument</a> when you do want to affect the ID to remove ambiguities</li><li id="_1179"><a href=".#h-synonym-argument"><code>\H</code> <code>synonym</code> argument</a></li></ul></div></div><div class="p" id="_1180">Parenthesis are added automatically around all rendered <code>title2</code>.</div><div class="p" id="_1181">The <code>title2</code> argument has a special meaning when applied to a <a href=".#header">header</a> with the <a href=".#h-synonym-argument"><code>\H</code> <code>synonym</code> argument</a>, see <a href=".#h-title2-argument-of-a-synonym-header"><code>\H</code> <code>title2</code> argument of a synonym header</a>.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#h-arguments"><code>\H</code> arguments</a></li><li><a href=".#header">Header</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(2)</span></a></h2><div class="list"><ul><li><a href=".#h-synonym-argument"><code>\H</code> <code>synonym</code> argument</a></li><li><a href=".#h-title2-argument-of-a-synonym-header"><code>\H</code> <code>title2</code> argument of a synonym header</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -2696,7 +2696,14 @@ const DEFAULT_MACRO_LIST = [
           title: convert_arg(title, context),
         };
         Object.assign(render_env, context.options.template_vars);
-        ret = (new Liquid()).parseAndRenderSync(template, render_env);
+        ret = (new Liquid()).parseAndRenderSync(
+          template,
+          render_env,
+          {
+            strictFilters: true,
+            strictVariables: true,
+          }
+        );
       }
       return ret;
     }

@@ -850,7 +850,7 @@ For example, in file named `my-file.ciro` which contains:
 ``
 the ID of the header is `my-file` rather than `awesome-cirodown-file`. See also: \x[automatic-id-from-title].
 
-If the file is an \x[index-files][index file] other than \x[the-toplevel-index-file], then the basename of the parent directory is used instead, e.g. the toplevel ID of a file:
+If the file is an \x[index-file] other than \x[the-toplevel-index-file], then the basename of the parent directory is used instead, e.g. the toplevel ID of a file:
 ``my-subdir/README.ciro``
 would be:
 ``#my-subdir``
@@ -3717,7 +3717,7 @@ Convert a `.ciro` file from stdin to HTML and output the contents of `<body>` to
 printf 'ab\ncd\n' | cirodown --body-only
 ``
 
-= Index files
+= Index file
 {parent=cirodown-executable}
 
 The following basenames are considered "index files":
@@ -3729,7 +3729,7 @@ Those basenames have the following magic properties:
 * the default \x[the-toplevel-header][toplevel header] ID of an index files is derived from the parent directory basename rather than from the source file basename
 
 = Project toplevel directory
-{parent=the-toplevel-index-file}
+{parent=index-file}
 
 This directory is determined by first checking the presence of a \x[cirodown-json] file.
 
@@ -3756,11 +3756,11 @@ In this case:
   * if we run `cirodown path/to/notindex.ciro`: same
 
 = The toplevel index file
-{parent=index-files}
+{parent=project-toplevel-directory}
 
 This is the \x[index-file] present in the \x[project-toplevel-directory].
 
-Being the toplevel index file has the following implications compared to other index-files:
+Being the toplevel index file has the following implications compared to other \x[index-file]{p}:
 * its ID is derived from the header itself, not the directory, see also: \x[the-id-of-the-first-header-is-derived-from-the-filename]
 
 = The current working directory does not matter when there is a `cirodown.json`

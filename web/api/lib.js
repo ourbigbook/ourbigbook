@@ -10,7 +10,7 @@ const front = require('../front/js')
 function validateBodySize(loggedInUser, bodySource) {
   if (!loggedInUser.admin && bodySource.length > loggedInUser.maxArticleSize) {
     throw new ValidationError(
-      `The body size (${bodySource.length} bytes) was larger than you maximum article size (${loggedInUser.maxArticleSize} bytes)`,
+      `The body size (${bodySource.length} bytes) was larger than you maximum article size (${loggedInUser.maxArticleSize} bytes). bodySource:\n${bodySource}`,
       403,
     )
   }

@@ -2,11 +2,11 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useEffect } from 'react';
 
-import { aboutHref, googleAnalyticsId, isProduction } from 'front/config';
+import { docs, aboutUrl, googleAnalyticsId, isProduction } from 'front/config';
 import CustomLink from 'front/CustomLink'
 import Navbar from 'front/Navbar'
 import { AppContext, AppContextProvider } from 'front'
-import { appName } from 'front/config'
+import { appName, docsUrl } from 'front/config'
 
 // Css
 // migrating the local ourbigbook to webpack: https://github.com/cirosantilli/ourbigbook/issues/157
@@ -60,11 +60,12 @@ const MyApp = ({ Component, pageProps }) => {
         {!isEditor &&
           <footer>
             <div className="container">
-              <a href={aboutHref}>What is this website???</a>  |
+              <a href={aboutUrl}>What is this website???</a>  |
               Content license: <a href="https://cirosantilli.com/ourbigbook-com/content-license">CC BY-SA 4.0 unless noted</a>  |
               {' '}<a href="https://github.com/cirosantilli/ourbigbook/tree/master/web">Website source code</a> |
               {' '}<a href="https://github.com/cirosantilli/ourbigbook/issues">Contact, bugs, suggestions, abuse reports</a> |
-              {' '}<a href="https://twitter.com/OurBigBook">Announcements: @OurBigBook</a>
+              {' '}<a href="https://twitter.com/OurBigBook">Announcements: @OurBigBook</a> |
+              {' '}<a href={docsUrl}>Documentation</a>
             </div>
           </footer>
         }

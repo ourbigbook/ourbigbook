@@ -688,10 +688,10 @@ class IdProvider {
   async get_noscope_raw(ids) { throw new Error('unimplemented'); }
 
   async get_noscope_entry(id) {
-    return (await this.get_noscope_entries([id]))[0]
+    return (await this.get_noscope_entries(new Set([id])))[0]
   }
 
-  async get_noscope_entries(ids) { throw new Error('unimplemented'); }
+  async get_noscope_entries(ids, ignore_paths_set) { throw new Error('unimplemented'); }
 
   /** Array[{id: String, defined_at: String}] */
   async get_refs_to(type, to_id, reversed=false) { throw new Error('unimplemented'); }
@@ -3715,6 +3715,8 @@ async function parse(tokens, options, context, extra_returns={}) {
             );
             context.include_path_set.add(include_path);
           } else {
+            // TODO move this DB query to the end of parsing or make it a render-only thing
+            // with a new synthetic Include macro.
             const target_id_ast = await context.id_provider.get(href, context);
             const from_include = true;
             let header_node_title;
@@ -4684,12 +4686,11 @@ async function parse(tokens, options, context, extra_returns={}) {
 
   // Check for ID conflicts.
   if (options.id_provider !== undefined) {
-    const ignore_paths = Array.from(context.include_path_set).filter(x => x !== undefined)
     const ids = Object.keys(include_options.indexed_ids)
     if (ids.length) {
       const id_conflict_asts = await options.id_provider.get_noscope_entries(
         ids,
-        ignore_paths
+        context.include_path_set
       );
       for (const other_ast of id_conflict_asts) {
         const message = duplicate_id_error_message(

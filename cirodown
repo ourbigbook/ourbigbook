@@ -1027,6 +1027,9 @@ if (commander.helpMacros) {
         publish_tmpdir = path.join(publish_dir, subdir_relpath, TMP_DIRNAME);
       }
     }
+    if (publish_tmpdir === undefined) {
+      publish_tmpdir = tmpdir;
+    }
 
     // CIRODOWN_TEX_BASENAME
     let tex_path = path.join(cirodown_json_dir, CIRODOWN_TEX_BASENAME);

@@ -32,6 +32,9 @@ class AstNode {
    *                 {String} text - the text content of an AstType.PLAINTEXT, undefined for other types
    */
   constructor(node_type, macro_name, args, line, column, options={}) {
+    if (!('first_toplevel_child' in options)) {
+      options.first_toplevel_child = false;
+    }
     if (!('from_include' in options)) {
       options.from_include = false;
     }
@@ -61,6 +64,7 @@ class AstNode {
     this.line = line;
     this.input_path = options.input_path;
     this.column = column;
+    this.first_toplevel_child = options.first_toplevel_child;
     // This is the Nth macro of this type that appears in the document.
     this.macro_count = undefined;
     // This is the Nth macro of this type that is visible,
@@ -197,8 +201,17 @@ class AstNode {
   /** Manual implementation. There must be a better way, but I can't find it... */
   static fromJSON(json_string) {
     let json = JSON.parse(json_string);
-    let toplevel_ast = new AstNode(AstType[json.node_type], json.macro_name,
-      json.args, json.line, json.column, json.text);
+    let toplevel_ast = new AstNode(
+      AstType[json.node_type],
+      json.macro_name,
+      json.args,
+      json.line,
+      json.column,
+      {
+        text: json.text,
+        first_toplevel_child: json.first_toplevel_child,
+      }
+    );
     let nodes = [toplevel_ast];
     while (nodes.length !== 0) {
       let cur_ast = nodes.pop();
@@ -206,8 +219,17 @@ class AstNode {
         let arg = cur_ast.args[arg_name];
         let new_arg = [];
         for (let ast of arg) {
-          let new_ast = new AstNode(AstType[ast.node_type], ast.macro_name,
-            ast.args, ast.line, ast.column, {text: ast.text});
+          let new_ast = new AstNode(
+            AstType[ast.node_type],
+            ast.macro_name,
+            ast.args,
+            ast.line,
+            ast.column,
+            {
+              text: ast.text,
+              first_toplevel_child: ast.first_toplevel_child,
+            }
+          );
           new_arg.push(new_ast);
           nodes.push(new_ast);
         }
@@ -225,6 +247,7 @@ class AstNode {
       column:     this.column,
       text:       this.text,
       args:       this.args,
+      first_toplevel_child: this.first_toplevel_child,
     }
   }
 }
@@ -2986,6 +3009,10 @@ function parse(tokens, options, context, extra_returns={}) {
     }
   }
   extra_returns.ids = include_options.indexed_ids;
+  const first_toplevel_child = ast_toplevel.args.content[0];
+  if (first_toplevel_child !== undefined) {
+    first_toplevel_child.first_toplevel_child = true;
+  }
 
   context.line_to_id = function(line) {
     let index = binary_search(line_to_id_array,
@@ -3468,7 +3495,10 @@ function x_get_href_content(ast, context) {
   */
 function x_href(target_id_ast, context) {
   const [href_path, fragment] = x_href_parts(target_id_ast, context);
-  return href_path + '#' + fragment;
+  let ret = href_path;
+  if (fragment !== '')
+    ret += '#' + fragment;
+  return ret;
 }
 exports.x_href = x_href;
 
@@ -3495,10 +3525,14 @@ function x_href_parts(target_id_ast, context) {
       render_error(context, message, target_id_ast.line, target_id_ast.column);
       return error_message_in_output(message, context);
     } else {
-      if (file_provider_ret.toplevel_id === target_id_ast.id) {
-        fragment = target_id_ast.id;
+      if (target_id_ast.first_toplevel_child) {
+        fragment = '';
       } else {
-        fragment = target_id_ast.id.substr(file_provider_ret.toplevel_scope_cut_length);
+        if (file_provider_ret.toplevel_id === target_id_ast.id) {
+          fragment = target_id_ast.id;
+        } else {
+          fragment = target_id_ast.id.substr(file_provider_ret.toplevel_scope_cut_length);
+        }
       }
     }
   }

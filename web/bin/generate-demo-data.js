@@ -16,7 +16,8 @@ function myParseInt(value, dummyPrevious) {
 
 const commander = require('commander');
 commander.option('-a, --articles-per-user <n>', 'n articles per user', myParseInt);
-commander.option('-c, --max-comments-per-article <n>', 'maximum number of comments per article', myParseInt);
+commander.option('-i, --max-issues-per-article <n>', 'maximum number of issues per article', myParseInt);
+commander.option('-c, --max-comments-per-article <n>', 'maximum number of comments per issues', myParseInt);
 commander.option('-f, --follows-per-user <n>', 'n follows per user', myParseInt);
 commander.option('-l, --likes-per-user <n>', 'n likes per user', myParseInt);
 commander.option('--force-production', 'allow running in production, DELETES ALL DATA', false);
@@ -35,7 +36,8 @@ const sequelize = await test_lib.generateDemoData({
   directory: path.dirname(__dirname),
   empty: commander.empty,
   nArticlesPerUser: commander.articlesPerUser,
-  nMaxCommentsPerArticle: commander.maxCommentsPerArticle,
+  nMaxCommentsPerIssue: commander.nMaxCommentsPerIssue,
+  nMaxIssuesPerArticle: commander.maxIssuesPerArticle,
   nLikesPerUser: commander.likesPerUser,
   nFollowsPerUser: commander.followsPerUser,
   nUsers: commander.users,

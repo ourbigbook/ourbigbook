@@ -1070,6 +1070,7 @@ Similar to \x[lists][lists].
   \td[2 2]
 ]
 ]]
+The indentation space is removed automatically due to \x[remove-whitespace-children] which is set for `\table`.
 
 Explicit container to add further properties: \x[table-my-table].
 \cirodown_example[[
@@ -1562,54 +1563,6 @@ This also applies to consecutive sequences of \x[auto-parent] macros, e.g.:
 also does not include the newline between the list items.
 
 The definition of whitespace is the same as the ASCII whitespace definition of HTML5: ` \r\n\f\t`.
-
-\h[4][Argument automatic indentation removal]
-
-Inside of a non-literal block, the very first non-whitespace character determines the indentation level of the content.
-
-This allows seamlessly indenting complex nested content to make it more readable.
-
-For example, a list with complex content could be written without indentation as:
-``
-\l[a]
-\l[
-b
-
-\C[[
-And now some code
-]]
-
-And a paragraph.
-]
-\l[c]
-``
-but it would be more readable as the equivalent:
-``
-\l[a]
-\l[
-  b
-
-  \c[[
-  And now some code
-  ]]
-
-  And a paragraph.
-]
-\l[c]
-``
-
-If a something tries to reduce the current indentation level, then that leads to an error:
-``
-\l[a]
-\l[
-  b
-
-I'm bad because I have negative indentation.
-
-  Back to good.
-]
-\l[c]
-``
 
 \h[3][Macro capitalization for block vs inline]
 

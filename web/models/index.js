@@ -1,5 +1,5 @@
-const path = require('path')
 const fs = require('fs')
+const path = require('path')
 
 const { Sequelize, DataTypes } = require('sequelize')
 
@@ -33,9 +33,9 @@ function getSequelize(toplevelDir, toplevelBasename) {
   }
   const Article = require('./article')(sequelize)
   const Comment = require('./comment')(sequelize)
-  const User = require('./user')(sequelize)
   const SequelizeMeta = require('./sequelize_meta')(sequelize)
   const Tag = require('./tag')(sequelize)
+  const User = require('./user')(sequelize)
 
   // Associations.
 

@@ -1,7 +1,11 @@
 import { GetStaticProps } from 'next'
+import { verify } from 'jsonwebtoken'
+
 import sequelize from 'db'
 import { fallback, revalidate } from 'front/config'
-import { DEFAULT_LIMIT  } from 'constant'
+import { defaultLimit  } from 'front/config'
+import { secret } from 'front/config'
+import { getCookieFromReq } from 'front'
 
 export const getStaticPathsHome = () => {
   return {
@@ -37,8 +41,8 @@ export const makeGetStaticPropsHome = (what): GetStaticProps => {
     } else {
       const articlesAndCount = await sequelize.models.Article.getArticles({
         sequelize,
-        limit: DEFAULT_LIMIT,
-        offset: page * DEFAULT_LIMIT,
+        limit: defaultLimit,
+        offset: page * defaultLimit,
         order,
       })
       articles = await Promise.all(articlesAndCount.rows.map(article => article.toJson()))

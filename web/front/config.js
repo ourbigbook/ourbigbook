@@ -7,13 +7,18 @@ if (process.env.NEXT_PUBLIC_NODE_ENV === undefined) {
 }
 
 const API_PATH_COMPONENT = 'api'
-const ESCAPE_USERNAME = 'go'
+const escapeUsername = 'go'
 
 module.exports = {
   apiPath: '/' + API_PATH_COMPONENT,
-  API_PATH_COMPONENT,
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
-  ESCAPE_USERNAME,
+  escapeUsername,
+  aboutHref: "https://cirosantilli.com/ourbigbook-com",
+  appName: `OurBigBook.com`,
+  buttonActiveClass: 'active',
+  defaultProfileImage: `https://static.productionready.io/images/smiley-cyrus.jpg`,
+  defaultLimit: 20,
+  defaultUserScoreTitle: 'Sum of likes of all articles authored by user',
   /** @type {boolean | 'blocking'} */
   fallback: 'blocking',
   googleAnalyticsId: 'UA-47867706-4',
@@ -32,7 +37,7 @@ module.exports = {
   postgres: process.env.CIRODOWN_POSTGRES === 'true',
   reservedUsernames: new Set([
     API_PATH_COMPONENT,
-    ESCAPE_USERNAME,
+    escapeUsername,
   ]),
   revalidate: 10,
   usernameMinLength: 3,

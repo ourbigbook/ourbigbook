@@ -3,7 +3,7 @@ import { mutate } from 'swr'
 import Router from 'next/router'
 
 import UserAPI from 'front/api/user'
-import { BUTTON_ACTIVE_CLASS } from 'constant'
+import { buttonActiveClass } from 'front/config'
 import getLoggedInUser from 'getLoggedInUser'
 import routes from 'routes'
 
@@ -38,7 +38,7 @@ const FollowUserButton = ({
   };
   return (
     <button
-      className={following ? BUTTON_ACTIVE_CLASS : ''}
+      className={following ? buttonActiveClass : ''}
       onClick={handleClick}
     >
       <i className={ "ion-eye" + (following ? '-disabled' : '') } />

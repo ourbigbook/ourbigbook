@@ -4,14 +4,14 @@ import { useRouter } from 'next/router'
 import useSWR from 'swr'
 
 import fetcher from 'fetcher'
-import { SERVER_BASE_URL } from 'constant'
+import { apiPath } from 'front/config'
 import { minPath } from 'shared'
 import getLoggedInUser from 'getLoggedInUser'
 
 export default function useMin(query, assign) {
   const router = useRouter();
   const { data, error } = useSWR(
-    `${SERVER_BASE_URL}/${minPath}?query=${JSON.stringify(query)}`,
+    `${apiPath}/${minPath}?query=${JSON.stringify(query)}`,
     fetcher(!router.isFallback && getLoggedInUser() !== undefined)
   );
   if (error) alert('Could not fetch your personalized data')

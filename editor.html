@@ -63,7 +63,7 @@ f() {
 ``
 and here is some block maths:
 $$
-\sqrt{1+1} \
+\sqrt{1+1} \\
 \sqrt{1+1}
 $$
 
@@ -91,7 +91,7 @@ Here  are three backticks:
 Nice!
 ````
 or you can also use the equivalent sane literals:
-\Code[[
+\C[[
 Here  are three backticks:
 ```
 Nice!
@@ -319,6 +319,7 @@ require(["vs/editor/editor.main"], function () {
       folding: false,
       language: 'cirodown',
       minimap: {enabled: false},
+      scrollBeyondLastLine: false,
       theme: 'vs-dark-cirodown',
       wordWrap: 'on',
       value: example_elem.textContent,
@@ -327,9 +328,36 @@ require(["vs/editor/editor.main"], function () {
   editor.onDidChangeModelContent(function (e) {
     convert_input();
   });
+  editor.onDidScrollChange(function (e) {
+    const range = editor.getVisibleRanges()[0];
+    scroll_preview_to_source_line(range.startLineNumber, 'start');
+  });
+  editor.onDidChangeCursorPosition(function (e) {
+    scroll_preview_to_source_line(e.position.lineNumber, 'center');
+  });
+  let line_to_id;
   function convert_input() {
+    let extra_returns = {};
     output_elem.innerHTML = my_cirodown.convert(
-      editor.getValue(), {'body_only': true});
+      editor.getValue(),
+      {'body_only': true},
+      extra_returns
+    );
+    line_to_id = extra_returns.context.line_to_id;
+  }
+  function scroll_preview_to_source_line(line_number, block) {
+    if (block === undefined) {
+      block = 'center';
+    }
+    const id = line_to_id(line_number);
+    // TODO this would be awesome to make the element being targeted red,
+    // but it loses editor focus  on new paragraphs (e.g. double newline,
+    // making it unusable.
+    // window.location.hash = id;
+    document.getElementById(id).scrollIntoView({
+      behavior: 'smooth',
+      block: block,
+    });
   }
   convert_input();
 });

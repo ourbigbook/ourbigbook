@@ -46,6 +46,10 @@ module.exports = (sequelize) => {
           },
         }
       },
+      displayName: {
+        type: DataTypes.STRING(256),
+        allowNull: false,
+      },
       email: {
         type: DataTypes.STRING,
         set(v) {

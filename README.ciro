@@ -4597,6 +4597,9 @@ Nuke the database and generate a demo database:
 = Dependency organization
 {parent=heroku-deployment}
 
+= Dependency organization
+{parent=heroku-deployment}
+
 On the toplevel we have:
 * `.`: Cirodown package
 * `web`: \x[dynamic-website] package that depends on the local Cirodown package through relative path `..`
@@ -4606,7 +4609,7 @@ Currently, Heroku deployment does the following:
 * `npm run build`
 * remove `devDependencies` from the final output to save space and speed some things up
 
-  The `devDependencies` should therefore just contain things which are needed for the build, typically asset compressors like Webpack.
+  The `devDependencies` should therefore only contain things which are needed for the build, typically asset compressors like Webpack, but not components that are required at runtime.
 
 This setup creates some conflict between what we want for Cirodown command line users, and Heroku deployment.
 
@@ -4629,6 +4632,16 @@ Further discussion at: https://github.com/cirosantilli/cirodown/issues/156
   * Express.js
   * Sequelize
   * SQLite for local development, PostgreSQL for deployment
+
+= Dynamic website database migration setup
+{parent=dynamic-website}
+
+Any pending migrations are done automatically during deployment as part of `npm run build`, more precisely they are run from \a[web/bin/sync-db.js].
+
+We also have a custom setup where:
+* if the database is not initialized, just creates the database from the latest model descriptions
+* manually fill in the `SequelizeMeta` migration tracking table with all available migrations to tell sequelize that all migrations have been done up to this point
+This is something that should be merged into sequelize itself, or at least asked on Stack Overflow, but lazy now.
 
 = Editor support
 {parent=tooling}

@@ -18,6 +18,7 @@ const cirodown = require('cirodown');
 const cirodown_nodejs = require('cirodown/nodejs');
 
 const CIRODOWN_EXT = '.ciro';
+const CIRODOWN_JSON = 'cirodown.json';
 const SASS_EXT = '.scss';
 const OUT_DIRNAME = 'out';
 const DEFAULT_IGNORE_BASENAMES = [
@@ -108,9 +109,14 @@ function cmd_get_stdout(cmd, args=[], options={}) {
     ret = '';
   } else {
     if (out.status != 0 && options.throw_on_error) {
-      throw `cmd: \n${cmd_str}\nstdout: ` +
-            `${out.stdout.toString(ENCODING)}\nstderr: ` +
-            `${out.stderr.toString(ENCODING)}\n`;
+      let msg = `cmd: \n${cmd_str}\n`;
+      if (out.stdout !== null) {
+        msg += `stdout: \n${out.stdout.toString(ENCODING)}\n`;
+      }
+      if (out.stderr !== null) {
+        msg += `stdout: \n${out.stdout.toString(ENCODING)}\n`;
+      }
+      throw msg;
     }
     ret = out.stdout.toString(ENCODING);
   }
@@ -123,7 +129,7 @@ function convert_files_in_directory(input_path, options, convert_input_options) 
   }
 }
 
-/** Extract IDs from all input files into the ID database, without fully conveting. */
+/** Extract IDs from all input files into the ID database, without fully converting. */
 function convert_files_in_directory_extract_ids(input_path, options, convert_input_options) {
   convert_files_in_directory(
     input_path,
@@ -393,6 +399,10 @@ if (commander.helpMacros) {
   let output;
   let publish = commander.publish || commander.publishCommit !== undefined;
   let html_x_extension;
+  let cirodown_json = {};
+  if (fs.existsSync(CIRODOWN_JSON)) {
+    Object.assign(cirodown_json, JSON.parse(fs.readFileSync(CIRODOWN_JSON)));
+  }
   if (publish) {
     // GitHub pages target is the only one for now.
     html_x_extension = false;
@@ -598,12 +608,23 @@ if (commander.helpMacros) {
           cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'reset', `origin/${publish_branch}`], cmd_options);
 
           // Generate special files needed for GitHub pages.
-          // TODO regenerate to ensure it is up-to-date. And regenerate with the one in out/publish.
-          fs.copyFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_PATH, convert_input_options.out_css_path)
           gemfile_content = "gem 'github-pages', group: :jekyll_plugins\n";
           fs.writeFileSync(path.join(convert_input_options.outdir, 'Gemfile'), gemfile_content);
 
           // Commit and push.
+          if ('prepublish' in cirodown_json) {
+            const prepublish_path = cirodown_json.prepublish
+            if (!fs.existsSync(prepublish_path)) {
+              cli_error(`cirodown.json prepublish file not found: ${prepublish_path}`);
+            }
+            try {
+              cmd_get_stdout(path.resolve(prepublish_path), [convert_input_options.outdir], cmd_options);
+            } catch(error) {
+              cli_error(`cirodown.json prepublish command exited non-zero, aborting`);
+            }
+          }
+          // Copy the CSS into the repository.
+          fs.copyFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_PATH, convert_input_options.out_css_path)
           cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'add', '.'], cmd_options);
           source_commit = cmd_get_stdout('git', ['-C', inputPath, 'log', '-n1', '--pretty=%H', src_branch], cmd_options).slice(0, -1);
           if (commander.dryRun) {

@@ -93,7 +93,15 @@ If one of the input files starts getting too large, usually the toplevel `README
 npx cirodown README.ciro
 npx cirodown not-readme.ciro
 ``
-Note however that  when `README.ciro` has a \x[internal-cross-file-reference] to something defined in `not-readme.ciro`, e.g. via `\x[h2-in-not-the-readme]`, then you must first do a first pass once with `npx cirodown .` to parse all files and extract all necessary IDs to the \x[id-database].
+Note however that when those individual files have a \x[internal-cross-file-reference] to something defined in `not-readme.ciro`, e.g. via `\x[h2-in-not-the-readme]`, then you must first do a first pass once with:
+``
+npx cirodown .
+``
+to parse all files and extract all necessary IDs to the \x[id-database]. That would be optimized slightly wit the \x[no-render] command line option:
+``
+npx cirodown --no-render .
+``
+to only extract the IDs but not render, which speeds things up considerably
 
 When dealing with large files, you might also be interested in the following amazing options:
 * \x[split-headers]
@@ -4335,6 +4343,11 @@ If given however, the links render without the `.html` as in:
 which is what is needed for servers such as GitHub Pages, which automatically remove the `.html` extension from paths.
 
 This option is automatically implied when publishing to targets that remove the `.html` extension such as GitHub pages.
+
+= `--no-render`
+{parent=cirodown-executable-options}
+
+Only extract IDs to fill the \x[id-database], don't render. This saves time if you only want to render a single file which has references to other files without getting any errors.
 
 = `--outdir <outdir>`
 {id=outdir}

@@ -7004,6 +7004,11 @@ To clear the database and start with an empty database use `--empty`:
 ./bin/generate-demo-data --empty
 ``
 
+To regenerate the PostgreSQL database instead of SQLite as mentioned at <local development run with PostgreSQL>:
+``
+OURBIGBOOK_POSTGRES=true ./bin/generate-demo-data.js
+``
+
 = Log database queries done
 {parent=OurBigBook Web development}
 
@@ -7112,6 +7117,22 @@ Note that doing `sync-db` also requires `NODE_ENV=production` as in:
 NODE_ENV=production OURBIGBOOK_POSTGRES=true ./bin/sync-db.js
 ``
 because we have to shell out to the ugly <OurBigBook Web database migration setup>[migration] CLI, and that only understands `NODE_ENV`.
+
+Save the psql database state as per https://stackoverflow.com/questions/37984733/postgresql-database-export-to-sql-file[]:
+``
+PGPASSWORD=a pg_dump -U ourbigbook_user -h localhost ourbigbook -Fc -f tmp.psql
+``
+Then to restore it later:
+``
+PGPASSWORD=a pg_restore -U ourbigbook_user -h localhost --clean -d ourbigbook -v tmp.psql
+``
+https://stackoverflow.com/questions/2732474/restore-a-postgres-backup-file-using-the-command-line
+
+To interactively inspect the local development database use:
+``
+PGPASSWORD=a psql -U ourbigbook_user -h localhost ourbigbook
+``
+`PGPASSWORD` is mentioned at: https://stackoverflow.com/questions/6405127/how-do-i-specify-a-password-to-psql-non-interactively
 
 = OurBigBook Web step debug
 {parent=OurBigBook Web development}
@@ -8788,6 +8809,12 @@ Some blobs were unfortunately added to this repository earlier on, but when we s
 
 Official project merchandise is avaiable at:
 * https://www.tshirtstudio.com/marketplace/ourbigbook-com from <tshirtstudio.com>. Each sale includes a 5 dollar/euro/pound donation to the project.
+  * T-shirt https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-t-shirt
+
+    Very slightly too straight on shoulders, but not bad. The front color is a bit off/too white-ish, but not terrible.
+  * Zip Hoodie https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-zip-hoodie
+
+    Good quality, but the material is slightly warmer than I'd like, I tend to prefer slightly fluffier ones.
 
 = T-shirt
 {c}

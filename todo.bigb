@@ -3,6 +3,15 @@
 
 == Issues
 
+=== Computer sticker
+{tag=Publicity}
+
+=== Topics video demo
+{tag=Publicity}
+
+=== Photos of the merchandise!
+{tag=Publicity}
+
 === Hide unconfirmed users
 {tag=Web}
 
@@ -37,13 +46,71 @@ https://ourbigbook.com/api/articles
 
 For user cirosantilli, just pushed cirosantilli.github.io at aa60ccb934bf9646d548e6b761489d31aec1a341, which has almost 7k articles.
 
-The PUT to https://ourbigbook.com/api/articles is taking about 3s to 4s on ourbigbook.com "Waiting for server response", 3.44s would be an average.
+The POST to https://ourbigbook.com/api/articles is taking about 3s to 4s on ourbigbook.com "Waiting for server response", 3.44s seems like an common average exact value that often comes back.
 
-Locally on sqlite is only 800 ms.
+Doing it from the `barack-obama` test user which only has about 50 articles leads to the same result, so thank God it is not due to the nested set!
 
-TODO test locally on psql.
+Locally on sqlite is only 800 ms to 900 ms.
 
-This was after dynamic article tree, one suspicion is that it might be linked to maintaining the nested set state on a large set of articles. I really hope that's not it, as it would be hard to fix.
+Locally on postgresql with `barack-obama` user and no `cirosantilli` data, the POST is almost instantaneous however... 100ms or less!
+
+Local postgresql with `cirosantilli` user after uploading cirosantilli.github.io with about 7k articles: usually around 2.4s, sometimes a bit less.
+
+Same but with `barack-obama`: 2.16s! So the main slowdown is likely that we are not properly indexing things, as one users' article affects the other's!
+
+Let's hack it up to see:
+``
+PGPASSWORD=a psql -U ourbigbook_user -h localhost ourbigbook
+alter table "Article" add "authorId" integer;
+update "Article" as a set "authorId" = f."authorId" from "File" as f where a."fileId" = f.id
+create index idx_nested ON "Article" using btree ("authorId", "nestedSetIndex");
+``
+
+and patch:
+
+``
+
+
+diff --git a/web/convert.js b/web/convert.js
+index 59870ae3..ff834708 100644
+--- a/web/convert.js
++++ b/web/convert.js
+@@ -568,6 +568,7 @@ async function convertArticle({
+         const rendered_output = extra_returns.rendered_outputs[outpath]
+         const renderFull = rendered_output.full
+         articleArgs.push({
++          authorId: file.authorId,
+           depth: newDepth,
+           fileId: file.id,
+           h1Render: renderFull.substring(0, rendered_output.h1RenderLength),
+@@ -599,6 +600,7 @@ async function convertArticle({
+         articleArgs,
+         {
+           updateOnDuplicate: [
++            'authorId',
+             'h1Render',
+             'h2Render',
+             'titleRender',
+diff --git a/web/models/article.js b/web/models/article.js
+index 40dbbdba..1c382acc 100644
+--- a/web/models/article.js
++++ b/web/models/article.js
+@@ -13,6 +13,10 @@ module.exports = (sequelize) => {
+     'Article',
+     {
+       // E.g. `johnsmith/mathematics`.
++      authorId: {
++        type: DataTypes.INTEGER,
++        allowNull: false,
++      },
+       slug: {
+         type: DataTypes.TEXT,
+         unique: {
+``
+
+Didin't help :-(
+
+This was after dynamic article tree, one suspicion is that it might be linked to maintaining the nested set state on a large set of articles. I really hope that's not it, as it would be hard to fix. Edit: previous benchmarks suggest that is not the problem, as creation is also slow for a single user.
 
 === Render ancestors, incoming links and tagged on web
 {tag=Web}
@@ -582,6 +649,8 @@ Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
 === Scope
 
 === Performance
+
+=== Publicity
 
 === Refactor
 

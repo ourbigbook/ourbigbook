@@ -6648,6 +6648,13 @@ assert_lib('bigb output: x do not change capitalization if the first ast is not 
     }
   }
 )
+assert_error('bigb output: x to undefined does not blow up',
+  `<asdf>`,
+  1, 2, undefined,
+  {
+    extra_convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
+  }
+)
 
 // ourbigbook executable tests.
 assert_cli(

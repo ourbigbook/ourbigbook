@@ -941,10 +941,12 @@ class Tokenizer {
     } else {
       new_source_location = source_location.clone();
     }
+    if (new_source_location.path === undefined)
+      new_source_location.path = this.source_location.path;
     if (new_source_location.line === undefined)
-      new_source_location.line = this.source_location.line
+      new_source_location.line = this.source_location.line;
     if (new_source_location.column === undefined)
-      new_source_location.column = this.source_location.column
+      new_source_location.column = this.source_location.column;
     this.extra_returns.errors.push(
       new ErrorMessage(message, new_source_location));
   }
@@ -3837,7 +3839,6 @@ function url_basename(str) {
 function validate_ast(ast, context) {
   const macro_name = ast.macro_name;
   const macro = context.macros[macro_name];
-
   const name_to_arg = macro.name_to_arg;
   // First pass sets defaults on missing arguments.
   for (const argname in name_to_arg) {

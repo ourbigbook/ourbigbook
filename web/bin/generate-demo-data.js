@@ -14,33 +14,35 @@ function myParseInt(value, dummyPrevious) {
   return parsedValue;
 }
 
-const commander = require('commander');
-commander.option('-a, --articles-per-user <n>', 'n articles per user', myParseInt);
-commander.option('-i, --max-issues-per-article <n>', 'maximum number of issues per article', myParseInt);
-commander.option('-c, --max-comments-per-article <n>', 'maximum number of comments per issues', myParseInt);
-commander.option('-f, --follows-per-user <n>', 'n follows per user', myParseInt);
-commander.option('-l, --likes-per-user <n>', 'n likes per user', myParseInt);
-commander.option('--force-production', 'allow running in production, DELETES ALL DATA', false);
-commander.option('-C, --clear', 'clear the database and create demo data from scratch instead of just updating existing entries', false);
-commander.option('--empty', 'ignore everything else and make an empty database instead. Implies --reset', false);
-commander.option('-u, --users <n>', 'n users', myParseInt);
-commander.parse(process.argv);
+const { program } = require('commander');
+program.option('-a, --articles-per-user <n>', 'n articles per user', myParseInt);
+program.option('-i, --max-issues-per-article <n>', 'maximum number of issues per article', myParseInt);
+program.option('-c, --max-comments-per-article <n>', 'maximum number of comments per issues', myParseInt);
+program.option('-f, --follows-per-user <n>', 'n follows per user', myParseInt);
+program.option('-l, --likes-per-user <n>', 'n likes per user', myParseInt);
+program.option('--force-production', 'allow running in production, DELETES ALL DATA', false);
+program.option('-C, --clear', 'clear the database and create demo data from scratch instead of just updating existing entries', false);
+program.option('--empty', 'ignore everything else and make an empty database instead. Implies --reset', false);
+program.option('-u, --users <n>', 'n users', myParseInt);
+program.parse(process.argv);
+const opts = program.opts()
+console.error(opts);
 
-if (!commander.forceProduction) {
+if (!opts.forceProduction) {
   assert(!config.isProduction)
 }
 (async () => {
 const test_lib = require('../test_lib')
 const sequelize = await test_lib.generateDemoData({
-  clear: commander.clear,
+  clear: opts.clear,
   directory: path.dirname(__dirname),
-  empty: commander.empty,
-  nArticlesPerUser: commander.articlesPerUser,
-  nMaxCommentsPerIssue: commander.nMaxCommentsPerIssue,
-  nMaxIssuesPerArticle: commander.maxIssuesPerArticle,
-  nLikesPerUser: commander.likesPerUser,
-  nFollowsPerUser: commander.followsPerUser,
-  nUsers: commander.users,
+  empty: opts.empty,
+  nArticlesPerUser: opts.articlesPerUser,
+  nMaxCommentsPerIssue: opts.nMaxCommentsPerIssue,
+  nMaxIssuesPerArticle: opts.maxIssuesPerArticle,
+  nLikesPerUser: opts.likesPerUser,
+  nFollowsPerUser: opts.followsPerUser,
+  nUsers: opts.users,
   verbose: true,
 })
 await sequelize.close()

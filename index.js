@@ -1603,7 +1603,7 @@ function closing_token(token) {
  *
  * The CLI interface basically just feeds this.
  *
- * @options {Object}
+ * @param {Object} options
  *          {IdProvider} external_ids
  *          {Function[String] -> [string,string]} read_include(id) -> [file_name, content]
  *          {Number} h_level_offset - add this offset to the levels of every header
@@ -1612,6 +1612,10 @@ function closing_token(token) {
  *              The initial use case for this is to allow a faster and error-less
  *              first pass when building an entire directory with internal cross file
  *              references to extract IDs of each file.
+ * @param {Object} extra_returns
+ *          {Object} html_split_header render_path: content pairs of all output files
+ *                   to be generated. This is needed primarily because --html-spit-header 
+ *                   generates multiple output files for a single input file.
  * @return {String}
  */
 function convert(
@@ -1780,7 +1784,8 @@ function convert(
       function convert_header(cur_arg_list, context) {
         if (cur_arg_list.length > 0) {
           const context_copy = Object.assign({}, context);
-          const header_graph_node = cur_arg_list[0].header_graph_node;
+          const cur_arg = cur_arg_list[0];
+          const header_graph_node = cur_arg.header_graph_node;
           const header_graph_node_real_parent = header_graph_node.parent_node;
           // Add a new toplevel parent.
           header_graph_node.parent_node = new HeaderTreeNode();
@@ -1788,13 +1793,18 @@ function convert(
             AstType.MACRO,
             Macro.TOPLEVEL_MACRO_NAME,
             {
-              'content': new AstArgument(cur_arg_list,
-              cur_arg_list[0].source_location)
+              'content': new AstArgument(cur_arg_list, cur_arg.source_location)
             },
-            cur_arg_list[0].source_location,
+            cur_arg.source_location,
           );
-          context.extra_returns.html_split_header[cur_arg_list[0].id] =
-            ast_toplevel.convert(context);
+          let output_path = cur_arg.id + '.' + HTML_EXT;
+          if (cur_arg.id === context.options.toplevel_id) {
+            output_path += '-split';
+          }
+          context_copy.in_html_split_header = true;
+          context.extra_returns.html_split_header[output_path] =
+            ast_toplevel.convert(context_copy);
+          // Restore the original header_graph_node state.
           header_graph_node.parent_node = header_graph_node_real_parent;
         }
       }
@@ -2320,7 +2330,10 @@ function object_subset(source_object, keys) {
   return new_object;
 }
 
-/** Get the output path from the input path, e.g. my/README.ciro to my/index.html */
+/** Get the output path from the input path, e.g.
+ * - my/README.ciro -> my/index.html (local)
+ * - my/README.ciro -> my            (server)
+ */
 function output_path(input_path, outext, path_sep, html_x_extension=true) {
   const [dirname, basename] = path_split(input_path, path_sep);
   let ret = dirname;
@@ -3657,31 +3670,36 @@ exports.x_href = x_href;
 
 function x_href_parts(target_id_ast, context) {
   let href_path;
-  const target_input_path = target_id_ast.source_location.path;
   let fragment;
-  if (
-    // The header was included inline into the current file.
-    context.include_path_set.has(target_input_path) ||
-    // The header is in the current file.
-    (target_input_path == context.options.input_path)
-  ) {
-    href_path = '';
-    fragment = remove_toplevel_scope(target_id_ast, context);
+  if (context.in_html_split_header) {
+    href_path = target_id_ast.id + '.' + HTML_EXT;
+    fragment = '';
   } else {
-    href_path = output_path(target_input_path, HTML_EXT, context.options.path_sep, context.options.html_x_extension);
-    const file_provider_ret = context.options.file_provider.get(target_input_path);
-    if (file_provider_ret === undefined) {
-      let message = `file not found on database: "${target_input_path}", needed for toplevel scope removal`;
-      render_error(context, message, target_id_ast.source_location);
-      return error_message_in_output(message, context);
+    const target_input_path = target_id_ast.source_location.path;
+    if (
+      // The header was included inline into the current file.
+      context.include_path_set.has(target_input_path) ||
+      // The header is in the current file.
+      (target_input_path == context.options.input_path)
+    ) {
+      href_path = '';
+      fragment = remove_toplevel_scope(target_id_ast, context);
     } else {
-      if (target_id_ast.first_toplevel_child) {
-        fragment = '';
+      href_path = output_path(target_input_path, HTML_EXT, context.options.path_sep, context.options.html_x_extension);
+      const file_provider_ret = context.options.file_provider.get(target_input_path);
+      if (file_provider_ret === undefined) {
+        let message = `file not found on database: "${target_input_path}", needed for toplevel scope removal`;
+        render_error(context, message, target_id_ast.source_location);
+        return error_message_in_output(message, context);
       } else {
-        if (file_provider_ret.toplevel_id === target_id_ast.id) {
-          fragment = target_id_ast.id;
+        if (target_id_ast.first_toplevel_child) {
+          fragment = '';
         } else {
-          fragment = target_id_ast.id.substr(file_provider_ret.toplevel_scope_cut_length);
+          if (file_provider_ret.toplevel_id === target_id_ast.id) {
+            fragment = target_id_ast.id;
+          } else {
+            fragment = target_id_ast.id.substr(file_provider_ret.toplevel_scope_cut_length);
+          }
         }
       }
     }

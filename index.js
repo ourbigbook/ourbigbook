@@ -2704,7 +2704,7 @@ function output_path_parts(input_path, id, context) {
       if (renamed_basename_noext === INDEX_BASENAME_NOEXT) {
         basename_ret = INDEX_BASENAME_NOEXT;
         if (id_dirname === '') {
-          dirname_ret = id_dirname;
+          dirname_ret = dirname;
         } else {
           // Not a https://cirosantilli.com/cirodown#the-toplevel-index-file
           dirname_ret = path_join(id_dirname, id_basename, context.options.path_sep);

@@ -22,6 +22,8 @@ const NOSPLIT_MARKER = '\u{1F5D6} nosplit';
 exports.NOSPLIT_MARKER = NOSPLIT_MARKER;
 const SPLIT_MARKER = '\u{1F5D7} split';
 exports.SPLIT_MARKER = SPLIT_MARKER;
+const PARENT_MARKER = '\u{2191} parent';
+exports.PARENT_MARKER = PARENT_MARKER;
 
 class AstNode {
   /**
@@ -4873,7 +4875,7 @@ const DEFAULT_MACRO_LIST = [
       for (const parent_ast of parent_asts) {
         let parent_href = x_href_attr(parent_ast, context);
         let parent_body = convert_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-        parent_links.push(`<a${parent_href}${html_attr('title', 'parent header')}>\u2191 parent "${parent_body}"</a>`);
+        parent_links.push(`<a${parent_href}${html_attr('title', 'parent header')}>${PARENT_MARKER} "${parent_body}"</a>`);
       }
       parent_links = parent_links.join(HEADER_MENU_ITEM_SEP);
       if (parent_links) {
@@ -5371,7 +5373,7 @@ const DEFAULT_MACRO_LIST = [
           }
           let parent_href = html_attr('href', '#' + parent_href_target);
           let parent_body = convert_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-          ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${html_attr('title', 'parent ToC entry')}>\u2191 parent "${parent_body}"</a>`;
+          ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${html_attr('title', 'parent ToC entry')}>${PARENT_MARKER} "${parent_body}"</a>`;
         }
         ret += `</span></div>`;
         if (tree_node.children.length > 0) {

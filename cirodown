@@ -3,6 +3,8 @@
 const fs = require('fs');
 const util = require('util');
 
+const yargs = require('yargs')
+
 const AstNode = class {
   /**
    * @param {AstType} node_type -
@@ -196,12 +198,26 @@ let macro_list = [
       }),
     ],
     function(args, options) {
-      if ((!('content' in args)) || array_equals(args.content, [])) {
+      if ((!('content' in args))) {
         content = args.href;
       } else {
         content = args.content;
       }
       return `<a href="${convert_arg(args.href)}">${convert_arg(content)}</a>`
+    },
+    {
+      phrasing: true,
+    }
+  ),
+  new Macro(
+    'c',
+    [
+      new Argument({
+        name: 'content',
+      }),
+    ],
+    function(args, options) {
+      return `<code>${convert_arg(args.content)}</code>`
     },
     {
       phrasing: true,
@@ -242,19 +258,6 @@ let macro_list = [
       }),
     ],
     function(args, options) {
-      return `<p>${convert_arg(args.content)}</p>\n`
-    }
-  ),
-  new Macro(
-    'p_implicit',
-    [
-      new Argument({
-        name: 'content',
-      }),
-    ],
-    // Paragraph due to double newline.
-    function(args, options) {
-      //if (args.content[])
       return `<p>${convert_arg(args.content)}</p>\n`
     }
   ),
@@ -766,33 +769,51 @@ const convert = function(
 exports.convert = convert;
 
 if (require.main === module) {
-  let input;
+  // CLI options.
+  yargs.option('show-ast', {
+    default: false,
+    type: 'boolean',
+  });
+  yargs.option('show-tokens', {
+    default: false,
+    type: 'boolean',
+  });
+  yargs.help('h');
+  yargs.alias('h', 'help');
+  yargs.positional('input_path', {
+    description: 'Input path. If not given, read from stdin.',
+    type: 'string'
+  });
+  argv = yargs.argv;
+
+  // Action.
   const encoding = 'utf8';
+  let input;
   let title;
-  if (process.argv.length > 2) {
-    title = process.argv[2]
-    input = fs.readFileSync(title, encoding);
-  } else {
-    title = 'stdin'
+  if (argv.input === undefined) {
+    title = 'stdin';
     input = fs.readFileSync(0, encoding);
+  } else {
+    title = argv.input;
+    input = fs.readFileSync(argv.input_path, encoding);
   }
   let extra_returns = {};
   let output = convert(
     input,
     {
-      body_only: true,
+      //body_only: true,
       title: title,
       //show_parse: true,
     },
     extra_returns
   );
   console.log(output);
-  if (false) {
+  if (argv.show_tokens) {
     console.error('tokens:');
     console.error(JSON.stringify(extra_returns.tokens, null, 2));
     console.error();
   }
-  if (false) {
+  if (argv.show_ast) {
     console.error('ast:');
     console.error(JSON.stringify(extra_returns.ast, null, 2));
     console.error();

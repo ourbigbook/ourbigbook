@@ -795,3 +795,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[named arguments]
 \l[output argument descrition with some CLI help flag]
 \l[pass CLIs to test command to enable token and ast logging]
+
+\h[3][Related projects]
+
+\l[\a[https://github.com/rstudio/bookdown], \a[https://bookdown.org/]]

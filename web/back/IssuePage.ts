@@ -28,7 +28,7 @@ export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
         issuesCount,
         loggedInUserJson,
       ] = await Promise.all([
-        issue.issues.toJson(loggedInUser),
+        issue.article.toJson(loggedInUser),
         loggedInUser ? sequelize.models.Comment.count({ where: { authorId: loggedInUser.id } }) : null,
         Promise.all(issue.comments.map(comment => comment.toJson(loggedInUser))),
         sequelize.models.Comment.count({ where: { issueId: issue.id } }),

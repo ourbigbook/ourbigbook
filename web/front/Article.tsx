@@ -2,6 +2,7 @@ import React from 'react'
 import * as ReactDOM from 'react-dom'
 import Router from 'next/router'
 
+import { commentsHeaderId } from 'front/config'
 import { formatDate } from 'front/date'
 import { DeleteIcon, IssueIcon, EditArticleIcon, NewArticleIcon, SeeIcon, SignupOrLogin, TimeIcon, TopicIcon } from 'front'
 import Comment from 'front/Comment'
@@ -12,6 +13,7 @@ import ArticleList from 'front/ArticleList'
 import routes from 'front/routes'
 import { cant } from 'front/cant'
 import CustomLink from 'front/CustomLink'
+import FollowArticleButton from 'front/FollowArticleButton'
 
 import { AT_MENTION_CHAR, render_toc_from_entry_list } from 'ourbigbook'
 // This also worked. But using the packaged one reduces the need to replicate
@@ -28,7 +30,6 @@ const Article = ({
   commentCountByLoggedInUser=undefined,
   isIssue=false,
   issueArticle=undefined,
-  issuesCount,
   latestIssues,
   loggedInUser,
   topIssues,
@@ -38,12 +39,12 @@ const Article = ({
   if (!isIssue) {
     seeAllCreateNew = <>
       {latestIssues.length > 0 &&
-        <>
-          <CustomLink href={routes.issues(article.slug)}><SeeIcon /> See all ({ issuesCount })</CustomLink>{' '}
-        </>
+        <span className="see-all">
+          <CustomLink href={routes.issues(article.slug)}><SeeIcon /> See All ({ article.issueCount })</CustomLink>{' '}
+        </span>
       }
       {loggedInUser
-        ? <CustomLink href={routes.issueNew(article.slug)}><NewArticleIcon /> New discussion</CustomLink>
+        ? <CustomLink className="btn small" href={routes.issueNew(article.slug)}><NewArticleIcon /> New Discussion</CustomLink>
         : <SignupOrLogin to="create discussions"/>
       }
     </>
@@ -72,9 +73,7 @@ const Article = ({
             }
             curArticle = article
           } else if (
-            loggedInUser &&
-            // Happens on user index page.
-            id === loggedInUser.username
+            id === article.author.username
           ) {
             curArticle = article
             isIndex = true
@@ -93,8 +92,9 @@ const Article = ({
             <>
               <LikeArticleButton {...{
                 article: curArticle,
+                issueArticle,
+                isIssue,
                 loggedInUser,
-                isIssue: false,
                 showText: toplevel,
               }} />
               {!isIssue &&
@@ -107,7 +107,7 @@ const Article = ({
                   }
                   {' '}
                   <a className="issues btn" href={routes.issues(curArticle.slug)} title="Discussions">
-                    <IssueIcon title={false} /> {isIndex ? issuesCount : curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
+                    <IssueIcon title={false} /> {curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
                 </>
               }
               {toplevel &&
@@ -302,7 +302,17 @@ const Article = ({
     <div className="comments content-not-ourbigbook">
       {isIssue
         ? <>
-            <h2><IssueIcon /> Comments ({ commentsCount })</h2>
+            <h2 id={commentsHeaderId}>
+              <a href={`#${commentsHeaderId}`}><IssueIcon /> Comments ({ commentsCount })</a>
+              {' '}
+              <FollowArticleButton {...{
+                article,
+                issueArticle,
+                isIssue: true,
+                loggedInUser,
+                showText: false,
+              }} />
+            </h2>
             <div className="comment-form-holder">
               <CommentInput {...{
                 comments,
@@ -324,14 +334,26 @@ const Article = ({
             )}
           </>
         : <>
-            <h2><CustomLink href={routes.issues(article.slug)}><IssueIcon /> Discussion ({ issuesCount })</CustomLink></h2>
+            <h2>
+              <CustomLink href={routes.issues(article.slug)}>
+                <IssueIcon /> Discussion ({ article.issueCount })
+              </CustomLink>
+              {' '}
+              <FollowArticleButton {...{
+                article,
+                classNames: ['btn', 'small'],
+                isIssue: false,
+                loggedInUser,
+                showText: false,
+              }} />
+            </h2>
             { seeAllCreateNew }
             { latestIssues.length > 0 ?
                 <>
                   <h3>Latest threads</h3>
                   <ArticleList {...{
                     articles: latestIssues,
-                    articlesCount: issuesCount,
+                    articlesCount: article.issueCount,
                     comments,
                     commentsCount,
                     issueArticle: article,
@@ -344,7 +366,7 @@ const Article = ({
                   <h3>Top threads</h3>
                   <ArticleList {...{
                     articles: topIssues,
-                    articlesCount: issuesCount,
+                    articlesCount: article.issueCount,
                     comments,
                     commentsCount,
                     issueArticle: article,

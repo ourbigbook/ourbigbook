@@ -22,6 +22,7 @@ router.get('/', auth.optional, async function(req, res, next) {
         limit,
         offset,
         author: req.query.author,
+        followedBy: req.query.followedBy,
         likedBy: req.query.likedBy,
         topicId: req.query.topicId,
         order: lib.getOrder(req),
@@ -285,6 +286,9 @@ async function createOrUpdateArticle(req, res, opts) {
 
 // Likes.
 
+/**
+ * @param {boolean} create - trus if we are creating, false if destroying
+ */
 async function validateLike(req, res, user, article, isLike) {
   if (!article) {
     throw new lib.ValidationError(
@@ -304,6 +308,33 @@ async function validateLike(req, res, user, article, isLike) {
   if (await user.hasLikedArticle(article) === isLike) {
     throw new lib.ValidationError(
       [`User '${user.username}' ${isLike ? 'already likes' : 'does not like'} article '${article.slug}'`],
+      403,
+    )
+  }
+}
+
+/**
+ * @param {boolean} create - trus if we are creating, false if destroying
+ */
+async function validateFollow(req, res, user, article, create) {
+  if (!article) {
+    throw new lib.ValidationError(
+      ['Article not found'],
+      404,
+    )
+  }
+  let msg
+  if (create) {
+    msg = cant.followArticle(user, article)
+  } else {
+    msg = cant.unfollowArticle(user, article)
+  }
+  if (msg) {
+    throw new lib.ValidationError([msg], 403)
+  }
+  if (await user.hasFollowedArticle(article) === create) {
+    throw new lib.ValidationError(
+      [`User '${user.username}' ${create ? 'already follow' : 'does not follow'} article '${article.slug}'`],
       403,
     )
   }
@@ -334,6 +365,38 @@ router.delete('/like', auth.required, async function(req, res, next) {
     ])
     await validateLike(req, res, loggedInUser, article, false)
     await loggedInUser.removeArticleLikeSideEffects(article)
+    const newArticle = await lib.getArticle(req, res)
+    return res.json({ article: await newArticle.toJson(loggedInUser) })
+  } catch(error) {
+    next(error);
+  }
+})
+
+// Follow an article
+router.post('/follow', auth.required, async function(req, res, next) {
+  try {
+    const [article, loggedInUser] = await Promise.all([
+      lib.getArticle(req, res),
+      req.app.get('sequelize').models.User.findByPk(req.payload.id),
+    ])
+    await validateFollow(req, res, loggedInUser, article, true)
+    await loggedInUser.addArticleFollowSideEffects(article)
+    const newArticle = await lib.getArticle(req, res)
+    return res.json({ article: await newArticle.toJson(loggedInUser) })
+  } catch(error) {
+    next(error);
+  }
+})
+
+// Unfollow an article
+router.delete('/follow', auth.required, async function(req, res, next) {
+  try {
+    const [article, loggedInUser] = await Promise.all([
+      lib.getArticle(req, res),
+      req.app.get('sequelize').models.User.findByPk(req.payload.id),
+    ])
+    await validateFollow(req, res, loggedInUser, article, false)
+    await loggedInUser.removeArticleFollowSideEffects(article)
     const newArticle = await lib.getArticle(req, res)
     return res.json({ article: await newArticle.toJson(loggedInUser) })
   } catch(error) {

@@ -17,7 +17,7 @@
     "dev-pg": "OURBIGBOOK_POSTGRES=1 npm run dev",
     "devs": "DEBUG='sequelize:sql:*' npm run dev",
     "migrate": "sequelize-cli db:migrate --debug",
-    "seed-prod": "./prod.sh ./bin/generate-demo-data.js --force-production",
+    "seed-prod": "./prod.sh bin/generate-demo-data.js --force-production",
     "start": "node --unhandled-rejections=strict ./app.js",
     "start-dev": "NEXT_PUBLIC_NODE_ENV=development NODE_ENV_NEXT_SERVER_ONLY=production node --unhandled-rejections=strict ./app.js",
     "start-prod": "./prod.sh npm start",
@@ -25,7 +25,7 @@
     "test-deploy": "npm run test-next && npm run test-pg-next && cd .. && npm run test-release",
     "test-next-nobuild": "NODE_ENV_NEXT_SERVER_ONLY=production OURBIGBOOK_TEST_NEXT=true npm test -- --timeout 100000",
     "test-next": "npm run build-dev-nodeps && npm run test-next-nobuild --",
-    "test-pg": "OURBIGBOOK_POSTGRES=1 npm test --",
+    "test-pg": "bin/pg-setup ourbigbook_cli && OURBIGBOOK_POSTGRES=1 npm test --",
     "test-pg-next-nobuild": "NODE_ENV_NEXT_SERVER_ONLY=production OURBIGBOOK_TEST_NEXT=true npm run test-pg -- --timeout 100000",
     "test-pg-next": "npm run build-dev-nodeps && npm run test-pg-next-nobuild -- ",
     "tsc": "tsc"

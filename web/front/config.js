@@ -30,10 +30,12 @@ if (!databaseName) {
 }
 
 const appDomain = 'ourbigbook.com'
+const appNameShort  = 'OurBigBook'
 const docsUrl = `https://docs.${appDomain}`
 
 module.exports = {
   apiPath: '/' + ourbigbook.WEB_API_PATH,
+  commentsHeaderId: `${ourbigbook.Macro.RESERVED_ID_PREFIX}comments`,
   commentIdPrefix: `${ourbigbook.Macro.RESERVED_ID_PREFIX}comment-`,
   // Common convert options used by all frontend components: the backend and the editor.
   convertOptions: {
@@ -59,10 +61,11 @@ module.exports = {
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   escapeUsername,
   appDomain,
+  appNameShort,
+  appName: `${appNameShort}.com`,
   docsUrl,
   donateUrl: `${docsUrl}#donate`,
   aboutUrl: `${docsUrl}#ourbigbook-web-user-manual`,
-  appName: `OurBigBook.com`,
   buttonActiveClass: 'active',
   defaultProfileImage: `/default-profile-image.jpg`,
   // Default.
@@ -99,6 +102,8 @@ module.exports = {
   maxArticleSize: 50000,
   maxArticles: 10000,
   maxArticlesFetch: 100,
+  maxIssuesPerMinute: 6,
+  maxIssuesPerHour: 60,
   read_include_web: function(id_exists) {
     return read_include({
       exists: async (inpath) => {

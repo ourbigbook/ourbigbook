@@ -1,8 +1,9 @@
 module.exports = {
   up: async (queryInterface, Sequelize) => queryInterface.sequelize.transaction(async transaction => {
+    const DataTypes = Sequelize.DataTypes
     await queryInterface.addColumn('User', 'displayName',
       {
-        type: Sequelize.STRING(256),
+        type: DataTypes.STRING(256),
         allowNull: false,
         defaultValue: '',
       },
@@ -14,7 +15,7 @@ module.exports = {
       {transaction},
     )
   }),
-  down: async (queryInterface, Sequelize) => {
-    await queryInterface.removeColumn('User', 'displayName')
-  }
+  down: async (queryInterface, Sequelize) => queryInterface.sequelize.transaction(async transaction => {
+    await queryInterface.removeColumn('User', 'displayName', { transaction })
+  })
 };

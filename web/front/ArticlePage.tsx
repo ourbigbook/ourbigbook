@@ -75,9 +75,9 @@ const ArticlePageHoc = (isIssue=false) => {
               <nav className="issue-nav">
                 <DiscussionAbout article={issueArticle} issue={article} />
                 <div className="see-all">
-                  <CustomLink href={routes.issues(issueArticle.slug)}><SeeIcon /> See all ({issuesCount})</CustomLink>
+                  <CustomLink href={routes.issues(issueArticle.slug)}><SeeIcon /> See All ({issuesCount})</CustomLink>
                   {' '}
-                  <CustomLink href={routes.issueNew(issueArticle.slug)}><NewArticleIcon /> Create new</CustomLink>
+                  <CustomLink className="btn" href={routes.issueNew(issueArticle.slug)}><NewArticleIcon /> New Discussion</CustomLink>
                 </div>
               </nav>
             }

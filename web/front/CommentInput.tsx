@@ -50,6 +50,8 @@ const CommentInput = ({
       } else {
         if (data.errors) {
           setErrors(data.errors);
+        } else {
+          setErrors(['server error, try again later']);
         }
       }
       setLoading(false);

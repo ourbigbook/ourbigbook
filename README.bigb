@@ -6863,7 +6863,7 @@ And all of that is achieved:
 * without requiring authors to manually determine which headers are toplevel or not to customize page splits with reasonable load sizes.
 * without keeping multiple copies of the render output of each page and corresponding pre-rendered ToCs. On the static website, we already had two rendering for each page: one split and one non-split, and the ToCs were huge and copied everywhere. Perhaps the ToC side could be resolve with some runtime fetching of static JSON, but then that is bad for SEO.
 
-The downside of the feature is slightly slower page loads and a bit more server workload. We have kept it quite efficient server-side by implementing the page fetching with a nested sets implementation: https://stackoverflow.com/questions/4048151/what-are-the-options-for-storing-hierarchical-data-in-a-relational-database
+The downside of the feature is slightly slower page loads and a bit more server workload. We have kept it quite efficient server-side by implementing the page fetching with a <nested sets> implementation.
 
 We believe that dynamic article treee offers a very good tradeoff between server load, load speeds, SEO, readability and author friendliness.
 
@@ -7470,9 +7470,34 @@ Or e.g. to make `cirosantilli` admin in a <Heroku deployment> you can run:
 heroku psql -a ourbigbook -c "UPDATE \"User\" SET admin = true WHERE username='cirosantilli'"
 ``
 
-= OurBigBook Web database migration setup
+= OurBigBook Web database
 {c}
 {parent=OurBigBook Web deployment}
+
+= OurBigBook Web database normalization
+{c}
+{parent=OurBigBook Web database}
+
+We currently have some intentional denormalization in our database e.g.:
+* counts such as: user reputation, article issue and follower counts, issue comment and follower counts
+* <nested sets>
+
+These dernormalizations are not ideal, but they make things a bit easier, and some of them are almost certainly faster.
+
+To keep things slightly saner, the <file/web/bin/normalize> script can be used to view, check and update dernormalized data.
+
+= web/bin/normalize
+{file}
+{parent=OurBigBook Web directory structure}
+
+= Nested set
+{parent=OurBigBook Web database}
+
+A cache that allows quickly fetching pages for <OurBigBook Web dynamic article tree>: https://stackoverflow.com/questions/4048151/what-are-the-options-for-storing-hierarchical-data-in-a-relational-database
+
+= OurBigBook Web database migration setup
+{c}
+{parent=OurBigBook Web database}
 
 Any pending migrations are done automatically during deployment as part of `npm run build`, more precisely they are run from \a[web/bin/sync-db.js].
 
@@ -7523,13 +7548,13 @@ The arguments of `test-migration` are fowarded to \a[web/bin/generate-demo-data.
 
 Towards the end of that script, we can see lines of type:
 ``
-+ diff -u tmp.old.sqlite3.schema.sort tmp.new-clean.sqlite3.schema.sort
-+ diff -u tmp.new-clean.sqlite3.schema.sort; tmp.new-migration.sqlite3.schema.sort
++ diff -u tmp.old.sqlite3.sort.sql tmp.new-clean.sqlite3.sort.sql
++ diff -u tmp.new-clean.sqlite3.sort.sql tmp.new-migration.sqlite3.sort.sql
 ``
 Those are important diffs you might want to look at every time:
-* `tmp.old.sqlite3.schema.sort`: old schema before migration, but with lines sorted alphabetically
-* `tmp.new-clean.sqlite3.schema.sort`: new schema achieved by dropping the database and re creating at once
-* `tmp.new-migration.sqlite3.schema.sort`: new schema achieved migrating from the old state
+* `tmp.old.sqlite3.sort.sql`: old schema before migration, but with lines sorted alphabetically
+* `tmp.new-clean.sqlite3.sort.sql`: new schema achieved by dropping the database and re creating at once
+* `tmp.new-migration.sqlite3.sort.sql`: new schema achieved migrating from the old state
 Therefore, you really want the `diff tmp.old.sqlite3.schema tmp.new-clean.sqlite3.schema` to be empty. For sqlite3 we actually check that and give an error if they differ, but for PostgreSQL it is a bit harder due to the multiline statements, so just inspect the diffs manually.
 
 = OurBigBook Web nuke DB instead of migrating
@@ -7864,11 +7889,25 @@ The JWT token is only given to users after account verification. Having the JWT 
   * Sequelize
   * SQLite for local development, PostgreSQL for deployment
 
+= OurBigBook Web UI guidelines
+{c}
+{parent=OurBigBook Web architecture}
+
+* nav tabs
+  * are icon-separated, e.g.: "(home icon) Home (article icon) Top Articles (article icon) Latest Articles'
+  * Tabs Are Cammel Cased
+* things that users can click to "take actions" (usually modify the database) show as buttongs. Things that users can click to view things show as links. Exmaples of actions:
+  * like, subscribe
+  * create article/issue/comment
+  * go to a separate new/edit article/issue page. This is strictly technically speaking just a link, but it is closely related to creating something new, so it feels more intuitive for it to be a button
+
 = OurBigBook Web URL standards
 {c}
 {parent=OurBigBook Web architecture}
 
-It would be impossible to have upper case characters on any URL of the website. Words should be separated by hyphens `-` instead.
+This section describes rules for normally browser-visible URLs of the website. These rules do not apply to the Web API, see <OurBigBook Web API standards> for Web API URL standards.
+
+It should be impossible to have upper case characters on any URL of the website. Words should be separated by hyphens `-` instead.
 
 Use the usual gramatical ordering for action object pairs, e.g.:
 * `new-discussion`
@@ -8267,7 +8306,7 @@ or from the <ourbigbook.json> file with an entry of form:
 {parent=OurBigBook}
 
 * https://github.com/cirosantilli/ourbigbook/issues for any public contact, see also: <OurBigBook issue tracker>{full}
-* for private contact email: `ciro@ourbigbook.com`
+* for private contact email: `admin@ourbigbook.com`
 
 = OurBigBook issue tracker
 {parent=Contact}
@@ -9043,8 +9082,6 @@ Some blobs were unfortunately added to this repository earlier on, but when we s
 * LinkedIn company: https://www.linkedin.com/company/ourbigbook
   * LinkedIn group: https://www.linkedin.com/groups/9164882/ TODO vs the company.
 * Facebook:
-  * page: https://www.facebook.com/OurBigBook (case insensitive)
-  * group: https://www.facebook.com/groups/OurBigBook (case insensitive)
 * Discord: OurBigBook#6998 "OurBigBook's Server" invite link: https://discord.gg/A8P5zGcWUh
 * https://www.instagram.com/ourbigbook (case insensitive)
 

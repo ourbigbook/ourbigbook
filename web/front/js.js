@@ -33,7 +33,7 @@ function getOrder(req, opts={}) {
       sort === 'created'
     ) {
       return ['createdAt']
-    } else if (sort === 'score') {
+    } else if (sort === 'score' || sort === 'followerCount') {
       return [sort]
     } else {
       if (sort in urlToDbSort) {

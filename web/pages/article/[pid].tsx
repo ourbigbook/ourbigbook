@@ -108,7 +108,7 @@ export default ArticlePage;
 // Server only.
 
 import { getStaticPathsArticle, getStaticPropsArticle } from "lib/article";
-const configModule = require("../../config");
+import { revalidate } from "config";
 
 export const getStaticPaths = getStaticPathsArticle;
-export const getStaticProps = getStaticPropsArticle(configModule.revalidate, true);
+export const getStaticProps = getStaticPropsArticle(revalidate, true);

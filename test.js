@@ -1669,45 +1669,43 @@ bb
   ]),
   include_opts
 );
-// TODO failing https://github.com/cirosantilli/cirodown/issues/35
-//assert_convert_ast('include simple no paragraph',
-//  `= aa
-//
-//bb
-//
-//\\Include[include-one-level-1]
-//\\Include[include-one-level-2]
-//`,
-//  [
-//    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
-//    a('P', [t('bb')]),
-//    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
-//    a('P', [t('dd')]),
-//    a('H', undefined, {level: [t('2')], title: [t('ee')]}),
-//    a('P', [t('ff')]),
-//  ],
-//  include_opts
-//);
-//assert_convert_ast('include multilevel no paragraph',
-//  `= aa
-//
-//bb
-//
-//\\Include[include-two-levels]
-//\\Include[include-one-level-1]
-//`,
-//  [
-//    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
-//    a('P', [t('bb')]),
-//    a('H', undefined, {level: [t('2')], title: [t('ee')]}),
-//    a('P', [t('ff')]),
-//    a('H', undefined, {level: [t('3')], title: [t('gg')]}),
-//    a('P', [t('hh')]),
-//    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
-//    a('P', [t('dd')]),
-//  ],
-//  include_opts
-//);
+// https://github.com/cirosantilli/cirodown/issues/35
+assert_convert_ast('include simple no paragraph',
+  `= aa
+
+bb
+
+\\Include[include-one-level-1]
+\\Include[include-one-level-2]
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('P', [t('bb')]),
+    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
+    a('P', [t('dd')]),
+    a('H', undefined, {level: [t('2')], title: [t('ee')]}),
+    a('P', [t('ff')]),
+  ],
+  include_opts
+);
+assert_convert_ast('include multilevel no paragraph',
+  `= aa
+
+bb
+
+\\Include[include-two-levels]
+\\Include[include-one-level-1]
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('P', [t('bb')]),
+  ].concat(include_two_levels_ast_args)
+  .concat([
+    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
+    a('P', [t('dd')]),
+  ]),
+  include_opts
+);
 // TODO https://github.com/cirosantilli/cirodown/issues/73
 //assert_convert_ast('include without parent header',
 //  '\\Include[include-one-level-1]',

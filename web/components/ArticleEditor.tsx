@@ -14,20 +14,6 @@ import routes from 'routes'
 import { AppContext } from 'lib'
 import { modifyEditorInput } from 'shared';
 
-async function editorReducer(state, action) {
-  switch (action.type) {
-    case "SET_TITLE":
-      await action.cirodownEditorElem.current.cirodownEditor.setModifyEditorInput(
-        oldInput => modifyEditorInput(action.text, oldInput))
-      return {
-        ...state,
-        title: action.text
-      };
-    default:
-      throw new Error("Unhandled action");
-  }
-};
-
 export default function makeArticleEditor(isnew: boolean = false) {
   const editor = ({ article: initialArticle }) => {
     let body;
@@ -47,7 +33,7 @@ export default function makeArticleEditor(isnew: boolean = false) {
     }
     const [isLoading, setLoading] = React.useState(false);
     const [errors, setErrors] = React.useState([]);
-    const [article, articleDispatch] = React.useReducer(editorReducer, initialArticleState);
+    const [article, setArticle] = React.useState(initialArticleState);
     const cirodownEditorElem = useRef(null);
     useEffect(() => {
       if (cirodownEditorElem) {
@@ -82,8 +68,14 @@ export default function makeArticleEditor(isnew: boolean = false) {
     }, [])
     const loggedInUser = getLoggedInUser()
     const router = useRouter();
-    const handleTitle = (e) =>
-      articleDispatch({ type: "SET_TITLE", text: e.target.value, cirodownEditorElem });
+    const handleTitle = async (e) => {
+      setArticle(article => { return {
+        ...article,
+        title: e.target.value,
+      }})
+      await cirodownEditorElem.current.cirodownEditor.setModifyEditorInput(
+        oldInput => modifyEditorInput(e.target.value, oldInput))
+    }
     const handleSubmit = async (e) => {
       e.preventDefault();
       setLoading(true);

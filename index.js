@@ -1555,7 +1555,7 @@ class HeaderTreeNode {
     if (value !== undefined && !value.in_header) {
       this.word_count = value.word_count;
       let cur_node = this.parent_node;
-      if (cur_node.parent_node !== undefined) {
+      if (cur_node !== undefined && cur_node.parent_node !== undefined) {
         cur_node = cur_node.parent_node;
         while (cur_node !== undefined) {
           cur_node.descendant_word_count += this.word_count;
@@ -2419,10 +2419,10 @@ function format_number_approx(num, digits) {
 
 function get_descendant_count_html(tree_node) {
   const descendant_nodes = tree_node.descendant_count;
-  let ret = `<span class="descendant-count">` +
+  let ret = `<span class="metrics">` +
     `<span class="word-count" title="word count for this node">${format_number_approx(tree_node.word_count)}</span>`;
   if (descendant_nodes > 0) {
-    ret += `, <span class="descendant" title="number of descendant nodes">${format_number_approx(descendant_nodes)}</span>` +
+    ret += `, <span class="descendant-count" title="number of descendant nodes">${format_number_approx(descendant_nodes)}</span>` +
            `, <span class="word-count-descendant" title="word count for this node + descendants">${format_number_approx(tree_node.word_count + tree_node.descendant_word_count)}</span>`;
   }
   ret += `</span>`
@@ -3747,7 +3747,9 @@ function parse(tokens, options, context, extra_returns={}) {
           if (ast.in_header) {
             children_in_header = true;
           } else {
-            cur_header_graph_node.word_count += ast.word_count;
+            if (cur_header_graph_node !== undefined) {
+              cur_header_graph_node.word_count += ast.word_count;
+            }
             children_in_header = false;
           }
           if (cur_header_graph_node !== undefined) {

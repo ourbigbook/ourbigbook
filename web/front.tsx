@@ -5,7 +5,7 @@ import { mutate } from 'swr'
 import ourbigbook from 'ourbigbook';
 
 import { webApi } from 'front/api'
-import { docsUrl } from 'front/config'
+import { docsUrl, sureLeaveMessage } from 'front/config'
 import { AUTH_COOKIE_NAME } from 'front/js'
 import CustomLink from 'front/CustomLink'
 import routes from 'front/routes'
@@ -271,6 +271,48 @@ export function useEEdit(canEdit, slug) {
       }
     }
   }, [canEdit, slug]);
+}
+
+/** Add a window event listener but only for the current page.
+ * Remove the event when next.js router moves away. */
+export function useWindowEventListener(event, callback) {
+  React.useEffect(() => {
+    window.addEventListener(event, callback)
+    // Cleanup listener after leaving the page.
+    return () => {
+      window.removeEventListener(event, callback)
+    }
+  }, [])
+}
+
+/** Ask if user really wants to save page that may have unsaved changes.
+ * https://stackoverflow.com/questions/63064778/next-js-warn-user-for-unsaved-form-before-route-change
+ */
+export function useConfirmExitPage(okToLeave: boolean) {
+  React.useEffect(() => {
+    // If closing tab or browser history or input another domain on URL bar.
+    const beforeUnloadHandler = (e: BeforeUnloadEvent) => {
+      if (!okToLeave) {
+        (e || window.event).returnValue = sureLeaveMessage
+        return sureLeaveMessage
+      }
+    }
+    // If exiting by clicking a Next.js link.
+    const routeChangeStartHandler = (url: string) => {
+      if (!okToLeave && Router.pathname !== url && !confirm(sureLeaveMessage)) {
+        // to inform NProgress or something ...
+        Router.events.emit('routeChangeError')
+        // tslint:disable-next-line: no-string-throw
+        throw `Route change to "${url}" was aborted (this error can be safely ignored). See https://github.com/vercel/next.js/discussions/32231`
+      }
+    }
+    Router.events.on('routeChangeStart', routeChangeStartHandler)
+    window.addEventListener('beforeunload', beforeUnloadHandler)
+    return () => {
+      Router.events.off('routeChangeStart', routeChangeStartHandler)
+      window.removeEventListener('beforeunload', beforeUnloadHandler)
+    }
+  }, [okToLeave])
 }
 
 // https://stackoverflow.com/questions/4825683/how-do-i-create-and-read-a-value-from-cookie/38699214#38699214

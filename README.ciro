@@ -1,14 +1,18 @@
 = Cirodown
 
-A Markup language to write complex structured HTML wikis/books that is \x[saner] and more powerful than Markdown and Asciidoctor, with reference implementation in JavaScript.
+A Markup language to write complex structured HTML wikis/books that is \x[saner] and more powerful than Markdown and Asciidoctor, with reference implementation in JavaScript:
 
-The source for this document is at: https://github.com/cirosantilli/cirodown/blob/master/README.ciro and a rendered version can be seen at: https://cirosantilli.com/cirodown and a live in-browser demo at: https://cirosantilli.com/cirodown/editor[].
+* https://github.com/cirosantilli/cirodown/blob/master/README.ciro[]: source for this document
+* https://cirosantilli.com/cirodown[]: rendered version of this document
+* https://cirosantilli.com/cirodown/editor[]: live in-browser demo
+* https://cirosantilli.com[]: showcase demo document with more interesting content, and initial inspiration for Cirodown
+* https://github.com/cirosantilli/cirosantilli.github.io[]: source of the above document
 
 If Mark had his Down, why can't Ciro have his own? ;-)
 
 == Quick start
 
-Showcase website: https://www.cirosantilli.com source at https://github.com/cirosantilli/cirosantilli.github.io That is the initial motivation.
+Showcase website: https://www.cirosantilli.com source at 
 
 Live in-browser demo: https://cirosantilli.com/cirodown/editor
 

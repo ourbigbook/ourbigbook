@@ -2132,13 +2132,7 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
         let message = `reserved ID "${ast.id}"`;
         parse_error(state, message, ast.source_location);
       }
-      if (
-        ast.id !== undefined &&
-        ast.header_tree_node &&
-        ast.header_tree_node.parent_node !== undefined &&
-        ast.header_tree_node.parent_node.ast !== undefined &&
-        ast.scope !== undefined
-      ) {
+      if (ast.id !== undefined && ast.scope !== undefined) {
         ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id
       }
     }
@@ -2801,23 +2795,24 @@ function convert_init_context(options={}, extra_returns={}) {
   if (options.input_path !== undefined) {
     const [input_dir, basename] = path_split(options.input_path, options.path_sep)
     const [basename_noext, ext] = path_splitext(basename)
-    let toplevel_id;
     if (INDEX_FILE_BASENAMES_NOEXT.has(basename_noext)) {
       if (input_dir === '') {
         // https://cirosantilli.com/cirodown#the-toplevel-index-file
-        toplevel_id = undefined;
+        options.toplevel_id = undefined;
       } else {
         // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
-        toplevel_id = input_dir;
-        options.toplevel_has_scope = true;
+        options.toplevel_id = input_dir;
+        options.toplevel_has_scope = true
       }
+      options.isindex = true
     } else {
-      toplevel_id = basename_noext;
-      if (input_dir === '') {
-        options.toplevel_parent_scope = undefined;
-      } else {
-        options.toplevel_parent_scope = input_dir;
-      }
+      options.toplevel_id = basename_noext;
+      options.isindex = false
+    }
+    if (input_dir === '') {
+      options.toplevel_parent_scope = undefined;
+    } else {
+      options.toplevel_parent_scope = input_dir
     }
     // TODO htmlEmbed was split into embedIncludes and embedResources.
     // This was likely meant to be embedIncludes, but I don't have a filing test if this is commented out
@@ -2829,7 +2824,6 @@ function convert_init_context(options={}, extra_returns={}) {
       }
       options.template_vars.root_relpath = root_relpath;
     }
-    options.toplevel_id = toplevel_id;
   }
 
   if (options.unsafe_xss === undefined) {
@@ -3211,7 +3205,7 @@ function html_render_attrs_id(
   ast, context, arg_names=[], custom_args={}
 ) {
   let id = ast.id;
-  if (id !== undefined) {
+  if (id) {
     custom_args[Macro.ID_ARGUMENT_NAME] = [
       new PlaintextAstNode(
         remove_toplevel_scope(id, context.toplevel_ast, context),
@@ -3917,7 +3911,13 @@ async function parse(tokens, options, context, extra_returns={}) {
         );
         parent_ast.includes.push(href);
       }
-      const read_include_ret = options.read_include(href);
+      let input_dir, input_basename
+      if (options.input_path) {
+        ;[input_dir, input_basename] = path_split(options.input_path, options.path_sep)
+      } else {
+        input_dir = '.'
+      }
+      const read_include_ret = options.read_include(href, input_dir);
       if (read_include_ret === undefined) {
         let message = `could not find include: "${href}"`;
         parse_error(
@@ -3981,6 +3981,9 @@ async function parse(tokens, options, context, extra_returns={}) {
             );
             options.include_hrefs[href] = header_ast
             headers_from_include[href] = header_ast
+            if (options.cur_header !== undefined) {
+              header_ast.scope = options.cur_header.scope
+            }
             header_ast.header_tree_node = new HeaderTreeNode(header_ast, parent_ast_header_tree_node);
             parent_ast_header_tree_node.add_child(header_ast.header_tree_node);
             new_child_nodes = [
@@ -4088,15 +4091,17 @@ async function parse(tokens, options, context, extra_returns={}) {
           ast.id = context.toplevel_id
           if (options.toplevel_has_scope) {
             // We also need to fake an argument here, because that will
-            // get serialiezd to the database, which his needed for
+            // get serialized to the database, which his needed for
             // toplevel scope removal from external links.
             const scope_arg = new AstArgument([], ast.source_location);
             ast.add_argument('scope', scope_arg);
           }
           if (options.toplevel_parent_scope !== undefined) {
             ast.scope = options.toplevel_parent_scope;
-            // We skip calculation of scoped IDs, so gotta do it here.
-            ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id;
+            if (!options.isindex) {
+              // We skip calculation of scoped IDs, so gotta do it here.
+              ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id;
+            }
           }
           ast.is_first_header_in_input_file = true;
         }
@@ -4864,24 +4869,8 @@ async function parse(tokens, options, context, extra_returns={}) {
         // level. Previously, we would do a query, go up, query, go up,
         // interactively until found, but that is not possible anymore that
         // we have grouped all queries at one point.
-        //
-        // This very slightly duplicates the resolution code in IdProvider.get,
-        // but it was not trivial to factor them out, so just going for this now.
         let ids = []
-        if (id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
-          ids.push(id.substr(1))
-        } else {
-          let current_scope = ast.scope
-          if (current_scope !== undefined) {
-            current_scope += Macro.HEADER_SCOPE_SEPARATOR
-            for (let i = current_scope.length - 1; i > 0; i--) {
-              if (current_scope[i] === Macro.HEADER_SCOPE_SEPARATOR) {
-                ids.push(current_scope.substring(0, i + 1) + id)
-              }
-            }
-          }
-          ids.push(id)
-        }
+        push_scope_resolution(ids, ast.scope, id)
 
         // We need the target IDs of any x to render it.
         for (const id of ids) {
@@ -4889,12 +4878,15 @@ async function parse(tokens, options, context, extra_returns={}) {
           prefetch_file_ids.add(id)
         }
       }
+      const include_hrefs_ids = []
       for (const id in options.include_hrefs) {
         // We need the target it to be able to render the dummy include title
         // with link to the real content.
+        push_scope_resolution(include_hrefs_ids, options.include_hrefs[id].scope, id)
+      }
+      for (const id of include_hrefs_ids) {
         prefetch_ids.add(id)
       }
-      const prefetch_refs_ids = new Set()
 
       let get_noscopes_base_fetch, get_refs_to_fetch, get_refs_to_fetch_reverse
       ;[
@@ -4951,10 +4943,10 @@ async function parse(tokens, options, context, extra_returns={}) {
     // Reconcile the dummy include header with our actual knowledge from the DB, e.g.:
     // * patch the ID of the include headers.
     // Has to be deferred here after DB fetch obviously because we need he DB data.
-    // This is hair pulling stuff. There has to be abetter way...
+    // This is hair pulling stuff. There has to be a better way...
     for (const href in options.include_hrefs) {
-      const target_id_ast = context.id_provider.get(href, context);
       const header_ast = options.include_hrefs[href]
+      const target_id_ast = context.id_provider.get(href, context, header_ast.scope);
       if (target_id_ast === undefined) {
         let message = `ID in include not found on database: "${href}", ` +
           `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
@@ -5514,6 +5506,27 @@ function propagate_numbered(ast, context) {
 }
 exports.propagate_numbered = propagate_numbered
 
+// Push all possible IDs due to walking up scope resolution
+// into the given ids array.
+//
+// This very slightly duplicates the resolution code in IdProvider.get,
+// but it was not trivial to factor them out, so just going for this now.
+function push_scope_resolution(ids, current_scope, id) {
+  if (id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
+    ids.push(id.substr(1))
+  } else {
+    if (current_scope !== undefined) {
+      current_scope += Macro.HEADER_SCOPE_SEPARATOR
+      for (let i = current_scope.length - 1; i > 0; i--) {
+        if (current_scope[i] === Macro.HEADER_SCOPE_SEPARATOR) {
+          ids.push(current_scope.substring(0, i + 1) + id)
+        }
+      }
+    }
+    ids.push(id)
+  }
+}
+
 // Fuck JavaScript? Can't find a built-in way to get the symbol string without the "Symbol(" part.
 // https://stackoverflow.com/questions/30301728/get-the-description-of-a-es6-symbol
 function symbol_to_string(symbol) {
@@ -5876,7 +5889,7 @@ function x_href_parts(target_id_ast, context) {
     context.options.include_path_set.has(target_input_path) &&
     !(context.to_split_headers !== undefined && context.to_split_headers)
   ) {
-    // We are not in split headears, and the output is in the current file.
+    // We are not in split headers, and the output is in the current file.
     // Therefore, don't use the split header target no matter what its
     // splitDefault is, use the non-split one.
     to_split_headers = false;

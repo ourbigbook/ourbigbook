@@ -9,6 +9,7 @@ node_modules
 # and used by the default template generation!
 !/editor.html
 /dist
+/editor.css
 /my_node_modules
 /template/repos
 gitignore

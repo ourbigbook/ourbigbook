@@ -1,4 +1,4 @@
-import { User } from './userType'
+import { UserType } from './userType'
 
 export interface ArticleList {
   articles: ArticleType[];
@@ -11,7 +11,7 @@ export interface Article {
 export type ArticleType = {
   tagList: string[];
   createdAt: number;
-  author: User;
+  author: UserType;
   title: string;
   body: string;
   slug: string;

@@ -2,11 +2,11 @@
 
 import CustomLink from 'front/CustomLink'
 import CustomImage from 'front/CustomImage'
-import { User } from 'front/types/userType'
+import { UserType } from 'front/types/userType'
 import routes from 'front/routes'
 import { DisplayAndUsername } from 'front/user'
 
-const UserLinkWithImage = ({ user }: { user: User }) => {
+const UserLinkWithImage = ({ user }: { user: UserType }) => {
   if (!user) return null;
   return (
     <CustomLink

@@ -390,6 +390,9 @@ function assert_executable(
     }
     const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'cirodown'));
     const cwd = path.join(tmpdir, options.cwd)
+    if (!fs.existsSync(cwd)) {
+      fs.mkdirSync(cwd);
+    }
     for (const relpath in options.filesystem) {
       const dirpath = path.join(tmpdir, path.parse(relpath).dir);
       if (!fs.existsSync(dirpath)) {
@@ -586,7 +589,7 @@ hh
 }
 
 function exec_assert_message(out, cmd, args, cwd, msg_extra) {
-  let ret;
+  let ret = '';
   if (msg_extra !== undefined) {
     ret = msg_extra + '\n\n'
   }
@@ -3177,6 +3180,8 @@ $$
   'notindex-splitsuffix.ciro': `= Notindex splitsuffix
 {splitSuffix=asdf}
 `,
+  'scss.scss': `body { color: red }`,
+  'cirodown.json': `{}\n`,
   'subdir/index.ciro': `= Subdir index
 
 \\x[index][link to toplevel]
@@ -3195,7 +3200,10 @@ $$
 
 == Included by subdir index h2
 `,
-  'cirodown.json': `{}\n`,
+  'subdir/myfile.txt': `Hello world
+
+Goodbye world.
+`,
 };
 assert_executable(
   'executable: input from directory with cirodown.json produces several output files',
@@ -3332,6 +3340,10 @@ assert_executable(
         // TODO nested scopes not removing correctly, was giving ../../toplevel-scope.html#nested-scope-2
         // //xpath_header_split(1, 'nested-scope-2', '../../toplevel-scope.html#nested-scope/nested-scope-2', cirodown.NOSPLIT_MARKER),
       ],
+
+      // Non converted paths.
+      'scss.css': [],
+      'cirodown.json': [],
     },
     expect_filesystem_not_xpath: {
       'split.html': [
@@ -3369,6 +3381,10 @@ assert_executable(
       'out/publish/out/publish/subdir/index.html': [
         "//x:style[contains(text(),'@import \"../cirodown.css\"')]",
       ],
+      // Non-converted files are copied over.
+      'out/publish/out/publish/scss.css': [],
+      'out/publish/out/publish/cirodown.json': [],
+      'out/publish/out/publish/subdir/myfile.txt': [],
     },
   }
 );
@@ -3478,7 +3494,10 @@ assert_executable(
       'subdir/notindex.ciro': `= Subdir notindex`,
       'cirodown.json': `{}\n`,
     },
-    expect_exists: ['my_outdir/out'],
+    expect_exists: [
+      'my_outdir/out',
+      'my_outdir/cirodown.json',
+    ],
     expect_not_exists: [
       'out',
       'index.html',
@@ -3961,11 +3980,15 @@ assert_executable(
 
 // executable cwd tests
 assert_executable(
-  "executable: conversion works with cwd outside project directory",
+  "executable: cwd outside project directory given by cirodown.json",
   {
     args: ['myproject'],
     filesystem: {
       'myproject/README.ciro': `= Index
+
+\\x[not-readme]
+
+\\x[subdir]
 
 \\Include[not-readme]
 
@@ -3975,12 +3998,69 @@ assert_executable(
 `,
       'myproject/not-readme.ciro': `= Not readme
 `,
+      'myproject/scss.scss': `body { color: red }`,
+      'myproject/cirodown.json': `{}
+`,
       'myproject/subdir/index.ciro': `= Subdir
 `,
       'myproject/subdir/notindex.ciro': `= Subdir Notindex
 `,
+    },
+    expect_exists: [
+      'myproject/out',
+      'myproject/scss.css',
+      'myproject/cirodown.json',
+    ],
+    expect_filesystem_xpath: {
+      'myproject/index.html': [
+          xpath_header(1, 'index'),
+      ],
+      'myproject/subdir/index.html': [
+          xpath_header(1, 'subdir'),
+      ]
+    }
+  }
+);
+assert_executable(
+  "executable: if there is no cirodown.json and the input is not under cwd then the project dir is the input dir",
+  {
+    args: [path.join('..', 'myproject')],
+    cwd: 'notmyproject',
+    filesystem: {
+      'myproject/README.ciro': `= Index
+
+\\x[not-readme]
+
+\\x[subdir]
+
+\\Include[not-readme]
+
+\\Include[subdir]
+
+\\Include[subdir/notindex]
+`,
+      'myproject/not-readme.ciro': `= Not readme
+`,
+      'myproject/scss.scss': `body { color: red }`,
       'myproject/cirodown.json': `{}
 `,
+      'myproject/subdir/index.ciro': `= Subdir
+`,
+      'myproject/subdir/notindex.ciro': `= Subdir Notindex
+`,
     },
+    expect_exists: [
+      'myproject/out',
+      'myproject/scss.css',
+      'myproject/cirodown.json',
+    ],
+    expect_filesystem_xpath: {
+      'myproject/index.html': [
+          xpath_header(1, 'index'),
+      ],
+      'myproject/subdir/index.html': [
+          xpath_header(1, 'subdir'),
+      ]
+    }
   }
 );

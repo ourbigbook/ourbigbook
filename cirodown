@@ -160,7 +160,7 @@ function cmd_get_stdout(cmd, args=[], options={}) {
 }
 
 /**
- * @param {String} path to a directory to convert files in
+ * @param {String} input_path - path to a directory to convert files in
  */
 function convert_directory(input_path, options, convert_input_options) {
   const ignore_fullpaths = new Set();
@@ -172,7 +172,11 @@ function convert_directory(input_path, options, convert_input_options) {
     DEFAULT_IGNORE_BASENAMES_SET,
     ignore_fullpaths,
   )) {
-    convert_path_to_file(input_path, path.relative(input_path, one_path), options, convert_input_options);
+    convert_path_to_file(
+      one_path,
+      options,
+      convert_input_options,
+    );
     if (convert_input_options.had_error) {
       break;
     }
@@ -410,7 +414,7 @@ function convert_path(input_path, options, convert_input_options) {
               ) {
                 if (context.id_provider.get(from_id)===undefined){
                   console.error(from_id);
-                  asdf
+                  throw new Error(from_id);
                 }
                 insert_include_stmt.run(
                   from_id,
@@ -456,10 +460,9 @@ function convert_path(input_path, options, convert_input_options) {
  *
  * The output file name is derived from the input file name with the output extension.
  */
-function convert_path_to_file(base_path, input_path, options, convert_input_options={}) {
+function convert_path_to_file(input_path, options, convert_input_options={}) {
   let output;
   let input_path_parse = path.parse(input_path);
-  const input_path_full = path.join(base_path, input_path)
   if (input_path_parse.ext === cirodown.CIRODOWN_EXT) {
     let message_prefix;
     if (options.render) {
@@ -471,7 +474,7 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
     console.log(message);
     const new_convert_input_options = Object.assign({}, convert_input_options);
     let t0 = performance.now();
-    output = convert_path(input_path_full, options, new_convert_input_options);
+    output = convert_path(input_path, options, new_convert_input_options);
     let t1 = performance.now();
     console.log(`${message} finished in ${t1 - t0} ms`);
     if (new_convert_input_options.had_error) {
@@ -479,7 +482,10 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
     }
   } else {
     let output_name = input_path_parse.name;
-    let output_path_noext = path.join(base_path, input_path_parse.dir, output_name);
+    let output_path_noext = path.join(
+      path.relative(convert_input_options.cirodown_json_dir, input_path_parse.dir),
+      output_name
+    );
     if (options.outfile === undefined) {
       output_path_noext = path.join(convert_input_options.outdir, output_path_noext);
     } else {
@@ -492,7 +498,7 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
         fs.writeFileSync(
           output_path_noext + '.css',
           sass.renderSync({
-            data: fs.readFileSync(path.join(base_path, input_path), convert_input_options.encoding),
+            data: fs.readFileSync(path.join(input_path), convert_input_options.encoding),
             outputStyle: 'compressed',
             includePaths: [
               path.dirname(cirodown_nodejs.PACKAGE_PATH),
@@ -502,9 +508,9 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
       } else {
         // Otherwise, just copy the file over if needed.
         const output_path = output_path_noext + input_path_parse.ext;
-        if (output_path !== path.resolve(input_path_full)) {
+        if (output_path !== path.resolve(input_path)) {
           console.log(`copy ${input_path}`);
-          fs.copyFileSync(input_path_full, output_path);
+          fs.copyFileSync(input_path, output_path);
         }
       }
     }
@@ -674,6 +680,11 @@ function git_toplevel(input_path) {
     show_cmd: false,
     throw_on_error: true
   }).slice(0, -1);
+}
+
+function is_subpath(parent, child) {
+  const relative = path.relative(parent, child);
+  return relative && !relative.startsWith('..') && !path.isAbsolute(relative);
 }
 
 // https://stackoverflow.com/questions/9355403/deleting-duplicates-on-sorted-array/61974900#61974900
@@ -1068,20 +1079,16 @@ if (commander.helpMacros) {
         convert_directory_extract_ids(inputPath, options, convert_input_options);
         generate_redirects(convert_input_options, cirodown_json, outdir);
       }
-      let watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES});
-      watcher.on('change', function(path) {
-        convert_path_to_file(input_dir, path, options, convert_input_options);
-      }).on('add', function(path) {
-        convert_path_to_file(input_dir, path, options, convert_input_options);
-      });
+      const watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES})
+      const convert = (subpath) => convert_path_to_file(path.join(input_dir, path), options, convert_input_options)
+      watcher.on('change', convert).on('add', convert)
     } else {
       if (input_path_is_file) {
         if (publish) {
           cli_error('--publish must take a directory as input, not a file');
         }
         create_db(convert_input_options);
-        const inputPathParse = path.parse(inputPath);
-        output = convert_path_to_file(inputPathParse.dir, inputPathParse.base, options, convert_input_options);
+        output = convert_path_to_file(inputPath, options, convert_input_options);
       } else {
         let actual_input_dir;
         let publish_branch;

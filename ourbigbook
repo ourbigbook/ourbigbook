@@ -57,7 +57,8 @@ function assertApiStatus(status, data) {
   //console.log(require('child_process').execSync(`printf 'count '; sqlite3 /home/ciro/bak/git/ourbigbook/web/db.sqlite3 "select to_id_index,from_id,to_id,defined_at from Ref where from_id = '@barack-obama' and type = 0 order by to_id_index" | wc -l`).toString())
   //console.log(require('child_process').execSync(`sqlite3 /home/ciro/bak/git/ourbigbook/web/db.sqlite3 "select to_id_index,from_id,to_id,defined_at from Ref where from_id = '@barack-obama' and type = 0 order by to_id_index"`).toString())
   if (status !== 200) {
-    console.error(`error status: ${status}`);
+    console.error(`HTTP error status: ${status}`);
+    console.error(`Error messages from server:`);
     const errors = data.errors
     if (errors instanceof Array) {
       for (const error of data.errors) {
@@ -70,7 +71,7 @@ function assertApiStatus(status, data) {
         console.error(errors);
       }
     }
-    cli_error('conversion error')
+    cli_error()
   }
 }
 
@@ -160,19 +161,23 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, non_o
 // the ID in the previous file depending on conversion order. So we are moving it here instead at the end.
 // Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
 async function check_db(non_ourbigbook_options) {
-  const sequelize = non_ourbigbook_options.sequelize
-  if (sequelize && non_ourbigbook_options.cli.render) {
-    const error_messages = await ourbigbook_nodejs_webpack_safe.check_db(
-      sequelize, non_ourbigbook_options.ourbigbook_paths_converted)
-    if (error_messages.length > 0) {
-      cli_error('\n' + error_messages.join('\n'))
+  if (!non_ourbigbook_options.cli.skipCheckDb) {
+    const sequelize = non_ourbigbook_options.sequelize
+    if (sequelize && non_ourbigbook_options.cli.render) {
+      const error_messages = await ourbigbook_nodejs_webpack_safe.check_db(
+        sequelize, non_ourbigbook_options.ourbigbook_paths_converted, { perf: false })
+      if (error_messages.length > 0) {
+        cli_error('\n' + error_messages.join('\n'))
+      }
     }
   }
 }
 
 /** Report an error with the CLI usage and exit in error. */
 function cli_error(message) {
-  console.error(`error: ${message}`);
+  if (message !== undefined) {
+    console.error(`error: ${message}`);
+  }
   process.exit(1);
 }
 
@@ -1036,6 +1041,7 @@ cli_parser.option('-P, --publish-commit <commit-message>', 'https://docs.ourbigb
 cli_parser.option('--publish-target <target>', 'https://docs.ourbigbook.com#publish-target', PUBLISH_TARGETS['github-pages']);
 cli_parser.option('--format-source', 'https://docs.ourbigbook.com#format-source');
 cli_parser.option('-S, --split-headers', 'https://docs.ourbigbook.com#split-headers', undefined);
+cli_parser.option('--skip-check-db', 'Skip the database sanity check that is normally done after conversions https://docs.ourbigbook.com#skip-check-db', false);
 cli_parser.option('--stdout', 'also print output to stdout in addition to saving to a file https://docs.ourbigbook.com#stdout', false);
 cli_parser.option('--template <template>', 'https://docs.ourbigbook.com#template');
 cli_parser.option('-w, --watch', 'https://docs.ourbigbook.com#watch', false);
@@ -1045,6 +1051,7 @@ cli_parser.option('--web-force-render', "same as --force-render but for --web up
 cli_parser.option('--web-max-renders <n>', 'stop after <n> articles are rendered: https://docs.ourbigbook.com#web-max-renders', ourbigbook_nodejs.cliInt);
 cli_parser.option('--web-test', 'Convenient --web-* defaults local development: https://docs.ourbigbook.com#web-test', false);
 cli_parser.option('--web-id <id>', 'Upload only the selected ID. It must belong to a file being converted. https://docs.ourbigbook.com/#web-id');
+cli_parser.option('--web-ask-password', 'Ask the password in case it had some default https://docs.ourbigbook.com#web-ask-password');
 cli_parser.option('--web-password <password>', 'Set password from CLI. Really bad idea for non-test users due e.g. to Bash history: https://docs.ourbigbook.com#web-user');
 cli_parser.option('--web-url <url>', 'Set a custom sync URL for --web: https://docs.ourbigbook.com#web-url');
 cli_parser.option('--web-user <username>', 'Set username from CLI: https://docs.ourbigbook.com#web-user');
@@ -1486,7 +1493,7 @@ if (cli.helpMacros) {
       const host = url.host
       await create_db(ourbigbook_options, non_ourbigbook_options);
 
-      // Username
+      // Get username, password and attempt login before anything else.
       let username, webApi
       if (!cli.webDry) {
         if (cli.webUser) {
@@ -1527,7 +1534,7 @@ if (cli.helpMacros) {
           if (cli.webPassword) {
             password = cli.webPassword
           } else {
-            if (cli.webTest) {
+            if (cli.webTest && !cli.webAskPassword) {
               password = 'asdf'
             } else {
               ;[err, password] = await read({ prompt: 'Password: ', silent: true })
@@ -1576,6 +1583,8 @@ if (cli.helpMacros) {
           })
         }
       }
+
+      // Do a local conversion that splits mutiheader files into single header files for upload.
       ourbigbook_options.split_headers = true
       ourbigbook_options.render_include = false
       const titleRegex = new RegExp(`${ourbigbook.INSANE_HEADER_CHAR} (.*)`)
@@ -1755,6 +1764,7 @@ if (cli.helpMacros) {
       if (non_ourbigbook_options.had_error) {
         process.exit(1);
       }
+
       let header_tree = []
       if (input_path_is_file || cli.webId) {
         let toPush
@@ -1800,6 +1810,7 @@ if (cli.helpMacros) {
           if (t0 !== undefined) {
             msg += ` finished in ${t1 - t0} ms`
           }
+          console.error(msg);
         }
         let data, status, i = 0
         const webPathToSha = {}
@@ -1813,7 +1824,7 @@ if (cli.helpMacros) {
           i += articles.length
         } while (data.articles.length > 0)
         const idToArticleMeta = {}
-        const localArticles = await sequelizeWebArticle.findAll({ attributes: ['sha256', 'idid', 'inpath'] })
+        const localArticles = await sequelizeWebArticle.findAll({ attributes: ['sha256', 'title', 'idid', 'inpath'] })
         for (const article of localArticles) {
           idToArticleMeta[article.idid] = article
         }

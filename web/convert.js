@@ -30,12 +30,18 @@ async function convert({
   fakeUsernameDir,
   parentId,
   path,
+  perf,
   render,
   sequelize,
   splitHeaders,
   titleSource,
   transaction,
 }) {
+  let t0
+  if (perf) {
+    t0 = performance.now();
+    console.error('perf: convert.start');
+  }
   const db_provider = new SqlDbProvider(sequelize)
   const extra_returns = {};
   const source = modifyEditorInput(titleSource, bodySource).new
@@ -101,6 +107,9 @@ async function convert({
       extra_returns.errors.map(e => e.toString()))
     throw new ValidationError(errsNoDupes)
   }
+  if (perf) {
+    console.error(`perf: convert.finish: ${performance.now() - t0} ms`);
+  }
   return {
     db_provider,
     extra_returns,
@@ -120,6 +129,7 @@ async function convertArticle({
   enforceMaxArticles,
   forceNew,
   path,
+  perf,
   parentId,
   previousSiblingId,
   render,
@@ -127,6 +137,12 @@ async function convertArticle({
   titleSource,
   transaction,
 }) {
+  perf = true
+  let t0
+  if (perf) {
+    t0 = performance.now();
+    console.error('perf: convertArticle.start');
+  }
   let articles, extra_returns
   if (enforceMaxArticles === undefined) {
     enforceMaxArticles = true
@@ -153,11 +169,13 @@ async function convertArticle({
         // to show fine under a single page.
         fixedScopeRemoval: ourbigbook.AT_MENTION_CHAR.length,
         h_web_metadata: true,
+        perf,
         prefixNonIndexedIdsWithParentId: true,
       },
       forceNew,
       parentId,
       path,
+      perf,
       render,
       sequelize,
       titleSource,
@@ -464,7 +482,10 @@ async function convertArticle({
         ourbigbook_nodejs_webpack_safe.check_db(
           sequelize,
           [input_path],
-          transaction
+          {
+            perf,
+            transaction,
+          },
         ),
         sequelize.models.File.findOne({ where: { path: input_path }, transaction }),
       ])
@@ -684,6 +705,9 @@ async function convertArticle({
       articles = []
     }
   })
+  if (perf) {
+    console.error(`convertArticle finished in ${performance.now() - t0} ms`);
+  }
   return { articles, extra_returns }
 }
 

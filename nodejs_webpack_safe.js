@@ -726,15 +726,21 @@ async function update_database_after_convert({
 // so if you e.g. move an ID from one file to another, a common operation, then it would still see
 // the ID in the previous file depending on conversion order. So we are moving it here instead at the end.
 // Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
-async function check_db(sequelize, paths_converted, transaction) {
+async function check_db(sequelize, paths_converted, opts={}) {
   // * delete unused xrefs in different files to correctly have tags and incoming links in such cases
   //   https://github.com/ourbigbook/ourbigbook/issues/229
   //   These can happen due to:
   //   * directory based scopes
   //   * \x magic pluralization variants
   // * ensure that all \x targets exist
+  const { perf, transaction } = opts
+  let t0
+  if (perf) {
+    t0 = performance.now();
+    console.error('perf: check_db.start');
+  }
   const [new_refs, duplicate_rows, invalid_title_title_rows] = await Promise.all([
-    await sequelize.models.Ref.findAll({
+    sequelize.models.Ref.findAll({
       order: [
         ['defined_at', 'ASC'],
         ['defined_at_line', 'ASC'],
@@ -763,11 +769,14 @@ async function check_db(sequelize, paths_converted, transaction) {
       ],
       transaction,
     }),
-    await sequelize.models.Id.findDuplicates(
+    sequelize.models.Id.findDuplicates(
       paths_converted, transaction),
-    await sequelize.models.Id.findInvalidTitleTitle(
+    sequelize.models.Id.findInvalidTitleTitle(
       paths_converted, transaction),
   ])
+  if (perf) {
+    console.error(`perf: check_db.after_finds: ${performance.now() - t0} ms`);
+  }
   const error_messages = []
 
   // Check that each link has at least one hit for the available magic inflections if any.
@@ -889,6 +898,9 @@ async function check_db(sequelize, paths_converted, transaction) {
         `${source_location.path}:${source_location.line}:${source_location.column}: cannot \\x link from a title to a non-header element: https://docs.ourbigbook.com/x-within-title-restrictions`
       )
     }
+  }
+  if (perf) {
+    console.error(`perf: check_db.finish: ${performance.now() - t0} ms`);
   }
   return error_messages
 }

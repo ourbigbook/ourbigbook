@@ -149,7 +149,20 @@ class AstNode {
     const macro = context.macros[this.macro_name];
     let out;
     if (this.validation_error === undefined) {
-      out = macro.convert(this, context);
+      let output_format;
+      if (context.in_title_no_id) {
+        output_format = OUTPUT_FORMAT_ID;
+      } else {
+        output_format = context.options.output_format;
+      }
+      const convert_function = macro.convert_funcs[output_format];
+      if (convert_function === undefined) {
+        const message = `output format ${context.options.output_format} not defined for macro ${this.macro_name}`;
+        render_error(context, message, this.line, this.column);
+        out = error_message_in_output(message, context);
+      } else {
+        out = convert_function(this, context);
+      }
     } else {
       render_error(context, this.validation_error[0], this.validation_error[1], this.validation_error[2]);
       out = error_message_in_output(this.validation_error[0], context);
@@ -165,7 +178,7 @@ class AstNode {
         this.id !== undefined &&
         macro.toplevel_link
       ) {
-        out = `<div>${html_hide_hover_link(x_href(this, context))}${out}</div>`;
+        out = TOPLEVEL_CHILD_MODIFIER[context.options.output_format](this, context, out);
       }
     }
 
@@ -449,7 +462,7 @@ class Macro {
    *                 to this node. This is usually the case for nodes that are not visible in the final output,
    *                 otherwise that would confuse readers.
    */
-  constructor(name, positional_args, convert, options={}) {
+  constructor(name, positional_args, html_convert_func, options={}) {
     if (!('auto_parent' in options)) {
       // https://cirosantilli.com/cirodown#auto_parent
       options.auto_parent = undefined;
@@ -511,7 +524,9 @@ class Macro {
     }
     this.auto_parent = options.auto_parent;
     this.auto_parent_skip = options.auto_parent_skip;
-    this.convert = convert;
+    this.convert_funcs = {
+      html: html_convert_func
+    }
     this.id_prefix = options.id_prefix;
     this.options = options;
     this.remove_whitespace_children = options.remove_whitespace_children;
@@ -532,6 +547,10 @@ class Macro {
     })
     this.name_to_arg[Macro.ID_ARGUMENT_NAME] = this.named_args[Macro.ID_ARGUMENT_NAME];
     delete this.options.named_args;
+  }
+
+  add_convert_function(output_format, my_function) {
+    this.convert_funcs[output_format] = my_function;
   }
 
   check_name(name) {
@@ -570,7 +589,7 @@ Macro.LIST_MACRO_NAME = 'L';
 Macro.MATH_MACRO_NAME = 'm';
 Macro.PARAGRAPH_MACRO_NAME = 'P';
 Macro.PLAINTEXT_MACRO_NAME = 'plaintext';
-Macro.TATBLE_MACRO_NAME = 'Table';
+Macro.TABLE_MACRO_NAME = 'Table';
 Macro.TD_MACRO_NAME = 'Td';
 Macro.TH_MACRO_NAME = 'Th';
 Macro.TR_MACRO_NAME = 'Tr';
@@ -1399,7 +1418,7 @@ function char_is_alphanumeric(c) {
 
 // Valid macro name / argument characters.
 // Compatible with JavaScript-like function names / variables.
-function char_is_identifier (c) {
+function char_is_identifier(c) {
   return char_is_alphanumeric(c) || c === '_';
 };
 
@@ -1493,6 +1512,7 @@ function convert(
   if (!('id_provider' in options)) { options.id_provider = undefined; }
   if (!('include_path_set' in options)) { options.include_path_set = new Set(); }
   if (!('input_path' in options)) { options.input_path = undefined; }
+  if (!('output_format' in options)) { options.output_format = OUTPUT_FORMAT_HTML; }
   if (!('render' in options)) { options.render = true; }
   if (!('start_line' in options)) { options.start_line = 1; }
   if (!('show_ast' in options)) { options.show_ast = false; }
@@ -1919,12 +1939,24 @@ function html_self_link(ast, context) {
   return ` ${x_href_attr(ast, context)}`;
 }
 
+function link_get_href_content(ast, context) {
+  const href = convert_arg(ast.args.href, context)
+  let content = convert_arg(ast.args.content, context);
+  if (content === '') {
+    content = href;
+  }
+  return [href, content];
+}
+
 /**
  * @return {Object} dict of macro name to macro
  */
 function macro_list_to_macros() {
   const macros = {};
   for (const macro of macro_list()) {
+    for (const format in MACRO_CONVERT_FUNCIONS) {
+      macro.add_convert_function(format, MACRO_CONVERT_FUNCIONS[format][macro.name]);
+    }
     macros[macro.name] = macro;
   }
   return macros;
@@ -2971,6 +3003,12 @@ function parse_error(state, message, line, column) {
     message, line, column));
 }
 
+function id_convert_simple_elem() {
+  return function(ast, context) {
+    return convert_arg(ast.args.content, context);
+  };
+}
+
 function protocol_is_known(src) {
   for (const known_url_protocol of KNOWN_URL_PROTOCOLS) {
     if (src.startsWith(known_url_protocol)) {
@@ -3020,6 +3058,12 @@ function title_to_id(title) {
 function toc_id(target_id_ast, context) {
   const [href_path, fragment] = x_href_parts(target_id_ast, context);
   return Macro.TOC_PREFIX + fragment;
+}
+
+function unconvertible() {
+  return function(ast, context) {
+    throw new Error(`programmer error, macro "${ast.macro_name}" must never render`);
+  };
 }
 
 // Do some error checking. If no errors are found, convert normally. Save output on out.
@@ -3093,6 +3137,56 @@ function validate_ast(ast, context) {
   }
 }
 exports.validate_ast = validate_ast;
+
+function x_get_href_content(ast, context) {
+  const target_id = convert_arg_noescape(ast.args.href, context);
+  const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);
+  let href;
+  if (target_id_ast === undefined) {
+    if (context.in_title_no_id) {
+      href = '';
+    } else {
+      let message = `cross reference to unknown id: "${target_id}"`;
+      render_error(context, message, ast.args.href.line, ast.args.href.column);
+      return error_message_in_output(message, context);
+    }
+  } else {
+    href = x_href_attr(target_id_ast, context);
+  }
+  const content_arg = ast.args.content;
+  let content;
+  if (content_arg === undefined) {
+    // No explicit content given, deduce content from target ID title.
+    if (context.in_title_no_id) {
+      // Inside a title that does not have an ID: not allowed.
+      context.extra_returns.x_no_content_in_title_no_id = true;
+      context.extra_returns.x_no_content_in_title_no_id_line = ast.line;
+      context.extra_returns.x_no_content_in_title_no_id_column = ast.column;
+      context.extra_returns.x_no_content_in_title_no_id_target = target_id;
+      return '';
+    }
+    let x_text_options = {
+      caption_prefix_span: false,
+      capitalize: ast.validation_output.c.boolean,
+      from_x: true,
+      quote: true,
+      pluralize: ast.validation_output.p.given ? ast.validation_output.p.boolean : undefined,
+    };
+    if (ast.validation_output.full.given) {
+      x_text_options.style_full = ast.validation_output.full.boolean;
+    }
+    content = x_text(target_id_ast, context, x_text_options);
+    if (content === ``) {
+      let message = `empty cross reference body: "${target_id}"`;
+      render_error(context, message, ast.line, ast.column);
+      return error_message_in_output(message, context);
+    }
+  } else {
+    // Explicit content given, just use it then.
+    content = convert_arg(content_arg, context);
+  }
+  return [href, content];
+}
 
 /**
   * @param {AstNode} target_id_ast
@@ -3287,6 +3381,8 @@ const INSANE_TD_START = '| ';
 const INSANE_TH_START = '|| ';
 const INSANE_LIST_INDENT = '  ';
 const INSANE_HEADER_CHAR = '=';
+const OUTPUT_FORMAT_HTML = 'html';
+const OUTPUT_FORMAT_ID = 'id';
 const TOC_ARROW_HTML = '<div class="arrow"><div></div></div>';
 const TOC_HAS_CHILD_CLASS = 'has-child';
 const MAGIC_CHAR_ARGS = {
@@ -3509,13 +3605,8 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      let content_arg = ast.args.content;
-      let href = convert_arg(ast.args.href, context)
-      let content = convert_arg(ast.args.content, context);
-      if (content === '') {
-        content = href;
-      }
-      let attrs = html_convert_attrs_id(ast, context);
+      const [href, content] = link_get_href_content(ast, context);
+      const attrs = html_convert_attrs_id(ast, context);
       return `<a${html_attr('href',  href)}${attrs}>${content}</a>`;
     },
     {
@@ -3588,9 +3679,7 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    function(ast, context) {
-      throw new Error('programmer error, include must never render');
-    },
+    unconvertible(),
     {
       macro_counts_ignore: function(ast) { return true; }
     }
@@ -3719,9 +3808,7 @@ const DEFAULT_MACRO_LIST = [
         mandatory: true,
       }),
     ],
-    function(ast, context) {
-      throw new Error('programmer error, include must never render');
-    },
+    unconvertible(),
     {
       macro_counts_ignore: function(ast) { return true; }
     }
@@ -3987,7 +4074,7 @@ const DEFAULT_MACRO_LIST = [
     ),
   ),
   new Macro(
-    Macro.TATBLE_MACRO_NAME,
+    Macro.TABLE_MACRO_NAME,
     [
       new MacroArgument({
         name: 'content',
@@ -4242,7 +4329,7 @@ const DEFAULT_MACRO_LIST = [
       return res;
     },
     {
-      auto_parent: Macro.TATBLE_MACRO_NAME,
+      auto_parent: Macro.TABLE_MACRO_NAME,
     }
   ),
   new Macro(
@@ -4270,52 +4357,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      const target_id = convert_arg_noescape(ast.args.href, context);
-      const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);
-      let href;
-      if (target_id_ast === undefined) {
-        if (context.in_title_no_id) {
-          href = '';
-        } else {
-          let message = `cross reference to unknown id: "${target_id}"`;
-          render_error(context, message, ast.args.href.line, ast.args.href.column);
-          return error_message_in_output(message, context);
-        }
-      } else {
-        href = x_href_attr(target_id_ast, context);
-      }
-      const content_arg = ast.args.content;
-      let content;
-      if (content_arg === undefined) {
-        // No explicit content given, deduce content from target ID title.
-        if (context.in_title_no_id) {
-          // Inside a title that does not have an ID: not allowed.
-          context.extra_returns.x_no_content_in_title_no_id = true;
-          context.extra_returns.x_no_content_in_title_no_id_line = ast.line;
-          context.extra_returns.x_no_content_in_title_no_id_column = ast.column;
-          context.extra_returns.x_no_content_in_title_no_id_target = target_id;
-          return '';
-        }
-        let x_text_options = {
-          caption_prefix_span: false,
-          capitalize: ast.validation_output.c.boolean,
-          from_x: true,
-          quote: true,
-          pluralize: ast.validation_output.p.given ? ast.validation_output.p.boolean : undefined,
-        };
-        if (ast.validation_output.full.given) {
-          x_text_options.style_full = ast.validation_output.full.boolean;
-        }
-        content = x_text(target_id_ast, context, x_text_options);
-        if (content === ``) {
-          let message = `empty cross reference body: "${target_id}"`;
-          render_error(context, message, ast.line, ast.column);
-          return error_message_in_output(message, context);
-        }
-      } else {
-        // Explicit content given, just use it then.
-        content = convert_arg(content_arg, context);
-      }
+      const [href, content] = x_get_href_content(ast, context);
       const attrs = html_convert_attrs_id(ast, context);
       return `<a${href}${attrs}>${content}</a>`;
     },
@@ -4425,3 +4467,51 @@ const DEFAULT_MACRO_LIST = [
     ),
   ),
 ];
+const MACRO_CONVERT_FUNCIONS = {
+  [OUTPUT_FORMAT_ID]: {
+    [Macro.LINK_MACRO_NAME]: function(ast, context) {
+      const [href, content] = link_get_href_content(ast, context);
+      return content;
+    },
+    'b': id_convert_simple_elem(),
+    [Macro.CODE_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
+    [Macro.CODE_MACRO_NAME]: id_convert_simple_elem(),
+    [Macro.CIRODOWN_EXAMPLE_MACRO_NAME]: unconvertible(),
+    'Comment': function(ast, context) { return ''; },
+    'comment': function(ast, context) { return ''; },
+    [Macro.HEADER_MACRO_NAME]: id_convert_simple_elem(),
+    [Macro.INCLUDE_MACRO_NAME]: unconvertible(),
+    [Macro.LIST_MACRO_NAME]: id_convert_simple_elem(),
+    [Macro.MATH_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
+    [Macro.MATH_MACRO_NAME]: id_convert_simple_elem(),
+    'i': id_convert_simple_elem(),
+    'Image': function(ast, context) { return ''; },
+    'image': function(ast, context) { return ''; },
+    'JsCanvasDemo': id_convert_simple_elem(),
+    'Ol': id_convert_simple_elem(),
+    [Macro.PARAGRAPH_MACRO_NAME]: id_convert_simple_elem(),
+    [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) {return ast.text},
+    'Passthrough': id_convert_simple_elem(),
+    'Q': id_convert_simple_elem(),
+    [Macro.TABLE_MACRO_NAME]: id_convert_simple_elem(),
+    [Macro.TD_MACRO_NAME]: id_convert_simple_elem(),
+    [Macro.TOC_MACRO_NAME]: function(ast, context) { return '' },
+    [Macro.TOPLEVEL_MACRO_NAME]: id_convert_simple_elem(),
+    [Macro.TH_MACRO_NAME]: id_convert_simple_elem(),
+    [Macro.TR_MACRO_NAME]: id_convert_simple_elem(),
+    'Ul': id_convert_simple_elem(),
+    'x': function(ast, context) {
+      const [href, content] = x_get_href_content(ast, context);
+      return content;
+    },
+    'Video': macro_image_video_block_convert_function,
+  },
+};
+const TOPLEVEL_CHILD_MODIFIER = {
+  [OUTPUT_FORMAT_HTML]: function(ast, context, out) {
+    return `<div>${html_hide_hover_link(x_href(ast, context))}${out}</div>`;
+  },
+  [OUTPUT_FORMAT_ID]: function(ast, context, out) {
+    return out;
+  },
+}

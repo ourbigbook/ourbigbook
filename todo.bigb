@@ -3,6 +3,25 @@
 
 == Issues
 
+=== Add sibling/add child buttons next to toc entries of articles owned by the current user
+{tag=ToC}
+{tag=Web}
+
+=== Add sibling/add child buttons next to self headers and toc
+{synonym}
+
+Self headers done. ToC missing.
+
+=== Progress spinner after submit
+{tag=UI}
+{tag=Web}
+
+=== Progress spinner after submit
+{tag=UI}
+{tag=Web}
+
+<Article create and update slow on web> was an extreme case of slowness, but it taught us that we do want some kind of immediate feedback as soon as users click a form submission, and one feedback blocks further action such as typing.
+
 === Computer sticker
 {tag=Publicity}
 
@@ -86,6 +105,23 @@ Limiting the ToC to 1k articles on server side leads to 0.5s. Maybe that's the f
 
 Maybe we can use some of the techniques from: https://reactjs.org/docs/optimizing-performance.html#virtualize-long-lists[] to improve things.
 
+=== Inject React header metadata on each header separately
+{tag=Web}
+
+This is closely related to: <Reach the same performance as static website with dynamic tree>. Performance considerations should guide if we actually want this or not.
+
+No more need for:
+``
+for (const h of elem.querySelectorAll('.h')) {
+``
+on `Article.tsx` now that we have separate headers, we can just inject it one by one.
+
+Bibliography:
+
+* https://stackoverflow.com/questions/44643424/how-to-parse-html-to-react-component
+* https://stackoverflow.com/questions/36104302/how-do-i-convert-a-string-to-jsx
+* https://stackoverflow.com/questions/71224517/is-it-possible-to-inject-a-next-js-component-into-an-existing-application-html
+
 === Include should work transparently with README in subdirectory
 {tag=Include}
 {tag=Web}
@@ -148,38 +184,12 @@ child/subdir.bigb
 
 but that is fine, it is saner if we enforce scopes to match the tree article tree hierarchy.
 
-=== Prevent full page reload on links using our existing link capture
-{tag=Web}
-
-Would be a possibly good solution now to: https://github.com/cirosantilli/ourbigbook/issues/274 now that we already have link click capturing necessarily.
-
-=== Inject React header metadata on each header separately
-{tag=Web}
-
-No more need for:
-``
-for (const h of elem.querySelectorAll('.h')) {
-``
-on `Article.tsx` now that we have separate headers, we can just inject it one by one.
-
-Bibliography:
-
-* https://stackoverflow.com/questions/44643424/how-to-parse-html-to-react-component
-* https://stackoverflow.com/questions/36104302/how-do-i-convert-a-string-to-jsx
-* https://stackoverflow.com/questions/71224517/is-it-possible-to-inject-a-next-js-component-into-an-existing-application-html
-
 === Statically render links to issues and topic under each header for better SEO
 {tag=Web}
 
 The links don't show without JavaScript, this can be seen by disabling Js.
 
 The counts can be dynamic loaded, but the links we really want to do at compile time... any way?
-
-=== Add sibling/add child buttons next to toc entries of articles owned by the current user
-{tag=Web}
-
-=== Add sibling/add child buttons next to self headers and toc
-{tag=Web}
 
 === Allow creating new pages under scope on web
 {tag=Scope}
@@ -323,6 +333,11 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== Prevent full page reload on links using our existing link capture
+{tag=Web}
+
+Would be a possibly good solution now to: https://github.com/cirosantilli/ourbigbook/issues/274 now that we already have link click capturing necessarily.
 
 === Second meta line showing up on index page even if empty
 {tag=Web}
@@ -846,7 +861,9 @@ Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
 
 == Tag
 
-=== CSS
+=== UI
+
+==== CSS
 
 === Web
 

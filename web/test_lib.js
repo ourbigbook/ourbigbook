@@ -147,6 +147,8 @@ const articleData = [
 Link to parent: <test child>
 
 Link to child: <test child 1 1>
+
+Link to external: http://example.com
 ` }],
       ['Test child 2', []],
     ]],

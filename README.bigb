@@ -8207,12 +8207,9 @@ Here we use PostgreSQL instead of SQLite with the prebuilt static frontend.
 
 For when you really need to debug some deployment stuff locally.
 
-Before the first run the <OurBigBook Web PostgreSQL setup>:
-``
-web/bin/pg-setup
-``
+Before the first run, do the <OurBigBook Web PostgreSQL setup>.
 
-Run after every modification
+Then, after every modification
 ``
 npm run build-prod
 npm run start-prod

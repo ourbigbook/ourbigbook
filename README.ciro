@@ -192,6 +192,61 @@ Those that have a \c[title] but no \c[id], get an auto-generated ID from the tit
 
 For macros that do have an ID, you can write a cross reference to it:
 
+\h[3][x child argument]
+
+Setting \c[child=1] on a cross reference to a header as in:
+
+\C[[
+\xref[my-header]{child=1}
+]]
+
+has the following effects:
+
+\l[add the current header to the list of extra parents of the child]
+
+This allows a section to have multiple parents, e.g. to include it into multiple categories.
+
+For example:
+
+\C[[[
+\h[1][Animals]
+
+\h[2][Mammals]
+
+\h[3][Dog]
+
+\h[3][Cat]
+
+\h[2][Cute animals]
+
+Cute animals:
+
+\l[\xref[dog]{child=1}]
+\l[\xref[cat]]
+]]]
+
+would render something like:
+
+\C[[[
+h1 Animals
+
+h2 Mammals
+
+h3 Dog (parent section: Mammals)
+(other parent sections: Cute animals)
+
+h3 Cat (parent section: Mammals)
+
+\h[2][Cute animals]
+
+\l[\xref[dog]]
+\l[\xref[cat]]
+]]]
+
+so note how "Dog" has a list of extra parents including "Cute animals", but Cat does not, due to the \c[child=1].
+
+This property does not affect how the \x[table-of-contents][\c[\\toc]] is rendered. We could insert elements sections there multiple times, but it has the downside that browser Ctrl + F searches would hit the same thing multiple times on the table of contents, which might make finding things harder.
+
 \C[[
 \h[2][My title]{id=my-id}
 
@@ -1424,7 +1479,6 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[multiple newlines blow up (5 or six), create test and decide best behaviour]
 \l[LaTeX output]
 \l[autolinks http]
-\l[multiple parents via xref child=1. Shows on children, but not on toc]
 \l[paragraphs rendered as divs, can show anything inside e.g. lists, code blocks]
 
 \h[2][Related projects]

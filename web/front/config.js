@@ -36,12 +36,14 @@ module.exports = {
     body_only: true,
     html_x_extension: false,
     forbid_include: '\\Include is not allowed on OurBigBook Web, the article tree can be manipulated directly via the UI',
+    renderH2: true,
     path_sep: '/',
     ourbigbook_json: {
       h: {
         numbered: false,
       },
     },
+    render_metadata: false,
     x_leading_at_to_web: false,
     x_remove_leading_at: true,
   },

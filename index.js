@@ -3860,8 +3860,7 @@ function html_render_simple_elem(elem_name, options={}) {
     for (const key in options.attrs) {
       extra_attrs_string += html_attr(key, options.attrs[key]);
     }
-    let content_ast = ast.args.content;
-    let content = render_arg(content_ast, context);
+    let content = render_arg(ast.args.content, context);
 
     // testData
     let test_data_arg = ast.args[Macro.TEST_DATA_ARGUMENT_NAME]
@@ -3975,8 +3974,9 @@ function html_img({
   if (relpath_prefix !== undefined) {
     src = path.join(relpath_prefix, src)
   }
+  const href = ast.validation_output.link.given ? render_arg(ast.args.link, context) : src
   return {
-    html: `<img${html_attr('src', html_escape_attr(src))}${html_attr('loading', 'lazy')}${rendered_attrs}${alt}${border_attr}>${error}\n`,
+    html: `<a${html_attr('href', href)}><img${html_attr('src', html_escape_attr(src))}${html_attr('loading', 'lazy')}${rendered_attrs}${alt}${border_attr}></a>${error}`,
     src,
   };
 }
@@ -7556,7 +7556,8 @@ const TokenType = make_enum([
   'POSITIONAL_ARGUMENT_START',
 ]);
 const DEFAULT_MEDIA_HEIGHT = 315;
-const IMAGE_INLINE_BLOCK_COMMON_NAMED_ARGUMENTS = [
+// Arguments for \Image, \image and \Video
+const IMAGE_VIDEO_INLINE_BLOCK_NAMED_ARGUMENTS = [
   new MacroArgument({
     name: 'border',
     boolean: true,
@@ -7578,7 +7579,15 @@ const IMAGE_INLINE_BLOCK_COMMON_NAMED_ARGUMENTS = [
     positive_nonzero_integer: true,
   }),
 ]
-const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = IMAGE_INLINE_BLOCK_COMMON_NAMED_ARGUMENTS.concat([
+// Arguments for \Image and \image
+const IMAGE_INLINE_BLOCK_NAMED_ARGUMENTS = [
+  new MacroArgument({
+    name: 'link',
+    elide_link_only: true,
+  }),
+]
+// Arguments for \Image and \Video
+const IMAGE_VIDEO_BLOCK_NAMED_ARGUMENTS = IMAGE_VIDEO_INLINE_BLOCK_NAMED_ARGUMENTS.concat([
   new MacroArgument({
     name: Macro.TITLE_ARGUMENT_NAME,
     count_words: true,
@@ -8072,9 +8081,9 @@ const DEFAULT_MACRO_LIST = [
             src,
             relpath_prefix,
           }))
-          return `<a${html_attr('href', src)}>${img_html}</a>\n`;
+          return img_html
         },
-        named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS,
+        named_args: IMAGE_VIDEO_BLOCK_NAMED_ARGUMENTS.concat(IMAGE_INLINE_BLOCK_NAMED_ARGUMENTS),
         source_func: function (ast, context, src, media_provider_type, is_url) {
           if ('source' in ast.args) {
             return render_arg(ast.args.source, context);
@@ -8101,7 +8110,7 @@ const DEFAULT_MACRO_LIST = [
     'image',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
     {
-      named_args: IMAGE_INLINE_BLOCK_COMMON_NAMED_ARGUMENTS,
+      named_args: IMAGE_VIDEO_INLINE_BLOCK_NAMED_ARGUMENTS.concat(IMAGE_INLINE_BLOCK_NAMED_ARGUMENTS),
       phrasing: true,
     }
   ),
@@ -8443,7 +8452,7 @@ const DEFAULT_MACRO_LIST = [
             return `<video${html_attr('src', src + start)}${rendered_attrs} preload="none" controls${alt}></video>${error}\n`;
           }
         },
-        named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS.concat(
+        named_args: IMAGE_VIDEO_BLOCK_NAMED_ARGUMENTS.concat(
           new MacroArgument({
             name: 'start',
             positive_nonzero_integer: true,
@@ -8996,11 +9005,11 @@ const OUTPUT_FORMATS_LIST = [
           let rendered_attrs = html_render_attrs_id(ast, context, ['height', 'width']);
           let { error_message, media_provider_type, src } = macro_image_video_resolve_params(ast, context);
           const external = ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined
-          let { html: ret } = html_img({ alt, ast, context, external, media_provider_type, rendered_attrs, src })
+          let { html: imgHtml } = html_img({ alt, ast, context, external, media_provider_type, rendered_attrs, src })
           if (error_message) {
-            ret += error_message_in_output(error_message, context)
+            imgHtml += error_message_in_output(error_message, context)
           }
-          return ret
+          return imgHtml
         },
         'JsCanvasDemo': function(ast, context) {
           return html_code(

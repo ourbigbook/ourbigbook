@@ -2823,13 +2823,6 @@ Adds a border around the image. This can be useful to make it clearer where imag
 {title=Logo of the OurBigBook Project with a border around it.}
 ]]
 
-= Image `external` argument
-{parent=Image argument}
-{tag=Named argument}
-{tag=Boolean argument}
-
-Analogous to the <\a external argument> when checking if the <image src argument> exists or not.
-
 = Image `description` argument
 {parent=Image argument}
 {tag=Named argument}
@@ -2868,6 +2861,31 @@ Stuff after the image description.
 ]]
 
 We recommend adding a period or other punctuation to the end of every description.
+
+= Image `external` argument
+{parent=Image argument}
+{tag=Named argument}
+{tag=Boolean argument}
+
+Analogous to the <\a external argument> when checking if the <image src argument> exists or not.
+
+= Image `link` argument
+{parent=Image argument}
+{tag=Named argument}
+
+If given, make clicking an image go to the specified URL rather than the image's URL as is the default.
+
+By default, clicking on a rendered image links to the URL of the image itself. E.g. clicking:
+\OurBigBookExample[[
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+]]
+would open \a[Tank_man_standing_in_front_of_some_tanks.jpg] as produces `img` surrounded by something like `a href="Tank_man_standing_in_front_of_some_tanks.jpg"`.
+
+If insetad we want the image to point to a custom URL, e.g. https://ourbigbook.com[] we could instead write:
+\OurBigBookExample[[
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{link=https://ourbigbook.com}
+]]
+and now clicking the image leads to https://ourbigbook.com[] instead.
 
 = Image `source` argument
 {parent=Image argument}
@@ -3687,7 +3705,7 @@ Clicking on the link from a <header> up to the table of contents also automatica
 
 = Video
 {parent=Macro}
-{title2=`\Video` and `\video`}
+{title2=`\Video`}
 
 Very analogous to <images>, only differences will be documented here.
 
@@ -7457,6 +7475,7 @@ For example:
   * a section of ND content without the rest of the work?
   * ND content but with extra article interlinking added?
   * ND content with IDs (such as HTML id= elements) but where IDs have been 
+  * a public modification request to an ND content?
 
 Unfortunately, NC is extremely popular amongst academics, presumably due to professors hopes that one day their notes may become a book which will sell for money, or maybe simply for idealist reasons, and it would be too hard to fight against such licenses at this point in time.
 

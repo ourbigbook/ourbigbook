@@ -1,6 +1,7 @@
 import React from 'react'
 
 import Maybe from 'front/Maybe'
+import CustomLink from 'front/CustomLink'
 
 export type PaginationPropsUrlFunc = (number) => string;
 
@@ -25,7 +26,7 @@ function PaginationItem(props) {
   }
   return <>
     <span className={`page-item${className}`} {...newProps}>
-      <a href={props.href} className="page-link">{props.children}</a>
+      <CustomLink href={props.href} className="page-link">{props.children}</CustomLink>
     </span>
     {' '}
   </>

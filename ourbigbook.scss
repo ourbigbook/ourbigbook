@@ -11,7 +11,6 @@
 @font-face { font-family: fa-solid-900; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2); }
 
 $caption-margin-bottom: 5px;
-$header-font-size: 24px;
 $p-margin-vert: 14px;
 $max-mobile-width: 450px;
 $toplevel-horizontal-padding-mobile: 5px;
@@ -82,6 +81,9 @@ word-wrap: break-word;
 a {
   &:visited {
     color: $a-color-visited;
+  }
+  &.toc {
+    color: $a-color;
   }
 }
 
@@ -157,28 +159,30 @@ figure {
 }
 
 div.h {
-  font-size: $header-font-size;
-  font-weight: bold;
-  margin: 20px 0 8px;
-  width: 100%;
-  box-sizing: border-box;
-  h1, h2, h3, h4, h5, h6 {
-    > a:first-child {
-      color: $color;
-      &:visited {
-        color: $color;
-      }
-    }
-    display: inline;
-    margin: 0;
-    // To make `word-wrap: break-word;` work, otherwise it does not take effect.
-    overflow-wrap: break-word;
-  }
-  h1 {
-    font-size: $header-font-size * 1.5;
-  }
-  h2, h3, h4, h5, h6 {
+  div.notnav {
+    display: inline-block;
     font-size: $header-font-size;
+    font-weight: bold;
+    width: 100%;
+    box-sizing: border-box;
+    h1, h2, h3, h4, h5, h6 {
+      > a:first-child {
+        color: $color;
+        &:visited {
+          color: $color;
+        }
+      }
+      display: inline;
+      margin: 0;
+      // To make `word-wrap: break-word;` work, otherwise it does not take effect.
+      overflow-wrap: break-word;
+    }
+    h1 {
+      font-size: $header-font-size * 1.5;
+    }
+    h2, h3, h4, h5, h6 {
+      font-size: $header-font-size;
+    }
   }
   .hover-meta {
     @include hidden;
@@ -188,9 +192,31 @@ div.h {
       @include visible;
     }
   }
+  &.top {
+    div.notnav {
+      margin-bottom: 10px;
+    }
+  }
   // Also show header metadata when the header is selected as the current #fragment.
   &:target .hover-meta {
     @include visible;
+  }
+  .web {
+    display: inline;
+    &.top {
+      font-size: 18px;
+    }
+    &:not(.top) {
+      a,btn, button {
+        vertical-align: text-bottom;
+      }
+    }
+    .issues {
+      color: $a-color;
+      &:visited {
+        color: $a-color;
+      }
+    }
   }
 }
 nav.h-nav {

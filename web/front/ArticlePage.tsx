@@ -8,8 +8,7 @@ import UserLinkWithImage from 'front/UserLinkWithImage'
 import FollowUserButton from 'front/FollowUserButton'
 import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import Article from 'front/Article'
-import ArticleInfo from 'front/ArticleInfo'
-import { AppContext, DiscussionAbout, TopicIcon, useEEdit, UserIcon } from 'front'
+import { AppContext, DiscussionAbout, NewArticleIcon, SeeIcon, TimeIcon, TopicIcon, useEEdit, UserIcon } from 'front'
 import { webApi } from 'front/api'
 import { cant } from 'front/cant'
 import fetcher from 'front/fetcher'
@@ -21,10 +20,11 @@ import { UserType } from 'front/types/UserType'
 
 export interface ArticlePageProps {
   article: ArticleType & IssueType;
+  articlesInSamePage: ArticleType[];
   comments?: CommentType[];
   commentsCount?: number;
   issueArticle?: ArticleType;
-  issuesCount?: number;
+  issuesCount: number;
   latestIssues?: IssueType[];
   loggedInUser?: UserType;
   sameArticleByLoggedInUser?: string;
@@ -35,6 +35,7 @@ export interface ArticlePageProps {
 const ArticlePageHoc = (isIssue=false) => {
   return ({
     article,
+    articlesInSamePage,
     comments,
     commentsCount,
     issueArticle,
@@ -54,56 +55,64 @@ const ArticlePageHoc = (isIssue=false) => {
       // https://github.com/cirosantilli/ourbigbook/issues/250
       setTitle(`${isIssue ? article.titleSource : article.file.titleSource} by ${displayAndUsernameText(author)}`)
     )
+
     const showOthers = topicArticleCount !== undefined && topicArticleCount > 1
     const showCreateMyOwn = !loggedInUser || author.username !== loggedInUser.username
-    const canEdit = loggedInUser && (isIssue ? !cant.editIssue(loggedInUser, article) : loggedInUser.username === article.author.username)
+    const canEdit = isIssue ? !cant.editIssue(loggedInUser, article) : !cant.editArticle(loggedInUser, article)
+    const handleDelete = async () => {
+      if (!loggedInUser) return;
+      const result = window.confirm("Do you really want to delete this article?");
+      if (!result) return;
+      await webApi.articleDelete(article.slug);
+      Router.push(`/`);
+    };
     useEEdit(canEdit, article.slug)
     return (
       <>
         <div className="article-page">
           <div className="content-not-ourbigbook article-meta">
-            {isIssue && <DiscussionAbout article={issueArticle} issue={article} />}
+            {isIssue &&
+              <>
+                <DiscussionAbout article={issueArticle} issue={article} />
+                <div className="see-all">
+                  <CustomLink href={routes.issues(issueArticle.slug)}><SeeIcon /> See all ({issuesCount})</CustomLink>
+                  {' '}
+                  <CustomLink href={routes.issueNew(issueArticle.slug)}><NewArticleIcon /> Create new</CustomLink>
+                </div>
+              </>
+            }
             <div className="article-info">
-              <span className="mobile-hide"><UserIcon /> Author: </span>
-              <UserLinkWithImage user={author} showUsernameMobile={false} />
+              <UserLinkWithImage user={author} showUsername={true} showUsernameMobile={false} />
               {' '}
               <FollowUserButton {...{ user: author, loggedInUser, showUsername: false }} />
-            </div>
-            {!isIssue &&
-              <div className="article-info article-info-2">
-                  {showOthers &&
-                    <CustomLink
-                      href={routes.topic(article.topicId, { sort: 'score' })}
-                    >
-                      <TopicIcon /> {topicArticleCount - 1}<span className="mobile-hide"> article{
-                        topicArticleCount - 1 > 1 ? 's' : ''}</span> by others<span className="mobile-hide"> about "<span
-                        className="ourbigbook-title" dangerouslySetInnerHTML={{ __html: article.titleRender }} />"</span>
-                    </CustomLink>
-                  }
-                  {showOthers && showCreateMyOwn && <>{' '}</> }
+              {' '}
+              {!isIssue &&
+                <span className="by-others">
                   {(showCreateMyOwn) &&
                     <>
+                      {' '}
                       {sameArticleByLoggedInUser === undefined
                         ? <CustomLink
                             href={routes.articleNewFrom(article.slug)}
                           >
-                            <i className="ion-edit" /> Create my own version
+                            <NewArticleIcon /> Create my own version
                           </CustomLink>
                         : <CustomLink
                             href={routes.article(sameArticleByLoggedInUser)}
                           >
-                            <i className="ion-eye" /> View mine
+                            <SeeIcon /> View mine
                           </CustomLink>
                       }
                     </>
                   }
-              </div>
-            }
-            <ArticleInfo {...{ article, isIssue, issueArticle, loggedInUser }}/>
+                </span>
+              }
+            </div>
           </div>
           <div className="container page">
             <Article {...{
               article,
+              articlesInSamePage,
               comments,
               commentsCount,
               issueArticle,

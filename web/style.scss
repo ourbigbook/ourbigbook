@@ -44,16 +44,16 @@ overflow: auto;
 
 button, a.btn {
   $button-fg-color: black;
-  border: 1px solid $button-fg-color;
   border-radius: 3px;
+  border: 1px solid $button-fg-color;
   cursor: pointer;
   display: inline-block;
   font-size: 15px;
   font-weight: bold;
-  line-height: 28px;
+  line-height: 24px;
+  margin: 0;
   padding: 2px 5px;
   text-decoration: none;
-  margin: 0;
   &:not(.disabled) {
     &, &:hover.active {
       background-color: rgb(239, 239, 239);
@@ -164,23 +164,23 @@ div.article-page {
     div.article-info {
       margin-bottom: 10px;
       .username {
-        font-size: 1.4em;
+        font-size: 1.2em;
         img.profile-thumb {
           $size: 1.5em;
           height: $size;
           width: $size;
         }
       }
+      .by-others {
+        font-weight: bold;
+        i {
+          font-size: 1.5em;
+        }
+      }
     }
     .see-all {
       font-size: 1.3em;
       margin-bottom: 1em;
-    }
-    div.article-info-2 {
-      font-weight: bold;
-      i {
-        font-size: 1.5em;
-      }
     }
     div.article-info-3 {
       margin-bottom: 10px;
@@ -226,7 +226,7 @@ div.editor-page {
 }
 
 div.tab-list {
-  margin: 20px;
+  margin: 10px 0;
   overflow: hidden;
   a.tab-item {
     display: inline-block;
@@ -374,9 +374,6 @@ span.shortcut {
 }
 
 .profile-page {
-  h1 {
-    margin-bottom: 0.2em;
-  }
   div.user-actions {
     margin-bottom: 1em;
   }
@@ -425,13 +422,18 @@ footer, nav.navbar {
   color: $background-color;
 }
 
+h1 {
+  margin-top: 0;
+  margin-bottom: 0.2em;
+}
+
 nav.navbar {
   $font-size: 24px;
   /* https://stackoverflow.com/questions/5078239/how-do-i-remove-the-space-between-inline-block-elements */
   display: flex;
   flex: 0 1 auto;
   height: $font-size * 1.2;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
   .navbar-list {
     display: flex;
     margin-left: auto;

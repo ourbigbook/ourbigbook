@@ -2,7 +2,6 @@ import { useRouter } from 'next/router'
 import React from 'react'
 
 import CustomLink from 'front/CustomLink'
-import LikeArticleButton from 'front/LikeArticleButton'
 import LoadingSpinner from 'front/LoadingSpinner'
 import Pagination, { PaginationPropsUrlFunc } from 'front/Pagination'
 import UserLinkWithImage from 'front/UserLinkWithImage'

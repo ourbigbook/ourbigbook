@@ -5,6 +5,7 @@ $header-background-color: #AA0;
 body {
 background-color: $color;
 font-family: $font-family;
+padding-top: $header-font-size;
 
 header, footer {
   background-color: $header-background-color;

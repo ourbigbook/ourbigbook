@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import Maybe from 'front/Maybe'
 import { webApi } from 'front/api'
 import config from 'front/config'
+import CustomLink from 'front/CustomLink'
 import { cant } from 'front/cant'
 import { formatDate } from 'front/date'
 import UserLinkWithImage from 'front/UserLinkWithImage'
@@ -21,7 +22,7 @@ const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
   return (
     <div className="comment" id={targetId}>
       <div className="comment-header">
-        <a className="number" href={`#${targetId}`}>#{comment.number}</a>
+        <CustomLink className="number" href={`#${targetId}`}>#{comment.number}</CustomLink>
         {' by '}
         <UserLinkWithImage user={comment.author} showUsernameMobile={false} />
         {' on '}

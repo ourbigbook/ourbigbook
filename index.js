@@ -2907,6 +2907,10 @@ function convert_init_context(options={}, extra_returns={}) {
     if (!('root_relpath' in options.template_vars)) { options.template_vars.root_relpath = ''; }
     if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
     if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
+  if (!('web' in options)) {
+    // If true, inject elements that are used for OurBigBook Web.
+    options.web = false;
+  }
 
   // Internalish options that may get modified by sub-includes/OurBigBookExample in order
   // to forward state back up. Maybe we should move them to a subdict to make this clearer
@@ -7804,7 +7808,12 @@ const OUTPUT_FORMATS_LIST = [
           let id_attr = html_render_attrs_id(ast, context);
           let ret = '';
           // Div that contains h + on hover span.
-          ret += `<div class="h"${id_attr}>`;
+          let first_header = (
+            // May fail in some error scenarios.
+            context.toplevel_ast !== undefined &&
+            ast.id === context.toplevel_ast.id
+          )
+          ret += `<div class="h${first_header ? ' top' : ''}"${id_attr}>`;
 
           // Self link.
           let self_link_context
@@ -7821,7 +7830,7 @@ const OUTPUT_FORMATS_LIST = [
             self_link_context = context
             self_link_ast = ast
           }
-          ret += `<h${level_int_capped}${attrs}><a${x_href_attr(self_link_ast, self_link_context)}>`;
+          ret += `<div class="notnav"><h${level_int_capped}${attrs}><a${x_href_attr(self_link_ast, self_link_context)}>`;
 
           let x_text_options = {
             show_caption_prefix: false,
@@ -7838,21 +7847,31 @@ const OUTPUT_FORMATS_LIST = [
           ret += `</a>`;
           ret += `</h${level_int_capped}>\n`;
 
+          const web_meta = []
+          if (context.options.web) {
+            const web_html = `<div class="web${first_header ? ' top' : ''}"></div>`
+            if (first_header) {
+              web_meta.push(web_html)
+            } else {
+              ret += web_html
+            }
+          }
+
           // On hover metadata.
           let link_to_split;
           let parent_links;
           {
-            ret += `<span class="hover-meta"> `;
+            const items = []
             if (context.options.split_headers) {
               link_to_split = link_to_split_opposite(ast, context);
               if (link_to_split) {
-                ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
+                items.push(`${link_to_split}`);
               }
             }
             let toc_href;
             if (!is_top_level && context.has_toc) {
               toc_href = html_attr('href', '#' + html_escape_attr(toc_id(ast, context)));
-              ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href} class="ourbigbook-h-to-toc"${html_attr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`;
+              items.push(`<a${toc_href} class="toc"${html_attr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`);
             }
 
             // Parent links.
@@ -7865,16 +7884,24 @@ const OUTPUT_FORMATS_LIST = [
             }
             parent_links = parent_links.join(HEADER_MENU_ITEM_SEP);
             if (parent_links) {
-              ret += `${HEADER_MENU_ITEM_SEP}${parent_links}`;
+              items.push(parent_links);
             }
             let descendant_count = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
             if (descendant_count !== undefined) {
-              ret += `${HEADER_MENU_ITEM_SEP}${descendant_count}`;
+              items.push(`${descendant_count}`);
             }
 
-            ret += `</span>`;
+            if (!first_header) {
+              ret += `<span class="hover-meta"> `;
+              if (!context.options.web) {
+                ret += HEADER_MENU_ITEM_SEP
+              }
+              ret += items.join(HEADER_MENU_ITEM_SEP)
+              ret += `</span>`;
+            }
           }
-          ret += `</div>`;
+          // .notnav
+          ret += '</div>'
 
           // Metadata that shows on separate lines below toplevel header.
           let wiki_link;
@@ -7947,11 +7974,6 @@ const OUTPUT_FORMATS_LIST = [
           // Calculate header_meta and header_meta
           let header_meta = [];
           let header_meta2 = [];
-          let first_header = (
-            // May fail in some error scenarios.
-            context.toplevel_ast !== undefined &&
-            ast.id === context.toplevel_ast.id
-          )
           if (file_link_html !== undefined) {
             header_meta2.push(file_link_html);
           }
@@ -7969,7 +7991,7 @@ const OUTPUT_FORMATS_LIST = [
               header_meta.push(link_to_split);
             }
             if (context.has_toc) {
-              header_meta.push(`<a${html_attr('href', '#' + Macro.TOC_ID)}>${TOC_MARKER}</a>`);
+              header_meta.push(`<a${html_attr('href', '#' + Macro.TOC_ID)} class="toc">${TOC_MARKER}</a>`);
             }
             let descendant_count_html = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
             if (descendant_count_html !== undefined) {
@@ -7981,7 +8003,7 @@ const OUTPUT_FORMATS_LIST = [
           if (header_has_meta) {
             ret += `<nav class="h-nav h-nav-toplevel">`;
           }
-          for (const meta of [header_meta, header_meta2]) {
+          for (const meta of [web_meta, header_meta, header_meta2]) {
             if (meta.length > 0) {
               ret += `<div class="nav"> ${meta.join(HEADER_MENU_ITEM_SEP)}</div>`;
             }
@@ -7989,6 +8011,7 @@ const OUTPUT_FORMATS_LIST = [
           if (header_has_meta) {
             ret += `</nav>\n`;
           }
+          ret += `</div>`;
           if (showTags) {
             if (children !== undefined) {
               ret += header_check_child_tag_exists(ast, context, children, 'child')
@@ -8108,7 +8131,7 @@ const OUTPUT_FORMATS_LIST = [
             root_node = root_node.children[0];
           }
           let descendant_count_html = get_descendant_count_html_sep(context, root_node, { long_style: false, show_descendant_count: true });
-          ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title"${x_href_attr(ast, context)}>Table of contents</a><span class="hover-metadata">${descendant_count_html}</span></span></div>\n`;
+          ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc"${x_href_attr(ast, context)}>Table of contents</a><span class="hover-metadata">${descendant_count_html}</span></span></div>\n`;
           for (let i = root_node.children.length - 1; i >= 0; i--) {
             todo_visit.push([root_node.children[i], 1]);
           }

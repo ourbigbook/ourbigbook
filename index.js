@@ -472,7 +472,7 @@ class AstNode {
         } else {
           typestr = `${ast.node_type.toString()}`
         }
-        ret.push(`${pref}${typestr} parent_node=${ast.parent_node === undefined}`)
+        ret.push(`${pref}${typestr}`)
         if (ast.node_type === AstType.MACRO) {
           const args = ast.args
           const argnames = Object.keys(args).sort().reverse()
@@ -2007,7 +2007,10 @@ async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
   }
   ast.index_id = index_id;
   if (ast.id !== undefined && !ast.force_no_index) {
-    let previous_ast = await context.id_provider.get(ast.id, context, ast.header_graph_node);
+    let previous_ast
+    if (index_id) {
+      previous_ast = await context.id_provider.get(ast.id, context, ast.header_graph_node);
+    }
     let input_path;
     if (previous_ast === undefined) {
       let non_indexed_id = non_indexed_ids[ast.id];

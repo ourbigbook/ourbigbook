@@ -1396,6 +1396,8 @@ Macro.TITLE2_ARGUMENT_NAME = 'title2';
 //   magic one.
 Macro.RESERVED_ID_PREFIX = '_'
 Macro.FILE_ID_PREFIX = Macro.RESERVED_ID_PREFIX + 'file' + Macro.HEADER_SCOPE_SEPARATOR
+const RAW_PREFIX = Macro.RESERVED_ID_PREFIX + 'raw'
+exports.RAW_PREFIX = RAW_PREFIX
 Macro.TOC_ID = Macro.RESERVED_ID_PREFIX + 'toc';
 Macro.TOC_PREFIX = Macro.TOC_ID + '/'
 Macro.TOPLEVEL_MACRO_NAME = 'Toplevel';
@@ -2880,9 +2882,12 @@ function render_ast_list(opts) {
       // root_relpath
       options.template_vars = Object.assign({}, options.template_vars);
       const new_root_relpath = get_root_relpath(output_path, context)
-      context.root_relpath_shift = path.relative(options.template_vars.root_relpath,
-        path.join(context.root_relpath_shift, new_root_relpath))
+      context.root_relpath_shift = path.relative(
+        options.template_vars.root_relpath,
+        new_root_relpath
+      )
       options.template_vars.root_relpath = new_root_relpath
+      options.template_vars.raw_relpath = path.join(new_root_relpath, RAW_PREFIX) + URL_SEP
       context.extra_returns.rendered_outputs[output_path] = rendered_outputs_entry
     }
     // Do the conversion.
@@ -3472,6 +3477,7 @@ function check_and_update_local_link({
   context,
   href,
   relative,
+  media_provider_type,
   source_location,
 }) {
   const was_protocol_given = protocol_is_given(href)
@@ -3526,13 +3532,12 @@ function check_and_update_local_link({
       )
     )
   ) {
-    // We'll use this for _raw
-    // https://docs.ourbigbook.com/todo/Put raw files in a separate magic prefix
-    // context.root_relpath_shift,
-    href = path.relative(
-      context.toplevel_output_path_dir,
-      path.join(context.input_dir, href),
-    )
+    let pref = context.root_relpath_shift
+    if (media_provider_type === 'local') {
+      pref = path.join(pref, RAW_PREFIX)
+    }
+    pref = path.join(pref, context.input_dir)
+    href = path.join(pref, href)
   }
   return { href, error }
 }
@@ -3585,6 +3590,8 @@ function get_link_html({
       context,
       href,
       relative,
+      // The only one available for now. One day we could add: \a[some/path]{provider=github}
+      media_provider_type: 'local',
       source_location,
     }))
     return `<a${html_attr('href', href)}${attrs}>${content}${error}</a>`;
@@ -3881,6 +3888,7 @@ function html_img({
   alt,
   ast,
   context,
+  media_provider_type,
   rendered_attrs,
   relpath_prefix,
   src,
@@ -3893,6 +3901,7 @@ function html_img({
     check: ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined,
     context,
     href: src,
+    media_provider_type,
     source_location: ast.args.src.source_location,
   }))
   let border_attr
@@ -3904,8 +3913,10 @@ function html_img({
   if (relpath_prefix !== undefined) {
     src = path.join(relpath_prefix, src)
   }
-  return `<img${html_attr('src', html_escape_attr(src))
-  }${html_attr('loading', 'lazy')}${rendered_attrs}${alt}${border_attr}>${error}\n`;
+  return {
+    html: `<img${html_attr('src', html_escape_attr(src))}${html_attr('loading', 'lazy')}${rendered_attrs}${alt}${border_attr}>${error}\n`,
+    src,
+  };
 }
 
 function html_is_whitespace_text_node(ast) {
@@ -4130,18 +4141,16 @@ function macro_image_video_block_convert_function(ast, context) {
   } else {
     alt = html_attr('alt', html_escape_attr(alt_val));
   }
-  ret += context.macros[ast.macro_name].options.image_video_content_func(
+  ret += context.macros[ast.macro_name].options.image_video_content_func({
+    alt,
     ast,
     context,
-    src,
-    rendered_attrs,
-    alt,
-    media_provider_type,
     is_url,
-    {
-      relpath_prefix
-    }
-  );
+    media_provider_type,
+    relpath_prefix,
+    rendered_attrs,
+    src,
+  });
   if (has_caption) {
     const { full: title, inner } = x_text_base(ast, context, { href_prefix, force_separator })
     const title_and_description = get_title_and_description({ title, description, source, inner })
@@ -7950,28 +7959,26 @@ const DEFAULT_MACRO_LIST = [
     Object.assign(
       {
         caption_prefix: 'Figure',
-        image_video_content_func: function (
+        image_video_content_func: function ({
+          alt,
           ast,
           context,
-          src,
-          rendered_attrs,
-          alt,
-          media_provider_type,
           is_url,
-          opts={}
-        ) {
-          const relpath_prefix = opts.relpath_prefix
-          const img_html = html_img({
+          media_provider_type,
+          rendered_attrs,
+          relpath_prefix,
+          src,
+        }) {
+          let img_html
+          ;({ html: img_html, src } = html_img({
             alt,
             ast,
             context,
+            media_provider_type,
             rendered_attrs,
             src,
             relpath_prefix,
-          })
-          if (relpath_prefix !== undefined) {
-            src = path.join(relpath_prefix, src)
-          }
+          }))
           return `<a${html_attr('href', src)}>${img_html}</a>\n`;
         },
         named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS,
@@ -8259,7 +8266,15 @@ const DEFAULT_MACRO_LIST = [
           return url_basename(html_escape_attr(src)).replace(
             macro_image_video_block_convert_function_wikimedia_source_video_re, '$1');
         },
-        image_video_content_func: function (ast, context, src, rendered_attrs, alt, media_provider_type, is_url) {
+        image_video_content_func: function ({
+          alt,
+          ast,
+          context,
+          is_url,
+          media_provider_type,
+          rendered_attrs,
+          src,
+        }) {
           if (media_provider_type === 'youtube') {
             let url_start_time;
             let video_id;
@@ -8318,6 +8333,7 @@ const DEFAULT_MACRO_LIST = [
               check,
               context,
               href: src,
+              media_provider_type,
               source_location: ast.args.src.source_location,
             }))
             let start;
@@ -8852,8 +8868,8 @@ const OUTPUT_FORMATS_LIST = [
           }
           let alt = html_attr('alt', html_escape_attr(render_arg(alt_arg, context)));
           let rendered_attrs = html_render_attrs_id(ast, context, ['height', 'width']);
-          let { error_message, src } = macro_image_video_resolve_params(ast, context);
-          let ret = html_img({ alt, ast, context, rendered_attrs, src })
+          let { error_message, media_provider_type, src } = macro_image_video_resolve_params(ast, context);
+          let { html: ret } = html_img({ alt, ast, context, media_provider_type, rendered_attrs, src })
           if (error_message) {
             ret += error_message_in_output(error_message, context)
           }

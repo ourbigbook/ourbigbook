@@ -561,7 +561,7 @@ function assert_cli(
     for (const relpath in options.assert_xpath) {
       const assert_msg_xpath = `path should match xpath: ${relpath}\n\n` + assert_msg;
       const fullpath = path.join(tmpdir, relpath);
-      assert.ok(fs.existsSync(fullpath), `path does not exist: ${fullpath}`);
+      assert.ok(fs.existsSync(fullpath), `path does not exist: ${fullpath}\n\n` + assert_msg);
       const html = fs.readFileSync(fullpath).toString(ourbigbook_nodejs_webpack_safe.ENCODING);
       for (const xpath_expr of options.assert_xpath[relpath]) {
         assert_xpath(xpath_expr, html, {message: assert_msg_xpath});
@@ -1555,7 +1555,7 @@ assert_lib_ast('table without id, title, nor description does not increment the 
 );
 
 // Images.
-assert_lib_ast('image simple',
+assert_lib_ast('block image simple',
   `ab
 
 \\Image[cd]
@@ -1570,7 +1570,26 @@ gh
   {
     filesystem: { cd: '' },
     assert_xpath_stdout: [
-      "//x:img[@src='cd']",
+      `//x:a[@href='${ourbigbook.RAW_PREFIX}/cd']//x:img[@src='${ourbigbook.RAW_PREFIX}/cd']`,
+    ],
+  },
+);
+assert_lib_ast('inline image simple',
+  `ab
+
+\\image[cd]
+
+gh
+`,
+[
+  a('P', [t('ab')]),
+  a('P', [a('image', undefined, {src: [t('cd')]})] ),
+  a('P', [t('gh')]),
+],
+  {
+    filesystem: { cd: '' },
+    assert_xpath_stdout: [
+      `//x:img[@src='${ourbigbook.RAW_PREFIX}/cd']`,
     ],
   },
 );
@@ -1589,7 +1608,7 @@ gh
   {
     filesystem: { cd: '' },
     assert_xpath_stdout: [
-      "//x:video[@src='cd']",
+      `//x:video[@src='${ourbigbook.RAW_PREFIX}/cd']`,
     ],
   },
 );
@@ -2278,21 +2297,12 @@ assert_lib_ast('link: with multiple paragraphs',
     ]),
   ]
 );
-assert_lib_ast('xss: a content and href',
+assert_lib_ast('xss: content and href',
   '\\a[ab&\\<>"\'cd][ef&\\<>"\'gh]{check=0}\n',
   undefined,
   {
     assert_xpath_stdout: [
-      "//x:a[@href=concat('ab&<>\"', \"'\", 'cd') and text()=concat('ef&<>\"', \"'\", 'gh')]",
-    ]
-  }
-);
-assert_lib_ast('xss: a content and href',
-  '\\a[ab&\\<>"\'cd][ef&\\<>"\'gh]{check=0}\n',
-  undefined,
-  {
-    assert_xpath_stdout: [
-      "//x:a[@href=concat('ab&<>\"', \"'\", 'cd') and text()=concat('ef&<>\"', \"'\", 'gh')]",
+      `//x:a[@href=concat('${ourbigbook.RAW_PREFIX}/ab&<>"', "'", 'cd') and text()=concat('ef&<>"', "'", 'gh')]`,
     ]
   }
 );
@@ -2428,32 +2438,35 @@ assert_lib(
       'subdir/i-exist-subdir': ``,
     },
     assert_xpath: {
+      // TODO patch test system to make work.
+      //[`${ourbigbook.RAW_PREFIX}/i-exist`]: [],
+      //[`${ourbigbook.RAW_PREFIX}/subdir/i-exist`]: [],
       'index.html': [
-        "//x:a[@href='i-exist' and text()='h3 i-exist']",
-        "//x:img[@src='i-exist' and @alt='h3 i-exist img']",
-        "//x:video[@src='i-exist' and @alt='h3 i-exist video']",
-        "//x:a[@href='subdir/i-exist-subdir' and text()='h3 i-exist-subdir']",
-        "//x:a[@href='https://cirosantilli.com' and text()='h3 abs']",
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/i-exist' and text()='h3 i-exist']`,
+        `//x:img[@src='${ourbigbook.RAW_PREFIX}/i-exist' and @alt='h3 i-exist img']`,
+        `//x:video[@src='${ourbigbook.RAW_PREFIX}/i-exist' and @alt='h3 i-exist video']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/i-exist-subdir' and text()='h3 i-exist-subdir']`,
+        `//x:a[@href='https://cirosantilli.com' and text()='h3 abs']`,
       ],
       'h2/h3.html': [
-        "//x:a[@href='../i-exist' and text()='h3 i-exist']",
-        "//x:img[@src='../i-exist' and @alt='h3 i-exist img']",
-        "//x:video[@src='../i-exist' and @alt='h3 i-exist video']",
-        "//x:a[@href='https://cirosantilli.com' and text()='h3 abs']",
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/i-exist' and text()='h3 i-exist']`,
+        `//x:img[@src='../${ourbigbook.RAW_PREFIX}/i-exist' and @alt='h3 i-exist img']`,
+        `//x:video[@src='../${ourbigbook.RAW_PREFIX}/i-exist' and @alt='h3 i-exist video']`,
+        `//x:a[@href='https://cirosantilli.com' and text()='h3 abs']`,
       ],
       'subdir.html': [
-        "//x:a[@href='i-exist' and text()='subdir i-exist']",
-        "//x:a[@href='/i-exist' and text()='subdir /i-exist']",
-        "//x:a[@href='subdir/i-exist-subdir' and text()='subdir i-exist-subdir']",
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/i-exist' and text()='subdir i-exist']`,
+        `//x:a[@href='/i-exist' and text()='subdir /i-exist']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/i-exist-subdir' and text()='subdir i-exist-subdir']`,
       ],
       'subdir/subdir-h2/subdir-h3.html': [
-        "//x:a[@href='../../i-exist' and text()='subdir h3 i-exist']",
-        "//x:a[@href='/i-exist' and text()='subdir h3 /i-exist']",
-        "//x:a[@href='../i-exist-subdir' and text()='subdir h3 i-exist-subdir']",
+        `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/i-exist' and text()='subdir h3 i-exist']`,
+        `//x:a[@href='/i-exist' and text()='subdir h3 /i-exist']`,
+        `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/i-exist-subdir' and text()='subdir h3 i-exist-subdir']`,
       ],
       'subdir/not-readme.html': [
-        "//x:a[@href='../i-exist' and text()='subdir not readme i-exist']",
-        "//x:a[@href='i-exist-subdir' and text()='subdir not readme i-exist-subdir']",
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/i-exist' and text()='subdir not readme i-exist']`,
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/subdir/i-exist-subdir' and text()='subdir not readme i-exist-subdir']`,
       ],
     },
   }
@@ -8093,7 +8106,7 @@ assert_cli(
   {
     stdin: '\\a[asdf]',
     expect_not_exists: ['out'],
-    assert_xpath_stdout: ["//x:a[@href='asdf']"],
+    assert_xpath_stdout: [`//x:a[@href='${ourbigbook.RAW_PREFIX}/asdf']`],
     filesystem: { 'asdf': '' },
   }
 );
@@ -8414,8 +8427,8 @@ assert_cli(
       ],
 
       // Non converted paths.
-      'scss.css': [],
-      'ourbigbook.json': [],
+      [`${ourbigbook.RAW_PREFIX}/scss.css`]: [],
+      [`${ourbigbook.RAW_PREFIX}/ourbigbook.json`]: [],
     },
     assert_not_xpath: {
       'split.html': [
@@ -8457,9 +8470,9 @@ assert_cli(
         "//x:style[contains(text(),'@import \"dist/ourbigbook.css\"')]",
       ],
       // Non-converted files are copied over.
-      'out/publish/out/publish/scss.css': [],
-      'out/publish/out/publish/ourbigbook.json': [],
-      'out/publish/out/publish/subdir/myfile.txt': [],
+      [`out/publish/out/publish/${ourbigbook.RAW_PREFIX}/scss.css`]: [],
+      [`out/publish/out/publish/${ourbigbook.RAW_PREFIX}/ourbigbook.json`]: [],
+      [`out/publish/out/publish/${ourbigbook.RAW_PREFIX}/subdir/myfile.txt`]: [],
     },
   }
 );
@@ -8480,13 +8493,13 @@ assert_cli(
     // Place out next to ourbigbook.json which should be the toplevel.
     expect_exists: [
       'out',
-      'subdir/scss.css',
+      `${ourbigbook.RAW_PREFIX}/subdir/scss.css`,
       'subdir/xml.xml',
     ],
     expect_not_exists: [
       'subdir/out',
       'xml.xml',
-      'scss.css',
+      `${ourbigbook.RAW_PREFIX}/scss.css`,
       'index.html',
     ],
     assert_xpath: {
@@ -8509,12 +8522,12 @@ assert_cli(
     // Don't know a better place to place out, so just put it int subdir.
     expect_exists: [
       'out',
-      'subdir/scss.css',
+      `${ourbigbook.RAW_PREFIX}/subdir/scss.css`,
       'subdir/xml.xml',
     ],
     expect_not_exists: [
       'index.html',
-      'scss.css',
+      `${ourbigbook.RAW_PREFIX}/scss.css`,
       'subdir/out',
       'xml.xml',
     ],
@@ -8571,7 +8584,7 @@ assert_cli(
     },
     expect_exists: [
       'my_outdir/out',
-      'my_outdir/ourbigbook.json',
+      `my_outdir/${ourbigbook.RAW_PREFIX}/ourbigbook.json`,
     ],
     expect_not_exists: [
       'out',
@@ -8796,7 +8809,7 @@ assert_cli(
     },
     expect_exists: [
       'myproject/out',
-      'myproject/scss.css',
+      `myproject/${ourbigbook.RAW_PREFIX}/scss.css`,
       'myproject/ourbigbook.json',
     ],
     assert_xpath: {
@@ -8837,7 +8850,7 @@ assert_cli(
     },
     expect_exists: [
       'myproject/out',
-      'myproject/scss.css',
+      `myproject/${ourbigbook.RAW_PREFIX}/scss.css`,
     ],
     assert_xpath: {
       'myproject/index.html': [
@@ -9600,5 +9613,23 @@ assert_cli(
 \\dv{x^2}{x}
 $$
 `,
+  }
+);
+assert_cli(
+  'raw: bigb source files are copied into raw',
+  {
+    args: ['.'],
+    filesystem: {
+      'README.bigb': ``,
+      'notreadme.bigb': ``,
+      'subdir/README.bigb': ``,
+      'subdir/notreadme.bigb': ``,
+    },
+    expect_exists: [
+      `${ourbigbook.RAW_PREFIX}/README.bigb`,
+      `${ourbigbook.RAW_PREFIX}/notreadme.bigb`,
+      `${ourbigbook.RAW_PREFIX}/subdir/README.bigb`,
+      `${ourbigbook.RAW_PREFIX}/subdir/notreadme.bigb`,
+    ]
   }
 );

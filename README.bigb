@@ -6277,7 +6277,7 @@ psql -c 'GRANT ALL PRIVILEGES ON DATABASE ourbigbook_cli TO ourbigbook_user'
 ``
 and then run with:
 ``
-npm test
+npm run test-pg
 ``
 
 List all tests:

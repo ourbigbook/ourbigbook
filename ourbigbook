@@ -470,9 +470,13 @@ async function create_db(ourbigbook_options, non_ourbigbook_options) {
   perf_print('create_db_begin', ourbigbook_options)
   const db_dir = path.dirname(non_ourbigbook_options.db_options.storage);
   if (!fs.existsSync(db_dir)) {
-    fs.mkdirSync(db_dir, {recursive: true});
+    fs.mkdirSync(db_dir, { recursive: true });
   }
-  const sequelize = await ourbigbook_nodejs_webpack_safe.create_sequelize(non_ourbigbook_options.db_options, Sequelize)
+  const sequelize = await ourbigbook_nodejs_webpack_safe.create_sequelize(
+    non_ourbigbook_options.db_options,
+    Sequelize,
+    { force: commander.clearDb },
+  )
   non_ourbigbook_options.sequelize = sequelize;
   non_ourbigbook_options.id_provider = new ourbigbook_nodejs_webpack_safe.SqliteIdProvider(sequelize);
   non_ourbigbook_options.file_provider = new ourbigbook_nodejs_webpack_safe.SqliteFileProvider(
@@ -632,6 +636,7 @@ function* walk_files_recursively(file_or_dir, skip_basenames, ignore_paths) {
 commander.option('--add-test-instrumentation', 'For testing only', false);
 commander.option('--body-only', 'output only the content inside the HTLM body element', false);
 commander.option('--china', 'https://cirosantilli.com/ourbigbook#china', false);
+commander.option('--clear-db', 'clear the database before running', false);
 commander.option('--dry-run', "don't run most external commands https://github.com/cirosantilli/ourbigbook#dry-run", false);
 commander.option('--dry-run-push', "don't run git push commands https://github.com/cirosantilli/ourbigbook#dry-run-push", false);
 commander.option('--embed-includes', 'http://cirosantilli.com/ourbigbook#embed-include', false);
@@ -924,7 +929,7 @@ if (commander.helpMacros) {
     ourbigbook_paths_converted: [],
     ourbigbook_paths_converted_only: false,
     commander,
-    db_options: ourbigbook_nodejs_webpack_safe.db_options,
+    db_options: {},
     file_rows_dict: {},
     encoding: ourbigbook_nodejs_webpack_safe.ENCODING,
     external_css_and_js: false,

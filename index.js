@@ -844,10 +844,14 @@ class Tokenizer {
           this.tokens[this.tokens.length - 1].type === TokenType.POSITIONAL_ARGUMENT_START ||
           this.tokens[this.tokens.length - 1].type === TokenType.NAMED_ARGUMENT_NAME
         ) {
-          if (
-            array_contains_array_at(this.chars, this.i, 'http://') ||
-            array_contains_array_at(this.chars, this.i, 'https://')
-          ) {
+          let protocol_is_known = false;
+          for (const known_url_protocol of KNOWN_URL_PROTOCOLS) {
+            if (array_contains_array_at(this.chars, this.i, known_url_protocol)) {
+              protocol_is_known = true;
+              break;
+            }
+          }
+          if (protocol_is_known) {
             this.push_token(TokenType.MACRO_NAME, Macro.LINK_MACRO_NAME);
             this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
             let link_text = '';
@@ -2751,22 +2755,31 @@ const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [
 function macro_image_video_source(ast, context) {
   let src = convert_arg_noescape(ast.args.src, context);
   let error_message;
-  let provider;
-  if ('provider' in ast.args) {
-    provider = convert_arg_noescape(ast.args.provider, context);
-  } else {
-    provider = 'local';
-  }
-  if (provider === 'local') {
-    const path = context.options.cirodown_json['media-providers'].local.path;
-    if (path !== '') {
-      src = path + URL_SEP + src;
+  let protocol_is_known = false;
+  for (const known_url_protocol of KNOWN_URL_PROTOCOLS) {
+    if (src.startsWith(known_url_protocol)) {
+      protocol_is_known = true;
+      break;
     }
-  } else if (provider === 'github') {
-    src = `https://raw.githubusercontent.com/${context.options.cirodown_json['media-providers'].github.remote}/master/${src}`;
-  } else {
-    error_message = `unknown media provider: "${html_escape_attr(provider)}"`;
-    render_error(context, error_message, ast.args.provider.line, ast.args.provider.column);
+  }
+  if (!protocol_is_known) {
+    let provider;
+    if ('provider' in ast.args) {
+      provider = convert_arg_noescape(ast.args.provider, context);
+    } else {
+      provider = 'local';
+    }
+    if (provider === 'local') {
+      const path = context.options.cirodown_json['media-providers'].local.path;
+      if (path !== '') {
+        src = path + URL_SEP + src;
+      }
+    } else if (provider === 'github') {
+      src = `https://raw.githubusercontent.com/${context.options.cirodown_json['media-providers'].github.remote}/master/${src}`;
+    } else {
+      error_message = `unknown media provider: "${html_escape_attr(provider)}"`;
+      render_error(context, error_message, ast.args.provider.line, ast.args.provider.column);
+    }
   }
   let source_type;
   if (src.match(macro_image_video_block_convert_function_source_types_wikimedia_re)) {
@@ -2798,6 +2811,8 @@ const MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS = [
     name: 'alt',
   }),
 ];
+// https://cirosantilli.com/cirodown#known-url-protocols
+const KNOWN_URL_PROTOCOLS = new Set(['http://', 'https://']);
 const URL_SEP = '/';
 const DEFAULT_MACRO_LIST = [
   new Macro(

@@ -241,9 +241,7 @@ Insane links must be preceded by either:
 * space ` ` char
 * newline `\n` char
 
-The recognized protocols are:
-* `http://`
-* `https://`
+The recognized protocols are the ones shown at: \x[known-url-protocols]{full}.
 
 Insane links end when either the end of the document or one of the following characters is found:
 * space ` `
@@ -933,6 +931,12 @@ This particular documentation repository does have a different setup as can be s
 \Image[Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]{provider=github}
 ]]
 In this example, we also needed to set `{provider=github}` explicitly since it was not set as the default image provider in our `cirodown.json`. In most projects however, all of your images will be in the default repository, so this won't be needed.
+
+Note that `provider` is ignored if a full URL is given (detected by starting with one of the \x[known-url-protocols]), e.g.:
+\cirodown_example[[
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]{provider=github}
+]]
+still works rather than appending the GitHub media prefix to that full URL. This is important to that setting a default provider will still work as expected with random external URLs you might want to add.
 
 TODO implement: `cirodown` will even automatically add and push used images in the `my-tutorial-media` repository for you \x[publish][during publishing]!
 
@@ -1801,6 +1805,18 @@ For example, when the \x[internal-cross-references][ID of a node is derived from
 ]]
 In this example, see how the contents of the code block \c[`with code`] were rendered as plaintext and used for the ID.
 ``
+
+=== Known URL protocols
+
+Certain common URL protocols are treated as "known" by Cirodown, and when found they have special effects in some parts of the conversion.
+
+The currently known protocols are:
+* `http://`
+* `https://`
+
+Effects of known protocols include:
+* \x[insane-link-parsing-rules]: mark the start of insane links
+* \x[store-images-in-a-separate-media-repository]: mark an image `src` to ignore `provider`
 
 === Security
 

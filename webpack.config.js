@@ -1,6 +1,6 @@
 const path = require('path');
 
-const ourbigbook_nodejs = require('./nodejs');
+const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe.js');
 
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
@@ -77,6 +77,9 @@ module.exports = {
     globalObject: 'this',
     library: '[name]',
     libraryTarget: 'umd',
-    path: ourbigbook_nodejs.DIST_PATH,
+    // nodejs.DIST_PATH would be better here, but we are unable to import nodejs.js
+    // in this file without a global install with npm run link. Like this is works
+    // with just npm install.
+    path: path.join(__dirname, ourbigbook_nodejs_webpack_safe.DIST_BASENAME),
   },
 };

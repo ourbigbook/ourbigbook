@@ -1049,4 +1049,5 @@ module.exports = {
   update_database_after_convert,
   ENCODING,
   TMP_DIRNAME: 'out',
+  DIST_BASENAME: 'dist',
 }

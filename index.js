@@ -6,6 +6,7 @@ const UNICODE_LINK = String.fromCodePoint(0x1F517);
 class AstNode {
   /**
    * @param {AstType} node_type -
+   * @param {Object} macros - dict of all String macro_name to Macro
    * @param {String} macro_name - if node_type === AstType.PLAINTEXT: fixed to 'plaintext'
    *                              elif node_type === AstType.PARAGRAPH: fixed to undefined
    *                              else: arbitrary regular macro
@@ -15,10 +16,8 @@ class AstNode {
    * @param {Number} line - the best representation of where the macro is starts in the document
    *                        used primarily to present useful debug messages
    * @param {Number} column
-   * @param {Object} attrs
-   *                 {boolean} has_paragraph_siblings: is the macro surrounded directly by \n\n paragraphs
    */
-  constructor(node_type, macros, macro_name, args, line, column, attrs={}) {
+  constructor(node_type, macros, macro_name, args, line, column) {
     this.node_type = node_type;
     this.macro_name = macro_name;
     this.args = args;
@@ -103,6 +102,11 @@ class AstNode {
       throw new Error('missing mandatory argument macros');
     }
     return context.macros[this.macro_name].convert(this, context);
+  }
+
+  static fromJSON(json_string) {
+    let cur_node = JSON.parse(json_string);
+    node_type, macros, macro_name, args, line, column
   }
 
   toJSON() {
@@ -195,7 +199,7 @@ class ChainedIdProvider extends IdProvider {
     if (ret !== undefined) {
       return ret;
     }
-    throw undefined;
+    return undefined;
   }
 }
 
@@ -831,8 +835,8 @@ function convert(
   }
   if (!('body_only' in options)) { options.body_only = false; }
   if (!('css' in options)) { options.css = ''; }
-  if (!('external_id_provider' in options)) {
-    options.external_id_provider = undefined;
+  if (!('id_provider' in options)) {
+    options.id_provider = undefined;
   }
   if (!('html_single_page' in options)) { options.html_single_page = false; }
   if (!('input_path' in options)) { options.input_path = undefined; }
@@ -864,6 +868,7 @@ function convert(
   }
   extra_returns.ast = ast;
   extra_returns.context = sub_extra_returns.context;
+  extra_returns.ids = sub_extra_returns.ids;
   extra_returns.errors.push(...sub_extra_returns.errors);
   let errors = [];
   let context = Object.assign(
@@ -1151,10 +1156,10 @@ function parse(tokens, macros, options, extra_returns={}) {
   // IDs that are indexed: you can link to those.
   let id_provider;
   let local_id_provider = new DictIdProvider(options.input_path, indexed_ids);
-  if (options.external_id_provider !== undefined) {
+  if (options.id_provider !== undefined) {
     id_provider = new ChainedIdProvider(
       local_id_provider,
-      options.external_id_provider
+      options.id_provider
     );
   } else {
     id_provider = local_id_provider;
@@ -1348,6 +1353,7 @@ function parse(tokens, macros, options, extra_returns={}) {
       }
     }
   }
+  extra_returns.ids = indexed_ids;
 
   // Calculate header_graph_top_level.
   let level0_header = extra_returns.context.header_graph;
@@ -2121,7 +2127,7 @@ const DEFAULT_MACRO_LIST = [
       let target_id = convert_arg_noescape(ast.args.href, context);
       let id_provider_get = context.id_provider.get(target_id);
       if (id_provider_get !== undefined) {
-        [input_path, target_id_ast] = id_provider_get;
+        [target_input_path, target_id_ast] = id_provider_get;
         let content;
         if (ast.arg_given('content')) {
           content = convert_arg(ast.args.content, context);
@@ -2148,7 +2154,16 @@ const DEFAULT_MACRO_LIST = [
           }
         }
         let attrs = html_convert_attrs_id(ast, context);
-        let href = html_attr('href', '#' + html_escape_attr(target_id));
+        let href_path;
+        if (
+          context.options.html_single_page ||
+          (target_input_path == context.options.input_path)
+        ) {
+          href_path = '';
+        } else {
+          href_path = target_input_path;
+        }
+        let href = html_attr('href', href_path + '#' + html_escape_attr(target_id));
         return `<a${href}${attrs}>${content}</a>`;
       } else {
         let message = `cross reference to unknown id: "${target_id}"`;

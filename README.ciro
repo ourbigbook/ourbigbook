@@ -1541,6 +1541,8 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[update tests to test the AST output rather than HTML. HTML too complex and variable]
 \l[parse_error: add in document error message, currently only to stderr]
 \l[LaTeX output]
+\l[infinite xref header recursion: \a[https://github.com/asciidoctor/asciidoctor/issues/3543] Solution: forbid x in titles, pass down context from parent.]
+\l[ID extraction convert mode that skips HTML generation to save time and not get any xref errors, just to dump IDs to sqlite database]
 
 \h[2][Related projects]
 

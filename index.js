@@ -5791,6 +5791,7 @@ function path_splitext(str) {
     return [str.substring(0, sep_index), str.substr(sep_index + 1)];
   }
 }
+exports.path_splitext = path_splitext
 
 function protocol_get(url) {
   const match = /^([a-zA-Z]+):\/\//.exec(url)

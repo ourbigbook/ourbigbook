@@ -65,6 +65,7 @@
     "ourbigbook.common.scss",
     "dist/*",
     "index.js",
+    "logo.svg",
     "main.liquid.html",
     "main.scss",
     "models/*",

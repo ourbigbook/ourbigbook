@@ -57,7 +57,7 @@ padding-left: 0;
   padding-right: $toplevel-horizontal-padding-mobile;
 }
 @media only screen and (min-width: $max-mobile-width + 1) {
-  padding-right: 15px;
+  padding-right: $toplevel-horizontal-padding-right;
 }
 .caption-prefix {
   font-weight: bold;
@@ -70,7 +70,7 @@ padding-left: 0;
     padding-left: $toplevel-horizontal-padding-mobile;
   }
   @media only screen and (min-width: $max-mobile-width + 1) {
-    padding-left: 20px;
+    padding-left: $toplevel-horizontal-padding-left;
   }
   // Makes the absolute on hover link be absolute relative to this element.
   // This makes it show up inside the padding-left of this element.
@@ -288,13 +288,15 @@ ol, ul {
 
       // CSS border triangles.
       // https://css-tricks.com/snippets/css/css-triangle/
-      $arrow-width: 5px;
+      $arrow-color: #009900;
+      $arrow-width: 0.7em;
       @mixin arrow {
+        color: blue;
         display: inline;
         > * {
           display: inline-block;
           height: 0;
-          margin-right: $arrow-width * 1.5;
+          margin-right: 0.6 * $arrow-width;
           vertical-align: middle;
           width: 0;
         }
@@ -330,7 +332,7 @@ ol, ul {
         & > * {
           border-left: $arrow-width solid transparent;
           border-right: $arrow-width solid transparent;
-          border-top: $arrow-width solid $color;
+          border-top: $arrow-width solid $arrow-color;
         }
       }
       &.close {
@@ -344,7 +346,7 @@ ol, ul {
           & > * {
             border-top: $arrow-width solid transparent;
             border-bottom: $arrow-width solid transparent;
-            border-left: $arrow-width solid $color;
+            border-left: $arrow-width solid $arrow-color;
           }
         }
       }

@@ -1,0 +1,6 @@
+language: node_js
+node_js: "8"
+sudo: false
+
+before_script: npm start & sleep 5
+script: npm test

@@ -155,6 +155,7 @@ commander.option('--html-embed', 'TODO embed all external resources like images 
 commander.option('--outdir <outdir>', 'if the output would be saved to a file e.g. when building a directory, use this directory as the root');
 commander.option('--output-format', 'output format');
 commander.option('--publish', "http://cirosantilli.com/cirodown#publish");
+commander.option('--publish-commit', "http://cirosantilli.com/cirodown#publish-commit");
 commander.option('--show-ast', 'print the AST to stderr');
 commander.option(
   '--show-ast-inside',
@@ -202,8 +203,9 @@ if (commander.helpMacros) {
     had_error: false,
     multifile: true,
   };
+  let publish = commander.publish || commander.publishCommit !== undefined;
   if (inputPath === undefined) {
-    if (commander.publish) {
+    if (publish) {
       cli_error('--publish is incompatible with input from stdin');
     }
     if (commander.watch) {
@@ -218,7 +220,7 @@ if (commander.helpMacros) {
       cli_error(`input_path does not exist: "${inputPath}"`);
     }
     if (commander.watch) {
-      if (commander.publish) {
+      if (publish) {
         cli_error('--publish and --watch are incompatible');
       }
       let watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES, ignoreInitial: true});
@@ -229,7 +231,7 @@ if (commander.helpMacros) {
       });
     } else {
       if (fs.lstatSync(inputPath).isFile()) {
-        if (commander.publish) {
+        if (publish) {
           cli_error('--publish must take a directory as input, not a file');
         }
         convert_input_options.multifile = false;
@@ -245,7 +247,7 @@ if (commander.helpMacros) {
         }
 
         // Clone the source to ensure that only git tracked changes get built and published.
-        if (commander.publish) {
+        if (publish) {
           if (!fs.existsSync(path.join(inputPath, '.git'))) {
             cli_error('--publish must point to the root of a git repository');
           }
@@ -269,6 +271,10 @@ if (commander.helpMacros) {
             cli_error(`source and publish branches are the same: ${publish_branch}`);
           }
           fs.mkdirSync(publish_dir, {recursive: true});
+          if (commander.publishCommit !== undefined) {
+            cmd_get_stdout('git', ['-C', inputPath, 'add', '-u'], cmd_options);
+            cmd_get_stdout('git', ['-C', inputPath, 'commit', '-m', commander.publishCommit], cmd_options);
+          }
           if (!fs.existsSync(path.join(publish_dir, '.git'))) {
             cmd_get_stdout('git', ['clone', '--recursive', inputPath, publish_dir], cmd_options);
           } else {
@@ -291,7 +297,7 @@ if (commander.helpMacros) {
         }
 
         // Publish the converted output if build succeeded.
-        if (commander.publish && !convert_input_options.had_error) {
+        if (publish && !convert_input_options.had_error) {
           // Push the original source.
           cmd_get_stdout('git', ['-C', inputPath, 'push'], cmd_options);
           if (!fs.existsSync(path.join(commander.outdir, '.git'))) {

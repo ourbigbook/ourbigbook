@@ -1329,11 +1329,11 @@ function parse(tokens, macros, options, extra_returns={}) {
         parent_arg.push(...new_child_nodes);
       }
     } else {
-      if (is_first_header) {
-        ast.id = options.toplevel_id;
-        is_first_header = false;
-      }
       if (macro_name === Macro.HEADER_MACRO_NAME) {
+        if (is_first_header) {
+          ast.id = options.toplevel_id;
+          is_first_header = false;
+        }
         cur_header_level = parseInt(
           convert_arg_noescape(ast.args.level, id_context)
         ) + options.h_level_offset;

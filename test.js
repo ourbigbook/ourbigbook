@@ -5552,7 +5552,7 @@ assert_lib('header: file argument ignores text files on nosplit if they are too 
     }
   },
 )
-assert_lib_error('header: file argument to a file that does not exist gives an error',
+assert_lib_error('header: file argument to a toplevel file that does not exist fails gracefully',
   `= h1
 
 == dont-exist

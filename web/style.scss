@@ -236,16 +236,26 @@ i.ion-heart {
   }
 }
 
-.comment-form {
-  border: 1px solid $color;
-  border-radius: $border-radius;
+.comment-form-holder {
   margin-bottom: 10px;
-  .comment-form-textarea {
-    border-bottom: 1px solid $color;
-    padding: 5px 10px 2px 5px;
-  }
-  .comment-form-submit {
-    padding: 10px;
+  .comment-form {
+    border: 1px solid $color;
+    border-radius: $border-radius;
+    margin-bottom: 10px;
+    .comment-form-textarea {
+      border-bottom: 1px solid $color;
+      padding: 5px 5px 2px 5px;
+      textarea {
+        border-radius: $border-radius;
+        box-sizing: border-box;
+        margin-bottom: 0;
+        resize: vertical;
+        width: 100%;
+      }
+    }
+    .comment-form-submit {
+      padding: 10px;
+    }
   }
 }
 

@@ -27,12 +27,12 @@ const Article = ({
     />
     <div className="comments content-not-ourbigbook">
       <h1>Comments</h1>
-      <div>
-        <CommentInput />
+        <div className="comment-form-holder">
+          <CommentInput />
+        </div>
         {comments?.map((comment: CommentType) => (
           <Comment key={comment.id} comment={comment} />
         ))}
-      </div>
     </div>
   </>
 }

@@ -675,17 +675,23 @@ class IdProvider {
   /** Like get, but do not resolve scope. */
   async get_noscope(id, context) {
     const ast = await this.get_noscope_entry(id);
-    if (ast) {
+    if (ast === undefined) {
+      return undefined;
+    } else {
       if (context !== undefined) {
         await validate_ast(ast, context);
       }
       return ast;
-    } else {
-      return undefined;
     }
   }
 
-  async get_noscope_entry(id) { throw new Error('unimplemented'); }
+  async get_noscope_raw(ids) { throw new Error('unimplemented'); }
+
+  async get_noscope_entry(id) {
+    return (await this.get_noscope_entries([id]))[0]
+  }
+
+  async get_noscope_entries(ids) { throw new Error('unimplemented'); }
 
   /** Array[{id: String, defined_at: String}] */
   async get_refs_to(type, to_id, reversed=false) { throw new Error('unimplemented'); }
@@ -703,7 +709,7 @@ class IdProvider {
     for (const ref_id of ref_ids) {
       const from_ast = await this.get(ref_id, context);
       if (from_ast === undefined) {
-        throw new Error(`parent ID of include not in database, not sure how this can happen so throwing: ${to_id}`);
+        throw new Error(`could not find reference in database: ${to_id}`);
       } else {
         ret.push(from_ast);
       }
@@ -719,18 +725,6 @@ class IdProvider {
   }
 }
 exports.IdProvider = IdProvider;
-
-class IdProviderWithIgnorePath extends IdProvider {
-  constructor(sequelize) {
-    super();
-    this.ignore_path = undefined
-  }
-
-  setIgnorePath(ignore_path) {
-    this.ignore_path = ignore_path
-  }
-}
-exports.IdProviderWithIgnorePath = IdProviderWithIgnorePath
 
 /** IdProvider that first tries id_provider_1 and then id_provider_2.
  *
@@ -2013,21 +2007,8 @@ async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
     }
     ast.index_id = index_id;
     if (ast.id !== undefined && !ast.force_no_index) {
-      let previous_ast
-      if (index_id) {
-        previous_ast = await context.id_provider.get(ast.id, context, ast.header_graph_node);
-      }
-      let input_path;
-      if (previous_ast === undefined) {
-        let non_indexed_id = non_indexed_ids[ast.id];
-        if (non_indexed_id !== undefined) {
-          input_path = input_path;
-          previous_ast = non_indexed_id;
-        }
-      } else {
-        input_path = previous_ast.source_location.path;
-      }
-      if (previous_ast === undefined) {
+      let non_indexed_ast = non_indexed_ids[ast.id];
+      if (non_indexed_ast === undefined) {
         non_indexed_ids[ast.id] = ast;
         if (index_id) {
           indexed_ids[ast.id] = ast;
@@ -2035,9 +2016,9 @@ async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
       } else {
         const message = duplicate_id_error_message(
           ast.id,
-          input_path,
-          previous_ast.source_location.line,
-          previous_ast.source_location.column
+          non_indexed_ast.source_location.path,
+          non_indexed_ast.source_location.line,
+          non_indexed_ast.source_location.column
         )
         parse_error(state, message, ast.source_location);
       }
@@ -3657,7 +3638,6 @@ async function parse(tokens, options, context, extra_returns={}) {
       local_id_provider,
       options.id_provider
     );
-    options.id_provider.setIgnorePath(options.input_path)
   } else {
     id_provider = local_id_provider;
   }
@@ -4701,6 +4681,24 @@ async function parse(tokens, options, context, extra_returns={}) {
     }
     return line_to_id_array[index][1];
   };
+
+  // Check for ID conflicts.
+  if (options.id_provider !== undefined) {
+    const ignore_paths = Array.from(context.include_path_set).filter(x => x !== undefined)
+    const id_conflict_asts = await options.id_provider.get_noscope_entries(
+      Object.keys(include_options.indexed_ids),
+      ignore_paths
+    );
+    for (const other_ast of id_conflict_asts) {
+      const message = duplicate_id_error_message(
+        other_ast.id,
+        other_ast.source_location.path,
+        other_ast.source_location.line,
+        other_ast.source_location.column,
+      )
+      parse_error(state, message, include_options.indexed_ids[other_ast.id].source_location);
+    }
+  }
 
   perf_print(context, 'post_process_end')
   return ast_toplevel;

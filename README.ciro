@@ -1,6 +1,6 @@
 = Cirodown
 
-Markup language + static site generator to write complex structured wikis/books/blogs, that is \x[saner] and \x[design-goals][more powerful] than Markdown and Asciidoctor, with reference implementation in JavaScript.
+Markup language + static site generator to write complex structured wikis/books/blogs, that aims to be \x[saner] and \x[design-goals][more powerful] than Markdown and Asciidoctor, with reference implementation in JavaScript.
 
 * https://cirosantilli.com[]: showcase demo document with interesting content. Primary inspiration for Cirodown development.
   * https://cirosantilli.com/oxford-nanopore-river-bacteria[]: a self-contained tutorial style part of the above. Note how internal links integrate seamlessly into the more global topic of biology, e.g. when talking about DNA we link to the global topic https://cirosantilli.com/dna[].
@@ -1918,7 +1918,7 @@ This exemplifies the following parameters:
 * `title`: analogous to the \x[h-title-argument]. Shows up preeminently, and sets a default ID if one is not given.
 * \x[image-description-argument][`description`]: similar to `title`, but allow for further explanations without them appearing in \x[internal-cross-reference][cross references] to the image
 * `source`: a standardized way to credit an image by linking to a URL that contains further image metadata
-For further discussion on the effects of ID see: \x[image-id][full].
+For further discussion on the effects of ID see: \x[image-id]{full}.
 
 And this is how you make an inline image inline one with lower case `i`:
 \CirodownExample[[
@@ -1938,8 +1938,7 @@ By default, we fix image heights to `height=315`, and let the `width` be calcula
 * prevent reflows as the page loads images and can determine their actual sizes, especially is the user opens the page at a given ID in the middle of the page
 * create a more uniform media experience by default, unless a custom image size is actually needed e.g. if the image needs to be larger
 
-= Image IDs and captions
-{id=image-id}
+= Image ID
 {parent=image}
 
 Here is an image without a \x[image-description-argument][description] but with an ID so we can link to it: \x[image-my-test-image-2].
@@ -1959,7 +1958,10 @@ Have a look at this amazing image: \x[image-tank-man-standing-in-front-of-some-t
 {titleFromSrc}
 ]]
 
-If the image has neither ID nor title, then it does not get a caption at all, and it is not possible to link to it with an \x[internal-cross-reference], e.g.:
+= Image caption
+{parent=image-id}
+
+If the image has neither \x[image-id][ID] nor title, then it does not get a caption at all, and it is not possible to link to it with an \x[internal-cross-reference], e.g.:
 \CirodownExample[[
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 ]]
@@ -2803,7 +2805,7 @@ To pass further arguments to an implicit table such as `title` or `id`, you need
 | 2 2
 ]
 ]]
-We would like to remove that explicit toplevel requirement as per: https://github.com/cirosantilli/cirodown/issues/186[] The rules of when the caption shows up or not similar to those of \x[image]{p} as mentioned at \x[image-ids-and-captions]{full} but with one difference: if the table has neither ID, nor title nor description then it does not get a caption.
+We would like to remove that explicit toplevel requirement as per: https://github.com/cirosantilli/cirodown/issues/186[] The rules of when the caption shows up or not similar to those of \x[image]{p} as mentioned at \x[image-caption]{full} but with one difference: if the table has neither ID, nor title nor description then it does not get a caption.
 
 Multiple source lines, including paragraphs, can be added to a single cell with insane syntax by indenting the cell with exactly two spaces just as for \x[list]{p}, e.g.:
 \CirodownExample[[
@@ -5079,7 +5081,7 @@ Properties that are valid for every provider:
   The first character of the macros are case insensitive and must be given as lower case. Therefore e.g.:
   * `image` applies to both `image` and `Image`
   * giving `Image` is an error because that starts with an upper case character
-* `title-from-src` (`bool`): extract the `title` argument from the `src` by default for media such as \x[image]{p} and \x[video]{p} as if the `titleFromSrc` macro argument had been given, see also: \x[image-id]
+* `title-from-src` (`bool`): extract the `title` argument from the `src` by default for media such as \x[image]{p} and \x[video]{p} as if the `titleFromSrc` macro argument had been given, see also: \x[image-id]{full}
 
 Direct children of media-providers and subproperties that are valid only for them specifically:
 * `local`: tracked in the current Git repository as mentioned at \x[store-images-inside-the-repository-itself]{full}

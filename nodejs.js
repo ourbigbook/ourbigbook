@@ -52,7 +52,7 @@ class ZeroFileProvider extends cirodown.FileProvider {
 }
 exports.ZeroFileProvider = ZeroFileProvider;
 
-class SqliteIdProvider extends cirodown.IdProviderWithIgnorePath {
+class SqliteIdProvider extends cirodown.IdProvider {
   constructor(sequelize) {
     super();
     this.sequelize = sequelize
@@ -79,22 +79,22 @@ class SqliteIdProvider extends cirodown.IdProviderWithIgnorePath {
     ])
   }
 
-  async get_noscope_entry(id) {
+  async get_noscope_entries(ids, ignore_paths) {
     const where = {
-      idid: id,
+      idid: ids,
     }
-    if (this.ignore_path !== undefined) {
-      where.path = { [Op.not]: this.ignore_path }
+    if (ignore_paths !== undefined) {
+      where.path = { [Op.not]: ignore_paths }
     }
-    const ret = await this.sequelize.models.Id.findOne({ where })
-    if (ret) {
-      const ast = cirodown.AstNode.fromJSON(ret.ast_json)
-      ast.input_path = ret.path
-      ast.id = id
-      return ast
-    } else {
-      return undefined
+    const rows = await this.sequelize.models.Id.findAll({ where })
+    const asts = []
+    for (const row of rows) {
+      const ast = cirodown.AstNode.fromJSON(row.ast_json)
+      ast.input_path = row.path
+      ast.id = row.idid
+      asts.push(ast)
     }
+    return asts
   }
 
   async get_includes_entries(to_id) {

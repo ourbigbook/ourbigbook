@@ -722,11 +722,12 @@ class Tokenizer {
   consume_list_indent() {
     if (this.i > 0 && this.chars[this.i - 1] === '\n') {
       let new_list_level = 0;
-      while (array_contains_array_at(this.chars, this.i, INSANE_LIST_INDENT)) {
-        if (new_list_level < this.list_level) {
-          for (const c in INSANE_LIST_INDENT) {
-            this.consume();
-          }
+      while (
+        array_contains_array_at(this.chars, this.i, INSANE_LIST_INDENT) &&
+        new_list_level < this.list_level
+      ) {
+        for (const c in INSANE_LIST_INDENT) {
+          this.consume();
         }
         new_list_level += 1;
       }
@@ -837,6 +838,8 @@ class Tokenizer {
     while (!this.is_end()) {
       this.log_debug('tokenize loop');
       this.log_debug('this.i: ' + this.i);
+      this.log_debug('this.line: ' + this.line);
+      this.log_debug('this.column: ' + this.column);
       this.log_debug('this.cur_c: ' + this.cur_c);
       this.log_debug();
       this.consume_list_indent();

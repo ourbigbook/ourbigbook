@@ -113,31 +113,30 @@ And so this "degraded" slightly into a language slightly saner than Asciidoctor 
 But hopefully, having starting from a saner point will still produce a saner end result, e.g. there are sane constructs for every insane one.
 
 It is intended that this will be an acceptable downside as Cirodown will be used primarily large complex content such as books rather than forum posts, and will therefore primarily written either:
-\l[in text editors locally, where users have more features than in random browser textareas]
-\l[in a dedicated website that will revolutionize education, and therefore have a good JavaScript editing interface: https://github.com/cirosantilli/write-free-science-books-to-get-famous-website]
+* in text editors locally, where users have more features than in random browser textareas
+* in a dedicated website that will revolutionize education, and therefore have a good JavaScript editing interface: https://github.com/cirosantilli/write-free-science-books-to-get-famous-website
 
 For example, originally Cirodown had exactly five magic characters, with similar functions as in LaTeX:
-\l[`\` backslash to start a macro, like LaTeX]
-\l[`{` and `}`: left and right square brackets to delimit \x[positional-vs-named-arguments][optional macro arguments]]
-\l[`[` and `]`: left and right curly braces bracket to start an optional arguments]
+* `\` backslash to start a macro, like LaTeX
+* `{` and `}`: left and right square brackets to delimit \x[positional-vs-named-arguments][optional macro arguments]
+* `[` and `]`: left and right curly braces bracket to start an optional arguments
 and double blank newlines for \x[paragraphs][paragraphs] if you are pedantic, but this later degrated into many more with \x[insane-macro-shortcuts].
 
 We would like to have only square brackets for both optional and mandatory to have even less magic characters, but that would make the language difficult to parse for computer and humans. LaTeX was right for once!
 
 This produces a very regular syntax that is easy to learn, including doing:
-\l[arbitrary nesting of elements]
-\l[adding arbitrary properties to elements]
+* arbitrary nesting of elements
+* adding arbitrary properties to elements
 
 This sanity also makes the end tail learning curve of the endless edge cases found in Markdown and Asciidoctor disappear.
 
 The language is designed to be philosophically isomorphic to HTML to:
-\l[further reduce the learning curve]
-\l[ensure that most of HTML constructs can be reached, including arbitrary nesting]
+* further reduce the learning curve
+* ensure that most of HTML constructs can be reached, including arbitrary nesting
 
 More precisely:
-\l[macro names map to tag names, e.g.: `\\a` to `<a`]
-\l[
-  one of the arguments of macros, maps to the content of the HTML element, and the others map to attributes.
+* macro names map to tag names, e.g.: `\\a` to `<a`
+* one of the arguments of macros, maps to the content of the HTML element, and the others map to attributes.
 
   E.g., in a link:
   ``\a[http://example.com][Link text\]``
@@ -146,7 +145,6 @@ More precisely:
   maps to the `href` of `<a`, and the second macro argument:
   ``Link text``
   maps to the internal content of `<a>Link text<>`.
-]
 
 \h[3][More powerful]
 
@@ -159,9 +157,9 @@ Markdown is clearly missing many key features such as block attributes and \x[in
 The "more powerful than Asciidoctor" part is only partially true, since Asciidoctor is very featureful can do basically anything through extensions.
 
 The difference is mostly that Cirodown is completely and entirely focused on making amazing scientific books, and so will have key features for that application out-of-the box, notably:
-\l[amazing header/ToC/ID features including proper error reports: never have a internal broken link or duplicate ID again]
-\l[\x[math][server side pre-rendered maths with KaTeX]: all divs and spans are ready, browser only applies CSS, no JavaScript gets executed]
-\l[\x[publish]: we take care of website publishing for you out-of-the-box, no need to integrate into an external project like Jekyll]
+* amazing header/ToC/ID features including proper error reports: never have a internal broken link or duplicate ID again
+* \x[math][server side pre-rendered maths with KaTeX]: all divs and spans are ready, browser only applies CSS, no JavaScript gets executed
+* \x[publish]: we take care of website publishing for you out-of-the-box, no need to integrate into an external project like Jekyll
 
 Another advantage over Asciidoctor is that the reference implementation of Cirodown is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with \a[https://github.com/opal/opal][Opal], but who wants to deal with that layer of complexity?
 
@@ -227,20 +225,20 @@ paragraphs]
 \h[3][Insane link parsing rules]
 
 Insane links must be preceded by either:
-\l[the start of the document]
-\l[the start of a \x[positional-vs-named-arguments][positional or named argument] (e.g. `\p[http://example.com]` or `Image[xi.png]{description=http://example.com}`) that not marked with `elide_link_only` (which is the case for example for `href` of `a`)]
-\l[space ` ` char]
-\l[newline `\n` char]
+* the start of the document
+* the start of a \x[positional-vs-named-arguments][positional or named argument] (e.g. `\p[http://example.com]` or `Image[xi.png]{description=http://example.com}`) that not marked with `elide_link_only` (which is the case for example for `href` of `a`)
+* space ` ` char
+* newline `\n` char
 
 The recognized protocols are:
-\l[`http://`]
-\l[`https://`]
+* `http://`
+* `https://`
 
 Insane links end when either the end of the document or one of the following characters is found:
-\l[space ` `]
-\l[newline `\n`]
-\l[close square bracket `]`]
-\l[close curly bracket `}`]
+* space ` `
+* newline `\n`
+* close square bracket `]`
+* close curly bracket `}`
 
 As a consequence, of those rules, it is impossible to have an insane link followed immediately by a period, e.g.:
 \cirodown_example[[
@@ -296,7 +294,7 @@ Setting `child=1` on a cross reference to a header as in:
 \xref[my-header]{child=1}
 ``
 has the following effects:
-\l[add the current header to the list of extra parents of the child]
+* add the current header to the list of extra parents of the child
 
 This allows a section to have multiple parents, e.g. to include it into multiple categories. For example:
 ``
@@ -311,9 +309,8 @@ This allows a section to have multiple parents, e.g. to include it into multiple
 \h[2][Cute animals]
 
 Cute animals:
-
-\l[\xref[dog]{child=1}]
-\l[\xref[cat]]
+* \xref[dog]{child=1}
+* \xref[cat]
 ``
 would render something like:
 ``
@@ -328,8 +325,8 @@ h3 Cat (parent section: Mammals)
 
 \h[2][Cute animals]
 
-\l[\xref[dog]]
-\l[\xref[cat]]
+* \xref[dog]
+* \xref[cat]
 ``
 so note how "Dog" has a list of extra parents including "Cute animals", but Cat does not, due to the `child=1`.
 
@@ -426,9 +423,9 @@ sqlite3 out/db.sqlite3 .dump
 \h[3][Automatic ID from title]
 
 If a \x[the-toplevel-header][non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:
-\l[convert all of `A-Z` characters to lowercase]
-\l[convert consecutive sequences of all non `a-z0-9` ASCII characters to a single hyphen `-`. Note that this leaves non-ASCII character untouched.]
-\l[strip leading or trailing hyphens]
+* convert all of `A-Z` characters to lowercase
+* convert consecutive sequences of all non `a-z0-9` ASCII characters to a single hyphen `-`. Note that this leaves non-ASCII character untouched.
+* strip leading or trailing hyphens
 Note how those rules leave non ASCII Unicode characters untouched, as capitalization and determining if something "is a letter or not" in those cases can be tricky.
 
 So for example, the following automatic IDs would be generated: \x[table-examples-of-automatically-generated-ids].
@@ -533,8 +530,8 @@ But we chose not to do it like most markups available because it leads to too ma
 The `\include` macro allows including an external Cirodown headers under the current header.
 
 It exists to allow optional single page HTML output while still retaining the ability to:
-\l[split up large input files into multiple files to make renders faster during document development]
-\l[suggest an optional custom output split with one HTML output per Cirodown input, in order to avoid extremely large HTML pages which could be slow to load]
+* split up large input files into multiple files to make renders faster during document development
+* suggest an optional custom output split with one HTML output per Cirodown input, in order to avoid extremely large HTML pages which could be slow to load
 
 `\include` takes one mandatory argument, which is the relative path without extension to the `.ciro` file that you want to include.
 
@@ -545,15 +542,13 @@ Headers of the included document are automatically shifted to match the level of
 If \x[html-single-page] is given, the external document is rendered embedded into the current document directly, essentially as if the source had been copy pasted (except for small corrections such as the header offsets).
 
 Otherwise, the following effects happen:
-\l[
-  The headers of the included tree appear in the \x[table-of-contents][table of contents] of the document as links to the corresponding external files.
+* The headers of the included tree appear in the \x[table-of-contents][table of contents] of the document as links to the corresponding external files.
 
   This is implemented simply by reading a previously generated database file much like \x[internal-cross-file-references-internals], which avoids the slowdown of parsing all included files every time.
 
   As a result, you have to do an initial parse of all files in the project to extract their headers however, just as you would need to do when linking to those headers.
-]
-\l[the include itself renders as a link to the included document]
-\l[\x[html-single-page]]
+* the include itself renders as a link to the included document
+* \x[html-single-page]
 
 Here is an example of inclusion of the files `not-readme.ciro` and `not-readme-2.ciro`.
 
@@ -564,8 +559,8 @@ Here is an example of inclusion of the files `not-readme.ciro` and `not-readme-2
 \h[3][Skipping header levels]
 
 The very first header of a document can be of any level, although we highly recommend your document to start with a `\h[1]`, and to contain exactly just one `\h[1]`, as this has implications such as:
-\l[`\h[1]` is used for the document title: \x[html-document-title]]
-\l[`\h[1]` does not show on the \x[table-of-contents]]
+* `\h[1]` is used for the document title: \x[html-document-title]
+* `\h[1]` does not show on the \x[table-of-contents]
 
 After the initial header however, you must not skip a header level, e.g. the following would give an error because it skips level 3:
 ``
@@ -633,14 +628,21 @@ rather than:
 \h[2][Lists `\l`]
 {id=lists}
 
-With \x[auto-parent][implicit container]:
+\x[insane-macro-shortcuts][Insane] with `* ` (asterisk space):
+\cirodown_example[[
+* a
+* b
+* c
+]]
+
+Equivalent saner with \x[auto-parent][implicit `ul` container]:
 \cirodown_example[[
 \l[a]
 \l[b]
 \l[c]
 ]]
 
-Equivalent with explicit container:
+Equivalent fully sane with explicit container:
 \cirodown_example[[
 \ul[
 \l[a]
@@ -669,31 +671,55 @@ It is also required if you want ordered lists:
 ]
 ]]
 
-Nested lists with implicit containers:
+Insane nested list with two space indentation:
+\cirodown_example[[
+* a
+  * a1
+  * a2
+  * a2
+* b
+* c
+]]
+The indentation must always be exactly equal to two spaces.
+
+Equivalent saner nested lists with implicit containers:
 \cirodown_example[[
 \l[
-  a
-
-  \l[a1]
-  \l[a2]
-  \l[a2]
+a
+\l[a1]
+\l[a2]
+\l[a2]
 ]
 \l[b]
 \l[c]
 ]]
 
-List item with a paragraph inside of it:
+Insane list item with a paragraph inside of it:
 \cirodown_example[[
-\l[a]
-\l[
-  I have
+* a
+* I have
 
   Multiple paragraphs.
 
-  \l[And]
-  \l[also]
-  \l[a]
-  \l[list]
+  * And
+  * also
+  * a
+  * list
+* c
+]]
+
+Equivalent sane version:
+\cirodown_example[[
+\l[a]
+\l[
+I have
+
+Multiple paragraphs.
+
+\l[And]
+\l[also]
+\l[a]
+\l[list]
 ]
 \l[c]
 ]]
@@ -720,8 +746,8 @@ Have a look at this amazing image: \x[fig-my-test-image].
 {description=This image is amazing because it highlight's Xi's beauty and honesty.}
 ]]
 This exemplifies the following parameters:
-\l[`description`: similar to `title`, but allow for further explanations without them appearing in \x[internal-cross-references][cross references] to the image]
-\l[`source`: a standardized way to credit an image by linking to a URL that contains further image metadata]
+* `description`: similar to `title`, but allow for further explanations without them appearing in \x[internal-cross-references][cross references] to the image
+* `source`: a standardized way to credit an image by linking to a URL that contains further image metadata
 For further discussion on the effects of ID see: \x[image-id][full].
 
 And this is how you make an inline image inline one with lower case `i`:
@@ -753,8 +779,8 @@ And now an image outside of \x[cirodown-example] to test how it looks directly u
 \h[3][Image height]
 
 By default, we fix image heights to `height=315`, and let the `width` be calculated proportionally once the image loads. We therefore ignore the actual image size. This is done to:
-\l[prevent reflows as the page loads images and can determine their actual sizes, especially is the user opens the page at a given ID in the middle of the page]
-\l[create a more uniform media experience by default, unless a custom image size is actually needed e.g. if the image needs to be larger]
+* prevent reflows as the page loads images and can determine their actual sizes, especially is the user opens the page at a given ID in the middle of the page
+* create a more uniform media experience by default, unless a custom image size is actually needed e.g. if the image needs to be larger
 
 \h[3][Image ID]
 
@@ -804,8 +830,8 @@ However, if you are making a huge tutorial, which can have a huge undefined numb
 We recommend the following approach instead.
 
 Create a separate GitHub repository in addition to the main one containing the text, for example:
-\l[`./my-tutorial/`]
-\l[`./my-tutorial-media/`]
+* `./my-tutorial/`
+* `./my-tutorial-media/`
 The name `*-media` suffix is not mandatory, but if you use this default, `cirodown` will handle it for you without any further configuration.
 
 And then set the \x[media-source-type] option in your \x[cirodown-json]:
@@ -823,8 +849,8 @@ Now, simply drop your images into the `my-tutorial-media` repository and use the
 `cirodown` will even automatically add and push used images in the `my-tutorial-media` repository for you during publishing!
 
 You should then use the following rules inside `my-tutorial-media`:
-\l[give every file a very descriptive and unique name as a full English sentence]
-\l[never ever delete any files, nor change their content, unless it is an improvement in format that does change the information contained of the image TODO link to nice Wikimedia Commons guideline page]
+* give every file a very descriptive and unique name as a full English sentence
+* never ever delete any files, nor change their content, unless it is an improvement in format that does change the information contained of the image TODO link to nice Wikimedia Commons guideline page
 
 This way, even though the repositories are not fully in sync, anyone who clones the latest version of the `*-media` directory will be able to view any version of the main repository.
 
@@ -1167,10 +1193,10 @@ This macro is used extensively in the Cirodown documentation.
 \h[3][Insane macro shortcuts]
 
 Certain commonly used macros have insane macro shortcuts that do not start with backslash (`\`):
-\l[\x[paragraphs]: `\n\n` (double newline)]
-\l[\x[links]: `a http://exmaple.com b` (space followed by `http://`)]
-\l[\x[math]: `$`, described at: \x[insane-code-and-math-shortcuts]]
-\l[\x[code]: \c[[`]], described at: \x[insane-code-and-math-shortcuts]]
+* \x[paragraphs]: `\n\n` (double newline)
+* \x[links]: `a http://exmaple.com b` (space followed by `http://`)
+* \x[math]: `$`, described at: \x[insane-code-and-math-shortcuts]
+* \x[code]: \c[[`]], described at: \x[insane-code-and-math-shortcuts]
 
 Originally, \x[design-goals][Ciro wanted to avoid those], but they just feel too good to avoid.
 
@@ -1215,8 +1241,8 @@ d
 \h[4][Insane macro shortcut extra arguments]
 
 Insane arguments always work by abbreviating:
-\l[the macro name]
-\l[one or more of its positional arguments, which are fixed as either \x[literal-arguments][literal or non-literal] for a given insane construct]
+* the macro name
+* one or more of its positional arguments, which are fixed as either \x[literal-arguments][literal or non-literal] for a given insane construct
 This means that you can add further arguments as usual.
 
 For example, an insane code block with an id can be written as:
@@ -1276,12 +1302,10 @@ For example, in a \x[headers][header] definition with an ID:
 \h[1][My asdf]{id=asdf qwer}{id_scope=myscope}
 ``
 we have:
-\l[two positional argument: `[1]` and `[My asdf]`. Those are surrounded by square brackets `[]` and have no name]
-\l[
-  two named arguments: `{id=asdf qwer}` and `{id_scope=myscope}`.
+* two positional argument: `[1]` and `[My asdf]`. Those are surrounded by square brackets `[]` and have no name
+* two named arguments: `{id=asdf qwer}` and `{id_scope=myscope}`.
 
   The first one has name `id` and the mandatory separator `=`, followed by the value `asdf qwer`.
-]
 
 You can determine if a macro is positional or named by using \x[help-macros]. Its output contains something like:
 ``
@@ -1366,12 +1390,10 @@ The JavaScript interface sees arguments as follows:
 function macro_name(args)
 ``
 where args is a dict such that:
-\l[optional arguments have the key/value pairs explicitly given on the call]
-\l[
-  mandatory arguments have a key documented by the API, and the value on the call.
+* optional arguments have the key/value pairs explicitly given on the call
+* mandatory arguments have a key documented by the API, and the value on the call.
 
   For example, the link API names its arguments `href` and `text`.
-]
 
 \h[4][Literal arguments (`[[...]]` and `{{key=...}}`)]
 {id=literal-arguments}
@@ -1403,12 +1425,12 @@ The program \c[[puts("]");]] is very complex.
 ]]]
 
 Within literal blocks, only one thing can be escaped with backslashes are:
-\l[leading open square bracket `[`]
-\l[trailing close square bracket `]`]
+* leading open square bracket `[`
+* trailing close square bracket `]`
 
 The rule is that:
-\l[if the first character of a literal argument is a sequence of backslashes (`\`), and it is followed by another argument open character (e.g. `[`, remove the first `\` and treat the other characters as regular text]
-\l[if the last character of a literal argument is a `\`, ignore it and treat the following closing character (e.g. `]`) as regular text]
+* if the first character of a literal argument is a sequence of backslashes (`\`), and it is followed by another argument open character (e.g. `[`, remove the first `\` and treat the other characters as regular text
+* if the last character of a literal argument is a `\`, ignore it and treat the following closing character (e.g. `]`) as regular text
 
 See the following open input/output pairs:
 ``
@@ -1502,11 +1524,11 @@ This allows to greatly improve the readability of long argument lists by having 
 \h[4][Escape characters]
 
 For \x[literal-arguments][non-literal macro arguments], you have to use a backslash to escape:
-\l[`\`: backslashes start macros]
-\l[`\` and `\`: open and close \x[positional-vs-named-arguments][positional macro arguments]]
-\l[`\` and `\`: open and close \x[positional-vs-named-arguments][optional macro arguments]]
-\l[`$` (dollar sign)]: \x[insane-macro-shortcuts][insane macro shortcut] for \x[math][Math]
-\l[\c[[`]] (backtick)]: \x[insane-macro-shortcuts][insane macro shortcut] for \x[code][code]
+* `\`: backslashes start macros
+* `\` and `\`: open and close \x[positional-vs-named-arguments][positional macro arguments]
+* `\` and `\`: open and close \x[positional-vs-named-arguments][optional macro arguments]
+* `$` (dollar sign)]: \x[insane-macro-shortcuts][insane macro shortcut] for \x[math][Math
+* \c[[`]] (backtick)]: \x[insane-macro-shortcuts][insane macro shortcut] for \x[code][code
 
 The escape rules for literal arguments are described at: \x[literal-arguments]{full}.
 
@@ -1518,14 +1540,14 @@ This is good for short arguments of regular text, but for longer blocks of \x[co
 Some sequences of macros such as `l` from \x[lists] and `tr` from \x[tables] automatically generate implicit parents, e.g.:
 ``
 \ul[
-\li[aa]
-\li[bb]
+\l[aa]
+\l[bb]
 ]
 ``
 parses exactly like:
 ``
-\li[aa]
-\li[bb]
+\l[aa]
+\l[bb]
 ``
 
 The children are always added as arguments of the `content` argument of the implicit parent.
@@ -1540,24 +1562,24 @@ In HTML, certain elements such as `<ul>` cannot have any `text` nodes in them, a
 A similar concept applies to Cirodown, e.g.:
 ``
 \ul[
-\li[aa]
-\li[bb]
+\l[aa]
+\l[bb]
 ]
 ``
 does not parse as:
 ``
-\ul[\li[aa]<NEWLINE>\li[bb]<NEWLINE>]
+\ul[\l[aa]<NEWLINE>\l[bb]<NEWLINE>]
 ``
 but rather as:
 ``
-\ul[\li[aa]\li[bb]]
+\ul[\l[aa]\l[bb]]
 ``
 because the `content` argument of `ul` is marked with `remove_whitespace_children` and automatically removes any whitespace children (such as a newline) as a result.
 
 This also applies to consecutive sequences of \x[auto-parent] macros, e.g.:
 ``
-\li[aa]
-\li[bb]
+\l[aa]
+\l[bb]
 ``
 also does not include the newline between the list items.
 
@@ -1566,13 +1588,13 @@ The definition of whitespace is the same as the ASCII whitespace definition of H
 \h[3][Macro capitalization for block vs inline]
 
 This is just a naming convention without any magic attached to it. It is currently used for macros such as:
-\l[\x[math]]
-\l[\x[code]]
-\l[\x[comments]]
+* \x[math]
+* \x[code]
+* \x[comments]
 
 The naming convention is as follows:
-\l[if there is both an inline and block version of something, use the capitalization to distinguish between them]
-\l[otherwise, just name it lowercase, even if it is block]
+* if there is both an inline and block version of something, use the capitalization to distinguish between them
+* otherwise, just name it lowercase, even if it is block
 
 Maybe it would be saner to go "block if and only if uppercase", and automate that in the code. But it means more shift pressing...
 
@@ -1594,8 +1616,8 @@ cirodown .
 ``
 
 In order to resolve \x[internal-cross-file-references], this actually does two passes:
-\l[first an ID extraction pass, which parses all inputs and dumps their IDs to the ID database]
-\l[then a second render pass, which uses the IDs in the ID database]
+* first an ID extraction pass, which parses all inputs and dumps their IDs to the ID database
+* then a second render pass, which uses the IDs in the ID database
 
 Convert a `.ciro` file from stdin to HTML and output the contents of `<body>` to stdout:
 ``
@@ -1605,12 +1627,12 @@ printf 'ab\ncd\n' | cirodown --body-only
 \h[4][Index files]
 
 The following basenames are considered "index files":
-\l[`README.ciro`]
-\l[`index.ciro`]
+* `README.ciro`
+* `index.ciro`
 
 Those basenames have the following magic properties:
-\l[the default output file name for an index file in HTML output is always `index.html`, including that of `README.ciro`. This way it will appear on both the root of the HTML output and on the GitHub home page once GitHub adds Cirodown support.]
-\l[the default \x[the-toplevel-header][toplevel header] ID of an index files is derived from the parent directory basename rather than from the source file basename]
+* the default output file name for an index file in HTML output is always `index.html`, including that of `README.ciro`. This way it will appear on both the root of the HTML output and on the GitHub home page once GitHub adds Cirodown support.
+* the default \x[the-toplevel-header][toplevel header] ID of an index files is derived from the parent directory basename rather than from the source file basename
 
 \h[4][`cirodown` executable options]
 {id=cirodown-executable-options}
@@ -1633,8 +1655,8 @@ cd out/publish/out/publish/
 Generate a simple repository template for a new project.
 
 This includes common files that almost all projects will want to have, e.g.:
-\l[`package.json` specifying the Cirodown version]
-\l[`.gitignore` to prevent output from being committed accidentally]
+* `package.json` specifying the Cirodown version
+* `.gitignore` to prevent output from being committed accidentally
 
 The output provides a hello world setup that is immediately ready to be published e.g. \x[publish-to-github-pages][to GitHub pages].
 
@@ -1659,17 +1681,14 @@ Embed as many external resources as possible into a single HTML file.
 The use case for this option is to produce a single HTML file for an entire build that is fully self contained, and can therefore be given to consumers and viewed offline, much like a PDF.
 
 Examples of embeddings done:
-\l[
-  CSS and JavaScript are copy pasted in place into the HTML.
+* CSS and JavaScript are copy pasted in place into the HTML.
 
   The default built-in CSS and JavaScript files used by Cirodown (e.g. the KaTeX CSS \x[math][used for mathematics]) are currently all automatically downloaded as NPM package dependencies to cirodown
 
   Without `--html-embed`, those CSS and JavaScript use their main cloud CDN URLs, and therefore require Internet connection to view the generated documents.
 
-  The embeded version of the document can be viewed offline however.
-]
-\l[
-  \x[images][images] are downloaded if needed and embedded as `data:` URLs.
+  The embedded version of the document can be viewed offline however.
+* \x[images][images] are downloaded if needed and embedded as `data:` URLs.
 
   Images that are managed by the project itself and already locally present, such as those inside the project itself or due to \x[media-source-type] usually don't require download.
 
@@ -1677,18 +1696,17 @@ Examples of embeddings done:
 
   To re-download due to image updates, use either:
 
-  \l[`--asset-cache-update`: download all images such that the local disk timestamp is older than the HTTP modification date with \a[https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since][`If-Modified-Since`]]
-  \l[`--asset-cache-update-force`: forcefully redownload all assets]
-]
+  * `--asset-cache-update`: download all images such that the local disk timestamp is older than the HTTP modification date with \a[https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since][`If-Modified-Since`]
+  * `--asset-cache-update-force`: forcefully redownload all assets
 
 Keep in mind that certain things can never be embedded, e.g.:
-\l[YouTube videos, since YouTube does not offer any download API]
+* YouTube videos, since YouTube does not offer any download API
 
 \h[5][`--html-single-page`]
 {id=html-single-page}
 
 If given:
-\l[the \x[includes][`include`] macro parses the target file to be included and includes it in-place]
+* the \x[includes][`include`] macro parses the target file to be included and includes it in-place
 \l[\x[internal-cross-file-references] are disabled, and the cross file ID database does not get updated.
 
 It should be possible to work around this, but we are starting with the simplest implementation that forbids it.
@@ -1755,8 +1773,8 @@ If not specified, the default target is \x[publish-to-github-pages].
 Only changes committed to Git are pushed.
 
 Files that `cirodown` knows how to process get processed and only their outputs are added to the published repo, those file types are:
-\l[`.ciro` files are converted to `.html`]
-\l[`.scss` files are converted to `.css`]
+* `.ciro` files are converted to `.html`
+* `.scss` files are converted to `.css`
 Every other Git-tracked file is pushed as is.
 
 When `--publish` is given, stdin input is not accepted, and so the current directory is built by default, i.e. the following two are equivalent:
@@ -1774,8 +1792,8 @@ Publishing only happens if the build has no errors.
 The first step is of course to create the GitHub repository that will contain your GitHub pages as usual.
 
 Then, if you want to publish your root user page, which appears at `/` (e.g. https://github.com/cirosantilli/cirosantilli.github.io for the user `cirosantilli`), GitHub annoyingly forces you to use the `master` branch for the HTML output:
-\l[https://github.com/isaacs/github/issues/212]
-\l[https://stackoverflow.com/questions/31439951/how-can-i-use-a-branch-other-than-master-for-user-github-pages]
+* https://github.com/isaacs/github/issues/212
+* https://stackoverflow.com/questions/31439951/how-can-i-use-a-branch-other-than-master-for-user-github-pages
 
 This means that you must place your `.ciro` input files in a branch other than `master` to clear up `master` for the generated HTML.
 
@@ -1810,8 +1828,8 @@ cirodown --publish .
 {id=publish-commit}
 
 Like \x[publish], but also automatically:
-\l[`git add -u` to automatically add change to any files that have been previously git tracked]
-\l[`git commit -m <commit-message>` to create a new commit with those changes]
+* `git add -u` to automatically add change to any files that have been previously git tracked
+* `git commit -m <commit-message>` to create a new commit with those changes
 
 This allows you to publish your changes live in a single command such as:
 ``
@@ -1870,10 +1888,10 @@ If not given, the default template at one point was:
 This will get out of sync sooner or later with the code, but this should still serve as a good base example for this documentation.
 
 Defined variables:
-\l[`body`: the rendered body]
-\l[`git_sha`: SHA of the latest git commit of the source code if in a git repository]
-\l[`style`: default Cirodown stylesheets]
-\l[`title`]
+* `body`: the rendered body
+* `git_sha`: SHA of the latest git commit of the source code if in a git repository
+* `style`: default Cirodown stylesheets
+* `title`
 
 We pick Liquid because it is server-side safe: if we ever some day offer a compilation service, Liquid is designed to prevent arbitrary code execution and infinite loops in templates.
 
@@ -1904,7 +1922,7 @@ If the `prepublish` script returns with a non-zero exit value, the publish is ab
 {id=media-source-type}
 
 TODO implement:
-\l[`local`: tracked in the current Git repository, no further magic is done]
+* `local`: tracked in the current Git repository, no further magic is done
 \l[
   `media_repo`: tracked in a separate media repository, defaults to `../<project-name>-media/`
 
@@ -1937,40 +1955,40 @@ Possibilities we could reuse:
 Editor.js
 
 Returns JSON AST!
-\l[website: https://editorjs.io/ json output]
-\l[source: https://github.com/codex-team/editor.js]
-\l[WYSIWYG: no]
-\l[preview scroll sync: yes]
+* website: https://editorjs.io/ json output
+* source: https://github.com/codex-team/editor.js
+* WYSIWYG: no
+* preview scroll sync: yes
 ]
 \l[
   StackEdit
 
-  \l[website: https://stackedit.io]
-  \l[source: https://github.com/benweet/stackedit]
-  \l[demo: https://stackedit.io/app]
-  \l[WYSIWYG: no]
-  \l[preview scroll sync: yes]
+  * website: https://stackedit.io
+  * source: https://github.com/benweet/stackedit
+  * demo: https://stackedit.io/app
+  * WYSIWYG: no
+  * preview scroll sync: yes
 ]
 \l[
   Editor.md
 
-  \l[website: https://github.com/pandao/editor.md]
-  \l[source: https://github.com/pandao/editor.md]
-  \l[demo: https://pandao.github.io/editor.md]
-  \l[WYSIWYG: no]
-  \l[preview scroll sync: yes but buggy when tested 2019-12-12 on live website]
+  * website: https://github.com/pandao/editor.md
+  * source: https://github.com/pandao/editor.md
+  * demo: https://pandao.github.io/editor.md
+  * WYSIWYG: no
+  * preview scroll sync: yes but buggy when tested 2019-12-12 on live website
 ]
 \l[
   Quill.md
 
-  \l[website: https://quilljs.com]
-  \l[source: https://github.com/pandao/editor.md]
-  \l[demo: https://pandao.github.io/editor.md]
-  \l[WYSIWYG: yes]
-  \l[markdown output: no https://github.com/quilljs/quill/issues/74]
+  * website: https://quilljs.com
+  * source: https://github.com/pandao/editor.md
+  * demo: https://pandao.github.io/editor.md
+  * WYSIWYG: yes
+  * markdown output: no https://github.com/quilljs/quill/issues/74
 ]
-\l[https://ui.toast.com/tui-editor/]
-\l[https://www.froala.com/wysiwyg-editor]
+* https://ui.toast.com/tui-editor/
+* https://www.froala.com/wysiwyg-editor
 
 \h[2][Developing Cirodown]
 
@@ -2006,23 +2024,23 @@ node inspect ./node_modules/.bin/mocha test --ignore-leaks -g 'p with id before'
 
 Source files:
 
-\l[\a[index.js]: main code. Must be able to run in the browser, so no Node.js specifics. Exposes the central `convert` function]
-\l[\a[cirodown]: CLI executable. Is basically just a CLI interface frontend to `convert`]
-\l[\a[test.js]: contains all the Mocha tests, see also: \x[test-system]]
-\l[\a[README.md]: minimal Markdown README until GitHub / NPM support Cirodown :-)]
+* \a[index.js]: main code. Must be able to run in the browser, so no Node.js specifics. Exposes the central `convert` function
+* \a[cirodown]: CLI executable. Is basically just a CLI interface frontend to `convert`
+* \a[test.js]: contains all the Mocha tests, see also: \x[test-system]
+* \a[README.md]: minimal Markdown README until GitHub / NPM support Cirodown :-)
 
 Generated files:
 
-\l[`cirodown.js` packaged \a[http://browserify.org/][browserify] JavaScript for browser usage, generated with `npm run browserify`]
+* `cirodown.js` packaged \a[http://browserify.org/][browserify] JavaScript for browser usage, generated with `npm run browserify`
 
 \h[4][`build-sass`]
 {id=build-sass}
 
 The \a[build-sass] script takes as input the \a[cirodown.scss] \a[https://sass-lang.com/][SASS] scss file, and generates various `.css` versions from it required to properly view generated Cirodown HTML:
 
-\l[`cirodown.min.css`: contains the converted `cirodown.scss` plus online `@import` requests for stuff like \x[math][KaTeX]]
-\l[`cirodown.embed.min.css`: like `cirodown.min.css` but embeds all external CSS in-place without any `@import`. Used to distribute standalone pages: \x[html-embed]]
-\l[`cirodown.local.min.css`: only includes style generated from `cirodown.scss`, not external styles. Used when the external styles are present locally, e.g. via `node_modules`. I think this was done because \a[https://stackoverflow.com/questions/34139675/css-import-not-working-for-local-file-file-path-is-correct][`@import`] was not working with local flies?]
+* `cirodown.min.css`: contains the converted `cirodown.scss` plus online `@import` requests for stuff like \x[math][KaTeX]
+* `cirodown.embed.min.css`: like `cirodown.min.css` but embeds all external CSS in-place without any `@import`. Used to distribute standalone pages: \x[html-embed]
+* `cirodown.local.min.css`: only includes style generated from `cirodown.scss`, not external styles. Used when the external styles are present locally, e.g. via `node_modules`. I think this was done because \a[https://stackoverflow.com/questions/34139675/css-import-not-working-for-local-file-file-path-is-correct][`@import`] was not working with local flies?
 
 \h[3][Internals API]
 
@@ -2038,8 +2056,8 @@ All tooling will be merged into one single repo.
 {id=toplevel}
 
 Every Cirodown document is implicitly put inside a `\toplevel` document and:
-\l[any optionally given arguments at the very beginning of the document will be treated as arguments of the `\toplevel` macro]
-\l[anything else will be put inside the `content` argument of the `\toplevel` macro]
+* any optionally given arguments at the very beginning of the document will be treated as arguments of the `\toplevel` macro
+* anything else will be put inside the `content` argument of the `\toplevel` macro
 
 E.g., a Cirodown document that contains:
 ``
@@ -2061,9 +2079,9 @@ Trying to use the `\toplevel` macro explicitly in a document leads to an error.
 
 \h[4][HTML document title]
 
-\l[if the `title` argument of `toplevel` is given, use that]
-\l[otherwise, if the document has a `\h[1]`, use the title of the first such header]
-\l[otherwise use a dummy value]
+* if the `title` argument of `toplevel` is given, use that
+* otherwise, if the document has a `\h[1]`, use the title of the first such header
+* otherwise use a dummy value
 
 \h[3][CSS]
 
@@ -2080,23 +2098,23 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \h[3][TODO]
 
-\l[list and code caption]
-\l[\x[id-scope]]
-\l[correct ID generation algorithm to be Unicode robust]
-\l[handle ID calculation from title if title has HTML elements, e.g. headers with code. Use that for the title as well. This has to be done with a context argument that makes implementing macros output just the text without tags]
-\l[local downloads and single HTML page with image / script embeds]
-\l[image management: upload to separate media directory]
-\l[create mechanism to link to the GitHub blob view of in-tree source files that are not added to GitHub pages, e.g. `\file`]
-\l[parse_error: add in document error message, currently only to stderr]
-\l[on the AST, put contents of headers inside headers]
-\l[auto-toc after the first paragraph]
-\l[capitalization property of headers]
+* list and code caption
+* \x[id-scope]
+* correct ID generation algorithm to be Unicode robust
+* handle ID calculation from title if title has HTML elements, e.g. headers with code. Use that for the title as well. This has to be done with a context argument that makes implementing macros output just the text without tags
+* local downloads and single HTML page with image / script embeds
+* image management: upload to separate media directory
+* create mechanism to link to the GitHub blob view of in-tree source files that are not added to GitHub pages, e.g. `\file`
+* parse_error: add in document error message, currently only to stderr
+* on the AST, put contents of headers inside headers
+* auto-toc after the first paragraph
+* capitalization property of headers
 
 \h[2][Related projects]
 
-\l[\a[https://github.com/rstudio/bookdown], \a[https://bookdown.org/]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: \a[https://bookdown.org/yihui/bookdown/pandoc.html], thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.]
-\l[\a[https://gohugo.io/][Hugo]. Pretty good, similar feature set to ours. But Go based, so hard on browser, and adds adhoc features on top of markdown once again]
+* \a[https://github.com/rstudio/bookdown], \a[https://bookdown.org/]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: \a[https://bookdown.org/yihui/bookdown/pandoc.html], thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.
+* \a[https://gohugo.io/][Hugo]. Pretty good, similar feature set to ours. But Go based, so hard on browser, and adds adhoc features on top of markdown once again
 
 Less related but of interest:
-\l[http://www.uprtcl.io/]
-\l[https://libretexts.org]
+* http://www.uprtcl.io/
+* https://libretexts.org

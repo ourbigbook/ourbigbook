@@ -7,6 +7,10 @@
 {tag=Web}
 {tag=Issue}
 
+=== Like comments
+{tag=Web}
+{tag=Issue}
+
 === Use same parent title if the current user has a matching article when clicking "Create my own version of article" 
 {tag=Web}
 {tag=Topic}
@@ -543,6 +547,33 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== Undefined tag error message for directory conversion says header ID is not defined instead of tag ID
+{tag=Bug}
+{tag=Tag}
+
+README.bigb
+``
+= Tmp
+
+== Tmp 2
+{tag=adsf}
+``
+convert:
+``
+ourbigbook .
+``
+outcome:
+``
+extract_ids: README.bigb
+extract_ids: README.bigb finished in 43.47357300110161 ms
+error:
+README.bigb:4:1: cross reference to unknown id: "tmp-2"
+``
+expected outcome:
+``
+README.bigb:4:1: cross reference to unknown id: "asdf"
+``
 
 === Design a project banner
 {tag=Publicity}
@@ -1210,6 +1241,8 @@ This tag is about `ourbigbook --web` uploading from the local filesystem to OurB
 === CLI
 
 === Lib
+
+==== Tag
 
 === Bug
 

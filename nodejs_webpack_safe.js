@@ -765,8 +765,18 @@ async function check_db(sequelize, paths_converted, transaction) {
       not_inflected_match_global_idx === undefined &&
       inflected_match_global_idx === undefined
     ) {
+      let to
+      if (
+        // Happens on undefined tags.
+        // https://docs.ourbigbook.com/todo/undefined-tag-error-message-for-directory-conversion-says-header-id-is-not-defined-instead-of-tag-id
+        shortest_not_inflected_ref.type === sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_CHILD]
+      ) {
+        to = shortest_not_inflected_ref.from_id
+      } else {
+        to = shortest_not_inflected_ref.to_id
+      }
       error_messages.push(
-        `${new_ref.defined_at}:${new_ref.defined_at_line}:${new_ref.defined_at_col}: cross reference to unknown id: "${shortest_not_inflected_ref.to_id}"`
+        `${new_ref.defined_at}:${new_ref.defined_at_line}:${new_ref.defined_at_col}: cross reference to unknown id: "${to}"`
       )
     }
   }

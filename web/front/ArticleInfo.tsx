@@ -12,7 +12,7 @@ const ArticleInfo = ({
   loggedInUser,
 }) => {
   const canModify =
-    loggedInUser && loggedInUser?.username === article?.file?.author?.username;
+    loggedInUser && loggedInUser?.username === article?.author?.username;
   const [liked, setLiked] = React.useState(false);
   const [score, setScore] = React.useState(article?.score);
   const handleDelete = async () => {

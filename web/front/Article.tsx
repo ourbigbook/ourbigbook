@@ -3,7 +3,8 @@ import React from 'react'
 import Comment from 'front/Comment'
 import CommentInput from 'front/CommentInput'
 import { CommentType } from 'front/types/CommentType'
-import IssueSummary from 'front/IssueSummary'
+import ArticleList from 'front/ArticleList'
+import routes from 'front/routes'
 
 // This also worked. But using the packaged one reduces the need to replicate
 // or factor out the webpack setup of the ourbigbook package.
@@ -18,10 +19,26 @@ function renderRefCallback(elem) {
 
 const Article = ({
   article,
+  comments,
+  commentsCount,
+  isIssue,
   issues,
+  issuesCount,
   loggedInUser,
 }) => {
   const markup = { __html: article.render };
+  let seeAllCreateNew
+  if (!isIssue) {
+    seeAllCreateNew = <>
+      {issues.length > 0 &&
+        <>
+          <a href={routes.issuesLatest(article.slug)}><i className="ion-eye" /> See all { issuesCount } threads</a>
+          {' '}
+        </>
+      }
+      <a href={routes.issueNew(article.slug)}><i className="ion-edit" /> Create a new thread</a>
+    </>
+  }
   return <>
     <div
       dangerouslySetInnerHTML={markup}
@@ -29,14 +46,32 @@ const Article = ({
       ref={renderRefCallback}
     />
     <div className="issues content-not-ourbigbook">
-      <h1>Comments</h1>
-      {issues?.map((issue: IssueType) => (
-        <IssueSummary{...{
-          issue,
-          key: issue.id,
-          loggedInUser,
-        }} />
-      ))}
+      {isIssue
+        ? <h2>Comments ({ commentsCount })</h2>
+        : <>
+            <h2>Discussion ({ issuesCount })</h2>
+            { seeAllCreateNew }
+            { issues.length > 0 ?
+                <>
+                  <h3>Latest threads</h3>
+                  <ArticleList {...{
+                    articles: issues,
+                    articlesCount: issuesCount,
+                    comments,
+                    commentsCount,
+                    issueArticle: article,
+                    isIssue: true,
+                    loggedInUser,
+                    page: 0,
+                    showAuthor: true,
+                    what: 'issues',
+                  }}/>
+                  { seeAllCreateNew }
+                </>
+              : <p>There are no discussion threads in this article yet.</p>
+            }
+          </>
+      }
     </div>
   </>
 }

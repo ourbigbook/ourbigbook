@@ -5,11 +5,12 @@ export interface Issues {
 }
 
 export type IssueType = {
-  createdAt: number;
-  number: number;
-  id: string;
-  source: string;
-  render: string;
   author: UserType;
+  createdAt: number;
+  id: string;
+  number: number;
+  render: string;
+  score: number;
+  source: string;
   updatedAt: number;
 };

@@ -18,19 +18,6 @@ module.exports = (sequelize) => {
         // Once there are no conversion errors however and the DB is stable, then they should be unique.
         //unique: true,
       },
-      // Path at which the ID is defined, relative to project toplevel. E.g.:
-      // animal/dog.bigb
-      // or on web:
-      // @username/dog.bigb
-      // It would likely have been nicer if we had just not kept the extension in there,
-      // but lazy to change now.
-      //
-      // TODO maybe this should point to File instead? Also, idid already points to File.toplevel_id.
-      // https://docs.ourbigbook.com/todo#ref-file-normalization
-      path: {
-        type: DataTypes.TEXT,
-        allowNull: false,
-      },
       // The ID of the toplevel header for this element. E.g. in:
       //
       // ``
@@ -66,7 +53,7 @@ module.exports = (sequelize) => {
     {
       indexes: [
         { fields: ['idid'], },
-        { fields: ['path'], },
+        { fields: ['defined_at'], },
       ],
     }
   )
@@ -76,22 +63,36 @@ module.exports = (sequelize) => {
       '$Id.idid$': { [Op.col]: 'duplicate.idid' },
       '$Id.id$': { [Op.ne]: { [Op.col]: 'duplicate.id' } },
     }
-    if (paths !== undefined) {
+    if (paths.length) {
       on[Op.or] = [
-        { '$Id.path$': paths },
-        { '$duplicate.path$': paths },
+        { '$idDefinedAt.path$': paths },
+        { '$duplicate->idDefinedAt.path$': paths },
       ]
     }
     return sequelize.models.Id.findAll({
-      include: {
-        model: sequelize.models.Id,
-        as: 'duplicate',
-        required: true,
-        on,
-      },
+      include: [
+        {
+          model: sequelize.models.Id,
+          as: 'duplicate',
+          required: true,
+          include: [
+            {
+              model: sequelize.models.File,
+              as: 'idDefinedAt',
+              required: true,
+            },
+          ],
+        },
+        {
+          model: sequelize.models.File,
+          as: 'idDefinedAt',
+          required: true,
+          on,
+        },
+      ],
       order: [
         ['idid', 'ASC'],
-        ['path', 'ASC'],
+        [sequelize.col('idDefinedAt.path'), 'ASC'],
       ],
       transaction,
     })
@@ -99,28 +100,38 @@ module.exports = (sequelize) => {
 
   Id.findInvalidTitleTitle = async (paths, transaction) => {
     let where
-    if (paths !== undefined) {
-      where = { 'path': paths }
+    if (paths === undefined) {
+      where = { path: paths }
     }
     return sequelize.models.Id.findAll({
-      include: {
-        model: sequelize.models.Ref,
-        as: 'from',
-        required: true,
-        where: {
-          type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_TITLE_TITLE],
+      include: [
+        {
+          model: sequelize.models.File,
+          as: 'idDefinedAt',
+          required: true,
+          where,
         },
-        include: {
-          model: sequelize.models.Id,
-          as: 'to',
+        {
+          model: sequelize.models.Ref,
+          as: 'from',
           required: true,
           where: {
-            macro_name: { [Op.ne]: ourbigbook.Macro.HEADER_MACRO_NAME },
-          }
+            type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_TITLE_TITLE],
+          },
+          include: [
+            {
+              model: sequelize.models.Id,
+              as: 'to',
+              required: true,
+              where: {
+                macro_name: { [Op.ne]: ourbigbook.Macro.HEADER_MACRO_NAME },
+              }
+            },
+          ],
         },
-      },
+      ],
       order: [
-        ['path', 'ASC'],
+        [sequelize.col('idDefinedAt.path'), 'ASC'],
         ['idid', 'ASC'],
       ],
       transaction,

@@ -20,7 +20,7 @@ const { DataTypes } = require('sequelize')
 const ourbigbook = require('./index');
 const ourbigbook_nodejs_front = require('./nodejs_front');
 const web_api = require('./web_api');
-const models = require('./models')
+const models = require('./models');
 
 const ENCODING = 'utf8'
 
@@ -172,27 +172,45 @@ ORDER BY "RecRefs".level ASC, "RecRefs".from_id ASC, "RecRefs".to_id_index ${to_
   }
 }
 
-class SqliteDbProvider extends web_api.DbProviderBase {
+/** DbProvider that fetches data from SQL queries directly.
+ * Should work across different RDMSs (SQLite / PostgreSQL) due
+ * to the use of an ORM (Sequelize) or portable queries/ifs.
+ */
+class SqlDbProvider extends web_api.DbProviderBase {
   constructor(sequelize) {
     super();
     this.sequelize = sequelize
   }
 
   async clear(input_paths, transaction) {
+    const sequelize = this.sequelize
     return Promise.all([
-      this.sequelize.models.Id.destroy({ where: { path: input_paths }, transaction }),
-      this.sequelize.models.Ref.findAll({
+      // TODO get rid of this when we start deleting files on CLI.
+      // https://docs.ourbigbook.com/bigb-id-ref-and-file-foreign-normalization
+      sequelize.models.Id.findAll({
+        where: {},
+        include: [
+          {
+            model: sequelize.models.File,
+            as: 'idDefinedAt',
+            required: true,
+            where: { path: input_paths },
+          },
+        ],
+        transaction
+      }).then(ids => sequelize.models.Id.destroy({ where: { id: ids.map(id => id.id ) }, transaction })),
+      sequelize.models.Ref.findAll({
         attributes: ['id'],
         include: [
           {
-            model: this.sequelize.models.File,
+            model: sequelize.models.File,
             as: 'definedAt',
             where: { path: input_paths },
             attributes: [],
           },
         ],
         transaction,
-      }).then(ids => this.sequelize.models.Ref.destroy({ where: { id: ids.map(id => id.id ) }, transaction })),
+      }).then(ids => sequelize.models.Ref.destroy({ where: { id: ids.map(id => id.id ) }, transaction })),
     ])
   }
 
@@ -205,7 +223,17 @@ class SqliteDbProvider extends web_api.DbProviderBase {
       prefix_literal = '%'
     }
     return Promise.all([
-      this.sequelize.models.Id.destroy({ where: { path: { [this.sequelize.Sequelize.Op.like]: prefix_literal } } }),
+      this.sequelize.models.Id.destroy({
+        where: {},
+        include: [
+          {
+              model: sequelize.models.File,
+              as: 'idDefinedAt',
+              required: true,
+              where: { path: { [this.sequelize.Sequelize.Op.like]: prefix_literal } } 
+          },
+        ],
+      }),
       this.sequelize.models.Ref.findAll({
         attributes: ['id'],
         include: [
@@ -250,19 +278,17 @@ class SqliteDbProvider extends web_api.DbProviderBase {
         {
           model: this.sequelize.models.Id,
           as: include_key,
-          // TODO for the love of God, adding this makes it return just a single Ref row
-          // on SQLite at least. I even ran the raw query manually, and that does return multiple rows
-          // I simply cannot understand how it is possible, it has to be a sequelize bug?
-          // Can't easily reproduce on a minimal example however...
-          // So for now, I'm just going to make a separate query afterwards to get the files...
           // https://github.com/ourbigbook/ourbigbook/issues/240
-          //required: false,
-          //include: [
-          //  {
-          //    model: this.sequelize.models.File,
-          //    required: false,
-          //  },
-          //],
+          include: [
+            {
+              model: this.sequelize.models.File,
+              as: 'idDefinedAt',
+              include: [{
+                model: this.sequelize.models.Id,
+                as: 'toplevelId',
+              }]
+            },
+          ],
         }
       ]
       if (ignore_paths_set !== undefined) {
@@ -277,7 +303,7 @@ class SqliteDbProvider extends web_api.DbProviderBase {
                 null
               ]
             }
-          }
+          },
         })
       }
       const rows = await this.sequelize.models.Ref.findAll({
@@ -290,25 +316,32 @@ class SqliteDbProvider extends web_api.DbProviderBase {
         ],
         include,
       })
+
       // Fetch files. In theory should be easily done on above query as JOIN,
       // but for some reason it is not working as mentioned on the TODO...
-      const file_paths = []
       for (const row of rows) {
         if (row[include_key]) {
-          file_paths.push(row[include_key].path)
+          this.add_file_row_to_cache(row[include_key].idDefinedAt, context)
         }
       }
-      const file_rows = await this.sequelize.models.File.findAll({
-        where: { path: file_paths },
-        include: [
-          {
-            model: this.sequelize.models.Id,
-          }
-        ],
-      })
-      for (const file_row of file_rows) {
-        this.add_file_row_to_cache(file_row, context)
-      }
+      //const file_paths = []
+      //for (const row of rows) {
+      //  if (row[include_key]) {
+      //    file_paths.push(row[include_key].idDefinedAt.path)
+      //  }
+      //}
+      //const file_rows = await this.sequelize.models.File.findAll({
+      //  where: { path: file_paths },
+      //  include: [
+      //    {
+      //      model: this.sequelize.models.Id,
+      //      as: 'toplevelId',
+      //    }
+      //  ],
+      //})
+      //for (const file_row of file_rows) {
+      //  this.add_file_row_to_cache(file_row, context)
+      //}
 
       for (const row of rows) {
         this.add_ref_row_to_cache(row, to_id_key, include_key, context)
@@ -439,6 +472,9 @@ ORDER BY "RecRefs".level DESC
   }
 
   // Update the databases based on the output of the Ourbigbook conversion.
+  // This updates the tables:
+  // * Id
+  // * Ref
   async update(ourbigbook_extra_returns, sequelize, transaction, opts={}) {
     const { newFile, synonymHeaderPaths } = opts
     const context = ourbigbook_extra_returns.context
@@ -453,7 +489,7 @@ ORDER BY "RecRefs".level DESC
       const ast = ids[id];
       create_ids.push({
         idid: id,
-        path: ast.source_location.path,
+        defined_at: newFile.id,
         ast_json: JSON.stringify(ast),
         macro_name: ast.macro_name,
         toplevel_id: ast.toplevel_id,
@@ -496,9 +532,7 @@ ORDER BY "RecRefs".level DESC
     }
 
     return Promise.all([
-      sequelize.models.Id.bulkCreate(create_ids, {
-        transaction,
-      }),
+      sequelize.models.Id.bulkCreate(create_ids, { transaction }),
       sequelize.models.Ref.bulkCreate(refs, { transaction }),
     ])
   }
@@ -507,7 +541,10 @@ ORDER BY "RecRefs".level DESC
     const rows = await this.sequelize.models.File.findAll({
       where: { path },
       // We need to fetch these for toplevel scope removal.
-      include: this.sequelize.models.Id,
+      include: [{
+        model: this.sequelize.models.Id,
+        as: 'toplevelId',
+      }],
     })
     for (const row of rows) {
       this.add_file_row_to_cache(row, context)
@@ -552,6 +589,11 @@ async function destroy_sequelize(sequelize) {
 }
 
 // Update the database after converting each separate file.
+// This updates the tables:
+// * Id
+// * Ref
+// * File
+// * Render
 async function update_database_after_convert({
   authorId,
   bodySource,
@@ -607,7 +649,7 @@ async function update_database_after_convert({
   // Likely would not have been a bottleneck if we new more about databases/had more patience
   // and instead of doing INSERT one by one we would do a single insert with a bunch of data.
   // The move to Sequelize made that easier with bulkCreate. But keeping the transaction just in case
-  let idProviderUpdate, newFile
+  let newFile
   await sequelize.transaction({ transaction }, async (transaction) => {
     file_bulk_create_opts.transaction = transaction
      await sequelize.models.File.bulkCreate(
@@ -641,7 +683,7 @@ async function update_database_after_convert({
         }
       ))
     }
-    ;[idProviderUpdate] = await Promise.all(promises)
+    await Promise.all(promises)
     // Re-find here until SQLite RETURNING gets used by sequelize.
     const file = await sequelize.models.File.findOne({ where: { path }, transaction })
     if (!render) {
@@ -747,7 +789,6 @@ async function check_db(sequelize, paths_converted, transaction) {
   //  inflected: r.inflected,
   //} }), { maxArrayLength: null } );
   while (i < new_refs.length) {
-    let new_ref_start = i
     let new_ref = new_refs[i]
     let new_ref_next = new_ref
     let not_inflected_match_local_idx, inflected_match_local_idx, not_inflected_match_global_idx, inflected_match_global_idx
@@ -868,8 +909,86 @@ function remove_duplicates_sorted_array(arr) {
   return arr.filter((e, i, a) => e !== a[i - 1]);
 }
 
+// on: 'insert', 'delete', 'update'
+// action: SQL statement string with what must be done
+// after: 'BEFORE' or 'AFTER'
+// when: SQL statement string that goes in WHEN ( <when> )
+async function sequelizeCreateTrigger(sequelize, model, on, action, { after, when, nameExtra } = {}) {
+  if (after === undefined) {
+    after = 'AFTER'
+  }
+  if (nameExtra) {
+    nameExtra = `_${nameExtra})`
+  } else {
+    nameExtra = ''
+  }
+  const oldnew = on === 'delete' ? 'OLD' : 'NEW'
+  const triggerName = `${model.tableName}_${on}${nameExtra}`
+  if (when) {
+    when = `\n  WHEN (${when})`
+  } else {
+    when = ''
+  }
+  if (sequelize.options.dialect === 'postgres') {
+    const functionName = `${triggerName}_fn`
+    await sequelize.query(`CREATE OR REPLACE FUNCTION "${functionName}"()
+  RETURNS TRIGGER
+  LANGUAGE PLPGSQL
+  AS
+$$
+BEGIN
+  ${action};
+  RETURN ${oldnew};
+END;
+$$
+`)
+    // CREATE OR REPLACE TRIGGER was only added on postgresql 14 so let's be a bit more portable for now:
+    // https://stackoverflow.com/questions/35927365/create-or-replace-trigger-postgres
+    await sequelize.query(`DROP TRIGGER IF EXISTS ${triggerName} ON "${model.tableName}"`)
+    await sequelize.query(`CREATE TRIGGER ${triggerName}
+  ${after} ${on.toUpperCase()}
+  ON "${model.tableName}"
+  FOR EACH ROW${when}
+  EXECUTE PROCEDURE "${functionName}"();
+`)
+  } else if (sequelize.options.dialect === 'sqlite') {
+    await sequelize.query(`
+CREATE TRIGGER IF NOT EXISTS ${triggerName}
+  ${after} ${on.toUpperCase()}
+  ON "${model.tableName}"
+  FOR EACH ROW${when}
+  BEGIN
+    ${action};
+  END;
+`)
+  }
+}
+
+/** Create triggers to keep counts such as user likes article counts on article table in sync. */
+async function sequeliezeCreateTriggerUpdateCount(sequelize, articleTable, likeTable, articleTableCountField, likeTableArticleIdField) {
+  const articleTableName = articleTable.tableName
+  await sequelizeCreateTrigger(sequelize, likeTable, 'insert',
+    `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" + 1 WHERE NEW."${likeTableArticleIdField}" = "${articleTableName}"."id"`
+  ),
+  await sequelizeCreateTrigger(sequelize, likeTable, 'delete',
+    `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" - 1 WHERE OLD."${likeTableArticleIdField}" = "${articleTableName}"."id"`
+  ),
+  await sequelizeCreateTrigger(
+    // I don't think this will ever happen, only insert/deletion. But still let's define it just in case.
+    sequelize,
+    likeTable,
+    'update',
+    `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" + 1 WHERE NEW."${likeTableArticleIdField}" = "${articleTableName}"."id";\n` +
+    `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" - 1 WHERE OLD."${likeTableArticleIdField}" = "${articleTableName}"."id"`
+    ,
+    {
+      when: `OLD."${likeTableArticleIdField}" <> NEW."${likeTableArticleIdField}"`,
+    }
+  )
+}
+
 module.exports = {
-  SqliteDbProvider,
+  SqlDbProvider,
   check_db,
   create_sequelize,
   db_options,
@@ -878,6 +997,8 @@ module.exports = {
   get_noscopes_base_fetch_rows,
   preload_katex_from_file,
   remove_duplicates_sorted_array,
+  sequelizeCreateTrigger,
+  sequeliezeCreateTriggerUpdateCount,
   update_database_after_convert,
   ENCODING,
   TMP_DIRNAME: 'out',

@@ -6,6 +6,7 @@ const { DatabaseError, Sequelize, DataTypes } = require('sequelize')
 
 const ourbigbook_models = require('ourbigbook/models')
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
+const { sequelizeCreateTrigger, sequeliezeCreateTriggerUpdateCount } = ourbigbook_nodejs_webpack_safe
 
 const config = require('../front/config')
 
@@ -143,12 +144,12 @@ function getSequelize(toplevelDir, toplevelBasename) {
       ],
     }
   );
-  Article.belongsToMany(User, { through: UserFollowArticle, as: 'followers', foreignKey: 'articleId', otherKey: 'userId'  })
+  Article.belongsToMany(User, { through: UserFollowArticle, as: 'followers', foreignKey: 'articleId', otherKey: 'userId' })
   User.belongsToMany(Article, { through: UserFollowArticle, as: 'followedArticles', foreignKey: 'userId', otherKey: 'articleId' })
 
   // User like Issue
-  Issue.belongsToMany(User, { through: 'UserLikeIssue', as: 'issueLikedBy', foreignKey: 'articleId', otherKey: 'userId'  })
-  User.belongsToMany(Issue, { through: 'UserLikeIssue', as: 'likedIssues',   foreignKey: 'userId', otherKey: 'articleId'  })
+  Issue.belongsToMany(User, { through: 'UserLikeIssue', as: 'issueLikedBy', foreignKey: 'issueId', otherKey: 'userId' })
+  User.belongsToMany(Issue, { through: 'UserLikeIssue', as: 'likedIssues', foreignKey: 'userId', otherKey: 'issueId' })
 
   // User follow issue.
   // Initial use case: get notifications when new comments are created under an issue.
@@ -199,9 +200,11 @@ function getSequelize(toplevelDir, toplevelBasename) {
     as: 'file',
     foreignKey: {
       name: 'fileId',
-      allowNull: false
+      // TODO https://docs.ourbigbook.com/4
+      allowNull: true,
     },
-    onDelete: 'CASCADE',
+    // TODO https://docs.ourbigbook.com/4
+    onDelete: 'SET NULL',
   })
   File.hasMany(Article, {
     as: 'file',
@@ -259,7 +262,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
   User.hasMany(Comment, { foreignKey: 'authorId' });
 
   Topic.belongsTo(Article, { as: 'article' })
-  Article.hasOne(Topic, { as: 'article', constraints: false })
+  Article.hasOne(Topic, { as: 'topic', constraints: false })
 
   Article.hasMany(Article, { as: 'sameTopic', foreignKey: 'topicId', sourceKey: 'topicId', constraints: false })
 
@@ -279,6 +282,46 @@ async function sync(sequelize, opts={}) {
     }
   }
   await sequelize.sync(opts)
+
+  // Database triggers.
+
+    const Article = sequelize.models.Article
+    const Comment = sequelize.models.Comment
+    const File = sequelize.models.File
+    const Issue = sequelize.models.Issue
+    const User = sequelize.models.User
+    const UserLikeArticle = sequelize.models.UserLikeArticle
+    const UserFollowArticle = sequelize.models.UserFollowArticle
+    const UserLikeIssue = sequelize.models.UserLikeIssue
+    const UserFollowIssue = sequelize.models.UserFollowIssue
+    const UserFollowUser = sequelize.models.UserFollowUser
+
+    await sequeliezeCreateTriggerUpdateCount(sequelize, Article, UserLikeArticle, 'score', 'articleId')
+    await sequeliezeCreateTriggerUpdateCount(sequelize, Article, UserFollowArticle, 'followerCount', 'articleId')
+    await sequeliezeCreateTriggerUpdateCount(sequelize, Issue, UserLikeIssue, 'score', 'issueId')
+    await sequeliezeCreateTriggerUpdateCount(sequelize, Issue, UserFollowIssue, 'followerCount', 'issueId')
+    await sequeliezeCreateTriggerUpdateCount(sequelize, User, UserFollowUser, 'followerCount', 'followId')
+    await sequeliezeCreateTriggerUpdateCount(sequelize, Issue, Comment, 'commentCount', 'issueId')
+    await sequeliezeCreateTriggerUpdateCount(sequelize, Article, Issue, 'issueCount', 'articleId')
+
+    // Article
+    await sequelizeCreateTrigger(sequelize, Article, 'delete',
+      `UPDATE "${User.tableName}" SET "score" = "${User.tableName}"."score" - OLD."score"\n` +
+      `  FROM "${Article.tableName}", "${File.tableName}" WHERE OLD."fileId" = "File"."id" AND "File"."authorId" = "User"."id"`
+      ,
+      { after: 'BEFORE', }
+    )
+    await sequelizeCreateTrigger(
+      sequelize,
+      Article,
+      'update',
+      `UPDATE "${User.tableName}" SET "score" = "${User.tableName}"."score" + (NEW."score" - OLD."score")\n` +
+      `  FROM "${Article.tableName}", "${File.tableName}" WHERE NEW."fileId" = "File"."id" AND "File"."authorId" = "User"."id"`
+      ,
+      {
+        when: 'OLD."score" <> NEW."score"',
+      }
+    )
   if (!dbExists || opts.force) {
     await sequelize.models.SequelizeMeta.bulkCreate(
       fs.readdirSync(path.join(path.dirname(__dirname), 'migrations')).map(
@@ -324,7 +367,7 @@ async function normalize({
         if (fix) {
           await sequelize.models.Article.updateNestedSets(username, { transaction })
         }
-        const articles = await sequelize.models.Article.findNestedSets({ username, transaction })
+        const articles = await sequelize.models.Article.treeFindInOrder({ username, transaction })
         if (check) {
           const nestedSetsFromRefs = await sequelize.models.Article.getNestedSetsFromRefs(username, { transaction })
           for (let i = 0; i < nestedSetsFromRefs.length; i++) {
@@ -533,7 +576,8 @@ async function normalize({
           await Promise.all(promises)
         }
       } else if (
-        what === 'topic-count'
+        what === 'topic-count' ||
+        what === 'user-follower-count'
       ) {
         throw new Error(`unimplemented: ${what}`)
       } else {

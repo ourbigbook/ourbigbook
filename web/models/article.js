@@ -32,6 +32,7 @@ module.exports = (sequelize) => {
       },
       // E.g. for `johnsmith/mathematics` this is just the `mathematics`.
       // Can't be called just `id`, sequelize complains that it is not a primary key with that name.
+      // TODO point to topic ID directly https://docs.ourbigbook.com/todo#ref-file-normalization
       topicId: {
         type: DataTypes.TEXT,
         allowNull: false,
@@ -141,14 +142,527 @@ module.exports = (sequelize) => {
     }
   )
 
-  //// TODO https://docs.ourbigbook.com/todo/delete-articles
-  //Article.prototype.destroySideEffects = function() {
-  //  sequelize.transaction({ transaction }, async (transaction) => {
-  //    // topic.articleCount--
-  //    // author.score -= article.score
-  //    // TODO delete IDs defined inside article
-  //  })
-  //}
+  /**
+   * Move a contiguous range of siblings and all their descendants to a new location in the tree.
+   *
+   * Updates both nested set and Ref representations.
+   *
+   * @param {number} nArticlesToplevel - Total toplevel sibling articles to be moved, excluding their descendants.
+   * @param {number} nArticles - Total articles to be moved, including toplevel siblings and their descendants.
+   * @param {number} newNestedSetIndex - position where to move the first article of the range to.
+   *
+   *        This position, together with newNestedSetIndexParent, is relative to the old tree nested set state.
+   *
+   *        The final new index might therefore be different because we might need to close down space from which 
+   *        the article was moved out after moving it out.
+   */
+  Article.treeMoveRangeTo = async function({
+    depthDelta,
+    logging,
+    nArticlesToplevel,
+    nArticles,
+    newNestedSetIndex,
+    newNestedSetIndexParent,
+    newParentId,
+    new_to_id_index,
+    oldNestedSetIndex,
+    oldNestedSetIndexParent,
+    oldParentId,
+    old_to_id_index,
+    transaction,
+    username,
+  }) {
+    if (logging === undefined) {
+      // Log previous nested set state, and the queries done on it.
+      logging = false
+    }
+    if (logging) {
+      console.log('Article.treeMoveRangeTo');
+      console.log({
+        depthDelta,
+        nArticlesToplevel,
+        nArticles,
+        newNestedSetIndex,
+        newNestedSetIndexParent,
+        newParentId,
+        new_to_id_index,
+        oldNestedSetIndex,
+        oldNestedSetIndexParent,
+        oldParentId,
+        old_to_id_index,
+        username,
+      })
+    }
+    return sequelize.transaction({ transaction }, async (transaction) => {
+      if (
+        // As an optimization, skip move it position didn't change.
+        oldParentId !== newParentId ||
+        old_to_id_index !== new_to_id_index
+      ) {
+        // Open up destination space.
+        await sequelize.models.Article.treeOpenSpace({
+          logging,
+          parentNestedSetIndex: newNestedSetIndexParent,
+          nestedSetIndex: newNestedSetIndex,
+          parentId: newParentId,
+          shiftNestedSetBy: nArticles,
+          shiftRefBy: nArticlesToplevel,
+          to_id_index: new_to_id_index,
+          transaction,
+          username,
+        })
+
+        // Update indices to account for space opened upbefore insertion.
+        let nestedSetDelta = newNestedSetIndex - oldNestedSetIndex
+        if (newNestedSetIndex < oldNestedSetIndex) {
+          oldNestedSetIndex += nArticles
+          nestedSetDelta -= nArticles
+          if (oldParentId === newParentId) {
+            old_to_id_index += nArticlesToplevel
+          }
+        }
+        if (newNestedSetIndex <= oldNestedSetIndexParent) {
+          oldNestedSetIndexParent += nArticles
+        }
+
+        // Move articles to new location
+        if (logging) {
+          console.log('Article.treeMoveRangeTo move');
+          console.log(await Article.treeToString({ transaction }))
+        }
+        await Promise.all([
+          sequelize.query(`
+UPDATE "Article" SET
+  "nestedSetIndex" = "nestedSetIndex" + :nestedSetDelta,
+  "nestedSetNextSibling" = "nestedSetNextSibling" + :nestedSetDelta,
+  "depth" = "depth" + :depthDelta
+WHERE
+  "nestedSetIndex" >= :oldNestedSetIndex AND
+  "nestedSetIndex" < :oldNestedSetNextSibling AND
+  "id" IN (
+    SELECT "Article"."id" from "Article"
+    INNER JOIN "File"
+      ON "Article"."fileId" = "File"."id"
+    INNER JOIN "User"
+      ON "File"."authorId" = "User"."id"
+    WHERE "User"."username" = :username
+  )
+`,
+            {
+              logging: logging ? console.log : false,
+              transaction,
+              replacements: {
+                depthDelta,
+                oldNestedSetIndex,
+                oldNestedSetNextSibling: oldNestedSetIndex + nArticles,
+                nestedSetDelta,
+                newNestedSetIndex,
+                username,
+              },
+            },
+          ),
+          sequelize.models.Ref.update(
+            {
+              from_id: newParentId,
+              to_id_index: sequelize.fn(`${new_to_id_index - old_to_id_index} + `, sequelize.col('to_id_index')),
+            },
+            {
+              logging: logging ? console.log : false,
+              where: {
+                from_id: oldParentId,
+                type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+                to_id_index: {
+                  [sequelize.Sequelize.Op.gte]: old_to_id_index,
+                  [sequelize.Sequelize.Op.lt]: old_to_id_index + nArticlesToplevel,
+                },
+              },
+              transaction,
+            }
+          )
+        ])
+
+        // Close up space where articles were removed from.
+        await sequelize.models.Article.treeOpenSpace({
+          logging,
+          parentNestedSetIndex: oldNestedSetIndexParent,
+          nestedSetIndex: oldNestedSetIndex,
+          parentId: oldParentId,
+          shiftNestedSetBy: -nArticles,
+          shiftRefBy: -nArticlesToplevel,
+          to_id_index: old_to_id_index,
+          transaction,
+          username,
+        })
+      }
+    })
+  }
+
+  Article.treeToString = async function(opts={}) {
+    return 'nestedSetIndex, nestedSetNextSibling, depth, to_id_index, slug, parentId\n' + (
+      await sequelize.models.Article.treeFindInOrder({ refs: true, transaction: opts.transaction })
+    ).map(a => {
+      let to_id_index, parentId
+      const ref = a.file.toplevelId
+      if (ref === null) {
+        to_id_index = null
+        parentId = null
+      } else {
+        to_id_index = ref.to[0].to_id_index
+        parentId = ref.to[0].from_id
+      }
+      return `${a.nestedSetIndex}, ${a.nestedSetNextSibling}, ${a.depth}, ${to_id_index}, ${a.slug}, ${parentId}`
+    }).join('\n')
+  }
+
+  Article.treeRemove = async function({
+    idid,
+    logging,
+    nestedSetIndex,
+    nestedSetNextSibling,
+    parentNestedSetIndex,
+    parentId,
+    to_id_index,
+    username,
+    transaction,
+  }) {
+    if (logging === undefined) {
+      logging = false
+    }
+    return sequelize.transaction({ transaction }, async (transaction) => {
+      if (logging) {
+        console.log('Article.treeRemove')
+        console.log({
+          idid,
+          nestedSetIndex,
+          nestedSetNextSibling,
+          parentNestedSetIndex,
+          parentId,
+          to_id_index,
+          username,
+        })
+        console.log(await Article.treeToString({ transaction }))
+      }
+
+      // Decrement the depth of all descendants of the article
+      // as they are going to be moved up the tree.
+      await Promise.all([
+        sequelize.models.Article.decrement('depth', {
+          logging: logging ? console.log : false,
+          where: {
+            nestedSetIndex: {
+              [sequelize.Sequelize.Op.gt]: nestedSetIndex,
+              [sequelize.Sequelize.Op.lt]: nestedSetNextSibling,
+            },
+          },
+          transaction,
+        }),
+        Article.treeOpenSpace({
+          logging,
+          nestedSetIndex,
+          parentId,
+          parentNestedSetIndex,
+          shiftNestedSetBy: -1,
+          // Number of descendants - 1. -1 Because we are removing the article.
+          shiftRefBy: nestedSetNextSibling - (nestedSetIndex + 2),
+          to_id_index,
+          transaction,
+          username,
+        }),
+      ])
+      // Change parent and increment to_id_index of all child pages
+      // to fit into their new location.
+      await sequelize.models.Ref.update(
+        {
+          from_id: parentId,
+          to_id_index: sequelize.fn(`${to_id_index} + `, sequelize.col('to_id_index')),
+        },
+        {
+          logging: logging ? console.log : false,
+          where: {
+            from_id: idid,
+            type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+          },
+          transaction,
+        }
+      )
+    })
+  }
+
+  // Remove this article from the nested set altogether.
+  // Used when deleting the article. All children are reassigned to its parent.
+  Article.prototype.treeRemove = async function(opts={}) {
+    let logging = opts.logging
+    if (logging === undefined) {
+      logging = false
+    }
+    const transaction = opts.transaction
+    const parentRef = await this.findParentRef({ transaction })
+    const parentArticleToplevelId = parentRef.from
+    const parentArticle = parentArticleToplevelId.toplevelId.file[0]
+    return Article.treeRemove({
+      idid: parentRef.to_id,
+      logging,
+      nestedSetIndex: this.nestedSetIndex,
+      nestedSetNextSibling: this.nestedSetNextSibling,
+      parentId: parentArticleToplevelId.idid,
+      parentNestedSetIndex: parentArticle.nestedSetIndex,
+      to_id_index: parentRef.to_id_index,
+      transaction,
+      username: (await this.getAuthor({ transaction })).username,
+    })
+  }
+
+  Article.prototype.findParentRef = async function(opts={}) {
+    if (this.parentRef) {
+      // Cached, usually fetched via previous joins.
+      return this.parentRef
+    }
+    return sequelize.models.Ref.findOne({
+      where: {
+        type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+      },
+      subQuery: false,
+      required: true,
+      include: [
+        {
+          model: sequelize.models.Id,
+          as: 'to',
+          subQuery: false,
+          required: true,
+          include: [
+            {
+              model: sequelize.models.File,
+              as: 'toplevelId',
+              subQuery: false,
+              required: true,
+              include: [
+                {
+                  model: sequelize.models.Article,
+                  as: 'file',
+                  subQuery: false,
+                  required: true,
+                  where: { slug: this.slug }
+                }
+              ],
+            }
+          ]
+        },
+        {
+          model: sequelize.models.Id,
+          as: 'from',
+          subQuery: false,
+          required: true,
+          include: [
+            {
+              model: sequelize.models.File,
+              as: 'toplevelId',
+              subQuery: false,
+              required: true,
+              include: [
+                {
+                  model: sequelize.models.Article,
+                  as: 'file',
+                  subQuery: false,
+                  required: true,
+                }
+              ],
+            }
+          ]
+        },
+      ],
+      transaction: opts.transaction,
+    })
+  }
+
+  /**
+   * Shift all articles after a given article by a certain ammount.
+   *
+   * This is the most fundamental nested set modification primitive, as it is done to:
+   * * if if the shift ammount is positive: open space for new/move incoming items
+   * * if the shift ammount is negative: close up space from a deleted item or from which outgoing move items left
+   *
+   * This primitive can be used to prepare to move multiple items at once, but 
+   *
+   * If negative, this removes existing space, for e.g. when removing items.
+   *
+   * This function also maintains Ref.to_id_index state to help keep it in sync.
+   *
+   * @param {boolean=} logging - enable logging of current state and queries
+   * @param {number} nestedSetIndex - at which nested set index to insert or remove space from
+   * @param {string} parentId - idid of the parent article. Used for Ref managment, not nested set.
+   *                            TODO https://docs.ourbigbook.com/todo#ref-file-normalization
+   * @param {number} parentNestedSetIndex - the parent nested set index of the nodes that will 
+   *        be inserted/removed from the location. The way nested sets work, we must know this
+   *        information, we can't just say how much space to open at a given location, because
+   *        when inserting after nodes without children, we can either be a child or sibling
+   *        or sibling of an ancestor.
+   * @param {number} shiftNestedSetBy - how much to shift nested sets by
+   * @param {number=} shiftRefBy - how much to shift ref to_id_index by
+   * @param {number} to_id_index - the new to_id_index of the article within its parent. Used for Ref managemnt, not nested set.
+   * @param {Transaction=} transaction
+   * @param {string} username - username to take effect on
+   */
+  Article.treeOpenSpace = async function({
+    logging,
+    nestedSetIndex,
+    parentId,
+    parentNestedSetIndex,
+    shiftNestedSetBy,
+    shiftRefBy,
+    to_id_index,
+    transaction,
+    username,
+  }) {
+    if (logging === undefined) {
+      // Log previous nested set state, and the queries done on it.
+      logging = false
+    }
+    if (
+      // Happens for the root node. The root cannot move, so we just skip that case.
+      parentNestedSetIndex !== undefined
+    ) {
+      if (logging) {
+        console.log('Article.treeOpenSpace')
+        console.log({
+          nestedSetIndex,
+          parentId,
+          parentNestedSetIndex,
+          shiftNestedSetBy,
+          shiftRefBy,
+          to_id_index,
+          username,
+        })
+        console.log(await Article.treeToString({ transaction }))
+      }
+      return sequelize.transaction({ transaction }, async (transaction) => {
+        return Promise.all([
+          // Increment sibling indexes after point we are inserting from.
+          sequelize.models.Ref.increment('to_id_index', {
+            logging: logging ? console.log : false,
+            by: shiftRefBy,
+            where: {
+              from_id: parentId,
+              to_id_index: { [sequelize.Sequelize.Op.gte]: to_id_index },
+              type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+            },
+            transaction,
+          }),
+          // Increase nested set index and next sibling of all nodes that come after.
+          // We need a raw query because Sequelize does not support UPDATE with JOIN:
+          // https://github.com/sequelize/sequelize/issues/3957
+          sequelize.query(`
+UPDATE "Article" SET
+  "nestedSetIndex" = "nestedSetIndex" + :shiftNestedSetBy,
+  "nestedSetNextSibling" = "nestedSetNextSibling" + :shiftNestedSetBy
+WHERE
+  "nestedSetIndex" >= :nestedSetIndex AND
+  "id" IN (
+    SELECT "Article"."id" from "Article"
+    INNER JOIN "File"
+      ON "Article"."fileId" = "File"."id"
+    INNER JOIN "User"
+      ON "File"."authorId" = "User"."id"
+    WHERE "User"."username" = :username
+  )
+`,
+            {
+              logging: logging ? console.log : false,
+              transaction,
+              replacements: {
+                username,
+                nestedSetIndex,
+                shiftNestedSetBy,
+              },
+            },
+          ),
+
+          // Increase nested set next sibling of ancestors. Their index is unchanged.
+          sequelize.query(`
+UPDATE "Article" SET
+  "nestedSetNextSibling" = "nestedSetNextSibling" + :shiftNestedSetBy
+WHERE
+  "nestedSetIndex" <= :parentNestedSetIndex AND
+  "nestedSetNextSibling" >= :nestedSetIndex AND
+  "id" IN (
+    SELECT "Article"."id" from "Article"
+    INNER JOIN "File"
+      ON "Article"."fileId" = "File"."id"
+    INNER JOIN "User"
+      ON "File"."authorId" = "User"."id"
+    WHERE "User"."username" = :username
+  )
+`,
+            {
+              logging: logging ? console.log : false,
+              transaction,
+              replacements: {
+                username,
+                nestedSetIndex,
+                parentNestedSetIndex,
+                shiftNestedSetBy,
+              },
+            },
+          ),
+        ])
+      })
+    }
+  }
+
+  // TODO https://docs.ourbigbook.com/todo/delete-articles
+  Article.prototype.destroySideEffects = async function(opts={}) {
+    return sequelize.transaction({ transaction: opts.transaction }, async (transaction) => {
+      const [articles, topic, _] = await Promise.all([
+        sequelize.models.Article.findAll({
+          where: { topicId: this.topicId },
+          limit: 2,
+          order: [['id', 'ASC']],
+          transaction,
+        }),
+        sequelize.models.Topic.findOne({
+          include: [{
+            model: sequelize.models.Article,
+            as: 'article',
+            where: { topicId: this.topicId },
+          }],
+          transaction,
+        }),
+        this.treeRemove({
+          logging: opts.logging,
+          transaction
+        }),
+      ])
+      let otherArticleSameTopic
+      if (articles.length > 1) {
+        if (articles[0].id === this.id) {
+          otherArticleSameTopic = articles[1]
+        } else {
+          otherArticleSameTopic = articles[0]
+        }
+      }
+      await this.destroy({ transaction })
+      return Promise.all([
+        this.parentRef ? this.parentRef.destroy({ transaction }) : null,
+        // Has to come after File.destroy finished because the file is needed in order for the
+        // DELETE ARTICLE trigger to be able to link the article to the author.
+        //
+        // Cannot be easily done on CASCADE currently because we had a setup where each File
+        // could have many Articles, which is basically gone.
+        this.file.destroy({ transaction }),
+        otherArticleSameTopic
+          ? // Set it to another article provisorily just in case it points to the current article,
+            // because we are going to destroy the current article.
+            topic.update({ articleId: otherArticleSameTopic.id }, { transaction }).then(
+              // Then update to whatever is actually correct.
+              () => sequelize.models.Topic.updateTopics([ otherArticleSameTopic ], { deleteArticle: true, transaction })
+            )
+            : topic.destroy({ transaction })
+      ])
+      // TODO move child articles to parent
+      // destroy issues, and then comments. Not doig this now because our "deletion" is for migration to another article only initially
+      //   This can be done on delete cascade as there are no side effects of issues/comments that are not taken care of by triggers
+      //   Sequelize does not set on delete cascade by default however on belongsTo, it uses on delete set null, which would need changing
+    })
+  }
 
   Article.prototype.getAuthor = async function() {
     return (await this.getFileCached()).author
@@ -301,24 +815,41 @@ module.exports = (sequelize) => {
    * Return Articles ordered by username and nested sets.
    * @return {Article[]}
    */
-  Article.findNestedSets = async function(opts={}) {
+  Article.treeFindInOrder = async function(opts={}) {
     const userWhere = {}
     const username = opts.username
     if (username) {
       userWhere.username = username
     }
-    return sequelize.models.Article.findAll({
-      include: [{
+    const fileIncludes = [{
+      model: sequelize.models.User,
+      as: 'author',
+      where: userWhere,
+      required: true,
+    }]
+    if (opts.refs) {
+      fileIncludes.push({
+        model: sequelize.models.Id,
+        as: 'toplevelId',
+        include: [{
+          model: sequelize.models.Ref,
+          as: 'to',
+          where: {
+            type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+          },
+        }]
+      })
+    }
+    const include = [
+      {
         model: sequelize.models.File,
         as: 'file',
         required: true,
-        include: [{
-          model: sequelize.models.User,
-          as: 'author',
-          where: userWhere,
-          required: true,
-        }],
-      }],
+        include: fileIncludes,
+      }
+    ]
+    return sequelize.models.Article.findAll({
+      include,
       order: [
         [
           { model: sequelize.models.File, as: 'file' },
@@ -339,6 +870,7 @@ module.exports = (sequelize) => {
     // TODO reimplement with the nested index information instead of this megajoin.
     return {
       model: sequelize.models.Id,
+      as: 'toplevelId',
       subQuery: false,
       include: [{
         model: sequelize.models.Ref,
@@ -355,14 +887,21 @@ module.exports = (sequelize) => {
           include: [
             {
               model: sequelize.models.File,
+              as: 'toplevelId',
+              include: [
+                {
+                  model: sequelize.models.Article,
+                  as: 'file',
+                },
+              ]
             },
             {
               model: sequelize.models.Ref,
               as: 'from',
               subQuery: false,
               on: {
-                '$file->Id->to->from->from.from_id$': {[Op.eq]: sequelize.col('file->Id->to->from.idid')},
-                '$file->Id->to->from->from.to_id_index$': {[Op.eq]: sequelize.where(sequelize.col('file->Id->to.to_id_index'), '-', 1)},
+                '$file->toplevelId->to->from->from.from_id$': {[Op.eq]: sequelize.col('file->toplevelId->to->from.idid')},
+                '$file->toplevelId->to->from->from.to_id_index$': {[Op.eq]: sequelize.where(sequelize.col('file->toplevelId->to.to_id_index'), '-', 1)},
               },
               include: [{
                 // Previous sibling ID.
@@ -371,6 +910,7 @@ module.exports = (sequelize) => {
                 include: [
                   {
                     model: sequelize.models.File,
+                    as: 'toplevelId',
                   },
                 ],
               }],
@@ -385,12 +925,17 @@ module.exports = (sequelize) => {
     article,
   ) {
     // Some access helpers, otherwise too convoluted!.
-    const articleId = article.file.Id
+    const articleId = article.file.toplevelId
     if (articleId) {
-      const parentId = articleId.to[0].from
+      const parentRef = articleId.to[0]
+      const parentId = parentRef.from
+      article.parentRef = parentRef
       article.parentId = parentId
+      article.idid = articleId.idid
+      article.parentArticle = parentId.toplevelId.file[0]
       const previousSiblingRef = parentId.from[0]
       if (previousSiblingRef) {
+        article.previousSiblingRef = previousSiblingRef
         article.previousSiblingId = previousSiblingRef.to
       }
     }
@@ -817,7 +1362,7 @@ LIMIT ${limit}` : ''}
    * doing it in bulk to speed things up. And also creating this to quickfix
    * a wrong index observed in production for unknown reasons:
    * https://docs.ourbigbook.com/subsections-missing-on-web-dynamic-tree
-   * 
+   *
    * @param {string} username
    */
   Article.getNestedSetsFromRefs = async function(username, opts={}) {
@@ -921,7 +1466,7 @@ LIMIT ${limit}` : ''}
     })
     for (const article of articles) {
       if (opts.log) {
-        console.error(`authorId=${article.file.authorId} title=${article.titleRender}`);
+        console.log(`authorId=${article.file.authorId} title=${article.titleRender}`);
       }
       await article.rerender()
     }

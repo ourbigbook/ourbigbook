@@ -3,7 +3,6 @@ const assert = require('assert')
 const { DataTypes } = require('sequelize')
 
 const config = require('../front/config')
-const { articleEdit } = require('../front/routes')
 
 module.exports = (sequelize) => {
   const Issue = sequelize.define(
@@ -71,13 +70,10 @@ module.exports = (sequelize) => {
   Issue.createSideEffects = async function(author, article, fields, opts={}) {
     const { transaction } = opts
     return sequelize.transaction({ transaction: opts.transaction }, async (transaction) => {
-      const [issue, newArticle] = await Promise.all([
-        sequelize.models.Issue.create(
-          Object.assign({ articleId: article.id, authorId: author.id }, fields),
-          { transaction }
-        ),
-        article.increment('issueCount', { transaction }),
-      ])
+      const issue = await sequelize.models.Issue.create(
+        Object.assign({ articleId: article.id, authorId: author.id }, fields),
+        { transaction }
+      )
       await author.addIssueFollowSideEffects(issue, { transaction })
       return issue
     })

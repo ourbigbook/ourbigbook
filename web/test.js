@@ -14,12 +14,56 @@ const convert = require('./convert')
 const test_lib = require('./test_lib')
 const { AUTH_COOKIE_NAME } = require('./front/js')
 
-const web_api = require('ourbigbook/web_api')
+const web_api = require('ourbigbook/web_api');
+const { execPath } = require('process');
 
 const testNext = process.env.OURBIGBOOK_TEST_NEXT === 'true'
 
-function assertRows(rows, rowsExpect) {
+async function assertNestedSets(sequelize, expects) {
+  const articles = await sequelize.models.Article.treeFindInOrder({ refs: true })
+  let i = 0
+  const articleObjs = []
+  for (const article of articles) {
+    const expect = expects[i]
+    const articleObj = {}
+    for (const key in expect) {
+      if (key !== 'to_id_index') {
+        articleObj[key] = article.get(key)
+      }
+    }
+    const ref = article.file.toplevelId
+    let to_id_index, parentId
+    if (ref === null) {
+      to_id_index = null
+      parentId = null
+    } else {
+      const tos = ref.to
+      assert.strictEqual(tos.length, 1)
+      to_id_index = tos[0].to_id_index
+      parentId = tos[0].from_id
+    }
+    articleObj.to_id_index = to_id_index
+    articleObj.parentId = parentId
+    articleObjs.push(articleObj)
+    i++
+  }
+  assertRows(
+    articleObjs,
+    expects,
+    {
+      msgFn: () => 'actual:\nnestedSetIndex, nestedSetNextSibling, depth, to_id_index, slug, parentId\n' +
+        articleObjs.map(a => `${a.nestedSetIndex}, ${a.nestedSetNextSibling}, ${a.depth}, ${a.to_id_index}, ${a.slug}, ${a.parentId}`).join('\n')
+    }
+  )
+}
+
+function assertRows(rows, rowsExpect, opts={}) {
+  const msgFn = opts.msgFn
   assert.strictEqual(rows.length, rowsExpect.length, `wrong number of rows: ${rows.length}, expected: ${rowsExpect.length}`)
+  function printMsg(i, key) {
+    if (msgFn) console.error(msgFn())
+    console.error({ i, key })
+  }
   for (let i = 0; i < rows.length; i++) {
     let row = rows[i]
     let rowExpect = rowsExpect[i]
@@ -35,16 +79,20 @@ function assertRows(rows, rowsExpect) {
       }
       const expect = rowExpect[key]
       if (expect instanceof RegExp) {
-        if (!val.match(expect)) { console.error({ i, key }); }
+        if (!val.match(expect)) {
+          printMsg(i, key)
+        }
         assert.match(val, expect)
       } else {
         if (typeof expect === 'function') {
           if (!expect(val)) {
-            console.error({ i, key });
+            printMsg(i, key)
             assert(false)
           }
         } else {
-          if (val !== expect) { console.error({ i, key }); }
+          if (val !== expect) {
+            printMsg(i, key)
+          }
           assert.strictEqual(val, expect)
         }
       }
@@ -706,111 +754,6 @@ it('api: create an article and see it on global feed', async () => {
       assert.strictEqual(data.titleRender, 'Index')
       assert.match(data.render, /Welcome to my home page hacked!/)
 
-    // Article like
-
-      // Make user1 like one of the articles.
-      test.loginUser(user1)
-      ;({data, status} = await test.webApi.articleLike('user0'))
-      assertStatus(status, data)
-      test.loginUser(user)
-
-    // Like effects.
-
-      // Score goes up.
-      ;({data, status} = await test.webApi.article('user0'))
-      assertStatus(status, data)
-      assert.strictEqual(data.score, 1)
-
-      // Shows on likedBy list of user1.
-      ;({data, status} = await test.webApi.articles({ likedBy: 'user1' }))
-      assertStatus(status, data)
-      assertRows(data.articles, [
-        { titleRender: 'Index', slug: 'user0' },
-      ])
-
-      // Does not show up on likedBy list of user0.
-      ;({data, status} = await test.webApi.articles({ likedBy: 'user0' }))
-      assertStatus(status, data)
-      assertRows(data.articles, [])
-
-      // Top articles by a user.
-      ;({data, status} = await test.webApi.articles({ author: 'user0', sort: 'score' }))
-      assertStatus(status, data)
-      assertRows(data.articles, [
-        { titleRender: 'Index', slug: 'user0', score: 1 },
-        { titleRender: 'Title 0', slug: 'user0/title-0', render: /Body 0/, score: 0 },
-      ])
-
-      // Invalid sort.
-      ;({data, status} = await test.webApi.articles({ author: 'user0', sort: 'dontexist' }))
-      assert.strictEqual(status, 422)
-
-      // User score.
-      ;({data, status} = await test.webApi.users({ sort: 'score' }))
-      assertStatus(status, data)
-      assertRows(data.users, [
-        { username: 'user0', score: 1 },
-        { username: 'user2', score: 0 },
-        { username: 'user1', score: 0 },
-      ])
-
-    // Article like errors.
-
-      // Users cannot like articles twice.
-      test.loginUser(user1)
-      ;({data, status} = await test.webApi.articleLike('user0'))
-      assert.strictEqual(status, 403)
-      test.loginUser(user)
-
-      // Users cannot like their own article.
-      test.loginUser(user1)
-      ;({data, status} = await test.webApi.articleLike('user1'))
-      assert.strictEqual(status, 403)
-      test.loginUser(user)
-
-      // Trying to like article that does not exist fails gracefully.
-      test.loginUser(user1)
-      ;({data, status} = await test.webApi.articleLike('user0/dontexist'))
-      assert.strictEqual(status, 404)
-      test.loginUser(user)
-
-    // Make user1 unlike one of the articles.
-
-      test.loginUser(user1)
-      ;({data, status} = await test.webApi.articleUnlike('user0'))
-      assertStatus(status, data)
-      test.loginUser(user)
-
-    // Unlike effects
-
-      // Score goes back down.
-      ;({data, status} = await test.webApi.article('user0'))
-      assertStatus(status, data)
-      assert.strictEqual(data.score, 0)
-
-      // User score.
-      ;({data, status} = await test.webApi.users())
-      assertStatus(status, data)
-      assertRows(data.users, [
-        { username: 'user2', score: 0 },
-        { username: 'user1', score: 0 },
-        { username: 'user0', score: 0 },
-      ])
-
-    // Unlike errors.
-
-      // Cannot unlike article twice.
-      test.loginUser(user1)
-      ;({data, status} = await test.webApi.articleUnlike('user0'))
-      assert.strictEqual(status, 403)
-      test.loginUser(user)
-
-      // Trying to like article that does not exist fails gracefully.
-      test.loginUser(user1)
-      ;({data, status} = await test.webApi.articleUnlike('user0/dontexist'))
-      assert.strictEqual(status, 404)
-      test.loginUser(user)
-
     // View articles
 
       // Test global feed paging.
@@ -865,10 +808,18 @@ it('api: create an article and see it on global feed', async () => {
 
     // User following.
 
-      // user2 follows user0 and user2
+      // user2 follows user0
       test.loginUser(user2)
       ;({data, status} = await test.webApi.userFollow('user0'))
       assertStatus(status, data)
+
+      // Follower count increases.
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.username, 'user0')
+      assert.strictEqual(data.followerCount, 1)
+
+      // user2 follows user2
       ;({data, status} = await test.webApi.userFollow('user2'))
       assertStatus(status, data)
       test.loginUser(user)
@@ -934,13 +885,23 @@ it('api: create an article and see it on global feed', async () => {
 
     // User unfollowing.
 
-      // Unfollow everyone.
+      // user2 unfollows user0
       test.loginUser(user2)
       ;({data, status} = await test.webApi.userUnfollow('user0'))
       assertStatus(status, data)
+
+      // Follower count decreases.
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.username, 'user0')
+      assert.strictEqual(data.followerCount, 0)
+
+      // user0 unfollows user2
       ;({data, status} = await test.webApi.userUnfollow('user2'))
       assertStatus(status, data)
       test.loginUser(user)
+
+      // user0 unfollows user1
       ;({data, status} = await test.webApi.userUnfollow('user1'))
 
       // Users cannot unfollow another user twice.
@@ -1037,37 +998,61 @@ it('api: create an article and see it on global feed', async () => {
 
     // Get issues
 
-    ;({data, status} = await test.webApi.issues({ id: 'user0/title-0' }))
-    assertStatus(status, data)
-    assertRows(data.issues, [
-      { number: 4, titleRender: /The <i>title<\/i> 0 0 3\./ },
-      { number: 3, titleRender: /The <i>title<\/i> 0 0 2\./ },
-      { number: 2, titleRender: /The <i>title<\/i> 0 0 1\./ },
-      { number: 1, titleRender: /The <i>title<\/i> 0 0 0\./ },
-    ])
+      // Get one issue.
+      ;({data, status} = await test.webApi.issues({ id: 'user0/title-0' }))
+      assertStatus(status, data)
+      assertRows(data.issues, [
+        { number: 4, titleRender: /The <i>title<\/i> 0 0 3\./ },
+        { number: 3, titleRender: /The <i>title<\/i> 0 0 2\./ },
+        { number: 2, titleRender: /The <i>title<\/i> 0 0 1\./ },
+        { number: 1, titleRender: /The <i>title<\/i> 0 0 0\./ },
+      ])
 
-    ;({data, status} = await test.webApi.issues({ id: 'user0/title-1' }))
-    assertStatus(status, data)
-    assertRows(data.issues, [
-      { number: 2, titleRender: /The <i>title<\/i> 0 1 1\./ },
-      { number: 1, titleRender: /The <i>title<\/i> 0 1 0\./ },
-    ])
+      // Article issue count increments when new issues are created.
+      ;({data, status} = await test.webApi.article('user0/title-0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.issueCount, 4)
 
-    ;({data, status} = await test.webApi.issues({ id: 'user0' }))
-    assertStatus(status, data)
-    assertRows(data.issues, [
-      { number: 1, titleRender: /The <i>title<\/i> 0 index 0\./ },
-    ])
+      // Get another issue.
+      ;({data, status} = await test.webApi.issues({ id: 'user0/title-1' }))
+      assertStatus(status, data)
+      assertRows(data.issues, [
+        { number: 2, titleRender: /The <i>title<\/i> 0 1 1\./ },
+        { number: 1, titleRender: /The <i>title<\/i> 0 1 0\./ },
+      ])
 
-    ;({data, status} = await test.webApi.issues({ id: 'user1' }))
-    assertStatus(status, data)
-    assertRows(data.issues, [
-      { number: 1, titleRender: /The <i>title<\/i> 1 index 0\./ },
-    ])
+      // Article issue count increments when new issues are created.
+      ;({data, status} = await test.webApi.article('user0/title-1'))
+      assertStatus(status, data)
+      assert.strictEqual(data.issueCount, 2)
 
-    // Getting issues from article that doesn't exist fails gracefully.
-    ;({data, status} = await test.webApi.issues({ id: 'user0/dontexist' }))
-    assert.strictEqual(status, 404)
+      // Get an index page issue.
+      ;({data, status} = await test.webApi.issues({ id: 'user0' }))
+      assertStatus(status, data)
+      assertRows(data.issues, [
+        { number: 1, titleRender: /The <i>title<\/i> 0 index 0\./ },
+      ])
+
+      // Article issue count increments when new issues are created.
+      ;({data, status} = await test.webApi.article('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.issueCount, 1)
+
+      // Get another index page issue.
+      ;({data, status} = await test.webApi.issues({ id: 'user1' }))
+      assertStatus(status, data)
+      assertRows(data.issues, [
+        { number: 1, titleRender: /The <i>title<\/i> 1 index 0\./ },
+      ])
+
+      // Article issue count increments when new issues are created.
+      ;({data, status} = await test.webApi.article('user1'))
+      assertStatus(status, data)
+      assert.strictEqual(data.issueCount, 1)
+
+      // Getting issues from an article that doesn't exist fails gracefully.
+      ;({data, status} = await test.webApi.issues({ id: 'user0/dontexist' }))
+      assert.strictEqual(status, 404)
 
     // Edit issue.
 
@@ -1256,22 +1241,80 @@ it('api: create an article and see it on global feed', async () => {
 
     // Get some comments.
 
-    ;({data, status} = await test.webApi.comments('user0/title-0', 1))
-    assertRows(data.comments, [
-      { number: 1, render: /The <i>body<\/i> 0 0 0\./ },
-      { number: 2, render: /The <i>body<\/i> 0 0 1\./ },
-    ])
+      // Get all comments in article.
+      ;({data, status} = await test.webApi.comments('user0/title-0', 1))
+      assertStatus(status, data)
+      assertRows(data.comments, [
+        { number: 1, render: /The <i>body<\/i> 0 0 0\./ },
+        { number: 2, render: /The <i>body<\/i> 0 0 1\./ },
+      ])
 
-    ;({data, status} = await test.webApi.comments('user0/title-0', 2))
-    assertRows(data.comments, [
-      { number: 1, render: /The <i>body<\/i> 0 1 0\./ },
-    ])
+      // Get one comment in article
+      ;({data, status} = await test.webApi.comment('user0/title-0', 1, 1))
+      assertStatus(status, data)
+      assertRows([data], [
+        { number: 1, render: /The <i>body<\/i> 0 0 0\./ },
+      ])
 
-    // Getting comments from articles or issues that don't exist fails gracefully.
-    ;({data, status} = await test.webApi.comments('user0/title-1', 999))
-    assert.strictEqual(status, 404)
-    ;({data, status} = await test.webApi.comments('user0/dontexist', 1))
-    assert.strictEqual(status, 404)
+      // Get another comment in article
+      ;({data, status} = await test.webApi.comment('user0/title-0', 1, 2))
+      assertStatus(status, data)
+      assertRows([data], [
+        { number: 2, render: /The <i>body<\/i> 0 0 1\./ },
+      ])
+
+      // Getting a comment that doesn't exist fails gracefully.
+      ;({data, status} = await test.webApi.comment('user0/title-0', 1, 3))
+      assert.strictEqual(status, 404)
+
+      // The issue comment count goes up with comment creation.
+      ;({data, status} = await test.webApi.issue('user0/title-0', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.commentCount, 2)
+
+      // Get all comments in another article
+      ;({data, status} = await test.webApi.comments('user0/title-0', 2))
+      assertRows(data.comments, [
+        { number: 1, render: /The <i>body<\/i> 0 1 0\./ },
+      ])
+
+      // The issue comment count goes up with comment creation.
+      ;({data, status} = await test.webApi.issue('user0/title-0', 2))
+      assertStatus(status, data)
+      assert.strictEqual(data.commentCount, 1)
+
+      // Getting comments from articles or issues that don't exist fails gracefully.
+      ;({data, status} = await test.webApi.comments('user0/title-1', 999))
+      assert.strictEqual(status, 404)
+      ;({data, status} = await test.webApi.comments('user0/dontexist', 1))
+      assert.strictEqual(status, 404)
+
+    // Delete comment
+
+      // Non-admin users cannot delete comments.
+      ;({data, status} = await test.webApi.commentDelete('user0/title-0', 1, 1))
+      assert.strictEqual(status, 403)
+
+      // Trying to delete a comment that doesn't exist fails gracefully.
+      test.loginUser(user2)
+      ;({data, status} = await test.webApi.commentDelete('user0/title-0', 1, 3))
+      assert.strictEqual(status, 404)
+      test.loginUser(user)
+
+      // Admin can delete comments.
+      test.loginUser(user2)
+      ;({data, status} = await test.webApi.commentDelete('user0/title-0', 1, 1))
+      assert.strictEqual(status, 204)
+      test.loginUser(user)
+
+      // The issue comment count goes down with comment deletion.
+      ;({data, status} = await test.webApi.issue('user0/title-0', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.commentCount, 1)
+
+      // The deleted comment is no longer visible
+      ;({data, status} = await test.webApi.comment('user0/title-0', 1, 1))
+      assert.strictEqual(status, 404)
 
     // No more comment index gets from now on.
 
@@ -1428,6 +1471,144 @@ it('api: create an article and see it on global feed', async () => {
       test.loginUser(user)
     }
   }, { canTestNext: true })
+})
+
+it('api: article like', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+    const user2 = await test.createUserApi(2)
+    test.loginUser(user0)
+
+    // user0 creates another article
+    article = createArticleArg({ i: 0 })
+    ;({data, status} = await createArticleApi(test, article))
+    assertStatus(status, data)
+    assertRows(data.articles, [{ titleRender: 'Title 0' }])
+
+    // Make user1 like article user0
+    test.loginUser(user1)
+    ;({data, status} = await test.webApi.articleLike('user0'))
+    assertStatus(status, data)
+    test.loginUser(user0)
+
+    // Article score goes up.
+    ;({data, status} = await test.webApi.article('user0'))
+    assertStatus(status, data)
+    assert.strictEqual(data.score, 1)
+
+    // Make user2 like article user0
+    test.loginUser(user2)
+    ;({data, status} = await test.webApi.articleLike('user0'))
+    assertStatus(status, data)
+    test.loginUser(user0)
+
+    // Like effects.
+
+      // Article score goes up.
+      ;({data, status} = await test.webApi.article('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.score, 2)
+
+      // Shows on likedBy list of user1.
+      ;({data, status} = await test.webApi.articles({ likedBy: 'user1' }))
+      assertStatus(status, data)
+      assertRows(data.articles, [
+        { titleRender: 'Index', slug: 'user0' },
+      ])
+
+      // Does not show up on likedBy list of user0.
+      ;({data, status} = await test.webApi.articles({ likedBy: 'user0' }))
+      assertStatus(status, data)
+      assertRows(data.articles, [])
+
+      // Top articles by a user.
+      ;({data, status} = await test.webApi.articles({ author: 'user0', sort: 'score' }))
+      assertStatus(status, data)
+      assertRows(data.articles, [
+        { titleRender: 'Index', slug: 'user0', score: 2 },
+        { titleRender: 'Title 0', slug: 'user0/title-0', render: /Body 0/, score: 0 },
+      ])
+
+      // Invalid sort.
+      ;({data, status} = await test.webApi.articles({ author: 'user0', sort: 'dontexist' }))
+      assert.strictEqual(status, 422)
+
+      // User score.
+      ;({data, status} = await test.webApi.users({ sort: 'score' }))
+      assertStatus(status, data)
+      assertRows(data.users, [
+        { username: 'user0', score: 2 },
+        { username: 'user2', score: 0 },
+        { username: 'user1', score: 0 },
+      ])
+
+    // Article like errors.
+
+      // Users cannot like articles twice.
+      test.loginUser(user1)
+      ;({data, status} = await test.webApi.articleLike('user0'))
+      assert.strictEqual(status, 403)
+      test.loginUser(user0)
+
+      // Users cannot like their own article.
+      test.loginUser(user1)
+      ;({data, status} = await test.webApi.articleLike('user1'))
+      assert.strictEqual(status, 403)
+      test.loginUser(user0)
+
+      // Trying to like article that does not exist fails gracefully.
+      test.loginUser(user1)
+      ;({data, status} = await test.webApi.articleLike('user0/dontexist'))
+      assert.strictEqual(status, 404)
+      test.loginUser(user0)
+
+    // Make user1 unlike one of the articles.
+    test.loginUser(user1)
+    ;({data, status} = await test.webApi.articleUnlike('user0'))
+    assertStatus(status, data)
+    test.loginUser(user0)
+
+    // Make user2 unlike one of the articles.
+    test.loginUser(user2)
+    ;({data, status} = await test.webApi.articleUnlike('user0'))
+    assertStatus(status, data)
+    test.loginUser(user0)
+
+    // Unlike effects
+
+      // Score goes back down.
+      ;({data, status} = await test.webApi.article('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.score, 0)
+
+      // User score.
+      ;({data, status} = await test.webApi.users())
+      assertStatus(status, data)
+      assertRows(data.users, [
+        { username: 'user2', score: 0 },
+        { username: 'user1', score: 0 },
+        { username: 'user0', score: 0 },
+      ])
+
+    // Unlike errors.
+
+      // Cannot unlike article twice.
+      test.loginUser(user1)
+      ;({data, status} = await test.webApi.articleUnlike('user0'))
+      assert.strictEqual(status, 403)
+      test.loginUser(user0)
+
+      // Trying to like article that does not exist fails gracefully.
+      test.loginUser(user1)
+      ;({data, status} = await test.webApi.articleUnlike('user0/dontexist'))
+      assert.strictEqual(status, 404)
+      test.loginUser(user0)
+
+  })
 })
 
 it('api: article follow', async () => {
@@ -1601,7 +1782,7 @@ it('api: issue follow', async () => {
       ;({data, status} = await test.webApi.issueFollow('user0', 2))
       assert.strictEqual(status, 404)
 
-    // Make user0 unfollowe issue user1/title-0.
+    // Make user0 unfollow issue user1/title-0.
 
       ;({data, status} = await test.webApi.issueUnfollow('user0', 1))
       assertStatus(status, data)
@@ -1628,7 +1809,7 @@ it('api: issue follow', async () => {
       ;({data, status} = await test.webApi.issueUnfollow('user0', 2))
       assert.strictEqual(status, 404)
 
-    // Commenting on an issue makes you follow it automatically 
+    // Commenting on an issue makes you follow it automatically
 
       ;({data, status} = await test.webApi.commentCreate('user0', 1, 'The \\i[body] 0 index 0.'))
       assertStatus(status, data)
@@ -1649,24 +1830,300 @@ it('api: issue follow', async () => {
   })
 })
 
-// TODO https://docs.ourbigbook.com/todo/delete-articles
-//it('api: delete article', async () => {
-//  await testApp(async (test) => {
-//    let data, status, article
-//
-//    // Create users
-//    const user = await test.createUserApi(0)
-//    const admin = await test.createUserApi(1)
-//    await test.sequelize.models.User.update({ admin: true }, { where: { username: 'user1' } })
-//
-//    // Create article
-//    article = createArticleArg({ i: 0 })
-//    ;({data, status} = await createArticleApi(test, article))
-//    assertStatus(status, data)
-//    assertRows(data.articles, [{ titleRender: 'Title 0' }])
-//
-//  })
-//})
+// TODO this is an initial sketch of https://docs.ourbigbook.com/todo/delete-articles
+// Some steps have been skipped because we are initially only enabling this for article moves:
+// and issues and children are moved out to the new merge target by the migration code prior
+// to deletion. For this reason, it is also not yet exposed on the API, and is tested by calling
+// via the sequelize model directly.
+it('api: delete article', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    const sequelize = test.sequelize
+
+    // Create users
+    const user = await test.createUserApi(0)
+    const admin = await test.createUserApi(1)
+    await test.sequelize.models.User.update({ admin: true }, { where: { username: 'user1' } })
+    test.loginUser(user)
+
+    // Create a basic hierarchy.
+
+      article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Algebra' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Calculus', bodySource: '\\Image[http://jpg]{title=My calculus image}\n\n<Algebra>\n' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Geometry' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Derivative', bodySource: '<Calculus>\n' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Limit' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
+      assertStatus(status, data)
+
+      // Create some data from another user
+      test.loginUser(admin)
+
+        // Add user1 metadata to user0/calculus
+
+          // Like.
+          ;({data, status} = await test.webApi.articleLike('user0/calculus'))
+          assertStatus(status, data)
+
+          // Create issue.
+          ;({data, status} = await test.webApi.issueCreate('user0/calculus',
+            { titleSource: 'Calculus issue 1' }
+          ))
+          assertStatus(status, data)
+
+        // Create another "calculus" article to see handling of topic count side effects.
+
+          article = createArticleArg({ i: 0, titleSource: 'Calculus' })
+          ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user1' }))
+          assertStatus(status, data)
+
+      test.loginUser(user)
+
+      // Create a comment
+      ;({data, status} = await test.webApi.commentCreate('user0/calculus', 1, 'user0/title-1 1 1'))
+      assertStatus(status, data)
+
+    // Sanity checks before deletion.
+
+      // User score is now up to 1 after like
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.username, 'user0')
+      assert.strictEqual(data.score, 1)
+
+      // The topic has 2 entries
+      ;({data, status} = await test.webApi.topics({ id: 'calculus' }))
+      assertStatus(status, data)
+      assert.strictEqual(data.topics[0].articleCount, 2)
+
+      // Issue is visible.
+      ;({data, status} = await test.webApi.issue('user0/calculus', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.titleRender, 'Calculus issue 1')
+
+      // Comment is visible
+      ;({data, status} = await test.webApi.comment('user0/calculus', 1, 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.source, 'user0/title-1 1 1')
+
+      // The in-article ID image-my-calculus-image is defined.
+      {
+        const id = await sequelize.models.Id.findOne({ where: { idid: '@user0/image-my-calculus-image' } })
+        assert.notStrictEqual(id, null)
+      }
+
+      // References defined in calculus are present
+      {
+        const count = await sequelize.models.Ref.count({
+          include: [
+            {
+              model: sequelize.models.File,
+              as: 'definedAt',
+              where: { path: '@user0/calculus.bigb' }
+            }
+          ]
+        })
+        assert.notStrictEqual(count, 0)
+      }
+
+      // The File object exists.
+      {
+        const file = await sequelize.models.File.findOne({ where: { path: '@user0/calculus.bigb' } })
+        assert.notStrictEqual(file, null)
+      }
+
+      // Parent and previous siblings that involve calculus.
+      {
+        // Current tree state:
+        // * 0 user0/Index
+        //  * 1 Mathematics
+        //    * 2 Geometry
+        //    * 3 Calculus
+        //      * 4 Limit
+        //      * 5 Derivative
+        //    * 6 Algebra
+        // * 0 user1/Index
+        //   * 1 Calculus
+
+        const algebra = await sequelize.models.Article.getArticle({
+          includeParentAndPreviousSibling: true,
+          sequelize,
+          slug: 'user0/algebra',
+        })
+        assert.strictEqual(algebra.parentId.idid, '@user0/mathematics')
+        assert.strictEqual(algebra.previousSiblingId.idid, '@user0/calculus')
+
+        const limit = await sequelize.models.Article.getArticle({
+          includeParentAndPreviousSibling: true,
+          slug: 'user0/limit',
+          sequelize
+        })
+        assert.strictEqual(limit.parentId.idid, '@user0/calculus')
+        assert.strictEqual(limit.previousSiblingId, undefined)
+
+        const derivative = await sequelize.models.Article.getArticle({
+          includeParentAndPreviousSibling: true,
+          slug: 'user0/derivative',
+          sequelize
+        })
+        assert.strictEqual(derivative.parentId.idid, '@user0/calculus')
+        assert.strictEqual(derivative.previousSiblingId.idid, '@user0/limit')
+
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 7, depth: 0, to_id_index: null, slug: 'user0', parentId: null },
+          { nestedSetIndex: 1, nestedSetNextSibling: 7, depth: 1, to_id_index: 0, slug: 'user0/mathematics', parentId: '@user0' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, to_id_index: 0, slug: 'user0/geometry', parentId: '@user0/mathematics' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 6, depth: 2, to_id_index: 1, slug: 'user0/calculus', parentId: '@user0/mathematics' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 3, to_id_index: 0, slug: 'user0/limit', parentId: '@user0/calculus' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 3, to_id_index: 1, slug: 'user0/derivative', parentId: '@user0/calculus' },
+          { nestedSetIndex: 6, nestedSetNextSibling: 7, depth: 2, to_id_index: 2, slug: 'user0/algebra', parentId: '@user0/mathematics' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 2, depth: 0, to_id_index: null, slug: 'user1', parentId: null },
+          { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user1/calculus', parentId: '@user1' },
+        ])
+      }
+
+    // Delete user0/calculus and check the side effects!!!
+    {
+      const article = await sequelize.models.Article.getArticle({
+        includeParentAndPreviousSibling: true,
+        sequelize,
+        slug: 'user0/calculus',
+      })
+      await article.destroySideEffects()
+    }
+
+      // User score is is decremented when an article is deleted
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.username, 'user0')
+      assert.strictEqual(data.score, 0)
+
+      // Topic article count is decremented when the article the topic pointed to is deleted
+      // Here the topic pointed to user0/calculus because it was created before user1/calculus.
+      ;({data, status} = await test.webApi.topics({ id: 'calculus' }))
+      assertStatus(status, data)
+      assert.strictEqual(data.topics[0].articleCount, 1)
+
+      //// Issues are deleted TODO
+      //;({data, status} = await test.webApi.issue('user0/calculus', 1))
+      //assert.strictEqual(status, 404)
+
+      //// Comments are deleted TODO
+      //;({data, status} = await test.webApi.comment('user0/calculus', 1, 1))
+      ////assert.strictEqual(status, 404)
+
+      // The in-article ID image-my-calculus-image was deleted
+      {
+        const id = await sequelize.models.Id.findOne({ where: { idid: '@user0/image-my-calculus-image' } })
+        assert.strictEqual(id, null)
+      }
+
+      // References defined in calculus were deleted
+      {
+        const count = await sequelize.models.Ref.count({
+          include: [
+            {
+              model: sequelize.models.File,
+              as: 'definedAt',
+              where: { path: '@user0/calculus.bigb' }
+            }
+          ]
+        })
+        assert.strictEqual(count, 0)
+      }
+
+      // The File object were deleted
+      {
+        const file = await sequelize.models.File.findOne({ where: { path: '@user0/calculus.bigb' } })
+        assert.strictEqual(file, null)
+      }
+
+      // Parent and previous siblings that involve deleted article are updated.
+      // All child pages are moved up the tree and placed where the parent was. 
+      {
+        // Current tree state:
+        // * 0 user0/Index
+        //  * 1 Mathematics
+        //    * 2 Geometry
+        //    * 3 Limit
+        //    * 4 Derivative
+        //    * 5 Algebra
+        // * 0 user1/Index
+        //   * 1 Calculus
+
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 6, depth: 0, to_id_index: null, slug: 'user0', parentId: null },
+          { nestedSetIndex: 1, nestedSetNextSibling: 6, depth: 1, to_id_index: 0, slug: 'user0/mathematics', parentId: '@user0' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, to_id_index: 0, slug: 'user0/geometry', parentId: '@user0/mathematics' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 2, to_id_index: 1, slug: 'user0/limit', parentId: '@user0/mathematics' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 2, to_id_index: 2, slug: 'user0/derivative', parentId: '@user0/mathematics' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 2, to_id_index: 3, slug: 'user0/algebra', parentId: '@user0/mathematics' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 2, depth: 0, to_id_index: null, slug: 'user1', parentId: null },
+          { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user1/calculus', parentId: '@user1' },
+        ])
+
+        const limit = await sequelize.models.Article.getArticle({
+          includeParentAndPreviousSibling: true,
+          slug: 'user0/limit',
+          sequelize
+        })
+        assert.strictEqual(limit.parentId.idid, '@user0/mathematics')
+        assert.strictEqual(limit.previousSiblingId.idid, '@user0/geometry')
+
+        const derivative = await sequelize.models.Article.getArticle({
+          includeParentAndPreviousSibling: true,
+          slug: 'user0/derivative',
+          sequelize
+        })
+        assert.strictEqual(derivative.parentId.idid, '@user0/mathematics')
+        assert.strictEqual(derivative.previousSiblingId.idid, '@user0/limit')
+
+        const algebra = await sequelize.models.Article.getArticle({
+          includeParentAndPreviousSibling: true,
+          sequelize,
+          slug: 'user0/algebra',
+        })
+        assert.strictEqual(algebra.parentId.idid, '@user0/mathematics')
+        assert.strictEqual(algebra.previousSiblingId.idid, '@user0/derivative')
+      }
+
+    // Delete user1/calculus and check the topic deletion effects.
+    {
+      const article = await sequelize.models.Article.getArticle({
+        includeParentAndPreviousSibling: true,
+        sequelize,
+        slug: 'user1/calculus',
+      })
+      await article.destroySideEffects()
+    }
+
+      // Topics without articles are deleted
+      // This behaviour might have to change later on if we implement features
+      // such as topic following and topic issues:
+      // https://docs.ourbigbook.com/todo/follow-topic
+      // https://github.com/ourbigbook/ourbigbook/issues/257
+      ;({data, status} = await test.webApi.topics({ id: 'calculus' }))
+      assertStatus(status, data)
+      assertRows(data.topics, [])
+  })
+})
 
 // This used to work at one point working. But then we
 // when we started exposing the parentId via API, and decided it would be
@@ -1983,12 +2440,6 @@ it('api: resource limits', async () => {
   })
 })
 
-async function assertNestedSets(sequelize, expect) {
-  const articles = await sequelize.models.Article.findNestedSets()
-  //console.error(articles.map(a => [a.nestedSetIndex, a.nestedSetNextSibling, a.slug]));
-  assertRows(articles, expect)
-}
-
 it('api: article tree single user', async () => {
   await testApp(async (test) => {
     let data, status, article
@@ -2002,8 +2453,8 @@ it('api: article tree single user', async () => {
     // Article.
 
       await assertNestedSets(sequelize, [
-        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, slug: 'user0' },
-        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, slug: 'user1' },
+        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user0' },
+        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user1' },
       ])
 
       article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
@@ -2012,9 +2463,9 @@ it('api: article tree single user', async () => {
       assert_xpath(xpath_header_parent(1, 'user0/mathematics', '/user0', 'Index'), data.articles[0].h1Render)
 
       await assertNestedSets(sequelize, [
-        { nestedSetIndex: 0, nestedSetNextSibling: 2, depth: 0, slug: 'user0' },
-        { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, slug: 'user0/mathematics' },
-        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, slug: 'user1' },
+        { nestedSetIndex: 0, nestedSetNextSibling: 2, depth: 0, to_id_index: null, slug: 'user0' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
+        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user1' },
       ])
 
       article = createArticleArg({ i: 0, titleSource: 'Calculus' })
@@ -2023,10 +2474,10 @@ it('api: article tree single user', async () => {
       assert_xpath(xpath_header_parent(1, 'user0/calculus', '/user0/mathematics', 'Mathematics'), data.articles[0].h1Render)
 
       await assertNestedSets(sequelize, [
-        { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, slug: 'user0' },
-        { nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, slug: 'user0/mathematics' },
-        { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, slug: 'user0/calculus' },
-        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, slug: 'user1' },
+        { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
+        { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, to_id_index: 0, slug: 'user0/calculus' },
+        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user1' },
       ])
 
       // It is possible to change a parent ID.
@@ -2038,36 +2489,36 @@ it('api: article tree single user', async () => {
         assert_xpath(xpath_header_parent(1, 'user0/derivative', '/user0/mathematics', 'Mathematics'), data.articles[0].h1Render)
 
         // Current tree state:
-        // * Index
-        //  * 0 Mathematics
-        //    * 1 Derivative
-        //    * 2 Calculus
+        // * 0 Index
+        //  * 1 Mathematics
+        //    * 2 Derivative
+        //    * 3 Calculus
 
         await assertNestedSets(sequelize, [
-          { nestedSetIndex: 0, nestedSetNextSibling: 4, depth: 0, slug: 'user0' },
-          { nestedSetIndex: 1, nestedSetNextSibling: 4, depth: 1, slug: 'user0/mathematics' },
-          { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, slug: 'user0/derivative' },
-          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 2, slug: 'user0/calculus' },
-          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, slug: 'user1' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 4, depth: 0, to_id_index: null, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 4, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, to_id_index: 0, slug: 'user0/derivative' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 2, to_id_index: 1, slug: 'user0/calculus' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user1' },
         ])
 
-        // Modify its parent.
+        // Modify the parent of derivative from Mathematics to its next sibling Calculus.
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
         assertStatus(status, data)
         assert_xpath(xpath_header_parent(1, 'user0/derivative', '/user0/calculus', 'Calculus'), data.articles[0].h1Render)
 
         // Current tree state:
-        // * Index
-        //  * 0 Mathematics
-        //    * 1 Calculus
-        //      * 2 Derivative
+        // * 0 Index
+        //  * 1 Mathematics
+        //    * 2 Calculus
+        //      * 3 Derivative
 
         await assertNestedSets(sequelize, [
-          { nestedSetIndex: 0, nestedSetNextSibling: 4, depth: 0, slug: 'user0' },
-          { nestedSetIndex: 1, nestedSetNextSibling: 4, depth: 1, slug: 'user0/mathematics' },
-          { nestedSetIndex: 2, nestedSetNextSibling: 4, depth: 2, slug: 'user0/calculus' },
-          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 3, slug: 'user0/derivative' },
-          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, slug: 'user1' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 4, depth: 0, to_id_index: null, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 4, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 4, depth: 2, to_id_index: 0, slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 3, to_id_index: 0, slug: 'user0/derivative' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user1' },
         ])
 
       // parentId errors
@@ -2126,12 +2577,12 @@ it('api: article tree single user', async () => {
         //      * 3 Integral
 
         await assertNestedSets(sequelize, [
-          { nestedSetIndex: 0, nestedSetNextSibling: 5, depth: 0, slug: 'user0' },
-          { nestedSetIndex: 1, nestedSetNextSibling: 5, depth: 1, slug: 'user0/mathematics' },
-          { nestedSetIndex: 2, nestedSetNextSibling: 5, depth: 2, slug: 'user0/calculus' },
-          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 3, slug: 'user0/derivative' },
-          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 3, slug: 'user0/integral' },
-          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, slug: 'user1' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 5, depth: 0, to_id_index: null, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 5, depth: 1, to_id_index: 0,    slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 5, depth: 2, to_id_index: 0,    slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 3, to_id_index: 0,    slug: 'user0/derivative' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 3, to_id_index: 1,    slug: 'user0/integral' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user1' },
         ])
 
         // Refresh the parent index to show this new child.
@@ -2158,13 +2609,13 @@ it('api: article tree single user', async () => {
         //      * 4 Integral
 
         await assertNestedSets(sequelize, [
-          { nestedSetIndex: 0, nestedSetNextSibling: 6, depth: 0, slug: 'user0' },
-          { nestedSetIndex: 1, nestedSetNextSibling: 6, depth: 1, slug: 'user0/mathematics' },
-          { nestedSetIndex: 2, nestedSetNextSibling: 6, depth: 2, slug: 'user0/calculus' },
-          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 3, slug: 'user0/limit' },
-          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 3, slug: 'user0/derivative' },
-          { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 3, slug: 'user0/integral' },
-          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, slug: 'user1' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 6, depth: 0, to_id_index: null, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 6, depth: 1, to_id_index: 0,    slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 6, depth: 2, to_id_index: 0,    slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 3, to_id_index: 0,    slug: 'user0/limit' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 3, to_id_index: 1,    slug: 'user0/derivative' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 3, to_id_index: 2,    slug: 'user0/integral' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user1' },
         ])
 
         // TODO restore toc asserts.
@@ -2196,15 +2647,15 @@ it('api: article tree single user', async () => {
         //      * 6 Integral
 
         await assertNestedSets(sequelize, [
-          { nestedSetIndex: 0, nestedSetNextSibling: 8, depth: 0, slug: 'user0' },
-          { nestedSetIndex: 1, nestedSetNextSibling: 8, depth: 1, slug: 'user0/mathematics' },
-          { nestedSetIndex: 2, nestedSetNextSibling: 8, depth: 2, slug: 'user0/calculus' },
-          { nestedSetIndex: 3, nestedSetNextSibling: 6, depth: 3, slug: 'user0/limit' },
-          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 4, slug: 'user0/limit-of-a-sequence' },
-          { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 4, slug: 'user0/limit-of-a-function' },
-          { nestedSetIndex: 6, nestedSetNextSibling: 7, depth: 3, slug: 'user0/derivative' },
-          { nestedSetIndex: 7, nestedSetNextSibling: 8, depth: 3, slug: 'user0/integral' },
-          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, slug: 'user1' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 8, depth: 0, to_id_index: null, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 8, depth: 1, to_id_index: 0,    slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 8, depth: 2, to_id_index: 0,    slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 6, depth: 3, to_id_index: 0,    slug: 'user0/limit' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 4, to_id_index: 0,    slug: 'user0/limit-of-a-sequence' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 4, to_id_index: 1,    slug: 'user0/limit-of-a-function' },
+          { nestedSetIndex: 6, nestedSetNextSibling: 7, depth: 3, to_id_index: 1,    slug: 'user0/derivative' },
+          { nestedSetIndex: 7, nestedSetNextSibling: 8, depth: 3, to_id_index: 2,    slug: 'user0/integral' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user1' },
         ])
 
         // TODO restore toc asserts.
@@ -2214,7 +2665,8 @@ it('api: article tree single user', async () => {
         //assert_xpath("//*[@id='toc']//x:a[@href='user0/derivative' and @data-test='5' and text()='Derivative']", data.articles[0].render)
         //assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'   and @data-test='6' and text()='Integral']",   data.articles[0].render)
 
-        // Move Limit up. Give a parentId as well as sibling. This is not necessary.
+        // Move Limit to after a later sibling. Give a parentId as well as sibling. parentId is not necessary
+        // in this case as it is implied by previousSibling, but it is allowed.
         ;({data, status} = await createOrUpdateArticleApi(test,
           createArticleArg({ i: 0, titleSource: 'Limit' }),
           { parentId: '@user0/calculus', previousSiblingId: '@user0/integral' }
@@ -2222,25 +2674,25 @@ it('api: article tree single user', async () => {
         assertStatus(status, data)
 
         // Current tree state:
-        // * Index
-        //  * 0 Mathematics
-        //    * 1 Calculus
-        //      * 2 Derivative
-        //      * 3 Integral
-        //      * 4 Limit
-        //        * 5 Limit of a sequence
-        //        * 6 Limit of a function
+        // * 0 Index
+        //  * 1 Mathematics
+        //    * 2 Calculus
+        //      * 3 Derivative
+        //      * 4 Integral
+        //      * 5 Limit
+        //        * 6 Limit of a sequence
+        //        * 7 Limit of a function
 
         await assertNestedSets(sequelize, [
-          { nestedSetIndex: 0, nestedSetNextSibling: 8, depth: 0, slug: 'user0' },
-          { nestedSetIndex: 1, nestedSetNextSibling: 8, depth: 1, slug: 'user0/mathematics' },
-          { nestedSetIndex: 2, nestedSetNextSibling: 8, depth: 2, slug: 'user0/calculus' },
-          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 3, slug: 'user0/derivative' },
-          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 3, slug: 'user0/integral' },
-          { nestedSetIndex: 5, nestedSetNextSibling: 8, depth: 3, slug: 'user0/limit' },
-          { nestedSetIndex: 6, nestedSetNextSibling: 7, depth: 4, slug: 'user0/limit-of-a-sequence' },
-          { nestedSetIndex: 7, nestedSetNextSibling: 8, depth: 4, slug: 'user0/limit-of-a-function' },
-          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, slug: 'user1' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 8, depth: 0, to_id_index: null, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 8, depth: 1, to_id_index: 0,    slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 8, depth: 2, to_id_index: 0,    slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 3, to_id_index: 0,    slug: 'user0/derivative' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 3, to_id_index: 1,    slug: 'user0/integral' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 8, depth: 3, to_id_index: 2,    slug: 'user0/limit' },
+          { nestedSetIndex: 6, nestedSetNextSibling: 7, depth: 4, to_id_index: 0,    slug: 'user0/limit-of-a-sequence' },
+          { nestedSetIndex: 7, nestedSetNextSibling: 8, depth: 4, to_id_index: 1,    slug: 'user0/limit-of-a-function' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user1' },
         ])
 
         // TODO restore toc asserts.
@@ -2250,7 +2702,7 @@ it('api: article tree single user', async () => {
         //assert_xpath("//*[@id='toc']//x:a[@href='user0/limit-of-a-sequence' and @data-test='5' and text()='Limit of a sequence']", data.articles[0].render)
         //assert_xpath("//*[@id='toc']//x:a[@href='user0/limit-of-a-function' and @data-test='6' and text()='Limit of a function']", data.articles[0].render)
 
-        // Move Limit down. Don't give parentId on an update. Parent will be derived from sibling.
+        // Move to previous sibling. Don't give parentId on update. Parent will be derived from sibling.
         ;({data, status} = await createOrUpdateArticleApi(test,
           createArticleArg({ i: 0, titleSource: 'Limit' }),
           { parentId: undefined, previousSiblingId: '@user0/derivative' }
@@ -2258,25 +2710,25 @@ it('api: article tree single user', async () => {
         assertStatus(status, data)
 
         // Current tree state:
-        // * Index
-        //  * 0 Mathematics
-        //    * 1 Calculus
-        //      * 2 Derivative
-        //      * 3 Limit
-        //        * 4 Limit of a sequence
-        //        * 5 Limit of a function
-        //      * 6 Integral
+        // * 0 Index
+        //  * 1 Mathematics
+        //    * 2 Calculus
+        //      * 3 Derivative
+        //      * 4 Limit
+        //        * 5 Limit of a sequence
+        //        * 6 Limit of a function
+        //      * 7 Integral
 
         await assertNestedSets(sequelize, [
-          { nestedSetIndex: 0, nestedSetNextSibling: 8, depth: 0, slug: 'user0' },
-          { nestedSetIndex: 1, nestedSetNextSibling: 8, depth: 1, slug: 'user0/mathematics' },
-          { nestedSetIndex: 2, nestedSetNextSibling: 8, depth: 2, slug: 'user0/calculus' },
-          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 3, slug: 'user0/derivative' },
-          { nestedSetIndex: 4, nestedSetNextSibling: 7, depth: 3, slug: 'user0/limit' },
-          { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 4, slug: 'user0/limit-of-a-sequence' },
-          { nestedSetIndex: 6, nestedSetNextSibling: 7, depth: 4, slug: 'user0/limit-of-a-function' },
-          { nestedSetIndex: 7, nestedSetNextSibling: 8, depth: 3, slug: 'user0/integral' },
-          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, slug: 'user1' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 8, depth: 0, to_id_index: null, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 8, depth: 1, to_id_index: 0,    slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 8, depth: 2, to_id_index: 0,    slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 3, to_id_index: 0,    slug: 'user0/derivative' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 7, depth: 3, to_id_index: 1,    slug: 'user0/limit' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 4, to_id_index: 0,    slug: 'user0/limit-of-a-sequence' },
+          { nestedSetIndex: 6, nestedSetNextSibling: 7, depth: 4, to_id_index: 1,    slug: 'user0/limit-of-a-function' },
+          { nestedSetIndex: 7, nestedSetNextSibling: 8, depth: 3, to_id_index: 2,    slug: 'user0/integral' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user1' },
         ])
 
         // Move limit to before ancestor to check that nested set doesn't blow up.
@@ -2297,15 +2749,15 @@ it('api: article tree single user', async () => {
         //      * Integral
 
         await assertNestedSets(sequelize, [
-          { nestedSetIndex: 0, nestedSetNextSibling: 8, slug: 'user0' },
-          { nestedSetIndex: 1, nestedSetNextSibling: 8, slug: 'user0/mathematics' },
-          { nestedSetIndex: 2, nestedSetNextSibling: 5, slug: 'user0/limit' },
-          { nestedSetIndex: 3, nestedSetNextSibling: 4, slug: 'user0/limit-of-a-sequence' },
-          { nestedSetIndex: 4, nestedSetNextSibling: 5, slug: 'user0/limit-of-a-function' },
-          { nestedSetIndex: 5, nestedSetNextSibling: 8, slug: 'user0/calculus' },
-          { nestedSetIndex: 6, nestedSetNextSibling: 7, slug: 'user0/derivative' },
-          { nestedSetIndex: 7, nestedSetNextSibling: 8, slug: 'user0/integral' },
-          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, slug: 'user1' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 8, depth: 0, to_id_index: null, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 8, depth: 1, to_id_index: 0,    slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 5, depth: 2, to_id_index: 0,    slug: 'user0/limit' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 3, to_id_index: 0,    slug: 'user0/limit-of-a-sequence' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 3, to_id_index: 1,    slug: 'user0/limit-of-a-function' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 8, depth: 2, to_id_index: 1,    slug: 'user0/calculus' },
+          { nestedSetIndex: 6, nestedSetNextSibling: 7, depth: 3, to_id_index: 0,    slug: 'user0/derivative' },
+          { nestedSetIndex: 7, nestedSetNextSibling: 8, depth: 3, to_id_index: 1,    slug: 'user0/integral' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user1' },
         ])
 
         // Move limit back to where it was.
@@ -2350,15 +2802,15 @@ it('api: article tree single user', async () => {
         //      * 6 Integral
 
         await assertNestedSets(sequelize, [
-          { nestedSetIndex: 0, nestedSetNextSibling: 8, depth: 0, slug: 'user0' },
-          { nestedSetIndex: 1, nestedSetNextSibling: 8, depth: 1, slug: 'user0/mathematics' },
-          { nestedSetIndex: 2, nestedSetNextSibling: 8, depth: 2, slug: 'user0/calculus' },
-          { nestedSetIndex: 3, nestedSetNextSibling: 6, depth: 3, slug: 'user0/limit' },
-          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 4, slug: 'user0/limit-of-a-sequence' },
-          { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 4, slug: 'user0/limit-of-a-function' },
-          { nestedSetIndex: 6, nestedSetNextSibling: 7, depth: 3, slug: 'user0/derivative' },
-          { nestedSetIndex: 7, nestedSetNextSibling: 8, depth: 3, slug: 'user0/integral' },
-          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, slug: 'user1' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 8, depth: 0, to_id_index: null, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 8, depth: 1, to_id_index: 0,    slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 8, depth: 2, to_id_index: 0,    slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 6, depth: 3, to_id_index: 0,    slug: 'user0/limit' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 4, to_id_index: 0,    slug: 'user0/limit-of-a-sequence' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 4, to_id_index: 1,    slug: 'user0/limit-of-a-function' },
+          { nestedSetIndex: 6, nestedSetNextSibling: 7, depth: 3, to_id_index: 1,    slug: 'user0/derivative' },
+          { nestedSetIndex: 7, nestedSetNextSibling: 8, depth: 3, to_id_index: 2,    slug: 'user0/integral' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user1' },
         ])
 
         // TODO restore toc asserts.
@@ -2387,16 +2839,16 @@ it('api: article tree single user', async () => {
         //      * 7 Measure
 
         await assertNestedSets(sequelize, [
-          { nestedSetIndex: 0, nestedSetNextSibling: 9, depth: 0, slug: 'user0' },
-          { nestedSetIndex: 1, nestedSetNextSibling: 9, depth: 1, slug: 'user0/mathematics' },
-          { nestedSetIndex: 2, nestedSetNextSibling: 9, depth: 2, slug: 'user0/calculus' },
-          { nestedSetIndex: 3, nestedSetNextSibling: 6, depth: 3, slug: 'user0/limit' },
-          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 4, slug: 'user0/limit-of-a-sequence' },
-          { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 4, slug: 'user0/limit-of-a-function' },
-          { nestedSetIndex: 6, nestedSetNextSibling: 7, depth: 3, slug: 'user0/derivative' },
-          { nestedSetIndex: 7, nestedSetNextSibling: 8, depth: 3, slug: 'user0/integral' },
-          { nestedSetIndex: 8, nestedSetNextSibling: 9, depth: 3, slug: 'user0/measure' },
-          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, slug: 'user1' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 9, depth: 0, to_id_index: null, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 9, depth: 1, to_id_index: 0,    slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 9, depth: 2, to_id_index: 0,    slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 6, depth: 3, to_id_index: 0,    slug: 'user0/limit' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 4, to_id_index: 0,    slug: 'user0/limit-of-a-sequence' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 4, to_id_index: 1,    slug: 'user0/limit-of-a-function' },
+          { nestedSetIndex: 6, nestedSetNextSibling: 7, depth: 3, to_id_index: 1,    slug: 'user0/derivative' },
+          { nestedSetIndex: 7, nestedSetNextSibling: 8, depth: 3, to_id_index: 2,    slug: 'user0/integral' },
+          { nestedSetIndex: 8, nestedSetNextSibling: 9, depth: 3, to_id_index: 3,    slug: 'user0/measure' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user1' },
         ])
 
         // TODO restore toc asserts.
@@ -2409,7 +2861,7 @@ it('api: article tree single user', async () => {
 
         // Refresh Mathematics to show the source ToC.
         // Add a reference to the article self: we once had a bug where this was preventing the ToC from showing.
-        article = createArticleArg({ i: 0, titleSource: 'Mathematics', bodySource: 'I like <mathematics>.' })
+        article = createArticleArg({ i: 0, titleSource: 'Mathematics', bodySource: 'I like mathematics.' })
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0' }))
         assertStatus(status, data)
         // TODO restore toc asserts.
@@ -2417,6 +2869,19 @@ it('api: article tree single user', async () => {
 
       // Article.getArticle includeParentAndPreviousSibling argument test.
       // Used on editor only for now, so a bit hard to test on UI. But this tests the crux MEGAJOIN just fine.
+
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 9, depth: 0, to_id_index: null, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 9, depth: 1, to_id_index: 0,    slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 9, depth: 2, to_id_index: 0,    slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 6, depth: 3, to_id_index: 0,    slug: 'user0/limit' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 4, to_id_index: 0,    slug: 'user0/limit-of-a-sequence' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 4, to_id_index: 1,    slug: 'user0/limit-of-a-function' },
+          { nestedSetIndex: 6, nestedSetNextSibling: 7, depth: 3, to_id_index: 1,    slug: 'user0/derivative' },
+          { nestedSetIndex: 7, nestedSetNextSibling: 8, depth: 3, to_id_index: 2,    slug: 'user0/integral' },
+          { nestedSetIndex: 8, nestedSetNextSibling: 9, depth: 3, to_id_index: 3,    slug: 'user0/measure' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user1' },
+        ])
 
         // First sibling.
         article = await sequelize.models.Article.getArticle({
@@ -2466,26 +2931,14 @@ it('api: article tree single user', async () => {
           ],
         })
         assertRows(refs, [
-          { from_id: '@user0',             to_id: '@user0/mathematics', to_id_index: 0, },
-          { from_id: '@user0/calculus',    to_id: '@user0/limit',       to_id_index: 0, },
-          { from_id: '@user0/calculus',    to_id: '@user0/derivative',  to_id_index: 1, },
-          { from_id: '@user0/calculus',    to_id: '@user0/integral',    to_id_index: 2, },
-          { from_id: '@user0/calculus',    to_id: '@user0/measure',     to_id_index: 3, },
+          { from_id: '@user0',             to_id: '@user0/mathematics',         to_id_index: 0, },
+          { from_id: '@user0/calculus',    to_id: '@user0/limit',               to_id_index: 0, },
+          { from_id: '@user0/calculus',    to_id: '@user0/derivative',          to_id_index: 1, },
+          { from_id: '@user0/calculus',    to_id: '@user0/integral',            to_id_index: 2, },
+          { from_id: '@user0/calculus',    to_id: '@user0/measure',             to_id_index: 3, },
           { from_id: '@user0/limit',       to_id: '@user0/limit-of-a-sequence', to_id_index: 0, },
           { from_id: '@user0/limit',       to_id: '@user0/limit-of-a-function', to_id_index: 1, },
-          { from_id: '@user0/mathematics', to_id: '@user0/calculus',    to_id_index: 0, },
-        ])
-        await assertNestedSets(sequelize, [
-          { nestedSetIndex: 0, nestedSetNextSibling: 9, depth: 0, slug: 'user0',                     },
-          { nestedSetIndex: 1, nestedSetNextSibling: 9, depth: 1, slug: 'user0/mathematics',         },
-          { nestedSetIndex: 2, nestedSetNextSibling: 9, depth: 2, slug: 'user0/calculus',            },
-          { nestedSetIndex: 3, nestedSetNextSibling: 6, depth: 3, slug: 'user0/limit',               },
-          { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 4, slug: 'user0/limit-of-a-sequence', },
-          { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 4, slug: 'user0/limit-of-a-function', },
-          { nestedSetIndex: 6, nestedSetNextSibling: 7, depth: 3, slug: 'user0/derivative',          },
-          { nestedSetIndex: 7, nestedSetNextSibling: 8, depth: 3, slug: 'user0/integral',            },
-          { nestedSetIndex: 8, nestedSetNextSibling: 9, depth: 3, slug: 'user0/measure',             },
-          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, slug: 'user1' },
+          { from_id: '@user0/mathematics', to_id: '@user0/calculus',            to_id_index: 0, },
         ])
 
       // previousSiblingId errors
@@ -2561,9 +3014,9 @@ it('api: article tree multiuser', async () => {
   await testApp(async (test) => {
     let article, data, status
     const sequelize = test.sequelize
-    const user = await test.createUserApi(0)
+    const user0 = await test.createUserApi(0)
     const user1 = await test.createUserApi(1)
-    const users = [user, user1]
+    const users = [user0, user1]
 
     await assertNestedSetsMultiuser(sequelize, users, [
       { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, slug: '' },
@@ -2574,7 +3027,7 @@ it('api: article tree multiuser', async () => {
 
     await assertNestedSetsMultiuser(sequelize, users, [
       { nestedSetIndex: 0, nestedSetNextSibling: 2, depth: 0, slug: '' },
-      { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, slug: 'mathematics' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, slug: 'mathematics' },
     ])
 
     article = createArticleArg({ i: 0, titleSource: 'Calculus',  })
@@ -2582,8 +3035,8 @@ it('api: article tree multiuser', async () => {
 
     await assertNestedSetsMultiuser(sequelize, users, [
       { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, slug: '' },
-      { nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, slug: 'mathematics' },
-      { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, slug: 'calculus' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, slug: 'mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, slug: 'calculus' },
     ])
 
     article = createArticleArg({ i: 0, titleSource: 'Natural science' })
@@ -2591,9 +3044,39 @@ it('api: article tree multiuser', async () => {
 
     await assertNestedSetsMultiuser(sequelize, users, [
       { nestedSetIndex: 0, nestedSetNextSibling: 4, depth: 0, slug: '' },
-      { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, slug: 'natural-science' },
-      { nestedSetIndex: 2, nestedSetNextSibling: 4, depth: 1, slug: 'mathematics' },
-      { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 2, slug: 'calculus' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, slug: 'natural-science' },
+        { nestedSetIndex: 2, nestedSetNextSibling: 4, depth: 1, slug: 'mathematics' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 2, slug: 'calculus' },
+    ])
+
+    // Sanity check because now we are going to start modifying just one tree.
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 4, depth: 0, slug: 'user0' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, slug: 'user0/natural-science' },
+        { nestedSetIndex: 2, nestedSetNextSibling: 4, depth: 1, slug: 'user0/mathematics' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 2, slug: 'user0/calculus' },
+      { nestedSetIndex: 0, nestedSetNextSibling: 4, depth: 0, slug: 'user1' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, slug: 'user1/natural-science' },
+        { nestedSetIndex: 2, nestedSetNextSibling: 4, depth: 1, slug: 'user1/mathematics' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 2, slug: 'user1/calculus' },
+    ])
+
+    // Move user0/mathematics before natural science.
+    test.loginUser(user0)
+    article = createArticleArg({ i: 0, titleSource: 'Mathematics',  })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assertStatus(status, data)
+
+    // Moving a user0 article does not affect user1's tree.
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 4, depth: 0, slug: 'user0' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, slug: 'user0/calculus' },
+        { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 1, slug: 'user0/natural-science' },
+      { nestedSetIndex: 0, nestedSetNextSibling: 4, depth: 0, slug: 'user1' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, slug: 'user1/natural-science' },
+        { nestedSetIndex: 2, nestedSetNextSibling: 4, depth: 1, slug: 'user1/mathematics' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 2, slug: 'user1/calculus' },
     ])
   })
 })
@@ -2660,29 +3143,47 @@ it('api: synonym rename', async () => {
     let data, status, article
     const sequelize = test.sequelize
     const user = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
     test.loginUser(user)
 
     // Create a basic hierarchy.
 
-    article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
-    ;({data, status} = await createOrUpdateArticleApi(test, article))
-    assertStatus(status, data)
+      article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article))
+      assertStatus(status, data)
 
-    // Has Calculus as previous sibling.
-    article = createArticleArg({ i: 0, titleSource: 'Algebra' })
-    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
-    assertStatus(status, data)
+      // Has Calculus as previous sibling.
+      article = createArticleArg({ i: 0, titleSource: 'Algebra' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
+      assertStatus(status, data)
 
-    article = createArticleArg({ i: 0, titleSource: 'Calculus', bodySource: '\\Image[http://jpg]{title=My image}\n' })
-    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
-    assertStatus(status, data)
+      article = createArticleArg({ i: 0, titleSource: 'Calculus', bodySource: '\\Image[http://jpg]{title=My image}\n' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
+      assertStatus(status, data)
 
-    article = createArticleArg({ i: 0, titleSource: 'Derivative', bodySource: '<Calculus>\n' })
-    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
-    assertStatus(status, data)
+      article = createArticleArg({ i: 0, titleSource: 'Integral' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
+      assertStatus(status, data)
 
-    article = createArticleArg({ i: 0, titleSource: 'Physics' })
-    assertStatus(status, data)
+      article = createArticleArg({ i: 0, titleSource: 'Fundamental theorem of calculus' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/integral' }))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Derivative', bodySource: '<Calculus>\n' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Chain rule' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/derivative' }))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Limit' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Limit of a series' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/limit' }))
+      assertStatus(status, data)
 
     // Add some metadata to our article of interest.
 
@@ -2690,34 +3191,107 @@ it('api: synonym rename', async () => {
       { titleSource: 'Calculus issue 0' }
     ))
     assertStatus(status, data)
-    ;({data, status} = await test.webApi.issue('user0/calculus', 1))
+
+    test.loginUser(user1)
+    ;({data, status} = await test.webApi.articleLike('user0/calculus'))
     assertStatus(status, data)
-    assert.strictEqual(data.titleRender, 'Calculus issue 0')
+    test.loginUser(user)
 
-    // Sanity check that the parent and previous sibling are correct.
+    // Sanity checks
 
-    ;({data, status} = await test.webApi.article('user0/derivative', { 'include-parent': true }))
-    assertStatus(status, data)
-    assert.strictEqual(data.titleRender, 'Derivative')
-    assert.strictEqual(data.parentId, '@user0/calculus')
+      ;({data, status} = await test.webApi.issue('user0/calculus', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.titleRender, 'Calculus issue 0')
 
-    ;({data, status} = await test.webApi.article('user0/algebra', { 'include-parent': true }))
-    assertStatus(status, data)
-    assert.strictEqual(data.titleRender, 'Algebra')
-    assert.strictEqual(data.previousSiblingId, '@user0/calculus')
+      // Current tree state:
+      // * 0 user0/Index
+      //  * 1 Mathematics
+      //    * 2 Calculus
+      //      * 3 Limit
+      //        * 4 Limit of a series
+      //      * 5 Derivative
+      //        * 6 Chain rule
+      //      * 7 Integral
+      //        * 8 Fundamental theorem of calculus
+      //    * 9 Algebra
+      await assertNestedSets(sequelize, [
+        { nestedSetIndex: 0, nestedSetNextSibling: 10, depth: 0, to_id_index: null, slug: 'user0' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 10, depth: 1, to_id_index: 0,    slug: 'user0/mathematics' },
+        { nestedSetIndex: 2, nestedSetNextSibling: 9,  depth: 2, to_id_index: 0,    slug: 'user0/calculus' },
+        { nestedSetIndex: 3, nestedSetNextSibling: 5,  depth: 3, to_id_index: 0,    slug: 'user0/limit' },
+        { nestedSetIndex: 4, nestedSetNextSibling: 5,  depth: 4, to_id_index: 0,    slug: 'user0/limit-of-a-series' },
+        { nestedSetIndex: 5, nestedSetNextSibling: 7,  depth: 3, to_id_index: 1,    slug: 'user0/derivative' },
+        { nestedSetIndex: 6, nestedSetNextSibling: 7,  depth: 4, to_id_index: 0,    slug: 'user0/chain-rule' },
+        { nestedSetIndex: 7, nestedSetNextSibling: 9,  depth: 3, to_id_index: 2,    slug: 'user0/integral' },
+        { nestedSetIndex: 8, nestedSetNextSibling: 9,  depth: 4, to_id_index: 0,    slug: 'user0/fundamental-theorem-of-calculus' },
+        { nestedSetIndex: 9, nestedSetNextSibling: 10, depth: 2, to_id_index: 1,    slug: 'user0/algebra' },
+        { nestedSetIndex: 0, nestedSetNextSibling: 1,  depth: 0, to_id_index: null, slug: 'user1' },
+      ])
 
-    // Add synonym without changing title.
+      // Sanity check that the parent and previous sibling are correct.
 
-    article = createArticleArg({
-      i: 0,
-      titleSource: 'Calculus',
-      bodySource: '= Calculus 2\n{synonym}\n\n\\Image[http://jpg]{title=My image}\n'
-    })
-    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
-    assertStatus(status, data)
+      ;({data, status} = await test.webApi.article('user0/derivative', { 'include-parent': true }))
+      assertStatus(status, data)
+      assert.strictEqual(data.titleRender, 'Derivative')
+      assert.strictEqual(data.parentId, '@user0/calculus')
 
-      // Check that the synonym exists as a redirect.
+      ;({data, status} = await test.webApi.article('user0/algebra', { 'include-parent': true }))
+      assertStatus(status, data)
+      assert.strictEqual(data.titleRender, 'Algebra')
+      assert.strictEqual(data.previousSiblingId, '@user0/calculus')
 
+      // Sanity check scores
+
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.username, 'user0')
+      assert.strictEqual(data.score, 1)
+
+      ;({data, status} = await test.webApi.article('user0/calculus'))
+      assertStatus(status, data)
+      assert.strictEqual(data.titleRender, 'Calculus')
+      assert.strictEqual(data.score, 1)
+
+    // Add calculus-2 as a synonym of calculus without changing title.
+
+      article = createArticleArg({
+        i: 0,
+        titleSource: 'Calculus',
+        bodySource: `= Calculus 2
+{synonym}
+
+\\Image[http://jpg]{title=My image}
+`
+      })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
+      assertStatus(status, data)
+
+      // Current tree state:
+      // * 0 user0/Index
+      //  * 1 Mathematics
+      //    * 2 Calculus (Calculus 2)
+      //      * 3 Limit
+      //        * 4 Limit of a series
+      //      * 5 Derivative
+      //        * 6 Chain rule
+      //      * 7 Integral
+      //        * 8 Fundamental theorem of calculus
+      //    * 9 Algebra
+      await assertNestedSets(sequelize, [
+        { nestedSetIndex: 0, nestedSetNextSibling: 10, depth: 0, to_id_index: null, slug: 'user0' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 10, depth: 1, to_id_index: 0,    slug: 'user0/mathematics' },
+        { nestedSetIndex: 2, nestedSetNextSibling: 9,  depth: 2, to_id_index: 0,    slug: 'user0/calculus' },
+        { nestedSetIndex: 3, nestedSetNextSibling: 5,  depth: 3, to_id_index: 0,    slug: 'user0/limit' },
+        { nestedSetIndex: 4, nestedSetNextSibling: 5,  depth: 4, to_id_index: 0,    slug: 'user0/limit-of-a-series' },
+        { nestedSetIndex: 5, nestedSetNextSibling: 7,  depth: 3, to_id_index: 1,    slug: 'user0/derivative' },
+        { nestedSetIndex: 6, nestedSetNextSibling: 7,  depth: 4, to_id_index: 0,    slug: 'user0/chain-rule' },
+        { nestedSetIndex: 7, nestedSetNextSibling: 9,  depth: 3, to_id_index: 2,    slug: 'user0/integral' },
+        { nestedSetIndex: 8, nestedSetNextSibling: 9,  depth: 4, to_id_index: 0,    slug: 'user0/fundamental-theorem-of-calculus' },
+        { nestedSetIndex: 9, nestedSetNextSibling: 10, depth: 2, to_id_index: 1,    slug: 'user0/algebra' },
+        { nestedSetIndex: 0, nestedSetNextSibling: 1,  depth: 0, to_id_index: null, slug: 'user1' },
+      ])
+
+      // The synonym exists as a redirect.
       ;({data, status} = await test.webApi.articleRedirects({ id: 'user0/calculus-2' }))
       assertStatus(status, data)
       assert.strictEqual(data.redirects['user0/calculus-2'], 'user0/calculus')
@@ -2744,31 +3318,96 @@ it('api: synonym rename', async () => {
       assert.strictEqual(algebra.parentId.idid, '@user0/mathematics')
       assert.strictEqual(algebra.previousSiblingId.idid, '@user0/calculus')
 
-      // Add a link to the new synonym.
-      article = createArticleArg({ i: 0, titleSource: 'Derivative', bodySource: '<Calculus>\n\n<Calculus 2>\n' })
-      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
+      // Issues are not broken by adding the synonym.
+      ;({data, status} = await test.webApi.issue('user0/calculus', 1))
       assertStatus(status, data)
-      // TODO Links to synonym header from have fragment
-      // https://docs.ourbigbook.com/todo/links-to-synonym-header-have-fragment
-      assert_xpath("//x:a[@href='/user0/calculus' and text()='Calculus']", data.articles[0].render)
-      assert_xpath("//x:a[@href='/user0/calculus' and text()='Calculus 2']", data.articles[0].render)
+      assert.strictEqual(data.titleRender, 'Calculus issue 0')
+
+    // Add a link to the new synonym.
+    article = createArticleArg({ i: 0, titleSource: 'Derivative', bodySource: '<Calculus>\n\n<Calculus 2>\n' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus', previousSiblingId: '@user0/limit' }))
+    assertStatus(status, data)
+    // TODO Links to synonym header from have fragment
+    // https://docs.ourbigbook.com/todo/links-to-synonym-header-have-fragment
+    assert_xpath("//x:a[@href='/user0/calculus' and text()='Calculus']", data.articles[0].render)
+    assert_xpath("//x:a[@href='/user0/calculus' and text()='Calculus 2']", data.articles[0].render)
+
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 10, depth: 0, to_id_index: null, slug: 'user0' },
+      { nestedSetIndex: 1, nestedSetNextSibling: 10, depth: 1, to_id_index: 0,    slug: 'user0/mathematics' },
+      { nestedSetIndex: 2, nestedSetNextSibling: 9,  depth: 2, to_id_index: 0,    slug: 'user0/calculus' },
+      { nestedSetIndex: 3, nestedSetNextSibling: 5,  depth: 3, to_id_index: 0,    slug: 'user0/limit' },
+      { nestedSetIndex: 4, nestedSetNextSibling: 5,  depth: 4, to_id_index: 0,    slug: 'user0/limit-of-a-series' },
+      { nestedSetIndex: 5, nestedSetNextSibling: 7,  depth: 3, to_id_index: 1,    slug: 'user0/derivative' },
+      { nestedSetIndex: 6, nestedSetNextSibling: 7,  depth: 4, to_id_index: 0,    slug: 'user0/chain-rule' },
+      { nestedSetIndex: 7, nestedSetNextSibling: 9,  depth: 3, to_id_index: 2,    slug: 'user0/integral' },
+      { nestedSetIndex: 8, nestedSetNextSibling: 9,  depth: 4, to_id_index: 0,    slug: 'user0/fundamental-theorem-of-calculus' },
+      { nestedSetIndex: 9, nestedSetNextSibling: 10, depth: 2, to_id_index: 1,    slug: 'user0/algebra' },
+      { nestedSetIndex: 0, nestedSetNextSibling: 1,  depth: 0, to_id_index: null, slug: 'user1' },
+    ])
 
     // Rename Calculus to Calculus 3
-
     article = createArticleArg({
       i: 0,
       titleSource: 'Calculus 3',
-      bodySource: '= Calculus\n{synonym}\n\n= Calculus 2\n{synonym}\n\n\\Image[http://jpg]{title=My image}\n'
+      bodySource: `= Calculus
+{synonym}
+
+= Calculus 2
+{synonym}
+
+\\Image[http://jpg]{title=My image}
+`
     })
     ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
     assertStatus(status, data)
 
-    // Check that the latest name exists as the main one.
+    // Current tree state:
+    // * 0 user0/Index
+    //  * 1 Mathematics
+    //    * 2 Calculus 3 (Calculus, Calculus 2)
+    //      * 3 Limit
+    //        * 4 Limit of a series
+    //      * 5 Derivative
+    //        * 6 Chain rule
+    //      * 7 Integral
+    //        * 8 Fundamental theorem of calculus
+    //    * 9 Algebra
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 10, depth: 0, to_id_index: null, slug: 'user0' },
+      { nestedSetIndex: 1, nestedSetNextSibling: 10, depth: 1, to_id_index: 0,    slug: 'user0/mathematics' },
+      { nestedSetIndex: 2, nestedSetNextSibling: 9,  depth: 2, to_id_index: 0,    slug: 'user0/calculus-3' },
+      { nestedSetIndex: 3, nestedSetNextSibling: 5,  depth: 3, to_id_index: 0,    slug: 'user0/limit' },
+      { nestedSetIndex: 4, nestedSetNextSibling: 5,  depth: 4, to_id_index: 0,    slug: 'user0/limit-of-a-series' },
+      { nestedSetIndex: 5, nestedSetNextSibling: 7,  depth: 3, to_id_index: 1,    slug: 'user0/derivative' },
+      { nestedSetIndex: 6, nestedSetNextSibling: 7,  depth: 4, to_id_index: 0,    slug: 'user0/chain-rule' },
+      { nestedSetIndex: 7, nestedSetNextSibling: 9,  depth: 3, to_id_index: 2,    slug: 'user0/integral' },
+      { nestedSetIndex: 8, nestedSetNextSibling: 9,  depth: 4, to_id_index: 0,    slug: 'user0/fundamental-theorem-of-calculus' },
+      { nestedSetIndex: 9, nestedSetNextSibling: 10, depth: 2, to_id_index: 1,    slug: 'user0/algebra' },
+      { nestedSetIndex: 0, nestedSetNextSibling: 1,  depth: 0, to_id_index: null, slug: 'user1' },
+    ])
 
+    // Check that the latest name exists as the main one.
     ;({data, status} = await test.webApi.article('user0/calculus-3'))
     assertStatus(status, data)
     assert.strictEqual(data.titleRender, 'Calculus 3')
-    assert.strictEqual(data.file.bodySource, '= Calculus\n{synonym}\n\n= Calculus 2\n{synonym}\n\n\\Image[http://jpg]{title=My image}\n')
+    assert.strictEqual(data.file.bodySource, `= Calculus
+{synonym}
+
+= Calculus 2
+{synonym}
+
+\\Image[http://jpg]{title=My image}
+`
+    )
+    // The score is zeroed on rename to prevent rename spam.
+    assert.strictEqual(data.score, 0)
+
+    // The user score is reduce accordingly.
+    ;({data, status} = await test.webApi.user('user0'))
+    assertStatus(status, data)
+    assert.strictEqual(data.username, 'user0')
+    assert.strictEqual(data.score, 0)
 
     // Check that the metadata is now associated to the article with the new main title.
 
@@ -2811,28 +3450,210 @@ it('api: synonym rename', async () => {
     }
 
     // Only the main Article retains a File object.
-
     assert.notStrictEqual(await sequelize.models.File.findOne({ where: { path: '@user0/calculus-3.bigb' } }), null)
     assert.strictEqual(await sequelize.models.File.findOne({ where: { path: '@user0/calculus.bigb' } }), null)
     assert.strictEqual(await sequelize.models.File.findOne({ where: { path: '@user0/calculus-2.bigb' } }), null)
 
     // extract_ids without render of header with synonym does not blow up.
     // Yes, everything breaks everything.
+    article = createArticleArg({ i: 0, titleSource: 'Calculus 3', bodySource: `= Calculus
+{synonym}
 
-    article = createArticleArg({ i: 0, titleSource: 'Calculus 3', bodySource: '= Calculus\n{synonym}\n\n= Calculus 2\n{synonym}\n' })
-    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics', render: false }))
+= Calculus 2
+{synonym}
+
+\\Image[http://jpg]{title=My image}
+`
+    })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { render: false }))
     assertStatus(status, data)
 
-    // Adding synonym to index is fine.
+    // Current tree state:
+    // * 0 user0/Index
+    //  * 1 Mathematics
+    //    * 2 Calculus 3 (Calculus, Calculus 2)
+    //      * 3 Limit
+    //        * 4 Limit of a series
+    //      * 5 Derivative
+    //        * 6 Chain rule
+    //      * 7 Integral
+    //        * 8 Fundamental theorem of calculus
+    //    * 9 Algebra
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 10, depth: 0, to_id_index: null, slug: 'user0' },
+      { nestedSetIndex: 1, nestedSetNextSibling: 10, depth: 1, to_id_index: 0,    slug: 'user0/mathematics' },
+      { nestedSetIndex: 2, nestedSetNextSibling: 9,  depth: 2, to_id_index: 0,    slug: 'user0/calculus-3' },
+      { nestedSetIndex: 3, nestedSetNextSibling: 5,  depth: 3, to_id_index: 0,    slug: 'user0/limit' },
+      { nestedSetIndex: 4, nestedSetNextSibling: 5,  depth: 4, to_id_index: 0,    slug: 'user0/limit-of-a-series' },
+      { nestedSetIndex: 5, nestedSetNextSibling: 7,  depth: 3, to_id_index: 1,    slug: 'user0/derivative' },
+      { nestedSetIndex: 6, nestedSetNextSibling: 7,  depth: 4, to_id_index: 0,    slug: 'user0/chain-rule' },
+      { nestedSetIndex: 7, nestedSetNextSibling: 9,  depth: 3, to_id_index: 2,    slug: 'user0/integral' },
+      { nestedSetIndex: 8, nestedSetNextSibling: 9,  depth: 4, to_id_index: 0,    slug: 'user0/fundamental-theorem-of-calculus' },
+      { nestedSetIndex: 9, nestedSetNextSibling: 10, depth: 2, to_id_index: 1,    slug: 'user0/algebra' },
+      { nestedSetIndex: 0, nestedSetNextSibling: 1,  depth: 0, to_id_index: null, slug: 'user1' },
+    ])
 
+    // Adding synonym to index is fine.
     article = createArticleArg({ i: 0, titleSource: 'Index', bodySource: '= Index 2\n{synonym}' })
     ;({data, status} = await createOrUpdateArticleApi(test, article))
     assertStatus(status, data)
 
-    // Renaming index via synonyms is not allowed.
+    // Current tree state:
+    // * 0 user0/Index (Index 2)
+    //  * 1 Mathematics
+    //    * 2 Calculus 3 (Calculus, Calculus 2)
+    //      * 3 Limit
+    //        * 4 Limit of a series
+    //      * 5 Derivative
+    //        * 6 Chain rule
+    //      * 7 Integral
+    //        * 8 Fundamental theorem of calculus
+    //    * 9 Algebra
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 10, depth: 0, to_id_index: null, slug: 'user0' },
+      { nestedSetIndex: 1, nestedSetNextSibling: 10, depth: 1, to_id_index: 0,    slug: 'user0/mathematics' },
+      { nestedSetIndex: 2, nestedSetNextSibling: 9,  depth: 2, to_id_index: 0,    slug: 'user0/calculus-3' },
+      { nestedSetIndex: 3, nestedSetNextSibling: 5,  depth: 3, to_id_index: 0,    slug: 'user0/limit' },
+      { nestedSetIndex: 4, nestedSetNextSibling: 5,  depth: 4, to_id_index: 0,    slug: 'user0/limit-of-a-series' },
+      { nestedSetIndex: 5, nestedSetNextSibling: 7,  depth: 3, to_id_index: 1,    slug: 'user0/derivative' },
+      { nestedSetIndex: 6, nestedSetNextSibling: 7,  depth: 4, to_id_index: 0,    slug: 'user0/chain-rule' },
+      { nestedSetIndex: 7, nestedSetNextSibling: 9,  depth: 3, to_id_index: 2,    slug: 'user0/integral' },
+      { nestedSetIndex: 8, nestedSetNextSibling: 9,  depth: 4, to_id_index: 0,    slug: 'user0/fundamental-theorem-of-calculus' },
+      { nestedSetIndex: 9, nestedSetNextSibling: 10, depth: 2, to_id_index: 1,    slug: 'user0/algebra' },
+      { nestedSetIndex: 0, nestedSetNextSibling: 1,  depth: 0, to_id_index: null, slug: 'user1' },
+    ])
 
+    // Renaming index via synonyms is not allowed.
     article = createArticleArg({ i: 0, titleSource: 'Index 3', bodySource: '= Index\n{synonym}\n\n= Index 2\n{synonym}\n' })
     ;({data, status} = await createOrUpdateArticleApi(test, article))
     assert.strictEqual(status, 422)
+
+    // Current tree state:
+    // * 0 user0/Index (Index 2)
+    //  * 1 Mathematics
+    //    * 2 Calculus 3 (Calculus, Calculus 2)
+    //      * 3 Limit
+    //        * 4 Limit of a series
+    //      * 5 Derivative
+    //        * 6 Chain rule
+    //      * 7 Integral
+    //        * 8 Fundamental theorem of calculus
+    //    * 9 Algebra
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 10, depth: 0, to_id_index: null, slug: 'user0' },
+      { nestedSetIndex: 1, nestedSetNextSibling: 10, depth: 1, to_id_index: 0,    slug: 'user0/mathematics' },
+      { nestedSetIndex: 2, nestedSetNextSibling: 9,  depth: 2, to_id_index: 0,    slug: 'user0/calculus-3' },
+      { nestedSetIndex: 3, nestedSetNextSibling: 5,  depth: 3, to_id_index: 0,    slug: 'user0/limit' },
+      { nestedSetIndex: 4, nestedSetNextSibling: 5,  depth: 4, to_id_index: 0,    slug: 'user0/limit-of-a-series' },
+      { nestedSetIndex: 5, nestedSetNextSibling: 7,  depth: 3, to_id_index: 1,    slug: 'user0/derivative' },
+      { nestedSetIndex: 6, nestedSetNextSibling: 7,  depth: 4, to_id_index: 0,    slug: 'user0/chain-rule' },
+      { nestedSetIndex: 7, nestedSetNextSibling: 9,  depth: 3, to_id_index: 2,    slug: 'user0/integral' },
+      { nestedSetIndex: 8, nestedSetNextSibling: 9,  depth: 4, to_id_index: 0,    slug: 'user0/fundamental-theorem-of-calculus' },
+      { nestedSetIndex: 9, nestedSetNextSibling: 10, depth: 2, to_id_index: 1,    slug: 'user0/algebra' },
+      { nestedSetIndex: 0, nestedSetNextSibling: 1,  depth: 0, to_id_index: null, slug: 'user1' },
+    ])
+
+    // Article merge
+
+      // Add user1 metadata to user0/derivative
+      test.loginUser(user1)
+
+      // Like derivative.
+      ;({data, status} = await test.webApi.articleLike('user0/derivative'))
+      assertStatus(status, data)
+
+      // Create issue.
+      ;({data, status} = await test.webApi.issueCreate('user0/derivative',
+        { titleSource: 'Derivative issue 0' }
+      ))
+      assertStatus(status, data)
+
+      test.loginUser(user)
+
+      // Sanity check that user score is now up to 1
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.username, 'user0')
+      assert.strictEqual(data.score, 1)
+
+      // Sanity check that the issue is visible.
+      ;({data, status} = await test.webApi.issue('user0/derivative', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.titleRender, 'Derivative issue 0')
+
+      // Rename derivative to calculus-3, triggering an article merge
+      // of user0/derivative to user/calculus-3.
+      article = createArticleArg({
+        i: 0,
+        titleSource: 'Calculus 3',
+        bodySource: `= Calculus
+{synonym}
+
+= Calculus 2
+{synonym}
+
+= Derivative
+{synonym}
+
+\\Image[http://jpg]{title=My image}
+`,
+      })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: undefined }))
+      assertStatus(status, data)
+
+      // Current tree state:
+      // * 0 user0/Index
+      //  * 1 Mathematics
+      //    * 2 Calculus 3 (Calculus, Calculus 2, Derivative)
+      //      * 3 Limit
+      //        * 4 Limit of a series
+      //      * 5 Integral
+      //        * 6 Fundamental theorem of calculus
+      //      * 7 Chain rule
+      //    * 8 Algebra
+      await assertNestedSets(sequelize, [
+        { nestedSetIndex: 0, nestedSetNextSibling: 9, depth: 0, to_id_index: null, slug: 'user0', parentId: null },
+        { nestedSetIndex: 1, nestedSetNextSibling: 9, depth: 1, to_id_index: 0,    slug: 'user0/mathematics', parentId: '@user0' },
+        { nestedSetIndex: 2, nestedSetNextSibling: 8, depth: 2, to_id_index: 0,    slug: 'user0/calculus-3', parentId: '@user0/mathematics' },
+        { nestedSetIndex: 3, nestedSetNextSibling: 5, depth: 3, to_id_index: 0,    slug: 'user0/limit', parentId: '@user0/calculus-3' },
+        { nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 4, to_id_index: 0,    slug: 'user0/limit-of-a-series', parentId: '@user0/limit' },
+        { nestedSetIndex: 5, nestedSetNextSibling: 7, depth: 3, to_id_index: 1,    slug: 'user0/integral', parentId: '@user0/calculus-3' },
+        { nestedSetIndex: 6, nestedSetNextSibling: 7, depth: 4, to_id_index: 0,    slug: 'user0/fundamental-theorem-of-calculus', parentId: '@user0/integral' },
+        { nestedSetIndex: 7, nestedSetNextSibling: 8, depth: 3, to_id_index: 2,    slug: 'user0/chain-rule', parentId: '@user0/calculus-3' },
+        { nestedSetIndex: 8, nestedSetNextSibling: 9, depth: 2, to_id_index: 1,    slug: 'user0/algebra', parentId: '@user0/mathematics' },
+        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user1', parentId: null },
+      ])
+
+      // user0/derivative redirects to user0/calculus-3
+      ;({data, status} = await test.webApi.articleRedirects({ id: 'user0/derivative' }))
+      assertStatus(status, data)
+      assert.strictEqual(data.redirects['user0/derivative'], 'user0/calculus-3')
+
+      // user0/chain-rule, previously a child of user0/derivative, is reparented
+      // to the new parent user0/calculus-3
+      {
+        const article = await sequelize.models.Article.getArticle({
+          includeParentAndPreviousSibling: true,
+          slug: 'user0/chain-rule',
+          sequelize
+        })
+        assert.strictEqual(article.parentId.idid, '@user0/calculus-3')
+        assert.strictEqual(article.previousSiblingId.idid, '@user0/integral')
+      }
+
+      // Issue 1 of user0/derivative is migrated as issue 2 of user/calculus-3,
+      // following the pre-existing issue 1.
+      ;({data, status} = await test.webApi.issue('user0/calculus-3', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.titleRender, 'Calculus issue 0')
+      ;({data, status} = await test.webApi.issue('user0/calculus-3', 2))
+      assertStatus(status, data)
+      assert.strictEqual(data.titleRender, 'Derivative issue 0')
+
+      // user0 score is back down to 0 since likes of merged articles are deleted to prevent spam.
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.username, 'user0')
+      assert.strictEqual(data.score, 0)
   })
 })

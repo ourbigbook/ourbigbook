@@ -92,15 +92,15 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
         props.issueArticle = issueArticleJson
       } else if (article) {
         if (article.parentId) {
-          props.parentTitle = article.parentId.File.titleSource
+          props.parentTitle = article.parentId.toplevelId.titleSource
         }
         if (article.previousSiblingId) {
-          props.previousSiblingTitle = article.previousSiblingId.File.titleSource
+          props.previousSiblingTitle = article.previousSiblingId.toplevelId.titleSource
         }
       }
       if (previousSiblingTitle) {
         props.previousSiblingTitle = previousSiblingTitle
-        props.parentTitle = previousSiblingArticle.parentId.File.titleSource
+        props.parentTitle = previousSiblingArticle.parentId.toplevelId.titleSource
       } else {
         if (parentTitle) {
           props.parentTitle = parentTitle

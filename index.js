@@ -1033,32 +1033,36 @@ function parse(tokens, macros, options, extra_returns={}) {
     const node = todo_visit.shift();
     const macro_name = node.macro_name;
 
+    // Linear count of each macro type for macros that have IDs.
+    if (!(macro_name in macro_counts)) {
+      macro_counts[macro_name] = 0;
+    }
+    macro_count = macro_counts[macro_name] + 1;
+    macro_counts[macro_name] = macro_count;
+    node.macro_count = macro_count;
+
     // Calculate node ID and add it to the ID index.
     let id_context = {'macros': macros};
+    let index_id = true;
     if (node.arg_given(Macro.ID_ARGUMENT_NAME)) {
       node.id = convert_arg_noescape(node.args[Macro.ID_ARGUMENT_NAME], id_context);
-    } else if (node.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
-      // TODO correct unicode aware algorithm.
+    } else {
       let id_text = '';
       let id_prefix = macros[node.macro_name].id_prefix;
       if (id_prefix !== '') {
         id_text += id_prefix + ID_SEPARATOR
       }
-      id_text += title_to_id(convert_arg_noescape(node.args.title, id_context));
+      if (node.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
+        // TODO correct unicode aware algorithm.
+        id_text += title_to_id(convert_arg_noescape(node.args.title, id_context));
+      } else {
+        id_text += node.macro_count;
+        index_id = false;
+      }
       node.id = id_text;
     }
-    if (node.id !== undefined) {
+    if (index_id) {
       extra_returns.context.ids[node.id] = node;
-    }
-
-    // Linear count of each macro type for macros that have IDs.
-    if (node.id !== undefined) {
-      if (!(macro_name in macro_counts)) {
-        macro_counts[macro_name] = 0;
-      }
-      macro_count = macro_counts[macro_name] + 1;
-      macro_counts[macro_name] = macro_count;
-      node.macro_count = macro_count;
     }
 
     // Header tree.
@@ -1583,7 +1587,7 @@ const DEFAULT_MACRO_LIST = [
     },
     {
       caption_prefix: 'Equation',
-      id_prefix: 'equation',
+      id_prefix: 'eq',
       named_args: [
         new MacroArgument({
           name: Macro.TITLE_ARGUMENT_NAME,
@@ -1634,6 +1638,8 @@ const DEFAULT_MACRO_LIST = [
       return ret;
     },
     {
+      caption_prefix: 'Figure',
+      id_prefix: 'fig',
       named_args: [
         new MacroArgument({
           name: Macro.TITLE_ARGUMENT_NAME,
@@ -1727,7 +1733,7 @@ const DEFAULT_MACRO_LIST = [
         let href = html_attr('href', '#' + target_id);
         ret += `<div class="table-caption-container">\n`;
         ret += `<span class="table-caption">${this.x_text(ast, context)}</span>`;
-        ret += `<span> <a${href}>${Macro.LINK_SELF})</a></span>\n`;
+        ret += `<span> <a${href}>${Macro.LINK_SELF}</a></span>\n`;
         ret += `</div>\n`;
       }
       ret += `<table>\n${content}</table>\n`;

@@ -167,6 +167,7 @@ Another step towards world domination is taken!
 })
 
 // Modify information about the currently logged in user.
+// Backend for settings page on the web UI.
 router.put('/users/:username', auth.required, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
@@ -208,92 +209,12 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
       if (emailNotifications !== undefined) {
         user.emailNotifications = userArg.emailNotifications
       }
-      if (!cant.setUserLimits(loggedInUser)) {
-        const maxArticles = lib.validateParam(userArg, 'maxArticles', {
-          typecast: front.typecastInteger,
-          validators: [front.isPositiveInteger],
-          defaultValue: undefined,
-        })
-        if (maxArticles !== undefined) {
-          user.maxArticles = maxArticles
-        }
-        const maxArticleSize = lib.validateParam(userArg, 'maxArticleSize', {
-          typecast: front.typecastInteger,
-          validators: [front.isPositiveInteger],
-          defaultValue: undefined,
-        })
-        if (maxArticleSize !== undefined) {
-          user.maxArticleSize = maxArticleSize
-        }
-        const maxIssuesPerMinute = lib.validateParam(userArg, 'maxIssuesPerMinute', {
-          typecast: front.typecastInteger,
-          validators: [front.isPositiveInteger],
-          defaultValue: undefined,
-        })
-        if (maxIssuesPerMinute !== undefined) {
-          user.maxIssuesPerMinute = maxIssuesPerMinute
-        }
-        const maxIssuesPerHour = lib.validateParam(userArg, 'maxIssuesPerHour', {
-          typecast: front.typecastInteger,
-          validators: [front.isPositiveInteger],
-          defaultValue: undefined,
-        })
-        if (maxIssuesPerHour !== undefined) {
-          user.maxIssuesPerHour = maxIssuesPerHour
-        }
-      }
-      if (typeof userArg.password !== 'undefined') {
-        sequelize.models.User.setPassword(user, userArg.password)
-      }
-      await user.save()
-    }
-    user.token = user.generateJWT()
-    return res.json({ user: await user.toJson(user) })
-  } catch(error) {
-    next(error);
-  }
-})
-
-router.put('/users/:username/liked-count', auth.optional, async function(req, res, next) {
-  try {
-    const sequelize = req.app.get('sequelize')
-    const user = req.user
-    const loggedInUser = await sequelize.models.User.findByPk(req.payload.id)
-    const msg = cant.editUser(loggedInUser, user)
-    if (msg) {
-      throw new lib.ValidationError( [msg], 403)
-    }
-    const userArg = req.body.user
-    if (userArg) {
-      // only update fields that were actually passed...
-      if (typeof userArg.username !== 'undefined') {
-        //user.username = userArg.username
-        if (user.username !== userArg.username) {
-          throw new lib.ValidationError(
-            [`username cannot be modified currently, would change from ${user.username} to ${userArg.username}`],
-          )
-        }
-      }
-      if (typeof userArg.email !== 'undefined') {
-        //user.email = userArg.email
-        if (user.email !== userArg.email) {
-          throw new lib.ValidationError(
-            [`email cannot be modified currently, would change from ${user.email} to ${userArg.email}`],
-          )
-        }
-      }
-      if (typeof userArg.displayName !== 'undefined') {
-        user.displayName = userArg.displayName
-      }
-      if (typeof userArg.image !== 'undefined') {
-        user.image = userArg.image
-      }
-      const emailNotifications = lib.validateParam(userArg, 'emailNotifications', {
+      const hideArticleDates = lib.validateParam(userArg, 'hideArticleDates', {
         validators: [front.isBoolean],
         defaultValue: undefined,
       })
-      if (emailNotifications !== undefined) {
-        user.emailNotifications = userArg.emailNotifications
+      if (hideArticleDates !== undefined) {
+        user.hideArticleDates = userArg.hideArticleDates
       }
       if (!cant.setUserLimits(loggedInUser)) {
         const maxArticles = lib.validateParam(userArg, 'maxArticles', {

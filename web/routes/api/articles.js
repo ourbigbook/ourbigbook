@@ -14,11 +14,8 @@ router.param('article', function(req, res, next, slug) {
       if (!article) {
         return res.sendStatus(404)
       }
-
       req.article = article
-
       next()
-
       return null
     })
     .catch(next)

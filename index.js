@@ -425,15 +425,16 @@ class AstNode {
     }
   }
 
-  /** Manual implementation. There must be a better way, but I can't find it... */
-  static fromJSON(json_string, context) {
-    let ast_json_toplevel = JSON.parse(json_string);
-
+  /** Manual implementation. There must be a better way, but I can't find it...
+   *
+   * * row: a row from the Ids database
+   */
+  static fromJSON(ast_json, context) {
     // Post order depth first convert the AST JSON tree.
     let new_ast
-    let ast_head = ast_json_toplevel
+    let ast_head = JSON.parse(ast_json)
     const toplevel_arg = []
-    const todo_visit = [[toplevel_arg, ast_json_toplevel]];
+    const todo_visit = [[toplevel_arg, ast_head]];
     while (todo_visit.length !== 0) {
       const [parent_arg, ast_json] = todo_visit[todo_visit.length - 1];
 
@@ -2087,8 +2088,6 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
           }
           const new_context = clone_and_set(context, 'id_conversion', true);
           new_context.id_conversion_for_header = is_header;
-          new_context.extra_returns.id_conversion_header_title_no_id_xref = false;
-          new_context.extra_returns.id_conversion_non_header_no_id_xref_non_header = false;
           title_text = render_arg_noescape(title_arg, new_context)
           if (
             ast.macro_name === Macro.HEADER_MACRO_NAME &&
@@ -2110,25 +2109,7 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
           if (disambiguate_arg !== undefined) {
             id_text += ID_SEPARATOR + title_to_id(render_arg_noescape(disambiguate_arg, new_context), new_context.options.cirodown_json['id']);
           }
-          let message;
-          if (new_context.extra_returns.id_conversion_header_title_no_id_xref) {
-            message = 'x without content inside title of a header that does not have an ID: https://cirosantilli.com/cirodown#x-within-title-restrictions';
-          }
-          if (new_context.extra_returns.id_conversion_non_header_no_id_xref_non_header) {
-            message = 'x without content inside title of a non-header that does not have an ID linking to a non-header: https://cirosantilli.com/cirodown#x-within-title-restrictions';
-          }
-          if (message !== undefined) {
-            title_arg.push(
-              new PlaintextAstNode(
-                ' ' + error_message_in_output(message, new_context),
-                new_context.extra_returns.id_conversion_xref_error_source_location
-              )
-            );
-            parse_error(state, message,
-              new_context.extra_returns.id_conversion_xref_error_source_location)
-          } else {
-            ast.id = id_text;
-          }
+          ast.id = id_text;
         } else {
           id_text += '_'
         }
@@ -2994,7 +2975,7 @@ function get_descendant_count_html(context, tree_node, options) {
 
 function get_descendant_count_html_sep(context, tree_node, options) {
   let ret = get_descendant_count_html(context, tree_node, options);
-  if (ret !== '') {
+  if (ret !== undefined) {
     ret = `<span class="metrics-sep">${HEADER_MENU_ITEM_SEP + ret}</span>`;
   }
   return ret;
@@ -3411,9 +3392,12 @@ function is_ascii(str) {
   return /^[\x00-\x7F]*$/.test(str);
 }
 
-function id_convert_simple_elem() {
+function id_convert_simple_elem(argname) {
+  if (argname === undefined) {
+    argname = 'content'
+  }
   return function(ast, context) {
-    let ret = render_arg(ast.args.content, context);
+    let ret = render_arg(ast.args[argname], context);
     if (!context.macros[ast.macro_name].options.phrasing) {
       ret += '\n';
     }
@@ -3866,18 +3850,28 @@ async function parse(tokens, options, context, extra_returns={}) {
   context.id_provider = id_provider;
   options.include_path_set.add(options.input_path);
   let header_file_preview_ast, header_file_preview_ast_next
-  const title_ast_stack = []
+  const title_ast_ancestors = []
+  const header_title_ast_ancestors = []
   const header_ids = []
   while (todo_visit.length > 0) {
     const pop = todo_visit.pop();
-    if (pop === 'pop_title_ast_stack') {
-      title_ast_stack.pop()
+    if (pop === 'pop_title_ast_ancestors') {
+      title_ast_ancestors.pop()
+      continue
+    }
+    if (pop === 'pop_header_title_ast_ancestors') {
+      header_title_ast_ancestors.pop()
       continue
     }
     const [parent_arg, ast] = pop
     if (parent_arg.argument_name === Macro.TITLE_ARGUMENT_NAME) {
-      title_ast_stack.push(parent_arg.parent_node)
-      todo_visit.push('pop_title_ast_stack')
+      const parent_ast = parent_arg.parent_node
+      title_ast_ancestors.push(parent_ast)
+      todo_visit.push('pop_title_ast_ancestors')
+      if (parent_ast.macro_name === Macro.HEADER_MACRO_NAME) {
+        header_title_ast_ancestors.push(parent_ast)
+        todo_visit.push('pop_header_title_ast_ancestors')
+      }
     }
     let parent_arg_push_after = []
     let parent_arg_push_before = []
@@ -4414,9 +4408,17 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
         }
       } else if (macro_name === Macro.X_MACRO_NAME) {
+        if (header_title_ast_ancestors.length > 0 && ast.args.content === undefined) {
+          const message = 'x without content inside title of a header: https://cirosantilli.com/cirodown#x-within-title-restrictions'
+          ast.args.content = new AstArgument(
+            [ new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location) ],
+            ast.source_location
+          );
+          parse_error(state, message, ast.source_location);
+        }
         options.add_refs_to_x.push({
           ast,
-          title_ast_stack: Object.assign([], title_ast_stack)
+          title_ast_ancestors: Object.assign([], title_ast_ancestors)
         })
       }
 
@@ -5061,47 +5063,41 @@ async function parse(tokens, options, context, extra_returns={}) {
     }
     for (const ref of options.add_refs_to_x) {
       const ast = ref.ast
-      const target_ast = context.id_provider.get(ref.target_id, context, ast.scope)
+      const target_id_effective = x_child_db_effective_id(
+        ref.target_id,
+        context,
+        ast
+      )
+      const parent_id = ast.get_local_header_parent_id();
       if (
-        // Possible in error cases
-        target_ast !== undefined
+        // Happens on some special elements e.g. the ToC.
+        parent_id !== undefined
       ) {
-        const target_id_effective = x_child_db_effective_id(
-          target_ast.id,
-          context,
-          ast
-        )
-        const parent_id = ast.get_local_header_parent_id();
+        // TODO add test and enable this possible fix.
         if (
-          // Happens on some special elements e.g. the ToC.
-          parent_id !== undefined
+          // We don't want the "This section is present in another page" to count as a link.
+          !ast.from_include
         ) {
-          // TODO add test and enable this possible fix.
-          if (
-            // We don't want the "This section is present in another page" to count as a link.
-            !ast.from_include
-          ) {
-            // Update xref database for incoming links.
-            const from_ids = add_to_refs_to(target_id_effective, context, parent_id, REFS_TABLE_X);
-          }
+          // Update xref database for incoming links.
+          const from_ids = add_to_refs_to(target_id_effective, context, parent_id, REFS_TABLE_X);
+        }
 
-          // Update xref database for child/parent relationships.
-          {
-            let toid, fromid;
-            if (ast.validation_output.child.boolean) {
-              fromid = parent_id;
-              toid = target_id_effective;
-            } else if (ast.validation_output.parent.boolean) {
-              toid = parent_id;
-              fromid = target_id_effective;
-            }
-            if (toid !== undefined) {
-              add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD);
-            }
+        // Update xref database for child/parent relationships.
+        {
+          let toid, fromid;
+          if (ast.validation_output.child.boolean) {
+            fromid = parent_id;
+            toid = target_id_effective;
+          } else if (ast.validation_output.parent.boolean) {
+            toid = parent_id;
+            fromid = target_id_effective;
           }
-          for (const title_ast of ref.title_ast_stack) {
-            add_to_refs_to(target_id_effective, context, title_ast.id, REFS_TABLE_X_TITLE_TITLE);
+          if (toid !== undefined) {
+            add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD);
           }
+        }
+        for (const title_ast of ref.title_ast_ancestors) {
+          add_to_refs_to(target_id_effective, context, title_ast.id, REFS_TABLE_X_TITLE_TITLE);
         }
       }
     }
@@ -5687,7 +5683,9 @@ function x_get_href_content(ast, context) {
 
   // href
   let href;
-  if (target_id_ast === undefined) {
+  if (target_id_ast) {
+    href = x_href_attr(target_id_ast, context);
+  } else {
     let message = `cross reference to unknown id: "${target_id}"`;
     let source_location
     if (ast.args.href) {
@@ -5697,8 +5695,6 @@ function x_get_href_content(ast, context) {
     }
     render_error(context, message, source_location, 2);
     return [href, error_message_in_output(message, context)];
-  } else {
-    href = x_href_attr(target_id_ast, context);
   }
 
   // content
@@ -5706,20 +5702,6 @@ function x_get_href_content(ast, context) {
   let content;
   if (content_arg === undefined) {
     // No explicit content given, deduce content from target ID title.
-    if (context.id_conversion) {
-      if (context.id_conversion_for_header) {
-        // Inside a header title that does not have an ID.
-        context.extra_returns.id_conversion_header_title_no_id_xref = true;
-        context.extra_returns.id_conversion_xref_error_source_location = ast.source_location;
-        return '';
-      }
-      if (target_id_ast.macro_name !== Macro.HEADER_MACRO_NAME) {
-        // Inside a non-header title that does not have an ID and links to a non-header.
-        context.extra_returns.id_conversion_non_header_no_id_xref_non_header = true;
-        context.extra_returns.id_conversion_xref_error_source_location = ast.source_location;
-        return '';
-      }
-    }
     if (context.x_parents.has(ast)) {
       // Prevent render infinite loops.
       let message = `x with infinite recursion`;
@@ -6678,7 +6660,7 @@ const DEFAULT_MACRO_LIST = [
           ret += `${HEADER_MENU_ITEM_SEP}${parent_links}`;
         }
         let descendant_count = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
-        if (descendant_count !== '') {
+        if (descendant_count !== undefined) {
           ret += `${HEADER_MENU_ITEM_SEP}${descendant_count}`;
         }
 
@@ -6767,7 +6749,7 @@ const DEFAULT_MACRO_LIST = [
           header_meta2.push(`<a${html_attr('href', '#' + Macro.TOC_ID)}>${TOC_MARKER}</a>`);
         }
         let descendant_count_html = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
-        if (descendant_count_html !== '') {
+        if (descendant_count_html !== undefined) {
           header_meta2.push(descendant_count_html);
         }
       }
@@ -7898,10 +7880,7 @@ const MACRO_CONVERT_FUNCIONS = {
     [Macro.TH_MACRO_NAME]: id_convert_simple_elem(),
     [Macro.TR_MACRO_NAME]: id_convert_simple_elem(),
     'Ul': id_convert_simple_elem(),
-    [Macro.X_MACRO_NAME]: function(ast, context) {
-      const [href, content, target_ast] = x_get_href_content(ast, context);
-      return content;
-    },
+    [Macro.X_MACRO_NAME]: id_convert_simple_elem('href'),
     'Video': macro_image_video_block_convert_function,
   },
   [OUTPUT_FORMAT_ID]: {
@@ -7937,8 +7916,11 @@ const MACRO_CONVERT_FUNCIONS = {
     [Macro.TR_MACRO_NAME]: id_convert_simple_elem(),
     'Ul': id_convert_simple_elem(),
     [Macro.X_MACRO_NAME]: function(ast, context) {
-      const [href, content, target_ast] = x_get_href_content(ast, context);
-      return content;
+      if (ast.args.content) {
+        return id_convert_simple_elem('content')(ast, context)
+      } else {
+        return id_convert_simple_elem('href')(ast, context)
+      }
     },
     'Video': macro_image_video_block_convert_function,
   },

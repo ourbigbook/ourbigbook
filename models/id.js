@@ -1,5 +1,7 @@
 const { DataTypes, Op } = require('sequelize')
 
+const cirodown = require('cirodown')
+
 module.exports = (sequelize) => {
   const Id = sequelize.define(
     'Id',
@@ -23,6 +25,15 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: false,
       },
+      // Needed for title to title checks. This does duplicate
+      // ast_json.macro_name for the toplevel element, but for nested elements in the JSON
+      // we have no choice, so just keeping it duplicated for the toplevel for simplicity.
+      // We could use database JSON functions instead, but these will be slower,
+      // and have less support/portability.
+      macro_name: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
     },
     {
       indexes: [
@@ -32,20 +43,56 @@ module.exports = (sequelize) => {
     }
   )
 
-  Id.findDuplicates = async () => {
+  Id.findDuplicates = async (paths) => {
+    const on = {
+      '$Id.idid$': { [Op.col]: 'duplicate.idid' },
+      '$Id.id$': { [Op.ne]: { [Op.col]: 'duplicate.id' } },
+    }
+    if (paths !== undefined) {
+      on[Op.or] = [
+        { '$Id.path$': paths },
+        { '$duplicate.path$': paths },
+      ]
+    }
     return sequelize.models.Id.findAll({
       include: {
         model: sequelize.models.Id,
         as: 'duplicate',
-        on: {
-          '$Id.idid$': { [Op.col]: 'duplicate.idid' },
-          '$Id.id$': { [Op.ne]: { [Op.col]: 'duplicate.id' } },
-        },
         required: true,
+        on,
       },
       order: [
         ['idid', 'ASC'],
         ['path', 'ASC'],
+      ],
+    })
+  }
+
+  Id.findInvalidTitleTitle = async (paths) => {
+    let where
+    if (paths !== undefined) {
+      where = { 'path': paths }
+    }
+    return sequelize.models.Id.findAll({
+      include: {
+        model: sequelize.models.Ref,
+        as: 'from',
+        required: true,
+        where: {
+          type: sequelize.models.Ref.Types[cirodown.REFS_TABLE_X_TITLE_TITLE],
+        },
+        include: {
+          model: sequelize.models.Id,
+          as: 'to',
+          required: true,
+          where: {
+            macro_name: { [Op.ne]: cirodown.Macro.HEADER_MACRO_NAME },
+          }
+        },
+      },
+      order: [
+        ['path', 'ASC'],
+        ['idid', 'ASC'],
       ],
     })
   }

@@ -89,20 +89,19 @@ class SqliteFileProvider extends cirodown.FileProvider {
 async function reconcile_db_and_filesystem(input_path, cirodown_options, non_cirodown_options) {
   const sequelize = non_cirodown_options.sequelize
   if (sequelize) {
-    const cirodown_paths_to_be_converted = []
     await convert_directory(
       input_path,
       cirodown_options,
       cirodown.clone_and_set(non_cirodown_options,
-        'cirodown_paths_to_be_converted', cirodown_paths_to_be_converted),
+        'cirodown_paths_converted_only', true),
     );
     const [,,file_rows] = await Promise.all([
       sequelize.models.Id.destroy({
-        where: { path: { [Op.not]: cirodown_paths_to_be_converted } } }),
+        where: { path: { [Op.not]: non_cirodown_options.cirodown_paths_converted } } }),
       sequelize.models.Ref.destroy({
-        where: { defined_at: { [Op.not]: cirodown_paths_to_be_converted } } }),
+        where: { defined_at: { [Op.not]: non_cirodown_options.cirodown_paths_converted } } }),
       sequelize.models.File.findAll({
-        where: { path: cirodown_paths_to_be_converted } }),
+        where: { path: non_cirodown_options.cirodown_paths_converted } }),
     ])
     const file_rows_dict = {}
     for (const file_row of file_rows) {
@@ -112,25 +111,45 @@ async function reconcile_db_and_filesystem(input_path, cirodown_options, non_cir
   }
 }
 
-// Check for ID conflicts.
-// Previously this was done inside cirodown.convert. But then we started skipping render by timestamp,
+// Do various post conversion checks to verify database integrity:
+//
+// - duplicate IDs
+// - https://cirosantilli.com/cirodown/x-within-title-restrictions
+//
+// Previously these were done inside cirodown.convert. But then we started skipping render by timestamp,
 // so if you e.g. move an ID from one file to another, a common operation, then it would still see
 // the ID in the previous file depending on conversion order. So we are moving it here instead at the end.
 // Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
-async function check_duplicates(cirodown_options, non_cirodown_options) {
+async function check_db(cirodown_options, non_cirodown_options) {
   const sequelize = non_cirodown_options.sequelize
   if (sequelize) {
-    const duplicate_rows = await sequelize.models.Id.findDuplicates()
+    const [duplicate_rows, invalid_title_title_rows] = await Promise.all([
+      await sequelize.models.Id.findDuplicates(
+        non_cirodown_options.cirodown_paths_converted),
+      await sequelize.models.Id.findInvalidTitleTitle(
+        non_cirodown_options.cirodown_paths_converted),
+    ])
+    const error_messages = []
     if (duplicate_rows.length > 0) {
-      const error_messages = []
-      const duplicate_ids = {}
       for (const duplicate_row of duplicate_rows) {
         const ast = cirodown.AstNode.fromJSON(duplicate_row.ast_json)
         const source_location = ast.source_location
         error_messages.push(
-          `ID duplicate: "${duplicate_row.idid}" defined at ${duplicate_row.path}:${source_location.line}:${source_location.column}`
+          `${source_location.path}:${source_location.line}:${source_location.column}: ID duplicate: "${duplicate_row.idid}"`
         )
       }
+    }
+    if (invalid_title_title_rows.length > 0) {
+      console.error(invalid_title_title_rows);
+      for (const invalid_title_title_row of invalid_title_title_rows) {
+        const ast = cirodown.AstNode.fromJSON(invalid_title_title_row.ast_json)
+        const source_location = ast.source_location
+        error_messages.push(
+          `${source_location.path}:${source_location.line}:${source_location.column}: cannot \\x link from a title to a non-header element: https://cirosantilli.com/cirodown/x-within-title-restrictions`
+        )
+      }
+    }
+    if (error_messages.length > 0) {
       cli_error('\n' + error_messages.join('\n'))
     }
   }
@@ -180,6 +199,7 @@ function cmd_get_stdout(cmd, args=[], options={}) {
  * @param {String} input_path - path to a directory to convert files in
  */
 async function convert_directory(input_path, cirodown_options, non_cirodown_options) {
+  non_cirodown_options.cirodown_paths_converted = []
   const ignore_fullpaths = new Set();
   for (const ignore of cirodown_options.cirodown_json.ignore) {
     ignore_fullpaths.add(path.join(non_cirodown_options.cirodown_json_dir, ignore));
@@ -373,8 +393,8 @@ async function convert_path_to_file(input_path, cirodown_options, non_cirodown_o
       path_relative_to_cirodown_json = path.relative(non_cirodown_options.cirodown_json_dir, input_path_parse.dir);
       input_path_relative_to_cirodown_json = path.join(path_relative_to_cirodown_json, input_path_parse.base);
     }
-    if (non_cirodown_options.cirodown_paths_to_be_converted) {
-      non_cirodown_options.cirodown_paths_to_be_converted.push(input_path_relative_to_cirodown_json)
+    non_cirodown_options.cirodown_paths_converted.push(input_path_relative_to_cirodown_json)
+    if (non_cirodown_options.cirodown_paths_converted_only) {
       return
     }
     msg_ret = convert_path_to_file_print_starting(cirodown_options, input_path)
@@ -484,7 +504,7 @@ async function convert_path_to_file(input_path, cirodown_options, non_cirodown_o
       }
     }
   } else {
-    if (non_cirodown_options.cirodown_paths_to_be_converted) {
+    if (non_cirodown_options.cirodown_paths_converted_only) {
       // I should use callbacks instead of doing this. But lazy.
       return
     }
@@ -1059,7 +1079,8 @@ if (commander.helpMacros) {
   // but rather used only by this cirodown executable.
   const non_cirodown_options = {
     cirodown_json_dir,
-    cirodown_paths_to_be_converted: undefined,
+    cirodown_paths_converted: [],
+    cirodown_paths_converted_only: false,
     commander,
     db_options: {},
     file_rows_dict: {},
@@ -1154,7 +1175,8 @@ if (commander.helpMacros) {
       const watcher = require('chokidar').watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES})
       const convert = async (subpath) => {
         await convert_path_to_file(subpath, cirodown_options, non_cirodown_options);
-        await check_duplicates(cirodown_options, non_cirodown_options)
+        await check_db(cirodown_options, non_cirodown_options)
+        non_cirodown_options.cirodown_paths_converted = []
       }
       watcher.on('change', convert).on('add', convert)
     } else {
@@ -1164,7 +1186,7 @@ if (commander.helpMacros) {
         }
         await create_db(cirodown_options, non_cirodown_options);
         output = await convert_path_to_file(inputPath, cirodown_options, non_cirodown_options);
-        await check_duplicates(cirodown_options, non_cirodown_options)
+        await check_db(cirodown_options, non_cirodown_options)
       } else {
         let actual_input_dir;
         let publish_branch;
@@ -1237,12 +1259,14 @@ if (commander.helpMacros) {
 
         // Do the actual conversion.
         await convert_directory_extract_ids(actual_input_dir, cirodown_options, non_cirodown_options);
-        await check_duplicates(cirodown_options, non_cirodown_options)
-        if (!non_cirodown_options.had_error) {
-          await convert_directory(actual_input_dir, cirodown_options, non_cirodown_options);
-        }
-        if (!non_cirodown_options.had_error) {
-          await generate_redirects(non_cirodown_options, cirodown_json, publish_out_publish_dir);
+        await check_db(cirodown_options, non_cirodown_options)
+        if (commander.render) {
+          if (!non_cirodown_options.had_error) {
+            await convert_directory(actual_input_dir, cirodown_options, non_cirodown_options);
+          }
+          if (!non_cirodown_options.had_error) {
+            await generate_redirects(non_cirodown_options, cirodown_json, publish_out_publish_dir);
+          }
         }
 
         // Publish the converted output if build succeeded.

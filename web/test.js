@@ -419,6 +419,40 @@ it('Article.getArticlesInSamePage', async function() {
   ])
 })
 
+it('Article.rerender', async function() {
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+
+    // Create articles
+
+      article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+      ;({data, status} = await createArticleApi(test, article))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Physics' })
+      ;({data, status} = await createArticleApi(test, article, { previousSiblingId: '@user0/mathematics' }))
+      assertStatus(status, data)
+
+      // Sanity check.
+      await assertNestedSets(sequelize, [
+        { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
+        { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 1, to_id_index: 1, slug: 'user0/physics' },
+      ])
+
+    // Rerender does not set previousSibligId to undefined (thus moving article as first child).
+    await sequelize.models.Article.rerender({ slugs: 'user0/physics' })
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
+      { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
+      { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 1, to_id_index: 1, slug: 'user0/physics' },
+    ])
+  })
+})
+
 it('Article.updateTopicsNewArticles', async function() {
   const sequelize = this.test.sequelize
 
@@ -3880,10 +3914,6 @@ it('api: editor/fetch-files', async () => {
 
     // Create articles
 
-      await assertNestedSets(sequelize, [
-        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user0' },
-      ])
-
       article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
       ;({data, status} = await createArticleApi(test, article))
       assertStatus(status, data)
@@ -3892,8 +3922,7 @@ it('api: editor/fetch-files', async () => {
       ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/mathematics' }))
       assertStatus(status, data)
 
-    // Fetch the files
-
+    // Fetch and check some files.
     ;({data, status} =  await test.webApi.editorFetchFiles([ '@user0/mathematics.bigb', '@user0/calculus.bigb' ]))
     assertStatus(status, data)
     console.error();

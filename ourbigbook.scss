@@ -218,6 +218,13 @@ img {
     @include img-border;
   }
 }
+nav {
+  img {
+    // Undo responsive-img width ==100 for navigation images, otherwise
+    // the OurBigBook.com iamge becomes huge and breaks the navigation.
+    width: auto;
+  }
+}
 
 iframe {
   @include responsive-img;

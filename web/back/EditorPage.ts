@@ -12,7 +12,8 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
     const previousSiblingTitle = query['previous-sibling']
     if (
       title instanceof Array ||
-      parentTitle instanceof Array
+      parentTitle instanceof Array ||
+      previousSiblingTitle instanceof Array
     ) {
       throw new TypeError
     } else {

@@ -56,6 +56,11 @@ class AstNode {
     // caption_number_visible.
     this.macro_count_visible = undefined;
     this.parent_node = options.parent_node;
+    // {TreeNode}:
+    // * for a header, the tree node points to the header
+    // * for non-header elements, the tree node points to
+    //   the deepest header that contains the element
+    this.header_tree_node = undefined;
     this.validation_error = undefined;
     this.validation_output = {};
 
@@ -75,8 +80,6 @@ class AstNode {
     // Header only fields.
     // {Number}
     this.level = undefined;
-    // {TreeNode}
-    this.header_tree_node = undefined;
     // Includes under this header.
     this.includes = [];
 
@@ -257,11 +260,32 @@ class IdProvider {
 
   /**
    * @param {String} id
+   * @param {TreeNode} header_tree_node
    * @return {Union[AstNode,undefined]}.
    *         undefined: ID not found
    *         Otherwise, the ast node for the given ID
    */
-  get(id, context) { throw 'unimplemented'; }
+  get(id, context, header_tree_node) {
+    if (id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
+      return this.get_noscope(id.substr(1), context);
+    } else {
+      if (header_tree_node !== undefined) {
+        let parent_scope_id = get_parent_scope_id(header_tree_node);
+        if (parent_scope_id !== undefined) {
+          let resolved_scope_id = this.get_noscope(
+            parent_scope_id + Macro.HEADER_SCOPE_SEPARATOR + id, context);
+          if (resolved_scope_id !== undefined) {
+            return resolved_scope_id;
+          }
+        }
+      }
+      // Not found with ID resolution, so just try to get the exact ID.
+      return this.get_noscope(id, context);
+    }
+  }
+
+  /** Like get, but do not resolve scope. */
+  get_noscope(id, context) { throw 'unimplemented'; }
 
   /**
    * @param {String} id
@@ -283,13 +307,13 @@ class ChainedIdProvider extends IdProvider {
     this.id_provider_1 = id_provider_1;
     this.id_provider_2 = id_provider_2;
   }
-  get(id, context) {
+  get_noscope(id, context) {
     let ret;
-    ret = this.id_provider_1.get(id, context);
+    ret = this.id_provider_1.get_noscope(id, context);
     if (ret !== undefined) {
       return ret;
     }
-    ret = this.id_provider_2.get(id, context);
+    ret = this.id_provider_2.get_noscope(id, context);
     if (ret !== undefined) {
       return ret;
     }
@@ -310,7 +334,7 @@ class DictIdProvider extends IdProvider {
     super();
     this.dict = dict;
   }
-  get(id, context) {
+  get_noscope(id, context) {
     if (id in this.dict) {
       return this.dict[id];
     }
@@ -500,6 +524,7 @@ class Macro {
 Macro.CIRODOWN_EXAMPLE_MACRO_NAME = 'cirodown_example';
 Macro.CODE_MACRO_NAME = 'c';
 Macro.HEADER_MACRO_NAME = 'h';
+Macro.HEADER_SCOPE_SEPARATOR = '/';
 Macro.ID_ARGUMENT_NAME = 'id';
 Macro.INCLUDE_MACRO_NAME = 'include';
 Macro.LINK_MACRO_NAME = 'a';
@@ -1441,6 +1466,27 @@ function error_message_in_output(msg, context) {
   return `[CIRODOWN_ERROR: ${escaped_msg}]`
 }
 
+/** @return {Union[String,undefined]}
+ *          If the node has a parent header with a scope, return the ID of that header.
+ *          Otherwise, return undefined.
+ */
+function get_parent_scope_id(header_tree_node) {
+  let cur_header_tree_node = header_tree_node.parent_node;
+  while (
+    // Possible in case of mal-formed document e.g. with
+    // non-integer header level.
+    cur_header_tree_node !== undefined &&
+    cur_header_tree_node.value !== undefined
+  ) {
+    if (cur_header_tree_node.value.validation_output.scope.boolean) {
+      // The ID of the first scoped parent already contains all further scopes prepended to it.
+      return cur_header_tree_node.value.id;
+    }
+    cur_header_tree_node = cur_header_tree_node.parent_node;
+  }
+  return undefined;
+}
+
 /** Convert a key value already fully HTML escaped strings
  * to an HTML attribute. The callers MUST escape any untrested chars.
   e.g. with html_attr_value.
@@ -2241,7 +2287,6 @@ function parse(tokens, options, context, extra_returns={}) {
             header_graph_stack[header_graph_last_level] = context.header_graph;
           }
           cur_header_tree_node = new TreeNode(ast, header_graph_stack[cur_header_level - 1]);
-          ast.header_tree_node = cur_header_tree_node;
           if (cur_header_level - header_graph_last_level > 1) {
             const message = `skipped a header level from ${header_graph_last_level} to ${ast.level}`;
             ast.args[Macro.TITLE_ARGUMENT_NAME].push(
@@ -2266,6 +2311,7 @@ function parse(tokens, options, context, extra_returns={}) {
             context.headers_with_include.push(ast);
           }
         }
+        ast.header_tree_node = cur_header_tree_node;
 
         // Linear count of each macro type for macros that have IDs.
         if (!macro.options.macro_counts_ignore(ast)) {
@@ -2324,6 +2370,12 @@ function parse(tokens, options, context, extra_returns={}) {
             }
           } else {
             ast.id = convert_arg_noescape(macro_id_arg, context);
+          }
+          if (ast.id !== undefined && ast.header_tree_node) {
+            let parent_scope_id = get_parent_scope_id(ast.header_tree_node);
+            if (parent_scope_id !== undefined) {
+              ast.id = parent_scope_id + Macro.HEADER_SCOPE_SEPARATOR + ast.id
+            }
           }
         }
         ast.index_id = index_id;
@@ -3230,6 +3282,10 @@ const DEFAULT_MACRO_LIST = [
           name: 'c',
           boolean: true,
         }),
+        new MacroArgument({
+          name: 'scope',
+          boolean: true,
+        }),
       ],
     }
   ),
@@ -3684,7 +3740,7 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       const target_id = convert_arg_noescape(ast.args.href, context);
-      const target_id_ast = context.id_provider.get(target_id, context);
+      const target_id_ast = context.id_provider.get(target_id, context, ast.header_tree_node);
       let href;
       if (target_id_ast === undefined) {
         if (context.in_title_no_id) {

@@ -504,6 +504,10 @@ Now for a live example for quick and dirty interactive testing.
 \x[not-readme]{c}
 ]]
 
+\cirodown_example[[
+\x[not-the-readme-header-with-fixed-case]
+]]
+
 ====== Inflection example not-proper
 
 ====== Inflection example proper
@@ -787,9 +791,94 @@ The ToC ignores `\h[1]` by default, as we encourage that header level to appear 
 
 `\toc` from \x[includes][includes] are ignored.
 
-==== scope
+=== Header `scope` argument
+{id=scope}
 
-TODO implement: https://github.com/cirosantilli/cirodown/issues/71
+In some use cases, the sections under a section describe inseparable parts of something.
+
+For example, when documenting an experiment you executed, you will generally want an "Introduction", then a "Materials" section, and then a "Results" section for every experiment.
+
+On their own, those sections don't make much sense: they are always referred to in the context of the given experiment.
+
+The problem is then how to get unique IDs for those sections.
+
+One solution, would be to manually add the experiment ID as prefix to every subsection, as in:
+``
+= Experiments
+
+See: \x[full-and-unique-experiment-name/materials]
+
+== Introduction
+
+== Full and unique experiment name
+
+=== Introduction
+{id=full-and-unique-experiment-name/introduction}
+
+See our awesome results: \x[full-and-unique-experiment-name/results]
+
+For a more general introduction to all experiments, see: \x[introduction].
+
+=== Materials
+{id=full-and-unique-experiment-name/materials}
+
+=== Results
+{id=full-and-unique-experiment-name/results}
+``
+
+but this would be very tedious.
+
+To keep those IDs shorter, Cirodown provides the `scope` \x[boolean-named-arguments][boolean named argument] property of \x[headers], which works analogously to C++ namespaces with the header IDs.
+
+Using `scope`, the previous example could be written more succinctly as:
+``
+= Experiments
+
+See: \x[full-and-unique-experiment-name/materials]
+
+== Introduction
+
+== Full and unique experiment name
+{scope}
+
+=== Introduction
+
+See our awesome results: \x[results]
+
+For a more general introduction to all experiments, see: \x[/introduction].
+
+=== Materials
+
+=== Results
+``
+
+Note how:
+* full IDs are automatically prefixed by the parent scopes prefixed and joined with a slash `/`
+* we can refer to other IDs withing the current scope without duplicating the scope. E.g. `\x[results]` in the example already refers to the ID `full-and-unique-experiment-name/materials`
+* to refer to an ID outside of the scope and avoid name conflicts with IDs inside of the current scope, we start a reference with a slash `/`
+
+  So in the example above, `\x[/introduction]` refers to the ID `introduction`, and not `full-and-unique-experiment-name/introduction`.
+
+==== Header `scope` argument of toplevel headers in multi-file output mode
+
+When \x[the-toplevel-header] is given the `scope` property, and if \x[html-single-page] is not being used, Cirodown automatically uses the file path for the scope and heaves fragments untouched.
+
+For example, suppose that file `full-and-unique-experiment-name` contains:
+``
+= Full and unique experiment name
+{scope}
+
+== Introduction
+
+== Materials
+``
+
+In this case, multi-file output will generate a file called `full-and-unique-experiment-name.html`, and the URL of the subsections will be just:
+* `full-and-unique-experiment-name.html#introduction`
+* `full-and-unique-experiment-name.html#materials`
+instead of
+* `full-and-unique-experiment-name.html#full-and-unique-experiment-name/introduction`
+* `full-and-unique-experiment-name.html#full-and-unique-experiment-name/materials`
 
 === Header explicit levels vs nesting design choice
 

@@ -63,7 +63,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
     this.delete_includes_stmt.run(input_path_noext_renamed);
   }
 
-  get(id, context) {
+  get_noscope(id, context) {
     let get_ret = this.get_id_stmt.get(id);
     if (get_ret === undefined) {
       return undefined;

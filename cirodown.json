@@ -18,5 +18,5 @@
     "quick-start-redirect-test": "quick-start"
   },
   "template": "main.liquid.html",
-  "xss-unsafe": true
+  "unsafe-xss": true
 }

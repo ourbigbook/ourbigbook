@@ -68,6 +68,7 @@
     "dev": "cd web && npm run dev",
     "heroku-prebuild": "./heroku-prebuild",
     "link": "npm link && npm link cirodown",
+    "publish": "cirodown --publish --unsafe-ace",
     "sass": "./build-sass",
     "start": "cd web && npm start",
     "test": "mocha test --ignore-leaks",

@@ -730,7 +730,8 @@ commander.option('-S, --split-headers', 'http://cirosantilli.com/cirodown#split-
 commander.option('--stdout', 'print output to stdout instead of saving to a file', false);
 commander.option('--template <template>', 'http://cirosantilli.com/cirodown#template');
 commander.option('-w, --watch', 'http://cirosantilli.com/cirodown#watch', false);
-commander.option('--xss-unsafe', 'https://cirosantilli.com/cirodown#xss-unsafe');
+commander.option('--unsafe-ace', 'https://cirosantilli.com/cirodown#unsafe-ace', false);
+commander.option('--unsafe-xss', 'https://cirosantilli.com/cirodown#unsafe-xss');
 let inputPath;
 commander.arguments(
   '[input_path]',
@@ -837,7 +838,7 @@ if (commander.helpMacros) {
     render: true,
     split_headers: split_headers,
     template_vars: {},
-    xss_unsafe: commander.xssUnsafe,
+    unsafe_xss: commander.unsafeXss,
   };
 
   // ignore
@@ -1160,6 +1161,9 @@ if (commander.helpMacros) {
 
           // Commit and push.
           if ('prepublish' in cirodown_json) {
+            if (commander.unsafeAce) {
+              cli_error('prepublish in cirodown.json requires running with --unsafe-ace');
+            }
             const prepublish_path = cirodown_json.prepublish
             if (!fs.existsSync(prepublish_path)) {
               cli_error(`${CIRODOWN_JSON_BASENAME} prepublish file not found: ${prepublish_path}`);

@@ -45,6 +45,7 @@ const DEFAULT_IGNORE_BASENAMES = [
   'package.json',
   ourbigbook_nodejs_webpack_safe.TMP_DIRNAME,
   ourbigbook_nodejs.PACKAGE_SASS_BASENAME,
+  ourbigbook.RAW_PREFIX,
 ];
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
 const SQLITE_MAGIC_MEMORY_NAME = ':memory:'
@@ -372,7 +373,9 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
   let msg_ret
   let output, first_output_path;
   let skip = false
+  let is_bigb = false
   if (input_path_parse.ext === `.${ourbigbook.OURBIGBOOK_EXT}`) {
+    is_bigb = true
     let full_path = path.resolve(input_path);
     let input_path_parse = path.parse(full_path);
     let path_relative_to_ourbigbook_json;
@@ -490,46 +493,52 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
         non_ourbigbook_options.had_error = true;
       }
     }
+  }
+  if (
+    non_ourbigbook_options.cli.formatSource ||
+    non_ourbigbook_options.ourbigbook_paths_converted_only
+  ) {
+    // I should use callbacks instead of doing this. But lazy.
+    return
+  }
+  let output_name = input_path_parse.name;
+
+  // output_path_noext
+  let output_path_noext = path.join(
+    ourbigbook.RAW_PREFIX,
+    path.relative(
+      non_ourbigbook_options.ourbigbook_json_dir,
+      input_path_parse.dir
+    ),
+    output_name
+  )
+  if (ourbigbook_options.outfile === undefined) {
+    output_path_noext = path.join(non_ourbigbook_options.outdir, output_path_noext);
   } else {
-    if (
-      non_ourbigbook_options.cli.formatSource ||
-      non_ourbigbook_options.ourbigbook_paths_converted_only
-    ) {
-      // I should use callbacks instead of doing this. But lazy.
-      return
-    }
-    let output_name = input_path_parse.name;
-    let output_path_noext = path.join(
-      path.relative(non_ourbigbook_options.ourbigbook_json_dir, input_path_parse.dir),
-      output_name
-    );
-    if (ourbigbook_options.outfile === undefined) {
-      output_path_noext = path.join(non_ourbigbook_options.outdir, output_path_noext);
+    output_path_noext = ourbigbook_options.outfile;
+  }
+
+  fs.mkdirSync(path.dirname(output_path_noext), {recursive: true});
+  if (ourbigbook_options.render) {
+    if (input_path_parse.ext === SASS_EXT) {
+      first_output_path = output_path_noext + '.css'
+      msg_ret = convert_path_to_file_print_starting(ourbigbook_options, input_path)
+      fs.writeFileSync(
+        first_output_path,
+        require('sass').renderSync({
+          data: fs.readFileSync(path.join(input_path), non_ourbigbook_options.encoding),
+          outputStyle: 'compressed',
+          includePaths: [
+            path.dirname(ourbigbook_nodejs.PACKAGE_PATH),
+          ],
+        }).css
+      );
     } else {
-      output_path_noext = ourbigbook_options.outfile;
-    }
-    fs.mkdirSync(path.dirname(output_path_noext), {recursive: true});
-    if (ourbigbook_options.render) {
-      if (input_path_parse.ext === SASS_EXT) {
-        first_output_path = output_path_noext + '.css'
-        msg_ret = convert_path_to_file_print_starting(ourbigbook_options, input_path)
-        fs.writeFileSync(
-          first_output_path,
-          require('sass').renderSync({
-            data: fs.readFileSync(path.join(input_path), non_ourbigbook_options.encoding),
-            outputStyle: 'compressed',
-            includePaths: [
-              path.dirname(ourbigbook_nodejs.PACKAGE_PATH),
-            ],
-          }).css
-        );
-      } else {
-        // Otherwise, just copy the file over if needed.
-        const output_path = output_path_noext + input_path_parse.ext;
-        if (output_path !== path.resolve(input_path)) {
-          console.log(`copy ${input_path} -> ${path.relative(process.cwd(), output_path)}`);
-          fs.copyFileSync(input_path, output_path);
-        }
+      // Otherwise, just copy the file over if needed.
+      const output_path = output_path_noext + input_path_parse.ext;
+      if (output_path !== path.resolve(input_path)) {
+        console.log(`copy ${input_path} -> ${path.relative(process.cwd(), output_path)}`);
+        fs.copyFileSync(input_path, output_path);
       }
     }
   }

@@ -34,6 +34,7 @@ The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> i
 * https://docs.ourbigbook.com[]: rendered version of this document
 * https://docs.ourbigbook.com/editor[]: live in-browser editor demo
 * https://cirosantilli.com/ourbigbook-template[]: good template to get started with <OurBigBook CLI>, see <OurBigBook CLI quick start>{full}
+* https://cirosantilli.com/ourbigbook-media[]: media for the project such as for documentation and <publicity>, more info: <OurBigBook media repository>{full}
 
 = Quick start
 {parent=OurBigBook}
@@ -8680,11 +8681,20 @@ npx ourbigbook .
 firefox index.html
 ``
 
-= Public relations
+= OurBigBook media repository
+{parent=Developing OurBigBook}
+
+The repository https://cirosantilli.com/ourbigbook-media[] contains media for the project such as for documentation and <publicity>
+
+It was created to keep blobs out of this repository.
+
+Some blobs were unfortunately added to this repository earlier on, but when we saw that we would need more and more, we made the sane call and forked that out.
+
+= Publicity
 {parent=Developing OurBigBook}
 
 = Official accounts
-{parent=Public relations}
+{parent=Publicity}
 
 * https://OurBigBook.com (case insensitive)
 * https://twitter.com/OurBigBook (case insensitive)
@@ -8697,9 +8707,10 @@ firefox index.html
 * https://github.com/OurBigBook GitHub organization (case insensitive)
 
 = Merchandise
-{parent=Public relations}
+{parent=Publicity}
 
 = T-shirt
+{c}
 {parent=Merchandise}
 
 We are thinking about the following layout:
@@ -8711,13 +8722,34 @@ We are thinking about the following layout:
 
 We are planning on using a clear green on white color scheme to reflect the current website CSS.
 
-Some options:
-* https://www.tshirtstudio.com/t-shirt-printing/design-your-own-super-premium-t-shirt 20 pounds. Could not place the chest logo
+= tshirtstudio.com merchandise
+{parent=T-shirt}
+
+https://www.tshirtstudio.com/t-shirt-printing/design-your-own-super-premium-t-shirt 20 pounds.
 
 = Project logo
-{parent=Public relations}
+{parent=Publicity}
 
 The logo can be seen at: <image Logo of the OurBigBook Project>.
+
+\Image[logo.svg]
+{height=150}
+{title=logo.svg canonical source of the projct logo}
+{description=
+Is file was actually manually created, and therefore counts as code and can be tracked on this git repository.
+
+Since it does not contain text, only geometric primitives, it is fully reproducible, the \a[logo.png] export was created purely for convenience.
+}
+
+\Image[logo.svg]
+{height=150}
+{provider=github}
+{title=logo-transparent.svg}
+{description=
+This is a version of logo.svg with a transparent background instead of the hardcoded black background.
+
+It was useful e.g. for t-shirt merch, where the t-shirt background choices were not perfectly black, and the black square would be visible (and possibly glossy) otherwise, which would not be nice.
+}
 
 Some rationale:
 * the lowercase `b` followed by uppercase `B` gives the idea of big and small
@@ -8727,9 +8759,14 @@ Some rationale:
 
 It might be cool if we were able to come up with something that looks more like an actual book though instead of just using a boring lettermark.
 
-Some other ideas follow.
+A good point of the current design is that it suggests a certain simplicity. We want the explanations of our website to be simple and accessible to all.
 
-A letter square with uppercase monospace font letters:
+= Text logo
+{parent=Project logo}
+
+In addition to the pictorial logo, we have also created a few textual logos which might be useful.
+
+The main idea of the text logo is to make a letter square with uppercase monospace font letters:
 ``
 OUR
 BIG
@@ -8737,3 +8774,29 @@ BOOK
 .COM
 ``
 Could make the `OBB` red and other letters white. But that does come a bit closer to our dreaded https://en.wikipedia.org/wiki/ÖBB[ÖBB] name competitor.
+
+Note that monospace fonts are not actually square, only fixed width: https://graphicdesign.stackexchange.com/questions/45260/name-for-type-that-has-the-same-width-and-height
+
+Another idea to differentiate from ÖBB would be to go lowercase:
+``
+obb
+``
+
+\Image[text-logo/3x3.svg]
+{title=3x4.svg text logo}
+{description=This one was done without scaling. The font is a slightly tall rectangle, leading to a natural 3x4 aspect ratio.}
+{provider=github}
+
+\Image[text-logo/3x3-1000.png]
+{title=3x4-1000.png text logo}
+{description=This is a rasterization of 3x4.png to 1000x1000 px. Since SVG does not contain the actual font, we always need PNG exports for reproducibility.}
+{provider=github}
+
+\Image[text-logo/3x3.svg]
+{title=3x3.svg text logo}
+{description=This was made by scaling down a version of the 3x4.svg logo. We had to add some extra space between lines before however, otherwise it would feel too cramped after scaling.}
+{provider=github}
+
+\Image[text-logo/3x3-1000.png]
+{title=3x3-1000.png text logo}
+{provider=github}

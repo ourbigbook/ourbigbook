@@ -627,4 +627,6 @@ module.exports = {
   read_include,
   remove_duplicates_sorted_array,
   update_database_after_convert,
+  ENCODING: 'utf8',
+  TMP_DIRNAME: 'out',
 }

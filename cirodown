@@ -38,7 +38,7 @@ const DEFAULT_IGNORE_BASENAMES = [
   'node_modules',
   'package-lock.json',
   'package.json',
-  cirodown_nodejs.TMP_DIRNAME,
+  cirodown_nodejs_webpack_safe.TMP_DIRNAME,
   cirodown_nodejs.PACKAGE_SASS_BASENAME,
 ];
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
@@ -151,14 +151,14 @@ function cmd_get_stdout(cmd, args=[], options={}) {
     if (out.status != 0 && options.throw_on_error) {
       let msg = `cmd: \n${cmd_str}\n`;
       if (out.stdout !== null) {
-        msg += `stdout: \n${out.stdout.toString(cirodown_nodejs.ENCODING)}\n`;
+        msg += `stdout: \n${out.stdout.toString(cirodown_nodejs_webpack_safe.ENCODING)}\n`;
       }
       if (out.stderr !== null) {
-        msg += `stderr: \n${out.stderr.toString(cirodown_nodejs.ENCODING)}\n`;
+        msg += `stderr: \n${out.stderr.toString(cirodown_nodejs_webpack_safe.ENCODING)}\n`;
       }
       throw msg;
     }
-    ret = out.stdout.toString(cirodown_nodejs.ENCODING);
+    ret = out.stdout.toString(cirodown_nodejs_webpack_safe.ENCODING);
   }
   return ret;
 }
@@ -227,10 +227,10 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
   if (non_cirodown_options.commander.embedResources) {
     new_options.template_vars.style = fs.readFileSync(
       cirodown_nodejs.DIST_CSS_PATH,
-      cirodown_nodejs.ENCODING
+      cirodown_nodejs_webpack_safe.ENCODING
     );
     new_options.template_vars.post_body = `<script>${fs.readFileSync(
-      cirodown_nodejs.DIST_JS_PATH, cirodown_nodejs.ENCODING)}</script>\n`;
+      cirodown_nodejs.DIST_JS_PATH, cirodown_nodejs_webpack_safe.ENCODING)}</script>\n`;
      ;
   } else {
     let includes_str = ``;
@@ -612,7 +612,7 @@ function perf_print(name, cirodown_options) {
 function renderTemplate(templateRelpath, outdir, env) {
   const template = fs.readFileSync(
     path.join(cirodown_nodejs.PACKAGE_PATH, 'template', templateRelpath),
-    cirodown_nodejs.ENCODING
+    cirodown_nodejs_webpack_safe.ENCODING
   );
   const out = (new Liquid()).parseAndRenderSync(
     template,
@@ -801,7 +801,7 @@ if (commander.helpMacros) {
     path_sep: path.sep,
     read_include: cirodown_nodejs_webpack_safe.read_include({
       exists: (inpath) => fs.existsSync(path.join(cirodown_json_dir, inpath)),
-      read: (inpath) => fs.readFileSync(path.join(cirodown_json_dir, inpath), cirodown_nodejs.ENCODING),
+      read: (inpath) => fs.readFileSync(path.join(cirodown_json_dir, inpath), cirodown_nodejs_webpack_safe.ENCODING),
       path_sep: cirodown.Macro.HEADER_SCOPE_SEPARATOR,
     }),
     // Part of considering file previews for source code.
@@ -812,7 +812,7 @@ if (commander.helpMacros) {
     //    // Let's prevent path transverasl a bit by default.
     //    path.resolve(readpath).startsWith(path.resolve(cirodown_json_dir))
     //  ) {
-    //    return fs.readFileSync(readpath, cirodown_nodejs.ENCODING);
+    //    return fs.readFileSync(readpath, cirodown_nodejs_webpack_safe.ENCODING);
     //  } else {
     //    return undefined
     //  }
@@ -888,7 +888,7 @@ if (commander.helpMacros) {
     let gitignore_new = '';
     const gitignore = fs.readFileSync(
       cirodown_nodejs.GITIGNORE_PATH,
-      cirodown_nodejs.ENCODING
+      cirodown_nodejs_webpack_safe.ENCODING
     );
     for (const line of gitignore.split('\n')) {
       if (line === '') {
@@ -932,7 +932,7 @@ if (commander.helpMacros) {
     // Possible on intput from stdin.
     outdir !== undefined
   ) {
-    tmpdir = path.join(outdir, cirodown_nodejs.TMP_DIRNAME);
+    tmpdir = path.join(outdir, cirodown_nodejs_webpack_safe.TMP_DIRNAME);
     if (
       commander.outdir === undefined &&
       cirodown_json.outputOutOfTree
@@ -949,7 +949,7 @@ if (commander.helpMacros) {
     commander,
     db_options: cirodown_nodejs_webpack_safe.db_options,
     file_rows_dict: {},
-    encoding: cirodown_nodejs.ENCODING,
+    encoding: cirodown_nodejs_webpack_safe.ENCODING,
     external_css_and_js: false,
     had_error: false,
     log: non_cirodown_options_log,
@@ -969,7 +969,7 @@ if (commander.helpMacros) {
   if (inputPath === undefined) {
     // Input from stdin.
     title = 'stdin';
-    input = fs.readFileSync(0, cirodown_nodejs.ENCODING);
+    input = fs.readFileSync(0, cirodown_nodejs_webpack_safe.ENCODING);
     output = await convert_input(input, cirodown_options, non_cirodown_options);
   } else {
     if (!fs.existsSync(inputPath)) {
@@ -993,7 +993,7 @@ if (commander.helpMacros) {
           // This cleanup has to be done before the database initialization.
           cmd_get_stdout('git', ['-C', publish_dir, 'clean', '-x', '-d', '-f'], cmd_options);
         }
-        publish_tmpdir = path.join(publish_dir, subdir_relpath, cirodown_nodejs.TMP_DIRNAME);
+        publish_tmpdir = path.join(publish_dir, subdir_relpath, cirodown_nodejs_webpack_safe.TMP_DIRNAME);
       }
     }
     if (publish_tmpdir === undefined) {
@@ -1005,7 +1005,7 @@ if (commander.helpMacros) {
     const katex_macros = {};
     if (fs.existsSync(tex_path)) {
       require('katex').renderToString(
-        fs.readFileSync(tex_path, cirodown_nodejs.ENCODING),
+        fs.readFileSync(tex_path, cirodown_nodejs_webpack_safe.ENCODING),
         {
           globalGroup: true,
           macros: katex_macros,

@@ -3,12 +3,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const ENCODING = 'utf8';
-exports.ENCODING = ENCODING;
-
 const PACKAGE_NAME = 'cirodown';
 exports.PACKAGE_NAME = PACKAGE_NAME;
 
+// This does not work in webpack.
 // https://stackoverflow.com/questions/10111163/in-node-js-how-can-i-get-the-path-of-a-module-i-have-loaded-via-require-that-is
 const PACKAGE_PATH = path.dirname(require.resolve(path.join(PACKAGE_NAME, 'package.json')));
 exports.PACKAGE_PATH = PACKAGE_PATH;
@@ -42,6 +40,3 @@ exports.GITIGNORE_PATH = GITIGNORE_PATH;
 
 const PACKAGE_SASS_BASENAME = PACKAGE_NAME + '.scss';
 exports.PACKAGE_SASS_BASENAME = PACKAGE_SASS_BASENAME;
-
-const TMP_DIRNAME = 'out';
-exports.TMP_DIRNAME = TMP_DIRNAME;

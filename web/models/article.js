@@ -212,6 +212,7 @@ module.exports = (sequelize) => {
     }]
     if (includeParentAndPreviousSibling) {
       // Behold.
+      // TODO reimplement with the nested index information isntead of this megajoin.
       fileInclude.push({
         model: sequelize.models.Id,
         subQuery: false,

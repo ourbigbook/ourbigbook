@@ -129,44 +129,58 @@ const Article = ({
                 </>
               }
               {canEdit
-                ?
-                <>
-                  {' '}
-                  <span>
-                    {false && <>TODO: convert this a and all other injected links to Link. https://github.com/cirosantilli/ourbigbook/issues/274</> }
-                    <a
-                      href={isIssue ? routes.issueEdit(issueArticle.slug, curArticle.number) : routes.articleEdit(curArticle.slug)}
-                      className="btn edit"
-                    >
-                      <EditArticleIcon />{toplevel && <> <span className="shortcut">E</span>dit</>}
+                ? <>
+                    {' '}
+                    <span>
+                      {false && <>TODO: convert this a and all other injected links to Link. https://github.com/cirosantilli/ourbigbook/issues/274</> }
+                      <a
+                        href={isIssue ? routes.issueEdit(issueArticle.slug, curArticle.number) : routes.articleEdit(curArticle.slug)}
+                        className="btn edit"
+                      >
+                        <EditArticleIcon />{toplevel && <> <span className="shortcut">E</span>dit</>}
+                      </a>
+                    </span>
+                    {' '}
+                    <a href={routes.articleNew({ 'parent-title': curArticle.titleSource })} className="btn new" title="Create a new article that is a child of this one">
+                      {' '}<NewArticleIcon title={false}/>
+                      {/* TODO spacing too large on non toplevel, not sure what's the difference*/ toplevel ? ' ' : ''}
+                      <i className="ion-arrow-down-c"/>{toplevel ? ' Create child article' : ''}{' '}
                     </a>
-                  </span>
-                </>
-                :
-                <>
-                  {!isIssue &&
-                    <>
-                      {(curArticle.hasSameTopic || isIndex)
-                        ? <>
-                            {article.slug !== mySlug &&
-                              <>
-                                {' '}
-                                <a href={routes.article(mySlug)} className="btn see" title="See my version of this topic">
-                                    {' '}<SeeIcon title={false}/>{toplevel ? ' See My Version' : ''}{' '}
-                                </a>
-                              </>
-                            }
-                          </>
-                        : <>
-                            {' '}
-                            <a href={routes.articleNew({ title: curArticle.titleSource })} className="btn new" title="Create my version of this topic">
-                              {' '}<NewArticleIcon title={false}/>{toplevel ? ' Create my own version' : ''}{' '}
-                            </a>
-                          </>
-                      }
-                    </>
-                  }
-                </>
+                    {' '}
+                    {!isIndex &&
+                      <a
+                        href={routes.articleNew({ 'parent-title': curArticle.parentTitle, 'previous-sibling': curArticle.titleSource })}
+                        className="btn new"
+                        title="Create a new article that is the next sibling of this one"
+                      >
+                        {' '}<NewArticleIcon title={false}/>{toplevel ? ' ' : ''}<i className="ion-arrow-right-c"/>{toplevel ? ' Create sibling article' : ''}{' '}
+                      </a>
+                    }
+                  </>
+                : <>
+                    {!isIssue &&
+                      <>
+                        {(curArticle.hasSameTopic || isIndex)
+                          ? <>
+                              {article.slug !== mySlug &&
+                                <>
+                                  {' '}
+                                  <a href={routes.article(mySlug)} className="btn see" title="See my version of this topic">
+                                      {' '}<SeeIcon title={false}/>{toplevel ? ' See My Version' : ''}{' '}
+                                  </a>
+                                </>
+                              }
+                            </>
+                          : <>
+                              {' '}
+                              <a href={routes.articleNew({ title: curArticle.titleSource })} className="btn new" title="Create my version of this topic">
+                                {' '}<NewArticleIcon title={false}/>{toplevel ? ' Create my own version' : ''}{' '}
+                              </a>
+                            </>
+                        }
+                      </>
+                    }
+                  </>
               }
             </>,
             web

@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "ourbigbook",
+            "program": "${workspaceFolder}/ourbigbook",
+            "args": ["--web", "--web-nested-set-bulk", "--web-url", "http://localhost:3000"],
+            "cwd": "${workspaceFolder}/web/tmp/demo/barack-obama",
+            //"cwd": "${workspaceFolder}/../cirosantilli.github.io"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "nested-set",
+            "program": "${workspaceFolder}/web/bin/nested-set"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "nested-set -u",
+            "program": "${workspaceFolder}/web/bin/nested-set",
+            "args": ["-u", "barack-obama"]
+        }
+    ]
+}

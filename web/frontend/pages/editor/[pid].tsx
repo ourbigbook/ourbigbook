@@ -1,12 +1,12 @@
 import makeArticleEditor from "../../components/editor/ArticleEditor";
 
 // Backend.
-const { Article, User } = require("cirodown-backend/models");
+import sequelize from "../../lib/db";
 
 export async function getStaticProps({ params: { pid } }) {
-  const article = await Article.findOne({
+  const article = await sequelize.models.Article.findOne({
     where: { slug: pid },
-    include: [{ model: User, as: 'Author' }],
+    include: [{ model: sequelize.models.User, as: 'Author' }],
   });
   const articleJson = article.toJSONFor(article.Author);
   return { props: { article: articleJson } };
@@ -14,8 +14,7 @@ export async function getStaticProps({ params: { pid } }) {
 
 export async function getStaticPaths() {
   const ret = { fallback: true };
-  debugger;
-  ret.paths = (await Article.findAll()).map(
+  ret.paths = (await sequelize.models.Article.findAll()).map(
     article => {
       return {
         params: {

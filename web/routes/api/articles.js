@@ -2,13 +2,11 @@ const router = require('express').Router()
 const auth = require('../auth')
 const Op = require('sequelize').Op
 
-const { Article, User, Comment } = require('../../models')
-
 // Preload article objects on routes with ':article'
 router.param('article', function(req, res, next, slug) {
-  Article.findOne({
+  req.app.get('sequelize').models.Article.findOne({
     where: { slug: slug },
-    include: [{ model: User, as: 'Author' }]
+    include: [{ model: req.app.get('sequelize').models.User, as: 'Author' }]
   })
     .then(function(article) {
       if (!article) {
@@ -22,7 +20,7 @@ router.param('article', function(req, res, next, slug) {
 })
 
 router.param('comment', function(req, res, next, id) {
-  Comment.findByPk(id)
+  req.app.get('sequelize').models.Comment.findByPk(id)
     .then(function(comment) {
       if (!comment) {
         return res.sendStatus(404)
@@ -55,8 +53,8 @@ router.get('/', auth.optional, function(req, res, next) {
   }
 
   Promise.all([
-    req.query.author ? User.findOne({ where: { username: req.query.author } }) : null,
-    req.query.favorited ? User.findOne({ where: { username: req.query.favorited } }) : null
+    req.query.author ? req.app.get('sequelize').models.User.findOne({ where: { username: req.query.author } }) : null,
+    req.query.favorited ? req.app.get('sequelize').models.User.findOne({ where: { username: req.query.favorited } }) : null
   ])
     .then(function(results) {
       let author = results[0]
@@ -73,15 +71,15 @@ router.get('/', auth.optional, function(req, res, next) {
       }
 
       return Promise.all([
-        Article.findAll({
+        req.app.get('sequelize').models.Article.findAll({
           where: query,
           order: [['created_at', 'DESC']],
           limit: Number(limit),
           offset: Number(offset),
-          include: [{ model: User, as: 'Author' }]
+          include: [{ model: req.app.get('sequelize').models.User, as: 'Author' }]
         }),
-        Article.count({ where: query }),
-        req.payload ? User.findByPk(req.payload.id) : null
+        req.app.get('sequelize').models.Article.count({ where: query }),
+        req.payload ? req.app.get('sequelize').models.User.findByPk(req.payload.id) : null
       ]).then(function(results) {
         let articles = results[0]
         let articlesCount = results[1]
@@ -110,21 +108,21 @@ router.get('/feed', auth.required, function(req, res, next) {
     offset = req.query.offset
   }
 
-  User.findByPk(req.payload.id).then(function(user) {
+  req.app.get('sequelize').models.User.findByPk(req.payload.id).then(function(user) {
     if (!user) {
       return res.sendStatus(401)
     }
 
     Promise.all([
-      Article.findAll({
+      req.app.get('sequelize').models.Article.findAll({
         where: { author_id: { [Op.in]: user.following } },
         offset: Number(offset),
         limit: Number(limit),
-        include: [{ model: User, as: 'Author' }]
+        include: [{ model: req.app.get('sequelize').models.User, as: 'Author' }]
       }),
-      Article.count({
+      req.app.get('sequelize').models.Article.count({
         where: { author_id: { [Op.in]: user.following } },
-        include: [{ model: User, as: 'Author' }]
+        include: [{ model: req.app.get('sequelize').models.User, as: 'Author' }]
       })
     ])
       .then(function(results) {
@@ -143,13 +141,13 @@ router.get('/feed', auth.required, function(req, res, next) {
 })
 
 router.post('/', auth.required, function(req, res, next) {
-  User.findByPk(req.payload.id)
+  req.app.get('sequelize').models.User.findByPk(req.payload.id)
     .then(function(user) {
       if (!user) {
         return res.sendStatus(401)
       }
 
-      let article = new Article(req.body.article)
+      let article = new req.app.get('sequelize').models.Article(req.body.article)
       article.AuthorId = user.id
 
       return article.save().then(article => {
@@ -161,7 +159,7 @@ router.post('/', auth.required, function(req, res, next) {
 
 // return a article
 router.get('/:article', auth.optional, function(req, res, next) {
-  Promise.all([req.payload ? User.findByPk(req.payload.id) : null, req.article.getAuthor()])
+  Promise.all([req.payload ? req.app.get('sequelize').models.User.findByPk(req.payload.id) : null, req.article.getAuthor()])
     .then(function(results) {
       let [user, author] = results
       return res.json({ article: req.article.toJSONFor(author, user) })
@@ -171,7 +169,7 @@ router.get('/:article', auth.optional, function(req, res, next) {
 
 // update article
 router.put('/:article', auth.required, function(req, res, next) {
-  User.findByPk(req.payload.id).then(function(user) {
+  req.app.get('sequelize').models.User.findByPk(req.payload.id).then(function(user) {
     if (req.article.AuthorId.toString() === req.payload.id.toString()) {
       if (typeof req.body.article.title !== 'undefined') {
         req.article.title = req.body.article.title
@@ -205,7 +203,7 @@ router.put('/:article', auth.required, function(req, res, next) {
 
 // delete article
 router.delete('/:article', auth.required, function(req, res, next) {
-  User.findByPk(req.payload.id)
+  req.app.get('sequelize').models.User.findByPk(req.payload.id)
     .then(function(user) {
       if (!user) {
         return res.sendStatus(401)
@@ -226,7 +224,7 @@ router.delete('/:article', auth.required, function(req, res, next) {
 router.post('/:article/favorite', auth.required, function(req, res, next) {
   let articleId = req.article.id
 
-  User.findByPk(req.payload.id)
+  req.app.get('sequelize').models.User.findByPk(req.payload.id)
     .then(function(user) {
       if (!user) {
         return res.sendStatus(401)
@@ -247,7 +245,7 @@ router.post('/:article/favorite', auth.required, function(req, res, next) {
 router.delete('/:article/favorite', auth.required, function(req, res, next) {
   let articleId = req.article.id
 
-  User.findByPk(req.payload.id)
+  req.app.get('sequelize').models.User.findByPk(req.payload.id)
     .then(function(user) {
       if (!user) {
         return res.sendStatus(401)
@@ -266,7 +264,7 @@ router.delete('/:article/favorite', auth.required, function(req, res, next) {
 
 // return an article's comments
 router.get('/:article/comments', auth.optional, function(req, res, next) {
-  Promise.resolve(req.payload ? User.findByPk(req.payload.id) : null)
+  Promise.resolve(req.payload ? req.app.get('sequelize').models.User.findByPk(req.payload.id) : null)
     .then(function(user) {
       return req.article.getComments({ order: [['created_at', 'DESC']] }).then(function(comments) {
         return res.json({
@@ -281,12 +279,12 @@ router.get('/:article/comments', auth.optional, function(req, res, next) {
 
 // create a new comment
 router.post('/:article/comments', auth.required, function(req, res, next) {
-  User.findByPk(req.payload.id)
+  req.app.get('sequelize').models.User.findByPk(req.payload.id)
     .then(function(user) {
       if (!user) {
         return res.sendStatus(401)
       }
-      return Comment.create(
+      return req.app.get('sequelize').models.Comment.create(
         Object.assign({}, req.body.comment, { ArticleId: req.article.id, AuthorId: user.id })
       ).then(function(comment) {
         res.json({ comment: comment.toJSONFor(user, user) })

@@ -113,6 +113,9 @@ div.list-container {
   .item:not(:last-child) {
     margin-bottom: 1em;
   }
+  div.title-container {
+    margin-bottom: 1.0em;
+  }
   table.list {
     border-collapse: collapse;
     white-space: nowrap;

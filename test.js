@@ -153,9 +153,21 @@ function assert_lib(
       })
     }
     options.convert_opts.fs_exists_sync = (my_path) => {
-      return options.filesystem[my_path] !== undefined
+      return options.filesystem.hasOwnProperty(my_path)
+    }
+    options.convert_opts.read_file = (readpath, context) => {
+      return options.filesystem[readpath]
     }
     let filesystem = options.filesystem
+
+    // Add directory to filesystem so that exist checks won't blow up.
+    for (let p in filesystem) {
+      do {
+        p = path.dirname(p)
+        filesystem[p] = undefined
+      } while (p !== '.')
+    }
+
     if (options.stdin !== undefined) {
       if (!('input_path_noext' in options) && options.convert_opts.split_headers) {
         options.input_path_noext = ourbigbook.INDEX_BASENAME_NOEXT;
@@ -720,6 +732,15 @@ ${out.stderr.toString(ourbigbook_nodejs_webpack_safe.ENCODING)}`;
   return ret;
 }
 
+function header_file_about_ast(path) {
+  return a('P', [
+    t('This section is about the file: '),
+    a('b', [
+      a('a', undefined, {href: [t(path)]})
+    ]),
+  ])
+}
+
 /** Shortcut to create plaintext nodes for ast_arg_has_subset, we have too many of those. */
 function t(text) { return {'macro_name': 'plaintext', 'text': text}; }
 
@@ -735,9 +756,7 @@ function update_filesystem(filesystem, tmpdir) {
     } else {
       // This is the string that will be written to the file.
       const dirpath = path.join(tmpdir, path.parse(relpath).dir);
-      if (!fs.existsSync(dirpath)) {
-        fs.mkdirSync(dirpath);
-      }
+      fs.mkdirSync(dirpath, { recursive: true });
       fs.writeFileSync(file_path, file_content);
     }
   }
@@ -5079,6 +5098,11 @@ assert_lib('header: splitDefault on ourbigbook.json',
 assert_lib_ast('header: file argument works',
   `= h1
 
+== path/to
+{file}
+
+My directory
+
 == path/to/my-file.txt
 {file}
 
@@ -5101,17 +5125,35 @@ My youtube
 `,
   [
     a('H', undefined, {level: [t('1')], title: [t('h1')]}),
+
+    a('H', undefined, {level: [t('2')], title: [t('path/to')]}),
+    header_file_about_ast('path/to'),
+    a('P', [t('My directory')]),
+
     a('H', undefined, {level: [t('2')], title: [t('path/to/my-file.txt')]}),
+    header_file_about_ast('path/to/my-file.txt'),
     a('P', [t('My txt')]),
+    a('P', [a('b', [t('path/to/my-file.txt')])]),
+    a('C', [t(`My Line 1
+
+My Line 2
+`
+    )]),
+
     a('H', undefined, {level: [t('2')], title: [t('path/to/my-file.png')]}),
-    a('P', [t('My png')]),
+    header_file_about_ast('path/to/my-file.png'),
     a('Image', undefined, {src: [t('path/to/my-file.png')]}),
+    a('P', [t('My png')]),
+
     a('H', undefined, {level: [t('2')], title: [t('path/to/my-file.mp4')]}),
-    a('P', [t('My mp4')]),
+    header_file_about_ast('path/to/my-file.mp4'),
     a('Video', undefined, {src: [t('path/to/my-file.mp4')]}),
+    a('P', [t('My mp4')]),
+
     a('H', undefined, {level: [t('2')], title: [t('Path to YouTube')]}),
-    a('P', [t('My youtube')]),
+    header_file_about_ast('https://www.youtube.com/watch?v=YeFzeNAHEhU'),
     a('Video', undefined, {src: [t('https://www.youtube.com/watch?v=YeFzeNAHEhU')]}),
+    a('P', [t('My youtube')]),
   ],
   {
     filesystem: {
@@ -5133,6 +5175,7 @@ assert_lib_ast('header file argument that is the last header adds the preview',
   [
     a('H', undefined, {level: [t('1')], title: [t('h1')]}),
     a('H', undefined, {level: [t('2')], title: [t('path/to/my-file.png')]}),
+    header_file_about_ast('path/to/my-file.png'),
     a('Image', undefined, {src: [t('path/to/my-file.png')]}),
   ],
   {

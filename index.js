@@ -2574,9 +2574,26 @@ const DEFAULT_MACRO_LIST = [
         href_prefix = undefined;
       }
       let src = html_attr('href', convert_arg(ast.args.src, context));
-      ret += `<a${src}><img${img_attrs}>`;
+      let alt_arg;
+      const has_caption = ast.id !== undefined && ast.index_id;
+      if (ast.args.alt === undefined) {
+        if (has_caption) {
+          alt_arg = undefined;
+        } else {
+          alt_arg = ast.args.src;
+        }
+      } else {
+        alt_arg = ast.args.alt;
+      }
+      let alt;
+      if (alt_arg === undefined) {
+        alt = '';
+      } else {
+        alt = html_attr('alt', html_escape_attr(convert_arg(alt_arg, context)));;
+      }
+      ret += `<a${src}><img${img_attrs}${alt}>`;
       ret += `</a>\n`;
-      if (ast.id !== undefined && ast.index_id) {
+      if (has_caption) {
         ret += `<figcaption>${Macro.x_text(ast, context, {href_prefix: href_prefix})}</figcaption>\n`;
       }
       ret += '</figure>\n';
@@ -2610,8 +2627,15 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      let img_attrs = html_convert_attrs_id(ast, context, ['src', 'alt']);
-      return `<img${img_attrs}>`;
+      let alt_arg;
+      if (ast.args.alt === undefined) {
+        alt_arg = ast.args.src;
+      } else {
+        alt_arg = ast.args.alt;
+      }
+      let alt = html_attr('alt', html_escape_attr(convert_arg(alt_arg, context)));
+      let img_attrs = html_convert_attrs_id(ast, context, ['src']);
+      return `<img${img_attrs}${alt}>`;
     },
     {
       phrasing: true,

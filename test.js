@@ -692,10 +692,10 @@ assert_no_error('cross reference full boolean style correct',
 \\x[my-header]{full}
 `, 3, 21);
 assert_error('cross reference full boolean style with value',
-  `\\h[1][My header]
+  `\\h[1][abc]
 
-\\x[my-header]{full=true}
-`, 3, 20);
+\\x[abc]{full=true}
+`, 3, 8);
 assert_no_error('cross reference to image',
   `\\Image[ab]{id=cd}{title=ef}
 
@@ -706,7 +706,7 @@ assert_no_error('cross reference without content nor target title style full',
 
 \\x[cd]
 `);
-assert_error('cross reference undefined', '\\x[ab]', 1, 4);
+assert_error('cross reference undefined', '\\x[ab]', 1, 3);
 
 //// Headers.
 // TODO inner ID property test
@@ -755,8 +755,7 @@ assert_convert_ast('header 7',
   a('h', undefined, {level: [t('7')], title: [t('7')]}),
 ]
 );
-// TODO https://github.com/cirosantilli/cirodown/issues/30 wrong column.
-assert_error('header must be an integer letters', '\\h[a][b]\n', 1, 1);
+assert_error('header must be an integer letters', '\\h[a][b]\n', 1, 3);
 assert_error('header h2 must be an integer toc',
   `\\h[1][h1]
 
@@ -765,16 +764,16 @@ assert_error('header h2 must be an integer toc',
 \\h[][h2 1]
 
 \\h[2][h2 2]
-`, 5, 1);
+`, 5, 3);
 // TODO failing
 //assert_error('header h1 must be an integer toc',
 //  `\\h[][h1]
 //
 //\\toc
 //`, 1, 1);
-assert_error('header must be an integer empty', '\\h[][b]\n', 1, 1);
-assert_error('header must not be zero', '\\h[0][b]\n', 1, 1);
-assert_error('header skip level is an error', '\\h[1][a]\n\\h[3][b]\n', 2, 4);
+assert_error('header must be an integer empty', '\\h[][b]\n', 1, 3);
+assert_error('header must not be zero', '\\h[0][b]\n', 1, 3);
+assert_error('header skip level is an error', '\\h[1][a]\n\n\\h[3][b]\n', 3, 3);
 
 // Code.
 assert_convert_ast('code inline sane',
@@ -855,7 +854,7 @@ assert_no_error('math block insane',
   '$$\\sqrt{1 + 1}$$',
   [a('M', [t('\\sqrt{1 + 1}')])],
 );
-assert_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 5);
+assert_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 3);
 
 // Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception, or worse, not blowing up at all!

@@ -148,6 +148,6 @@ c
 // TODO
 it('unknown macro', ()=>{assert_error('\\reserved_undefined', 1, 2)});
 it('missing positional argument', ()=>{assert_convert('\\p')});
-it('too many positional arguments', ()=>{assert_convert('\\p[ab][cd]')});
+it('too many positional arguments', ()=>{assert_error('\\p[ab][cd]', 1, 7)});
 it('unknown named macro argument', ()=>{assert_error('\\c{reserved_undefined=abc}[]', 1, 4)});
 it('named argument without =', ()=>{assert_error('\\p{id ab}[cd]', 1, 6)});

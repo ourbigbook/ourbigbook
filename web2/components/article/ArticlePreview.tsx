@@ -22,7 +22,8 @@ const ArticlePreview = ({ article }) => {
         >
           <CustomImage
             src={preview.author.image}
-            alt="author's profile image"
+            className="profile-thumb"
+            alt="author profile image"
           />
         </CustomLink>
         <div className="info">

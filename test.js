@@ -3736,8 +3736,10 @@ assert_convert_ast('table of contents contains included headers numbered without
       "//x:blockquote//x:a[@href='notindex2.html' and text()='Section 1. \"Notindex2\"']",
       "//*[@id='toc']//x:a[@href='notindex2.html' and text()='1. Notindex2']",
       "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='1.1. Notindex2 h2']",
-      "//*[@id='toc']//x:a[@href='notindex3.html' and text()='1.1.1. Notindex3']",
-      "//*[@id='toc']//x:a[@href='notindex3.html#notindex3-h2' and text()='1.1.1.1. Notindex3 h2']",
+      "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h3' and text()='1.2. Notindex2 h3']",
+      "//*[@id='toc']//x:a[@href='notindex3.html' and text()='1.2.1. Notindex3']",
+      "//*[@id='toc']//x:a[@href='notindex3.html#notindex3-h2' and text()='1.2.1.1. Notindex3 h2']",
+      "//*[@id='toc']//x:a[@href='notindex3.html#notindex3-h3' and text()='1.2.1.2. Notindex3 h3']",
       "//*[@id='toc']//x:a[@href='#notindex-h2' and text()='2. Notindex h2']",
     ],
     assert_xpath_split_headers: {
@@ -3756,11 +3758,15 @@ assert_convert_ast('table of contents contains included headers numbered without
 
 == Notindex2 h2
 
+== Notindex2 h3
+
 \\Include[notindex3]
 `,
       'notindex3.ciro': `= Notindex3
 
 == Notindex3 h2
+
+== Notindex3 h3
 `,
     },
     input_path_noext: 'notindex',

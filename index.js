@@ -2175,7 +2175,6 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
           if (id_prefix !== '') {
             id_text += id_prefix + ID_SEPARATOR
           }
-          new_context.id_conversion_for_header = is_header;
           title_text = render_arg_noescape(title_arg, new_context)
           if (
             ast.macro_name === Macro.HEADER_MACRO_NAME &&
@@ -3022,11 +3021,11 @@ function convert_init_context(options={}, extra_returns={}) {
 function convert_x_href(target_id, options) {
   const context = convert_init_context(options);
   context.db_provider = options.db_provider;
-  const target_id_ast = context.db_provider.get(target_id, context);
-  if (target_id_ast === undefined) {
+  const target_ast = context.db_provider.get(target_id, context);
+  if (target_ast === undefined) {
     return undefined
   } else {
-    return x_href(target_id_ast, context);
+    return x_href(target_ast, context);
   }
 }
 exports.convert_x_href = convert_x_href;
@@ -3318,8 +3317,8 @@ function header_check_child_tag_exists(ast, context, childrenOrTags, type) {
   let ret = ''
   for (let child of childrenOrTags) {
     const target_id = render_arg_noescape(child.args.content, context)
-    const target_id_ast = context.db_provider.get(target_id, context, ast.header_tree_node.ast.scope)
-    if (target_id_ast === undefined) {
+    const target_ast = context.db_provider.get(target_id, context, ast.header_tree_node.ast.scope)
+    if (target_ast === undefined) {
       let message = `unknown ${type} id: "${target_id}"`
       render_error(context, message, child.source_location)
       ret += error_message_in_output(message, context)
@@ -5360,8 +5359,8 @@ async function parse(tokens, options, context, extra_returns={}) {
       // This is hair pulling stuff. There has to be a better way...
       for (const href in options.include_hrefs) {
         const header_ast = options.include_hrefs[href]
-        const target_id_ast = context.db_provider.get(href, context, header_ast.scope);
-        if (target_id_ast === undefined) {
+        const target_ast = context.db_provider.get(href, context, header_ast.scope);
+        if (target_ast === undefined) {
           let message = `ID in include not found on database: "${href}", ` +
             `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
           header_ast.args[Macro.TITLE_ARGUMENT_NAME].get(0).text = error_message_in_output(message)
@@ -5369,7 +5368,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             parse_error(state, message, header_ast.source_location);
           }
         } else {
-          if (target_id_ast.is_first_header_in_input_file) {
+          if (target_ast.is_first_header_in_input_file) {
             // We want the rendered placeholder to use its parent numbered, so as to follow the includer's numbering scheme,
             // but the descendants to follow what they would actually render in the output as so they will show correctly on ToC.
             header_ast.add_argument('numbered', new AstArgument(
@@ -5379,18 +5378,18 @@ async function parse(tokens, options, context, extra_returns={}) {
               header_ast.source_location,
             ))
           }
-          header_ast.splitDefault = target_id_ast.splitDefault
+          header_ast.splitDefault = target_ast.splitDefault
           propagate_numbered(header_ast, context)
-          header_ast.set_source_location(target_id_ast.source_location)
-          header_ast.header_tree_node.update_ancestor_counts(target_id_ast.header_tree_node_word_count)
-          for (const argname in target_id_ast.args) {
+          header_ast.set_source_location(target_ast.source_location)
+          header_ast.header_tree_node.update_ancestor_counts(target_ast.header_tree_node_word_count)
+          for (const argname in target_ast.args) {
             if (
               // We have to patch the level of the target ID (1) do our new dummy one in the current tree.
               argname !== 'level' &&
               argname !== 'wiki' &&
-              target_id_ast.validation_output[argname].given
+              target_ast.validation_output[argname].given
             ) {
-              header_ast.args[argname] = target_id_ast.args[argname]
+              header_ast.args[argname] = target_ast.args[argname]
             }
           }
         }
@@ -5400,14 +5399,14 @@ async function parse(tokens, options, context, extra_returns={}) {
         // injected under the last header.
         validate_ast(header_ast, context);
 
-        if (target_id_ast !== undefined) {
+        if (target_ast !== undefined) {
           // We modify the cache here to ensure that the header ID has the full header_tree_node, which
           // then gets feched from \x{full} (notably ToC) in order to show the link number there.
           //
           // Yes, this erase IDs that come from other Includes, but we don´t have a use case for that
           // right now, e.g. the placholder include header does not show parents.
-          target_id_ast.header_tree_node = header_ast.header_tree_node
-          target_id_ast.header_parent_ids = []
+          target_ast.header_tree_node = header_ast.header_tree_node
+          target_ast.header_parent_ids = []
         }
       }
       let build_header_tree_asts
@@ -5913,8 +5912,8 @@ exports.title_to_id = title_to_id;
  *
  * For after everything broke down due to toplevel scope.
  */
-function toc_id(target_id_ast, context) {
-  return Macro.TOC_PREFIX + target_id_ast.id;
+function toc_id(target_ast, context) {
+  return Macro.TOC_PREFIX + target_ast.id;
 }
 
 function unconvertible(ast, context) {
@@ -6020,9 +6019,9 @@ ${ast.toString()}`)
 exports.validate_ast = validate_ast
 
 function x_child_db_effective_id(target_id, context, ast) {
-  const target_id_ast = context.db_provider.get(target_id, context, ast.scope);
+  const target_ast = context.db_provider.get(target_id, context, ast.scope);
   if (
-    target_id_ast === undefined
+    target_ast === undefined
   ) {
     // Return as is. This can happen during ID extraction when the
     // target ID needs to be resolved across directory based scopes.
@@ -6035,14 +6034,11 @@ function x_child_db_effective_id(target_id, context, ast) {
     }
     return target_id
   } else {
-    return target_id_ast.id
+    return target_ast.id
   }
 }
 
-/**
- * @return {[String, String]} [href, content] pair for the x node.
- */
-function x_get_href_content(ast, context) {
+function x_get_target_ast(ast, context) {
   const href_arg = ast.args.href
   const target_id = convert_id_arg(href_arg, context);
   if (context.options.magic_leading_at && target_id[0] === AT_MENTION_CHAR) {
@@ -6057,18 +6053,26 @@ function x_get_href_content(ast, context) {
   } else {
     target_id_eff = target_id
   }
-  let target_id_ast = context.db_provider.get(target_id_eff, context, ast.scope);
-  if (ast.validation_output.magic.boolean && !target_id_ast) {
+  let target_ast = context.db_provider.get(target_id_eff, context, ast.scope);
+  if (ast.validation_output.magic.boolean && !target_ast) {
     target_id_eff = magic_title_to_id(pluralize(target_id, 1))
-    target_id_ast = context.db_provider.get(target_id_eff, context, ast.scope);
+    target_ast = context.db_provider.get(target_id_eff, context, ast.scope);
   }
+  return { href_arg, target_id: target_id_eff, target_ast }
+}
+
+/**
+ * @return {[String, String]} [href, content] pair for the x node.
+ */
+function x_get_href_content(ast, context) {
+  const { href_arg, target_id, target_ast } = x_get_target_ast(ast, context)
 
   // href
   let href;
-  if (target_id_ast) {
-    href = x_href_attr(target_id_ast, context);
+  if (target_ast) {
+    href = x_href_attr(target_ast, context);
   } else {
-    let message = `cross reference to unknown id: "${target_id_eff}" at render time`;
+    let message = `cross reference to unknown id: "${target_id}" at render time`;
     let source_location
     if (ast.args.href) {
       source_location = ast.args.href.source_location
@@ -6120,9 +6124,9 @@ function x_get_href_content(ast, context) {
     }
     const x_parents_new = new Set(context.x_parents);
     x_parents_new.add(ast);
-    content = x_text(target_id_ast, clone_and_set(context, 'x_parents', x_parents_new), x_text_options);
+    content = x_text(target_ast, clone_and_set(context, 'x_parents', x_parents_new), x_text_options);
     if (content === ``) {
-      let message = `empty cross reference body: "${target_id_eff}"`;
+      let message = `empty cross reference body: "${target_id}"`;
       render_error(context, message, ast.source_location);
       return error_message_in_output(message, context);
     }
@@ -6130,7 +6134,7 @@ function x_get_href_content(ast, context) {
     // Explicit content given, just use it then.
     content = render_arg(content_arg, context);
   }
-  return [href, content, target_id_ast];
+  return [href, content, target_ast];
 }
 
 /** Calculate the href value to a given target AstNode.
@@ -6138,11 +6142,11 @@ function x_get_href_content(ast, context) {
  * This takes into account e.g. if the target node is in a different source file:
  * https://docs.ourbigbook.com#internal-cross-file-references
  *
- * @param {AstNode} target_id_ast
- * @return {String} the value of href (no quotes) that an \x cross reference to the given target_id_ast
+ * @param {AstNode} target_ast
+ * @return {String} the value of href (no quotes) that an \x cross reference to the given target_ast
  */
-function x_href(target_id_ast, context) {
-  const [href_path, fragment] = x_href_parts(target_id_ast, context);
+function x_href(target_ast, context) {
+  const [href_path, fragment] = x_href_parts(target_ast, context);
   let ret = href_path;
   if (fragment !== '')
     ret += '#' + fragment;
@@ -6181,25 +6185,25 @@ function is_to_split_headers(ast, context) {
  * So I just write tests, and hack the code until the tests pass, but
  * I'm not capable of factoring it nicely.
  *
- * @param {AstNode} target_id_ast
+ * @param {AstNode} target_ast
  */
-function x_href_parts(target_id_ast, context) {
-  if (target_id_ast.macro_name === Macro.TOC_MACRO_NAME) {
+function x_href_parts(target_ast, context) {
+  if (target_ast.macro_name === Macro.TOC_MACRO_NAME) {
     // Otherwise, split header ToCs would link to the toplevel source ToC,
     // since split header ToCs are not really properly registered.
     return ['', Macro.TOC_ID];
   }
-  let target_id_ast_effective_id
-  if (target_id_ast.synonym !== undefined) {
-    target_id_ast_effective_id = target_id_ast.synonym
+  let target_ast_effective_id
+  if (target_ast.synonym !== undefined) {
+    target_ast_effective_id = target_ast.synonym
   } else {
-    target_id_ast_effective_id = target_id_ast.id
+    target_ast_effective_id = target_ast.id
   }
-  let to_split_headers = is_to_split_headers(target_id_ast, context);
+  let to_split_headers = is_to_split_headers(target_ast, context);
   // Linking to the toplevel of the current output path.
   let to_current_toplevel =
       // Linkting to the current output file.
-      target_id_ast_effective_id === context.toplevel_id &&
+      target_ast_effective_id === context.toplevel_id &&
       // Also requires outputting to the same type of split/nonsplit
       // as the current one.
       context.in_split_headers === to_split_headers
@@ -6207,9 +6211,9 @@ function x_href_parts(target_id_ast, context) {
 
   // href_path
   let href_path;
-  const target_input_path = target_id_ast.source_location.path;
+  const target_input_path = target_ast.source_location.path;
   if (
-    target_id_ast.source_location.path === undefined ||
+    target_ast.source_location.path === undefined ||
     context.toplevel_output_path === undefined ||
     (
       // Nosplit header link to a header that renders on the
@@ -6224,8 +6228,8 @@ function x_href_parts(target_id_ast, context) {
     (
       // Split header link to image in current header.
       context.in_split_headers &&
-      target_id_ast.macro_name !== Macro.HEADER_MACRO_NAME &&
-      target_id_ast.get_header_parent_ids(context).has(context.toplevel_id)
+      target_ast.macro_name !== Macro.HEADER_MACRO_NAME &&
+      target_ast.get_header_parent_ids(context).has(context.toplevel_id)
     ) ||
     to_current_toplevel
   ) {
@@ -6238,10 +6242,10 @@ function x_href_parts(target_id_ast, context) {
       target_output_path_dirname,
       target_output_path_basename
     ] = output_path_from_ast(
-      target_id_ast,
+      target_ast,
       context,
       {
-        effective_id: target_id_ast_effective_id,
+        effective_id: target_ast_effective_id,
       }
     );
     if (context.options.remove_leading_at) {
@@ -6300,10 +6304,10 @@ function x_href_parts(target_id_ast, context) {
   let fragment;
   if (
     (
-      target_id_ast.macro_name === Macro.HEADER_MACRO_NAME &&
+      target_ast.macro_name === Macro.HEADER_MACRO_NAME &&
       (
         // Linking to a toplevel ID.
-        target_id_ast.first_toplevel_child ||
+        target_ast.first_toplevel_child ||
         // Linking towards a split header not included in the current output.
         to_split_headers
       )
@@ -6314,11 +6318,11 @@ function x_href_parts(target_id_ast, context) {
     fragment = '';
   } else {
     // This is the AST that will show up on the top of the rendered page.
-    // that contains target_id_ast. We need to know it for toplevel scope culling.
+    // that contains target_ast. We need to know it for toplevel scope culling.
     let toplevel_ast;
     if (to_split_headers) {
       // We know not a header target, as that would have been caught previously.
-      toplevel_ast = target_id_ast.get_header_parent_asts(context)[0];
+      toplevel_ast = target_ast.get_header_parent_asts(context)[0];
     } else if (
       // The header was included inline into the current file.
       context.options.include_path_set.has(target_input_path) && !context.in_split_headers
@@ -6334,7 +6338,7 @@ function x_href_parts(target_id_ast, context) {
         toplevel_ast = context.nosplit_toplevel_ast
       }
     }
-    fragment = remove_toplevel_scope(target_id_ast_effective_id, toplevel_ast, context);
+    fragment = remove_toplevel_scope(target_ast_effective_id, toplevel_ast, context);
   }
 
   // return
@@ -6342,8 +6346,8 @@ function x_href_parts(target_id_ast, context) {
 }
 
 /* href="" that links to a given node. */
-function x_href_attr(target_id_ast, context) {
-  return html_attr('href', x_href(target_id_ast, context));
+function x_href_attr(target_ast, context) {
+  return html_attr('href', x_href(target_ast, context));
 }
 
 /**
@@ -7506,7 +7510,7 @@ function create_link_list(context, ast, id, title, target_ids, body) {
   let ret = '';
   if (target_ids.size !== 0) {
     // TODO factor this out more with real headers.
-    const target_id_asts = [];
+    const target_asts = [];
     ret += `<div>${html_hide_hover_link('#' + id)}<h2 id="${id}"><a href="#${id}">${title}</a></h2></div>\n`;
     for (const target_id of Array.from(target_ids).sort()) {
       let target_ast = context.db_provider.get(target_id, context);
@@ -7521,7 +7525,7 @@ function create_link_list(context, ast, id, title, target_ids, body) {
         //} else {
         //  counts_str = '';
         //}
-        target_id_asts.push(new AstNode(
+        target_asts.push(new AstNode(
           AstType.MACRO,
           Macro.LIST_ITEM_MACRO_NAME,
           {
@@ -7561,7 +7565,7 @@ function create_link_list(context, ast, id, title, target_ids, body) {
       }
     }
     let ulArgs = {
-      'content': new AstArgument(target_id_asts)
+      'content': new AstArgument(target_asts)
     }
     if (context.options.add_test_instrumentation) {
       ulArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(id)]
@@ -8006,26 +8010,26 @@ const OUTPUT_FORMATS_LIST = [
               ret += html_class_attr([TOC_HAS_CHILD_CLASS]);
             }
             ret += '>'
-            let target_id_ast = context.db_provider.get(tree_node.ast.id, context);
+            let target_ast = context.db_provider.get(tree_node.ast.id, context);
             if (
               // Can happen in test error cases:
               // - cross reference from header title without ID to previous header is not allowed
               // - include to file that does exists without embed includes before extracting IDs fails gracefully
-              target_id_ast !== undefined
+              target_ast !== undefined
             ) {
               // ToC entries always link to the same split/nosplit type, except for included sources.
               // This might be handled more generally through: https://github.com/cirosantilli/ourbigbook/issues/146
               // but for now we are just taking care of this specific and important ToC subcase.
               let cur_context;
-              if (ast.source_location.path === target_id_ast.source_location.path) {
+              if (ast.source_location.path === target_ast.source_location.path) {
                 cur_context = clone_and_set(context, 'to_split_headers', context.in_split_headers);
               } else {
                 cur_context = context;
               }
 
-              let content = x_text(target_id_ast, cur_context, {style_full: true, show_caption_prefix: false});
-              let href = x_href_attr(target_id_ast, cur_context);
-              const my_toc_id = toc_id(target_id_ast, cur_context);
+              let content = x_text(target_ast, cur_context, {style_full: true, show_caption_prefix: false});
+              let href = x_href_attr(target_ast, cur_context);
+              const my_toc_id = toc_id(target_ast, cur_context);
               let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, html_escape_attr(my_toc_id));
               // The inner <div></div> inside arrow is so that:
               // - outter div: takes up space to make clicking easy
@@ -8042,12 +8046,12 @@ const OUTPUT_FORMATS_LIST = [
               let toc_href = html_attr('href', '#' + html_escape_attr(my_toc_id));
               ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
               if (cur_context.options.split_headers) {
-                const link_to_split = link_to_split_opposite(target_id_ast, cur_context)
+                const link_to_split = link_to_split_opposite(target_ast, cur_context)
                 if (link_to_split) {
                   ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
                 }
               }
-              let parent_ast = target_id_ast.get_header_parent_asts(cur_context)[0];
+              let parent_ast = target_ast.get_header_parent_asts(cur_context)[0];
               if (
                 // Possible on broken h1 level.
                 parent_ast !== undefined
@@ -8753,23 +8757,144 @@ OUTPUT_FORMATS_LIST.push(
         'Ul': ourbigbook_ul,
         [Macro.X_MACRO_NAME]: function(ast, context) {
           let href = render_arg(ast.args.href, context)
+          let { href_arg, target_id, target_ast } = x_get_target_ast(ast, context)
           href = href.replaceAll(ID_SEPARATOR, ' ')
-          if (ast.validation_output.c.boolean) {
-            href = href[0].toUpperCase() + href.substring(1)
-          }
           if (ast.validation_output.p.boolean) {
             const href_plural = pluralize(href, 2)
+            let target_ast_plural = context.db_provider.get(magic_title_to_id(href_plural), context)
             if (
               // When we have \x without magic to a destination that exists
               // in both plural and singular, we can't use the magic plural,
               // or it will resolve to plural rather than the correct singular.
               !ast.validation_output.magic.boolean &&
-              context.db_provider.get(href, context) &&
-              context.db_provider.get(href_plural, context)
+              target_ast &&
+              target_ast_plural
             ) {
               return `<${href}>${ourbigbook_convert_args(ast, context, { skip: new Set(['c', 'href', 'magic']) }).join('')}`
+            }
+            href = href_plural
+            if (target_ast_plural) {
+              target_ast = target_ast_plural
+            }
+          }
+          let was_magic_plural, was_magic_uppercase
+          const href_singular = pluralize(href, 1)
+          if (ast.validation_output.magic.boolean) {
+            if (!target_ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME] && href !== href_singular) {
+              was_magic_plural = true
+            }
+            const components = href.split(Macro.HEADER_SCOPE_SEPARATOR)
+            const c = components[components.length - 1][0]
+            was_magic_uppercase = c === c.toUpperCase()
+          }
+          if (!(
+            target_ast.first_toplevel_child ||
+            (
+              target_ast.validation_output[Macro.ID_ARGUMENT_NAME] &&
+              target_ast.validation_output[Macro.ID_ARGUMENT_NAME].given
+            ) ||
+            (
+              target_ast.macro_name === Macro.HEADER_MACRO_NAME &&
+              target_ast.validation_output.file.given
+            )
+          )) {
+            const macro = context.macros[target_ast.macro_name];
+            const title_arg = macro.options.get_title_arg(target_ast, context);
+            href = render_arg(title_arg, clone_and_set(context, 'id_conversion', true));
+            href = href.replaceAll(Macro.HEADER_SCOPE_SEPARATOR, ' ')
+            let was_pluralized
+            let disambiguate
+            const disambiguate_arg = target_ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
+            if (disambiguate_arg) {
+              disambiguate = render_arg(disambiguate_arg, clone_and_set(context, 'id_conversion', true))
             } else {
-              href = href_plural
+              disambiguate = ''
+            }
+            if (macro.options.id_prefix) {
+              href = `${macro.options.id_prefix} ${href}`
+            } else {
+              const first_ast = title_arg.get(0);
+              if (!(
+                (
+                  target_ast.macro_name === Macro.HEADER_MACRO_NAME &&
+                  target_ast.validation_output.c.boolean
+                ) ||
+                (
+                  first_ast &&
+                  first_ast.node_type !== AstType.PLAINTEXT
+                )
+              )) {
+                if (ast.validation_output.c.boolean || was_magic_uppercase) {
+                  href = href[0].toUpperCase() + href.substring(1)
+                } else {
+                  href = href[0].toLowerCase() + href.substring(1)
+                }
+              }
+              if (
+                was_magic_plural ||
+                ast.validation_output.p.boolean
+              ) {
+                const href_plural = pluralize(href, 2)
+                let disambiguate_sep
+                if (disambiguate) {
+                  disambiguate_sep = ID_SEPARATOR + disambiguate
+                } else {
+                  disambiguate_sep = ''
+                }
+                let target_scope = target_ast.scope
+                if (target_scope) {
+                  target_scope = `${target_scope}${Macro.HEADER_SCOPE_SEPARATOR}`
+                } else {
+                  target_scope = ''
+                }
+                const plural_id = `${target_scope}${magic_title_to_id(href_plural)}${disambiguate_sep}`
+                const plural_target = context.db_provider.get(plural_id, context)
+                if (!plural_target || plural_target.id !== target_ast.id) {
+                  const singular_id = `${target_scope}${magic_title_to_id(pluralize(href, 1))}${disambiguate_sep}`
+                  const singular_target = context.db_provider.get(singular_id, context)
+                  if (!singular_target || singular_target.id !== target_ast.id) {
+                    // This can happen due to pluralize bugs:
+                    // https://github.com/plurals/pluralize/issues/172
+                    // Just bail out in those cases.
+                    return ourbigbook_convert_simple_elem(ast, context)
+                  }
+                }
+                href = href_plural
+                was_pluralized = true
+              }
+            }
+            if (disambiguate_arg) {
+              if (was_pluralized) {
+                // TODO https://github.com/cirosantilli/ourbigbook/issues/244
+                return ourbigbook_convert_simple_elem(ast, context)
+              }
+              href = `${href} (${disambiguate})`;
+            }
+            let target_scope = target_ast.scope
+            if (target_scope) {
+              if (ast.scope) {
+                const target_scope_split = target_scope.split(Macro.HEADER_SCOPE_SEPARATOR)
+                const scope_split = ast.scope.split(Macro.HEADER_SCOPE_SEPARATOR)
+                let last_common = 0
+                while (
+                  last_common < target_scope_split.length &&
+                  last_common < scope_split.length
+                ) {
+                  if (target_scope_split[last_common] !== scope_split[last_common]) {
+                    break
+                  }
+                  last_common++
+                }
+                target_scope = target_scope_split.slice(last_common).join(Macro.HEADER_SCOPE_SEPARATOR)
+              }
+              if (target_scope) {
+                target_scope = `${target_scope}${Macro.HEADER_SCOPE_SEPARATOR}`
+              }
+              target_scope = target_scope.replaceAll(ID_SEPARATOR, ' ')
+              href = `${target_scope}${href}`
+            }
+            if (is_absolute_xref(target_id, context)) {
+              href = target_id[0] + href
             }
           }
           return `<${href}>${ourbigbook_convert_args(ast, context, { skip: new Set(['c', 'href', 'magic', 'p']) }).join('')}`

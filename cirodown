@@ -24,6 +24,17 @@ const IO_RENAME_MAP = {
   README: 'index',
 }
 
+class SqliteIdProvider extends cirodown.IdProvider {
+  constructor(db) {
+    super();
+    this.db = db;
+  }
+  get(id) {
+    return undefined;
+    return [path, dict[id]];
+  }
+}
+
 /** Report an error with the CLI usage and exit in error. */
 function cli_error(message) {
   console.error(`error: ${message}`);
@@ -70,6 +81,9 @@ function convert_input(input, options, convert_input_options={}) {
   const new_options = Object.assign({}, options);
   if ('title' in convert_input_options) {
     new_options.title = convert_input_options.title;
+  }
+  if ('input_path' in convert_input_options) {
+    new_options.input_path = convert_input_options.input_path;
   }
   new_options.extra_returns = {};
   let output = cirodown.convert(input, new_options, new_options.extra_returns);
@@ -126,9 +140,7 @@ function convert_path(input_path, options, convert_input_options) {
     convert_input_options.multifile = false;
   }
   let new_convert_input_options = Object.assign({}, convert_input_options);
-  if (convert_input_options.multifile) {
-    new_convert_input_options.input_path = input_path;
-  }
+  new_convert_input_options.input_path = input_path;
   let input = fs.readFileSync(input_path, new_convert_input_options.encoding);
   let output = convert_input(input, options, new_convert_input_options);
   if ('db' in convert_input_options) {

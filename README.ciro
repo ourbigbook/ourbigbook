@@ -513,7 +513,7 @@ When converting a directory, `out/ids.sqlite3` is placed inside the input direct
 
 When running in the browser, the same JavaScript API will send queries to the server instead of a local SQLite database.
 
-To inspect the the ID database to debug it, you can use:
+To inspect the ID database to debug it, you can use:
 ``
 sqlite3 out/db.sqlite3 .dump
 ``
@@ -2203,25 +2203,27 @@ Don't quit `cirodown` immediately.
 
 Instead, watch the selected file or directory for changes, and rebuild individual files when changes are detected.
 
-Watch a single file:
-``
-cirodown --watch README.ciro
-``
-
-Now you can just edit `README.ciro`, save the file in your editor, and refresh the webpage and your change should be visible, no need to run a `cirodown` command excplicitly every time.
-
-TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with-live-preview/ to also dispense the browser refresh.
-
 Watch every `.ciro` file in an entire directory:
 ``
 cirodown --watch .
 ``
+When a directory is given as the input path, this automatically first does an ID extraction pass on all files to support \x[internal-cross-file-references].
 
-This automatically first does a first ID extraction pass on all files to support \x[internal-cross-file-references].
-
-The output of conversion to `.html` files is saved automatically instead of outputting it to stdout as done without `--watch`.
+Now you can just edit any Cirodown file such has `README.ciro`, save the file in your editor, and refresh the webpage and your change should be visible, no need to run a `cirodown` command explicitly every time.
 
 Exit by entering Ctrl + C on the terminal.
+
+Watch a single file:
+``
+cirodown --watch README.ciro
+``
+When a single file is watched, the reference database is not automatically updated. If it is not already up-to-date, you should first update it with:
+``
+cirodown .
+``
+otherwise you will just get a bunch of undefined ID errors every time the input file is saved.
+
+TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with-live-preview/ to also dispense the browser refresh.
 
 ===== `--template`
 {id=template}

@@ -1050,7 +1050,6 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[header nested numbers]
 \l[list and code caption]
 \l[image description and source]
-\l[self links on tables and equations with on hover over caption]
 \l[input indentation skip]
 \l[correct ID generation algorithm to be Unicode robust]
 \l[local downloads and single HTML page with image / script embeds]

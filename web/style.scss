@@ -568,7 +568,7 @@ footer {
   padding: 10px $toplevel-padding;
   a {
     &:not(:last-child) {
-      margin-right: 10px;
+      margin-right: 0.8em;
     }
     color: $h-color;
     text-decoration: none;

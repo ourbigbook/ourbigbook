@@ -20,15 +20,18 @@ height: 100%;
 height: 100%;
 
 div.toplevel {
-
-display: flex;
-flex-flow: column;
+height: 100%;
 &.editor {
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+  div.main {
+    height: 100%;
+  }
 }
 
 div.main {
-
+flex: 0 1 auto;
+overflow: auto;
 @media only screen and (max-width: $max-mobile-width) {
   .mobile-hide {
     display: none;
@@ -36,10 +39,6 @@ div.main {
 }
 @media only screen and (min-width: $max-mobile-width + 1) {
 }
-
-flex: 1 1 auto;
-height: 100%;
-overflow: auto;
 
 button, a.btn {
   $button-fg-color: black;
@@ -78,34 +77,32 @@ button, a.btn {
   }
 }
 
-form {
-  input, textarea.not-monaco {
-    background-color: $background-color;
-    border-radius: 3px;
-    border: 1px solid gray;
-    box-sizing: border-box;
-    color: white;
-    padding: 0.3em 0.5em;
-    margin-bottom: 10px;
-    width: 100%;
-    &[disabled] {
-      background-color: rgb(50, 50, 50);
-    }
-    &:focus {
-      outline: none;
-      border-color: #CCC;
-    }
-    &::placeholder {
-      color: #AAA;
-    }
-    // Unable to make it work for password fields.
-    // https://stackoverflow.com/questions/55131944/how-to-remove-blue-background-on-chrome-autocomplete
+input, textarea.not-monaco {
+  background-color: $background-color;
+  border-radius: 3px;
+  border: 1px solid gray;
+  box-sizing: border-box;
+  color: white;
+  padding: 0.3em 0.5em;
+  margin-bottom: 10px;
+  width: 100%;
+  &[disabled] {
+    background-color: rgb(50, 50, 50);
   }
-  label {
-    font-weight: bold;
-    div.label {
-      margin-bottom: 5px;
-    }
+  &:focus {
+    outline: none;
+    border-color: #CCC;
+  }
+  &::placeholder {
+    color: #AAA;
+  }
+  // Unable to make it work for password fields.
+  // https://stackoverflow.com/questions/55131944/how-to-remove-blue-background-on-chrome-autocomplete
+}
+label {
+  font-weight: bold;
+  div.label {
+    margin-bottom: 5px;
   }
 }
 
@@ -247,32 +244,37 @@ div.article-page {
 
 div.editor-page {
   $title-font-size: 24px;
+  display: flex;
+  flex-direction: column;
   height: 100%;
-  overflow: hidden;
-  form.editor-form {
-    //display: flex;
-    //flex-flow: column;
-    height: 100%;
-    div.title-and-actions {
-      display: flex;
-      font-size: $title-font-size;
-      input.title {
-        flex: 1 1 auto;
-        margin-bottom: 0;
-      }
-      div.actions {
-        flex: 0 0 auto;
-        margin-left: auto;
-        button {
-          font-size: $title-font-size * 0.75;
-          height: 100%;
-          margin-left: 5px;
-        }
+  #obb_header {
+    flex-grow: 0;
+    flex-shrink: 0;
+  }
+  div.title-and-actions {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 0;
+    flex-shrink: 0;
+    font-size: $title-font-size;
+    input.title {
+      flex: 1 1 auto;
+      margin-bottom: 0;
+    }
+    div.actions {
+      flex: 0 0 auto;
+      margin-left: auto;
+      button {
+        font-size: $title-font-size * 0.75;
+        height: 100%;
+        margin-left: 5px;
       }
     }
-    div.ourbigbook-editor {
-      //flex-grow: 1;
-    }
+  }
+  div.ourbigbook-editor {
+    overflow-y: auto;
+    flex-grow: 1;
+    flex-shrink: 1;
   }
 }
 
@@ -455,7 +457,6 @@ img.profile-thumb {
 } // div.main
 
 footer {
-  flex: 0 1 auto;
   margin-top: 10px;
   padding: 10px $toplevel-padding;
   a {
@@ -483,8 +484,8 @@ nav.navbar {
   $font-size: 24px;
   /* https://stackoverflow.com/questions/5078239/how-do-i-remove-the-space-between-inline-block-elements */
   display: flex;
-  flex: 0 1 auto;
   height: $font-size * 1.2;
+  flex: 0 0 auto;
   margin-bottom: 20px;
   .navbar-list {
     display: flex;

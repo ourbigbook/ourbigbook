@@ -5655,7 +5655,13 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
+      const children = ast.args.child
       if (ast.validation_output.synonym.boolean) {
+        if (children !== undefined) {
+          const message = `"synonym" and "child" are incompatible`;
+          render_error(context, message, ast.args.child.source_location);
+          return error_message_in_output(message, context);
+        }
         return '';
       }
       let level_int = ast.header_graph_node.get_level();
@@ -5819,13 +5825,12 @@ const DEFAULT_MACRO_LIST = [
       }
       // Ensure that all child targets exist. This is for error checking only.
       // https://cirosantilli.com/cirodown#h-child-argment
-      const children = ast.args.child
       if (children !== undefined) {
         for (let child of children) {
           const target_id = convert_arg_noescape(child.args.content, context)
           const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node)
           if (target_id_ast === undefined) {
-            let message = `cross reference to unknown id: "${target_id}"`
+            let message = `unknown child id: "${target_id}"`
             render_error(context, message, child.source_location)
             ret += error_message_in_output(message, context)
           }

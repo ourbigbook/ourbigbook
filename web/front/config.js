@@ -42,7 +42,7 @@ module.exports = {
     add_test_instrumentation: isTest,
     body_only: true,
     forbid_include: '\\Include is not allowed on OurBigBook Web, the article tree can be manipulated directly via the UI',
-    html_x_extension: false,
+    htmlXExtension: false,
     renderH2: true,
     path_sep: '/',
     // https://docs.ourbigbook.com/todo/word-count-on-web

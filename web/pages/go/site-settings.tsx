@@ -87,7 +87,7 @@ const SiteSettings = ({
   return (
     <div className="settings-page content-not-ourbigbook">
       <h1>{title}</h1>
-      <p>This page contains settings that affect the entire website. It can only be edited by <a href={`${config.docsAdminUrl}`}>admins</a>.</p>
+      <p>This page contains global settings that affect the entire website. It can only be edited by <a href={`${config.docsAdminUrl}`}>admins</a>.</p>
       <>
         <MapErrors errors={errors} />
         <form onSubmit={handleSubmit}>

@@ -17,11 +17,11 @@
 // Dark.
 $a-color: #88CCFF;
 $a-color-visited: #FFAAFF;
-$background-color: #000000;
+$background-color: #181818;
 $code-background-color: #333333;
-$color: #00FF00;
-$color-discreet: #00BB00;
-$h-color: #CCC;
+$color: #EEEEEE;
+$color-discreet: #BBBBBB;
+$h-color: #0F0;
 $navbar-background-color: #222222;
 // To make non-brand items a bit less visible than the brand.
 $table-border-color: #444444;
@@ -40,9 +40,11 @@ $toplevel-horizontal-padding-left: 20px;
 $toplevel-horizontal-padding-right: 15px;
 
 // Derived parameters.
-$brandname-color: $h-color;
+$brandname-color: $color;
 $h1-font-size: $header-font-size * 1.5;
-$navbar-color-discrete: #BBBBBB;
+$navbar-color-discrete: $color-discreet;
+$navbar-non-brandname-color: $color;
+$footer-color: $color;
 
 @mixin body {
   background-color: $background-color;

@@ -17,18 +17,20 @@ import getLoggedInUser from "lib/utils/getLoggedInUser";
 const ProfileHoc = (tab) => {
   return ({ profile }) => {
     const router = useRouter();
-    if (router.isFallback) { return <LoadingSpinner />; }
-    const { data: profileApi, error } = useSWR(`${SERVER_BASE_URL}/profiles/${profile.username}`, fetcher);
+    const { data: profileApi, error } = useSWR(`${SERVER_BASE_URL}/profiles/${profile?.username}`, fetcher(router.isFallback));
     if (profileApi !== undefined) {
       profile = profileApi.profile
     }
-    const { username, bio, image } = profile;
+    const username = profile?.username
+    const bio = profile?.bio
+    const image = profile?.image
     const loggedInUser = getLoggedInUser()
-    const isCurrentUser = loggedInUser && username === loggedInUser?.username;
+    const isCurrentUser = loggedInUser && username === loggedInUser?.username
     const [following, setFollowing] = React.useState(false)
     React.useEffect(() => {
-      setFollowing(profile.following)
-    }, [profile.following])
+      setFollowing(profile?.following)
+    }, [profile?.following])
+    if (router.isFallback) { return <LoadingSpinner />; }
     return (
       <>
         <Head>

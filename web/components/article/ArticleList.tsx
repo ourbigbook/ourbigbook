@@ -49,7 +49,7 @@ const ArticleList = (props) => {
         throw new Error(`Unknown search: ${props.what}`)
     }
   })()
-  const { data, error } = useSWR(fetchURL, fetcher);
+  const { data, error } = useSWR(fetchURL, fetcher());
   const { articles, articlesCount } = data || {
     articles: [],
     articlesCount: 0,

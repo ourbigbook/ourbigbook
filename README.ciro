@@ -4240,6 +4240,8 @@ This is the type of setup that will run in production, with a single server. Run
 
 Building like this notably runs full typescript type checking, which is a good way to find bugs early.
 
+`build` runs `npm run build-assets` on toplevel which repacks cirodown itself and is a bit slow. To speed things up during the development loop, you can also use `npm run build-dev-nodeps` instead, which builds only the stuf under `web/`.
+
 = Local run as identical to deployment as possible
 {parent=dynamic-website}
 

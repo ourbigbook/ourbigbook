@@ -14,7 +14,11 @@ const updateOptions = () => {
   }
 };
 
-export default async function Fetcher (url) {
-  const { data } = await axios.get(url, updateOptions());
-  return data;
+export default function Fetcher(isFallback = false) {
+  return async (url) => {
+    if (!isFallback) {
+      const { data } = await axios.get(url, updateOptions());
+      return data;
+    }
+  }
 }

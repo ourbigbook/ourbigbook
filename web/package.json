@@ -5,7 +5,7 @@
   "main": "app.js",
   "scripts": {
     "back-test": "NODE_ENV=test npm run dev",
-    "build": "cd ../ && npm run build-assets && ./bin/sync-db.js && npm run build-nodeps",
+    "build": "cd ../ && npm run build-assets && cd - && ./bin/sync-db.js && npm run build-nodeps",
     "build-dev": "NODE_ENV_OVERRIDE=development npm run build",
     "build-nodeps": "next build",
     "build-dev-nodeps": "NODE_ENV_OVERRIDE=development npm run build-nodeps",

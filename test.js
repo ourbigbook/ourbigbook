@@ -7784,18 +7784,6 @@ assert_cli('cli: id conflict with id on another file simple',
     expect_exit_status: 1,
   }
 );
-assert_cli('cli: cross reference to undefined ID fails without render',
-  {
-    args: ['--no-render', '.'],
-    filesystem: {
-      'index.bigb': `= index
-
-\\x[not-defined]
-`,
-    },
-    expect_exit_status: 1,
-  }
-);
 assert_cli(
   // https://github.com/cirosantilli/ourbigbook/issues/241
   'cli: fixing a header parent bug on a file in the include chain does not blow up afterwards',

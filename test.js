@@ -1405,6 +1405,10 @@ assert_convert_ast('cross reference to non-included header in another file',
 \\x[include-two-levels]
 
 \\x[gg]
+
+\\x[bb]
+
+== bb
 `,
   [
     a('H', undefined, {level: [t('1')], title: [t('aa')]}),
@@ -1414,16 +1418,23 @@ assert_convert_ast('cross reference to non-included header in another file',
     a('P', [
       a('x', undefined, {href: [t('gg')]}),
     ]),
+    a('P', [
+      a('x', undefined, {href: [t('bb')]}),
+    ]),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('bb')]}),
   ],
   {
     assert_xpath_matches: [
       "//a[@href='include-two-levels.html' and text()='ee']",
-      "//a[@href='include-two-levels.html#gg' and text()='gg']"
+      "//a[@href='include-two-levels.html#gg' and text()='gg']",
+      "//a[@href='#bb' and text()='bb']",
     ],
     assert_xpath_split_headers: {
       'notindex-split.html': [
         "//a[@href='include-two-levels-split.html' and text()='ee']",
-        "//a[@href='gg.html' and text()='gg']"
+        "//a[@href='gg.html' and text()='gg']",
+        "//a[@href='bb.html' and text()='bb']",
       ],
     },
     convert_before: ['include-two-levels'],
@@ -1433,6 +1444,34 @@ assert_convert_ast('cross reference to non-included header in another file',
     },
     input_path_noext: 'notindex',
   },
+);
+assert_convert_ast('include simple with paragraph with no embed',
+  `= aa
+
+bb
+
+\\Include[include-two-levels]
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('P', [t('bb')]),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('ee')]}),
+    a('P', [
+      a(
+        'x',
+        [t('This section is present in another page, follow this link to view it.')],
+        {'href': [t('include-two-levels')]}
+      ),
+    ]),
+  ],
+  {
+    convert_before: ['include-two-levels'],
+    extra_convert_opts: {
+      file_provider: new cirodown_nodejs.ZeroFileProvider(),
+      read_include: default_file_reader,
+    }
+  }
 );
 
 // Infinite recursion.
@@ -2018,7 +2057,7 @@ const include_two_levels_ast_args = [
   a('H', undefined, {level: [t('3')], title: [t('gg')]}),
   a('P', [t('hh')]),
 ]
-assert_convert_ast('include simple with paragraph',
+assert_convert_ast('include simple with paragraph with embed',
   `= aa
 
 bb

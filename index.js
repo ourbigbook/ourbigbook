@@ -1843,7 +1843,12 @@ function convert(
       let cur_arg_list = [];
       for (const child_ast of content) {
         const macro_name = child_ast.macro_name;
-        if (macro_name === Macro.HEADER_MACRO_NAME) {
+        if (
+          macro_name === Macro.HEADER_MACRO_NAME
+          // Just ignore extra added include headers, these
+          // were overwritting index-split.html output.
+          && !child_ast.from_include
+        ) {
           convert_header(cur_arg_list, context);
           cur_arg_list = [];
         }
@@ -3847,7 +3852,10 @@ function x_href_parts(target_id_ast, context) {
   if (
     target_id_ast.source_location.path === undefined ||
     context.toplevel_output_path === undefined ||
-    context.include_path_set.has(target_input_path)
+    (
+      !context.in_split_headers &&
+      context.include_path_set.has(target_input_path)
+    )
   ) {
     href_path = '';
   } else {

@@ -3865,3 +3865,36 @@ it('api: hideArticleDates', async () => {
     assert.strictEqual(data.articles[0].updatedAt, config.hideArticleDatesDate)
   })
 })
+
+it('api: editor/fetch-files', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+
+    // Create articles
+
+      await assertNestedSets(sequelize, [
+        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user0' },
+      ])
+
+      article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+      ;({data, status} = await createArticleApi(test, article))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Calculus' })
+      ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/mathematics' }))
+      assertStatus(status, data)
+
+    // Fetch the files
+
+    ;({data, status} =  await test.webApi.editorFetchFiles([ '@user0/mathematics.bigb', '@user0/calculus.bigb' ]))
+    assertStatus(status, data)
+    console.error();
+    assertRows(data.files, [
+      { path: '@user0/calculus.bigb', toplevel_id: '@user0/calculus' },
+      { path: '@user0/mathematics.bigb', toplevel_id: '@user0/mathematics' },
+    ])
+  })
+})

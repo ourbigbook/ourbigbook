@@ -96,7 +96,7 @@ class AstNode {
    *                 otherwise e.g. `1 < 2` would escape the `<` to `&lt;` and KaTeX would receive bad input.
    *        - {TreeNode} header_graph - TreeNode graph containing AstNode headers
    *        - {Object} ids - map of document IDs to their description:
-   *                 - 'prefix': prefix to add if style=full, e.g. `Figure 1`, `Section 2`, etc.
+   *                 - 'prefix': prefix to add if style_full, e.g. `Figure 1`, `Section 2`, etc.
    *                 - {List[AstNode]} 'title': the title of the element linked to
    * @param {Object} context
    */
@@ -408,8 +408,8 @@ class Macro {
     if (!('toplevel_link' in options)) {
       options.toplevel_link = true;
     }
-    if (!('x_style' in options)) {
-      options.x_style = XStyle.full;
+    if (!('x_style_full' in options)) {
+      options.x_style_full = true;
     }
     this.name = name;
     this.positional_args = positional_args;
@@ -497,7 +497,7 @@ class Macro {
   /** Calculate the text of a cross reference, or the text
    * that the caption text that cross references can refer to, e.g.
    * "Table 123. My favorite table". Both are done in a single function
-   * so that style=full references will show very siimlar to the caption
+   * so that style_full references will show very siimlar to the caption
    * they refer to.
    *
    * @param {Object} options
@@ -518,12 +518,12 @@ class Macro {
     if (!('show_caption_prefix' in options)) {
       options.show_caption_prefix = true;
     }
-    if (!('style' in options)) {
-      options.style = XStyle.full;
+    if (!('style_full' in options)) {
+      options.style_full = true;
     }
     let ret = ``;
     let number;
-    if (options.style === XStyle.full) {
+    if (options.style_full) {
       if (options.href_prefix !== undefined) {
         ret += `<a${options.href_prefix}>`
       }
@@ -545,7 +545,7 @@ class Macro {
       }
     }
     if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
-      if (options.style === XStyle.full) {
+      if (options.style_full) {
         if (number !== undefined) {
           ret += html_escape_context(context, `. `);
         }
@@ -553,7 +553,7 @@ class Macro {
           ret += html_escape_context(context, `"`);
       }
       ret += convert_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-      if (options.style === XStyle.full && options.quote) {
+      if (options.style_full && options.quote) {
         ret += html_escape_context(context, `"`);
       }
     }
@@ -1592,7 +1592,7 @@ function parse(tokens, macros, options, extra_returns={}) {
           } else {
             const x_text_options = {
               show_caption_prefix: false,
-              style: XStyle.short,
+              style_full: false,
             };
             header_node_title = Macro.x_text(target_id_ast, id_context, x_text_options);
           }
@@ -2300,10 +2300,6 @@ const AstType = make_enum([
   // magic because of the double newline madness treatment.
   'PARAGRAPH',
 ]);
-const XStyle = make_enum([
-  'full',
-  'short',
-]);
 const TokenType = make_enum([
   'PLAINTEXT',
   'MACRO_NAME',
@@ -2449,7 +2445,7 @@ const DEFAULT_MACRO_LIST = [
         show_caption_prefix: false,
       };
       if (level_int === context.header_graph_top_level) {
-        x_text_options.style = XStyle.short;
+        x_text_options.style_full = false;
       }
       ret += Macro.x_text(ast, context, x_text_options);
       ret += `</a>`;
@@ -2490,7 +2486,7 @@ const DEFAULT_MACRO_LIST = [
           return header_tree_node.get_nested_number(context.header_graph_top_level);
         }
       },
-      x_style: XStyle.short,
+      x_style_full: false,
     }
   ),
   new Macro(
@@ -2990,19 +2986,9 @@ const DEFAULT_MACRO_LIST = [
       if (content_arg === undefined) {
         let x_text_options = {
           caption_prefix_span: false,
-          style: context.macros[target_id_ast.macro_name].options.x_style,
+          style_full: ast.args.full !== undefined,
           quote: true,
         };
-        let style = ast.args.style;
-        if (style !== undefined) {
-          let style_string = convert_arg_noescape(style, context);
-          if (!(style_string in XStyle)) {
-            let message = `unkown x style: "${style_string}"`;
-            this.error(context, message, ast.args.style[0].line, ast.args.style[0].column);
-            return error_message_in_output(message, context);
-          }
-          x_text_options.style = XStyle[style_string];
-        }
         content = Macro.x_text(target_id_ast, context, x_text_options);
         if (content === ``) {
           let message = `empty cross reference body: "${target_id}"`;
@@ -3019,11 +3005,6 @@ const DEFAULT_MACRO_LIST = [
     {
       named_args: [
         new MacroArgument({
-          // TODO restrict to valid choices.
-          name: 'style',
-        }),
-        new MacroArgument({
-          // TODO restrict to valid choices.
           name: 'full',
           boolean: true,
         }),

@@ -203,7 +203,7 @@ The website http://example.com is cool. See also:
 
 \q[http://example.com/2]
 ]]
-Exact parsing rules described at: \x[insane-link-parsing-rules]{style=full}.
+Exact parsing rules described at: \x[insane-link-parsing-rules]{full}.
 
 Equivalent sane version:
 \cirodown_example[[
@@ -285,7 +285,7 @@ For macros that do have an ID, you can write a cross reference to it, e.g.:
 See this \x[internal-cross-references] awesome section.
 ]]
 
-\h[3][x child argument]
+\h[3][x `child` argument]
 
 TODO implement.
 
@@ -353,9 +353,9 @@ Read this \x[my-id][My title].
 
 \h[3][Cross reference style]
 
-To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{style=full}` \x[positional-vs-named-arguments][named parameter] to the cross reference, for example:
+To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` \x[boolean-named-arguments][boolean named argument] to the cross reference, for example:
 \cirodown_example[[
-\x[cross-reference-style]{style=full}.
+\x[cross-reference-style]{full}.
 ]]
 
 \h[3][Internal cross file references]
@@ -372,17 +372,17 @@ Reference to the first header of another file that is a second inclusion:
 
 Reference to another header of another file, with \x[cross-reference-style] equals `full`:
 \cirodown_example[[
-\x[h2-in-not-the-readme]{style=full}.
+\x[h2-in-not-the-readme]{full}.
 ]]
 
 Reference to an image in another file:
 \cirodown_example[[
-\x[fig-not-readme-xi]{style=full}.
+\x[fig-not-readme-xi]{full}.
 ]]
 
 Reference to an image in another file:
 \cirodown_example[[
-\x[fig-figure-in-not-the-readme-without-explicit-id]{style=full}.
+\x[fig-figure-in-not-the-readme-without-explicit-id]{full}.
 ]]
 
 Remember that the \x[the-toplevel-header][ID of the toplevel header] is automatically derived from its file name, that's why we have to use:
@@ -645,7 +645,7 @@ Equivalent with explicit container:
 ]
 ]]
 
-The explicit container is required if you want to add properties to the list, e.g. a title and an ID: \x[list-my-id]:
+The explicit container is required if you want to add properties to the list, e.g. a title and an ID: \x[list-my-id]{full}:
 \cirodown_example[[
 \ul
 {id=list-my-id}
@@ -715,12 +715,12 @@ This exemplifies the following parameters:
 \l[`description`: similar to `title`, but allow for further explanations without them appearing in \x[internal-cross-references][cross references] to the image]
 \l[`source`: a standardized way to credit an image by linking to a URL that contains further image metadata]
 
-Here is one without a description but with an ID so we can link to it: \x[fig-my-xi-chrysanthemum-2]{style=full}.
+Here is one without a description but with an ID so we can link to it: \x[fig-my-xi-chrysanthemum-2]{full}.
 \cirodown_example[[
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {id=fig-my-xi-chrysanthemum-2}
 ]]
-We must use \x[cross-reference-style][`style=full`] here because otherwise the link text would be empty and not show at all.
+We must use \x[cross-reference-style][`full`] here because otherwise the link text would be empty and not show at all.
 
 If the image has neither ID nor title, then it does not get a caption at all, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
 \cirodown_example[[
@@ -1283,7 +1283,7 @@ These arguments marked with the `mandatory: true` \x[help-macros] argument prope
 
 \h[5][boolean named arguments]
 
-Name arguments marked in \x[help-macros] as `boolean: true` don't take any value. For example, the `full` argument of \x[internal-cross-references] is correctly written as:
+Name arguments marked in \x[help-macros] as `boolean: true` don't take any value. For example, \x[cross-reference-style][the `full` argument] of \x[internal-cross-references] is correctly written as:
 \cirodown_example[[
 \x[boolean-named-arguments]{full}
 ]]
@@ -1442,7 +1442,7 @@ For \x[literal-arguments][non-literal macro arguments], you have to use a backsl
 \l[`$` (dollar sign)]: \x[insane-macro-shortcuts][insane macro shortcut] for \x[math][Math]
 \l[\c[[`]] (backtick)]: \x[insane-macro-shortcuts][insane macro shortcut] for \x[code][code]
 
-The escape rules for literal arguments are described at: \x[literal-arguments]{style=full}.
+The escape rules for literal arguments are described at: \x[literal-arguments]{full}.
 
 This is good for short arguments of regular text, but for longer blocks of \x[code] or \x[math], you may want to use \x[literal-arguments]
 

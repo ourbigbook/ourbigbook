@@ -19,6 +19,7 @@ tmp.*
 *.tmp
 *.tmp.*
 tmp2.bigb
+logo.png
 
 # web/
 /!web/**/*.css

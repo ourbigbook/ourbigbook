@@ -7,6 +7,8 @@
     "ourbigbook_runtime.js",
     "template",
     "test_bigb_output.bigb",
+    "test_bigb_output_2.bigb",
+    "test_bigb_output_3.bigb",
     "tmp",
     "tmp.bigb",
     "web"

@@ -5986,9 +5986,20 @@ TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with
 
 Sync local directory to <OurBigBook Web> instead of doing anything else.
 
+To upload the entire repository, run from toplevel:
+``
+ourbigbook --web
+``
+
+To update just all IDs in a single `physics.bigb` source file use:
+``
+ourbigbook --web physics.bigb
+``
+This requires that all external IDs that `physics.bigb` might depend on have already been previously uploaded, e.g. with a previous `ourbigbook --web` from toplevel.
+
 The source code is uploaded, and conversion to HTML happens on the server, no conversion is done locally.
 
-This option is not amazing right now. It was introduced mostly to allow uploading the reference demo content from https://cirosantilli.com to https://ourbigbook.com/cirosantilli[], and it is not expected that it will be a major use case for end users for a long time.
+This option is not amazing right now. It was introduced mostly to allow uploading the reference demo content from https://cirosantilli.com to https://ourbigbook.com/cirosantilli[], and it is not expected that it will be a major use case for end users for a long time, as most users are likely to just edit on <OurBigBook Web> directly.
 
 Some important known limitations:
 * file renaming does not work, it will think that you are creating a new file and blows up duplicates
@@ -5996,6 +6007,16 @@ Some important known limitations:
 * if there's an error in a later file, the database is still modified by the previous files, i.e. there is no atomicity. A way to improve that would be to upload all files to the server in one go, and let the server convert everything in one transaction. However, this would lead to a very long server action, which would block any other incoming request (I tested, everything is single threaded)
 
 However, all of those are fixable, and in an ideal world, will be fixed. Patches welcome.
+
+= `--web-id`
+{parent=OurBigBook CLI options}
+
+Upload only the selected ID with <--web>.
+
+That ID must belong to a file being converted for everything to work well. e.g.:
+``
+ourbigbook --web --web-is quantum-mechanics physics.bigb
+``
 
 = `--web-url`
 {parent=OurBigBook CLI options}
@@ -6005,12 +6026,12 @@ Set a custom URL for <web> from the command line. If not given, the canonical ht
 ourbigbook --web --web-url http://localhost:3000
 ``
 
-= `--web-username`
+= `--web-user`
 {parent=OurBigBook CLI options}
 
 Set the username for <web> from the command line, e.g.:
 ``
-ourbigbook --web --web-url http://localhost:3000 --web-username donald-trump
+ourbigbook --web --web-url http://localhost:3000 --web-user donald-trump
 ``
 If not given, you will be prompted for it from the command line.
 

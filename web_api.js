@@ -366,15 +366,25 @@ class DbProviderBase extends ourbigbook.DbProvider {
   add_row_to_id_cache(row, context) {
     if (row !== null) {
       const ast = this.row_to_ast(row, context)
+      const oldCache = this.id_cache[ast.id]
       if (
-        // Possible on reference to ID that does not exist and some other
-        // non error cases I didn't bother to investigate.
-        row.to !== undefined
+        // This is not just an optimization, we actually had a case that broke because
+        // this was overwriting the value from the parsed tree, which contained more
+        // information about the header tree not present in the new ast and which was required.
+        oldCache
       ) {
-        ast.header_parent_ids = row.to.map(to => to.from_id)
+        return oldCache
+      } else {
+        if (
+          // Possible on reference to ID that does not exist and some other
+          // non error cases I didn't bother to investigate.
+          row.to !== undefined
+        ) {
+          ast.header_parent_ids = row.to.map(to => to.from_id)
+        }
+        this.id_cache[ast.id] = ast
+        return ast
       }
-      this.id_cache[ast.id] = ast
-      return ast
     }
   }
 

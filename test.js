@@ -6819,6 +6819,57 @@ assert_error('bigb output: x to undefined does not blow up',
     extra_convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
   }
 )
+assert_lib('bigb output: x convert parent, tag and child IDs to insane magic',
+  {
+    filesystem: {
+      'notindex.bigb': `= Notindex
+
+= My \\i[h2] é \\}
+{disambiguate=dis}
+{parent=notindex}
+
+= My h3
+{child=my-h2-e-dis}
+{parent=my-h2-e-dis}
+{tag=my-h2-e-dis}
+
+= Myscope
+{parent=notindex}
+{scope}
+
+= Myscope
+{parent=myscope}
+
+= Escape scope
+{parent=/myscope}
+`,
+    },
+    convert_dir: true,
+    assert_bigb: {
+      'notindex.bigb': `= Notindex
+
+= My \\i[h2] é \\}
+{disambiguate=dis}
+{parent=Notindex}
+
+= My h3
+{child=My h2 é (dis)}
+{parent=My h2 é (dis)}
+{tag=My h2 é (dis)}
+
+= Myscope
+{parent=Notindex}
+{scope}
+
+= Myscope
+{parent=Myscope}
+
+= Escape scope
+{parent=/Myscope}
+`,
+    }
+  }
+)
 
 // ourbigbook executable tests.
 assert_cli(

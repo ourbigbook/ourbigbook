@@ -352,8 +352,13 @@ World
 == Black
 
 == Black dog
-{tag=dog}
-{tag=black}
+{tag=Dog}
+{tag=Black}
+
+== My \i[Tag]
+
+== My tagged
+{tag=My Tag}
 
 == Greater > than
 

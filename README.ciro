@@ -54,7 +54,7 @@ git clone https://github.com/cirosantilli/cirodown
 cd cirodown
 npm link
 npm link cirodown
-./cirodown --html-single-page -o index.html README.ciro
+./cirodown --html-single-page README.ciro
 xdg-open index.html
 ``
 or render README.ciro and all includes \x[includes][includes] into a single HTML page and view it:
@@ -64,7 +64,7 @@ xdg-open index.html
 ``
 or render instead as one fully offline standalone HTML file that can be given directly to readers with \x[html-embed]:
 ``
-./cirodown --html-single-page -o index.html README.ciro
+./cirodown --html-single-page README.ciro
 ``
 
 Try out the JavaScript API with \a[api_hello.js]:

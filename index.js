@@ -275,6 +275,7 @@ class AstNode {
       // Possible for AstType === PARAGRAPH which can happen for
       // insane paragraph inside header or ID during post processing.
       // Not the nicest solution, but prevents the crash, so so be it.
+      // https://github.com/cirosantilli/cirodown/issues/143
       return ' '
     }
     const macro = context.macros[this.macro_name];

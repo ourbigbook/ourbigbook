@@ -201,7 +201,7 @@ const l_with_explicit_ul_expect = [
   ]),
   a('p', [t('gh')]),
 ];
-assert_convert_ast('l with explicit ul',
+assert_convert_ast('l with explicit ul and no extra spaces',
   `ab
 
 \\ul[
@@ -218,6 +218,19 @@ assert_convert_ast('l with implicit ul',
 
 \\l[cd]
 \\l[ef]
+
+gh
+`,
+  l_with_explicit_ul_expect
+);
+assert_convert_ast('l with explicit ul and extra spaces',
+  `ab
+
+\\ul[
+\\l[cd]\u0020
+\u0020\t\u0020
+\\l[ef]
+]
 
 gh
 `,
@@ -406,6 +419,49 @@ assert_convert_ast('p with id before', '\\p{id=ab}[cd]\n',
 assert_convert_ast('p with id after', '\\p[cd]{id=ab}\n',
   [a('p', [t('cd')], {'id': [t('ab')]})]);
 
+// Newline after close.
+assert_convert_ast('text after block element',
+  `a
+
+\\C[
+b
+c
+]
+d
+
+e
+`,
+[
+  a('p', [t('a')]),
+  a('p', [
+    a('C', [t('b\nc\n')]),
+    t('\nd'),
+  ]),
+  a('p', [t('e')]),
+]
+);
+assert_convert_ast('macro after block element',
+  `a
+
+\\C[
+b
+c
+]
+\\c[d]
+
+e
+`,
+[
+  a('p', [t('a')]),
+  a('p', [
+    a('C', [t('b\nc\n')]),
+    t('\n'),
+    a('c', [t('d')]),
+  ]),
+  a('p', [t('e')]),
+]
+);
+
 // Literal arguments.
 assert_convert_ast('literal argument code inline',
   '\\c[[\\ab[cd]{ef}]]\n',
@@ -475,6 +531,25 @@ assert_convert_ast('literal agument escape trailing one backslash',
 assert_convert_ast('literal agument escape trailing two backslashes',
   '\\c[[\\\\]]]\n',
   [a('p', [a('c', [t('\\]')])])],
+);
+assert_convert_ast('not literal argument with argument after newline',
+  `\\C[
+ab
+]{id=cd}
+`,
+[
+  a('C', [t('ab\n')], {id: [t('cd')]}),
+],
+);
+assert_convert_ast('yes literal argument with argument after newline',
+  `\\C[[
+ab
+]]
+{id=cd}
+`,
+[
+  a('C', [t('ab\n')], {id: [t('cd')]}),
+],
 );
 
 // Links.
@@ -687,29 +762,6 @@ d
   a('p', [t('a')]),
   a('C', [t('b\nc\n')]),
   a('p', [t('d')]),
-]
-);
-
-
-// Phrasing related.
-assert_convert_ast('text after block element',
-  `a
-
-\\C[[
-b
-c
-]]
-d
-
-e
-`,
-[
-  a('p', [t('a')]),
-  a('p', [
-    a('C', [t('b\nc\n')]),
-    t('\nd'),
-  ]),
-  a('p', [t('e')]),
 ]
 );
 

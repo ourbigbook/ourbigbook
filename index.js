@@ -299,11 +299,8 @@ class ErrorMessage {
 
   toString(path) {
     let ret = 'error: ';
-    if (path !== undefined) {
-      ret += `${path}: `;
-    }
     let had_line_or_col = false;
-    if (this.source_location.path) {
+    if (this.source_location.path !== undefined) {
       ret += `${this.source_location.path}:`;
     }
     if (this.source_location.line !== undefined) {
@@ -325,7 +322,10 @@ class ErrorMessage {
 }
 
 class FileProvider {
+  /* Get entry by path. */
   get(path) { throw new Error('unimplemented'); }
+  /* Get entry by ID. */
+  get_id(id) { throw new Error('unimplemented'); }
 }
 exports.FileProvider = FileProvider;
 
@@ -357,7 +357,7 @@ class IdProvider {
       return this.get_noscope(id.substr(1), context);
     } else {
       if (header_graph_node !== undefined) {
-        let parent_scope_id = get_parent_scope_id(header_graph_node);
+        let parent_scope_id = get_parent_scope_id(header_graph_node, context);
         if (parent_scope_id !== undefined) {
           let resolved_scope_id = this.get_noscope(
             parent_scope_id + Macro.HEADER_SCOPE_SEPARATOR + id, context);
@@ -1480,7 +1480,7 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
       ast.id = convert_arg_noescape(macro_id_arg, context);
     }
     if (ast.id !== undefined && ast.header_graph_node) {
-      const parent_scope_id = get_parent_scope_id(ast.header_graph_node);
+      const parent_scope_id = get_parent_scope_id(ast.header_graph_node, context);
       if (parent_scope_id !== undefined) {
         ast.id = parent_scope_id + Macro.HEADER_SCOPE_SEPARATOR + ast.id
       }
@@ -1582,7 +1582,7 @@ function closing_token(token) {
  *
  * @options {Object}
  *          {IdProvider} external_ids
- *          {Function[String] -> string} read_include(input_path) -> content
+ *          {Function[String] -> string} read_include(id) -> content
  *          {Number} h_level_offset - add this offset to the levels of every header
  *          {boolean} render - if false, parse the input, but don't render it,
  *              and return undefined.
@@ -1645,6 +1645,8 @@ function convert(
   if (!('output_format' in options)) { options.output_format = OUTPUT_FORMAT_HTML; }
   if (!('render' in options)) { options.render = true; }
   if (!('start_line' in options)) { options.start_line = 1; }
+  // A toplevel scope, to implement conversion of files in subdirectories.
+  if (!('scope' in options)) { options.scope = undefined; }
   if (!('show_ast' in options)) { options.show_ast = false; }
   if (!('show_parse' in options)) { options.show_parse = false; }
   if (!('show_tokenize' in options)) { options.show_tokenize = false; }
@@ -1888,7 +1890,7 @@ function get_descendant_count(tree_node) {
  *          If the node has a parent header with a scope, return the ID of that header.
  *          Otherwise, return undefined.
  */
-function get_parent_scope_id(header_graph_node) {
+function get_parent_scope_id(header_graph_node, context) {
   let cur_header_graph_node = header_graph_node.parent_node;
   while (
     // Possible in case of mal-formed document e.g. with
@@ -1903,6 +1905,9 @@ function get_parent_scope_id(header_graph_node) {
     cur_header_graph_node = cur_header_graph_node.parent_node;
   }
   return undefined;
+  // TODO attempt for https://github.com/cirosantilli/cirodown/issues/116
+  // but broke image related stuff.
+  //return context.options.scope;
 }
 
 /** Convert a key value already fully HTML escaped strings
@@ -3254,6 +3259,7 @@ function parse_error(state, message, source_location) {
   } else {
     new_source_location = source_location.clone();
   }
+  new_source_location.path = state.options.input_path;
   if (new_source_location.line === undefined)
     new_source_location.line = state.token.source_location.line;
   if (new_source_location.column === undefined)

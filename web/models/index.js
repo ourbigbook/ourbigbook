@@ -135,7 +135,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
       allowNull: false
     },
   });
-  User.hasMany(Comment, { foreignKey: 'authorId' });
+  User.hasMany(Issue, { foreignKey: 'authorId' });
 
   // User authors Comment
   Comment.belongsTo(User, {

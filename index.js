@@ -2981,9 +2981,7 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     let basename_ret;
     const [id_dirname, id_basename] = path_split(id, URL_SEP);
     const to_split_headers = is_to_split_headers(ast, context);
-    if (
-      first_header_or_before
-    ) {
+    if (first_header_or_before) {
       // For toplevel elements in split header mode, we have
       // to take care of index and -split suffix.
       if (renamed_basename_noext === INDEX_BASENAME_NOEXT) {
@@ -3006,9 +3004,9 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     }
     if (first_header_or_before || split_suffix !== undefined) {
       if (split_suffix === undefined || split_suffix === '') {
-        if (ast.split_default) {
+        if (to_split_headers && !ast.split_default) {
           split_suffix = 'split';
-        } else {
+        } else if (!to_split_headers && ast.split_default) {
           split_suffix = 'nosplit';
         }
       }

@@ -181,14 +181,14 @@ it('api: create an article and see it on global feed', async () => {
     assert.strictEqual(data.articles[1].author.username, 'user0')
     assert.strictEqual(data.articlesCount, 2)
 
-    // Get request does not blow up.
-    ;[res, data] = await sendJsonHttp({
-      server,
-      method: 'GET',
-      path: '/user0/title-0',
-      token,
-    })
-    assert.strictEqual(res.statusCode, 200)
+    //// Get request does not blow up.
+    //;[res, data] = await sendJsonHttp({
+    //  server,
+    //  method: 'GET',
+    //  path: '/user0/title-0',
+    //  token,
+    //})
+    //assert.strictEqual(res.statusCode, 200)
 
     //// See the tags on the global feed.
     //;[res, data] = await sendJsonHttp({

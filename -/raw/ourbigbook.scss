@@ -1,0 +1,34 @@
+// https://docs.ourbigbook.com#shorthand-link-parsing-rules#overview-of-files-in-this-repository
+
+@import 'normalize.css/normalize';
+@import 'katex/dist/katex.min';
+@import 'tablesort/tablesort';
+
+@import 'ourbigbook.common.scss';
+
+// Only the bundled entry point emits font assets. Shared styles are also
+// imported by standalone Sass builds (e.g. main.scss), which cannot bundle URLs.
+// Web imports this stylesheet inside a selector, but font faces must be global.
+@at-root {
+  @font-face { font-family: fa-brands-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-brands-400.woff2); }
+  @font-face { font-family: fa-regular-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2); }
+  @font-face { font-family: fa-solid-900; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2); }
+}
+
+@if $ourbigbook-include-theme {
+  :root {
+    @include ourbigbook-theme-light;
+  }
+  :root[data-ourbigbook-theme='dark'] {
+    @include ourbigbook-theme-dark;
+  }
+}
+
+// Main class that contains full ourbigbook content.
+.ourbigbook {
+  @include ourbigbook-main;
+}
+
+.ourbigbook-body {
+  @include ourbigbook-body;
+}

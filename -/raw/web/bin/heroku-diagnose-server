@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# Read-only diagnostics. Run while the site is unresponsive, before restarting it.
+# Usage: web/bin/heroku-diagnose-server [heroku-app]
+set -uo pipefail
+umask 077
+
+app=${1:-ourbigbook}
+snapshots=${SNAPSHOTS:-6}
+interval=${INTERVAL:-5}
+log_seconds=${LOG_SECONDS:-45}
+for value in "$snapshots" "$interval" "$log_seconds"; do
+  if [[ ! $value =~ ^[0-9]+$ ]]; then
+    echo 'SNAPSHOTS, INTERVAL and LOG_SECONDS must be non-negative integers.' >&2
+    exit 1
+  fi
+done
+if (( snapshots < 1 || log_seconds < 1 )); then
+  echo 'SNAPSHOTS and LOG_SECONDS must be greater than zero.' >&2
+  exit 1
+fi
+for executable in heroku timeout; do
+  if ! command -v "$executable" >/dev/null; then
+    echo "Missing command: $executable" >&2
+    exit 1
+  fi
+done
+
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+repo_root=$(cd -- "$script_dir/../.." && pwd)
+out="$repo_root/tmp/heroku-diagnostics-$(date -u +%Y%m%dT%H%M%SZ)-$$"
+mkdir -p "$out" || exit 1
+printf 'Saving diagnostics to:\n%s\n' "$out"
+
+# Keep failures in their respective logs and continue collecting other evidence.
+# Exit status 124 means timeout; this is expected for the bounded log stream.
+capture() {
+  local filename=$1 seconds=$2 status
+  shift 2
+  {
+    date -u '+Started: %Y-%m-%dT%H:%M:%SZ'
+    printf 'Command:'
+    printf ' %q' "$@"
+    printf '\n\n'
+    timeout --kill-after=5s "${seconds}s" "$@" </dev/null
+    status=$?
+    printf '\nExit status: %s\n' "$status"
+    date -u '+Finished: %Y-%m-%dT%H:%M:%SZ'
+  } >"$out/$filename" 2>&1
+}
+
+cat >"$out/activity.sql" <<'SQL'
+\set ON_ERROR_STOP on
+\pset pager off
+\x on
+SET statement_timeout = '10s';
+SELECT clock_timestamp() AS captured_at,
+       pid, application_name, client_addr, backend_type, state,
+       clock_timestamp() - xact_start AS transaction_age,
+       CASE WHEN state = 'active'
+            THEN clock_timestamp() - query_start END AS active_query_age,
+       clock_timestamp() - state_change AS state_age,
+       wait_event_type, wait_event,
+       pg_blocking_pids(pid) AS blockers,
+       query AS current_or_last_query
+FROM pg_stat_activity
+WHERE datname = current_database()
+  AND pid <> pg_backend_pid()
+ORDER BY xact_start NULLS LAST, pid;
+
+SELECT datname, numbackends, xact_commit, xact_rollback,
+       blks_read, blks_hit, temp_files, temp_bytes, deadlocks, stats_reset
+FROM pg_stat_database
+WHERE datname = current_database();
+SQL
+
+cat >"$out/README.txt" <<EOF
+App: $app
+Capture started (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)
+This script collects diagnostics without changing application or database data.
+The SQL timeout applies only to each diagnostic connection.
+Exit status 124 is expected for logs-live.log when its capture window ends.
+Other nonzero exit statuses indicate incomplete evidence; inspect those logs.
+Database snapshots include idle sessions to help diagnose connection usage.
+An idle session's query is its last query, not a currently running query.
+
+Please add the last CLI upload output to upload-cli.log in this directory.
+Also note the time of any restart and whether the site was stalled throughout
+the capture. CPU/load and memory values from Heroku Metrics are useful too.
+EOF
+
+# Collect concurrently so logs and database snapshots cover the same incident.
+capture logs-recent.log 25 heroku logs -a "$app" --num 1500 &
+capture logs-live.log "$log_seconds" heroku logs -a "$app" --tail &
+capture dynos.log 20 heroku ps -a "$app" &
+capture database-info.log 20 heroku pg:info -a "$app" &
+capture database-processes.log 20 heroku pg:ps -a "$app" &
+(
+  for ((i = 1; i <= snapshots; i++)); do
+    printf -v filename 'database-activity-%02d.log' "$i"
+    capture "$filename" 20 heroku pg:psql -a "$app" --file "$out/activity.sql"
+    if (( i < snapshots )); then sleep "$interval"; fi
+  done
+) &
+wait
+
+printf '\nCapture finished. Files are in:\n%s\n' "$out"
+printf 'Check Exit status lines for failures; logs-live.log normally ends with 124.\n'
+printf 'Save the last upload CLI lines as %s/upload-cli.log\n' "$out"

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# https://docs.ourbigbook.com/ourbigbook-web-postgresql-setup
+set -eu
+script_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+db="${1:-ourbigbook}"
+user=ourbigbook_user
+psql -c "DROP DATABASE IF EXISTS \"$db\""
+#psql -c "DROP OWNED BY $user"
+#psql -c "DROP USER IF EXISTS $user"
+createdb "$db"
+# Don't know how to avoid the `|| true` https://stackoverflow.com/questions/8092086/create-postgresql-role-user-if-it-doesnt-exist`
+psql -c "CREATE ROLE \"$user\" with login password 'a'" || true
+psql -c "GRANT ALL PRIVILEGES ON DATABASE \"$db\" TO \"$user\""
+# Required since postgres 15.
+# https://stackoverflow.com/questions/67276391/why-am-i-getting-a-permission-denied-error-for-schema-public-on-pgadmin-4/75876944#75876944
+psql "$db" -c "GRANT ALL ON SCHEMA public TO \"$user\""
+env="$script_dir/../.env"
+if [ -f "$env" ]; then
+  sed -i '/^SECRET=/d' "$env"
+fi
+echo "SECRET=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)" >> "$env"

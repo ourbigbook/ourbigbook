@@ -1,0 +1,17 @@
+const router = require('express').Router()
+
+// heroku bootstrap
+router.get('/', function(req, res) {
+  res.setHeader(require('../back/js').databaseDialectHeader, req.app.get('sequelize').getDialect())
+  res.json({message: 'backend is up'})
+});
+router.use('/', require('./users'))
+router.use('/articles', require('./articles'))
+router.use('/editor', require('./editor'))
+router.use('/issues', require('./issues'))
+router.use(`/min`, require('./min'))
+router.use(`/site`, require('./site'))
+router.use('/topics', require('./topics'))
+router.use('/uploads', require('./uploads').router)
+
+module.exports = router

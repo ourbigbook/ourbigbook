@@ -1,0 +1,3 @@
+= Markdown example child
+
+This native OurBigBook article was included from `not-index-md.md` using `\Include`!

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>web/front/BuildJobs.tsx - Ciro Santilli</title>
+<meta property="og:title" content="web/front/BuildJobs.tsx - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/-/raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/-/file/web/front/BuildJobs.tsx">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../-/raw/main.css">
+<link rel="icon" href="../../../../-/raw/logo-circle.svg" type="image/svg+xml">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../../" class="brand"><img src="../../../../-/raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../-/raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/web/front/BuildJobs.tsx"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">web/front/BuildJobs.tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../../-/dir">(root)</a> / <a href="../../../../-/dir/web">web</a> / <a href="../../../../-/dir/web/front">front</a> / <a href="../../../../-/raw/web/front/BuildJobs.tsx">BuildJobs.tsx</a></b></div></nav></div><div class="p"><b>web/front/BuildJobs.tsx</b></div><div class="code"><div><pre><code>import { useRouter } from 'next/router'
+import React from 'react'
+
+import CustomLink from 'front/CustomLink'
+import Pagination from 'front/Pagination'
+import { CancelIcon, ListIcon, OkIcon } from 'front'
+import { webApi } from 'front/api'
+import routes from 'front/routes'
+import { formatNumberApprox } from 'ourbigbook'
+
+type BulkJob = { username?: string; id: number; batchIndex?: number | null; batchCount?: number | null; phase: string; status: string; completed: number | null; total: number | null; error: string | null; createdAt: string; runtimeMs: number | null }
+type BulkStatus = { jobs: BulkJob[]; jobsCount: number; todoCount: number; doneCount: number; ongoing?: boolean }
+
+const BuildJobTable = ({ jobs, loading, error, done, global }: { jobs: BulkJob[]; loading: boolean; error: string; done: boolean; global: boolean }) =&gt; {
+  return &lt;table className="list" aria-label="Build jobs"&gt;
+    &lt;thead&gt;&lt;tr&gt;{global &amp;&amp; &lt;th&gt;Username&lt;/th&gt;}&lt;th&gt;Job&lt;/th&gt;&lt;th&gt;Job ID&lt;/th&gt;&lt;th&gt;Phase&lt;/th&gt;&lt;th&gt;Status&lt;/th&gt;&lt;th&gt;Progress&lt;/th&gt;&lt;th&gt;Created (UTC)&lt;/th&gt;{done &amp;&amp; &lt;th&gt;Runtime&lt;/th&gt;}&lt;th&gt;Error&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
+    &lt;tbody&gt;
+      {error &amp;&amp; &lt;tr&gt;&lt;td colSpan={(done ? 8 : 7) + (global ? 1 : 0)} role="alert"&gt;{error}&lt;/td&gt;&lt;/tr&gt;}
+      {!jobs.length &amp;&amp; !error &amp;&amp; &lt;tr&gt;&lt;td colSpan={(done ? 8 : 7) + (global ? 1 : 0)}&gt;{loading ? 'Loading jobs…' : 'No jobs yet.'}&lt;/td&gt;&lt;/tr&gt;}
+      {jobs.map(job =&gt; &lt;tr key={`${job.phase}-${job.id}`}&gt;
+      {global &amp;&amp; &lt;td&gt;&lt;CustomLink href={routes.user(job.username)}&gt;{job.username}&lt;/CustomLink&gt;&lt;/td&gt;}
+      &lt;td&gt;{job.batchIndex == null || job.batchCount == null ? '—' : `${job.batchIndex + 1}/${job.batchCount}`}&lt;/td&gt;
+      &lt;td&gt;{job.id}&lt;/td&gt;
+      &lt;td&gt;{{ extract: 'ID extraction', check: 'Database check', render: 'Rendering', tree: 'Tree rebuild' }[job.phase] || job.phase}&lt;/td&gt;
+      &lt;td&gt;{job.status}&lt;/td&gt;
+      &lt;td className="right"&gt;{job.total === null ? '—' : `${job.completed} / ${job.total}`}&lt;/td&gt;
+      &lt;td&gt;&lt;time dateTime={job.createdAt}&gt;{job.createdAt ? (global ? job.createdAt : new Date(job.createdAt).toISOString().slice(0, 19).replace('T', ' ')) : '—'}&lt;/time&gt;&lt;/td&gt;
+      {done &amp;&amp; &lt;td className="right"&gt;{job.runtimeMs == null ? '—' : `${(job.runtimeMs / 1000).toFixed(3)} s`}&lt;/td&gt;}
+      &lt;td&gt;{job.error || ''}&lt;/td&gt;
+    &lt;/tr&gt;)}&lt;/tbody&gt;
+  &lt;/table&gt;
+}
+
+export default function BuildJobs({ username, baseUrl, canCancel=false }: { username?: string; baseUrl: string; canCancel?: boolean }) {
+  const router = useRouter()
+  const jobsView = router.query.jobs === 'done' ? 'done' : 'todo'
+  const requestedPage = Number(router.query.page || 1)
+  const jobsPage = Number.isSafeInteger(requestedPage) &amp;&amp; requestedPage &gt; 0 ? requestedPage - 1 : 0
+  const jobsPerPage = 20
+  const [bulkStatus, setBulkStatus] = React.useState&lt;BulkStatus | null&gt;(null)
+  const [bulkError, setBulkError] = React.useState('')
+  const [cancelling, setCancelling] = React.useState(false)
+  const [cancelMessage, setCancelMessage] = React.useState('')
+  const cancelBuild = async () =&gt; {
+    setCancelling(true)
+    setCancelMessage('')
+    try {
+      const current = await webApi.articlesCurrentBuild({ timeout: 15000 }, username)
+      if (current.status !== 200) throw new Error('Could not load the current build.')
+      if (!window.confirm('Cancel this build? Completed articles will be kept.')) return
+      const result = await webApi.articlesCancelBuild(current.data.build?.token || null, username, { timeout: 15000 })
+      if (result.status !== 202) throw new Error('Could not cancel the build. It may have changed; refresh and try again.')
+      setCancelMessage(result.data.message)
+    } catch (error) {
+      setCancelMessage(error.message)
+    } finally {
+      setCancelling(false)
+    }
+  }
+  React.useEffect(() =&gt; {
+    let active = true
+    let timer: ReturnType&lt;typeof setTimeout&gt;
+    setBulkStatus(null)
+    const poll = async () =&gt; {
+      try {
+        const options = { view: jobsView, limit: jobsPerPage, offset: jobsPage * jobsPerPage }
+        const requestOptions = { timeout: 15000 }
+        const { data, status } = await (username
+          ? webApi.articlesBulkStatus(username, requestOptions, options)
+          : webApi.siteJobs(requestOptions, options))
+        if (status !== 200) throw new Error('Could not load background upload status')
+        if (active) {
+          setBulkStatus(data)
+          setBulkError('')
+        }
+      } catch {
+        if (active) setBulkError('Could not load background upload status. Retrying…')
+      } finally {
+        if (active) timer = setTimeout(poll, 3000)
+      }
+    }
+    poll()
+    return () =&gt; { active = false; clearTimeout(timer) }
+  }, [username, jobsView, jobsPage])
+  return &lt;div id="background-uploads" className="list-container"&gt;
+    &lt;div className="tab-list" role="navigation" aria-label="Build job status"&gt;
+      &lt;CustomLink href={`${baseUrl}?tab=builds`} className={`tab-item${jobsView === 'todo' ? ' active' : ''}`}&gt;&lt;ListIcon /&gt; TODO{bulkStatus &amp;&amp; &lt;span className="mobile-hide"&gt; ({formatNumberApprox(bulkStatus.todoCount)})&lt;/span&gt;}&lt;/CustomLink&gt;
+      {' '}
+      &lt;CustomLink href={`${baseUrl}?tab=builds&amp;jobs=done`} className={`tab-item${jobsView === 'done' ? ' active' : ''}`}&gt;&lt;OkIcon /&gt; Done{bulkStatus &amp;&amp; &lt;span className="mobile-hide"&gt; ({formatNumberApprox(bulkStatus.doneCount)})&lt;/span&gt;}&lt;/CustomLink&gt;
+    &lt;/div&gt;
+    &lt;BuildJobTable jobs={bulkStatus?.jobs || []} loading={!bulkStatus} error={bulkError} done={jobsView === 'done'} global={!username} /&gt;
+    {bulkStatus &amp;&amp; &lt;Pagination currentPage={jobsPage} itemsCount={bulkStatus.jobsCount} itemsPerPage={jobsPerPage} what="jobs" wrap={false} /&gt;}
+    {canCancel &amp;&amp; username &amp;&amp; bulkStatus?.ongoing &amp;&amp; &lt;div className="build-actions"&gt;
+      &lt;button type="button" className="btn cancel-build" onClick={cancelBuild} disabled={cancelling}&gt;&lt;CancelIcon title={null} /&gt; {cancelling ? 'Cancelling…' : 'Cancel build'}&lt;/button&gt;
+    &lt;/div&gt;}
+    {cancelMessage &amp;&amp; &lt;div role="status"&gt;{cancelMessage}&lt;/div&gt;}
+  &lt;/div&gt;
+}
+</code></pre></div></div></main>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../../-/dir">Website source code</a></div>
+
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

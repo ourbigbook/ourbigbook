@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+script_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+# https://www.sqlprostudio.com/blog/8-killing-cancelling-a-long-running-postgres-query
+"$script_dir/psql" -c "SELECT pg_cancel_backend(pid) FROM pg_stat_activity WHERE state = 'active' and pid <> pg_backend_pid();" "$@"

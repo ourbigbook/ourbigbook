@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>web/back/js.js - Ciro Santilli</title>
+<meta property="og:title" content="web/back/js.js - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/-/raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/-/file/web/back/js.js">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../-/raw/main.css">
+<link rel="icon" href="../../../../-/raw/logo-circle.svg" type="image/svg+xml">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../../" class="brand"><img src="../../../../-/raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../-/raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/web/back/js.js"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">web/back/js.js</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../../-/dir">(root)</a> / <a href="../../../../-/dir/web">web</a> / <a href="../../../../-/dir/web/back">back</a> / <a href="../../../../-/raw/web/back/js.js">js.js</a></b></div></nav></div><div class="p"><b>web/back/js.js</b></div><div class="code"><div><pre><code>const { AsyncLocalStorage } = require('async_hooks')
+const fs = require('fs')
+const { performance } = require('perf_hooks')
+const path = require('path')
+
+function preloadKatex() {
+  // Other backend helpers are also used before the benchmark has detected the
+  // server's dialect. Do not cache environment-dependent DB config on import.
+  const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
+  return ourbigbook_nodejs_webpack_safe.preload_katex_from_file(
+    path.join(path.dirname(require.resolve(path.join('ourbigbook', 'package.json'))), 'default.tex'))
+}
+
+const explainHeader = 'x-ourbigbook-explain'
+const databaseDialectHeader = 'x-ourbigbook-db-dialect'
+const defaultExplainDirectory = path.resolve(__dirname, '../../tmp/benchmark-explain')
+const explainUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+
+function explainDirectory(value) {
+  return value === true || value === '1' ? defaultExplainDirectory : path.resolve(value)
+}
+
+// auto_explain instruments the original execution. Replaying SQL with EXPLAIN
+// ANALYZE would execute writes twice and lose the original transaction context.
+function installExplain(sequelize, outputDirectory) {
+  if (sequelize.getDialect() !== 'postgres') throw new Error('OURBIGBOOK_EXPLAIN requires PostgreSQL')
+  const output = explainDirectory(outputDirectory)
+  fs.mkdirSync(output, { recursive: true, mode: 0o700 })
+  const context = new AsyncLocalStorage()
+  const queries = new Map()
+
+  sequelize.addHook('afterConnect', async connection =&gt; {
+    try {
+      await connection.query(`LOAD 'auto_explain';
+        SET auto_explain.log_min_duration = 0;
+        SET auto_explain.log_analyze = on;
+        SET auto_explain.log_buffers = on;
+        SET auto_explain.log_timing = off;
+        SET auto_explain.log_format = 'json';
+        SET auto_explain.log_level = 'notice';
+        SET auto_explain.log_nested_statements = off;
+        SET auto_explain.sample_rate = 1;
+        SET client_min_messages = notice;`)
+    } catch (error) {
+      await connection.end()
+      throw new Error(`OURBIGBOOK_EXPLAIN could not load auto_explain (requires PostgreSQL superuser permission): ${error.message}`)
+    }
+    // Socket callbacks do not necessarily inherit the request's async context.
+    // Identify the query by its SQL comment, including concurrent pooled queries.
+    connection.on('notice', notice =&gt; {
+      const match = notice.message.match(/^duration: ([\d.]+) ms\s+plan:\s*([\s\S]*)$/)
+      if (!match) return
+      const tag = match[2].match(/ourbigbook-explain:([0-9a-f-]+:\d+)/)
+      const record = tag &amp;&amp; queries.get(tag[1])
+      if (!record) return
+      try {
+        record.plans.push({ duration_ms: Number(match[1]), ...JSON.parse(match[2]) })
+      } catch (error) {
+        record.error = `Could not decode auto_explain JSON: ${error.message}`
+      }
+    })
+  })
+
+  function save(trace) {
+    if (!trace.finished || trace.pending || trace.saved) return
+    trace.saved = true
+    for (const record of trace.data.queries) {
+      queries.delete(`${trace.data.request_id}:${record.query_id}`)
+    }
+    const filename = path.join(output, `${trace.data.request_id}.json`)
+    try {
+      fs.writeFileSync(`${filename}.tmp`, JSON.stringify(trace.data) + '\n', { mode: 0o600 })
+      fs.renameSync(`${filename}.tmp`, filename)
+    } catch (error) {
+      console.error(`Could not save benchmark query plans: ${error.message}`)
+    }
+  }
+
+  sequelize.addHook('beforeQuery', (options, query) =&gt; {
+    const trace = context.getStore()
+    if (!trace || trace.finished) return
+    const run = query.run
+    query.run = async function(sql, parameters) {
+      const record = { query_id: trace.data.queries.length, sql, parameters: parameters || [], plans: [] }
+      const tag = `${trace.data.request_id}:${record.query_id}`
+      trace.data.queries.push(record)
+      trace.pending++
+      queries.set(tag, record)
+      const start = performance.now()
+      try {
+        return await run.call(this, `/* ourbigbook-explain:${tag} */ ${sql}`, parameters)
+      } catch (error) {
+        record.error = error.message
+        throw error
+      } finally {
+        record.elapsed_ms = performance.now() - start
+        // Bound SELECT plans inside a transaction can arrive only when its
+        // portal closes (e.g. at COMMIT). Retain the association until the
+        // request finishes, even though the rows have already been returned.
+        trace.pending--
+        save(trace)
+      }
+    }
+  })
+
+  return (req, res, next) =&gt; {
+    // Also advertise instrumentation on untraced requests, so benchmark timings
+    // cannot silently be mistaken for runs without auto_explain overhead.
+    res.setHeader(explainHeader, 'auto_explain')
+    const requestId = req.get(explainHeader)
+    if (!requestId) return next()
+    if (!explainUuidPattern.test(requestId)) return res.status(400).json({ error: 'Invalid benchmark request ID' })
+    const trace = {
+      pending: 0, finished: false, saved: false,
+      data: {
+        request_id: requestId, method: req.method, path: req.originalUrl,
+        timestamp: new Date().toISOString(), queries: [],
+      },
+    }
+    res.setHeader(explainHeader, requestId)
+    const finish = () =&gt; {
+      if (trace.finished) return
+      trace.finished = true
+      trace.data.status = res.statusCode
+      trace.data.aborted = !res.writableFinished
+      trace.data.finished_at = new Date().toISOString()
+      save(trace)
+    }
+    res.once('finish', finish)
+    res.once('close', finish)
+    context.run(trace, next)
+  }
+}
+
+module.exports = {
+  databaseDialectHeader,
+  explainDirectory,
+  explainHeader,
+  installExplain,
+  preloadKatex,
+}
+</code></pre></div></div></main>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../../-/dir">Website source code</a></div>
+
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

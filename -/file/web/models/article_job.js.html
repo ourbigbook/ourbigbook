@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>web/models/article_job.js - Ciro Santilli</title>
+<meta property="og:title" content="web/models/article_job.js - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/-/raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/-/file/web/models/article_job.js">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../-/raw/main.css">
+<link rel="icon" href="../../../../-/raw/logo-circle.svg" type="image/svg+xml">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../../" class="brand"><img src="../../../../-/raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../-/raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/web/models/article_job.js"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">web/models/article_job.js</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../../-/dir">(root)</a> / <a href="../../../../-/dir/web">web</a> / <a href="../../../../-/dir/web/models">models</a> / <a href="../../../../-/raw/web/models/article_job.js">article_job.js</a></b></div></nav></div><div class="p"><b>web/models/article_job.js</b></div><div class="code"><div><pre><code>const { performance } = require('perf_hooks')
+const { DataTypes, Op } = require('sequelize')
+
+const timeoutMs = 20 * 60 * 1000
+
+module.exports = sequelize =&gt; {
+  const Job = sequelize.define('ArticleJob', {
+    userId: { type: DataTypes.INTEGER, allowNull: false },
+    activeUserId: { type: DataTypes.INTEGER, unique: true },
+    requestId: { type: DataTypes.STRING, allowNull: false },
+    requestHash: { type: DataTypes.STRING, allowNull: false },
+    phase: { type: DataTypes.STRING, allowNull: false, defaultValue: 'render' },
+    queuedAt: DataTypes.DATE,
+    startedAt: DataTypes.DATE,
+    batchIndex: DataTypes.INTEGER,
+    batchCount: DataTypes.INTEGER,
+    buildId: DataTypes.STRING(64),
+    buildIndex: DataTypes.INTEGER,
+    // Bounded staging payload; source bodies are discarded after extraction.
+    items: { type: DataTypes.TEXT, allowNull: false },
+    total: { type: DataTypes.INTEGER, allowNull: false },
+    completed: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    status: { type: DataTypes.STRING, allowNull: false, defaultValue: 'staged' },
+    error: DataTypes.TEXT,
+    finishedAt: DataTypes.DATE,
+  }, { indexes: [
+    { unique: true, fields: ['buildId', 'buildIndex'] },
+    { unique: true, fields: ['userId', 'requestId'] },
+    { fields: ['userId', 'id'] },
+    { fields: ['userId', 'status'] },
+    { fields: ['status', 'queuedAt'] },
+    { fields: ['status', 'createdAt'] },
+  ] })
+
+  Job.expire = async () =&gt; {
+    await Job.update({
+      status: 'failed', activeUserId: null, finishedAt: new Date(), items: '[]',
+      error: 'Worker deadline exceeded. Rerun --web to resume; completed articles are saved.',
+    }, { where: {
+      status: { [Op.in]: ['pending', 'running'] },
+      id: { [Op.notIn]: sequelize.literal(`(SELECT "jobId" FROM "BuildQueue" WHERE "kind" = 'ArticleJob' AND ("status" != 'finished' OR "activeSlot" IS NOT NULL))`) },
+      queuedAt: { [Op.lt]: new Date(Date.now() - timeoutMs) },
+    } })
+  }
+
+  Job.launch = job =&gt; sequelize.models.TreeRebuildJob.launch(job, { articles: true })
+
+  // Shared shape for user and site Settings; never load job source payloads.
+  Job.historySql = `SELECT "id", "userId", 'ArticleJob' AS "kind", "phase", "status", "completed", "total", "error", "createdAt", "startedAt", "finishedAt", "buildId", "batchIndex", "batchCount" FROM "ArticleJob"
+    UNION ALL SELECT "id", "userId", 'TreeRebuildJob' AS "kind", 'tree' AS "phase", "status", NULL AS "completed", NULL AS "total", "error", "createdAt", "startedAt", "finishedAt",
+      (SELECT "id" FROM "ArticleBuild" WHERE "treeJobId" = "TreeRebuildJob"."id" LIMIT 1) AS "buildId", NULL AS "batchIndex", NULL AS "batchCount" FROM "TreeRebuildJob"`
+  Job.history = async (userId, { view, limit, offset }) =&gt; {
+    const userWhere = userId == null ? '1 = 1' : '"userId" = :userId'
+    const where = `${userWhere} AND "status" ${view === 'done' ? '' : 'NOT'} IN ('completed', 'failed')`
+    const order = view === 'done'
+      ? 'COALESCE("finishedAt", "createdAt") DESC, "id" DESC, "kind" ASC'
+      : `CASE "status" WHEN 'running' THEN 0 WHEN 'pending' THEN 1 WHEN 'queued' THEN 2 WHEN 'waiting' THEN 3 ELSE 4 END, "createdAt" ASC, "id" ASC, "kind" ASC`
+    const replacements = { userId, limit, offset }
+    const [rows, counts] = await Promise.all([
+      sequelize.query(`SELECT * FROM (${Job.historySql}) AS history WHERE ${where} ORDER BY ${order} LIMIT :limit OFFSET :offset`, { replacements, type: sequelize.QueryTypes.SELECT }),
+      sequelize.query(`SELECT
+        COUNT(CASE WHEN "status" NOT IN ('completed', 'failed') THEN 1 END) AS "todoCount",
+        COUNT(CASE WHEN "status" IN ('completed', 'failed') THEN 1 END) AS "doneCount"
+        FROM (${Job.historySql}) AS history WHERE ${userWhere}`, { replacements, type: sequelize.QueryTypes.SELECT }),
+    ])
+    const todoCount = Number(counts[0].todoCount)
+    const doneCount = Number(counts[0].doneCount)
+    return { jobs: rows.map(job =&gt; ({ ...job, runtimeMs: job.startedAt &amp;&amp; job.finishedAt
+      ? Math.max(0, new Date(job.finishedAt) - new Date(job.startedAt)) : null })), jobsCount: view === 'done' ? doneCount : todoCount, todoCount, doneCount }
+  }
+
+  Job.start = async job =&gt; {
+    if (job.buildId) throw new (require('../api/lib').ValidationError)('Submit the complete build instead of starting individual jobs', 409)
+    let changed
+    try {
+      await sequelize.transaction(sequelize.getDialect() === 'sqlite' ? { type: 'IMMEDIATE' } : {}, async transaction =&gt; {
+        await sequelize.models.User.findByPk(job.userId, { transaction, lock: transaction.LOCK.UPDATE })
+        if (await sequelize.models.ArticleBuild.findOne({ where: { activeUserId: job.userId }, transaction })) {
+          throw new (require('../api/lib').ValidationError)('Another bulk job is active for this user', 409)
+        }
+        ;[changed] = await Job.update({ status: 'pending', activeUserId: job.userId, queuedAt: new Date() }, {
+          where: { id: job.id, status: 'staged' }, transaction,
+        })
+      })
+    } catch (error) {
+      if (error.name !== 'SequelizeUniqueConstraintError') throw error
+      throw new (require('../api/lib').ValidationError)('Another bulk job is active for this user', 409)
+    }
+    if (changed) {
+      try {
+        await Job.launch(job)
+      } catch (error) {
+        await Job.update({
+          status: 'failed', activeUserId: null, finishedAt: new Date(),
+          error: 'Could not launch bulk worker. Check worker configuration and rerun --web.',
+        }, { where: { id: job.id, status: 'pending' } })
+      }
+    }
+    return job.reload()
+  }
+
+  Job.run = async id =&gt; {
+    const [claimed] = await Job.update({ status: 'running', startedAt: sequelize.fn('COALESCE', sequelize.col('startedAt'), new Date()) }, {
+      where: { id, status: 'pending', queuedAt: { [Op.gte]: new Date(Date.now() - timeoutMs) } },
+    })
+    if (!claimed) return
+    let currentPath
+    try {
+      const initial = await Job.findByPk(id)
+      if (!initial) return
+      const items = JSON.parse(initial.items)
+      const { createOrUpdateArticleData } = require('../api/articles')
+      const { cant } = require('../front/cant')
+      for (let i = initial.completed; i &lt; items.length; i++) {
+        const { hash, ...body } = items[i]
+        currentPath = body.path
+        let logPrefix
+        let startedAt
+        // Conversion and its checkpoint commit together. A crash cannot mark
+        // an uncommitted render as complete or roll back earlier articles.
+        await sequelize.transaction(sequelize.getDialect() === 'sqlite' ? { type: 'IMMEDIATE' } : {}, async transaction =&gt; {
+          if (sequelize.getDialect() === 'postgres') {
+            await sequelize.query("SET LOCAL statement_timeout = '10min'", { transaction })
+            await sequelize.query("SET LOCAL lock_timeout = '10s'", { transaction })
+          }
+          // Replacement and conversion share this lock. A replaced worker may
+          // finish its current article, but cannot begin another afterwards.
+          const user = await sequelize.models.User.findByPk(initial.userId, { transaction, lock: transaction.LOCK.UPDATE })
+          const job = await Job.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE })
+          if (!job || job.status !== 'running' || Date.now() - job.queuedAt.getTime() &gt;= timeoutMs) {
+            throw new Error('Render job expired')
+          }
+          if (job.buildId) {
+            const build = await sequelize.models.ArticleBuild.findByPk(job.buildId, { transaction })
+            if (!build || build.status !== 'running') throw new Error('Build replaced or cancelled')
+          }
+          const denied = cant.editArticle(user, user &amp;&amp; user.username)
+          if (denied) throw new Error(String(denied))
+          logPrefix = `web_${initial.phase}: job ${initial.batchIndex == null ? '?' : initial.batchIndex + 1}/${initial.batchCount == null ? '?' : initial.batchCount}, job id: ${id} (${i + 1}/${items.length}) @${user.username}/${currentPath}`
+          startedAt = performance.now()
+          console.log(logPrefix)
+          if (job.phase === 'check') {
+            await sequelize.models.User.findByPk(user.id, { transaction, lock: transaction.LOCK.UPDATE })
+            const file = await sequelize.models.File.findOne({ where: { authorId: user.id, path: `@${user.username}/${body.path}.bigb` }, transaction })
+            if (!file || file.hash !== hash) throw new Error(`Source changed before check: ${body.path}`)
+            const errors = await require('../convert').checkArticleDb(sequelize, [file.path], user, { transaction })
+            if (errors.length) throw new (require('../api/lib').ValidationError)(errors)
+            await file.update({ checkedHash: hash }, { transaction })
+          } else {
+            await createOrUpdateArticleData(sequelize, job.userId, body, {
+              forceNew: false, expectedHash: job.phase === 'extract' ? undefined : hash, skipJson: true, transaction,
+            })
+          }
+          await job.update({
+            completed: i + 1,
+            ...(i + 1 === items.length
+              ? { status: 'completed', activeUserId: null, finishedAt: new Date(), items: JSON.stringify(items.map(item =&gt; ({ ...item, article: {} }))) } : {}),
+          }, { transaction })
+        })
+        console.log(`${logPrefix} (finished in ${Math.floor(performance.now() - startedAt)} ms)`)
+      }
+    } catch (error) {
+      const validation = error instanceof require('../api/lib').ValidationError
+        ? (Array.isArray(error.errors) ? error.errors.join('\n') : String(error.errors)).slice(0, 4000)
+        : ''
+      await Job.update({
+        status: 'failed', activeUserId: null, finishedAt: new Date(),
+        items: '[]',
+        error: `Bulk processing failed at ${currentPath || 'startup'}. ${validation ? `${validation}\n` : ''}Rerun --web to resume. Check worker logs for details.`,
+      }, { where: { id, status: 'running' } })
+      throw error
+    }
+  }
+  return Job
+}
+</code></pre></div></div></main>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../../-/dir">Website source code</a></div>
+
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

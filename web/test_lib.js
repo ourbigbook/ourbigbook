@@ -159,14 +159,24 @@ f() + 3*g()
 is enough to make the loop terminate?
 `,
 ]
-let todo_visit = articleData.slice()
+let todo_visit = articleData.map(a => [null, a])
 let articleDataCount = 0
 while (todo_visit.length > 0) {
-  let entry = todo_visit.pop()
-  let childrenOrig = entry[1]
-  let children = childrenOrig.slice()
+  let [parentEntry, entry] = todo_visit.pop()
+  const { children, opts } = expandArticleDataEntry(entry)
+  entry[2] = opts
+  opts.parentEntry = parentEntry
+  console.error({entry});
+  console.error({children});
   for (let i = children.length - 1; i >= 0; i--) {
-    todo_visit.push(children[i]);
+    const child = children[i]
+    todo_visit.push([entry, child]);
+    if (i > 0) {
+      const { opts } = expandArticleDataEntry(child)
+      child[2] = opts
+      opts.previousSiblingEntry = children[i - 1]
+      console.error();
+    }
   }
   articleDataCount++
 }
@@ -195,38 +205,24 @@ class ArticleDataProvider {
     //}
     //this.todo_visit = todo_visit_top
 
-    //// These store the current tree transversal state across .get calls.
-    this.todo_visit = articleData.slice()
-    this.head = undefined
+    // These store the current tree transversal state across .get calls.
+    this.todo_visit = articleData.slice().reverse()
     // Set of all entries we visited that don't have a parent.
     // We will want to include those from the toplevel index.
     this.toplevelTitleToEntry = {}
   }
 
-  // Post order depth first transversal to ensure that we create all includees
-  // before actually including them.
+  // Pre order depth first transversal to ensure that parents are created before children.
   get() {
     while (this.todo_visit.length !== 0) {
-      let entry = this.todo_visit[this.todo_visit.length - 1];
+      let entry = this.todo_visit.pop();
       let title = entry[0]
       let children = entry[1]
-
-      let finishedSubtrees = this.head === children[children.length - 1]
-      let isLeaf = children.length === 0
-      if (finishedSubtrees || isLeaf) {
-        this.todo_visit.pop()
-        this.head = entry
-        this.i++
-        for (const child of children) {
-          delete this.toplevelTitleToEntry[child[0]]
-        }
-        this.toplevelTitleToEntry[title] = entry
-        return entry
-      } else {
-        for (let i = children.length - 1; i >= 0; i--) {
-          this.todo_visit.push(children[i]);
-        }
+      for (let i = children.length - 1; i >= 0; i--) {
+        this.todo_visit.push(children[i]);
       }
+      this.toplevelTitleToEntry[title] = entry
+      return entry
     }
     return undefined
   }
@@ -326,49 +322,22 @@ async function generateDemoData(params) {
       dateI++
       articleDataEntry.articleIdx = i
       let { titleSource, extra, children, opts } = expandArticleDataEntry(articleDataEntry)
-      if (opts.toplevel || forceToplevel) {
-        extra = opts.extra
-        if (extra === undefined) {
-          extra = ''
-        } else {
-          extra += '\n\n'
-        }
-        let refsString
-        if (children.length > 0) {
-          const ids = children.map(child => ourbigbook.title_to_id(child[0]))
-          refsString = 'Internal links: ' + ids.map(id => `\\x[${id}]`).join(', ') + '\n\n'
-        } else {
-          refsString = ''
-        }
-        let includesString = ''
-        const todo_visit = children.slice().reverse().map(child => [child, 2])
-        while (todo_visit.length > 0) {
-          const [articleDataEntry, level] = todo_visit.pop()
-          const { titleSource, extra, children, opts } = expandArticleDataEntry(articleDataEntry)
-          if (opts.toplevel) {
-            includesString += `\\Include[${ourbigbook.title_to_id(titleSource)}]\n`
-          } else {
-            includesString += `\n${'='.repeat(level)} ${titleSource}\n`
-            if (extra) {
-              includesString += `\n${extra}\n`
-            }
-            includesString += `\n${makeBody(titleSource)}`
-            for (let i = children.length - 1; i >= 0; i--) {
-              todo_visit.push([children[i], level + 1])
-            }
-          }
-        }
-        const id_noscope = ourbigbook.title_to_id(
-          await ourbigbook.convert(titleSource, { output_format: ourbigbook.OUTPUT_FORMAT_ID }))
-        toplevelTopicIds.add(id_noscope)
-        return {
-          titleSource,
-          authorId,
-          createdAt: date,
-          // TODO not taking effect. Appears to be because of the hook.
-          updatedAt: date,
-          bodySource: `${extra}${makeBody(titleSource)}${includesString}`,
-        }
+      extra = opts.extra
+      if (extra === undefined) {
+        extra = ''
+      } else {
+        extra += '\n\n'
+      }
+      const id_noscope = await title_to_id(titleSource)
+      toplevelTopicIds.add(id_noscope)
+      return {
+        titleSource,
+        authorId,
+        createdAt: date,
+        // TODO not taking effect. Appears to be because of the hook.
+        updatedAt: date,
+        bodySource: `${extra}${makeBody(titleSource)}`,
+        opts,
       }
     }
     let i
@@ -378,18 +347,6 @@ async function generateDemoData(params) {
         const articleDataProvider = articleDataProviders[authorId]
         const articleDataEntry = articleDataProvider.get()
         const articleArg = await makeArticleArg(articleDataEntry, false, i, authorId)
-        if (articleArg) {
-          articleArgs.push(articleArg)
-        }
-      }
-    }
-    // All toplevel entries must be in their own articles as they will be
-    // automatically included from the Index.
-    for (let userIdx = 0; userIdx < nUsers; userIdx++) {
-      for (const title in articleDataProvider.toplevelTitleToEntry) {
-        let authorId = users[userIdx].id
-        const articleDataEntry = articleDataProvider.toplevelTitleToEntry[title]
-        const articleArg = await makeArticleArg(articleDataEntry, true, ++i, authorId)
         if (articleArg) {
           articleArgs.push(articleArg)
         }
@@ -414,13 +371,22 @@ async function generateDemoData(params) {
     const articles = []
     let articleId = 0
     for (const articleArg of articleArgs) {
-      if (verbose) console.error(`${articleId} authorId=${articleArg.authorId} title=${articleArg.titleSource}`);
-      const newArticles = await convert.convertArticle({
-        author: userIdToUser[articleArg.authorId],
+      if (verbose) console.error(`${articleId} author=${userIdToUser[articleArg.authorId].username} title=${articleArg.titleSource}`);
+      const author = userIdToUser[articleArg.authorId]
+      const usernamePref = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
+      const parentEntry = articleArg.opts.parentEntry
+      const previousSiblingEntry = articleArg.opts.previousSiblingEntry
+      const args = {
+        author,
         bodySource: articleArg.bodySource,
+        parentId: `${usernamePref}${parentEntry ? `/${await title_to_id(parentEntry[0])}` : ''}`,
         sequelize,
         titleSource: articleArg.titleSource,
-      })
+      }
+      if (previousSiblingEntry) {
+        args.previousSiblingId = `${usernamePref}/${await title_to_id(previousSiblingEntry[0])}`
+      }
+      const newArticles = await convert.convertArticle(args)
       for (const article of newArticles) {
         articleIdToArticle[article.id] = article
         articles.push(article)
@@ -448,10 +414,9 @@ async function generateDemoData(params) {
       for (const titleSource in articleDataProvider.toplevelTitleToEntry) {
         ids.push(ourbigbook.title_to_id(titleSource))
       }
-      const includesString = '\n\n' + ids.map(id => `\\Include[${id}]`).join('\n')
       await convert.convertArticle({
         author: user,
-        bodySource: sequelize.models.User.defaultIndexBody + includesString,
+        bodySource: sequelize.models.User.defaultIndexBody,
         sequelize,
         titleSource: sequelize.models.User.defaultIndexTitle,
       })
@@ -470,7 +435,7 @@ async function generateDemoData(params) {
     i = 0
     for (const article of articles) {
       if (toplevelTopicIds.has(article.topicId)) {
-        if (verbose) console.error(`${i} authorId=${article.file.authorId} title=${article.file.titleSource}`);
+        if (verbose) console.error(`${i} author=${userIdToUser[article.file.authorId].username} title=${article.file.titleSource}`);
         await article.rerender()
         i++
       }
@@ -568,7 +533,7 @@ async function generateDemoData(params) {
 exports.generateDemoData = generateDemoData
 
 function expandArticleDataEntry(articleDataEntry) {
-  let titleSource, extra, children, opts
+  let titleSource, children, opts
   if (articleDataEntry === undefined) {
     titleSource = `My title ${articleDataEntry.articleIdx * (userIdx + 1)}`
     children = []
@@ -578,7 +543,7 @@ function expandArticleDataEntry(articleDataEntry) {
     children = articleDataEntry[1]
     opts = articleDataEntry[2] || {}
   }
-  return { titleSource, extra, children, opts }
+  return { titleSource, children, opts }
 }
 
 function makeBody(titleSource) {
@@ -658,3 +623,13 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
 `,
 */
 }
+
+async function title_to_id(titleSource) {
+  return ourbigbook.title_to_id(
+    await ourbigbook.convert(
+      titleSource,
+      { output_format: ourbigbook.OUTPUT_FORMAT_ID }
+    )
+  )
+}
+

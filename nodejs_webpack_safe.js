@@ -142,7 +142,12 @@ class SqliteDbProvider extends web_api.DbProviderBase {
       }
       if (ignore_paths_set !== undefined) {
         const ignore_paths = Array.from(ignore_paths_set).filter(x => x !== undefined)
-        where.defined_at = { [this.sequelize.Sequelize.Op.not]: ignore_paths }
+        where.defined_at = {
+          [this.sequelize.Sequelize.Op.or]: [
+            { [this.sequelize.Sequelize.Op.not]: ignore_paths },
+            null
+          ]
+        }
       }
       const rows = await this.sequelize.models.Ref.findAll({
         where,
@@ -172,7 +177,6 @@ class SqliteDbProvider extends web_api.DbProviderBase {
           }
         ]
       })
-
       // Fetch files. In theory should be easily done on above query as JOIN,
       // but for some reason it is not working as mentioned on the TODO...
       const file_paths = []
@@ -194,18 +198,7 @@ class SqliteDbProvider extends web_api.DbProviderBase {
       }
 
       for (const row of rows) {
-        let to_id_key_dict = this.ref_cache[to_id_key][row[to_id_key]]
-        if (to_id_key_dict === undefined) {
-          to_id_key_dict = {}
-          this.ref_cache[to_id_key][row[to_id_key]] = to_id_key_dict
-        }
-        let to_id_key_dict_type = to_id_key_dict[row.type]
-        if (to_id_key_dict_type === undefined) {
-          to_id_key_dict_type = []
-          to_id_key_dict[row.type] = to_id_key_dict_type
-        }
-        to_id_key_dict_type.push(row)
-        this.add_row_to_id_cache(row[include_key], context)
+        this.add_ref_row_to_cache(row, to_id_key, include_key, context)
       }
       return rows
     }
@@ -248,7 +241,12 @@ class SqliteDbProvider extends web_api.DbProviderBase {
         ast.header_tree_node = new ourbigbook.HeaderTreeNode(ast, parent_ast_header_tree_node);
         // I love it when you get potential features like this for free.
         // Only noticed when Figures showed up on ToC.
-        if (ast.macro_name === ourbigbook.Macro.HEADER_MACRO_NAME) {
+        if (
+          ast.macro_name === ourbigbook.Macro.HEADER_MACRO_NAME &&
+          // Can happen on error condition of pointing options.parent_id to self.
+          // Blew up on web test "Circular parent loops to self fail gracefully."
+          parent_ast_header_tree_node !== undefined
+        ) {
           parent_ast_header_tree_node.add_child(ast.header_tree_node);
         }
         ourbigbook.propagate_numbered(ast, context)
@@ -259,8 +257,7 @@ class SqliteDbProvider extends web_api.DbProviderBase {
     return asts
   }
 
-  async fetch_header_tree_ids(starting_ids_to_asts) {
-    const starting_ids = Object.keys(starting_ids_to_asts)
+  async fetch_header_tree_ids(starting_ids) {
     if (starting_ids.length > 0) {
       // Fetch all data recursively.
       //

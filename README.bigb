@@ -6741,6 +6741,7 @@ To clear the database and start with an empty database use `--empty`:
 = Log database queries done
 {parent=OurBigBook Web development}
 
+To log all queries use:
 ``
 DEBUG='sequelize:sql:*' npm run dev
 ``
@@ -6748,6 +6749,12 @@ Shortcut:
 ``
 npm run devs
 ``
+
+However, you often want to long only a few selected queries, otherwise it becomes very difficult to determine which query is which, in partciular due asynchronous execution. In this case, use the technique mentioned at: https://stackoverflow.com/questions/21427501/how-can-i-see-the-sql-generated-by-sequelize-js/21431627#21431627 and just add:
+``
+logging: console.log
+``
+to the code in the query you want to log.
 
 = Local optimized frontend
 {parent=OurBigBook Web development}

@@ -18,6 +18,7 @@ function addModels(sequelize, { web, cli }={}) {
   Ref.belongsTo(Id, { as: 'to', foreignKey: 'to_id', targetKey: 'idid', constraints: false })
   Id.hasMany(Ref, { as: 'from', foreignKey: 'from_id', sourceKey: 'idid', constraints: false  })
   Ref.belongsTo(Id, { as: 'from', foreignKey: 'from_id', targetKey: 'idid', constraints: false })
+  // Maybe we should add as: 'file' with lowercase here as we do everywhere else. Defaults to as: 'File'.
   Id.hasOne(File, { foreignKey: 'toplevel_id', sourceKey: 'idid', constraints: false  })
   File.belongsTo(Id, { foreignKey: 'toplevel_id', targetKey: 'idid', constraints: false })
 

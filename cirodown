@@ -58,10 +58,10 @@ class SqliteIdProvider extends cirodown.IdProvider {
     this.sequelize = sequelize
   }
 
-  async clear(input_path) {
+  async clear(input_paths) {
     return Promise.all([
-      this.sequelize.models.Id.destroy({ where: { path: input_path } }),
-      this.sequelize.models.Ref.destroy({ where: { from_path: input_path } }),
+      this.sequelize.models.Id.destroy({ where: { path: input_paths } }),
+      this.sequelize.models.Ref.destroy({ where: { from_path: input_paths } }),
     ])
   }
 
@@ -80,7 +80,20 @@ class SqliteIdProvider extends cirodown.IdProvider {
   }
 
   async get_noscope_entry(id) {
-    return this.sequelize.models.Id.findOne({ where: { idid: id } })
+    const ret = await this.sequelize.models.Id.findOne({
+      where: {
+        idid: id,
+        path: { [Op.not]: this.ignore_path },
+      }
+    })
+    if (ret) {
+      const ast = cirodown.AstNode.fromJSON(ret.ast_json)
+      ast.input_path = ret.path
+      ast.id = id
+      return ast
+    } else {
+      return undefined
+    }
   }
 
   async get_includes_entries(to_id) {
@@ -350,7 +363,7 @@ async function convert_path(input_path, cirodown_options, non_cirodown_options) 
     input_path_relative_to_cirodown_json = path.join(path_relative_to_cirodown_json, input_path_parse.base);
   }
   new_non_cirodown_options.input_path = input_path_relative_to_cirodown_json;
-  let output = await convert_input(input, new_options, new_non_cirodown_options);
+  const output = await convert_input(input, new_options, new_non_cirodown_options);
   const context = new_non_cirodown_options.extra_returns.context;
   if (non_cirodown_options.log.headers) {
     console.error(context.header_graph.toString());
@@ -377,17 +390,21 @@ async function convert_path(input_path, cirodown_options, non_cirodown_options) 
       toplevel_id = context.toplevel_ast.id;
     }
 
+    // Remove all IDs from the converted files to ensure that removed IDs won't be
+    // left over hanging in the database.
+    await non_cirodown_options.id_provider.clear(Array.from(context.include_path_set));
+
     // This was the 80% bottleneck at Cirodown f8fc9eacfa794b95c1d9982a04b62603e6d0bb83
     // before being converted to a single transaction!
     // Likely would not have been a bottleneck if we new more about databases/had more patience
     // and instead of doing INSERT one by one we would do a single insert with a bunch of data.
     // The move to Sequelize made that easier with bulkCreate. But keeping the transaction just in case
     await non_cirodown_options.sequelize.transaction(async (transaction) => {
-      // Calculate includes.
-      const includes = []
+      // Calculate refs.
+      const refs = []
       for (const header_ast of context.headers_with_include) {
         for (const include of header_ast.includes) {
-          includes.push({
+          refs.push({
             from_id: header_ast.id,
             from_path: header_ast.source_location.path,
             to_id: include,
@@ -411,7 +428,7 @@ async function convert_path(input_path, cirodown_options, non_cirodown_options) 
                 // leading to ID not being present.
                 from_header !== undefined
               ) {
-                includes.push({
+                refs.push({
                   from_id,
                   from_path: from_header.source_location.path,
                   to_id,
@@ -424,7 +441,7 @@ async function convert_path(input_path, cirodown_options, non_cirodown_options) 
       }
       await Promise.all([
         non_cirodown_options.sequelize.models.Id.bulkCreate(create_ids, { transaction }),
-        non_cirodown_options.sequelize.models.Ref.bulkCreate(includes, { transaction }),
+        non_cirodown_options.sequelize.models.Ref.bulkCreate(refs, { transaction }),
         non_cirodown_options.sequelize.models.File.create(
           {
             path: input_path_relative_to_cirodown_json,

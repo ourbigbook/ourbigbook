@@ -60,6 +60,19 @@ and another:
 \Q[or maybe not]
 and finally.
 
+br:
+
+\Q[
+aa\br
+bb\br
+]
+
+\Q[
+asdf\br
+
+qwer
+]
+
 Literal block that renders as sane:
 
 \Q[[To be \i[or] maybe not.]]

@@ -3707,20 +3707,20 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: --generate followed by conversion does not blow up',
+  'executable: --generate min followed by conversion does not blow up',
   {
     args: ['.'],
     pre_exec: [
-      ['cirodown', ['--generate']],
+      ['cirodown', ['--generate', 'min']],
     ],
   }
 );
 assert_executable(
-  'executable: --generate-multifile followed by conversion does not blow up',
+  'executable: --generate default followed by conversion does not blow up',
   {
     args: ['.'],
     pre_exec: [
-      ['cirodown', ['--generate-multifile']],
+      ['cirodown', ['--generate', 'default']],
       ['git', ['init']],
       ['git', ['add', '.']],
       ['git', ['commit', '-m', '0']],
@@ -3728,11 +3728,11 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: --generate followed by publish conversion does not blow up',
+  'executable: --generate min followed by publish conversion does not blow up',
   {
     args: ['--dry-run', '--publish'],
     pre_exec: [
-      ['cirodown', ['--generate']],
+      ['cirodown', ['--generate', 'min']],
       ['git', ['init']],
       ['git', ['add', '.']],
       ['git', ['commit', '-m', '0']],
@@ -3741,11 +3741,11 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: --generate-multifile followed by publish conversion does not blow up',
+  'executable: --generate default followed by publish conversion does not blow up',
   {
     args: ['--dry-run', '--publish'],
     pre_exec: [
-      ['cirodown', ['--generate-multifile']],
+      ['cirodown', ['--generate', 'default']],
       ['git', ['init']],
       ['git', ['add', '.']],
       ['git', ['commit', '-m', '0']],

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>OurBigBook Web URL standards: GET param vs url component - Ciro Santilli</title>
+<meta property="og:title" content="OurBigBook Web URL standards: GET param vs url component - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/ourbigbook-web-url-standards-get-param-vs-url-component">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ourbigbook-web-url-standards-get-param-vs-url-component"><div class="notnav"><h1><a href="">OurBigBook Web URL standards: GET param vs url component</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-web"> OurBigBook Web</a><a href=".#ourbigbook-web-development"> OurBigBook Web development</a><a href=".#ourbigbook-web-architecture"> OurBigBook Web architecture</a><a href=".#ourbigbook-web-url-standards"> OurBigBook Web URL standards</a></div><div class="nav"><a class="nosplit" href=".#ourbigbook-web-url-standards-get-param-vs-url-component"></a><span class="metrics"><span class="wcntr"> Words: 151</span></span></div></nav></div><div class="p" id="_4842">Next.js imposes one constraint: ISR only works with URL parameters like <code>/articles/&lt;page&gt;</code>, not GET parameters like <code>/articles?page=1</code>.</div><div class="p" id="_4843">As of writing however, we don't use any ISR as it adds a lot of complication. But still, we are trying to stick to the general principle that if something might ever be ISR'ed in the future, then we would like to keep it as parameter rather then GET. It feels sane.</div><div class="p" id="_4844">The only things that we are ever consider ISR'ing are the pre-rendered version of articles and issues, excluding any metadata of those that changes often or depends on logged in users.</div><div class="p" id="_4845">All lists of things will never be ISR'ed, as those can change constantly. One conclusion of this is that:<div class="list"><ul id="_4846"><li id="_4847">page number</li><li id="_4848">ordering</li><li id="_4849">other search-like parameters</li></ul></div>which appear only in lists of things, will always be part of the GET query, and not params.</div><div class="p" id="_4850">Types:<div class="list"><ul id="_4851"><li id="_4852">booleans are <code>true</code> or <code>false</code></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-web-url-standards">OurBigBook Web URL standards</a></li><li><a href=".#ourbigbook-web-architecture">OurBigBook Web architecture</a></li><li><a href=".#ourbigbook-web-development">OurBigBook Web development</a></li><li><a href=".#ourbigbook-web">OurBigBook Web</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

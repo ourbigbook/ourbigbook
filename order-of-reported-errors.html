@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Order of reported errors - Ciro Santilli</title>
+<meta property="og:title" content="Order of reported errors - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/order-of-reported-errors">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="order-of-reported-errors"><div class="notnav"><h1><a href="">Order of reported errors</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#tooling"> Tooling</a><a href=".#error-reporting"> Error reporting</a></div><div class="nav"><a class="nosplit" href=".#order-of-reported-errors"></a><span class="metrics"><span class="wcntr"> Words: 284</span></span></div></nav></div><div class="p" id="_5144">One important philosophy of the error reporting is that the very first message should be the root cause of the problem whenever possible: users should not be forced to search a hundred messages to find the root cause. In this way, the procedure:<div class="list"><ul id="_5145"><li id="_5146">solve the first error</li><li id="_5147">reconvert</li><li id="_5148">solving the new first error</li><li id="_5149">reconvert</li><li id="_5150">etc.</li></ul></div>should always deterministically lead to a resolution of all problems.</div><div class="p" id="_5151">Error messages are normally sorted by file, line and column, regardless of which conversion stage they happened (e.g. a tokeniser error first gets reported before a parser error).</div><div class="p" id="_5152">There is however one important exception to that: broken <a href=".#internal-link">internal links</a> are always reported last.</div><div class="p" id="_5153">For example, consider the following syntactically wrong document:<div class="code" id="_5154"><div><pre><code>= a
+
+\x[b]
+
+``
+== b</code></pre></div></div>Here we have an unterminated code block at line 5.</div><div class="p" id="_5155">However, this unterminated code block leads the header <code>b</code> not to be seen, and therefore the reference <code>\x[b]</code> on line 3 to fail.</div><div class="p" id="_5156">Therefore, if we sorted naively by line, the broken reference would shoe up first:<div class="code" id="_5157"><div><pre><code>error: tmp.bigb:3:3: internal link to unknown id: "b"
+error: tmp.bigb:5:1: unterminated literal argument</code></pre></div></div></div><div class="p" id="_5158">But in a big document, this case could lead to hundreds of undefined references to show up before the actual root unterminated literal problem.:<div class="code" id="_5159"><div><pre><code>error: tmp.bigb:3:3: internal link \x to unknown id: "b"
+error: tmp.bigb:4:3: internal link \x to unknown id: "b"
+error: tmp.bigb:5:3: internal link \x to unknown id: "b"
+...
+error: tmp.bigb:1000:1: unterminated literal argument</code></pre></div></div></div><div class="p" id="_5160">Therefore, we force undefined references to show up last to prevent this common problem:<div class="code" id="_5161"><div><pre><code>error: tmp.bigb:1000:1: unterminated literal argument
+error: tmp.bigb:3:3: intenal link \x to unknown id: "b"
+error: tmp.bigb:4:3: intenal link \x to unknown id: "b"
+error: tmp.bigb:5:3: intenal link \x to unknown id: "b"
+...</code></pre></div></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#error-reporting">Error reporting</a></li><li><a href=".#tooling">Tooling</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

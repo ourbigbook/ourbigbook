@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+f="${1:-latest.dump}"
+shift
+PGPASSWORD=a pg_dump -U ourbigbook_user -h localhost -Fc -f "$f" "$@" ourbigbook

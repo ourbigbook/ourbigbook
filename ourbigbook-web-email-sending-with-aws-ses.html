@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>OurBigBook Web email sending with AWS SES - Ciro Santilli</title>
+<meta property="og:title" content="OurBigBook Web email sending with AWS SES - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/ourbigbook-web-email-sending-with-aws-ses">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ourbigbook-web-email-sending-with-aws-ses"><div class="notnav"><h1><a href="">OurBigBook Web email sending with AWS SES</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-web"> OurBigBook Web</a><a href=".#ourbigbook-web-development"> OurBigBook Web development</a><a href=".#ourbigbook-web-deployment"> OurBigBook Web deployment</a><a href=".#ourbigbook-web-email-sending"> OurBigBook Web email sending</a><a href=".#ourbigbook-web-email-sending-with"> OurBigBook Web email sending with</a></div><div class="nav"><a class="nosplit" href=".#ourbigbook-web-email-sending-with-aws-ses"></a><span class="metrics"><span class="wcntr"> Words: 74</span></span></div></nav></div><div class="p" id="_4574">This is the current method used on <a href=".#ourbigbook-com">OurBigBook.com</a>. They currenly offer pay as you go mailing at 1$ / 10,000 emails sent, which feels reasonable.</div><div class="code" id="_4575"><div><pre><code>OURBIGBOOK_SEND_EMAIL=ses \
+    OURBIGBOOK_SEND_EMAIL_SES_REGION=us-east-1 \
+    OURBIGBOOK_SEND_EMAIL_SES_USERNAME=access-key \
+    OURBIGBOOK_SEND_EMAIL_SES_API_KEY=secret-access-key \
+    npm run dev</code></pre></div></div><div class="p" id="_4576">The initial setup is slightly annoying as you have to write to support for them to enable your account, much like other AWS products, but once that is done we managed to get it working fine.</div><div class="p" id="_4577">Announced at: <div class="list"><ul id="_4578"><li id="_4579"><a href="https://mastodon.social/@ourbigbook/114970958914849281">mastodon.social/@ourbigbook/114970958914849281</a></li><li id="_4580"><a href="https://x.com/OurBigBook/status/1952376470849859661">x.com/OurBigBook/status/1952376470849859661</a></li><li id="_4581"><a href="https://www.linkedin.com/feed/update/urn:li:share:7358142308652838912">www.linkedin.com/feed/update/urn:li:share:7358142308652838912</a></li><li id="_4582"><a href="https://www.facebook.com/OurBigBook/posts/pfbid034bsRDjfp6aRsG8EwBQnBxBrm5yPe9uaEWeHHJoyVUjEzJDTAREyApcNPzMhBpSkGl">www.facebook.com/OurBigBook/posts/pfbid034bsRDjfp6aRsG8EwBQnBxBrm5yPe9uaEWeHHJoyVUjEzJDTAREyApcNPzMhBpSkGl</a></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(6)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-web-email-sending-with">OurBigBook Web email sending with</a></li><li><a href=".#ourbigbook-web-email-sending">OurBigBook Web email sending</a></li><li><a href=".#ourbigbook-web-deployment">OurBigBook Web deployment</a></li><li><a href=".#ourbigbook-web-development">OurBigBook Web development</a></li><li><a href=".#ourbigbook-web">OurBigBook Web</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Test system - Ciro Santilli</title>
+<meta property="og:title" content="Test system - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/test-system">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="test-system"><div class="notnav"><h1><a href="">Test system</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#developing-ourbigbook"> Developing OurBigBook</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#test-system"></a><span class="metrics"><span class="wcntr"> Words: 797</span><span class="dcnt"> Articles: 3</span></span></div></nav></div><div class="p" id="_5202">Run all tests:<div class="code" id="_5203"><div><pre><code>npm test</code></pre></div></div></div><div class="p" id="_5204">To run all tests on PostgreSQL as in the <a href=".#ourbigbook-web">OurBigBook Web</a>, first setup the PostgreSQL database similarly to <a href=".#local-run-as-identical-to-deployment-as-possible">local run as identical to deployment as possible</a>:<div class="code" id="_5205"><div><pre><code>createdb ourbigbook_cli
+psql -c "CREATE ROLE ourbigbook_user with login password 'a'"
+psql -c 'GRANT ALL PRIVILEGES ON DATABASE ourbigbook_cli TO ourbigbook_user'
+psql -c 'GRANT ALL ON SCHEMA public TO ourbigbook_user'
+psql -c 'GRANT USAGE ON SCHEMA public TO ourbigbook_user'
+psql -c 'ALTER DATABASE ourbigbook_cli OWNER TO ourbigbook_user'</code></pre></div></div>This got really annoying with PostgreSQL 15: <a href="https://stackoverflow.com/questions/67276391/why-am-i-getting-a-permission-denied-error-for-schema-public-on-pgadmin-4">stackoverflow.com/questions/67276391/why-am-i-getting-a-permission-denied-error-for-schema-public-on-pgadmin-4</a> And then run with:<div class="code" id="_5206"><div><pre><code>npm run test-pg</code></pre></div></div></div><div class="p" id="_5207">List all tests:<div class="code" id="_5208"><div><pre><code>node node_modules/mocha-list-tests/mocha-list-tests.js main.js</code></pre></div></div>as per: <a href="https://stackoverflow.com/questions/41380137/list-all-mocha-tests-without-executing-them/58573986#58573986">stackoverflow.com/questions/41380137/list-all-mocha-tests-without-executing-them/58573986#58573986</a>.</div><div class="p" id="_5209">Run just one test by name:<div class="code" id="_5210"><div><pre><code>npm test -- -g 'one paragraph'</code></pre></div></div>or on PostgreSQL:<div class="code" id="_5211"><div><pre><code>npm run test-pg -- -g 'one paragraph'</code></pre></div></div>As per: <a href="https://stackoverflow.com/questions/10832031/how-to-run-a-single-test-with-mocha">stackoverflow.com/questions/10832031/how-to-run-a-single-test-with-mocha</a> todo: what if the test name is a substring? You will want these Bash aliases:<div class="code" id="_5212"><div><pre><code>npmtg() ( npm test -- -g "$*" )
+npmtpg() ( npm run test-pg -- -g "$*" )</code></pre></div></div>which allos you to just:<div class="code" id="_5213"><div><pre><code>npmtg one paragraph
+npmtpg one paragraph</code></pre></div></div></div><div class="p" id="_5214">Run all tests that don't start with <code>cli:</code>:<div class="code" id="_5215"><div><pre><code>npm test -- -g '^(?!cli:)'</code></pre></div></div>This works because <code>-g</code> takes JavaScript regular expressions, so we can use negative lookahead, see also: <a href="https://stackoverflow.com/questions/26908288/with-mocha-how-do-i-run-all-tests-that-dont-have-slow-in-the-name">stackoverflow.com/questions/26908288/with-mocha-how-do-i-run-all-tests-that-dont-have-slow-in-the-name</a></div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 797</span><span class="dcnt"> 3</span></span></span></span></div><ul><li><div id="_toc/inspect-the-database-after-a-test"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#inspect-the-database-after-a-test">Inspect the database after a test</a><span class="hover-metadata"><a href="#_toc" class="u"> Test system</a><span class="metrics"><span class="wcntr"> 80</span></span></span></span></div></li><li><div id="_toc/step-debug-when-running-a-test"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#step-debug-when-running-a-test">Step debug when running a test</a><span class="hover-metadata"><a href="#_toc" class="u"> Test system</a><span class="metrics"><span class="wcntr"> 154</span></span></span></span></div></li><li><div id="_toc/lib-vs-cli-tests"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#lib-vs-cli-tests"><code>lib:</code> vs <code>cli:</code> tests</a><span class="hover-metadata"><a href="#_toc" class="u"> Test system</a><span class="metrics"><span class="wcntr"> 373</span></span></span></span></div></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(2)</span></a></h2><div class="list"><ol><li><a href=".#developing-ourbigbook">Developing OurBigBook</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(4)</span></a></h2><div class="list"><ul><li><a href=".#do-the-release">Do the release</a></li><li><a href=".#ourbigbook-web-next-js-unit-tests">OurBigBook Web Next.js unit tests</a></li><li><a href=".#ourbigbook-web-unit-tests">OurBigBook Web unit tests</a></li><li><a href=".#overview-of-files-in-this-repository">Overview of files in this repository</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

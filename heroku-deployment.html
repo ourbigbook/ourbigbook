@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Heroku deployment - Ciro Santilli</title>
+<meta property="og:title" content="Heroku deployment - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/heroku-deployment">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="heroku-deployment"><div class="notnav"><h1><a href="">Heroku deployment</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-web"> OurBigBook Web</a><a href=".#ourbigbook-web-development"> OurBigBook Web development</a><a href=".#ourbigbook-web-deployment"> OurBigBook Web deployment</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#heroku-deployment"></a><span class="metrics"><span class="wcntr"> Words: 1k</span><span class="dcnt"> Articles: 7</span></span></div></nav></div><div class="p" id="_4621">Got it running perfectly at as of April 2021 <a href="https://ourbigbook.com">ourbigbook.com</a> with the following steps.</div><div class="p" id="_4622">Initial setup for a Heroku project called <code>ourbigbook</code>:<div class="code" id="_4623"><div><pre><code>sudo snap install --classic heroku
+heroku login
+./heroku git:remote
+git remote rename heroku prod
+# Automatically sets DATABASE_URL.
+./heroku addons:create heroku-postgresql:hobby-dev
+# We need this to be able to require("ourbigbook")
+./heroku config:set SECRET="$(tr -dc A-Za-z0-9 &lt;/dev/urandom | head -c 256)"
+# Password of users generated with ./web/bin/generate-demo-data
+./heroku config:set OURBIGBOOK_DEMO_USER_PASSWORD="$(tr -dc A-Za-z0-9 &lt;/dev/urandom | head -c 20)"
+# You can get it later to login with the demo users from the Heroku web interface</code></pre></div></div>To finish things off, you must now:<div class="list"><ul id="_4624"><li id="_4625">setup <a href=".#ourbigbook-web-email-sending">OurBigBook Web email sending</a>, e.g. with <a href=".#ourbigbook-web-email-sending-with-sendgrid">OurBigBook Web email sending with Sendgrid</a>. We haven't found a free method integrated with Heroku currently, so using this separate Sendgrid setup initially.</li><li id="_4626">optional but highly recommended: setup reCAPTCHA: <a href=".#ourbigbook-web-recaptcha-setup">Section "OurBigBook Web reCAPTCHA setup"</a></li><li id="_4627">optional: setup <a href=".#ourbigbook-vpn-blocking">Section "OurBigBook VPN blocking"</a></li></ul></div></div><div class="p" id="_4628">Additionally, you also need to setup the PostgreSQL test database for both OurBigBook CLI and OurBigBook Web as documented at <a href=".#ourbigbook-web-postgresql-setup">Section "OurBigBook Web PostgreSQL setup"</a>:<div class="code" id="_4629"><div><pre><code>web/bin/pg-setup ourbigbook-cli</code></pre></div></div></div><div class="p" id="_4630">Then deploy with:<div class="code" id="_4631"><div><pre><code>cd web
+npm run deploy-prod</code></pre></div></div></div><div class="p" id="_4632">Get an interactive shell on the production server:<div class="code" id="_4633"><div><pre><code>./heroku run bash</code></pre></div></div>From there you could then for example update the <a href=".#demo-data">demo data</a> with:<div class="code" id="_4634"><div><pre><code>cd web
+bin/generate-demo-data.js --force-production</code></pre></div></div>This should in theory not affect any real user data, only the demo articles and users, so it might be safe. In theory!</div><div class="p" id="_4635">Alternatively, we could do this at once with;<div class="code" id="_4636"><div><pre><code>./heroku run web/bin/generate-demo-data.js --force-production</code></pre></div></div></div><div class="p" id="_4637">Drop into a PostgreSQL shell on production:<div class="code" id="_4638"><div><pre><code>./heroku psql</code></pre></div></div>Of course, any writes could mean loss of user data!</div><div class="p" id="_4639">Run a query directly from your terminal:<div class="code" id="_4640"><div><pre><code>./heroku psql -c 'SELECT username,email FROM "User" ORDER BY "createdAt" DESC LIMIT 50'</code></pre></div></div></div><div class="p" id="_4641">If some spurious bugs crashes the server, you might want to restart it with:<div class="code" id="_4642"><div><pre><code>./heroku restart</code></pre></div></div></div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 1k</span><span class="dcnt"> 7</span></span></span></span></div><ul><li><div id="_toc/_file/heroku"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#_file/heroku">heroku</a><span class="hover-metadata"><a href="#_toc" class="u"> Heroku deployment</a><span class="metrics"><span class="wcntr"> 26</span></span></span></span></div></li><li><div id="_toc/upgrade-postgresql-database"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#upgrade-postgresql-database">Upgrade PostgreSQL database</a><span class="hover-metadata"><a href="#_toc" class="u"> Heroku deployment</a><span class="metrics"><span class="wcntr"> 18</span></span></span></span></div></li><li><div id="_toc/custom-domain-name-setup"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#custom-domain-name-setup">Custom domain name setup</a><span class="hover-metadata"><a href="#_toc" class="u"> Heroku deployment</a><span class="metrics"><span class="wcntr"> 175</span></span></span></span></div></li><li><div id="_toc/staging-deployment"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#staging-deployment">Staging deployment</a><span class="hover-metadata"><a href="#_toc" class="u"> Heroku deployment</a><span class="metrics"><span class="wcntr"> 137</span></span></span></span></div></li><li class="has-child"><div id="_toc/heroku-debugging"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#heroku-debugging">Heroku debugging</a><span class="hover-metadata"><a href="#_toc" class="u"> Heroku deployment</a><span class="metrics"><span class="wcntr"> 171</span><span class="dcnt"> 1</span></span></span></span></div><ul><li><div id="_toc/download-heroku-database-and-restore-it-locally"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#download-heroku-database-and-restore-it-locally">Download Heroku database and restore it locally</a><span class="hover-metadata"><a href="#_toc/heroku-debugging" class="u"> Heroku debugging</a><span class="metrics"><span class="wcntr"> 142</span></span></span></span></div></li></ul><li><div id="_toc/dependency-organization"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#dependency-organization">Dependency organization</a><span class="hover-metadata"><a href="#_toc" class="u"> Heroku deployment</a><span class="metrics"><span class="wcntr"> 227</span></span></span></span></div></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-web-deployment">OurBigBook Web deployment</a></li><li><a href=".#ourbigbook-web-development">OurBigBook Web development</a></li><li><a href=".#ourbigbook-web">OurBigBook Web</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(5)</span></a></h2><div class="list"><ul><li><a href=".#ourbigbook-web-admin">OurBigBook Web admin</a></li><li><a href=".#ourbigbook-web-next-js-unit-tests">OurBigBook Web Next.js unit tests</a></li><li><a href=".#ourbigbook-web-performance-log">OurBigBook Web performance log</a></li><li><a href=".#ourbigbook-web-recaptcha-setup">OurBigBook Web reCAPTCHA setup</a></li><li><a href=".#staging-deployment">Staging deployment</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

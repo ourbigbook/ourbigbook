@@ -1,0 +1,237 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "OurBigBook",
+	"scopeName": "source.ourbigbook",
+	"patterns": [
+		{ "include": "#escape" },
+		{ "include": "#shorthandCode" },
+		{ "include": "#shorthandHeader" },
+		{ "include": "#shorthandList" },
+		{ "include": "#shorthandMath" },
+		{ "include": "#shorthandRef" },
+		{ "include": "#shorthandRefNoBracket" },
+		{ "include": "#macro" },
+		{ "include": "#named" },
+		{ "include": "#namedLiteral2" },
+		{ "include": "#namedLiteral3" },
+		{ "include": "#namedLiteral4" },
+		{ "include": "#namedLiteral5" },
+		{ "include": "#positionalLiteral2" },
+		{ "include": "#positionalLiteral3" },
+		{ "include": "#positionalLiteral4" },
+		{ "include": "#positionalLiteral5" },
+		{ "include": "#url" }
+	],
+	"repository": {
+		"escape": {
+			"patterns": [
+				{
+					"match": "\\\\(`|\\$|\\\\|\\[|]|\\{|}|<|\\||\\*|#)",
+					"name": "string.quoted.bigb"
+				}
+			]
+		},
+		"shorthandCode": {
+			"patterns": [
+				{
+					"begin": "(`+)",
+					"end": "\\1",
+					"captures": { "0": { "name": "entity.name.tag.bigb" } },
+					"name": "string.quoted.bigb"
+				}
+			]
+		},
+		"shorthandHeader": {
+			"patterns": [
+				{
+					"name": "markup.heading.bigb",
+					"match": "^=+ .*$"
+				}
+			]
+		},
+		"shorthandList": {
+			"patterns": [
+				{
+					"name": "entity.name.tag.bigb",
+                    "comment": "The < has no effect apparently, it gest overridden by brace matching...: https://stackoverflow.com/questions/45301283/how-to-disable-angle-bracket-highlighting-in-visual-studio-code",
+					"match": "^ *(\\*|\\|\\||\\||\\>) "
+				}
+			]
+		},
+		"shorthandMath": {
+			"patterns": [
+				{
+					"begin": "(\\$+)",
+					"end": "\\1",
+					"captures": { "0": { "name": "entity.name.tag.bigb" } },
+					"name": "string.quoted.bigb",
+					"patterns": [ { "include": "text.tex" } ]
+				}
+			]
+		},
+		"shorthandRefNoBracket": {
+			"patterns": [
+				{
+					"match": "(#)([^\\[\\]{} \n]+)",
+					"captures": {
+                        "1": { "name": "entity.name.tag.bigb" },
+                        "2": { "name": "variable" }
+                    }
+				}
+			]
+		},
+		"shorthandRef": {
+			"patterns": [
+				{
+					"begin": "(<)(#?)",
+					"end": ">",
+					"beginCaptures": {
+                        "1": { "name": "entity.name.tag.bigb" },
+                        "2": { "name": "string.quoted.bigb" }
+                    },
+					"endCaptures": { "0": { "name": "entity.name.tag.bigb" } },
+					"name": "variable"
+				}
+			]
+		},
+		"macro": {
+			"patterns": [
+				{
+					"name": "entity.name.tag.bigb",
+					"match": "\\\\[a-zA-Z0-9]+"
+				}
+			]
+		},
+		"named": {
+			"patterns": [
+				{
+					"match": "(\\{)([a-zA-Z0-9]+)(=)?",
+					"captures": {
+						"2": { "name": "variable.parameter.bigb" },
+						"3": { "name": "keyword.control.bigb" }
+					}
+				}
+			]
+		},
+		"namedLiteral2": {
+			"patterns": [
+				{
+					"begin": "(\\{{2,2})([a-zA-Z0-9]+)(=)?",
+					"end": "}{2,2}",
+					"beginCaptures": {
+						"1": { "name": "punctuation.definition.tag.bigb" },
+						"2": { "name": "variable.parameter.bigb" },
+						"3": { "name": "keyword.control.bigb" }
+					},
+					"endCaptures": {
+						"0": { "name": "punctuation.definition.tag.bigb" }
+					},
+					"contentName": "string.quoted.bigb"
+				}
+			]
+		},
+		"namedLiteral3": {
+			"patterns": [
+				{
+					"begin": "(\\{{3,3})([a-zA-Z0-9]+)(=)?",
+					"end": "}{3,3}",
+					"beginCaptures": {
+						"1": { "name": "punctuation.definition.tag.bigb" },
+						"2": { "name": "variable.parameter.bigb" },
+						"3": { "name": "keyword.control.bigb" }
+					},
+					"endCaptures": {
+						"0": { "name": "punctuation.definition.tag.bigb" }
+					},
+					"contentName": "string.quoted.bigb"
+				}
+			]
+		},
+		"namedLiteral4": {
+			"patterns": [
+				{
+					"begin": "(\\{{4,4})([a-zA-Z0-9]+)(=)?",
+					"end": "}{4,4}",
+					"beginCaptures": {
+						"1": { "name": "punctuation.definition.tag.bigb" },
+						"2": { "name": "variable.parameter.bigb" },
+						"3": { "name": "keyword.control.bigb" }
+					},
+					"endCaptures": {
+						"0": { "name": "punctuation.definition.tag.bigb" }
+					},
+					"contentName": "string.quoted.bigb"
+				}
+			]
+		},
+		"namedLiteral5": {
+			"patterns": [
+				{
+					"begin": "(\\{{5,5})([a-zA-Z0-9]+)(=)?",
+					"end": "}{5,5}",
+					"beginCaptures": {
+						"1": { "name": "punctuation.definition.tag.bigb" },
+						"2": { "name": "variable.parameter.bigb" },
+						"3": { "name": "keyword.control.bigb" }
+					},
+					"endCaptures": {
+						"0": { "name": "punctuation.definition.tag.bigb" }
+					},
+					"contentName": "string.quoted.bigb"
+				}
+			]
+		},
+		"positionalLiteral2": {
+			"patterns": [
+				{
+					"begin": "\\[{2,2}",
+					"end": "]{2,2}",
+					"beginCaptures": { "0": { "name": "punctuation.definition.tag.bigb" } },
+					"endCaptures": { "0": { "name": "punctuation.definition.tag.bigb" } },
+					"name": "string.quoted.bigb"
+				}
+			]
+		},
+		"positionalLiteral3": {
+			"patterns": [
+				{
+					"begin": "\\[{3,3}",
+					"end": "]{3,3}",
+					"beginCaptures": { "0": { "name": "punctuation.definition.tag.bigb" } },
+					"endCaptures": { "0": { "name": "punctuation.definition.tag.bigb" } },
+					"name": "string.quoted.bigb"
+				}
+			]
+		},
+		"positionalLiteral4": {
+			"patterns": [
+				{
+					"begin": "\\[{4,4}",
+					"end": "]{4,4}",
+					"beginCaptures": { "0": { "name": "punctuation.definition.tag.bigb" } },
+					"endCaptures": { "0": { "name": "punctuation.definition.tag.bigb" } },
+					"name": "string.quoted.bigb"
+				}
+			]
+		},
+		"positionalLiteral5": {
+			"patterns": [
+				{
+					"begin": "\\[{5,5}",
+					"end": "]{5,5}",
+					"beginCaptures": { "0": { "name": "punctuation.definition.tag.bigb" } },
+					"endCaptures": { "0": { "name": "punctuation.definition.tag.bigb" } },
+					"name": "string.quoted.bigb"
+				}
+			]
+		},
+		"url": {
+			"patterns": [
+				{
+					"name": "markup.underline.link",
+					"match": "https?://[^ \\[\\]]+"
+				}
+			]
+		}
+	}
+}

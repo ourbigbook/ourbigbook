@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>lib: vs cli: tests - Ciro Santilli</title>
+<meta property="og:title" content="lib: vs cli: tests - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/lib-vs-cli-tests">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="lib-vs-cli-tests"><div class="notnav"><h1><a href=""><code>lib:</code> vs <code>cli:</code> tests</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#developing-ourbigbook"> Developing OurBigBook</a><a href=".#test-system"> Test system</a></div><div class="nav"><a class="nosplit" href=".#lib-vs-cli-tests"></a><span class="metrics"><span class="wcntr"> Words: 373</span></span></div></nav></div><div class="p" id="_5229">There are two types of test in our test suite:<div class="list"><ul id="_5230"><li id="_5231"><div class="p" id="_5232">tests that call the <code>ourbigbook.convert</code> <a href=".#ourbigbook-library">JavaScript API</a> directly.<br>These tests are prefixed with <code>lib: </code></div><div class="p" id="_5233">These tests don't actually create files in the filesystem, and just mock the filesystem instead with a dictionary.</div><div class="p" id="_5234">Database access is not mocked however, we just use Sqlite's fantastic in-memory mode.</div><div class="p" id="_5235">Whenever possible, these tests check their results just from the <a href=".#abstract-syntax-tree">abstract syntax tree</a> tree returned by the API, which is cleaner than parsing the HTML. But sometimes HTML parsing is inevitable.</div></li><li id="_5236">tests that call the <a href=".#ourbigbook-cli"><code>ourbigbook</code> executable</a> itself:<div class="list"><ul id="_5237"><li id="_5238">their titles are prefixed with <code>cli: </code></li><li id="_5239">they tend to be a lot slower than the API test</li><li id="_5240">can test functionality that is done outside of the <code>ourbigbook.convert</code> JavaScript API, notably stuff prevent in ourbigbook, so they are more end to end</li><li id="_5241"><div class="p" id="_5242">don't do any mocking, and could therefore be more representative.</div><div class="p" id="_5243">However, as of 2022, we have basically eliminated all the hard database access mocking and are using the main database methods directly.</div><div class="p" id="_5244">So all that has to be mocked is basically stuff done in the ourbigbook executable itself.</div><div class="p" id="_5245">This means that except for more specific options, the key functionality of ourbigbook, which is to convert multiple paths, can be done very well in a non executable test.</div><div class="p" id="_5246">The only major difference is that instead of passing command line arguments like in <code>ourbigbook .</code> to convert multiple files in a directory, you have to use <code>convert_before</code> and <code>convert_before_norender</code> and specify conversion order one by one.</div><div class="p" id="_5247">This test robustness is new as of 2022, and many tests were previously written with executable that would now also work as unit tests, and we generally want that to be the case to make the tests go faster.</div></li><li id="_5248"><div class="p" id="_5249">work by creating an actual physical filesystem under <code>_out/test/&lt;normalized-test-title&gt;</code> with the OurBigBook files and other files like <code>ourbigbook.json</code>, and then running the executable on that directory.</div><div class="p" id="_5250"><code>npm test</code> first deletes the <code>_out/test</code> directory before running the tests. After running, the generated files are kept so you can inspect them to help debug any issues.</div></li><li id="_5251">all these tests check their results by parsing the HTML and searching for elements, since here we don't have access to the <a href=".#abstract-syntax-tree">abstract syntax tree</a>. It wouldn't be impossible to obtain it however, as it is likely already JSON serializable.</li></ul></div></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#test-system">Test system</a></li><li><a href=".#developing-ourbigbook">Developing OurBigBook</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

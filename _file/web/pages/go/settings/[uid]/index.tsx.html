@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>web/pages/go/settings/[uid]/index.tsx - Ciro Santilli</title>
+<meta property="og:title" content="web/pages/go/settings/[uid]/index.tsx - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/_file/web/pages/go/settings/[uid]/index.tsx">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../../../../" class="brand"><img src="../../../../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="file/web/pages/go/settings/[uid]/index.tsx"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">web/pages/go/settings/[uid]/index.tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../../../_dir">(root)</a> / <a href="../../../../../_dir/web">web</a> / <a href="../../../../../_dir/web/pages">pages</a> / <a href="../../../../../_dir/web/pages/go">go</a> / <a href="../../../../../_dir/web/pages/go/settings">settings</a> / <a href="../../../../../_dir/web/pages/go/settings/%5Buid%5D">[uid]</a> / <a href="../../../../../_raw/web/pages/go/settings/%5Buid%5D/index.tsx">index.tsx</a></b></div></nav></div><div class="p"><b>web/pages/go/settings/[uid]/index.tsx</b></div><div class="code"><div><pre><code>import Router from 'next/router'
+import React from 'react'
+
+import lodash from 'lodash'
+
+import {
+  allowedImageContentTypes,
+  allowedImageContentTypesSimplifiedArr,
+  contactUrl,
+  docsUrl,
+  docsAccountLockingUrl,
+  profilePicturePath,
+  profilePictureMaxUploadSize,
+} from 'front/config'
+import CustomImage from 'front/CustomImage'
+import Label from 'front/Label'
+import MapErrors from 'front/MapErrors'
+import {
+  addCommasToInteger,
+  HelpIcon,
+  LockIcon,
+  MyHead,
+  OkIcon,
+  SettingsIcon,
+  setupUserLocalStorage,
+  useCtrlEnterSubmit
+} from 'front'
+import { webApi } from 'front/api'
+import routes from 'front/routes'
+import { CommonPropsType } from 'front/types/CommonPropsType'
+import { UserType } from 'front/types/UserType'
+import { displayAndUsernameText } from 'front/user'
+import { formatNumberApprox } from 'ourbigbook'
+
+const maxArticlesLabel = "Maximum number of articles, issues and comments (maxArticles)"
+const maxArticleSizeLabel = "Maximum article/issue/comment size (maxArticleSize)"
+const maxUploadsLabel = "Maximum number of uploads (maxUploads)"
+const maxUploadSizeLabel = "Maximum upload size (maxUploadSize)"
+const maxIssuesPerMinuteLabel = "Maximum issues/comments per minute (maxIssuesPerMinute)"
+const maxIssuesPerHourLabel = "Maximum issues/comments per hour (maxIssuesPerHour)"
+const title = "Account settings"
+
+interface SettingsProps extends CommonPropsType {
+  user?: UserType;
+}
+
+const Settings = ({
+  user: user0,
+  loggedInUser,
+}: SettingsProps) =&gt; {
+  const [isLoading, setLoading] = React.useState(false);
+  const [errors, setErrors] = React.useState([]);
+  const username = user0.username
+  const [userInfo, setUserInfo] = React.useState(lodash.pick(
+    user0,
+    [
+      'displayName',
+      'emailNotifications',
+      'hideArticleDates',
+      'password',
+    ]
+  ))
+  const profileImageRef = React.useRef&lt;HTMLImageElement|null&gt;(null)
+  const updateState = (field) =&gt; (e) =&gt; {
+    const state = userInfo;
+    const newState = { ...state, [field]: e.target.value };
+    setUserInfo(newState);
+  }
+  const handleSubmit = async (e) =&gt; {
+    e.preventDefault()
+    setLoading(true)
+    const user = { ...userInfo }
+    if (!user.password) {
+      delete user.password
+    }
+    const { data, status } = await webApi.userUpdate(user0.username, user)
+    setLoading(false)
+    if (status === 200) {
+      if (
+        data.user &amp;&amp;
+        // Possible for admin edits.
+        data.user.username === loggedInUser.username
+      ) {
+        await setupUserLocalStorage(data.user, setErrors)
+      }
+      Router.push(routes.user(data.user.username))
+    } else {
+      setErrors(data.errors)
+    }
+  }
+
+  // Limits.
+  const [userInfoLimits, setUserInfoLimits] = React.useState(lodash.pick(
+    user0,
+    [
+      'locked',
+      'maxArticles',
+      'maxArticleSize',
+      'maxUploads',
+      'maxUploadSize',
+      'maxIssuesPerHour',
+      'maxIssuesPerMinute',
+    ]
+  ))
+  const updateStateLimits = (field) =&gt; (e) =&gt; {
+    const state = userInfoLimits
+    const newState = { ...state, [field]: e.target.value }
+    setUserInfoLimits(newState)
+  }
+  const handleSubmitLimits = async (e) =&gt; {
+    e.preventDefault()
+    setLoading(true)
+    const { data, status } = await webApi.userUpdate(user0.username, userInfoLimits)
+    setLoading(false)
+    if (status === 200) {
+      Router.push(routes.user(data.user.username))
+    } else {
+      setErrors(data.errors)
+    }
+  }
+
+  const emailNotificationsForArticleAnnouncementRef = React.useRef(null)
+  const cantSetUserLimit = !!cant.setUserLimits(loggedInUser)
+  return &lt;&gt;
+    &lt;MyHead title={`${title} - ${displayAndUsernameText(userInfo)}`} /&gt;
+    &lt;div className="settings-page content-not-ourbigbook"&gt;
+      &lt;h1&gt;&lt;SettingsIcon /&gt; {title}&lt;/h1&gt;
+      &lt;&gt;
+        &lt;MapErrors errors={errors} /&gt;
+        &lt;form onSubmit={handleSubmit}&gt;
+          &lt;Label label="Username"&gt;
+            &lt;input
+              type="text"
+              disabled={true}
+              placeholder="Username"
+              value={user0.username}
+              title="Cannot be currently modified"
+              autoComplete="username"
+              //onChange={updateState("username")}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label="Display name"&gt;
+            &lt;input
+              type="text"
+              placeholder="Display name"
+              value={userInfo.displayName}
+              onChange={updateState("displayName")}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label="Profile picture"&gt;
+            &lt;span
+              className="profile-picture-container"
+              onClick={() =&gt; {
+                const input = document.createElement('input')
+                input.type = 'file'
+                input.onchange = e =&gt; { 
+                  var file = (e.target as HTMLInputElement).files[0]
+                  if (file.size &gt; profilePictureMaxUploadSize) {
+                    alert(`File too large: ${addCommasToInteger(file.size)} bytes. Maximum allowed size: ${formatNumberApprox(profilePictureMaxUploadSize)}B`)
+                  } else if (!allowedImageContentTypes.has(file.type)) {
+                    alert(`File type not allowed: ${file.type.split('/')[1]}. Allowed types: ${allowedImageContentTypesSimplifiedArr.join(', ')}`)
+                  } else {
+                    var reader = new FileReader()
+                    reader.readAsDataURL(file)
+                    reader.onload = async (readerEvent) =&gt; {
+                      const { data, status } = await webApi.userUpdateProfilePicture(
+                        user0.username,
+                        readerEvent.target.result,
+                      )
+                      if (status === 200) {
+                        profileImageRef.current.src = `${profilePicturePath}/${user0.id}`
+                      } else {
+                        let msg = `Upload failed with status: ${status}`
+                        if (data.errors) {
+                          msg += `. Error message: ${data.errors[0]}`
+                        }
+                        alert(msg)
+                      }
+                    }
+                  }
+                }
+                input.click()
+              }}
+            &gt;
+              &lt;CustomImage
+                className="profile-picture"
+                imgRef={profileImageRef}
+                src={user0.effectiveImage}
+              /&gt;
+              &lt;span className="profile-picture-caption"&gt;Click to update&lt;/span&gt;
+            &lt;/span&gt;
+          &lt;/Label&gt;
+          &lt;Label label="Email"&gt;
+            &lt;input
+              type="email"
+              placeholder="Email"
+              value={user0.email}
+              onChange={updateState("email")}
+              // https://github.com/ourbigbook/ourbigbook/issues/268
+              disabled={true}
+              title="Cannot be currently modified"
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label="Password"&gt;
+            &lt;input
+              type="password"
+              placeholder="New Password"
+              value={userInfoLimits.password}
+              onChange={updateState("password")}
+              autoComplete="new-password"
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label="Email notifications" inline={true}&gt;
+            &lt;input
+              type="checkbox"
+              defaultChecked={userInfoLimits.emailNotifications}
+              onChange={() =&gt; {
+                setUserInfo((state) =&gt; {
+                  const newState = !state.emailNotifications
+                  const emailNotificationsForArticleAnnouncementElem = emailNotificationsForArticleAnnouncementRef.current
+                  if (emailNotificationsForArticleAnnouncementElem) {
+                    emailNotificationsForArticleAnnouncementElem.disabled = !newState
+                  }
+                  return {
+                    ...state,
+                    emailNotifications: newState
+                  }}
+                )
+              }}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label="Email notifications for article announcements" inline={true}&gt;
+            &lt;input
+              type="checkbox"
+              defaultChecked={userInfo.emailNotificationsForArticleAnnouncement}
+              ref={emailNotificationsForArticleAnnouncementRef}
+              onChange={() =&gt; setUserInfo((state) =&gt; { return {
+                ...state,
+                emailNotificationsForArticleAnnouncement: !state.emailNotificationsForArticleAnnouncement
+              }})}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label
+            label="Hide article dates"
+            inline={true}
+            helpUrl={`${docsUrl}/ourbigbook-web-hide-article-dates`}
+          &gt;
+            &lt;input
+              type="checkbox"
+              defaultChecked={userInfo.hideArticleDates}
+              onChange={() =&gt; setUserInfo((state) =&gt; { return {
+                ...state,
+                hideArticleDates: !state.hideArticleDates
+              }})}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;button
+            className="btn"
+            type="submit"
+            disabled={isLoading}
+          &gt;
+            &lt;OkIcon /&gt; Update settings
+          &lt;/button&gt;
+        &lt;/form&gt;
+        &lt;h2&gt;&lt;LockIcon /&gt; Limits&lt;/h2&gt;
+        {cantSetUserLimit &amp;&amp;
+          &lt;p&gt;You must &lt;a href={contactUrl}&gt;&lt;b&gt;ask an admin&lt;/b&gt;&lt;/a&gt; to change the following limits for you:&lt;/p&gt;
+        }
+        &lt;form onSubmit={handleSubmitLimits}&gt;
+          &lt;Label label={maxArticlesLabel}&gt;
+            &lt;input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxArticles}
+              onChange={updateStateLimits("maxArticles")}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label={maxArticleSizeLabel}&gt;
+            &lt;input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxArticleSize}
+              onChange={updateStateLimits("maxArticleSize")}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label={maxUploadsLabel}&gt;
+            &lt;input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxUploads}
+              onChange={updateStateLimits("maxUploads")}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label={maxUploadSizeLabel}&gt;
+            &lt;input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxUploadSize}
+              onChange={updateStateLimits("maxUploadSize")}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label={maxIssuesPerMinuteLabel}&gt;
+            &lt;input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxIssuesPerMinute}
+              onChange={updateStateLimits("maxIssuesPerMinute")}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label label={maxIssuesPerHourLabel}&gt;
+            &lt;input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxIssuesPerHour}
+              onChange={updateStateLimits("maxIssuesPerHour")}
+            /&gt;
+          &lt;/Label&gt;
+          &lt;Label
+            label="Account locked"
+            helpUrl={docsAccountLockingUrl}
+            inline={true}
+          &gt;
+            &lt;input
+              disabled={cantSetUserLimit}
+              type="checkbox"
+              defaultChecked={userInfoLimits.locked}
+              onChange={() =&gt; setUserInfoLimits((state) =&gt; { return {
+                ...state,
+                locked: !state.locked
+              }})}
+            /&gt;
+            {' '}
+          &lt;/Label&gt;
+          &lt;button
+            className="btn"
+            type="submit"
+            disabled={isLoading}
+          &gt;
+            &lt;OkIcon /&gt; Update limits
+          &lt;/button&gt;
+        &lt;/form&gt;
+        &lt;h2&gt;&lt;HelpIcon /&gt; Extra information&lt;/h2&gt;
+        &lt;p&gt;Signup IP: &lt;b&gt;{user0.ip || 'not set'}&lt;/b&gt;&lt;/p&gt;
+        &lt;p&gt;Nested set needs update (nestedSetNeedsUpdate): &lt;b&gt;{user0.nestedSetNeedsUpdate.toString()}&lt;/b&gt;&lt;/p&gt;
+        {loggedInUser.admin &amp;&amp;
+          &lt;p&gt;Verified: &lt;b&gt;{user0.verified.toString()}&lt;/b&gt;&lt;/p&gt;
+        }
+      &lt;/&gt;
+    &lt;/div&gt;
+  &lt;/&gt;
+};
+
+export default Settings;
+
+import { getLoggedInUser } from 'back'
+import { cant } from 'front/cant'
+
+export async function getServerSideProps(context) {
+  const { params: { uid }, req, res } = context
+  if (
+    typeof uid === 'string'
+  ) {
+    const sequelize = req.sequelize
+    const [loggedInUser, user] = await Promise.all([
+      getLoggedInUser(req, res),
+      sequelize.models.User.findOne({
+        where: { username: uid },
+      }),
+    ])
+    if (!user) { return { notFound: true } }
+    const props: SettingsProps = {}
+    if (!loggedInUser) {
+      return {
+        redirect: {
+          destination: routes.userNew(),
+          permanent: false,
+        }
+      }
+    }
+    if (cant.viewUserSettings(loggedInUser, user)) {
+      return { notFound: true }
+    } else {
+      ;[props.user, props.loggedInUser] = await Promise.all([
+        user.toJson(loggedInUser),
+        loggedInUser.toJson(loggedInUser),
+      ])
+    }
+    return { props }
+  } else {
+    return { notFound: true }
+  }
+}
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

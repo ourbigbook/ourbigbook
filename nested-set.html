@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Nested set - Ciro Santilli</title>
+<meta property="og:title" content="Nested set - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/nested-set">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="nested-set"><div class="notnav"><h1><a href="">Nested set</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-web"> OurBigBook Web</a><a href=".#ourbigbook-web-development"> OurBigBook Web development</a><a href=".#ourbigbook-web-deployment"> OurBigBook Web deployment</a><a href=".#ourbigbook-web-database"> OurBigBook Web database</a></div><div class="nav"><a class="nosplit" href=".#nested-set"></a><span class="metrics"><span class="wcntr"> Words: 171</span></span></div></nav></div><div class="p" id="_4517">The "nested set index" is an index explicitly maintained by our codebase that allows quickly fetching pages for <a href=".#ourbigbook-web-dynamic-article-tree">OurBigBook Web dynamic article tree</a> in <a href="https://ourbigbook.com/go/topic/pre-order-depth-first">pre-order depth first</a>, i.e. the conventional order in which  the table of contents and articlees appear in a book. See also: <a href="https://stackoverflow.com/questions/4048151/what-are-the-options-for-storing-hierarchical-data-in-a-relational-database">stackoverflow.com/questions/4048151/what-are-the-options-for-storing-hierarchical-data-in-a-relational-database</a></div><div class="p" id="_4518">This technique is also called "closure table" by some authors.</div><div class="p" id="_4519">This index is, as the name indicates, an index, i.e. it duplicates information otherwise present in the <a href=".#ourbigbook-web-ref-database-table">OurBigBook Web <code>Ref</code> database table</a>, which contains an adjacency list format instead, in the hope that it would be faster to pre-order depth first traverse.</div><div class="p" id="_4520">This feature adds considerable complexity to the codebase. Also, updates can be considerably slow, as updating this index for a single article requires updating the index value for most or all other articles as well. We should bechmark it better vs recursive queries.</div><div class="p" id="_4521">This index was partly introduced as a helper rather than as a pure speed up, as it is a bit hard to do pre order tree traversal in SQLite due to the lack of arrays. In PostgreSQL we can do it well: <a href="https://stackoverflow.com/questions/65247873/preorder-tree-traversal-using-recursive-ctes-in-sql/77276675#77276675">stackoverflow.com/questions/65247873/preorder-tree-traversal-using-recursive-ctes-in-sql/77276675#77276675</a></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-web-database">OurBigBook Web database</a></li><li><a href=".#ourbigbook-web-deployment">OurBigBook Web deployment</a></li><li><a href=".#ourbigbook-web-development">OurBigBook Web development</a></li><li><a href=".#ourbigbook-web">OurBigBook Web</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(5)</span></a></h2><div class="list"><ul><li><a href=".#no-web-nested-set-bulk"><code>--no-web-nested-set-bulk</code></a></li><li><a href=".#ourbigbook-web-database-normalization">OurBigBook Web database normalization</a></li><li><a href=".#ourbigbook-web-dynamic-article-tree">OurBigBook Web dynamic article tree</a></li><li><a href=".#web-nested-set-option"><code>--web-nested-set</code> (option)</a></li><li><a href=".#wikipedia-bot">Wikipedia bot</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>OurBigBook Web analytics - Ciro Santilli</title>
+<meta property="og:title" content="OurBigBook Web analytics - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/ourbigbook-web-analytics">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ourbigbook-web-analytics"><div class="notnav"><h1><a href="">OurBigBook Web analytics</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-web"> OurBigBook Web</a><a href=".#ourbigbook-web-user-manual"> OurBigBook Web user manual</a><a href=".#ourbigbook-web-moderation"> OurBigBook Web moderation</a><a href=".#database-access-only-admin"> Database access-only admin</a></div><div class="nav"><a class="nosplit" href=".#ourbigbook-web-analytics"></a><span class="metrics"><span class="wcntr"> Words: 171</span></span></div></nav></div><div class="p" id="_4196"><a href=".#ourbigbook-web">OurBigBook Web</a> supports the following types of analytics:<div class="list"><ul id="_4197"><li id="_4198">Google Analytics. TODO: the Google Analytics ID is currently hardcoded under <a href="_raw/web/front/config.js">web/front/config.js</a> <code>googleAnalyticsId: 'G-R721ZZTW7L'</code>, we should instead take it from an environment variable</li><li id="_4199"><div class="p" id="_4200">our simple built-in analytics to better view referrers. At some point Google Analytics stopped showing clear referrer paths, and so we started storing out own real quick. There is currently no UI for it, you just have to query the database e.g. with:<div class="code" id="_4201"><div><pre><code>printf '\\a\nSELECT referrer,path,ip,"createdAt" FROM "Request" ORDER BY "createdAt" DESC LIMIT 1000' | ./heroku psql DATABASE_URL</code></pre></div></div>You can also blacklist domains to reduce referrer spam with <a href="_raw/web/bin/blacklist-referrer-domain">web/bin/blacklist-referrer-domain</a>:<div class="code" id="_4202"><div><pre><code>./heroku web/bin/blacklist-referrer-domain binance.com</code></pre></div></div>You can list the blacklisted domains with:<div class="code" id="_4203"><div><pre><code>./heroku psql -c 'SELECT domain FROM "ReferrerDomainBlacklist" ORDER BY domain ASC'</code></pre></div></div>Here's a small open database that might help: <a href="https://github.com/matomo-org/referrer-spam-list">github.com/matomo-org/referrer-spam-list</a>.</div><div class="p" id="_4204">Local testing can be done on <a href=".#ourbigbook-web-postgresql">PostgreSQL</a> with the help of:<div class="code" id="_4205"><div><pre><code>curl -H 'Referrer:http://exmaple.com' http://localhost:3000/qwer &amp;&gt;/dev/null &amp;&amp; web/bin/psql 'select * from "Request"'</code></pre></div></div></div><div class="p" id="_4206">We later learned that this feature is completely useless because <a href="https://stackoverflow.com/questions/6762258/when-browser-sets-the-referrer-in-http-request-header/79469565#79469565">browsers are actually not sending paths anymore</a>. But it's fun.</div></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#database-access-only-admin">Database access-only admin</a></li><li><a href=".#ourbigbook-web-moderation">OurBigBook Web moderation</a></li><li><a href=".#ourbigbook-web-user-manual">OurBigBook Web user manual</a></li><li><a href=".#ourbigbook-web">OurBigBook Web</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Vim - Ciro Santilli</title>
+<meta property="og:title" content="Vim - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/vim">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="vim"><div class="notnav"><h1><a href="">Vim</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#tooling"> Tooling</a><a href=".#editor-support"> Editor support</a></div><div class="nav"><a class="nosplit" href=".#vim"></a><span class="metrics"><span class="wcntr"> Words: 423</span></span></div></nav></div><div class="p" id="_5044">You can install the support with <a href="https://github.com/VundleVim/Vundle.vim">Vundle</a> with:<div class="code" id="_5045"><div><pre><code>set nocompatible
+filetype off
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+Plugin 'gmarik/vundle'
+let g:snipMate = {}
+let g:snipMate.snippet_version = 1
+Plugin 'MarcWeber/vim-addon-mw-utils'
+Plugin 'tomtom/tlib_vim'
+Plugin 'garbas/vim-snipmate'
+Plugin 'ourbigbook/ourbigbook', {'rtp': 'vim'}</code></pre></div></div>or by directly dropping the files named below under your <code>~/.vim/</code>, e.g. <code>vim/syntax/ourbigbook.vim</code></div><div class="p" id="_5046">The following support is provided:<div class="list"><ul id="_5047"><li id="_5048"><div class="p" id="_5049"><a href="_raw/vim/syntax/ourbigbook.vim">vim/syntax/ourbigbook.vim</a>: syntax highlighting.</div><div class="p" id="_5050">As for other programming languages, this cannot be perfect without actually parsing, which would be slow for larger files.</div><div class="p" id="_5051">But even the imperfect approximation already covers a lot of the most cases.</div><div class="p" id="_5052">Notably it turns off spelling from parts of the document like URLs and code which would otherwise contain many false positive spelling errors.</div></li><li id="_5053"><div class="p" id="_5054"><a href="_raw/vim/snippets/ourbigbook.snippets">vim/snippets/ourbigbook.snippets</a>: snippets for <a href="https://github.com/honza/vim-snippets">github.com/honza/vim-snippets</a>, which you also have to install first for them to work.</div><div class="p" id="_5055">For example, with those snippets installed, you can easily create links to headers. Suppose you have:<div class="code" id="_5056"><div><pre><code>= My long header</code></pre></div></div>To create an <a href=".#internal-link">internal link</a> to it you can:<div class="list"><ul id="_5057"><li id="_5058">copy <code>My long header</code> to the clipboard, see copy to clipboard shortcuts at: <a href="https://stackoverflow.com/questions/3961859/how-to-copy-to-clipboard-in-vim/67890119#67890119">stackoverflow.com/questions/3961859/how-to-copy-to-clipboard-in-vim/67890119#67890119</a></li><li id="_5059">type <code>\x</code> and then hit tab</li></ul></div>and it will automatically expand to:<div class="code" id="_5060"><div><pre><code>\x[my-long-header]</code></pre></div></div>This provides a reasonable alternative for ID calculation, until a ctags-like setup gets implemented (never/<a href=".#browser-editor-with-preview">browser editor with preview</a>-only? ;-))</div><div class="p" id="_5061">Similarly for <a href=".#h-parent-argument"><code>\H</code> <code>parent</code> argument</a> you can do:<div class="code" id="_5062"><div><pre><code>{p</code></pre></div></div>would expand to:<div class="code" id="_5063"><div><pre><code>{parent=my-long-header}</code></pre></div></div></div><div class="p" id="_5064">Syntax highlighting can likely never be perfect without a full parser (which is slow), but even the imperfect approximate setup (as provided for most other languages) is already a huge usability improvement.</div><div class="p" id="_5065">We will attempt to err on the side of "misses some stuff but does not destroy the entire page below" whenever possible.</div></li><li id="_5066">mappings:<div class="list"><ul id="_5067"><li id="_5068"><code>&lt;leader&gt;f</code>, which usually means <code>,f</code> (comma then F): start searching for a header in the current file. Does a regular <code>/</code> search without opening any windows, to is it very ligthweight. Mnemonic: "Find".</li><li id="_5069"><div class="p" id="_5070"><code>&lt;leader&gt;h</code> (requires <a href="https://github.com/tpope/vim-fugitive">Fugitive</a> to be installed): sets up the <code>ObbGitGrep</code> command, which  searches for header across all git tracked files in the current Git repository. After <code>,g</code> you are left in the prompt with:<div class="code" id="_5071"><div><pre><code>ObbGitGrep</code></pre></div></div>so if you complete that by:<div class="code" id="_5072"><div><pre><code>ObbGitGrep animal kingdom</code></pre></div></div>it will match headers that start with <code>animal kingdoom</code> case insentively, e.g.:<div class="code" id="_5073"><div><pre><code>= Animal kingdom tree
+= Animal kingdom book</code></pre></div></div>Vim regular expressions are accepted, e.g. if you don't want it to start with the search pattern:<div class="code" id="_5074"><div><pre><code>ObbGitGrep .*animal kingdom</code></pre></div></div>The command opens a new tab (technically a "Vim error window") containing all matches, where you can click Enter to open one of them.</div><div class="p" id="_5075">Mnemonic: "Header search".</div></li></ul></div></li></ul></div></div><div class="p" id="_5076">A simple way to develop is to edit the Vundle repository directly under <code>~/.vim/bundle/ourbigbook</code>.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#editor-support">Editor support</a></li><li><a href=".#tooling">Tooling</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#visual-studio-code-documentation">Visual Studio Code documentation</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

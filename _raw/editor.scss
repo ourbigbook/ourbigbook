@@ -1,0 +1,49 @@
+@import 'ourbigbook.common.scss';
+
+.ourbigbook-editor {
+  display: flex;
+  /* https://stackoverflow.com/questions/12989931/body-height-100-displaying-vertical-scrollbar/46847795#46847795
+   * 20 == 2x 10px padding (top + bottom). */
+  height: 100%;
+  .errorDecoration {
+    background: red;
+    width: 4px !important;
+    margin-left: 3px;
+  }
+  .input {
+    align-items: center;
+    flex: 1 0 auto;
+    height: 100%;
+    margin: 0 5px 0 0;
+    overflow: hidden;
+    width: 50%;
+  }
+  .output {
+    align-items: center;
+    flex: 1 1 auto;
+    height: 100%;
+    margin: 0 0 0 5px;
+    overflow: auto;
+    width: 50%;
+  }
+  .errors {
+    flex: 1 1 auto;
+    height: 100%;
+    overflow: auto;
+    .title {
+      color: $ourbigbook-error-color;
+      font-weight: bold;
+    }
+    &.has-error {
+      padding: 0 1em;
+      width: 50%;
+    }
+    .error {
+      margin-bottom: 0.5em;
+      .loc {
+        cursor: pointer;
+        font-weight: bold;
+      }
+    }
+  }
+}

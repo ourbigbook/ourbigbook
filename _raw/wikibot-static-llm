@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -eux
+
+# Sketch of doing it locally. It took 5 s / query on my computer,
+# on ollama llama3.2, so it would take about 5 days to complete.
+indir=../wikibot
+outdir=../wikibot-llm
+mkdir -p "$outdir"
+git -C "$indir" ls-files | grep '\.bigb' | while read f; do
+  echo "$f"
+  cat "$indir/$f" | while read l; do
+    echo "$l"
+    if printf '%s' "$l" | grep -Eq '^='; then
+      title="$(printf '%s' "$l" | sed -r 's/^=+ //')"
+      # TODO
+      body=
+      printf '\n'
+      printf '%s\n' "$body"
+    fi
+  done > "$outdir/$f"
+done

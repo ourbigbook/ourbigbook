@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>News / OurBigBook CLI enforces consistent header tree by default - Ciro Santilli</title>
+<meta property="og:title" content="News / OurBigBook CLI enforces consistent header tree by default - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/news/ourbigbook-cli-enforces-consistent-header-tree-by-default">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ourbigbook-cli-enforces-consistent-header-tree-by-default"><div class="notnav"><h1><a href="../news">News</a><span class="meta"> / </span><a href="">OurBigBook CLI enforces consistent header tree by default</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href=".."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="..#developing-ourbigbook"> Developing OurBigBook</a><a href="..#publicity"> Publicity</a><a href="../news"> News</a></div><div class="nav"><span class="tags"> Tags: <a href="..#ourbigbook-cli">OurBigBook CLI</a></span><a class="nosplit" href="../news#ourbigbook-cli-enforces-consistent-header-tree-by-default"></a><span class="metrics"><span class="wcntr"> Words: 421</span></span></div></nav></div><div class="p" id="_240"><a href="..#ourbigbook-cli">OurBigBook CLI</a> now forces you to write a consistent tree of headers by default, including e.g.:</div><div class="list"><ul id="_241"><li id="_242">can't have text under the current header after <a href="..#include">Includes</a>. E.g. this is not allowed anymore:<div class="code" id="_243"><div><pre><code>= Vertebrate
+
+Vertebrates are cool.
+
+\Include[mammal]
+
+And they have vertebrae.</code></pre></div></div>You need instead something like:<div class="code" id="_244"><div><pre><code>= Vertebrate
+
+Vertebrates are cool.
+
+And they have vertebrae.
+
+\Include[mammal]</code></pre></div></div></li><li id="_245">files must start with a h1 header and contain only a single h1 header. E.g. in <code>vertebrate.bigb</code> this is not allowed because it does not start with a header:<div class="code" id="_246"><div><pre><code>I like vertebrates.
+
+= Vertebrate</code></pre></div></div>Neither is this because it starts with a h2 header:<div class="code" id="_247"><div><pre><code>== Vertebrate
+
+I like vertebrates.</code></pre></div></div>Neither is this because it has two h1 headers:<div class="code" id="_248"><div><pre><code>= Vertebrate
+
+I like vertebrates.
+
+= Non-vertebrate
+
+I don't like non vertebrates.</code></pre></div></div></li><li id="_249"><div class="p" id="_250">prevent infinite <a href="..#include">include</a> loop recursion. E.g. this would lead to an infinite loop at render time:</div><div class="p" id="_251">index.bigb<div class="code" id="_252"><div><pre><code>= My homepage
+
+\Include[vertebrate]</code></pre></div></div></div><div class="p" id="_253">vertebrate.bigb<div class="code" id="_254"><div><pre><code>= Vertebrate
+
+\Include[mammal]</code></pre></div></div></div><div class="p" id="_255">mammal.bigb<div class="code" id="_256"><div><pre><code>= Mammal
+
+\Include[vertebrate]</code></pre></div></div></div><div class="p" id="_257">Now you just get a nice error message instead.</div></li><li id="_258"><div class="p" id="_259">every file must be recursively included from <a href="..#the-toplevel-index-file">the toplevel index file</a>. E.g.</div><div class="p" id="_260">index.bigb<div class="code" id="_261"><div><pre><code>= My homepage
+
+\Include[vertebrate]</code></pre></div></div></div><div class="p" id="_262">vertebrate.bigb<div class="code" id="_263"><div><pre><code>= Vertebrate</code></pre></div></div></div><div class="p" id="_264">mammal.bigb<div class="code" id="_265"><div><pre><code>= Mammal</code></pre></div></div></div><div class="p" id="_266">would give an error because <code>mammal.bigb</code> is not included from anywhere. To fix it you would likely want:</div><div class="p" id="_267">vertebrate.bigb<div class="code" id="_268"><div><pre><code>= Vertebrate
+
+\Include[mammal]</code></pre></div></div></div></li><li id="_269"><div class="p" id="_270">files cannot be included twice. Previously the following was allowed:</div><div class="p" id="_271">index.bigb<div class="code" id="_272"><div><pre><code>= My homepage
+
+\Include[vertebrate]
+\Include[mammal]</code></pre></div></div></div><div class="p" id="_273">vertebrate.bigb<div class="code" id="_274"><div><pre><code>= Vertebrate
+
+\Include[mammal]</code></pre></div></div></div><div class="p" id="_275">mammal.bigb<div class="code" id="_276"><div><pre><code>= Mammal</code></pre></div></div></div><div class="p" id="_277">But now it gives an error because <code>mammal.bigb</code> is included from both <code>index.bigb</code> and <code>vertebrate.bigb</code>.</div><div class="p" id="_278">To fix it you would likely instead want to include it only from the most specific location <code>vertebrate.bigb</code> and remove it from <code>index.bigb</code>:</div><div class="p" id="_279">index.bigb<div class="code" id="_280"><div><pre><code>= My homepage
+
+\Include[vertebrate]</code></pre></div></div></div></li></ul></div><div class="p" id="_281">It is a common issue with most plaintext note taking systems that they don't force you to make a consistent tree.</div><div class="p" id="_282">However, for publishing, having one tree is essential, otherwise it can be very hard for users to navigate your content.</div><div class="p" id="_283">Furthermore, this makes things much simpler to implement and understand for OurBigBook Web and a future WYSIWYG local editor.</div><div class="p" id="_284">Some other pedantry:</div><div class="list"><ul id="_285"><li id="_286">rename <code>README.bigb</code> to <code>index.bigb</code> for the <a href="..#the-toplevel-index-file">the toplevel index file</a>. Much cleaner, and we already have a conflict on the baseneme index with index.html, so why create another conflict with README</li><li id="_287">rename <a href="..#the-out-directory">the <code>_out</code> directory</a> from <code>out</code> to <code>_out</code>, which is a reserved ID. Otherwise it was impossible to have a directory called <code>out</code> with ourbigbook files for <a href="..#directory-based-scope">directory-based <code>scope</code></a>.</li></ul></div><div class="p" id="_288">While <a href="..#ourbigbook-web">OurBigBook Web</a> topic mind melding remains the most innovative feature of the project, local plaintext is a fundamental guarantee that you will never lose your content, and we intend to keep it awesome.</div><div class="p" id="_289">Announcements:<div class="list"><ul id="_290"><li id="_291"><a href="https://mastodon.social/@ourbigbook/113549071062984064">mastodon.social/@ourbigbook/113549071062984064</a></li><li id="_292"><a href="https://x.com/OurBigBook/status/1861383431973683551">x.com/OurBigBook/status/1861383431973683551</a></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href="../news">News</a></li><li><a href="..#publicity">Publicity</a></li><li><a href="..#developing-ourbigbook">Developing OurBigBook</a></li><li><a href=".."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/news.bigb">news.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "news/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -eux
+version="$(awk -F \" '$2=="version"{print $4}' package.json)"
+sed -i "s/  \"ourbigbook\":[^,]*/  \"ourbigbook\": \"${version}\"/" vscode/package.json
+ext_version="$(./inc-version vscode/package.json)"
+cd vscode
+sed -i "s/  \"version\":[^,]*/  \"version\": \"${ext_version}\"/" package.json
+rm -rf node_modules
+npm install
+git add package.json package-lock.json
+git commit -m "vscode: version $ext_version"
+git tag -m "vscode-$ext_version" "vscode-$ext_version"
+git push --follow-tags
+npx vsce package
+npx vsce publish
+## Workaround in case we ever get banned again.
+## https://github.com/ourbigbook/ourbigbook/issues/333
+#cp ourbigbook-vscode-2-${ext_version}.vsix ../../ourbigbook-media/ourbigbook-vscode.vsix
+#cd ../../ourbigbook-media
+#git add ourbigbook-vscode.vsix
+#git commit -m "vscode version ${ext_version}"
+#git push
+#cd -
+rm -f *.vsix

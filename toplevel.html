@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>The \Toplevel implicit macro - Ciro Santilli</title>
+<meta property="og:title" content="The \Toplevel implicit macro - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/toplevel">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="toplevel"><div class="notnav"><h1><a href="">The <code>\Toplevel</code> implicit macro</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#developing-ourbigbook"> Developing OurBigBook</a><a href=".#internals-api"> Internals API</a></div><div class="nav"><a class="nosplit" href=".#toplevel"></a><span class="metrics"><span class="wcntr"> Words: 103</span></span></div></nav></div><div class="p" id="_5405">Every OurBigBook document is implicitly put inside a <code>\Toplevel</code> document and:<div class="list"><ul id="_5406"><li id="_5407">any optionally given arguments at the very beginning of the document will be treated as arguments of the <code>\Toplevel</code> macro</li><li id="_5408">anything else will be put inside the <a href=".#content-argument"><code>content</code> argument</a> of the <code>\Toplevel</code> macro</li></ul></div></div><div class="p" id="_5409">E.g., a OurBigBook document that contains:<div class="code" id="_5410"><div><pre><code>{title=My favorite title}
+
+And now, some content!</code></pre></div></div></div><div class="p" id="_5411">is morally equivalent to:<div class="code" id="_5412"><div><pre><code>\Toplevel{title=My favorite title}
+[
+And now, some content!
+]</code></pre></div></div>In terms of HTML, the <code>\Toplevel</code> element corresponds to the <code>&lt;html&gt;</code>, <code>&lt;head&gt;</code>, <code>&lt;header&gt;</code> and <code>&lt;footer&gt;</code> elements of a document.</div><div class="p" id="_5413">Trying to use the <code>\Toplevel</code> macro explicitly in a document leads to an error.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#internals-api">Internals API</a></li><li><a href=".#developing-ourbigbook">Developing OurBigBook</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(4)</span></a></h2><div class="list"><ul><li><a href=".#code-block">Code block</a></li><li><a href=".#image">Image</a></li><li><a href=".#list">List</a></li><li><a href=".#table">Table</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

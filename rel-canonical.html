@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>rel="canonical" - Ciro Santilli</title>
+<meta property="og:title" content="rel="canonical" - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/rel-canonical">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="rel-canonical"><div class="notnav"><h1><a href=""><code>rel="canonical"</code></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-cli"> OurBigBook CLI</a><a href=".#ourbigbook-cli-options"> OurBigBook CLI options</a><a href=".#template"> <code>--template</code></a><a href=".#ourbigbook-liquid-html"> ourbigbook.liquid.html</a></div><div class="nav"><a class="nosplit" href=".#rel-canonical"></a><span class="metrics"><span class="wcntr"> Words: 98</span></span></div></nav></div><div class="p" id="_3508">The <code>rel="canonical"</code> HTML <code>&lt;head&gt;</code> tag tells Google the new preferred search result for each page.</div><div class="p" id="_3509">You might want to set this up for example if you decide to publish your website both as:<div class="list"><ul id="_3510"><li id="_3511">a <a href=".#p-publish">static</a> website e.g. under <code>https://cirosantilli.com</code></li><li id="_3512">on <a href=".#ourbigbook-web">OurBigBook Web</a> e.g. under <code>https://ourbigbook.com/cirosantilli</code></li></ul></div>but you'd like the <a href=".#ourbigbook-web">OurBigBook Web</a> one to take precedence.</div><div class="p" id="_3513">You can set this up by adding something like the following code to the <code>&lt;head&gt;</code> element in your <a href=".#ourbigbook-liquid-html">ourbigbook.liquid.html</a>:<div class="code" id="_3514"><div><pre><code>&lt;link rel="canonical" href="https://ourbigbook.com/cirosantilli/{{ toplevel_id }}"&gt;</code></pre></div></div>you might also want to do that for all pages except your homepage with:<div class="code" id="_3515"><div><pre><code>{% unless is_index_article %}&lt;link rel="canonical" href="https://ourbigbook.com/cirosantilli/{{ toplevel_id }}"&gt;{% endunless %}</code></pre></div></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-liquid-html">ourbigbook.liquid.html</a></li><li><a href=".#template"><code>--template</code></a></li><li><a href=".#ourbigbook-cli-options">OurBigBook CLI options</a></li><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

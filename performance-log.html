@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Performance log - Ciro Santilli</title>
+<meta property="og:title" content="Performance log - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/performance-log">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="performance-log"><div class="notnav"><h1><a href="">Performance log</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#developing-ourbigbook"> Developing OurBigBook</a><a href=".#performance"> Performance</a></div><div class="nav"><a class="nosplit" href=".#performance-log"></a><span class="metrics"><span class="wcntr"> Words: 366</span></span></div></nav></div><div class="p" id="_5383">On P51:</div><div class="list"><ul id="_5384"><li id="_5385"><div class="p" id="_5386"><code>time ./ourbigbook --no-render . &amp;&amp; time ./ourbigbook -S --log=perf index.bigb</code>:</div><div class="list"><ul id="_5387"><li id="_5388"><div class="p" id="_5389">ourbigbook 39e633f08b2abce10331b884c04d70dbe6d4565a before moving OurBigBook to Sequelize: 14s<div class="code" id="_5390"><div><pre><code>convert index.bigb
+perf start 248.0712810009718
+perf tokenize_pre 248.36641899868846
+perf tokenize_post 2027.6697090007365
+perf parse_start 2028.678952999413
+perf post_process_start 2684.3162699975073
+perf post_process_end 5017.946601998061
+perf split_render_pre 6572.925067000091
+perf render_pre 5018.202895000577
+perf render_2_pre undefined
+perf render_post 13093.658641997725
+perf end 13126.138450000435
+perf convert_input_end 14281.568749997765
+perf convert_path_pre_sqlite 14281.64151499793
+perf convert_path_pre_sqlite_transaction 14281.835940998048
+perf convert_path_post_sqlite_transaction 14551.673818998039
+perf convert_path_end 14551.860617998987
+convert index.bigb finished in 14309.703324001282 ms
+perf convert_path_to_file_end 14552.230636000633
+
+real    0m14.602s
+user    0m16.500s
+sys     0m1.832</code></pre></div></div></div><div class="p" id="_5391"><code>sqlite3 _out/db.sqlite3 .schema</code><div class="code" id="_5392"><div><pre><code>CREATE TABLE IF NOT EXISTS 'ids' (
+        id TEXT PRIMARY KEY,
+        path TEXT,
+        ast_json TEXT
+      );
+CREATE TABLE IF NOT EXISTS 'includes' (
+        from_id TEXT,
+        from_path TEXT,
+        to_id TEXT,
+        type TINYINT
+      );
+CREATE INDEX includes_from_path
+      ON includes(from_path);
+CREATE INDEX includes_from_id_type
+      ON includes(from_id, type);
+CREATE TABLE IF NOT EXISTS 'files' (
+        path TEXT PRIMARY KEY,
+        toplevel_id TEXT UNIQUE
+      );</code></pre></div></div></div></li></ul></div><div class="list"><ul id="_5393"><li id="_5394"><div class="p" id="_5395">ourbigbook 8e6a4311f7debd079721412e1ea5d647cc1c2941 after, OMG gotta debug perf now:<div class="code" id="_5396"><div><pre><code>real    0m29.595s
+user    0m34.095s
+sys     0m4.427s
+
+convert index.bigb
+perf start_convert undefined
+perf tokenize_pre 411.71094800531864
+perf tokenize_post 2265.3646410033107
+perf parse_start 2266.436312004924
+perf post_process_start 2905.8304330036044
+perf post_process_end 12113.761793002486
+perf split_render_pre 16534.5258340016
+perf render_pre 12114.092462003231
+perf render_post 40937.611143000424
+perf end_convert undefined
+perf convert_input_end 42042.85608199984
+perf convert_path_pre_sqlite 42042.92515899986
+perf convert_path_pre_sqlite_transaction 42147.847070001066
+perf convert_path_post_sqlite_transaction 42732.242132000625
+perf convert_path_end 42732.35991900414
+convert index.bigb finished in 42327.62727500498 ms
+perf convert_path_to_file_end 42732.534088000655
+
+real    0m42.779s
+user    0m46.530s
+sys     0m6.945s</code></pre></div></div></div><div class="p" id="_5397"><code>sqlite3 _out/db.sqlite3 .schema</code><div class="code" id="_5398"><div><pre><code>CREATE TABLE `Files` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `path` TEXT NOT NULL UNIQUE, `toplevel_id` TEXT UNIQUE);
+CREATE TABLE sqlite_sequence(name,seq);
+CREATE INDEX `files_path` ON `Files` (`path`);
+CREATE INDEX `files_toplevel_id` ON `Files` (`toplevel_id`);
+CREATE TABLE `Ids` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `idid` TEXT NOT NULL UNIQUE, `path` TEXT NOT NULL, `ast_json` TEXT NOT NULL);
+CREATE INDEX `ids_path` ON `Ids` (`path`);
+CREATE TABLE `Refs` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `from_id` TEXT NOT NULL, `from_path` TEXT NOT NULL, `to_id` TEXT NOT NULL, `type` TINYINT NOT NULL);
+CREATE INDEX `refs_from_path` ON `Refs` (`from_path`);
+CREATE INDEX `refs_from_id_type` ON `Refs` (`from_id`, `type`);
+CREATE INDEX `refs_to_id_type` ON `Refs` (`to_id`, `type`);</code></pre></div></div></div><div class="p" id="_5399">The question is: is it because we added <code>async</code> Everywhere, or is it because of changes in the database queries?</div><div class="p" id="_5400">Answering the question: added old DB at: <a href="https://github.com/ourbigbook/ourbigbook/tree/async-slow-old-db">github.com/ourbigbook/ourbigbook/tree/async-slow-old-db</a> and it is fast again. So DB debugging it is, hurray.</div></li></ul></div></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#performance">Performance</a></li><li><a href=".#developing-ourbigbook">Developing OurBigBook</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#performance">Performance</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

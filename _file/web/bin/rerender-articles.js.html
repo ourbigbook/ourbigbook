@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>web/bin/rerender-articles.js - Ciro Santilli</title>
+<meta property="og:title" content="web/bin/rerender-articles.js - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/_file/web/bin/rerender-articles.js">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="_file/web/bin/rerender-articles.js"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">web/bin/rerender-articles.js</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="../../.."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="../../..#ourbigbook-web"> OurBigBook Web</a><a href="../../..#ourbigbook-web-development"> OurBigBook Web development</a><a href="../../..#ourbigbook-web-architecture"> OurBigBook Web architecture</a><a href="../../..#ourbigbook-web-directory-structure"> OurBigBook Web directory structure</a><a href="../../..#web-cli-utils"> Web CLI utils</a></div><div class="nav"><a class="nosplit" href="../../..#_file/web/bin/rerender-articles.js"></a><span class="metrics"><span class="wcntr"> Words: 167</span></span></div><div class="nav file"><b> <a href="../../../_dir">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/bin">bin</a> / <a href="../../../_raw/web/bin/rerender-articles.js">rerender-articles.js</a></b></div></nav></div><div class="p" id="_4879">Rerender all articles by all users:<div class="code" id="_4880"><div><pre><code>web/bin/rerender-articles.js</code></pre></div></div></div><div class="p" id="_4881">Rerender only the articles with specified slugs:<div class="code" id="_4882"><div><pre><code>web/bin/rerender-articles.js johnsmith/mathematics maryjane/physics</code></pre></div></div></div><div class="p" id="_4883">Only rerender articles by <code>johnsmith</code> and <code>maryjane</code>:<div class="code" id="_4884"><div><pre><code>web/bin/rerender-articles.js -a johnsmith -a maryjane</code></pre></div></div></div><div class="p" id="_4885">Rerender articles by all authors except <code>johnsmith</code> and <code>maryjane</code>:<div class="code" id="_4886"><div><pre><code>web/bin/rerender-articles.js -A johnsmith -A maryjane</code></pre></div></div></div><div class="p" id="_4887">Rerendering has to be done to see updates on OurBigBook changes that change the render output.</div><div class="p" id="_4888">Notably, this would be mandatory in case of CSS changes that require corresponding HTML changes.</div><div class="p" id="_4889">As the website grows, we will likely need to do a lazy version of this that marks pages as outdated, and then renders on the fly, plus a background thread that always updates outdated pages.</div><div class="p" id="_4890">The functionality of this script should be called from a <a href="../../..#ourbigbook-web-database-migration-setup">migration</a> whenever such HTML changes are required. TODO link to an example. We had one at <code>web/migrations/20220321000000-output-update-ancestor.js</code> that seemed to work, but lost it. It was simple though. Just you have to instantiate your own Sequelize instance after making the model change to move any data.</div><div class="p"><b>web/bin/rerender-articles.js</b></div><div class="code"><div><pre><code>#!/usr/bin/env node
+
+const path = require('path')
+
+const commander = require('commander')
+
+const models = require('../models')
+const back_js = require('../back/js')
+const { cliInt } = require('ourbigbook/nodejs_webpack_safe')
+
+const program = commander.program
+program.description('Re-render articles https://docs.ourbigbook.com/_file/web/bin/rerender-articles.js')
+program.option('-a, --author &lt;username&gt;', 'only convert articles by this author', (v, p) =&gt; p.concat([v]), [])
+program.option('--automatic-topic-links-max-words &lt;val&gt;', 'maximum number of words to put on automatic topic links', cliInt)
+program.option('-A, --skip-author &lt;username&gt;', "don't convert articles by this author", (v, p) =&gt; p.concat([v]), [])
+program.option('-d, --descendants', 'rerender all descendants of input slugs in addition to the articles themselves. Has no effect if no slugs are given as input (everything gets converted regardless in that case).')
+program.option('-i, --ignore-errors', 'ignore errors', false)
+program.option('-s, --start-from &lt;start-from&gt;', 'start from this article and continue alphabetically to the end', false)
+program.argument('[slugs...]', 'list of slugs to convert, e.g. "barack-obama/quantum-mechanics". If not given, convert all articles matching the criteria of other options.')
+program.parse(process.argv);
+const opts = program.opts()
+let [slugs] = program.processedArgs
+const sequelize = models.getSequelize(path.dirname(__dirname));
+(async () =&gt; {
+await sequelize.models.Article.rerender({
+  log: true,
+  convertOptionsExtra: {
+    automaticTopicLinksMaxWords: opts.automaticTopicLinksMaxWords,
+    katex_macros: back_js.preloadKatex(),
+  },
+  authors: opts.author,
+  descendants: opts.descendants,
+  ignoreErrors: opts.ignoreErrors,
+  slugs,
+  skipAuthors: opts.skipAuthor,
+  startFrom: opts.startFrom,
+})
+})().finally(() =&gt; { return sequelize.close() });
+</code></pre></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(6)</span></a></h2><div class="list"><ol><li><a href="../../..#web-cli-utils">Web CLI utils</a></li><li><a href="../../..#ourbigbook-web-directory-structure">OurBigBook Web directory structure</a></li><li><a href="../../..#ourbigbook-web-architecture">OurBigBook Web architecture</a></li><li><a href="../../..#ourbigbook-web-development">OurBigBook Web development</a></li><li><a href="../../..#ourbigbook-web">OurBigBook Web</a></li><li><a href="../../.."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(3)</span></a></h2><div class="list"><ul><li><a href="../../..#_file/web/bin/rerender-comments.js">web/bin/rerender-comments.js</a></li><li><a href="../../..#_file/web/bin/rerender-issues.js">web/bin/rerender-issues.js</a></li><li><a href="../../..#web-force-id-extraction"><code>--web-force-id-extraction</code></a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../../../_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Template variable - Ciro Santilli</title>
+<meta property="og:title" content="Template variable - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/template-variable">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="template-variable"><div class="notnav"><h1><a href="">Template variable</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-cli"> OurBigBook CLI</a><a href=".#ourbigbook-cli-options"> OurBigBook CLI options</a><a href=".#template"> <code>--template</code></a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#template-variable"></a><span class="metrics"><span class="wcntr"> Words: 763</span><span class="dcnt"> Articles: 1</span></span></div></nav></div><div class="p" id="_3516">The following variables are defined for usage inside your <a href=".#ourbigbook-liquid-html">ourbigbook.liquid.html</a> file:<div class="list"><ul id="_3517"><li id="_3518"><code>body</code>: the rendered body</li><li id="_3519"><code>dir_relpath</code>: relative path from the rendered output to the <a href=".#dir-directory"><code>_dir</code> directory</a>. Sample usage to link to the root directory listing:<div class="code" id="_3520"><div><pre><code>&lt;div&gt;&lt;a href="{{ dir_relpath }}{{ html_index }}"&gt;Website source code&lt;/a&gt;&lt;/div&gt;</code></pre></div></div></li><li id="_3521"><code>file_relpath</code>: similar to <code>raw_relpath</code>, but link to the <a href=".#file-output-directory"><code>_file</code> output directory</a> instead</li><li id="_3522"><code>git_sha</code>: SHA of the latest git commit of the source code if in a git repository</li><li id="_3523"><code>github_prefix</code>: this variable is set only if if the "github" <a href=".#ourbigbook-json/media-providers">media provider</a>. It points to the URL prefix of the provider, e.g. if you have in your <a href=".#ourbigbook-json"><code>ourbigbook.json</code></a>:<div class="code" id="_3524"><div><pre><code>"media-providers": {
+  "github": {
+    "remote": "mygithubusername/media"
+  },</code></pre></div></div>then you can use media from that repository with:<div class="code" id="_3525"><div><pre><code>&lt;img src="image/x-icon" href="{{ github_prefix }}/myimage.jpg" /&gt;</code></pre></div></div></li><li id="_3526"><div class="p" id="_3527"><code>html_ext</code>: <code>.html</code> for local renders, empty for server renders.</div><div class="p" id="_3528">So e.g. to link to an ID <code>myid</code> you can use:</div><div class="code" id="_3529"><div><pre><code>&lt;a href="{{ root_relpath }}myid{{ html_ext }}"&gt;</code></pre></div></div><div class="p" id="_3530">This will ideally be replaced with a more generic link to arbitrary ID mechnism at some point: <a href="https://github.com/ourbigbook/ourbigbook/issues/135">github.com/ourbigbook/ourbigbook/issues/135</a></div></li><li id="_3531"><code>html_index</code>: <code>/index.html</code> for local renders, empty for server renders</li><li id="_3532"><code>image</code>: absolute URL of the first <a href=".#image">image</a> of the rendered page if any. This is suitable for usage in <code>og:image</code> with something like:<div class="code" id="_3533"><div><pre><code>&lt;meta property="og:image" content="{% if image %}{{ image }}{% else %}{{ json.publishRootUrl }}/_raw/logo.svg{% endif %}"&gt;</code></pre></div></div>Only the <a href=".#image"><code>\Image</code> macro</a> (<a href=".#block-macro">block macro</a>) is currently considered.</li><li id="_3534"><div class="p" id="_3535"><code>input_path</code>: path to the <a href=".#ourbigbook-markup">OurBigBook Markup</a> source file relative to the <a href=".#project-toplevel-directory">project toplevel directory</a> that generated this output, e.g. <code>path/to/myfile.bigb</code></div><div class="p" id="_3536">May be an empty string in the case of autogenerated sources, notably <a href=".#raw-directory">automatic directory listings</a>, so you should always check for that with something like:<div class="code" id="_3537"><div><pre><code>{% if input_path != "" %}
+&lt;div&gt;Source code for this page: &lt;a href="{{ raw_relpath }}/{{ input_path }}"&gt;{{ input_path }}&lt;/a&gt;&lt;/div&gt;
+{% endif %}</code></pre></div></div></div></li><li id="_3538"><div class="p" id="_3539"><code>is_index_article</code>. Boolean. True if the toplevel being rendered on this output file is the <a href=".#the-home-article">the index article</a>. E.g. in:</div><div class="p" id="_3540">index.bigb</div><div class="p" id="_3541"><div class="code" id="_3542"><div><pre><code>= John Smith's homepage
+
+== Mathematics</code></pre></div></div>with <a href=".#split-headers">split header</a> conversion, the value of <code>is_index_article</code> would be:<div class="list"><ul id="_3543"><li id="_3544"><code>index.html</code>: true</li><li id="_3545"><code>split.html</code>: true</li><li id="_3546"><code>mathematics.html</code>: false</li></ul></div></div></li><li id="_3547"><code>json</code>: exposes the entire <a href=".#ourbigbook-json"><code>ourbigbook.json</code></a> to the template. This is useful for example to obtain <a href=".#ourbigbook-json/publishrooturl"><code>publishRootUrl</code></a> as in:<div class="code" id="_3548"><div><pre><code>&lt;meta property="og:image" content="{{ json.publishRootUrl }}/{{ raw_relpath }}/logo.svg"&gt;</code></pre></div></div></li><li id="_3549"><code>raw_relpath</code>: relative path from the rendered output to the <a href=".#raw-directory"><code>_raw</code> directory</a>. Should be used to prefix all non-<a href=".#ourbigbook-markup">OurBigBook Markup</a> output resources, which is the directory where such files are placed during conversion, e.g.<div class="code" id="_3550"><div><pre><code>&lt;link rel="shortcut icon" href="{{ raw_relpath }}/logo.svg" /&gt;</code></pre></div></div></li><li id="_3551"><code>root_page</code>: relative path to the toplevel page, e.g. either <code>index.html</code>, <code>../index.html</code> locally or <code>./</code>, <code>../</code> on server oriented rendereing</li><li id="_3552"><div class="p" id="_3553"><code>root_relpath</code>: relative path from the rendered output to the toplevel directory.</div><div class="p" id="_3554">This allows for toplevel resources like CSS to be found seamlessly form inside subdirectories, specially when rendering locally.</div><div class="p" id="_3555">For example, for the toplevel <a href=".#css">CSS</a> <code>main.css</code> which is generated from <a href="_raw/main.scss">main.scss</a>, we can use:<div class="code" id="_3556"><div><pre><code>&lt;link rel="stylesheet" type="text/css" href="{{ root_relpath }}main.css"&gt;</code></pre></div></div></div><div class="p" id="_3557">Then, when a file is locally, for example under a subdirectory <code>mysubdir/myfile.html</code>, OurBigBook will set:<div class="code" id="_3558"><div><pre><code>root_relpath=../</code></pre></div></div>giving the desired:<div class="code" id="_3559"><div><pre><code>&lt;link rel="stylesheet" type="text/css" href="../main.css"&gt;</code></pre></div></div></div><div class="p" id="_3560">And if the output path were instead just <code>myohterfile.html</code>, <code>root_relpath</code> expands to an empty string, giving again the correct:<div class="code" id="_3561"><div><pre><code>&lt;link rel="stylesheet" type="text/css" href="main.css"&gt;</code></pre></div></div></div><div class="p" id="_3562">This will ideally be replaced with a more generic link to arbitrary ID mechnism at some point: <a href="https://github.com/ourbigbook/ourbigbook/issues/135">github.com/ourbigbook/ourbigbook/issues/135</a></div></li><li id="_3563"><code>server_path</code>: path part of the URL at which the output of this template will be visible on the server. For example:<div class="list"><ul id="_3564"><li id="_3565"><code>index.bigb</code>:<div class="list"><ul id="_3566"><li id="_3567"><a href=".#ourbigbook-json/htmlxextension"><code>htmlXExtension</code></a> is true:<div class="list"><ul id="_3568"><li id="_3569">nosplit: <code>/index.html</code></li><li id="_3570">split: <code>/split.html</code></li></ul></div></li><li id="_3571"><a href=".#ourbigbook-json/htmlxextension"><code>htmlXExtension</code></a> is false<div class="list"><ul id="_3572"><li id="_3573">nosplit: (empty string)</li><li id="_3574">split: <code>/split</code></li></ul></div></li></ul></div></li><li id="_3575"><code>notindex.bigb</code>:<div class="list"><ul id="_3576"><li id="_3577"><a href=".#ourbigbook-json/htmlxextension"><code>htmlXExtension</code></a> is true:<div class="list"><ul id="_3578"><li id="_3579">nosplit: <code>/notindex.html</code></li><li id="_3580">split: <code>/notindex-split.html</code></li></ul></div></li><li id="_3581"><a href=".#ourbigbook-json/htmlxextension"><code>htmlXExtension</code></a> is false<div class="list"><ul id="_3582"><li id="_3583">nosplit: <code>/notindex</code></li><li id="_3584">split: <code>/notindex-split</code></li></ul></div></li></ul></div></li></ul></div>This variable can be useful if you need to generate the full path to a given page for an insane system such as <code>og:url</code>:<div class="code" id="_3585"><div><pre><code>&lt;meta property="og:url" content="{{ json.publishRootUrl }}{{ server_path }}"&gt;</code></pre></div></div></li><li id="_3586"><code>style</code>: default OurBigBook stylesheets</li><li id="_3587"><code>title</code>: a plaintext version of the page title without any HTML tags which will is suitable for the <code>&lt;title&gt;</code> element</li><li id="_3588"><code>toplevel_id</code>: ID of <a href=".#the-toplevel-header">the toplevel header</a> of a page, e.g. given and <a href=".#split-headers"><code>-S</code>, <code>--split-headers</code></a>:<div class="code" id="_3589"><div><pre><code>= My homepage
+
+== Mathematics
+{scope}
+
+=== Chain rule</code></pre></div></div>we'd get;<div class="list"><ul id="_3590"><li id="_3591"><code>/</code>: empty string</li><li id="_3592"><code>/split</code>: empty string</li><li id="_3593"><code>/mathematics</code>: <code>mathematics</code></li><li id="_3594"><code>/mathematics/chain-rule</code>: <code>mathematics/chain-rule</code></li></ul></div></li></ul></div></div><div class="p" id="_3595">Template variable expansion automatically escape special HTML characters such as <code>&lt;</code>. TODO: <code>"</code> however is not currently escaped: <a href="https://github.com/ourbigbook/ourbigbook/issues/375">github.com/ourbigbook/ourbigbook/issues/375</a> but it would be better if it were.</div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 763</span><span class="dcnt"> 1</span></span></span></span></div><ul><li><div id="_toc/publishtargetiswebsite"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#publishtargetiswebsite"><code>publishTargetIsWebsite</code></a><span class="hover-metadata"><a href="#_toc" class="u"> Template variable</a><span class="metrics"><span class="wcntr"> 64</span></span></span></span></div></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href=".#template"><code>--template</code></a></li><li><a href=".#ourbigbook-cli-options">OurBigBook CLI options</a></li><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#template"><code>--template</code></a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

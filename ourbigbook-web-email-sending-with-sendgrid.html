@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>OurBigBook Web email sending with Sendgrid - Ciro Santilli</title>
+<meta property="og:title" content="OurBigBook Web email sending with Sendgrid - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/ourbigbook-web-email-sending-with-sendgrid">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ourbigbook-web-email-sending-with-sendgrid"><div class="notnav"><h1><a href="">OurBigBook Web email sending with Sendgrid</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-web"> OurBigBook Web</a><a href=".#ourbigbook-web-development"> OurBigBook Web development</a><a href=".#ourbigbook-web-deployment"> OurBigBook Web deployment</a><a href=".#ourbigbook-web-email-sending"> OurBigBook Web email sending</a><a href=".#ourbigbook-web-email-sending-with"> OurBigBook Web email sending with</a></div><div class="nav"><a class="nosplit" href=".#ourbigbook-web-email-sending-with-sendgrid"></a><span class="metrics"><span class="wcntr"> Words: 247</span></span></div></nav></div><div class="list"><ul id="_4590"><li id="_4591">ensure that you have a working email address in the hosted domain such as <code>notification@ourbigbook.com</code>. E.g. on our <a href=".#custom-domain-name-setup">custom domain name setup</a> with Porkbun. We achieved this by redirecting <code>notification@ourbigbook.com</code> to your personal email initially.</li><li id="_4592">create a Sendgrid account<div class="list"><ul id="_4593"><li id="_4594">it would also be a good idea to setup two factor authentication</li></ul></div></li><li id="_4595">verify your domain, e.g. <code>ourbigbook.com</code>. This means setting up three <code>CNAME</code> records given by Sendgrid on your DNS provider, e.g. Porkbun.</li><li id="_4596">create a single sender. We used:<div class="list"><ul id="_4597"><li id="_4598">From Name: OurBigBook.com</li><li id="_4599">From Email Address: <code>notification@ourbigbook.com</code></li><li id="_4600">Reply to: <code>notification@ourbigbook.com</code></li></ul></div></li><li id="_4601">we disabled their "link tracking" feature, which was turned on by default. While it is fun to track clicks, it is basically useless for transactional email, and it parse HTML and replaces the links with their tracking links, making things less clear for end users. It is also harder to debug.</li><li id="_4602">integrate using web API<div class="list"><ul id="_4603"><li id="_4604">create an API key, and then save it on Heroku:<div class="code" id="_4605"><div><pre><code>heroku config:set -a ourbigbook OURBIGBOOK_SEND_EMAIL_SENDGRID_API_KEY=thekey</code></pre></div></div>Also set it locally to be able to test email sending integration locally:<div class="code" id="_4606"><div><pre><code>echo ourbigbook OURBIGBOOK_SEND_EMAIL_SENDGRID_API_KEY=thekey &gt;&gt; web/.env</code></pre></div></div>Then, to verify that the email sending is actually working run;<div class="code" id="_4607"><div><pre><code>env $(cat .env | xargs) OURBIGBOOK_SEND_EMAIL=cloudmailin npm run dev</code></pre></div></div>and try to register some of your real emails. You should actually receive the email at this step. The email appears as sent from:<div class="code" id="_4608"><div><pre><code>ciro@ourbigbook.com via sendgrid.net</code></pre></div></div>gmail accepted the email under promotions without domain verification, but outlook sent it to spam. Make sure to click "it is not spam" in that case.</li></ul></div></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(6)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-web-email-sending-with">OurBigBook Web email sending with</a></li><li><a href=".#ourbigbook-web-email-sending">OurBigBook Web email sending</a></li><li><a href=".#ourbigbook-web-deployment">OurBigBook Web deployment</a></li><li><a href=".#ourbigbook-web-development">OurBigBook Web development</a></li><li><a href=".#ourbigbook-web">OurBigBook Web</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(2)</span></a></h2><div class="list"><ul><li><a href=".#custom-domain-name-setup">Custom domain name setup</a></li><li><a href=".#heroku-deployment">Heroku deployment</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Abstract syntax tree - Ciro Santilli</title>
+<meta property="og:title" content="Abstract syntax tree - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/abstract-syntax-tree">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="abstract-syntax-tree"><div class="notnav"><h1><a href="">Abstract syntax tree <span class="meta">(AST)</span></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#developing-ourbigbook"> Developing OurBigBook</a><a href=".#conversion-process-overview"> Conversion process overview</a></div><div class="nav"><a class="nosplit" href=".#abstract-syntax-tree"></a><span class="metrics"><span class="wcntr"> Words: 265</span></span></div></nav></div><div class="p" id="_5339">The implementation of much of the functionality of OurBigBook involves manipulating the abstract syntax tree.</div><div class="p" id="_5340">The structure of the AST is as follows:<div class="list"><ul id="_5341"><li id="_5342"><code>AstNode</code>: contains a map from argument names to the values of each argument, which are of type AstArgument</li><li id="_5343"><div class="p" id="_5344"><code>AstArgument</code>: contains a list of <code>AstNode</code>. These are generally just joined up on the output, one after the other.</div><div class="p" id="_5345">One important exception to this are plaintext nodes. These nodes contain just raw strings instead of a list of arguments. They are usually the leaf nodes.</div></li></ul></div></div><div class="p" id="_5346">We can easily observe the AST of an input document by using the <a href=".#log"><code>--log</code></a> following log options:<div class="code" id="_5347"><div><pre><code>ourbigbook --log=ast-simple input.bigb
+ourbigbook --log=ast input.bigb</code></pre></div></div></div><div class="p" id="_5348">For example, the document:<div class="code" id="_5349"><div><pre><code>= My title
+{c}
+
+A link to \x[another-title]{c}{p} and more text.
+
+== Another title</code></pre></div></div>produces with <code>--log=ast-simple</code> the following output:<div class="code" id="_5350"><div><pre><code>ast Toplevel
+  arg content
+    ast H id="tmp"
+      arg c
+      arg level
+        ast plaintext "1"
+      arg numbered
+        ast plaintext "0"
+      arg scope
+        ast plaintext "0"
+      arg splitDefault
+        ast plaintext "0"
+      arg synonym
+        ast plaintext "0"
+      arg title
+        ast plaintext "My title"
+    ast P id="p-1"
+      arg content
+        ast plaintext "A link to "
+        ast x
+          arg c
+          arg child
+            ast plaintext "0"
+          arg full
+            ast plaintext "0"
+          arg href
+            ast plaintext "another-title"
+          arg p
+          arg parent
+            ast plaintext "0"
+          arg ref
+            ast plaintext "0"
+        ast plaintext " and more text."
+    ast Toc id="toc"
+    ast H id="another-title"
+      arg c
+        ast plaintext "0"
+      arg level
+        ast plaintext "2"
+      arg numbered
+        ast plaintext "0"
+      arg scope
+        ast plaintext "0"
+      arg splitDefault
+        ast plaintext "0"
+      arg synonym
+        ast plaintext "0"
+      arg title
+        ast plaintext "Another title"</code></pre></div></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#conversion-process-overview">Conversion process overview</a></li><li><a href=".#developing-ourbigbook">Developing OurBigBook</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(4)</span></a></h2><div class="list"><ul><li><a href=".#conversion-process-overview">Conversion process overview</a></li><li><a href=".#lib-vs-cli-tests"><code>lib:</code> vs <code>cli:</code> tests</a></li><li><a href=".#log"><code>--log</code></a></li><li><a href=".#multiple-argument"><code>multiple</code> argument</a></li></ul></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#abstract-syntax-tree">AST</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

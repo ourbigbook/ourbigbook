@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>OurBigBook Web performance log - Ciro Santilli</title>
+<meta property="og:title" content="OurBigBook Web performance log - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/ourbigbook-web-performance-log">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ourbigbook-web-performance-log"><div class="notnav"><h1><a href="">OurBigBook Web performance log</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-web"> OurBigBook Web</a><a href=".#ourbigbook-web-development"> OurBigBook Web development</a><a href=".#ourbigbook-web-performance-benchmarking"> OurBigBook Web performance benchmarking</a></div><div class="nav"><a class="nosplit" href=".#ourbigbook-web-performance-log"></a><span class="metrics"><span class="wcntr"> Words: 322</span></span></div></nav></div><div class="p" id="_4708">A good benchmark for the critical Article page is perhaps the <a href=".#wikipedia-bot">Wikipedia bot</a> account which stresses the atricle tree the hardest.</div><div class="p" id="_4709">We should look out for metrics such as:<div class="list"><ul id="_4710"><li id="_4711">First Contentful Paint (FCP)</li><li id="_4712">Time to First Byte (TTFB)</li></ul></div>and test both on <a href=".#heroku-deployment">Heroku deployment</a> and locally.</div><div class="p" id="_4713">Local tests are always on optimized PostgresQL. Remote tests always on powerful home wifi, never 4G. Measuremnts are taken on browser Network tab in developer tools with cache enabled. Each URL is ran randomly a few times, which gives an idea of cache warmup effects. Logged-in is logged-in as <code>cirosantilli</code>.</div><div class="p" id="_4714">Visit article:<div class="list"><ul id="_4715"><li id="_4716">ae4d0e3a0964f3c00a7e1ec0d561ebd6f2d2f44f (show tagged headers under non-toplevel headers) TTFB logged off local:<div class="list"><ul id="_4717"><li id="_4718">/barack-obama: 60 - 75</li><li id="_4719">/cirosantilli: 200 - 300</li><li id="_4720">/wikibot: 100 - 120</li></ul></div></li><li id="_4721">3c61db4b778f0cc6c0fcfbc5519ef82927d365b3 (one before "show tagged headers under non-toplevel headers") TTFB logged off local:<div class="list"><ul id="_4722"><li id="_4723">/cirosantilli: 200 - 300</li><li id="_4724">/wikibot: 110 - 120</li></ul></div></li><li id="_4725"><div class="p" id="_4726">075872a0a5ca7faf171d45834bc2b47995a15634 web: speed up article page DB queries further by moving topicId into topic</div><div class="p" id="_4727">At this commit we had highly optimized article page queries. The slowest query was getting the new upvotes of the logged in user at 20 - 30 ms.</div><div class="list"><ul id="_4728"><li id="_4729">TTFB<div class="list"><ul id="_4730"><li id="_4731">local<div class="list"><ul id="_4732"><li id="_4733">logged off:<div class="list"><ul id="_4734"><li id="_4735">/barack-obama: 40 - 60</li><li id="_4736">/cirosantilli: 160 - 190</li><li id="_4737">/cirosantilli/mathematics: 100 - 120</li><li id="_4738">/wikibot: 65 - 70</li></ul></div></li><li id="_4739">logged in:<div class="list"><ul id="_4740"><li id="_4741">/barack-obama 65</li><li id="_4742">/cirosantilli: 200 - 300</li><li id="_4743">/wikibot: 90 - 100</li></ul></div></li></ul></div></li><li id="_4744">cirosantilli.com: 100 - 200</li><li id="_4745">ourbigbook.com<div class="list"><ul id="_4746"><li id="_4747">logged off:<div class="list"><ul id="_4748"><li id="_4749">/barack-obama: 140 -180</li><li id="_4750">/cirosantilli: 300 - 400</li><li id="_4751">/cirosantilli/mathematics: 240 - 400</li><li id="_4752">/wikibot: 180 - 300</li></ul></div></li><li id="_4753">logged in:<div class="list"><ul id="_4754"><li id="_4755">/barack-obama: 250 - 400</li><li id="_4756">/cirosantilli: 450 - 600</li><li id="_4757">/cirosantilli/mathematics: 350 - 500</li><li id="_4758">/wikibot: 330 - 450</li></ul></div></li></ul></div></li></ul></div></li></ul></div></li><li id="_4759">8ea5ffa52d291350e9a5ddef92e4171d50a51dcc TTFB logged off:<div class="list"><ul id="_4760"><li id="_4761">local<div class="list"><ul id="_4762"><li id="_4763">/barack-obama: 400</li><li id="_4764">/cirosantilli: 500</li><li id="_4765">/wikibot: 1200</li></ul></div></li><li id="_4766">cirosantilli.com: 100 - 200</li><li id="_4767">ourbigbook.com<div class="list"><ul id="_4768"><li id="_4769">/barack-obama: 500 - 700</li><li id="_4770">/cirosantilli: 1100 - 1500</li><li id="_4771">/wikibot: 3500 - 4500</li></ul></div></li></ul></div>This suggests a database scaling issue like a missing index.</li></ul></div></div><div class="p" id="_4772">Update article:<div class="list"><ul id="_4773"><li id="_4774">f2d48c4b6eaa6264017d3ef506a58167802730f3 Lenovo ThinkPad P14s Ubuntu 24.10 postgresql 16.8 and cirosantilli.github.io at 858d7eb936b541979660e3aecb7abf96541fc06c<div class="list"><ul id="_4775"><li id="_4776">/cirosantilli 380 ms</li><li id="_4777">/cirosantilli/x86-paging and descendants 1900 ms</li><li id="_4778">/cirosantilli/cool-data-embedded-in-the-bitcoin-blockchain and descendants 4400</li><li id="_4779">/cirosantilli/cia-2010-covert-communication-websites and descendants 4700</li></ul></div></li></ul></div></div><div class="p" id="_4780">Related:<div class="list"><ul id="_4781"><li id="_4782"><a href="todo#reach-the-same-performance-as-static-website-with-dynamic-tree">Reach the same performance as static website with dynamic tree</a></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-web-performance-benchmarking">OurBigBook Web performance benchmarking</a></li><li><a href=".#ourbigbook-web-development">OurBigBook Web development</a></li><li><a href=".#ourbigbook-web">OurBigBook Web</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href="news#ourbigbook-com-cirosantilli-loads-2x-as-fast-after-database-optimizations">Ourbigbook.com/cirosantilli loads 2x as fast after database optimizations</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

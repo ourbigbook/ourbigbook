@@ -1,0 +1,80 @@
+{
+    "Image": {
+        "prefix": "\\I",
+        "body": [
+            "\\Image[${CLIPBOARD}]"
+        ],
+    },
+    "Video": {
+        "prefix": "\\V",
+        "body": [
+            "\\Video[${CLIPBOARD}]"
+        ],
+    },
+    "Tag named argument": {
+        "prefix": "{a",
+        "body": [
+            "{tag=$0}"
+        ],
+    },
+    "Description named argument": {
+        "prefix": "{d",
+        "body": [
+            "{description=$0}"
+        ],
+    },
+    "Disambiguate named argument": {
+        "prefix": "{g",
+        "body": [
+            "{disambiguate=$0}"
+        ],
+    },
+    "Full named argument": {
+        "prefix": "{f",
+        "body": [
+            "{full}"
+        ],
+    },
+    "Height named argument": {
+        "prefix": "{h",
+        "body": [
+            "{height=$0}"
+        ],
+    },
+    "Title2 named argument": {
+        "prefix": "{i",
+        "body": [
+            "{title2=}"
+        ],
+    },
+    "Parent named argument": {
+        "prefix": "{p",
+        "body": [
+            "{parent=${0}}"
+        ],
+    },
+    "Source named argument": {
+        "prefix": "{s",
+        "body": [
+            "{source=${CLIPBOARD}}"
+        ],
+    },
+    "Wiki named argument": {
+        "prefix": "{w",
+        "body": [
+            "{wiki}"
+        ],
+    },
+    "Synonym named argument": {
+        "prefix": "{y",
+        "body": [
+            "{synonym}"
+        ],
+    },
+    "Title named argument": {
+        "prefix": "{t",
+        "body": [
+            "{title=$0}"
+        ],
+    },
+}

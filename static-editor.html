@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Static editor - Ciro Santilli</title>
+<meta property="og:title" content="Static editor - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/static-editor">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="static-editor"><div class="notnav"><h1><a href="">Static editor <span class="meta">(editor.html)</span></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#tooling"> Tooling</a><a href=".#editor-support"> Editor support</a><a href=".#browser-editor-with-preview"> Browser editor with preview</a></div><div class="nav"><a class="nosplit" href=".#static-editor"></a><span class="metrics"><span class="wcntr"> Words: 120</span></span></div></nav></div><div class="p" id="_5132">The "static editor" is the <a href=".#browser-editor-with-preview">Browser editor with preview</a>.</div><div class="p" id="_5133">It can be viewed live at: <a href="https://docs.ourbigbook.com/_obb/dist/editor">docs.ourbigbook.com/_obb/dist/editor</a> and its main source code is located at: <a href="_raw/editor.html">editor.html</a>.</div><div class="p" id="_5134">The static editor is a browser-only toy/demo with no persistent storage. We call it "static" because it is able to run on a <a href=".#p-publish">static website</a>, as opposed to the more advanced editor present in <a href=".#ourbigbook-web">OurBigBook Web</a>, which interacts fully with a dynamic database. Both static and dynamic editor codebases are highly factored however, which is why they look identical.</div><div class="p" id="_5135">That editor can be viewed directly locally with:<div class="code" id="_5136"><div><pre><code>git clone https://github.com/ourbigbook/ourbigbook
+cd ourbigbook
+npm install
+npm run build-assets
+firefox dist/editor.html</code></pre></div></div></div><div class="p" id="_5137">You can also speed up the interactive development loop of editor.html with:<div class="code" id="_5138"><div><pre><code>npm run webpack-dev</code></pre></div></div>as usual when dealing with the <a href=".#dist-directory"><code>dist</code> directory</a>.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href=".#browser-editor-with-preview">Browser editor with preview</a></li><li><a href=".#editor-support">Editor support</a></li><li><a href=".#tooling">Tooling</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(2)</span></a></h2><div class="list"><ul><li><a href=".#browser-editor-with-preview">Browser editor with preview</a></li><li><a href=".#web-editor">Web editor</a></li></ul></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#static-editor">Editor.html</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

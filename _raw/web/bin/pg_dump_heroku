@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+rm -f latest.dump
+d="$(date --iso-8601=seconds)"
+heroku pg:backups:capture -a ourbigbook
+heroku pg:backups:download -a ourbigbook
+mv latest.dump latest-$d.dump
+ln -s latest-$d.dump latest.dump

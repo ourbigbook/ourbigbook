@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>News / File upload on Web - Ciro Santilli</title>
+<meta property="og:title" content="News / File upload on Web - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/web-files/user-page-arrow.png">
+<meta property="og:url" content="https://docs.ourbigbook.com/news/file-upload-on-web">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="file-upload-on-web"><div class="notnav"><h1><a href="../news">News</a><span class="meta"> / </span><a href="">File upload on Web</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href=".."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="..#developing-ourbigbook"> Developing OurBigBook</a><a href="..#publicity"> Publicity</a><a href="../news"> News</a></div><div class="nav"><a class="nosplit" href="../news#file-upload-on-web"></a><span class="metrics"><span class="wcntr"> Words: 139</span></span></div></nav></div><div class="p" id="_9">It is now possible to have create file uploads on <a href="..#ourbigbook-web">OurBigBook Web</a>, e.g.:<div class="list"><ul id="_10"><li id="_11"><a href="https://ourbigbook.com/cirosantilli/_dir">ourbigbook.com/cirosantilli/_dir</a></li><li id="_12"><a href="https://ourbigbook.com/cirosantilli/_dir/c">ourbigbook.com/cirosantilli/_dir/c</a></li><li id="_13"><a href="https://ourbigbook.com/cirosantilli/_raw/c/segfault.c">ourbigbook.com/cirosantilli/_raw/c/segfault.c</a></li></ul></div>You can upload images, source code, or any other type of file.</div><div class="p" id="_14">Previously, you'd just get broken links when publishing to <a href="..#ourbigbook-web">OurBigBook Web</a> if you linked to your files with the <a href="..#link"><code>\a</code> macro</a> or other related constructs.</div><div class="p" id="_15">The implementation attempts to follow what already existed for <a href="..#p-publish">static websites</a> as closely as possible.</div><div class="p" id="_16">The current implementation has a few limitations which should be fixed one day:<div class="list"><ul id="_17"><li id="_18">there is no web UI for file upload, it is exposed via CLI only</li><li id="_19">file previews don't show under corresponding <code>_file</code> articles as they do on static</li><li id="_20"><code>_file</code> articles are not properly auto-generated for files that don's have explicit articles, we just show <code>_raw</code> under <code>_file</code></li></ul></div></div><div class="figure"><figure id="image-user-home-pages-have-a-link-to-the-root-file-directory-of-the-user"><div class="float-wrap"><a href="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/web-files/user-page-arrow.png"><img src="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/web-files/user-page-arrow.png" loading="lazy" height="536"  class="border"></a></div><figcaption><a href="#image-user-home-pages-have-a-link-to-the-root-file-directory-of-the-user"><span class="caption-prefix">Figure 1. </span></a><div class="title">User home pages have a link to the root file directory of the user</div>. <a href="https://ourbigbook.com/cirosantilli">Source</a>. </figcaption></figure></div><div class="figure"><figure id="image-sample-directory-listing"><div class="float-wrap"><a href="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/web-files/directory-listing.png"><img src="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/web-files/directory-listing.png" loading="lazy" height="533"  class="border"></a></div><figcaption><a href="#image-sample-directory-listing"><span class="caption-prefix">Figure 2. </span></a><div class="title">Sample directory listing</div>. <a href="https://ourbigbook.com/cirosantilli/_dir/c">Source</a>. </figcaption></figure></div><div class="figure"><figure id="image-sample-raw-listing"><div class="float-wrap"><a href="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/web-files/raw.png"><img src="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/web-files/raw.png" loading="lazy" height="153"  class="border"></a></div><figcaption><a href="#image-sample-raw-listing"><span class="caption-prefix">Figure 3. </span></a><div class="title">Sample raw listing</div>. <a href="https://ourbigbook.com/cirosantilli/_file/c/segfault.c">Source</a>. </figcaption></figure></div><div class="p" id="_21">Announced at:<div class="list"><ul id="_22"><li id="_23"><a href="https://mastodon.social/@ourbigbook/114851233133955275">mastodon.social/@ourbigbook/114851233133955275</a></li><li id="_24"><a href="https://x.com/OurBigBook/status/1944713518474744230">x.com/OurBigBook/status/1944713518474744230</a></li><li id="_25"><a href="https://www.linkedin.com/feed/update/urn:li:ugcPost:7350479547579961347">www.linkedin.com/feed/update/urn:li:ugcPost:7350479547579961347</a></li><li id="_26"><a href="https://www.facebook.com/OurBigBook/posts/pfbid02AH8MfRBf4Dc3LzoeGPnZkKp9GffS8qr2hF4FoqC9g1eq1EcGHV1ABcFiPniF4pual">www.facebook.com/OurBigBook/posts/pfbid02AH8MfRBf4Dc3LzoeGPnZkKp9GffS8qr2hF4FoqC9g1eq1EcGHV1ABcFiPniF4pual</a></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href="../news">News</a></li><li><a href="..#publicity">Publicity</a></li><li><a href="..#developing-ourbigbook">Developing OurBigBook</a></li><li><a href=".."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/news.bigb">news.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "news/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

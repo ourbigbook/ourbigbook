@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -eux
+script_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+"${script_dir}/pg-setup"
+"${script_dir}/pg_restore" --no-acl --no-owner "${1:-latest.dump}"

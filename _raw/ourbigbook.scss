@@ -1,0 +1,16 @@
+// https://docs.ourbigbook.com#shorthand-link-parsing-rules#overview-of-files-in-this-repository
+
+@import 'normalize.css/normalize';
+@import 'katex/dist/katex.min';
+@import 'tablesort/tablesort';
+
+@import 'ourbigbook.common.scss';
+
+// Main class that contains full ourbigbook content.
+.ourbigbook {
+  @include ourbigbook-main;
+}
+
+.ourbigbook-body {
+  @include ourbigbook-body;
+}

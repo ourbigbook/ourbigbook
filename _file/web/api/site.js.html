@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>web/api/site.js - Ciro Santilli</title>
+<meta property="og:title" content="web/api/site.js - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/_file/web/api/site.js">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="file/web/api/site.js"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">web/api/site.js</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/api">api</a> / <a href="../../../_raw/web/api/site.js">site.js</a></b></div></nav></div><div class="p"><b>web/api/site.js</b></div><div class="code"><div><pre><code>
+// These routes return only user-specific data that is added by the client
+// on top of the pre-rendered page for logged out users that we return first.
+//
+// Ended up being an ad-hoc GraphQL! Great.
+
+const router = require('express').Router()
+
+const auth = require('../auth')
+const { cant } = require('../front/cant')
+const front = require('../front/js')
+const lib = require('./lib')
+const {
+  ValidationError,
+  validateParam,
+} = lib
+
+router.get('/', auth.optional, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const { Site, User } = sequelize.models
+    res.json(
+      await sequelize.transaction(async (transaction) =&gt; {
+        const [loggedInUser, site] = await Promise.all([
+          User.findByPk(req.payload.id, { transaction }),
+          Site.findOne({ transaction }),
+        ])
+        return await site.toJson(loggedInUser)
+      })
+    )
+  } catch(error) {
+    next(error);
+  }
+})
+
+router.put('/', auth.optional, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    res.json(
+      await sequelize.transaction(async (transaction) =&gt; {
+        const body = validateParam(req, 'body')
+        const automaticTopicLinksMaxWords = validateParam(body, 'automaticTopicLinksMaxWords', {
+          defaultValue: undefined,
+          validators: [front.isNonNegativeInteger],
+        })
+        const pinnedArticle = validateParam(body, 'pinnedArticle', {
+          defaultValue: undefined,
+          validators: [front.isString],
+        })
+        const [article, loggedInUser, site] = await Promise.all([
+          pinnedArticle
+            ? sequelize.models.Article.findOne({
+                where: { slug: pinnedArticle },
+                transaction
+              })
+            : null,
+          sequelize.models.User.findByPk(req.payload.id, { transaction }),
+          sequelize.models.Site.findOne({ transaction }),
+        ])
+        const msg = cant.updateSiteSettings(loggedInUser)
+        if (msg) {
+          throw new ValidationError([msg], 403)
+        }
+        if (automaticTopicLinksMaxWords !== undefined) {
+          site.automaticTopicLinksMaxWords = automaticTopicLinksMaxWords
+        }
+        if (pinnedArticle !== undefined) {
+          if (pinnedArticle) {
+            if (!article) {
+              throw new ValidationError([`article does not exist: "${pinnedArticle}"`], 404)
+            }
+            site.pinnedArticleId = article.id
+          } else {
+            site.pinnedArticleId = null
+          }
+        }
+        await site.save({ transaction })
+        return await site.toJson(loggedInUser, { transaction })
+      })
+    )
+  } catch(error) {
+    next(error);
+  }
+})
+
+router.get('/blacklist-signup-ip', auth.optional, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    res.json(
+      await sequelize.transaction(async (transaction) =&gt; {
+        const body = validateParam(req, 'body')
+        const ips = validateParam(body, 'ips', {
+          validators: [ front.isArrayOf(front.isString) ],
+          defaultValue: [],
+        })
+        const [loggedInUser] = await Promise.all([
+          sequelize.models.User.findByPk(req.payload.id, { transaction }),
+        ])
+        const msg = cant.updateSiteSettings(loggedInUser)
+        if (msg) {
+          throw new ValidationError([msg], 403)
+        }
+        const ipsFound = await sequelize.models.SignupBlacklistIp.findAll(
+          { where: { ip: ips } },
+          { transaction },
+        )
+        return { ips: ipsFound.map(ip =&gt; ip.ip) }
+      })
+    )
+  } catch(error) {
+    next(error);
+  }
+})
+
+router.put('/blacklist-signup-ip', auth.optional, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    res.json(
+      await sequelize.transaction(async (transaction) =&gt; {
+        const body = validateParam(req, 'body')
+        const ips = validateParam(body, 'ips', {
+          validators: [ front.isArrayOf(front.isString) ],
+          defaultValue: [],
+        })
+        for (const ip of ips) {
+          if (!ip.match(/\d+(\.\d+(\.\d+(\.\d+)))/)) {
+            throw new ValidationError(`not a valid IP or IP prefix: ${ip}`)
+          }
+        }
+        const [loggedInUser] = await Promise.all([
+          sequelize.models.User.findByPk(req.payload.id, { transaction }),
+        ])
+        const msg = cant.updateSiteSettings(loggedInUser)
+        if (msg) {
+          throw new ValidationError([msg], 403)
+        }
+        await sequelize.models.SignupBlacklistIp.bulkCreate(
+          ips.map(ip =&gt; { return { ip } }),
+          {
+            transaction,
+            updateOnDuplicate: ['ip'],
+          }
+        )
+        return {}
+      })
+    )
+  } catch(error) {
+    next(error);
+  }
+})
+
+router.delete('/blacklist-signup-ip', auth.optional, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    res.json(
+      await sequelize.transaction(async (transaction) =&gt; {
+        const body = validateParam(req, 'body')
+        const ips = validateParam(body, 'ips', {
+          validators: [ front.isArrayOf(front.isString) ],
+          defaultValue: [],
+        })
+        const [loggedInUser] = await Promise.all([
+          sequelize.models.User.findByPk(req.payload.id, { transaction }),
+        ])
+        const msg = cant.updateSiteSettings(loggedInUser)
+        if (msg) {
+          throw new ValidationError([msg], 403)
+        }
+        await sequelize.models.SignupBlacklistIp.destroy(
+          { where: { ip: ips }, transaction }
+        )
+        return {}
+      })
+    )
+  } catch(error) {
+    next(error);
+  }
+})
+
+module.exports = router
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

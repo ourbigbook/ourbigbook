@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>\x within title restrictions - Ciro Santilli</title>
+<meta property="og:title" content="\x within title restrictions - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/x-within-title-restrictions">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="x-within-title-restrictions"><div class="notnav"><h1><a href=""><code>\x</code> within <code>title</code> restrictions</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#internal-link"> Internal link</a></div><div class="nav"><a class="nosplit" href=".#x-within-title-restrictions"></a><span class="metrics"><span class="wcntr"> Words: 448</span></span></div></nav></div><div class="p" id="_2320">If you use an <a href=".#internal-link">internal link</a> within a <a href=".#title-argument"><code>title</code> argument</a>, that can generate complex dependencies between IDs, which would either be harder to implement, or lead to infinite recursion.</div><div class="p" id="_2321">To prevent such problems:<div class="list"><ul id="_2322"><li id="_2323">for the case of <a href=".#header">headers</a>:<div class="list"><ul id="_2324"><li id="_2325">if the <a href=".#internal-link">internal link</a> text is explicitly given, then it is used to calculate the ID of the title element and on render output</li><li id="_2326">otherwise, the href argument is used for the ID and the render output. This generally works best when you use <a href=".#x-magic-argument">magic links</a>.</li></ul></div></li><li id="_2327">for non-<a href=".#header">headers</a> such as <a href=".#image">images</a>, you you can link to headers, and the rendered target gets used for both ID and rendered content</li></ul></div></div><div class="p" id="_2328">Here are some example:<div class="list"><ul id="_2329"><li id="_2330"><div class="code" id="_2331"><div><pre><code>= Hello \x[h2-id][the content]
+
+== H2 title
+{id=h2-id}</code></pre></div></div><div class="list"><ul id="_2332"><li id="_2333">h1 id: <code>hello-the-content</code></li><li id="_2334">h1 render content: <code>Hello the content</code></li></ul></div></li><li id="_2335"><div class="code" id="_2336"><div><pre><code>= Hello \x[h2-id]
+
+== H2 title
+{id=h2-id}</code></pre></div></div><div class="list"><ul id="_2337"><li id="_2338">h1 id: <code>hello-h2-id</code></li><li id="_2339">h1 render content: <code>Hello h2-id</code>. Note that this is not very nice due to the <code>-</code>, but it can be made nicer without repetition with a <a href=".#x-magic-argument">magic link</a> as in the following example</li></ul></div></li><li id="_2340"><div class="code" id="_2341"><div><pre><code>= Hello &lt;blue dog&gt;
+
+== Blue dog</code></pre></div></div><div class="list"><ul id="_2342"><li id="_2343">h1 id: <code>hello-blue-dog</code></li><li id="_2344">h1 render content: <code>Hello blue dog</code></li></ul></div></li><li id="_2345"><div class="p" id="_2346">non-header (e.g. an <a href=".#image">image</a>) that links to the title of another non-header</div><div class="p" id="_2347">For non-headers, things are a bit more relaxed, and we can link to headers, e.g.:<div class="code" id="_2348"><div><pre><code>= h1
+
+\Image[myimg.jpg]
+{title=my \x[h1]}</code></pre></div></div>This is allowed because OurBigBook calculates IDs in two stages: first for all headers, and only later non non-headers.</div><div class="p" id="_2349">What you cannot do is link to another image e.g.:<div class="code" id="_2350"><div><pre><code>\Image[myimg.jpg]
+{id=myimage1}
+{title=My image 1}
+
+\Image[myimg.jpg]
+{title=my \x[h1]}</code></pre></div></div>and there the workaround are much the same as for headers: either explicitly set the <a href=".#internal-link">internal link</a> content:<div class="code" id="_2351"><div><pre><code>\Image[myimg.jpg]
+{id=myimage1}
+{title=My image 1}
+
+\Image[myimg.jpg]
+{title=my \x[h1][My image 1]}</code></pre></div></div>or explicitly set an ID:<div class="code" id="_2352"><div><pre><code>\Image[myimg.jpg]
+{id=myimage1}
+{title=My image 1}
+
+\Image[myimg.jpg]
+{id=myimage2}
+{title=my \x[h1]}</code></pre></div></div>TODO both workaround are currently broken <a href="todo#image-title-with-x-to-image-with-content-incorrectly-disallowed">Image title with x to image with content incorrectly disallowed</a>, we forgot to add a test earlier on, and things inevitably broke... Should not be hard to fix though, we are just overchecking.</div></li></ul></div></div><div class="p" id="_2353">While it is technically possible relax the above limitations and give an error only in case of loops, it would require a bit of extra work which we don't want to put in right now: <a href="https://github.com/ourbigbook/ourbigbook/issues/95">github.com/ourbigbook/ourbigbook/issues/95</a>.</div><div class="p" id="_2354">Furthermore, the above rules do not exclude infinite rendering loops, but OurBigBook detects such loops and gives a nice error message, this has been fixed at: <a href="https://github.com/ourbigbook/ourbigbook/issues/34">github.com/ourbigbook/ourbigbook/issues/34</a></div><div class="p" id="_2355">For example this would contain an infinite loop:<div class="code" id="_2356"><div><pre><code>\Image[myimg.jpg]
+{id=myimage1}
+{title=\x[myimage2]}
+
+\Image[myimg.jpg]
+{id=myimage2}
+{title=\x[myimage1]}</code></pre></div></div></div><div class="p" id="_2357">This infinite recursion is fundamentally not technically solved: the user has to manually break the loop by providing an <code>x</code> content explicitly, e.g. in either:<div class="code" id="_2358"><div><pre><code>\Image[myimg.jpg]
+{id=myimage1}
+{title=\x[myimage2][my content 2]}
+
+\Image[myimg.jpg]
+{id=myimage2}
+{title=\x[myimage1]}</code></pre></div></div>or:<div class="code" id="_2359"><div><pre><code>\Image[myimg.jpg]
+{id=myimage1}
+{title=\x[myimage2]}
+
+\Image[myimg.jpg]
+{id=myimage2}
+{title=\x[myimage1][my content 1]}</code></pre></div></div></div><div class="p" id="_2360">A closely related limitation is the simplistic approach to <a href=".#x-id-output-format"><code>\x</code> <code>id</code> output format</a>.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href=".#internal-link">Internal link</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(3)</span></a></h2><div class="list"><ul><li><a href=".#conversion-process-overview">Conversion process overview</a></li><li><a href=".#format-source"><code>--format-source</code></a></li><li><a href=".#x-id-output-format"><code>\x</code> <code>id</code> output format</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

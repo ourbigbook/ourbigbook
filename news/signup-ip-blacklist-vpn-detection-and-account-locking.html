@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>News / Signup IP blacklist, VPN detection and account locking - Ciro Santilli</title>
+<meta property="og:title" content="News / Signup IP blacklist, VPN detection and account locking - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/spam/crypto.png">
+<meta property="og:url" content="https://docs.ourbigbook.com/news/signup-ip-blacklist-vpn-detection-and-account-locking">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="signup-ip-blacklist-vpn-detection-and-account-locking"><div class="notnav"><h1><a href="../news">News</a><span class="meta"> / </span><a href="">Signup IP blacklist, VPN detection and account locking</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href=".."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="..#developing-ourbigbook"> Developing OurBigBook</a><a href="..#publicity"> Publicity</a><a href="../news"> News</a></div><div class="nav"><span class="tags"> Tags: <a href="..#account-locking">Account locking</a>, <a href="..#ourbigbook-vpn-blocking">OurBigBook VPN blocking</a>, <a href="..#ourbigbook-web-signup-ip-blacklist">OurBigBook Web signup IP blacklist</a>, <a href="..#web"><code>-W</code>, <code>--web</code></a></span><a class="nosplit" href="../news#signup-ip-blacklist-vpn-detection-and-account-locking"></a><span class="metrics"><span class="wcntr"> Words: 482</span></span></div></nav></div><div class="p" id="_54">As described at: <a href="https://github.com/ourbigbook/ourbigbook/issues/346">github.com/ourbigbook/ourbigbook/issues/346</a>, starting December 2024 and increasingly so through January and February 2025, <a href="..#ourbigbook-com">OurBigBook.com</a> has been increasingly targeted by a SAPMmer group.</div><div class="p" id="_55">About half of the SPAM posts were advertising cryptocurrency recovery services, but other scammy products were also advertized.</div><div class="p" id="_56">They usually create a few posts every day, but they are very persistent and keep coming back day after day.</div><div class="p" id="_57">The spammers were rather sophisticated:<div class="list"><ul id="_58"><li id="_59">almost always one SPAM post per account</li><li id="_60">all accounts use gmail addresses, presumably bought in bulk</li><li id="_61">the SPAMers use one of a variety of free VPN, most notably ExpressVPN, NordVPN and PIA</li></ul></div></div><div class="p" id="_62">At first we were rather amused that there would be human labor so cheap as to make such a work economically feasible.</div><div class="p" id="_63">Adding SPAM to a website that has zero users and almost no views. Amazing!</div><div class="p" id="_64">And it has to be manual work because the website is already protected by <a href="..#ourbigbook-web-recaptcha-setup">OurBigBook Web reCAPTCHA setup</a>.</div><div class="p" id="_65">Furthermore all of the above strongly indicate a well organized SPAM operation that spams across a variety of websites for a variety of clients.</div><div class="p" id="_66">But what really impressed us the most was <a href="https://ourbigbook.com/alannakennedy/top-ways-to-recover-funds-from-cryptocurrency-scam-iforce-hacker-recovery">ourbigbook.com/alannakennedy/top-ways-to-recover-funds-from-cryptocurrency-scam-iforce-hacker-recovery</a> They actually upvoted a single post from 13 other accounts, making it by far the top article on <a href="..#ourbigbook-com">OurBigBook.com</a> as visible at: <a href="https://ourbigbook.com/go/articles?sort=score">ourbigbook.com/go/articles?sort=score</a></div><div class="figure"><figure id="image-screenshot-showing-voting-manipulated-spam-as-the-most-highly-upvoted-article-on-ourbigbook-com"><div class="float-wrap"><a href="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/spam/crypto.png"><img src="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/spam/crypto.png" loading="lazy" height="971"  class="border"></a></div><figcaption><a href="#image-screenshot-showing-voting-manipulated-spam-as-the-most-highly-upvoted-article-on-ourbigbook-com"><span class="caption-prefix">Figure 7. </span></a><div class="title">Screenshot showing voting manipulated SPAM as the most highly upvoted article on OurBigBook.com</div>. <a href="https://web.archive.org/web/20250228110911/https://ourbigbook.com/go/articles?sort=score">Source</a>. </figcaption></figure></div><div class="p" id="_67">Initially Ciro was debating to himself if he should allow this to continue or not. It is kind of fun to see them work and build a database of compromised gmail addresses.</div><div class="p" id="_68">But finally, Ciro decided to put a stop to it mostly because:<div class="list"><ul id="_69"><li id="_70">they create so many accounts that it would take a lot of effort to go over all of them to decide which accounts are legit or not if in the future we wanted to nuke the SPAM accounts</li><li id="_71">manipulating the voting system was a step to far</li></ul></div></div><div class="p" id="_72">As a result, we have implemented the following features on the website, which should completely kill off this wave of SPAM, while hopefully having little impact to legitimate users:<div class="list"><ul id="_73"><li id="_74"><a href="..#ourbigbook-vpn-blocking">OurBigBook VPN blocking</a>: we now detect and forbid users from signing up from IPs of well known VPNs. The detection is done via API calls to <a href="https://ipapi.is/">ipapi.is/</a> which allows fo 1000 free daily requests. We only make the requests after <a href="..#ourbigbook-web-recaptcha-setup">reCAPTCHA</a>, and if that service is ever down for some reason, we just skip the check instead</li><li id="_75"><a href="..#ourbigbook-web-signup-ip-blacklist">OurBigBook Web signup IP blacklist</a>: additionally, a small percentage of the SPAM was coming from Pakistani IPs which were not marked as part of a VPN. So we have also given the ability for admins to block some IPs manually to cover those</li><li id="_76"><a href="..#account-locking">Account locking</a>: for SPAM that goes through, we intend to use this new feature to <a href="..#account-locking">lock</a> the SPAM accounts, which prevents them from further editing the database in any way, e.g. creating articles</li></ul></div></div><div class="p" id="_77">Furthermore, we will also use the pre-existing <a href="..#ourbigbook-web-unlisted-articles">unlisted</a> article feature to unlist any particularly noisy spam such as the vote manipulated post.</div><div class="p" id="_78">Announcements:<div class="list"><ul id="_79"><li id="_80"><a href="https://mastodon.social/@ourbigbook/114081249345123512">mastodon.social/@ourbigbook/114081249345123512</a></li><li id="_81"><a href="https://x.com/OurBigBook/status/1895434750376165482">x.com/OurBigBook/status/1895434750376165482</a></li><li id="_82"><a href="https://www.linkedin.com/feed/update/urn:li:share:7301200741862420480">www.linkedin.com/feed/update/urn:li:share:7301200741862420480</a></li><li id="_83"><a href="https://www.facebook.com/OurBigBook/posts/pfbid0QPh3kRDe4bA99MpsVNEXX6LqURKooYMjWX3wC6phGrs2vv7PswyTs2GpwX3KTxUCl">www.facebook.com/OurBigBook/posts/pfbid0QPh3kRDe4bA99MpsVNEXX6LqURKooYMjWX3wC6phGrs2vv7PswyTs2GpwX3KTxUCl</a></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href="../news">News</a></li><li><a href="..#publicity">Publicity</a></li><li><a href="..#developing-ourbigbook">Developing OurBigBook</a></li><li><a href=".."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/news.bigb">news.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "news/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

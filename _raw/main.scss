@@ -1,0 +1,111 @@
+@import 'ourbigbook/ourbigbook.common.scss';
+
+body {
+background-color: $background-color;
+font-family: $font-family;
+
+header, footer {
+  background-color: $navbar-background-color;
+}
+header {
+  align-items: center;
+  display: flex;
+  /* https://stackoverflow.com/questions/5078239/how-do-i-remove-the-space-between-inline-block-elements */
+  font-size: 0;
+  margin-bottom: 0.8 * $header-font-size;
+  overflow-x: hidden;
+  white-space: nowrap;
+  a {
+    /* Make buttons occupy the full height of the header bar.
+     * https://stackoverflow.com/questions/28254332/how-to-vertically-center-the-contents-of-a-flexbox-item/28254903#28254903 */
+    align-items: center;
+    align-self: stretch;
+    display: flex;
+    font-size: 32px;
+    font-weight: bold;
+    height: 1.2em;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 10px;
+    padding-right: 10px;
+    text-decoration: none;
+    &:first-child {
+      padding-left: 0;
+    }
+    img {
+      height: 100%;
+      margin-right: 0.1em;
+    }
+    @media only screen and (min-width: $max-mobile-width + 1) {
+      .mobile-show {
+        display: none;
+      }
+    }
+    @media only screen and (max-width: $max-mobile-width) {
+      .mobile-hide {
+        display: none;
+      }
+    }
+
+    // Color
+    color: $navbar-non-brandname-color;
+    &:visited {
+      color: $navbar-non-brandname-color;
+    }
+    &:hover {
+      color: $navbar-background-color;
+      background-color: $navbar-non-brandname-color;
+    }
+    &.brand {
+      &:visited {
+        color: $brandname-color;
+      }
+      &:hover {
+        color: $navbar-background-color;
+        background-color:  $navbar-non-brandname-color;
+      }
+    }
+    .icon {
+      color: $color;
+      font-weight: normal;
+      padding-right: 5px;
+    }
+    &:hover {
+      .icon {
+        color: $navbar-background-color;
+      }
+    }
+  }
+  .brand-group {
+    display: flex;
+    @media only screen and (max-width: $max-mobile-width) {
+      padding-left: $toplevel-horizontal-padding-mobile;
+    }
+    @media only screen and (min-width: $max-mobile-width + 1) {
+      padding-left: $toplevel-horizontal-padding-left;
+    }
+  }
+}
+footer {
+  color: $footer-color;
+  font-size: 1.2em;
+  word-wrap: break-word;
+  a {
+    color: $a-color;
+    text-decoration: none;
+    &:visited {
+      color: $a-color;
+    }
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+  padding: 10px $toplevel-horizontal-padding-right 10px $toplevel-horizontal-padding-left;
+  div + div {
+    margin-top: 5px;
+  }
+}
+div.giscus {
+  margin-top: 1em;
+}
+}

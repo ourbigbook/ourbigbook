@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Visual Studio Code quick start - Ciro Santilli</title>
+<meta property="og:title" content="Visual Studio Code quick start - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/local-editing/vscode-mathematics-calculus-derivative.png">
+<meta property="og:url" content="https://docs.ourbigbook.com/visual-studio-code-quick-start">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="visual-studio-code-quick-start"><div class="notnav"><h1><a href="">Visual Studio Code quick start</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#tooling"> Tooling</a><a href=".#editor-support"> Editor support</a><a href=".#visual-studio-code"> Visual Studio Code</a></div><div class="nav"><span class="tags"> Tags: <a href=".#quick-start">Quick start</a></span><a class="nosplit" href=".#visual-studio-code-quick-start"></a><span class="metrics"><span class="wcntr"> Words: 241</span></span></div></nav></div><div class="p" id="_4919">First follow <a href=".#play-with-the-template">play with the template</a> and ensure that you are able to run <code>ourbigbook</code> from the command line succesfully on a <a href=".#generate">project template</a>:<div class="code" id="_4920"><div><pre><code>npx ourbigbook .</code></pre></div></div>We would like to remove the need for this step and allow users doing everyting without the command line, but that will require some extra work: <a href="https://github.com/ourbigbook/ourbigbook/issues/318">github.com/ourbigbook/ourbigbook/issues/318</a></div><div class="p" id="_4921">Once that is working, you can now install the extension either:<div class="list"><ul id="_4922"><li id="_4923">via the VS Code UI: Ctrl + Shift + X and search for "ourbigbook", the ID is: <code>ourbigbook.ourbigbook-vscode</code></li><li id="_4924">from the command line with:<div class="code" id="_4925"><div><pre><code>ext install ourbigbook.ourbigbook-vscode</code></pre></div></div></li></ul></div></div><div class="p" id="_4926">We also recommend installing the "Code Spell checker" extension:<div class="code" id="_4927"><div><pre><code>ext install streetsidesoftware.code-spell-checker</code></pre></div></div>and adding the following settings to your User JSON settings file:<div class="code" id="_4928"><div><pre><code>"cSpell.enableFiletypes": [
+    "ourbigbook"
+],</code></pre></div></div></div><div class="p" id="_4929">Next, open the downloaded folder in Visual Studio Code with:<div class="list"><ul id="_4930"><li id="_4931"><code>Ctrl + Shift + P</code></li><li id="_4932">File: Open Folder</li></ul></div>then open a .bigb file such as index.bigb on vscode.</div><div class="p" id="_4933">Now you are ready to:<div class="list"><ul id="_4934"><li id="_4935"><code>Ctrl + Shift + B</code>: build all files in the folder</li><li id="_4936"><code>F5</code>: build all files in the folder, and view the HTML output for the current source file in your browser</li><li id="_4937"><code>Ctrl + Shift + Alt + B</code>: publish your project to <a href=".#ourbigbook-web">OurBigBook Web</a></li></ul></div></div><div class="p" id="_4938">Other things to try include:<div class="list"><ul id="_4939"><li id="_4940"><code>Ctrl + T</code>: search for a header in any file</li><li id="_4941">type <code>&lt;</code> to create an <a href=".#cross-file-internal-link">internal cross file internal link</a> and observe autocompletion suggest header names for you</li></ul></div></div><div class="figure"><figure id="video-edit-locally-and-publish-demo-visual-studio-code"><div class="float-wrap"><iframe width="720" height="720" loading="lazy" src="https://www.youtube.com/embed/Ghvlztiu6rI" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><figcaption><a href="#video-edit-locally-and-publish-demo-visual-studio-code"><span class="caption-prefix">Video 20. </span></a><div class="title">Edit locally and publish demo</div>. <a href="https://www.youtube.com/watch?v=Ghvlztiu6rI">Source</a>. This shows editing <a href=".#ourbigbook-markup">OurBigBook Markup</a> and <a href=".#publish-your-content">publishing</a> it using the <a href=".#visual-studio-code">VS Code</a> extension.</figcaption></figure></div><div class="figure"><figure id="image-screenshot-of-a-sample-ourbigbook-project-in-vs-code"><div class="float-wrap"><a href="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/local-editing/vscode-mathematics-calculus-derivative.png"><img src="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/local-editing/vscode-mathematics-calculus-derivative.png" loading="lazy" height="800"></a></div><figcaption><a href="#image-screenshot-of-a-sample-ourbigbook-project-in-vs-code"><span class="caption-prefix">Figure 68. </span></a><div class="title">Screenshot of a sample OurBigBook project in VS Code</div>. </figcaption></figure></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href=".#visual-studio-code">Visual Studio Code</a></li><li><a href=".#editor-support">Editor support</a></li><li><a href=".#tooling">Tooling</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#quick-start">Quick start</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

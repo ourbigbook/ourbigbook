@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+const fs = require('fs');
+const ourbigbook_nodejs = require('./nodejs');
+const packageJsonPath = process.argv.length > 2
+  ? process.argv[2]
+  : ourbigbook_nodejs.PACKAGE_PACKAGE_JSON_PATH
+let v = JSON.parse(fs.readFileSync(packageJsonPath).toString()).version
+let vs = v.split('.')
+vs[vs.length - 1] = parseInt(vs[vs.length - 1], 10) + 1
+console.log(vs.join('.'))

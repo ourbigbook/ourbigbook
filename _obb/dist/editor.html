@@ -1,0 +1,248 @@
+<!doctype html> <html lang="en"> <head> <meta charset="utf-8"> <title>Ourbigbook editor demo</title> <link rel="shortcut icon" href="logo.svg"> <link rel="stylesheet" href="ourbigbook.css"> <link rel="stylesheet" href="editor_css.css"> <style>body,html{height:100%;margin:0;padding:0;background-color:#000}#example{display:none}</style> </head> <body> <div class="ourbigbook-editor"></div> <pre id="example">= Ourbigbook hello world
+
+Welcome to Ourbigbook! Here's the table of contents:
+
+== Paragraphs, links, code, math
+
+My first paragraph is amazing!
+
+Implicit link with body equals URL: https://examle.com This works because we automatically recognize the `https://` prefix.
+
+Implicit link with custom body: https://examle.com[example website]
+
+Implicit link immediately followed by a period by using an empty argument: https://examle.com[].  After period.
+
+Explicit link with `\a[]`: \a[https://examle.com][example website]
+
+And the second one with inline code `f(){}` and inline server-side rendered maths with KaTeX: $\sqrt{1+1}$.
+
+But if we want block code here it is
+``
+f() {
+  return 1;
+}
+``
+and here is some block maths:
+$$
+\sqrt{1+1} \\
+\sqrt{1+1}
+$$
+
+OurBigBook loves maths, and so equations can have titles, and references to math equations just work! See e.g.: my favorite equation&gt;
+$$
+\newcommand{\mycmd}[1]{\nabla \cdot #1}
+\newcommand{\divergence}[1]{\nabla \cdot #1}
+\divergence{\overrightarrow{E}} = \frac{\rho}{\mycmd{\overrightarrow{E}}} \\
+\divergence{\overrightarrow{\mathbf{B}}} = 0
+$$
+{title=This is my favorite equation in the entire world!!!}
+{id=my-favorite-equation}
+
+We try to make anything escapable with a backslash, e.g.:
+* literal backslash \\notmacro
+* code and math: \` and \$
+
+If you want more than three backticks in your shorthand code block, you can add more to the open:
+````
+Here  are three backticks:
+```
+Nice!
+````
+or you can also use the equivalent sane macro literals. When you open and close a macro argument with more than one square bracket `[` or curly brackets `{`, it becomes a literal string and does not get parsed further:
+\C[[
+Here  are three backticks:
+```
+Nice!
+]]
+
+And here's an example of named `title=` argument with multiple curly brackets `{` which makes its content literal:
+$$
+x = \frac{1}{\sqrt{2}}
+$$
+{{title=My \notAMacro is nice.}}
+
+== Lists, tables, quotations
+
+Meh, the usual. Shorthand list:
+* first item
+* second item
+  * some nesting
+  * and some more
+* third item
+Sane list with explicit `Ul`:
+\Ul[
+\L[first item]
+\L[second item]
+]
+
+And now for tables, see this one: &lt;table my table title&gt;. Try clicking next to the headers to sort the columns!
+\Table
+{title=My table title}
+[
+|| String col
+|| Integer col
+|| Float col
+
+| ab
+| 2
+| 10.1
+
+| a
+| 10
+| 10.2
+
+| c
+| 2
+| 3.4
+
+| c
+| 3
+| 3.3
+]
+
+To escape the shorthand lists and tables just backslash them as usual:
+
+\* not a list
+
+\| not a table
+
+And a quotation:
+\Q[To be or not to be!
+
+Ourbigbook is the answer.]
+
+== References, headers, images
+
+OurBigBook loves headers and headers!
+
+Reference to a header: &lt;paragraphs links code math&gt;.
+
+Make it show the section number as well with `{full}`: &lt;paragraphs links code math&gt;{full}.
+
+Make it uppercase and plural: OurBigBook loves &lt;Bananas&gt;!
+
+Reference to the following image: &lt;image my xi chrysanthemum&gt;.
+
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+{title=Xi Chrysanthemum is a very nice image}
+{id=image-my-xi-chrysanthemum}
+{source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
+
+An YouTube video: &lt;video sample youtube video&gt;.
+
+\Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
+{title=Sample YouTube video.}
+
+=== OurBigBook is awesome
+{c}
+
+=== Banana
+
+=== Unlimited header levels?!
+
+==== My h4
+
+===== My h5
+
+====== My h6
+
+\H[7][My h7]
+
+\H[8][My h8]
+
+\H[9][My h9]
+
+\H[10][My h10]
+
+\H[11][My h11]
+
+\H[12][My h12]
+
+\H[13][My h13]
+
+= Header parent determined by ID!!!
+{parent=my-h9}
+
+The parent of this header is determined by specifying it's ID with:
+``
+{parent=my-h9}
+``
+rather than by the number of `=` signs of this header.
+
+This means that you don't need to worry about counting equal signs anymore!
+
+And it is much easier to move large chunks of headers around! You only need to change the `{parent=}` of the toplevel one.
+
+This is why when creating large documents, you should use `parent` exclusively.
+
+== Tags
+
+These will show up on the metadata of a given header.
+
+Note that metadata is only visible when the header is the toplevel header of a page, otherwise it would clutter your headers too much, so it is not very easy to see in this single page example.
+
+But all headers get their own toplevel pages when using split headers: https://docs.ourbigbook.com/split-headers
+
+=== Animal
+
+==== Ant
+
+==== Cow
+{tag=Mammal}
+
+Oh, and cows are also &lt;mammals&gt;.
+
+==== Flying animal
+
+&lt;Bats&gt; can fly.
+
+But &lt;cats&gt; can't.
+
+==== Mammal
+
+===== Cat
+
+===== Bat
+{tag=Flying animal}
+
+== Scopes
+
+Sometimes, nested header names would really start getting too long.
+
+For this we have https://docs.ourbigbook.com/#h-scope-argument[scopes], which add a prefix to the ID of all descendants.
+
+E.g.:
+* &lt;Experiment how to measure temperature of a cow/Equipment&gt; has id `experiment-how-to-measure-temperature-of-a-cow/equipment`
+* &lt;Experiment how to measure temperature of a pig/Equipment&gt; has id `experiment-how-to-measure-temperature-of-a-pig/equipment`
+so both "Equipment" sections can coexist in the same project.
+
+=== Experiment how to measure temperature of a cow
+{scope}
+
+==== Equipment
+
+Cow thermometer.
+
+==== Setup
+
+Put cow thermometer in cow mouth.
+
+==== Results
+
+The cow was cold.
+
+=== Experiment how to measure temperature of a pig
+{scope}
+
+==== Equipment
+
+Pig thermometer.
+
+==== Setup
+
+Put pig thermometer in pig ear.
+
+==== Results
+
+The pig was cold.
+</pre> <script src="editor.js"></script> <script src="ourbigbook.js"></script> <script src="ourbigbook_runtime.js"></script> <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.26.1/min/vs/loader.min.js" integrity="sha512-SExj71Cw3B9C9EE8BC/ad3AKia5zQXDj/2SM4THgkeKh5GIFZhKM/R3uclUG8YZwJrjcVhydAlIHmfNvsBCKZA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> <script>const example_elem=document.getElementById("example"),root_elem=document.getElementsByClassName("ourbigbook-editor")[0];require.config({paths:{vs:"https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.26.1/min/vs"}}),require(["vs/editor/editor.main"],(()=>{new editor.OurbigbookEditor(root_elem,example_elem.textContent,monaco,ourbigbook,ourbigbook_runtime.ourbigbook_runtime)}))</script> </body> </html> 

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Browser editor with preview - Ciro Santilli</title>
+<meta property="og:title" content="Browser editor with preview - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/_raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/browser-editor-with-preview">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="browser-editor-with-preview"><div class="notnav"><h1><a href="">Browser editor with preview</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#tooling"> Tooling</a><a href=".#editor-support"> Editor support</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#browser-editor-with-preview"></a><span class="metrics"><span class="wcntr"> Words: 349</span><span class="dcnt"> Articles: 2</span></span></div></nav></div><div class="p" id="_5077">There are two versions of this editor:<div class="list"><ul id="_5078"><li id="_5079"><a href=".#static-editor">static editor</a>: a browser-only toy/demo with no persistent storage</li><li id="_5080"><a href=".#web-editor">web editor</a>: this is editor present in <a href=".#ourbigbook-web">OurBigBook Web</a>. It is linked to the database, and has further features added on top of the <a href=".#static-editor">static editor</a>.</li></ul></div></div><div class="p" id="_5081">Issues for the editor are being tracked under: <a href="https://github.com/ourbigbook/ourbigbook/labels/web-editor">github.com/ourbigbook/ourbigbook/labels/web-editor</a></div><div class="p" id="_5082">We must achieve an editor setup with synchronized live side-by-side preview.</div><div class="p" id="_5083">Likely, we will first do a non WYSIWYG editor with side by side preview with scroll sync.</div><div class="p" id="_5084">Then, if the project picks up steam, we can start considering a full WYSIWYG.</div><div class="p" id="_5085">It would be amazing to have a WebKit interface that works both on browser for the and locally.</div><div class="p" id="_5086">Possibilities we could reuse:<div class="list"><ul id="_5087"><li id="_5088">CKeditor <a href="https://ckeditor.com/">ckeditor.com/</a> Used e.g. by Trilium Notes.</li><li id="_5089"><div class="p" id="_5090">Editor.js</div><div class="p" id="_5091">Returns JSON AST!</div><div class="list"><ul id="_5092"><li id="_5093">website: <a href="https://editorjs.io/">editorjs.io/</a></li><li id="_5094">source: <a href="https://github.com/codex-team/editor.js">github.com/codex-team/editor.js</a></li><li id="_5095">WYSIWYG: yes</li><li id="_5096">preview scroll sync: yes</li></ul></div></li><li id="_5097">StackEdit<div class="list"><ul id="_5098"><li id="_5099">markup implementation: PageDown</li><li id="_5100">website: <a href="https://stackedit.io">stackedit.io</a></li><li id="_5101">source: <a href="https://github.com/benweet/stackedit">github.com/benweet/stackedit</a></li><li id="_5102">demo: <a href="https://stackedit.io/app">stackedit.io/app</a></li><li id="_5103">WYSIWYG: no</li><li id="_5104">preview scroll sync: yes</li></ul></div></li><li id="_5105">Editor.md<div class="list"><ul id="_5106"><li id="_5107">website: <a href="https://github.com/pandao/editor.md">github.com/pandao/editor.md</a></li><li id="_5108">source: <a href="https://github.com/pandao/editor.md">github.com/pandao/editor.md</a></li><li id="_5109">demo: <a href="https://pandao.github.io/editor.md">pandao.github.io/editor.md</a></li><li id="_5110">WYSIWYG: no</li><li id="_5111">preview scroll sync: yes but buggy when tested 2019-12-12 on live website</li></ul></div></li><li id="_5112"><div class="p" id="_5113"><a href="https://github.com/markdown-it/markdown-it">markdown-it</a></div><div class="p" id="_5114">Custom editor and highlight via <a href="https://github.com/highlightjs/highlight.js/">highlight.js</a>.</div><div class="list"><ul id="_5115"><li id="_5116">markup implementation: custom</li><li id="_5117">website: <a href="https://markdown-it.github.io">markdown-it.github.io</a></li><li id="_5118">source: <a href="https://github.com/markdown-it/markdown-it">github.com/markdown-it/markdown-it</a></li><li id="_5119">WYSIWYG: no</li><li id="_5120">preview scroll sync: yes</li><li id="_5121">editor hangs on large input: yes</li></ul></div></li><li id="_5122">Quill.md<div class="list"><ul id="_5123"><li id="_5124">website: <a href="https://quilljs.com">quilljs.com</a></li><li id="_5125">source: <a href="https://github.com/quilljs/quill/">github.com/quilljs/quill/</a></li><li id="_5126">demo: <a href="https://pandao.github.io/editor.md">pandao.github.io/editor.md</a></li><li id="_5127">WYSIWYG: yes</li><li id="_5128">markdown output: no <a href="https://github.com/quilljs/quill/issues/74">github.com/quilljs/quill/issues/74</a></li></ul></div></li><li id="_5129"><a href="https://ui.toast.com/tui-editor/">ui.toast.com/tui-editor/</a></li><li id="_5130"><a href="https://www.froala.com/wysiwyg-editor">www.froala.com/wysiwyg-editor</a></li></ul></div></div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 349</span><span class="dcnt"> 2</span></span></span></span></div><ul><li><div id="_toc/static-editor"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#static-editor">Static editor</a><span class="hover-metadata"><a href="#_toc" class="u"> Browser editor with preview</a><span class="metrics"><span class="wcntr"> 120</span></span></span></span></div></li><li><div id="_toc/web-editor"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#web-editor">Web editor</a><span class="hover-metadata"><a href="#_toc" class="u"> Browser editor with preview</a><span class="metrics"><span class="wcntr"> 36</span></span></span></span></div></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#editor-support">Editor support</a></li><li><a href=".#tooling">Tooling</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(6)</span></a></h2><div class="list"><ul><li><a href=".#conversion-process-overview">Conversion process overview</a></li><li><a href=".#dist-directory"><code>dist</code> directory</a></li><li><a href=".#h-parent-argument"><code>\H</code> <code>parent</code> argument</a></li><li><a href=".#log-headers"><code>--log headers</code></a></li><li><a href=".#static-editor">Static editor</a></li><li><a href=".#vim">Vim</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -37,7 +37,6 @@ function getSequelize(toplevelDir, toplevelBasename) {
   const Article = require('./article')(sequelize)
   const Comment = require('./comment')(sequelize)
   const SequelizeMeta = require('./sequelize_meta')(sequelize)
-  const Tag = require('./tag')(sequelize)
   const User = require('./user')(sequelize)
 
   // Associations.
@@ -100,10 +99,6 @@ function getSequelize(toplevelDir, toplevelBasename) {
     },
   });
   User.hasMany(Comment, {foreignKey: 'authorId'});
-
-  // Tag Article
-  Article.belongsToMany(Tag, { through: 'ArticleTag', as: 'tags',           foreignKey: 'articleId', otherKey: 'tagId'     });
-  Tag.belongsToMany(Article, { through: 'ArticleTag', as: 'taggedArticles', foreignKey: 'tagId',     otherKey: 'articleId' });
 
   cirodown_models.addModels(sequelize)
 

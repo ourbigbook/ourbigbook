@@ -15,14 +15,6 @@ const ArticleAPI = {
       )}&${getQuery(limit, page)}`
     ),
 
-  byTag: (tag, page = 0, limit = 10) =>
-    axios.get(
-      `${SERVER_BASE_URL}/articles?tag=${encodeURIComponent(tag)}&${getQuery(
-        limit,
-        page
-      )}`
-    ),
-
   create: async (article, token) => {
     const { data, status } = await axios.post(
       `${SERVER_BASE_URL}/articles`,

@@ -23,13 +23,11 @@ export default function makeArticleEditor(isnew: boolean = false) {
       body = initialArticle.body
       initialArticleState = {
         title: initialArticle.title,
-        tagList: initialArticle.tagList,
       }
     } else {
       body = ""
       initialArticleState = {
         title: "",
-        tagList: [],
       }
     }
     const [isLoading, setLoading] = React.useState(false);

@@ -5552,6 +5552,52 @@ https://github.com/cirosantilli/ourbigbook/issues/188 contains a proposal to ins
 
 This options is exactly analogous to the \x[numbered] option, but it affects the \x[h-splitdefault-argument] instead of the \x[h-numbered-argument].
 
+= `splitDefaultNotToplevel`
+{parent=h}
+
+If given, the the toplevel output of each input source is always non-split, and a split version if not generated at all.
+
+This overrides the \x[h-splitdefault-argument] for the toplevel header.
+
+E.g.:
+ourbigbook.json
+``
+{
+  "h": {
+    "splitDefault": true,
+    "splitDefaultNoToplevel": true,
+  }
+}
+``
+
+my-first-header.bigb
+``
+= My first header
+
+== My second header
+``
+
+When converted with:
+``
+ourbigbook --split-headers my-first-header.bigb
+``
+woule lead only to two output files:
+* my-first-header: not split
+* my-second-header: split
+
+Without `splitDefaultNoToplevel` we would instead have:
+* my-first-header: split
+* my-first-header-nosplit: not split
+* my-second-header: split
+
+The initial use case for this was in \x[ourbigbook-web]. If we didn't do this, then there would be two versions of every article at the toplevel of a file: split and nosplit.
+
+This would be confusing for users, who would e.g. see two new articles on the article index every time they create a new one.
+
+It would also mean that metadata such as comments would be visible in two separate locations.
+
+So instead of filtering the duplicate articles on every index, we just don't generate them in the first place.
+
 = `media-providers`
 {parent=ourbigbook-json}
 

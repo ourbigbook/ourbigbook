@@ -36,6 +36,12 @@ async function convert({
       id_provider,
       file_provider,
       input_path,
+      ourbigbook_json: {
+        h: {
+          splitDefault: true,
+          splitDefaultNotToplevel: true,
+        },
+      },
       read_include: ourbigbook_nodejs_webpack_safe.read_include({
         exists: async (inpath) => {
           const suf = ourbigbook.Macro.HEADER_SCOPE_SEPARATOR + ourbigbook.INDEX_BASENAME_NOEXT

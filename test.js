@@ -102,6 +102,9 @@ function assert_convert_ast(
       // Passed to ourbigbook.convert.
       options.extra_convert_opts = {};
     }
+    if (!('expect_not_exists' in options)) {
+      options.expect_not_exists = [];
+    }
     if (!('path_sep' in options.extra_convert_opts)) {
       options.extra_convert_opts.path_sep = PATH_SEP;
     }
@@ -282,7 +285,7 @@ function assert_convert_ast(
       }
       for (const key in options.assert_xpath) {
         const output = rendered_outputs[key];
-        assert.notStrictEqual(output, undefined, `${key} not in ${Object.keys(extra_returns.rendered_outputs)}`);
+        assert.notStrictEqual(output, undefined, `"${key}" not in ${Object.keys(rendered_outputs)}`);
         for (const xpath_expr of options.assert_xpath[key]) {
           assert_xpath_main(xpath_expr, output.full, {message: key});
         }
@@ -296,6 +299,9 @@ function assert_convert_ast(
             message: key,
           });
         }
+      }
+      for (const key of options.expect_not_exists) {
+        assert.ok(!(key in rendered_outputs))
       }
     } catch(e) {
       exception = e
@@ -704,7 +710,13 @@ function xpath_header(n, id, insideH) {
 
 // xpath to match the split/nosplit link inside of a header.
 function xpath_header_split(n, id, href, marker) {
-  return `${xpath_header(n, id)}//x:a[@href='${href}' and text()=' ${marker}']`;
+  let href_xpath
+  if (href === undefined) {
+    href_xpath = ''
+  } else {
+    href_xpath = `@href='${href}' and `
+  }
+  return `${xpath_header(n, id)}//x:a[${href_xpath}text()=' ${marker}']`;
 }
 
 // xpath to match the parent link inside of a header.
@@ -2266,6 +2278,112 @@ assert_convert_ast('cross reference to non-included ids in another file',
     filesystem: Object.assign({}, default_filesystem, {
       'bb.png': ''
     }),
+    input_path_noext: 'notindex',
+  },
+);
+assert_convert_ast('cross reference to non-included ids in another file with splitDefaultNotToplevel true',
+  `= Notindex
+
+\\x[index][notindex to index]
+
+\\x[index-h2][notindex to index h2]
+
+== Notindex h2
+
+\\x[index][notindex h2 to index]
+
+\\x[index-h2][notindex h2 to index h2]
+
+=== Notindex h3
+
+\\x[index][notindex h3 to index]
+`,
+  undefined,
+  {
+    filesystem: {
+      'index.bigb': `= Index
+
+\\x[index][index to index]
+
+\\x[index-h2][index to index h2]
+
+== Index h2
+
+\\x[index][index h2 to index]
+
+\\x[index-h2][index h2 to index h2]
+
+=== Index h3
+
+\\x[index][index h3 to index]
+
+== Index h2 2
+
+\\x[index-h2][index h2 2 to index h2]
+`,
+    },
+    expect_not_exists: ['out'],
+    assert_xpath_main: [
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to index']",
+        "//x:div[@class='p']//x:a[@href='index-h2.html' and text()='notindex to index h2']",
+
+        // This output is not split.
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to index']",
+        "//x:div[@class='p']//x:a[@href='index-h2.html' and text()='notindex h2 to index h2']",
+    ],
+    assert_xpath: {
+      'index.html': [
+        "//x:div[@class='p']//x:a[@href='' and text()='index to index']",
+        "//x:div[@class='p']//x:a[@href='#index-h2' and text()='index to index h2']",
+
+        // This output is not split.
+        "//x:div[@class='p']//x:a[@href='' and text()='index h2 to index']",
+        "//x:div[@class='p']//x:a[@href='#index-h2' and text()='index h2 to index h2']",
+
+        // Links to the split versions.
+        xpath_header_split(2, 'index-h2', 'index-h2.html', ourbigbook.SPLIT_MARKER_TEXT),
+      ],
+      'index-h2.html': [
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='index h2 to index']",
+        "//x:div[@class='p']//x:a[@href='' and text()='index h2 to index h2']",
+        xpath_header_split(1, 'index-h2', 'index.html#index-h2', ourbigbook.NOSPLIT_MARKER_TEXT),
+      ],
+      'notindex-h2.html': [
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to index']",
+        "//x:div[@class='p']//x:a[@href='index-h2.html' and text()='notindex h2 to index h2']",
+        xpath_header_split(1, 'notindex-h2', 'notindex.html#notindex-h2', ourbigbook.NOSPLIT_MARKER_TEXT),
+      ],
+    },
+    assert_not_xpath: {
+      'index.html': [
+        // There is no split version of this header.
+        xpath_header_split(1, 'index', undefined, ourbigbook.SPLIT_MARKER_TEXT),
+      ],
+      'index-h2.html': [
+        // This output is split.
+        "//x:div[@class='p']//x:a[text()='index h3 to index']",
+      ],
+      'notindex-h2.html': [
+        // This output is split.
+        "//x:div[@class='p']//x:a[text()='notindex h3 to index']",
+      ],
+    },
+    convert_before: [
+      'index.bigb',
+    ],
+    expect_not_exists: [
+      'split.html',
+      'nosplit.html',
+      'notindex-split.html',
+      'notindex-nosplit.html',
+    ],
+    extra_convert_opts: {
+      split_headers: true,
+      ourbigbook_json: { h: {
+        splitDefault: true,
+        splitDefaultNotToplevel: true,
+      } },
+    },
     input_path_noext: 'notindex',
   },
 );

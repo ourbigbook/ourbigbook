@@ -4112,7 +4112,7 @@ const DEFAULT_MACRO_LIST = [
             } else {
               start = '';
             }
-            return `<iframe width="560" height="${DEFAULT_MEDIA_HEIGHT}" src="https://www.youtube.com/embed/${html_escape_attr(video_id)}${start}" ` +
+            return `<iframe width="560" height="${DEFAULT_MEDIA_HEIGHT}" loading="lazy" src="https://www.youtube.com/embed/${html_escape_attr(video_id)}${start}" ` +
                   `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
           } else {
             let start;

@@ -323,6 +323,8 @@ class Macro {
     return ret;
   }
 }
+// Macro names defined here are those that have magic properties, e.g.
+// headers are used by the 'toc'.
 Macro.HEADER_MACRO_NAME = 'h';
 Macro.ID_ARGUMENT_NAME = 'id';
 Macro.LINK_SELF = `(link ${String.fromCodePoint(0x1F517)})`;
@@ -831,7 +833,7 @@ function convert_arg_noescape(arg, context={}) {
 
 /** Error message to be rendered inside the generated output itself. */
 function error_message_in_output(msg) {
-  return `[CIRODOWN_ERROR: ${msg}]`
+  return `[CIRODOWN_ERROR: ${html_escape_attr(msg)}]`
 }
 
 /** Convert a key value fully HTML escaped strings to an HTML attribute.
@@ -1582,17 +1584,19 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       let attrs = html_convert_attrs_id(ast, context);
+      let href = html_attr('href', '#' + html_escape_attr(ast.id));
       let ret = ``;
       ret += `<div class="math-container"${attrs}>`;
-      if (ast.id !== undefined) {
-        let target_id = html_escape_attr(ast.id);
-        let href = html_attr('href', '#' + target_id);
-        ret += `<div class="hide-hover">\n`;
+      if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
+        ret += `<div class="math-caption-container">\n`;
         ret += `<span class="math-caption">${this.x_text(ast, context)}</span>`;
         ret += `<span> <a${href}>${Macro.LINK_SELF}</a></span>\n`;
         ret += `</div>\n`;
       }
+      ret += `<div class="math-equation">\n`
       ret += `<div>${this.katex_convert(ast, context)}</div>\n`;
+      ret += `<div><a${href}>(${ast.macro.options.get_number(ast, context)})</a></div>`;
+      ret += `</div>\n`
       ret += `</div>\n`;
       return ret;
     },
@@ -1895,7 +1899,19 @@ figure {
   display: inline;
 }
 .math-container {
+  align-items: center;
   margin-bottom: ${paragraph_margin_bottom};
+}
+.math-equation {
+  align-items: center;
+  display: flex;
+}
+.math-equation > :nth-child(1) {
+  flex-grow: 9;
+}
+.math-equation > :nth-child(2) {
+  flex-grow: 1;
+  text-align: right;
 }
 /* Tables */
 /* Add borders! */

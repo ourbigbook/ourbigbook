@@ -4,12 +4,12 @@ import CustomImage from 'front/CustomImage'
 import { UserType } from 'front/types/UserType'
 import { DisplayAndUsername, DisplayAndUsernameProps, UserLink } from 'front/user'
 
-const UserLinkWithImage = ({
+export const UserLinkWithImageInner = ({
   user, showScore, showUsername, showUsernameMobile
 }: DisplayAndUsernameProps) => {
   if (!user) return null;
   return (
-    <UserLink user={user}>
+    <>
       <CustomImage
         src={user.effectiveImage}
         className="profile-thumb"
@@ -17,6 +17,23 @@ const UserLinkWithImage = ({
       />
       {' '}
       <DisplayAndUsername {...{
+          showScore,
+          showUsername,
+          showUsernameMobile,
+          user,
+        }}
+      />
+    </>
+  )
+}
+
+const UserLinkWithImage = ({
+  user, showScore, showUsername, showUsernameMobile
+}: DisplayAndUsernameProps) => {
+  if (!user) return null;
+  return (
+    <UserLink user={user}>
+      <UserLinkWithImageInner {...{
           showScore,
           showUsername,
           showUsernameMobile,

@@ -47,6 +47,7 @@ module.exports = {
       },
     },
     render_metadata: false,
+    x_absolute: true,
     x_leading_at_to_web: false,
     x_remove_leading_at: true,
   },

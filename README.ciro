@@ -574,19 +574,21 @@ the rendered output looks like:
 ``
 The toc:
 
-* Quotation \Q
-* Orthogonal group $O(n)$
+* Quotation (\Q)
+* Orthogonal group (O(n))
 
-== Quotation `\Q`
+== Quotation (\Q)
 
-== Orthogonal group $O(n)$
+== Orthogonal group (O(n))
 
 quotations
 
 orthogonal group
 
-Section 2. "Orthogonal group $O(n)$"
+Section 2. "Orthogonal group (O(n))"
 ``
+
+Parenthesis are added automatically around all rendered `title2`.
 
 === `\x` within `title` restrictions
 {id=x-within-title-restrictions}
@@ -1074,7 +1076,7 @@ rather than:
 ``#README.ciro``
 
 == Lists
-{title2=(`* `, `\L`, `\Ul`, `\Ol`)}
+{title2=`* `, `\L`, `\Ul`, `\Ol`}
 
 \x[insane-macro-shortcuts][Insane] with `* ` (asterisk space):
 \CirodownExample[[
@@ -1185,7 +1187,7 @@ And now a list outside of \x[cirodown-example] to test how it looks directly und
 \L[c]
 
 == Images
-{title2=(`\Image` and `\image`)}
+{title2=`\Image` and `\image`}
 
 A block image with \x[block-vs-inline-macros][capital] 'i' `Image` showcasing most of the image properties \x[image-my-test-image].
 \CirodownExample[[
@@ -1576,7 +1578,7 @@ cd
 ]]
 
 == Mathematics
-{title2=(`$`, `$$`, `\m` and `\M`)}
+{title2=`$`, `$$`, `\m` and `\M`}
 
 Via https://katex.org/[KaTeX] server side, oh yes!
 
@@ -1675,7 +1677,7 @@ $$3 + 3$${show=1}
 ]]
 
 == Tables
-{title2=(`|| `, `| `, `\Table`, `\Tr`, `\Th` and `\Td`)}
+{title2=`|| `, `| `, `\Table`, `\Tr`, `\Th` and `\Td`}
 
 The \x[insane-code-and-math-shortcuts][insane] syntax marks:
 * headers with `|| ` (pipe, pipe space) at the start of a line
@@ -2363,6 +2365,7 @@ Of course, we are walking on eggs, and this is hard to assert, so the best thing
 About server safety, we have to think about it. E.g. stuff like \x[prepublish] already allows ACE.
 
 ==== xss-unsafe
+{title2=`--xss-unsafe`}
 
 XSS unsafe constructs lead to errors by default. XSS unsafe constructs can be allowed \x[cirodown-executable][from the command] line with:
 ``
@@ -2943,10 +2946,16 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 == Related projects
 
+Static wiki generators: this is perhaps the best way of classifying this project :-)
+* https://github.com/gollum/gollum[]: already has a local server editor! But no WYSIWYG nor live preview. Git integration by default, so when you save on the UI already generates a Git commit. We could achieve that with: https://github.com/isomorphic-git/isomorphic-git[], would be really nice.
+* https://github.com/wcchin/markypydia
+
+Static book generators:
 * https://github.com/rstudio/bookdown[], https://bookdown.org/[]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: https://bookdown.org/yihui/bookdown/pandoc.html[], thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.
 * https://gohugo.io/[Hugo]. Pretty good, similar feature set to ours. But Go based, so hard on browser, and adds adhoc features on top of markdown once again
 * https://en.wikipedia.org/wiki/Personal_wiki
   * https://github.com/vimwiki/vimwiki
+* https://github.com/hplgit/doconce
 
 Less related but of interest, similar philosophy to what Ciro wants, but no explicitly reusable system:
 * http://www.uprtcl.io/

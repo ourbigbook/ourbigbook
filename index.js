@@ -3127,7 +3127,7 @@ function x_text(ast, context, options={}) {
     ret += convert_arg(title_arg, context);
     if (style_full) {
       if (Macro.TITLE2_ARGUMENT_NAME in ast.args) {
-        ret += ' ' + convert_arg(ast.args[Macro.TITLE2_ARGUMENT_NAME], context);
+        ret += ' (' + convert_arg(ast.args[Macro.TITLE2_ARGUMENT_NAME], context) + ')';
       }
       if (options.quote) {
         ret += html_escape_context(context, `"`);

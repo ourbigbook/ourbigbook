@@ -13,9 +13,7 @@
     "liquidjs": "9.11.7",
     "lodash": "4.17.20",
     "normalize.css": "8.0.1",
-    "path-browserify": "1.0.1",
     "pluralize": "8.0.0",
-    "sass": "1.23.7",
     "tablesort": "5.2.1"
   },
   "devDependencies": {
@@ -23,6 +21,8 @@
     "mocha": "6.2.2",
     "mocha-list-tests": "1.0.2",
     "parse5": "6.0.1",
+    "path-browserify": "1.0.1",
+    "sass": "1.23.7",
     "xmldom": "0.4.0",
     "xmlserializer": "0.6.1",
     "xpath": "0.0.32"
@@ -61,5 +61,9 @@
     "test": "mocha test --ignore-leaks"
   },
   "version": "0.6.0",
-  "cacheDirectories": ["node_modules", "web/node_modules", "web/frontend/node_modules"]
+  "cacheDirectories": [
+    "node_modules",
+    "web/node_modules",
+    "web/frontend/node_modules"
+  ]
 }

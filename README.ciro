@@ -2188,7 +2188,53 @@ since those pages link to the `tmp-1` ID.
 
 Lists sections that are \x[secondary-children] of the current section, i.e. tagged under the current section.
 
-The main header hierarchy descendants already show under the \x[table-of-contents] instead.
+The main header tree hierarchy descendants already show under the \x[table-of-contents] instead.
+
+E.g. in:
+``
+= tmp
+
+== Mammal
+
+== Flying
+
+== Animal
+
+=== Bat
+{tag=mammal}
+{tag=flying}
+
+=== Bee
+{tag=flying}
+
+=== Dog
+{tag=mammal}
+``
+the tagged sections for:
+* Mammal will contain Bat and Dog
+* Flying will contain Bat and Bee
+
+= Ancestors
+{parent=header-metadata-section}
+
+Shows a list of ancestors of the page. E.g. in:
+``
+= Asia
+
+== China
+
+=== Beijing
+
+==== Tiananmen Square
+
+=== Hong Kong
+``
+the ancestor lists would be for:
+* Hong Kong: China, Asia
+* Tiananmen Square: Beijing, China, Asia
+* Beijing: China, Asia
+* China: Asia
+so we see that this basically provides a type of breadcrumb navigation.
 
 = Image
 {parent=macro}

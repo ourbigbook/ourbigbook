@@ -3974,6 +3974,7 @@ const DEFAULT_MACRO_LIST = [
 <title>{{ title }}</title>
 <style>{{ style }}</style>
 {{ head }}
+</head>
 <body class="cirodown">
 {{ body }}
 {{ post_body }}

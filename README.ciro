@@ -2676,6 +2676,7 @@ If not given, the default template at one point was:
 <meta charset=utf-8>
 <title>{{ title }}</title>
 <style>{{ style }}</style>
+</head>
 <body class="cirodown">
 {{ body }}
 </body>

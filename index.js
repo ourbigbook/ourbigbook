@@ -2706,7 +2706,7 @@ function html_katex_convert(ast, context) {
       }
     );
   } catch(error) {
-    // TODO get working remove the crap KaTeX adds to the end of the string.
+    // TODO remove the crap KaTeX adds to the end of the string.
     // It uses Unicode char hacks to add underlines... and there are two trailing
     // chars after the final newline, so the error message is taking up two lines
     let message = error.toString().replace(/\n\xcc\xb2$/, '');

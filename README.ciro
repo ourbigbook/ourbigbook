@@ -191,7 +191,7 @@ Equivalently however, you can use an explicit \c[[\p]] macros as well, which is 
 
 Paragraphs are created automatically inside \x[macro-argument-syntax][macro argument] whenever a double newline appears.
 
-Due to their insane syntax, paragraphs have to do some magic to determine where they start and end. TODO: mention the rule that paragraphs wrap only phrasing content, link to: \x[help-macros].
+Due to their \x[insane-macro-shortcuts][insane syntax], paragraphs have to do some magic to determine where they start and end. TODO: mention the rule that paragraphs wrap only phrasing content, link to: \x[help-macros].
 
 \h[2][Links \c[[\a]]]
 {id=links}
@@ -814,18 +814,62 @@ We could have chosen to do some magic to differentiate between them, e.g. checki
 
 Via KaTeX server side, oh yes!
 
+Inline math is done with lower case \c[m]:
+
+\C[[[
+My inline \m[[\sqrt{1 + 1}]] is awesome.
+]]]
+
+which renders as:
+
 My inline \m[[\sqrt{1 + 1}]] is awesome.
 
-Escape the closing bracket with backslash: \m[1 - \[1 + 1\] = -1].
+Alternatively, you can use the equivalent dollar sign (\c[[$]]) \x[insane-macro-shortcuts][insane macro shortcut]:
 
-Escape the closing bracket with double open and close: \m[[1 - [1 + 1] = -1]] is awesome.
+\C[[[
+My inline $\sqrt{1 + 1}$ is awesome.
+]]]
+
+In the sane syntax, \x[escape-characters][as with any other argument], you have to either escape any closing square brackets \c[\]] with a backslash:
+
+\C[[
+My inline \m[1 - \[1 + 1\] = -1] is awesome.
+]]
+
+or with double open and close:
+
+\C[[[
+My inline \m[[1 - [1 + 1] = -1]] is awesome.
+]]]
+
+both of which render as:
+
+My inline \m[1 - \[1 + 1\] = -1] is awesome.
 
 Display math is done with upper case \c[M]:
+
+\C[[[
+\M[[
+\sqrt{1 + 1} \\
+\sqrt{1 + 1}
+]]
+]]]
+
+which renders as:
 
 \M[[
 \sqrt{1 + 1} \\
 \sqrt{1 + 1}
 ]]
+
+Or alternatively, you can use the equivalent multiple dollar sign (\c[[$$]]) \x[insane-macro-shortcuts][insane macro shortcut]:
+
+\C[[[
+$$
+\sqrt{1 + 1} \\
+\sqrt{1 + 1}
+$$
+]]]
 
 HTML escaping happens as you would expect, e.g. < shows fine in:
 
@@ -934,6 +978,161 @@ And here is: \comment[[\m[1 + 1\]]] an inline one.
 \comment[[\m[1 + 1\]]] inline at the start.
 
 \h[2][Cirodown syntax]
+
+\h[3][Insane macro shortcuts]
+
+Certain commonly used macros have insane macro shortcuts that do not start with backslash (\c[\\]):
+
+\l[\x[paragraphs]: \c[[\n\n]] (double newline)]
+\l[\x[math]: \c[[$]], described at: \x[insane-code-and-math-shortcuts]]
+\l[\x[code]: \c[[`]], described at: \x[insane-code-and-math-shortcuts]]
+
+Originally, \x[design-goals][Ciro wanted to avoid those], but they just feel too good to avoid.
+
+Every insane syntax does however have an equivalent sane syntax.
+
+\h[4][Insane code and math shortcuts]
+
+The insane code and math shortcuts work very analogously and are therefore described together in this section.
+
+The insane inline code syntax:
+
+\C[[
+a `b c` d
+]]
+
+is equivalent to the sane:
+
+\C[[[
+a \c[[b c]] d
+]]
+
+And the insane block code:
+
+\C[[
+a
+
+``
+b c
+``
+
+d
+]]
+
+is equivalent to the sane:
+
+\C[[[
+a
+
+\C[[
+b c
+]]
+
+d
+]]]
+
+Similarly for math:
+
+\C[[
+$a b$
+
+$$c d$$
+]]
+
+is equivalent to the sane:
+
+\C[[[
+\m[[a c]]
+
+\M[[c d]]
+]]]
+
+It is not possible to escape backticks (\c[`]) inside an insane inline code, or dollar signs (\c[$]) in insane math.
+
+The design reason for that is because multiple backticks produce block code.
+
+The upside is that then you don't have to escape anything else, e.g. backslashes (\c[\\]) are rendered literally.
+
+The only way to do it is to use the sane syntax instead
+
+\C[[
+a \c[b \ ` c] d
+
+a \m[[\sqrt{$4}]] d
+]]
+
+Within block code and math, you can just add more separators:
+
+\C[[
+```
+code with two backticks
+``
+nice
+```
+]]
+
+\h[4][Insane macro shortcut extra arguments]
+
+Insane arguments always work by abbreviating:
+
+\l[the macro name]
+\l[one or more of its positional arguments, which are fixed as either \x[literal-arguments][literal or non-literal] for a given insane construct]
+
+This means that you can add further arguments as usual.
+
+For example, an insane code block with an id can be written as:
+
+\C[[
+a `b c`{id=ef} g
+]]
+
+because that is the same as:
+
+\C[[
+a \c[b c]{id=ef} g
+]]
+
+Extra arguments must however come after the insane opening, e.g. the following does not work:
+
+\C[[
+a {id=ef}`b c` g
+]]
+
+This restriction things easy to parse for humans and machines alike.
+
+\h[4][Escapes in insane macro shortcuts]
+
+Escaping in insane macro shortcuts is similar to \x[escape-characters][that of regular arguments].
+
+For the inline versions, the only choice is to use backslashes, e.g., an inline code block with a backtick (\c[[`]]) can be written as:
+
+\C[[
+`a \` b`
+]]
+
+which is equivalent to the sane:
+
+\C[[
+\c[a ` b]
+]]
+
+It is not possible to use multiple backticks because that means the block version.
+
+For the block version, you can wither use backslashes as well, e.g.:
+
+\C[[
+``
+a \`` b
+``
+]]
+
+or just increase the number of opening chars:
+
+\C[[
+```
+a `` b
+```
+]]
 
 \h[3][Macro argument syntax]
 
@@ -1058,11 +1257,15 @@ This allows to greatly improve the readability of long argument lists by having 
 
 \h[4][Escape characters]
 
-For non-literal macro arguments, the rule is simple, you must escape all of:
+For \x[literal-arguments][non-literal macro arguments], you have to use a backslash to escape:
 
-\l[\c[\\]]
-\l[\c[\[] and \c[\]]]
-\l[\c[\{] and \c[\}]]
+\l[\c[\\]: backslashes start macros]
+\l[\c[\[] and \c[\]]: open and close \x[positional-vs-named-arguments][positional macro arguments]]
+\l[\c[\{] and \c[\}]: open and close \x[positional-vs-named-arguments][optional macro arguments]]
+\l[\c[[$]] (dollar sign)]: \x[insane-macro-shortcuts][insane macro shortcut] for \x[math][Math]
+\l[\c[[`]] (backtick)]: \x[insane-macro-shortcuts][insane macro shortcut] for \x[code][code]
+
+The escape rules for literal arguments are described at: \x[literal-arguments]{style=full}.
 
 This is good for short arguments of regular text, but for longer blocks of \x[code] or \x[math], you may want to use \x[literal-arguments]
 

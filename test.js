@@ -36,8 +36,8 @@ function assert_convert_ast_func(input_string, expected_ast_output_subset) {
       console.error(error.toString());
     }
     console.error('input ' + util.inspect(input_string));
-    assert.ok(is_subset);
     assert.strictEqual(extra_returns.errors.length, 0);
+    assert.ok(is_subset);
   }
 }
 
@@ -57,8 +57,8 @@ function assert_convert_func(input_string, expected_output) {
     console.error('input ' + util.inspect(input_string));
     console.error('output ' + util.inspect(output));
     console.error('expect ' + util.inspect(expected_output));
-    assert.strictEqual(output, expected_output);
     assert.strictEqual(extra_returns.errors.length, 0);
+    assert.strictEqual(output, expected_output);
   }
 }
 
@@ -574,7 +574,7 @@ assert_error('cross reference without content nor target title style short',
   `\\Image[ab]{id=cd}
 
 \\x[cd]{style=short}
-`, 3, 2);
+`, 3, 1);
 
 //// Headers.
 // TODO inner property test
@@ -622,7 +622,7 @@ assert_error('header must not be zero', '\\h[0][b]\n', 1, 4);
 assert_error('header skip level is an error', '\\h[1][a]\n\\h[3][b]\n', 2, 4);
 
 // Code.
-assert_convert_ast('code inline',
+assert_convert_ast('code inline sane',
   'a \\c[b c] d\n',
   [
     t('a '),
@@ -630,7 +630,15 @@ assert_convert_ast('code inline',
     t(' d'),
   ]
 );
-assert_convert_ast('code block simple',
+assert_convert_ast('code inline insane',
+  'a `b c` d\n',
+  [
+    t('a '),
+    a('c', [t('b c')]),
+    t(' d'),
+  ]
+);
+assert_convert_ast('code block sane',
   `a
 
 \\C[[
@@ -646,27 +654,54 @@ d
   a('p', [t('d')]),
 ]
 );
+assert_convert_ast('code block insane',
+  `a
 
-// Math.
-assert_convert_ast('math inline',
+\`\`
+b
+c
+\`\`
+
+d
+`,
+[
+  a('p', [t('a')]),
+  a('C', [t('b\nc\n')]),
+  a('p', [t('d')]),
+]
+);
+
+// Math. Minimal testing since this is mostly factored out with code tests.
+assert_convert_ast('math inline sane',
   '\\m[[\\sqrt{1 + 1}]]\n',
   [a('m', [t('\\sqrt{1 + 1}')])],
 );
-assert_no_error('math block',
+assert_convert_ast('math inline insane',
+  '$\\sqrt{1 + 1}$\n',
+  [a('m', [t('\\sqrt{1 + 1}')])],
+);
+assert_no_error('math block sane',
   '\\M[[\\sqrt{1 + 1}]]',
+  [a('M', [t('\\sqrt{1 + 1}')])],
+);
+assert_no_error('math block insane',
+  '$$\\sqrt{1 + 1}$$',
   [a('M', [t('\\sqrt{1 + 1}')])],
 );
 assert_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 5);
 
 // Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception, or worse, not blowing up at all!
-assert_error('backslash without macro', '\\ a', 1, 2);
-assert_error('unknown macro', '\\reserved_undefined', 1, 2);
+assert_error('backslash without macro', '\\ a', 1, 1);
+assert_error('unknown macro', '\\reserved_undefined', 1, 1);
 assert_error('too many positional arguments', '\\p[ab][cd]', 1, 7);
 assert_error('unknown named macro argument', '\\c{reserved_undefined=abc}[]', 1, 4);
 assert_error('named argument without =', '\\p{id ab}[cd]', 1, 6);
 // TODO
 //assert_error('argument without close', '\\p[', 1, 3);
 //assert_error('argument without open', ']', 1, 1);
-//assert_error('unterminated literal argument', '\\c[[ab]', 1, 3;
+assert_error('unterminated literal positional argument', '\\c[[\n', 1, 3);
+assert_error('unterminated literal named argument', '\\c{{id=\n', 1, 3);
+assert_error('unterminated insane inline code', '`\n', 1, 1);
+
 //assert_error('unterminated argument', '\\c[ab', 1, 3);

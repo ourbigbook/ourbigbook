@@ -456,10 +456,12 @@ class Macro {
 }
 // Macro names defined here are those that have magic properties, e.g.
 // headers are used by the 'toc'.
+Macro.CODE_MACRO_NAME = 'c';
 Macro.HEADER_MACRO_NAME = 'h';
 Macro.ID_ARGUMENT_NAME = 'id';
 Macro.INCLUDE_MACRO_NAME = 'include';
 Macro.LINK_SELF = `(${UNICODE_LINK} link)`;
+Macro.MATH_MACRO_NAME = 'm';
 Macro.PARAGRAPH_MACRO_NAME = 'p';
 Macro.PLAINTEXT_MACRO_NAME = 'plaintext';
 Macro.TITLE_ARGUMENT_NAME = 'title';
@@ -513,14 +515,21 @@ class Tokenizer {
     this.line = 1;
     this.tokens = [];
     this.show_tokenize = show_tokenize;
+    this.log_debug('Tokenizer');
+    this.log_debug(`this.chars ${this.chars}`);
+    this.log_debug(`this.chars.length ${this.chars.length}`);
+    this.log_debug('');
   }
 
-  // Advance the current character and set cur_c to the next one.
-  //
-  // Maintain the newline count up to date for debug messages.
-  //
-  // The current index must only be incremented through this function
-  // and never directly.
+  /** Advance the current character and set cur_c to the next one.
+   *
+   * Maintain the newline count up to date for debug messages.
+   *
+   * The current index must only be incremented through this function
+   * and never directly.
+   *
+   * @return {boolean} true iff we are not reading past the end of the input
+   */
   consume() {
     this.log_debug('consume');
     this.log_debug('this.i: ' + this.i);
@@ -545,22 +554,35 @@ class Tokenizer {
     this.plaintext_append_or_create(this.cur_c);
   }
 
+  /**
+   * @return {boolean} EOF reached?
+   */
   consume_optional_newline(literal) {
     if (
       !this.is_end() &&
       this.cur_c === '\n' &&
       (literal || this.peek() !== '\n')
     ) {
-      this.consume();
+      return this.consume();
     }
+    return true;
   }
 
-  error(message) {
+  error(message, line, column) {
+    if (line === undefined)
+      line = this.line
+    if (column === undefined)
+      column = this.column
     this.extra_returns.errors.push(
-      new ErrorMessage(message, this.line, this.column));
+      new ErrorMessage(message, line, column));
   }
 
   is_end() {
+    this.log_debug('is_end');
+    this.log_debug(`this.i: ${this.i}`);
+    this.log_debug(`this.chars ${this.chars}`);
+    this.log_debug(`this.chars.length ${this.chars.length}`);
+    this.log_debug('');
     return this.i === this.chars.length;
   }
 
@@ -610,15 +632,18 @@ class Tokenizer {
     // Add the magic implicit toplevel element.
     this.push_token(TokenType.MACRO_NAME, Macro.TOPLEVEL_MACRO_NAME);
     this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
+    let unterminated_literal = false;
+    let start_line;
+    let start_column;
     while (!this.is_end()) {
       this.log_debug('tokenize loop');
       this.log_debug('this.i: ' + this.i);
       this.log_debug('this.cur_c: ' + this.cur_c);
       this.log_debug();
+      start_line = this.line;
+      start_column = this.column;
       if (this.cur_c === ESCAPE_CHAR) {
         this.consume();
-        let start_line = this.line;
-        let start_column = this.column;
         if (this.is_end()) {
           // Maybe this should be an error.
         } else if (ESCAPABLE_CHARS.has(this.cur_c)) {
@@ -654,7 +679,9 @@ class Tokenizer {
           // Literal argument.
           let close_string = closing_char(
             START_NAMED_ARGUMENT_CHAR).repeat(open_length);
-          this.tokenize_literal(START_NAMED_ARGUMENT_CHAR, close_string);
+          if (!this.tokenize_literal(START_NAMED_ARGUMENT_CHAR, close_string)) {
+            unterminated_literal = true;
+          }
           this.push_token(TokenType.NAMED_ARGUMENT_END);
         }
       } else if (this.cur_c === END_NAMED_ARGUMENT_CHAR) {
@@ -673,13 +700,34 @@ class Tokenizer {
           // Literal argument.
           let close_string = closing_char(
             START_POSITIONAL_ARGUMENT_CHAR).repeat(open_length);
-          this.tokenize_literal(START_POSITIONAL_ARGUMENT_CHAR, close_string);
+          if (!this.tokenize_literal(START_POSITIONAL_ARGUMENT_CHAR, close_string)) {
+            unterminated_literal = true;
+          }
           this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
         }
       } else if (this.cur_c === END_POSITIONAL_ARGUMENT_CHAR) {
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
         this.consume();
         this.consume_optional_newline();
+      } else if (this.cur_c in MAGIC_CHAR_ARGS) {
+        // Insane shortcuts e.g. $$ math and `` code.
+        let line = this.line;
+        let column = this.column;
+        let open_char = this.cur_c;
+        let open_length = this.tokenize_func(
+          (c)=>{return c === open_char}
+        ).length;
+        let close_string = open_char.repeat(open_length);
+        let macro_name = MAGIC_CHAR_ARGS[open_char];
+        if (open_length > 1) {
+          macro_name = macro_name.toUpperCase();
+        }
+        this.push_token(TokenType.MACRO_NAME, macro_name, this.line, this.column);
+        this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
+        if (!this.tokenize_literal(open_char, close_string)) {
+          unterminated_literal = true;
+        }
+        this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
       } else if (this.cur_c === '\n') {
         if (this.peek() === '\n') {
           this.push_token(TokenType.PARAGRAPH);
@@ -691,6 +739,9 @@ class Tokenizer {
       } else {
         this.consume_plaintext_char();
       }
+    }
+    if (unterminated_literal) {
+      this.error(`unterminated literal argument`, start_line, start_column);
     }
     // Close the opening of toplevel.
     this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
@@ -718,9 +769,18 @@ class Tokenizer {
    * Start inside the literal argument after the opening,
    * and consume until its end.
    *
-   * @return {boolean} - true if OK, false if EOF unexpected EOF
+   * @return {boolean} - true if OK, false if unexpected EOF
    */
   tokenize_literal(open_char, close_string) {
+    this.log_debug('tokenize_literal');
+    this.log_debug(`this.i: ${this.i}`);
+    this.log_debug(`open_char: ${open_char}`);
+    this.log_debug(`close_string ${close_string}`);
+    this.log_debug('');
+
+    if (this.is_end())
+      return false;
+
     // Remove leading escapes.
     let i = this.i;
     while (this.chars[i] === ESCAPE_CHAR) {
@@ -730,9 +790,11 @@ class Tokenizer {
     }
     if (this.chars[i] === open_char) {
       // Skip one of the escape chars if they are followed by an open.
-      this.consume();
+      if (!this.consume())
+        return false;
     } else {
-      this.consume_optional_newline(true);
+      if (!this.consume_optional_newline(true))
+        return false;
     }
 
     // Now consume the following unescaped part.
@@ -756,7 +818,8 @@ class Tokenizer {
       // Ignore the trailing backslash.
       end_i = this.i - 1;
       // Consume the escaped closing char.
-      this.consume();
+      if (!this.consume())
+        return false;
       append = closing_char(open_char);
     } else {
       end_i = this.i;
@@ -1864,6 +1927,10 @@ const END_NAMED_ARGUMENT_CHAR = '}';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';
 const ESCAPE_CHAR = '\\';
 const ID_SEPARATOR = '-';
+const MAGIC_CHAR_ARGS = {
+  '$': Macro.MATH_MACRO_NAME,
+  '`': Macro.CODE_MACRO_NAME,
+}
 const NAMED_ARGUMENT_EQUAL_CHAR = '=';
 const START_NAMED_ARGUMENT_CHAR = '{';
 const START_POSITIONAL_ARGUMENT_CHAR = '[';
@@ -1874,6 +1941,9 @@ const ESCAPABLE_CHARS = new Set([
   START_NAMED_ARGUMENT_CHAR,
   END_NAMED_ARGUMENT_CHAR,
 ]);
+for (const c in MAGIC_CHAR_ARGS) {
+  ESCAPABLE_CHARS.add(c);
+}
 const AstType = make_enum([
   // An in-output error message.
   'ERROR',
@@ -1927,7 +1997,8 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'C',
+    // Block code.
+    Macro.CODE_MACRO_NAME.toUpperCase(),
     [
       new MacroArgument({
         name: 'content',
@@ -1940,7 +2011,8 @@ const DEFAULT_MACRO_LIST = [
     },
   ),
   new Macro(
-    'c',
+    // Inline code.
+    Macro.CODE_MACRO_NAME,
     [
       new MacroArgument({
         name: 'content',
@@ -2088,7 +2160,8 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'M',
+    // Block math.
+    Macro.MATH_MACRO_NAME.toUpperCase(),
     [
       new MacroArgument({
         name: 'content',
@@ -2145,7 +2218,8 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'm',
+    // Inline math.
+    Macro.MATH_MACRO_NAME,
     [
       new MacroArgument({
         name: 'content',

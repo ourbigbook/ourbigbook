@@ -2994,6 +2994,8 @@ you can just go and inspect the generated HTML to see what would get pushed at:
 cd out/publish/out/publish/
 ``
 
+Inspiration: https://github.com/cirosantilli/linux-kernel-module-cheat/tree/6d0a900f4c3c15e65d850f9d29d63315a6f976bf#dry-run-to-get-commands-for-your-project
+
 = `--embed-includes`
 {parent=cirodown-executable-options}
 
@@ -3516,7 +3518,11 @@ To quickly test bugs in redirect generation, you may use the `--generate-redirec
 ``
 cirodown --generate-redirects .
 ``
-which generates the redirects while skipping everything else.
+which generates the redirects while skipping everything else. A previous:
+``
+cirodown .
+``
+is required to generate the ID database.
 
 === Editor with preview
 

@@ -27,7 +27,7 @@ class AstNode {
     if (!('force_no_index' in options)) {
       options.force_no_index = false;
     }
-    if (!('id' in options)) {
+    if (!(Macro.ID_ARGUMENT_NAME in options)) {
       options.id = undefined;
     }
     if (!('input_path' in options)) {
@@ -3087,16 +3087,19 @@ const DEFAULT_MACRO_LIST = [
         let content = Macro.x_text(target_ast, context, {style_full: true, show_caption_prefix: false});
         let target_id = html_escape_attr(target_ast.id);
         let href = html_attr('href', '#' + target_id);
-        let id_to_toc = html_attr('id', Macro.TOC_PREFIX + target_id);
+        let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, Macro.TOC_PREFIX + target_id);
         ret += `<li><div${id_to_toc}><a${href}>${content}</a><span>`;
 
         let toc_href = html_attr('href', '#' + Macro.TOC_PREFIX + target_id);
         ret += ` | <a${toc_href}>${UNICODE_LINK} link</a>`;
 
         let parent_ast = target_ast.header_tree_node.parent_node.value;
-        let parent_href = html_attr('href', '#' + Macro.TOC_PREFIX + parent_ast.id);
-        let parent_body = convert_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-        ret += ` | <a${parent_href}>\u2191 parent "${parent_body}"</a>`;
+        // Possible on broken h1 level.
+        if (parent_ast !== undefined) {
+          let parent_href = html_attr('href', '#' + Macro.TOC_PREFIX + parent_ast.id);
+          let parent_body = convert_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+          ret += ` | <a${parent_href}>\u2191 parent "${parent_body}"</a>`;
+        }
 
         ret += `</span></div>`;
         if (tree_node.children.length > 0) {

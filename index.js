@@ -2065,14 +2065,22 @@ function convert(
 
     // For non-split header toplevel conversion.
     let outpath;
-    if (context.options.outfile !== undefined) {
-      outpath = context.options.outfile;
-    } else if (context.options.input_path !== undefined) {
+    if (context.options.outfile === undefined) {
+      let id;
+      if (context.options.toplevel_id === undefined) {
+        const toplevel_header_node = context.header_graph.children[0];
+        const toplevel_header_ast = toplevel_header_node.value;
+        id = toplevel_header_ast.id;
+      } else {
+        id = context.options.toplevel_id;
+      }
       outpath = output_path(
         context.options.input_path,
-        context.options.toplevel_id,
-        context
+        id,
+        clone_and_set(context, 'to_split_headers', false)
       )[0];
+    } else if (context.options.input_path !== undefined) {
+      outpath = context.options.outfile;
     }
     context.toplevel_output_path = outpath;
 
@@ -2083,6 +2091,7 @@ function convert(
     context.katex_macros = Object.assign({}, context.options.katex_macros);
 
     // We render a second time because indexing operations such as \x[...]{child}
+    // for per-section incoming links
     // are only indexed at render time. But headers before that \x might need that
     // parent list. This does add a bit of time. One option would be to have a fast
     // render mode that disables this. That could be the default render mode, and
@@ -2380,10 +2389,12 @@ function convert_init_context(options={}, extra_returns={}) {
     if (!('root_relpath' in options.template_vars)) { options.template_vars.root_relpath = ''; }
     if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
     if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
-  // If given, force the toplevel header to have this ID.
-  // Otherwise, derive the ID from the title.
-  // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
-  if (!('toplevel_id' in options)) { options.toplevel_id = undefined; }
+  if (!('toplevel_id' in options)) {
+    // If given, force the toplevel header to have this ID.
+    // Otherwise, derive the ID from the title.
+    // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
+    options.toplevel_id = undefined;
+  }
   if (!('toplevel_has_scope' in options)) {
     // Set for index files in subdirectories. Is equivalent to
     // adding a {scope} to the toplevel header.
@@ -3010,8 +3021,11 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
           split_suffix = 'nosplit';
         }
       }
-      if (basename_ret !== '') {
+      if (basename_ret === '') {
         basename_ret += '-';
+      }
+      if (split_suffix === undefined) {
+        throw new Error('split_suffix is undefined');
       }
       basename_ret += split_suffix;
     }

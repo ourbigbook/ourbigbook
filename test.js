@@ -3522,13 +3522,13 @@ assert_executable(
       //  "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='toplevel to my image h2']",
       //  "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
       ],
-      //'h2.html': [
+      'h2.html': [
       //  "//x:div[@class='p']//x:a[@href='index.html' and text()='h2 to toplevel']",
       //  "//x:div[@class='p']//x:a[@href='' and text()='h2 to h2']",
       //  "//x:div[@class='p']//x:a[@href='notindex.html' and text()='h2 to notindex']",
       //  "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
       //  "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
-      //],
+      ],
       //'notindex.html': [
       //  // Link so the split one of index because that's the default of that page.
       //  "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to toplevel']",

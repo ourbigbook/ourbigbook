@@ -1057,6 +1057,7 @@ if (commander.helpMacros) {
         } catch(err) {
           console.error(err.code);
           if (err.code === 'ECONNREFUSED') {
+            cli_error('could not connect to server');
           }
         }
         if (status === 422) {
@@ -1065,6 +1066,66 @@ if (commander.helpMacros) {
         token = data.user.token
         await non_ourbigbook_options.sequelize.models.Web.create({ host, token })
       }
+      const new_non_ourbigbook_options = ourbigbook.clone_and_set(
+        non_ourbigbook_options, 'ourbigbook_paths_converted_only', true)
+      await convert_directory(
+        inputPath,
+        ourbigbook_options,
+        new_non_ourbigbook_options,
+      );
+      const ourbigbook_paths_converted = new_non_ourbigbook_options.ourbigbook_paths_converted
+      const sources = await Promise.all(ourbigbook_paths_converted.map(
+        (inpath) => fs.promises.readFile(inpath, ourbigbook_nodejs_webpack_safe.ENCODING)))
+      const titleRegex = new RegExp(`${ourbigbook.INSANE_HEADER_CHAR} (.*)`)
+      let articles = []
+      for (let i = 0; i < sources.length; i++) {
+        const source = sources[i]
+        const inpath = ourbigbook_paths_converted[i]
+        const lines = source.split('\n')
+        const title = lines[0].match(titleRegex)[1]
+        const inpathParse = path.parse(inpath)
+        const basenameNoext = path.join(inpathParse.dir, inpathParse.name)
+        let addId
+        let addScope
+        if (ourbigbook.INDEX_FILE_BASENAMES_NOEXT.has(inpathParse.name)) {
+          if (inpathParse.dir) {
+            const dirPathParse = path.parse(inpathParse.dir)
+            const titleId = ourbigbook.title_to_id(title)
+            if (titleId !== dirPathParse.name) {
+              addId = dirPathParse.name
+            }
+            if (dirPathParse.dir) {
+              addScope = dirPathParse.dir
+            }
+          }
+        } else {
+          const titleId = ourbigbook.title_to_id(title)
+          if (titleId !== inpathParse.name) {
+            addId = inpathParse.name
+          }
+          if (inpathParse.dir) {
+            addScope = inpathParse.dir
+          }
+        }
+        let bodyStart
+        if (lines[1] === '' && !addId && !addScope) {
+          bodyStart = 2
+        } else {
+          bodyStart = 1
+        }
+        let body = ''
+        if (addId) {
+          body += `{id=${addId}}\n`
+        }
+        if (addScope) {
+          // TODO implement, we don't currently have a way of representing direcory scopes just
+          // in the body content, which is required for OurBigBook Web.
+          //body += `{scope=${addScope}}\n`
+        }
+        body += lines.slice(bodyStart).join('\n')
+        articles.push({ title, body })
+      }
+      console.error(articles);
     } else if (commander.watch) {
       if (publish) {
         cli_error('--publish and --watch are incompatible');

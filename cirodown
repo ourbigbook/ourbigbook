@@ -352,6 +352,7 @@ function* walk_files_recursively(file_or_dir, skip_basenames) {
 // CLI options.
 commander.option('--body-only', 'output only the content inside the HTLM body element', false);
 commander.option('--dry-run', "don't run most external commands, see: https://github.com/cirosantilli/linux-kernel-module-cheat/tree/6d0a900f4c3c15e65d850f9d29d63315a6f976bf#dry-run-to-get-commands-for-your-project", false);
+commander.option('--generate', 'http://cirosantilli.com/cirodown#generate', false);
 commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown/#', false);
 commander.option('--html-embed', 'http://cirosantilli.com/cirodown#html-embed', false);
 commander.option('--html-single-page', 'http://cirosantilli.com/cirodown#html-single-page', false);
@@ -423,6 +424,37 @@ if (commander.helpMacros) {
     show_tokens: commander.showTokensInside,
     show_tokenize: commander.showTokenize,
   };
+  if (commander.generate) {
+    // Generate package.json.
+    const package_json = JSON.parse(fs.readFileSync(cirodown_nodejs.PACKAGE_PACKAGE_JSON_PATH).toString());
+    const package_json_str = `{
+  "dependencies": {
+    "cirodown": "${package_json.version}"
+  }
+}
+`;
+    fs.writeFileSync(path.join('package.json'), package_json_str);
+
+    // Generate .gitignore.
+    let gitignore_new = '';
+    const gitignore = fs.readFileSync(cirodown_nodejs.GITIGNORE_PATH, ENCODING);
+    for (const line of gitignore.split('\n')) {
+      if (line === '') {
+        break;
+      }
+      gitignore_new += line + '\n';
+    }
+    fs.writeFileSync('.gitignore', gitignore_new);
+
+    // Generate README.ciro.
+    const readme_cirodown_str = `\\h[1][Cirodown hello world]
+
+Hello!
+`;
+    fs.writeFileSync(path.join('README.ciro'), readme_cirodown_str);
+
+    process.exit(0);
+  }
   let convert_input_options = {
     commander: commander,
     encoding: ENCODING,

@@ -12,4 +12,6 @@ cirodown.embed.min.css
 cirodown.js
 cirodown.local.min.css
 cirodown.min.css
+tmp
 tmp.*
+*.tmp

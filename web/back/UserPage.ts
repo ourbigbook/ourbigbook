@@ -74,8 +74,6 @@ export const getServerSidePropsUserHoc = (what) => {
       props.articles = await Promise.all(articles.rows.map(article => article.toJson(loggedInUser)))
       props.articlesCount = articles.count
     }
-    return {
-      props,
-    }
+    return { props }
   }
 }

@@ -19,13 +19,14 @@ export function getServerSidePropsArticleHoc(addComments?, loggedInUserCache?) {
         where: { topicId: article.topicId },
       }),
     ])
-    const ret: any = {
-      props: {
-        article: articleJson,
-        loggedInUser: await loggedInUser?.toJson(),
-        topicArticleCount,
-      },
+    const props = {
+      article: articleJson,
+      topicArticleCount,
     }
+    if (loggedInUser) {
+      props.loggedInUser = await loggedInUser.toJson()
+    }
+    const ret: any = { props }
     if (addComments) {
       const comments = await article.getComments({
         order: [['createdAt', 'DESC']],

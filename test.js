@@ -156,7 +156,11 @@ function assert_lib(
       return options.filesystem.hasOwnProperty(my_path)
     }
     options.convert_opts.read_file = (readpath, context) => {
-      return options.filesystem[readpath]
+      // TODO implement directory.
+      return {
+        type: 'file',
+        content: options.filesystem[readpath],
+      }
     }
     let filesystem = options.filesystem
 
@@ -9754,5 +9758,95 @@ assert_cli(
         status: 1,
       },
     ],
+  }
+);
+assert_cli(
+  'directory listings',
+  {
+    args: ['.'],
+    filesystem: {
+      'README.bigb': `= Index
+
+\\a[.][link to root]
+
+\\a[subdir][link to subdir]
+
+\\a[subdir/subdir2][link to subdir2]
+
+== subdir
+{file}
+
+== subdir/subdir2
+{file}
+`,
+      'subdir/index.bigb': `= Subdir
+
+\\a[..][link to root]
+
+\\a[.][link to subdir]
+
+\\a[subdir2][link to subdir2]
+`,
+      'myfile.txt': `ab`,
+      'subdir/myfile-subdir.txt': `ab`,
+      'subdir/subdir2/index.bigb': `= Subdir2
+
+\\a[../..][link to root]
+
+\\a[..][link to subdir]
+
+\\a[.][link to subdir2]
+`,
+      'subdir/subdir2/myfile-subdir2.txt': `ab`,
+      '.git/myfile-git.txt': `ab`,
+    },
+    expect_exists: [
+      `${ourbigbook.RAW_PREFIX}/myfile.txt`,
+      `${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
+    ],
+    expect_not_exists: [
+      // Ignored directories are not listed.
+      `${ourbigbook.RAW_PREFIX}/.git/index.html`,
+    ],
+    assert_xpath: {
+      [`index.html`]: [
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='View file']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/subdir2/index.html' and text()='View file']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/index.html' and text()='link to root']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='link to subdir']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
+      ],
+      [`subdir.html`]: [
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/index.html' and text()='link to root']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='link to subdir']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
+      ],
+      [`subdir/subdir2.html`]: [
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/index.html' and text()='link to root']`,
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='link to subdir']`,
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
+      ],
+      [`${ourbigbook.RAW_PREFIX}/index.html`]: [
+        "//x:a[@href='myfile.txt' and text()='myfile.txt']",
+        "//x:a[@href='README.bigb' and text()='README.bigb']",
+        "//x:a[@href='subdir/index.html' and text()='subdir/']",
+      ],
+      [`${ourbigbook.RAW_PREFIX}/subdir/index.html`]: [
+        "//x:a[@href='myfile-subdir.txt' and text()='myfile-subdir.txt']",
+        "//x:a[@href='subdir2/index.html' and text()='subdir2/']",
+        "//x:a[@href='../index.html' and text()='../']",
+      ],
+    },
+    assert_not_xpath: {
+      [`${ourbigbook.RAW_PREFIX}/index.html`]: [
+        // Rood directory does not link to its parent.
+        "//x:a[@href='..']",
+        "//x:a[@href='../']",
+
+        // Ignored files don't show on listing.
+        "//x:a[@href='.git']",
+        "//x:a[@href='.git/']",
+      ],
+    },
   }
 );

@@ -2890,7 +2890,7 @@ function render_ast_list(opts) {
         new_root_relpath
       )
       options.template_vars.root_relpath = new_root_relpath
-      options.template_vars.raw_relpath = path.join(new_root_relpath, RAW_PREFIX) + URL_SEP
+      options.template_vars.raw_relpath = path.join(new_root_relpath, RAW_PREFIX)
       context.extra_returns.rendered_outputs[output_path] = rendered_outputs_entry
     }
     // Do the conversion.
@@ -3515,15 +3515,18 @@ function check_and_update_local_link({
       ) {
         error = `link to inexistent local file: ${href}`;
         render_error(context, error, source_location);
+      } else {
+        const { type } = context.options.read_file(check_path, context)
+        if (type === 'directory' && context.options.html_x_extension) {
+          href = path.join(href, 'index.html')
+        }
       }
     }
-  }
-  if (error) {
-    error = error_message_in_output(error, context)
-  }
+    if (error) {
+      error = error_message_in_output(error, context)
+    }
 
-  // Modify external paths to account for scope + --split-headers
-  if (!is_external) {
+    // Modify external paths to account for scope + --split-headers
     let pref = context.root_relpath_shift
     if (media_provider_type === 'local') {
       pref = path.join(pref, RAW_PREFIX)
@@ -5047,10 +5050,11 @@ async function parse(tokens, options, context, extra_returns={}) {
             newast.set_source_location(ast.source_location)
             parent_arg_push_after.push(newast)
           } else {
-            // Plaintext file.
             const protocol = protocol_get(ast.file)
             if (protocol === null || protocol === 'file') {
-              const content = context.options.read_file(ast.file, context)
+              const indir = context.options.input_path === undefined ? '.' : path.dirname(context.options.input_path)
+              const { type, content } = context.options.read_file(
+                path.join(indir, ast.file), context)
               if (
                 content !== undefined
               ) {
@@ -9074,9 +9078,11 @@ const OUTPUT_FORMATS_LIST = [
             let root_page;
             if (context.options.html_x_extension) {
               context.options.template_vars.html_ext = '.html';
+              context.options.template_vars.html_index = '/index.html';
               root_page = context.options.template_vars.root_relpath + INDEX_BASENAME_NOEXT + '.' + HTML_EXT;
             } else {
               context.options.template_vars.html_ext = '';
+              context.options.template_vars.html_index = '';
               if (context.options.template_vars.root_relpath === '') {
                 root_page = '.'
               } else {

@@ -21,7 +21,8 @@ import {
   CancelIcon,
   HelpIcon,
   IssueIcon,
-  slugFromArray
+  slugFromArray,
+  useWindowEventListener,
 } from 'front'
 import ErrorList from 'front/ErrorList'
 import { webApi } from 'front/api'
@@ -264,13 +265,24 @@ export default function EditorPageHoc({
       // Initial check here, then check only on title update.
       checkTitle(file.titleSource)
     }, [])
-    useEffect(() => {
-      window.onbeforeunload = function(){
-        if (file.titleSource) {
-          return sureLeaveMessage
-        }
+
+    // Ask for confirmation before leaving page with:
+    // - tab close
+    // - history back button
+    // if any changes were made to editor. In this page we:
+    // - can only exit with router on Cancel, and that is handled there
+    // - every other link opens a new page.
+    // This is why we don't use useConfirmExitPage, as it handles the
+    // Router.push case which is not needed in this case.
+    function beforeUnloadConfirm() {
+      if (ourbigbookEditorElem.current.ourbigbookEditor.modified) {
+        // Message not really shown, there's no way:
+        // https://stackoverflow.com/questions/38879742/is-it-possible-to-display-a-custom-message-in-the-beforeunload-popup
+        return sureLeaveMessage
       }
-    }, [file.titleSource])
+    }
+    useWindowEventListener('beforeunload', beforeUnloadConfirm)
+
     useEffect(() => {
       if (
         // Can fail on maximum number of articles reached.

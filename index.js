@@ -21,9 +21,10 @@ const pluralize = require('pluralize');
 // consts used by classes.
 const HEADER_MENU_ITEM_SEP = ' | ';
 const UNICODE_LINK = String.fromCodePoint(0x1F517);
-const NOSPLIT_MARKER = '\u{1F5D6} nosplit';
+//const NOSPLIT_MARKER = '\u{1F5D6} nosplit';
+const NOSPLIT_MARKER = 'nosplit';
 exports.NOSPLIT_MARKER = NOSPLIT_MARKER;
-const SPLIT_MARKER = '\u{1F5D7} split';
+const SPLIT_MARKER = 'split';
 exports.SPLIT_MARKER = SPLIT_MARKER;
 const PARENT_MARKER = '\u{2191} parent';
 exports.PARENT_MARKER = PARENT_MARKER;

@@ -1,8 +1,6 @@
 const assert = require('assert');
 
-const ArticleApi = require('ourbigbook/web_api/article')
-const CommentApi = require('ourbigbook/web_api/comment')
-const UserApi = require('ourbigbook/web_api/user')
+const { WebApi } = require('ourbigbook/web_api')
 
 const app = require('./app')
 const convert = require('./convert')
@@ -136,13 +134,10 @@ function testApp(cb, opts={}) {
       assert.strictEqual(data.user.username, `user${i}`)
       return data.user
     }
-    const opts = {
+    test.webApi = new WebApi({
       getToken,
       https,
-    }
-    test.articleApi = new ArticleApi(opts)
-    test.commentApi = new CommentApi(opts)
-    test.userApi = new UserApi(opts)
+    })
     await cb(test)
     server.close()
   })

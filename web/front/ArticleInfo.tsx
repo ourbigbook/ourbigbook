@@ -3,7 +3,7 @@ import React from 'react'
 import { trigger } from 'swr'
 
 import CustomLink from 'front/CustomLink'
-import { articleApi } from 'front/api'
+import { webApi } from 'front/api'
 import { formatDate } from 'front/date'
 import LikeArticleButton from 'front/LikeArticleButton'
 import routes from 'front/routes'
@@ -20,8 +20,8 @@ const ArticleInfo = ({
     if (!loggedInUser) return;
     const result = window.confirm("Do you really want to delete this article?");
     if (!result) return;
-    await articleApi.delete(article.slug);
-    trigger(articleApi.url(article.slug));
+    await webApi.articleDelete(article.slug);
+    trigger(webApi.articleUrl(article.slug));
     Router.push(`/`);
   };
   return <div className="article-info-3">

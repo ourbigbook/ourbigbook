@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import { trigger } from 'swr'
 
 import Maybe from 'front/Maybe'
-import { commentApi } from 'front/api'
+import { webApi } from 'front/api'
 import { formatDate } from 'front/date'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 
@@ -15,8 +15,8 @@ const Comment = ({ comment, loggedInUser }) => {
     query: { pid },
   } = router;
   const handleDelete = async (commentId) => {
-    await commentApi.delete(pid, commentId)
-    trigger(commentApi.url(pid));
+    await webApi.commentDelete(pid, commentId)
+    trigger(webApi.commentUrl(pid));
   };
   return (
     <div className="comment">

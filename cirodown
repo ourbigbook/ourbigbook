@@ -256,7 +256,7 @@ function convert_input(input, options, convert_input_options={}) {
   const output = cirodown.convert(input, new_options, new_options.extra_returns);
   if (convert_input_options.commander.htmlSplitHeader) {
     for (const id in new_options.extra_returns.html_split_header) {
-      const output_path = path.join(convert_input_options.outdir, id + '.' + cirodown.HTML_EXT);
+      const output_path = path.join(convert_input_options.outdir, id);
       fs.mkdirSync(path.dirname(output_path), {recursive: true});
       fs.writeFileSync(output_path, new_options.extra_returns.html_split_header[id]);
     }

@@ -7539,3 +7539,29 @@ assert_executable('cli: cross file ancestors work on single file conversions in 
     },
   }
 );
+
+// JSON
+// ourbigbook.json
+assert_executable('cli: ourbigbook.json redirects',
+  {
+    args: ['.'],
+    filesystem: {
+      'ourbigbook.json': `{
+  "redirects": [
+    ["from", "tourl"],
+    ["from2", "https://tourl.com"]
+  ]
+}
+`,
+    },
+    assert_xpath: {
+      'from.html': [
+        "//x:script[text()=\"location='tourl.html'\"]",
+      ],
+      'from2.html': [
+        // .html not added because it is an absolute URL.
+        "//x:script[text()=\"location='https://tourl.com'\"]",
+      ],
+    },
+  }
+);

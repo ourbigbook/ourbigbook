@@ -3630,7 +3630,7 @@ function macro_list_to_macros() {
 function macro_list() {
   return DEFAULT_MACRO_LIST;
 }
-exports.macro_list = macro_list;
+exports.macro_list = macro_list
 
 const OURBIGBOOK_EXT = 'bigb';
 exports.OURBIGBOOK_EXT = OURBIGBOOK_EXT;
@@ -5671,6 +5671,7 @@ function protocol_is_known(src) {
   }
   return false;
 }
+exports.protocol_is_known = protocol_is_known
 
 // https://docs.ourbigbook.com#scope
 function remove_toplevel_scope(id, toplevel_ast, context) {

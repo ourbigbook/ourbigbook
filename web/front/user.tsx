@@ -12,19 +12,32 @@ export function displayAndUsernameText(user) {
   return ret
 }
 
-export function DisplayAndUsername({ user }) {
+export function DisplayAndUsername({ user, showUsername }) {
   let ret = ''
-  if (user.displayName) {
-    ret += `${user.displayName} (`
+  if (showUsername === undefined) {
+    showUsername = true
   }
-  ret += `@${user.username}`
   if (user.displayName) {
-    ret += ', '
+    ret += `${user.displayName} `
   } else {
-    ret += ' ('
+    ret += `${user.username} `
+  }
+  const showParenthesis = user.displayName && showUsername
+  if (showParenthesis) {
+    ret += `(`
+  }
+  if (showUsername) {
+    ret += `@${user.username}`
+  }
+  if (showParenthesis) {
+    if (user.displayName) {
+      ret += ', '
+    } else {
+      ret += ' ('
+    }
   }
   return <>
     {ret}
-    <span title={defaultUserScoreTitle}>{user.articleScoreSum}<i className="ion-heart"></i></span>)
+    <span title={defaultUserScoreTitle}>{user.articleScoreSum}<i className="ion-heart"></i></span>{showParenthesis ? ')' : ''}
   </>
 }

@@ -75,47 +75,49 @@ const ArticleList = ({
     </div>;
   }
   return (
-    <div className="article-list-container">
-      <table className="article-list">
-        <thead>
-          <tr>
-            {showAuthor &&
-              <th className="shrink">Author</th>
-            }
-            <th className="shrink">Score</th>
-            <th className="expand">Title</th>
-            <th className="shrink">Created</th>
-            <th className="shrink">Updated</th>
-          </tr>
-        </thead>
-        <tbody>
-          {articles?.map((article, i) => (
-            <tr key={article.slug}>
+    <div className="article-list-nav-container">
+      <div className="article-list-container">
+        <table className="article-list">
+          <thead>
+            <tr>
+              <th className="shrink center">Score</th>
+              <th className="expand">Title</th>
               {showAuthor &&
-                <td className="shrink">
-                  <UserLinkWithImage user={article.author} />
-                </td>
+                <th className="shrink">Author</th>
               }
-              <td className="shrink">
-                <LikeArticleButton
-                  article={article}
-                  showText={false}
-                />
-              </td>
-              <td className="expand title">
-                <CustomLink
-                  href={routes.articleView(article.slug)}
-                  className="preview-link"
-                >
-                  {article.title}
-                </CustomLink>
-              </td>
-              <td className="shrink">{formatDate(article.createdAt)}</td>
-              <td className="shrink">{formatDate(article.updatedAt)}</td>
+              <th className="shrink">Created</th>
+              <th className="shrink">Updated</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {articles?.map((article, i) => (
+              <tr key={article.slug}>
+                <td className="shrink center">
+                  <LikeArticleButton
+                    article={article}
+                    showText={false}
+                  />
+                </td>
+                <td className="expand title">
+                  <CustomLink
+                    href={routes.articleView(article.slug)}
+                    className="preview-link"
+                  >
+                    {article.title}
+                  </CustomLink>
+                </td>
+                {showAuthor &&
+                  <td className="shrink">
+                    <UserLinkWithImage showUsername={false} user={article.author} />
+                  </td>
+                }
+                <td className="shrink">{formatDate(article.createdAt)}</td>
+                <td className="shrink">{formatDate(article.updatedAt)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <Pagination {...{
         articlesCount,
         articlesPerPage: articleLimit,

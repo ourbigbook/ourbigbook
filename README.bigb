@@ -5836,7 +5836,7 @@ instead, which builds only the stuff under `web/`.
 
 TypeScript type checking an also be run in isolation as mentioned at \x[ourbigbook-web-typescript-type-checking]{full} with:
 ``
-npm run typecheck
+npm run tsc
 ``
 
 = Local run as identical to deployment as possible

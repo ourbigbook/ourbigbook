@@ -93,8 +93,8 @@ class AstNode {
     if (!('html_is_attr' in context)) {
       context.html_is_attr = false;
     }
-    if (!('ids' in context)) {
-      context.ids = {};
+    if (!('id_provider' in context)) {
+      context.id_provider = {};
     }
     if (!('katex_macros' in context)) {
       context.katex_macros = {};
@@ -152,6 +152,68 @@ class ErrorMessage {
       ret += ': ';
     ret += this.message;
     return ret
+  }
+}
+
+/** Interface to retrieving the nodes of IDs defined in external files.
+ *
+ * We need the abstraction because IDs will come from widely different locations
+ * between browser and local Node.js operation:
+ *
+ * - browser: HTTP requests
+ * - local: sqlite database
+ */
+class IdProvider {
+  /**
+   * @param {String} id
+   * @return {Union[Array[String,AstNode],undefined]}.
+   *         undefined: ID not found
+   *         Array: path/AstNode pair
+   */
+  get(id) { throw 'unimplemented'; }
+}
+exports.IdProvider = IdProvider;
+
+/** IdProvider that first tries id_provider_1 and then id_provider_2.
+ *
+ * The initial use case for this is to transparently use either IDs defined
+ * in the current document, or IDs defined externally.
+ */
+class ChainedIdProvider extends IdProvider {
+  constructor(id_provider_1, id_provider_2) {
+    super();
+    this.id_provider_1 = id_provider_1;
+    this.id_provider_2 = id_provider_2;
+  }
+  get(id) {
+    let ret;
+    ret = this.id_provider_1.get(id);
+    if (ret !== undefined) {
+      return ret;
+    }
+    ret = this.id_provider_2.get(id);
+    if (ret !== undefined) {
+      return ret;
+    }
+    throw undefined;
+  }
+}
+
+/** ID provider from a dict with a fixed path.
+ * The initial use caes is to represent locally defined IDs, and inject
+ * them into ChainedIdProvider together with externally defined IDs.
+ */
+class DictIdProvider extends IdProvider {
+  constructor(path, dict) {
+    super();
+    this.path = path;
+    this.dict = dict;
+  }
+  get(id) {
+    if (id in this.dict) {
+      return [this.path, this.dict[id]];
+    }
+    return undefined;
   }
 }
 
@@ -755,6 +817,8 @@ function closing_token(token) {
  *
  * The CLI interface basically just feeds this.
  *
+ * @options {Object}
+ *          {IdProvider} external_ids
  * @return {String}
  */
 function convert(
@@ -765,18 +829,23 @@ function convert(
   if (options === undefined) {
     options = {};
   }
-  if (!('body_only'        in options)) { options.body_only         = false; }
-  if (!('css'              in options)) { options.css               = '';    }
-  if (!('html_single_page' in options)) { options.html_single_page  = false; }
-  if (!('show_ast'         in options)) { options.show_ast          = false; }
-  if (!('show_parse'       in options)) { options.show_parse        = false; }
-  if (!('show_tokenize'    in options)) { options.show_tokenize     = false; }
-  if (!('show_tokens'      in options)) { options.show_tokens       = false; }
+  if (!('body_only' in options)) { options.body_only = false; }
+  if (!('css' in options)) { options.css = ''; }
+  if (!('external_id_provider' in options)) {
+    options.external_id_provider = undefined;
+  }
+  if (!('html_single_page' in options)) { options.html_single_page = false; }
+  if (!('input_path' in options)) { options.input_path = undefined; }
+  if (!('show_ast' in options)) { options.show_ast = false; }
+  if (!('show_parse' in options)) { options.show_parse = false; }
+  if (!('show_tokenize' in options)) { options.show_tokenize = false; }
+  if (!('show_tokens' in options)) { options.show_tokens = false; }
   macros = macro_list_to_macros();
   extra_returns.errors = [];
   let sub_extra_returns;
   sub_extra_returns = {};
-  let tokens = (new Tokenizer(input_string, sub_extra_returns, options.show_tokenize)).tokenize();
+  let tokens = (new Tokenizer(input_string, sub_extra_returns,
+    options.show_tokenize)).tokenize();
   if (options.show_tokens) {
     console.error('tokens:');
     for (let i = 0; i < tokens.length; i++) {
@@ -1074,10 +1143,23 @@ function parse(tokens, macros, options, extra_returns={}) {
   const header_graph_stack = new Map();
   let first_header = true;
   let first_header_level;
+  let indexed_ids = {};
+  // Non-indexed-ids: auto-generated numeric ID's like p-1, p-2, etc.
+  // It is not possible to link to them from inside the document, since links
+  // break across versions.
+  let non_indexed_ids = {};
   // IDs that are indexed: you can link to those.
-  extra_returns.context.ids = {};
-  // All IDs, including the non-indexed ones.
-  let all_ids = {};
+  let id_provider;
+  let local_id_provider = new DictIdProvider(options.input_path, indexed_ids);
+  if (options.external_id_provider !== undefined) {
+    id_provider = new ChainedIdProvider(
+      local_id_provider,
+      options.external_id_provider
+    );
+  } else {
+    id_provider = local_id_provider;
+  }
+  extra_returns.context.id_provider = id_provider;
   extra_returns.context.header_graph = new TreeNode();
   extra_returns.context.has_toc = false;
   while (todo_visit.length > 0) {
@@ -1121,19 +1203,28 @@ function parse(tokens, macros, options, extra_returns={}) {
       }
     }
     if (ast.id !== undefined) {
-      if (ast.id in all_ids) {
-        const previous_ast = all_ids[ast.id];
-        parse_error(
-          state,
-          `duplicate ID "${ast.id}", previous one defined at line ${previous_ast.line} colum ${previous_ast.column}`,
-          ast.args.line,
-          ast.args.column
-        );
-      } else {
-        all_ids[ast.id] = ast;
-        if (index_id) {
-          extra_returns.context.ids[ast.id] = ast;
+      const id_provider_get = id_provider.get(ast.id);
+      let previous_ast = undefined;
+      if (id_provider_get === undefined) {
+        if (ast.id in non_indexed_ids) {
+          input_path = options.input_path;
+          previous_ast = non_indexed_ids[ast.id];
         }
+      } else {
+        [input_path, previous_ast] = id_provider_get;
+      }
+      if (previous_ast === undefined) {
+        non_indexed_ids[ast.id] = ast;
+        if (index_id) {
+          indexed_ids[ast.id] = ast;
+        }
+      } else {
+        let message = `duplicate ID "${ast.id}", previous one defined at `;
+        if (input_path !== undefined) {
+          message += `file ${input_path} `;
+        }
+        message += `line ${previous_ast.line} colum ${previous_ast.column}`;
+        parse_error(state, message, ast.args.line, ast.args.column);
       }
     }
 
@@ -2028,8 +2119,9 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       let content_arg;
       let target_id = convert_arg_noescape(ast.args.href, context);
-      if (target_id in context.ids) {
-        target_id_ast = context.ids[target_id];
+      let id_provider_get = context.id_provider.get(target_id);
+      if (id_provider_get !== undefined) {
+        [input_path, target_id_ast] = id_provider_get;
         let content;
         if (ast.arg_given('content')) {
           content = convert_arg(ast.args.content, context);

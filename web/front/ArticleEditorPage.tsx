@@ -161,6 +161,7 @@ export default function ArticleEditorPageHoc({
     }
     const itemType = isIssue ? 'discussion' : 'article'
     const [isLoading, setLoading] = React.useState(false);
+    const [editorLoaded, setEditorLoading] = React.useState(false);
     const [titleErrors, setTitleErrors] = React.useState([]);
     const [hasConvertError, setHasConvertError] = React.useState(false);
     const [file, setFile] = React.useState(initialFileState);
@@ -281,6 +282,9 @@ export default function ArticleEditorPageHoc({
             },
           )
           ourbigbookEditorElem.current.ourbigbookEditor = editor
+          // To ensure an initial conversion in case user has modified title before the editor had loaded.
+          // Otherwise title would only update if user edited title again.
+          setEditorLoading(true)
         })
         return () => {
           // TODO cleanup here not working.
@@ -303,18 +307,30 @@ export default function ArticleEditorPageHoc({
         ...file,
         titleSource,
       }})
-      await checkTitle(titleSource)
+      checkTitle(titleSource)
       // TODO this would be slighty better, but not taking effect, I simply can't understand why,
       // there appear to be no copies of convertOptions under editor...
       //if (titleSource) {
       //  finalConvertOptions.input_path = titleToPath(loggedInUser, ourbigbook.title_to_id(titleSource))
       //}
-      await ourbigbookEditorElem.current.ourbigbookEditor.setModifyEditorInput(
-        oldInput => modifyEditorInput(e.target.value, oldInput))
     }
+    useEffect(() => {
+      if (
+        // Can fail is user starts editing title quickly after page load before editor had time to load.
+        ourbigbookEditorElem.current.ourbigbookEditor
+      ) {
+        ourbigbookEditorElem.current.ourbigbookEditor.setModifyEditorInput(
+          oldInput => modifyEditorInput(file.titleSource, oldInput))
+      }
+    }, [file, editorLoaded])
     const handleSubmit = async (e) => {
       if (e) {
         e.preventDefault();
+      }
+      if (hasConvertError || titleErrors.length) {
+        // Although the button should be disabled from clicks,
+        // this could still be reached via the Ctrl shortcut.
+        return
       }
       setLoading(true);
       let data, status;

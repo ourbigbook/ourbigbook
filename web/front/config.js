@@ -2,11 +2,17 @@ const ourbigbook = require('ourbigbook')
 const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front')
 
 let isProduction;
+let isTest;
 
 if (process.env.NEXT_PUBLIC_NODE_ENV === undefined) {
   isProduction = process.env.NODE_ENV === 'production'
 } else {
   isProduction = process.env.NEXT_PUBLIC_NODE_ENV === 'production'
+}
+if (isProduction) {
+  isTest = false
+} else {
+  isTest = process.env.NEXT_PUBLIC_NODE_ENV === 'test'
 }
 
 const escapeUsername = 'go'
@@ -48,11 +54,13 @@ module.exports = {
   // An ID separator that should be used or all IDs in the website to avoid conflicts with OurBigBook Markup output,
   // of which users can control IDs to some extent. Usage is like: prefix + sep + number.
   idSep: '_',
+  isTest,
   // Default isProduction check. Affetcs all aspects of the application unless
   // they are individually overridden, including:
   // * is Next.js server dev or prod?
   // * use SQLite or PostgreSQL?
   // * in browser effects, e.g. show Google Analytics or not?
+  // * print emails to stdout or actually try to send them
   isProduction,
   // Overrides isProduction for the "is Next.js server dev or prod?" only.
   isProductionNext: process.env.NODE_ENV_NEXT_SERVER_ONLY === undefined ?

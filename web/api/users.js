@@ -2,15 +2,27 @@ const router = require('express').Router()
 const passport = require('passport')
 const auth = require('../auth')
 const lib = require('./lib')
+const config = require('../front/config')
+const routes = require('../front/routes')
 
-async function authenticate(req, res, next) {
+async function authenticate(req, res, next, opts={}) {
+  const { forceVerify } = opts
   passport.authenticate('local', { session: false }, async function(err, user, info) {
     if (err) {
       return next(err)
     }
     if (user) {
-      user.token = user.generateJWT()
-      return res.json({ user: await user.toJson(user) })
+      let missingVerify
+      if (user.verified || forceVerify) {
+        user.token = user.generateJWT()
+        verified = true
+      } else {
+        verified = false
+      }
+      return res.json({
+        user: await user.toJson(user),
+        verified,
+      })
     } else {
       return res.status(422).json(info)
     }
@@ -53,7 +65,7 @@ router.get('/users', auth.optional, async function(req, res, next) {
     const sequelize = req.app.get('sequelize')
     const [limit, offset] = lib.getLimitAndOffset(req, res)
     const [loggedInUser, {count: usersCount, rows: users}] = await Promise.all([
-      sequelize.models.User.findByPk(req.payload.id),
+      req.payload ? sequelize.models.User.findByPk(req.payload.id) : null,
       sequelize.models.User.getUsers({
         sequelize,
         limit,
@@ -74,7 +86,7 @@ router.get('/users', auth.optional, async function(req, res, next) {
 
 router.get('/users/:username', auth.optional, async function(req, res, next) {
   try {
-    const loggedInUser = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
+    const loggedInUser = req.payloas ? await req.app.get('sequelize').models.User.findByPk(req.payload.id) : null
     return res.json({ user: await req.user.toJson(loggedInUser) })
   } catch(error) {
     next(error);
@@ -102,8 +114,19 @@ router.post('/users', async function(req, res, next) {
     user.email = req.body.user.email
     user.ip = lib.getClientIp(req)
     req.app.get('sequelize').models.User.setPassword(user, req.body.user.password)
+    if (config.isTest) {
+      user.verified = true
+    }
     await user.saveSideEffects()
-    await authenticate(req, res, next)
+    if (config.isTest) {
+      return authenticate(req, res, next, { forceVerify: true })
+    }
+    if (!config.isProduction && !config.isTest) {
+      // TODO this will go into the general email send fallback.
+      const verificationMessage = `Your verification link is: ${req.protocol}://${req.get('host')}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}`
+      console.log(verificationMessage);
+    }
+    return res.json({ user: await user.toJson(user) })
   } catch(error) {
     next(error);
   }

@@ -140,21 +140,21 @@ export function deleteCookie(name, path = '/') {
   setCookie(name, '', -1, path)
 }
 
-export async function setupUserLocalStorage(data, setErrors) {
+export async function setupUserLocalStorage(user, setErrors) {
   // We fetch from /profiles/:username again because the return from /users/login above
   // does not contain the image placeholder.
   const { data: userData, status: userStatus } = await webApi.userGet(
-    data.user.username
+    user.username
   )
-  if (userStatus !== 200) {
+  if (userStatus !== 200 && setErrors) {
     setErrors(userData.errors)
   }
-  data.user.effectiveImage = userData.user.effectiveImage
+  user.effectiveImage = userData.user.effectiveImage
   window.localStorage.setItem(
     AUTH_LOCAL_STORAGE_NAME,
-    JSON.stringify(data.user)
+    JSON.stringify(user)
   );
-  setCookie(AUTH_COOKIE_NAME, data.user.token)
-  mutate(AUTH_COOKIE_NAME, data.user.token)
-  mutate(AUTH_LOCAL_STORAGE_NAME, data.user);
+  setCookie(AUTH_COOKIE_NAME, user.token)
+  mutate(AUTH_COOKIE_NAME, user.token)
+  mutate(AUTH_LOCAL_STORAGE_NAME, user);
 }

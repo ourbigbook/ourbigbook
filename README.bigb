@@ -6069,8 +6069,11 @@ The source for OurBigBook Web, source code is located under \a[web/]. OurBigBook
 
 OurBigBook Web was originally forked from the following starter boilerplate: https://github.com/cirosantilli/node-express-sequelize-realworld-example-app[]. We are trying to keep tech synced as much as possible between both projects, since the boilerplate is useful as a tech demo to quickly try out new technologies in a more minimal setup.
 
-= Local development server
+= OurBigBook Web development
 {parent=OurBigBook Web}
+
+= Local development server
+{parent=OurBigBook Web development}
 
 It is highly recommended that you use the exact same Node.js and NPM versions as given under \a[package.json] `engines.js` entry. The best way to do that is likely to use NVM as explained at: https://stackoverflow.com/questions/16898001/how-to-install-a-specific-version-of-node-on-ubuntu/47376491#47376491
 
@@ -6128,7 +6131,7 @@ Whenever you save any changes to the backend server, we listen to this and autom
 For frontend, changes are automatically recompiled by the webpack development server, so you can basically just refresh pages and they will be updated straightaway.
 
 = Demo data
-{parent=OurBigBook Web}
+{parent=OurBigBook Web development}
 
 You can generate demo data for <OurBigBook Web> with \a[web/bin/generate-demo-data.js], e.g.:
 ``
@@ -6164,7 +6167,7 @@ To clear the database and start with an empty database use `--empty`:
 ``
 
 = Log database queries done
-{parent=OurBigBook Web}
+{parent=OurBigBook Web development}
 
 ``
 DEBUG='sequelize:sql:*' npm run dev
@@ -6175,7 +6178,7 @@ npm run devs
 ``
 
 = Local optimized frontend
-{parent=OurBigBook Web}
+{parent=OurBigBook Web development}
 
 First run the first time setup from <local development server>.
 
@@ -6208,7 +6211,7 @@ npm run tsc
 ``
 
 = Local run as identical to deployment as possible
-{parent=OurBigBook Web}
+{parent=OurBigBook Web development}
 
 Here we use PostgreSQL instead of SQLite with the prebuilt static frontend.
 
@@ -6265,9 +6268,140 @@ NODE_ENV=production OURBIGBOOK_POSTGRES=true ./bin/sync-db.js
 ``
 because we have to shell out to the ugly migration CLI, and that only understands `NODE_ENV`.
 
-= Heroku deployment
+= OurBigBook Web step debug
+{parent=OurBigBook Web development}
+
+Put a `debugger` statment where you want to break and run:
+``
+npm run devi
+``
+where `i` stands for `inspect` as in `node inspect`.
+
+This pauses at the start of execution. So just run `c` and normal execution resumes until the `debugger;` statement is reached.
+
+= OurBigBook Web unit tests
+{parent=OurBigBook Web development}
+
+All our tests are all located inside \a[test.js].
+
+They can be run with:
+``
+cd web
+npm test
+``
+
+The dynamic website tests also uses Mocha just like <test system>[the tests for OurBigBook CLI and OurBigBook Library], so similar usage patterns apply, e.g. to run just a single test:
+``
+npm test -- -g 'substring of test title'
+``
+or to show database queries being done in the tests:
+``
+DEBUG='*:sql:*' npm test
+``
+
+To run the tests on PostgreSQL instead of SQLite, first setup as in <local run as identical to deployment as possible>, and then:
+``
+npm run test-pg
+``
+
+``
+npm run deploy-prod
+``
+
+Note that this will erase all data present in the database used. In order to point to a custom database use:
+``
+DATABASE_URL_TEST=postgres://realworld_next_user:a@localhost:5432/realworld_next_test npm run test-pg
+``
+We don't use `DATABASE_URL` when running tests as a safeguard to reduce the likelihood of accidentally nuking the production database.
+
+The tests include two broad classes of tests:
+* API tests: launch the server on a random port, and run API commands, thus testing the entire backend
+* smaller unit tests that only call certain functions directly
+* TODO: create frontend tests: https://github.com/cirosantilli/node-express-sequelize-nextjs-realworld-example-app/issues/11
+
+= OurBigBook Web Next.js unit tests
+{parent=OurBigBook Web unit tests}
+
+By default, we don't make any requests to Next.js, because starting up Next.js is extremely slow for regular test usage and would drive us crazy.
+
+In regular OurBigBook Web usage through a browser, Next.js handles all GET requests for us, and the API only handles the other modifying methods like POST.
+
+However, we are trying to keep the API working equally well for GET, and also factored out with Next.js, and that's what we use for the testing by default.
+
+But testing Next.js requests before deployment is a must, and is already done by default by `npm run deploy-prod` from <Heroku deployment>, and can be done manually with:
+``
+npm run test-next
+``
+or e.g. to run just a single test:
+``
+npm run test-next -- -g 'api: create an article and see it on global feed'
+``
+for for Postgres:
+``
+npm run test-pg-next
+``
+
+If you are not making any changes to the website itself, e.g. only to the test system, then you can skip the slow rebuild with:
+``
+test-next-nobuild
+``
+
+Note that Next.js tests are just present inside other tests, e.g. `api: create an article and see it on global feed` also tests some stuff when not testing Next.js. Running `npm run test-next` simply enables the Next.js tests on top of the non Next.js ones that get run by default.
+
+These tests can only be run in production mode, and so our scripts automatically rebuild every time before running the tests, which makes things quite slow. This required because in development mode, Next.js is extremelly soft, and e.g. does not raise 500 instead returning a 200 page with error messages. Bad default.
+
+= OurBigBook Web TypeScript type checking
+{parent=OurBigBook Web development}
+
+TypeScript type checking of <OurBigBook Web> is run automatically during build, e.g. by:
+``
+npm run build-dev
+``
+as mentioned at <local optimized frontend>.
+
+To speed up the development loop further, you can run just the TypeScript type checking with:
+``
+cd web
+nmp run typecheck
+``
+The output format is also a bit nicer that what is shown in `npm run build-dev`.
+
+= OurBigBook Web deployment
 {c}
 {parent=OurBigBook Web}
+
+= OurBigBook Web admin
+{parent=OurBigBook Web deployment}
+
+Each user has an `admin` property which when set to `true` allows the user to basically do anything for themselves and other users. TODO some actions are not possible currently because they were originally hardcoded for "do action for the current user" rather than "do action for target user", but all of those are intended to be converted.
+
+In order to set the property, direct DB acceess is required.
+
+For example, to make user `cirosantilli` admin in a <Heroku deployment> you can run:
+``
+heroku psql -a ourbigbook -c "UPDATE \"User\" SET admin = true WHERE username='cirosantilli'"
+``
+
+= OurBigBook Web database migration setup
+{parent=OurBigBook Web deployment}
+
+Any pending migrations are done automatically during deployment as part of `npm run build`, more precisely they are run from \a[web/bin/sync-db.js].
+
+We also have a custom setup where, if the database is not initialized, we first:
+* just creates the database from the latest model descriptions
+* manually fill in the `SequelizeMeta` migration tracking table with all available migrations to tell Sequelize that all migrations have been done up to this point
+This is something that should be merged into Sequelize itself, or at least asked on Stack Overflow, but lazy now.
+
+= OurBigBook Web email sending
+{parent=OurBigBook Web deployment}
+
+In development mode, emails are all logged to the server stdout.
+
+This is particularly important to know about for verifying the creation of new test users: the verification link should appear in your terminal.
+
+= Heroku deployment
+{c}
+{parent=OurBigBook Web deployment}
 
 Got it running perfectly at as of April 2021 https://ourbigbook.com with the following steps.
 
@@ -6437,16 +6571,6 @@ Further discussion at: https://github.com/cirosantilli/ourbigbook/issues/156
   * Sequelize
   * SQLite for local development, PostgreSQL for deployment
 
-= OurBigBook Web database migration setup
-{parent=OurBigBook Web}
-
-Any pending migrations are done automatically during deployment as part of `npm run build`, more precisely they are run from \a[web/bin/sync-db.js].
-
-We also have a custom setup where, if the database is not initialized, we first:
-* just creates the database from the latest model descriptions
-* manually fill in the `SequelizeMeta` migration tracking table with all available migrations to tell Sequelize that all migrations have been done up to this point
-This is something that should be merged into Sequelize itself, or at least asked on Stack Overflow, but lazy now.
-
 = OurBigBook Web directory structure
 {c}
 {parent=OurBigBook Web}
@@ -6489,104 +6613,6 @@ This section will eventually be moved into the website itself. We'll just likely
   * Article page (and for Index page on user page):
     * E: edit the page
     * L: like or unlike the page. This would require moving like state out of the Like button, which is a bit annoying.
-
-= Step debug the dynamic website
-{parent=OurBigBook Web}
-
-Put a `debugger` statment where you want to break and run:
-``
-npm run devi
-``
-where `i` stands for `inspect` as in `node inspect`.
-
-This pauses at the start of execution. So just run `c` and normal execution resumes until the `debugger;` statement is reached.
-
-= OurBigBook Web unit tests
-{parent=OurBigBook Web}
-
-All our tests are all located inside \a[test.js].
-
-They can be run with:
-``
-cd web
-npm test
-``
-
-The dynamic website tests also uses Mocha just like <test system>[the tests for OurBigBook CLI and OurBigBook Library], so similar usage patterns apply, e.g. to run just a single test:
-``
-npm test -- -g 'substring of test title'
-``
-or to show database queries being done in the tests:
-``
-DEBUG='*:sql:*' npm test
-``
-
-To run the tests on PostgreSQL instead of SQLite, first setup as in <local run as identical to deployment as possible>, and then:
-``
-npm run test-pg
-``
-
-``
-npm run deploy-prod
-``
-
-Note that this will erase all data present in the database used. In order to point to a custom database use:
-``
-DATABASE_URL_TEST=postgres://realworld_next_user:a@localhost:5432/realworld_next_test npm run test-pg
-``
-We don't use `DATABASE_URL` when running tests as a safeguard to reduce the likelihood of accidentally nuking the production database.
-
-The tests include two broad classes of tests:
-* API tests: launch the server on a random port, and run API commands, thus testing the entire backend
-* smaller unit tests that only call certain functions directly
-* TODO: create frontend tests: https://github.com/cirosantilli/node-express-sequelize-nextjs-realworld-example-app/issues/11
-
-= OurBigBook Web Next.js unit tests
-{parent=OurBigBook Web unit tests}
-
-By default, we don't make any requests to Next.js, because starting up Next.js is extremely slow for regular test usage and would drive us crazy.
-
-In regular OurBigBook Web usage through a browser, Next.js handles all GET requests for us, and the API only handles the other modifying methods like POST.
-
-However, we are trying to keep the API working equally well for GET, and also factored out with Next.js, and that's what we use for the testing by default.
-
-But testing Next.js requests before deployment is a must, and is already done by default by `npm run deploy-prod` from <Heroku deployment>, and can be done manually with:
-``
-npm run test-next
-``
-or e.g. to run just a single test:
-``
-npm run test-next -- -g 'api: create an article and see it on global feed'
-``
-for for Postgres:
-``
-npm run test-pg-next
-``
-
-If you are not making any changes to the website itself, e.g. only to the test system, then you can skip the slow rebuild with:
-``
-test-next-nobuild
-``
-
-Note that Next.js tests are just present inside other tests, e.g. `api: create an article and see it on global feed` also tests some stuff when not testing Next.js. Running `npm run test-next` simply enables the Next.js tests on top of the non Next.js ones that get run by default.
-
-These tests can only be run in production mode, and so our scripts automatically rebuild every time before running the tests, which makes things quite slow. This required because in development mode, Next.js is extremelly soft, and e.g. does not raise 500 instead returning a 200 page with error messages. Bad default.
-
-= OurBigBook Web TypeScript type checking
-{parent=OurBigBook Web}
-
-TypeScript type checking of <OurBigBook Web> is run automatically during build, e.g. by:
-``
-npm run build-dev
-``
-as mentioned at <local optimized frontend>.
-
-To speed up the development loop further, you can run just the TypeScript type checking with:
-``
-cd web
-nmp run typecheck
-``
-The output format is also a bit nicer that what is shown in `npm run build-dev`.
 
 = Runtime feature
 {parent=OurBigBook}

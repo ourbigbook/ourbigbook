@@ -32,6 +32,7 @@ module.exports = {
   userEdit: () => `/${escapeUsername}/settings`,
   userLogin: () => `/${escapeUsername}/login`,
   userNew: () => `/${escapeUsername}/register`,
+  userVerify: (email) => `/${escapeUsername}/verify${encodeGetParams({ email })}`,
   userView: (uid) => `/${uid}`,
   userViewTop: (uid, page) => `/${escapeUsername}/user/${uid}/top${getPage(page)}`,
   userViewLikes: (uid, page) => `/${escapeUsername}/user/${uid}/likes${getPage(page)}`,

@@ -21,14 +21,14 @@ function getClientIp(req) {
 }
 
 function getOrder(req) {
-  const [ret, err] = front.getOrder(req)
+  const [sort, err] = front.getOrder(req)
   if (err) {
     throw new ValidationError(
       [`Invalid sort value: '${sort}'`],
       422,
     )
   }
-  return ret
+  return sort
 }
 
 function getLimitAndOffset(req, res) {

@@ -8,22 +8,13 @@ Escape at start of newline only:
 \|| ||
 \| |
 
+Same in list indent:
 
-* Same in list indent:
+* the list
   \* *
   \= =
   \|| ||
   \| |
-
-Same at start of argument:
-
-\Q[\* *]
-
-\Q[\= =]
-
-\Q[\|| ||]
-
-\Q[\| |]
 
 Sane inline element: \i[qwer] after.
 

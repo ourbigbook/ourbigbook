@@ -5679,7 +5679,7 @@ assert_convert_ast('one paragraph implicit split headers',
 
 // Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception, or worse, not blowing up at all!
-assert_error('backslash without macro', '\\ a', 1, 1);
+assert_convert_ast('backslash without macro', '\\ a', [a('P', [t(' a')])],);
 assert_error('unknown macro without args', '\\reserved_undefined', 1, 1);
 assert_error('unknown macro with positional arg', '\\reserved_undefined[aa]', 1, 1);
 assert_error('unknown macro with named arg', '\\reserved_undefined{aa=bb}', 1, 1);
@@ -5709,12 +5709,57 @@ it(`api: x does not blow up without ID provider`, async function () {
 
 // TODO
 const bigb_input = fs.readFileSync(path.join(__dirname, 'test_bigb_output.bigb'), ourbigbook_nodejs_webpack_safe.ENCODING)
-assert_convert_ast('bigb output format is unchanched for the preferred format',
+assert_convert_ast('bigb output format is unchanged for the preferred format',
   // https://github.com/cirosantilli/ourbigbook/issues/83
   bigb_input,
   undefined,
   {
     bigb: bigb_input,
+  },
+);
+assert_convert_ast('bigb output converts plaintext arguments with escapes to literal arguments when possible',
+  `\\Q[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$]
+
+\\Q[\\* *]
+
+\\Q[\\= =]
+
+\\Q[\\|| ||]
+
+\\Q[\\| |]
+
+\\Q[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$ \\i[asdf]]
+
+\\Q[\\* \\i[asdf]]
+
+\\Q[\\= \\i[asdf]]
+
+\\Q[\\|| \\i[asdf]]
+
+\\Q[\\| \\i[asdf]]
+`,
+  undefined,
+  {
+    bigb: `\\Q[[\\ [ ] { } < \` $]]
+
+\\Q[[* *]]
+
+\\Q[[= =]]
+
+\\Q[[|| ||]]
+
+\\Q[[| |]]
+
+\\Q[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$ \\i[asdf]]
+
+\\Q[\\* \\i[asdf]]
+
+\\Q[\\= \\i[asdf]]
+
+\\Q[\\|| \\i[asdf]]
+
+\\Q[\\| \\i[asdf]]
+`
   },
 );
 assert_convert_ast('bigb output converts sane refs to insane ones',

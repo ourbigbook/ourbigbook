@@ -1499,7 +1499,7 @@ class Tokenizer {
         this.consume();
         if (this.is_end()) {
           // Maybe this should be an error.
-        } else if (ESCAPABLE_CHARS.has(this.cur_c)) {
+        } else if (!char_is_identifier(this.cur_c)) {
           this.consume_plaintext_char();
         } else {
           // Insane link.
@@ -2320,8 +2320,9 @@ function char_is_alphanumeric(c) {
 
 // Valid macro name / argument characters.
 // Compatible with JavaScript-like function names / variables.
+// https://cirosantilli.com/ourbigbook#macro-identifier
 function char_is_identifier(c) {
-  return char_is_alphanumeric(c) || c === '_';
+  return char_is_alphanumeric(c)
 };
 
 /** Shallow clone an object, and set a given value on the cloned one. */
@@ -6475,16 +6476,6 @@ const NAMED_ARGUMENT_EQUAL_CHAR = '=';
 const START_NAMED_ARGUMENT_CHAR = '{';
 exports.START_NAMED_ARGUMENT_CHAR = START_NAMED_ARGUMENT_CHAR;
 const START_POSITIONAL_ARGUMENT_CHAR = '[';
-const ESCAPABLE_CHARS = new Set([
-  ESCAPE_CHAR,
-  START_POSITIONAL_ARGUMENT_CHAR,
-  END_POSITIONAL_ARGUMENT_CHAR,
-  START_NAMED_ARGUMENT_CHAR,
-  END_NAMED_ARGUMENT_CHAR,
-  INSANE_LIST_START[0],
-  INSANE_TD_START[0],
-  INSANE_X_START,
-]);
 const INSANE_LINK_END_CHARS = new Set([
   ' ',
   '\n',
@@ -6498,9 +6489,6 @@ const INSANE_STARTS_TO_MACRO_NAME = {
   [INSANE_TD_START]: Macro.TD_MACRO_NAME,
   [INSANE_TH_START]: Macro.TH_MACRO_NAME,
 };
-for (const c in MAGIC_CHAR_ARGS) {
-  ESCAPABLE_CHARS.add(c);
-}
 const AstType = make_enum([
   // An in-output error message.
   'ERROR',
@@ -8338,19 +8326,27 @@ function ourbigbook_prefer_literal(ast, context, ast_arg, arg, open, close) {
   let delim_repeat
   const argname = arg.name
   if (
-    arg.ourbigbook_output_prefer_literal &&
     ast_arg.asts.length === 1 &&
     ast_arg.asts[0].node_type === AstType.PLAINTEXT
   ) {
-    rendered_arg = render_arg(ast_arg, clone_and_set(context, 'in_literal', true))
-    delim_repeat = 2
-    while (
-      rendered_arg.indexOf(open.repeat(delim_repeat)) !== -1 ||
-      rendered_arg.indexOf(close.repeat(delim_repeat)) !== -1
+    const rendered_arg_non_literal = render_arg(ast_arg, context)
+    if (
+      // Prefer literals if any escapes would be needed.
+      arg.ourbigbook_output_prefer_literal ||
+      rendered_arg_non_literal !== ast_arg.asts[0].text
     ) {
-      delim_repeat++
+      rendered_arg = ast_arg.asts[0].text
+      delim_repeat = 2
+      while (
+        rendered_arg.indexOf(open.repeat(delim_repeat)) !== -1 ||
+        rendered_arg.indexOf(close.repeat(delim_repeat)) !== -1
+      ) {
+        delim_repeat++
+      }
     }
-  } else {
+  }
+  if (!rendered_arg) {
+    // Not a literal.
     delim_repeat = 1
     rendered_arg = render_arg(ast_arg, context)
   }

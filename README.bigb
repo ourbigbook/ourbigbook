@@ -4287,6 +4287,18 @@ nice
 ```
 ]]
 
+= Macro identifier
+{parent=ourbigbook-markup-syntax}
+
+<OurBigBook Markup> macro identifiers can consist of the following letters:
+* `a-z` lowercase
+* `A-Z` uppercase
+* `0-9`
+Since underscores `_`  or hyphens `=` are not allowed, https://en.wikipedia.org/wiki/Camel_case[camel case] macro names are recommended, e.g. for <ourbigbookexample> we use the name:
+``
+OurBigBookExample
+``
+
 = Macro argument syntax
 {parent=ourbigbook-markup-syntax}
 
@@ -4579,19 +4591,24 @@ and the `id` gets assigned to the header rather than the trailing code element.
 = Escape characters
 {parent=macro-argument-syntax}
 
-For \x[literal-arguments][non-literal macro arguments], you have to use a backslash to escapeevery single:
+Every character that cannot be a <macro identifier> can be escaped with a backslash `\`. If you try to escape a macro identifier it of course treats the thing as a macro instead and fails, e.g. in `\a` it would try to use a macro called `\a`, not escape the character `a`.
+
+For some characters, escaping or not does not make any difference because they don't have any meaning to <ourbigbook markup>, e.g. currently `%` is always the exact same as `\%`.
+
+But in \x[literal-arguments][non-literal macro arguments], you have to use a backslash to escape the following if you want them to not have any magical meaning:
 * `\`: backslashes start macros
-* `\` and `\`: open and close \x[positional-vs-named-arguments][positional macro arguments]
-* `\` and `\`: open and close \x[positional-vs-named-arguments][optional macro arguments]
-* `<` (open angle brackets, less than sign): \x[insane-macro-shortcut] for \x[insane-internal-cross-reference]{p}
-* `$` (dollar sign): \x[insane-macro-shortcut] for \x[mathematics]
-* \c[[`]] (backtick): \x[insane-macro-shortcut] for \x[code-block]{p}
+* `\[` and `\]`: open and close \x[positional-vs-named-arguments][positional macro arguments]
+* `\{` and `\}`: open and close \x[positional-vs-named-arguments][optional macro arguments]
+* escapes for <macros with insane shortcut>:
+  * `<` (open angle brackets, less than sign): \x[insane-macro-shortcut] for \x[insane-internal-cross-reference]{p}
+  * `$` (dollar sign): \x[insane-macro-shortcut] for \x[mathematics]
+  * \c[[`]] (backtick): \x[insane-macro-shortcut] for \x[code-block]{p}
 
 Furthermore, only at:
 * at the start of the document
 * after a newline
 * at the start of a new argument
-you must also escape:
+you must also escape the following <macros with insane shortcut>:
 * `* ` for insane <lists>
 * `| ` and `|| ` for insane <tables>
 * `= ` for insane <headers>

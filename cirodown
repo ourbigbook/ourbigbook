@@ -11,9 +11,9 @@ const AstNode = class {
    * @param {String} macro_name - if node_type === AstType.PLAINTEXT: fixed to 'plaintext'
    *                              elif node_type === AstType.PARAGRAPH: fixed to undefined
    *                              else: arbitrary regular macro
-   * @param {Object[String, Array[AstNode]|String} args
+   * @param {Object[String, Array[AstNode]|String]} args -
    *        If type is macro, the Object with child args.
-   *        Otherwise, it ype is text, , the raw String.
+   *        Otherwise, it type is text, the raw String.
    * @param {Number} line - the best representation of where the macro is starts in the document
    *                        used primarily to present useful debug messages
    * @param {Number} column
@@ -27,7 +27,9 @@ const AstNode = class {
     this.line = line;
     this.column = column;
     const macro = macros[this.macro_name];
-    // Store which args were given or not.
+
+    // Set all non-given arguments to empty plaintext nodes by default,
+    // and store which args were given or not.
     this.args_given = new Set();
     if (this.node_type === AstType.MACRO) {
       for (const arg_name in macro.name_to_arg) {
@@ -35,8 +37,17 @@ const AstNode = class {
           this.args_given.add(arg_name);
         } else {
           // Default arguments not given to ''.
-          this.args[arg_name] = '';
+          this.args[arg_name] = [new AstNode(
+            AstType.PLAINTEXT, 'plaintext', '', this.line, this.column)];
         }
+      }
+    }
+
+    // Set the parents of all children.
+    this.parent_node = undefined;
+    if (this.node_type === AstType.MACRO) {
+      for (const arg_name in this.args) {
+        this.args[arg_name].parent_node = this;
       }
     }
   }
@@ -55,7 +66,7 @@ const AstNode = class {
     return {
       node_type:  this.node_type.toString(),
       macro_name: this.macro_name,
-      args:       this.args,
+      args:       object_subset(this.args, this.args_given),
       line:       this.line,
       column:     this.column
     }
@@ -226,6 +237,13 @@ const array_equals = function(arr1, arr2) {
   return true;
 }
 
+// https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties/17781518#17781518
+const object_subset = function(source_object, keys) {
+  const new_object = {};
+  keys.forEach((obj, key) => { new_object[key] = source_object[key]; });
+  return new_object;
+}
+
 /**
  * Convert a list of arguments and join them up.
  *
@@ -367,13 +385,8 @@ let macro_list = [
       }),
     ],
     function(ast, options, is_attr) {
-      return `<li${html_convert_attrs(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</li>`;
+      return `<li${html_convert_attrs(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</li>\n`;
     },
-    {
-      properties: {
-        phrasing: true,
-      }
-    }
   ),
   new Macro(
     'p',
@@ -421,18 +434,18 @@ let macro_list = [
       if (ast.args_given.has('title')) {
         title = ast.args.title;
       } else {
+        let text_title;
         if ('title' in options) {
-          title = options['title'];
+          text_title = options['title'];
         } else {
           let message = 'missing title';
-          title = IN_OUTPUT_ERROR_PREFIX + message;
+          text_title = IN_OUTPUT_ERROR_PREFIX + message;
           if (!options.body_only) {
             extra_returns.errors.push(new ErrorMessage(message, line, column));
           }
         }
-        title = [new AstNode(AstType.PLAINTEXT, 'plaintext', title, 1, 1)];
+        title = [new AstNode(AstType.PLAINTEXT, 'plaintext', text_title, 1, 1)];
       }
-      debugger;
       let ret = '';
       if (!options.body_only) {
         ret += `<!doctype html>
@@ -459,6 +472,17 @@ pre {
       }
       return ret;
     }
+  ),
+  new Macro(
+    'ul',
+    [
+      new MacroArgument({
+        name: 'content',
+      }),
+    ],
+    function(ast, options, is_attr) {
+      return `<ul${html_convert_attrs(ast, options)}>\n${convert_arg(ast.args.content, options, is_attr)}</ul>\n`;
+    },
   ),
 ];
 
@@ -807,8 +831,9 @@ const parse = function(tokens, options, extra_returns={}) {
     parse_report_error(state, `unexpected tokens at the end of input`);
   }
 
-  // Post process the AST to support the insane paragraphs double newline syntax.
-  // Loop over it, search for all PARAGRAPH entries, and add paragraph nodes.
+  // Post process the AST breadth first to support:
+  // * the insane but necessary paragraphs double newline syntax
+  // * automatic ul parent to li and table to tr
   let todo_visit = [ast];
   while (todo_visit.length > 0) {
     const node = todo_visit.shift();

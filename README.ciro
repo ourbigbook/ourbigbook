@@ -834,6 +834,18 @@ npm test -- 'one paragraph'
 
 As per: https://stackoverflow.com/questions/10832031/how-to-run-a-single-test-with-mocha TODO: what if the test name is a substring?
 
+TODO not working: step debug during a test run. Add the statement:
+
+\C[[
+debugger;
+]]
+
+to where you want to break in the code, and then:
+
+\C[[
+node inspect ./node_modules/.bin/mocha test --ignore-leaks "-g" "p with id before"
+]]
+
 \h[3][Internals API]
 
 Tokenized token stream and AST can be obtained as JSON from the API.

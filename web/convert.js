@@ -1,3 +1,5 @@
+const lodash = require('lodash')
+
 const ourbigbook = require('ourbigbook')
 const {
   update_database_after_convert,
@@ -8,7 +10,7 @@ const {
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 
 const { ValidationError } = require('./api/lib')
-const { convertOptions, convertOptionsJson } = require('./front/config')
+const { convertOptions } = require('./front/config')
 const { modifyEditorInput } = require('./front/js')
 
 // This does the type of stuff that OurBigBook CLI does for CLI
@@ -40,16 +42,16 @@ async function convert({
   const input_path = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${path}`
   await ourbigbook.convert(
     input,
-    Object.assign({
+    lodash.merge({
       id_provider,
       file_provider,
       input_path,
-      ourbigbook_json: Object.assign({
+      ourbigbook_json: {
         h: {
           splitDefault: true,
           splitDefaultNotToplevel: true,
         },
-      }, convertOptionsJson),
+      },
       read_include: ourbigbook_nodejs_webpack_safe.read_include({
         exists: async (inpath) => {
           const suf = ourbigbook.Macro.HEADER_SCOPE_SEPARATOR + ourbigbook.INDEX_BASENAME_NOEXT

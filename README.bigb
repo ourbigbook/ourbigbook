@@ -3495,6 +3495,15 @@ it gets expanded exactly to the sane equivalent:
 ``
 so we see that the \x[x-magic-argument] gets added. It is that argument that for example adds the missing `-`, and removes the pluralization to find the correct ID `internal-cross-reference`.  For more details, see the documentation of the \x[x-magic-argument].
 
+Like other <insane> constructs, <insane internal cross references> are exactly equivalent to the sane version, so you can just add other arguments after the construct, e.g.:
+\OurbigbookExample[[
+<Internal cross references>{full} are awesome.
+]]
+which gets converted to exact the same as the sane:
+\OurbigbookExample[[
+\x[internal-cross-reference]{full} are awesome.
+]]
+
 = Cross reference title inflection
 {parent=internal-cross-reference}
 
@@ -4113,6 +4122,8 @@ If given e.g. as in:
 ``
 the link treated magically as follows:
 * the content equals the link, i.e. the content will be `Internal references`
+
+  If the \x[x-full-argument] is also given however, then `full` takes priority instead.
 * the ID is calculated as follows:
   * the last word is singularized as in the `x-p-argument` with `p=0`, giving `Internal reference`
   * \x[automatic-id-from-title] conversion is performed, , giving `internal-reference`
@@ -4402,9 +4413,9 @@ To also show the section auto-generated number as in "Section X.Y My title" we a
 Name arguments marked in \x[help-macros] as `boolean: true` must either:
 * take no value and no `=` sign, in which case the value is implicitly set to `1`
 * take value exactly `0` or `1`
-* not be given, in which case a custom per-macro default is used. Tha value is the `default` from \x[help-macros], or `0` if such default is not given
+* not be given, in which case a custom per-macro default is used. That value is the `default` from \x[help-macros], or `0` if such default is not given
 
-For example, \x[x-full-argument][the `full` argument] of \x[internal-cross-reference]{p} is correctly written as:
+For example, the \x[x-full-argument] of <internal cross references> is correctly written as:
 \OurbigbookExample[[
 \x[boolean-argument]{full}
 ]]

@@ -5896,7 +5896,7 @@ function x_get_href_content(ast, context) {
   const content_arg = ast.args.content;
   let content;
   if (content_arg === undefined) {
-    if (ast.validation_output.magic.boolean) {
+    if (ast.validation_output.magic.boolean && !ast.validation_output.full.boolean) {
       content = target_id
     } else {
       // No explicit content given, deduce content from target ID title.
@@ -7884,11 +7884,40 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       let [href, content, target_ast] = x_get_href_content(ast, context);
-      if (
-        ast.validation_output.full.given &&
-        ast.validation_output.ref.given
-      ) {
-        const message = `"full" and "ref" are incompatible`;
+      let incompatible_pair
+      if (ast.validation_output.full.given) {
+        if (ast.validation_output.ref.given) {
+          incompatible_pair = ['full', 'ref']
+        }
+        if (ast.validation_output.content.given) {
+          incompatible_pair = ['full', 'content']
+        }
+        if (ast.validation_output.c.given) {
+          incompatible_pair = ['full', 'c']
+        }
+        if (ast.validation_output.p.given) {
+          incompatible_pair = ['full', 'p']
+        }
+      } else if (ast.validation_output.content.given) {
+        if (ast.validation_output.ref.given) {
+          incompatible_pair = ['content', 'ref']
+        }
+        if (ast.validation_output.c.given) {
+          incompatible_pair = ['content', 'c']
+        }
+        if (ast.validation_output.p.given) {
+          incompatible_pair = ['content', 'p']
+        }
+      } else if (ast.validation_output.ref.given) {
+        if (ast.validation_output.c.given) {
+          incompatible_pair = ['ref', 'c']
+        }
+        if (ast.validation_output.p.given) {
+          incompatible_pair = ['ref', 'p']
+        }
+      }
+      if (incompatible_pair) {
+        const message = `"${incompatible_pair[0]}" and "${incompatible_pair[1]}" are incompatible`;
         render_error(context, message, ast.source_location);
         content = error_message_in_output(message, context);
       } else if (ast.validation_output.ref.boolean) {

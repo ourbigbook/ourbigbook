@@ -7,9 +7,9 @@ import ListErrors from 'front/ListErrors'
 import LogoutButton from 'front/LogoutButton'
 import { AppContext, useCtrlEnterSubmit  } from 'front'
 import UserAPI from 'front/api/user'
-import checkLogin from 'checkLogin'
+import checkLogin from 'front/checkLogin'
 import useLoggedInUser from 'front/useLoggedInUser'
-import storage from 'storage'
+import storage from 'front/storage'
 import routes from 'routes'
 
 const Settings = () => {

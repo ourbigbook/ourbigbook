@@ -2,6 +2,8 @@ import React from 'react'
 
 import cirodown from 'cirodown/dist/cirodown.js';
 
+export const AUTH_COOKIE_NAME = 'auth'
+export const AUTH_LOCAL_STORAGE_NAME = 'user'
 export const LOGIN_ACTION = 'Sign in'
 export const REGISTER_ACTION = 'Sign up'
 

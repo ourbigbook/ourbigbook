@@ -9,8 +9,8 @@ import { articleLimit, fallback } from 'front/config'
 //
 //export const getServerSidePropsIndexHoc = (what): GetServerSideProps => {
 export const getServerSidePropsIndexHoc = (what) => {
-  return async ({ req }) => {
-    const loggedInUser = await getLoggedInUser(req)
+  return async ({ req, res }) => {
+    const loggedInUser = await getLoggedInUser(req, res)
     const page = req?.params?.page ? parseInt(req.params.page as string, 10) - 1: 0
     let order
     let loggedInQuery

@@ -7285,9 +7285,7 @@ assert_cli('include: tags show on embed include',
   {
     args: ['--embed-includes', 'index.bigb'],
     pre_exec: [
-      {
-        cmd: ['ourbigbook', ['.']],
-      },
+      { cmd: ['ourbigbook', ['.']], },
     ],
     filesystem: {
       'index.bigb': `= Index
@@ -8589,6 +8587,41 @@ assert_cli(
       'out/html/notindex.html': [xpath_header(1, 'notindex')],
       'out/html/notindex2.html': [xpath_header(1, 'notindex2')],
     }
+  }
+)
+assert_cli(
+  '--no-render prevents rendering',
+  {
+    args: ['--no-render', 'notindex.bigb'],
+    filesystem: {
+      'notindex.bigb': `= Notindex\n`,
+    },
+    assert_exists: [
+      'out/db.sqlite3'
+    ],
+    assert_not_exists: [
+      'out/html/notindex.html'
+    ],
+  }
+)
+assert_cli(
+  '--check-db exits with error status on failure',
+  {
+    pre_exec: [
+      { cmd: ['ourbigbook', ['--no-check-db', '--no-render', '.']], },
+    ],
+    args: ['--check-db'],
+    filesystem: {
+      'notindex.bigb': `= Notindex
+
+== Duplicated
+`,
+      'notindex2.bigb': `= Notindex2
+
+== Duplicated
+`,
+    },
+    assert_exit_status: 1,
   }
 )
 const complex_filesystem = {

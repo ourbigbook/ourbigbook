@@ -86,8 +86,8 @@ class SqliteIdProvider extends cirodown.IdProvider {
 
   async get_noscope_entries(ids, ignore_paths_set, options={}) {
     if (!('use_db' in options)) {
-      // TODO set to false.
-      options.use_db = true
+      // TODO remove this entirely, never use_db here.
+      options.use_db = false
     }
     const cached_asts = []
     const non_cached_ids = []

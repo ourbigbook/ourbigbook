@@ -3649,6 +3649,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   const add_refs_to_h = []
   const add_refs_to_x = []
   const header_ids = []
+  const include_hrefs = {}
   while (todo_visit.length > 0) {
     const [parent_arg, ast] = todo_visit.pop();
     let parent_arg_push_after = []
@@ -3720,27 +3721,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             );
             context.include_path_set.add(include_path);
           } else {
-            // TODO move this DB query to the end of parsing or make it a render-only thing
-            // with a new synthetic Include macro.
-            const target_id_ast = await context.id_provider.get(href, context);
-            const from_include = true;
-            let header_node_title;
-            if (target_id_ast === undefined) {
-              let message = `ID in include not found on database: "${href}", ` +
-                `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
-              header_node_title = error_message_in_output(message);
-              // Don't do an error if we are not going to render, because this is how
-              // we extract IDs on the first pass of ./cirodown .
-              if (options.render) {
-                parse_error(state, message);
-              }
-            } else {
-              const x_text_options = {
-                show_caption_prefix: false,
-                style_full: false,
-              };
-              header_node_title = await x_text(target_id_ast, context, x_text_options);
-            }
+            const from_include = true
             // Don't merge into a single file, render as a dummy header and an xref link instead.
             const header_ast = new AstNode(
               AstType.MACRO,
@@ -3753,9 +3734,10 @@ async function parse(tokens, options, context, extra_returns={}) {
                     )
                   ],
                 ),
-                [Macro.TITLE_ARGUMENT_NAME]: new AstArgument(
-                  [
-                    new PlaintextAstNode(header_node_title)
+                [Macro.TITLE_ARGUMENT_NAME]: new AstArgument( [
+                    // Will be patched in later in order to group all DB queries at the end of parse,
+                    // as this requires getting an ID from DB.
+                    new PlaintextAstNode('TODO patchme')
                   ],
                 ),
               },
@@ -3767,11 +3749,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                 level: parent_ast_header_level + 1,
               },
             );
-            // This is a bit nasty and duplicates the below header processing code,
-            // but it is a bit hard to factor them out since this is a magic include header,
-            // and all includes and headers must be parsed concurrently since includes get
-            // injected under the last header.
-            await validate_ast(header_ast, context);
+            include_hrefs[href] = header_ast
             header_ast.header_graph_node = new HeaderTreeNode(header_ast, parent_ast_header_graph_node);
             parent_ast_header_graph_node.add_child(header_ast.header_graph_node);
             new_child_nodes = [
@@ -4630,19 +4608,21 @@ async function parse(tokens, options, context, extra_returns={}) {
   perf_print(context, 'db_queries')
 
   if (options.id_provider !== undefined) {
-    const prefetch_ids = new Set(header_ids)
 
     // Prefetch IDs for setup refs DB.
-    const prefetch_ids_ref_dbs = new Set()
+    const prefetch_ids = new Set()
     for (const ref of add_refs_to_h) {
       const id = await render_arg_noescape(ref.content, context)
-      prefetch_ids_ref_dbs.add(id)
+      prefetch_ids.add(id)
       ref.target_id = id
     }
     for (const ref of add_refs_to_x) {
       const id = await render_arg_noescape(ref.ast.args.href, context)
-      prefetch_ids_ref_dbs.add(id)
+      prefetch_ids.add(id)
       ref.target_id = id
+    }
+    for (const id in include_hrefs) {
+      prefetch_ids.add(id)
     }
 
     // Prefetch File queries.
@@ -4650,6 +4630,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     // entry that it targets. This is used by \x rendering to decide
     // if the target is the toplevel or not, since for the toplevel
     // the fragment becomes empty.
+    const prefetch_refs_ids = new Set(header_ids)
     const prefetch_file_ids = new Set()
     const refs_to_true = context.refs_to[true]
     for (const from_id in refs_to_true) {
@@ -4657,7 +4638,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       if (refs_to_true_from_id_x !== undefined) {
         for (const to_id in refs_to_true_from_id_x) {
           prefetch_file_ids.add(to_id)
-          prefetch_ids.add(to_id)
+          prefetch_refs_ids.add(to_id)
         }
       }
     }
@@ -4675,11 +4656,11 @@ async function parse(tokens, options, context, extra_returns={}) {
       id_conflict_asts_promise = true
     }
 
-    const prefetch_ids_arr = Array.from(prefetch_ids)
+    const prefetch_refs_ids_arr = Array.from(prefetch_refs_ids)
     const [id_conflict_asts,,,] = await Promise.all([
       id_conflict_asts_promise,
       options.id_provider.get_noscope_entries(
-        prefetch_ids_ref_dbs,
+        prefetch_ids,
         undefined,
         { use_db: true },
       ),
@@ -4698,14 +4679,14 @@ async function parse(tokens, options, context, extra_returns={}) {
           // This is needed for the Incoming links at the bottom of each output file.
           REFS_TABLE_X,
         ],
-        prefetch_ids_arr,
+        prefetch_refs_ids_arr,
       ),
       // This is needed to generate the "tagged" at the end of each output file.
       options.id_provider.get_refs_to_warm_cache(
         [
           REFS_TABLE_X_CHILD,
         ],
-        prefetch_ids_arr,
+        prefetch_refs_ids_arr,
         true
       ),
     ])
@@ -4788,6 +4769,36 @@ async function parse(tokens, options, context, extra_returns={}) {
     if (prefetch_files.size) {
       await context.options.file_provider.get_path_entry_warm_cache(Array.from(prefetch_files))
     }
+  }
+
+  // Patch the ID of the include headers.
+  // Deferred here after ID cache warming to group all DB queries.
+  for (const href in include_hrefs) {
+    const header_ast = include_hrefs[href]
+    const target_id_ast = await context.id_provider.get(href, context);
+    let header_node_title;
+    if (target_id_ast === undefined) {
+      let message = `ID in include not found on database: "${href}", ` +
+        `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
+      header_node_title = error_message_in_output(message);
+      // Don't do an error if we are not going to render, because this is how
+      // we extract IDs on the first pass of ./cirodown .
+      if (options.render) {
+        parse_error(state, message);
+      }
+    } else {
+      const x_text_options = {
+        show_caption_prefix: false,
+        style_full: false,
+      };
+      header_node_title = await x_text(target_id_ast, context, x_text_options);
+    }
+    header_ast.args[Macro.TITLE_ARGUMENT_NAME][0].text = header_node_title
+    // This is a bit nasty and duplicates the below header processing code,
+    // but it is a bit hard to factor them out since this is a magic include header,
+    // and all includes and headers must be parsed concurrently since includes get
+    // injected under the last header.
+    await validate_ast(header_ast, context);
   }
 
   perf_print(context, 'post_process_end')

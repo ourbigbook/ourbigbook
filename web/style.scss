@@ -42,9 +42,9 @@ overflow: auto;
 }
 
 button, a.btn {
-  $button-fg-color: black;
+  $button-fg-color: #E8E6E3;
   border-radius: 3px;
-  border: 1px solid $button-fg-color;
+  border: 2px solid #666666;
   cursor: pointer;
   display: inline-block;
   font-size: 15px;
@@ -56,7 +56,7 @@ button, a.btn {
   vertical-align: middle;
   &:not(.disabled):not(.disabled-hover) {
     &, &:hover.active {
-      background-color: rgb(239, 239, 239);
+      background-color: #181818;
       color: $button-fg-color;
       i.ion-heart {
         color: $like-button-active-color;

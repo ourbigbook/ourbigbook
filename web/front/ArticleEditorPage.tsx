@@ -132,7 +132,7 @@ export default function ArticleEditorPageHoc({
           ;({ data, status } = await webApi.issueEdit(slugString, router.query.number, file))
         } else {
           const path = slugFromArray(ourbigbook.path_splitext(initialFile.path)[0].split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR), { username: false })
-          const opts = {}
+          const opts: { path?: string } = {}
           if (path) {
             opts.path = path
           }

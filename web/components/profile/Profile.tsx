@@ -24,8 +24,6 @@ const ProfileHoc = (tab) => {
       profile = profileApi.user
     }
     const username = profile?.username
-    const bio = profile?.bio
-    const image = profile?.effectiveImage
     const loggedInUser = getLoggedInUser()
     const isCurrentUser = loggedInUser && username === loggedInUser?.username
     const [following, setFollowing] = React.useState(false)
@@ -41,12 +39,14 @@ const ProfileHoc = (tab) => {
         <div className="profile-page content-not-cirodown">
           <div className="user-info">
             <h1>{username}</h1>
+            <p>Article score sum: { profile.articleScoreSum }</p>
+            <p>Followers: { profile.followerCount }</p>
             <CustomImage
-              src={image}
+              src={profile.effectiveImage}
               alt="User's profile image"
               className="user-img"
             />
-            <p>{bio}</p>
+            <p>{profile.bio}</p>
             {isCurrentUser &&
               <LogoutButton />
             }
@@ -55,18 +55,25 @@ const ProfileHoc = (tab) => {
               <FollowUserButton profile={profile} />
             </FollowUserButtonContext.Provider>
           </div>
+          <h2>Articles</h2>
           <div className="tab-list">
             <CustomLink
               href={routes.userView(username)}
-              className={`tab-item${tab === 'my-posts' ? ' active' : ''}`}
+              className={`tab-item${tab === 'my-articles-top' ? ' active' : ''}`}
             >
-              Authored Articles
+              Top
+            </CustomLink>
+            <CustomLink
+              href={routes.userViewLatest(username)}
+              className={`tab-item${tab === 'my-articles-latest' ? ' active' : ''}`}
+            >
+              Latest
             </CustomLink>
             <CustomLink
               href={routes.userViewFavorites(username)}
               className={`tab-item${tab === 'favorites' ? ' active' : ''}`}
             >
-              Favorited Articles
+              Favorited
             </CustomLink>
           </div>
           <ArticleList what={tab} />

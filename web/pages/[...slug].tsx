@@ -88,59 +88,60 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
       </Head>
       <div className="article-page">
         <div className="banner content-not-cirodown">
-          <FavoriteArticleButtonContext.Provider value={{
-            favorited, setFavorited, score, setScore
-          }}>
-            <FollowUserButtonContext.Provider value={{
-              following, setFollowing
-            }}>
-              <div className="article-meta">
-                <div className="article-info">
-                  <UserLinkWithImage user={article.author} />
-                  {' Created: '}
-                  {formatDate(article.createdAt)}
-                  {article.createdAt !== article.updatedAt &&
-                    <>
-                      {' '}
-                      Updated: {formatDate(article.updatedAt)}
-                    </>
-                  }
-                </div>
-                <div className="article-info article-info-2">
+          <div className="article-meta">
+            <div className="article-info">
+              <UserLinkWithImage user={article.author} />
+              {' '}
+              <FollowUserButtonContext.Provider value={{
+                following, setFollowing
+              }}>
+                <FollowUserButton profile={article.author} showUsername={false} />
+              </FollowUserButtonContext.Provider>
+              <Maybe test={canModify}>
+                <span>
                   <CustomLink
-                    href={routes.topicArticlesView(article.topicId)}
+                    href={routes.articleEdit(article.slug)}
+                    className="btn"
                   >
-                    <i className="ion-ios-people" /> Top articles by other authors about the same topic
+                    <i className="ion-edit" /> Edit
                   </CustomLink>
-                </div>
-                <div className="article-actions">
-                  <FavoriteArticleButton
-                    favorited={article.favorited}
-                    score={article.score}
-                    slug={article.slug}
-                    showText={false}
-                  />
-                  <Maybe test={canModify}>
-                    <span>
-                      <CustomLink
-                        href={routes.articleEdit(article.slug)}
-                        className="btn"
-                      >
-                        <i className="ion-edit" /> Edit
-                      </CustomLink>
-                      <button
-                        className="btn"
-                        onClick={handleDelete}
-                      >
-                        <i className="ion-trash-a" /> Delete
-                      </button>
-                    </span>
-                  </Maybe>
-                  <FollowUserButton profile={article.author} />
-                </div>
-              </div>
-            </FollowUserButtonContext.Provider>
-          </FavoriteArticleButtonContext.Provider>
+                  <button
+                    className="btn"
+                    onClick={handleDelete}
+                  >
+                    <i className="ion-trash-a" /> Delete
+                  </button>
+                </span>
+              </Maybe>
+            </div>
+            <div className="article-info article-info-2">
+              <CustomLink
+                href={routes.topicArticlesView(article.topicId)}
+              >
+                <i className="ion-ios-people" /> Top articles by other authors about the same topic
+              </CustomLink>
+            </div>
+            <div className="article-actions">
+              <FavoriteArticleButtonContext.Provider value={{
+                favorited, setFavorited, score, setScore
+              }}>
+                <FavoriteArticleButton
+                  favorited={article.favorited}
+                  score={article.score}
+                  slug={article.slug}
+                  showText={false}
+                />
+              </FavoriteArticleButtonContext.Provider>
+              {' Created: '}
+              {formatDate(article.createdAt)}
+              {article.createdAt !== article.updatedAt &&
+                <>
+                  {' '}
+                  Updated: {formatDate(article.updatedAt)}
+                </>
+              }
+            </div>
+          </div>
         </div>
         <div className="container page">
           <div

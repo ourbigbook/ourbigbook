@@ -35,7 +35,11 @@ const ArticleList = (props) => {
         return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&favorited=${encodeURIComponent(
           String(uid)
         )}&offset=${page * DEFAULT_LIMIT}`
-      case 'my-posts':
+      case 'my-articles-top':
+        return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&author=${encodeURIComponent(
+          String(uid)
+        )}&offset=${page * DEFAULT_LIMIT}&sort=score`;
+      case 'my-articles-latest':
         return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&author=${encodeURIComponent(
           String(uid)
         )}&offset=${page * DEFAULT_LIMIT}`;

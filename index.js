@@ -6923,12 +6923,12 @@ const DEFAULT_MACRO_LIST = [
               body += `<div>${html_hide_hover_link('#ancestors')}<h2 id="#ancestors"><a href="#ancestors">Ancestors</a></h2></div>\n`;
               const ancestor_id_asts = [];
               for (const ancestor of ancestors) {
-                let counts_str;
-                if (ancestor.header_graph_node !== undefined) {
-                  counts_str = get_descendant_count_html_sep(ancestor.header_graph_node, false);
-                } else {
-                  counts_str = '';
-                }
+                //let counts_str;
+                //if (ancestor.header_graph_node !== undefined) {
+                //  counts_str = get_descendant_count_html_sep(ancestor.header_graph_node, false);
+                //} else {
+                //  counts_str = '';
+                //}
                 ancestor_id_asts.push(new AstNode(
                   AstType.MACRO,
                   Macro.LIST_MACRO_NAME,
@@ -6947,21 +6947,21 @@ const DEFAULT_MACRO_LIST = [
                             'c': new AstArgument(),
                           },
                         ),
-                        new AstNode(
-                          AstType.MACRO,
-                          'passthrough',
-                          {
-                            'content': new AstArgument(
-                              [
-                                new PlaintextAstNode(counts_str),
-                              ],
-                            ),
-                          },
-                          undefined,
-                          {
-                            xss_safe: true,
-                          }
-                        ),
+                        //new AstNode(
+                        //  AstType.MACRO,
+                        //  'passthrough',
+                        //  {
+                        //    'content': new AstArgument(
+                        //      [
+                        //        new PlaintextAstNode(counts_str),
+                        //      ],
+                        //    ),
+                        //  },
+                        //  undefined,
+                        //  {
+                        //    xss_safe: true,
+                        //  }
+                        //),
                       ],
                     ),
                   },
@@ -7301,12 +7301,12 @@ async function create_link_list(context, ast, id, title, target_ids, body) {
         // The error is caught elsewhere.
         target_ast !== undefined
       ) {
-        let counts_str;
-        if (target_ast.header_graph_node !== undefined) {
-          counts_str = get_descendant_count_html_sep(target_ast.header_graph_node, false);
-        } else {
-          counts_str = '';
-        }
+        //let counts_str;
+        //if (target_ast.header_graph_node !== undefined) {
+        //  counts_str = get_descendant_count_html_sep(target_ast.header_graph_node, false);
+        //} else {
+        //  counts_str = '';
+        //}
         target_id_asts.push(new AstNode(
           AstType.MACRO,
           Macro.LIST_MACRO_NAME,
@@ -7325,21 +7325,21 @@ async function create_link_list(context, ast, id, title, target_ids, body) {
                     'c': new AstArgument(),
                   },
                 ),
-                new AstNode(
-                  AstType.MACRO,
-                  'passthrough',
-                  {
-                    'content': new AstArgument(
-                      [
-                        new PlaintextAstNode(counts_str),
-                      ],
-                    ),
-                  },
-                  undefined,
-                  {
-                    xss_safe: true,
-                  }
-                ),
+                //new AstNode(
+                //  AstType.MACRO,
+                //  'passthrough',
+                //  {
+                //    'content': new AstArgument(
+                //      [
+                //        new PlaintextAstNode(counts_str),
+                //      ],
+                //    ),
+                //  },
+                //  undefined,
+                //  {
+                //    xss_safe: true,
+                //  }
+                //),
               ],
             ),
           },

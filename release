@@ -6,12 +6,10 @@ if [ $# -lt 1 ]; then
 else
   version="$1"
 fi
-# Although this is run by `npm run publish`, it is also required for some tests to pass.
+# Although this is also run by `npm run publish`, it is also
+# required for some tests to pass so we have to run it here too.
 npm run build-assets
 npm test
-# To be able to add it to the NPM package for the template generation. I call bullshit!
-# https://stackoverflow.com/questions/24976950/how-do-i-include-a-gitignore-file-as-part-of-my-npm-module
-cp .gitignore gitignore
 # This also does npm run build-assets
 npm run publish
 sed -i "s/  \"version\":.*/  \"version\": \"${version}\",/" package.json

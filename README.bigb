@@ -6390,6 +6390,13 @@ The script arguments are:
 
 If the `prepublish` script returns with a non-zero exit value, the publish is aborted.
 
+= `publishRemoteUrl`
+{parent=ourbigbook.json}
+
+A custom `remoteUrl` to push build outputs to.
+
+If not given this value is extracted by default from the `origin` remote of the Git repository were the source code is located in.
+
 = `redirects`
 {parent=ourbigbook.json}
 

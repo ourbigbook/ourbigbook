@@ -356,8 +356,13 @@ module.exports = (sequelize) => {
     // We don't want to pull both of them together because then we'd be pulling
     // both h1 and h2 renders which we don't need. Talk about premature optimization!
     h1,
+    limit,
+    render,
     sequelize,
   }) => {
+    if (render === undefined) {
+      render = true
+    }
 //    // OLD VERSION 1: as much as possible from calls, same article by file.
 //    const articlesInSamePageAttrs = [
 //      'id',
@@ -502,8 +507,7 @@ SELECT
   "Article"."score" AS "score",
   "Article"."slug" AS "slug",
   "Article"."topicId" AS "topicId",
-  "Article"."titleSource" AS "titleSource",
-  "Article"."render" AS "render",
+  "Article"."titleSource" AS "titleSource",${render ? `\n  "Article"."render" AS "render",` : ''}
   ${h1 ? '"Article"."h1Render" AS "h1Render"' : '"Article"."h2Render" AS "h2Render"'},
   "Article"."topicId" AS "topicId",
   "Article"."titleRender" AS "titleRender",
@@ -550,7 +554,8 @@ GROUP BY
   "SameTopic"."articleCount",
   "ArticleSameTopicByLoggedIn"."id",
   "UserLikeArticle"."userId"
-ORDER BY "Article"."nestedSetIndex" ASC
+ORDER BY "Article"."nestedSetIndex" ASC${limit !== undefined ? `
+LIMIT ${limit}` : ''}
 `,
       {
         replacements: {

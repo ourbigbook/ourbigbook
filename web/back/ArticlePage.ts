@@ -51,6 +51,7 @@ export const getServerSidePropsArticleHoc = ({
       const [
         articleJson,
         articlesInSamePage,
+        articlesInSamePageForToc,
         h1ArticlesInSamePage,
         issuesCount,
         topicArticleCount,
@@ -61,6 +62,13 @@ export const getServerSidePropsArticleHoc = ({
         sequelize.models.Article.getArticlesInSamePage({
           article,
           loggedInUser,
+          limit: 10,
+          sequelize,
+        }),
+        sequelize.models.Article.getArticlesInSamePage({
+          article,
+          loggedInUser,
+          render: false,
           sequelize,
         }),
         sequelize.models.Article.getArticlesInSamePage({
@@ -89,6 +97,7 @@ export const getServerSidePropsArticleHoc = ({
       const props: ArticlePageProps = {
         article: articleJson,
         articlesInSamePage,
+        articlesInSamePageForToc,
         topicArticleCount,
       }
       if (loggedInUser) {

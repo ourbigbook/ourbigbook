@@ -2,8 +2,8 @@ import { GetStaticProps, GetStaticPaths } from 'next'
 
 import cirodown from 'cirodown/dist/cirodown'
 import { fallback, revalidate } from 'config'
-import sequelize from 'lib/db'
-import { DEFAULT_LIMIT  } from 'lib/utils/constant'
+import sequelize from 'db'
+import { DEFAULT_LIMIT  } from 'constant'
 import { getStaticPropsArticle } from 'back/ArticlePage'
 
 export const getStaticPathsUser: GetStaticPaths = async () => {

@@ -3,14 +3,14 @@ import React from 'react'
 import useSWR  from 'swr'
 import { useRouter } from 'next/router'
 
-import ArticleList from 'components/ArticleList'
-import CustomLink from 'components/CustomLink'
-import LoadingSpinner from 'components/LoadingSpinner'
-import LogoutButton from 'components/LogoutButton'
-import Maybe from 'components/Maybe'
+import ArticleList from 'front/ArticleList'
+import CustomLink from 'front/CustomLink'
+import LoadingSpinner from 'front/LoadingSpinner'
+import LogoutButton from 'front/LogoutButton'
+import Maybe from 'front/Maybe'
 import routes from 'routes'
 import useMin from 'front/api/useMin'
-import { AppContext, slugFromArray} from 'lib'
+import { AppContext, slugFromArray} from 'front'
 
 export const TopicPage = ({articles, articlesCount, what}) => {
   const router = useRouter();

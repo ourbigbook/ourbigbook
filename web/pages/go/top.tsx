@@ -1,4 +1,4 @@
-import Home from 'components/Home'
+import Home from 'front/IndexPage'
 export default Home;
-import { makeGetStaticPropsHome } from 'lib/home'
+import { makeGetStaticPropsHome } from 'back/IndexPage'
 export const getStaticProps = makeGetStaticPropsHome('top')

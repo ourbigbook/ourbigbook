@@ -1,4 +1,4 @@
-import { DEFAULT_PROFILE_IMAGE } from 'lib/utils/constant'
+import { DEFAULT_PROFILE_IMAGE } from 'constant'
 
 const handleBrokenImage = e => {
   e.target.src = DEFAULT_PROFILE_IMAGE;

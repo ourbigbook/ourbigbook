@@ -123,33 +123,46 @@ class AstNode {
       throw new Error('contenxt does not have a mandatory .macros property');
     }
     const macro = context.macros[this.macro_name];
-    const name_to_arg = macro.name_to_arg;
-    let error_message = undefined;
-    for (const argname in name_to_arg) {
-      const macro_arg = name_to_arg[argname];
-      if (macro_arg.mandatory && !(argname in this.args)) {
-        error_message = `missing mandatory argument ${argname} of ${this.macro_name}`;
+    let out;
+
+    // Do some error checking. If no errors are found, convert normally. Save output on out.
+    {
+      let error_message = undefined;
+      const name_to_arg = macro.name_to_arg;
+      for (const argname in name_to_arg) {
+        const macro_arg = name_to_arg[argname];
+        if (macro_arg.mandatory && !(argname in this.args)) {
+          error_message = `missing mandatory argument ${argname} of ${this.macro_name}`;
+          break;
+        }
+        if (macro_arg.boolean && (argname in this.args)) {
+          const arg = this.args[argname];
+          if (arg.length > 0) {
+            error_message = `boolean arguments like "${argname}" of "${this.macro_name}" cannot have values, use just "{${argname}}" instead`;
+            break;
+          }
+        }
+      }
+      if (error_message === undefined) {
+        out = macro.convert(this, context);
+      } else {
         macro.error(context, error_message, this.line, this.column);
-        break;
+        out = error_message_in_output(error_message, context);
       }
     }
-    let out;
-    if (error_message === undefined) {
-      out = macro.convert(this, context);
-    } else {
-      out = error_message_in_output(error_message, context);
-    }
-    const parent_node = this.parent_node;
 
     // Add a div to all direct children of toplevel to implement
     // the on hover links to self and left margin.
-    if (
-      parent_node !== undefined &&
-      parent_node.macro_name === Macro.TOPLEVEL_MACRO_NAME &&
-      this.id !== undefined &&
-      macro.toplevel_link
-    ) {
-      out = `<div>${html_hide_hover_link(this.id)}${out}</div>`;
+    {
+      const parent_node = this.parent_node;
+      if (
+        parent_node !== undefined &&
+        parent_node.macro_name === Macro.TOPLEVEL_MACRO_NAME &&
+        this.id !== undefined &&
+        macro.toplevel_link
+      ) {
+        out = `<div>${html_hide_hover_link(this.id)}${out}</div>`;
+      }
     }
 
     return out;
@@ -319,13 +332,19 @@ class MacroArgument {
       // https://cirosantilli.com/cirodown#insane-link-parsing-rules
       options.elide_link_only = false;
     }
+    if (!('boolean' in options)) {
+      // https://cirosantilli.com/cirodown#boolean-named-arguments
+      options.boolean = false;
+    }
     if (!('mandatory' in options)) {
+      // https://cirosantilli.com/cirodown#mandatory-positional-arguments
       options.mandatory = false;
     }
     if (!('remove_whitespace_children' in options)) {
       // https://cirosantilli.com/cirodown#remove_whitespace_children
       options.remove_whitespace_children = false;
     }
+    this.boolean = options.boolean;
     this.elide_link_only = options.elide_link_only;
     this.mandatory = options.mandatory;
     this.name = options.name;
@@ -767,11 +786,14 @@ class Tokenizer {
         let column = this.column;
         let arg_name = this.tokenize_func(char_is_identifier);
         this.push_token(TokenType.NAMED_ARGUMENT_NAME, arg_name, line, column);
-        if (this.cur_c !== NAMED_ARGUMENT_EQUAL_CHAR) {
-          this.error(`expected character: '${NAMED_ARGUMENT_EQUAL_CHAR}' got '${this.cur_c}'`);
+        if (this.cur_c === NAMED_ARGUMENT_EQUAL_CHAR) {
+          // Consume the = sign.
+          this.consume();
+        } else if (this.cur_c === END_NAMED_ARGUMENT_CHAR) {
+          // Boolean argument.
+        } else {
+          this.error(`expected character: '${NAMED_ARGUMENT_EQUAL_CHAR}' or '${END_NAMED_ARGUMENT_CHAR}' (for a boolean argument), got '${this.cur_c}'`);
         }
-        // Consume the = sign.
-        this.consume();
         if (open_length === 1) {
           this.consume_optional_newline(true);
         } else {
@@ -1417,7 +1439,7 @@ function html_hide_hover_link(id) {
     return '';
   } else {
     let href = html_attr('href', '#' + html_escape_attr(id));
-    return `<span class="hide-hover"> <a${href}>${UNICODE_LINK}</a></span>`;
+    return `<span class="hide-hover"><a${href}>${UNICODE_LINK}</a></span>`;
   }
 }
 
@@ -2153,7 +2175,7 @@ function parse_macro(state) {
         state.token.type !== TokenType.POSITIONAL_ARGUMENT_END &&
         state.token.type !== TokenType.NAMED_ARGUMENT_END
       ) {
-        // The recursive case.
+        // The recursive case: the arguments are lists of macros, go into them.
         arg_children.push(parse_macro(state));
       }
       if (state.token.type !== closing_token(open_type)) {
@@ -2999,6 +3021,11 @@ const DEFAULT_MACRO_LIST = [
         new MacroArgument({
           // TODO restrict to valid choices.
           name: 'style',
+        }),
+        new MacroArgument({
+          // TODO restrict to valid choices.
+          name: 'full',
+          boolean: true,
         }),
       ],
       properties: {

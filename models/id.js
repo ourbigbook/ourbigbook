@@ -10,14 +10,6 @@ module.exports = (sequelize) => {
         allowNull: false,
         unique: true,
       },
-      parent_id: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
-      parent_idx: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
       path: {
         type: DataTypes.TEXT,
         allowNull: false,

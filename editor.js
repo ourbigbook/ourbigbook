@@ -5,6 +5,9 @@ class CirodownEditor {
     if (options === undefined) {
       options = {}
     }
+    if (!('production' in options)) {
+      options.production = true
+    }
     if (!('modifyEditorInput' in options)) {
       options.modifyEditorInput = (old) => old
     }
@@ -12,6 +15,7 @@ class CirodownEditor {
     if (!('onDidChangeModelContentCallback' in options)) {
       options.onDidChangeModelContentCallback = (editor) => {}
     }
+    this.options = options
 
     // Create input and output elems.
     const input_elem = document.createElement('div');
@@ -157,14 +161,27 @@ class CirodownEditor {
 
   async convertInput() {
     let extra_returns = {};
-    this.output_elem.innerHTML = await this.cirodown.convert(
-      this.modifyEditorInput(this.editor.getValue()),
-      {'body_only': true},
-      extra_returns
-    );
-    // Rebind to newly generated elements.
-    this.cirodown_runtime(this.output_elem);
-    this.line_to_id = extra_returns.context.line_to_id;
+    let ok = true
+    try {
+      this.output_elem.innerHTML = await this.cirodown.convert(
+        this.modifyEditorInput(this.editor.getValue()),
+        { body_only: true },
+        extra_returns
+      );
+    } catch(e) {
+      // TODO clearly notify user on UI that they found a Cirodown crash bug for the current input.
+      console.error(e);
+      ok = false
+      if (!this.options.production) {
+        // This shows proper stack traces in the console unlike what is shown on browser for some reason.
+        //throw e
+      }
+    }
+    if (ok) {
+      // Rebind to newly generated elements.
+      this.cirodown_runtime(this.output_elem);
+      this.line_to_id = extra_returns.context.line_to_id;
+    }
   }
 
   dispose() {

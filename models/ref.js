@@ -1,11 +1,10 @@
 /* Models different types of references between two sections, e.g.
  * \x from one link to the other. */
 
-const { DataTypes } = require('sequelize')
-
 const cirodown = require('cirodown');
 
 module.exports = (sequelize) => {
+  const { DataTypes } = sequelize.Sequelize
   const Ref = sequelize.define(
     'Ref',
     {

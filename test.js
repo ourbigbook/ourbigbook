@@ -5,8 +5,11 @@ const path = require('path');
 const os = require('os');
 const util = require('util');
 
+const { Sequelize } = require('sequelize')
+
 const cirodown = require('cirodown')
 const cirodown_nodejs = require('cirodown/nodejs');
+const cirodown_nodejs_webpack_safe = require('cirodown/nodejs_webpack_safe');
 const models = require('cirodown/models');
 
 // Common default convert options for the tests.
@@ -169,11 +172,13 @@ function assert_convert_ast(
     }
 
     // SqliteIdProvider with in-memory database.
-    const sequelize = await cirodown_nodejs.create_sequelize({
-      storage: ':memory:',
-      logging: false,
-    })
-    new_convert_opts.id_provider = new cirodown_nodejs.SqliteIdProvider(sequelize);
+    const sequelize = await cirodown_nodejs_webpack_safe.create_sequelize({
+        storage: ':memory:',
+        logging: false,
+      },
+      Sequelize,
+    )
+    new_convert_opts.id_provider = new cirodown_nodejs_webpack_safe.SqliteIdProvider(sequelize);
     new_convert_opts.file_provider = new MockFileProvider();
     const rendered_outputs = {}
     for (const input_path of options.convert_before) {

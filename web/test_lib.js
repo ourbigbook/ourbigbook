@@ -202,13 +202,24 @@ Table:
       return 0;
     }
   })
-  const articles = await sequelize.models.Article.bulkCreate(
-    articleArgs,
-    {
-      validate: true,
-      individualHooks: true,
-    }
-  )
+  const articles = []
+  let articleIds = 0
+  for (const articleArg of articleArgs) {
+    console.error(`${articleIds} authorId=${articleArg.authorId} title=${articleArg.title}`);
+    const article = await new sequelize.models.Article(articleArg)
+    await article.save()
+    articles.push(article)
+    articleIds++
+  }
+  // TODO This was livelocking (taking a very long time, live querries)
+  // due to update_database_after_convert on the hook it would be good to investigate it.
+  //const articles = await sequelize.models.Article.bulkCreate(
+  //  articleArgs,
+  //  {
+  //    validate: true,
+  //    individualHooks: true,
+  //  }
+  //)
   printTime()
 
   console.error('Like');

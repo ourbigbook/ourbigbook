@@ -1,6 +1,6 @@
 import { GetStaticProps, GetStaticPaths } from 'next'
 import sequelize from 'db';
-import { fallback, revalidate } from 'config'
+import { fallback, revalidate } from 'front/config'
 
 const cirodown = require('cirodown')
 

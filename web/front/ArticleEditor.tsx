@@ -5,7 +5,7 @@ import Router, { useRouter } from 'next/router'
 import cirodown from 'cirodown/dist/cirodown.js';
 import { cirodown_runtime } from 'cirodown/dist/cirodown_runtime.js';
 import { CirodownEditor } from 'cirodown/editor.js';
-import { isProduction } from 'config';
+import { isProduction } from 'front/config';
 
 import ListErrors from 'front/ListErrors'
 import { slugFromRouter } from 'front'

@@ -1,44 +1,30 @@
 {
-  "name": "frontend",
-  "version": "0.1.0",
-  "private": true,
+  "name": "next-realworld-example-app",
+  "version": "1.0.0",
+  "author": "reck1ess",
+  "scripts": {
+    "dev": "next dev -p 4001",
+    "build": "next build",
+    "postinstall": "cd ../.. && npm link cirodown",
+    "start": "next start -p 4001"
+  },
   "dependencies": {
+    "@emotion/core": "^10.0.28",
+    "@emotion/react": "^11.4.0",
+    "@emotion/styled": "^10.0.27",
+    "axios": "^0.19.2",
     "cirodown": "../..",
-    "history": "^4.6.3",
-    "prop-types": "^15.5.10",
-    "react": "^16.3.0",
-    "react-dom": "^16.3.0",
-    "react-redux": "^5.0.7",
-    "react-router": "^4.1.2",
-    "react-router-dom": "^4.1.2",
-    "react-router-redux": "^5.0.0-alpha.6",
-    "react-scripts": "^4.0.3",
-    "redux": "^3.6.0",
-    "redux-devtools-extension": "^2.13.2",
-    "redux-logger": "^3.0.1",
-    "superagent": "^3.8.2",
-    "superagent-promise": "^1.1.0"
+    "emotion": "^10.0.27",
+    "emotion-server": "^10.0.27",
+    "lazysizes": "^5.2.2",
+    "next": "^9.5.1",
+    "react": "16.13.1",
+    "react-dom": "16.13.1",
+    "swr": "^0.3.0"
   },
   "devDependencies": {
-    "cross-env": "^5.1.4"
-  },
-  "scripts": {
-    "start": "cross-env PORT=4101 REACT_APP_API_URL=http://localhost:3000 REACT_EDITOR=none react-scripts start",
-    "build": "REACT_APP_API_URL= react-scripts build",
-    "test": "cross-env PORT=4101 react-scripts test --env=jsdom",
-    "eject": "react-scripts eject",
-    "postinstall": "cd ../.. && npm link cirodown"
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "@types/node": "^14.0.27",
+    "@types/react": "^16.9.44",
+    "typescript": "^3.9.7"
   }
 }

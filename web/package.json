@@ -7,7 +7,7 @@
     "back": "nodemon --unhandled-rejections=strict ./app.js",
     "build": "cd frontend && npm run build",
     "dev": "concurrently --kill-others 'npm run front --' 'npm run back --'",
-    "front": "cd frontend && npm start",
+    "front": "cd frontend && npm run dev",
     "preinstall": "cd frontend && npm install",
     "start": "node --unhandled-rejections=strict ./app.js"
   },

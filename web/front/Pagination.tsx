@@ -10,6 +10,7 @@ export interface PaginationProps {
   showPagesMax?: number;
   currentPage: number;
   urlFunc: PaginationPropsUrlFunc;
+  what: string;
 }
 
 function PaginationItem(props) {

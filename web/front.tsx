@@ -6,6 +6,8 @@ import ourbigbook from 'ourbigbook/dist/ourbigbook.js';
 
 import { webApi } from 'front/api'
 import routes from 'front/routes'
+import { ArticleType } from 'front/types/ArticleType'
+import { IssueType } from 'front/types/IssueType'
 
 export const AUTH_COOKIE_NAME = 'auth'
 export const AUTH_LOCAL_STORAGE_NAME = 'user'
@@ -20,8 +22,13 @@ export function decapitalize(s) {
   return s[0].toLowerCase() + s.slice(1)
 }
 
-export function DiscussionAbout({ article, issue }) {
-  return <h1>Discussion{issue ? ` #${issue.number}` : ''}: <a href={routes.articleView(article.slug)}>"<span className="comment-body ourbigbook-title" dangerouslySetInnerHTML={{ __html: article.titleRender }} />" by { article.author.displayName }</a></h1>
+export function DiscussionAbout(
+  { article, issue }:
+  { article?: ArticleType; issue?: IssueType }
+) {
+  return <h1>Discussion{issue ? ` #${issue.number}` : ''}: <a href={routes.articleView(article.slug)}
+    >"<span className="comment-body ourbigbook-title" dangerouslySetInnerHTML={{ __html: article.titleRender }}
+    />" by { article.author.displayName }</a></h1>
 }
 
 export function slugFromArray(arr, { username }: { username?: boolean } = {}) {
@@ -74,14 +81,14 @@ export function useCtrlEnterSubmit(handleSubmit) {
 
 export function useEEdit(canEdit, slug) {
   React.useEffect(() => {
-    if (slug !== undefined) {
-      function listener(e) {
-        if (e.code === 'KeyE') {
-          if (canEdit) {
-            Router.push(routes.articleEdit(slug))
-          }
+    function listener(e) {
+      if (e.code === 'KeyE') {
+        if (canEdit) {
+          Router.push(routes.articleEdit(slug))
         }
       }
+    }
+    if (slug !== undefined) {
       document.addEventListener('keydown', listener);
       return () => {
         document.removeEventListener('keydown', listener);
@@ -140,7 +147,7 @@ export function deleteCookie(name, path = '/') {
   setCookie(name, '', -1, path)
 }
 
-export async function setupUserLocalStorage(user, setErrors) {
+export async function setupUserLocalStorage(user, setErrors?) {
   // We fetch from /profiles/:username again because the return from /users/login above
   // does not contain the image placeholder.
   const { data: userData, status: userStatus } = await webApi.userGet(

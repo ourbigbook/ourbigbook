@@ -6,13 +6,22 @@ import { webApi } from 'front/api'
 import { formatDate } from 'front/date'
 import LikeArticleButton from 'front/LikeArticleButton'
 import routes from 'front/routes'
+import { ArticleType } from 'front/types/ArticleType'
+import { UserType } from 'front/types/UserType'
 
 const ArticleInfo = ({
   article,
-  isIssue,
+  isIssue=false,
   loggedInUser,
   issueArticle,
-}) => {
+}:
+{
+  article?,
+  isIssue?: boolean,
+  loggedInUser?: UserType,
+  issueArticle?: ArticleType,
+}
+) => {
   const canModify =
     loggedInUser && loggedInUser?.username === article?.author?.username;
   const [liked, setLiked] = React.useState(false);

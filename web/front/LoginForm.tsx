@@ -1,5 +1,6 @@
 import Router from 'next/router'
 import React from 'react'
+import Script from 'next/script'
 
 import { LOGIN_ACTION, REGISTER_ACTION, useCtrlEnterSubmit, setCookie, setupUserLocalStorage } from 'front'
 import ListErrors from 'front/ListErrors'
@@ -59,12 +60,13 @@ const LoginForm = ({ register = false }) => {
         }
       } else {
         ({ data, status } = await webApi.userLogin({ username, password }));
-        if (!data.verified) {
+        if (data.verified) {
+          if (data.user) {
+            await setupUserLocalStorage(data.user, setErrors)
+            Router.back()
+          }
+        } else {
           Router.push(routes.userVerify(data.user.email))
-        }
-        if (data.user) {
-          await setupUserLocalStorage(data.user, setErrors)
-          Router.back()
         }
       }
       if (status !== 200 && data.errors) {
@@ -133,7 +135,7 @@ const LoginForm = ({ register = false }) => {
         </button>
       </form>
       {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY &&
-        <script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`}></script>
+        <Script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} />
       }
     </>
   );

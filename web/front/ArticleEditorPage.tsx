@@ -17,11 +17,10 @@ import routes from 'front/routes'
 import { AppContext, useCtrlEnterSubmit } from 'front'
 import { modifyEditorInput } from 'front/js';
 
-export default function ArticleEditorPageHoc(options = {
-  isIssue: false,
-  isNew: false,
-}) {
-  const { isIssue, isNew } = options
+export default function ArticleEditorPageHoc({
+  isIssue=false,
+  isNew=false,
+}={}) {
   const editor = ({ article: initialArticle }: ArticlePageProps) => {
     const router = useRouter();
     const {

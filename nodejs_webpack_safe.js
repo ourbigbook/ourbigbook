@@ -505,26 +505,7 @@ async function create_sequelize(db_options_arg, Sequelize, sync_opts={}) {
     )
     sequelize = new Sequelize(db_options_arg)
   }
-  models.addModels(sequelize)
-  sequelize.define(
-    'Web',
-    {
-      host: {
-        type: DataTypes.TEXT,
-        allowNull: false,
-        unique: true,
-      },
-      token: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
-    },
-    {
-      indexes: [
-        { fields: ['host'], },
-      ],
-    }
-  )
+  models.addModels(sequelize, { cli: true })
   if (
     db_options_arg.dialect !== 'sqlite' ||
     storage === ourbigbook.SQLITE_MAGIC_MEMORY_NAME ||

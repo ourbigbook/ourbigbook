@@ -677,7 +677,7 @@ commander.option('-w, --watch', 'https://cirosantilli.com/ourbigbook#watch', fal
 // otherwise they would pickup our toplevel ourbigbook.json.
 commander.option('-W, --web', 'Sync to ourbigbook web', false);
 commander.option('--web-url <url>', 'Set a custom sync URL for --web', false);
-commander.option('--web-email <email>', 'Set email from CLI', false);
+commander.option('--web-username <username>', 'Set username from CLI', false);
 commander.option('--unsafe-ace', 'https://cirosantilli.com/ourbigbook#unsafe-ace', false);
 commander.option('--unsafe-xss', 'https://cirosantilli.com/ourbigbook#unsafe-xss');
 let inputPath;
@@ -1020,7 +1020,7 @@ if (commander.helpMacros) {
       const url = new URL(web_url)
       const host = url.host
       await create_db(ourbigbook_options, non_ourbigbook_options);
-      const host_row = await non_ourbigbook_options.sequelize.models.Web.findOne({ where: { host } })
+      const host_row = await non_ourbigbook_options.sequelize.models.Cli.findOne({ where: { host } })
       const webApi = new WebApi({
         getToken: () => token,
         https: url.protocol === 'https',
@@ -1036,24 +1036,24 @@ if (commander.helpMacros) {
       if (host_row) {
         token = host_row.token
       } else {
-        let err, email, password
-        if (commander.webEmail) {
-          email = commander.webEmail
+        let err, username, password
+        if (commander.webUsername) {
+          username = commander.webUsername
         } else {
-          ;[err, email] = await read({ prompt: 'Email: ' })
+          ;[err, username] = await read({ prompt: 'Username: ' })
         }
         ;[err, password] = await read({ prompt: 'Password: ', silent: true })
         let data, status
         try {
-          ;({ data, status } = await webApi.userLogin({ email, password }))
+          ;({ data, status } = await webApi.userLogin({ username, password }))
         } catch(err) {
           handleWebApiErr(err)
         }
         if (status === 422) {
-          cli_error('invalid email or password');
+          cli_error('invalid username or password');
         }
         token = data.user.token
-        await non_ourbigbook_options.sequelize.models.Web.create({ host, token })
+        await non_ourbigbook_options.sequelize.models.Cli.create({ host, token })
       }
       const new_non_ourbigbook_options = ourbigbook.clone_and_set(
         non_ourbigbook_options, 'ourbigbook_paths_converted_only', true)

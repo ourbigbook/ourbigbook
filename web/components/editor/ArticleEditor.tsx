@@ -5,9 +5,10 @@ import ListErrors from "components/common/ListErrors";
 import ArticleAPI from "lib/api/article";
 import { SERVER_BASE_URL } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
-import * as monaco from 'monaco-editor';
-import { cirodown } from 'cirodown/dist/cirodown.js';
+import Editor, { DiffEditor, useMonaco, loader } from "@monaco-editor/react";
+import cirodown from 'cirodown/dist/cirodown.js';
 import { cirodown_runtime } from 'cirodown/dist/cirodown_runtime.js';
+import { cirodown_editor } from 'cirodown/editor.js';
 
 function editorReducer(state, action) {
   switch (action.type) {
@@ -39,7 +40,7 @@ function editorReducer(state, action) {
 function getEditorRefCallback(initialContent) {
   return (elem) => {
     if (elem) {
-      cirodown_editor(elem, initialContent, monaco, cirodown, cirodown_runtime)
+      loader.init().then(monaco => cirodown_editor(elem, initialContent, monaco, cirodown, cirodown_runtime));
     }
   }
 }
@@ -99,7 +100,7 @@ export default function makeArticleEditor(isnew: boolean = false) {
     return (
       <div className="editor-page content-not-cirodown">
         <ListErrors errors={errors} />
-        <form>
+        <form className="editor-form">
           <input
             type="text"
             placeholder="Article Title"

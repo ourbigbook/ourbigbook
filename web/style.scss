@@ -4,9 +4,13 @@ $border-radius: 10px;
 $nav-background-color: #AA0;
 $toplevel-padding: 20px;
 
+html {
+height: 100%;
+
 body {
 @include body;
 margin: 0;
+height: 100%;
 background-color: $background-color;
 
 /* Scrollbar behaviour.
@@ -221,6 +225,12 @@ div.tab-list {
   }
 }
 
+.editor-page {
+  .editor-form: {
+    height: 100%;
+  }
+}
+
 .error-message {
   display: flex;
   justify-content: center;
@@ -279,5 +289,6 @@ div.tab-list {
 
 .username {
   font-weight: bold;
+}
 }
 }

@@ -8,6 +8,7 @@ import CustomLink from 'front/CustomLink'
 import { useCtrlEnterSubmit, slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, decapitalize } from 'front'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
+import ListErrors from 'front/ListErrors'
 
 const CommentInput = ({
   commentCountByLoggedInUser,
@@ -20,6 +21,7 @@ const CommentInput = ({
   const slug = slugFromRouter(router)
   const [body, setBody] = React.useState("");
   const [isLoading, setLoading] = React.useState(false);
+  const [errors, setErrors] = React.useState([]);
   const submitButton = React.useRef(null);
   function changeBody(body) {
     setBody(body);
@@ -43,9 +45,14 @@ const CommentInput = ({
       const {data, status} = await webApi.commentCreate(slug, issueNumber, body)
       if (status === 200) {
         setComments(comments => [...comments, data.comment])
+        changeBody('');
+        setErrors([]);
+      } else {
+        if (data.errors) {
+          setErrors(data.errors);
+        }
       }
       setLoading(false);
-      changeBody('');
     }
   };
   useCtrlEnterSubmit(handleSubmit)
@@ -59,8 +66,7 @@ const CommentInput = ({
 
   return (
     <>
-      <ul className="error-messages">{/* TODO. Reference does not handle those errors either right now.
-        but the unconditional (and likely buggy) presence of this is visible. */}</ul>
+      <ListErrors errors={errors} />
       <form className="card comment-form" onSubmit={handleSubmit}>
         <div className="comment-form-textarea">
           <textarea

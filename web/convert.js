@@ -11,12 +11,14 @@ const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 const { ValidationError } = require('./api/lib')
 const { convertOptions, maxArticleTitleSize } = require('./front/config')
 const { modifyEditorInput } = require('./front/js')
+const routes = require('./front/routes')
 
 // Subset of convertArticle for usage in issues and comments.
 // This is a much simpler procedure as it does not alter the File/Article database.
 async function convert({
   author,
   bodySource,
+  convertOptionsExtra,
   path,
   render,
   sequelize,
@@ -29,7 +31,7 @@ async function convert({
   bodySource = bodySource.replace(/\n+$/, '')
   const input = modifyEditorInput(titleSource, bodySource).new
   if (path === undefined) {
-    path = `${ourbigbook.title_to_id(titleSource)}`
+    path = titleSource ? ourbigbook.title_to_id(titleSource) : 'asdf'
   }
   path += `.${ourbigbook.OURBIGBOOK_EXT}`
   const input_path = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${path}`
@@ -64,7 +66,7 @@ async function convert({
       render,
       split_headers: splitHeaders === undefined ? true : splitHeaders,
       web: true,
-    }, convertOptions),
+    }, convertOptions, convertOptionsExtra),
     extra_returns,
   )
   if (extra_returns.errors.length > 0) {
@@ -190,13 +192,15 @@ async function convertComment({ issue, number, sequelize, source, user }) {
   const { extra_returns } = await convert({
     author: user,
     bodySource: source,
-    path: `${ourbigbook.INDEX_BASENAME_NOEXT}`,
+    convertOptionsExtra: {
+      x_external_prefix: '../'.repeat((routes.issue(issue.issues.slug, number).match(/\//g) || []).length - 1),
+    },
     render: true,
     sequelize,
     splitHeaders: false,
     titleSource: undefined,
   })
-  const outpath = `${ourbigbook.AT_MENTION_CHAR}${user.username}.${ourbigbook.HTML_EXT}`;
+  const outpath = Object.keys(extra_returns.rendered_outputs)[0]
   return sequelize.models.Comment.create({
     issueId: issue.id,
     number,
@@ -222,16 +226,20 @@ async function convertIssue({ article, bodySource, issue, number, sequelize, tit
   if (titleSource.length > maxArticleTitleSize) {
     //throw new ValidationError(`Title source too long: ${titleSource.length} bytes, maximum: ${maxArticleTitleSize} bytes, title: ${titleSource}`)
   }
+  // We use routes here to achieve a path that matches the exact length of what the issue will render to,
+  // so that the internal cross references will render with the correct number of ../
   const { extra_returns } = await convert({
     author: user,
     bodySource,
-    path: `${ourbigbook.INDEX_BASENAME_NOEXT}`,
+    convertOptionsExtra: {
+      x_external_prefix: '../'.repeat((routes.issue(article.slug, number).match(/\//g) || []).length - 1),
+    },
     render: true,
     sequelize,
     splitHeaders: false,
     titleSource,
   })
-  const outpath = `${ourbigbook.AT_MENTION_CHAR}${user.username}.${ourbigbook.HTML_EXT}`;
+  const outpath = Object.keys(extra_returns.rendered_outputs)[0]
   const renders = extra_returns.rendered_outputs[outpath]
   const titleRender = renders.title
   const render = renders.full

@@ -798,7 +798,7 @@ class ErrorMessage {
 
 function is_absolute_xref(id, context) {
   return id[0] === Macro.HEADER_SCOPE_SEPARATOR ||
-      (context.options.magic_leading_at && id[0] === AT_MENTION_CHAR)
+      (context.options.x_leading_at_to_web && id[0] === AT_MENTION_CHAR)
 }
 
 function resolve_absolute_xref(id, context) {
@@ -2197,7 +2197,7 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
             ast.file = id_text_append
             id_text = Macro.FILE_ID_PREFIX + id_text + id_text_append
           } else {
-            id_text += title_to_id(title_text, new_context.options.ourbigbook_json['id']);
+            id_text += title_to_id(title_text, new_context.options.ourbigbook_json['id'], new_context);
           }
           const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
           if (disambiguate_arg !== undefined) {
@@ -2853,9 +2853,18 @@ function convert_init_context(options={}, extra_returns={}) {
     // an offset relative to where it is included from.
     options.h_parse_level_offset = 0;
   }
-  if (!('magic_leading_at' in options)) { options.magic_leading_at = true; }
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('katex_macros' in options)) { options.katex_macros = {}; }
+  if (!('id_prefix' in options)) {
+    // Prefix all IDs of a file with this prefix.
+    // Internal links should be updated to still work.
+    // External incoming links to such modified IDs are not supported.
+    // Use case: avoid ID conflicts when web when showing multiple:
+    // * comments on issue page
+    // * articles on topic page
+    // https://github.com/cirosantilli/ourbigbook/issues/251
+    options.id_prefix = '';
+  }
   if (!('log' in options)) { options.log = {}; }
   if (!('outfile' in options)) {
     // Override the default calculated output file for the main input.
@@ -2866,6 +2875,7 @@ function convert_init_context(options={}, extra_returns={}) {
   if (!('read_include' in options)) { options.read_include = () => undefined; }
   if (!('read_file' in options)) { options.read_file = () => undefined; }
   if (!('ref_prefix' in options)) {
+    // TODO implement.
     // This option started as a hack as a easier to implement workaround for:
     // https://github.com/cirosantilli/ourbigbook/issues/229
     // to allow tagged and incoming links to work at all on OurBigBook Web.
@@ -2875,12 +2885,6 @@ function convert_init_context(options={}, extra_returns={}) {
     // it is necessary to resolve absolute references like \x[/top-id] correctly to
     // \x[@username/top-id] in Web.
     options.ref_prefix = '';
-  }
-  if (!('remove_leading_at' in options)) {
-    // If true, make \x[@username/someid] link to username/someid without the leading @.
-    // This is used in Web, where our URLs don't really have the @ sign on them,
-    // but the username IDs do have the @ sign implicitly added to them.
-    options.remove_leading_at = false;
   }
   if (!('render' in options)) { options.render = true; }
   if (!('start_line' in options)) { options.start_line = 1; }
@@ -2910,6 +2914,23 @@ function convert_init_context(options={}, extra_returns={}) {
   if (!('web' in options)) {
     // If true, inject elements that are used for OurBigBook Web.
     options.web = false;
+  }
+  if (!('x_external_prefix' in options)) {
+    // Prefix all x reference targets not to the current document with this prefix.
+    // Used in web to offset the relative paths of issues and editor preview, e.g.
+    // go/issues/1/username/article
+    options.x_external_prefix = '';
+  }
+  if (!('x_leading_at_to_web' in options)) {
+    // If \x href starts with @ as in \x[@username] link to OBB Web
+    // https://ourbigbook.com/username instead of treating it as a regular ID.
+    options.x_leading_at_to_web = true
+  }
+  if (!('x_remove_leading_at' in options)) {
+    // If true, make \x[@username/someid] link to username/someid without the leading @.
+    // This is used in Web, where our URLs don't really have the @ sign on them,
+    // but the username IDs do have the @ sign implicitly added to them.
+    options.x_remove_leading_at = false;
   }
 
   // Internalish options that may get modified by sub-includes/OurBigBookExample in order
@@ -3287,7 +3308,7 @@ function get_link_html({
 function get_parent_argument_ast(ast, context, prev_header, include_options) {
   let parent_id;
   let parent_ast;
-  parent_id = magic_title_to_id(render_arg_noescape(ast.args.parent, context));
+  parent_id = magic_title_to_id(render_arg_noescape(ast.args.parent, context), context);
   if (
     // Happens for the first header
     prev_header !== undefined
@@ -3808,10 +3829,14 @@ function macro_image_video_block_convert_function(ast, context) {
   return ret;
 }
 
-function magic_title_to_id(target_id) {
+function magic_title_to_id(target_id, context) {
   if (target_id.startsWith(Macro.FILE_ID_PREFIX))
     return target_id
-  return title_to_id(target_id, { keep_scope_sep: true })
+  let ret = title_to_id(target_id, { keep_scope_sep: true, magic: true }, context)
+  if (target_id[0] === AT_MENTION_CHAR) {
+    ret = AT_MENTION_CHAR + ret
+  }
+  return ret
 }
 
 // https://stackoverflow.com/questions/44447847/enums-in-javascript-with-es6/49709701#49709701
@@ -4750,7 +4775,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           const tags_or_children = ast.args[argname]
           if (tags_or_children !== undefined) {
             for (const tag_or_child of tags_or_children) {
-              const target_id = magic_title_to_id(render_arg_noescape(tag_or_child.args.content, context))
+              const target_id = magic_title_to_id(render_arg_noescape(tag_or_child.args.content, context), context)
               for (const target_id_with_scope of get_all_possible_scope_resolutions(ast.scope, target_id, context)) {
                 options.refs_to_h.push({
                   ast,
@@ -4779,7 +4804,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         const fetch_plural = ast.validation_output.magic.boolean ||
           context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK
         if (fetch_plural) {
-          target_id = magic_title_to_id(target_id)
+          target_id = magic_title_to_id(target_id, context)
         }
         const cur_scope = options.cur_header ? options.cur_header.scope : ''
         for (const target_id_with_scope of get_all_possible_scope_resolutions(cur_scope, target_id, context)) {
@@ -4804,7 +4829,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             const new_text = pluralize_wrap(old_text, 1)
             if (new_text !== old_text) {
               last_ast.text = new_text
-              const target_id = magic_title_to_id(convert_id_arg(ast.args.href, context))
+              const target_id = magic_title_to_id(convert_id_arg(ast.args.href, context), context)
               last_ast.text = old_text
               for (const target_id_with_scope of get_all_possible_scope_resolutions(cur_scope, target_id, context)) {
                 options.refs_to_x.push({
@@ -5963,11 +5988,12 @@ function symbol_to_string(symbol) {
   return symbol.toString().slice(7, -1);
 }
 
-function title_to_id(title, options={}) {
+function title_to_id(title, options={}, context={}) {
   if (options.normalize === undefined) {
     options.normalize = {}
   }
   const new_chars = [];
+  let first = true
   for (let c of title) {
     if (
       options.normalize === undefined ||
@@ -5977,9 +6003,18 @@ function title_to_id(title, options={}) {
       c = normalize_latin_character(c)
     }
     if (
-      options.normalize === undefined ||
-      options.normalize.punctuation === undefined ||
-      options.normalize.punctuation
+      (
+        options.normalize === undefined ||
+        options.normalize.punctuation === undefined ||
+        options.normalize.punctuation
+      )
+      &&
+      !(
+        first &&
+        c === AT_MENTION_CHAR &&
+        options.magic &&
+        context.options.x_remove_leading_at
+      )
     ) {
       c = normalize_punctuation_character(c)
     }
@@ -5994,6 +6029,7 @@ function title_to_id(title, options={}) {
     } else {
       new_chars.push(ID_SEPARATOR);
     }
+    first = false
   }
   return new_chars.join('')
     .replace(new RegExp(ID_SEPARATOR + '+', 'g'), ID_SEPARATOR)
@@ -6140,7 +6176,7 @@ function x_get_target_ast_base({
   scope,
   target_id,
 }) {
-  if (context.options.magic_leading_at && target_id[0] === AT_MENTION_CHAR) {
+  if (context.options.x_leading_at_to_web && target_id[0] === AT_MENTION_CHAR) {
     return [html_attr('href', WEB_URL + target_id.substr(1)), target_id];
   }
   if (target_id[0] === HASHTAG_CHAR) {
@@ -6148,13 +6184,13 @@ function x_get_target_ast_base({
   }
   let target_id_eff
   if (do_magic_title_to_id) {
-    target_id_eff = magic_title_to_id(target_id)
+    target_id_eff = magic_title_to_id(target_id, context)
   } else {
     target_id_eff = target_id
   }
   let target_ast = context.db_provider.get(target_id_eff, context, scope);
   if (do_singularize && !target_ast) {
-    target_id_eff = magic_title_to_id(pluralize_wrap(target_id, 1))
+    target_id_eff = magic_title_to_id(pluralize_wrap(target_id, 1), context)
     target_ast = context.db_provider.get(target_id_eff, context, scope);
   }
   return { target_id: target_id_eff, target_ast }
@@ -6313,9 +6349,7 @@ function x_href_parts(target_ast, context) {
     target_ast_effective_id = target_ast.id
   }
   let to_split_headers = is_to_split_headers(target_ast, context);
-  // Linking to the toplevel of the current output path.
   let to_current_toplevel =
-      // Linkting to the current output file.
       target_ast_effective_id === context.toplevel_id &&
       // Also requires outputting to the same type of split/nonsplit
       // as the current one.
@@ -6361,7 +6395,7 @@ function x_href_parts(target_ast, context) {
         effective_id: target_ast_effective_id,
       }
     );
-    if (context.options.remove_leading_at) {
+    if (context.options.x_remove_leading_at) {
       if (target_output_path_dirname) {
         if (target_output_path_dirname[0] === AT_MENTION_CHAR) {
           target_output_path_dirname = target_output_path_dirname.slice(1)
@@ -6401,6 +6435,9 @@ function x_href_parts(target_ast, context) {
       href_path = path_join(href_path_dirname_rel,
         target_output_path_basename, context.options.path_sep);
     }
+  }
+  if (!context.options.include_path_set.has(target_input_path)) {
+    href_path = context.options.x_external_prefix + href_path
   }
 
   // Fragment
@@ -8745,10 +8782,10 @@ function ourbigbook_get_x_href({
         } else {
           target_scope = ''
         }
-        const plural_id = `${target_scope}${magic_title_to_id(href_plural)}${disambiguate_sep}`
+        const plural_id = `${target_scope}${magic_title_to_id(href_plural, context)}${disambiguate_sep}`
         const plural_target = context.db_provider.get(plural_id, context)
         if (!plural_target || plural_target.id !== target_ast.id) {
-          const singular_id = `${target_scope}${magic_title_to_id(pluralize_wrap(href, 1))}${disambiguate_sep}`
+          const singular_id = `${target_scope}${magic_title_to_id(pluralize_wrap(href, 1), context)}${disambiguate_sep}`
           const singular_target = context.db_provider.get(singular_id, context)
           if ((!singular_target || singular_target.id !== target_ast.id) && !explicit_id) {
             // This can happen due to pluralize bugs:
@@ -8761,7 +8798,7 @@ function ourbigbook_get_x_href({
         was_pluralized = true
       }
     }
-    if (explicit_id && magic_title_to_id(href) !== target_ast.id) {
+    if (explicit_id && magic_title_to_id(href, context) !== target_ast.id) {
       href = href_from_id
     } else {
       if (disambiguate_arg) {

@@ -11,6 +11,7 @@ const ourbigbook = require('./index')
 const ourbigbook_nodejs_front = require('./nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe');
 const models = require('./models');
+const { assert_xpath_main } = require('./test_lib')
 
 const PATH_SEP = ourbigbook.Macro.HEADER_SCOPE_SEPARATOR
 
@@ -569,29 +570,6 @@ function assert_no_error(description, input, options) {
   assert_convert_ast(description, input, undefined, options)
 }
 
-function assert_xpath_main(xpath_expr, string, options={}) {
-  const xpath_matches = xpath_html(string, xpath_expr);
-  if (!('count' in options)) {
-    options.count = 1;
-  }
-  if (!('message' in options)) {
-    options.message = '';
-  }
-  if (xpath_matches.length !== options.count) {
-    let count_str
-    if (options.count === 1) {
-      count_str = ''
-    } else {
-      count_str = ` count=${options.count}`
-    }
-    console.error(`assert_xpath_main${count_str}: ` + options.message);
-    console.error('xpath: ' + xpath_expr);
-    console.error('string:');
-    console.error(string);
-    assert.strictEqual(xpath_matches.length, options.count);
-  }
-}
-
 /** Determine if a given Ast argument has a subset.
  *
  * For each lement of the array, only the subset of each object is checked.
@@ -723,22 +701,6 @@ ${out.stderr.toString(ourbigbook_nodejs_webpack_safe.ENCODING)}`;
 
 /** Shortcut to create plaintext nodes for ast_arg_has_subset, we have too many of those. */
 function t(text) { return {'macro_name': 'plaintext', 'text': text}; }
-
-// https://stackoverflow.com/questions/25753368/performant-parsing-of-html-pages-with-node-js-and-xpath/25971812#25971812
-// Not using because too broken.
-// https://github.com/hieuvp/xpath-html/issues/10
-//const xpath = require("xpath-html");
-const parse5 = require('parse5');
-const xmlserializer = require('xmlserializer');
-const xmldom = require('xmldom').DOMParser;
-const xpath = require('xpath');
-function xpath_html(html, xpathStr) {
-  const document = parse5.parse(html);
-  const xhtml = xmlserializer.serializeToString(document);
-  const doc = new xmldom().parseFromString(xhtml);
-  const select = xpath.useNamespaces({"x": "http://www.w3.org/1999/xhtml"});
-  return select(xpathStr, doc);
-}
 
 function update_filesystem(filesystem, tmpdir) {
   for (const relpath in filesystem) {
@@ -2491,7 +2453,8 @@ assert_lib(
   }
 );
 
-// Internal cross references \x
+// Internal cross references
+// x
 assert_convert_ast('cross reference simple',
   `= My header
 
@@ -3379,6 +3342,42 @@ assert_convert_ast('cross reference p ignores non plaintext last argument',
     ],
   }
 )
+assert_lib('x_external_prefix option',
+  {
+    convert_dir: true,
+    filesystem: {
+     'notindex.bigb': `= Notindex
+
+\\x[notindex][notindex to notindex]
+
+\\x[notindex-2][notindex to notindex 2]
+
+\\x[notindex2][notindex to notindex2]
+
+\\x[notindex2-2][notindex to notindex2 2]
+
+== Notindex 2
+`,
+     'notindex2.bigb': `= Notindex2
+
+== Notindex2 2
+`,
+    },
+    extra_convert_opts: {
+      x_external_prefix: 'asdf/'
+    },
+    assert_xpath: {
+      'notindex.html': [
+        // Internal links: unchanged.
+        "//x:div[@class='p']//x:a[@href='' and text()='notindex to notindex']",
+        "//x:div[@class='p']//x:a[@href='#notindex-2' and text()='notindex to notindex 2']",
+        // External links: add the prefix.
+        "//x:div[@class='p']//x:a[@href='asdf/notindex2.html' and text()='notindex to notindex2']",
+        "//x:div[@class='p']//x:a[@href='asdf/notindex2.html#notindex2-2' and text()='notindex to notindex2 2']",
+      ],
+    },
+  }
+);
 
 // Infinite recursion.
 // failing https://github.com/cirosantilli/ourbigbook/issues/34
@@ -6059,7 +6058,7 @@ assert_lib('subdir index.bigb outputs to subdir without trailing slash with html
     },
   }
 );
-assert_lib('subdir index.bigb removes leading @ from links with the remove_leading_at option',
+assert_lib('subdir index.bigb removes leading @ from links with the x_remove_leading_at option',
   {
     filesystem: {
       '@subdir/index.bigb': `= Subdir
@@ -6067,6 +6066,8 @@ assert_lib('subdir index.bigb removes leading @ from links with the remove_leadi
 \\x[notindex][link to subdir notindex]
 
 \\x[notindex-h2][link to subdir notindex h2]
+
+<@subdir/notindex>
 
 \\Include[notindex]
 `,
@@ -6083,8 +6084,8 @@ assert_lib('subdir index.bigb removes leading @ from links with the remove_leadi
     },
     convert_dir: true,
     extra_convert_opts: {
-      remove_leading_at: true,
-      magic_leading_at: false,
+      x_remove_leading_at: true,
+      x_leading_at_to_web: false,
     },
     assert_xpath: {
       '@subdir.html': [

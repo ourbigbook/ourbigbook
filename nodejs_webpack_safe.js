@@ -15,6 +15,7 @@ const { DataTypes } = require('sequelize')
 
 const ourbigbook = require('./index');
 const ourbigbook_nodejs_front = require('./nodejs_front');
+const web_api = require('./web_api');
 const models = require('./models')
 
 const ENCODING = 'utf8'
@@ -30,16 +31,67 @@ const db_options = {
   },
 }
 
-class SqliteDbProvider extends ourbigbook.DbProvider {
+async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
+  let rows
+  if (ids.length) {
+    const where = {
+      idid: ids,
+    }
+    if (ignore_paths_set !== undefined) {
+      const ignore_paths = Array.from(ignore_paths_set).filter(x => x !== undefined)
+      where.path = { [sequelize.Sequelize.Op.not]: ignore_paths }
+    }
+    rows = await sequelize.models.Id.findAll({
+      where,
+      include: [
+        {
+          model: sequelize.models.Ref,
+          as: 'to',
+          where: { type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT] },
+          required: false,
+        },
+        {
+          model: sequelize.models.Ref,
+          as: 'from',
+          where: {
+            type: { [sequelize.Sequelize.Op.or]: [
+              sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+              sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_TITLE_TITLE],
+            ]}
+          },
+          required: false,
+          include: [
+            {
+              model: sequelize.models.Id,
+              as: 'to',
+              required: false,
+              // This is to only get IDs here for REFS_TABLE_X_TITLE_TITLE,
+              // and not for REFS_TABLE_PARENT.
+              // Can't do it with a second include easily it seems:
+              // https://stackoverflow.com/questions/51480266/joining-same-table-multiple-times-with-sequelize
+              // so we are just hacking this custom ON here.
+              on: {
+                // This is the default ON condition. Don't know how to add a new condition to the default,
+                // so just duplicating it here.
+                '$from.to_id$': {[sequelize.Sequelize.Op.col]: 'from->to.idid' },
+                // This gets only the TITLE TITLE.
+                '$from.type$': sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_TITLE_TITLE],
+              }
+            }
+          ]
+        },
+      ],
+    })
+  } else {
+    rows = []
+  }
+  return rows
+}
+
+class SqliteDbProvider extends web_api.DbProviderBase {
   constructor(sequelize) {
     super();
     this.sequelize = sequelize
-    this.id_cache = {}
-    this.ref_cache = {
-      from_id: {},
-      to_id: {},
-    }
-    this.path_to_file_cache = {}
   }
 
   async clear(input_paths, transaction) {
@@ -63,105 +115,11 @@ class SqliteDbProvider extends ourbigbook.DbProvider {
     ])
   }
 
-  add_row_to_id_cache(row, context) {
-    if (row !== null) {
-      const ast = this.row_to_ast(row, context)
-      if (
-        // Possible on reference to ID that does not exist and some other
-        // non error cases I didn't bother to investigate.
-        row.to !== undefined
-      ) {
-        ast.header_parent_ids = row.to.map(to => to.from_id)
-      }
-      this.id_cache[ast.id] = ast
-      return ast
-    }
-  }
-
+  // Get all ASTs for the selected IDs.
+  // @return Ast[]
   async get_noscopes_base_fetch(ids, ignore_paths_set, context) {
-    const asts = []
-    if (ids.length) {
-      const where = {
-        idid: ids,
-      }
-      if (ignore_paths_set !== undefined) {
-        const ignore_paths = Array.from(ignore_paths_set).filter(x => x !== undefined)
-        where.path = { [this.sequelize.Sequelize.Op.not]: ignore_paths }
-      }
-      const rows = await this.sequelize.models.Id.findAll({
-        where,
-        include: [
-          {
-            model: this.sequelize.models.Ref,
-            as: 'to',
-            where: { type: this.sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT] },
-            required: false,
-          },
-          {
-            model: this.sequelize.models.Ref,
-            as: 'from',
-            where: {
-              type: { [this.sequelize.Sequelize.Op.or]: [
-                this.sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-                this.sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_TITLE_TITLE],
-              ]}
-            },
-            required: false,
-            include: [
-              {
-                model: this.sequelize.models.Id,
-                as: 'to',
-                required: false,
-                // This is to only get IDs here for REFS_TABLE_X_TITLE_TITLE,
-                // and not for REFS_TABLE_PARENT.
-                // Can't do it with a second include easily it seems:
-                // https://stackoverflow.com/questions/51480266/joining-same-table-multiple-times-with-sequelize
-                // so we are just hacking this custom ON here.
-                on: {
-                  // This is the default ON condition. Don't know how to add a new condition to the default,
-                  // so just duplicating it here.
-                  '$from.to_id$': {[this.sequelize.Sequelize.Op.col]: 'from->to.idid' },
-                  // This gets only the TITLE TITLE.
-                  '$from.type$': this.sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_TITLE_TITLE],
-                }
-              }
-            ]
-          },
-        ],
-      })
-      for (const row of rows) {
-        asts.push(this.add_row_to_id_cache(row, context))
-        for (const row_title_title of row.from) {
-          if (
-            // We need this check because the version of the header it fetches does not have .to
-            // so it could override one that did have the .to, and then other things could blow up.
-            !(row_title_title.to && row_title_title.to.idid in this.id_cache)
-          ) {
-            const ret = this.add_row_to_id_cache(row_title_title.to, context)
-            if (ret !== undefined) {
-              asts.push(ret)
-            }
-          }
-        }
-      }
-    }
-    return asts
-  }
-
-  get_noscopes_base(ids, ignore_paths_set) {
-    const cached_asts = []
-    for (const id of ids) {
-      if (id in this.id_cache) {
-        const ast = this.id_cache[id]
-        if (
-          ignore_paths_set === undefined ||
-          !ignore_paths_set.has(ast.input_path)
-        ) {
-          cached_asts.push(ast)
-        }
-      }
-    }
-    return cached_asts
+    const rows = await get_noscopes_base_fetch_rows(this.sequelize, ids, ignore_paths_set)
+    return this.rows_to_asts(rows, context)
   }
 
   async get_refs_to_fetch(types, to_ids, { reversed, ignore_paths_set, context }) {
@@ -422,13 +380,6 @@ ORDER BY "RecRefs".level DESC
     return asts
   }
 
-  row_to_ast(row, context) {
-    const ast = ourbigbook.AstNode.fromJSON(row.ast_json, context)
-    ast.input_path = row.path
-    ast.id = row.idid
-    return ast
-  }
-
   // Update the databases based on the output of the Ourbigbook conversion.
   async update(ourbigbook_extra_returns, sequelize, transaction) {
     const context = ourbigbook_extra_returns.context
@@ -490,21 +441,6 @@ ORDER BY "RecRefs".level DESC
       }),
       sequelize.models.Ref.bulkCreate(refs, { transaction }),
     ])
-  }
-
-  add_file_row_to_cache(row, context) {
-    this.path_to_file_cache[row.path] = row
-    if (
-      // Happens on some unminimized condition when converting
-      // cirosantilli.github.io @ 04f0f5bc03b9071f82b706b3481c09d616d44d7b + 1
-      // twice with ourbigbook -S ., no patience to minimize and test now.
-      row.Id !== null &&
-      // We have to do this if here because otherwise it would overwrite the reconciled header
-      // we have stiched into the tree with Include.
-      !this.id_cache[row.Id.idid]
-    ) {
-      this.add_row_to_id_cache(row.Id, context)
-    }
   }
 
   async fetch_files(path, context) {
@@ -906,6 +842,7 @@ module.exports = {
   create_sequelize,
   db_options,
   destroy_sequelize,
+  get_noscopes_base_fetch_rows,
   preload_katex,
   read_include,
   remove_duplicates_sorted_array,

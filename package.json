@@ -12,6 +12,7 @@
     "liquidjs": "9.11.7",
     "lodash": "4.17.20",
     "normalize.css": "8.0.1",
+    "path-browserify": "1.0.1",
     "pluralize": "8.0.0",
     "sass": "1.23.7",
     "tablesort": "5.2.1"

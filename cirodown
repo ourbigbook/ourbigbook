@@ -114,11 +114,11 @@ class SqliteFileProvider extends cirodown.FileProvider {
   }
 
   async get_id(id) {
-    return this.sequelize.models.File.findAll({ where: { toplevel_id: id } })
+    return this.sequelize.models.File.findOne({ where: { toplevel_id: id } })
   }
 
   async get_path_entry(path) {
-    return this.sequelize.models.File.findAll({ where: { path } })
+    return this.sequelize.models.File.findOne({ where: { path } })
   }
 }
 

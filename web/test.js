@@ -4100,6 +4100,12 @@ it('api: uppercase article IDs are forbidden', async () => {
     ;({data, status} = await test.webApi.article('user0/_file/path/to/main.S'))
     assertStatus(status, data)
     assert.notStrictEqual(data, undefined)
+
+    await models.normalize({
+      check: true,
+      sequelize,
+      whats: ['nested-set'],
+    })
   })
 })
 

@@ -361,14 +361,18 @@ is the same as:
 Read this \x[my-id][My title].
 ``
 
-=== Cross reference style
+=== Cross reference `full` argument
+{id=cross-reference-full-argument}
 
 To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` \x[boolean-named-arguments][boolean named argument] to the cross reference, for example:
 \cirodown_example[[
-\x[cross-reference-style]{full}.
+\x[cross-reference-full-argument]{full}.
 ]]
 
-`{full}` is not needed for cross references to most macros besides headers, which use `full` by default as seen by the `default_x_style_full` macro property in \x[help-macros]. This is for example the case for \x[images]. TODO create a mechanism to turn `full` off for those elements, e.g. `{nofull}`, currently impossible.
+`{full}` is not needed for cross references to most macros besides \x[headers][headers], which use `full` by default as seen by the `default_x_style_full` macro property in \x[help-macros]. This is for example the case for \x[images]. You can force this to be disabled with `{full=0}`:
+\cirodown_example[[
+Compare \x[fig-my-test-image]{full=0} vs \x[fig-my-test-image]{full=1}.
+]]
 
 === Internal cross file references
 
@@ -382,7 +386,7 @@ Reference to the first header of another file that is a second inclusion:
 \x[included-by-not-readme]
 ]]
 
-Reference to another header of another file, with \x[cross-reference-style] equals `full`:
+Reference to another header of another file, with \x[cross-reference-full-argument] equals `full`:
 \cirodown_example[[
 \x[h2-in-not-the-readme]{full}.
 ]]
@@ -858,7 +862,7 @@ Have a look at this amazing image: \x[fig-my-test-image-2].
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {id=fig-my-test-image-2}
 ]]
-This works because \x[cross-reference-style][`full` is the default cross referene style for `Image`], otherwise the link text would be empty since there is no `title`, and cirodown would raise an error.
+This works because \x[cross-reference-full-argument][`full` is the default cross referene style for `Image`], otherwise the link text would be empty since there is no `title`, and cirodown would raise an error.
 
 If the image has neither ID nor title, then it does not get a caption at all, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
 \cirodown_example[[
@@ -932,6 +936,8 @@ https://git-lfs.github.com/[Git LFS] is one approach to deal with this, but we f
 === Image generators
 
 TODO implement: mechanism where you enter a textual description of the image inside the code body, and it then converts to an image, adds to the `-media` repo and pushes all automatically. Start with dot.
+
+https://github.com/cirosantilli/cirodown/issues/40
 
 == Videos (`\Video` and `\video`)
 {id=videos}
@@ -1440,15 +1446,25 @@ This is for example the `level` of a \x[headers][header].
 
 These arguments marked with the `mandatory: true` \x[help-macros] argument property.
 
-===== boolean named arguments
+===== Boolean named arguments
 
-Name arguments marked in \x[help-macros] as `boolean: true` don't take any value. For example, \x[cross-reference-style][the `full` argument] of \x[internal-cross-references] is correctly written as:
+Name arguments marked in \x[help-macros] as `boolean: true` must either:
+* take no value and no `=` sign, in which case the value is implicitly set to `1`
+* take value exactly `0` or `1`
+* not be given, in which case the default value is the `default` from \x[help-macros], or `0` if such default is not given
+
+For example, \x[cross-reference-full-argument][the `full` argument] of \x[internal-cross-references] is correctly written as:
 \cirodown_example[[
 \x[boolean-named-arguments]{full}
 ]]
-without the `=` sign. Adding the `=` sign to a boolean argument is an error.
-
-If given, such arguments denote `true`, and if missing, `false`.
+without the `=` sign, or equivalently:
+\cirodown_example[[
+\x[boolean-named-arguments]{full=1}
+]]
+The `full=0` version is useful in the case of reference targets that unlike \x[headers][headers] expand the title on the cross reference by default, e.g. \x[images][images]:
+\cirodown_example[[
+\x[boolean-named-arguments]{full=1}
+]]
 
 The name "boolean argument" is given by analogy to the \a[https://stackoverflow.com/questions/16109358/what-is-the-correct-readonly-attribute-syntax-for-input-text-elements/24588427#24588427]["boolean attribute" concept in HTML5].
 

@@ -96,7 +96,7 @@ class AstNode {
    *                 otherwise e.g. `1 < 2` would escape the `<` to `&lt;` and KaTeX would receive bad input.
    *        - {TreeNode} header_graph - TreeNode graph containing AstNode headers
    *        - {Object} ids - map of document IDs to their description:
-   *                 - 'prefix': prefix to add if style_full, e.g. `Figure 1`, `Section 2`, etc.
+   *                 - 'prefix': prefix to add for a  full reference, e.g. `Figure 1`, `Section 2`, etc.
    *                 - {AstArgument} 'title': the title of the element linked to
    * @param {Object} context
    */
@@ -131,11 +131,16 @@ class AstNode {
     // Do some error checking. If no errors are found, convert normally. Save output on out.
     {
       let error_message = undefined;
-      const name_to_arg = macro.name_to_arg;
       const validation_output = {};
+      const name_to_arg = macro.name_to_arg;
+      // First pass sets defaults on missing arguments.
       for (const argname in name_to_arg) {
+        validation_output[argname] = {};
         const macro_arg = name_to_arg[argname];
-        if (!(argname in effective_this.args)) {
+        if (argname in effective_this.args) {
+          validation_output[argname].given = true;
+        } else {
+          validation_output[argname].given = false;
           if (macro_arg.mandatory) {
             error_message = [
               `missing mandatory argument ${argname} of ${effective_this.macro_name}`,
@@ -144,18 +149,31 @@ class AstNode {
           }
           if (macro_arg.default !== undefined) {
             effective_this.args[argname] = new AstArgument([new PlaintextAstNode(this.line, this.column, macro_arg.default)]);
+          } else if (macro_arg.boolean) {
+            effective_this.args[argname] = new AstArgument([new PlaintextAstNode(this.line, this.column, '0')]);
           }
         }
       }
+      // Second pass processes the values including defaults.
       for (const argname in name_to_arg) {
-        validation_output[argname] = {};
         const macro_arg = name_to_arg[argname];
         if (argname in effective_this.args) {
           const arg = effective_this.args[argname];
           if (macro_arg.boolean) {
+            let arg_string;
             if (arg.length > 0) {
+              arg_string = convert_arg_noescape(arg, context);
+            } else {
+              arg_string = '1';
+            }
+            if (arg_string === '0') {
+              validation_output[argname]['boolean'] = false;
+            } else if (arg_string === '1') {
+              validation_output[argname]['boolean'] = true;
+            } else {
+              validation_output[argname]['boolean'] = false;
               error_message = [
-                `boolean arguments like "${argname}" of "${effective_this.macro_name}" cannot have values, use just "{${argname}}" instead`,
+                `boolean argument "${argname}" of "${effective_this.macro_name}" has invalid value: "${arg_string}", only "0" and "1" are allowed`,
                 arg.line, arg.column];
               break;
             }
@@ -3270,7 +3288,7 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    function(ast, context) {
+    function(ast, context, validation_output) {
       const target_id = convert_arg_noescape(ast.args.href, context);
       const target_id_ast = context.id_provider.get(target_id);
       if (target_id_ast === undefined) {
@@ -3285,8 +3303,8 @@ const DEFAULT_MACRO_LIST = [
           caption_prefix_span: false,
           quote: true,
         };
-        if ('full' in ast.args) {
-          x_text_options.style_full = true;
+        if (validation_output.full.given) {
+          x_text_options.style_full = validation_output.full.boolean;
         }
         content = Macro.x_text(target_id_ast, context, x_text_options);
         if (content === ``) {

@@ -935,7 +935,7 @@ if (commander.helpMacros) {
     fs.writeFileSync(path.join(outdir, '.gitignore'), gitignore_new);
 
     // Generate README.ciro and other .ciro files.
-    let readme_cirodown_str = `= Cirodown hello world
+    let readme_cirodown_str = `= Cirodown Template
 
 Hello!
 `;

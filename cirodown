@@ -1202,4 +1202,7 @@ if (commander.helpMacros) {
     process.exit(non_cirodown_options.had_error);
   }
 }
-})()
+})().catch((e) => {
+  console.error(e);
+  process.exit(1);
+})

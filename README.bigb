@@ -6159,11 +6159,11 @@ Topics group articles that have the same title by different users. This feature 
 {c}
 {parent=OurBigBook Web user manual}
 
-Each article has their own discussion section. This way you can easily see if other user
+Each article has their own discussion section. This way you can easily see if other students have had the same problem as you and asked about it already.
 
 \Image[Fundamental_theorem_of_calculus_subheader_discussion.png]
 {border}
-{height=300}
+{height=200}
 {provider=github}
 {description=Click the "Discussions" button to see if other people hit the same problem as you and created a discussion thread for it. We see that there are 3 total discussions about this header, so let's check them out. URL: https://ourbigbook.com/barack-obama/mathematics#fundamental-theorem-of-calculus[]}
 
@@ -6178,6 +6178,43 @@ Each article has their own discussion section. This way you can easily see if ot
 {height=600}
 {provider=github}
 {description=So let's inspect that discussion. Ah, clearly, the comments are very illuminating, our problem is solved! URL: https://ourbigbook.com/go/issue/1/barack-obama/fundamental-theorem-of-calculus[]}
+
+= OurBigBook Web create your article about topic
+{c}
+{parent=OurBigBook Web user manual}
+
+If even existing <OurBigBook Web topics>[topics] and <OurBigBook Web discussions>[discussions] have failed you, and you have finally understood a subject after a few hours of Googling, why not share your knowledge by creating a new article yourself?
+
+There are a few ways to do that.
+
+\Image[Fundamental_theorem_of_calculus_topic_page_new_article.png]
+{border}
+{provider=github}
+{height=300}
+{description=One easy way to create an article about a given topic is to use the "New Article in Topic" button from the topic page. URL: https://ourbigbook.com/go/topic/fundamental-theorem-of-calculus[]}
+
+\Image[Fundamental_theorem_of_calculus_subheader_create_my.png]
+{border}
+{provider=github}
+{height=200}
+{description=Another option is to click the "Create my version of this topic button". URL: https://ourbigbook.com/barack-obama/mathematics#fundamental-theorem-of-calculus[]}
+
+\Image[Fundamental_theorem_of_calculus_editor_new.png]
+{border}
+{provider=github}
+{height=300}
+{description=If you click do any of the above links, you will be redirected to the editor page, and the title will be preset. By simply using that exact same title to create your new article, your article will then appear in the correct "Fundamental theorem of calculus" topic where others might see it. https://ourbigbook.com/go/new?title=Proof%20of%20the%20fundamental%20theorem%20of%20calculus[].}
+
+= OurBigBook Web keyboard shortcuts
+{parent=OurBigBook Web user manual}
+
+* Global:
+  * Ctrl + Enter: submit the current form, e.g. save/create articles or comments, login, register
+  * TODO N: create a new article. This requires making sure that all input fields and textareas don't propagate N key events. We did that as a one off for E in comment textareas.
+* Page specific:
+  * Article page (and for Index page on user page):
+    * E: edit the page
+    * L: like or unlike the page. This would require moving like state out of the Like button, which is a bit annoying.
 
 = OurBigBook.com policies
 {c}
@@ -6550,7 +6587,7 @@ The output format is also a bit nicer that what is shown in `npm run build-dev`.
 
 = OurBigBook Web deployment
 {c}
-{parent=OurBigBook Web}
+{parent=OurBigBook Web development}
 
 = OurBigBook Web admin
 {parent=OurBigBook Web deployment}
@@ -6870,7 +6907,7 @@ Further discussion at: https://github.com/cirosantilli/ourbigbook/issues/156
 
 = OurBigBook Web architecture
 {c}
-{parent=OurBigBook Web}
+{parent=OurBigBook Web development}
 
 = OurBigBook Web security
 {c}
@@ -6970,23 +7007,6 @@ Notably, this would be mandatory in case of CSS changes that require correspondi
 As the website grows, we will likely need to do a lazy version of this that marks pages as outdated, and then renders on the fly, plus a background thread that always updates outdated pages.
 
 The functionality of this script should be called from a migration whenever such HTML changes are required. TODO link to an example. We had one at `web/migrations/20220321000000-output-update-ancestor.js` that seemed to work, but lost it. It was simple though. Just you have to instantiate your own Sequelize instance after making the model change to move any data.
-
-= OurBigBook Web help
-{c}
-{parent=OurBigBook Web}
-
-This section will eventually be moved into the website itself. We'll just likely paste it into the database under an account that is always created or something like that.
-
-= OurBigBook Web keyboard shortcuts
-{parent=OurBigBook Web help}
-
-* Global:
-  * Ctrl + Enter: submit the current form, e.g. save/create articles or comments, login, register
-  * TODO N: create a new article. This requires making sure that all input fields and textareas don't propagate N key events. We did that as a one off for E in comment textareas.
-* Page specific:
-  * Article page (and for Index page on user page):
-    * E: edit the page
-    * L: like or unlike the page. This would require moving like state out of the Like button, which is a bit annoying.
 
 = Runtime feature
 {parent=OurBigBook}

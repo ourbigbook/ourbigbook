@@ -123,6 +123,9 @@ function cmd_get_stdout(cmd, args=[], options={}) {
   if (!('dry_run' in options)) {
     options.dry_run = false;
   }
+  if (!('env_extra' in options)) {
+    options.env_extra = {};
+  }
   if (!('show_cmd' in options)) {
     options.show_cmd = true;
   }
@@ -132,7 +135,7 @@ function cmd_get_stdout(cmd, args=[], options={}) {
     console.log(cmd_str);
   }
   if (!options.dry_run) {
-    out = child_process.spawnSync(cmd, args);
+    out = child_process.spawnSync(cmd, args, { env: { ...process.env, ...options.env_extra } });
   }
   let ret;
   if (options.dry_run) {
@@ -1424,7 +1427,7 @@ if (commander.helpMacros) {
           fs.mkdirSync(publish_dir, {recursive: true});
           if (commander.publishCommit !== undefined) {
             cmd_get_stdout('git', ['-C', inputPath, 'add', '-u'], cmd_options);
-            cmd_get_stdout('git', ['-C', inputPath, 'commit', '-m', commander.publishCommit], cmd_options);
+            cmd_get_stdout( 'git', [ '-C', inputPath, 'commit', '-m', commander.publishCommit ], cmd_options);
           }
           if (fs.existsSync(publish_git_dir)) {
             cmd_get_stdout('git', ['-C', publish_dir, 'checkout', '--', '.'], cmd_options);
@@ -1531,14 +1534,19 @@ if (commander.helpMacros) {
             )
           }
           dir.closeSync()
-
           cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'add', '.'], cmd_options);
           source_commit = git_sha(inputPath, src_branch);
           const args = ['-C', publish_out_publish_dir, 'commit', '-m', source_commit]
           if (git_has_commit(publish_out_publish_dir)) {
             args.push('--amend')
           }
-          cmd_get_stdout('git', args, cmd_options);
+          let commit_cmd_options = cmd_options
+          if (ourbigbook_json.publishCommitDate) {
+            args.push(...['--date', ourbigbook_json.publishCommitDate])
+            commit_cmd_options = Object.assign({}, cmd_options)
+            commit_cmd_options.env_extra = { GIT_COMMITTER_DATE: ourbigbook_json.publishCommitDate }
+          }
+          cmd_get_stdout('git', args, commit_cmd_options);
           if (!commander.dryRunPush) {
             cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'push', '-f', 'origin', `${publish_branch}:${publish_branch}`], cmd_options);
             // Mark the commit with the `published` branch to make it easier to find what was last published.

@@ -1,0 +1,257 @@
+import { findSynonymOr404, getLoggedInUser } from 'back'
+import { ArticlePageProps } from 'front/ArticlePage'
+import {
+  articleLimitSmall,
+  convertContext,
+  log,
+  maxArticlesFetch,
+  maxArticlesFetchToc,
+} from 'front/config'
+import { MyGetServerSideProps } from 'front/types'
+import { idToSlug } from 'front/js'
+import { IssueType } from 'front/types/IssueType'
+import { UserType } from 'front/types/UserType'
+import routes from 'front/routes'
+
+import ourbigbook from 'ourbigbook'
+
+async function getIncomingLinks(sequelize, article, { type, from, to }) {
+  return sequelize.models.Article.findAll({
+    attributes: ['slug', 'titleRenderWithScope'],
+    order: [['slug', 'ASC']],
+    include: [{
+      model: sequelize.models.File,
+      as: 'file',
+      required: true,
+      attributes: [],
+      include: [{
+        model: sequelize.models.Id,
+        as: 'toplevelId',
+        required: true,
+        attributes: [],
+        include: [{
+          model: sequelize.models.Ref,
+          as: from,
+          required: true,
+          where: { type: sequelize.models.Ref.Types[type] },
+          attributes: [],
+          include: [{
+            model: sequelize.models.Id,
+            as: to,
+            required: true,
+            attributes: [],
+            include: [{
+              model: sequelize.models.File,
+              as: 'toplevelId',
+              required: true,
+              attributes: [],
+              include: [{
+                model: sequelize.models.Article,
+                as: 'articles',
+                required: true,
+                attributes: [],
+                where: { slug: article.slug },
+              }],
+            }],
+          }],
+        }],
+      }]
+    }]
+  })
+}
+
+export const getServerSidePropsArticleHoc = ({
+  includeIssues=false,
+  loggedInUserCache,
+}:
+  {
+    includeIssues?: boolean,
+    loggedInUserCache?: UserType,
+  }
+={}): MyGetServerSideProps => {
+  return async function getServerSidePropsArticle({ params: { slug }, req, res }) {
+    let t0
+    if (log.perf) {
+      t0 = performance.now()
+    }
+    if (slug instanceof Array) {
+      const slugString = slug.join('/')
+      const sequelize = req.sequelize
+      const { Article, File, Issue, Id, Ref } = sequelize.models
+      const limit = articleLimitSmall
+      const [article, loggedInUser] = await Promise.all([
+        Article.getArticle({
+          sequelize,
+          slug: slugString,
+        }),
+        getLoggedInUser(req, res, loggedInUserCache),
+      ])
+      if (!article) {
+        return await findSynonymOr404(sequelize, slugString, routes.article)
+      }
+      const isIndex = article.isIndex()
+      const getIssueJson = async order => Promise.all((await Issue.getArticleIssues({
+        articleId: article.id, limit, order,
+      })).map(issue => issue.toJson(loggedInUser))) as Promise<IssueType[]>
+      const [
+        ancestors,
+        articleJson,
+        articlesInSamePage,
+        [
+          articlesInSamePageForToc,
+          articlesInSamePageForTocCount,
+          articlesInSamePageForTocHasMoreDirectChildren,
+        ],
+        articleInTopicByLoggedInUser,
+        h1ArticlesInSamePage,
+        incomingLinks,
+        issuesCount,
+        otherArticlesInTopic,
+        synonymIds,
+        latestIssues,
+        tagged,
+        topIssues
+      ] = await Promise.all([
+        // ancestors
+        article.treeFindAncestors({
+          attributes: ['slug', 'titleRender', 'titleRenderPlaintext'],
+          metadataOnly: true,
+        }),
+        article.toJson(loggedInUser),
+        // articlesInSamePage
+        Article.getArticlesInSamePage({
+          article,
+          getTagged: true,
+          loggedInUser,
+          limit: maxArticlesFetch,
+          list: true,
+          sequelize,
+          toplevelId: true,
+        }),
+        // articlesInSamePageForToc
+        Article.getArticlesInSamePageForToc({
+          article,
+          loggedInUser,
+          maxEntries: maxArticlesFetchToc,
+          preloadEntries: maxArticlesFetch,
+          sequelize,
+        }),
+        Article.getArticleJsonInTopicBy(loggedInUser, article.topicId),
+        // h1ArticlesInSamePage
+        Article.getArticlesInSamePage({
+          article,
+          loggedInUser,
+          list: undefined,
+          h1: true,
+          metadataOnly: true,
+          sequelize,
+        }),
+        getIncomingLinks(sequelize, article, { type: ourbigbook.REFS_TABLE_X, from: 'from', to: 'to' }),
+        includeIssues ? Issue.count({ where: { articleId: article.id } }) : null,
+        isIndex
+          ? { rows: [] }
+          : Article.getArticles({
+              forList: true,
+              excludeIds: [article.id],
+              limit,
+              offset: 0,
+              order: 'score',
+              sequelize,
+              topicId: article.topicId,
+            })
+        ,
+        // synonymIds
+        Id.findAll({
+          attributes: ['idid'],
+          include: [{
+            model: Ref,
+            as: 'from',
+            required: true,
+            where: { type: Ref.Types[ourbigbook.REFS_TABLE_SYNONYM] },
+            attributes: [],
+            include: [{
+              model: Id,
+              as: 'to',
+              required: true,
+              attributes: [],
+              include: [{
+                model: File,
+                as: 'toplevelId',
+                required: true,
+                attributes: [],
+                include: [{
+                  model: Article,
+                  as: 'articles',
+                  required: true,
+                  attributes: [],
+                  where: {
+                    slug: article.slug
+                  },
+                }],
+              }],
+            }]
+          }]
+        }),
+        includeIssues ? getIssueJson('createdAt') : null,
+        // Tagged.
+        getIncomingLinks(sequelize, article, { type: ourbigbook.REFS_TABLE_X_CHILD, from: 'to', to: 'from' }),
+        includeIssues ? getIssueJson('score') : null,
+      ])
+      const h1ArticleInSamePage = h1ArticlesInSamePage[0]
+      if (
+        // False for Index pages, I think because they have no associated topic.
+        // Which is correct.
+        h1ArticleInSamePage
+      ) {
+        articleJson.topicCount = h1ArticleInSamePage.topicCount
+        articleJson.hasSameTopic = h1ArticleInSamePage.hasSameTopic
+      }
+      const props: ArticlePageProps = {
+        ancestors: ancestors.map((a, i) => {
+          return {
+            hasScope: i !== 0 && ourbigbook.AstNode.fromJSON(a.file.toplevelId.ast_json, convertContext)
+              .validation_output.scope.given,
+            slug: a.slug,
+            titleRender: a.titleRender,
+            titleRenderPlaintext: a.titleRenderPlaintext,
+          }
+        }),
+        article: articleJson,
+        articleInTopicByLoggedInUser,
+        articlesInSamePage,
+        // Both lists have the same predicate. Reuse the ToC count, whose
+        // count-only query does not need the hydration joins used above.
+        articlesInSamePageCount: articlesInSamePageForTocCount,
+        articlesInSamePageForToc,
+        articlesInSamePageForTocCount,
+        articlesInSamePageForTocHasMoreDirectChildren,
+        incomingLinks: incomingLinks.map(a => { return { slug: a.slug, titleRenderWithScope: a.titleRenderWithScope } }),
+        isIndex,
+        loggedInUser,
+        otherArticlesInTopic: await Promise.all(otherArticlesInTopic.rows.map(article => article.toJson(loggedInUser))),
+        synonymLinks: synonymIds.map(i => { return {
+          slug: idToSlug(i.idid),
+          titleRenderWithScope: idToSlug(i.idid),
+          // TODO does not blow up, but returns empty.
+          // https://docs.ourbigbook.com/todo/list-synonyms-on-metadata-section
+          //titleRender: ourbigbook.renderAstFromOpts(i.ast_json, getConvertOpts({ render: true, sequelize })),
+        }}),
+        tagged: tagged.map(a => { return { slug: a.slug, titleRenderWithScope: a.titleRenderWithScope } }),
+      }
+      if (loggedInUser) {
+        props.loggedInUser = await loggedInUser.toJson(loggedInUser)
+      }
+      if (includeIssues) {
+        props.latestIssues = latestIssues
+        props.topIssues = topIssues
+        props.issuesCount = issuesCount
+      }
+      if (log.perf) {
+        console.error(`perf: getServerSidePropsArticle: ${performance.now() - t0} ms`)
+      }
+      return { props }
+    } else {
+      return { notFound: true }
+    }
+  }
+}

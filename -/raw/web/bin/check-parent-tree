@@ -1,0 +1,32 @@
+#!/usr/bin/env node
+
+const path = require('path')
+
+const commander = require('commander')
+const {
+  find_article_parent_issues,
+  find_parent_cycles,
+} = require('ourbigbook/nodejs_webpack_safe')
+
+const models = require('../models')
+
+const program = commander.program
+program.description('Check the web Article parent tree for missing parents, broken ancestry, and cycles')
+program.option('-a, --author <username>', 'only check one author')
+program.parse(process.argv)
+const opts = program.opts()
+const sequelize = models.getSequelize(path.dirname(__dirname))
+;(async () => {
+  const idPrefix = opts.author === undefined ? undefined : `@${opts.author}`
+  const [issues, cycles] = await Promise.all([
+    find_article_parent_issues(sequelize, { idPrefix }),
+    find_parent_cycles(sequelize, { idPrefix }),
+  ])
+  for (const issue of issues) console.error(JSON.stringify(issue))
+  for (const cycle of cycles) console.error(`cycle: ${cycle.join(' -> ')}`)
+  if (issues.length || cycles.length) {
+    process.exitCode = 1
+  } else {
+    console.log('No Article parent tree errors found.')
+  }
+})().finally(() => sequelize.close())

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>markdown-example.md - Ciro Santilli</title>
+<meta property="og:title" content="markdown-example.md - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/-/raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/-/file/markdown-example.md">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/logo-circle.svg" type="image/svg+xml">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../" class="brand"><img src="../../-/raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/markdown-example.md"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">markdown-example.md</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/markdown-example.md">markdown-example.md</a></b></div></nav></div><div class="p"><b>markdown-example.md</b></div><div class="code"><div><pre><code># Markdown example
+
+Hello, `markdown`!
+
+Hello multi-line code:
+
+```
+def myfunc(i):
+    return i + 1
+```
+
+And an image:
+
+![](logo.png)
+
+# OurBigBook Markdown extensions
+{parent=Markdown example}
+
+You can use any sane named argument that you want:
+
+\OurBigBookExample[[
+Hello my \b[bold text]!
+
+And here a sane quote:
+
+\Q[Hello world!]
+{description=My nice quote. This is also markdown: [link to example](http://example.com) site.}
+]]
+
+And you can add OurBigBook arguments to shortcut Markup syntax:
+
+\OurBigBookExample[[
+![](logo.png)
+{description=OurBigBook logo with a description!}
+]]
+
+\Include[markdown-example-child]
+
+# OurBigBook Markdown shorthand extensions
+{parent=OurBigBook Markdown extensions}
+
+# OurBigBook Markdown wikilinks
+{parent=OurBigBook Markdown shorthand extensions}
+
+Analogous to Obsidian, generates [[internal cross references]]:
+
+\OurBigBookExample[[[
+Hello my [[OurBigBook]]!
+
+I like [[headers]].
+
+And here with custom text [[header|fancy headers]].
+]]]
+
+# OurBigBook Markdown extensions h3
+{parent=OurBigBook Markdown extensions}
+
+# OurBigBook Markdown extensions h4
+{parent=OurBigBook Markdown extensions h3}
+
+# OurBigBook Markdown extensions h5
+{parent=OurBigBook Markdown extensions h4}
+
+# OurBigBook Markdown extensions h6
+{parent=OurBigBook Markdown extensions h5}
+
+# OurBigBook Markdown extensions h7
+{parent=OurBigBook Markdown extensions h6}
+
+# OurBigBook Markdown extensions h8
+{parent=OurBigBook Markdown extensions h7}
+</code></pre></div></div><h2 id="-/used-by"><a href="#-/used-by"><span title="Used by" class="fa-solid-900 icon"></span> Used by <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href="../..#input-format-md"><code>--input-format md</code></a></li></ul></div></main>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:83922ccecbc248fc3f565a489948ca0dc64c6a4e133f27545a85402b3c1311fa-->

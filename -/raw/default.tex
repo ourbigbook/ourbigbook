@@ -1,0 +1,66 @@
+% https://docs.ourbigbook.com/built-in-math-macros
+
+% Scientific notation helper:
+% https://www.reddit.com/r/LaTeX/comments/3yjzz6/comment/cye8u5v/?utm_source=reddit&utm_medium=web2x&context=3
+\newcommand{\e}[1]{\times 10^{#1}}
+
+%% physics package
+%% http://mirrors.ibiblio.org/CTAN/macros/latex/contrib/physics/physics.pdf
+% Absolute value.
+\newcommand{\abs}[1]{\left|#1\right|}
+\newcommand{\curl}[1]{\nabla \times #1}
+\renewcommand{\div}[1]{\nabla \cdot #1}
+\newcommand{\grad}[1]{\nabla #1}
+\newcommand{\laplacian}[1]{\nabla^2 #1}
+% Partial derivative.
+% https://tex.stackexchange.com/questions/412439/is-there-a-short-hand-command-to-write-derivatives
+\newcommand{\pdv}[2]{\frac{\partial #1}{\partial #2}}
+% Non-partial derivative.
+\newcommand{\dv}[2]{\frac{d #1}{d #2}}
+% Vector Arrow.
+\newcommand{\va}[1]{\overrightarrow{#1}}
+
+%% Calculus
+
+% Derivative evaluated at point.
+% https://tex.stackexchange.com/questions/294499/evaluated-at-bar-for-derivatives-bigr-biggr-or-left-right
+\newcommand{\evalat}[2]{#1\biggr\rvert_{#2}}
+
+%% Complex numbers
+% Complex conjugate.
+\newcommand\conj[1]{\bar{#1}}
+
+%% Algebra
+
+\newcommand{\projectiveSpace}[0]{\mathbf{P}}
+
+%% Real and complex analysis
+\newcommand{\C}[0]{\mathbb{C}}
+% Field.
+\newcommand{\F}[0]{\mathbb{F}}
+% Quaternions.
+\renewcommand{\H}[0]{\mathbb{H}}
+\renewcommand{\R}[0]{\mathbb{R}}
+\newcommand{\Q}[0]{\mathbb{Q}}
+\renewcommand{\Z}[0]{\mathbb{Z}}
+
+%%% Lebesgue spaces.
+\newcommand{\LP}[0]{L^p}
+\newcommand{\LTwo}[0]{L^2}
+
+%% Electromagnetism
+% Magnetic field vector
+\newcommand{\B}[0]{\va{\mathbf{B}}}
+% Electric field vector
+\newcommand{\E}[0]{\va{\mathbf{E}}}
+% Electric current vector.
+\newcommand{\J}[0]{\va{\mathbf{J}}}
+\newcommand{\vacuumPermittivity}[0]{\varepsilon_0}
+\newcommand{\vacuumPermeability}[0]{\mu_0}
+
+%% esvect
+% https://tex.stackexchange.com/questions/261591/arrow-above-text-like-widehat
+\newcommand{\vv}[1]{\overrightarrow#1}
+
+%% number theory
+\newcommand{\gdc}[0]{\text{gdc}}

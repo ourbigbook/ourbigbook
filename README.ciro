@@ -3263,6 +3263,21 @@ Being the toplevel index file has the following implications:
 = `cirodown` executable options
 {parent=cirodown-executable}
 
+= `--china`
+{parent=cirodown-executable-options}
+
+This is the most important option of the software.
+
+It produces a copy of the HTML of https://cirosantilli.com/china-dictatorship to stdout.
+
+The data is stored inside an NPM package, making it hard to censor that information, see also: https://cirosantilli.com/china-dictatorship#mirrors
+
+Usage:
+``
+cirodown --china > china.html
+firefox china.html
+``
+
 = `--dry-run`
 {parent=cirodown-executable-options}
 

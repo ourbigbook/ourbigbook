@@ -168,6 +168,7 @@ Cirodown aims to be the ultimate \x[latex-output-format][LaTeX] "killer", allowi
     * supports both local serverless rendering to HTML files for local viewing, and server oriented rendering such as GitHub pages, e.g. \x[internal-cross-reference]{p} automatically get `.html` extension and or not
   * cross file configuration files to factor out common page parts like headers, footers and other metadata
   * \x[table-of-contents] that crosses input files (TODO https://github.com/cirosantilli/cirodown/issues/126[])
+  * check that local files and images linked to actually exist: \x[a-check-argument]
 * advanced header/ID related features:
   * \x[scope]{p}
   * \x[synonym]{p}
@@ -396,7 +397,7 @@ Trump said this and that.https://en.wikipedia.org/wiki/Donald_Trump_Access_Holly
 
 If given, this \x[boolean-named-argument] forces a given link to be a \x[relative-link] or not.
 
-Otherwise, the link is automatically guessed based on the address given as explained below.
+Otherwise, the link is automatically guessed based on the address given as explained at \x[relative-link]{full}.
 
 = Relative link
 {parent=a-relative-argument}
@@ -1036,9 +1037,86 @@ Besides disambiguating headers, the `disambiguate` argument has a second related
 {title=The title of my disambiguate image.}
 {disambiguate=2}
 ]]
-Note that unlike for headers, `disambiguate` does not appear on the title of images at all. It serves only to create an unique ID that can be later referred to. Headers are actually the only case where `disambiguate` shows up on the visible rendered output.
+Note that unlike for headers, `disambiguate` does not appear on the title of images at all. It serves only to create an unique ID that can be later referred to. Headers are actually the only case where `disambiguate` shows up on the visible rendered output. We intend on making this application obsolete however with:
 
 This use case is even more useful when `title-from-src` is enable by default for the \x[cirodown-json/media-providers] entry, so you don't have to repeat titles several times over and over.
+
+= `\H` `file` argument
+{parent=h-arguments}
+
+If given, the current section contains metadata about file or other resource with the given URL.
+
+If empty, the URl of the file is extracted directly from the header. Otherwise, the given URL is used.
+
+for example:
+``
+The file \x[file/path/to/myfile.c] is very useful.
+
+= path/to/myfile.c
+{file}
+
+An explanation of what this file is about.
+``
+renders the same as:
+``
+The file \x[file/path/to/myfile.c] is very useful.
+
+= path/to/myfile.c
+{file}
+{id=file/path/to/myfile.c}
+
+An explanation of what this file is about.
+
+\a[path/to/myfile.c][View file]
+``
+so note how:
+* \x[automatic-id-from-title] does not normalize the path, e.g. it does not convert `/` to `-`.
+
+  Also, a `file/` prefix is automatically added to the ID. This is needed with \x[split-headers] to avoid a collision between:
+  * `path/to/myfile.c`: the actual file
+  * `file/path/to/myfile.c`: the metadata about that file. Note that locally the `.html` extension is added as in `file/path/to/myfile.c.html` which avoids the collision. But on a server deployment, the `.html` is not present, and there would be a conflict if we didn't add that `file/` prefix.
+* a link to the is added automatically, since users won't be able to click it from the header, as clicking on the header will just link to the header itself
+* a preview is added. The type of preview is chosen as follows:
+  * if the URL has an image extension, do an \x[image] preview
+  * otherwise if the URL has a video extension, or is a YouTube URL, do a \x[video] preview
+  * otherwise, don't show a preview, as we don't know anything sensible to show
+
+In some cases however, especially when dealing with external URLs, we might want to have a more human readable title with a `file` specified as in:
+``
+The video \x[tank-man-by-cnn-1989] is very useful.
+
+= Tank Man by CNN (1989)
+{file=https://www.youtube.com/watch?v=YeFzeNAHEhU}
+
+An explanation of what this video is about.
+``
+which renders something like:
+``
+The video \x[tank-man-by-cnn-1989] is very useful.
+
+= Tank Man by CNN (1989)
+
+\a[https://www.youtube.com/watch?v=YeFzeNAHEhU][View file]
+
+An explanation of what this video is about.
+
+\Video[https://www.youtube.com/watch?v=YeFzeNAHEhU]
+``
+
+= `\H` `file` argument demo
+{parent=h-file-argument}
+
+= Tank_man_standing_in_front_of_some_tanks.jpg
+{file}
+{parent=h-file-argument-demo}
+
+An explanation of what this video is about.
+
+= Tank Man by CNN (1989)
+{file=https://www.youtube.com/watch?v=YeFzeNAHEhU}
+{parent=h-file-argument-demo}
+
+An explanation of what this video is about.
 
 = `\H` `numbered` argument
 {c}
@@ -1910,6 +1988,8 @@ just use the image from \C[README.ciro] as:
 
 However, if you are making a huge tutorial, which can have a huge undefined number of images (i.e. any scientific book), then you likely don't want to git track your images in the git repository.
 
+A generally better alternative is to \x[store-images-in-a-separate-media-repository], and especially \x[store-images-in-a-separate-media-repository-and-track-it-as-a-git-submodule].
+
 = Store images in a separate media repository
 {parent=where-to-store-images}
 
@@ -1954,6 +2034,43 @@ The reason why images should be kept in a separate repository is that images are
 Therefore, images could easily fill up the maximum repository size you are allowed: https://webapps.stackexchange.com/questions/45254/file-size-and-storage-limits-on-github#84746 and then what will you do when GitHub comes asking you to reduce the repository size?
 
 https://git-lfs.github.com/[Git LFS] is one approach to deal with this, but we feel that it adds too much development overhead.
+
+= Store images in a separate media repository and track it as a git submodule
+{parent=store-images-in-a-separate-media-repository}
+
+This is likely the sanest approach possible, as it clearly specifies which media version matches which repository version through the submodule link.
+
+Furthermore, it is possible to make the submodule clone completely optional by setting things up as follows. For your Cirodown project `yourname/myproject` create a  `yourname/myproject-media` with the media, and track it as a submodule under `yourname/myproject/media`.
+
+Then, add to \x[cirodown-json/media-providers]:
+```
+"media-providers": {
+  "github": {
+    "default-for": ["image", "video"],
+    "path": "media",
+    "remote": "yourname/myproject-media"
+  }
+}
+```
+
+Now, as mentioned at \x[cirodown-json/media-providers], everything will work beautifully:
+
+* `cirodown .` local conversion will use images from `media/` if it exists, e.g.:
+  ```
+  \Image[myimage.jpg]
+  ```
+  will render `media/myimage.jpg`. So after cloning the submodule, you will be able to see the images on the rendered pages without an internet connection.
+
+  But if the submodule is not cloned, not problem, renders will detect that and automatically use GitHub images.
+
+  Then, when you do:
+  ```
+  cirodown --publish
+  ```
+  the following happen:
+  * `\Image[myimage.jpg]` uses the GitHub URL
+  * automatically push `media/` to GitHub in case there were any updates
+  * also, that directory is automatically gitignore, so it won't be pushed as part of the main render and thus duplicate things
 
 = Store images in Wikimedia Commons
 {parent=where-to-store-images}
@@ -3100,7 +3217,7 @@ To prevent such problems, Cirodown emits an error if you use an `\x` without con
   {title=my \x[h1].}
   ``
 
-While it is technically possible implement the above limitations, it would require a bit of extra work which we don't want to put in right now: https://github.com/cirosantilli/cirodown/issues/95[].
+While it is technically possible relax the above limitations and give an error only in case of loops, it would require a bit of extra work which we don't want to put in right now: https://github.com/cirosantilli/cirodown/issues/95[].
 
 Furthermore, the above rules do not exclude infinite rendering loops, but Cirodown detects such loops and gives a nice error message, this has been fixed at: https://github.com/cirosantilli/cirodown/issues/34 
 
@@ -4289,7 +4406,8 @@ Note that this follows https://github.com/tj/commander.js/tree/e0e723810357e9152
 ```
 
 Values not documented in other sections:
-* `ast`: the final parsed \x[abstract-syntax-tree]
+* `ast`: the full final parsed \x[abstract-syntax-tree] as JSON
+* `ast-simple`: a simplified view of the \x[abstract-syntax-tree] with one AstNode or AstArgument per line and showing only the most important fields
 * `ast-inside`: print the AST from inside the `cirodown.convert` call before it returns.
 
   This is useful to debug the program if `cirodown.convert` blows up on the next stages before returning.
@@ -4840,7 +4958,7 @@ The general format of `media-providers` looks like:
   "github": {
     "default-for": ["image"], // "all" to default for both image, video and anything else
     "path": "data/media/",    // data is gitignored, but should not be nuked like out/
-    "remote": "cirosantilli/cirodown-media",
+    "remote": "cirosantilli/cirodown-media"
   },
   "local": {
     "default-for": ["video"],
@@ -4862,7 +4980,17 @@ Direct children of media-providers and subproperties that are valid only for the
 * `local`: tracked in the current Git repository as mentioned at \x[store-images-inside-the-repository-itself]{full}
   * `path`: location of the cloned local repository relative to the root the main repository
 * `github`: tracked in a separate Git repository as mentioned at \x[store-images-in-a-separate-media-repository]{full}
-  * `path`: same as for `local`
+  * `path`: analogous to `path` for `local`: a local location for this GitHub provider, where the repository can optionally be cloned.
+
+    TODO implement the amazing behaviour described below:
+
+    If this directory exists then local renders automatically use it instead of linking to the GitHub resources, therefore allowing you to develop locally without the internet and Still see images.
+
+    Then, during deployment, the GitHub version is used on the render regardless. Furthermore, we also automatically `git push` this repository during deployment to ensure that any asset changes will be available.
+
+    This path is ignored from Cirodown conversion as if added to \x[cirodown-json/ignore], and is not added to the final output, because you are already going to have a copy of it.
+
+    The sanest approach is generally to track this directory as a Git submodule as mentioned at: \x[store-images-in-a-separate-media-repository-and-track-it-as-a-git-submodule]
   * `remote`: `<github-username>/<repo-name>`
 * `youtube`: YouTube \x[video]{p}
 
@@ -5559,7 +5687,13 @@ The structure of the AST is as follows:
 * `AstNode`: contains a map from argument names to the values of each argument, which are of type AstArgument
 * `AstArgument`: contains a list of `AstNode`. These are generally just joined up on the output, one after the other.
 
-  One important exception to this are plaintext nodes. These nodes contain just raw strings instead of a list of arguments. They are usually the leave nodes.
+  One important exception to this are plaintext nodes. These nodes contain just raw strings instead of a list of arguments. They are usually the leaf nodes.
+
+We can easily observe the AST of an input document by using the \x[log] following log options:
+``
+cirodown --log=ast-simple input.ciro
+cirodown --log=ast input.ciro
+``
 
 For example, the document:
 ``
@@ -5570,38 +5704,61 @@ A link to \x[another-title]{c}{p} and more text.
 
 == Another title
 ``
-would have a syntax tree that looks like:
+produces with `--log=ast-simple` the following output:
 ``
-AstNode: Toplevel
-  AstArgument: content
-    AstNode: H
-      AstArgument: title
-        AstNode:
-          AstArgument: plaintext
-            "My title"
-      AstArgument: c
-        AstNode: "1"
-    AstNode: P
-      AstArgument: content
-        AstNode: plaintext
-            "A link to "
-        AstNode: x
-          AstArgument: href
-            AstNode: plaintext
-              "another-title"
-          AstArgument: c
-            AstNode: plaintext
-              "1"
-          AstArgument: p
-            AstNode: plaintext
-              "1"
-        AstNode: plaintext
-            " and more text."
-``
-
-You can observe the generated AST by using the \x[log] option with:
-``
-cirodown --log ast input.ciro
+ast Toplevel
+  arg content
+    ast H
+      arg c
+      arg file
+        ast plaintext "0"
+      arg level
+        ast plaintext "1"
+      arg numbered
+        ast plaintext "0"
+      arg scope
+        ast plaintext "0"
+      arg splitDefault
+        ast plaintext "0"
+      arg synonym
+        ast plaintext "0"
+      arg title
+        ast plaintext "My title"
+    ast P
+      arg content
+        ast plaintext "A link to "
+        ast x
+          arg c
+          arg child
+            ast plaintext "0"
+          arg full
+            ast plaintext "0"
+          arg href
+            ast plaintext "another-title"
+          arg p
+          arg parent
+            ast plaintext "0"
+          arg ref
+            ast plaintext "0"
+        ast plaintext " and more text."
+    ast Toc
+    ast H
+      arg c
+        ast plaintext "0"
+      arg file
+        ast plaintext "0"
+      arg level
+        ast plaintext "2"
+      arg numbered
+        ast plaintext "0"
+      arg scope
+        ast plaintext "0"
+      arg splitDefault
+        ast plaintext "0"
+      arg synonym
+        ast plaintext "0"
+      arg title
+        ast plaintext "Another title"
 ``
 
 = Autogenerated tests

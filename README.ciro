@@ -649,13 +649,9 @@ The ToC ignores `\h[1]` by default, as we encourage that header level to appear 
 
 `\toc` from \x[includes][includes] are ignored.
 
-==== id_scope
+==== scope
 
-TODO implement.
-
-If this header attribute is `true`, then the ID of all children are prefixed with the ID of this header + a slash `/`.
-
-References withing a single scope do not need the parent scope prefix.
+TODO implement: https://github.com/cirosantilli/cirodown/issues/71
 
 === Header explicit levels vs nesting design choice
 
@@ -1562,15 +1558,15 @@ Every argument in Cirodown is either positional or named.
 
 For example, in a \x[headers][header] definition with an ID:
 ``
-= My asdf{id=asdf qwer}{id_scope}
+= My asdf{id=asdf qwer}{scope}
 ``
 we have:
 * two positional argument: `[1]` and `[My asdf]`. Those are surrounded by square brackets `[]` and have no name
-* two named arguments: `{id=asdf qwer}` and `{id_scope}`.
+* two named arguments: `{id=asdf qwer}` and `{scope}`.
 
   The first one has name `id` and the mandatory separator `=`, followed by the value `asdf qwer`.
 
-  The `id_scope` one does not need `=` because it is a \x[boolean-named-arguments]
+  The `scope` one does not need `=` because it is a \x[boolean-named-arguments]
 
 You can determine if a macro is positional or named by using \x[help-macros]. Its output contains something like:
 ``
@@ -1588,12 +1584,12 @@ You can determine if a macro is positional or named by using \x[help-macros]. It
       "id": {
         "name": "id"
       }
-      "id_scope": {
-        "name": "id_scope"
+      "scope": {
+        "name": "scope"
       }
     },
 ``
-and so we see that `level` and `content` are positional arguments, and `id` and `id_scope` are named arguments.
+and so we see that `level` and `content` are positional arguments, and `id` and `scope` are named arguments.
 
 Generally, positional arguments are few (otherwise it would be hard to know which is which is which), and are almost always used for a given element so tha they save us from typing the name too many times.
 
@@ -1601,10 +1597,10 @@ The order of positional arguments must of course be fixed, but named arguments c
 
 The following are therefore all equivalent:
 ``
-\h[1][My asdf]{id=asdf qwer}{id_scope}
-\h[1][My asdf]{id_scope}{id=asdf qwer}
-\h{id=asdf qwer}{id_scope}[1][My asdf]
-\h{id_scope}[1]{id=asdf qwer}[My asdf]
+\h[1][My asdf]{id=asdf qwer}{scope}
+\h[1][My asdf]{scope}{id=asdf qwer}
+\h{id=asdf qwer}{scope}[1][My asdf]
+\h{scope}[1]{id=asdf qwer}[My asdf]
 ``
 
 Just like named arguments, positional arguments are never mandatory.
@@ -1782,16 +1778,16 @@ b
 The macro name and the first argument, and two consecutive arguments, can be optionally separated by exactly one newline character, e.g.:
 ``
 \h[2]
-{id_scope}
+{scope}
 [Design goals]
 ``
 is equivalent to:
 ``
-\h[2]{id_scope}[Design goals]
+\h[2]{scope}[Design goals]
 ``
 and this non-recommended mixed style:
 ``
-\h[2]{id_scope}
+\h[2]{scope}
 [Design goals]
 ``
 This allows to greatly improve the readability of long argument lists by having them one per line.
@@ -2417,7 +2413,6 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 === TODO
 
-* \x[id-scope]
 * correct ID generation algorithm to be Unicode robust
 * local downloads and single HTML page with image / script embeds
 * image management: upload to separate media directory

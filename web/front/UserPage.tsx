@@ -2,7 +2,7 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import React from 'react'
 
-import { AppContext, ArticleIcon, useEEdit, UserIcon } from 'front'
+import { AppContext, ArticleIcon, useEEdit, HomeIcon, UserIcon } from 'front'
 import ArticleList from 'front/ArticleList'
 import { cant  } from 'front/cant'
 import config from 'front/config'
@@ -136,7 +136,7 @@ export default function UserPage({
             href={routes.user(username)}
             className={`tab-item${what === 'home' ? ' active' : ''}`}
           >
-            Home
+            <HomeIcon /> Home
           </CustomLink>
           <CustomLink
             href={routes.userArticles(username, { sort: 'score' })}
@@ -148,7 +148,7 @@ export default function UserPage({
             href={routes.userArticles(username,  { sort: 'created' })}
             className={`tab-item${what === 'user-articles' && order === 'created' ? ' active' : ''}`}
           >
-            Latest
+            <ArticleIcon /> Latest
           </CustomLink>
           <CustomLink
             href={routes.userLikes(username)}
@@ -166,7 +166,7 @@ export default function UserPage({
             href={routes.userFollowed(username)}
             className={`tab-item${what === 'followed' ? ' active' : ''}`}
           >
-            Followed by
+            <UserIcon /> Followed by
           </CustomLink>
         </div>
       </div>

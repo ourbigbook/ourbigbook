@@ -100,7 +100,7 @@ function IndexPageHoc({
                 className={`tab-item${itemType === 'article' && order === 'score' && followed ? ' active' : ''}`}
                 href={routes.articlesFollowed({ sort: 'score' })}
               >
-                Top Followed
+                <ArticleIcon /> Top Followed
               </CustomLink>
             </>
           }
@@ -108,13 +108,13 @@ function IndexPageHoc({
             className={`tab-item${(itemType === 'article' || itemType === 'discussion') && order === 'createdAt' && !followed ? ' active' : ''}`}
             href={isIssue ? routes.issues(issueArticle.slug, { sort: 'created' }) : routes.articles()}
           >
-            {!showFollowed && <><ArticleIcon />{' '}</>}Latest
+            <ArticleIcon /> Latest<span className="mobile-hide">  Articles</span>
           </CustomLink>
           <CustomLink
             className={`tab-item${(itemType === 'article' || itemType === 'discussion') && order === 'score' && !followed ? ' active' : ''}`}
             href={isIssue ? routes.issues(issueArticle.slug, { sort: 'score' }) : routes.articles({ sort: 'score' })}
           >
-            Top
+            <ArticleIcon /> Top<span className="mobile-hide"> Articles</span>
           </CustomLink>
           {isHomepage &&
             <>
@@ -128,7 +128,7 @@ function IndexPageHoc({
                 className={`tab-item${itemType === 'user'  && order === 'createdAt' ? ' active' : ''}`}
                 href={routes.users({ sort: 'created' })}
               >
-                New Users
+                <UserIcon /> New Users
               </CustomLink>
             </>
           }
@@ -139,16 +139,15 @@ function IndexPageHoc({
             <NewArticleIcon /> New {isIssue ? 'Discussion' : 'Article'}
           </CustomLink>
         </div>
-        {isUsers ?
-            <UserList {...{
+        {isUsers
+          ? <UserList {...{
               loggedInUser,
               page,
               paginationUrlFunc,
               users,
               usersCount,
             }}/>
-            :
-            <ArticleList {...{
+          : <ArticleList {...{
               articles,
               articlesCount,
               issueArticle,

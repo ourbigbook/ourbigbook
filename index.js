@@ -3617,19 +3617,17 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
 
   // We are the first header, or something that comes before it.
   let first_header_or_before = false;
-  let header_ast;
   if (ast === undefined) {
     return [dirname, renamed_basename_noext];
   } else {
     if (ast.macro_name === Macro.HEADER_MACRO_NAME) {
-      header_ast = ast;
+      id = ast.id;
     } else {
-      header_ast = ast.get_header_parent_asts(context)[0];
+      id = ast.get_header_parent_ids(context).values().next().value;
     }
-    if (header_ast.is_first_header_in_input_file) {
+    if (ast.is_first_header_in_input_file) {
       first_header_or_before = true;
     }
-    id = header_ast.id;
   }
 
   // Calculate the base basename_ret and dirname_ret.
@@ -4909,10 +4907,13 @@ async function parse(tokens, options, context, extra_returns={}) {
             macro_count_global, macro_counts_visible, state, false, line_to_id_array);
           macro_count_global = ret.macro_count_global
 
-          // Propagate splitDefault to non header children.
-          // Headeres were already handled previously.
+          // Propagate some header properties to non-header children.
+          // This allows us to save some extra DB fetches, at the cost of making the JSON slightly larger.
+          // and duplicating data a bit. But whaterver, simpler code with less JOINs.
           if (ast.header_tree_node.parent_node !== undefined && ast.header_tree_node.parent_node.ast !== undefined) {
-            ast.split_default = ast.header_tree_node.parent_node.ast.split_default;
+            const header_ast = ast.header_tree_node.parent_node.ast
+            ast.split_default = header_ast.split_default;
+            ast.is_first_header_in_input_file = header_ast.is_first_header_in_input_file;
           }
         }
 

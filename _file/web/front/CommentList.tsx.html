@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>CommentList.tsx - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="CommentList.tsx"><div class="notnav"><h1><a href="">web/front/CommentList.tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir/">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/front">front</a> / <a href="../../../_raw/web/front/CommentList.tsx">CommentList.tsx</a></b></div></nav></div><div class="p"><b>web/front/CommentList.tsx</b></div><div class="code"><div><pre><code>import React from 'react'
+import { useRouter } from 'next/router'
+import Link from 'next/link'
+
+import lodash from 'lodash'
+
+import Comment from 'front/Comment'
+import Pagination from 'front/Pagination'
+import UserLinkWithImage from 'front/UserLinkWithImage'
+import {
+  DiscussionIcon,
+  TimeIcon,
+  UserIcon,
+} from 'front'
+import { getCommentSlug } from 'front/js'
+import { articleLimit } from 'front/config'
+import { formatDate } from 'front/date'
+import routes from 'front/routes'
+import ShowBody from 'front/ShowBody'
+
+import { encodeGetParams, QUERY_FALSE_VAL, QUERY_TRUE_VAL } from 'ourbigbook/web_api'
+
+import { CommentType } from 'front/types/CommentType'
+import { UserType } from 'front/types/UserType'
+
+export type CommentListProps = {
+  comments?: CommentType[];
+  commentsCount?: number;
+  loggedInUser?: UserType;
+  page: number;
+  showAuthor?: boolean;
+  showBody?: boolean;
+  showBodyControl?: boolean;
+  showControls?: boolean;
+  showFullBody?: boolean;
+  showFullSlug?: boolean;
+}
+
+const CommentList = ({
+  comments,
+  commentsCount,
+  loggedInUser,
+  page,
+  showAuthor=true,
+  showBody=true,
+  showBodyControl=true,
+  showControls=true,
+  showFullBody=false,
+  showFullSlug=true,
+}: CommentListProps) =&gt; {
+  const router = useRouter();
+  const { pathname, query } = router
+  let showBodyInit
+  if (query.body === QUERY_TRUE_VAL) {
+    showBodyInit = true
+  } else if (query.body === QUERY_FALSE_VAL) {
+    showBodyInit = false
+  } else {
+    showBodyInit = showBody
+  }
+  const [showBodyState, setShowBodyState] = React.useState(showBodyInit)
+  const resetShowBodyGetString = encodeGetParams(lodash.omit(query, 'body'))
+  React.useEffect(() =&gt; {
+    // Reset on tab change.
+    setShowBodyState(showBodyInit)
+  }, [pathname, resetShowBodyGetString, showBodyInit])
+  let pagination
+  if (showControls) {
+    pagination = &lt;Pagination {...{
+      itemsCount: commentsCount,
+      itemsPerPage: articleLimit,
+      currentPage: page,
+      what: 'comments'
+    }} /&gt;
+  } else {
+    pagination = &lt;&gt;&lt;/&gt;
+  }
+  return (
+    &lt;div className="comment-list"&gt;
+      { commentsCount === 0
+        ? &lt;div className="article-preview content-not-ourbigbook"&gt;
+            There are currently no matching comments.
+          &lt;/div&gt;
+        : &lt;div className="list-nav-container"&gt;
+            {(showControls &amp;&amp; showBodyControl) &amp;&amp;
+              &lt;div className="content-not-ourbigbook controls"&gt;
+                {&lt;ShowBody {...{ setShowBodyState, showBody, showBodyState }}/&gt;}
+              &lt;/div&gt;
+            }
+            &lt;div className="content-not-ourbigbook"&gt;
+              &lt;div className={`list-container${showBodyState ? ' show-body' : ''}`}&gt;
+                {showBodyState
+                  ? &lt;&gt;
+                    {comments?.map((comment: CommentType) =&gt; &lt;Comment
+                      key={showFullSlug ? getCommentSlug(comment) : comment.number}
+                      {...{
+                        comment,
+                        loggedInUser,
+                        showFullBody,
+                        showFullSlug,
+                      }} /&gt;
+                    )}
+                    &lt;/&gt;
+                  : &lt;table className="list"&gt;
+                      &lt;thead&gt;
+                        &lt;tr&gt;
+                          {showAuthor &amp;&amp;
+                            &lt;th className="shrink"&gt;&lt;UserIcon /&gt; Author&lt;/th&gt;
+                          }
+                          &lt;th className="shrink"&gt;&lt;span className="icon"&gt;#&lt;/span&gt; id&lt;/th&gt;
+                          {showFullSlug &amp;&amp;
+                            &lt;th className="expand"&gt;&lt;DiscussionIcon /&gt; Issue&lt;/th&gt;
+                          }
+                          &lt;th className="shrink"&gt;&lt;TimeIcon /&gt; Created&lt;/th&gt;
+                        &lt;/tr&gt;
+                      &lt;/thead&gt;
+                      &lt;tbody&gt;
+                        {comments.map(comment =&gt; {
+                          const issue = comment?.issue
+                          const article = issue?.article
+                          let slug
+                          if (showFullSlug) {
+                            slug = getCommentSlug(comment)
+                          } else {
+                            slug = comment.number
+                          }
+                          return &lt;tr key={slug}&gt;
+                            {showAuthor &amp;&amp;
+                              &lt;td className="shrink"&gt;
+                                &lt;UserLinkWithImage showUsername={false} user={comment.author} /&gt;
+                              &lt;/td&gt;
+                            }
+                            &lt;td className="shrink bold"&gt;
+                              {showFullSlug
+                                ? &lt;Link href={routes.issueComment(article.slug, issue.number, comment.number)}&gt;
+                                    {slug}
+                                  &lt;/Link&gt;
+                                : &lt;&gt;{slug}&lt;/&gt;
+                              }
+                            &lt;/td&gt;
+                            {showFullSlug &amp;&amp;
+                              &lt;td className="shrink bold"&gt;
+                                &lt;Link href={routes.issue(article.slug, issue.number)}&gt;
+                                  &lt;span
+                                    className="ourbigbook-title"
+                                    dangerouslySetInnerHTML={{ __html: issue.titleRender }}
+                                  /&gt;
+                                &lt;/Link&gt;
+                              &lt;/td&gt;
+                            }
+                            &lt;td className="shrink"&gt;{formatDate(comment.createdAt)}&lt;/td&gt;
+                          &lt;/tr&gt;
+                        })}
+                      &lt;/tbody&gt;
+                    &lt;/table&gt;
+                  }
+              &lt;/div&gt;
+            &lt;/div&gt;
+            {pagination}
+          &lt;/div&gt;
+      }
+    &lt;/div&gt;
+  )
+}
+
+export default CommentList;
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/front/";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

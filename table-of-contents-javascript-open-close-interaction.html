@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Table of contents JavaScript open close interaction - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="table-of-contents-javascript-open-close-interaction"><div class="notnav"><h1><a href="">Table of contents JavaScript open close interaction</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#header"> Header</a><a href=".#table-of-contents"> Table of contents</a></div><div class="nav"><a class="nosplit" href=".#table-of-contents-javascript-open-close-interaction"></a><span class="metrics"><span class="wcntr"> Words: 286</span></span></div></nav></div><div class="p" id="_1222">To the left of table of content entries you can click on an open/close icon to toggle the visibility of different levels of the table of contents.</div><div class="p" id="_1223">The main use case covered by the expansion algorithm is as follows:<div class="list"><ul id="_1224"><li id="_1225">the page starts with all nodes open to facilitate Ctrl + F queries</li><li id="_1226">if you click on a node in that sate, you close all its children, to get a summarized overview of the contents</li><li id="_1227">if you click one of those children, it opens only its own children, so you can interactively continue exploring the tree</li></ul></div></div><div class="p" id="_1228">The exact behaviour is:<div class="list"><ul id="_1229"><li id="_1230">the clicked node is open:<div class="list"><ul id="_1231"><li id="_1232">state 1 all children are closed. Action: open all children recursively, which puts us in state 2</li><li id="_1233">state 2: not all children are closed. Action close all children, which puts us in state 1. This gives a good overview of the children, without any children of children getting in the way.</li></ul></div></li><li id="_1234">state 3: the clicked node is closed (not showing any children). Action: open it to show all direct children, but not further descendants (i.e. close those children). This puts us in state 1.</li></ul></div></div><div class="p" id="_1235">Note that those rules make it impossible to close a node by clicking on it, the only way to close a node os to click on its parent, the state transitions are:<div class="list"><ul id="_1236"><li id="_1237">3 -&gt; 1</li><li id="_1238">1 -&gt; 2</li><li id="_1239">2 -&gt; 1</li></ul></div>but we feel that it is worth it to do things like this to cover the main use case described above without having to add two buttons per entry.</div><div class="p" id="_1240">Clicking on the link from a <a href=".#header">header</a> up to the table of contents also automatically opens up the node for you in case it had been previously closed manually.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#table-of-contents">Table of contents</a></li><li><a href=".#header">Header</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

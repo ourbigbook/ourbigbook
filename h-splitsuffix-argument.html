@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>\H splitSuffix argument - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="h-splitsuffix-argument"><div class="notnav"><h1><a href=""><code>\H</code> <code>splitSuffix</code> argument</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#header"> Header</a><a href=".#h-arguments"> <code>\H</code> arguments</a></div><div class="nav"><a class="nosplit" href=".#h-splitsuffix-argument"></a><span class="metrics"><span class="wcntr"> Words: 249</span></span></div></nav></div><div class="p" id="_1044">If given, add a custom suffix to the output filename of the header when using <a href=".#split-headers"><code>-S</code>, <code>--split-headers</code></a>.</div><div class="p" id="_1045">If the given suffix is empty, it defaults to <code>-split</code>.</div><div class="p" id="_1046">For example, given:<div class="code" id="_1047"><div><pre><code>= my h1
+
+== my h2</code></pre></div></div>a <code>--split-headers</code> conversion would normally place <code>my h2</code> into a file called:<div class="code" id="_1048"><div><pre><code>my-h2.html</code></pre></div></div>However, if we instead wrote:<div class="code" id="_1049"><div><pre><code>== my h2
+{splitSuffix}</code></pre></div></div>it would not be placed under:<div class="code" id="_1050"><div><pre><code>my-h2-split.html</code></pre></div></div>and if we set a custom one as:<div class="code" id="_1051"><div><pre><code>== my h2
+{splitSuffix=asdf}</code></pre></div></div>it would go instead to:<div class="code" id="_1052"><div><pre><code>my-h2-asdf.html</code></pre></div></div></div><div class="p" id="_1053">This option is useful if the root of your website is written in OurBigBook, and you want to both:<div class="list"><ul id="_1054"><li id="_1055">have a section that talks about some other project</li><li id="_1056">host the documentation of that project inside the project source tree</li></ul></div></div><div class="p" id="_1057">For example, <a href="https://cirosantilli.com">cirosantilli.com</a> with source at <a href="https://github.com/cirosantilli/cirosantilli.github.io">github.com/cirosantilli/cirosantilli.github.io</a> has a quick section about OurBigBook: <a href="https://cirosantilli.com#ourbigbook">cirosantilli.com#ourbigbook</a>.</div><div class="p" id="_1058">Therefore, without a custom suffix, the split header version of that header would go to <a href="https://docs.ourbigbook.com">docs.ourbigbook.com</a>, which would collide with this documentation, that is present in a separate repository: <a href="https://github.com/ourbigbook/ourbigbook">github.com/ourbigbook/ourbigbook</a>.</div><div class="p" id="_1059">Therefore a <code>splitSuffix</code> property is used, making the split header version fall under <code>/ourbigbook-split</code>, and leaving the nicer <code>/ourbigbook</code> for the more important project toplevel.</div><div class="p" id="_1060">If given on the <a href=".#the-toplevel-header">the toplevel headers</a>, which normally gets a suffix by default to differentiate from the non-split version, it replaces the default <code>-split</code> suffix with a custom one.</div><div class="p" id="_1061">For example if you had <code>notindex.bigb</code> as:<div class="code" id="_1062"><div><pre><code>= Not index</code></pre></div></div>then it would render to:<div class="code" id="_1063"><div><pre><code>notindex-split.bigb</code></pre></div></div>but if you used instead:<div class="code" id="_1064"><div><pre><code>= Not index
+{splitSuffix=asdf}</code></pre></div></div>then it would instead be:<div class="code" id="_1065"><div><pre><code>notindex-asdf.bigb</code></pre></div></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#h-arguments"><code>\H</code> arguments</a></li><li><a href=".#header">Header</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#split-headers"><code>-S</code>, <code>--split-headers</code></a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

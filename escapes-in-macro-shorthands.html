@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Escapes in macro shorthands - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="escapes-in-macro-shorthands"><div class="notnav"><h1><a href="">Escapes in macro shorthands</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#ourbigbook-markup-syntax"> OurBigBook Markup syntax</a><a href=".#macro-shorthand-syntax"> Macro shorthand syntax</a><a href=".#macro-with-shorthand-syntax"> Macro with shorthand syntax</a></div><div class="nav"><a class="nosplit" href=".#escapes-in-macro-shorthands"></a><span class="metrics"><span class="wcntr"> Words: 140</span></span></div></nav></div><div class="p" id="_2645">Literal backticks and dollar signs can be produced witha backslash escape as in:<div class="code" id="_2646"><div><pre><code>a \` \$ b</code></pre></div></div><div class="p" id="_2647">which renders as:</div><div><blockquote id="_2648"><div class="p" id="_2649">a ` $ b</div></blockquote></div></div><div class="p" id="_2650">It is not possible to escape backticks (<code>`</code>) inside an shorthand inline code, or dollar signs (<code>$</code>) in shorthand math.</div><div class="p" id="_2651">The design reason for that is because multiple backticks produce block code.</div><div class="p" id="_2652">The upside is that then you don't have to escape anything else, e.g. backslashes (<code>\</code>) are rendered literally.</div><div class="p" id="_2653">The only way to do it is to use the sane syntax instead:<div class="code" id="_2654"><div><pre><code>a \c[[b ` c]] d
+
+a \m[[\sqrt{\$4}]] d</code></pre></div></div><div class="p" id="_2655">which renders as:</div><div><blockquote id="_2656"><div class="p" id="_2657">a <code>b ` c</code> d</div><div class="p" id="_2658">a <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.04em;vertical-align:-0.1078em;"></span><span class="mord sqrt"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9322em;"><span class="svg-align" style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord" style="padding-left:0.833em;"><span class="mord">$4</span></span></span><span style="top:-2.8922em;"><span class="pstrut" style="height:3em;"></span><span class="hide-tail" style="min-width:0.853em;height:1.08em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="1.08em" viewBox="0 0 400000 1080" preserveAspectRatio="xMinYMin slice"><path d="M95,702
+c-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14
+c0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54
+c44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10
+s173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429
+c69,-144,104.5,-217.7,106.5,-221
+l0 -0
+c5.3,-9.3,12,-14,20,-14
+H400000v40H845.2724
+s-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7
+c-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z
+M834 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1078em;"><span></span></span></span></span></span></span></span></span> d</div></blockquote></div></div><div class="p" id="_2659">Within block code and math, you can just add more separators:<div class="code" id="_2660"><div><pre><code>```
+code with two backticks
+``
+nice
+```</code></pre></div></div><div class="p" id="_2661">which renders as:</div><div><blockquote id="_2662"><div class="code" id="_2663"><div><pre><code>code with two backticks
+``
+nice</code></pre></div></div></blockquote></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#macro-with-shorthand-syntax">Macro with shorthand syntax</a></li><li><a href=".#macro-shorthand-syntax">Macro shorthand syntax</a></li><li><a href=".#ourbigbook-markup-syntax">OurBigBook Markup syntax</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#escapes-in-macro-shorthands">Escapes in insane macro shortcuts</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

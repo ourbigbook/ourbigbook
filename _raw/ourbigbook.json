@@ -1,0 +1,25 @@
+{
+  "ignoreConvert": [
+    "ourbigbook.common.scss",
+    "ourbigbook.scss",
+    "editor.scss",
+    "ourbigbook_runtime.js",
+    "template",
+    "test_bigb_output.bigb",
+    "test_bigb_output_2.bigb",
+    "test_bigb_output_3.bigb",
+    "web/.*\\.bigb",
+    "web/.*\\.scss"
+  ],
+  "media-providers": {
+    "github": {
+      "path": "../ourbigbook-media",
+      "remote": "ourbigbook/ourbigbook-media"
+    }
+  },
+  "prepublish": "prepublish",
+  "publishCommitDate": "2000-01-01T00:00:00",
+  "publishCommitAuthorSameAsSource": true,
+  "publishRemoteUrl": "git@github.com:ourbigbook/ourbigbook.git",
+  "unsafeXss": true
+}

@@ -353,6 +353,24 @@ cc
 `,
   4, 1
 )
+// https://github.com/cirosantilli/cirodown/issues/53
+assert_convert_ast('insane list with element with newline separated arguments',
+  `* aa
+
+  \`\`
+  bb
+  \`\`
+  {id=cc}
+`,
+  [
+    a('ul', [
+      a('l', [
+        a('p', [t('aa')]),
+        a('C', [t('bb\n')], {'id': [t('cc')]}),
+      ]),
+    ]),
+  ]
+)
 assert_convert_ast('nested list insane',
   `* aa
   * bb

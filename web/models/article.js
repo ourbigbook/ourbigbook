@@ -2,8 +2,10 @@ const cirodown = require('cirodown')
 const { DataTypes, Op } = require('sequelize')
 
 const { modifyEditorInput } = require('../shared')
+const { update_database_after_convert, SqliteIdProvider } = require('cirodown/nodejs_webpack_safe')
 
 module.exports = (sequelize) => {
+  const id_provider = new SqliteIdProvider(sequelize)
   const Article = sequelize.define(
     'Article',
     {
@@ -46,20 +48,39 @@ module.exports = (sequelize) => {
       hooks: {
         beforeValidate: async (article, options) => {
           let extra_returns = {};
+          const author = await article.getAuthor()
           article.render = await cirodown.convert(
             modifyEditorInput(article.title, article.body),
             {
               body_only: true,
+              html_x_extension: false,
+              id_provider,
+              input_path: cirodown.title_to_id(article.title) + cirodown.CIRODOWN_EXT,
+              read_include: (id) => {
+                const included_article = sequelize.models.Article.findOne({ where: { slug: Article.makeSlug(author.username, id) } }) 
+                let found = undefined;
+                if (included_article) {
+                  return [id, included_article.body]
+                } else {
+                  return undefined
+                }
+              },
             },
             extra_returns,
           )
+          const id = extra_returns.context.header_tree.children[0].ast.id
+          await update_database_after_convert({
+            extra_returns,
+            id_provider,
+            sequelize,
+            path: id,
+            render: true,
+          })
           // https://github.com/sequelize/sequelize/issues/8586#issuecomment-422877555
           options.fields.push('render');
-          const id = extra_returns.context.header_tree.children[0].ast.id
           article.topicId = id
           options.fields.push('topicId')
           if (!article.slug) {
-            const author = await article.getAuthor()
             article.slug = Article.makeSlug(author.username, id)
             options.fields.push('slug')
           }

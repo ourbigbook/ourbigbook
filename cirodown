@@ -14,10 +14,11 @@ const path = require('path');
 const commander = require('commander');
 const is_installed_globally = require('is-installed-globally');
 const { Liquid } = require('liquidjs');
-const { Op } = require('sequelize')
+const { Op, Sequelize } = require('sequelize')
 
 const cirodown = require('cirodown');
 const cirodown_nodejs = require('cirodown/nodejs');
+const cirodown_nodejs_webpack_safe = require('cirodown/nodejs_webpack_safe');
 
 const CIRODOWN_JSON_BASENAME = 'cirodown.json';
 const CIRODOWN_TEX_BASENAME = 'cirodown.tex';
@@ -397,7 +398,11 @@ async function convert_path_to_file(input_path, cirodown_options, non_cirodown_o
         new_options.id_provider = non_cirodown_options.id_provider;
         new_options.file_provider = non_cirodown_options.file_provider;
       }
+
+      // Convert.
       const output = await convert_input(input, new_options, new_non_cirodown_options);
+
+      // Write out the output the output files.
       const extra_returns = new_non_cirodown_options.extra_returns
       for (const outpath in extra_returns.rendered_outputs) {
         const output_path = path.join(non_cirodown_options.outdir, outpath);
@@ -423,57 +428,13 @@ async function convert_path_to_file(input_path, cirodown_options, non_cirodown_o
       // Update the Sqlite databse with results from the conversion.
       cirodown.perf_print(context, 'convert_path_pre_sqlite')
       if ('sequelize' in non_cirodown_options) {
-
-        cirodown.perf_print(context, 'convert_path_pre_sqlite_transaction')
-        let toplevel_id;
-        if (context.toplevel_ast !== undefined) {
-          toplevel_id = context.toplevel_ast.id;
-        }
-
-        const file_bulk_create_opts = {}
-        let file_bulk_create_last_parse
-        if (new_non_cirodown_options.had_error) {
-          file_bulk_create_last_parse = null
-          file_bulk_create_last_render = null
-          file_bulk_create_opts.ignoreDuplicates = true
-        } else {
-          file_bulk_create_opts.updateOnDuplicate = ['last_parse']
-          file_bulk_create_last_parse = Date.now()
-          if (cirodown_options.render) {
-            file_bulk_create_opts.updateOnDuplicate.push('last_render')
-            file_bulk_create_last_render = file_bulk_create_last_parse
-          } else {
-            file_bulk_create_last_render = null
-          }
-        }
-
-        // This was the 80% bottleneck at Cirodown f8fc9eacfa794b95c1d9982a04b62603e6d0bb83
-        // before being converted to a single transaction!
-        // Likely would not have been a bottleneck if we new more about databases/had more patience
-        // and instead of doing INSERT one by one we would do a single insert with a bunch of data.
-        // The move to Sequelize made that easier with bulkCreate. But keeping the transaction just in case
-        await non_cirodown_options.sequelize.transaction(async (transaction) => {
-          file_bulk_create_opts.transaction = transaction
-          await Promise.all([
-            non_cirodown_options.id_provider.update(
-              new_non_cirodown_options.extra_returns,
-              non_cirodown_options.sequelize,
-              transaction,
-            ),
-            non_cirodown_options.sequelize.models.File.bulkCreate(
-              [
-                {
-                  path: input_path_relative_to_cirodown_json,
-                  toplevel_id,
-                  last_parse: file_bulk_create_last_parse,
-                  last_render: file_bulk_create_last_render,
-                },
-              ],
-              file_bulk_create_opts,
-            )
-          ])
-        });
-        cirodown.perf_print(context, 'convert_path_post_sqlite_transaction')
+        await cirodown_nodejs_webpack_safe.update_database_after_convert({
+          extra_returns,
+          id_provider: non_cirodown_options.id_provider,
+          sequelize: non_cirodown_options.sequelize,
+          path: input_path_relative_to_cirodown_json,
+          render: cirodown_options.render,
+        })
       }
       if (new_non_cirodown_options.had_error) {
         non_cirodown_options.had_error = true;
@@ -566,10 +527,10 @@ async function create_db(cirodown_options, non_cirodown_options) {
   if (!fs.existsSync(db_dir)) {
     fs.mkdirSync(db_dir, {recursive: true});
   }
-  const sequelize = await cirodown_nodejs.create_sequelize(non_cirodown_options.db_options)
+  const sequelize = await cirodown_nodejs_webpack_safe.create_sequelize(non_cirodown_options.db_options, Sequelize)
   non_cirodown_options.sequelize = sequelize;
   non_cirodown_options.file_provider = new SqliteFileProvider(sequelize);
-  non_cirodown_options.id_provider = new cirodown_nodejs.SqliteIdProvider(sequelize);
+  non_cirodown_options.id_provider = new cirodown_nodejs_webpack_safe.SqliteIdProvider(sequelize);
   perf_print('create_db_end', cirodown_options)
 }
 
@@ -1058,7 +1019,7 @@ if (commander.helpMacros) {
     cirodown_paths_converted: [],
     cirodown_paths_converted_only: false,
     commander,
-    db_options: {},
+    db_options: cirodown_nodejs_webpack_safe.db_options,
     file_rows_dict: {},
     encoding: cirodown_nodejs.ENCODING,
     external_css_and_js: false,

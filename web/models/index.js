@@ -3,15 +3,18 @@ const path = require('path')
 
 const { DatabaseError, Sequelize, DataTypes } = require('sequelize')
 
+const cirodown_models = require('cirodown/models')
+const cirodown_nodejs_webpack_safe = require('cirodown/nodejs_webpack_safe');
+
 const config = require('../config')
 
 function getSequelize(toplevelDir, toplevelBasename) {
-  const sequelizeParams = {
-    logging: config.verbose ? console.log : false,
-    define: {
-      freezeTableName: true,
+  const sequelizeParams = Object.assign(
+    {
+      logging: config.verbose ? console.log : false,
     },
-  };
+    cirodown_nodejs_webpack_safe.db_options,
+  );
   let sequelize;
   if (config.isProduction || config.postgres) {
     sequelizeParams.dialect = config.production.dialect;
@@ -99,8 +102,10 @@ function getSequelize(toplevelDir, toplevelBasename) {
   User.hasMany(Comment, {foreignKey: 'authorId'});
 
   // Tag Article
-  Article.belongsToMany(Tag, { through: 'ArticleTag', as: 'tags',           foreignKey: 'articleId', otherKey: 'tagId' });
-  Tag.belongsToMany(Article, { through: 'ArticleTag', as: 'taggedArticles', foreignKey: 'tagId', otherKey: 'articleId' });
+  Article.belongsToMany(Tag, { through: 'ArticleTag', as: 'tags',           foreignKey: 'articleId', otherKey: 'tagId'     });
+  Tag.belongsToMany(Article, { through: 'ArticleTag', as: 'taggedArticles', foreignKey: 'tagId',     otherKey: 'articleId' });
+
+  cirodown_models.addModels(sequelize)
 
   return sequelize;
 }

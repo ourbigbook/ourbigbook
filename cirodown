@@ -3,6 +3,7 @@
 const child_process = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { PerformanceObserver, performance } = require('perf_hooks');
 
 const better_sqlite3 = require('better-sqlite3');
 const chokidar = require('chokidar');
@@ -153,10 +154,14 @@ function convert_path_to_file(input_path, options, convert_input_options={}) {
     if (options.render) {
       message_prefix = 'convert';
     } else {
-      message_prefix = 'id_extract';
+      message_prefix = 'extract_ids';
     }
-    console.log(`${message_prefix} ${input_path}`);
+    let message = `${message_prefix} ${input_path}`;
+    console.log(message);
+    let t0 = performance.now();
     let output = convert_path(input_path, options, convert_input_options);
+    let t1 = performance.now();
+    console.log(`${message} finished in ${t1 - t0} ms`);
     let name = input_path_parse.name;
     if (input_path_parse.name in IO_RENAME_MAP) {
       name = IO_RENAME_MAP[name];

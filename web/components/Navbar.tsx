@@ -1,7 +1,8 @@
-import CustomImage from "components/CustomImage";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
+import CustomImage from "components/CustomImage";
+import CustomLink from "components/CustomLink";
 import Maybe from "components/Maybe";
 import { LOGIN_ACTION, REGISTER_ACTION } from "lib"
 import { APP_NAME } from "lib/utils/constant";
@@ -39,11 +40,25 @@ const NavLink = ({ href, onClick, children, className }: NavLinkProps) => {
 
 const Navbar = () => {
   const loggedInUser = getLoggedInUser()
+  const router = useRouter();
+  const { asPath } = router;
+
+  // We want to reset global page state when clicking this from
+  // the page itself, but we want fast page switches without full
+  // refresh otherwise.
+  let HomeLinkType
+  if (asPath === routes.home()) {
+    console.error('equal');
+    HomeLinkType = 'a'
+  } else {
+    HomeLinkType = CustomLink
+  }
+
   return (
     <nav className="navbar">
-      <a href={routes.home()} className="navbar-brand">
+      <HomeLinkType href={routes.home()} className="navbar-brand">
         {APP_NAME}
-      </a>
+      </HomeLinkType>
       <a href="https://cirosantilli.com/ourbigbook-com">About this website</a>
       <div className="navbar-list">
         <Maybe test={loggedInUser}>

@@ -398,7 +398,11 @@ function assert_executable(
       // https://stackoverflow.com/questions/15971167/how-to-increase-timeout-for-a-single-test-case-in-mocha
       this.timeout(options.timeout);
     }
-    const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'cirodown'));
+
+    const testdir = path.join(__dirname, cirodown_nodejs.TMP_DIRNAME, 'test')
+    fs.rmdirSync(testdir, { recursive: true});
+    fs.mkdirSync(testdir);
+    const tmpdir = fs.mkdtempSync(testdir + path.sep);
     const cwd = path.join(tmpdir, options.cwd)
     if (!fs.existsSync(cwd)) {
       fs.mkdirSync(cwd);
@@ -416,7 +420,7 @@ function assert_executable(
       assert.strictEqual(out.status, 0, exec_assert_message(out, cmd, args, tmpdir));
     }
     const cmd = 'cirodown'
-    const args = options.args
+    const args = ['--fakeroot', testdir].concat(options.args)
     const out = child_process.spawnSync(cmd, args, {
       cwd: cwd,
       input: options.stdin,
@@ -458,7 +462,6 @@ function assert_executable(
       assert.ok(!fs.existsSync(fullpath), exec_assert_message(
         out, cmd, args, tmpdir, 'path should not exist: ' + relpath));
     }
-    fs.rmdirSync(tmpdir, {recursive: true});
   });
 }
 

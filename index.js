@@ -1998,8 +1998,8 @@ function convert_header(cur_arg_list, context, has_toc) {
     if (options.template_vars.root_relpath !== '') {
         options.template_vars.root_relpath += context.options.path_sep;
     }
-    console.error(options.template_vars.root_relpath);
 
+    // Do the conversion.
     context.extra_returns.rendered_outputs[output_path] =
       ast_toplevel.convert(context);
   }

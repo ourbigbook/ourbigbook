@@ -1484,7 +1484,7 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       let attrs = html_convert_attrs_id(ast, context);
       let ret = ``;
-      ret += `<div class="math-containter"${attrs}>`;
+      ret += `<div class="math-container"${attrs}>`;
       if (ast.id !== undefined) {
         let target_id = html_escape_attr(ast.id);
         let href = html_attr('href', '#' + target_id);
@@ -1732,6 +1732,7 @@ const DEFAULT_MACRO_LIST = [
       }
       let ret = '';
       if (!context.options.body_only) {
+        let paragraph_margin_bottom = '10px';
         ret += `<!doctype html>
 <html lang=en>
 <head>
@@ -1773,6 +1774,9 @@ h1:hover span a:link, h2:hover span a:link, h3:hover span a:link, h4:hover span 
 h1:hover span a:visited, h2:hover span a:visited, h3:hover span a:visited, h4:hover span a:visited, h5:hover span a:visited, h6:hover span a:visited {
   color: blue;
 }
+figure {
+  margin-bottom: ${paragraph_margin_bottom};
+}
 /* Math. */
 .katex { font-size: 1.5em; }
 .math-caption-container > :last-child {
@@ -1780,6 +1784,9 @@ h1:hover span a:visited, h2:hover span a:visited, h3:hover span a:visited, h4:ho
 }
 .math-caption-container:hover > :last-child {
   display: inline;
+}
+.math-container {
+  margin-bottom: ${paragraph_margin_bottom};
 }
 /* Tables */
 /* Add borders! */
@@ -1798,6 +1805,9 @@ th, td {
 }
 .table-caption-container:hover > :last-child {
   display: inline;
+}
+.table-container {
+  margin-bottom: ${paragraph_margin_bottom};
 }
 /* Table of contents. */
 .toc-container ul {

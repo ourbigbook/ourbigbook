@@ -1,19 +1,19 @@
-import { escapeUsername } from "config";
+import { ESCAPE_USERNAME } from "config";
 
 export const apiRoutes = {
-  articleEdit: (slug) => `/${escapeUsername}/edit/${slug}`,
-  articleNew: (slug) => `/${escapeUsername}/new`,
+  articleEdit: (slug) => `/${ESCAPE_USERNAME}/edit/${slug}`,
+  articleNew: (slug) => `/${ESCAPE_USERNAME}/new`,
   articleFavorite: (slug) => `/${slug}`,
 }
 
 export default {
   home: () => `/`,
-  articleEdit: (slug) => `/${escapeUsername}/edit/${slug}`,
-  articleNew: (slug) => `/${escapeUsername}/new`,
+  articleEdit: (slug) => `/${ESCAPE_USERNAME}/edit/${slug}`,
+  articleNew: (slug) => `/${ESCAPE_USERNAME}/new`,
   articleView: (slug) => `/${slug}`,
-  userEdit: () => `/${escapeUsername}/settings`,
-  userLogin: () => `/${escapeUsername}/login`,
-  userNew: () => `/${escapeUsername}/register`,
+  userEdit: () => `/${ESCAPE_USERNAME}/settings`,
+  userLogin: () => `/${ESCAPE_USERNAME}/login`,
+  userNew: () => `/${ESCAPE_USERNAME}/register`,
   userView: (uid) => `/${uid}`,
-  userViewFavorites: (uid) => `/${escapeUsername}/user/favorites/${uid}`,
+  userViewFavorites: (uid) => `/${ESCAPE_USERNAME}/user/favorites/${uid}`,
 }

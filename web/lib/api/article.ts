@@ -7,7 +7,7 @@ const ArticleAPI = {
   all: (page, limit = 10) =>
     axios.get(`${SERVER_BASE_URL}/articles?${getQuery(limit, page)}`),
 
-  articleUrl: (slug) => `${SERVER_BASE_URL}/articles/${encodeURIComponent(slug)}`,
+  articleUrl: (slug) => `${SERVER_BASE_URL}/articles?id=${encodeURIComponent(slug)}`,
 
   byAuthor: (author, page = 0, limit = 5) =>
     axios.get(
@@ -24,7 +24,7 @@ const ArticleAPI = {
       )}`
     ),
 
-  commentsUrl: (slug) => `${SERVER_BASE_URL}/articles/comments/${slug}`,
+  commentsUrl: (slug) => `${SERVER_BASE_URL}/articles/comments?id=${encodeURIComponent(slug)}`,
 
   create: async (article, token) => {
     const { data, status } = await axios.post(
@@ -43,8 +43,8 @@ const ArticleAPI = {
     };
   },
 
-  delete: (id, token) =>
-    axios.delete(`${SERVER_BASE_URL}/articles/${id}`, {
+  delete: (slug, token) =>
+    axios.delete(`${SERVER_BASE_URL}/articles?id=${slug}`, {
       headers: {
         Authorization: `Token ${token}`,
       },
@@ -52,7 +52,7 @@ const ArticleAPI = {
 
   favorite: (slug, token) =>
     axios.post(
-      `${SERVER_BASE_URL}/articles/favorite/${slug}`,
+      `${SERVER_BASE_URL}/articles/favorite?id=${slug}`,
       {},
       {
         headers: {
@@ -75,7 +75,7 @@ const ArticleAPI = {
 
   unfavorite: (slug, token) =>
     axios.delete(
-      `${SERVER_BASE_URL}/articles/favorite/${encodeURIComponent(slug)}`,
+      `${SERVER_BASE_URL}/articles/favorite?id=${encodeURIComponent(slug)}`,
       {
         headers: {
           Authorization: `Token ${token}`,
@@ -83,9 +83,9 @@ const ArticleAPI = {
       }
     ),
 
-  update: async (article, pid, token) => {
+  update: async (article, slug, token) => {
     const { data, status } = await axios.put(
-      `${SERVER_BASE_URL}/articles/${pid}`,
+      `${SERVER_BASE_URL}/articles?id=${encodeURIComponent(slug)}`,
       JSON.stringify({ article }),
       {
         headers: {

@@ -6,14 +6,14 @@ if (process.env.NODE_ENV_OVERRIDE === undefined) {
   isProduction = process.env.NODE_ENV_OVERRIDE === 'production'
 }
 
-const apiPathComponent = 'api'
-const escapeUsername = 'go'
+const API_PATH_COMPONENT = 'api'
+const ESCAPE_USERNAME = 'go'
 
 module.exports = {
-  apiPath: '/' + apiPathComponent,
-  apiPathComponent,
+  apiPath: '/' + API_PATH_COMPONENT,
+  API_PATH_COMPONENT,
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
-  escapeUsername,
+  ESCAPE_USERNAME,
   databaseUrl: process.env.DATABASE_URL || '',
   revalidate: 10,
   isProduction: isProduction,
@@ -23,8 +23,8 @@ module.exports = {
   secret: isProduction ? process.env.SECRET : 'secret',
   port: process.env.PORT || 3000,
   reservedUsernames: new Set([
-    apiPathComponent,
-    escapeUsername,
+    API_PATH_COMPONENT,
+    ESCAPE_USERNAME,
   ]),
   usernameMinLength: 3,
   usernameMaxLength: 40,

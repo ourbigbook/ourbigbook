@@ -150,7 +150,7 @@ const commentData = [
   'Just fixed the issue on a new edit, thanks.',
   `I don\'t think this is correct.
 
-Conside what happens when $a + b > 0$`,
+Conside what happens when $\\sqrt{a + b} > 0$`,
   `Ah, maybe. But are you sure that the sum of:
 \`\`
 f() + 3*g()
@@ -374,8 +374,8 @@ function myFunc() {
 
 Inline math: $\\sqrt{1 + 1}$
 
-Block math and a reference to it: \\x[eq-in-${id_noscope}]:
-$$\\frac{1}{\\sqrt{2}}$$\{id=eq-in-${id_noscope}}
+Block math and a reference to it: \\x[equation-in-${id_noscope}]:
+$$\\frac{1}{\\sqrt{2}}$$\{id=equation-in-${id_noscope}}
 
 Block quote:
 \\Q[
@@ -500,7 +500,7 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     let i = 0
     for (const article of articles) {
       if (verbose) console.error(`${i} authorId=${article.file.authorId} title=${article.titleRender}`);
-      await article.save()
+      await article.rerender()
       i++
     }
     //await sequelize.models.Article.update({}, { where: {}, individualHooks: true})

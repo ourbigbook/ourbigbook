@@ -5840,17 +5840,22 @@ and we removed all other `ALIAS`/`CNAME` records from Porkbun.
 
 Before pushing any new changes, and especially ones that seem dangerous, it is a good idea to first deploy to a staging server.
 
-We just follow the exact same steps as for \x[heroku-deployment] but with a different project. E.g. using the `ourbigbook-staging` heroku project ID:
+We have a staging server running at: https://ourbigbook-staging.herokuapp.com/
+
+To set it up, we just follow the exact same steps as for \x[heroku-deployment] but with a different app ID. E.g. using the `ourbigbook-staging` heroku project ID:
 ``
 git remote add heroku-staging https://git.heroku.com/ourbigbook-staging.git
 heroku addons:create --app ourbigbook-staging heroku-postgresql:hobby-dev
 heroku config:set --app ourbigbook-staging SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)"
-heroku pg:copy --app ourbigbook-staging heroku-postgresql:hobby-dev
 git push heroku-staging
 ``
-TODO document and test `pg:copy` from the main deployment, it would be good to test with the same data too! Not sure if the secret has to be the same however in that case: https://stackoverflow.com/questions/10673630/how-do-i-transfer-production-database-to-staging-on-heroku-using-pgbackups-gett
 
-The staging website is then visible at: https://ourbigbook-staging.herokuapp.com
+To copy the main database in staging we can follow the instructions at: https://stackoverflow.com/questions/10673630/how-do-i-transfer-production-database-to-staging-on-heroku-using-pgbackups-gett Considering a production Heroku app ID of `ourbigbook`:
+``
+heroku maintenance:on -a ourbigbook-staging
+heroku pg:copy cirodown::DATABASE_URL DATABASE_URL -a ourbigbook-staging
+heroku maintenance:off -a ourbigbook-staging
+``
 
 = Dependency organization
 {parent=heroku-deployment}

@@ -336,8 +336,8 @@ function assert_error(description, input, line, column, path, options={}) {
 }
 
 const testdir = path.join(__dirname, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, 'test')
-fs.rmdirSync(testdir, { recursive: true});
-fs.mkdirSync(testdir);
+fs.rmdirSync(testdir, { recursive: true });
+fs.mkdirSync(testdir, { recursive: true });
 
 // Test the ourbigbook executable via a separate child process call.
 //

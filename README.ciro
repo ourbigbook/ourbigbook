@@ -1407,24 +1407,65 @@ Some quick interactive cross file link tests:
 {id=splitdefault}
 {parent=header}
 
-By default, when using \x[split-headers], Cirodown:
-* renders `README.ciro` as `index.html` and `split.html`
-* \x[internal-cross-references] from split headers always go to split headers, and those from non-split headers always go to split headers
+When using \x[split-headers], \x[internal-cross-references] always point to non-split pages as mentioned at \x[internal-cross-reference-targets-in-split-headers].
 
-One big problem that this was causing however is that Ciro likes to have a humongous README.ciro with a lot of random small stuff, and only split very important tutorials out.
+If the `splitDefault` \x[boolean-named-argument] is given however:
+* the split header becomes the default, e.g. `index.html` is now the split one, and `nosplit.html` is the non-split one
+* the header it is given for, and all of its descendant headers will use the split header as the default internal cross target, unless the header is already rendered in the current page. This does not propagate across \x[includes] however.
 
-This would lead the root page of the website to be annoyingly slow, even in browsers that support `iframe loading="lazy"` to not load a million YouTube videos at once.
-
-`splitDefault` was introduced to improve this. For example, if you set `splitDefault=split` on \x[the-toplevel-header] of `README.ciro` as in:
+For example, consider `README.ciro`:
 ``
-= My toplevel header
-{splitDefault=split}
+= Toplevel
+{splitDefault}
+
+\x[h2][toplevel to h2]
+
+\x[notreadme][toplevel to notreadme]
+
+\Include[notreadme]
+
+== h2
 ``
-now the split version of the page will be the default one. This means that:
-* `index.html` now contains the split page
-* `nosplit.html` containst he non-split page
-* internal cross references check if the target header ID defaults to split or non-split:
-  * if the header defaults to split, the internal cross reference always links to the split version
+and `notreadme.ciro`:
+``
+= Notreadme
+
+\x[h2][notreadme to h2]
+
+\x[notreadme][notreadme to notreadme h2]
+
+== Notreadme h2
+``
+Then the following links would be generated:
+* `index.html`: split version of `README.ciro`, i.e. does not contain `h2`
+  * `toplevel to h2`: `h2.html`. Links to the split version of `h2`, since `h2` is also affected by the `splitDefault` of its parent, and therefore links to it use the split version by default
+  * `toplevel to notreadme`: `notreadme.html`. Links to non-split version of `notreadme.html` since that header is not `splitDefault`, because `splitDefault` does not propagate across includes
+* `nosplit.html` non-split version of `README.ciro`, i.e. contains `h2`
+  * `toplevel to h2`: `#h2`, because even though `h2` is `splitDefault`, that header is already present in the current page, so it would be pointless to reload the split one
+  * `toplevel to notreadme`: `notreadme.html`
+* `h2.html` split version of `h2` from `README.ciro`
+* `notreadme.html`: non-split version of `notreadme.ciro`
+  * `notreadme to h2`: `h2.html`, because `h2` is `splitDefault`
+  * `notreadme to notreadme h2`: `#notreadme-h2`
+* `notreadme-split.html`: split version of `notreadme.ciro`
+  * `notreadme to h2`: `h2.html`, because `h2` is `splitDefault`
+  * `notreadme to notreadme h2`: `notreadme.html#notreadme-h2`, because `notreadme-h2` is not `splitDefault`
+
+The major application of this is that Ciro likes to work with a huge `README.ciro` containing thousands of random small topics.
+
+And splitting those into separate source files would be quite laborious, as it would require duplicating IDs on the filename, and setting up \x[includes].
+
+However, after this README reaches a certain size, page loads start becoming annoyingly slow, even despite already loading large assets like \x[image]{p} video \x[video]{p} only on hover or click: the annoying slowness comes from the loading of the HTML itself before the browser can jump to the ID.
+
+And even worse: this README corresponds to the main index page of the website, which will make what a large number of users will see be that slowness.
+
+Therefore, once this README reaches a certain size, you can add the `splitDefault` attribute to it, to make things smoother for readers.
+
+And if you have a smaller, more self-contained, and highly valuable tutorial such as https://cirosantilli.com/x86-paging[], you can just split that into a separate `.ciro` source file.
+
+This way, any links into the smaller tutorial will show the entire page as generally desired.
+
+And any links from the tutorial, back to the main massive README will link back to split versions, leading to fast loads.
 
 This feature was implemented at: https://github.com/cirosantilli/cirodown/issues/131
 
@@ -2081,7 +2122,7 @@ TODO implement: mechanism where you enter a textual description of the image ins
 
 https://github.com/cirosantilli/cirodown/issues/40
 
-== Videos
+== Video
 {title2=`\Video` and `\video`}
 
 Very analogous to \x[image]{p}, only differences will be documented here.
@@ -3702,12 +3743,21 @@ would produce the following output files:
   The `-split` suffix is appended in order to differentiate the output path from `hello.html`
 * `h1-1.html`, `h1-1-1.html`, `h1-1-2.html`: contain only the contents direcly under their headers, analogously to `hello-split.html`, but now we don't need to worry about the input filename and collisiont, and just directly use the ID of each header
 
-\x[internal-cross-references] such as `\x[h1-1]` automatically point to the same type of split/non-split output as the current output file, for example:
-* in `hello.html`, it points to the section in the current (non-split) file
-* in `hello-split.html`, it points to the section the separate split `h1-1.html` output file
+`--split-headers` is implied by \x[publish]: the published website will automatically get the split pages. There is no way to turn it off currently. A pull request would be accepted, especially if it offers a \x[cirodown-json] way to do it. Maybe it would be nice to have a more generalized way of setting any CLI option equivalent from the `cirodown.json`, and an option `cli` vs `cli-publish` so that `cli-publish` is publish only. Just lazy for now/not enough pressing use case met.
+
+= Internal cross reference targets in split headers
+{parent=split-headers}
+
+By defeault, all internal cross references point to the non-split version of headers, including those found in split headers.
+
+The rationale for this is that it gives readers the most context around the header by simply scrolling.
+
+For example, considering the example document at \x[split-headers], \x[internal-cross-references] such as `\x[h1-1]` would point:
+* from the non-split `hello.html` to the section in the current non-split file `#h1-1`
+* from split `hello-split.html` to the same section in non-split file with `hello.html#h1-1`
 The same applies to \x[internal-cross-file-references] when there are multiple input files.
 
-`--split-headers` is implied by \x[publish]: the published website will automatically get the split pages. There is no way to turn it off currently. A pull request would be accepted, especially if it offers a \x[cirodown-json] way to do it. Maybe it would be nice to have a more generalized way of setting any CLI option equivalent from the `cirodown.json`, and an option `cli` vs `cli-publish` so that `cli-publish` is publish only. Just lazy for now/not enough pressing use case met.
+In order to make the split version be the default for some headers, you can use the \x[splitdefault].
 
 = `--watch`
 {parent=cirodown-executable-options}
@@ -3843,7 +3893,7 @@ If given, the \x[outdir] option forces \x[the-out-directory] to be placed in `--
 = `media-providers`
 {parent=cirodown-json}
 
-The `media-providers` entry of `cirodown.json` specifies properties of how media such as \x[image]{p} and \x[videos] are retrieved and rendered.
+The `media-providers` entry of `cirodown.json` specifies properties of how media such as \x[image]{p} and \x[video]{p} are retrieved and rendered.
 
 The general format of `media-providers` looks like:
 ``
@@ -3867,7 +3917,7 @@ Properties that are valid for every provider:
   The first character of the macros are case insensitive and must be given as lower case. Therefore e.g.:
   * `image` applies to both `image` and `Image`
   * giving `Image` is an error because that starts with an upper case character
-* `title-from-src` (`bool`): extract the `title` argument from the `src` by default for media such as \x[image]{p} and \x[videos] as if the `titleFromSrc` macro argument had been given, see also: \x[image-id]
+* `title-from-src` (`bool`): extract the `title` argument from the `src` by default for media such as \x[image]{p} and \x[video]{p} as if the `titleFromSrc` macro argument had been given, see also: \x[image-id]
 
 Direct children of media-providers and subproperties that are valid only for them specifically:
 * `local`: tracked in the current Git repository as mentioned at \x[store-images-inside-the-repository-itself]{full}
@@ -3875,7 +3925,7 @@ Direct children of media-providers and subproperties that are valid only for the
 * `github`: tracked in a separate Git repository as mentioned at \x[store-images-in-a-separate-media-repository]{full}
   * `path`: same as for `local`
   * `remote`: `<github-username>/<repo-name>`
-* `youtube`: YouTube \x[videos][videos]
+* `youtube`: YouTube \x[video]{p}
 
 See also: https://github.com/cirosantilli/cirodown/issues/40
 

@@ -47,6 +47,10 @@
     "xmlserializer": "0.6.1",
     "xpath": "0.0.32"
   },
+  "engines": {
+    "node": "14.17.0",
+    "npm": "6.14.13"
+  },
   "files": [
     "gitignore",
     "cirodown",

@@ -8650,7 +8650,7 @@ const OUTPUT_FORMATS_LIST = [
           if (wiki_link !== undefined) {
             header_meta.push(wiki_link);
           }
-          if (parent_links !== undefined) {
+          if (parent_links) {
             header_meta.push(parent_links);
           }
           if (first_header) {
@@ -8675,7 +8675,7 @@ const OUTPUT_FORMATS_LIST = [
             }
           }
 
-          const header_has_meta = header_meta2.length > 0 || header_meta.length > 0
+          const header_has_meta = header_meta2.length > 0 || header_meta.length > 0 || web_meta.length > 0
           if (header_has_meta) {
             ret += `<nav class="h-nav h-nav-toplevel">`;
           }

@@ -650,12 +650,12 @@ function xpath_header(n, id, insideH) {
 
 // xpath to match the split/nosplit link inside of a header.
 function xpath_header_split(n, id, href, marker) {
-  return `${xpath_header(n, id)}//x:a[@href='${href}' and text()='${marker}']`;
+  return `${xpath_header(n, id)}//x:a[@href='${href}' and text()=' ${marker}']`;
 }
 
 // xpath to match the parent link inside of a header.
 function xpath_header_parent(n, id, href, title) {
-  return `${xpath_header(n, id)}//x:a[@href='${href}' and text()='${cirodown.PARENT_MARKER} \"${title}\"']`;
+  return `${xpath_header(n, id)}//x:a[@href='${href}' and text()=' \"${title}\"']`;
 }
 
 // Empty document.
@@ -2153,8 +2153,8 @@ assert_convert_ast('cross reference to non-included ids in another file',
       "//x:a[@href='#image-bb' and text()='image bb 1']",
 
       // Links to the split versions.
-      xpath_header_split(1, 'notindex', 'notindex-split.html', cirodown.SPLIT_MARKER),
-      xpath_header_split(2, 'bb', 'bb.html', cirodown.SPLIT_MARKER),
+      xpath_header_split(1, 'notindex', 'notindex-split.html', cirodown.SPLIT_MARKER_TEXT),
+      xpath_header_split(2, 'bb', 'bb.html', cirodown.SPLIT_MARKER_TEXT),
     ],
     assert_xpath_split_headers: {
       'notindex-split.html': [
@@ -2164,7 +2164,7 @@ assert_convert_ast('cross reference to non-included ids in another file',
         // https://github.com/cirosantilli/cirodown/issues/130
         "//x:blockquote//x:a[@href='notindex.html#bb' and text()='Section 1. \"bb\"']",
         // Link to the split version.
-        xpath_header_split(1, 'notindex', 'notindex.html', cirodown.NOSPLIT_MARKER),
+        xpath_header_split(1, 'notindex', 'notindex.html', cirodown.NOSPLIT_MARKER_TEXT),
         // Internal cross reference inside split header.
         "//x:a[@href='notindex.html#image-bb' and text()='image bb 1']",
       ],
@@ -2174,7 +2174,7 @@ assert_convert_ast('cross reference to non-included ids in another file',
         "//x:a[@href='notindex.html' and text()='bb to notindex']",
         "//x:a[@href='notindex.html#bb' and text()='bb to bb']",
         // Link to the split version.
-        xpath_header_split(1, 'bb', 'notindex.html#bb', cirodown.NOSPLIT_MARKER),
+        xpath_header_split(1, 'bb', 'notindex.html#bb', cirodown.NOSPLIT_MARKER_TEXT),
         // Internal cross reference inside split header.
         "//x:a[@href='#image-bb' and text()='bb to image bb']",
       ],
@@ -3506,7 +3506,7 @@ assert_convert_ast('word count simple',
   undefined,
   {
     assert_xpath_matches: [
-      "//*[contains(@class, 'h-nav')]//*[contains(@class, 'word-count') and text()='3']",
+      "//*[contains(@class, 'h-nav')]//*[@class='word-count' and text()='3']",
     ],
   }
 );
@@ -3537,12 +3537,12 @@ assert_convert_ast('word count descendant in source',
   undefined,
   {
     assert_xpath_matches: [
-      "//*[contains(@class, 'h-nav')]//*[contains(@class, 'word-count') and text()='3']",
-      "//*[contains(@class, 'h-nav')]//*[contains(@class, 'word-count-descendant') and text()='5']",
+      "//*[contains(@class, 'h-nav')]//*[@class='word-count' and text()='3']",
+      "//*[contains(@class, 'h-nav')]//*[@class='word-count-descendant' and text()='5']",
     ],
     assert_xpath_split_headers: {
       'h2.html': [
-        "//*[contains(@class, 'h-nav')]//*[contains(@class, 'word-count') and text()='2']",
+        "//*[contains(@class, 'h-nav')]//*[@class='word-count' and text()='2']",
       ]
     }
   }
@@ -3697,18 +3697,18 @@ assert_convert_ast('split headers have correct table of contents',
 
       // ToC links have parent toc entry links.
       // Toplevel entries point to the ToC toplevel.
-      `//*[@id='toc']//*[@id='toc-h1-1']//x:a[@href='#toc' and text()='${cirodown.PARENT_MARKER} \"h1\"']`,
-      `//*[@id='toc']//*[@id='toc-h1-2']//x:a[@href='#toc' and text()='${cirodown.PARENT_MARKER} \"h1\"']`,
+      `//*[@id='toc']//*[@id='toc-h1-1']//x:a[@href='#toc' and text()=' \"h1\"']`,
+      `//*[@id='toc']//*[@id='toc-h1-2']//x:a[@href='#toc' and text()=' \"h1\"']`,
       // Inner entries point to their parent entries.
-      `//*[@id='toc']//*[@id='toc-h1-2-1']//x:a[@href='#toc-h1-2' and text()='${cirodown.PARENT_MARKER} \"h1 2\"']`,
+      `//*[@id='toc']//*[@id='toc-h1-2-1']//x:a[@href='#toc-h1-2' and text()=' \"h1 2\"']`,
 
       // The ToC numbers look OK.
       "//*[@id='toc']//x:a[@href='#h1-2' and text()='2. h1 2']",
 
       // The headers have ToC links.
-      `${xpath_header(2, 'h1-1')}//x:a[@href='#toc-h1-1' and text()='\u21d1 toc']`,
-      `${xpath_header(2, 'h1-2')}//x:a[@href='#toc-h1-2' and text()='\u21d1 toc']`,
-      `${xpath_header(3, 'h1-2-1')}//x:a[@href='#toc-h1-2-1' and text()='\u21d1 toc']`,
+      `${xpath_header(2, 'h1-1')}//x:a[@href='#toc-h1-1' and text()=' toc']`,
+      `${xpath_header(2, 'h1-2')}//x:a[@href='#toc-h1-2' and text()=' toc']`,
+      `${xpath_header(3, 'h1-2-1')}//x:a[@href='#toc-h1-2-1' and text()=' toc']`,
 
       // Descendant count.
       "//*[@id='toc']//*[@class='title-div']//*[@class='descendant-count' and text()='4']",
@@ -3732,8 +3732,8 @@ assert_convert_ast('split headers have correct table of contents',
         "//*[@id='toc']//x:a[@href='h1-2-1-1.html' and text()='1.1. h1 2 1 1']",
 
         // ToC links in split headers have parent toc entry links.
-        `//*[@id='toc']//*[@id='toc-h1-2-1']//x:a[@href='#toc' and text()='${cirodown.PARENT_MARKER} \"h1 2\"']`,
-        `//*[@id='toc']//*[@id='toc-h1-2-1-1']//x:a[@href='#toc-h1-2-1' and text()='${cirodown.PARENT_MARKER} \"h1 2 1\"']`,
+        `//*[@id='toc']//*[@id='toc-h1-2-1']//x:a[@href='#toc' and text()=' \"h1 2\"']`,
+        `//*[@id='toc']//*[@id='toc-h1-2-1-1']//x:a[@href='#toc-h1-2-1' and text()=' \"h1 2 1\"']`,
 
         // Descendant count.
         "//*[@id='toc']//*[@class='title-div']//*[@class='descendant-count' and text()='2']",
@@ -4902,8 +4902,8 @@ assert_executable(
 
         xpath_header(2, 'included-by-index'),
         "//x:blockquote[text()='A Cirodown example!']",
-        xpath_header_split(2, 'index-scope', 'index-scope.html', cirodown.SPLIT_MARKER),
-        xpath_header_split(3, 'index-scope/index-scope-2', 'index-scope/index-scope-2.html', cirodown.SPLIT_MARKER),
+        xpath_header_split(2, 'index-scope', 'index-scope.html', cirodown.SPLIT_MARKER_TEXT),
+        xpath_header_split(3, 'index-scope/index-scope-2', 'index-scope/index-scope-2.html', cirodown.SPLIT_MARKER_TEXT),
       ],
       'included-by-index.html': [
         // Cross input file header.
@@ -4961,37 +4961,37 @@ assert_executable(
       ],
       'subdir/index.html': [
         xpath_header(1, 'subdir'),
-        xpath_header_split(1, 'subdir', 'split.html', cirodown.SPLIT_MARKER),
+        xpath_header_split(1, 'subdir', 'split.html', cirodown.SPLIT_MARKER_TEXT),
         xpath_header(2, 'index-h2'),
-        xpath_header_split(2, 'index-h2', 'index-h2.html', cirodown.SPLIT_MARKER),
+        xpath_header_split(2, 'index-h2', 'index-h2.html', cirodown.SPLIT_MARKER_TEXT),
         xpath_header(2, 'scope'),
-        xpath_header_split(2, 'scope', 'scope.html', cirodown.SPLIT_MARKER),
+        xpath_header_split(2, 'scope', 'scope.html', cirodown.SPLIT_MARKER_TEXT),
         xpath_header(3, 'scope/h3'),
-        xpath_header_split(3, 'scope/h3', 'scope/h3.html', cirodown.SPLIT_MARKER),
+        xpath_header_split(3, 'scope/h3', 'scope/h3.html', cirodown.SPLIT_MARKER_TEXT),
         "//x:a[@href='../index.html' and text()='link to toplevel']",
         "//x:a[@href='../index.html#h2' and text()='link to toplevel subheader']",
       ],
       'subdir/split.html': [
         xpath_header(1, 'index'),
-        xpath_header_split(1, 'subdir', 'index.html', cirodown.NOSPLIT_MARKER),
+        xpath_header_split(1, 'subdir', 'index.html', cirodown.NOSPLIT_MARKER_TEXT),
         // Check that split suffix works. Should be has-split-suffix-split.html,
         // not has-split-suffix.html.
         "//x:div[@class='p']//x:a[@href='has-split-suffix-split.html' and text()='link to has split suffix']",
       ],
       'subdir/scope/h3.html': [
         xpath_header(1, 'h3'),
-        xpath_header_split(1, 'h3', '../index.html#scope/h3', cirodown.NOSPLIT_MARKER),
+        xpath_header_split(1, 'h3', '../index.html#scope/h3', cirodown.NOSPLIT_MARKER_TEXT),
         "//x:div[@class='p']//x:a[@href='../index.html#scope' and text()='scope/h3 to scope']",
         "//x:div[@class='p']//x:a[@href='../index.html#scope/h3' and text()='scope/h3 to scope/h3']",
       ],
       'subdir/notindex.html': [
         xpath_header(1, 'notindex'),
         xpath_header(2, 'notindex-h2'),
-        xpath_header_split(2, 'notindex-h2', 'notindex-h2.html', cirodown.SPLIT_MARKER),
+        xpath_header_split(2, 'notindex-h2', 'notindex-h2.html', cirodown.SPLIT_MARKER_TEXT),
       ],
       'subdir/notindex-scope/h3.html': [
         xpath_header(1, 'h3'),
-        xpath_header_split(1, 'h3', '../notindex.html#notindex-scope/h3', cirodown.NOSPLIT_MARKER),
+        xpath_header_split(1, 'h3', '../notindex.html#notindex-scope/h3', cirodown.NOSPLIT_MARKER_TEXT),
       ],
       'subdir/split.html': [
         xpath_header(1, 'subdir'),
@@ -5009,32 +5009,32 @@ assert_executable(
         xpath_header(1, 'notindex-h2'),
       ],
       'index-scope.html': [
-        xpath_header_split(1, 'index-scope', 'index.html#index-scope', cirodown.NOSPLIT_MARKER),
+        xpath_header_split(1, 'index-scope', 'index.html#index-scope', cirodown.NOSPLIT_MARKER_TEXT),
       ],
       'index-scope/index-scope-child.html': [
         // https://github.com/cirosantilli/cirodown/issues/159
-        xpath_header_split(1, 'index-scope-child', '../index.html#index-scope/index-scope-child', cirodown.NOSPLIT_MARKER),
+        xpath_header_split(1, 'index-scope-child', '../index.html#index-scope/index-scope-child', cirodown.NOSPLIT_MARKER_TEXT),
       ],
       'index-scope/index-scope-2.html': [
         // https://github.com/cirosantilli/cirodown/issues/159
-        xpath_header_split(1, 'index-scope-2', '../index.html#index-scope/index-scope-2', cirodown.NOSPLIT_MARKER),
+        xpath_header_split(1, 'index-scope-2', '../index.html#index-scope/index-scope-2', cirodown.NOSPLIT_MARKER_TEXT),
       ],
       'toplevel-scope.html': [
-        xpath_header_split(2, 'nested-scope', 'toplevel-scope/nested-scope.html', cirodown.SPLIT_MARKER),
-        xpath_header_split(3, 'nested-scope/nested-scope-2', 'toplevel-scope/nested-scope/nested-scope-2.html', cirodown.SPLIT_MARKER),
+        xpath_header_split(2, 'nested-scope', 'toplevel-scope/nested-scope.html', cirodown.SPLIT_MARKER_TEXT),
+        xpath_header_split(3, 'nested-scope/nested-scope-2', 'toplevel-scope/nested-scope/nested-scope-2.html', cirodown.SPLIT_MARKER_TEXT),
       ],
       'toplevel-scope-split.html': [
-        xpath_header_split(1, 'toplevel-scope', 'toplevel-scope.html', cirodown.NOSPLIT_MARKER),
+        xpath_header_split(1, 'toplevel-scope', 'toplevel-scope.html', cirodown.NOSPLIT_MARKER_TEXT),
       ],
       'toplevel-scope/toplevel-scope-h2.html': [
-        xpath_header_split(1, 'toplevel-scope-h2', '../toplevel-scope.html#toplevel-scope-h2', cirodown.NOSPLIT_MARKER),
+        xpath_header_split(1, 'toplevel-scope-h2', '../toplevel-scope.html#toplevel-scope-h2', cirodown.NOSPLIT_MARKER_TEXT),
       ],
       'toplevel-scope/nested-scope.html': [
-        xpath_header_split(1, 'nested-scope', '../toplevel-scope.html#nested-scope', cirodown.NOSPLIT_MARKER),
+        xpath_header_split(1, 'nested-scope', '../toplevel-scope.html#nested-scope', cirodown.NOSPLIT_MARKER_TEXT),
       ],
       'toplevel-scope/nested-scope/nested-scope-2.html': [
         // https://github.com/cirosantilli/cirodown/issues/159
-        xpath_header_split(1, 'nested-scope-2', '../../toplevel-scope.html#nested-scope/nested-scope-2', cirodown.NOSPLIT_MARKER),
+        xpath_header_split(1, 'nested-scope-2', '../../toplevel-scope.html#nested-scope/nested-scope-2', cirodown.NOSPLIT_MARKER_TEXT),
       ],
 
       // Non converted paths.
@@ -5452,7 +5452,7 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='toplevel to my image h2']",
 
         // Split/nosplit.
-        xpath_header_split(1, 'toplevel', 'nosplit.html', cirodown.NOSPLIT_MARKER),
+        xpath_header_split(1, 'toplevel', 'nosplit.html', cirodown.NOSPLIT_MARKER_TEXT),
       ],
       'nosplit.html': [
         "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
@@ -5478,7 +5478,7 @@ assert_executable(
         xpath_header(2, 'h2', "x:a[@href='#h2' and text()='1. H2']"),
 
         // Spilt/nosplit.
-        xpath_header_split(1, 'toplevel', 'index.html', cirodown.SPLIT_MARKER),
+        xpath_header_split(1, 'toplevel', 'index.html', cirodown.SPLIT_MARKER_TEXT),
       ],
       'h2.html': [
         "//x:div[@class='p']//x:a[@href='index.html' and text()='h2 to toplevel']",
@@ -5494,7 +5494,7 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
 
         // Spilt/nosplit.
-        xpath_header_split(1, 'h2', 'nosplit.html#h2', cirodown.NOSPLIT_MARKER),
+        xpath_header_split(1, 'h2', 'nosplit.html#h2', cirodown.NOSPLIT_MARKER_TEXT),
       ],
       'split-suffix-split.html': [
       ],
@@ -5520,7 +5520,7 @@ assert_executable(
         xpath_header(2, 'notindex-h2', "x:a[@href='#notindex-h2' and text()='1. Notindex h2']"),
 
         // Spilt/nosplit.
-        xpath_header_split(1, 'notindex', 'notindex-split.html', cirodown.SPLIT_MARKER),
+        xpath_header_split(1, 'notindex', 'notindex-split.html', cirodown.SPLIT_MARKER_TEXT),
       ],
       'notindex-split.html': [
         "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to toplevel']",
@@ -5538,7 +5538,7 @@ assert_executable(
         xpath_header(1, 'notindex', "x:a[@href='' and text()='Notindex']"),
 
         // Spilt/nosplit.
-        xpath_header_split(1, 'notindex', 'notindex.html', cirodown.NOSPLIT_MARKER),
+        xpath_header_split(1, 'notindex', 'notindex.html', cirodown.NOSPLIT_MARKER_TEXT),
       ],
       'notindex-h2.html': [
         "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to toplevel']",
@@ -5552,7 +5552,7 @@ assert_executable(
         xpath_header(1, 'notindex-h2', "x:a[@href='' and text()='Notindex h2']"),
 
         // Spilt/nosplit.
-        xpath_header_split(1, 'notindex-h2', 'notindex.html#notindex-h2', cirodown.NOSPLIT_MARKER),
+        xpath_header_split(1, 'notindex-h2', 'notindex.html#notindex-h2', cirodown.NOSPLIT_MARKER_TEXT),
       ],
     }
   }

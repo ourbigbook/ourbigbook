@@ -83,6 +83,21 @@ padding-left: 0;
   position: relative;
 }
 
+.fa-regular-400, .fa-brands-400, .fa-solid-900 {
+  // Otherwise ToC hover leads to height changes and reflow.
+  // TODO find proper way to do it without this random value.
+  font-size: 0.95em;
+}
+.fa-regular-400 {
+  font-family: fa-regular-400;
+}
+.fa-brands-400 {
+  font-family: fa-brands-400;
+}
+.fa-solid-900 {
+  font-family: fa-solid-900;
+}
+
 // Hide by default, show if first child of hovered element.
 .hide-hover:first-child {
   @include hidden;
@@ -413,6 +428,11 @@ ol, ul {
   &:target div.title-div {
     background-color: $target-background-color;
   }
+}
+
+span.sep {
+  display: inline-block;
+  width: 1ch;
 }
 
 sup.ref {

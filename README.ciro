@@ -127,6 +127,7 @@ Furthermore, the default install of Chromium on Ubuntu 21.04 uses Snap and block
 * https://superuser.com/questions/1546550/chromium-81-wont-display-dotfiles-anymore
 * https://askubuntu.com/questions/1184357/why-cant-chromium-suddenly-access-any-partition-except-for-home
 * https://askubuntu.com/questions/1214346/as-a-user-is-there-any-way-to-change-the-confinement-of-a-snap-package
+One workaround is to use \x[embed-resouces], but this of course generates larger outputs.
 
 To run master globally for development see: \x[run-cirodown-master]{full}. This one actually works despite the dotfile thing since your development path is normally outside of dotfiles.
 
@@ -2093,7 +2094,7 @@ One major advantage of this, is that when writing documentation, you often want 
 
 Dumps its contents directly into the rendered output.
 
-This construct is not XSS safe, see: \x[xss-unsafe]{full}.
+This construct is not XSS safe, see: \x[unsafe-xss]{full}.
 
 Here for example we define a paragraph in raw HTML:
 \CirodownExample[[[
@@ -3509,22 +3510,31 @@ These conversions are also specified in the Unicode standard.
 
 === Security
 
-Cirodown HTML output is designed to be XSS safe by default, any non-XSS safe constructs must be enabled with a non-default flag or setting, see: \x[xss-unsafe].
+== `--unsafe-ace`
+{parent=security}
+
+Cirodown is designed to not allow arbitrary code execution by default on any Cirodown command.
+
+This means that it it should be safe to just download any Cirodown repository, and convert it with the Cirodown executable, even if you don't trust its author.
+
+This option enables actions that would allow such code execution, so you should only pass it if you trust the repository author:
+* \x[cirodown-json/prepublish]
+
+== unsafe-xss
+{title2=`--unsafe-xss`}
+{parent=security}
+
+Cirodown HTML output is designed to be XSS safe by default, any non-XSS safe constructs must be enabled with a non-default flag or setting, see: \x[unsafe-xss].
 
 Of course, we are walking on eggs, and this is hard to assert, so the best thing to do later on will be to parse the output e.g. with https://developer.mozilla.org/en-US/docs/Web/API/DOMParser[`DOMParser`] to ensure that it is valid and does not contain any `script` tags, but it is not as simple as that: https://stackoverflow.com/questions/37435077/execute-javascript-for-xss-without-script-tags/61588322#61588322
 
-About server safety, we have to think about it. E.g. stuff like \x[cirodown-json/prepublish] already allows ACE. We should add a `--ace-unsafe` CLI option, and block that functionality by default, and then publish with `npm run publish` that sets it.
-
-==== xss-unsafe
-{title2=`--xss-unsafe`}
-
 XSS unsafe constructs lead to errors by default. XSS unsafe constructs can be allowed \x[cirodown-executable][from the command] line with:
 ``
-./cirodown --xss-unsafe
+./cirodown --unsafe-xss
 ``
 or from the \x[cirodown-json] file with an entry of form:
 ``
-"xss-unsafe": true
+"unsafe-xss": true
 ``
 
 == Tooling
@@ -3674,14 +3684,22 @@ Examples of embeddings done:
   Without `--embed-resources`, those CSS and JavaScript use their main cloud CDN URLs, and therefore require Internet connection to view the generated documents.
 
   The embedded version of the document can be viewed offline however.
+
+  There is however a known bug: KaTeX fonts are not currently embedded, so math won't work properly. The situation is similar as for images, but a bit harder because we also need to fetch the blobs from the CSS, which is likely doable from Webpack:
+  * https://github.com/cirosantilli/cirodown/issues/157
+  * https://stackoverflow.com/questions/41657087/webpack-inline-font-with-url-loader
+  * https://stackoverflow.com/questions/35369419/how-to-use-images-in-css-with-webpack
+
+Examples of embedding that could be implemented in the future:
 * \x[image]{p} are downloaded if needed and embedded as `data:` URLs.
+
+  Doing this however has a downside: it would slow the page loading down. The root problem is that HTML was not designed to contain assets, and notably it doesn't have byte position indices that can tell it to skip blobs while parsing, and how to refer to them later on when they show up on the screen. This is kind of why EPUB exists: https://github.com/cirosantilli/cirodown/issues/158
 
   Images that are managed by the project itself and already locally present, such as those inside the project itself or due to \x[cirodown-json/media-providers] usually don't require download.
 
   For images linked directly from the web, we maintain a local download cache, and skip downloads if the image is already in the cache.
 
   To re-download due to image updates, use either:
-
   * `--asset-cache-update`: download all images such that the local disk timestamp is older than the HTTP modification date with https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since[`If-Modified-Since`]
   * `--asset-cache-update-force`: forcefully redownload all assets
 

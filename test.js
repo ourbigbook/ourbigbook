@@ -529,15 +529,18 @@ assert_convert_ast('literal agument escape trailing two backslashes',
   '\\c[[\\\\]]]\n',
   [a('p', [a('c', [t('\\]')])])],
 );
+
+// Newline between arguments.
+const newline_between_arguments_expect = [
+  a('C', [t('ab\n')], {id: [t('cd')]}),
+];
 assert_convert_ast('not literal argument with argument after newline',
   `\\C[
 ab
 ]
 {id=cd}
 `,
-[
-  a('C', [t('ab\n')], {id: [t('cd')]}),
-],
+  newline_between_arguments_expect
 );
 assert_convert_ast('yes literal argument with argument after newline',
   `\\C[[
@@ -545,9 +548,15 @@ ab
 ]]
 {id=cd}
 `,
-[
-  a('C', [t('ab\n')], {id: [t('cd')]}),
-],
+  newline_between_arguments_expect
+);
+assert_convert_ast('yes insane literal argument with argument after newline',
+  `\`\`
+ab
+\`\`
+{id=cd}
+`,
+  newline_between_arguments_expect
 );
 
 // Links.

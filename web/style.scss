@@ -104,23 +104,31 @@ div.article-list-container {
   }
 }
 
-div.article-meta {
-  div.article-info {
-    margin-bottom: 10px;
-  }
-  div.article-info-2 {
-    font-weight: bold;
-    i {
-      font-size: 1.5em;
+div.article-page {
+  div.article-meta {
+    div.article-info {
+      margin-bottom: 10px;
+      .username {
+        font-size: 1.4em;
+        .profile-thumb {
+          height: 1.6em;
+        }
+      }
     }
-  }
-  div.article-actions {
-    margin-bottom: 10px;
-    button, a.btn {
-      margin-right: 3px;
-    }
-    span.article-dates {
+    div.article-info-2 {
       font-weight: bold;
+      i {
+        font-size: 1.5em;
+      }
+    }
+    div.article-actions {
+      margin-bottom: 10px;
+      button, a.btn {
+        margin-right: 3px;
+      }
+      span.article-dates {
+        font-weight: bold;
+      }
     }
   }
 }

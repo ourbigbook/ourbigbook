@@ -8747,7 +8747,7 @@ web/bin/pg_dump_heroku
 ``
 This produces a file `latest.dump` with the database dump. If that already exists, it gets overwritten.
 
-Then restore it to a local database like in <Save and restore local PostgreSQL development database>{full}. First we nuke the database completely with `web/bin/pg-setup` to increase accuracy:
+Then restore it to a local database like in <Save and restore local PostgreSQL development database>{full}. First we nuke the database completely with \a[web/bin/pg-setup] to increase accuracy:
 ``
 web/bin/pg-setup
 web/bin/pg_restore --no-acl --no-owner latest.dump

@@ -4,6 +4,52 @@
 
 == Issues
 
+=== Make articles removed locally empty on web upload
+{tag=Web}
+{tag=Web upload}
+
+Otherwise the following sequence leads to a hard to understand failure for the end user.
+
+First the user uploads with:
+
+``
+== Header 1
+
+== Header 2
+
+\Image[img.png]{title=My image}
+``
+
+Then, `Header 2` is completely removed from all source files and the image is moved to `Header 1`:
+
+``
+== Header 1
+
+\Image[img.png]{title=My image}
+``
+
+Then, when the use tries to upload again, it fails because of duplicated id `image-my-image`.
+
+This above sequence of events is not ideal from the users' perspective, as a synonym generation would lead to better URLs:
+
+``
+== Header 1
+
+= Header 2
+{synonym}
+
+\Image[img.png]{title=My image}
+``
+
+In that sequence, the File for `Header 2` would be effectively emptied of Ids, and there would be no duplicates.
+
+But still, if the user deletes a header, it becomes very difficult to know it later on. So perhaps when the CLI downloads the SHA list, it could also check if there are articles on server that both:
+* are not present locally anymore
+* have a non-empty hash
+and then procede to make any such headers empty to avoid ID duplication.
+
+Aditionally, it would also be good to move the deleted articles to some predefined header to avoid cluttering the headers. E.g. we could start with a dummy "My deleted articles".
+
 === Image title with x to image with content incorrectly disallowed
 {tag=Lib}
 

@@ -43,12 +43,15 @@ npm link cirodown
 xdg-open index.html
 ]]
 
-The \c[npm link] commands allow you to make changes to the code without re-installing the package all the time for development! Try hacking \a[cirodown] to see it. Just remember that if you add a new dependency, you must redo it (TODO any better way?):
+The \c[npm link] commands allow you to make changes to the code without re-installing the package all the time for development! Try hacking \a[cirodown] to see it. Just remember that if you add a new dependency, you must redo the symlinking business:
 
 \C[[
 npm install <dependency>
 npm link
+npm link browserify-hello-world
 ]]
+
+Asked if there is a better way at: \a[https://stackoverflow.com/questions/59389027/how-to-interactively-test-the-executable-of-an-npm-node-js-package-during-develo].
 
 The symlink business can be undone with:
 
@@ -1216,7 +1219,52 @@ TODO
 
 We must achieve an editor setup with synchronized live side-by-side preview.
 
+Likely, we will first do a non WYSIWYG editor with side by side preview with scroll sync.
+
+Then, if the project picks up steam, we can start considering a full WYSISYG.
+
 It would be amazing to have a WebKit interface that works both on browser for the and locally.
+
+Possibilities we could reuse:
+
+\l[
+  Editor.js
+
+  Returns JSON AST!
+
+  \l[website: https://editorjs.io/ json output]
+  \l[source: https://github.com/codex-team/editor.js]
+  \l[WYSIWYG: no]
+  \l[preview scroll sync: yes]
+\l[
+  StackEdit
+
+  \l[website: \a[https://stackedit.io]]
+  \l[source: https://github.com/benweet/stackedit]
+  \l[demo: https://stackedit.io/app]
+  \l[WYSIWYG: no]
+  \l[preview scroll sync: yes]
+]
+\l[
+  Editor.md
+
+  \l[website: \a[https://github.com/pandao/editor.md]]
+  \l[source: \a[https://github.com/pandao/editor.md]]
+  \l[demo: \a[https://pandao.github.io/editor.md]]
+  \l[WYSIWYG: no]
+  \l[preview scroll sync: yes but buggy when tested 2019-12-12 on live website]
+]
+\l[
+  Quill.md
+
+  \l[website: \a[https://quilljs.com]]
+  \l[source: \a[https://github.com/pandao/editor.md]]
+  \l[demo: \a[https://pandao.github.io/editor.md]]
+  \l[WYSIWYG: yes]
+  \l[markdown output: no https://github.com/quilljs/quill/issues/74]
+]
+\l[https://ui.toast.com/tui-editor/]
+\l[https://www.froala.com/wysiwyg-editor]
 
 \h[2][Developing Cirodown]
 
@@ -1313,11 +1361,9 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \h[3][TODO]
 
-\l[expose a on over link to equations on right \c[(12)]. Consider exposing on code blocks like equations.]
-\l[empty equations that render nothing for math definitions]
 \l[expose git revision, especially to multipage template]
-\l[multipage template language that cannot run forever]
-\l[publish webpage on cirosantilli.com]
+\l[multipage template language that cannot run forever like Liquid. Maybe: \a[https://github.com/janl/mustache.js/]]
+\l[cirodown : google analytics]
 \l[custom header, footer and HEAD based on files like header.html, footer.html]
 \l[\x[id-scope]]
 \l[browser live quick test]
@@ -1330,6 +1376,9 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[handle ID calculation from title if title has HTML elements, e.g. headers with code. Use that for the title as well.]
 \l[multiple newlines blow up (5 or six), create test and decide best behaviour]
 \l[LaTeX output]
+\l[autolinks http]
+\l[multiple parents via xref child=1. Shows on children, but not on toc]
+\l[paragraphs rendered as divs, can show anything inside e.g. lists, code blocks]
 
 \h[2][Related projects]
 

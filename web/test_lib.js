@@ -412,7 +412,7 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     let articleId = 0
     for (const articleArg of articleArgs) {
       if (verbose) console.error(`${articleId} authorId=${articleArg.authorId} title=${articleArg.title}`);
-      articles.push(...(await convert.convert({
+      articles.push(...(await convert.convertArticle({
         author: userIdToUser[articleArg.authorId],
         body: articleArg.body,
         sequelize,

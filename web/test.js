@@ -31,13 +31,12 @@ function assertRows(rows, rowsExpect) {
 
 async function createArticles(sequelize, author, opts) {
   const articleArg = createArticleArg(opts, author)
-  return convert.convert({
+  return convert.convertArticle({
     author,
     body: articleArg.body,
     sequelize,
     title:articleArg.title,
   })
-  return sequelize.models.Article.create(createArticleArg(i, author))
 }
 
 async function createArticle(sequelize, author, opts) {
@@ -280,6 +279,45 @@ it('api: create an article and see it on global feed', async () => {
     assert.strictEqual(status, 200)
     assert.strictEqual(data.article.title, 'Title 1')
     assert.match(data.article.render, /Body 2/)
+
+    // Create issues and comments.
+    ;({data, status} = await test.webApi.issueCreate('user0/title-0', 'The \\i[title] 0 0.', 'The \\i[body] 0 0.'))
+    assert.strictEqual(status, 200)
+    assert.match(data.issue.titleRender, /The <i>title<\/i> 0 0\./)
+    assert.match(data.issue.bodyRender, /The <i>body<\/i> 0 0\./)
+    assert.strictEqual(data.issue.number, '1')
+
+    ;({data, status} = await test.webApi.issueCreate('user0/title-0', 'The \\i[title] 0 1.', 'The \\i[body] 0 1.'))
+    assert.strictEqual(status, 200)
+    assert.match(data.issue.titleRender, /The <i>title<\/i> 0 1\./)
+    assert.match(data.issue.bodyRender, /The <i>body<\/i> 0 1\./)
+    assert.strictEqual(data.issue.number, '2')
+
+    ;({data, status} = await test.webApi.issueCreate('user0/title-1', 'The \\i[title] 1 0.', 'The \\i[body] 1 0.'))
+    assert.strictEqual(status, 200)
+    assert.match(data.issue.titleRender, /The <i>title<\/i> 1 0\./)
+    assert.match(data.issue.bodyRender, /The <i>body<\/i> 1 0\./)
+    assert.strictEqual(data.issue.number, '1')
+
+    ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'The \\i[body] 0 0 0.'))
+    assert.strictEqual(status, 200)
+    assert.match(data.issue.render, /The <i>body<\/i> 0 0 0\./)
+    assert.strictEqual(data.issue.number, '1')
+
+    ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'The \\i[body] 0 0 1.'))
+    assert.strictEqual(status, 200)
+    assert.match(data.issue.render, /The <i>body<\/i> 0 0 1\./)
+    assert.strictEqual(data.issue.number, '2')
+
+    ;({data, status} = await test.webApi.commentCreate('user0/title-0', 2, 'The \\i[body] 0 1 0.'))
+    assert.strictEqual(status, 200)
+    assert.match(data.issue.render, /The <i>body<\/i> 0 1 0\./)
+    assert.strictEqual(data.issue.number, '1')
+
+    ;({data, status} = await test.webApi.commentCreate('user0/title-1', 2, 'The \\i[body] 1 0 0.'))
+    assert.strictEqual(status, 200)
+    assert.match(data.issue.render, /The <i>body<\/i> 1 0 0\./)
+    assert.strictEqual(data.issue.number, '1')
   }, { canTestNext: true })
 })
 

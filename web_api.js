@@ -81,21 +81,60 @@ class WebApi {
     return `/${WEB_API_PATH}/articles?id=${encodeURIComponent(slug)}`
   }
 
-  async commentCreate(slug, comment) {
+  async issueGet(slug) {
+    return this.req('get',
+      `/issues?id=${encodeURIComponent(slug)}`,
+    )
+  }
+
+  async issueCreate(slug, titleSource, bodySource) {
     return this.req('post',
-      `comments?id=${encodeURIComponent(slug)}`,
+      `/issues?id=${encodeURIComponent(slug)}`,
       {
-        body: { comment: { body: comment } },
+        body: { issue: { titleSource, bodySource } },
       },
     )
   }
 
-  async commentDelete(slug, commentId) {
-    return this.req('delete', `comments/${commentId}`)
+  async issueEdit(slug, issueNumber, titleSource, bodySource) {
+    return this.req('put',
+      `/issues/${issueNumber}?id=${encodeURIComponent(slug)}`,
+      {
+        body: { issue: { titleSource, bodySource } },
+      },
+    )
   }
 
-  commentUrl(slug) {
-    return `/${WEB_API_PATH}/comments?id=${encodeURIComponent(slug)}`
+  async issueDelete(slug, issueNumber) {
+    return this.req('delete', `/issues/${issueNumber}/comments/${commentNumber}?id=${encodeURIComponent(slug)}`)
+  }
+
+  async commentGet(slug, issueNumber) {
+    return this.req('get',
+      `/issues/${issueNumber}/comments?id=${encodeURIComponent(slug)}`,
+    )
+  }
+
+  async commentCreate(slug, issueNumber, source) {
+    return this.req('post',
+      `/issues/${issueNumber}/comments?id=${encodeURIComponent(slug)}`,
+      {
+        body: { comment: { source } },
+      },
+    )
+  }
+
+  async commentUpdate(slug, issueNumber, comentNumber, source) {
+    return this.req('put',
+      `/issues/${issueNumber}/comments${commentNumber}?id=${encodeURIComponent(slug)}`,
+      {
+        body: { comment: { source } },
+      },
+    )
+  }
+
+  async commentDelete(slug, issueNumber, commentId) {
+    return this.req('delete', `/issues/${issueNumber}/comments/${commentNumber}?id=${encodeURIComponent(slug)}`)
   }
 
   async userCreate(attrs) {

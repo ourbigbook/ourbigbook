@@ -22,10 +22,13 @@ module.exports = (sequelize, web=false) => {
   }
   if (web) {
     cols.title = {
+      // Toplevel header title source.
       type: DataTypes.TEXT,
       allowNull: false,
     }
     cols.body = {
+      // Body source, including any toplevel header arguments
+      // like {c}, etc.
       type: DataTypes.TEXT,
       allowNull: false,
     }

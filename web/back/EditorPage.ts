@@ -20,7 +20,7 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
           sequelize,
           slug: slugString,
         }) : null,
-        (isIssue && number) ? sequelize.models.Article.getIssue({
+        (isIssue && number) ? sequelize.models.Issue.getIssue({
           sequelize,
           number,
           slug: slugString,

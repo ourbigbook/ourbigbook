@@ -192,16 +192,19 @@ class WebApi {
 
 // https://stackoverflow.com/questions/6048504/synchronous-request-in-node-js/53338670#53338670
 async function sendJsonHttp(method, path, opts={}) {
-  const { body, contentType, getToken, https, hostname, port, validateStatus } = opts
+  let { body, contentType, getToken, headers, https, hostname, port, validateStatus } = opts
   let http
   if (https) {
     http = 'https'
   } else {
     http = 'http'
   }
-  const headers = {
-    "Content-Type": contentType || "application/json",
+  if (headers) {
+    headers = Object.assign({}, headers)
+  } else {
+    headers = {}
   }
+  headers['Content-Type'] = contentType || "application/json"
   if (getToken) {
     const token = getToken()
     if (token) {
@@ -218,6 +221,7 @@ async function sendJsonHttp(method, path, opts={}) {
   const response = await axios({
     data: body,
     headers,
+    maxRedirects: 0,
     method,
     url,
     validateStatus,

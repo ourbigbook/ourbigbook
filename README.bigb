@@ -6364,6 +6364,7 @@ If you are not making any changes to the website itself, e.g. only to the test s
 test-next-nobuild
 test-pg-next-nobuild
 ``
+Note that annoyingly, Next.js reuses the same forlder for dev and build runs, so you have to quit your dev server for this to work, otherwise the dev server just keeps writing into the folder and messing up the production build test.
 
 Note that Next.js tests are just present inside other tests, e.g. `api: create an article and see it on global feed` also tests some stuff when not testing Next.js. Running `npm run test-next` simply enables the Next.js tests on top of the non Next.js ones that get run by default.
 

@@ -2,7 +2,8 @@ import useSWR from 'swr'
 
 import checkLogin from 'front/checkLogin'
 import storage from 'front/storage'
-import { AUTH_COOKIE_NAME, AUTH_LOCAL_STORAGE_NAME, getCookie } from 'front'
+import { AUTH_LOCAL_STORAGE_NAME, getCookie } from 'front'
+import { AUTH_COOKIE_NAME } from 'front/js'
 
 // @return * undefined: don't know yet, waiting to access local memory asynchronously
 //         * null: checked and we are definitely not logged in.

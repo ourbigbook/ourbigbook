@@ -1475,7 +1475,8 @@ if (commander.helpMacros) {
         // Generate redirects from ourbigbook.json.
         for (let [from, to] of ourbigbook_json.redirects) {
           if (
-            ourbigbook_options.html_x_extension &&
+            // TODO https://docs.ourbigbook.com/respect-ourbigbook-json-htmlxextension-on-ourbigbook-json-redirects
+            ourbigbook_options.html_x_extension === false ? false : true &&
             !ourbigbook.protocol_is_known(to)
           ) {
             to +=  '.' + ourbigbook.HTML_EXT

@@ -3225,7 +3225,6 @@ function get_description(description_arg, context) {
   if (description === '') {
     force_separator = false
   } else {
-    description = ' ' + description;
     force_separator = true;
   }
 
@@ -3318,15 +3317,21 @@ function get_root_relpath(output_path, context) {
   return root_relpath
 }
 
-function get_title_and_description(title, description, source) {
+function get_title_and_description({ title, description, source, inner }) {
   let sep
-  if (is_punctuation(title[title.length - 1])) {
+  if (inner === undefined || is_punctuation(inner[inner.length - 1])) {
     sep = ''
   } else {
     sep = '.'
   }
   if (source === undefined) {
     source = ''
+  }
+  if (source && inner !== undefined) {
+    source = ' ' + source
+  }
+  if (inner !== undefined || source !== '') {
+    description = ' ' + description
   }
   return `${title}${sep}${source}${description}`
 }
@@ -3482,11 +3487,11 @@ function html_render_simple_elem(elem_name, options={}) {
     let elem_attrs
     if (show_caption) {
       const { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
-      const title = x_text(ast, context, {
+      const { full: title, inner } = x_text_base(ast, context, {
         href_prefix: html_self_link(ast, context),
         force_separator
       })
-      const title_and_description = get_title_and_description(title, description)
+      const title_and_description = get_title_and_description({ title, description, inner })
       res += `<div class="${multiline_caption ? multiline_caption.substring(1) : ''}"${attrs}>\n`;
       res += `\n<div class="caption">${title_and_description}</div>\n`;
       elem_attrs = ''
@@ -3748,7 +3753,7 @@ function macro_image_video_block_convert_function(ast, context) {
   }
   if (source !== '') {
     force_separator = true;
-    source = ` <a${html_attr('href', source)}>Source</a>.`;
+    source = `<a${html_attr('href', source)}>Source</a>.`;
   }
   let alt_val;
   const has_caption = (ast.id !== undefined) && caption_number_visible(ast, context);
@@ -3770,8 +3775,8 @@ function macro_image_video_block_convert_function(ast, context) {
   ret += context.macros[ast.macro_name].options.image_video_content_func(
     ast, context, src, rendered_attrs, alt, media_provider_type, is_url);
   if (has_caption) {
-    const title = x_text(ast, context, { href_prefix, force_separator })
-    const title_and_description = get_title_and_description(title, description, source)
+    const { full: title, inner } = x_text_base(ast, context, { href_prefix, force_separator })
+    const title_and_description = get_title_and_description({ title, description, source, inner })
     ret += `<figcaption>${title_and_description}</figcaption>\n`;
   }
   ret += '</figure>\n';
@@ -7703,11 +7708,11 @@ const OUTPUT_FORMATS_LIST = [
           let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
           let ret = `<div class="code${multiline_caption}"${attrs}>\n`;
           if (ast.index_id || ast.validation_output.description.given) {
-            const title = x_text(ast, context, {
+            const { full: title, inner } = x_text_base(ast, context, {
               href_prefix: html_self_link(ast, context),
               force_separator
             })
-            const title_and_description = get_title_and_description(title, description)
+            const title_and_description = get_title_and_description({ title, description, inner })
             ret += `\n<div class="caption">${title_and_description}</div>\n`;
           }
           ret += html_code(content);
@@ -8043,11 +8048,11 @@ const OUTPUT_FORMATS_LIST = [
           //Caption on top as per: https://tex.stackexchange.com/questions/3243/why-should-a-table-caption-be-placed-above-the-table */
           let href = html_attr('href', '#' + html_escape_attr(ast.id));
           if (ast.index_id || ast.validation_output.description.given) {
-            const title = x_text(ast, context, {
+            const { full: title, inner } = x_text_base(ast, context, {
               href_prefix: href,
               force_separator,
             })
-            const title_and_description = get_title_and_description(title, description)
+            const title_and_description = get_title_and_description({ title, description, inner })
             ret += `<div class="caption">${title_and_description}</div>`;
           }
           ret += `<table>\n${content}</table>\n`;

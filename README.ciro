@@ -1,21 +1,21 @@
-\h1{Cirodown}
+\h1[Cirodown]
 
 A Markup language to write multipage or single page HTML / PDF books that is saner and more powerful than Markdown and Asciidoctor, but still nicer to write than XML and JSON. Reference implementation in JavaScript. No implementation yet.
 
 \toc
 
-\h2{Design goals}
-[id_scope=true]
+\h2[Design goals]
+{id_scope=true}
 
 Cirodown is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
 
 Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation), supporting out of the box feature such as:
 
-\l{references to headers, images, etc.}
-\l{titles on figures, equations, math, etc.}
-\l{KaTeX server side math}
-\l{references across input files}
-\l{table of contents that crosses input files}
+\l[references to headers, images, etc.]
+\l[titles on figures, equations, math, etc.]
+\l[KaTeX server side math]
+\l[references across input files]
+\l[table of contents that crosses input files]
 
 It is meant to be both saner and more powerful than Markdown and Asciidoctor.
 
@@ -23,70 +23,70 @@ The tradeoff for those features is that the language is slightly heavier to read
 
 It is intended that this will be an acceptable downside as Cirodown will be used primarily large complex content such as books rather than forum posts, and will therefore primarily written either:
 
-\l{in text editors locally, where users have more features than in random browser textareas}
-\l{in a dedicated website that will revolutionize education, and therefore have a good JavaScript editing interface: \a{https://github.com/cirosantilli/write-free-science-books-to-get-famous-website}}
+\l[in text editors locally, where users have more features than in random browser textareas]
+\l[in a dedicated website that will revolutionize education, and therefore have a good JavaScript editing interface: \a[https://github.com/cirosantilli/write-free-science-books-to-get-famous-website]]
 
-\h3{Saner}
+\h3[Saner]
 
 To be saner than both Markdown and Asciidoctor, Cirodown has exactly five magic characters, with similar functions as in LaTeX:
 
-\l{\c{\\} backslash to start a macro, like LaTeX}
-\l{\c{\[} and \c{\]}: left and right square brackets to delimit optional macro arguments}
-\l{\c{\{} and \c{\}}: left and right curly braces bracket to start an optional arguments}
+\l[\c[\\] backslash to start a macro, like LaTeX]
+\l[\c[\{] and \c[\}]: left and right square brackets to delimit optional macro arguments]
+\l[\c[\[] and \c[\]]: left and right curly braces bracket to start an optional arguments]
 
-And double blank newlines for \x{paragraphs}{paragraphs} if you are pedantic.
+And double blank newlines for \x[paragraphs][paragraphs] if you are pedantic.
 
 We would like to have only square brackets for both optional and mandatory to have even less magic characters, but that would make the language difficult to parse for computer and humans. LaTeX was right for once!
 
 This produces a very regular syntax that is easy to learn, including doing:
 
-\l{arbitrary nesting of elements}
-\l{adding arbitrary properties to elements}
+\l[arbitrary nesting of elements]
+\l[adding arbitrary properties to elements]
 
 This sanity also makes the end tail learning curve of the endless edge cases found in Markdown and Asciidoctor disappear.
 
 The language is designed to be philosophically isomorphic to HTML to:
 
-\l{further reduce the learning curve}
-\l{ensure that most of HTML constructs can be reached, including arbitrary nesting}
+\l[further reduce the learning curve]
+\l[ensure that most of HTML constructs can be reached, including arbitrary nesting]
 
 More precisely:
 
-\l{macro names map to tag names, e.g.: \c{\a} to \c{<a}}
-\l{
+\l[macro names map to tag names, e.g.: \c[\a] to \c[<a]]
+\l[
   one of the arguments of macros, maps to the content of the HTML element, and the others map to attributes.
 
   E.g., in a link:
 
-  \c{{\a{http://example.com}{Link text}}}
+  \c[[\a[http://example.com][Link text]]]
 
   the first macro argument:
 
-  \c{http://example.com}
+  \c[http://example.com]
 
-  maps to the \c{href} of \c{<a}, and the second macro argument:
+  maps to the \c[href] of \c[<a], and the second macro argument:
 
-  \c{Link text}
+  \c[Link text]
 
-  maps to the internal content of \c{<a>Link text<>}
-}
+  maps to the internal content of \c[<a>Link text<>]
+]
 
-\h3{More powerful}
+\h3[More powerful]
 
-The \x{saner}{high sanity of Cirodown}, also makes creating new macro extensions extremely easy and intuitive.
+The \x[saner][high sanity of Cirodown], also makes creating new macro extensions extremely easy and intuitive.
 
 All built-in language features use the exact same API as new extensions, which ensures that the extension API is sane forever.
 
-Markdown is clearly missing many key features such as block attributes and \x[internal cross references][], and has no standardized extension mechanism.
+Markdown is clearly missing many key features such as block attributes and \x{internal cross references}{}, and has no standardized extension mechanism.
 
 The "more powerful than Asciidoctor" part is only partially true, since Asciidoctor is very featureful can do basically anything through extensions.
 
 The difference is mostly that Cirodown is completely and entirely focused on making amazing scientific books, and so will have key features for that application out-of-the box.
 
-Another advantage over Asciidoctor is that the reference implementation of Cirodown is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with \a[https://github.com/opal/opal][Opal], but who wants to deal with that layer of complexity?
+Another advantage over Asciidoctor is that the reference implementation of Cirodown is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with \a{https://github.com/opal/opal}{Opal}, but who wants to deal with that layer of complexity?
 
-\h2{Paragraphs \c{{\p}}}
-[id=paragraphs]
+\h2[Paragraphs \c[[\p]]]
+{id=paragraphs}
 
 OK, this is too common, so we opted for some insanity here: double newline is a paragraph!
 
@@ -94,145 +94,171 @@ Paragraph 1.
 
 Paragraph 2.
 
-Equivalently however, you can use an explicit \c[\p] macros as well, which is required for example to add properties to a paragraph, e.g.:
+Equivalently however, you can use an explicit \c[[\p]] macros as well, which is required for example to add properties to a paragraph, e.g.:
 
-\p[id=paragraph-1]{Paragraph 1}
-\p[id=paragraph-2]{Paragraph 2}
+\p{id=paragraph-1}[Paragraph 1]
+\p{id=paragraph-2}[Paragraph 2]
 
-\h2{Links \c{{\a}}}
-[id=links]
+Paragraphs are created automatically inside \x[Macro argument syntax][macro argument] whenever a double newline appears.
 
-Autolink (link text is the same as the link): \a{http://example.com}.
+The paragraphs start at the beginning of the parent element of the double newlines, and end at the end of it.
 
-Link with custom text: \a{http://example.com}{my custom link text}.
+For example:
 
-\a{http://example.com}{Multiple
+\c[[
+\somemacro[a b c d][c
 
-paragraphs}
+d
 
-\h2{Internal cross references \c{{\x}}}
-{internal-cross-references}
+e]
+]]
 
-Every macro in Cirodown can have an optional \c{id} and a \c{title} property.
+would parse as:
 
-Those that have a \c{title} but no \c{id}, get an auto-generated ID from the title: \x{automatic-id-from-title}.
+\c[[
+\somemacro[a b c][
+\p[d]
+\p[e]
+\p[f]
+]
+]]
+
+Note how the second argument has had newlines added because it contains
+
+\h2[Links \c[[\a]]]
+{id=links}
+
+Autolink (link text is the same as the link): \a[http://example.com].
+
+Link with custom text: \a[http://example.com][my custom link text].
+
+\a[http://example.com][Multiple
+
+paragraphs]
+
+\h2[Internal cross references \c[[\x]]]
+[internal-cross-references]
+
+Every macro in Cirodown can have an optional \c[id] and a \c[title] property.
+
+Those that have a \c[title] but no \c[id], get an auto-generated ID from the title: \x[automatic-id-from-title].
 
 For macros that do have an ID, you can write a cross reference to it:
 
-\c{{
-\h2{My title}{my-id}
+\c[[
+\h2[My title][my-id]
 
-Read this \x{my-id}{amazing section}.
-}}
+Read this \x[my-id][amazing section].
+]]
 
-Alternatively, if the ID is identical from the one that would be \c[Automatic ID from title][auto-generated form the title], you can use the title itself as the reference instead of the ID:
+Alternatively, if the ID is identical from the one that would be \c{Automatic ID from title}{auto-generated form the title}, you can use the title itself as the reference instead of the ID:
 
-\c{{
-\h2{My title}
+\c[[
+\h2[My title]
 
-Read this \x{My title}{amazing section}.
-}}
+Read this \x[My title][amazing section].
+]]
 
 which is equivalent to the more explicit:
 
-\c{{
-\h2{My title}[id=my-title]
+\c[[
+\h2[My title]{id=my-title}
 
-Read this \x{my-title}{amazing section}.
-}}
+Read this \x[my-title][amazing section].
+]]
 
 Empty internal cross reference titles expand to the header title, e.g.:
 
-\c{{
-\h2{My title}{my-id}
+\c[[
+\h2[My title][my-id]
 
-Read this \x{my-id}.
-}}
+Read this \x[my-id].
+]]
 
 is the same as:
 
-\c{{
-\h2{My title}{my-id}
+\c[[
+\h2[My title][my-id]
 
-Read this \x{my-id}{My title}.
-}}
+Read this \x[my-id][My title].
+]]
 
-To also show the section auto-generated number as in"Section X.Y My title" we add the optional \c[\[style=full\]] param to the cross reference, for example:
+To also show the section auto-generated number as in"Section X.Y My title" we add the optional \c{\{style=full\}} param to the cross reference, for example:
 
-\c{{
-\h2{My title}{my-id}
+\c[[
+\h2[My title][my-id]
 
-Read this \x{my-id}[style=full].
-}}
+Read this \x[my-id]{style=full}.
+]]
 
-\h3{Internal cross file references}
+\h3[Internal cross file references]
 
-Reference to the first header of another file: \x{not-readme}. That header gets its ID from the file name by default.
+Reference to the first header of another file: \x[not-readme]. That header gets its ID from the file name by default.
 
-Reference to an internal header of another file: \x{not-readme/h2-in-not-the-readme}. By default, That header ID gets prefixed by the ID of the top header.
+Reference to an internal header of another file: \x[not-readme/h2-in-not-the-readme]. By default, That header ID gets prefixed by the ID of the top header.
 
-\h3{Automatic ID from title}
+\h3[Automatic ID from title]
 
-If a macro has the \c{title} property is present but no explicit \c{id}, an ID is created automatically from the \c{title}, by applying the following transformations:
+If a macro has the \c[title] property is present but no explicit \c[id], an ID is created automatically from the \c[title], by applying the following transformations:
 
-\l{convert all of \c{A-Z} characters to lowercase}
-\l{convert consecutive sequences of all non \c{a-z0-9} ASCII characters to a single hyphen \c{-}}
-\l{strip leading or trailing hyphens}
+\l[convert all of \c[A-Z] characters to lowercase]
+\l[convert consecutive sequences of all non \c[a-z0-9] ASCII characters to a single hyphen \c[-]]
+\l[strip leading or trailing hyphens]
 
 Note how those rules leave non ASCII Unicode characters untouched, as capitalization and determining if something "is a letter or not" in those cases can be tricky.
 
 So for example, the following automatic IDs would be generated:
 
-\tr{
-  \th{title}
-  \th{id}
-  \th{comments}
-}
-\tr{
-  \td{My favorite title}
-  \td{my-favorite-title}
+\tr[
+  \th[title]
+  \th[id]
+  \th[comments]
+]
+\tr[
+  \td[My favorite title]
+  \td[my-favorite-title]
   \td
-}
-\tr{
-  \td{Ciro's markdown is awesome}
-  \td{ciro-s-markdown-is-awesome}
+]
+\tr[
+  \td[Ciro's markdown is awesome]
+  \td[ciro-s-markdown-is-awesome]
   \td
-}
-\tr{
-  \td{The École Polytechnique}
-  \td{the-École-polytechnique}
-  \td{We leave the non ASCII uppercase \a{https://en.wikipedia.org/wiki/Acute_accent}{acute accented} \c{e}, \c{É}, untouched by default}
-}
+]
+\tr[
+  \td[The École Polytechnique]
+  \td[the-École-polytechnique]
+  \td[We leave the non ASCII uppercase \a[https://en.wikipedia.org/wiki/Acute_accent][acute accented] \c[e], \c[É], untouched by default]
+]
 
-\h2{Headers \c{{\h1}}, \c{{\h2}}, etc.}
-{headers}
+\h2[Headers \c[[\h1]], \c[[\h2]], etc.]
+[headers]
 
-\h3{Unlimited header levels}
+\h3[Unlimited header levels]
 
-There is no limit to how many levels we can have! HTML is limited to \c{h6}, so Cirodown just renders \c{<div class="header">} instead.
+There is no limit to how many levels we can have! HTML is limited to \c[h6], so Cirodown just renders \c[<div class="header">] instead.
 
-\h4{My h4}
+\h4[My h4]
 
-\h5{My h5}
+\h5[My h5]
 
-\h6{My h6}
+\h6[My h6]
 
-\h7{My h7}
+\h7[My h7]
 
-\h8{My h8}
+\h8[My h8]
 
-\h10{My h9}
+\h10[My h9]
 
-\h10{My h10}
+\h10[My h10]
 
-\h11{My h11}
+\h11[My h11]
 
-\h12{My h12}
+\h12[My h12]
 
-\h13{My h12}
+\h13[My h12]
 
-\h3{Table of contents \c{{\toc}}}
-{id=table-of-contents}
+\h3[Table of contents \c[[\toc]]]
+[id=table-of-contents]
 
 We can add table of contents anywhere in the document, e.g. here is another one:
 
@@ -240,207 +266,207 @@ We can add table of contents anywhere in the document, e.g. here is another one:
 
 Table of contents only include the items which live in child headers relative to the current location.
 
-\h4{id_scope}
+\h4[id_scope]
 
-If this header attribute is \c[true], then the ID of all children are prefixed with the ID of this header + a slash \c[/].
+If this header attribute is \c{true}, then the ID of all children are prefixed with the ID of this header + a slash \c{/}.
 
-This property is true by default for cross file references, although it can be turned off explicitly with \c[id-scope=false].
+This property is true by default for cross file references, although it can be turned off explicitly with \c{id-scope=false}.
 
 References withing a single scope do not need the parent scope prefix.
 
-\h3{Includes \c{{\include}}}
-{includes}
+\h3[Includes \c[[\include]]]
+[includes]
 
-The \c{{\include}} macro achieves the following goals:
+The \c[[\include]] macro achieves the following goals:
 
-\l{
+\l[
   show a single header at multiple locations in the table of contents. This makes the TOC into a full blown graph rather than a tree.
 
   This can be used to implement a tag entirely within the ToC!
-}
-\l{
-  determine where external files will be placed in \c{--single-page} mode.
+]
+\l[
+  determine where external files will be placed in \c[--single-page] mode.
 
   When compiling to HTML, we can choose to either:
 
-  \l{compile as multiple pages: default, includes show on ToC and render as \x{internal-cross-references}{internal cross references to headers}}
-  \l{compile as a single page: selected with the \c{cirodown --single-page} option}
-}
+  \l[compile as multiple pages: default, includes show on ToC and render as \x[internal-cross-references][internal cross references to headers]]
+  \l[compile as a single page: selected with the \c[cirodown --single-page] option]
+]
 
 If an external header would be included multiple times in a single output page, the ToC contents are duplicated, but the content itself cannot be because that would lead to ID conflicts and large pages.
 
-Therefore, in this case you are forced to specify which include will actually expand to the \c[canonical] attribute:
+Therefore, in this case you are forced to specify which include will actually expand to the \c{canonical} attribute:
 
-\c{{
-\include{not-the-readme}[canonical=true]
-}}
+\c[[
+\include[not-the-readme]{canonical=true}
+]]
 
-\h2{Lists \c{{\l}}}
-{lists}
+\h2[Lists \c[[\l]]]
+[lists]
 
 With implicit container:
 
-\l{a}
-\l{b}
-\l{c}
+\l[a]
+\l[b]
+\l[c]
 
 Equivalent with explicit container:
 
-\ul{
-\l{a}
-\l{b}
-\l{c}
-}
+\ul[
+\l[a]
+\l[b]
+\l[c]
+]
 
-The explicit container is required if you want to add properties to the list, e.g. a title and an ID: \x[list-my-id]:
+The explicit container is required if you want to add properties to the list, e.g. a title and an ID: \x{list-my-id}:
 
-\ul[title=My list title]
-[id=list-my-id]
-{
-\l{a}
-\l{b}
-\l{c}
-}
+\ul{title=My list title}
+{id=list-my-id}
+[
+\l[a]
+\l[b]
+\l[c]
+]
 
 It is also required if you want ordered lists:
 
-\ol{
-\l{first}
-\l{second}
-\l{third}
-}
+\ol[
+\l[first]
+\l[second]
+\l[third]
+]
 
 Nested lists with implicit containers:
 
-\l{
+\l[
   a
 
-  \l{a1}
-  \l{a2}
-  \l{a2}
-}
-\l{b}
-\l{c}
+  \l[a1]
+  \l[a2]
+  \l[a2]
+]
+\l[b]
+\l[c]
 
 List item with a paragraph inside of it:
 
-\l{a}
-\l{
+\l[a]
+\l[
   I have
 
   Multiple paragraphs.
 
-  \l{And}
-  \l{also}
-  \l{a}
-  \l{list}
-}
-\l{c}
+  \l[And]
+  \l[also]
+  \l[a]
+  \l[list]
+]
+\l[c]
 
-\h2{Tables \c{{\table}}, \c{{\tr}}, \c{{\th}} and \c{{\td}}}
-[id=tables]
+\h2[Tables \c[[\table]], \c[[\tr]], \c[[\th]] and \c[[\td]]]
+{id=tables}
 
 Similar to lists. Implicit container with optional indentation to improve readability:
 
-\tr{
-  \th{Header 1}
-  \th{Header 2}
-}
-\tr{
-  \td{1 1}
-  \td{1 2}
-}
-\tr{
-  \td{2 1}
-  \td{2 2}
-}
+\tr[
+  \th[Header 1]
+  \th[Header 2]
+]
+\tr[
+  \td[1 1]
+  \td[1 2]
+]
+\tr[
+  \td[2 1]
+  \td[2 2]
+]
 
-Explicit container to add further properties: \x[table-my-table][].
+Explicit container to add further properties: \x{table-my-table}{}.
 
-\table[title=My table title]
-[id=table-my-table]
-{
-\tr{
-  \th{Header 1}
-  \th{Header 2}
-}
-\tr{
-  \td{1 1}
-  \td{1 2}
-}
-\tr{
-  \td{2 1}
-  \td{2 2}
-}
-}
+\table{title=My table title}
+{id=table-my-table}
+[
+\tr[
+  \th[Header 1]
+  \th[Header 2]
+]
+\tr[
+  \td[1 1]
+  \td[1 2]
+]
+\tr[
+  \td[2 1]
+  \td[2 2]
+]
+]
 
-\h2{Figures \c{{\img}}}
-{figures}
+\h2[Figures \c[[\img]]]
+[figures]
 
-See this image \x{image-lotus-flower}:
+See this image \x[image-lotus-flower]:
 
-\img{https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Lotus_flower_%28978659%29.jpg/640px-Lotus_flower_%28978659%29.jpg}
-[title=A lotus flower]
-[id=image-lotus-flower]
-[source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg]
-[description=
+\img[https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Lotus_flower_%28978659%29.jpg/640px-Lotus_flower_%28978659%29.jpg]
+{title=A lotus flower}
+{id=image-lotus-flower}
+{source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
+{description=
   We can have multiple paragraphs here, just for any other parameter argument.
 
   I'm not even kidding.
-]
+}
 
-\h2{Code \c{{\c}}}
-{code}
+\h2[Code \c[[\c]]]
+[code]
 
-My inline \c{code block} is awesome.
+My inline \c[code block] is awesome.
 
 Code block:
 
-\c{
+\c[
 Large
 
 block
 of
 
 code
-}
+]
 
-\h2{Math \c{{\m}}}
-{math}
+\h2[Math \c[[\m]]]
+[math]
 
 Via KaTeX server side, oh yes!
 
 Just like code, but LaTeX math goes in.
 
-My inline \m{{\sqrt{1 + 1}}} is awesome.
+My inline \m[[\sqrt[1 + 1]]] is awesome.
 
-Escape the closing bracket with backslash: \m{1 - \{1 + 1\} = -1}.
+Escape the closing bracket with backslash: \m[1 - \[1 + 1\] = -1].
 
-Escape the closing bracket with double open and close: \m{{1 - {1 + 1} = -1}} is awesome.
+Escape the closing bracket with double open and close: \m[[1 - [1 + 1] = -1]] is awesome.
 
 Display math:
 
-\m{{
-\sqrt{1 + 1}
-\sqrt{1 + 1}
-}}
+\m[[
+\sqrt[1 + 1]
+\sqrt[1 + 1]
+]]
 
-\h2{Cirodown syntax}
+\h2[Cirodown syntax]
 
-\h3{Macro argument syntax}
+\h3[Macro argument syntax]
 
-\h4{Optional vs mandatory arguments}
+\h4[Optional vs mandatory arguments]
 
 Every macro argument is of either two types:
 
-\l{
+\l[
   optional.
 
   Gets prefixed by a key `name=`.
 
   Must come before the mandatory ones, but the order between the optional ones is arbitrary.
-}
-\l{
+]
+\l[
   mandatory
 
   Not prefixed by keys.
@@ -449,16 +475,16 @@ Every macro argument is of either two types:
 
   Mandatory arguments can however be empty which is indicated by an empty pair of square brackets:
 
-  \c\[\]]
+  \c[\{\]]
 
   Macros can process this empty value magically or not as documented on their API.
 
   For example, \x[links][] have two mandatory arguments: the URL and text, and the link API treats an empty text as a copy of the URL, which is a common use case:
 
-  \c{{
+  \c[[
   \a[http://example.com][]
-  }}
-}
+  ]]
+]
 
 If a macro has no mandatory arguments, and if a given call has no optional arguments, then the macro does not need any square brackets, e.g. for \x[table-of-contents][]:
 
@@ -466,53 +492,53 @@ If a macro has no mandatory arguments, and if a given call has no optional argum
 
 The JavaScript interface sees arguments as follows:
 
-\c{
+\c[
 function macro_name(args)
-}
+]
 
 where args is a dict such that:
 
-\l{optional arguments have the key / value pairs explicitly given on the call}
-\l{
+\l[optional arguments have the key / value pairs explicitly given on the call]
+\l[
   mandatory arguments have a key documented by the API, and the value on the call.
 
-  For example, the link API names its arguments \c{href} and \c{text}.
-}
+  For example, the link API names its arguments \c[href] and \c[text].
+]
 
-\h4{Newlines between arguments}
+\h4[Newlines between arguments]
 
 The macro name and the first argument, and two consecutive arguments, can be optionally separated by exactly one newline character, e.g.:
 
 \c[[
 \h2
-[id-scope=true]
+{id-scope=true}
 [Design goals]
 ]]
 
 is equivalent to:
 
 \c[[
-\h2[id-scope=true][Design goals]
+\h2{id-scope=true}[Design goals]
 ]]
 
 and this non-recommended mixed style:
 
 \c[[
-\h2[id-scope=true]
+\h2{id-scope=true}
 [Design goals]
 ]]
 
 This allows to greatly improve the readability of long argument lists by having them one per line.
 
-\h4{Literal vs non-literal arguments}
-{literal}
+\h4[Literal vs non-literal arguments]
+[literal]
 
 Each macro argument is of either of two types as documented by its API:
 
 \l[
   literal: the content will not be parsed further by Cirodown, and it gets passed as a string to the \x[javascript-interface-for-arguments][].
 
-  For example, this is useful for macros such as \x{code}{code blocks} or \x{math}.
+  For example, this is useful for macros such as \x[code][code blocks] or \x[math].
 
   Literal blocks are more constrained, but they allow you to \x[escape-characters][escape less characters], and are typically used for sub-languages nested within the document.
 ]
@@ -522,19 +548,19 @@ Each macro argument is of either of two types as documented by its API:
   This is the case for most "nested HTML content"-like arguments, such as the text of \x[links][] or \x[internal-cross-references][]
 ]
 
-\h5{Escape characters}
+\h5[Escape characters]
 
 For non-literal macro arguments, the rule is simple, you must escape all of:
 
 \l[\c[\\]]
-\l[\c[\[]]
+\l[\c[\{]]
 \l[\c[\]]]
 
 For literal macro arguments there are two choices.
 
 For longer arguments, especially multiline, the best approach is usually to use the following heredoc-like syntax.
 
-By opening a macro argument with multiple square brackets \c[\[], only the same number of square brackets will be used for closing that opening.
+By opening a macro argument with multiple square brackets \c[\{], only the same number of square brackets will be used for closing that opening.
 
 For example, a multiline code block with double open and double close square brackets can be enclosed in triple square brackets:
 
@@ -693,6 +719,30 @@ TODO
 
 The compiler executable will have a \c[--dump-macros] option that will dump all macros, describing all of their arguments and including help strings registered by the macro definition API.
 
+\h3[Test system]
+
+Run all tests:
+
+\c[[
+npm test
+]]
+
+List all tests:
+
+\c[[
+node node_modules/mocha-list-tests/mocha-list-tests.js main.js
+]]
+
+As per: \a[https://stackoverflow.com/questions/41380137/list-all-mocha-tests-without-executing-them/58573986#58573986][].
+
+Run just one test by name:
+
+\c[[
+npm test -- --grep 'one paragraph'
+]]
+
+As per: https://stackoverflow.com/questions/10832031/how-to-run-a-single-test-with-mocha TODO: what if the test name is a substring?
+
 \h3[Internals API]
 
 Tokenized token stream and AST can be obtained as JSON from the API.
@@ -714,7 +764,7 @@ Every Cirodown document is implicitly put inside a \c[[\toplevel]] document and:
 E.g., a Cirodown document that contains:
 
 \c[[
-{title=My favorite title}
+[title=My favorite title]
 
 And now, some content!
 ]]
@@ -723,10 +773,14 @@ is morally equivalent to:
 
 \c[[
 \toplevel
-{title=My favorite title}
-{
+[title=My favorite title]
+[
 And now, some content!
-}
+]
 ]]
 
 In terms of HTML, the `\toplevel` element corresponds to the `<html>`, `<head>`, `<header>` and `<footer>` elements of a document.
+
+\h3[Formal grammar]
+
+TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarchy and parsing complexity.

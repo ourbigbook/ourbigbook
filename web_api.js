@@ -71,8 +71,8 @@ function read_include({exists, read, path_sep, ext}) {
         found = test;
       }
       if (found === undefined) {
-        const [dir, basename] = ourbigbook.path_split(id, path_sep)
-        const [basename_noext, ext] = ourbigbook.path_splitext(basename)
+        const [dir, basename] = ourbigbook.pathSplit(id, path_sep)
+        const [basename_noext, ext] = ourbigbook.pathSplitext(basename)
         if (basename_noext === ourbigbook.INDEX_BASENAME_NOEXT) {
           for (let index_basename_noext of ourbigbook.INDEX_FILE_BASENAMES_NOEXT) {
             test = join(dir, index_basename_noext + ext);

@@ -574,7 +574,7 @@ Some benchmarks on Chromium:
 
 If we comment the single line in Article.tsx:
 ``
-//html += render_toc_from_entry_list({ entry_list })
+//html += renderTocFromEntryList({ entry_list })
 ``
 TTFB falls from 2.6s to 0.77s.
 

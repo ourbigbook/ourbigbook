@@ -147,7 +147,7 @@ class AstNode {
     // and therefore increments counts such as Figure 1), Figure 2), etc.
     // All indexed IDs (those that can be linked to) are also visible, but
     // it is possible to force non-indexed IDs to count as well with
-    // caption_number_visible.
+    // captionNumberVisible.
     this.macro_count_visible = undefined;
     // Is this header numbered? Note that this is not set based on the numbered= argument:
     // that argument determines this .numbered of descendants only. This is analogous to scope.
@@ -293,11 +293,11 @@ class AstNode {
       // a single dummy source_location.
       context.source_location = undefined;
     }
-    if (!('validate_ast' in context)) {
-      // Do validate_ast to this element and the entire subtree.
+    if (!('validateAst' in context)) {
+      // Do validateAst to this element and the entire subtree.
       // This allows for less verbose manual construction of trees with
       // a single dummy source_location.
-      context.validate_ast = false;
+      context.validateAst = false;
     }
     if (!('x_parents' in context)) {
       context.x_parents = new Set();
@@ -322,8 +322,8 @@ class AstNode {
         this.args[argname].source_location = context.source_location;
       }
     }
-    if (context.validate_ast && !this.validated) {
-      validate_ast(this, context);
+    if (context.validateAst && !this.validated) {
+      validateAst(this, context);
     }
     if (this.node_type === AstType.PARAGRAPH) {
       // Possible for AstType === PARAGRAPH which can happen for
@@ -353,8 +353,8 @@ class AstNode {
       }
       if (convert_function === undefined) {
         const message = `output format ${context.options.output_format} not defined for macro ${this.macro_name}`;
-        render_error(context, message, this.source_location);
-        out = error_message_in_output(message, context);
+        renderError(context, message, this.source_location);
+        out = errorMessageInOutput(message, context);
       } else {
         const opts = {
           extra_returns: {}
@@ -363,13 +363,13 @@ class AstNode {
         render_pre = opts.extra_returns.render_pre
       }
     } else {
-      render_error(
+      renderError(
         context,
         this.validation_error[0],
         this.validation_error[1],
         this.validation_error[2]
       );
-      out = error_message_in_output(this.validation_error[0], context);
+      out = errorMessageInOutput(this.validation_error[0], context);
     }
 
     // Add a div to all direct children of toplevel to implement
@@ -400,7 +400,7 @@ class AstNode {
     ) {
       // TODO This is a bit of a hack used for web where we want separate headers.
       // Ideally we should just render h1 and body separately neatly before merging the
-      // two sources, e.g. at render_ast_list. But lazy. Let's build on top of some technical debt.
+      // two sources, e.g. at renderAstList. But lazy. Let's build on top of some technical debt.
       context.extra_returns.rendered_outputs[context.toplevel_output_path].h1RenderLength = out.length
     }
     return out;
@@ -427,7 +427,7 @@ class AstNode {
         // This fixes https://github.com/ourbigbook/ourbigbook/issues/204 so long as we are
         // rendering. Doing something before render would be ideal however, likely on the check_db step.
         const message = `parent IDs lead to infinite ancestor loop: ${ancestors.map(a => a.id).join(' -> ')} -> ${cur_ast.id}`;
-        render_error(context, message, this.source_location);
+        renderError(context, message, this.source_location);
         break
       } else {
         ancestor_id_set.add(cur_ast.id)
@@ -640,7 +640,7 @@ class AstNode {
           }
         );
         if (context !== undefined) {
-          validate_ast(new_ast, context)
+          validateAst(new_ast, context)
         }
         parent_arg.push(new_ast)
 
@@ -688,7 +688,7 @@ class AstNode {
       }
       let split_suffix;
       if (!ast_undefined && ast.args.splitSuffix !== undefined) {
-        split_suffix = render_arg(ast.args.splitSuffix, context);
+        split_suffix = renderArg(ast.args.splitSuffix, context);
       }
       const args = {
         ast_id: id,
@@ -706,13 +706,13 @@ class AstNode {
         args.ast_split_default = ast.split_default
         args.ast_toplevel_id = ast.toplevel_id
       }
-      const ret = output_path_base(args);
+      const ret = outputPathBase(args);
       if (ret === undefined) {
         return {}
       } else {
         const { dirname, basename, split_suffix: split_suffix_used } = ret
         return {
-          path: path_join(dirname, basename + '.' + OUTPUT_FORMATS[context.options.output_format].ext, context.options.path_sep),
+          path: pathJoin(dirname, basename + '.' + OUTPUT_FORMATS[context.options.output_format].ext, context.options.path_sep),
           dirname,
           basename,
           split_suffix: split_suffix_used,
@@ -827,7 +827,7 @@ class AstNode {
   toJSON() {
     const ret = {
       macro_name: this.macro_name,
-      node_type:  symbol_to_string(this.node_type),
+      node_type:  symbolToString(this.node_type),
       scope:      this.scope,
       source_location: this.source_location,
       subdir:     this.subdir,
@@ -980,12 +980,12 @@ class ErrorMessage {
   }
 }
 
-function is_absolute_xref(id, context) {
+function isAbsoluteXref(id, context) {
   return id[0] === Macro.HEADER_SCOPE_SEPARATOR ||
       (context.options.x_leading_at_to_web && id[0] === AT_MENTION_CHAR)
 }
 
-function resolve_absolute_xref(id, context) {
+function resolveAbsoluteXref(id, context) {
   if (context.options.ref_prefix) {
     return context.options.ref_prefix + id
   } else {
@@ -1037,8 +1037,8 @@ class DbProvider {
    *         Otherwise, the ast node for the given ID
    */
   get(id, context, current_scope) {
-    if (is_absolute_xref(id, context)) {
-      return this.get_noscope(resolve_absolute_xref(id, context), context);
+    if (isAbsoluteXref(id, context)) {
+      return this.get_noscope(resolveAbsoluteXref(id, context), context);
     } else {
       if (current_scope !== undefined) {
         current_scope += Macro.HEADER_SCOPE_SEPARATOR
@@ -1281,11 +1281,11 @@ class Macro {
     if (!('auto_parent_skip' in options)) {
       options.auto_parent_skip = new Set();
     }
-    if (!('caption_number_visible' in options)) {
-      options.caption_number_visible = function(ast) { return false; }
+    if (!('captionNumberVisible' in options)) {
+      options.captionNumberVisible = function(ast) { return false; }
     }
     if (!('caption_prefix' in options)) {
-      options.caption_prefix = capitalize_first_letter(name);
+      options.caption_prefix = capitalizeFirstLetter(name);
     }
     if (!('default_x_style_full' in options)) {
       options.default_x_style_full = true;
@@ -1299,7 +1299,7 @@ class Macro {
       }
     }
     if (!('id_prefix' in options)) {
-      options.id_prefix = title_to_id(name);
+      options.id_prefix = titleToId(name);
     }
     if (!('image_video_content_func' in options)) {
       options.image_video_content_func = function() { throw new Error('unimplemented'); };
@@ -1566,7 +1566,7 @@ class Tokenizer {
     if (this.i > 0 && this.chars[this.i - 1] === '\n') {
       let new_list_level = 0;
       while (
-        array_contains_array_at(this.chars, this.i, INSANE_LIST_INDENT) &&
+        arrayContainsArrayAt(this.chars, this.i, INSANE_LIST_INDENT) &&
         new_list_level < this.list_level
       ) {
         for (const c in INSANE_LIST_INDENT) {
@@ -1619,8 +1619,8 @@ class Tokenizer {
     ) {
       const full_indent = INSANE_LIST_INDENT.repeat(this.list_level);
       if (
-        array_contains_array_at(this.chars, this.i + 1, full_indent + START_POSITIONAL_ARGUMENT_CHAR) ||
-        array_contains_array_at(this.chars, this.i + 1, full_indent + START_NAMED_ARGUMENT_CHAR)
+        arrayContainsArrayAt(this.chars, this.i + 1, full_indent + START_POSITIONAL_ARGUMENT_CHAR) ||
+        arrayContainsArrayAt(this.chars, this.i + 1, full_indent + START_NAMED_ARGUMENT_CHAR)
       ) {
         this.consume(full_indent.length + 1);
       }
@@ -1738,19 +1738,19 @@ class Tokenizer {
         this.consume();
         if (this.is_end()) {
           this.error(`trailing unescaped ${ESCAPE_CHAR}`, start_source_location);
-        } else if (!char_is_identifier(this.cur_c)) {
+        } else if (!charIsIdentifier(this.cur_c)) {
           this.consume_plaintext_char();
         } else {
           // Insane link.
           for (const known_url_protocol of KNOWN_URL_PROTOCOLS) {
-            if (array_contains_array_at(this.chars, this.i, known_url_protocol)) {
+            if (arrayContainsArrayAt(this.chars, this.i, known_url_protocol)) {
               this.in_escape_insane_link = true;
               break;
             }
           }
           // Macro.
           if (!this.in_escape_insane_link) {
-            let macro_name = this.tokenize_func(char_is_identifier);
+            let macro_name = this.tokenize_func(charIsIdentifier);
             this.consume_optional_newline_after_argument();
             this.push_token(
               TokenType.MACRO_NAME,
@@ -1772,7 +1772,7 @@ class Tokenizer {
           // { at the end of file. Test: "named argument: open bracket at end of file fails gracefully".
           unterminated_literal = true;
         } else {
-          let arg_name = this.tokenize_func(char_is_identifier);
+          let arg_name = this.tokenize_func(charIsIdentifier);
           this.push_token(TokenType.NAMED_ARGUMENT_NAME, arg_name, source_location);
           if (this.cur_c === NAMED_ARGUMENT_EQUAL_CHAR) {
             // Consume the = sign.
@@ -1786,7 +1786,7 @@ class Tokenizer {
             this.consume_optional_newline();
           } else {
             // Literal argument.
-            let close_string = closing_char(
+            let close_string = closingChar(
               START_NAMED_ARGUMENT_CHAR).repeat(open_length);
             if (!this.tokenize_literal(START_NAMED_ARGUMENT_CHAR, close_string)) {
               unterminated_literal = true;
@@ -1812,7 +1812,7 @@ class Tokenizer {
           this.consume_optional_newline();
         } else {
           // Literal argument.
-          let close_string = closing_char(
+          let close_string = closingChar(
             START_POSITIONAL_ARGUMENT_CHAR).repeat(open_length);
           if (!this.tokenize_literal(START_POSITIONAL_ARGUMENT_CHAR, close_string)) {
             unterminated_literal = true;
@@ -1886,7 +1886,7 @@ class Tokenizer {
           let is_insane_link = false;
           for (const known_url_protocol of KNOWN_URL_PROTOCOLS) {
             if (
-              array_contains_array_at(this.chars, this.i, known_url_protocol)
+              arrayContainsArrayAt(this.chars, this.i, known_url_protocol)
             ) {
               const pos_char_after = this.i + known_url_protocol.length;
               if (
@@ -1958,7 +1958,7 @@ class Tokenizer {
             i += 1;
           }
           let new_list_level = 0;
-          while (array_contains_array_at(this.chars, i, INSANE_LIST_INDENT)) {
+          while (arrayContainsArrayAt(this.chars, i, INSANE_LIST_INDENT)) {
             i += INSANE_LIST_INDENT.length;
             new_list_level += 1;
           }
@@ -2059,7 +2059,7 @@ class Tokenizer {
   tokenize_insane_start(i) {
     for (const insane_start in INSANE_STARTS_TO_MACRO_NAME) {
       if (
-        array_contains_array_at(this.chars, i, insane_start)
+        arrayContainsArrayAt(this.chars, i, insane_start)
       ) {
         // Full insane start match.
         return [insane_start, insane_start.length];
@@ -2067,7 +2067,7 @@ class Tokenizer {
       // Empty table or list without space.
       let insane_start_nospace = insane_start.substring(0, insane_start.length - 1);
       if (
-        array_contains_array_at(this.chars, i, insane_start_nospace) &&
+        arrayContainsArrayAt(this.chars, i, insane_start_nospace) &&
         (
           i === this.chars.length - 1 ||
           this.chars[i + insane_start.length - 1] === '\n'
@@ -2133,7 +2133,7 @@ class Tokenizer {
       // Consume the escaped closing char.
       if (!this.consume())
         return false;
-      append = closing_char(open_char);
+      append = closingChar(open_char);
     } else {
       end_i = this.i;
       append = '';
@@ -2146,7 +2146,7 @@ class Tokenizer {
       while (true) {
         if (this.chars[i - 1] === '\n') {
           if (this.chars[i] === '\n') {
-          } else if (array_contains_array_at(this.chars, i, INSANE_LIST_INDENT.repeat(this.list_level))) {
+          } else if (arrayContainsArrayAt(this.chars, i, INSANE_LIST_INDENT.repeat(this.list_level))) {
             i += INSANE_LIST_INDENT.length * this.list_level;
           } else {
             this.error(`literal argument with indent smaller than current insane list`, start_source_location);
@@ -2290,12 +2290,12 @@ exports.HeaderTreeNode = HeaderTreeNode
 
 /** Add an entry to the data structures that keep the map of incoming
  * and outgoing \x and \x {child} links. */
-function add_to_refs_to(toid, context, fromid, relation_type, opts={}) {
-  add_to_refs_to_one_way(false, toid,   context, fromid, relation_type, opts)
-  add_to_refs_to_one_way(true,  fromid, context, toid,   relation_type, opts)
+function addToRefsTo(toid, context, fromid, relation_type, opts={}) {
+  addToRefsToOneWay(false, toid,   context, fromid, relation_type, opts)
+  addToRefsToOneWay(true,  fromid, context, toid,   relation_type, opts)
 }
 
-function add_to_refs_to_one_way(reverse, toid, context, fromid, relation_type, opts={}) {
+function addToRefsToOneWay(reverse, toid, context, fromid, relation_type, opts={}) {
   let { child_index, source_location, inflected } = opts
   if (inflected === undefined) {
     inflected = false
@@ -2338,7 +2338,7 @@ function add_to_refs_to_one_way(reverse, toid, context, fromid, relation_type, o
  *
  * @return {boolean} true iff if the big array contains the small one
  */
-function array_contains_array_at(big_array, position, small_array) {
+function arrayContainsArrayAt(big_array, position, small_array) {
   for (let i = 0; i < small_array.length; i++) {
     if (big_array[position + i] !== small_array[i]) {
       return false;
@@ -2348,7 +2348,7 @@ function array_contains_array_at(big_array, position, small_array) {
 }
 
 // https://stackoverflow.com/questions/7837456/how-to-compare-arrays-in-javascript
-function array_equals(arr1, arr2) {
+function arrayEquals(arr1, arr2) {
   if (arr1.length !== arr2.length)
     return false;
   for (let i = 0; i < arr1.length; i++) {
@@ -2359,11 +2359,11 @@ function array_equals(arr1, arr2) {
 }
 
 function basename(str, sep) {
-  return path_split(str, sep)[1];
+  return pathSplit(str, sep)[1];
 }
 
 /// https://stackoverflow.com/questions/22697936/binary-search-in-javascript/29018745#29018745
-function binary_search(ar, el, compare_fn) {
+function binarySearch(ar, el, compare_fn) {
   var m = 0;
   var n = ar.length - 1;
   while (m <= n) {
@@ -2380,20 +2380,20 @@ function binary_search(ar, el, compare_fn) {
   return -m - 1;
 }
 
-function binary_search_insert(ar, el, compare_fn) {
-  let index = binary_search(ar, el, compare_fn);
+function binarySearchInsert(ar, el, compare_fn) {
+  let index = binarySearch(ar, el, compare_fn);
   if (index < 0) {
     ar.splice(-(index + 1), 0, el);
   }
   return ar;
 }
 
-function binary_search_line_to_id_array_fn(elem0, elem1) {
+function binarySearchLineToIdArrayFn(elem0, elem1) {
   return elem0[0] - elem1[0];
 }
 
 /** Calculate node ID and add it to the ID index. */
-function calculate_id(
+function calculateId(
   ast,
   context,
   non_indexed_ids,
@@ -2430,7 +2430,7 @@ function calculate_id(
     ast.id === undefined
   ) {
     const macro_id_arg = ast.args[Macro.ID_ARGUMENT_NAME];
-    const new_context = clone_and_set(context, 'id_conversion', true);
+    const new_context = cloneAndSet(context, 'id_conversion', true);
     if (macro_id_arg === undefined) {
       let id_text = '';
       const id_prefix = context.macros[ast.macro_name].id_prefix;
@@ -2439,10 +2439,10 @@ function calculate_id(
         if (id_prefix !== '') {
           id_text += id_prefix + ID_SEPARATOR
         }
-        title_text = render_arg_noescape(title_arg, new_context)
+        title_text = renderArgNoescape(title_arg, new_context)
         if (file_header) {
           let id_text_append
-          const file_render = render_arg(ast.args.file, new_context)
+          const file_render = renderArg(ast.args.file, new_context)
           if (file_render) {
             id_text_append = file_render
           } else {
@@ -2451,11 +2451,11 @@ function calculate_id(
           ast.file = id_text_append
           id_text = Macro.FILE_ID_PREFIX + id_text + id_text_append
         } else {
-          id_text += title_to_id(title_text, new_context.options.ourbigbook_json.id, new_context);
+          id_text += titleToId(title_text, new_context.options.ourbigbook_json.id, new_context);
         }
         const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
         if (disambiguate_arg !== undefined) {
-          id_text += ID_SEPARATOR + title_to_id(render_arg_noescape(disambiguate_arg, new_context), new_context.options.ourbigbook_json.id);
+          id_text += ID_SEPARATOR + titleToId(renderArgNoescape(disambiguate_arg, new_context), new_context.options.ourbigbook_json.id);
         }
         id = id_text;
       } else {
@@ -2481,7 +2481,7 @@ function calculate_id(
         }
       }
     } else {
-      id = render_arg_noescape(macro_id_arg, new_context);
+      id = renderArgNoescape(macro_id_arg, new_context);
     }
     if (
       index_id &&
@@ -2490,7 +2490,7 @@ function calculate_id(
       !file_header
     ) {
       let message = `IDs that start with "${Macro.RESERVED_ID_PREFIX}" are reserved: "${id}"`;
-      parse_error(state, message, ast.source_location);
+      parseError(state, message, ast.source_location);
     }
     if (id !== undefined && ast.scope !== undefined && !skip_scope) {
       id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + id
@@ -2503,7 +2503,7 @@ function calculate_id(
     ast.id = ast.subdir + Macro.HEADER_SCOPE_SEPARATOR + ast.id
   }
   if (id === '') {
-    parse_error(state, 'ID cannot be empty', ast.source_location);
+    parseError(state, 'ID cannot be empty', ast.source_location);
   }
   ast.index_id = index_id;
   if (ast.id !== undefined && !ast.force_no_index) {
@@ -2514,7 +2514,7 @@ function calculate_id(
         indexed_ids[ast.id] = ast;
         const local_id = ast.get_local_header_parent_id()
         if (local_id !== undefined) {
-          add_to_refs_to(
+          addToRefsTo(
             ast.id,
             context,
             local_id,
@@ -2527,15 +2527,15 @@ function calculate_id(
         }
       }
     } else {
-      const message = duplicate_id_error_message(
+      const message = duplicateIdErrorMessage(
         ast.id,
         non_indexed_ast.source_location.path,
         non_indexed_ast.source_location.line,
         non_indexed_ast.source_location.column
       )
-      parse_error(state, message, ast.source_location);
+      parseError(state, message, ast.source_location);
     }
-    if (caption_number_visible(ast, context)) {
+    if (captionNumberVisible(ast, context)) {
       if (!(macro_name in macro_counts_visible)) {
         macro_counts_visible[macro_name] = 0;
       }
@@ -2543,14 +2543,14 @@ function calculate_id(
       macro_counts_visible[macro_name] = macro_count;
       ast.macro_count_visible = macro_count;
     }
-    binary_search_insert(line_to_id_array,
-      [ast.source_location.line, ast.synonym || ast.id], binary_search_line_to_id_array_fn);
+    binarySearchInsert(line_to_id_array,
+      [ast.source_location.line, ast.synonym || ast.id], binarySearchLineToIdArrayFn);
   }
   return { title_text, macro_count_global }
 }
 
 /* Calculate the length of the scope of a child header given its parent ast. */
-function calculate_scope_length(parent_ast) {
+function calculateScopeLength(parent_ast) {
   if (parent_ast !== undefined) {
     let scope = parent_ast.calculate_scope();
     if (scope !== undefined) {
@@ -2560,16 +2560,16 @@ function calculate_scope_length(parent_ast) {
   return 0;
 }
 
-function capitalize_first_letter(string) {
+function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
-exports.capitalize_first_letter = capitalize_first_letter
+exports.capitalizeFirstLetter = capitalizeFirstLetter
 
-function caption_number_visible(ast, context) {
-  return ast.index_id || context.macros[ast.macro_name].options.caption_number_visible(ast, context);
+function captionNumberVisible(ast, context) {
+  return ast.index_id || context.macros[ast.macro_name].options.captionNumberVisible(ast, context);
 }
 
-function char_is_alphanumeric(c) {
+function charIsAlphanumeric(c) {
   let code = c.codePointAt(0);
   return (
     // 0-9
@@ -2584,24 +2584,24 @@ function char_is_alphanumeric(c) {
 // Valid macro name / argument characters.
 // Compatible with JavaScript-like function names / variables.
 // https://docs.ourbigbook.com#macro-identifier
-function char_is_identifier(c) {
-  return char_is_alphanumeric(c)
+function charIsIdentifier(c) {
+  return charIsAlphanumeric(c)
 };
 
 /** Shallow clone an object, and set a given value on the cloned one. */
-function clone_and_set(obj, key, value) {
+function cloneAndSet(obj, key, value) {
   let new_obj = {...obj};
   new_obj[key] = value;
   return new_obj;
 }
-exports.clone_and_set = clone_and_set;
+exports.cloneAndSet = cloneAndSet;
 
-function clone_object(obj) {
+function cloneObject(obj) {
   // https://stackoverflow.com/questions/41474986/how-to-clone-a-javascript-es6-class-instance
   return Object.assign(Object.create(Object.getPrototypeOf(obj)), obj);
 }
 
-function closing_char(c) {
+function closingChar(c) {
   if (c === START_POSITIONAL_ARGUMENT_CHAR)
     return END_POSITIONAL_ARGUMENT_CHAR;
   if (c === START_NAMED_ARGUMENT_CHAR)
@@ -2609,7 +2609,7 @@ function closing_char(c) {
   throw new Error('char does not have a close: ' + c);
 }
 
-function closing_token(token) {
+function closingToken(token) {
   if (token === TokenType.POSITIONAL_ARGUMENT_START)
     return TokenType.POSITIONAL_ARGUMENT_END;
   if (token === TokenType.NAMED_ARGUMENT_START)
@@ -2645,12 +2645,12 @@ async function convert(
   options,
   extra_returns={},
 ) {
-  let context = convert_init_context(options, extra_returns);
+  let context = convertInitContext(options, extra_returns);
 
   // Tokenize.
   let sub_extra_returns;
   sub_extra_returns = {};
-  perf_print(context, 'tokenize_pre')
+  perfPrint(context, 'tokenize_pre')
   input_string = input_string.replace(/\n$/, '')
   const tokenizer = new Tokenizer(
     input_string,
@@ -2663,7 +2663,7 @@ async function convert(
   if (input_string[input_string.length - 1] === '\n') {
     context.errors.push(new ErrorMessage(`the document cannot end in two or more newlines`, tokenizer.source_location))
   }
-  perf_print(context, 'tokenize_post')
+  perfPrint(context, 'tokenize_post')
   if (context.options.log['tokens-inside']) {
     console.error('tokens:');
     for (let i = 0; i < tokens.length; i++) {
@@ -2689,13 +2689,13 @@ async function convert(
             if (default_for === 'all') {
               for (const macro_name of MACRO_WITH_MEDIA_PROVIDER) {
                 context.media_provider_default[default_for] = media_provider_name;
-                context.media_provider_default[capitalize_first_letter(default_for)] = media_provider_name;
+                context.media_provider_default[capitalizeFirstLetter(default_for)] = media_provider_name;
               }
             } else {
               if (MACRO_WITH_MEDIA_PROVIDER.has(default_for)) {
                 if (context.media_provider_default[default_for] === undefined) {
                   context.media_provider_default[default_for] = media_provider_name;
-                  context.media_provider_default[capitalize_first_letter(default_for)] = media_provider_name;
+                  context.media_provider_default[capitalizeFirstLetter(default_for)] = media_provider_name;
                 } else {
                   context.errors.push(new ErrorMessage(`multiple media providers set for macro "${default_for}"`, new SourceLocation(1, 1)));
                 }
@@ -2710,7 +2710,7 @@ async function convert(
     for (const macro_name of MACRO_WITH_MEDIA_PROVIDER) {
       if (context.media_provider_default[macro_name] === undefined) {
         context.media_provider_default[macro_name] = 'local';
-        context.media_provider_default[capitalize_first_letter(macro_name)] = 'local';
+        context.media_provider_default[capitalizeFirstLetter(macro_name)] = 'local';
       }
     }
   }
@@ -2772,7 +2772,7 @@ async function convert(
     for (const toplevel_id in toplevel_ids) {
       // TODO this prevents toplevel arguments (currently only {title}) from working. Never used them though.
       // The Toplevel element is a bit useless given this setup.
-      const ret = render_ast_list({
+      const ret = renderAstList({
         asts: toplevel_ids[toplevel_id],
         context,
         first_toplevel: toplevel_id === first_toplevel_id,
@@ -2784,14 +2784,14 @@ async function convert(
     }
     if (undefined_asts.length) {
       // There are no headers.
-      output = render_ast_list({
+      output = renderAstList({
         asts: undefined_asts,
         context,
         split: false,
       });
     }
 
-    perf_print(context, 'split_render_pre')
+    perfPrint(context, 'split_render_pre')
     // Split header conversion.
     if (context.options.split_headers) {
       // Reset katex_macros to the ourbigbook.json defaults, otherwise
@@ -2811,16 +2811,16 @@ async function convert(
           !child_ast.from_include &&
           !child_ast.validation_output.synonym.boolean
         ) {
-          render_ast_list({ asts, context, header_count, split: true });
+          renderAstList({ asts, context, header_count, split: true });
           asts = [];
           header_count++
         }
         asts.push(child_ast);
       }
-      render_ast_list({ asts, context, header_count, split: true });
+      renderAstList({ asts, context, header_count, split: true });
       // Because the following conversion would redefine them.
     }
-    perf_print(context, 'render_post')
+    perfPrint(context, 'render_post')
     extra_returns.errors.push(...context.errors);
   }
   // Sort errors that might have been produced on different conversion
@@ -2850,7 +2850,7 @@ async function convert(
       output += '\n';
     }
   }
-  perf_print(context, 'end_convert')
+  perfPrint(context, 'end_convert')
   return output;
 }
 exports.convert = convert;
@@ -2863,7 +2863,7 @@ exports.convert = convert;
  * @param {AstArgument} arg
  * @return {String} empty string if arg is undefined
  */
-function render_arg(arg, context) {
+function renderArg(arg, context) {
   let converted_arg = [];
   if (arg !== undefined) {
     if (context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
@@ -2883,7 +2883,7 @@ function render_arg(arg, context) {
   return converted_arg.join('');
 }
 
-/* Similar to render_arg, but used for IDs.
+/* Similar to renderArg, but used for IDs.
  *
  * Because IDs are used programmatically in ourbigbook, we don't escape
  * HTML characters at this point.
@@ -2891,8 +2891,8 @@ function render_arg(arg, context) {
  * @param {AstArgument} arg
  * @return {String}
  */
-function render_arg_noescape(arg, context={}) {
-  return render_arg(arg, clone_and_set(context, 'html_escape', false));
+function renderArgNoescape(arg, context={}) {
+  return renderArg(arg, cloneAndSet(context, 'html_escape', false));
 }
 
 /* Convert a list of asts.
@@ -2907,7 +2907,7 @@ function render_arg_noescape(arg, context={}) {
  * - --split-headers
  * - \H toplevel argument
  */
-function render_ast_list({ asts, context, first_toplevel, header_count, split }) {
+function renderAstList({ asts, context, first_toplevel, header_count, split }) {
   if (
     // Can fail if:
     // * the first thing in the document is a header
@@ -2921,7 +2921,7 @@ function render_ast_list({ asts, context, first_toplevel, header_count, split })
     context = { ...context }
     const options = { ...context.options }
     context.options = options;
-    const first_ast = clone_object(asts[0]);
+    const first_ast = cloneObject(asts[0]);
     if (!first_toplevel) {
       // When not in simple header mode, we always have a value-less node, with
       // children with values. Now things are a bit more complicated, because we
@@ -2931,12 +2931,12 @@ function render_ast_list({ asts, context, first_toplevel, header_count, split })
       context.header_tree = new HeaderTreeNode();
       // Clone this, because we are going to modify it, and it would affect
       // non-split headers and final outputs afterwards.
-      first_ast.header_tree_node = clone_object(first_ast.header_tree_node);
+      first_ast.header_tree_node = cloneObject(first_ast.header_tree_node);
       context.header_tree.add_child(first_ast.header_tree_node);
       context.header_tree_top_level = first_ast.header_tree_node.get_level();
     }
     const output_path_ret = first_ast.output_path(
-      clone_and_set(context, 'to_split_headers', split)
+      cloneAndSet(context, 'to_split_headers', split)
     )
     const { path: output_path, split_suffix } = output_path_ret
     if (options.log['split-headers']) {
@@ -2945,7 +2945,7 @@ function render_ast_list({ asts, context, first_toplevel, header_count, split })
     context.toplevel_output_path = output_path;
     if (output_path !== undefined) {
       const [toplevel_output_path_dir, toplevel_output_path_basename] =
-        path_split(output_path, context.options.path_sep);
+        pathSplit(output_path, context.options.path_sep);
       context.toplevel_output_path_dir = toplevel_output_path_dir;
     } else {
       context.toplevel_output_path_dir = '';
@@ -2966,7 +2966,7 @@ function render_ast_list({ asts, context, first_toplevel, header_count, split })
     if (output_path !== undefined) {
       // root_relpath
       options.template_vars = { ...options.template_vars }
-      const new_root_relpath = get_root_relpath(output_path, context)
+      const new_root_relpath = getRootRelpath(output_path, context)
       context.root_relpath_shift = path.relative(
         options.template_vars.root_relpath,
         new_root_relpath
@@ -2994,7 +2994,7 @@ function render_ast_list({ asts, context, first_toplevel, header_count, split })
         if (parent_ast) {
           context.toplevel_ast = parent_ast;
           const output_path_ret = parent_ast.output_path(
-            clone_and_set(context, 'to_split_headers', split)
+            cloneAndSet(context, 'to_split_headers', split)
           )
           const { path: output_path, split_suffix } = output_path_ret
           // Hax. It has to be both undefined, and different than the correct output_path.
@@ -3007,7 +3007,7 @@ function render_ast_list({ asts, context, first_toplevel, header_count, split })
         const header_tree_h1 = new HeaderTreeNode(parent_ast, context.header_tree);
         context.header_tree.add_child(header_tree_h1);
 
-        first_ast.header_tree_node = clone_object(first_ast.header_tree_node);
+        first_ast.header_tree_node = cloneObject(first_ast.header_tree_node);
         first_ast.header_tree_node.parent_ast = header_tree_h1
         first_ast.first_toplevel_child = false
         //header_tree_h1.add_child(first_ast.header_tree_node)
@@ -3028,7 +3028,7 @@ function render_ast_list({ asts, context, first_toplevel, header_count, split })
  *        - {Number} start_line
  *        - {Array} errors
  * @return {AstArgument}*/
-async function parse_include(
+async function parseInclude(
   input_string,
   convert_options,
   cur_header_level,
@@ -3062,18 +3062,18 @@ async function parse_include(
 // Convert an argument as an ID, notably:
 // - no HTML escapes
 // - plaintext conversion
-function convert_id_arg(arg, context) {
-  return render_arg_noescape(arg,
+function convertIdArg(arg, context) {
+  return renderArgNoescape(arg,
     // This was added because it was blowing up in the edge case of
     // \x[\m[1]] and others during parse to setup the x DB
     // because we hadn't validate validated elements
     // there yet. Not sure we could, no patience.
     // This fix relies on the expectation that id_conversion will
-    // not rely on validate_ast. Maybe that is reasonable.
-    clone_and_set(context, 'id_conversion', true))
+    // not rely on validateAst. Maybe that is reasonable.
+    cloneAndSet(context, 'id_conversion', true))
 }
 
-function convert_init_context(options={}, extra_returns={}) {
+function convertInitContext(options={}, extra_returns={}) {
   options = { ...options }
   if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
   if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
@@ -3396,8 +3396,8 @@ function convert_init_context(options={}, extra_returns={}) {
   let root_relpath_shift
   let input_dir, basename
   if (options.input_path !== undefined) {
-    ;[input_dir, basename] = path_split(options.input_path, options.path_sep)
-    const [basename_noext, ext] = path_splitext(basename)
+    ;[input_dir, basename] = pathSplit(options.input_path, options.path_sep)
+    const [basename_noext, ext] = pathSplitext(basename)
     if (INDEX_FILE_BASENAMES_NOEXT.has(basename_noext)) {
       if (input_dir === '') {
         // https://docs.ourbigbook.com#the-toplevel-index-file
@@ -3410,7 +3410,7 @@ function convert_init_context(options={}, extra_returns={}) {
       }
       options.isindex = true
     } else {
-      const [input_path_noext, ext] = path_splitext(options.input_path)
+      const [input_path_noext, ext] = pathSplitext(options.input_path)
       options.toplevel_id = input_path_noext;
       options.isindex = false
     }
@@ -3447,7 +3447,7 @@ function convert_init_context(options={}, extra_returns={}) {
     include_path_set: new Set(options.include_path_set),
     input_dir,
     in_header: false,
-    macros: macro_list_to_macros(),
+    macros: macroListToMacros(),
     options,
     // Shifts in local \a links due to either:
     // - scope + split headers e.g. scope/notindex.html
@@ -3472,39 +3472,39 @@ function convert_init_context(options={}, extra_returns={}) {
     to_split_headers: undefined,
     webUrl: `https://${ourbigbook_json.web.host}/`,
   }
-  perf_print(context, 'start_convert')
+  perfPrint(context, 'start_convert')
   return context;
 }
-exports.convert_init_context = convert_init_context
+exports.convertInitContext = convertInitContext
 
-/** Similar to convert_x_href, used for external callers that don't have the context.
+/** Similar to convertXHref, used for external callers that don't have the context.
  * TODO: possibly broken, was returning empty at some point. */
 function renderAstFromOpts(astJson, options) {
-  const context = convert_init_context(options);
+  const context = convertInitContext(options);
   context.db_provider = options.db_provider;
   return AstNode.fromJSON(astJson, context).render(context)
 }
 exports.renderAstFromOpts = renderAstFromOpts
 
-/* Like x_href, but called with options as convert,
+/* Like xHref, but called with options as convert,
  * so that we don't have to fake a complex context. */
-function convert_x_href(target_id, options) {
-  const context = convert_init_context(options)
+function convertXHref(target_id, options) {
+  const context = convertInitContext(options)
   context.db_provider = options.db_provider
   const target_ast = context.db_provider.get(target_id, context)
   if (target_ast === undefined) {
     return undefined
   } else {
-    return x_href(target_ast, context)
+    return xHref(target_ast, context)
   }
 }
-exports.convert_x_href = convert_x_href
+exports.convertXHref = convertXHref
 
 function dirname(str, sep) {
-  return path_split(str, sep)[0]
+  return pathSplit(str, sep)[0]
 }
 
-function duplicate_id_error_message(id, path, line, column) {
+function duplicateIdErrorMessage(id, path, line, column) {
   let message = `duplicate ID "${id}", previous one defined at `;
   if (path !== undefined) {
     message += `file "${path}" `;
@@ -3512,7 +3512,7 @@ function duplicate_id_error_message(id, path, line, column) {
   message += `line ${line} column ${column}`;
   return message
 }
-exports.duplicate_id_error_message = duplicate_id_error_message
+exports.duplicateIdErrorMessage = duplicateIdErrorMessage
 
 /** Error message to be rendered inside the generated output itself.
  *
@@ -3520,12 +3520,12 @@ exports.duplicate_id_error_message = duplicate_id_error_message
  *
  * @return {String}
  */
-function error_message_in_output(msg, context) {
+function errorMessageInOutput(msg, context) {
   let escaped_msg;
   if (context === undefined) {
     escaped_msg = msg;
   } else {
-    escaped_msg = html_escape_context(context, msg);
+    escaped_msg = htmlEscapeContext(context, msg);
   }
   return `[OURBIGBOOK_ERROR: ${escaped_msg}]`
 }
@@ -3540,7 +3540,7 @@ const FORMAT_NUMBER_APPROX_MAP = [
   { value: 1E15, symbol: "P" },
   { value: 1E18, symbol: "E" }
 ];
-function format_number_approx(num, digits) {
+function formatNumberApprox(num, digits) {
   if (digits === undefined) {
     digits = 0;
   }
@@ -3554,17 +3554,17 @@ function format_number_approx(num, digits) {
   return (num / FORMAT_NUMBER_APPROX_MAP[i].value).toFixed(
     digits).replace(rx, "$1") + FORMAT_NUMBER_APPROX_MAP[i].symbol;
 }
-exports.format_number_approx = format_number_approx
+exports.formatNumberApprox = formatNumberApprox
 
 // Get all possible IDs due to walking up scope resolution
 // into the given ids array.
 //
 // This very slightly duplicates the resolution code in DbProvider.get,
 // but it was not trivial to factor them out, so just going for this now.
-function get_all_possible_scope_resolutions(current_scope, id, context) {
+function getAllPossibleScopeResolutions(current_scope, id, context) {
   let ids = []
-  if (is_absolute_xref(id, context)) {
-    ids.push(resolve_absolute_xref(id, context))
+  if (isAbsoluteXref(id, context)) {
+    ids.push(resolveAbsoluteXref(id, context))
   } else {
     if (current_scope !== undefined) {
       current_scope += Macro.HEADER_SCOPE_SEPARATOR
@@ -3579,7 +3579,7 @@ function get_all_possible_scope_resolutions(current_scope, id, context) {
   return ids
 }
 
-function get_descendant_count(tree_node) {
+function getDescendantCount(tree_node) {
   return [
     tree_node.descendant_count,
     tree_node.word_count,
@@ -3587,7 +3587,7 @@ function get_descendant_count(tree_node) {
   ];
 }
 
-function get_descendant_count_html(context, tree_node, options) {
+function getDescendantCountHtml(context, tree_node, options) {
   if (!context.options.show_descendant_count) {
     return undefined
   }
@@ -3597,19 +3597,19 @@ function get_descendant_count_html(context, tree_node, options) {
   if (options.show_descendant_count === undefined) {
     options.show_descendant_count = true;
   }
-  const [descendant_count, word_count, descendant_word_count] = get_descendant_count(tree_node);
+  const [descendant_count, word_count, descendant_word_count] = getDescendantCount(tree_node);
   let ret;
   let word_count_html = ''
   const wordIcon = '<span class="fa-regular-400">\u{f075}</span>'
   const words_str = options.long_style ? `words: ` : ''
   if (descendant_word_count > 0 && (context.options.add_test_instrumentation || options.show_descendant_count)) {
-    word_count_html += `<span title="word count for this article + all descendants">${wordIcon} ${words_str}<span class="word-count-descendant">${format_number_approx(descendant_word_count)}</span></span>`
+    word_count_html += `<span title="word count for this article + all descendants">${wordIcon} ${words_str}<span class="word-count-descendant">${formatNumberApprox(descendant_word_count)}</span></span>`
   }
   if (tree_node.word_count > 0 && context.options.add_test_instrumentation || !options.show_descendant_count) {
-    word_count_html += `<span title="word count for this article">${wordIcon} ${words_str}<span class="word-count">${format_number_approx(word_count)}</span></span>`;
+    word_count_html += `<span title="word count for this article">${wordIcon} ${words_str}<span class="word-count">${formatNumberApprox(word_count)}</span></span>`;
   }
   if (descendant_count > 0 && (context.options.add_test_instrumentation || options.show_descendant_count)) {
-    word_count_html += `<span title="descendant article count"><span class="fa-solid-900">\u{f02d}</span> ${options.long_style ? 'articles: ' : ''}<span class="descendant-count">${format_number_approx(descendant_count)}</span></span>`
+    word_count_html += `<span title="descendant article count"><span class="fa-solid-900">\u{f02d}</span> ${options.long_style ? 'articles: ' : ''}<span class="descendant-count">${formatNumberApprox(descendant_count)}</span></span>`
   }
   if (word_count_html !== '') {
     ret = `<span class="metrics">${word_count_html}</span>`;
@@ -3617,22 +3617,22 @@ function get_descendant_count_html(context, tree_node, options) {
   return ret;
 }
 
-function get_descendant_count_html_sep(context, tree_node, options) {
-  let ret = get_descendant_count_html(context, tree_node, options);
+function getDescendantCountHtmlSep(context, tree_node, options) {
+  let ret = getDescendantCountHtml(context, tree_node, options);
   if (ret !== undefined) {
     ret = `<span class="metrics-sep">${HEADER_MENU_ITEM_SEP + ret}</span>`;
   }
   return ret;
 }
 
-function check_and_update_local_link({
+function checkAndUpdateLocalLink({
   context,
   href,
   external,
   media_provider_type,
   source_location,
 }) {
-  const was_protocol_given = protocol_is_given(href)
+  const was_protocol_given = protocolIsGiven(href)
 
   let input_path_directory
   if (context.options.input_path !== undefined) {
@@ -3664,8 +3664,8 @@ function check_and_update_local_link({
         !context.options.fs_exists_sync(check_path)
       ) {
         error = `link to inexistent local file: ${href}`;
-        render_error(context, error, source_location);
-        error = error_message_in_output(error, context)
+        renderError(context, error, source_location);
+        error = errorMessageInOutput(error, context)
       } else {
         const readFileRet = context.options.read_file(check_path, context)
         if (
@@ -3699,8 +3699,8 @@ function check_and_update_local_link({
 }
 
 // Get description and other closely related attributes.
-function get_description(description_arg, context) {
-  let description = render_arg(description_arg, context);
+function getDescription(description_arg, context) {
+  let description = renderArg(description_arg, context);
   let force_separator
   if (description === '') {
     force_separator = false
@@ -3727,7 +3727,7 @@ function get_description(description_arg, context) {
   return { description, force_separator, multiline_caption }
 }
 
-function get_link_html({
+function getLinkHtml({
   attrs,
   content,
   context,
@@ -3740,7 +3740,7 @@ function get_link_html({
       attrs = ''
     }
     let error
-    ;({ href, error } = check_and_update_local_link({
+    ;({ href, error } = checkAndUpdateLocalLink({
       context,
       external,
       href,
@@ -3748,7 +3748,7 @@ function get_link_html({
       media_provider_type: 'local',
       source_location,
     }))
-    return `<a${html_attr('href', href)}${attrs}>${content}${error}</a>`;
+    return `<a${htmlAttr('href', href)}${attrs}>${content}${error}</a>`;
   } else {
     // Don't create a link if we are a child of another link, as that is invalid HTML.
     return content;
@@ -3756,12 +3756,12 @@ function get_link_html({
 }
 
 /** Get the AST from the parent argument of headers or includes. */
-function get_parent_argument_ast(ast, context, include_options) {
+function getParentArgumentAst(ast, context, include_options) {
   let parent_id;
   let parent_ast;
-  parent_id = magic_title_to_id(convert_id_arg(ast.args.parent, context), context);
-  if (is_absolute_xref(parent_id, context)) {
-    parent_ast = context.db_provider.get_noscope(resolve_absolute_xref(parent_id, context), context);
+  parent_id = magicTitleToId(convertIdArg(ast.args.parent, context), context);
+  if (isAbsoluteXref(parent_id, context)) {
+    parent_ast = context.db_provider.get_noscope(resolveAbsoluteXref(parent_id, context), context);
   } else {
     // We can't use context.db_provider.get here because we don't know who
     // the parent node is, because scope can affect that choice.
@@ -3770,7 +3770,7 @@ function get_parent_argument_ast(ast, context, include_options) {
     let largest_level = sorted_keys[sorted_keys.length - 1];
     for (let level = largest_level; level > 0; level--) {
       let ast = include_options.header_tree_stack.get(level).ast;
-      if (id_is_suffix(parent_id, ast.id)) {
+      if (idIsSuffix(parent_id, ast.id)) {
         parent_ast = ast;
         break;
       }
@@ -3779,12 +3779,12 @@ function get_parent_argument_ast(ast, context, include_options) {
   return [parent_id, parent_ast];
 }
 
-function get_root_relpath(output_path, context) {
+function getRootRelpath(output_path, context) {
   // TODO htmlEmbed was split into embedIncludes and embedResources.
   // This was likely meant to be embedIncludes, but I don't have a filing test if this is commented out
   // so not sure.
   const [output_path_dir, output_path_basename] =
-    path_split(output_path, context.options.path_sep);
+    pathSplit(output_path, context.options.path_sep);
   let root_relpath = path.relative(output_path_dir, '.')
   if (root_relpath !== '') {
     root_relpath += URL_SEP;
@@ -3792,9 +3792,9 @@ function get_root_relpath(output_path, context) {
   return root_relpath
 }
 
-function get_title_and_description({ title, description, source, inner }) {
+function getTitleAndDescription({ title, description, source, inner }) {
   let sep
-  if (inner === undefined || is_punctuation(inner[inner.length - 1])) {
+  if (inner === undefined || isPunctuation(inner[inner.length - 1])) {
     sep = ''
   } else {
     sep = '.'
@@ -3811,14 +3811,14 @@ function get_title_and_description({ title, description, source, inner }) {
   return `${title}${sep}${source}${description}`
 }
 
-function github_provider_prefix(context) {
+function githubProviderPrefix(context) {
   const github = context.options.ourbigbook_json['media-providers'].github
   if (github) {
     return `https://raw.githubusercontent.com/${github.remote}/master`;
   }
 }
 
-function has_toc(context) {
+function checkHasToc(context) {
   let root_node = context.header_tree;
   if (root_node.children.length === 1) {
     root_node = root_node.children[0];
@@ -3828,15 +3828,15 @@ function has_toc(context) {
 
 // Ensure that all children and tag targets exist. This is for error checking only.
 // https://docs.ourbigbook.com#h-child-argment
-function header_check_child_tag_exists(ast, context, childrenOrTags, type) {
+function headerCheckChildTagExists(ast, context, childrenOrTags, type) {
   let ret = ''
   for (let child of childrenOrTags) {
-    const target_id = magic_title_arg_to_id(child.args.content, context)
+    const target_id = magicTitleArgToId(child.args.content, context)
     const target_ast = context.db_provider.get(target_id, context, ast.header_tree_node.ast.scope)
     if (target_ast === undefined) {
       let message = `unknown ${type} id: "${target_id}"`
-      render_error(context, message, child.source_location)
-      ret += error_message_in_output(message, context)
+      renderError(context, message, child.source_location)
+      ret += errorMessageInOutput(message, context)
     }
   }
   return ret
@@ -3851,7 +3851,7 @@ function htmlAncestorLinks(entries, nAncestors) {
   const ret = []
   let i = 0
   if (nAncestors > ANCESTORS_MAX) {
-    ret.push(`<a ${html_attr('href', `#${ANCESTORS_ID}`)}}>${PARENT_MARKER} &nbsp;...</a>`)
+    ret.push(`<a ${htmlAttr('href', `#${ANCESTORS_ID}`)}}>${PARENT_MARKER} &nbsp;...</a>`)
     i++
   }
   for (const entry of entries) {
@@ -3866,13 +3866,13 @@ exports.htmlAncestorLinks = htmlAncestorLinks
 
 /** Convert a key value already fully HTML escaped strings
  * to an HTML attribute. The callers MUST escape any untrusted chars.
- * e.g. with html_attr_value.
+ * e.g. with htmlAttrValue.
  *
  * @param {String} key
  * @param {AstArgument} arg
  * @return {String} - of form ' a="b"' (with a leading space)
  */
-function html_attr(key, value) {
+function htmlAttr(key, value) {
   return ` ${key}="${value}"`;
 }
 
@@ -3882,16 +3882,16 @@ function html_attr(key, value) {
  * @param {Object} context
  * @return {String}
  */
-function html_attr_value(arg, context) {
-  return render_arg(arg, clone_and_set(context, 'html_is_attr', true));
+function htmlAttrValue(arg, context) {
+  return renderArg(arg, cloneAndSet(context, 'html_is_attr', true));
 }
 
-function html_class_attr(classes) {
-  return html_attr('class', classes.join(' '))
+function htmlClassAttr(classes) {
+  return htmlAttr('class', classes.join(' '))
 }
 
-function html_code(content, attrs) {
-  return html_elem('pre', html_elem('code', content), attrs);
+function htmlCode(content, attrs) {
+  return htmlElem('pre', htmlElem('code', content), attrs);
 }
 
 /** Helper to convert multiple parameters directly to HTML attributes.
@@ -3905,7 +3905,7 @@ function html_code(content, attrs) {
  * @param {Object[String, AstNode]} custom_args - attributes that were not just passed in
  *        directly from the input text, but may rather have been calculated from the node.
  */
-function html_render_attrs(
+function htmlRenderAttrs(
   ast, context, arg_names=[], custom_args={}
 ) {
   // Determine the arguments.
@@ -3923,35 +3923,35 @@ function html_render_attrs(
   let ret = '';
   for (const name_arg_pair of args) {
     const [arg_name, arg] = name_arg_pair;
-    ret += html_attr(arg_name, html_attr_value(arg, context));
+    ret += htmlAttr(arg_name, htmlAttrValue(arg, context));
   }
   return ret;
 }
 
 /**
- * Same interface as html_render_attrs, but automatically add the ID to the list
+ * Same interface as htmlRenderAttrs, but automatically add the ID to the list
  * of arguments.
  */
-function html_render_attrs_id(
+function htmlRenderAttrsId(
   ast, context, arg_names=[], custom_args={}
 ) {
   let id = ast.id;
   if (id) {
     custom_args[Macro.ID_ARGUMENT_NAME] = [
       new PlaintextAstNode(
-        remove_toplevel_scope(id, context.toplevel_ast, context),
+        removeToplevelScope(id, context.toplevel_ast, context),
         ast.source_location,
       ),
     ];
   }
-  return html_render_attrs(ast, context, arg_names, custom_args);
+  return htmlRenderAttrs(ast, context, arg_names, custom_args);
 }
 
 /** Helper for the most common HTML function type that does "nothing magic":
  * only has "id" as a possible attribute, and uses ast.args.content as the
  * main element child.
  */
-function html_render_simple_elem(elem_name, options={}) {
+function htmlRenderSimpleElem(elem_name, options={}) {
   if (!('attrs' in options)) {
     options.attrs = {};
   }
@@ -3977,12 +3977,12 @@ function html_render_simple_elem(elem_name, options={}) {
     newline_after_close_str = '';
   }
   return function(ast, context) {
-    let attrs = html_render_attrs_id(ast, context);
+    let attrs = htmlRenderAttrsId(ast, context);
     let extra_attrs_string = '';
     for (const key in options.attrs) {
-      extra_attrs_string += html_attr(key, options.attrs[key]);
+      extra_attrs_string += htmlAttr(key, options.attrs[key]);
     }
-    let content = render_arg(ast.args.content, context);
+    let content = renderArg(ast.args.content, context);
 
     // testData
     let test_data_arg = ast.args[Macro.TEST_DATA_ARGUMENT_NAME]
@@ -3990,19 +3990,19 @@ function html_render_simple_elem(elem_name, options={}) {
     if (test_data_arg === undefined) {
       test_data_attr = ''
     } else {
-      test_data_attr = html_attr(Macro.TEST_DATA_HTML_PROP, render_arg(test_data_arg, context))
+      test_data_attr = htmlAttr(Macro.TEST_DATA_HTML_PROP, renderArg(test_data_arg, context))
     }
 
     let res = ''
     const show_caption = ast.index_id || (ast.validation_output.description && ast.validation_output.description.given)
     let elem_attrs
     if (show_caption) {
-      const { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
-      const { full: title, inner } = x_text_base(ast, context, {
-        href_prefix: html_self_link(ast, context),
+      const { description, force_separator, multiline_caption } = getDescription(ast.args.description, context)
+      const { full: title, inner } = xTextBase(ast, context, {
+        href_prefix: htmlSelfLink(ast, context),
         force_separator
       })
-      const title_and_description = get_title_and_description({ title, description, inner })
+      const title_and_description = getTitleAndDescription({ title, description, inner })
       res += `<div${multiline_caption ?  ` class="${multiline_caption.substring(1)}"` : ''}${attrs}>`;
       res += `<div class="caption">${title_and_description}</div>`;
       elem_attrs = ''
@@ -4014,59 +4014,59 @@ function html_render_simple_elem(elem_name, options={}) {
       res += `</div>`;
     }
     if (options.wrap) {
-      res = html_elem('div', res);
+      res = htmlElem('div', res);
     }
     return res;
   };
 }
 
-function html_elem(tag, content, attrs) {
+function htmlElem(tag, content, attrs) {
   let ret = '<' + tag;
   for (const attr_id in attrs) {
-    ret += ' ' + attr_id + '="' + html_escape_attr(attrs[attr_id]) + '"'
+    ret += ' ' + attr_id + '="' + htmlEscapeAttr(attrs[attr_id]) + '"'
   }
   return ret + '>' + content + '</' + tag + '>';
 }
 
-function html_escape_attr(str) {
-  return html_escape_content(str)
+function htmlEscapeAttr(str) {
+  return htmlEscapeContent(str)
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
   ;
 }
 
-function html_escape_content(str) {
+function htmlEscapeContent(str) {
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
   ;
 }
-exports.html_escape_content = html_escape_content
+exports.htmlEscapeContent = htmlEscapeContent
 
 /** Escape string depending on the current context. */
-function html_escape_context(context, str) {
+function htmlEscapeContext(context, str) {
   if (context.html_escape) {
     if (context.html_is_attr) {
-      return html_escape_attr(str);
+      return htmlEscapeAttr(str);
     } else {
-      return html_escape_content(str);
+      return htmlEscapeContent(str);
     }
   } else {
     return str;
   }
 }
 
-function html_hide_hover_link(id) {
+function htmlHideHoverLink(id) {
   if (id === undefined) {
     return '';
   } else {
-    let href = html_attr('href', html_escape_attr(id));
+    let href = htmlAttr('href', htmlEscapeAttr(id));
     return `<span class="hide-hover"><a${href}>${UNICODE_LINK}</a></span>`;
   }
 }
 
-function html_img({
+function htmlImg({
   alt,
   ast,
   context,
@@ -4081,7 +4081,7 @@ function html_img({
   ;({
     href: src,
     error
-  } = check_and_update_local_link({
+  } = checkAndUpdateLocalLink({
     context,
     external,
     href: src,
@@ -4090,15 +4090,15 @@ function html_img({
   }))
   let border_attr
   if (ast.validation_output.border.boolean) {
-    border_attr = html_attr('class', 'border')
+    border_attr = htmlAttr('class', 'border')
   } else {
     border_attr = ''
   }
   if (relpath_prefix !== undefined) {
     src = path.join(relpath_prefix, src)
   }
-  const href = ast.validation_output.link.given ? render_arg(ast.args.link, context) : src
-  let html = `<a${html_attr('href', href)}><img${html_attr('src', html_escape_attr(src))}${html_attr('loading', 'lazy')}${rendered_attrs}${alt}${border_attr}></a>`;
+  const href = ast.validation_output.link.given ? renderArg(ast.args.link, context) : src
+  let html = `<a${htmlAttr('href', href)}><img${htmlAttr('src', htmlEscapeAttr(src))}${htmlAttr('loading', 'lazy')}${rendered_attrs}${alt}${border_attr}></a>`;
   if (!inline) {
     html = `<div class="float-wrap">${html}</div>`
   }
@@ -4108,12 +4108,12 @@ function html_img({
   };
 }
 
-function html_is_whitespace_text_node(ast) {
-  return ast.node_type === AstType.PLAINTEXT && html_is_whitespace(ast.text);
+function htmlIsWhitespaceTextNode(ast) {
+  return ast.node_type === AstType.PLAINTEXT && htmlIsWhitespace(ast.text);
 }
 
 // https://stackoverflow.com/questions/2161337/can-we-use-any-other-tag-inside-ul-along-with-li/60885802#60885802
-function html_is_whitespace(string) {
+function htmlIsWhitespace(string) {
   for (const c of string) {
     if (!HTML_ASCII_WHITESPACE.has(c))
       return false;
@@ -4121,8 +4121,8 @@ function html_is_whitespace(string) {
   return true;
 }
 
-function html_katex_convert(ast, context) {
-  let katex_in = render_arg(ast.args.content, clone_and_set(context, 'html_escape', false))
+function htmlKatexConvert(ast, context) {
+  let katex_in = renderArg(ast.args.content, cloneAndSet(context, 'html_escape', false))
   if (!katex_in.endsWith('\n')) {
     katex_in += '\n'
   }
@@ -4146,43 +4146,43 @@ function html_katex_convert(ast, context) {
     // It uses Unicode char hacks to add underlines... and there are two trailing
     // chars after the final newline, so the error message is taking up two lines
     let message = error.toString().replace(/\n\xcc\xb2$/, '');
-    render_error(context, message, ast.args.content.source_location);
-    return error_message_in_output(message, context);
+    renderError(context, message, ast.args.content.source_location);
+    return errorMessageInOutput(message, context);
   }
 }
 
-function html_self_link(ast, context) {
-  return x_href_attr(
+function htmlSelfLink(ast, context) {
+  return xHrefAttr(
     ast,
-    clone_and_set(context, 'to_split_headers', context.in_split_headers)
+    cloneAndSet(context, 'to_split_headers', context.in_split_headers)
   );
 }
 
-function html_title_and_description(ast, context) {
+function htmlTitleAndDescription(ast, context) {
   let title_and_description = ``
-  let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
-  const href = html_self_link(ast, context)
+  let { description, force_separator, multiline_caption } = getDescription(ast.args.description, context)
+  const href = htmlSelfLink(ast, context)
   if (ast.index_id || ast.validation_output.description.given) {
-    const { full: title, inner } = x_text_base(ast, context, {
+    const { full: title, inner } = xTextBase(ast, context, {
       href_prefix: href,
       force_separator
     })
-    title_and_description += `<div class="caption">${get_title_and_description({ title, description, inner })}</div>`
+    title_and_description += `<div class="caption">${getTitleAndDescription({ title, description, inner })}</div>`
   }
   return { title_and_description, multiline_caption, href }
 }
 
 /** https://stackoverflow.com/questions/14313183/javascript-regex-how-do-i-check-if-the-string-is-ascii-only/14313213#14313213 */
-function is_ascii(str) {
+function isAscii(str) {
   return /^[\x00-\x7F]*$/.test(str);
 }
 
-function id_convert_simple_elem(argname) {
+function idConvertSimpleElem(argname) {
   if (argname === undefined) {
     argname = 'content'
   }
   return function(ast, context) {
-    let ret = render_arg(ast.args[argname], context);
+    let ret = renderArg(ast.args[argname], context);
     if (!context.macros[ast.macro_name].options.phrasing) {
       ret += '\n';
     }
@@ -4194,7 +4194,7 @@ function id_convert_simple_elem(argname) {
  *  bbb,     aaa/bbb -> true
  *  aaa/bbb, aaa/bbb -> true
  */
-function id_is_suffix(suffix, full) {
+function idIsSuffix(suffix, full) {
   let full_len = full.length;
   let suffix_len = suffix.length;
   return (
@@ -4210,11 +4210,11 @@ function id_is_suffix(suffix, full) {
 }
 
 // @return [href: string, content: string ], both XSS safe.
-function link_get_href_content(ast, context) {
-  const href = render_arg(ast.args.href, clone_and_set(context, 'html_is_attr', true))
-  let content = render_arg(ast.args.content, context);
+function linkGetHrefContent(ast, context) {
+  const href = renderArg(ast.args.href, cloneAndSet(context, 'html_is_attr', true))
+  let content = renderArg(ast.args.content, context);
   if (content === '') {
-    content = render_arg(ast.args.href, context);
+    content = renderArg(ast.args.href, context);
     if (!context.id_conversion) {
       content = content.replace(/^https?:\/\//, '')
     }
@@ -4224,7 +4224,7 @@ function link_get_href_content(ast, context) {
 
 // If in split header mode, link to the nosplit version.
 // If in the nosplit mode, link to the split version.
-function link_to_split_opposite(ast, context) {
+function linkToSplitOpposite(ast, context) {
   if (context.options.ourbigbook_json.toSplitHeaders) {
     return undefined
   } else {
@@ -4237,8 +4237,8 @@ function link_to_split_opposite(ast, context) {
       content = SPLIT_MARKER;
       title = 'view one header per page';
     }
-    let other_context = clone_and_set(context, 'to_split_headers', !context.in_split_headers);
-    let other_href = x_href_attr(ast, other_context);
+    let other_context = cloneAndSet(context, 'to_split_headers', !context.in_split_headers);
+    let other_href = xHrefAttr(ast, other_context);
     if (
       // I'm not going to lie, I bruteforced this. Sue me.
       context.options.ourbigbook_json.h.splitDefaultNotToplevel &&
@@ -4251,21 +4251,21 @@ function link_to_split_opposite(ast, context) {
       // But seriously, checking this more cleanly would require
       // unpacking a bunch of stuff down below from the toplevel scope removal.
       // Related: https://github.com/ourbigbook/ourbigbook/issues/271
-      const other_href_same = x_href_attr(ast, context);
+      const other_href_same = xHrefAttr(ast, context);
       if (other_href === other_href_same) {
         return undefined
       }
     }
-    return `<a${html_attr('title', title)}${other_href}>${content}</a>`;
+    return `<a${htmlAttr('title', title)}${other_href}>${content}</a>`;
   }
 }
 
 /**
  * @return {Object} dict of macro name to macro
  */
-function macro_list_to_macros() {
+function macroListToMacros() {
   const macros = {};
-  for (const macro of macro_list()) {
+  for (const macro of macroList()) {
     for (const format_id in OUTPUT_FORMATS) {
       const convert_func = OUTPUT_FORMATS[format_id].convert_funcs[macro.name]
       if (convert_func === undefined) {
@@ -4279,10 +4279,10 @@ function macro_list_to_macros() {
 }
 
 /** At some point we will generalize this to on-the-fly macro definitions. */
-function macro_list() {
+function macroList() {
   return DEFAULT_MACRO_LIST;
 }
-exports.macro_list = macro_list
+exports.macroList = macroList
 
 const OURBIGBOOK_EXT = 'bigb';
 exports.OURBIGBOOK_EXT = OURBIGBOOK_EXT;
@@ -4299,20 +4299,20 @@ const macro_image_video_block_convert_function_wikimedia_source_url = 'https://c
 const macro_image_video_block_convert_function_wikimedia_source_image_re = new RegExp('^\\d+px-');
 const macro_image_video_block_convert_function_wikimedia_source_video_re = new RegExp('^([^.]+\.[^.]+).*');
 
-function macro_image_video_block_convert_function(ast, context) {
-  let rendered_attrs = html_render_attrs(ast, context, ['height', 'width']);
-  let figure_attrs = html_render_attrs_id(ast, context);
-  let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
+function macroImageVideoBlockConvertFunction(ast, context) {
+  let rendered_attrs = htmlRenderAttrs(ast, context, ['height', 'width']);
+  let figure_attrs = htmlRenderAttrsId(ast, context);
+  let { description, force_separator, multiline_caption } = getDescription(ast.args.description, context)
   let figure_class
   if (multiline_caption) {
-    figure_class = html_attr('class', multiline_caption.slice(1))
+    figure_class = htmlAttr('class', multiline_caption.slice(1))
   } else {
     figure_class = ''
   }
   let ret = `<figure${figure_attrs}${figure_class}>`
   let href_prefix;
   if (ast.id !== undefined) {
-    href_prefix = html_self_link(ast, context);
+    href_prefix = htmlSelfLink(ast, context);
   } else {
     href_prefix = undefined;
   }
@@ -4323,16 +4323,16 @@ function macro_image_video_block_convert_function(ast, context) {
     source,
     src,
     is_url
-  } = macro_image_video_resolve_params_with_source(ast, context);
+  } = macroImageVideoResolveParamsWithSource(ast, context);
   if (error_message !== undefined) {
     return error_message;
   }
   if (source !== '') {
     force_separator = true;
-    source = `<a${html_attr('href', source)}>Source</a>.`;
+    source = `<a${htmlAttr('href', source)}>Source</a>.`;
   }
   let alt_val;
-  const has_caption = (ast.id !== undefined) && caption_number_visible(ast, context);
+  const has_caption = (ast.id !== undefined) && captionNumberVisible(ast, context);
   if (ast.args.alt === undefined) {
     if (has_caption) {
       alt_val = undefined;
@@ -4340,13 +4340,13 @@ function macro_image_video_block_convert_function(ast, context) {
       alt_val = src;
     }
   } else {
-    alt_val = render_arg(ast.args.alt, context);
+    alt_val = renderArg(ast.args.alt, context);
   }
   let alt;
   if (alt_val === undefined) {
     alt = '';
   } else {
-    alt = html_attr('alt', html_escape_attr(alt_val));
+    alt = htmlAttr('alt', htmlEscapeAttr(alt_val));
   }
   ret += context.macros[ast.macro_name].options.image_video_content_func({
     alt,
@@ -4359,8 +4359,8 @@ function macro_image_video_block_convert_function(ast, context) {
     src,
   });
   if (has_caption) {
-    const { full: title, inner } = x_text_base(ast, context, { href_prefix, force_separator })
-    const title_and_description = get_title_and_description({ title, description, source, inner })
+    const { full: title, inner } = xTextBase(ast, context, { href_prefix, force_separator })
+    const title_and_description = getTitleAndDescription({ title, description, source, inner })
     ret += `<figcaption>${title_and_description}</figcaption>\n`;
   }
   ret += '</figure>';
@@ -4368,18 +4368,18 @@ function macro_image_video_block_convert_function(ast, context) {
 }
 
 /** Convert args such as tag= or \x[]{magic} to their final target ID. */
-function magic_title_arg_to_id(arg, context) {
-  const id_context = clone_and_set(context, 'id_conversion', true)
-  return magic_title_to_id(render_arg_noescape(arg, id_context), id_context)
+function magicTitleArgToId(arg, context) {
+  const id_context = cloneAndSet(context, 'id_conversion', true)
+  return magicTitleToId(renderArgNoescape(arg, id_context), id_context)
 }
 
 /**
  * @param string target_id
  */
-function magic_title_to_id(target_id, context) {
+function magicTitleToId(target_id, context) {
   if (target_id.startsWith(Macro.FILE_ID_PREFIX))
     return target_id
-  let ret = title_to_id(target_id, { keep_scope_sep: true, magic: true }, context)
+  let ret = titleToId(target_id, { keep_scope_sep: true, magic: true }, context)
   if (target_id[0] === AT_MENTION_CHAR) {
     ret = AT_MENTION_CHAR + ret
   }
@@ -4387,7 +4387,7 @@ function magic_title_to_id(target_id, context) {
 }
 
 // https://stackoverflow.com/questions/44447847/enums-in-javascript-with-es6/49709701#49709701
-function make_enum(arr) {
+function makeEnum(arr) {
   let obj = {};
   for (let val of arr){
     obj[val] = Symbol(val);
@@ -4451,7 +4451,7 @@ const GREEK_MAP = {
 }
 
 // https://docs.ourbigbook.com#ascii-normalization
-function normalize_latin_character(c) {
+function normalizeLatinCharacter(c) {
   c = lodash.deburr(c)
   if (c in GREEK_MAP) {
     return ID_SEPARATOR + GREEK_MAP[c] + ID_SEPARATOR
@@ -4473,7 +4473,7 @@ const NORMALIZE_PUNCTUATION_CHARACTER_MAP = {
   '@': 'at',
   '\u{2212}': 'minus',
 }
-function normalize_punctuation_character(c) {
+function normalizePunctuationCharacter(c) {
   if (c in NORMALIZE_PUNCTUATION_CHARACTER_MAP) {
     return ID_SEPARATOR + NORMALIZE_PUNCTUATION_CHARACTER_MAP[c] + ID_SEPARATOR
   } else {
@@ -4482,7 +4482,7 @@ function normalize_punctuation_character(c) {
 }
 
 // https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties/17781518#17781518
-function object_subset(source_object, keys) {
+function objectSubset(source_object, keys) {
   const new_object = {};
   keys.forEach((obj, key) => { new_object[key] = source_object[key]; });
   return new_object;
@@ -4505,7 +4505,7 @@ function object_subset(source_object, keys) {
  * * README.bigb -> index.bigb renaming
  * * split header stuff
  **/
-function output_path_base(args={}) {
+function outputPathBase(args={}) {
   let {
     ast_undefined,
     ast_id,
@@ -4523,17 +4523,17 @@ function output_path_base(args={}) {
   if (ast_input_path === undefined) {
     return undefined
   }
-  const [dirname, basename] = path_split(ast_input_path, path_sep);
-  const renamed_basename_noext = rename_basename(noext(basename));
+  const [dirname, basename] = pathSplit(ast_input_path, path_sep);
+  const renamed_basename_noext = renameBasename(noext(basename));
   // We are the first header, or something that comes before it.
   if (ast_undefined) {
-    const [dirname_ret, basename_ret] = index_path_from_dirname(dirname, renamed_basename_noext, path_sep)
+    const [dirname_ret, basename_ret] = indexPathFromDirname(dirname, renamed_basename_noext, path_sep)
     return { dirname: dirname_ret, basename: basename_ret };
   }
   // Calculate the base basename_ret and dirname_ret.
   let dirname_ret;
   let basename_ret;
-  const to_split_headers = is_to_split_headers_base(ast_split_default, context_to_split_headers, toSplitHeadersOverride);
+  const to_split_headers = isToSplitHeadersBase(ast_split_default, context_to_split_headers, toSplitHeadersOverride);
   if (
     ast_is_first_header_in_input_file ||
     (
@@ -4563,11 +4563,11 @@ function output_path_base(args={}) {
     if (to_split_headers && ast_id !== undefined) {
       // Non-toplevel elements in split header mode are simple,
       // the ID just gives the output path directly.
-      ;[dirname_ret, basename_ret] = path_split(ast_id, URL_SEP);
+      ;[dirname_ret, basename_ret] = pathSplit(ast_id, URL_SEP);
     } else {
       if (dirname_ret === undefined) {
         if (ast_toplevel_id !== undefined) {
-          ;[dirname_ret, basename_ret] = path_split(ast_toplevel_id, URL_SEP);
+          ;[dirname_ret, basename_ret] = pathSplit(ast_toplevel_id, URL_SEP);
         } else {
           ;[dirname_ret, basename_ret] = [dirname, renamed_basename_noext]
         }
@@ -4575,7 +4575,7 @@ function output_path_base(args={}) {
     }
   }
 
-  ;[dirname_ret, basename_ret] = index_path_from_dirname(dirname_ret, basename_ret, path_sep)
+  ;[dirname_ret, basename_ret] = indexPathFromDirname(dirname_ret, basename_ret, path_sep)
 
   // Add -split, -nosplit or custom suffixes to basename_ret.
   let suffix_to_add;
@@ -4618,7 +4618,7 @@ function output_path_base(args={}) {
 
   return { dirname: dirname_ret, basename: basename_ret, split_suffix: suffix_added };
 }
-exports.output_path_base = output_path_base;
+exports.outputPathBase = outputPathBase;
 
 /** Parse tokens into the AST tree.
  *
@@ -4629,7 +4629,7 @@ exports.output_path_base = output_path_base;
  * @return {AstNode}
  */
 async function parse(tokens, options, context, extra_returns={}) {
-  perf_print(context, 'parse_start')
+  perfPrint(context, 'parse_start')
   context.in_parse = true
   extra_returns.errors = [];
   let state = {
@@ -4641,10 +4641,10 @@ async function parse(tokens, options, context, extra_returns={}) {
     tokens: tokens,
   };
   // Get toplevel arguments such as {title=}, see https://docs.ourbigbook.com#toplevel
-  const ast_toplevel_args = parse_argument_list(
+  const ast_toplevel_args = parseArgumentList(
     state, Macro.TOPLEVEL_MACRO_NAME, AstType.MACRO);
   if ('content' in ast_toplevel_args) {
-    parse_error(state, `the toplevel arguments cannot contain an explicit content argument`, new SourceLocation(1, 1));
+    parseError(state, `the toplevel arguments cannot contain an explicit content argument`, new SourceLocation(1, 1));
   }
 
   // Inject a maybe paragraph token after those arguments.
@@ -4654,7 +4654,7 @@ async function parse(tokens, options, context, extra_returns={}) {
 
   // Parse the main part of the document as the content
   // argument toplevel argument.
-  const ast_toplevel_content_arg = parse_argument(
+  const ast_toplevel_content_arg = parseArgument(
     state, state.token.source_location);
 
   // Create the toplevel macro itself.
@@ -4665,7 +4665,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     new SourceLocation(1, 1),
   );
   if (state.token.type !== TokenType.INPUT_END) {
-    parse_error(state, `unexpected tokens at the end of input`);
+    parseError(state, `unexpected tokens at the end of input`);
   }
   if (context.options.log['ast-pp-simple']) {
     console.error('ast-pp-simple: after parse');
@@ -4686,7 +4686,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   // but let's not complicate that further either, shall we?
   context.headers_with_include = [];
   context.header_tree = new HeaderTreeNode();
-  perf_print(context, 'post_process_1')
+  perfPrint(context, 'post_process_1')
   let prev_non_synonym_header_ast;
   let cur_header_level;
   let first_header_level;
@@ -4697,8 +4697,8 @@ async function parse(tokens, options, context, extra_returns={}) {
   // IDs that are indexed: you can link to those.
   const line_to_id_array = [];
   context.line_to_id = function(line) {
-    let index = binary_search(line_to_id_array,
-      [line + 1, undefined], binary_search_line_to_id_array_fn);
+    let index = binarySearch(line_to_id_array,
+      [line + 1, undefined], binarySearchLineToIdArrayFn);
     if (index < 0) {
       index = -(index + 1)
     }
@@ -4710,7 +4710,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         return undefined;
       }
     }
-    return remove_toplevel_scope(line_to_id_array[index][1], context.toplevel_ast, context);
+    return removeToplevelScope(line_to_id_array[index][1], context.toplevel_ast, context);
   };
   let macro_count_global = 0
   const macro_counts = {};
@@ -4777,12 +4777,12 @@ async function parse(tokens, options, context, extra_returns={}) {
         const error_ast = new PlaintextAstNode(options.forbid_include, ast.source_location);
         error_ast.parent_ast = ast.parent_ast;
         parent_arg.push(error_ast);
-        parse_error(state, options.forbid_include, ast.source_location);
+        parseError(state, options.forbid_include, ast.source_location);
       } else {
-        const href = render_arg_noescape(ast.args.href, context);
+        const href = renderArgNoescape(ast.args.href, context);
         let input_dir, input_basename
         if (options.input_path) {
-          ;[input_dir, input_basename] = path_split(options.input_path, options.path_sep)
+          ;[input_dir, input_basename] = pathSplit(options.input_path, options.path_sep)
         } else {
           input_dir = '.'
         }
@@ -4790,15 +4790,15 @@ async function parse(tokens, options, context, extra_returns={}) {
         // \Include parent argument handling.
         let parent_ast;
         let parent_id;
-        validate_ast(ast, context);
+        validateAst(ast, context);
         if (ast.validation_output.parent.given) {
-          [parent_id, parent_ast] = get_parent_argument_ast(ast, context, options)
+          [parent_id, parent_ast] = getParentArgumentAst(ast, context, options)
           if (parent_ast === undefined) {
             const message = Macro.INCLUDE_MACRO_NAME + ' ' + HEADER_PARENT_ERROR_MESSAGE + parent_id;
-            const error_ast = new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location);
+            const error_ast = new PlaintextAstNode(' ' + errorMessageInOutput(message), ast.source_location);
             error_ast.parent_ast = ast.parent_ast;
             parent_arg.push(error_ast);
-            parse_error(state, message, ast.args.parent.source_location);
+            parseError(state, message, ast.args.parent.source_location);
           }
         }
         if (parent_ast === undefined) {
@@ -4818,7 +4818,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           parent_ast_header_tree_node = parent_ast.header_tree_node;
           parent_ast_header_level = parent_ast_header_tree_node.get_level();
 
-          add_to_refs_to(
+          addToRefsTo(
             include_id,
             context,
             parent_ast.id,
@@ -4844,7 +4844,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             context.options.render
           ) {
             let message = `could not find include: "${href}"`;
-            parse_error(
+            parseError(
               state,
               message,
               ast.source_location,
@@ -4855,7 +4855,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           const [include_path, include_content] = read_include_ret;
           if (options.include_path_set.has(include_path)) {
             let message = `circular include detected to: "${include_path}"`;
-            parse_error(
+            parseError(
               state,
               message,
               ast.source_location,
@@ -4864,7 +4864,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           } else {
             let new_child_nodes;
             if (options.embed_includes) {
-              new_child_nodes = await parse_include(
+              new_child_nodes = await parseInclude(
                 include_content,
                 options,
                 parent_ast_header_level,
@@ -5006,8 +5006,8 @@ async function parse(tokens, options, context, extra_returns={}) {
           AstType.MACRO,
           'Q',
           {
-            content: await parse_include(
-              render_arg_noescape(ast.args.content, clone_and_set(context, 'id_conversion', true)),
+            content: await parseInclude(
+              renderArgNoescape(ast.args.content, cloneAndSet(context, 'id_conversion', true)),
               options,
               0,
               options.input_path,
@@ -5044,17 +5044,17 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
           ast.is_first_header_in_input_file = true;
         }
-        ast.subdir = convert_id_arg(ast.args.subdir, context)
+        ast.subdir = convertIdArg(ast.args.subdir, context)
 
-        // Required by calculate_id.
-        validate_ast(ast, context);
+        // Required by calculateId.
+        validateAst(ast, context);
 
         if (
           !ast.is_first_header_in_input_file &&
           !ast.validation_output.synonym.boolean &&
           options.forbid_multiheader
         ) {
-          parse_error(
+          parseError(
             state,
             options.forbid_multiheader,
             ast.source_location,
@@ -5082,21 +5082,21 @@ async function parse(tokens, options, context, extra_returns={}) {
         if (is_synonym) {
           if (options.cur_header === undefined) {
             const message = `the first header of an input file cannot be a synonym`;
-            parse_error(state, message, ast.args.synonym.source_location);
+            parseError(state, message, ast.args.synonym.source_location);
             // Hack it to behave like a non-synonym. This is the easiest way to avoid further errors.
             is_synonym = false
           } else {
             if (header_level !== 1) {
               const message = `synonym headers must be h1, got: ${header_level}`;
-              parse_error(state, message, ast.args.level.source_location);
+              parseError(state, message, ast.args.level.source_location);
             }
             ast.synonym = options.cur_header.id;
             if (ast.args[Macro.TITLE2_ARGUMENT_NAME] !== undefined) {
               if (ast.args[Macro.TITLE2_ARGUMENT_NAME].asts.length > 1) {
-                parse_error(state, `synonym headers can have at most one ${Macro.TITLE2_ARGUMENT_NAME} argument`, ast.args[Macro.TITLE2_ARGUMENT_NAME].source_location);
+                parseError(state, `synonym headers can have at most one ${Macro.TITLE2_ARGUMENT_NAME} argument`, ast.args[Macro.TITLE2_ARGUMENT_NAME].source_location);
               }
               if (ast.args[Macro.TITLE2_ARGUMENT_NAME].asts[0].args[Macro.CONTENT_ARGUMENT_NAME].asts.length > 0) {
-                parse_error(state, `the ${Macro.TITLE2_ARGUMENT_NAME} of synonym headers must be empty`, ast.args[Macro.TITLE2_ARGUMENT_NAME].source_location);
+                parseError(state, `the ${Macro.TITLE2_ARGUMENT_NAME} of synonym headers must be empty`, ast.args[Macro.TITLE2_ARGUMENT_NAME].source_location);
               }
               options.cur_header.title2s.push(ast);
             }
@@ -5115,16 +5115,16 @@ async function parse(tokens, options, context, extra_returns={}) {
           let parent_ast;
           if (is_synonym) {
             const message = `synonym and parent are incompatible`;
-            parse_error(state, message, ast.args.level.source_location);
+            parseError(state, message, ast.args.level.source_location);
           }
           if (header_level !== 1) {
             const message = `header with parent argument must have level equal 1`;
             ast.args[Macro.TITLE_ARGUMENT_NAME].push(
-              new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location)
+              new PlaintextAstNode(' ' + errorMessageInOutput(message), ast.source_location)
             );
-            parse_error(state, message, ast.args.level.source_location);
+            parseError(state, message, ast.args.level.source_location);
           }
-          ;[parent_id, parent_ast] = get_parent_argument_ast(ast, context, options);
+          ;[parent_id, parent_ast] = getParentArgumentAst(ast, context, options);
           let parent_tree_node;
           if (parent_ast !== undefined) {
             parent_tree_node = options.header_tree_id_stack.get(parent_ast.id);
@@ -5148,7 +5148,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           !ast.validation_output.synonym.boolean
         ) {
           const msg = 'only one level 1 header is allowed in this conversion'
-          parse_error(state, msg, ast.source_location);
+          parseError(state, msg, ast.source_location);
           parent_arg.push(new PlaintextAstNode(msg, ast.source_location));
         }
 
@@ -5171,8 +5171,8 @@ async function parse(tokens, options, context, extra_returns={}) {
             message = `parent given with lint['h-parent'] = "number"`;
           }
           if (message) {
-            parse_error(state, message, ast.source_location);
-            parent_arg_push_after.push(new PlaintextAstNode(error_message_in_output(message), ast.source_location));
+            parseError(state, message, ast.source_location);
+            parent_arg_push_after.push(new PlaintextAstNode(errorMessageInOutput(message), ast.source_location));
           }
         }
 
@@ -5196,8 +5196,8 @@ async function parse(tokens, options, context, extra_returns={}) {
             arg = ast.args[Macro.HEADER_CHILD_ARGNAME]
           }
           if (message) {
-            parse_error(state, message, arg.source_location);
-            parent_arg_push_after.push(new PlaintextAstNode(error_message_in_output(message), arg.source_location));
+            parseError(state, message, arg.source_location);
+            parent_arg_push_after.push(new PlaintextAstNode(errorMessageInOutput(message), arg.source_location));
           }
         }
 
@@ -5219,7 +5219,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             header_level_skip_error = header_tree_last_level;
           }
           if (cur_header_level < first_header_level) {
-            parse_error(
+            parseError(
               state,
               `header level ${cur_header_level} is smaller than the level of the first header of the document ${first_header_level}`,
               ast.args.level.source_location,
@@ -5260,10 +5260,10 @@ async function parse(tokens, options, context, extra_returns={}) {
 
         // Must come after the header tree step is mostly done, because scopes influence ID,
         // and they also depend on the parent node.
-        ;({ macro_count_global } = calculate_id(ast, context, options.non_indexed_ids, options.indexed_ids,
+        ;({ macro_count_global } = calculateId(ast, context, options.non_indexed_ids, options.indexed_ids,
           macro_counts, macro_count_global, macro_counts_visible, state, true, line_to_id_array));
 
-        // Now stuff that must come after calculate_id.
+        // Now stuff that must come after calculateId.
 
         header_ids.push(ast.id)
 
@@ -5271,11 +5271,11 @@ async function parse(tokens, options, context, extra_returns={}) {
         if (parent_tree_node_error) {
           const message = HEADER_PARENT_ERROR_MESSAGE + parent_id;
           ast.args[Macro.TITLE_ARGUMENT_NAME].push(
-            new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location));
-          parse_error(state, message, ast.args.parent.source_location);
+            new PlaintextAstNode(' ' + errorMessageInOutput(message), ast.source_location));
+          parseError(state, message, ast.args.parent.source_location);
         }
         if (is_synonym) {
-          add_to_refs_to(
+          addToRefsTo(
             prev_non_synonym_header_ast.id,
             context,
             ast.id,
@@ -5288,8 +5288,8 @@ async function parse(tokens, options, context, extra_returns={}) {
           if (header_level_skip_error !== undefined) {
             const message = `skipped a header level from ${header_level_skip_error} to ${cur_header_level}`;
             ast.args[Macro.TITLE_ARGUMENT_NAME].push(
-              new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location));
-            parse_error(state, message, ast.args.level.source_location);
+              new PlaintextAstNode(' ' + errorMessageInOutput(message), ast.source_location));
+            parseError(state, message, ast.args.level.source_location);
           }
           options.header_tree_id_stack.set(cur_header_tree_node.ast.id, cur_header_tree_node);
         }
@@ -5332,7 +5332,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
           parent_arg_push_after.push(...is_about_asts)
 
-          if (IMAGE_EXTENSIONS.has(path_splitext(ast.file)[1])) {
+          if (IMAGE_EXTENSIONS.has(pathSplitext(ast.file)[1])) {
             const newast = new AstNode(
               AstType.MACRO,
               'Image',
@@ -5347,7 +5347,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             newast.set_source_location(ast.source_location)
             parent_arg_push_after.push(newast)
           } else if (
-            VIDEO_EXTENSIONS.has(path_splitext(ast.file)[1]) ||
+            VIDEO_EXTENSIONS.has(pathSplitext(ast.file)[1]) ||
             ast.file.match(media_provider_type_youtube_re)
           ) {
             const newast = new AstNode(
@@ -5364,7 +5364,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             newast.set_source_location(ast.source_location)
             parent_arg_push_after.push(newast)
           } else {
-            const protocol = protocol_get(ast.file)
+            const protocol = protocolGet(ast.file)
             if (protocol === null || protocol === 'file') {
               if (
                 content !== undefined
@@ -5440,8 +5440,8 @@ async function parse(tokens, options, context, extra_returns={}) {
           const tags_or_children = ast.args[argname]
           if (tags_or_children !== undefined) {
             for (const tag_or_child of tags_or_children) {
-              const target_id = magic_title_arg_to_id(tag_or_child.args.content, context)
-              for (const target_id_with_scope of get_all_possible_scope_resolutions(ast.calculate_scope(), target_id, context)) {
+              const target_id = magicTitleArgToId(tag_or_child.args.content, context)
+              for (const target_id_with_scope of getAllPossibleScopeResolutions(ast.calculate_scope(), target_id, context)) {
                 options.refs_to_h.push({
                   ast,
                   child,
@@ -5457,25 +5457,25 @@ async function parse(tokens, options, context, extra_returns={}) {
         if (header_title_ast_ancestors.length > 0 && ast.args.content === undefined) {
           const message = 'x without content inside title of a header: https://docs.ourbigbook.com#x-within-title-restrictions'
           ast.args.content = new AstArgument(
-            [ new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location) ],
+            [ new PlaintextAstNode(' ' + errorMessageInOutput(message), ast.source_location) ],
             ast.source_location
           );
-          parse_error(state, message, ast.source_location);
+          parseError(state, message, ast.source_location);
         }
 
         // refs database updates.
-        validate_ast(ast, context)
-        let target_id = convert_file_id_arg(ast, ast.args.href, context)
+        validateAst(ast, context)
+        let target_id = convertFileIdArg(ast, ast.args.href, context)
         if (
           // Otherwise the ref would be added to the DB and DB checks would fail.
           !ast.validation_output.topic.boolean
         ) {
           const fetch_plural = ast.validation_output.magic.boolean
           if (fetch_plural) {
-            target_id = magic_title_to_id(target_id, context)
+            target_id = magicTitleToId(target_id, context)
           }
           const cur_scope = options.cur_header ? options.cur_header.calculate_scope() : ''
-          for (const target_id_with_scope of get_all_possible_scope_resolutions(cur_scope, target_id, context)) {
+          for (const target_id_with_scope of getAllPossibleScopeResolutions(cur_scope, target_id, context)) {
             options.refs_to_x.push({
               ast,
               title_ast_ancestors: Object.assign([], title_ast_ancestors),
@@ -5494,12 +5494,12 @@ async function parse(tokens, options, context, extra_returns={}) {
               last_ast.node_type === AstType.PLAINTEXT
             ) {
               const old_text = last_ast.text
-              const new_text = pluralize_wrap(old_text, 1)
+              const new_text = pluralizeWrap(old_text, 1)
               if (new_text !== old_text) {
                 last_ast.text = new_text
-                const target_id = magic_title_to_id(convert_id_arg(ast.args.href, context), context)
+                const target_id = magicTitleToId(convertIdArg(ast.args.href, context), context)
                 last_ast.text = old_text
-                for (const target_id_with_scope of get_all_possible_scope_resolutions(cur_scope, target_id, context)) {
+                for (const target_id_with_scope of getAllPossibleScopeResolutions(cur_scope, target_id, context)) {
                   options.refs_to_x.push({
                     ast,
                     title_ast_ancestors: Object.assign([], title_ast_ancestors),
@@ -5555,7 +5555,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     // - extract all IDs into an ID index
     //
     // Normally only the toplevel includer will enter this code section.
-    perf_print(context, 'post_process_2')
+    perfPrint(context, 'post_process_2')
     // Calculate header_tree_top_level.
     //
     // - if a header of this level is present in the document,
@@ -5594,12 +5594,12 @@ async function parse(tokens, options, context, extra_returns={}) {
           // it actually worked and output an `html` inside another `html`.
           // Maybe we could do something with iframe, but who cares about that?
           const message = `the "${Macro.TOPLEVEL_MACRO_NAME}" cannot be used explicitly`;
-          ast = new PlaintextAstNode(error_message_in_output(message), ast.source_location);
-          parse_error(state, message, ast.source_location);
+          ast = new PlaintextAstNode(errorMessageInOutput(message), ast.source_location);
+          parseError(state, message, ast.source_location);
         } else if (
           ast.macro_name === Macro.HEADER_MACRO_NAME
         ) {
-          propagate_numbered(ast, context)
+          propagateNumbered(ast, context)
 
           // Propagate toplevel_id for headers.
           if (
@@ -5640,7 +5640,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           //   and the thing comes out of serialization validated.
           macro_name !== Macro.HEADER_MACRO_NAME && !ast.validated
         ) {
-          validate_ast(ast, context);
+          validateAst(ast, context);
         }
 
         // Push this node into the parent argument list.
@@ -5722,7 +5722,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                         break;
                       } else if (
                         auto_parent_name_macro.name_to_arg['content'].remove_whitespace_children &&
-                        html_is_whitespace_text_node(arg_i)
+                        htmlIsWhitespaceTextNode(arg_i)
                       ) {
                         // Ignore the whitespace node.
                       } else {
@@ -5765,7 +5765,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               if (
                 (arg_name in macro.name_to_arg) &&
                 macro.name_to_arg[arg_name].remove_whitespace_children &&
-                html_is_whitespace_text_node(child_node)
+                htmlIsWhitespaceTextNode(child_node)
               ) {
                 new_child_nodes_set = true;
               } else if (child_node.node_type === AstType.MACRO) {
@@ -5791,7 +5791,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                         }
                       } else if (
                         auto_parent_name_macro.name_to_arg['content'].remove_whitespace_children &&
-                        html_is_whitespace_text_node(arg_i)
+                        htmlIsWhitespaceTextNode(arg_i)
                       ) {
                         // Ignore the whitespace node.
                       } else {
@@ -5836,16 +5836,16 @@ async function parse(tokens, options, context, extra_returns={}) {
             if (paragraph_indexes.length > 0) {
               const new_arg = new AstArgument([], arg.source_location);
               if (paragraph_indexes[0] > 0) {
-                parse_add_paragraph(state, ast, new_arg, arg, 0, paragraph_indexes[0], options);
+                parseAddParagraph(state, ast, new_arg, arg, 0, paragraph_indexes[0], options);
               }
               let paragraph_start = paragraph_indexes[0] + 1;
               for (let i = 1; i < paragraph_indexes.length; i++) {
                 const paragraph_index = paragraph_indexes[i];
-                parse_add_paragraph(state, ast, new_arg, arg, paragraph_start, paragraph_index, options);
+                parseAddParagraph(state, ast, new_arg, arg, paragraph_start, paragraph_index, options);
                 paragraph_start = paragraph_index + 1;
               }
               if (paragraph_start < arg.length()) {
-                parse_add_paragraph(state, ast, new_arg, arg, paragraph_start, arg.length(), options);
+                parseAddParagraph(state, ast, new_arg, arg, paragraph_start, arg.length(), options);
               }
               arg = new_arg;
             }
@@ -5881,7 +5881,7 @@ async function parse(tokens, options, context, extra_returns={}) {
 
     // Now do a pass that collects information that may be affected by
     // the tree modifications of the previous step, e.g. ID generation.
-    perf_print(context, 'post_process_3')
+    perfPrint(context, 'post_process_3')
     {
       const todo_visit = [ast_toplevel];
       let cur_header_tree_node
@@ -5910,7 +5910,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
 
           // Header IDs already previously calculated for parent= so we don't redo it in that case.
-          let ret = calculate_id(ast, context, options.non_indexed_ids, options.indexed_ids, macro_counts,
+          let ret = calculateId(ast, context, options.non_indexed_ids, options.indexed_ids, macro_counts,
             macro_count_global, macro_counts_visible, state, false, line_to_id_array);
           macro_count_global = ret.macro_count_global
 
@@ -5954,24 +5954,24 @@ async function parse(tokens, options, context, extra_returns={}) {
     }
 
     // Now for some final operations that don't go over the entire Ast Tree.
-    perf_print(context, 'post_process_4')
+    perfPrint(context, 'post_process_4')
 
     // Setup refs DB.
     for (const ref of options.refs_to_h) {
-      const target_id_effective = x_child_db_effective_id(
+      const target_id_effective = xChildDbEffectiveId(
         ref.target_id,
         context,
         ref.ast
       )
       if (ref.child) {
-        add_to_refs_to(target_id_effective, context, ref.ast.id, ref.type, { source_location: ref.source_location });
+        addToRefsTo(target_id_effective, context, ref.ast.id, ref.type, { source_location: ref.source_location });
       } else {
-        add_to_refs_to(ref.ast.id, context, target_id_effective, ref.type, { source_location: ref.source_location });
+        addToRefsTo(ref.ast.id, context, target_id_effective, ref.type, { source_location: ref.source_location });
       }
     }
     for (const ref of options.refs_to_x) {
       const ast = ref.ast
-      const target_id_effective = x_child_db_effective_id(
+      const target_id_effective = xChildDbEffectiveId(
         ref.target_id,
         context,
         ast
@@ -5987,7 +5987,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           !ast.from_include
         ) {
           // Update xref database for incoming links.
-          const from_ids = add_to_refs_to(
+          const from_ids = addToRefsTo(
             target_id_effective,
             context,
             parent_id,
@@ -6010,12 +6010,12 @@ async function parse(tokens, options, context, extra_returns={}) {
             fromid = target_id_effective;
           }
           if (toid !== undefined) {
-            add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD, { source_location: ast.source_location });
+            addToRefsTo(toid, context, fromid, REFS_TABLE_X_CHILD, { source_location: ast.source_location });
           }
         }
       }
       for (const title_ast of ref.title_ast_ancestors) {
-        add_to_refs_to(
+        addToRefsTo(
           target_id_effective,
           context,
           title_ast.id,
@@ -6035,7 +6035,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     }
 
     if (context.options.render) {
-      perf_print(context, 'db_queries')
+      perfPrint(context, 'db_queries')
 
       let id_conflict_asts = []
       if (options.db_provider !== undefined) {
@@ -6055,7 +6055,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK &&
             ast.validation_output.p.boolean
           ) {
-            const id_plural = pluralize_wrap(id.replaceAll(ID_SEPARATOR, ' ')).replaceAll(' ', ID_SEPARATOR)
+            const id_plural = pluralizeWrap(id.replaceAll(ID_SEPARATOR, ' ')).replaceAll(' ', ID_SEPARATOR)
             if (id !== id_plural) {
               // We need to also fetch this to decide if we can use magic plural or not, in case
               // there are separate IDs for both singular and plural. But we don't want to put it into
@@ -6158,9 +6158,9 @@ async function parse(tokens, options, context, extra_returns={}) {
         if (target_ast === undefined) {
           let message = `ID in include not found on database: "${href}", ` +
             `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
-          header_ast.args[Macro.TITLE_ARGUMENT_NAME].get(0).text = error_message_in_output(message)
+          header_ast.args[Macro.TITLE_ARGUMENT_NAME].get(0).text = errorMessageInOutput(message)
           if (options.render) {
-            parse_error(state, message, header_ast.source_location);
+            parseError(state, message, header_ast.source_location);
           }
         } else {
           if (target_ast.is_first_header_in_input_file) {
@@ -6174,7 +6174,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             ))
           }
           header_ast.splitDefault = target_ast.splitDefault
-          propagate_numbered(header_ast, context)
+          propagateNumbered(header_ast, context)
           header_ast.set_source_location(target_ast.source_location)
           header_ast.header_tree_node.update_ancestor_counts(target_ast.header_tree_node_word_count)
           for (const argname in target_ast.args) {
@@ -6192,7 +6192,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         // but it is a bit hard to factor them out since this is a magic include header,
         // and all includes and headers must be parsed concurrently since includes get
         // injected under the last header.
-        validate_ast(header_ast, context);
+        validateAst(header_ast, context);
 
         if (target_ast !== undefined) {
           // We modify the cache here to ensure that the header ID has the full header_tree_node, which
@@ -6255,18 +6255,18 @@ async function parse(tokens, options, context, extra_returns={}) {
   }
 
   context.in_parse = false
-  perf_print(context, 'parse_end')
+  perfPrint(context, 'parse_end')
   return ast_toplevel;
 }
 
 // Maybe add a paragraph after a \n\n.
-function parse_add_paragraph(
+function parseAddParagraph(
   state, ast, new_arg, arg, paragraph_start, paragraph_end, options
 ) {
-  parse_log_debug(state, 'function: parse_add_paragraph');
-  parse_log_debug(state, 'paragraph_start: ' + paragraph_start);
-  parse_log_debug(state, 'paragraph_end: ' + paragraph_end);
-  parse_log_debug(state);
+  parseLogDebug(state, 'function: parseAddParagraph');
+  parseLogDebug(state, 'paragraph_start: ' + paragraph_start);
+  parseLogDebug(state, 'paragraph_end: ' + paragraph_end);
+  parseLogDebug(state);
   if (paragraph_start < paragraph_end) {
     const macro = state.macros[arg.get(paragraph_start).macro_name];
     const slice = arg.slice(paragraph_start, paragraph_end);
@@ -6295,21 +6295,21 @@ function parse_add_paragraph(
 }
 
 // Consume one token.
-function parse_consume(state) {
+function parseConsume(state) {
   state.i += 1;
   if (state.i < state.tokens.length) {
     state.token = state.tokens[state.i];
   } else {
     throw new Error('programmer error');
   }
-  parse_log_debug(state, 'function: parse_consume');
-  parse_log_debug(state, 'state.i = ' + state.i.toString())
-  parse_log_debug(state, 'state.token = ' + JSON.stringify(state.token));
-  parse_log_debug(state);
+  parseLogDebug(state, 'function: parseConsume');
+  parseLogDebug(state, 'state.i = ' + state.i.toString())
+  parseLogDebug(state, 'state.token = ' + JSON.stringify(state.token));
+  parseLogDebug(state);
   return state.token;
 }
 
-function parse_log_debug(state, msg='') {
+function parseLogDebug(state, msg='') {
   if (state.options.log.parse) {
     console.error('parse: ' + msg);
   }
@@ -6317,10 +6317,10 @@ function parse_log_debug(state, msg='') {
 
 // Input: e.g. in `\Image[img.jpg]{height=123}` this parses the `[img.jpg]{height=123}`.
 // Return value: dict with arguments.
-function parse_argument_list(state, macro_name, macro_type) {
-  parse_log_debug(state, 'function: parse_argument_list');
-  parse_log_debug(state, 'state = ' + JSON.stringify(state.token));
-  parse_log_debug(state);
+function parseArgumentList(state, macro_name, macro_type) {
+  parseLogDebug(state, 'function: parseArgumentList');
+  parseLogDebug(state, 'state = ' + JSON.stringify(state.token));
+  parseLogDebug(state);
   const args = {};
   const macro = state.macros[macro_name];
   let name_to_arg;
@@ -6342,13 +6342,13 @@ function parse_argument_list(state, macro_name, macro_type) {
     let arg_name;
     let open_token = state.token;
     // Consume the *_ARGUMENT_START token out.
-    parse_consume(state);
+    parseConsume(state);
     if (open_token.type === TokenType.POSITIONAL_ARGUMENT_START) {
       if (macro_type === AstType.ERROR) {
         arg_name = positional_arg_count.toString();
       } else {
         if (positional_arg_count >= macro.positional_args.length) {
-          parse_error(state,
+          parseError(state,
             `unknown named macro argument "${arg_name}" of macro "${macro_name}"`,
             open_token.source_location,
           );
@@ -6362,17 +6362,17 @@ function parse_argument_list(state, macro_name, macro_type) {
       // Named argument.
       arg_name = state.token.value;
       if (macro_type !== AstType.ERROR && !(arg_name in macro.named_args)) {
-        parse_error(state,
+        parseError(state,
           `unknown named macro argument "${arg_name}" of macro "${macro_name}"`,
           state.token.source_location
         );
       }
       // Parse the argument name out.
-      parse_consume(state);
+      parseConsume(state);
     }
-    const arg_children = parse_argument(state, open_token.source_location);
-    if (state.token.type !== closing_token(open_token.type)) {
-      parse_error(state, `unclosed argument "${open_token.value}"`, open_token.source_location);
+    const arg_children = parseArgument(state, open_token.source_location);
+    if (state.token.type !== closingToken(open_token.type)) {
+      parseError(state, `unclosed argument "${open_token.value}"`, open_token.source_location);
     }
     if (
       // Happens in some error cases, e.g. \\undefinedMacro[aa]
@@ -6383,7 +6383,7 @@ function parse_argument_list(state, macro_name, macro_type) {
       if (arg_name in args) {
         if (!multiple) {
           // https://github.com/ourbigbook/ourbigbook/issues/101
-          parse_error(state,
+          parseError(state,
             `named argument "${arg_name}" given multiple times`,
             open_token.source_location,
           )
@@ -6406,7 +6406,7 @@ function parse_argument_list(state, macro_name, macro_type) {
     }
     if (state.token.type !== TokenType.INPUT_END) {
       // Consume the *_ARGUMENT_END token out.
-      parse_consume(state);
+      parseConsume(state);
     }
   }
   return args;
@@ -6416,7 +6416,7 @@ function parse_argument_list(state, macro_name, macro_type) {
  * Input: e.g. in `\Image[img.jpg]{height=123}` this parses the `img.jpg` and the `123`.
  * @return AstArgument
  */
-function parse_argument(state, open_argument_source_location) {
+function parseArgument(state, open_argument_source_location) {
   const arg_children = new AstArgument([], open_argument_source_location);
   while (
     state.token.type !== TokenType.INPUT_END &&
@@ -6424,17 +6424,17 @@ function parse_argument(state, open_argument_source_location) {
     state.token.type !== TokenType.NAMED_ARGUMENT_END
   ) {
     // The recursive case: the argument is a lists of macros, go into all of them.
-    arg_children.push(parse_macro(state));
+    arg_children.push(parseMacro(state));
   }
 return arg_children;
 }
 
 // Parse one macro. This is the centerpiece of the parsing!
 // Input: e.g. in `\Image[img.jpg]{height=123}` this parses the entire string.
-function parse_macro(state) {
-  parse_log_debug(state, 'function: parse_macro');
-  parse_log_debug(state, 'state = ' + JSON.stringify(state.token));
-  parse_log_debug(state);
+function parseMacro(state) {
+  parseLogDebug(state, 'function: parseMacro');
+  parseLogDebug(state, 'state = ' + JSON.stringify(state.token));
+  parseLogDebug(state);
   if (state.token.type === TokenType.MACRO_NAME) {
     const macro_name = state.token.value;
     const macro_source_location = state.token.source_location;
@@ -6444,18 +6444,18 @@ function parse_macro(state) {
       macro_type = AstType.MACRO;
     } else {
       macro_type = AstType.ERROR;
-      parse_error(state, unknown_macro_message);
+      parseError(state, unknown_macro_message);
     }
     // Consume the MACRO_NAME token out.
-    parse_consume(state);
-    const args = parse_argument_list(state, macro_name, macro_type);
+    parseConsume(state);
+    const args = parseArgumentList(state, macro_name, macro_type);
     if (macro_type === AstType.ERROR) {
       return new AstNode(
         macro_type,
         Macro.PLAINTEXT_MACRO_NAME,
         {},
         state.token.source_location,
-        {text: error_message_in_output(unknown_macro_message)},
+        {text: errorMessageInOutput(unknown_macro_message)},
       );
     } else {
       return new AstNode(macro_type, macro_name, args, macro_source_location);
@@ -6467,7 +6467,7 @@ function parse_macro(state) {
       state.token.source_location,
     );
     // Consume the PLAINTEXT node out.
-    parse_consume(state);
+    parseConsume(state);
     return node;
   } else if (state.token.type === TokenType.PARAGRAPH) {
     let node = new AstNode(
@@ -6477,7 +6477,7 @@ function parse_macro(state) {
       state.token.source_location,
     );
     // Consume the PLAINTEXT node out.
-    parse_consume(state);
+    parseConsume(state);
     return node;
   } else {
     let error_message
@@ -6490,19 +6490,19 @@ function parse_macro(state) {
       // Generic error message.
       error_message = `unexpected token ${state.token.type.toString()}`;
     }
-    parse_error(state, error_message);
+    parseError(state, error_message);
     let node = new PlaintextAstNode(
-      error_message_in_output(error_message),
+      errorMessageInOutput(error_message),
       state.token.source_location,
     );
     // Consume past whatever happened to avoid an infinite loop.
-    parse_consume(state);
+    parseConsume(state);
     return node;
   }
   state.i += 1;
 }
 
-function parse_error(state, message, source_location) {
+function parseError(state, message, source_location) {
   let new_source_location;
   if (source_location === undefined) {
     new_source_location = new SourceLocation();
@@ -6518,7 +6518,7 @@ function parse_error(state, message, source_location) {
     message, new_source_location));
 }
 
-function path_join(dirname, basename, sep) {
+function pathJoin(dirname, basename, sep) {
   let ret = dirname;
   if (ret !== '') {
     ret += sep;
@@ -6526,7 +6526,7 @@ function path_join(dirname, basename, sep) {
   return ret + basename;
 }
 
-function path_split(str, sep) {
+function pathSplit(str, sep) {
   const dir_sep_index = str.lastIndexOf(sep)
   if (dir_sep_index == -1) {
     return ['', str];
@@ -6534,9 +6534,9 @@ function path_split(str, sep) {
     return [str.substring(0, dir_sep_index), str.substr(dir_sep_index + 1)];
   }
 }
-exports.path_split = path_split
+exports.pathSplit = pathSplit
 
-function path_splitext(str) {
+function pathSplitext(str) {
   const sep_index = str.lastIndexOf('.')
   if (sep_index == -1) {
     return [str, ''];
@@ -6544,9 +6544,9 @@ function path_splitext(str) {
     return [str.substring(0, sep_index), str.substr(sep_index + 1)];
   }
 }
-exports.path_splitext = path_splitext
+exports.pathSplitext = pathSplitext
 
-function protocol_get(url) {
+function protocolGet(url) {
   const match = /^([a-zA-Z]+):\/\//.exec(url)
   if (match) {
     return match[0]
@@ -6555,11 +6555,11 @@ function protocol_get(url) {
   }
 }
 
-function protocol_is_given(url) {
-  return protocol_get(url) !== null
+function protocolIsGiven(url) {
+  return protocolGet(url) !== null
 }
 
-function protocol_is_known(src) {
+function protocolIsKnown(src) {
   for (const known_url_protocol of KNOWN_URL_PROTOCOLS) {
     if (src.startsWith(known_url_protocol)) {
       return true;
@@ -6567,10 +6567,10 @@ function protocol_is_known(src) {
   }
   return false;
 }
-exports.protocol_is_known = protocol_is_known
+exports.protocolIsKnown = protocolIsKnown
 
 // https://docs.ourbigbook.com#scope
-function remove_toplevel_scope(id, toplevel_ast, context) {
+function removeToplevelScope(id, toplevel_ast, context) {
   const fixedScopeRemoval = context.options.fixedScopeRemoval
   if (fixedScopeRemoval !== undefined) {
     return id.slice(fixedScopeRemoval)
@@ -6584,7 +6584,7 @@ function remove_toplevel_scope(id, toplevel_ast, context) {
     }
     return id;
   } else {
-    return id.substr(calculate_scope_length(toplevel_ast));
+    return id.substr(calculateScopeLength(toplevel_ast));
   }
 }
 
@@ -6603,7 +6603,7 @@ for (let i of INDEX_FILE_BASENAMES_NOEXT) {
   IO_RENAME_MAP[i] = INDEX_BASENAME_NOEXT;
 }
 exports.IO_RENAME_MAP = IO_RENAME_MAP;
-function rename_basename(original) {
+function renameBasename(original) {
   if (original in IO_RENAME_MAP) {
     return IO_RENAME_MAP[original];
   } else {
@@ -6611,13 +6611,13 @@ function rename_basename(original) {
   }
 }
 
-function render_error(context, message, source_location, severity=1) {
+function renderError(context, message, source_location, severity=1) {
   if (!context.ignore_errors) {
     context.errors.push(new ErrorMessage(message, source_location, severity));
   }
 }
 
-function render_error_x_undefined(ast, context, target_id, options={}) {
+function renderErrorXUndefined(ast, context, target_id, options={}) {
   let { source_location } = options
   let message = `cross reference to unknown id: "${target_id}" at render time`;
   if (source_location === undefined) {
@@ -6627,8 +6627,8 @@ function render_error_x_undefined(ast, context, target_id, options={}) {
       source_location = ast.source_location
     }
   }
-  render_error(context, message, source_location, 2);
-  return error_message_in_output(message, context)
+  renderError(context, message, source_location, 2);
+  return errorMessageInOutput(message, context)
 }
 
 /** Render the ToC from a list representation rather than tree.
@@ -6637,12 +6637,12 @@ function render_error_x_undefined(ast, context, target_id, options={}) {
  * the static one had a tree representation, but the dynamic one has a list, so we convert
  * both to a single list representation and render it here.
  */
-function render_toc_from_entry_list({ add_test_instrumentation, entry_list, descendant_count_html, tocIdPrefix }) {
+function renderTocFromEntryList({ add_test_instrumentation, entry_list, descendant_count_html, tocIdPrefix }) {
   let top_level = 0;
   if (tocIdPrefix === undefined) {
     tocIdPrefix = ''
   }
-  let ret = `<div id="${tocIdPrefix}${Macro.TOC_ID}"class="toc-container">\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`
+  let ret = `<div id="${tocIdPrefix}${Macro.TOC_ID}"class="toc-container">\n<ul>\n<li${htmlClassAttr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`
   ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc" href="#${tocIdPrefix}${Macro.TOC_ID}">${TOC_MARKER_SYMBOL} Table of contents</a>`
   if (descendant_count_html) {
     ret += `<span class="hover-metadata">${descendant_count_html}</span>`
@@ -6673,25 +6673,25 @@ function render_toc_from_entry_list({ add_test_instrumentation, entry_list, desc
     }
     ret += '<li';
     if (has_child) {
-      ret += html_class_attr([TOC_HAS_CHILD_CLASS]);
+      ret += htmlClassAttr([TOC_HAS_CHILD_CLASS]);
     }
     ret += '>'
-    const my_toc_id = toc_id(target_id);
-    let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, html_escape_attr(my_toc_id));
+    const my_toc_id = tocId(target_id);
+    let id_to_toc = htmlAttr(Macro.ID_ARGUMENT_NAME, htmlEscapeAttr(my_toc_id));
     let linear_count_str
     if (add_test_instrumentation) {
-      linear_count_str = html_attr('data-test', i)
+      linear_count_str = htmlAttr('data-test', i)
     } else {
       linear_count_str = ''
     }
     ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
-    let toc_href = html_attr('href', '#' + html_escape_attr(my_toc_id));
-    ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
+    let toc_href = htmlAttr('href', '#' + htmlEscapeAttr(my_toc_id));
+    ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${htmlAttr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
     if (link_to_split) {
       ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
     }
     if (parent_href) {
-      ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${html_attr('title', 'parent ToC entry')}>${PARENT_MARKER} ${parent_content}</a>`;
+      ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${htmlAttr('title', 'parent ToC entry')}>${PARENT_MARKER} ${parent_content}</a>`;
     }
     if (entry.descendant_count_html) {
       ret += `${entry.descendant_count_html}`
@@ -6708,10 +6708,10 @@ function render_toc_from_entry_list({ add_test_instrumentation, entry_list, desc
   ret += `</div>\n`
   return ret
 }
-exports.render_toc_from_entry_list = render_toc_from_entry_list
+exports.renderTocFromEntryList = renderTocFromEntryList
 
-function render_toc(context) {
-  if (context.toc_was_rendered || !has_toc(context)) {
+function renderToc(context) {
+  if (context.toc_was_rendered || !checkHasToc(context)) {
     // Empty ToC. Don't render. Initial common case: leaf split header nodes.
     return '';
   }
@@ -6724,7 +6724,7 @@ function render_toc(context) {
   if (root_node.children.length === 1) {
     root_node = root_node.children[0];
   }
-  let descendant_count_html = get_descendant_count_html_sep(context, root_node, { long_style: false, show_descendant_count: true });
+  let descendant_count_html = getDescendantCountHtmlSep(context, root_node, { long_style: false, show_descendant_count: true });
   for (let i = root_node.children.length - 1; i >= 0; i--) {
     todo_visit.push([root_node.children[i], 1]);
   }
@@ -6748,16 +6748,16 @@ function render_toc(context) {
       //// but for now we are just taking care of this specific and important ToC subcase.
       //let cur_context;
       //if (ast.source_location.path === target_ast.source_location.path) {
-      //  cur_context = clone_and_set(context, 'to_split_headers', context.in_split_headers);
+      //  cur_context = cloneAndSet(context, 'to_split_headers', context.in_split_headers);
       //} else {
       //  cur_context = context;
       //}
 
-      entry.content = x_text(target_ast, context, {style_full: true, show_caption_prefix: false});
-      entry.href = x_href_attr(target_ast, context);
+      entry.content = xText(target_ast, context, {style_full: true, show_caption_prefix: false});
+      entry.href = xHrefAttr(target_ast, context);
       entry.target_id = target_ast.id
       if (context.options.split_headers) {
-        entry.link_to_split = link_to_split_opposite(target_ast, context)
+        entry.link_to_split = linkToSplitOpposite(target_ast, context)
       }
 
       let parent_ast = target_ast.get_header_parent_asts(context)[0];
@@ -6772,15 +6772,15 @@ function render_toc(context) {
         ) {
           parent_href_target = context.options.tocIdPrefix + Macro.TOC_ID;
         } else {
-          parent_href_target = toc_id(parent_ast.id);
+          parent_href_target = tocId(parent_ast.id);
         }
-        entry.parent_href = html_attr('href', '#' + parent_href_target);
-        entry.parent_content = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+        entry.parent_href = htmlAttr('href', '#' + parent_href_target);
+        entry.parent_content = renderArg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
       }
       // The inner <div></div> inside arrow is so that:
       // - outter div: takes up space to make clicking easy
       // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
-      entry.descendant_count_html = get_descendant_count_html_sep(context, tree_node, { long_style: false, show_descendant_count: true });
+      entry.descendant_count_html = getDescendantCountHtmlSep(context, tree_node, { long_style: false, show_descendant_count: true });
     }
     if (has_child) {
       for (let i = tree_node.children.length - 1; i >= 0; i--) {
@@ -6789,7 +6789,7 @@ function render_toc(context) {
     }
     entry_list.push(entry)
   }
-  return render_toc_from_entry_list({
+  return renderTocFromEntryList({
     entry_list,
     descendant_count_html,
     add_test_instrumentation: context.options.add_test_instrumentation,
@@ -6797,7 +6797,7 @@ function render_toc(context) {
   })
 }
 
-function perf_print(context, name) {
+function perfPrint(context, name) {
   // Includes and CirodowExample also call convert to parse.
   // For now we are ignoring those recursions. A more correct approach
   // would be to track the time intervals of those subconverts, and add
@@ -6816,10 +6816,10 @@ function perf_print(context, name) {
     }
   }
 }
-exports.perf_print = perf_print
+exports.perfPrint = perfPrint
 
 // https://github.com/plurals/pluralize/issues/127
-function pluralize_wrap(s, n) {
+function pluralizeWrap(s, n) {
   let ret = pluralize(s, n)
   if (n === undefined || n > 1 && s !== ret) {
     const last = ret[ret.length - 1]
@@ -6830,7 +6830,7 @@ function pluralize_wrap(s, n) {
   return ret
 }
 
-function propagate_numbered(ast, context) {
+function propagateNumbered(ast, context) {
   // numbered propagation to children.
   // Note that the property only affects descendants, but not the node itself.
   const parent_tree_node = ast.header_tree_node.parent_ast
@@ -6855,15 +6855,15 @@ function propagate_numbered(ast, context) {
     }
   }
 }
-exports.propagate_numbered = propagate_numbered
+exports.propagateNumbered = propagateNumbered
 
 // Fuck JavaScript? Can't find a built-in way to get the symbol string without the "Symbol(" part.
 // https://stackoverflow.com/questions/30301728/get-the-description-of-a-es6-symbol
-function symbol_to_string(symbol) {
+function symbolToString(symbol) {
   return symbol.toString().slice(7, -1);
 }
 
-function title_to_id(title, options={}, context) {
+function titleToId(title, options={}, context) {
   if (options.normalize === undefined) {
     options.normalize = {}
   }
@@ -6881,7 +6881,7 @@ function title_to_id(title, options={}, context) {
         context.options.ourbigbook_json.id.normalize.latin
       )
     ) {
-      c = normalize_latin_character(c)
+      c = normalizeLatinCharacter(c)
     }
     if (
       (
@@ -6906,13 +6906,13 @@ function title_to_id(title, options={}, context) {
         )
       )
     ) {
-      c = normalize_punctuation_character(c)
+      c = normalizePunctuationCharacter(c)
     }
     c = c.toLowerCase();
     const scope_sep = options.keep_scope_sep ? Macro.HEADER_SCOPE_SEPARATOR : ''
     const ok_chars_regexp = new RegExp(`[a-z0-9-${scope_sep}]`)
     if (
-      !is_ascii(c) ||
+      !isAscii(c) ||
       ok_chars_regexp.test(c)
     ) {
       new_chars.push(c);
@@ -6927,40 +6927,40 @@ function title_to_id(title, options={}, context) {
     .replace(new RegExp(ID_SEPARATOR + '+$'), '')
   ;
 }
-exports.title_to_id = title_to_id;
+exports.titleToId = titleToId;
 
 /** Heuristic only. */
-function id_to_title(id) {
-  return capitalize_first_letter(id).replace('-')
+function idToTitle(id) {
+  return capitalizeFirstLetter(id).replace(ID_SEPARATOR, ' ')
 }
-exports.id_to_title = id_to_title
+exports.idToTitle = idToTitle
 
 /** Factored out calculations of the ID that is given to each TOC entry.
  *
  * For after everything broke down due to toplevel scope.
  */
-function toc_id(id) {
+function tocId(id) {
   return Macro.TOC_PREFIX + id;
 }
 
 function unconvertible(ast, context) {
   const msg = `macro "${ast.macro_name}" must never render`
   if (context.in_parse) {
-    render_error(context, msg, ast.source_location);
-    return error_message_in_output(msg, context)
+    renderError(context, msg, ast.source_location);
+    return errorMessageInOutput(msg, context)
   } else {
     throw new Error(msg);
   }
 }
 
-function url_basename(str) {
+function urlBasename(str) {
   return basename(str, URL_SEP);
 }
 
 // Do some error checking and setup some stuff like boolean.
 // We should likely do this in the AstNode constructor. The reason we didn't
 // was likely to not need context at that point, and be nicer to serialization.
-function validate_ast(ast, context) {
+function validateAst(ast, context) {
   if (ast.validated) {
     throw new Error(`ast has already been validated:
 ${ast.toString()}`)
@@ -7000,7 +7000,7 @@ ${ast.toString()}`)
       if (macro_arg.boolean) {
         let arg_string;
         if (arg.length() > 0) {
-          arg_string = render_arg_noescape(arg, clone_and_set(context, 'id_conversion', true));
+          arg_string = renderArgNoescape(arg, cloneAndSet(context, 'id_conversion', true));
         } else {
           arg_string = '1';
         }
@@ -7018,7 +7018,7 @@ ${ast.toString()}`)
         }
       }
       if (macro_arg.positive_nonzero_integer) {
-        const arg_string = render_arg_noescape(arg, context);
+        const arg_string = renderArgNoescape(arg, context);
         const int_value = parseInt(arg_string);
         ast.validation_output[argname].positive_nonzero_integer = int_value;
         if (!Number.isInteger(int_value) || !(int_value > 0)) {
@@ -7032,9 +7032,9 @@ ${ast.toString()}`)
     }
   }
 }
-exports.validate_ast = validate_ast
+exports.validateAst = validateAst
 
-function x_child_db_effective_id(target_id, context, ast) {
+function xChildDbEffectiveId(target_id, context, ast) {
   const target_ast = context.db_provider.get(target_id, context, ast.scope);
   if (
     target_ast === undefined
@@ -7045,8 +7045,8 @@ function x_child_db_effective_id(target_id, context, ast) {
     // read the database to decide. But reading from database during ID extraction
     // is forbidden, so we do that on a separate pass.
     // Related: https://github.com/ourbigbook/ourbigbook/issues/229
-    if (is_absolute_xref(target_id, context)) {
-      target_id = resolve_absolute_xref(target_id, context)
+    if (isAbsoluteXref(target_id, context)) {
+      target_id = resolveAbsoluteXref(target_id, context)
     }
     return target_id
   } else {
@@ -7054,7 +7054,7 @@ function x_child_db_effective_id(target_id, context, ast) {
   }
 }
 
-function x_get_target_ast_base({
+function xGetTargetAstBase({
   context,
   do_magic_title_to_id,
   do_singularize,
@@ -7065,24 +7065,24 @@ function x_get_target_ast_base({
     context.options.x_leading_at_to_web &&
     target_id[0] === AT_MENTION_CHAR
   ) {
-    return [html_attr('href', context.webUrl + target_id.substr(1)), target_id];
+    return [htmlAttr('href', context.webUrl + target_id.substr(1)), target_id];
   }
   let target_id_eff
   if (do_magic_title_to_id) {
-    target_id_eff = magic_title_to_id(target_id, context)
+    target_id_eff = magicTitleToId(target_id, context)
   } else {
     target_id_eff = target_id
   }
   let target_ast = context.db_provider.get(target_id_eff, context, scope);
   if (do_singularize && !target_ast) {
-    target_id_eff = magic_title_to_id(pluralize_wrap(target_id, 1), context)
+    target_id_eff = magicTitleToId(pluralizeWrap(target_id, 1), context)
     target_ast = context.db_provider.get(target_id_eff, context, scope);
   }
   return { target_id: target_id_eff, target_ast }
 }
 
-function convert_file_id_arg(ast, href_arg, context) {
-  let target_id = convert_id_arg(href_arg, context);
+function convertFileIdArg(ast, href_arg, context) {
+  let target_id = convertIdArg(href_arg, context);
   if (
     ast.validation_output.file.given
   ) {
@@ -7091,10 +7091,10 @@ function convert_file_id_arg(ast, href_arg, context) {
   return target_id
 }
 
-function x_get_target_ast(ast, context) {
+function xGetTargetAst(ast, context) {
   const href_arg = ast.args.href
-  const target_id = convert_file_id_arg(ast, href_arg, context);
-  const ret = x_get_target_ast_base({
+  const target_id = convertFileIdArg(ast, href_arg, context);
+  const ret = xGetTargetAstBase({
     context,
     do_magic_title_to_id: ast.validation_output.magic.boolean,
     do_singularize: ast.validation_output.magic.boolean,
@@ -7110,28 +7110,28 @@ function x_get_target_ast(ast, context) {
  * @param {AstNode} ast \x ast node
  * @return {[String, String]} [href, content] pair for the x node.
  */
-function x_get_href_content(ast, context) {
-  const { href_arg, target_id, target_id_raw, target_ast } = x_get_target_ast(ast, context)
+function xGetHrefContent(ast, context) {
+  const { href_arg, target_id, target_id_raw, target_ast } = xGetTargetAst(ast, context)
   const content_arg = ast.args.content;
   if (ast.validation_output.topic.boolean) {
     let topicTitle = target_id_raw
     let topicTitleSingular = topicTitle
     if (!ast.validation_output.p.boolean) {
-      topicTitleSingular = pluralize_wrap(topicTitleSingular, 1)
+      topicTitleSingular = pluralizeWrap(topicTitleSingular, 1)
     }
-    const topicId = title_to_id(topicTitleSingular, undefined, context)
+    const topicId = titleToId(topicTitleSingular, undefined, context)
     if (content_arg !== undefined) {
-      topicTitle = render_arg(content_arg, context)
+      topicTitle = renderArg(content_arg, context)
     }
-    return [html_attr('href', `${context.options.webMode ? URL_SEP : context.webUrl}${WEB_TOPIC_PATH}${URL_SEP}${topicId}`), topicTitle, undefined];
+    return [htmlAttr('href', `${context.options.webMode ? URL_SEP : context.webUrl}${WEB_TOPIC_PATH}${URL_SEP}${topicId}`), topicTitle, undefined];
   }
 
   // href
   let href;
   if (target_ast) {
-    href = x_href_attr(target_ast, context);
+    href = xHrefAttr(target_ast, context);
   } else {
-    const message = render_error_x_undefined(ast, context, target_id)
+    const message = renderErrorXUndefined(ast, context, target_id)
     return [href, message];
   }
 
@@ -7142,8 +7142,8 @@ function x_get_href_content(ast, context) {
     if (context.x_parents.has(ast)) {
       // Prevent render infinite loops.
       let message = `x with infinite recursion`;
-      render_error(context, message, ast.source_location);
-      return [href, error_message_in_output(message, context)];
+      renderError(context, message, ast.source_location);
+      return [href, errorMessageInOutput(message, context)];
     }
     let x_text_options = {
       caption_prefix_span: false,
@@ -7165,7 +7165,7 @@ function x_get_href_content(ast, context) {
       const last_ast = href_arg.get(href_arg.length() - 1);
       if (last_ast.node_type === AstType.PLAINTEXT) {
         const text = first_ast.text
-        if (text !== pluralize_wrap(text, 1)) {
+        if (text !== pluralizeWrap(text, 1)) {
           x_text_options.pluralize = true
         }
       }
@@ -7175,15 +7175,15 @@ function x_get_href_content(ast, context) {
     }
     const x_parents_new = new Set(context.x_parents);
     x_parents_new.add(ast);
-    content = x_text(target_ast, clone_and_set(context, 'x_parents', x_parents_new), x_text_options);
+    content = xText(target_ast, cloneAndSet(context, 'x_parents', x_parents_new), x_text_options);
     if (content === ``) {
       let message = `empty cross reference body: "${target_id}"`;
-      render_error(context, message, ast.source_location);
-      return error_message_in_output(message, context);
+      renderError(context, message, ast.source_location);
+      return errorMessageInOutput(message, context);
     }
   } else {
     // Explicit content given, just use it then.
-    content = render_arg(content_arg, context);
+    content = renderArg(content_arg, context);
   }
   return [href, content, target_ast];
 }
@@ -7196,16 +7196,16 @@ function x_get_href_content(ast, context) {
  * @param {AstNode} target_ast
  * @return {String} the value of href (no quotes) that an \x cross reference to the given target_ast
  */
-function x_href(target_ast, context) {
-  const [href_path, fragment] = x_href_parts(target_ast, context);
+function xHref(target_ast, context) {
+  const [href_path, fragment] = xHrefParts(target_ast, context);
   let ret = href_path;
   if (fragment !== '')
     ret += '#' + fragment;
   return ret;
 }
 
-function index_path_from_dirname(dirname_ret, basename_ret, sep) {
-  const [dir_dir, dir_base] = path_split(dirname_ret, sep);
+function indexPathFromDirname(dirname_ret, basename_ret, sep) {
+  const [dir_dir, dir_base] = pathSplit(dirname_ret, sep);
   if (basename_ret === INDEX_BASENAME_NOEXT && dirname_ret) {
     dirname_ret = dir_dir
     basename_ret = dir_base
@@ -7213,7 +7213,7 @@ function index_path_from_dirname(dirname_ret, basename_ret, sep) {
   return [dirname_ret, basename_ret]
 }
 
-function is_punctuation(c) {
+function isPunctuation(c) {
   return c === '.' ||
     c === '!' ||
     c === '?' ||
@@ -7241,15 +7241,15 @@ function is_punctuation(c) {
 // id='subdir/subdir-h2'     -> ['subdir', 'subdir-h2']
 // id='subdir/notindex'      -> ['subdir', 'notindex']
 // id='subdir/notindex-h2'   -> ['subdir', 'notindex-h2']
-function is_to_split_headers(ast, context) {
-  return is_to_split_headers_base(
+function isToSplitHeaders(ast, context) {
+  return isToSplitHeadersBase(
     ast.split_default,
     context.to_split_headers,
     context.options.ourbigbook_json.toSplitHeaders,
   )
 }
 
-function is_to_split_headers_base(
+function isToSplitHeadersBase(
   ast_split_default,
   context_to_split_headers,
   to_split_headers_override,
@@ -7267,7 +7267,7 @@ function is_to_split_headers_base(
  *
  * @param {AstNode} target_ast
  */
-function x_href_parts(target_ast, context) {
+function xHrefParts(target_ast, context) {
   // Synonym handling.
   let target_ast_effective_id, first_toplevel_child_effective
   if (target_ast.synonym === undefined) {
@@ -7278,7 +7278,7 @@ function x_href_parts(target_ast, context) {
     target_ast_effective_id = synonym_target_ast.id
     first_toplevel_child_effective = synonym_target_ast.first_toplevel_child
   }
-  let to_split_headers = is_to_split_headers(target_ast, context);
+  let to_split_headers = isToSplitHeaders(target_ast, context);
   let to_current_toplevel =
     target_ast_effective_id === context.toplevel_id &&
     // Also requires outputting to the same type of split/nonsplit
@@ -7318,14 +7318,14 @@ function x_href_parts(target_ast, context) {
     to_current_toplevel
   ) {
     // The output path is the same as the current path. Stop.
-    // Everything else is basically handled by output_path_base.
+    // Everything else is basically handled by outputPathBase.
     // That function doesn't have the concept of "where am I looking from".
     // so we do that here. Maybe it would be better to change that, if if
     // is hair tearing.
     href_path = '';
   } else {
     ;[toplevel_output_path_dirname, toplevel_output_path_basename] =
-      path_split(context.toplevel_output_path, context.options.path_sep);
+      pathSplit(context.toplevel_output_path, context.options.path_sep);
     ;({
       path: full_output_path,
       dirname: target_output_path_dirname,
@@ -7380,7 +7380,7 @@ function x_href_parts(target_ast, context) {
           }
         }
       }
-      href_path = path_join(href_path_dirname_rel,
+      href_path = pathJoin(href_path_dirname_rel,
         target_output_path_basename, context.options.path_sep);
     }
   }
@@ -7392,7 +7392,7 @@ function x_href_parts(target_ast, context) {
     href_path !== '' &&
     split_suffix === undefined
   ) {
-    href_path = context.options.ourbigbook_json.xPrefix + path_join(
+    href_path = context.options.ourbigbook_json.xPrefix + pathJoin(
       toplevel_output_path_dirname, href_path, context.options.path_sep)
   }
   if (href_path && context.options.x_absolute) {
@@ -7446,16 +7446,16 @@ function x_href_parts(target_ast, context) {
       //  // been added to the file db yet.
       //}
     }
-    fragment = remove_toplevel_scope(target_ast_effective_id, toplevel_ast, context);
+    fragment = removeToplevelScope(target_ast_effective_id, toplevel_ast, context);
   }
 
   // return
-  return [html_escape_attr(href_path), html_escape_attr(fragment)];
+  return [htmlEscapeAttr(href_path), htmlEscapeAttr(fragment)];
 }
 
 /* href="" that links to a given node. */
-function x_href_attr(target_ast, context) {
-  return html_attr('href', x_href(target_ast, context));
+function xHrefAttr(target_ast, context) {
+  return htmlAttr('href', xHref(target_ast, context));
 }
 
 /**
@@ -7472,8 +7472,8 @@ function x_href_attr(target_ast, context) {
  * @return {string} full: '<a href="#barack-obama/equation-my-favorite-equation"><span class="caption-prefix">Equation 1</span></a>. My favorite equation'
  *         {string} inner: 'My favorite equation'
  */
-function x_text_base(ast, context, options={}) {
-  context = clone_and_set(context, 'in_x_text', true)
+function xTextBase(ast, context, options={}) {
+  context = cloneAndSet(context, 'in_x_text', true)
   if (!('caption_prefix_span' in options)) {
     options.caption_prefix_span = true;
   }
@@ -7555,13 +7555,13 @@ function x_text_base(ast, context, options={}) {
     ) &&
     number !== undefined
   ) {
-    ret += html_escape_context(context, `. `);
+    ret += htmlEscapeContext(context, `. `);
   }
   if (
     title_arg !== undefined
   ) {
     if (style_full && options.quote) {
-      ret += html_escape_context(context, `"`);
+      ret += htmlEscapeContext(context, `"`);
     }
     // https://docs.ourbigbook.com#cross-reference-title-inflection
     if (options.from_x) {
@@ -7602,10 +7602,10 @@ function x_text_base(ast, context, options={}) {
         title_arg = lodash.clone(title_arg)
         title_arg.asts = lodash.clone(title_arg.asts)
         title_arg.set(title_arg.length() - 1, new PlaintextAstNode(last_ast.text, last_ast.source_location));
-        title_arg.get(title_arg.length() - 1).text = pluralize_wrap(last_ast.text, options.pluralize ? 2 : 1);
+        title_arg.get(title_arg.length() - 1).text = pluralizeWrap(last_ast.text, options.pluralize ? 2 : 1);
       }
     }
-    inner = render_arg(title_arg, context);
+    inner = renderArg(title_arg, context);
     ret += inner
     if (style_full) {
       const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
@@ -7613,31 +7613,31 @@ function x_text_base(ast, context, options={}) {
       const show_disambiguate = (disambiguate_arg !== undefined) && macro.options.show_disambiguate;
       const title2_renders = [];
       if (show_disambiguate) {
-        title2_renders.push(render_arg(disambiguate_arg, context));
+        title2_renders.push(renderArg(disambiguate_arg, context));
       }
       if (title2_arg !== undefined) {
         for (const arg of title2_arg.asts.map(ast => ast.args[Macro.CONTENT_ARGUMENT_NAME])) {
           if (arg.asts.length) {
-            title2_renders.push(render_arg(arg, context));
+            title2_renders.push(renderArg(arg, context));
           }
         }
       }
       for (const title2ast of ast.title2s) {
-        title2_renders.push(render_arg(title2ast.args.title, context));
+        title2_renders.push(renderArg(title2ast.args.title, context));
       }
       if (title2_renders.length) {
         ret += ` (${title2_renders.join(', ')})`
       }
       if (options.quote) {
-        ret += html_escape_context(context, `"`);
+        ret += htmlEscapeContext(context, `"`);
       }
     }
   }
   return { full: ret, inner }
 }
 
-function x_text(ast, context, options={}) {
-  return x_text_base(ast, context, options).full
+function xText(ast, context, options={}) {
+  return xTextBase(ast, context, options).full
 }
 
 // consts
@@ -7811,7 +7811,7 @@ const MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS = [
 ].join('|')
 const MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS_REGEX = new RegExp(`(^|\n)(${MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS})`, 'g')
 const INSANE_STARTS_MACRO_NAMES = new Set(Object.values(INSANE_STARTS_TO_MACRO_NAME))
-const AstType = make_enum([
+const AstType = makeEnum([
   // An in-output error message.
   'ERROR',
   // The most regular and non-magic nodes.
@@ -7823,7 +7823,7 @@ const AstType = make_enum([
   // magic because of the double newline madness treatment.
   'PARAGRAPH',
 ]);
-const TokenType = make_enum([
+const TokenType = makeEnum([
   'INPUT_END',
   'MACRO_NAME',
   'NAMED_ARGUMENT_END',
@@ -7886,7 +7886,7 @@ const IMAGE_VIDEO_BLOCK_NAMED_ARGUMENTS = IMAGE_VIDEO_INLINE_BLOCK_NAMED_ARGUMEN
 ]);
 const XSS_SAFE_ALT_DEFAULT = {
   [OUTPUT_FORMAT_HTML]: (ast, context) => {
-    return '<div>HTML snippet:</div>' + html_code(render_arg(ast.args[Macro.CONTENT_ARGUMENT_NAME], context))
+    return '<div>HTML snippet:</div>' + htmlCode(renderArg(ast.args[Macro.CONTENT_ARGUMENT_NAME], context))
   }
 }
 
@@ -7896,20 +7896,20 @@ const XSS_SAFE_ALT_DEFAULT = {
  * @return {Object}
  *         MediaProviderType {MediaProviderType} , e.g. type, src, source.
  */
-function macro_image_video_resolve_params(ast, context) {
+function macroImageVideoResolveParams(ast, context) {
   let error_message;
   let media_provider_type;
-  let src = render_arg_noescape(ast.args.src, context);
+  let src = renderArgNoescape(ast.args.src, context);
   let is_url;
 
   // Provider explicitly given by user on macro.
   if (ast.validation_output.provider.given) {
-    const provider_name = render_arg_noescape(ast.args.provider, clone_and_set(context, 'id_conversion', true));
+    const provider_name = renderArgNoescape(ast.args.provider, cloneAndSet(context, 'id_conversion', true));
     if (MEDIA_PROVIDER_TYPES.has(provider_name)) {
       media_provider_type = provider_name;
     } else {
-      error_message = `unknown media provider: "${html_escape_attr(provider_name)}"`;
-      render_error(context, error_message, ast.args.provider.source_location);
+      error_message = `unknown media provider: "${htmlEscapeAttr(provider_name)}"`;
+      renderError(context, error_message, ast.args.provider.source_location);
       media_provider_type = 'unknown';
     }
   }
@@ -7920,7 +7920,7 @@ function macro_image_video_resolve_params(ast, context) {
     media_provider_type_detected = 'wikimedia';
   } else if (src.match(media_provider_type_youtube_re)) {
     media_provider_type_detected = 'youtube';
-  } else if (protocol_is_known(src)) {
+  } else if (protocolIsKnown(src)) {
     // Full URL to a website we know nothing about.
     media_provider_type_detected = 'unknown';
   }
@@ -7934,7 +7934,7 @@ function macro_image_video_resolve_params(ast, context) {
   } else {
     if (media_provider_type !== undefined && media_provider_type !== media_provider_type_detected) {
       error_message = `detected media provider type "${media_provider_type_detected}", but user also explicitly gave "${media_provider_type}"`;
-      render_error(context, error_message, ast.args.provider.source_location);
+      renderError(context, error_message, ast.args.provider.source_location);
     }
     if (media_provider_type === undefined) {
       media_provider_type = media_provider_type_detected;
@@ -7961,7 +7961,7 @@ function macro_image_video_resolve_params(ast, context) {
       relpath_prefix = path.relative('.', context.options.outdir)
       src = `${github_path}/${src}`
     } else {
-      src = `${github_provider_prefix(context)}/${src}`;
+      src = `${githubProviderPrefix(context)}/${src}`;
     }
   }
 
@@ -7974,17 +7974,17 @@ function macro_image_video_resolve_params(ast, context) {
   }
 }
 
-function macro_image_video_resolve_params_with_source(ast, context) {
-  const ret = macro_image_video_resolve_params(ast, context);
+function macroImageVideoResolveParamsWithSource(ast, context) {
+  const ret = macroImageVideoResolveParams(ast, context);
   ret.source = context.macros[ast.macro_name].options.source_func(
     ast, context, ret.src, ret.media_provider_type, ret.is_url);
   return ret;
 }
 
 const MACRO_IMAGE_VIDEO_OPTIONS = {
-  caption_number_visible: function (ast, context) {
+  captionNumberVisible: function (ast, context) {
     return Macro.DESCRIPTION_ARGUMENT_NAME in ast.args ||
-      macro_image_video_resolve_params_with_source(ast, context).source !== '';
+      macroImageVideoResolveParamsWithSource(ast, context).source !== '';
   },
   get_title_arg: function(ast, context) {
     // Title given explicitly.
@@ -7993,7 +7993,7 @@ const MACRO_IMAGE_VIDEO_OPTIONS = {
     }
 
     // Title from src.
-    const media_provider_type = (macro_image_video_resolve_params(ast, context)).media_provider_type;
+    const media_provider_type = (macroImageVideoResolveParams(ast, context)).media_provider_type;
     if (
       ast.validation_output.titleFromSrc.boolean ||
       (
@@ -8002,9 +8002,9 @@ const MACRO_IMAGE_VIDEO_OPTIONS = {
       )
     ) {
       let basename_str;
-      let src = render_arg(ast.args.src, clone_and_set(context, 'id_conversion', true));
+      let src = renderArg(ast.args.src, cloneAndSet(context, 'id_conversion', true));
       if (media_provider_type === 'local') {
-        basename_str = url_basename(src);
+        basename_str = urlBasename(src);
       } else if (media_provider_type === 'wikimedia') {
         basename_str = context.macros[ast.macro_name].options.image_video_basename(src);
       } else {
@@ -8097,7 +8097,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     {
-      caption_number_visible: function (ast, context) {
+      captionNumberVisible: function (ast, context) {
         return Macro.DESCRIPTION_ARGUMENT_NAME in ast.args
       },
       caption_prefix: 'Code',
@@ -8358,7 +8358,7 @@ const DEFAULT_MACRO_LIST = [
           src,
         }) {
           let img_html
-          ;({ html: img_html, src } = html_img({
+          ;({ html: img_html, src } = htmlImg({
             alt,
             ast,
             context,
@@ -8373,7 +8373,7 @@ const DEFAULT_MACRO_LIST = [
         named_args: IMAGE_VIDEO_BLOCK_NAMED_ARGUMENTS.concat(IMAGE_INLINE_BLOCK_NAMED_ARGUMENTS),
         source_func: function (ast, context, src, media_provider_type, is_url) {
           if ('source' in ast.args) {
-            return render_arg(ast.args.source, context);
+            return renderArg(ast.args.source, context);
           } else if (media_provider_type == 'wikimedia') {
             return macro_image_video_block_convert_function_wikimedia_source_url +
               context.macros[ast.macro_name].options.image_video_basename(src);
@@ -8385,7 +8385,7 @@ const DEFAULT_MACRO_LIST = [
       Object.assign(
         {
           image_video_basename: function(src) {
-            return url_basename(html_escape_attr(src)).replace(
+            return urlBasename(htmlEscapeAttr(src)).replace(
               macro_image_video_block_convert_function_wikimedia_source_image_re, '');
           },
         },
@@ -8511,7 +8511,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     {
-      caption_number_visible: function (ast, context) {
+      captionNumberVisible: function (ast, context) {
         return Macro.DESCRIPTION_ARGUMENT_NAME in ast.args
       },
       named_args: [
@@ -8651,7 +8651,7 @@ const DEFAULT_MACRO_LIST = [
       {
         caption_prefix: 'Video',
         image_video_basename: function(src) {
-          return url_basename(html_escape_attr(src)).replace(
+          return urlBasename(htmlEscapeAttr(src)).replace(
             macro_image_video_block_convert_function_wikimedia_source_video_re, '$1');
         },
         image_video_content_func: function ({
@@ -8677,8 +8677,8 @@ const DEFAULT_MACRO_LIST = [
                   video_id = url_params.get('v')
                 } else {
                   let message = `youtube URL without video ID "${src}"`;
-                  render_error(context, message, ast.source_location);
-                  return error_message_in_output(message, context);
+                  renderError(context, message, ast.source_location);
+                  return errorMessageInOutput(message, context);
                 }
               } else {
                 // youtu.be/<ID> and path is "/<ID>" so get rid of "/".
@@ -8691,7 +8691,7 @@ const DEFAULT_MACRO_LIST = [
             if ('start' in ast.args) {
               start_time = ast.validation_output.start.positive_nonzero_integer;
             } else if (url_start_time !== undefined) {
-              start_time = html_escape_attr(url_start_time);
+              start_time = htmlEscapeAttr(url_start_time);
             }
             let start;
             if (start_time !== undefined) {
@@ -8712,11 +8712,11 @@ const DEFAULT_MACRO_LIST = [
               const DEFAULT_VIDEO_WIDTH = 560
               width = Math.floor(DEFAULT_VIDEO_WIDTH * height / DEFAULT_MEDIA_HEIGHT)
             }
-            return `<div class="float-wrap"><iframe width="${width}" height="${height}" loading="lazy" src="https://www.youtube.com/embed/${html_escape_attr(video_id)}${start}" ` +
+            return `<div class="float-wrap"><iframe width="${width}" height="${height}" loading="lazy" src="https://www.youtube.com/embed/${htmlEscapeAttr(video_id)}${start}" ` +
                   `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
           } else {
             let error
-            ;({ href: src, error } = check_and_update_local_link({
+            ;({ href: src, error } = checkAndUpdateLocalLink({
               context,
               external: ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined,
               href: src,
@@ -8730,7 +8730,7 @@ const DEFAULT_MACRO_LIST = [
             } else {
               start = '';
             }
-            return `<video${html_attr('src', src + start)}${rendered_attrs} preload="none" controls${alt}></video>${error}\n`;
+            return `<video${htmlAttr('src', src + start)}${rendered_attrs} preload="none" controls${alt}></video>${error}\n`;
           }
         },
         named_args: IMAGE_VIDEO_BLOCK_NAMED_ARGUMENTS.concat(
@@ -8741,12 +8741,12 @@ const DEFAULT_MACRO_LIST = [
         ),
         source_func: function (ast, context, src, media_provider_type, is_url) {
           if ('source' in ast.args) {
-            return render_arg(ast.args.source, context);
+            return renderArg(ast.args.source, context);
           } else if (media_provider_type === 'youtube') {
             if (is_url) {
-              return html_escape_attr(src);
+              return htmlEscapeAttr(src);
             } else {
-              return `https://youtube.com/watch?v=${html_escape_attr(src)}`;
+              return `https://youtube.com/watch?v=${htmlEscapeAttr(src)}`;
             }
           } else if (media_provider_type === 'wikimedia') {
             return macro_image_video_block_convert_function_wikimedia_source_url +
@@ -8761,13 +8761,13 @@ const DEFAULT_MACRO_LIST = [
   ),
 ];
 
-function create_link_list(context, ast, id, title, target_ids, body) {
+function createLinkList(context, ast, id, title, target_ids, body) {
   let ret = '';
   if (target_ids.size !== 0) {
     // TODO factor this out more with real headers.
     const target_asts = [];
     const idWithPrefix = `${Macro.RESERVED_ID_PREFIX}${id}`
-    ret += `<div>${html_hide_hover_link('#' + idWithPrefix)}<h2 id="${idWithPrefix}"><a href="#${idWithPrefix}">${title}</a></h2></div>`;
+    ret += `<div>${htmlHideHoverLink('#' + idWithPrefix)}<h2 id="${idWithPrefix}"><a href="#${idWithPrefix}">${title}</a></h2></div>`;
     for (const target_id of Array.from(target_ids).sort()) {
       let target_ast = context.db_provider.get(target_id, context);
       if (
@@ -8777,7 +8777,7 @@ function create_link_list(context, ast, id, title, target_ids, body) {
       ) {
         //let counts_str;
         //if (target_ast.header_tree_node !== undefined) {
-        //  counts_str = get_descendant_count_html_sep(target_ast.header_tree_node, false);
+        //  counts_str = getDescendantCountHtmlSep(target_ast.header_tree_node, false);
         //} else {
         //  counts_str = '';
         //}
@@ -8827,7 +8827,7 @@ function create_link_list(context, ast, id, title, target_ids, body) {
       ulArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(id)]
     }
     const incoming_ul_ast = new AstNode(AstType.MACRO, 'Ul', ulArgs)
-    const new_context = clone_and_set(context, 'validate_ast', true);
+    const new_context = cloneAndSet(context, 'validateAst', true);
     new_context.source_location = ast.source_location;
     ret += incoming_ul_ast.render(new_context);
   }
@@ -8854,7 +8854,7 @@ const OUTPUT_FORMATS_LIST = [
       toplevel_child_modifier: function(ast, context, out) {
         let link_to_self
         if (ast) {
-          link_to_self = html_hide_hover_link(x_href(ast, context))
+          link_to_self = htmlHideHoverLink(xHref(ast, context))
         } else {
           link_to_self = ''
         }
@@ -8862,16 +8862,16 @@ const OUTPUT_FORMATS_LIST = [
       },
       convert_funcs: {
         [Macro.LINK_MACRO_NAME]: function(ast, context) {
-          let [href, content] = link_get_href_content(ast, context);
+          let [href, content] = linkGetHrefContent(ast, context);
           if (ast.validation_output.ref.boolean) {
             content = '<sup class="ref">[ref]</sup>';
           }
           const external = ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined
-          let attrs = html_render_attrs_id(ast, context);
+          let attrs = htmlRenderAttrsId(ast, context);
           if (context.options.ourbigbook_json.openLinksOnNewTabs) {
             attrs += ' target="_blank"'
           }
-          return get_link_html({
+          return getLinkHtml({
             attrs,
             content,
             context,
@@ -8880,17 +8880,17 @@ const OUTPUT_FORMATS_LIST = [
             source_location: ast.args.href.source_location,
           })
         },
-        'b': html_render_simple_elem('b'),
+        'b': htmlRenderSimpleElem('b'),
         'br': function(ast, context) { return '<br>' },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: function(ast, context) {
-          const { title_and_description, multiline_caption } = html_title_and_description(ast, context)
-          let ret = `<div class="code${multiline_caption}"${html_render_attrs_id(ast, context)}>`
-          ret += html_code(render_arg(ast.args.content, context))
+          const { title_and_description, multiline_caption } = htmlTitleAndDescription(ast, context)
+          let ret = `<div class="code${multiline_caption}"${htmlRenderAttrsId(ast, context)}>`
+          ret += htmlCode(renderArg(ast.args.content, context))
           ret += title_and_description
           ret += `</div>`
           return ret
         },
-        [Macro.CODE_MACRO_NAME]: html_render_simple_elem('code', { newline_after_close: false }),
+        [Macro.CODE_MACRO_NAME]: htmlRenderSimpleElem('code', { newline_after_close: false }),
         [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: unconvertible,
         'Comment': function(ast, context) { return ''; },
         'comment': function(ast, context) { return ''; },
@@ -8903,23 +8903,23 @@ const OUTPUT_FORMATS_LIST = [
             // But not valid HTML, so I don't think it is worth allowing at all:
             // https://stackoverflow.com/questions/17363465/is-nesting-a-h2-tag-inside-another-header-with-h1-tag-semantically-wrong/71130770#71130770
             const message = `cannot have a header inside another`;
-            render_error(context, message, ast.source_location);
-            return error_message_in_output(message, context);
+            renderError(context, message, ast.source_location);
+            return errorMessageInOutput(message, context);
           }
           const context_old = context
-          context = clone_and_set(context, 'in_header', true)
+          context = cloneAndSet(context, 'in_header', true)
           const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
           const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
           if (ast.validation_output.synonym.boolean) {
             if (children !== undefined) {
               const message = `"synonym" and "child" are incompatible`;
-              render_error(context, message, children.source_location);
-              return error_message_in_output(message, context);
+              renderError(context, message, children.source_location);
+              return errorMessageInOutput(message, context);
             }
             if (tags !== undefined) {
               const message = `"synonym" and "tags" are incompatible`;
-              render_error(context, message, tags.source_location);
-              return error_message_in_output(message, context);
+              renderError(context, message, tags.source_location);
+              return errorMessageInOutput(message, context);
             }
             return '';
           }
@@ -8939,8 +8939,8 @@ const OUTPUT_FORMATS_LIST = [
             custom_args = {};
             level_int_capped = level_int_output;
           }
-          let attrs = html_render_attrs(ast, context, [], custom_args)
-          let id_attr = html_render_attrs_id(ast, context);
+          let attrs = htmlRenderAttrs(ast, context, [], custom_args)
+          let id_attr = htmlRenderAttrsId(ast, context);
           let ret = '';
           let hasToc = false
           if (
@@ -8948,7 +8948,7 @@ const OUTPUT_FORMATS_LIST = [
             context.header_tree.children.length > 1 &&
             context.options.render_metadata
           ) {
-            let render_toc_ret = render_toc(context)
+            let render_toc_ret = renderToc(context)
             if (render_toc_ret !== '') {
               opts.extra_returns.render_pre = render_toc_ret
               hasToc = true
@@ -8970,20 +8970,20 @@ const OUTPUT_FORMATS_LIST = [
               self_link_ast = context.db_provider.get(ast.id, context)
               self_link_context = context
             } else {
-              self_link_context = clone_and_set(context, 'to_split_headers', true)
+              self_link_context = cloneAndSet(context, 'to_split_headers', true)
               self_link_ast = ast
             }
           } else {
             self_link_context = context
             self_link_ast = ast
           }
-          ret += `<div class="notnav"><h${level_int_capped}${attrs}><a${x_href_attr(self_link_ast, self_link_context)}>`;
+          ret += `<div class="notnav"><h${level_int_capped}${attrs}><a${xHrefAttr(self_link_ast, self_link_context)}>`;
 
           let x_text_options = {
             show_caption_prefix: false,
             style_full: true,
           };
-          const x_text_base_ret = x_text_base(ast, context, x_text_options);
+          const x_text_base_ret = xTextBase(ast, context, x_text_options);
           if (context.toplevel_output_path) {
             const rendered_outputs_entry = context.extra_returns.rendered_outputs[context.toplevel_output_path]
             if (
@@ -8995,10 +8995,10 @@ const OUTPUT_FORMATS_LIST = [
             ) {
               rendered_outputs_entry.title = x_text_base_ret.inner;
               const title_arg = ast.args[Macro.TITLE_ARGUMENT_NAME]
-              rendered_outputs_entry.titleSource = render_arg(
+              rendered_outputs_entry.titleSource = renderArg(
                 title_arg,
-                clone_and_set(context, 'options',
-                  clone_and_set(context.options, 'output_format', OUTPUT_FORMAT_OURBIGBOOK)
+                cloneAndSet(context, 'options',
+                  cloneAndSet(context.options, 'output_format', OUTPUT_FORMAT_OURBIGBOOK)
                 )
               )
               rendered_outputs_entry.titleSourceLocation = title_arg.source_location
@@ -9027,12 +9027,12 @@ const OUTPUT_FORMATS_LIST = [
               context.options.split_headers &&
               context.options.h_show_split_header_link
             ) {
-              link_to_split = link_to_split_opposite(ast, context);
+              link_to_split = linkToSplitOpposite(ast, context);
               if (link_to_split) {
                 items.push(`${link_to_split}`);
               }
             }
-            let descendant_count = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
+            let descendant_count = getDescendantCountHtml(context, ast.header_tree_node, { long_style: true });
             if (descendant_count !== undefined) {
               items.push(`${descendant_count}`);
             }
@@ -9052,14 +9052,14 @@ const OUTPUT_FORMATS_LIST = [
           // Metadata that shows on separate lines below toplevel header.
           let wiki_link;
           if (ast.validation_output.wiki.given) {
-            let wiki = render_arg(ast.args.wiki, context);
+            let wiki = renderArg(ast.args.wiki, context);
             if (wiki === '') {
-              wiki = (render_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context)).replace(/ /g, '_');
+              wiki = (renderArg(ast.args[Macro.TITLE_ARGUMENT_NAME], context)).replace(/ /g, '_');
               if (ast.validation_output[Macro.DISAMBIGUATE_ARGUMENT_NAME].given) {
-                wiki += '_(' + (render_arg(ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME], context)).replace(/ /g, '_')  + ')'
+                wiki += '_(' + (renderArg(ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME], context)).replace(/ /g, '_')  + ')'
               }
             }
-            wiki_link = `<a href="https://en.wikipedia.org/wiki/${html_escape_attr(wiki)}"><span class="fa-brands-400" title="Wikipedia">\u{f266}</span> wiki</a>`;
+            wiki_link = `<a href="https://en.wikipedia.org/wiki/${htmlEscapeAttr(wiki)}"><span class="fa-brands-400" title="Wikipedia">\u{f266}</span> wiki</a>`;
           }
 
           let ourbigbookLink
@@ -9093,7 +9093,7 @@ const OUTPUT_FORMATS_LIST = [
           // Calculate file_link_html
           let file_link_html
           if (ast.file) {
-            file_link_html = get_link_html({
+            file_link_html = getLinkHtml({
               content: 'View file',
               context,
               href: ast.file,
@@ -9107,7 +9107,7 @@ const OUTPUT_FORMATS_LIST = [
           let tag_ids_html
           const showTags = !ast.from_include || context.options.embed_includes
           if (showTags) {
-            const new_context = clone_and_set(context, 'validate_ast', true);
+            const new_context = cloneAndSet(context, 'validateAst', true);
             // This is needed because in case of an an undefined \\x with {parent},
             // the undefined target would render as a link on the parent, leading
             // to an error that happens on the header, which is before the actual
@@ -9151,7 +9151,7 @@ const OUTPUT_FORMATS_LIST = [
               context.forceHeadersHaveTocLink ||
               (
                 !is_top_level &&
-                has_toc(context)
+                checkHasToc(context)
               )
             ) {
               let id = ast.id
@@ -9161,8 +9161,8 @@ const OUTPUT_FORMATS_LIST = [
                 // it is used only on web so... lazy to think now.
                 id = id.slice(fixedScopeRemoval)
               }
-              const toc_href = html_attr('href', '#' + html_escape_attr(toc_id(id)));
-              toc_link_html = `<a${toc_href} class="toc"${html_attr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`
+              const toc_href = htmlAttr('href', '#' + htmlEscapeAttr(tocId(id)));
+              toc_link_html = `<a${toc_href} class="toc"${htmlAttr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`
             }
           }
 
@@ -9181,8 +9181,8 @@ const OUTPUT_FORMATS_LIST = [
                 const nearestAncestors = ancestors.slice(0, ANCESTORS_MAX).reverse()
                 const entries = []
                 for (const ancestor of nearestAncestors) {
-                  const href = x_href_attr(ancestor, context)
-                  const content = render_arg(ancestor.args[Macro.TITLE_ARGUMENT_NAME], context)
+                  const href = xHrefAttr(ancestor, context)
+                  const content = renderArg(ancestor.args[Macro.TITLE_ARGUMENT_NAME], context)
                   entries.push({ href, content })
                 }
                 header_meta_ancestors.push(htmlAncestorLinks(entries, nAncestors));
@@ -9192,9 +9192,9 @@ const OUTPUT_FORMATS_LIST = [
             const parent_asts = ast.get_header_parent_asts(context)
             parent_links = [];
             for (const parent_ast of parent_asts) {
-              const parent_href = x_href_attr(parent_ast, context);
-              const parent_content = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-              parent_links.push(`<a${parent_href}${html_attr('title', 'parent header')}>${PARENT_MARKER} ${parent_content}</a>`);
+              const parent_href = xHrefAttr(parent_ast, context);
+              const parent_content = renderArg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+              parent_links.push(`<a${parent_href}${htmlAttr('title', 'parent header')}>${PARENT_MARKER} ${parent_content}</a>`);
             }
             parent_links = parent_links.join(HEADER_MENU_ITEM_SEP);
             if (parent_links) {
@@ -9202,8 +9202,8 @@ const OUTPUT_FORMATS_LIST = [
             }
           }
           if (first_header) {
-            if (has_toc(context)) {
-              header_meta.push(`<a${html_attr('href', `#${context.options.tocIdPrefix}${Macro.TOC_ID}`)} class="toc">${TOC_MARKER}</a>`);
+            if (checkHasToc(context)) {
+              header_meta.push(`<a${htmlAttr('href', `#${context.options.tocIdPrefix}${Macro.TOC_ID}`)} class="toc">${TOC_MARKER}</a>`);
             }
           } else {
             if (toc_link_html) {
@@ -9223,7 +9223,7 @@ const OUTPUT_FORMATS_LIST = [
             if (link_to_split !== undefined) {
               header_meta.push(link_to_split);
             }
-            let descendant_count_html = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
+            let descendant_count_html = getDescendantCountHtml(context, ast.header_tree_node, { long_style: true });
             if (descendant_count_html !== undefined) {
               header_meta.push(descendant_count_html);
             }
@@ -9247,10 +9247,10 @@ const OUTPUT_FORMATS_LIST = [
           ret += `</div>`;
           if (showTags) {
             if (children !== undefined) {
-              ret += header_check_child_tag_exists(ast, context, children, 'child')
+              ret += headerCheckChildTagExists(ast, context, children, 'child')
             }
             if (tags !== undefined) {
-              ret += header_check_child_tag_exists(ast, context, tags, 'tag')
+              ret += headerCheckChildTagExists(ast, context, tags, 'tag')
             }
           }
           // Variables we want permanently modify the context.
@@ -9258,13 +9258,13 @@ const OUTPUT_FORMATS_LIST = [
           return ret;
         },
         [Macro.INCLUDE_MACRO_NAME]: unconvertible,
-        [Macro.LIST_ITEM_MACRO_NAME]: html_render_simple_elem('li', { newline_after_close: true }),
+        [Macro.LIST_ITEM_MACRO_NAME]: htmlRenderSimpleElem('li', { newline_after_close: true }),
         [Macro.MATH_MACRO_NAME.toUpperCase()]: function(ast, context) {
-          let katex_output = html_katex_convert(ast, context)
+          let katex_output = htmlKatexConvert(ast, context)
           let ret = ``
           if (ast.validation_output.show.boolean) {
-            const { href, multiline_caption, title_and_description } = html_title_and_description(ast, context)
-            ret += `<div class="math${multiline_caption}"${html_render_attrs_id(ast, context)}>`
+            const { href, multiline_caption, title_and_description } = htmlTitleAndDescription(ast, context)
+            ret += `<div class="math${multiline_caption}"${htmlRenderAttrsId(ast, context)}>`
             ret += `<div class="equation">`
             ret += `<div>${katex_output}</div>`
             ret += `<div class="number"><a${href}>(${context.macros[ast.macro_name].options.get_number(ast, context)})</a></div>`
@@ -9276,10 +9276,10 @@ const OUTPUT_FORMATS_LIST = [
         },
         [Macro.MATH_MACRO_NAME]: function(ast, context) {
           // KaTeX already adds a <span> for us.
-          return html_katex_convert(ast, context);
+          return htmlKatexConvert(ast, context);
         },
-        'i': html_render_simple_elem('i'),
-        'Image': macro_image_video_block_convert_function,
+        'i': htmlRenderSimpleElem('i'),
+        'Image': macroImageVideoBlockConvertFunction,
         'image': function(ast, context) {
           let alt_arg;
           if (ast.args.alt === undefined) {
@@ -9287,43 +9287,43 @@ const OUTPUT_FORMATS_LIST = [
           } else {
             alt_arg = ast.args.alt;
           }
-          let alt = html_attr('alt', html_escape_attr(render_arg(alt_arg, context)));
-          let rendered_attrs = html_render_attrs_id(ast, context, ['height', 'width']);
-          let { error_message, media_provider_type, src } = macro_image_video_resolve_params(ast, context);
+          let alt = htmlAttr('alt', htmlEscapeAttr(renderArg(alt_arg, context)));
+          let rendered_attrs = htmlRenderAttrsId(ast, context, ['height', 'width']);
+          let { error_message, media_provider_type, src } = macroImageVideoResolveParams(ast, context);
           const external = ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined
-          let { html: imgHtml } = html_img({ alt, ast, context, external, inline: true, media_provider_type, rendered_attrs, src })
+          let { html: imgHtml } = htmlImg({ alt, ast, context, external, inline: true, media_provider_type, rendered_attrs, src })
           if (error_message) {
-            imgHtml += error_message_in_output(error_message, context)
+            imgHtml += errorMessageInOutput(error_message, context)
           }
           return imgHtml
         },
         'JsCanvasDemo': function(ast, context) {
-          return html_code(
-            render_arg(ast.args.content, context),
+          return htmlCode(
+            renderArg(ast.args.content, context),
             { 'class': 'ourbigbook-js-canvas-demo' }
           );
         },
-        'Ol': html_render_simple_elem('ol', UL_OL_OPTS),
-        [Macro.PARAGRAPH_MACRO_NAME]: html_render_simple_elem(
+        'Ol': htmlRenderSimpleElem('ol', UL_OL_OPTS),
+        [Macro.PARAGRAPH_MACRO_NAME]: htmlRenderSimpleElem(
           'div',
           {
             attrs: {'class': 'p'},
           }
         ),
         [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) {
-          return html_escape_context(context, ast.text);
+          return htmlEscapeContext(context, ast.text);
         },
         'passthrough': function(ast, context) {
-          return render_arg_noescape(ast.args.content, context);
+          return renderArgNoescape(ast.args.content, context);
         },
-        'Q': html_render_simple_elem('blockquote'),
-        'sub': html_render_simple_elem('sub'),
-        'sup': html_render_simple_elem('sup'),
+        'Q': htmlRenderSimpleElem('blockquote'),
+        'sub': htmlRenderSimpleElem('sub'),
+        'sup': htmlRenderSimpleElem('sup'),
         [Macro.TABLE_MACRO_NAME]: function(ast, context) {
-          let attrs = html_render_attrs_id(ast, context);
-          let content = render_arg(ast.args.content, context);
+          let attrs = htmlRenderAttrsId(ast, context);
+          let content = renderArg(ast.args.content, context);
           let ret = ``;
-          let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
+          let { description, force_separator, multiline_caption } = getDescription(ast.args.description, context)
           ret += `<div class="table${multiline_caption}"${attrs}>\n`;
           // TODO not using caption because I don't know how to allow the caption to be wider than the table.
           // I don't want the caption to wrap to a small table size.
@@ -9336,20 +9336,20 @@ const OUTPUT_FORMATS_LIST = [
           // }
           //
           //Caption on top as per: https://tex.stackexchange.com/questions/3243/why-should-a-table-caption-be-placed-above-the-table */
-          let href = html_attr('href', '#' + html_escape_attr(ast.id));
+          let href = htmlAttr('href', '#' + htmlEscapeAttr(ast.id));
           if (ast.index_id || ast.validation_output.description.given) {
-            const { full: title, inner } = x_text_base(ast, context, {
+            const { full: title, inner } = xTextBase(ast, context, {
               href_prefix: href,
               force_separator,
             })
-            const title_and_description = get_title_and_description({ title, description, inner })
+            const title_and_description = getTitleAndDescription({ title, description, inner })
             ret += `<div class="caption">${title_and_description}</div>`;
           }
           ret += `<table>\n${content}</table>\n`;
           ret += `</div>\n`;
           return ret;
         },
-        [Macro.TD_MACRO_NAME]: html_render_simple_elem('td', { newline_after_close: true }),
+        [Macro.TD_MACRO_NAME]: htmlRenderSimpleElem('td', { newline_after_close: true }),
         [Macro.TOPLEVEL_MACRO_NAME]: function(ast, context) {
           let title = ast.args[Macro.TITLE_ARGUMENT_NAME];
           if (title === undefined) {
@@ -9357,9 +9357,9 @@ const OUTPUT_FORMATS_LIST = [
             if (Macro.TITLE_ARGUMENT_NAME in context.options) {
               text_title = context.options[Macro.TITLE_ARGUMENT_NAME];
             } else if (context.header_tree.children.length > 0) {
-              text_title = render_arg(
+              text_title = renderArg(
                 context.header_tree.children[0].ast.args[Macro.TITLE_ARGUMENT_NAME],
-                clone_and_set(context, 'id_conversion', true)
+                cloneAndSet(context, 'id_conversion', true)
               );
             } else {
               text_title = 'dummy title because title is mandatory in HTML';
@@ -9370,11 +9370,11 @@ const OUTPUT_FORMATS_LIST = [
               text_title
             );
           }
-          let body = render_arg(ast.args.content, context);
+          let body = renderArg(ast.args.content, context);
 
           // Footer metadata.
           if (context.options.render_metadata) {
-            body += render_toc(context)
+            body += renderToc(context)
           }
           if (
             context.toplevel_ast !== undefined &&
@@ -9383,7 +9383,7 @@ const OUTPUT_FORMATS_LIST = [
             {
               const target_ids = context.db_provider.get_refs_to_as_ids(
                 REFS_TABLE_X_CHILD, context.toplevel_ast.id, true);
-              body += create_link_list(context, ast, TAGGED_ID_UNRESERVED, `${TAGS_MARKER} Tagged`, target_ids)
+              body += createLinkList(context, ast, TAGGED_ID_UNRESERVED, `${TAGS_MARKER} Tagged`, target_ids)
             }
 
             // Ancestors
@@ -9391,12 +9391,12 @@ const OUTPUT_FORMATS_LIST = [
               const ancestors = context.toplevel_ast.ancestors(context)
               if (ancestors.length !== 0) {
                 // TODO factor this out more with real headers.
-                body += `<div>${html_hide_hover_link(`#${ANCESTORS_ID}`)}<h2 id="${ANCESTORS_ID}"><a href="#${ANCESTORS_ID}">${PARENT_MARKER} Ancestors</a></h2></div>\n`;
+                body += `<div>${htmlHideHoverLink(`#${ANCESTORS_ID}`)}<h2 id="${ANCESTORS_ID}"><a href="#${ANCESTORS_ID}">${PARENT_MARKER} Ancestors</a></h2></div>\n`;
                 const ancestor_id_asts = [];
                 for (const ancestor of ancestors) {
                   //let counts_str;
                   //if (ancestor.header_tree_node !== undefined) {
-                  //  counts_str = get_descendant_count_html_sep(ancestor.header_tree_node, false);
+                  //  counts_str = getDescendantCountHtmlSep(ancestor.header_tree_node, false);
                   //} else {
                   //  counts_str = '';
                   //}
@@ -9449,7 +9449,7 @@ const OUTPUT_FORMATS_LIST = [
                   'Ol',
                   ulArgs,
                 );
-                const new_context = clone_and_set(context, 'validate_ast', true);
+                const new_context = cloneAndSet(context, 'validateAst', true);
                 new_context.source_location = ast.source_location;
                 body += incoming_ul_ast.render(new_context);
               }
@@ -9457,11 +9457,11 @@ const OUTPUT_FORMATS_LIST = [
 
             {
               const target_ids = context.db_provider.get_refs_to_as_ids(REFS_TABLE_X, context.toplevel_ast.id);
-              body += create_link_list(context, ast, INCOMING_LINKS_ID_UNRESERVED, `${INCOMING_LINKS_MARKER} Incoming links`, target_ids)
+              body += createLinkList(context, ast, INCOMING_LINKS_ID_UNRESERVED, `${INCOMING_LINKS_MARKER} Incoming links`, target_ids)
             }
             {
               const target_ids = context.db_provider.get_refs_to_as_ids(REFS_TABLE_SYNONYM, context.toplevel_ast.id);
-              body += create_link_list(context, ast, SYNONYM_LINKS_ID_UNRESERVED, `${SYNONYM_LINKS_MARKER} Synonyms`, target_ids)
+              body += createLinkList(context, ast, SYNONYM_LINKS_ID_UNRESERVED, `${SYNONYM_LINKS_MARKER} Synonyms`, target_ids)
             }
           }
 
@@ -9508,14 +9508,14 @@ const OUTPUT_FORMATS_LIST = [
             const render_env = {
               body,
               root_page,
-              title: render_arg(title, context),
+              title: renderArg(title, context),
             };
             if (context.options.auto_generated_source) {
               render_env.input_path = ''
             } else {
               render_env.input_path = context.options.input_path
             }
-            const github_prefix = github_provider_prefix(context)
+            const github_prefix = githubProviderPrefix(context)
             if (github_prefix) {
               render_env.github_prefix = github_prefix
             }
@@ -9555,10 +9555,10 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
           }
           return ret;
         },
-        [Macro.TH_MACRO_NAME]: html_render_simple_elem('th', { newline_after_close: true }),
+        [Macro.TH_MACRO_NAME]: htmlRenderSimpleElem('th', { newline_after_close: true }),
         [Macro.TR_MACRO_NAME]: function(ast, context) {
           let content_ast = ast.args.content;
-          let content = render_arg(content_ast, context);
+          let content = renderArg(content_ast, context);
           let res = '';
           if (ast.args.content.get(0).macro_name === Macro.TH_MACRO_NAME) {
             if (
@@ -9576,7 +9576,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
               res += `<tbody>\n`;
             }
           }
-          res += `<tr${html_render_attrs_id(ast, context)}>\n${content}</tr>\n`;
+          res += `<tr${htmlRenderAttrsId(ast, context)}>\n${content}</tr>\n`;
           if (ast.args.content.get(0).macro_name === Macro.TH_MACRO_NAME) {
             if (
               ast.parent_argument_index === ast.parent_argument.length() - 1 ||
@@ -9595,9 +9595,9 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
           }
           return res;
         },
-        'Ul': html_render_simple_elem('ul', UL_OL_OPTS),
+        'Ul': htmlRenderSimpleElem('ul', UL_OL_OPTS),
         [Macro.X_MACRO_NAME]: function(ast, context) {
-          let [href, content, target_ast] = x_get_href_content(ast, context);
+          let [href, content, target_ast] = xGetHrefContent(ast, context);
           let incompatible_pair
           if (ast.validation_output.full.given) {
             if (ast.validation_output.ref.given) {
@@ -9632,8 +9632,8 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
           }
           if (incompatible_pair) {
             const message = `"${incompatible_pair[0]}" and "${incompatible_pair[1]}" are incompatible`;
-            render_error(context, message, ast.source_location);
-            content = error_message_in_output(message, context);
+            renderError(context, message, ast.source_location);
+            content = errorMessageInOutput(message, context);
           } else if (ast.validation_output.ref.boolean) {
             content = '*';
           }
@@ -9648,15 +9648,15 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
             ) {
               counts_str = '';
             } else {
-              const counts = get_descendant_count(target_ast.header_tree_node);
+              const counts = getDescendantCount(target_ast.header_tree_node);
               for (let i = 0; i < counts.length; i++) {
-                counts[i] = format_number_approx(counts[i]);
+                counts[i] = formatNumberApprox(counts[i]);
               }
               counts_str = `\nword count: ${counts[0]}\ndescendant word count: ${counts[2]}\ndescendant count: ${counts[1]}`;
             }
-            const attrs = html_render_attrs_id(ast, context);
+            const attrs = htmlRenderAttrsId(ast, context);
 
-            // It would be cleaner to pass this up from x_href_parts. But lazy.
+            // It would be cleaner to pass this up from xHrefParts. But lazy.
             let target = ''
             if (context.options.ourbigbook_json.openLinksOnNewTabs && href) {
               const splitFragment = href.split('#')
@@ -9671,12 +9671,12 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
               }
             }
 
-            return `<a${href}${attrs}${html_attr('title', 'internal link' + counts_str)}${target}>${content}</a>`;
+            return `<a${href}${attrs}${htmlAttr('title', 'internal link' + counts_str)}${target}>${content}</a>`;
           } else {
             return content;
           }
         },
-        'Video': macro_image_video_block_convert_function,
+        'Video': macroImageVideoBlockConvertFunction,
       },
     }
   ),
@@ -9686,43 +9686,43 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
       ext: 'id',
       convert_funcs: {
         [Macro.LINK_MACRO_NAME]: function(ast, context) {
-          const [href, content] = link_get_href_content(ast, context);
+          const [href, content] = linkGetHrefContent(ast, context);
           return content;
         },
-        'b': id_convert_simple_elem(),
+        'b': idConvertSimpleElem(),
         'br': function(ast, context) { return '\n'; },
-        [Macro.CODE_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
-        [Macro.CODE_MACRO_NAME]: id_convert_simple_elem(),
+        [Macro.CODE_MACRO_NAME.toUpperCase()]: idConvertSimpleElem(),
+        [Macro.CODE_MACRO_NAME]: idConvertSimpleElem(),
         [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: unconvertible,
         'Comment': function(ast, context) { return ''; },
         'comment': function(ast, context) { return ''; },
-        [Macro.HEADER_MACRO_NAME]: id_convert_simple_elem(),
+        [Macro.HEADER_MACRO_NAME]: idConvertSimpleElem(),
         [Macro.INCLUDE_MACRO_NAME]: unconvertible,
-        [Macro.LIST_ITEM_MACRO_NAME]: id_convert_simple_elem(),
-        [Macro.MATH_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
-        [Macro.MATH_MACRO_NAME]: id_convert_simple_elem(),
-        'i': id_convert_simple_elem(),
+        [Macro.LIST_ITEM_MACRO_NAME]: idConvertSimpleElem(),
+        [Macro.MATH_MACRO_NAME.toUpperCase()]: idConvertSimpleElem(),
+        [Macro.MATH_MACRO_NAME]: idConvertSimpleElem(),
+        'i': idConvertSimpleElem(),
         'Image': function(ast, context) { return ''; },
         'image': function(ast, context) { return ''; },
-        'JsCanvasDemo': id_convert_simple_elem(),
-        'Ol': id_convert_simple_elem(),
-        [Macro.PARAGRAPH_MACRO_NAME]: id_convert_simple_elem(),
+        'JsCanvasDemo': idConvertSimpleElem(),
+        'Ol': idConvertSimpleElem(),
+        [Macro.PARAGRAPH_MACRO_NAME]: idConvertSimpleElem(),
         [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) { return ast.text },
-        'passthrough': id_convert_simple_elem(),
-        'Q': id_convert_simple_elem(),
-        'sub': id_convert_simple_elem(),
-        'sup': id_convert_simple_elem(),
-        [Macro.TABLE_MACRO_NAME]: id_convert_simple_elem(),
-        [Macro.TD_MACRO_NAME]: id_convert_simple_elem(),
-        [Macro.TOPLEVEL_MACRO_NAME]: id_convert_simple_elem(),
-        [Macro.TH_MACRO_NAME]: id_convert_simple_elem(),
-        [Macro.TR_MACRO_NAME]: id_convert_simple_elem(),
-        'Ul': id_convert_simple_elem(),
+        'passthrough': idConvertSimpleElem(),
+        'Q': idConvertSimpleElem(),
+        'sub': idConvertSimpleElem(),
+        'sup': idConvertSimpleElem(),
+        [Macro.TABLE_MACRO_NAME]: idConvertSimpleElem(),
+        [Macro.TD_MACRO_NAME]: idConvertSimpleElem(),
+        [Macro.TOPLEVEL_MACRO_NAME]: idConvertSimpleElem(),
+        [Macro.TH_MACRO_NAME]: idConvertSimpleElem(),
+        [Macro.TR_MACRO_NAME]: idConvertSimpleElem(),
+        'Ul': idConvertSimpleElem(),
         [Macro.X_MACRO_NAME]: function(ast, context) {
           if (ast.args.content) {
-            return id_convert_simple_elem('content')(ast, context)
+            return idConvertSimpleElem('content')(ast, context)
           } else {
-            return id_convert_simple_elem('href')(ast, context)
+            return idConvertSimpleElem('href')(ast, context)
           }
         },
         'Video': function(ast, context) { return ''; },
@@ -9731,27 +9731,27 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
   ),
 ]
 
-function ourbigbook_code_math_inline(c) {
+function ourbigbookCodeMathInline(c) {
   return function(ast, context) {
-    const content = render_arg(ast.args.content, clone_and_set(context, 'in_literal', true))
+    const content = renderArg(ast.args.content, cloneAndSet(context, 'in_literal', true))
     if (content.indexOf(c) === -1) {
       return `${c}${content}${c}`
     } else {
-      return ourbigbook_convert_simple_elem(ast, context)
+      return ourbigbookConvertSimpleElem(ast, context)
     }
   }
 }
 
-function ourbigbook_code_math_block(c) {
+function ourbigbookCodeMathBlock(c) {
   return function(ast, context) {
-    context = clone_and_set(context, 'in_literal', true)
-    const content = render_arg(ast.args.content, context)
+    context = cloneAndSet(context, 'in_literal', true)
+    const content = renderArg(ast.args.content, context)
     let delim = c + c
     while (content.indexOf(delim) !== -1) {
       delim += c
     }
-    const newline = '\n'.repeat(ourbigbook_add_newlines_after_block(ast, context))
-    const attrs = ourbigbook_convert_args(ast, context, { skip: new Set(['content']) }).join('')
+    const newline = '\n'.repeat(ourbigbookAddNewlinesAfterBlock(ast, context))
+    const attrs = ourbigbookConvertArgs(ast, context, { skip: new Set(['content']) }).join('')
     return `${delim}
 ${content}
 ${delim}${attrs === '' ? '' : '\n'}${attrs}${newline}`
@@ -9759,7 +9759,7 @@ ${delim}${attrs === '' ? '' : '\n'}${attrs}${newline}`
 }
 
 /** Get the preferred x href for the ourbigbook output format of an \x. */
-function ourbigbook_get_x_href({
+function ourbigbookGetXHref({
   ast,
   context,
   target_ast,
@@ -9773,8 +9773,8 @@ function ourbigbook_get_x_href({
 }) {
   href = href.replaceAll(ID_SEPARATOR, ' ')
   if (p) {
-    const href_plural = pluralize_wrap(href, 2)
-    let target_ast_plural = context.db_provider.get(magic_title_to_id(href_plural), context)
+    const href_plural = pluralizeWrap(href, 2)
+    let target_ast_plural = context.db_provider.get(magicTitleToId(href_plural), context)
     if (
       // When we have \x without magic to a destination that exists
       // in both plural and singular, we can't use the magic plural,
@@ -9783,7 +9783,7 @@ function ourbigbook_get_x_href({
       target_ast &&
       target_ast_plural
     ) {
-      return { override_href: `<${href}>${ourbigbook_convert_args(ast, context, { skip: new Set(['c', 'href', 'magic']) }).join('')}` }
+      return { override_href: `<${href}>${ourbigbookConvertArgs(ast, context, { skip: new Set(['c', 'href', 'magic']) }).join('')}` }
     }
     href = href_plural
     if (target_ast_plural) {
@@ -9791,11 +9791,11 @@ function ourbigbook_get_x_href({
     }
   }
   if (!target_ast) {
-    return { override_href: `${ourbigbook_convert_simple_elem(ast, context)} ${render_error_x_undefined(ast, context, target_id)}` }
+    return { override_href: `${ourbigbookConvertSimpleElem(ast, context)} ${renderErrorXUndefined(ast, context, target_id)}` }
   }
   let was_magic_plural, was_magic_uppercase
   if (magic && !for_header_parent) {
-    const href_singular = pluralize_wrap(href, 1)
+    const href_singular = pluralizeWrap(href, 1)
     if (!target_ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME] && href !== href_singular) {
       was_magic_plural = true
     }
@@ -9812,13 +9812,13 @@ function ourbigbook_get_x_href({
   )) {
     const macro = context.macros[target_ast.macro_name];
     const title_arg = macro.options.get_title_arg(target_ast, context);
-    href = render_arg(title_arg, clone_and_set(context, 'id_conversion', true));
+    href = renderArg(title_arg, cloneAndSet(context, 'id_conversion', true));
     href = href.replaceAll(Macro.HEADER_SCOPE_SEPARATOR, ' ')
     let was_pluralized
     let disambiguate
     const disambiguate_arg = target_ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
     if (disambiguate_arg) {
-      disambiguate = render_arg(disambiguate_arg, clone_and_set(context, 'id_conversion', true))
+      disambiguate = renderArg(disambiguate_arg, cloneAndSet(context, 'id_conversion', true))
     } else {
       disambiguate = ''
     }
@@ -9851,7 +9851,7 @@ function ourbigbook_get_x_href({
         was_magic_plural ||
         p
       ) {
-        const href_plural = pluralize_wrap(href, 2)
+        const href_plural = pluralizeWrap(href, 2)
         let disambiguate_sep
         if (disambiguate) {
           disambiguate_sep = ID_SEPARATOR + disambiguate
@@ -9864,29 +9864,29 @@ function ourbigbook_get_x_href({
         } else {
           target_scope = ''
         }
-        const plural_id = `${target_scope}${magic_title_to_id(href_plural, context)}${disambiguate_sep}`
+        const plural_id = `${target_scope}${magicTitleToId(href_plural, context)}${disambiguate_sep}`
         const plural_target = context.db_provider.get(plural_id, context)
         if (!plural_target || plural_target.id !== target_ast.id) {
-          const singular_id = `${target_scope}${magic_title_to_id(pluralize_wrap(href, 1), context)}${disambiguate_sep}`
+          const singular_id = `${target_scope}${magicTitleToId(pluralizeWrap(href, 1), context)}${disambiguate_sep}`
           const singular_target = context.db_provider.get(singular_id, context)
           if ((!singular_target || singular_target.id !== target_ast.id) && !explicit_id) {
             // This can happen due to pluralize bugs:
             // https://github.com/plurals/pluralize/issues/172
             // Just bail out in those cases.
-            return { override_href: ourbigbook_convert_simple_elem(ast, context) }
+            return { override_href: ourbigbookConvertSimpleElem(ast, context) }
           }
         }
         href = href_plural
         was_pluralized = true
       }
     }
-    if (explicit_id && magic_title_to_id(href, context) !== target_ast.id) {
+    if (explicit_id && magicTitleToId(href, context) !== target_ast.id) {
       href = href_from_id
     } else {
       if (disambiguate_arg) {
         if (was_pluralized) {
           // TODO https://github.com/ourbigbook/ourbigbook/issues/244
-          return { override_href: ourbigbook_convert_simple_elem(ast, context) }
+          return { override_href: ourbigbookConvertSimpleElem(ast, context) }
         }
         href = `${href} (${disambiguate})`;
       }
@@ -9914,17 +9914,17 @@ function ourbigbook_get_x_href({
         href = `${target_scope}${href}`
       }
     }
-    if (is_absolute_xref(target_id, context)) {
+    if (isAbsoluteXref(target_id, context)) {
       href = target_id[0] + href
     }
   }
   return { href, override_href: undefined }
 }
 
-function ourbigbook_li(marker) {
+function ourbigbookLi(marker) {
   return function(ast, context) {
     if (!ast.args.content || Object.keys(ast.args).length !== 1) {
-      return ourbigbook_convert_simple_elem(ast, context)
+      return ourbigbookConvertSimpleElem(ast, context)
     } else {
       let newline_before
       if (
@@ -9941,7 +9941,7 @@ function ourbigbook_li(marker) {
       } else {
         newline_before = ''
       }
-      const content = render_arg(ast.args.content, context)
+      const content = renderArg(ast.args.content, context)
       const content_indent = content.replace(/\n(.)/g, '\n  $1')
       const newline = ast.is_last_in_argument() ? '' : '\n'
       let marker_eff
@@ -9955,7 +9955,7 @@ function ourbigbook_li(marker) {
   }
 }
 
-function ourbigbook_add_newlines_after_block(ast, context, options={}) {
+function ourbigbookAddNewlinesAfterBlock(ast, context, options={}) {
   const { auto_parent } = options
   if (
     !context.macros[ast.macro_name].options.phrasing &&
@@ -9997,17 +9997,17 @@ function ourbigbook_add_newlines_after_block(ast, context, options={}) {
   }
 }
 
-function ourbigbook_ul(ast, context) {
+function ourbigbookUl(ast, context) {
   if (!ast.args.content || Object.keys(ast.args).length !== 1) {
-    return ourbigbook_convert_simple_elem(ast, context)
+    return ourbigbookConvertSimpleElem(ast, context)
   } else {
-    const argstr = render_arg(ast.args.content, context)
-    const newline = '\n'.repeat(ourbigbook_add_newlines_after_block(ast, context, { auto_parent: true }))
+    const argstr = renderArg(ast.args.content, context)
+    const newline = '\n'.repeat(ourbigbookAddNewlinesAfterBlock(ast, context, { auto_parent: true }))
     return `${argstr}${newline}`
   }
 }
 
-function ourbigbook_prefer_literal(ast, context, ast_arg, arg, open, close) {
+function ourbigbookPreferLiteral(ast, context, ast_arg, arg, open, close) {
   let rendered_arg
   let delim_repeat
   let has_newline
@@ -10016,7 +10016,7 @@ function ourbigbook_prefer_literal(ast, context, ast_arg, arg, open, close) {
     ast_arg.asts.length === 1 &&
     ast_arg.asts[0].node_type === AstType.PLAINTEXT
   ) {
-    const rendered_arg_non_literal = render_arg(ast_arg, context)
+    const rendered_arg_non_literal = renderArg(ast_arg, context)
     if (
       // Prefer literals if any escapes would be needed.
       arg.ourbigbook_output_prefer_literal ||
@@ -10048,13 +10048,13 @@ function ourbigbook_prefer_literal(ast, context, ast_arg, arg, open, close) {
   if (!rendered_arg) {
     // Not a literal.
     delim_repeat = 1
-    rendered_arg = render_arg(ast_arg, context)
+    rendered_arg = renderArg(ast_arg, context)
     has_newline = rendered_arg.indexOf('\n') !== -1
   }
   return { delim_repeat, has_newline, rendered_arg }
 }
 
-function ourbigbook_convert_args(ast, context, options={}) {
+function ourbigbookConvertArgs(ast, context, options={}) {
   const ret = options.ret || []
   const skip = options.skip || new Set()
   const modify_callbacks = options.modify_callbacks || {}
@@ -10067,7 +10067,7 @@ function ourbigbook_convert_args(ast, context, options={}) {
     const ret_arg = []
     const argname = arg.name
     if (!skip.has(argname) && ast.validation_output[argname].given) {
-      let { delim_repeat, has_newline, rendered_arg } = ourbigbook_prefer_literal(
+      let { delim_repeat, has_newline, rendered_arg } = ourbigbookPreferLiteral(
         ast, context, ast.args[argname], arg, START_POSITIONAL_ARGUMENT_CHAR, END_POSITIONAL_ARGUMENT_CHAR)
       if (argname in modify_callbacks) {
         rendered_arg = modify_callbacks[argname](ast, context, rendered_arg)
@@ -10110,7 +10110,7 @@ function ourbigbook_convert_args(ast, context, options={}) {
     for (const ast_arg of ast_args) {
       const ret_arg = []
       const macro_arg = macro.name_to_arg[argname]
-      let { delim_repeat, has_newline, rendered_arg } = ourbigbook_prefer_literal(
+      let { delim_repeat, has_newline, rendered_arg } = ourbigbookPreferLiteral(
         ast, context, ast_arg, arg, START_NAMED_ARGUMENT_CHAR, END_NAMED_ARGUMENT_CHAR)
       if (argname in modify_callbacks) {
         rendered_arg = modify_callbacks[argname](ast, context, ast_arg, rendered_arg)
@@ -10163,12 +10163,12 @@ function ourbigbook_convert_args(ast, context, options={}) {
   return ret
 }
 
-function ourbigbook_convert_simple_elem(ast, context) {
+function ourbigbookConvertSimpleElem(ast, context) {
   const ret = []
   ret.push(ESCAPE_CHAR + ast.macro_name)
   const macro = context.macros[ast.macro_name]
-  ourbigbook_convert_args(ast, context, { ret })
-  ret.push('\n'.repeat(ourbigbook_add_newlines_after_block(ast, context)))
+  ourbigbookConvertArgs(ast, context, { ret })
+  ret.push('\n'.repeat(ourbigbookAddNewlinesAfterBlock(ast, context)))
   return ret.join('')
 }
 
@@ -10179,24 +10179,24 @@ OUTPUT_FORMATS_LIST.push(
       ext: OURBIGBOOK_EXT,
       convert_funcs: {
         [Macro.LINK_MACRO_NAME]: function(ast, context) {
-          const href = render_arg(ast.args.href, context)
-          if (protocol_is_known(href)) {
-            return `${href}${ourbigbook_convert_args(ast, context, { skip: new Set(['href']) }).join('')}`
+          const href = renderArg(ast.args.href, context)
+          if (protocolIsKnown(href)) {
+            return `${href}${ourbigbookConvertArgs(ast, context, { skip: new Set(['href']) }).join('')}`
           } else {
-            return ourbigbook_convert_simple_elem(ast, context)
+            return ourbigbookConvertSimpleElem(ast, context)
           }
         },
-        'b': ourbigbook_convert_simple_elem,
-        'br': ourbigbook_convert_simple_elem,
-        [Macro.CODE_MACRO_NAME.toUpperCase()]: ourbigbook_code_math_block(INSANE_CODE_CHAR),
-        [Macro.CODE_MACRO_NAME]: ourbigbook_code_math_inline(INSANE_CODE_CHAR),
-        [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: ourbigbook_convert_simple_elem,
-        'Comment': ourbigbook_convert_simple_elem,
-        'comment': ourbigbook_convert_simple_elem,
+        'b': ourbigbookConvertSimpleElem,
+        'br': ourbigbookConvertSimpleElem,
+        [Macro.CODE_MACRO_NAME.toUpperCase()]: ourbigbookCodeMathBlock(INSANE_CODE_CHAR),
+        [Macro.CODE_MACRO_NAME]: ourbigbookCodeMathInline(INSANE_CODE_CHAR),
+        [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: ourbigbookConvertSimpleElem,
+        'Comment': ourbigbookConvertSimpleElem,
+        'comment': ourbigbookConvertSimpleElem,
         [Macro.HEADER_MACRO_NAME]: function(ast, context) {
           const newline = ast.is_last_in_argument() ? '' : '\n\n'
-          function modify_callback(ast, context, arg, rendered_arg) {
-            const { target_ast, target_id } = x_get_target_ast_base({
+          function modifyCallback(ast, context, arg, rendered_arg) {
+            const { target_ast, target_id } = xGetTargetAstBase({
               context,
               do_magic_title_to_id: true,
               do_singularize: false,
@@ -10204,9 +10204,9 @@ OUTPUT_FORMATS_LIST.push(
               target_id: rendered_arg,
             })
             if (!target_ast) {
-              return `${rendered_arg} ${render_error_x_undefined(ast, context, rendered_arg, { source_location: arg.source_location })}`
+              return `${rendered_arg} ${renderErrorXUndefined(ast, context, rendered_arg, { source_location: arg.source_location })}`
             }
-            const href = ourbigbook_get_x_href({
+            const href = ourbigbookGetXHref({
               ast,
               context,
               href: rendered_arg,
@@ -10239,20 +10239,20 @@ OUTPUT_FORMATS_LIST.push(
             // Happens on split headers.
             skip.add('parent')
           }
-          const args_string = ourbigbook_convert_args(
+          const args_string = ourbigbookConvertArgs(
             ast,
             context,
             {
               skip,
               modify_callbacks: {
-                'child': modify_callback,
-                'parent': modify_callback,
-                'tag': modify_callback,
+                'child': modifyCallback,
+                'parent': modifyCallback,
+                'tag': modifyCallback,
               }
             }
           ).join('')
           //ast.validation_output.level.positive_nonzero_integer
-          return `${INSANE_HEADER_CHAR.repeat(output_level)} ${render_arg(ast.args.title, context)}${args_string ? '\n' : '' }${args_string}${newline}`
+          return `${INSANE_HEADER_CHAR.repeat(output_level)} ${renderArg(ast.args.title, context)}${args_string ? '\n' : '' }${args_string}${newline}`
         },
         [Macro.INCLUDE_MACRO_NAME]: function(ast, context) {
           let newline
@@ -10263,21 +10263,21 @@ OUTPUT_FORMATS_LIST.push(
           } else {
             newline = ''
           }
-          return newline + ourbigbook_convert_simple_elem(ast, context)
+          return newline + ourbigbookConvertSimpleElem(ast, context)
         },
-        [Macro.LIST_ITEM_MACRO_NAME]: ourbigbook_li(INSANE_LIST_START),
-        [Macro.MATH_MACRO_NAME.toUpperCase()]: ourbigbook_code_math_block(INSANE_MATH_CHAR),
-        [Macro.MATH_MACRO_NAME]: ourbigbook_code_math_inline(INSANE_MATH_CHAR),
-        'i': ourbigbook_convert_simple_elem,
-        'Image': ourbigbook_convert_simple_elem,
-        'image': ourbigbook_convert_simple_elem,
-        'JsCanvasDemo': ourbigbook_convert_simple_elem,
-        'Ol': ourbigbook_ul,
+        [Macro.LIST_ITEM_MACRO_NAME]: ourbigbookLi(INSANE_LIST_START),
+        [Macro.MATH_MACRO_NAME.toUpperCase()]: ourbigbookCodeMathBlock(INSANE_MATH_CHAR),
+        [Macro.MATH_MACRO_NAME]: ourbigbookCodeMathInline(INSANE_MATH_CHAR),
+        'i': ourbigbookConvertSimpleElem,
+        'Image': ourbigbookConvertSimpleElem,
+        'image': ourbigbookConvertSimpleElem,
+        'JsCanvasDemo': ourbigbookConvertSimpleElem,
+        'Ol': ourbigbookUl,
         [Macro.PARAGRAPH_MACRO_NAME]: function(ast, context) {
           if (!ast.args.content || Object.keys(ast.args).length !== 1) {
-            return ourbigbook_convert_simple_elem(ast, context)
+            return ourbigbookConvertSimpleElem(ast, context)
           } else {
-            const rendered_arg = render_arg(ast.args.content, context)
+            const rendered_arg = renderArg(ast.args.content, context)
             const newline = ast.is_last_in_argument() ? '' : '\n\n'
             return `${rendered_arg}${newline}`
           }
@@ -10290,18 +10290,18 @@ OUTPUT_FORMATS_LIST.push(
             return text.replace(MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS_REGEX, '\\$1').replace(MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS_REGEX, '$1\\$2')
           }
         },
-        'passthrough': ourbigbook_convert_simple_elem,
-        'Q': ourbigbook_convert_simple_elem,
-        'sub': ourbigbook_convert_simple_elem,
-        'sup': ourbigbook_convert_simple_elem,
-        [Macro.TABLE_MACRO_NAME]: ourbigbook_ul,
-        [Macro.TD_MACRO_NAME]: ourbigbook_li(INSANE_TD_START),
-        [Macro.TOPLEVEL_MACRO_NAME]: id_convert_simple_elem(),
-        [Macro.TH_MACRO_NAME]: ourbigbook_li(INSANE_TH_START),
-        [Macro.TR_MACRO_NAME]: ourbigbook_ul,
-        'Ul': ourbigbook_ul,
+        'passthrough': ourbigbookConvertSimpleElem,
+        'Q': ourbigbookConvertSimpleElem,
+        'sub': ourbigbookConvertSimpleElem,
+        'sup': ourbigbookConvertSimpleElem,
+        [Macro.TABLE_MACRO_NAME]: ourbigbookUl,
+        [Macro.TD_MACRO_NAME]: ourbigbookLi(INSANE_TD_START),
+        [Macro.TOPLEVEL_MACRO_NAME]: idConvertSimpleElem(),
+        [Macro.TH_MACRO_NAME]: ourbigbookLi(INSANE_TH_START),
+        [Macro.TR_MACRO_NAME]: ourbigbookUl,
+        'Ul': ourbigbookUl,
         [Macro.X_MACRO_NAME]: function(ast, context) {
-          let href = render_arg(ast.args.href, context)
+          let href = renderArg(ast.args.href, context)
           if (ast.validation_output.topic.boolean) {
             for (const c of href) {
               if (INSANE_LINK_END_CHARS.has(c)) {
@@ -10314,19 +10314,19 @@ OUTPUT_FORMATS_LIST.push(
           //  return `<${href}>`
           //}
           // Remove any > from the ref. There's currently no way to escape them, would cut argument short.
-          let { target_id, target_ast } = x_get_target_ast(ast, context)
+          let { target_id, target_ast } = xGetTargetAst(ast, context)
           const magic = ast.validation_output.magic.boolean
-          if (!magic && href !== magic_title_to_id(href, context)) {
+          if (!magic && href !== magicTitleToId(href, context)) {
             // Explicit IDs with weird characters weird cannot be converted to insane, e.g.
             //
             // = Dollar
             // {{id=$}}
             //
             // \x[[$]]
-            return ourbigbook_convert_simple_elem(ast, context)
+            return ourbigbookConvertSimpleElem(ast, context)
           }
           let override_href
-          ;({ href, override_href } = ourbigbook_get_x_href({
+          ;({ href, override_href } = ourbigbookGetXHref({
             ast,
             context,
             target_ast,
@@ -10341,9 +10341,9 @@ OUTPUT_FORMATS_LIST.push(
             return override_href
           }
           href = href.replace(/[ >]+/g, ' ')
-          return `<${href}>${ourbigbook_convert_args(ast, context, { skip: new Set(['c', 'href', 'magic', 'p']) }).join('')}`
+          return `<${href}>${ourbigbookConvertArgs(ast, context, { skip: new Set(['c', 'href', 'magic', 'p']) }).join('')}`
         },
-        'Video': ourbigbook_convert_simple_elem,
+        'Video': ourbigbookConvertSimpleElem,
       }
     }
   )

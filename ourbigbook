@@ -114,7 +114,7 @@ async function readStdin(opts) {
 async function reconcile_db_and_filesystem(input_path, ourbigbook_options, nonOurbigbookOptions) {
   const sequelize = nonOurbigbookOptions.sequelize
   if (sequelize) {
-    const newNonOurbigbookOptions = ourbigbook.clone_and_set(
+    const newNonOurbigbookOptions = ourbigbook.cloneAndSet(
       nonOurbigbookOptions, 'ourbigbook_paths_converted_only', true)
     await convert_directory(
       input_path,
@@ -227,7 +227,7 @@ async function convert_directory(input_path, ourbigbook_options, nonOurbigbookOp
 async function convert_directory_extract_ids(input_path, ourbigbook_options, nonOurbigbookOptions) {
   await convert_directory(
     input_path,
-    ourbigbook.clone_and_set(ourbigbook_options, 'render', false),
+    ourbigbook.cloneAndSet(ourbigbook_options, 'render', false),
     nonOurbigbookOptions
   )
 }
@@ -242,7 +242,7 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
     nonOurbigbookOptions.cli.render &&
     !nonOurbigbookOptions.had_error
   ) {
-    const newNonOurbigbookOptions = ourbigbook.clone_and_set(nonOurbigbookOptions, 'is_render_after_extract', true)
+    const newNonOurbigbookOptions = ourbigbook.cloneAndSet(nonOurbigbookOptions, 'is_render_after_extract', true)
     await convert_directory(
       input_dir,
       ourbigbook_options,
@@ -366,7 +366,7 @@ async function convert_input(input, ourbigbook_options, nonOurbigbookOptions={})
   if (new_options.extra_returns.errors.length > 0) {
     nonOurbigbookOptions.had_error = true;
   }
-  ourbigbook.perf_print(new_options.extra_returns.context, 'convert_input_end')
+  ourbigbook.perfPrint(new_options.extra_returns.context, 'convert_input_end')
   return output;
 }
 
@@ -497,7 +497,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
       }
 
       // Update the Sqlite databse with results from the conversion.
-      ourbigbook.perf_print(context, 'convert_path_pre_sqlite')
+      ourbigbook.perfPrint(context, 'convert_path_pre_sqlite')
       if ('sequelize' in nonOurbigbookOptions) {
         await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
           extra_returns,
@@ -761,7 +761,7 @@ function convert_path_to_file_print_starting(ourbigbook_options, input_path, mes
 }
 
 async function create_db(ourbigbook_options, nonOurbigbookOptions) {
-  perf_print('create_db_begin', ourbigbook_options)
+  perfPrint('create_db_begin', ourbigbook_options)
   const db_dir = path.dirname(nonOurbigbookOptions.db_options.storage);
   if (!fs.existsSync(db_dir)) {
     fs.mkdirSync(db_dir, { recursive: true });
@@ -773,7 +773,7 @@ async function create_db(ourbigbook_options, nonOurbigbookOptions) {
   )
   nonOurbigbookOptions.sequelize = sequelize;
   nonOurbigbookOptions.db_provider = new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize);
-  perf_print('create_db_end', ourbigbook_options)
+  perfPrint('create_db_end', ourbigbook_options)
 }
 
 function finished_in_ms(ms) {
@@ -786,7 +786,7 @@ async function generate_redirect(ourbigbook_options, redirect_src_id, redirect_t
   const outpath_basename = redirect_src_id + '.' + ourbigbook.HTML_EXT
   const outpath = path.join(outdir, outpath_basename);
   ourbigbook_options.outfile = outpath_basename;
-  const redirect_href = await ourbigbook.convert_x_href(redirect_target_id, ourbigbook_options);
+  const redirect_href = await ourbigbook.convertXHref(redirect_target_id, ourbigbook_options);
   if (redirect_href === undefined) {
     cli_error(`redirection target ID "${redirect_target_id}" not found`);
   }
@@ -897,7 +897,7 @@ function is_subpath(parent, child) {
   return relative && !relative.startsWith('..') && !path.isAbsolute(relative);
 }
 
-function perf_print(name, ourbigbook_options) {
+function perfPrint(name, ourbigbook_options) {
   if (ourbigbook_options === undefined || ourbigbook_options.log.perf) {
     console.error(`perf ${name} t=${now()}`);
   }
@@ -1148,7 +1148,7 @@ async function webCreateOrUpdate({
     // Retry the transaction a few times. This designed to work well during development when nodemon
     // restarts the server after a file update that adds some logging, often for perf. This way
     // you can just turn logs on and off during a large conversion and it will just keep running fine.
-    ;({ data, status } = await tryCreateOrUpdate(webApi, articleArgs, ourbigbook.clone_and_set(extraArgs, 'updateNestedSetIndex', updateNestedSetIndex)))
+    ;({ data, status } = await tryCreateOrUpdate(webApi, articleArgs, ourbigbook.cloneAndSet(extraArgs, 'updateNestedSetIndex', updateNestedSetIndex)))
     assertApiStatus(status, data)
     //if (render && i % 100 == 0) {
     //  runCmd('bin/pg', ['bin/normalize', '-c', '-u', 'cirosantilli', 'nested-set'], {
@@ -1228,7 +1228,7 @@ const cli = cli_parser.opts()
 // main action.
 ;(async () => {
 if (cli.helpMacros) {
-  console.log(JSON.stringify(ourbigbook.macro_list(), null, 2));
+  console.log(JSON.stringify(ourbigbook.macroList(), null, 2));
 } else if (cli.china) {
   console.log(china_dictatorship.get_data());
 } else {
@@ -1636,7 +1636,7 @@ if (cli.helpMacros) {
   if (cli.titleToId) {
     const readline = require('readline');
     for await (const line of readline.createInterface({ input: process.stdin })) {
-      console.log(ourbigbook.title_to_id(line))
+      console.log(ourbigbook.titleToId(line))
     }
     process.exit(0)
   }
@@ -1878,7 +1878,7 @@ if (cli.helpMacros) {
               if (ourbigbook.INDEX_FILE_BASENAMES_NOEXT.has(inpathParse.name)) {
                 if (inpathParse.dir) {
                   const dirPathParse = path.parse(inpathParse.dir)
-                  const titleId = ourbigbook.title_to_id(title)
+                  const titleId = ourbigbook.titleToId(title)
                   if (titleId !== dirPathParse.name) {
                     // This would be ideal, allowing us to store all information about the article in the body itself.
                     // But it was hard to implement, since now the input path is an important input of conversion.
@@ -1902,7 +1902,7 @@ if (cli.helpMacros) {
                 }
                 inpath = `index.${ourbigbook.OURBIGBOOK_EXT}`
               } else {
-                const titleId = ourbigbook.title_to_id(title)
+                const titleId = ourbigbook.titleToId(title)
                 if (titleId !== inpathParse.name) {
                   //addId = inpathParse.name
                 }
@@ -2286,7 +2286,7 @@ if (cli.helpMacros) {
             runCmd('git', ['-C', publishDirCwd, 'clean', '-xdf'], cmdOptsNoDry);
           } else {
             runCmd('git', ['clone', '--recursive', '--depth', '1', input_git_toplevel, publishDirCwd],
-              ourbigbook.clone_and_set(cmdOpts, 'dry_run', false));
+              ourbigbook.cloneAndSet(cmdOpts, 'dry_run', false));
           }
 
           // Set some variables especially for publishing.
@@ -2310,7 +2310,7 @@ if (cli.helpMacros) {
                 //if (git_ls_files(publishOutPublishDir).length > 0) {
                 // So instead I'm lazy and just throwOnError false here.
                 runCmd('git', ['-C', publishOutPublishDirCwd, 'rm', '-r', '-f', '.'],
-                  ourbigbook.clone_and_set(cmdOpts, 'throwOnError', false))
+                  ourbigbook.cloneAndSet(cmdOpts, 'throwOnError', false))
               }
             } else {
               fs.rmSync(publishOutPublishDir, { recursive: true, force: true })
@@ -2346,7 +2346,7 @@ if (cli.helpMacros) {
             if (
               // TODO https://docs.ourbigbook.com/respect-ourbigbook-json-htmlxextension-on-ourbigbook-json-redirects
               ourbigbook_options.htmlXExtension === false ? false : true &&
-              !ourbigbook.protocol_is_known(to)
+              !ourbigbook.protocolIsKnown(to)
             ) {
               to +=  '.' + ourbigbook.HTML_EXT
             }
@@ -2381,7 +2381,7 @@ if (cli.helpMacros) {
               'git',
               ['-C', publishOutPublishDirCwd, 'reset', `origin/${publishBranch}`],
               // Fails on the first commit in an empty repository.
-              ourbigbook.clone_and_set(cmdOpts, 'throwOnError', false)
+              ourbigbook.cloneAndSet(cmdOpts, 'throwOnError', false)
             );
           }
 
@@ -2474,7 +2474,7 @@ if (cli.helpMacros) {
   ) {
     process.stdout.write(output);
   }
-  perf_print('exit', ourbigbook_options)
+  perfPrint('exit', ourbigbook_options)
   if (!cli.watch) {
     process.exit(nonOurbigbookOptions.had_error ? 1 : 0)
   }

@@ -103,7 +103,7 @@ padding-left: 0;
 
 blockquote {
   border-left: 2px solid $color;
-  margin-left: 10px;
+  margin-left: $toplevel-horizontal-padding-left;
   margin-right: 0;
   padding-left: 10px;
 }

@@ -95,9 +95,9 @@ function assert_convert_ast(
       // before the main conversion to build up the cross-file reference database.
       options.convert_before = [];
     }
-    if (!('file_reader' in options)) {
+    if (!('filesystem' in options)) {
       // Passed to cirodown.convert.
-      options.file_reader = default_file_reader;
+      options.filesystem = default_filesystem;
     }
     if (!('has_error' in options)) {
       // Has error somewhere, but our precise error line/column assertions
@@ -118,9 +118,10 @@ function assert_convert_ast(
     if (!('read_include' in options.extra_convert_opts)) {
       options.extra_convert_opts.read_include = (input_path_noext) => {
         return [input_path_noext + cirodown.CIRODOWN_EXT,
-           options.file_reader(input_path_noext)];
+           options.filesystem[input_path_noext]];
       };
     }
+    options.extra_convert_opts.fs_exists_sync = (my_path) => options.filesystem[my_path] !== undefined
     if (
       (
         Object.keys(options.assert_xpath_split_headers).length > 0 ||
@@ -154,7 +155,7 @@ function assert_convert_ast(
     new_convert_opts.file_provider = new MockFileProvider();
     for (const input_path_noext of options.convert_before) {
       const extra_returns = {};
-      const input_string = options.file_reader(input_path_noext);
+      const input_string = options.filesystem[input_path_noext];
       const input_path = input_path_noext + cirodown.CIRODOWN_EXT;
       options.convert_before = [];
       const dependency_convert_opts = Object.assign({}, new_convert_opts);
@@ -175,14 +176,17 @@ function assert_convert_ast(
     const has_subset_extra_returns = {fail_reason: ''};
     let is_subset;
     let content;
+    let content_array;
     if (expected_ast_output_subset === undefined) {
       is_subset = true;
     } else {
       if (options.toplevel) {
         content = extra_returns.ast;
+        content_array = [content]
         is_subset = ast_has_subset(content, expected_ast_output_subset, has_subset_extra_returns);
       } else {
         content = extra_returns.ast.args.content;
+        content_array = content
         is_subset = ast_arg_has_subset(content, expected_ast_output_subset, has_subset_extra_returns);
       }
     }
@@ -204,6 +208,9 @@ function assert_convert_ast(
       console.error('ast output:');
       console.error(JSON.stringify(content, null, 2));
       console.error();
+      console.error('ast output toString:');
+      console.error(content_array.map(c => c.toString()).join('\n'));
+      console.error();
       console.error('ast expect:');
       console.error(JSON.stringify(expected_ast_output_subset, null, 2));
       console.error();
@@ -211,8 +218,6 @@ function assert_convert_ast(
       for (const error of extra_returns.errors) {
         console.error(error);
       }
-      console.error(JSON.stringify(expected_ast_output_subset, null, 2));
-      console.error();
       if (!is_subset) {
         console.error('failure reason:');
         console.error(has_subset_extra_returns.fail_reason);
@@ -502,28 +507,24 @@ function a(macro_name, content, extra_args={}, extra_props={}) {
   );
 }
 
-function default_file_reader(input_path) {
-  if (input_path === 'include-one-level-1') {
-    return `= cc
+const default_filesystem = {
+  'include-one-level-1': `= cc
 
 dd
-`;
-  } else if (input_path === 'include-one-level-2') {
-    return `= ee
+`,
+  'include-one-level-2': `= ee
 
 ff
-`;
-  } else if (input_path === 'include-two-levels') {
-    return `= ee
+`,
+  'include-two-levels': `= ee
 
 ff
 
 == gg
 
 hh
-`;
-  } else if (input_path === 'include-two-levels-parent') {
-    return `= Include two levels parent
+`,
+  'include-two-levels-parent': `= Include two levels parent
 
 h1 content
 
@@ -531,34 +532,27 @@ h1 content
 {parent=include-two-levels-parent}
 
 h2 content
-`;
-  } else if (input_path === 'include-two-levels-subdir/index') {
-    return `= Include two levels subdir h1
+`,
+  'include-two-levels-subdir/index': `= Include two levels subdir h1
 
 == Include two levels subdir h2
-`;
-  } else if (input_path === 'include-with-error') {
-    return `= bb
+`,
+  'include-with-error': `= bb
 
 \\reserved_undefined
-`
-  } else if (input_path === 'include-circular-1') {
-    return `= bb
+`,
+  'include-circular-1': `= bb
 
 \\Include[include-circular-2]
-`
-  } else if (input_path === 'include-circular-2') {
-    return `= cc
+`,
+  'include-circular-2': `= cc
 
 \\Include[include-circular-1]
-`
-  } else {
-    throw new Error(`unknown lnclude path: ${input_path}`);
-  }
+`,
 }
 
 function exec_assert_message(out, cmd, args, cwd, msg_extra) {
-  let ret = '';
+  let ret = ''
   if (msg_extra !== undefined) {
     ret = msg_extra + '\n\n'
   }
@@ -1155,7 +1149,32 @@ gh
   a('P', [t('ab')]),
   a('Image', undefined, {src: [t('cd')]}),
   a('P', [t('gh')]),
-]
+],
+  {
+    filesystem: { cd: '' },
+    assert_xpath_matches: [
+      "//x:img[@src='cd']",
+    ],
+  },
+);
+assert_convert_ast('video simple',
+  `ab
+
+\\Video[cd]
+
+gh
+`,
+[
+  a('P', [t('ab')]),
+  a('Video', undefined, {src: [t('cd')]}),
+  a('P', [t('gh')]),
+],
+  {
+    filesystem: { cd: '' },
+    assert_xpath_matches: [
+      "//x:video[@src='cd']",
+    ],
+  },
 );
 assert_convert_ast('image title',
   `\\Image[ab]{title=c d}`,
@@ -1164,7 +1183,8 @@ assert_convert_ast('image title',
     src: [t('ab')],
     title: [t('c d')],
   }),
-]
+],
+  { filesystem: { ab: '' } },
 );
 assert_error('image with unknown provider',
   `\\Image[ab]{provider=reserved_undefined}`,
@@ -1379,7 +1399,7 @@ ab
 );
 
 // Links.
-assert_convert_ast('link simple',
+assert_convert_ast('link simple to external URL',
   'a \\a[http://example.com][example link] b\n',
   [
     a('P', [
@@ -1408,6 +1428,24 @@ assert_convert_ast('link auto insane space start and end',
       t(' b'),
     ]),
   ]
+);
+assert_convert_ast('link simple to local file that exists',
+  'a \\a[local-path.txt] b\n',
+  [
+    a('P', [
+      t('a '),
+      a('a', undefined, {'href': [t('local-path.txt')]}),
+      t(' b'),
+    ]),
+  ],
+  { filesystem: { 'local-path.txt': '' } }
+);
+assert_error('link simple to local file that does not exist give an error without check=0',
+  'a \\a[local-path.txt] b\n',
+  1, 5,
+);
+assert_no_error('link simple to local file that does not exist does not give an error with check=0',
+  'a \\a[local-path.txt]{check=0} b\n',
 );
 assert_convert_ast('link auto insane start end document',
   'http://example.com',
@@ -1450,6 +1488,7 @@ assert_convert_ast('link auto insane start end named argument',
     description: [a('a', undefined, {'href': [t('http://example.com')]})],
     src: [t('aaa.jpg')],
   })],
+  { filesystem: { 'aaa.jpg': '' } }
 );
 assert_convert_ast('link auto insane start end named argument',
   '\\Image[aaa.jpg]{source=http://example.com}\n',
@@ -1457,6 +1496,7 @@ assert_convert_ast('link auto insane start end named argument',
     source: [t('http://example.com')],
     src: [t('aaa.jpg')],
   })],
+  { filesystem: { 'aaa.jpg': '' } }
 );
 assert_convert_ast('link auto insane newline',
   `a
@@ -1673,12 +1713,12 @@ assert_no_error('cross reference to image',
   `\\Image[ab]{id=cd}{title=ef}
 
 \\x[cd]
-`);
+`, { filesystem: { ab: '' } });
 assert_no_error('cross reference without content nor target title style full',
   `\\Image[ab]{id=cd}
 
 \\x[cd]
-`);
+`, { filesystem: { ab: '' } });
 assert_error('cross reference undefined fails gracefully', '\\x[ab]', 1, 3);
 assert_error('cross reference with child to undefined id fails gracefully',
   `= h1
@@ -1795,6 +1835,9 @@ assert_convert_ast('cross reference to non-included header in another file',
       // https://github.com/cirosantilli/cirodown/issues/116
       'include-two-levels-subdir/index',
     ],
+    filesystem: Object.assign({}, default_filesystem, {
+      'bb.png': ''
+    }),
     input_path_noext: 'notindex',
   },
 );
@@ -1848,12 +1891,12 @@ assert_error('cross reference from image title without ID to previous non-header
   `\\Image[ab]{title=cd}
 
 \\Image[ef]{title=gh \\x[image-cd]}
-`, 3, 21);
+`, 3, 21, undefined, { filesystem: { ab: '', ef: '' } });
 assert_error('cross reference from image title without ID to following non-header is not allowed',
   `\\Image[ab]{title=cd \\x[image-gh]}
 
 \\Image[ef]{title=gh}
-`, 1, 23);
+`, 1, 23, undefined, { filesystem: { ab: '', ef: '' } });
 assert_error('cross reference infinite recursion with explicit IDs fails gracefully',
   `= \\x[h2]
 {id=h1}
@@ -1879,7 +1922,8 @@ assert_convert_ast('cross reference from image to previous header with x content
         title: [a('x', [t('cd')], {'href': [t('ab')]})],
       },
     ),
-  ]
+  ],
+  { filesystem: { cd: '' } },
 );
 assert_convert_ast('cross reference from image to previous header without x content with image ID works',
   `= ab
@@ -1896,7 +1940,8 @@ assert_convert_ast('cross reference from image to previous header without x cont
       src: [t('cd')],
       title: [a('x', undefined, {'href': [t('ab')]})],
     }),
-  ]
+  ],
+  { filesystem: { cd: '' } },
 );
 assert_convert_ast('cross reference from image to previous header without x content without image ID works',
   `= ab
@@ -1922,7 +1967,8 @@ assert_convert_ast('cross reference from image to previous header without x cont
         id: 'image-ab-cd',
       }
     ),
-  ]
+  ],
+  { filesystem: { cd: '' } },
 );
 assert_convert_ast('cross reference from image to following header without x content without image id works',
   `= ab
@@ -1955,7 +2001,8 @@ assert_convert_ast('cross reference from image to following header without x con
       level: [t('2')],
       title: [t('gh')],
     }),
-  ]
+  ],
+  { filesystem: { cd: '' } },
 );
 assert_error('cross reference with parent to undefined ID does not throw',
   `= aa
@@ -2169,6 +2216,7 @@ assert_convert_ast('cross reference to toplevel scoped split header',
       ],
     },
     input_path_noext: 'notindex',
+    filesystem: { 'bb.png': '' },
   },
 );
 // https://github.com/cirosantilli/cirodown/issues/173
@@ -2238,9 +2286,8 @@ assert_convert_ast('cross reference to non-included file with toplevel scope',
     },
     convert_before: ['toplevel-scope'],
     input_path_noext: 'notindex',
-    file_reader: (path)=> {
-      if (path === 'toplevel-scope') {
-        return `= Toplevel scope
+    filesystem: {
+      'toplevel-scope': `= Toplevel scope
 {scope}
 
 \\Image[h1.png]{title=h1}
@@ -2248,8 +2295,7 @@ assert_convert_ast('cross reference to non-included file with toplevel scope',
 == h2
 
 \\Image[h2.png]{title=h2}
-`;
-      }
+`
     }
   }
 );
@@ -2605,6 +2651,78 @@ assert_convert_ast('header numbered cirodown.json',
     extra_convert_opts: { cirodown_json: { numbered: false } }
   },
 );
+assert_convert_ast('header file argument works',
+  `= h1
+
+== path/to/my-file.txt
+{file}
+
+My txt
+
+== path/to/my-file.png
+{file}
+
+My png
+
+== path/to/my-file.mp4
+{file}
+
+My mp4
+
+== Path to YouTube
+{file=https://www.youtube.com/watch?v=YeFzeNAHEhU}
+
+My youtube
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('h1')]}),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('path/to/my-file.txt')]}),
+    a('P', [t('My txt')]),
+    a('H', undefined, {level: [t('2')], title: [t('path/to/my-file.png')]}),
+    a('P', [t('My png')]),
+    a('Image', undefined, {src: [t('path/to/my-file.png')]}),
+    a('H', undefined, {level: [t('2')], title: [t('path/to/my-file.mp4')]}),
+    a('P', [t('My mp4')]),
+    a('Video', undefined, {src: [t('path/to/my-file.mp4')]}),
+    a('H', undefined, {level: [t('2')], title: [t('Path to YouTube')]}),
+    a('P', [t('My youtube')]),
+    a('Video', undefined, {src: [t('https://www.youtube.com/watch?v=YeFzeNAHEhU')]}),
+  ],
+  {
+    filesystem: {
+      'path/to/my-file.txt': '',
+      'path/to/my-file.png': '',
+      'path/to/my-file.mp4': '',
+    },
+  },
+);
+assert_convert_ast('header file argument that is the last header adds the preview',
+  `= h1
+
+== path/to/my-file.png
+{file}
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('h1')]}),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('path/to/my-file.png')]}),
+    a('Image', undefined, {src: [t('path/to/my-file.png')]}),
+  ],
+  {
+    filesystem: {
+      'path/to/my-file.txt': '',
+      'path/to/my-file.png': '',
+      'path/to/my-file.mp4': '',
+    },
+  },
+);
+assert_error('header file argument to a file that does not exist give an error',
+  `= h1
+
+== dont-exist
+{file}
+`, 3, 1);
 
 // Code.
 assert_convert_ast('code inline sane',
@@ -3182,15 +3300,12 @@ assert_error('include circular dependency 1 <-> 2',
       input_path_noext: 'notindex',
     },
     has_error: true,
-    file_reader: (path)=>{
-      if (path === 'notindex') {
-        return circular_entry
-      } else if (path === 'include-circular') {
-        return `= include-circular
+    filesystem: {
+      'notindex': circular_entry,
+      'include-circular': `= include-circular
 
 \\Include[notindex]
-`;
-      }
+`
     }
   }
 );
@@ -3446,6 +3561,16 @@ assert_executable(
     stdin: 'aabb',
     expect_not_exists: ['out'],
     expect_stdout_xpath: ["//x:div[@class='p' and text()='aabb']"],
+  }
+);
+assert_executable(
+  // Was blowing up on file existence check.
+  'executable: input from stdin with relative link does not blow up',
+  {
+    stdin: '\\a[asdf]',
+    expect_not_exists: ['out'],
+    expect_stdout_xpath: ["//x:a[@href='asdf']"],
+    filesystem: { 'asdf': '' },
   }
 );
 assert_executable(
@@ -4108,6 +4233,7 @@ assert_executable(
 
 \\Image[img.jpg]{title=My image notindex h2}
 `,
+      'img.jpg': '',
     },
     expect_filesystem_xpath: {
       // This is he split one.
@@ -4388,7 +4514,7 @@ assert_executable(
   }
 );
 assert_executable(
-  "executable: link: relative links are corrected for different output paths with scope and split-headers",
+  "executable: link: relative links and images are corrected for different output paths with scope and split-headers",
   {
     args: ['--split-headers', '.'],
     filesystem: {
@@ -4400,6 +4526,10 @@ assert_executable(
 === h3
 
 \\a[i-exist][h3 i-exist]
+
+\\Image[i-exist][h3 i-exist img]
+
+\\Video[i-exist][h3 i-exist video]
 
 \\a[subdir/i-exist-subdir][h3 i-exist-subdir]
 
@@ -4436,11 +4566,15 @@ assert_executable(
     expect_filesystem_xpath: {
       'index.html': [
         "//x:a[@href='i-exist' and text()='h3 i-exist']",
+        "//x:img[@src='i-exist' and @alt='h3 i-exist img']",
+        "//x:video[@src='i-exist' and @alt='h3 i-exist video']",
         "//x:a[@href='subdir/i-exist-subdir' and text()='h3 i-exist-subdir']",
         "//x:a[@href='https://cirosantilli.com' and text()='h3 abs']",
       ],
       'h2/h3.html': [
         "//x:a[@href='../i-exist' and text()='h3 i-exist']",
+        "//x:img[@src='../i-exist' and @alt='h3 i-exist img']",
+        "//x:video[@src='../i-exist' and @alt='h3 i-exist video']",
         "//x:a[@href='https://cirosantilli.com' and text()='h3 abs']",
       ],
       'subdir/index.html': [

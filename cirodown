@@ -26,6 +26,7 @@ const CIRODOWN_JSON_BASENAME = 'cirodown.json';
 const CIRODOWN_TEX_BASENAME = 'cirodown.tex';
 const LOG_OPTIONS = new Set([
   'ast',
+  'ast-simple',
   'db',
   'headers',
   'tokens',
@@ -264,6 +265,11 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
   if (non_cirodown_options.log.ast) {
     console.error('ast:');
     console.error(JSON.stringify(new_options.extra_returns.ast, null, 2));
+    console.error();
+  }
+  if (non_cirodown_options.log['ast-simple']) {
+    console.error('ast-simple:');
+    console.error(new_options.extra_returns.ast.toString());
     console.error();
   }
   // Remove duplicate messages due to split header rendering. We could not collect
@@ -670,7 +676,9 @@ if (commander.helpMacros) {
   // Initialize cirodown.json and directories determined from it if present.
   let cirodown_json_dir;
   const cirodown_json = {};
-  if (inputPath !== undefined) {
+  if (inputPath === undefined) {
+    cirodown_json_dir = '.'
+  } else {
     let curdir = path.resolve(inputPath);
     let initial_dir;
     if (fs.lstatSync(inputPath).isFile()) {
@@ -762,6 +770,19 @@ if (commander.helpMacros) {
       };
       return undefined;
     },
+    // Part of considering file previews for source code.
+    //read_file: (readpath, context) => {
+    //  readpath = path.join(path.dirname(context.options.input_path), readpath)
+    //  if (
+    //    fs.existsSync(readpath) &&
+    //    // Let's prevent path transverasl a bit by default.
+    //    path.resolve(readpath).startsWith(path.resolve(cirodown_json_dir))
+    //  ) {
+    //    return fs.readFileSync(readpath, cirodown_nodejs.ENCODING);
+    //  } else {
+    //    return undefined
+    //  }
+    //},
     render: commander.render,
     split_headers: split_headers,
     template_vars: {},

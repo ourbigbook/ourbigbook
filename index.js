@@ -118,6 +118,8 @@ class AstNode {
     this.source_location = source_location;
 
     this.args = args;
+    // The effetctive value for file, coming either from the file=XXX or title if that is empty.
+    this.file = undefined
     this.first_toplevel_child = options.first_toplevel_child;
     this.is_first_header_in_input_file = options.is_first_header_in_input_file;
     // This is the Nth macro of this type that appears in the document.
@@ -177,9 +179,7 @@ class AstNode {
       this.word_count = 0;
     }
     for (const argname in args) {
-      for (const arg of args[argname]) {
-        this.setup_argument(argname, arg);
-      }
+      this.setup_argument(argname, args[argname]);
     }
   }
 
@@ -360,11 +360,6 @@ class AstNode {
     }
   }
 
-  setup_argument(argname, arg) {
-    arg.parent_node = this;
-    arg.argument_name = argname;
-  }
-
   /** Manual implementation. There must be a better way, but I can't find it... */
   static fromJSON(json_string) {
     let json = JSON.parse(json_string);
@@ -409,6 +404,82 @@ class AstNode {
       }
     }
     return toplevel_ast;
+  }
+
+  setup_argument(argname, arg) {
+    // TODO the second post process pass is destroying this information.
+    arg.parent_node = this;
+    arg.argument_name = argname;
+  }
+
+  // Recursively set source_location on this subtree for elements that
+  // don't have it yet. Convenient for manually created trees.
+  set_source_location(source_location) {
+    const todo_visit_asts = [this]
+    const todo_visit_args = []
+    while (todo_visit_asts.length > 0) {
+      const ast = todo_visit_asts.pop();
+      if (ast.source_location === undefined) {
+        ast.source_location = source_location
+      }
+      for (const argname in ast.args) {
+        todo_visit_args.push(ast.args[argname])
+      }
+      while (todo_visit_args.length > 0) {
+        const arg = todo_visit_args.pop();
+        if (arg.source_location === undefined) {
+          arg.source_location = source_location
+        }
+        for (const ast of arg) {
+          todo_visit_asts.push(ast)
+        }
+      }
+    }
+  }
+
+  // A simplified recursive view of the most important fields of this AstNode and children,
+  // with one AstNode or AstArgument per line. Indispensable for debugging, since the toJSON
+  // is huge.
+  toString() {
+    let ret = []
+    let indent_marker = '  '
+    const todo_visit = [{type: 'ast', value: this, indent: 0}]
+    while (todo_visit.length > 0) {
+      const thing = todo_visit.pop();
+      const indent = thing.indent + 1
+      const indent_str = indent_marker.repeat(thing.indent)
+      if (thing.type === 'ast') {
+        const ast = thing.value
+        let plaintext
+        if (ast.node_type === AstType.PLAINTEXT) {
+          plaintext = ` "${ast.text}"`
+        } else {
+          plaintext = ''
+        }
+        const pref = `${indent_str}ast `
+        if (ast.node_type === AstType.PLAINTEXT || ast.node_type === AstType.MACRO) {
+          ret.push(`${pref}${ast.macro_name}${plaintext}`)
+        } else {
+          ret.push(`${pref}${ast.node_type.toString()}`)
+        }
+        if (ast.node_type === AstType.MACRO) {
+          const args = ast.args
+          const argnames = Object.keys(args).sort().reverse()
+          for (const argname of argnames) {
+            todo_visit.push({type: 'arg', value: args[argname], argname, indent })
+          }
+        }
+      } else {
+        const arg = thing.value
+        if (arg) {
+          ret.push(`${indent_str}arg ${thing.argname}`)
+          for (const ast of arg.slice().reverse()) {
+            todo_visit.push({type: 'ast', value: ast, indent })
+          }
+        }
+      }
+    }
+    return ret.join('\n')
   }
 
   toJSON() {
@@ -1837,6 +1908,7 @@ async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
   }
 
   let index_id = true;
+  let title_text
   if (
     // This can happen be false for included headers, and this is notably important
     // for the toplevel header which gets its ID from the filename.
@@ -1855,7 +1927,23 @@ async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
         new_context.id_conversion_for_header = is_header;
         new_context.extra_returns.id_conversion_header_title_no_id_xref = false;
         new_context.extra_returns.id_conversion_non_header_no_id_xref_non_header = false;
-        id_text += title_to_id(await render_arg_noescape(title_arg, new_context), new_context.options.cirodown_json['id']);
+        title_text = await render_arg_noescape(title_arg, new_context)
+        if (
+          ast.macro_name === Macro.HEADER_MACRO_NAME &&
+          ast.validation_output.file.given
+        ) {
+          let id_text_append
+          const file_render = await render_arg(ast.args.file, new_context)
+          if (file_render) {
+            id_text_append = file_render
+          } else {
+            id_text_append = title_text
+          }
+          ast.file = id_text_append
+          id_text = 'file' + Macro.HEADER_SCOPE_SEPARATOR + id_text + id_text_append
+        } else {
+          id_text += title_to_id(title_text, new_context.options.cirodown_json['id']);
+        }
         const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
         if (disambiguate_arg !== undefined) {
           id_text += ID_SEPARATOR + title_to_id(await render_arg_noescape(disambiguate_arg, new_context), new_context.options.cirodown_json['id']);
@@ -1943,6 +2031,7 @@ async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
     binary_search_insert(line_to_id_array,
       [ast.source_location.line, ast.id], binary_search_line_to_id_array_fn);
   }
+  return { title_text }
 }
 
 // Return the full scope of a given node. This includes the concatenation of both:
@@ -2482,6 +2571,8 @@ function convert_init_context(options={}, extra_returns={}) {
   }
   if (!('output_format' in options)) { options.output_format = OUTPUT_FORMAT_HTML; }
   if (!('path_sep' in options)) { options.path_sep = undefined; }
+  if (!('read_include' in options)) { options.read_include = () => undefined; }
+  if (!('read_file' in options)) { options.read_file = () => undefined; }
   if (!('render' in options)) { options.render = true; }
   if (!('start_line' in options)) { options.start_line = 1; }
   if (!('split_headers' in options)) {
@@ -2682,6 +2773,95 @@ function get_descendant_count_html_sep(tree_node, long_style) {
     ret = `<span class="metrics-sep">${HEADER_MENU_ITEM_SEP + ret}</span>`;
   }
   return ret;
+}
+
+function check_and_update_local_link({
+  check,
+  context,
+  href,
+  relative,
+  source_location,
+}) {
+  const was_protocol_given = protocol_is_given(href)
+
+  let input_path_directory
+  if (context.options.input_path !== undefined) {
+    input_path_directory = dirname(
+      context.options.input_path,
+      context.options.path_sep
+    )
+  } else {
+    input_path_directory = '.'
+  }
+
+  // Check existence.
+  let error = ''
+  if (
+    (check !== undefined && check) ||
+    (check === undefined && !was_protocol_given)
+  ) {
+    if (href.length !== 0) {
+      let check_path;
+      if (href[0] === URL_SEP) {
+        check_path = href.slice(1)
+      } else {
+        check_path = path.join(input_path_directory, href)
+      }
+      if (!context.options.fs_exists_sync(check_path)) {
+        error = `link to inexistent local file: ${href}`;
+        render_error(context, error, source_location);
+      }
+    }
+  }
+
+  // Modify relative paths to account for scope + --split-headers
+  if (
+    (relative !== undefined && relative) ||
+    (
+      relative === undefined
+      && (
+        !was_protocol_given &&
+        (
+          href.length === 0 ||
+          href[0] !== URL_SEP
+        )
+      )
+    )
+  ) {
+    href = path.join(context.root_relpath_scope_shift, href);
+  }
+  return { href, error }
+}
+
+async function get_link_html({
+  attrs,
+  check,
+  content,
+  context,
+  href,
+  relative,
+  source_location,
+}) {
+  if (context.x_parents.size === 0) {
+    if (attrs === undefined) {
+      attrs = ''
+    }
+    let error
+    ({ href, error } = check_and_update_local_link({
+      check,
+      context,
+      href,
+      relative,
+      source_location,
+    }))
+    if (error) {
+      content += error_message_in_output(error, context)
+    }
+    return `<a${html_attr('href', href)}${attrs}>${content}</a>`;
+  } else {
+    // Don't create a link if we are a child of another link, as that is invalid HTML.
+    return content;
+  }
 }
 
 /** Get the AST from the parent argument of headers or includes. */
@@ -3328,11 +3508,13 @@ async function parse(tokens, options, context, extra_returns={}) {
     parse_error(state, `unexpected tokens at the end of input`);
   }
 
+  // Post process pass 1
+  //
   // Post process the AST depth first minimally to support includes.
   //
   // This could in theory be done in a single pass with the next one,
   // but that is much more hard to implement and maintain, because we
-  // have to stich togetegher internal structors to maintain the header
+  // have to stich togetegher internal structures to maintain the header
   // tree across the includer and included documents.
   //
   // Another possibility would be to do it in the middle of the initial parse,
@@ -3398,9 +3580,11 @@ async function parse(tokens, options, context, extra_returns={}) {
   }
   context.id_provider = id_provider;
   context.include_path_set.add(options.input_path);
+  let header_file_preview_ast, header_file_preview_ast_next
   while (todo_visit.length > 0) {
     const [parent_arg, ast] = todo_visit.pop();
-    const parent_arg_push_after = []
+    let parent_arg_push_after = []
+    let parent_arg_push_before = []
     const macro_name = ast.macro_name;
     ast.from_include = options.from_include;
     ast.from_cirodown_example = options.from_cirodown_example;
@@ -3858,7 +4042,7 @@ async function parse(tokens, options, context, extra_returns={}) {
 
         // Must come after the header tree step is mostly done, because scopes influence ID,
         // and they also depend on the parent node.
-        await calculate_id(ast, context, include_options.non_indexed_ids, include_options.indexed_ids,
+        const { title_text } = await calculate_id(ast, context, include_options.non_indexed_ids, include_options.indexed_ids,
           macro_counts, macro_counts_visible, state, true, line_to_id_array);
 
         // Now stuff that must come after calculate_id.
@@ -3879,28 +4063,112 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
           include_options.header_graph_id_stack.set(cur_header_graph_node.value.id, cur_header_graph_node);
         }
+
+        header_file_preview_ast = header_file_preview_ast_next
+        header_file_preview_ast_next = undefined
+        if (ast.file) {
+          if (IMAGE_EXTENSIONS.has(path_splitext(ast.file)[1])) {
+            header_file_preview_ast_next = new AstNode(
+              AstType.MACRO,
+              'Image',
+              {
+                'src': new AstArgument(
+                  [
+                    new PlaintextAstNode(ast.file)
+                  ],
+                ),
+              },
+            )
+          } else if (
+            VIDEO_EXTENSIONS.has(path_splitext(ast.file)[1]) ||
+            ast.file.match(media_provider_type_youtube_re)
+          ) {
+            header_file_preview_ast_next = new AstNode(
+              AstType.MACRO,
+              'Video',
+              {
+                'src': new AstArgument(
+                  [
+                    new PlaintextAstNode(ast.file)
+                  ],
+                ),
+              },
+            )
+          } else {
+            // This works. We are not enabling it for now for the following reasons:
+            // - what is a binary file or not?
+            // - do we really want to duplicate huge files? How large is huge? iframe does not work well, e.g.
+            //   files that would be downloaded like .yml are also downloaded from the iframe.
+            //const protocol = protocol_get(ast.file)
+            //if (protocol === null || protocol === 'file') {
+            //  const content = await context.options.read_file(ast.file, context)
+            //  console.error({content});
+            //  console.error(/[\x00-\x10]/.test(content));
+            //  if (
+            //    content !== undefined &&
+            //    // https://stackoverflow.com/questions/1677644/detect-non-printable-characters-in-javascript
+            //    !/[\x00]/.test(content)
+            //  ) {
+            //    header_file_preview_ast_next = new AstNode(
+            //      AstType.MACRO,
+            //      Macro.CODE_MACRO_NAME.toUpperCase(),
+            //      {
+            //        'content': new AstArgument(
+            //          [
+            //            new PlaintextAstNode(content)
+            //          ],
+            //        ),
+            //      },
+            //    )
+            //  }
+            //}
+          }
+          if (header_file_preview_ast_next) {
+            header_file_preview_ast_next.set_source_location(ast.source_location)
+          }
+        }
+        if (header_file_preview_ast) {
+          parent_arg_push_before.push(header_file_preview_ast);
+        }
+
+        if (parent_arg_push_before.length) {
+          parent_arg_push_before = parent_arg_push_before.concat([new AstNode(
+            AstType.PARAGRAPH, undefined, undefined, ast.source_location)
+          ])
+        }
+
+        // Push a paragraph separator after the header when adding nodes after.
+        if (parent_arg_push_after.length) {
+          parent_arg_push_after = [new AstNode(
+            AstType.PARAGRAPH, undefined, undefined, ast.source_location
+          )].concat(parent_arg_push_after)
+        }
       }
 
       // Push this node into the parent argument list.
       // This allows us to skip nodes, or push multiple nodes if needed.
+      parent_arg.push(...parent_arg_push_before);
       parent_arg.push(ast);
       parent_arg.push(...parent_arg_push_after);
 
       // Recurse.
       for (const arg_name in ast.args) {
-        let arg = ast.args[arg_name];
+        const arg = ast.args[arg_name];
+        for (let i = arg.length - 1; i >= 0; i--) {
+          todo_visit.push([arg, arg[i]]);
+        }
         // We make the new argument be empty so that children can
         // decide if they want to push themselves or not.
-        const new_arg = new AstArgument([], arg.source_location);
-        for (let i = arg.length - 1; i >= 0; i--) {
-          todo_visit.push([new_arg, arg[i]]);
-        }
-        // Update the argument.
-        ast.args[arg_name] = new_arg;
+        arg.length = 0
       }
     }
   }
+  if (header_file_preview_ast_next) {
+    ast_toplevel.args.content.push(header_file_preview_ast_next)
+  }
 
+  // Post process pass 2
+  //
   // Post process the AST breadth-first after inclusions are resolved to support things like:
   //
   // - the insane but necessary paragraphs double newline syntax
@@ -4628,8 +4896,17 @@ function path_splitext(str) {
   }
 }
 
-function protocol_is_given(src) {
-  return /^[a-zA-Z]+:\/\//.test(src)
+function protocol_get(url) {
+  const match = /^([a-zA-Z]+):\/\//.exec(url)
+  if (match) {
+    return match[0]
+  } else {
+    return null
+  }
+}
+
+function protocol_is_given(url) {
+  return protocol_get(url) !== null
 }
 
 function protocol_is_known(src) {
@@ -5317,6 +5594,24 @@ const LOG_OPTIONS = new Set([
   'tokenize',
 ]);
 exports.LOG_OPTIONS = LOG_OPTIONS;
+const IMAGE_EXTENSIONS = new Set([
+  'bmp',
+  'gif',
+  'jpeg',
+  'jpg',
+  'png',
+  'svg',
+  'tiff',
+  'webp',
+])
+const VIDEO_EXTENSIONS = new Set([
+  'avi',
+  'mkv',
+  'mov',
+  'mp4',
+  'ogv',
+  'webm',
+])
 const OUTPUT_FORMAT_CIRODOWN = 'cirodown';
 const OUTPUT_FORMAT_HTML = 'html';
 const OUTPUT_FORMAT_ID = 'id';
@@ -5558,54 +5853,21 @@ const DEFAULT_MACRO_LIST = [
     ],
     async function(ast, context) {
       let [href, content] = await link_get_href_content(ast, context);
-
-      const was_protocol_given = protocol_is_given(href)
-
-      // Check existence.
-      if (
-        (ast.validation_output.check.given && ast.validation_output.check.boolean) ||
-        (!ast.validation_output.check.given && !was_protocol_given)
-      ) {
-        if (href.length !== 0) {
-          let check_path;
-          if (href[0] === URL_SEP) {
-            check_path = href.slice(1)
-          } else {
-            check_path = path.join(dirname(context.options.input_path, context.options.path_sep), href)
-          }
-          if (!context.options.fs_exists_sync(check_path)) {
-            const message = `link to inexistent local file: ${href}`;
-            render_error(context, message, ast.source_location);
-            content = error_message_in_output(message, context) + content;
-          }
-        }
-      }
-
-      // Modify relative paths to account for scope + --split-headers
-      if (
-        (ast.validation_output.relative.given && ast.validation_output.relative.boolean) || 
-        (
-          !ast.validation_output.relative.given
-          && (
-            !was_protocol_given &&
-            (
-              href.length === 0 ||
-              href[0] !== URL_SEP
-            )
-          )
-        )
-      ) {
-        href = path.join(context.root_relpath_scope_shift, href);
-      }
       if (ast.validation_output.ref.boolean) {
         content = '*';
       }
-      if (context.x_parents.size == 0) {
-        const attrs = await html_convert_attrs_id(ast, context);
-        return `<a${html_attr('href',  href)}${attrs}>${content}</a>`;
-      } else {
-        return content;
-      }
+      const check = ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined
+      const relative = ast.validation_output.relative.given ? ast.validation_output.relative.boolean : undefined
+      const attrs = await html_convert_attrs_id(ast, context);
+      return get_link_html({
+        attrs,
+        check,
+        content,
+        context,
+        href,
+        relative,
+        source_location: ast.args.href.source_location,
+      })
     },
     {
       named_args: [
@@ -5840,32 +6102,20 @@ const DEFAULT_MACRO_LIST = [
         }
         wiki_link = `<a href="https://en.wikipedia.org/wiki/${html_escape_attr(wiki)}">Wikipedia</a>`;
       }
-      let header_meta = [];
-      let first_header = (
-        // May fail in some error scenarios.
-        context.toplevel_ast !== undefined &&
-        ast.id === context.toplevel_ast.id
-      )
-      if (first_header) {
-        if (link_to_split !== undefined) {
-          header_meta.push(link_to_split);
-        }
-        if (context.has_toc) {
-          header_meta.push(`<a${html_attr('href', '#' + Macro.TOC_ID)}>\u{21d3} toc</a>`);
-        }
-        if (parent_links !== '') {
-          header_meta.push(parent_links);
-        }
+
+      // Calculate file_link_html
+      let file_link_html
+      if (ast.file) {
+        file_link_html = await get_link_html({
+          content: 'View file',
+          context,
+          href: ast.file,
+          relative: undefined,
+          source_location: ast.source_location,
+        })
       }
-      if (wiki_link !== undefined) {
-        header_meta.push(wiki_link);
-      }
-      if (first_header) {
-        let descendant_count_html = get_descendant_count_html(ast.header_graph_node, true);
-        if (descendant_count_html !== '') {
-          header_meta.push(descendant_count_html);
-        }
-      }
+
+      // Calculate tag_ids_html
       const tag_ids = await context.id_provider.get_refs_to_as_ids(
         REFS_TABLE_X_CHILD, ast.id);
       const new_context = clone_and_set(context, 'validate_ast', true);
@@ -5892,20 +6142,48 @@ const DEFAULT_MACRO_LIST = [
         tag_ids_html_array.push(await x_ast.render(new_context));
       }
       const tag_ids_html = 'Tags: ' + tag_ids_html_array.join(', ');
-      if (!first_header && tag_ids_html_array.length > 0) {
+
+      // Calculate header_meta and header_meta2
+      let header_meta = [];
+      let header_meta2 = [];
+      let first_header = (
+        // May fail in some error scenarios.
+        context.toplevel_ast !== undefined &&
+        ast.id === context.toplevel_ast.id
+      )
+      if (file_link_html !== undefined) {
+        header_meta.push(file_link_html);
+      }
+      if (wiki_link !== undefined) {
+        header_meta.push(wiki_link);
+      }
+      if (tag_ids_html_array.length) {
         header_meta.push(tag_ids_html);
       }
-      const header_has_meta = tag_ids_html.length > 0 || header_meta.length > 0;
+      if (first_header) {
+        if (parent_links !== '') {
+          header_meta2.push(parent_links);
+        }
+        if (link_to_split !== undefined) {
+          header_meta2.push(link_to_split);
+        }
+        if (context.has_toc) {
+          header_meta2.push(`<a${html_attr('href', '#' + Macro.TOC_ID)}>\u{21d3} toc</a>`);
+        }
+        let descendant_count_html = get_descendant_count_html(ast.header_graph_node, true);
+        if (descendant_count_html !== '') {
+          header_meta2.push(descendant_count_html);
+        }
+      }
+
+      const header_has_meta = header_meta.length > 0 || header_meta2.length > 0
       if (header_has_meta) {
         ret += `<div class="h-nav h-nav-toplevel">`;
       }
-      if (header_meta.length > 0) {
-        ret += `<div class="nav"> ${header_meta.join(HEADER_MENU_ITEM_SEP)}</div>`;
-      }
-      if (first_header && tag_ids_html_array.length > 0) {
-        ret += `<div class="nav"> `;
-        ret += tag_ids_html;
-        ret += `</div>`;
+      for (const meta of [header_meta, header_meta2]) {
+        if (meta.length > 0) {
+          ret += `<div class="nav"> ${meta.join(HEADER_MENU_ITEM_SEP)}</div>`;
+        }
       }
       if (header_has_meta) {
         ret += `</div>\n`;
@@ -5953,6 +6231,9 @@ const DEFAULT_MACRO_LIST = [
           multiple: true,
         }),
         new MacroArgument({
+          name: 'file',
+        }),
+        new MacroArgument({
           name: 'numbered',
           boolean: true,
         }),
@@ -5986,6 +6267,18 @@ const DEFAULT_MACRO_LIST = [
         }),
       ],
     }
+  ),
+  new Macro(
+    'Iframe',
+    [
+      new MacroArgument({
+        name: 'src',
+      }),
+    ],
+    async function(ast, context) {
+      const attrs = await html_convert_attrs_id(ast, context, ['src']);
+      return `<iframe${attrs}></iframe>`
+    },
   ),
   new Macro(
     Macro.INCLUDE_MACRO_NAME,
@@ -6107,8 +6400,18 @@ const DEFAULT_MACRO_LIST = [
       {
         caption_prefix: 'Figure',
         image_video_content_func: function (ast, context, src, rendered_attrs, alt, media_provider_type, is_url) {
+          let error
+          ({ href: src, error } = check_and_update_local_link({
+            context,
+            href: src,
+            source_location: ast.args.src.source_location,
+          }))
+          if (error) {
+            error = error_message_in_output(error, context)
+          }
           return `<a${html_attr('href', src)}><img${html_attr('src',
-            html_escape_attr(src))}${html_attr('loading', 'lazy')}${rendered_attrs}${alt}></a>\n`;
+            html_escape_attr(src))
+          }${html_attr('loading', 'lazy')}${rendered_attrs}${alt}></a>${error}\n`;
         },
         named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS,
         source_func: async function (ast, context, src, media_provider_type, is_url) {
@@ -6847,6 +7150,15 @@ const DEFAULT_MACRO_LIST = [
             return `<iframe width="560" height="${DEFAULT_MEDIA_HEIGHT}" loading="lazy" src="https://www.youtube.com/embed/${html_escape_attr(video_id)}${start}" ` +
                   `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
           } else {
+            let error
+            ({ href: src, error } = check_and_update_local_link({
+              context,
+              href: src,
+              source_location: ast.args.src.source_location,
+            }))
+            if (error) {
+              error = error_message_in_output(error, context)
+            }
             let start;
             if ('start' in ast.args) {
               // https://stackoverflow.com/questions/5981427/start-html5-video-at-a-particular-position-when-loading
@@ -6854,7 +7166,7 @@ const DEFAULT_MACRO_LIST = [
             } else {
               start = '';
             }
-            return `<video${html_attr('src', src + start)}${rendered_attrs} preload="none" controls>${alt}</video>\n`;
+            return `<video${html_attr('src', src + start)}${rendered_attrs} preload="none" controls${alt}></video>${error}\n`;
           }
         },
         named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS.concat(

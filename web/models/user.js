@@ -105,6 +105,7 @@ module.exports = (sequelize) => {
   User.prototype.toJson = async function(loggedInUser) {
     const ret = {
       username: this.username,
+      displayName: this.displayName,
       bio: this.bio === undefined ? '' : this.bio,
       image: this.image,
       effectiveImage: this.image || 'https://static.productionready.io/images/smiley-cyrus.jpg',

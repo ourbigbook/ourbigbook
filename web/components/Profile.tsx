@@ -12,6 +12,7 @@ import Maybe from "components/Maybe";
 import EditProfileButton from "components/EditProfileButton";
 import FollowUserButton, { FollowUserButtonContext } from "components/FollowUserButton";
 import UserAPI from "lib/api/user";
+import { DisplayAndUserName } from "front/user"
 import { DEFAULT_USER_SCORE_TITLE } from "lib/utils/constant"
 import fetcher from "lib/utils/fetcher";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
@@ -40,12 +41,11 @@ const ProfileHoc = (tab) => {
     return (
       <>
         <Head>
-          <title>{username}</title>
+          <title></title>
         </Head>
         <div className="profile-page content-not-cirodown">
           <div className="user-info">
-            <h1>{username} <span title={DEFAULT_USER_SCORE_TITLE}>({profile.articleScoreSum}<i className="ion-heart"></i>)</span>
-            </h1>
+            <h1><DisplayAndUserName user={profile}></DisplayAndUserName></h1>
             <p>
               <FollowUserButtonContext.Provider value={{following, setFollowing, followerCount, setFollowerCount}}>
                 <FollowUserButton profile={profile} showUsername={false}/>

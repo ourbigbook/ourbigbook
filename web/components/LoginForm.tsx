@@ -59,14 +59,24 @@ const LoginForm = ({ register = false }) => {
       <ListErrors errors={errors} />
       <form onSubmit={handleSubmit}>
         {register &&
-          <Label label="Username">
-            <input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={handleUsernameChange}
-            />
-          </Label>
+          <>
+            <Label label="Display name">
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={handleUsernameChange}
+              />
+            </Label>
+            <Label label="Username">
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={handleUsernameChange}
+              />
+            </Label>
+          </>
         }
         <Label label="Email">
           <input

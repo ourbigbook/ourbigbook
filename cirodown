@@ -636,19 +636,19 @@ if (commander.helpMacros) {
     fs.writeFileSync(path.join(outdir, '.gitignore'), gitignore_new);
 
     // Generate README.ciro and other .ciro files.
-    let readme_cirodown_str = `\\h[1][Cirodown hello world]
+    let readme_cirodown_str = `= Cirodown hello world
 
 Hello!
 `;
     if (commander.generateMultifile) {
       readme_cirodown_str += `
-\\toc
+\\Toc
 
-\\h[2][And now an include]
+== And now an include
 
-\\include[not-readme]
+\\Include[not-readme]
 `
-      not_readme_str = `\\h[1][Not the readme]
+      not_readme_str = `= Not the readme
 
 A link to another file: \\x[and-now-an-include]
 `

@@ -14,5 +14,5 @@ perl -pi -e 's/^\.\.\.\.$/``/' "$out"
 perl -pi -e 's/^\*\* /  * /' "$out"
 perl -pi -e 's/^\*\*\* /    * /' "$out"
 perl -pi -e 's/^\*\*\*\* /      * /' "$out"
-perl -pi -e 's/toc::\[\]/\\toc/' "$out"
+perl -pi -e 's/toc::\[\]/\\Toc/' "$out"
 # TODO italic and bold.

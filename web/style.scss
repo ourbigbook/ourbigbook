@@ -371,6 +371,7 @@ div.tab-list {
   margin: 5px 0 10px;
   overflow: hidden;
   .tab-item {
+    line-height: 1.5em;
     overflow: hidden;
     padding-right: 10px;
     // TODO https://docs.ourbigbook.com/todo/firefox-tab-lists-don-t-wrap
@@ -525,15 +526,11 @@ span.shortcut {
   */
 }
 
-/* https://github.com/gothinkster/angular-realworld-example-app/blob/9e8c49514ee874e5e0bbfe53ffdba7d2fd0af36f/src/app/shared/article-helpers/article-list.component.css#L1 */
-.page-link {
-  cursor: pointer;
-}
-
 .pagination {
   padding: 0;
   list-style-type: none;
-  margin-bottom: 10px;
+  margin-bottom: 1.5em;
+  height: 100%;
   .pages {
     margin-right: 10px;
     .page-item {
@@ -551,6 +548,18 @@ span.shortcut {
       &.total {
         margin-left: 10px;
       }
+    }
+  }
+  /* https://github.com/gothinkster/angular-realworld-example-app/blob/9e8c49514ee874e5e0bbfe53ffdba7d2fd0af36f/src/app/shared/article-helpers/article-list.component.css#L1 */
+  .page-link {
+    border: 2px solid $table-border-color;
+    border-radius: 5px;
+    cursor: pointer;
+    display: inline-block;
+    margin-right: 0.2em;
+    padding: 0.5em;
+    &:hover {
+      border-color: $color;
     }
   }
 }

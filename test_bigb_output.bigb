@@ -199,6 +199,12 @@ List in paragraph with blocks with paragraph:
 
 List in paragraph with block followed by nested list tight:
 * \Q[first]
+
+  * second
+
+List immediately in list item:
+
+* * first
   * second
 
 Table:

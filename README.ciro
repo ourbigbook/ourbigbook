@@ -4466,9 +4466,13 @@ perf convert_path_pre_sqlite_transaction 566.2528780028224
 perf convert_path_post_sqlite_transaction 582.256645001471
 perf convert_path_end 582.3469280004501
 ``
-which sohws how long different parts of the conversion took to help identify bottlenecks.
+which shows how long different parts of the \x[conversion-process-overview][conversion process] took to help identify bottlenecks.
 
-This option can also be useful to mark phases of the conversion to identify from which phase other logs are coming from, e.g.:
+This option can also be useful to mark phases of the conversion to identify from which phase other logs are coming from, e.g. if we wanted to know which part of the conversion is making a ton of database requests we could run:
+``
+cirodown --log db perf -- README.ciro
+``
+and we would see the database requests made at each conversion phase.
 
 Note that `--log perf` currently does not take sub-converts into account, e.g. \x[include] and \x[cirodownexample] both call the toplevel conversion  function `convert`, and therefore go through all the conversion intervals, but we do not take those it account, and just dump them all into the same toplevel interval that they happen in, currently between `post_process_start` and `post_process_end`.
 

@@ -3008,7 +3008,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: publish dry run does not blow up',
+  'executable: --dry --publish works',
   {
     args: ['--dry-run', '--publish', '.'],
     filesystem: complex_filesystem,
@@ -3017,6 +3017,14 @@ assert_executable(
       ['git', ['add', '.']],
       ['git', ['commit', '-m', '0']],
     ],
+    expect_filesystem_xpath: {
+      'out/publish/out/publish/index.html': [
+        "//x:style[contains(text(),'@import \"cirodown.min.css\"')]",
+      ],
+      //'out/publish/out/publish/subdir/index.html': [
+      //  "//x:style[contains(text(),'@import \"../cirodown.min.css\"')]",
+      //],
+    },
   }
 );
 assert_executable(

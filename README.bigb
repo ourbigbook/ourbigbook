@@ -6142,7 +6142,7 @@ This is analogous to <force-render>.
 
 Render up to a maxinum of N articles.
 
-Useful for quick and dirty <OurBigBook Web performance benchmarking, especially together with <--web-force-render> to avoid skipping over finished files.
+Useful for quick and dirty <OurBigBook Web performance benchmarking>, especially together with <--web-force-render> to avoid skipping over finished files.
 
 = `--web-password`
 {parent=OurBigBook CLI options}
@@ -7389,7 +7389,7 @@ The tests include two broad classes of tests:
 = OurBigBook Web Next.js unit tests
 {parent=OurBigBook Web unit tests}
 
-By default, we don't make any requests to Next.js, because starting up Next.js is extremely slow for regular test usage and would drive us crazy.
+By default, we don't make any requests to Next.js, because starting up Next.js is extremelly slow for regular test usage and would drive us crazy.
 
 In regular OurBigBook Web usage through a browser, Next.js handles all GET requests for us, and the API only handles the other modifying methods like POST.
 
@@ -9107,8 +9107,11 @@ This is a reasonable website. It is a shame that you can't easily drag and drop 
 
   Standard delivery in a bout 7 business days.
 
-= Project logo
+= Project identity
 {parent=Publicity}
+
+= Project logo
+{parent=Project identity}
 
 The logo can be seen at: <image Logo of the OurBigBook Project>.
 
@@ -9200,7 +9203,7 @@ obb
 {provider=github}
 
 = Project slogan
-{parent=Publicity}
+{parent=Project identity}
 
 We were thinking something like:
 \Q[Learn for real!]
@@ -9211,7 +9214,7 @@ Another one that is also somewhat taken is:
 https://www.teacherspayteachers.com/Product/You-Be-The-Teacher-Independent-Research-Project-Distance-Learning-3785062
 
 = Project name
-{parent=Publicity}
+{parent=Project identity}
 
 A free domain name was the key restriction.
 
@@ -9219,6 +9222,32 @@ We almost went with `destroyuni.com`!!! But Ciro regained his senses in the end.
 
 But Ciro was very happy with OurBigBook. Some other `<possessive><adjective><noun>` domains:
 * https://www.mysmallcar.com
+
+= Project banner
+{parent=Project identity}
+
+\Image[banner-topics-signed-in-800.png]
+{title=Topics page banner}
+{description=
+Initial project banner showing the <OurBigBook Web topics> feature. Not very subtle, but will do as a placeholder.
+
+The downside of this is that much of its bottom left is hidden by the profile picture on websites such as Twitter and LinkedIn.
+
+The banner is also a bit narrow for certain websites, and either looks rescaled, or is outright not allowd with editing, e.g. YouTube requires a minium width of 1024, with 2048 recommended.
+
+YouTube is also extremelly picky and hard to make the banner look right as it reserves mandatory huge height for TV displays! The best approach we can find is to make the image huge and fill in black with:
+``
+convert banner-topics-signed-in-800.png -background black -gravity center -extent 2000x1000 tmp.png
+``
+and then drag the image selection so that the desktop view covers the area we care about.
+}
+{provider=github}
+
+Websites that accept banners:
+* Twitter
+* LinkedIn
+* YouTube
+* Reddit
 
 = Demo videos
 {parent=Publicity}
@@ -9236,7 +9265,10 @@ Video guidelines:
 * music style guidelines: cool, beats, techno, mysterious, upbeat
 
   Some of the videos contain non-fully free YouTube music added via the YouTube UI. Reupload together with the video files appears however allowed. Ideally we should use fully https://ourbigbook.com/go/topic/cc-by-sa[CC BY-SA] music, but it is quite hard to find good ones. NC is not acceptable.
-* hardcode subs in the video. No voice. We've been happily using Aegisub and ffmpeg
+* hardcode subs in the video. No voice. We've been happily using Aegisub to create the subtitles in `.ass` format and ffmpeg to hardcode:
+  ``
+  ffmpeg -i raw.mkv -vf subtitles=sub.ass out.mkv
+  ``
 
 = OurBigBook.com Fellowship
 {parent=Publicity}

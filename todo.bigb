@@ -248,15 +248,6 @@ Self headers done. ToC missing.
 === Hide unconfirmed users
 {tag=Web}
 
-=== Design a project banner
-{tag=Publicity}
-
-E.g. for Twitter and LinkedIn.
-
-Maybe a screenshot of the website?
-
-If we could represent topics somehow that would be ideal...
-
 === Fragment redirects not working on web
 {tag=Web}
 
@@ -542,6 +533,15 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== Design a project banner
+{tag=Publicity}
+
+E.g. for Twitter and LinkedIn.
+
+Maybe a screenshot of the website?
+
+If we could represent topics somehow that would be ideal...
 
 === Subsections missing on web dynamic tree
 {tag=Bug}

@@ -38,10 +38,16 @@ for (let i of INDEX_FILE_BASENAMES_NOEXT) {
 class SqliteIdProvider extends cirodown.IdProvider {
   constructor(db, ids_table_name) {
     super();
-    this.stmt = db.prepare(`SELECT path,ast_json FROM ${ids_table_name} WHERE id = ?`);
+    this.delete_stmt = db.prepare(`DELETE FROM '${ids_table_name}' WHERE path = ?`);
+    this.get_stmt = db.prepare(`SELECT path,ast_json FROM ${ids_table_name} WHERE id = ?`);
   }
+
+  clear(input_path_noext_renamed) {
+    this.delete_stmt.run(input_path_noext_renamed);
+  }
+
   get(id) {
-    let get_ret = this.stmt.get(id);
+    let get_ret = this.get_stmt.get(id);
     if (get_ret === undefined) {
       return undefined;
     } else {
@@ -207,14 +213,6 @@ function convert_path(input_path, options, convert_input_options) {
   }
   input_path_noext_renamed = path.join(input_path_parse.dir, input_path_basename_noext_renamed);
   new_convert_input_options.input_path_noext_renamed = input_path_noext_renamed;
-  if ('db' in convert_input_options) {
-    // Remove all IDs from the path, so that they will be removed from the database
-    // if they were removed from the file. Done before conversion, so that we won't
-    // find duplicates with the file itself.
-    const delete_stmt = convert_input_options.db.prepare(
-      `DELETE FROM '${convert_input_options.ids_table_name}' WHERE path = ?`
-    ).run(input_path_noext_renamed);
-  }
   let output = convert_input(input, new_options, new_convert_input_options);
   if ('db' in convert_input_options) {
     const ids = new_convert_input_options.extra_returns.ids;
@@ -224,7 +222,7 @@ function convert_path(input_path, options, convert_input_options) {
     );
     for (const id in ids) {
       const ast = ids[id];
-      insert_stmt.run(id, input_path_noext_renamed, JSON.stringify(ast));
+      insert_stmt.run(id, ast.input_path, JSON.stringify(ast));
     }
   }
   if (new_convert_input_options.had_error) {

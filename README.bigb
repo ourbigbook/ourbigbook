@@ -5262,7 +5262,7 @@ While using `-O bigb` is not a common use case, the existence of this format has
 
 Can be tested interactively with:
 ``
-ourbigbook --no-db -O bigb --stdout test_bigb_output.bigb
+ourbigbook --no-db -O bigb --stdout --log=ast-simple test_bigb_output.bigb
 ``
 
 One important property of the `bigb` conversion is that is must not alter the <ast>, and therefore neither the final output, in any way.

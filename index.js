@@ -272,6 +272,9 @@ class AstNode {
     if (!('katex_macros' in context)) {
       context.katex_macros = {};
     }
+    if (!('li_depth' in context)) {
+      context.li_depth = 0;
+    }
     //if (!('last_render' in context)) {
     //}
     if (!('macros' in context)) {
@@ -8303,6 +8306,7 @@ ${content}${delim}${newline}`
 function ourbigbook_li(marker) {
   return function(ast, context) {
     context = clone_and_set(context, 'in_paragraph', false)
+    context.li_depth++
     if (!ast.args.content || Object.keys(ast.args).length !== 1) {
       return ourbigbook_convert_simple_elem(ast, context)
     } else {
@@ -8326,8 +8330,9 @@ function ourbigbook_li(marker) {
 }
 
 function ourbigbook_add_newlines_after_block(ast, context) {
-  return !ast.is_last_in_argument() &&
-    !context.in_paragraph &&
+  return !context.in_paragraph &&
+    !ast.is_last_in_argument() &&
+    !context.macros[ast.macro_name].options.phrasing &&
     !context.macros[ast.parent_argument.get(ast.parent_argument_index + 1).macro_name].options.phrasing
 }
 

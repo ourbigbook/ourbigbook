@@ -173,6 +173,44 @@ module.exports = (sequelize) => {
     })).dataValues.count
   }
 
+  User.prototype.addFavoriteSideEffects = async function(article) {
+    await sequelize.transaction(async t => {
+      await Promise.all([
+        this.addFavorite(article.id, { transaction: t }),
+        this.increment('articleScoreSum', { transaction: t }),
+        article.increment('score', { transaction: t }),
+      ])
+    })
+  }
+
+  User.prototype.removeFavoriteSideEffects = async function(article) {
+    await sequelize.transaction(async t => {
+      await Promise.all([
+        this.removeFavorite(article.id, { transaction: t }),
+        this.decrement('articleScoreSum', { transaction: t }),
+        article.decrement('score', { transaction: t }),
+      ])
+    })
+  }
+
+  User.prototype.addFollowSideEffects = async function(otherUser) {
+    await sequelize.transaction(async t => {
+      await Promise.all([
+        this.addFollow(otherUser.id, { transaction: t }),
+        otherUser.increment('followerCount', { transaction: t }),
+      ])
+    })
+  }
+
+  User.prototype.removeFollowSideEffects = async function(otherUser) {
+    await sequelize.transaction(async t => {
+      await Promise.all([
+        this.removeFollow(otherUser.id, { transaction: t }),
+        otherUser.decrement('followerCount', { transaction: t }),
+      ])
+    })
+  }
+
   User.validPassword = function(user, password) {
     let hash = crypto.pbkdf2Sync(password, user.salt, 10000, 512, 'sha512').toString('hex')
     return user.hash === hash

@@ -40,7 +40,11 @@ const ProfileHoc = (tab) => {
           <div className="user-info">
             <h1>{username}</h1>
             <p>Article score sum: { profile.articleScoreSum }</p>
-            <p>Followers: { profile.followerCount }</p>
+            <p>
+              <FollowUserButtonContext.Provider value={{following, setFollowing}}>
+                <FollowUserButton profile={profile} />
+              </FollowUserButtonContext.Provider>
+            </p>
             <CustomImage
               src={profile.effectiveImage}
               alt="User's profile image"
@@ -51,9 +55,6 @@ const ProfileHoc = (tab) => {
               <LogoutButton />
             }
             <EditProfileButton isCurrentUser={isCurrentUser} />
-            <FollowUserButtonContext.Provider value={{following, setFollowing}}>
-              <FollowUserButton profile={profile} />
-            </FollowUserButtonContext.Provider>
           </div>
           <h2>Articles</h2>
           <div className="tab-list">

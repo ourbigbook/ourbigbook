@@ -272,8 +272,8 @@ class AstNode {
     if (!('katex_macros' in context)) {
       context.katex_macros = {};
     }
-    if (!('li_depth' in context)) {
-      context.li_depth = 0;
+    if (!('arg_depth' in context)) {
+      context.arg_depth = 0;
     }
     //if (!('last_render' in context)) {
     //}
@@ -8336,8 +8336,6 @@ ${content}${delim}${newline}`
 
 function ourbigbook_li(marker) {
   return function(ast, context) {
-    context = clone_and_set(context, 'in_paragraph', false)
-    context.li_depth++
     if (!ast.args.content || Object.keys(ast.args).length !== 1) {
       return ourbigbook_convert_simple_elem(ast, context)
     } else {
@@ -8368,15 +8366,20 @@ function ourbigbook_add_newlines_after_block(ast, context) {
   return !context.macros[ast.macro_name].options.phrasing &&
     !ast.is_last_in_argument() &&
     (
-      (context.li_depth === 0 && !context.in_paragraph) ||
+      // It is a bit sad that we have to use this "am I on toplevel" checks processing here.
+      // It would be saner if indented blocks were exactly the same as toplevel.
+      // But it just intuitively feels that the "no loose on toplevel, but loose in subelements"
+      // sound good, so going for it like that now... I think this is implemented by always adding
+      // a PARAGRAPH Token on toplevel in case we ever want to dump that.
+      ast.parent_ast.macro_name === Macro.TOPLEVEL_MACRO_NAME ||
       (
-        // It is a bit sad that we have to use this special li_depth > 0 processing here.
-        // It would be saner if indented blocks were exactly the same as toplevel.
-        // But it just intuitively feels that the "no loose on toplevel, but loose in lists"
-        // sound good, so going for it like that now...
-        context.li_depth > 0 &&
+        !(
+          ast.parent_ast.macro_name === Macro.PARAGRAPH_MACRO_NAME &&
+          ast.parent_ast.parent_ast.macro_name === Macro.TOPLEVEL_MACRO_NAME
+        ) &&
+        ast.parent_ast.macro_name !== Macro.TOPLEVEL_MACRO_NAME &&
           (
-            ( ast.parent_argument.has_paragraph && !context.in_paragraph ) ||
+            ( ast.parent_argument.has_paragraph ) ||
             ( !ast.parent_argument.has_paragraph && !ast.parent_argument.not_all_block )
           )
       )
@@ -8572,7 +8575,7 @@ OUTPUT_FORMATS_LIST.push(
           if (!ast.args.content || Object.keys(ast.args).length !== 1) {
             return ourbigbook_convert_simple_elem(ast, context)
           } else {
-            const rendered_arg = render_arg(ast.args.content, clone_and_set(context, 'in_paragraph', true))
+            const rendered_arg = render_arg(ast.args.content, context)
             const newline = ast.is_last_in_argument() ? '' : '\n\n'
             return `${rendered_arg}${newline}`
           }

@@ -1793,7 +1793,7 @@ assert_convert_ast('literal agument escape trailing two backslashes',
 
 // Newline between arguments.
 const newline_between_arguments_expect = [
-  a('C', [t('ab\n')], {id: [t('cd')]}),
+  a('C', [t('ab')], {id: [t('cd')]}),
 ];
 assert_convert_ast('not literal argument with argument after newline',
   `\\C[

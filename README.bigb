@@ -210,7 +210,7 @@ The following sections cover different ways to use tools from the OurBigBook:
     would lead to a build error.
   * associate headers to files with the <\H file argument> e.g.:
     ``
-    Here's an example of a nice image: \x[file/path/to/my/image.png].
+    Here's an example of a nice image: \x[path/to/my/image.png]{file}.
 
     = path/to/my/image.png
     {file}
@@ -1473,19 +1473,14 @@ If empty, the URL of the file is extracted directly from the header. Otherwise, 
 
 for example:
 ``
-The file \x[file/path/to/myfile.c] is very useful.
-
 = path/to/myfile.c
 {file}
 
 An explanation of what this file is about.
 ``
-renders the same as:
+renders a bit like:
 ``
-The file \x[file/path/to/myfile.c] is very useful.
-
 = path/to/myfile.c
-{file}
 {id=file/path/to/myfile.c}
 
 An explanation of what this file is about.
@@ -1504,13 +1499,12 @@ so note how:
   * otherwise if the URL has a video extension, or is a YouTube URL, do a <video> preview
   * otherwise, don't show a preview, as we don't know anything sensible to show
 
-In some cases however, especially when dealing with external URLs, we might want to have a more human readable title with a `file` specified as in:
+In some cases however, especially when dealing with external URLs, we might want to have a more human readable title with a non empty `file` argument:
 ``
 The video \x[tank-man-by-cnn-1989] is very useful.
 
-To make <internal cross references> to `{file}` headers, use the <`\x` `file` argument>.
-
 = Tank Man by CNN (1989)
+{c}
 {file=https://www.youtube.com/watch?v=YeFzeNAHEhU}
 
 An explanation of what this video is about.
@@ -1520,6 +1514,7 @@ which renders something like:
 The video \x[tank-man-by-cnn-1989] is very useful.
 
 = Tank Man by CNN (1989)
+{id=https://www.youtube.com/watch?v=YeFzeNAHEhU}
 
 \a[https://www.youtube.com/watch?v=YeFzeNAHEhU][View file]
 
@@ -1528,8 +1523,12 @@ An explanation of what this video is about.
 \Video[https://www.youtube.com/watch?v=YeFzeNAHEhU]
 ``
 
+To make <internal cross references> to `{file}` headers, use the <`\x` `file` argument>.
+
 = `\H` `file` argument demo
 {parent=H file argument}
+
+This section contains some live demoes of the <`\H` `file` argument>.
 
 = file_demo
 {file}
@@ -1578,6 +1577,7 @@ An explanation of what this image is about.
 Another line.
 
 = Tank Man by CNN (1989)
+{c}
 {file=https://www.youtube.com/watch?v=YeFzeNAHEhU}
 {parent=H file argument demo}
 
@@ -4628,10 +4628,35 @@ Allows to link to <headers> with the <`\H` `file` argument>, e.g.:
 ``
 = My header
 
-Check out this amazing file: <path/to/myfile.txt>
+Check out this amazing file: <path/to/myfile.txt>{file}
 
 == path/to/myfile.txt
 ``
+
+Some live demos follow:
+\OurBigBookExample[[
+\x[file_demo]{file}
+]]
+
+\OurBigBookExample[[
+\x[file_demo/file_demo_subdir]{file}
+]]
+
+\OurBigBookExample[[
+\x[file_demo/file_demo_subdir/hello_world.js]{file}
+]]
+
+\OurBigBookExample[[
+\x[file_demo/my.bin]{file}
+]]
+
+\OurBigBookExample[[
+\x[Tank_man_standing_in_front_of_some_tanks.jpg]{file}
+]]
+
+\OurBigBookExample[[
+\x[https://www.youtube.com/watch?v=YeFzeNAHEhU]{file}
+]]
 
 = `\x` `full` argument
 {parent=x arguments}
@@ -5223,6 +5248,9 @@ where args is a dict such that:
 = Literal arguments
 {parent=Macro argument}
 {title2=`[[...]]` and `{{key=...}}`}
+
+= Literal argument
+{synonym}
 
 Arguments that are opened with more than one square brackets `[` or curly braces `{` are literal arguments.
 

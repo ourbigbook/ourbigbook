@@ -32,9 +32,8 @@ const ArticleActions = ({ article }) => {
         favorited={article.favorited}
         favoritesCount={article.favoritesCount}
         slug={article.slug}
-        showText={true}
+        showText={false}
       />
-      <FollowUserButton profile={article.author} />
       <Maybe test={canModify}>
         <span>
           <CustomLink
@@ -42,16 +41,17 @@ const ArticleActions = ({ article }) => {
             as={`/editor/${article.slug}`}
             className="btn"
           >
-            <i className="ion-edit" /> Edit Article
+            <i className="ion-edit" /> Edit
           </CustomLink>
           <button
             className="btn"
             onClick={handleDelete}
           >
-            <i className="ion-trash-a" /> Delete Article
+            <i className="ion-trash-a" /> Delete
           </button>
         </span>
       </Maybe>
+      <FollowUserButton profile={article.author} />
     </div>
   );
 };

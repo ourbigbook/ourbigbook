@@ -3,8 +3,8 @@
   display: flex;
   /* https://stackoverflow.com/questions/12989931/body-height-100-displaying-vertical-scrollbar/46847795#46847795
    * 20 == 2x 10px padding (top + bottom). */
-  height: calc(100% - 20px);
-  padding: 10px;
+  height: 100%;
+  padding: 10px 0 0 0;
   .input {
     border: 1px black solid;
     flex-grow: 1;

@@ -14,7 +14,7 @@ const Navbar = () => {
   const loggedInUser = getLoggedInUser()
   const handleClick = React.useCallback(() => setPage(0), []);
   return (
-    <nav className="navbar navbar-light">
+    <nav className="navbar">
       <CustomLink href="/" as="/" onClick={handleClick} className="navbar-brand">
         {APP_NAME}
       </CustomLink>
@@ -22,7 +22,7 @@ const Navbar = () => {
         <Maybe test={loggedInUser}>
           <NavLink href="/editor" as="/editor">
             <i className="ion-compose" />
-            &nbsp;New Article
+            &nbsp;New
           </NavLink>
           <NavLink href="/settings" as="/settings">
             <i className="ion-gear-a" />

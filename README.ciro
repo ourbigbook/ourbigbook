@@ -1,6 +1,6 @@
 \h[1][Cirodown]
 
-A Markup language to write multipage or single page HTML / PDF books, blogs, etc. that is saner and more powerful than Markdown and Asciidoctor, but still nicer to write than XML and JSON, with reference implementation in JavaScript.
+A Markup language to write multipage or single page HTML / PDF books, blogs, etc. that is \x[saner][saner] and more powerful than Markdown and Asciidoctor, but still nicer to write than XML and JSON, with reference implementation in JavaScript.
 
 The source for this document is at: \a[https://github.com/cirosantilli/cirodown/blob/master/README.ciro] and a rendered version can be seen at: \a[https://cirosantilli.com/cirodown].
 
@@ -55,7 +55,7 @@ or render instead as one fully offline standalone HTML file that can be given di
 ./cirodown --html-single-page README.ciro > index.html
 ``
 
-The \c[npm link] commands allow you to make changes to the code without re-installing the package all the time for development! Try hacking \a[cirodown] to see it. Just remember that if you add a new dependency, you must redo the symlinking business:
+The `npm link` commands allow you to make changes to the code without re-installing the package all the time for development! Try hacking \a[cirodown] to see it. Just remember that if you add a new dependency, you must redo the symlinking business:
 ``
 npm install <dependency>
 npm link
@@ -79,10 +79,12 @@ Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally pu
 \l[multi file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
   \l[\x[internal-cross-file-references]]
   \l[\x[table-of-contents][table of contents] that crosses input files]
-  \l[\c[inotifywait] watch rebuild server]
+  \l[`inotifywait` watch rebuild server]
   \l[cross file includes that work as links on multi output file mode, and true includes in single output file mode]
   \l[cross file configuration files to factor out common page parts like headers and footers]
 ]
+
+\h[3][Saner]
 
 Originally, Cirodown was is meant to be both saner and more powerful than Markdown and Asciidoctor.
 
@@ -96,14 +98,11 @@ It is intended that this will be an acceptable downside as Cirodown will be used
 \l[in text editors locally, where users have more features than in random browser textareas]
 \l[in a dedicated website that will revolutionize education, and therefore have a good JavaScript editing interface: \a[https://github.com/cirosantilli/write-free-science-books-to-get-famous-website]]
 
-\h[3][Saner]
-
-To be saner than both Markdown and Asciidoctor, Cirodown has exactly five magic characters, with similar functions as in LaTeX:
-\l[\c[\\] backslash to start a macro, like LaTeX]
-\l[\c[\{] and \c[\}]: left and right square brackets to delimit optional macro arguments]
-\l[\c[\[] and \c[\]]: left and right curly braces bracket to start an optional arguments]
-
-And double blank newlines for \x[paragraphs][paragraphs] if you are pedantic.
+For example, originally Cirodown had exactly five magic characters, with similar functions as in LaTeX:
+\l[`\` backslash to start a macro, like LaTeX]
+\l[`{` and `}`: left and right square brackets to delimit optional macro arguments]
+\l[`[` and `]`: left and right curly braces bracket to start an optional arguments]
+and double blank newlines for \x[paragraphs][paragraphs] if you are pedantic, but this later degrated into many more with \x[insane-macro-shortcuts].
 
 We would like to have only square brackets for both optional and mandatory to have even less magic characters, but that would make the language difficult to parse for computer and humans. LaTeX was right for once!
 
@@ -118,7 +117,7 @@ The language is designed to be philosophically isomorphic to HTML to:
 \l[ensure that most of HTML constructs can be reached, including arbitrary nesting]
 
 More precisely:
-\l[macro names map to tag names, e.g.: \c[\\a] to \c[<a]]
+\l[macro names map to tag names, e.g.: `\\a` to `<a`]
 \l[
   one of the arguments of macros, maps to the content of the HTML element, and the others map to attributes.
 
@@ -126,7 +125,7 @@ More precisely:
   ``\a[http://example.com][Link text\]``
   the first macro argument:
   ``http://example.com``
-  maps to the \c[href] of \c[<a], and the second macro argument:
+  maps to the `href` of `<a`, and the second macro argument:
   ``Link text``
   maps to the internal content of `<a>Link text<>`.
 ]
@@ -157,22 +156,17 @@ Paragraph 1.
 
 Paragraph 2.
 
-Equivalently however, you can use an explicit \c[[\p]] macros as well, which is required for example to add properties to a paragraph, e.g.:
-``
+Equivalently however, you can use an explicit `\p` macros as well, which is required for example to add properties to a paragraph, e.g.:
+\cirodown_example[[
 \p{id=paragraph-1}[Paragraph 1]
 \p{id=paragraph-2}[Paragraph 2]
-``
-which renders as:
-\q[
-\p{id=paragraph-1}[Paragraph 1]
-\p{id=paragraph-2}[Paragraph 2]
-]
+]]
 
 Paragraphs are created automatically inside \x[macro-argument-syntax][macro argument] whenever a double newline appears.
 
 Due to their \x[insane-macro-shortcuts][insane syntax], paragraphs have to do some magic to determine where they start and end. TODO: mention the rule that paragraphs wrap only phrasing content, link to: \x[help-macros].
 
-\h[2][Links \c[[\a]]]
+\h[2][Links `\a`]
 {id=links}
 
 Autolink (link text is the same as the link): \a[http://example.com].
@@ -183,12 +177,12 @@ Link with custom text: \a[http://example.com][my custom link text].
 
 paragraphs]
 
-\h[2][Internal cross references \c[[\x]]]
+\h[2][Internal cross references `\x`]
 {id=internal-cross-references}
 
-Every macro in Cirodown can have an optional \c[id] and a \c[title] property.
+Every macro in Cirodown can have an optional `id` and a `title` property.
 
-Those that have a \c[title] but no \c[id], get an auto-generated ID from the title: \x[automatic-id-from-title].
+Those that have a `title` but no `id`, get an auto-generated ID from the title: \x[automatic-id-from-title].
 
 For macros that do have an ID, you can write a cross reference to it:
 
@@ -196,20 +190,16 @@ For macros that do have an ID, you can write a cross reference to it:
 
 TODO implement.
 
-Setting \c[child=1] on a cross reference to a header as in:
+Setting `child=1` on a cross reference to a header as in:
 ``
 \xref[my-header]{child=1}
 ``
-
 has the following effects:
-
 \l[add the current header to the list of extra parents of the child]
 
-This allows a section to have multiple parents, e.g. to include it into multiple categories.
+This allows a section to have multiple parents, e.g. to include it into multiple categories. For example:
 
-For example:
-
-\C[[[
+``
 \h[1][Animals]
 
 \h[2][Mammals]
@@ -224,11 +214,9 @@ Cute animals:
 
 \l[\xref[dog]{child=1}]
 \l[\xref[cat]]
-]]]
-
+``
 would render something like:
-
-\C[[[
+``
 h1 Animals
 
 h2 Mammals
@@ -242,104 +230,103 @@ h3 Cat (parent section: Mammals)
 
 \l[\xref[dog]]
 \l[\xref[cat]]
-]]]
+``
+so note how "Dog" has a list of extra parents including "Cute animals", but Cat does not, due to the `child=1`.
 
-so note how "Dog" has a list of extra parents including "Cute animals", but Cat does not, due to the \c[child=1].
-
-This property does not affect how the \x[table-of-contents][\c[\\toc]] is rendered. We could insert elements sections there multiple times, but it has the downside that browser Ctrl + F searches would hit the same thing multiple times on the table of contents, which might make finding things harder.
-
-\C[[
+This property does not affect how the \x[table-of-contents][`\toc`] is rendered. We could insert elements sections there multiple times, but it has the downside that browser Ctrl + F searches would hit the same thing multiple times on the table of contents, which might make finding things harder.
+``
 \h[2][My title]{id=my-id}
 
 Read this \x[my-id][amazing section].
-]]
+``
 
-If the second argument, the \c[content], is not present, it expand to the header title, e.g.:
-
-\C[[
+If the second argument, the `content`, is not present, it expand to the header title, e.g.:
+``
 \h[2][My title]{id=my-id}
 
 Read this \x[my-id].
-]]
-
+``
 is the same as:
-
-\C[[
+``
 \h[2][My title]{id=my-id}
 
 Read this \x[my-id][My title].
-]]
+``
 
 \h[3][Cross reference style]
 
-To also show the section auto-generated number as in "Section X.Y My title" we add the optional \c[[{style=full}]] \x[positional-vs-named-arguments][named parameter] to the cross reference, for example:
-
-\C[[
-\h[2][My title]{id=my-id}
-
-Read this \x[my-id]{style=full}.
+To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{style=full}` \x[positional-vs-named-arguments][named parameter] to the cross reference, for example:
+\cirodown_example[[
+\x[cross-reference-style]{style=full}.
 ]]
-
-Example: \x[cross-reference-style]{style=full}.
 
 \h[3][Internal cross file references]
 
-Reference to the first header of another file: \x[not-readme].
-
-Reference to the first header of another file that is a second inclusion: \x[included-by-not-readme].
-
-Reference to another header of another file, with \x[cross-reference-style] equals "full": \x[h2-in-not-the-readme]{style=full}.
-
-Reference to an image in another file: \x[fig-not-readme-xi]{style=full}.
-
-Remember that the \x[the-toplevel-header][ID of the toplevel header] is automatically derived from its file name, that's why we have to use:
-
-\C[[
+Reference to the first header of another file:
+\cirodown_example[[
 \x[not-readme]
 ]]
 
-instead of:
-
-\C[[
-\x[not-the-readme]
+Reference to the first header of another file that is a second inclusion:
+\cirodown_example[[
+\x[included-by-not-readme]
 ]]
+
+Reference to another header of another file, with \x[cross-reference-style] equals `full`:
+\cirodown_example[[
+\x[h2-in-not-the-readme]{style=full}.
+]]
+
+Reference to an image in another file:
+\cirodown_example[[
+\x[fig-not-readme-xi]{style=full}.
+]]
+
+Reference to an image in another file:
+\cirodown_example[[
+\x[fig-figure-in-not-the-readme-without-explicit-id]{style=full}.
+]]
+
+Remember that the \x[the-toplevel-header][ID of the toplevel header] is automatically derived from its file name, that's why we have to use:
+\cirodown_example[[
+\x[not-readme]
+]]
+instead of:
+``
+\x[not-the-readme]
+``
 
 Reference to an internal header of another file: \x[h2-in-not-the-readme]. By default, That header ID gets prefixed by the ID of the top header.
 
 When using \x[html-single-page] mode, the cross file references end up pointing to an ID inside the current HTML element, e.g.:
-
-\C[[
+``
 <a href="#not-readme">
-]]
-
+``
 rather than:
-
-\C[[
+``
 <a href="not-readme.html/#not-readme">
-]]
-
+``
 This is why IDs must be unique for elements across all pages.
 
 \h[4][Internal cross file references internals]
 
-When running in Node.js, Cirodown dumps the IDs of all processed files to a \c[out/ids.sqlite3] file, and then reads from that file when IDs are needed.
+When running in Node.js, Cirodown dumps the IDs of all processed files to a `out/ids.sqlite3` file, and then reads from that file when IDs are needed.
 
-When converting a directory, \c[out/ids.sqlite3] is placed inside the input directory. When converting individual files, \c[out/ids.sqlite3] is placed in the current working directory. The file is not created or used when handling input from stdin.
+When converting a directory, `out/ids.sqlite3` is placed inside the input directory. When converting individual files, `out/ids.sqlite3` is placed in the current working directory. The file is not created or used when handling input from stdin.
 
 When running in the browser, the same JavaScript API will send queries to the server instead of a local SQLite database.
 
 To inspect the the ID database to debug it, you can use:
-
-\C[[
+``
 sqlite3 out/db.sqlite3 .dump
-]]
+``
 
 \h[3][Automatic ID from title]
 
-If a \x[the-toplevel-header][non-toplevel] macro has the \c[title] property is present but no explicit \c[id], an ID is created automatically from the \c[title], by applying the following transformations:
+If a \x[the-toplevel-header][non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:
 
-\l[convert all of \c[A-Z] characters to lowercase]
-\l[convert consecutive sequences of all non \c[a-z0-9] ASCII characters to a single hyphen \c[-]. Note that this leaves non-ASCII character untouched.]
+\l[convert all of `A-Z` characters to lowercase]
+\l[convert consecutive sequences of all non `a-z0-9` ASCII characters to a single hyphen `-`. Note that this leaves non-ASCII character untouched.]
 \l[strip leading or trailing hyphens]
 
 Note how those rules leave non ASCII Unicode characters untouched, as capitalization and determining if something "is a letter or not" in those cases can be tricky.
@@ -366,24 +353,23 @@ So for example, the following automatic IDs would be generated: \x[table-example
 \tr[
   \td[The École Polytechnique]
   \td[the-École-polytechnique]
-  \td[We leave the non ASCII uppercase \a[https://en.wikipedia.org/wiki/Acute_accent][acute accented] \c[e], \c[É], untouched by default]
+  \td[We leave the non ASCII uppercase \a[https://en.wikipedia.org/wiki/Acute_accent][acute accented] `e`, `É`, untouched by default]
 ]
 ]
 
-For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the Cirodown file without extension instead of from the \c[title] argument.
+For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the Cirodown file without extension instead of from the `title` argument.
 
-\h[2][Headers \c[[\h]]]
+\h[2][Headers `\h`]
 {id=headers}
 
 \h[3][Unlimited header levels]
 
 There is no limit to how many levels we can have!
 
-HTML is randomly limited to \c[h6], so Cirodown just renders higher levels as an \c[h6] with a \c[data-level] attribute to indicate the actual level for possible CSS styling:
-
-\C[[
+HTML is randomly limited to `h6`, so Cirodown just renders higher levels as an `h6` with a `data-level` attribute to indicate the actual level for possible CSS styling:
+``
 <h6 data-level="7">My title</h6>
-]]
+``
 
 \h[4][My h4]
 
@@ -405,57 +391,55 @@ HTML is randomly limited to \c[h6], so Cirodown just renders higher levels as an
 
 \h[13][My h13]
 
-\h[3][Table of contents \c[[\toc]]]
+\h[3][Table of contents `\toc`]
 {id=table-of-contents}
 
 Only one ToC shows per document.
 
 Any ToC besides the first one is ignored. TODO make it into an error instead?
 
-The ToC ignores \c[[\h[1\]]] by default, as we encourage that header level to appear only once and represent the main title under which the entire document goes.
+The ToC ignores `\h[1]` by default, as we encourage that header level to appear only once and represent the main title under which the entire document goes.
 
-\c[[\toc]] from \x[includes][includes] are ignored.
+`\toc` from \x[includes][includes] are ignored.
 
 \h[4][id_scope]
 
 TODO implement.
 
-If this header attribute is \c[true], then the ID of all children are prefixed with the ID of this header + a slash \c[/].
+If this header attribute is `true`, then the ID of all children are prefixed with the ID of this header + a slash `/`.
 
-This property is true by default for cross file references, although it can be turned off explicitly with \c[id-scope=false].
+This property is true by default for cross file references, although it can be turned off explicitly with `id-scope=false`.
 
 References withing a single scope do not need the parent scope prefix.
 
 \h[3][Header explicit levels vs nesting design choice]
 
 Arguably, the language would be even saner if we did:
-
-\C[[
+``
 \h[My h1][
 
 Paragraph.
 
 \h[My h2][]
 ]
-]]
-
+``
 rather than having explicit levels.
 
 But we chose not to do it like most markups available because it leads to too many nesting levels, and hard to determine where you are without tooling.
 
-\h[3][Includes \c[[\include]]]
+\h[3][Includes `\include`]
 {id=includes}
 
-The \c[[\include]] macro allows including an external Cirodown headers under the current header.
+The `\include` macro allows including an external Cirodown headers under the current header.
 
 It exists to allow optional single page HTML output while still retaining the ability to:
 
 \l[split up large input files into multiple files to make renders faster during document development]
 \l[suggest an optional custom output split with one HTML output per Cirodown input, in order to avoid extremely large HTML pages which could be slow to load]
 
-\c[[\include]] takes one mandatory argument, which is the relative path without extension to the \c[.ciro] file that you want to include.
+`\include` takes one mandatory argument, which is the relative path without extension to the `.ciro` file that you want to include.
 
-Things would have been a bit more clean if the argument would take the ID of the header you want to include rather than the filename, which is analogous to how \x[internal-cross-references][\c[\\x]] works, but that would mean that a single page build would require an initial parse to determine IDs, so we are just going with the easier option of pointing out the file name directly.
+Things would have been a bit more clean if the argument would take the ID of the header you want to include rather than the filename, which is analogous to how \x[internal-cross-references][`\x`] works, but that would mean that a single page build would require an initial parse to determine IDs, so we are just going with the easier option of pointing out the file name directly.
 
 Headers of the included document are automatically shifted to match the level of the child of the level where they are being included.
 
@@ -474,7 +458,7 @@ Otherwise, the following effects happen:
 
 \l[\x[html-single-page]]
 
-Here is an example of inclusion of the files \c[not-readme.ciro] and \c[not-readme-2.ciro].
+Here is an example of inclusion of the files `not-readme.ciro` and `not-readme-2.ciro`.
 
 \include[not-readme]
 
@@ -482,58 +466,51 @@ Here is an example of inclusion of the files \c[not-readme.ciro] and \c[not-read
 
 \h[3][Skipping header levels]
 
-The very first header of a document can be of any level, although we highly recommend your document to start with a \c[[\h[1\]]], and to contain exactly just one \c[[\h[1\]]], as this has implications such as:
+The very first header of a document can be of any level, although we highly recommend your document to start with a `\h[1]`, and to contain exactly just one `\h[1]`, as this has implications such as:
 
-\l[\c[[\h[1\]]] is used for the document title: \x[html-document-title]]
-\l[\c[[\h[1\]]] does not show on the \x[table-of-contents]]
+\l[`\h[1]` is used for the document title: \x[html-document-title]]
+\l[`\h[1]` does not show on the \x[table-of-contents]]
 
 After the initial header however, you must not skip a header level, e.g. the following would give an error because it skips level 3:
-
-\C[[
+``
 \h[1][my 1]
 
 \h[2][my 1]
 
 \h[4][my 4]
-]]
+``
 
 \h[3][The toplevel header]
 
-If the document has only a single header of the highest level, e.g. like the following has only a single \c[h2]:
-
-\C[[
+If the document has only a single header of the highest level, e.g. like the following has only a single `h2`:
+``
 \h[2][My 2]
 
 \h[3][My 3 1]
 
 \h[3][My 3 2]
-]]
-
+``
 then this has some magical effects.
 
 \h[4][The toplevel header IDs don't show]
 
 Header IDs won't show for the toplevel level. For example, the headers would render like:
-
-\C[[
+``
 My 2
 
 1. My 3 1
 
 2. My 3 2
-]]
-
+``
 rather than:
-
-\C[[
+``
 1. My 2
 
 1.2. My 3 1
 
 1.2. My 3 2
-]]
-
-This is because in this case, we guess that the \c[h2] is the toplevel
+``
+This is because in this case, we guess that the `h2` is the toplevel.
 
 \h[4][The ID of the first header is derived from the filename]
 
@@ -543,45 +520,41 @@ When the Cirodown input comes from a file (and not e.g. stdin), the default ID o
 
 This is specially relevant when \x[includes][including] other files.
 
-For example, in file named \c[my-file.ciro] which contains:
-
-\C[[
+For example, in file named `my-file.ciro` which contains:
+``
 \h[1][Awesome cirodown file]
 ]]
-
-the ID of the header is \c[my-file] rather than \c[awesome-cirodown-file]. See also: \x[automatic-id-from-title].
+``
+the ID of the header is `my-file` rather than `awesome-cirodown-file`. See also: \x[automatic-id-from-title].
 
 If the file is an \x[index-files][index file], then the basename of the parent directory is used instead, e.g. the toplevel ID of a file:
-
-\C[[my-subdir/README.ciro]]
-
+``my-subdir/README.ciro``
 would be:
-
-\C[[#my-subdir]]
-
+``#my-subdir``
 rather than:
+``#README.ciro``
 
-\C[[#README.ciro]]
-
-\h[2][Lists \c[[\l]]]
+\h[2][Lists `\l`]
 {id=lists}
 
 With implicit container:
-
+\cirodown_example[[
 \l[a]
 \l[b]
 \l[c]
+]]
 
 Equivalent with explicit container:
-
+\cirodown_example[[
 \ul[
 \l[a]
 \l[b]
 \l[c]
 ]
+]]
 
 The explicit container is required if you want to add properties to the list, e.g. a title and an ID: \x[list-my-id]:
-
+\cirodown_example[[
 \ul
 {id=list-my-id}
 [
@@ -589,17 +562,19 @@ The explicit container is required if you want to add properties to the list, e.
 \l[b]
 \l[c]
 ]
+]]
 
 It is also required if you want ordered lists:
-
+\cirodown_example[[
 \ol[
 \l[first]
 \l[second]
 \l[third]
 ]
+]]
 
 Nested lists with implicit containers:
-
+\cirodown_example[[
 \l[
   a
 
@@ -609,9 +584,10 @@ Nested lists with implicit containers:
 ]
 \l[b]
 \l[c]
+]]
 
 List item with a paragraph inside of it:
-
+\cirodown_example[[
 \l[a]
 \l[
   I have
@@ -624,12 +600,14 @@ List item with a paragraph inside of it:
   \l[list]
 ]
 \l[c]
+]]
 
-\h[2][Images \c[[\image]]]
+\h[2][Images `\image`]
 {id=images}
 
-A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' \c[Image] can be seen at \x[fig-my-xi-chrysanthemum]:
+A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' `Image` can be seen at \x[fig-my-xi-chrysanthemum].
 
+\cirodown_example[[
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {title=Xi Chrysanthemum is a very nice image}
 {id=fig-my-xi-chrysanthemum}
@@ -639,48 +617,48 @@ A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' \c[
 
   I'm not even kidding.
 }
+]]
 
 Here is one without a description but with an ID so we can link to it: \x[fig-my-xi-chrysanthemum-2]{style=full}.
 
+\cirodown_example[[
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {id=fig-my-xi-chrysanthemum-2}
-
-We must use \x[cross-reference-style][\c[style=full]] here because otherwise the link text would be empty and not show at all.
-
-If the image has neither ID nor title, then it just gets a generic caption, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
-
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-
-The image does however get an automatically generated ID based on its image number so that readers can link to it on the rendered version, e.g. as:
-
-\C[[
-#fig-123
 ]]
 
-This link is of course not stable across document revisions, since if an image is added before that one, the link will break.
+We must use \x[cross-reference-style][`style=full`] here because otherwise the link text would be empty and not show at all.
 
-This kind of image is discouraged, because in paged output formats like PDF, it could float away from the text that refers to the image.
+If the image has neither ID nor title, then it just gets a generic caption, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
+\cirodown_example[[
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+]]
+The image does however get an automatically generated ID based on its image number so that readers can link to it on the rendered version, e.g. as:
+``
+#fig-123
+``
+This link is of course not stable across document revisions, since if an image is added before that one, the link will break. This kind of image is discouraged, because in paged output formats like PDF, it could float away from the text that refers to the image.
 
-And here is an \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg][Xi Chrysanthemum] inline one with lower case 'i'. Inline images can't have captions.
+And this is how you make an inline image inline one with lower case `i`:
+\cirodown_example[[
+My inline \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg][Xi Chrysanthemum] is awesome.
+]]
+Inline images can't have captions.
 
 \h[3][Where to store images]
 
 If you are making a limited repository that will not have a ton of images, then you can get away with simply git tracking your images in the main repository.
 
 With this setup, no further action is needed. For example, with a file structure of:
-
-\C[[
+``
 ./README.ciro
 ./Image_with_a_descriptive_title.jpeg
-]]
-
+``
 just use the image from \C[README.ciro] as:
-
-\C[[
+``
 Here is a nice image:
 
 \Image[Image_with_a_descriptive_title.jpeg]
-]]
+``
 
 However, if you are making a huge tutorial, which can have a huge undefined number of images (i.e. any scientific book), then you likely don't want to git track your images in the git repository.
 
@@ -688,33 +666,30 @@ We recommend the following approach instead.
 
 Create a separate GitHub repository in addition to the main one containing the text, for example:
 
-\l[\c[./my-tutorial/]]
-\l[\c[./my-tutorial-media/]]
+\l[`./my-tutorial/`]
+\l[`./my-tutorial-media/`]
 
-The name \c[*-media] suffix is not mandatory, but if you use this default, \c[cirodown] will handle it for you without any further configuration.
+The name `*-media` suffix is not mandatory, but if you use this default, `cirodown` will handle it for you without any further configuration.
 
 And then set the \x[media-source-type] option in your \x[cirodown-json]:
-
-\C[[
+``
 {
   media_source_type = "media_repo"
 }
-]]
+``
 
-Now, simply drop your images into the \c[my-tutorial-media] repository and use them just as before, and everything will just work!
-
-\C[[
+Now, simply drop your images into the `my-tutorial-media` repository and use them just as before, and everything will just work!
+``
 \Image[Image_with_a_descriptive_title.jpeg]
-]]
+``
 
-\c[cirodown] will even automatically add and push used images in the \c[my-tutorial-media] repository for you during publishing!
+`cirodown` will even automatically add and push used images in the `my-tutorial-media` repository for you during publishing!
 
-You should then use the following rules inside \c[my-tutorial-media]:
-
+You should then use the following rules inside `my-tutorial-media`:
 \l[give every file a very descriptive and unique name as a full English sentence]
 \l[never ever delete any files, nor change their content, unless it is an improvement in format that does change the information contained of the image TODO link to nice Wikimedia Commons guideline page]
 
-This way, even though the repositories are not fully in sync, anyone who clones the latest version of the \c[*-media] directory will be able to view any version of the main repository.
+This way, even though the repositories are not fully in sync, anyone who clones the latest version of the `*-media` directory will be able to view any version of the main repository.
 
 Then, if one day the media repository ever blows up GitHub's limit, you can just migrate the images to another image server that allows arbitrary basenames, e.g. AWS, and just configure your project to use that new media base URL with the \x[media-base-url] option.
 
@@ -726,47 +701,41 @@ Therefore, images could easily fill up the maximum repository size you are allow
 
 \h[3][Image generators]
 
-TODO implement: mechanism where you enter a textual description of the image inside the code body, and it then converts to an image, adds to the \c[-media] repo and pushes all automatically. Start with dot.
+TODO implement: mechanism where you enter a textual description of the image inside the code body, and it then converts to an image, adds to the `-media` repo and pushes all automatically. Start with dot.
 
-\h[2][Code \c[[\c]] and \c[[\C]]]
+\h[2][Code \c[[`]], \c[[``]], `\c` and `\C`]
 {id=code}
 
-Inline code blocks (code blocks that should appear in the middle of a paragraph) are done with lower case \c[c]:
-
-\C[[
-My \c[inline] code.
+Inline code (code that should appear in the middle of a paragraph rather than on its own line) is done with a single backtick (\c[[`]]) \x[insane-macro-shortcuts][insane macro shortcut]:
+\cirodown_example[[
+My inline `x = 'hello\n'` is awesome.
+]]
+and block code (code that should appear on their own line) is done with two or more backticks (\c[[``]]):
+\cirodown_example[[
+``
+f() {
+  return 'hello\n';
+}
+``
 ]]
 
-renders to:
-
+The sane version of inline code is a lower case `c`:
+\cirodown_example[[[
+My inline \c[[x = 'hello\n']] is awesome.
+]]]
+and the sane version of block math is with an upper case `M`:
+\cirodown_example[[[
 \C[[
-<p>My <code>inline</code> code.</p>
+f() {
+  return 'hello\n';
+}
 ]]
+]]]
 
-Code blocks (code blocks that should appear outside of paragraphs in their own lines) are done with capital \c[C]:
+The capital vs lower case theme is also used in other elements, see: \x[macro-capitalization-for-block-vs-inline].
 
-\C[[
-A paragraph.
-
-\C[
-A block
-of code
-]
-
-Another paragraph.
-]]
-
-renders to:
-
-\C[[
-<p>A paragraph.</p>
-<pre><code>A block
-of code</code></pre>
-<p>Another paragraph.</p>
-]]
-
-If the content of the code block has many characters that you would need to \x[escape-characters][escape], you will often want to use \x[literal-arguments], which work just like the do for any other argument. For example:
-
+If the content of the sane code block has many characters that you would need to \x[escape-characters][escape], you will often want to use \x[literal-arguments], which work just like the do for any other argument. For example:
+\cirodown_example[[[[
 \C[[[
 A paragraph.
 
@@ -778,130 +747,120 @@ of chars that you would need to escape:
 
 A paragraph.
 ]]]
-
+]]]]
 Note that the initial newline is skipped automatically in code blocks, just as for any other element, due to: \x[argument-leading-newline-removal], so you don't have to worry about it.
 
-The capital vs lower case theme is also used in other elements, for example \x[math].
-
-The distinction between inline \c[c] and block \c[C] code blocks is needed because in HTML, \a[https://stackoverflow.com/questions/5371787/can-i-have-a-pre-tag-inside-a-p-tag-in-tumblr/58603596#58603596][\c[pre] cannot go inside \c[p]].
+The distinction between inline `c` and block `C` code blocks is needed because in HTML, \a[https://stackoverflow.com/questions/5371787/can-i-have-a-pre-tag-inside-a-p-tag-in-tumblr/58603596#58603596][`pre` cannot go inside `p`].
 
 We could have chosen to do some magic to differentiate between them, e.g. checking if the block is the only element in a paragraph, but we decided not to do that to keep the language saner.
 
-\h[2][Mathematics \c[[\M]] and \c[[\m]]]
+\h[2][Mathematics `$`, `$$`, `\m` and `\M`]
 {id=math}
 
-Via KaTeX server side, oh yes!
+Via \a[https://katex.org/][KaTeX] server side, oh yes!
 
-Inline math is done with lower case \c[m]:
-
-\C[[[
-My inline \m[[\sqrt{1 + 1}]] is awesome.
-]]]
-
-which renders as:
-
-My inline \m[[\sqrt{1 + 1}]] is awesome.
-
-Alternatively, you can use the equivalent dollar sign (\c[[$]]) \x[insane-macro-shortcuts][insane macro shortcut]:
-
-\C[[[
+Inline math is done with the dollar sign (`$`) \x[insane-macro-shortcuts][insane macro shortcut]:
+\cirodown_example[[
 My inline $\sqrt{1 + 1}$ is awesome.
-]]]
-
-In the sane syntax, \x[escape-characters][as with any other argument], you have to either escape any closing square brackets \c[\]] with a backslash:
-
-\C[[
-My inline \m[1 - \[1 + 1\] = -1] is awesome.
+]]
+and block math is done with two or more dollar signs (`$$`):
+\cirodown_example[[
+$$
+\sqrt{1 + 1} \\
+\sqrt{1 + 1}
+$$
 ]]
 
-or with double open and close:
+The sane version of inline math is a lower case `m`:
+\cirodown_example[[[
+My inline \m[[\sqrt{1 + 1}]] is awesome.
+]]]
+and the sane version of block math is with an upper case `M`:
+\cirodown_example[[[
+\M[[
+\sqrt{1 + 1} \\
+\sqrt{1 + 1}
+]]
+]]]
 
-\C[[[
+The capital vs lower case theme is also used in other elements, see: \x[macro-capitalization-for-block-vs-inline].
+
+In the sane syntax, \x[escape-characters][as with any other argument], you have to either escape any closing square brackets `]` with a backslash `\`:
+\cirodown_example[[
+My inline \m[1 - \[1 + 1\] = -1] is awesome.
+]]
+or with the equivalent double open and close:
+``
 My inline \m[[1 - [1 + 1] = -1]] is awesome.
-]]]
-
-both of which render as:
-
-My inline \m[1 - \[1 + 1\] = -1] is awesome.
-
-Display math is done with upper case \c[M]:
-
-\C[[[
-\M[[
-\sqrt{1 + 1} \\
-\sqrt{1 + 1}
-]]
-]]]
-
-which renders as:
-
-\M[[
-\sqrt{1 + 1} \\
-\sqrt{1 + 1}
-]]
-
-Or alternatively, you can use the equivalent multiple dollar sign (\c[[$$]]) \x[insane-macro-shortcuts][insane macro shortcut]:
-$$
-\sqrt{1 + 1} \\
-\sqrt{1 + 1}
-$$
+``
 
 HTML escaping happens as you would expect, e.g. < shows fine in:
-\C[[[
-\M[[
+\cirodown_example[[
+$$
 1 < 2
+$$
+]]
+
+Equation IDs and titles and linking to equations works identically to \x[images][images], see that section for full details. Here is one equation reference example that links to the following insane syntax equation: \x[eq-my-first-insane-equation]:
+\cirodown_example[[
+$$
+\sqrt{1 + 1}
+$${title=My first insane equation}
+]]
+and the sane equivalent \x[eq-my-first-sane-equation]:
+\cirodown_example[[[
+\M{title=My first sane equation}[[
+\sqrt{1 + 1}
 ]]
 ]]]
 
-which renders as:
+Here is a raw one just to test the formatting outside of a `cirodown_comment`:
 
-\q[
-\M[[
-1 < 2
-]]
-]
-
-Equation IDs and titles and linking to equations works identically to \x[images][images], see that section for full details. Here is one equation reference example: \x[eq-my-first-equation].
-
-\M{title=My first equation}[[
-1 + 1 = 2
-]]
+$$\sqrt{1 + 1}$$
 
 \h[3][Math defines across blocks]
 
-TODO pending upstream tag bump: \a[https://github.com/KaTeX/KaTeX/pull/2091] First here is an invisible block defining with a \c[\\newcommand] definition after this paragraph:
+TODO superior `\newcommand` version pending upstream tag bump: \a[https://github.com/KaTeX/KaTeX/pull/2091]
 
-\M{show=0}[[
+First here is an invisible block (with `{show=0}`) defining with a `\newcommand` definition after this paragraph:
+
+\cirodown_example[[
+$$[[
 \newcommand{\foo}[0]{bar}
+$${show=0}
 ]]
 
-We set the \c[\{show=0\}] argument because this block only contains KaTeX definitions, and should not render to anything.
+We make it invisible because this block only contains KaTeX definitions, and should not render to anything.
 
-Second block using:
+Then the second math block uses those definitions:
 
-\C[[[
-\M[[
+``
+$$
 \foo
 ]]
-]]]
+$$
+``
 
-First invisible block defining with \c[\\def] after this paragraph:
-
-\M{show=0}[[
+Analogously with `\def`, definition:
+\cirodown_example[[
+$$
 \gdef\foogdef{bar}
+$${show=0}
 ]]
-
-Second block using it:
-
-\M[[
+and the second block using it:
+\cirodown_example[[
+$$
 \foogdef
+$$
 ]]
 
-\h[2][Tables \c[[\table]], \c[[\tr]], \c[[\th]] and \c[[\td]]]
+\h[2][Tables `\table`, `\tr`, `\th` and `\td`]
 {id=tables}
 
-Similar to lists. Implicit container with optional indentation to improve readability:
+Similar to lists.
 
+Implicit container with optional indentation to improve readability:
+\cirodown_example[[
 \tr[
   \th[Header 1]
   \th[Header 2]
@@ -914,9 +873,10 @@ Similar to lists. Implicit container with optional indentation to improve readab
   \td[2 1]
   \td[2 2]
 ]
+]]
 
 Explicit container to add further properties: \x[table-my-table].
-
+\cirodown_example[[
 \table{title=My table title}
 {id=table-my-table}
 [
@@ -933,13 +893,13 @@ Explicit container to add further properties: \x[table-my-table].
   \td[2 2]
 ]
 ]
+]]
 
-\h[2][Quotations \c[\\q]]
+\h[2][Quotations `\q`]
 {id=quotations}
 
-With \c[q]:
-
-\C[[
+With `q`:
+\cirodown_example[[
 And so he said:
 
 \q[
@@ -950,47 +910,36 @@ And with multiple paragraphs.
 
 and it was great.
 ]]
-
-which renders as:
-
-\q[
-And so he said:
-
-\q[
-Something very smart
-
-And with multiple paragraphs.
-]
-
-and it was great.
-]
 
 \h[2][Comments]
 
-The \c[Comment] and \c[comment] macros are regular macros that does not produce any output. Capitalization is explained at: \x[macro-capitalization-for-block-vs-inline].
+The `Comment` and `comment` macros are regular macros that does not produce any output. Capitalization is explained at: \x[macro-capitalization-for-block-vs-inline].
 
 You will therefore mostly want to use it with a \x[literal-arguments][literal argument], which will, as for any other macro, ignore any macros inside of it.
+\cirodown_example[[[
+Before comment.
 
 \Comment[[
-One line and \m[1 + 1]
-
-\l[a]
-\l[b]
-
-Another line.
+Inside comment.
 ]]
 
-And here is: \comment[[\m[1 + 1\]]] an inline one.
+After comment.
+]]]
 
-\comment[[\m[1 + 1\]]] inline at the start.
+And an inline one:
+\cirodown_example[[[
+My inline \comment[[inside comment]] is awesome.
+
+\comment[[inside comment]] inline at the start.
+]]]
 
 \h[2][Cirodown syntax]
 
 \h[3][Insane macro shortcuts]
 
-Certain commonly used macros have insane macro shortcuts that do not start with backslash (\c[\\]):
-\l[\x[paragraphs]: \c[[\n\n]] (double newline)]
-\l[\x[math]: \c[[$]], described at: \x[insane-code-and-math-shortcuts]]
+Certain commonly used macros have insane macro shortcuts that do not start with backslash (`\`):
+\l[\x[paragraphs]: `\n\n` (double newline)]
+\l[\x[math]: `$`, described at: \x[insane-code-and-math-shortcuts]]
 \l[\x[code]: \c[[`]], described at: \x[insane-code-and-math-shortcuts]]
 
 Originally, \x[design-goals][Ciro wanted to avoid those], but they just feel too good to avoid.
@@ -1004,24 +953,16 @@ The style recommendation is: use the insane version which is shorter, unless you
 The insane code and math shortcuts work very analogously and are therefore described together in this section.
 
 The insane inline code syntax:
-
-\C[[
+\cirodown_example[[
 a `b c` d
 ]]
-
-is equivalent to the sane:
-
-\C[[[
+and is equivalent to the sane:
+``
 a \c[[b c]] d
-]]]
+``
 
-and both render as:
-
-\q[a `b c` d]
-
-the insane block code:
-
-\C[[
+The insane block code:
+\cirodown_example[[
 a
 
 ``
@@ -1030,10 +971,8 @@ b c
 
 d
 ]]
-
-is equivalent to the sane:
-
-\C[[[
+and is equivalent to the sane:
+``
 a
 
 \C[[
@@ -1041,52 +980,7 @@ b c
 ]]
 
 d
-]]]
-
-and both render as:
-
-\q[
-a
-
 ``
-b c
-``
-
-d
-]
-
-Similarly for math:
-
-\C[[
-My inline $\sqrt{1 + 1}$ formula.
-
-$$
-\sqrt{1 + 1} \\
-\sqrt{1 + 1}
-$$
-]]
-
-is equivalent to the sane:
-
-\C[[[
-My inline \m[[\sqrt{1 + 1}]] formula.
-
-\M[[
-\sqrt{1 + 1} \\
-\sqrt{1 + 1}
-]]
-]]]
-
-and renders as:
-
-\q[
-My inline \m[[\sqrt{1 + 1}]] formula.
-
-\M[[
-\sqrt{1 + 1} \\
-\sqrt{1 + 1}
-]]
-]
 
 \h[4][Insane macro shortcut extra arguments]
 
@@ -1098,20 +992,16 @@ Insane arguments always work by abbreviating:
 This means that you can add further arguments as usual.
 
 For example, an insane code block with an id can be written as:
-
-\C[[
+``
 a `b c`{id=ef} g
-]]
-
+``
 because that is the same as:
-
-\C[[
+\cirodown_example[[
 a \c[b c]{id=ef} g
 ]]
 
 Extra arguments must however come after the insane opening, e.g. the following does not work:
-
-\C[[
+\cirodown_example[[
 a {id=ef}`b c` g
 ]]
 
@@ -1120,40 +1010,25 @@ This restriction things easy to parse for humans and machines alike.
 \h[4][Escapes in insane macro shortcuts]
 
 Literal backticks and dollar signs can be produced witha backslash escape as in:
-
-\C[[
+\cirodown_example[[
 a \` \$ b
 ]]
 
-which renders as:
-
-\q[
-a \` \$ b
-]
-
-It is not possible to escape backticks (\c[[`]]) inside an insane inline code, or dollar signs (\c[[$]]) in insane math.
+It is not possible to escape backticks (\c[[`]]) inside an insane inline code, or dollar signs (`$`) in insane math.
 
 The design reason for that is because multiple backticks produce block code.
 
-The upside is that then you don't have to escape anything else, e.g. backslashes (\c[\\]) are rendered literally.
+The upside is that then you don't have to escape anything else, e.g. backslashes (`\`) are rendered literally.
 
-The only way to do it is to use the sane syntax instead
-
-\C[[[
-a \c[[b ` c]] d
-
-a \m[[\sqrt{$4}]] d
-]]]
-
-which renders as:
-
+The only way to do it is to use the sane syntax instead:
+\cirodown_example[[[
 a \c[[b ` c]] d
 
 a \m[[\sqrt{\$4}]] d
+]]]
 
 Within block code and math, you can just add more separators:
-
-\C[[
+\cirodown_example[[
 ```
 code with two backticks
 ``
@@ -1168,23 +1043,19 @@ nice
 Every argument in Cirodown is either positional or named.
 
 For example, in a \x[headers][header] definition with an ID:
-
-\C[[
+``
 \h[1][My asdf]{id=asdf qwer}{id_scope=myscope}
-]]
-
+``
 we have:
-
-\l[two positional argument: \c[[[1]]] and \c[[[My asdf]]]. Those are surrounded by \c[[[]]] and have no name]
+\l[two positional argument: `[1]` and `[My asdf]`. Those are surrounded by square brackets `[]` and have no name]
 \l[
-  two named arguments: \c[[{id=asdf qwer}]] and \c[[{id_scope=myscope}]].
+  two named arguments: `{id=asdf qwer}` and `{id_scope=myscope}`.
 
-  The first one has name \c[id] and the mandatory separator \c[=], followed by the value \c[asdf qwer].
+  The first one has name `id` and the mandatory separator `=`, followed by the value `asdf qwer`.
 ]
 
 You can determine if a macro is positional or named by using \x[help-macros]. Its output contains something like:
-
-\C[[
+``
   "h": {
     "name": "h",
     "positional_args": [
@@ -1203,22 +1074,20 @@ You can determine if a macro is positional or named by using \x[help-macros]. It
         "name": "id_scope"
       }
     },
-]]
-
-and so we see that \c[level] and \c[content] are positional arguments, and \c[id] and \c[id_scope] are named arguments.
+``
+and so we see that `level` and `content` are positional arguments, and `id` and `id_scope` are named arguments.
 
 Generally, positional arguments are few (otherwise it would be hard to know which is which is which), and are almost always used for a given element so tha they save us from typing the name too many times.
 
 The order of positional arguments must of course be fixed, but named arguments can go anywhere. We can even mix positional and named arguments however we want, although this is not advised for clarity.
 
 The following are therefore all equivalent:
-
-\C[[
+``
 \h[1][My asdf]{id=asdf qwer}{id_scope=myscope}
 \h[1][My asdf]{id_scope=myscope}{id=asdf qwer}
 \h{id=asdf qwer}{id_scope=myscope}[1][My asdf]
 \h{id_scope=myscope}[1]{id=asdf qwer}[My asdf]
-]]
+``
 
 Just like named arguments, positional arguments are never mandatory.
 
@@ -1227,69 +1096,56 @@ If not given, most positional arguments will default to an empty string.
 However, some positional arguments can have special effects if not given.
 
 For example, an anchor with the first positional argument present (the URL), but not the second positional argument (the link text) as in:
-
-\C[[
+\cirodown_example[[
 \a[http://example.com]
 ]]
-
 has the special effect of generating automatic links as in:
-
-\C[[
+``
 \a[http://example.com][http://example.com]
-]]
+``
 
 See also: \x[links].
 
 \h[4][JavaScript interface for arguments]
 
 The JavaScript interface sees arguments as follows:
-
-\C[
+``
 function macro_name(args)
-]
-
+``
 where args is a dict such that:
-
 \l[optional arguments have the key / value pairs explicitly given on the call]
 \l[
   mandatory arguments have a key documented by the API, and the value on the call.
 
-  For example, the link API names its arguments \c[href] and \c[text].
+  For example, the link API names its arguments `href` and `text`.
 ]
 
 \h[4][Newlines between arguments]
 
 The macro name and the first argument, and two consecutive arguments, can be optionally separated by exactly one newline character, e.g.:
-
-\C[[
+``
 \h[2]
 {id-scope=true}
 [Design goals]
-]]
-
+``
 is equivalent to:
-
-\C[[
+``
 \h[2]{id-scope=true}[Design goals]
-]]
-
+``
 and this non-recommended mixed style:
-
-\C[[
+``
 \h[2]{id-scope=true}
 [Design goals]
-]]
-
+``
 This allows to greatly improve the readability of long argument lists by having them one per line.
 
 \h[4][Escape characters]
 
 For \x[literal-arguments][non-literal macro arguments], you have to use a backslash to escape:
-
-\l[\c[\\]: backslashes start macros]
-\l[\c[\[] and \c[\]]: open and close \x[positional-vs-named-arguments][positional macro arguments]]
-\l[\c[\{] and \c[\}]: open and close \x[positional-vs-named-arguments][optional macro arguments]]
-\l[\c[[$]] (dollar sign)]: \x[insane-macro-shortcuts][insane macro shortcut] for \x[math][Math]
+\l[`\`: backslashes start macros]
+\l[`\` and `\`: open and close \x[positional-vs-named-arguments][positional macro arguments]]
+\l[`\` and `\`: open and close \x[positional-vs-named-arguments][optional macro arguments]]
+\l[`$` (dollar sign)]: \x[insane-macro-shortcuts][insane macro shortcut] for \x[math][Math]
 \l[\c[[`]] (backtick)]: \x[insane-macro-shortcuts][insane macro shortcut] for \x[code][code]
 
 The escape rules for literal arguments are described at: \x[literal-arguments]{style=full}.
@@ -1298,22 +1154,21 @@ This is good for short arguments of regular text, but for longer blocks of \x[co
 
 \h[4][Literal arguments]
 
-Arguments that are opened with more than one square brackets \c[\[] or curly braces \c[\{] are literal arguments.
+Arguments that are opened with more than one square brackets `[` or curly braces `{` are literal arguments.
 
 In literal arguments, Cirodown is not parsed, and the entire argument is considered as text until a corresponding close with the same number of characters.
 
 Therefore, you cannot have nested content, but it makes it extremely convenient to write \x[code] or \x[math].
 
 For example, a multiline code block with double open and double close square brackets inside can be enclosed in triple square brackets:
-
-\C[[[
+\cirodown_example[[[
 A literal argument looks like this in Cirodown:
 
 \C[[
 \C[
 A multiline
 
-cod block.
+code block.
 ]
 ]]
 
@@ -1321,21 +1176,20 @@ And another paragraph.
 ]]]
 
 The same works for inline code:
-
-\C[[[
+\cirodown_example[[[
 The program \c[[puts("]");]] is very complex.
 ]]]
 
-Within literal blocks, only one thing can be escaped with backslashes: leading \c[\[] or trailing \c[\]].
+Within literal blocks, only one thing can be escaped with backslashes are:
+\l[leading open square bracket `[`]
+\l[trailing close square bracket `]`]
 
 The rule is that:
+\l[if the first character of a literal argument is a sequence of backslashes (`\`), and it is followed by another argument open character (e.g. `[`, remove the first `\` and treat the other characters as regular text]
+\l[if the last character of a literal argument is a `\`, ignore it and treat the following closing character (e.g. `]`) as regular text]
 
-\l[if the first character of a literal argument is a sequence of \c[\\], and it is followed by another argument open character (e.g. \c[\[]), remove the first \c[\\] and treat the other characters as regular text]
-\l[if the last character of a literal argument is a \c[\\], ignore it and treat the following closing character (e.g. \c[\]]) as regular text]
-
-See the following open input / output:
-
-\C[[[
+See the following open input/output pairs:
+``
 \c[[\ b]]
 <code>\ b</code>
 
@@ -1350,11 +1204,9 @@ See the following open input / output:
 
 \c[[\\\[ b]]
 <code>\\[ b</code>
-]]]
-
+``
 and close examples:
-
-\C[[[[
+``
 \c[[a \]]
 <code>a \</code>
 
@@ -1363,46 +1215,40 @@ and close examples:
 
 \c[[a \\]]]
 <code>a \]</code>
-]]]]
+``
 
 \h[4][Argument leading newline removal]
 
 If the very first character of an argument is a newline, then that character is ignored.
 
 For example:
-
-\C[[[
+``
 \C[[
 a
 
 b
 ]]
-]]]
-
+``
 generates something like:
-
-\C[
+``
 <pre><code>a
 
 b
 </code></pre>
-]
-
+``
 instead of:
-
-\C[
+``
 <pre><code>
 a
 
 b
 </code></pre>
-]
+``
 
 This is extremely convenient to improve the readability of code blocks and similar constructs.
 
 If you absolutely need an opening newline, just add a second leading or trailing newline to the macro argument, e.g.:
-
-\C[[[
+``
 \C[[
 
 a
@@ -1410,7 +1256,7 @@ a
 b
 
 ]]
-]]]
+``
 
 \h[4][Argument automatic indentation removal]
 
@@ -1419,8 +1265,7 @@ Inside of a non-literal block, the very first non-whitespace character determine
 This allows seamlessly indenting complex nested content to make it more readable.
 
 For example, a list with complex content could be written without indentation as:
-
-\C[[[
+``
 \l[a]
 \l[
 b
@@ -1432,11 +1277,9 @@ And now some code
 And a paragraph.
 ]
 \l[c]
-]]]
-
+``
 but it would be more readable as the equivalent:
-
-\C[[[
+``
 \l[a]
 \l[
   b
@@ -1448,11 +1291,10 @@ but it would be more readable as the equivalent:
   And a paragraph.
 ]
 \l[c]
-]]]
+``
 
 If a something tries to reduce the current indentation level, then that leads to an error:
-
-\C[[
+``
 \l[a]
 \l[
   b
@@ -1462,7 +1304,7 @@ I'm bad because I have negative indentation.
   Back to good.
 ]
 \l[c]
-]]
+``
 
 \h[3][Macro capitalization for block vs inline]
 
@@ -1480,91 +1322,83 @@ The distinction is required because there are lots of things you cannot put insi
 
 Unlike all languages which rely on ad-hoc tooling, we will support every single tool that is required and feasible to be in this repository in this repository, in a centralized manner.
 
-\h[3][\c[cirodown] executable]
+\h[3][`cirodown` executable]
 {id=cirodown-executable}
 
-Convert a \c[.ciro] file to HTML and output the HTML to stdout:
-
-\C[[
+Convert a `.ciro` file to HTML and output the HTML to stdout:
+``
 cirodown README.ciro
-]]
+``
 
-Convert all \c[.ciro] files in a directory to HTML files next to each corresponding \c[.ciro] file, e.g. \c[somefile.ciro] to \c[somefile.html]:
-
-\C[[
+Convert all `.ciro` files in a directory to HTML files next to each corresponding `.ciro` file, e.g. `somefile.ciro` to `somefile.html`:
+``
 cirodown .
-]]
+``
 
 In order to resolve \x[internal-cross-file-references], this actually does two passes:
-
 \l[first an ID extraction pass, which parses all inputs and dumps their IDs to the ID database]
 \l[then a second render pass, which uses the IDs in the ID database]
 
-Convert a \c[.ciro] file from stdin to HTML and output the contents of \c[<body>] to stdout:
-
-\C[[
+Convert a `.ciro` file from stdin to HTML and output the contents of `<body>` to stdout:
+``
 printf 'ab\ncd\n' | cirodown --body-only
-]]
+``
 
 \h[4][Index files]
 
 The following basenames are considered "index files":
 
-\l[\c[README.ciro]]
-\l[\c[index.ciro]]
+\l[`README.ciro`]
+\l[`index.ciro`]
 
 Those basenames have the following magic properties:
 
-\l[the default output file name for an index file in HTML output is always \c[index.html], including that of \c[README.ciro]. This way it will appear on both the root of the HTML output and on the GitHub home page once GitHub adds Cirodown support.]
+\l[the default output file name for an index file in HTML output is always `index.html`, including that of `README.ciro`. This way it will appear on both the root of the HTML output and on the GitHub home page once GitHub adds Cirodown support.]
 \l[the default \x[the-toplevel-header][toplevel header] ID of an index files is derived from the parent directory basename rather than from the source file basename]
 
-\h[4][\c[cirodown] executable most important options]
+\h[4][`cirodown` executable most important options]
 {id=cirodown-executable-most-important-options}
 
-\h[5][\c[--watch]]
+\h[5][`--watch`]
 {id=watch}
 
-Don't quit \c[cirodown] immediately.
+Don't quit `cirodown` immediately.
 
 Instead, watch the selected file or directory for changes, and rebuild individual files when changes are detected.
 
 Watch a single file:
-
-\C[[
+``
 cirodown --watch README.ciro
-]]
+``
 
-Now you can just edit \c[README.ciro], save the file in your editor, and refresh the webpage and your change should be visible, no need to run a \c[cirodown] command excplicitly every time.
+Now you can just edit `README.ciro`, save the file in your editor, and refresh the webpage and your change should be visible, no need to run a `cirodown` command excplicitly every time.
 
 TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with-live-preview/ to also dispense the browser refresh.
 
-Watch every \c[.ciro] file in an entire directory:
-
-\C[[
+Watch every `.ciro` file in an entire directory:
+``
 cirodown --watch .
-]]
+``
 
 This automatically first does a first ID extractoin pass on all files to support \x[internal-cross-file-references].
 
-The output of conversion to \c[.html] files is saved automatically instead of outputting it to stdout as done without \c[--watch].
+The output of conversion to `.html` files is saved automatically instead of outputting it to stdout as done without `--watch`.
 
 Exit by entering Ctrl + C on the terminal.
 
-\h[5][\c[--publish]]
+\h[5][`--publish`]
 {id=publish}
 
 Cirodown tooling is so amazing that we also take care of the HTML publishing for you.
 
 \h[6][Publish to GitHub Pages]
 
-If you want to publish your root user page, which appears at `/` (e.g. \a[https://github.com/cirosantilli/cirosantilli.github.io] for the user \c[cirosantilli]), GitHub annoyingly forces you to use the \c[master] branch for the HTML output:
-
+If you want to publish your root user page, which appears at `/` (e.g. \a[https://github.com/cirosantilli/cirosantilli.github.io] for the user `cirosantilli`), GitHub annoyingly forces you to use the `master` branch for the HTML output:
 \l[https://github.com/isaacs/github/issues/212]
 \l[https://stackoverflow.com/questions/31439951/how-can-i-use-a-branch-other-than-master-for-user-github-pages]
 
-Therefore, you must first place your \c[.ciro] source in a different branch and clear up the \c[master] branch for the HTML, and only then publish:
-
-\C[[
+Therefore, you must first place your `.ciro` source in a different branch and clear up the `master` branch for the HTML, and only then publish:
+``
 git checkout -b dev
 git branch -D master
 git push --delete origin master
@@ -1572,93 +1406,82 @@ git push --delete origin master
 git add README.ciro
 git commit --message 'some commit message'
 cirodown --publish
-]]
+``
 
-This will automatically \c[git push] both the \c[dev] branch for you, and create/update the \c[master] branch, which contains the desired HTML output.
+This will automatically `git push` both the `dev` branch for you, and create/update the `master` branch, which contains the desired HTML output.
 
 Only changes committed to Git are pushed.
 
-You then will also want to set your default repository branch to \c[dev] in the settings for that repository: https://help.github.com/en/github/administering-a-repository/setting-the-default-branch
+You then will also want to set your default repository branch to `dev` in the settings for that repository: https://help.github.com/en/github/administering-a-repository/setting-the-default-branch
 
-\c[cirodown] automatically detects that we are not on the \c[master] branch, and therefore guesses that you want to publish GitHub pages on the \c[master] branch.
+`cirodown` automatically detects that we are not on the `master` branch, and therefore guesses that you want to publish GitHub pages on the `master` branch.
 
-For any other non-root directory, \c[cirodown] sees that you are on the \c[master] branch, and automatically publishes on the \c[gh-pages] branch, so all you need is:
-
-\C[[
+For any other non-root directory, `cirodown` sees that you are on the `master` branch, and automatically publishes on the `gh-pages` branch, so all you need is:
+``
 git add README.ciro
 git commit --message 'some commit message'
 cirodown --publish .
 ]]
+``
 
 The publishing only happens if the build has no errors.
 
-When \c[--publish] is given, stdin input is not accepted, and so the current directory is built by default, i.e. the following two are equivalent:
-
-\C[[
+When `--publish` is given, stdin input is not accepted, and so the current directory is built by default, i.e. the following two are equivalent:
+``
 ./cirodown --publish
 ./cirodown --publish .
-]]
+``
 
-\h[6][\c[--dry-run]]
+\h[6][`--dry-run`]
 {id=dry-run}
 
-The \c[--dry-run] option is a good way to debug \c[--publish], as it builds the publish output files without doing any git commands that would be annoying to revert.
-
-So after doing:
-
-\C[[
+The `--dry-run` option is a good way to debug `--publish`, as it builds the publish output files without doing any git commands that would be annoying to revert. So after doing:
+``
 ./cirodown --dry-run --publish .
-]]
-
+``
 you can just go and inspect the generated HTML to see what would get pushed at:
-
-\C[[
+``
 cd out/publish/out/publish/
-]]
+``
 
-\h[5][\c[--publish-commit <commit-message>]]
+\h[5][`--publish-commit <commit-message>`]
 {id=publish-commit}
 
 Like \x[publish], but also automatically:
 
-\l[\c[git add -u] to automatically add change to any files that have been previously git tracked]
-\l[\c[git commit -m <commit-message>] to create a new commit with those changes]
+\l[`git add -u` to automatically add change to any files that have been previously git tracked]
+\l[`git commit -m <commit-message>` to create a new commit with those changes]
 
 This allows you to publish your changes live in a single command such as:
-
-\C[[
+``
 cirodown --publish-commit 'my amazing change' .
-]]
+``
 
 With great power comes great responsibility of course, but who cares!
 
-\h[5][\c[--outfile <outfie>]]
+\h[5][`--outfile <outfie>`]
 {id=outfile}
 
 Save the output to a given file instead of outputting to stdout:
-
-\C[[
+``
 ./cirodown --outfile not-readme.html not-readme.ciro
-]]
+``
 
 The generated output is slightly different than that of:
-
-\C[[
+``
 ./cirodown not-readme.ciro > not-readme.html
-]]
+``
+because with `--outfile` we know where the output is going, and so we can generate relative includes to default CSS/JavaScript files.
 
-because with \c[--outfile] we know where the output is going, and so we can generate relative includes to default CSS/JavaScript files.
-
-\h[5][\c[--help-macros]]
+\h[5][`--help-macros`]
 {id=help-macros}
 
 You can get an overview of all macros in JSON format with:
-
-\C[[
+``
 cirodown --help-macros
-]]
+``
 
-\h[5][\c[--html-embed]]
+\h[5][`--html-embed`]
 {id=html-embed}
 
 Embed as many external resources as possible into a single HTML file.
@@ -1672,12 +1495,12 @@ Examples of embeddings done:
 
   The default built-in CSS and JavaScript files used by Cirodown (e.g. the KaTeX CSS \x[math][used for mathematics]) are currently all automatically downloaded as NPM package dependencies to cirodown
 
-  Without \c[--html-embed], those CSS and JavaScript use their main cloud CDN URLs, and therefore require Internet connection to view the generated documents.
+  Without `--html-embed`, those CSS and JavaScript use their main cloud CDN URLs, and therefore require Internet connection to view the generated documents.
 
   The embeded version of the document can be viewed offline however.
 ]
 \l[
-  \x[images][images] are downloaded if needed and embedded as \c[data:] URLs.
+  \x[images][images] are downloaded if needed and embedded as `data:` URLs.
 
   Images that are managed by the project itself and already locally present, such as those inside the project itself or due to \x[media-source-type] usually don't require download.
 
@@ -1685,72 +1508,68 @@ Examples of embeddings done:
 
   To re-download due to image updates, use either:
 
-  \l[\c[--asset-cache-update]: download all images such that the local disk timestamp is older than the HTTP modification date with \a[https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since][\c[If-Modified-Since]]]
-  \l[\c[--asset-cache-update-force]: forcefully redownload all assets]
+  \l[`--asset-cache-update`: download all images such that the local disk timestamp is older than the HTTP modification date with \a[https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since][`If-Modified-Since`]]
+  \l[`--asset-cache-update-force`: forcefully redownload all assets]
 ]
 
 Keep in mind that certain things can never be embedded, e.g.:
 
 \l[YouTube videos, since YouTube does not offer any download API]
 
-\h[5][\c[--html-single-page]]
+\h[5][`--html-single-page`]
 {id=html-single-page}
 
 If given:
 
-\l[the \x[includes][\c[include]] macro parses the target file to be included and includes it in-place]
+\l[the \x[includes][`include`] macro parses the target file to be included and includes it in-place]
 \l[\x[internal-cross-file-references] are disabled, and the cross file ID database does not get updated.
 
 It should be possible to work around this, but we are starting with the simplest implementation that forbids it.
 
 The problem those cause is that the IDs of included headers show as duplicate IDs of those in the ID database.
 
-This should be OK to start with because the more common use case with \c[--html-sinle-page] is that of including all headers in a single document.
+This should be OK to start with because the more common use case with `--html-sinle-page` is that of including all headers in a single document.
 ]
 
-Otherwise, \c[include] only adds the headers of the other file to the table of contents of the current one, but not the body of the other file. The ToC entries then point to the headers of the included external files.
+Otherwise, `include` only adds the headers of the other file to the table of contents of the current one, but not the body of the other file. The ToC entries then point to the headers of the included external files.
 
 You may want to use this option together with \x[html-embed] to produce fully self-contained individual HTML files for your project.
 
-\h[5][\c[--no-html-x-extension]]
+\h[5][`--no-html-x-extension`]
 {id=html-x-no-extension}
 
-If not given, \x[internal-cross-references] render with the \c[.html] extension as in:
-
-\C[[
+If not given, \x[internal-cross-references] render with the `.html` extension as in:
+``
 <a href=not-readme.html#h2-in-not-the-readme>
-]]
+``
 
-This way, those links will work when rendering locally to \c[.html] files which is the default behaviour of:
-
-\C[[
+This way, those links will work when rendering locally to `.html` files which is the default behaviour of:
+``
 cirodown .
-]]
+``
 
-If given however, the links render without the \c[.html] as in:
-
-\C[[
+If given however, the links render without the `.html` as in:
+``
 <a href=not-readme#h2-in-not-the-readme>
-]]
+``
+which is what is needed for servers such as GitHub Pages, which automatically remove the `.html` extension from paths.
 
-which is what is needed for servers such as GitHub Pages, which automatically remove the \c[.html] extension from paths.
+This option is automatically implied when publishing to targets that remove the `.html` extension such as GitHub pages.
 
-This option is automatically implied when publishing to targets that remove the \c[.html] extension such as GitHub pages.
-
-\h[4][\c[cirodown.json]]
+\h[4][`cirodown.json`]
 {id=cirodown-json}
 
-\h[5][\c[media_source_type]]
+\h[5][`media_source_type`]
 {id=media-source-type}
 
-\l[\c[local]: tracked in the current Git repository, no further magic is done]
+\l[`local`: tracked in the current Git repository, no further magic is done]
 \l[
-  \c[media_repo]: tracked in a separate media repository, defaults to \c[../<project-name>-media/]
+  `media_repo`: tracked in a separate media repository, defaults to `../<project-name>-media/`
 
-  When \x[publish][publishing], Cirodown searches for files that were used in the build but not added to the media directory, and automatically does a \c[git add], \c[commit] and \c[push] for you!
+  When \x[publish][publishing], Cirodown searches for files that were used in the build but not added to the media directory, and automatically does a `git add`, `commit` and `push` for you!
 ]
 
-\h[5][\c[media_base_url]]
+\h[5][`media_base_url`]
 {id=media-base-url}
 
 TODO implement set the base URL where media will be served from.
@@ -1818,43 +1637,35 @@ Possibilities we could reuse:
 \h[3][Test system]
 
 Run all tests:
-
-\C[[
+``
 npm test
-]]
+``
 
 List all tests:
-
-\C[[
+``
 node node_modules/mocha-list-tests/mocha-list-tests.js main.js
-]]
-
-As per: \a[https://stackoverflow.com/questions/41380137/list-all-mocha-tests-without-executing-them/58573986#58573986].
+``
+as per: \a[https://stackoverflow.com/questions/41380137/list-all-mocha-tests-without-executing-them/58573986#58573986].
 
 Run just one test by name:
-
-\C[[
+``
 npm test -- 'one paragraph'
-]]
-
-As per: https://stackoverflow.com/questions/10832031/how-to-run-a-single-test-with-mocha TODO: what if the test name is a substring?
+``
+as per: https://stackoverflow.com/questions/10832031/how-to-run-a-single-test-with-mocha TODO: what if the test name is a substring?
 
 Step debug during a test run. Add the statement:
-
-\C[[
+``
 debugger;
-]]
-
+``
 to where you want to break in the code, and then:
-
-\C[[
+``
 node inspect ./node_modules/.bin/mocha test --ignore-leaks -g 'p with id before'
-]]
+``
 
 \h[3][Overview of files in this repository]
 
-\l[\a[index.js]: main code. Must be able to run in the browser, so no Node.js specifics. Exposes the central \c[convert] function]
-\l[\a[cirodown]: CLI executable. Is basically just a CLI interface frontend to \c[convert]]
+\l[\a[index.js]: main code. Must be able to run in the browser, so no Node.js specifics. Exposes the central `convert` function]
+\l[\a[cirodown]: CLI executable. Is basically just a CLI interface frontend to `convert`]
 \l[\a[test.js]: contains all the Mocha tests, see also: \x[test-system]]
 \l[\a[README.md]: minimal Markdown README until GitHub / NPM support Cirodown :-)]
 
@@ -1868,38 +1679,34 @@ Everything that you need to write Cirodown tooling, is present in the main API.
 
 All tooling will be merged into one single repo.
 
-\h[3][The \c[[\toplevel]] implicit macro]
+\h[3][The `\toplevel` implicit macro]
 {id=toplevel}
 
-Every Cirodown document is implicitly put inside a \c[[\toplevel]] document and:
-
-\l[any optionally given arguments at the very beginning of the document will be treated as arguments of the \c[[\toplevel]] macro]
-\l[anything else will be put inside the \c[content] argument of the \c[[\toplevel]] macro]
+Every Cirodown document is implicitly put inside a `\toplevel` document and:
+\l[any optionally given arguments at the very beginning of the document will be treated as arguments of the `\toplevel` macro]
+\l[anything else will be put inside the `content` argument of the `\toplevel` macro]
 
 E.g., a Cirodown document that contains:
-
-\C[[
+``
 [title=My favorite title]
 
 And now, some content!
-]]
+``
 
 is morally equivalent to:
-
-\C[[
+``
 \toplevel
 [title=My favorite title]
 [
 And now, some content!
 ]
-]]
-
-In terms of HTML, the \c[\\toplevel] element corresponds to the \c[<html>], \c[<head>], \c[<header>] and \c[<footer>] elements of a document.
+``
+In terms of HTML, the `\toplevel` element corresponds to the `<html>`, `<head>`, `<header>` and `<footer>` elements of a document.
 
 \h[4][HTML document title]
 
-\l[if the \c[title] argument of \c[toplevel] is given, use that]
-\l[otherwise, if the document has a \c[[\h[1\]]], use the title of the first such header]
+\l[if the `title` argument of `toplevel` is given, use that]
+\l[otherwise, if the document has a `\h[1]`, use the title of the first such header]
 \l[otherwise use a dummy value]
 
 \h[3][CSS]
@@ -1907,10 +1714,9 @@ In terms of HTML, the \c[\\toplevel] element corresponds to the \c[<html>], \c[<
 Our CSS is located at \a[main.scss] and gets processed through \a[https://sass-lang.com/][Sass].
 
 To generate the CSS during development after any changes to that file, you must run:
-
-\C[[
+``
 npm sass
-]]
+``
 
 \h[3][Formal grammar]
 
@@ -1934,18 +1740,19 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[multiple newlines blow up (5 or six), create test and decide best behaviour]
 \l[autolinks http]
 \l[paragraphs rendered as divs, can show anything inside e.g. lists, code blocks]
-\l[create mechanism to link to the GitHub blob view of in-tree source files that are not added to GitHub pages, e.g. \c[\\file]]
+\l[create mechanism to link to the GitHub blob view of in-tree source files that are not added to GitHub pages, e.g. `\file`]
 \l[avoid infinite recursion with xref]
 \l[parse_error: add in document error message, currently only to stderr]
 \l[LaTeX output]
 \l[infinite xref header recursion: \a[https://github.com/asciidoctor/asciidoctor/issues/3543] Solution: forbid x in titles, pass down context from parent.]
 \l[on the AST, put contents of headers inside headers]
-\l[parallel build across files on \c[./cirodown .]]
+\l[parallel build across files on `./cirodown .`]
 \l[includes without double newline between them]
 \l[link from first toplevel header of document to parents determined by includes]
 \l[proper reporting of which source file error is in when including, add a source field to the AST in addition to line and column]
 \l[auto-toc after the first paragraph]
 \l[on publish website, create a mechanism to share the auto-generated default main.scss CSS across all pages via @import, currently just embedding]
+\l[capitalization property of headers]
 
 \h[2][Related projects]
 

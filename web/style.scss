@@ -566,6 +566,11 @@ nav.navbar {
         display: none;
       }
     }
+    @media only screen and (max-width: 780px) {
+      &.donate {
+        display: none;
+      }
+    }
     .beta {
       // Otherwise flex ignores the space.
       // https://stackoverflow.com/questions/39325039/css-flex-box-last-space-removed

@@ -3,10 +3,16 @@
 # The expansion result then calculates the ID for that header and injects it.
 snippet {c
 	{child=`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`}
+snippet \I
+	\\Image[`@+`]
+	{title=$1}
 snippet {p
 	{parent=`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`}
 snippet {t
 	{tag=`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`}
+snippet \V
+	\\Video[`@+`]
+	{title=$1}
 snippet \x
 	\\x[`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`]
 snippet <

@@ -4569,9 +4569,10 @@ where the insane list requires a leading newline `\n* ` to work. That newline is
 = Argument newlines between arguments removal
 {parent=macro-argument-syntax}
 
-The macro name and the first argument, and two consecutive arguments, can be optionally separated by exactly one newline character, e.g.:
+The macro name and the first argument, and any two consecutive arguments, can be optionally separated by exactly one newline character, e.g.:
 ``
-\H[2]
+\H
+[2]
 {scope}
 [Design goals]
 ``
@@ -4579,7 +4580,7 @@ is equivalent to:
 ``
 \H[2]{scope}[Design goals]
 ``
-and this non-recommended mixed style:
+which is also equivalent to:
 ``
 \H[2]{scope}
 [Design goals]

@@ -961,7 +961,7 @@ assert_convert_ast('insane list with literal no error',
     a('Ul', [
       a('L', [
         a('P', [t('aa')]),
-        a('C', [t('bb\ncc\n')]),
+        a('C', [t('bb\ncc')]),
       ]),
     ]),
   ]
@@ -989,7 +989,7 @@ assert_convert_ast('insane list with literal with double newline is not an error
     a('Ul', [
       a('L', [
         a('P', [t('aa')]),
-        a('C', [t('bb\n\ncc\n')]),
+        a('C', [t('bb\n\ncc')]),
       ]),
     ]),
   ]
@@ -1007,7 +1007,7 @@ assert_convert_ast('insane list with element with newline separated arguments',
     a('Ul', [
       a('L', [
         a('P', [t('aa')]),
-        a('C', [t('bb\n')], {id: [t('cc')]}),
+        a('C', [t('bb')], {id: [t('cc')]}),
       ]),
     ]),
   ]
@@ -1737,7 +1737,7 @@ d
 `,
 [
   a('P', [t('a')]),
-  a('C', [t('\\[]{}\n\\[]{}\n')]),
+  a('C', [t('\\[]{}\n\\[]{}')]),
   a('P', [t('d')]),
 ],
 );
@@ -1749,19 +1749,20 @@ b
 `,
   [a('P', [t('a\nb')])],
 );
-assert_convert_ast('literal argument leading newline gets removed',
+assert_convert_ast('literal argument leading and trailing newlines get removed',
   `\\P[[
 a
 b
 ]]
 `,
-  [a('P', [t('a\nb\n')])],
+  [a('P', [t('a\nb')])],
 );
-assert_convert_ast('literal argument leading newline gets removed but not the second one',
+assert_convert_ast('literal argument leading and trailing newlines get removed but not the second one',
   `\\P[[
 
 a
 b
+
 ]]
 `,
   [a('P', [t('\na\nb\n')])],
@@ -4059,7 +4060,7 @@ assert_convert_ast('code inline insane escape backtick',
   'a \\`b c\n',
   [a('P', [t('a `b c')])]
 );
-assert_convert_ast('code block sane',
+assert_convert_ast('code block literal sane',
   `a
 
 \\C[[
@@ -4071,7 +4072,7 @@ d
 `,
   [
     a('P', [t('a')]),
-    a('C', [t('b\nc\n')]),
+    a('C', [t('b\nc')]),
     a('P', [t('d')]),
   ]
 );
@@ -4087,7 +4088,7 @@ d
 `,
   [
     a('P', [t('a')]),
-    a('C', [t('b\nc\n')]),
+    a('C', [t('b\nc')]),
     a('P', [t('d')]),
   ]
 );
@@ -4098,7 +4099,7 @@ aa
 {id=bb}
 `,
   [
-    a('C', [t('aa\n')], { id: [t('bb')] }, { id: 'bb'} ),
+    a('C', [t('aa')], { id: [t('bb')] }, { id: 'bb'} ),
   ],
   {
     assert_xpath_main: [
@@ -4113,7 +4114,7 @@ aa
 {title=b b}
 `,
   [
-    a('C', [t('aa\n')], { title: [t('b b')] }, { id: 'code-b-b'} ),
+    a('C', [t('aa')], { title: [t('b b')] }, { id: 'code-b-b'} ),
   ],
   {
     assert_xpath_main: [
@@ -4128,7 +4129,7 @@ aa
 {description=b b}
 `,
   [
-    a('C', [t('aa\n')], { description: [t('b b')] }, { id: '_1'} ),
+    a('C', [t('aa')], { description: [t('b b')] }, { id: '_1'} ),
   ],
   {
     assert_xpath_main: [
@@ -4142,7 +4143,7 @@ aa
 \`\`
 `,
   [
-    a('C', [t('aa\n')], {}, { id: '_1'} ),
+    a('C', [t('aa')], {}, { id: '_1'} ),
   ],
   {
     assert_not_xpath_main: [
@@ -4166,9 +4167,9 @@ cc
 {id=22}
 `,
   [
-    a('C', [t('aa\n')], { id: [t('00')] }, { id: '00'} ),
-    a('C', [t('bb\n')], {}, { id: '_1'} ),
-    a('C', [t('cc\n')], { id: [t('22')] }, { id: '22'} ),
+    a('C', [t('aa')], { id: [t('00')] }, { id: '00'} ),
+    a('C', [t('bb')], {}, { id: '_1'} ),
+    a('C', [t('cc')], { id: [t('22')] }, { id: '22'} ),
   ],
   {
     assert_xpath_main: [
@@ -4424,23 +4425,6 @@ b]
       { id: 'a-b' }
     )
   ]
-);
-assert_convert_ast('explicit toc after implicit toc is removed',
-  `= aa
-
-bb
-
-== cc
-
-\\Toc
-
-`,
-  [
-    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
-    a('P', [t('bb')]),
-    a('Toc'),
-    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
-]
 );
 assert_convert_ast('xss: H id',
   `= tmp

@@ -1059,6 +1059,8 @@ For fun and profit.
 {parent=test-scope-1}
 {scope}
 
+Let's break this local link: \a[cirodown]{local}.
+
 = Not scoped
 {parent=test-scope-2}
 
@@ -4410,7 +4412,7 @@ The following support is provided:
   But even the imperfect approximation already covers a lot of the most cases.
 
   Notably it turns off spelling from parts of the document like URLs and code which would otherwise contain many false positive spelling errors.
-* \a[vim/snippets/cirodown.vim]: snippets for https://github.com/honza/vim-snippets[], which you also have to install first for them to work.
+* \a[vim/snippets/cirodown.snippets]: snippets for https://github.com/honza/vim-snippets[], which you also have to install first for them to work.
 
   For example, with those snippets installed, you can easily create links to headers. Suppose you have:
   ``

@@ -510,6 +510,7 @@ async function update_database_after_convert({
   path,
   render,
   sequelize,
+  sha256,
   transaction,
   titleSource,
 }) {
@@ -542,6 +543,7 @@ async function update_database_after_convert({
       'last_parse',
       // https://github.com/cirosantilli/ourbigbook/issues/241
       'toplevel_id',
+      'sha256',
     ]
     file_bulk_create_last_parse = Date.now()
     if (
@@ -572,6 +574,7 @@ async function update_database_after_convert({
             bodySource,
             last_parse: file_bulk_create_last_parse,
             path,
+            sha256,
             titleSource,
             toplevel_id,
           },

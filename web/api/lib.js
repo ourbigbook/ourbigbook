@@ -40,7 +40,7 @@ function getOrder(req) {
   return sort
 }
 
-function getLimitAndOffset(req, res) {
+function getLimitAndOffset(req, res, opts) {
   return [
     validateParam(req.query, 'limit', {
       typecast: front.typecastInteger,
@@ -48,7 +48,7 @@ function getLimitAndOffset(req, res) {
         front.isNonNegativeInteger,
         front.isSmallerOrEqualTo(config.articleLimitMax),
       ],
-      defaultValue: config.articleLimit
+      defaultValue: opts.defaultLimit !== undefined ? opts.defaultLimit : config.articleLimit
     }),
     validateParam(req.query, 'offset', {
       typecast: front.typecastInteger,

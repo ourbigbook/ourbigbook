@@ -1,4 +1,5 @@
 const lodash = require('lodash')
+const crypto = require('crypto');
 
 const ourbigbook = require('ourbigbook')
 const {
@@ -37,7 +38,7 @@ async function convert({
   const db_provider = new SqliteDbProvider(sequelize)
   const extra_returns = {};
   bodySource = bodySource.replace(/\n+$/, '')
-  const input = modifyEditorInput(titleSource, bodySource).new
+  const source = modifyEditorInput(titleSource, bodySource).new
   let input_path_given
   if (path === undefined) {
     path = titleSource ? ourbigbook.title_to_id(titleSource) : 'asdf'
@@ -77,7 +78,7 @@ async function convert({
     input_path = `${usernameDir}/${path}.${ourbigbook.OURBIGBOOK_EXT}`
   }
   await ourbigbook.convert(
-    input,
+    source,
     lodash.merge({
       db_provider,
       input_path,
@@ -100,7 +101,12 @@ async function convert({
       extra_returns.errors.map(e => e.toString()))
     throw new ValidationError(errsNoDupes)
   }
-  return { db_provider, extra_returns, input_path }
+  return {
+    db_provider,
+    extra_returns,
+    input_path,
+    sha256: crypto.createHash('sha256').update(source).digest('hex'),
+  }
 }
 
 // This does the type of stuff that OurBigBook CLI does for CLI
@@ -126,7 +132,7 @@ async function convertArticle({
       render = true
     }
     let db_provider, input_path
-    ;({ db_provider, extra_returns, input_path } = await convert({
+    ;({ db_provider, extra_returns, input_path, sha256 } = await convert({
       author,
       bodySource,
       convertOptionsExtra: {
@@ -165,6 +171,7 @@ async function convertArticle({
       sequelize,
       path: input_path,
       render,
+      sha256,
       titleSource,
       transaction,
     })

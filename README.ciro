@@ -3850,7 +3850,7 @@ Generate one of the template repositories locally:
 * `cirodown --generate simple`:
   * https://github.com/cirosantilli/cirodown-template-simple
   * https://cirosantilli.com/cirodown-template-simple
-* `cirodown --generate subdir`:
+* `cirodown --generate subdir`: TODO https://github.com/cirosantilli/cirodown/issues/160
   * https://github.com/cirosantilli/cirodown-template-subdir
   * https://cirosantilli.com/cirodown-template-subdir
 

@@ -6585,6 +6585,61 @@ nmp run typecheck
 ``
 The output format is also a bit nicer that what is shown in `npm run build-dev`.
 
+= Runtime features
+{parent=ourbigbook}
+
+This section describes features present in \a[ourbigbook_runtime.js]
+
+That file contains JavaScript functionality to be included in the final documents to enable interactive document features such as the \x[table-of-contents].
+
+You should use the packaged `dist/ourbigbook_runtime.js` instead of this file directly however.
+
+= JavaScript redirect to split on missing ID
+{parent=ourbigbook}
+
+When you have a document like:
+
+animal.bigb
+
+``
+= Animal
+
+== Dog
+
+=== Poodle
+``
+
+the version without <split headers> will contains a valid ID within it:
+
+``
+animal.html#poodle
+``
+
+However, if at some point you decide that the section `dog` has become too large and want to split it as:
+
+``
+= Animal
+
+\Include[dog]
+``
+
+and:
+
+
+dog.bigb
+
+``
+= Dog
+
+== Poodle
+``
+
+When you do this, it would break liks that users might have shared to `animal.html#poodle`, which is not located at `dog.html#poodle`.
+
+To make that less worse, if <split headers> are enabled, we check at runtime if the ID `poodle` is present in the output, and if it is not, we redirect to the split page `#poodle` to `poodle.html`.
+
+It would be even more awesome if we were able to redirect to the non-split version as well, `dog.html#poodle`, but that would be harder to implement, so not doing it for now.
+
 = Tooling
 {parent=ourbigbook}
 
@@ -6989,7 +7044,7 @@ Source files:
 * \a[ourbigbook]: CLI executable. Is basically just a CLI interface frontend to `convert`
 * \a[test.js]: contains all the Mocha tests, see also: \x[test-system]
 * \a[README.md]: minimal Markdown README until GitHub / NPM support OurBigBook :-)
-* \a[ourbigbook_runtime.js]: JavaScript functionality to be included in the final documents to enable interactive document features such as the \x[table-of-contents]. You should use the packaged `dist/ourbigbook_runtime.js` instead of this file directly however.
+* \a[ourbigbook_runtime.js]: <runtime fatures>
 * \a[main.scss] this file simply contains the customized CSS for https://cirosantilli.com/ourbigbook/[] and does not get otherwise distributed with OurBigBook, see: \x[css]
 
 Generated files:

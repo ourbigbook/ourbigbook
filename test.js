@@ -1091,7 +1091,7 @@ dd
     ]),
   ]
 );
-assert_convert_ast('insane list at start of sane quote with newline',
+assert_convert_ast('insane list at start of positional argument with newline',
   `\\Q[
 * bb
 * cc
@@ -1101,12 +1101,14 @@ assert_convert_ast('insane list at start of sane quote with newline',
     a('Q', [
       a('Ul', [
         a('L', [t('bb')]),
+        // TODO get rid of that newline
+        // https://github.com/cirosantilli/ourbigbook/issues/245
         a('L', [t('cc\n')]),
       ]),
     ]),
   ]
 );
-assert_convert_ast('insane list at start of sane quote without newline',
+assert_convert_ast('insane list at start of positional argument without newline',
   `\\Q[* bb
 * cc
 ]
@@ -1120,7 +1122,21 @@ assert_convert_ast('insane list at start of sane quote without newline',
     ]),
   ]
 );
-assert_convert_ast('insane list at start of description with newline',
+assert_convert_ast('insane list at end of positional argument without newline',
+  `\\Q[
+* bb
+* cc]
+`,
+  [
+    a('Q', [
+      a('Ul', [
+        a('L', [t('bb')]),
+        a('L', [t('cc')]),
+      ]),
+    ]),
+  ]
+);
+assert_convert_ast('insane list at start of named argument with newline',
   `\\Image[http://example.com]
 {description=
 * bb
@@ -1138,7 +1154,7 @@ assert_convert_ast('insane list at start of description with newline',
     }),
   ]
 );
-assert_convert_ast('insane list at start of description without newline',
+assert_convert_ast('insane list at start of named argument without newline',
   `\\Image[http://example.com]
 {description=* bb
 * cc
@@ -1155,6 +1171,24 @@ assert_convert_ast('insane list at start of description without newline',
     }),
   ]
 );
+//assert_convert_ast('insane list at end of named argument without newline',
+//  // TODO https://github.com/cirosantilli/ourbigbook/issues/246
+//  `\\Image[http://example.com]
+//{description=
+//* bb
+//* cc}
+//`,
+//  [
+//    a('Image', undefined, {
+//      description: [
+//        a('Ul', [
+//          a('L', [t('bb')]),
+//          a('L', [t('cc')]),
+//        ]),
+//      ],
+//    }),
+//  ]
+//);
 assert_convert_ast('nested list insane',
   `* aa
   * bb

@@ -61,8 +61,11 @@ class AstNode {
     if (!(Macro.ID_ARGUMENT_NAME in options)) {
       options.id = undefined;
     }
-    if (!('header_graph_node_parent_id' in options)) {
-      options.header_graph_node_parent_id = undefined;
+    if (!('header_parent_ids' in options)) {
+      options.header_parent_ids = [];
+    }
+    if (!('header_child_ids' in options)) {
+      options.header_child_ids = [];
     }
     if (!('is_first_header_in_input_file' in options)) {
       // Either the first header on a regular toplevel input,
@@ -144,10 +147,14 @@ class AstNode {
     // children of their parent. But they still know who the parent is.
     // This was originally required for header scope resolution.
     this.header_graph_node = options.header_graph_node;
-    // When fetching Nodes from the database, we only serialize the ID.
-    // Then to get the actual parent node, further DB querries are done
-    // as needed.
-    this.header_graph_node_parent_id = options.header_graph_node_parent_id;
+
+    // When fetching Nodes from the database, we only get their ID,
+    // so we can't construct a full proper header_graph_node from that alone.
+    // So we just store the IDs here and not on header_graph_node as that
+    // alone is already useful.
+    this.header_parent_ids = options.header_parent_ids;
+    this.header_child_ids = options.header_child_ids;
+
     this.validation_error = undefined;
     this.validation_output = {};
 
@@ -324,6 +331,7 @@ class AstNode {
 
   get_header_parent_ids_and_idxs(context) {
     const ret = []
+    // Refs defined in the current .ciro file + include_path_set
     if (
       this.header_graph_node !== undefined &&
       this.header_graph_node.parent_node !== undefined &&
@@ -333,23 +341,35 @@ class AstNode {
         id: this.header_graph_node.parent_node.value.id,
         idx: this.header_graph_node.index,
       });
-    } else if (this.header_graph_node_parent_id !== undefined) {
-      ret.push({
-        id: this.header_graph_node_parent_id
-      });
     }
-    ret.push(...Array.from(context.id_provider.get_refs_to_as_ids(REFS_TABLE_INCLUDE, this.id)).map(id => { return { id } }));
+
+    // Refs not defined from outside in the current .ciro file + include_path_set
+    // gUbut which were explicitly requested, e.g. we request it for all headers
+    // gUto look for external include parents
+    if (context.options.id_provider) {
+      const parents_from_db = context.options.id_provider.get_refs_to_as_ids(
+        REFS_TABLE_PARENT,
+        this.id,
+      )
+      ret.push(...Array.from(parents_from_db).map(id => { return { id } }));
+    }
+
+    // Refs not defined from outside in the current .ciro file + include_path_set,
+    // but which were automatically fetched by JOIN our fetch all IDs query:
+    // we fetch all parent and children via JOIN for every ID we fetch.
+    // This is needed notably for toplevel scope removal.
+    ret.push(...this.header_parent_ids.map(id => { return { id } }))
     return ret
   }
 
   /** Works with both actual this.header_graph_node and
-   * this.header_graph_node_parent_id when coming from a database. */
+   * this.header_parent_ids when coming from a database. */
   get_header_parent_ids(context) {
     return this.get_header_parent_ids_and_idxs(context).map(e => e.id)
   }
 
   /* Like get_header_parent_ids, but returns the parent AST. */
-  get_header_parents(context) {
+  get_header_parent_asts(context) {
     const ret = []
     const header_parent_ids = this.get_header_parent_ids(context);
     for (const header_parent_id of header_parent_ids) {
@@ -364,7 +384,7 @@ class AstNode {
   get_split_default(context) {
     let ast;
     if (this.macro_name !== Macro.HEADER_MACRO_NAME) {
-      ast = this.get_header_parents(context)[0]
+      ast = this.get_header_parent_asts(context)[0]
     }
     if (ast === undefined) {
       ast = this;
@@ -376,7 +396,7 @@ class AstNode {
     let cur_ast = this;
     const other_id = other.id;
     while (true) {
-      cur_ast = cur_ast.get_header_parents(context)[0];
+      cur_ast = cur_ast.get_header_parent_asts(context)[0];
       if (cur_ast === undefined) {
         return false;
       }
@@ -398,7 +418,6 @@ class AstNode {
         text: json.text,
         first_toplevel_child: json.first_toplevel_child,
         is_first_header_in_input_file: json.is_first_header_in_input_file,
-        header_graph_node_parent_id: json.header_graph_node_parent_id,
         scope: json.scope,
         split_default: json.split_default,
         synonym: json.synonym,
@@ -529,13 +548,6 @@ class AstNode {
       synonym:    this.synonym,
       word_count: this.word_count,
       args:       this.args,
-    }
-    if (
-      this.header_graph_node !== undefined &&
-      this.header_graph_node.parent_node !== undefined &&
-      this.header_graph_node.parent_node.value !== undefined
-    ) {
-      ret.header_graph_node_parent_id = this.header_graph_node.parent_node.value.id;
     }
     return ret;
   }
@@ -2031,6 +2043,13 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
         non_indexed_ids[ast.id] = ast;
         if (index_id) {
           indexed_ids[ast.id] = ast;
+          if (
+            ast.header_graph_node &&
+            ast.header_graph_node.parent_node !== undefined &&
+            ast.header_graph_node.parent_node.value !== undefined
+          ) {
+            add_to_refs_to(ast.id, context, ast.header_graph_node.parent_node.value.id, REFS_TABLE_PARENT);
+          }
         }
       } else {
         const message = duplicate_id_error_message(
@@ -3504,7 +3523,7 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     if (ast.macro_name === Macro.HEADER_MACRO_NAME) {
       header_ast = ast;
     } else {
-      header_ast = ast.get_header_parents(context)[0];
+      header_ast = ast.get_header_parent_asts(context)[0];
     }
     if (header_ast.is_first_header_in_input_file) {
       first_header_or_before = true;
@@ -3741,7 +3760,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       const parent_ast_header_graph_node = parent_ast.header_graph_node;
       const parent_ast_header_level = parent_ast_header_graph_node.get_level();
 
-      add_to_refs_to(href, context, parent_ast.id, REFS_TABLE_INCLUDE);
+      add_to_refs_to(href, context, parent_ast.id, REFS_TABLE_PARENT);
       parent_ast.includes.push(href);
       const read_include_ret = options.read_include(href);
       if (read_include_ret === undefined) {
@@ -4282,6 +4301,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       const prefetch_ids = new Set()
       for (const ref of options.add_refs_to_h) {
         const id = render_arg_noescape(ref.content, context)
+        prefetch_ids.add(id)
         ref.target_id = id
       }
       const prefetch_file_ids = new Set()
@@ -4317,14 +4337,14 @@ async function parse(tokens, options, context, extra_returns={}) {
           Array.from(prefetch_ids),
         ),
 
-        // TODO merge these two into one single DB query. Lazy now.
+        // TODO merge the following two refs fetch into one single DB query. Lazy now.
         // Started prototype at: https://github.com/cirosantilli/cirodown/tree/merge-ref-cache
         // The annoying part is deciding what needs to go in which direction of the cache.
         options.id_provider.get_refs_to_fetch(
           [
             // These are needed to render each header.
             // Shows on parents.
-            REFS_TABLE_INCLUDE,
+            REFS_TABLE_PARENT,
             // Shows on tags.
             REFS_TABLE_X_CHILD,
 
@@ -4332,6 +4352,9 @@ async function parse(tokens, options, context, extra_returns={}) {
             REFS_TABLE_X,
           ],
           header_ids,
+          {
+            ignore_paths_set: context.options.include_path_set,
+          },
         ),
         // This is needed to generate the "tagged" at the end of each output file.
         options.id_provider.get_refs_to_fetch(
@@ -4339,7 +4362,10 @@ async function parse(tokens, options, context, extra_returns={}) {
             REFS_TABLE_X_CHILD,
           ],
           header_ids,
-          true
+          {
+            reversed: true,
+            ignore_paths_set: context.options.include_path_set,
+          }
         ),
       ])
 
@@ -5566,7 +5592,7 @@ function x_href_parts(target_id_ast, context) {
     let toplevel_ast;
     if (to_split_headers) {
       // We know not a header target, as that would have been caught previously.
-      toplevel_ast = target_id_ast.get_header_parents(context)[0];
+      toplevel_ast = target_id_ast.get_header_parent_asts(context)[0];
     } else if (
       // The header was included inline into the current file.
       context.options.include_path_set.has(target_input_path) && !context.in_split_headers
@@ -5773,8 +5799,8 @@ function x_text(ast, context, options={}) {
 const AT_MENTION_CHAR = '@';
 const HASHTAG_CHAR = '#';
 const WEBSITE_URL = 'https://ourbigbook.com/';
-const REFS_TABLE_INCLUDE = 'INCLUDE';
-exports.REFS_TABLE_INCLUDE = REFS_TABLE_INCLUDE;
+const REFS_TABLE_PARENT = 'PARENT';
+exports.REFS_TABLE_PARENT = REFS_TABLE_PARENT;
 const REFS_TABLE_X = 'X';
 exports.REFS_TABLE_X = REFS_TABLE_X;
 const REFS_TABLE_X_CHILD = 'X_CHILD';
@@ -6295,7 +6321,7 @@ const DEFAULT_MACRO_LIST = [
         }
 
         // Parent links.
-        let parent_asts = ast.get_header_parents(context)
+        let parent_asts = ast.get_header_parent_asts(context)
         parent_links = [];
         for (const parent_ast of parent_asts) {
           let parent_href = x_href_attr(parent_ast, context);
@@ -6904,7 +6930,7 @@ const DEFAULT_MACRO_LIST = [
         if (cur_context.options.split_headers) {
           ret += `${HEADER_MENU_ITEM_SEP}${link_to_split_opposite(target_id_ast, cur_context)}`;
         }
-        let parent_ast = target_id_ast.get_header_parents(cur_context)[0];
+        let parent_ast = target_id_ast.get_header_parent_asts(cur_context)[0];
         if (
           // Possible on broken h1 level.
           parent_ast !== undefined
@@ -7003,7 +7029,7 @@ const DEFAULT_MACRO_LIST = [
             const ancestors = [];
             let cur_ast = context.toplevel_ast;
             while (true) {
-              cur_ast = cur_ast.get_header_parents(context)[0];
+              cur_ast = cur_ast.get_header_parent_asts(context)[0];
               if (cur_ast === undefined) {
                 break
               }

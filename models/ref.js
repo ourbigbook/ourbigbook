@@ -21,6 +21,10 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: false,
       },
+      to_id_index: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
       type: {
         type: DataTypes.TINYINT,
         allowNull: false,
@@ -31,12 +35,16 @@ module.exports = (sequelize) => {
         { fields: ['defined_at'], },
         { fields: ['from_id', 'type'], },
         { fields: ['to_id', 'type'], },
+        {
+          fields: ['from_id', 'to_id', 'type'],
+          unique: true
+        },
       ],
     }
   )
   Ref.Types = {
     // https://cirosantilli.com/cirodown/include
-    [cirodown.REFS_TABLE_INCLUDE]: 0,
+    [cirodown.REFS_TABLE_PARENT]: 0,
     // https://cirosantilli.com/cirodown/internal-cross-reference
     [cirodown.REFS_TABLE_X]: 1,
     // https://cirosantilli.com/cirodown/secondary-children

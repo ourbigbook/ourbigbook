@@ -4278,13 +4278,13 @@ async function parse(tokens, options, context, extra_returns={}) {
               parent_id !== undefined
             ) {
               // TODO add test and enable this possible fix.
-              //if (
-              //  // We don't want the "This section is present in another page" to count as a link.
-              //  !ast.from_include
-              //) {
+              if (
+                // We don't want the "This section is present in another page" to count as a link.
+                !ast.from_include
+              ) {
                 // Update xref database for incoming links.
                 const from_ids = add_to_refs_to(target_id_effective, context, parent_id, REFS_TABLE_X);
-              //}
+              }
 
               // Update xref database for child/parent relationships.
               {

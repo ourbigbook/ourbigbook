@@ -16,10 +16,10 @@ const make_enum = function(arr) {
 const TokenType = make_enum([
   'PLAINTEXT',
   'MACRO_NAME',
-  'MANDATORY_ARGUMENT_START',
-  'MANDATORY_ARGUMENT_END',
-  'OPTIONAL_ARGUMENT_START',
-  'OPTIONAL_ARGUMENT_END',
+  'POSITIONAL_ARGUMENT_START',
+  'POSITIONAL_ARGUMENT_END',
+  'NAMED_ARGUMENT_START',
+  'NAMED_ARGUMENT_END',
 ]);
 
 const Token = class {
@@ -40,21 +40,9 @@ const Token = class {
 const Argument = class {
   /**
    * @param {String} name
-   * @param {Boolean} required - Default: false
-   * @param {Boolean} literal - Default: false
    */
   constructor(options) {
     this.name = options.name;
-    if ('required' in options) {
-      this.requied = options.required;
-    } else {
-      this.requied = false;
-    }
-    if ('literal' in options) {
-      this.literal = options.literal;
-    } else {
-      this.literal = false;
-    }
   }
 }
 
@@ -66,26 +54,17 @@ const Macro = class {
   constructor(args, convert) {
     this.args = args;
     this.convert = convert;
-    this.optional_args = {
-      id: new Argument({
-        name: 'id',
-        required: false,
-        literal: false,
-      }),
-    };
-    this.required_args = [];
-    let required_arg_names = new Set();
+    this.name_to_arg = {};
+    this.index_to_arg = {};
+    let i = 0;
     for (const arg of args) {
-      let name = arg.name
-      if (required_arg_names.has(name) || name in this.optional_args) {
+      let name = arg.name;
+      if (name in this.name_to_arg) {
         throw new Error('name already taken: ' + name);
       }
-      if (arg.required) {
-        this.required_args.push(arg);
-        required_arg_names.add(name);
-      } else {
-        this.optional_args[name] = arg;
-      }
+      this.name_to_arg[name] = arg;
+      this.index_to_arg[i] = arg;
+      i += 1;
     }
   }
 }
@@ -95,8 +74,6 @@ let macros = {
     [
       new Argument({
         name: 'content',
-        required: true,
-        literal: false,
       }),
     ],
     function(args) {
@@ -107,13 +84,9 @@ let macros = {
     [
       new Argument({
         name: 'href',
-        required: true,
-        literal: true,
       }),
       new Argument({
         name: 'content',
-        required: true,
-        literal: false,
       }),
     ],
     function(args) {
@@ -162,16 +135,16 @@ ${args.content.convert()}
 }
 
 const ESCAPE_CHAR = '\\';
-const START_MANDATORY_ARGUMENT_CHAR = '{';
-const END_MANDATORY_ARGUMENT_CHAR = '}';
-const START_OPTIONAL_ARGUMENT_CHAR = '[';
-const END_OPTIONAL_ARGUMENT_CHAR = ']';
+const START_POSITIONAL_ARGUMENT_CHAR = '{';
+const END_POSITIONAL_ARGUMENT_CHAR = '}';
+const START_NAMED_ARGUMENT_CHAR = '[';
+const END_NAMED_ARGUMENT_CHAR = ']';
 const ESCAPABLE_CHARS = new Set([
   ESCAPE_CHAR,
-  START_MANDATORY_ARGUMENT_CHAR,
-  END_MANDATORY_ARGUMENT_CHAR,
-  START_OPTIONAL_ARGUMENT_CHAR,
-  END_OPTIONAL_ARGUMENT_CHAR,
+  START_POSITIONAL_ARGUMENT_CHAR,
+  END_POSITIONAL_ARGUMENT_CHAR,
+  START_NAMED_ARGUMENT_CHAR,
+  END_NAMED_ARGUMENT_CHAR,
 ]);
 
 const char_is_alphanumeric = function(c) {
@@ -193,10 +166,10 @@ const char_is_macro = function (c) {
 char_is_macro.chars = new Set(['-', '_']);
 
 const closing_token = function(token) {
-  if (token === TokenType.MANDATORY_ARGUMENT_START)
-    return TokenType.OPTIONAL_ARGUMENT_END;
-  if (token === TokenType.MANDATORY_ARGUMENT_START)
-    return TokenType.OPTIONAL_ARGUMENT_END;
+  if (token === TokenType.POSITIONAL_ARGUMENT_START)
+    return TokenType.NAMED_ARGUMENT_END;
+  if (token === TokenType.POSITIONAL_ARGUMENT_START)
+    return TokenType.NAMED_ARGUMENT_END;
   return undefined;
 }
 
@@ -276,9 +249,9 @@ const tokenize = function(input_string, extra_returns={}) {
   }
 
   push_token(TokenType.MACRO_NAME, 'toplevel');
-  push_token(TokenType.MANDATORY_ARGUMENT_START);
+  push_token(TokenType.POSITIONAL_ARGUMENT_START);
   push_token(TokenType.MACRO_NAME, 'p');
-  push_token(TokenType.MANDATORY_ARGUMENT_START);
+  push_token(TokenType.POSITIONAL_ARGUMENT_START);
   while (consume()) {
     if (cur_c === '\\') {
       next_c = chars[i + 1];
@@ -297,27 +270,27 @@ const tokenize = function(input_string, extra_returns={}) {
         push_token(TokenType.MACRO_NAME, macro_name);
         macro_argument_stack.push([macros[macro_name], 0]);
       }
-    } else if (cur_c === START_OPTIONAL_ARGUMENT_CHAR) {
+    } else if (cur_c === START_NAMED_ARGUMENT_CHAR) {
       assert_could_be_argument();
       consume_optional_newline();
-    } else if (cur_c === END_OPTIONAL_ARGUMENT_CHAR) {
+    } else if (cur_c === END_NAMED_ARGUMENT_CHAR) {
       consume_optional_newline();
       last_possible_new_argument_index = i;
-    } else if (cur_c === START_MANDATORY_ARGUMENT_CHAR) {
+    } else if (cur_c === START_POSITIONAL_ARGUMENT_CHAR) {
       consume_optional_newline();
-      push_token(TokenType.MANDATORY_ARGUMENT_START);
-    } else if (cur_c === END_MANDATORY_ARGUMENT_CHAR') {
+      push_token(TokenType.POSITIONAL_ARGUMENT_START);
+    } else if (cur_c === END_POSITIONAL_ARGUMENT_CHAR) {
       consume_optional_newline();
       last_possible_new_argument_index = i;
-      push_token(TokenType.MANDATORY_ARGUMENT_END);
+      push_token(TokenType.POSITIONAL_ARGUMENT_END);
     } else if (cur_c === '\n') {
       if (((i + 1) === chars.length)) {
         // Do nothing.
       } else if (chars[i + 1] === '\n') {
         // Double newline.
-        push_token(TokenType.MANDATORY_ARGUMENT_END);
+        push_token(TokenType.POSITIONAL_ARGUMENT_END);
         push_token(TokenType.MACRO_NAME, 'p');
-        push_token(TokenType.MANDATORY_ARGUMENT_START);
+        push_token(TokenType.POSITIONAL_ARGUMENT_START);
         consume();
         done = true;
       } else {
@@ -327,8 +300,8 @@ const tokenize = function(input_string, extra_returns={}) {
       tokenize_plaintext(tokens, cur_c);
     }
   }
-  push_token(TokenType.MANDATORY_ARGUMENT_END);
-  push_token(TokenType.MANDATORY_ARGUMENT_END);
+  push_token(TokenType.POSITIONAL_ARGUMENT_END);
+  push_token(TokenType.POSITIONAL_ARGUMENT_END);
   extra_returns.failed = true;
   return tokens;
 }
@@ -337,7 +310,7 @@ const parse = function(tokens) {
   let state = {
     i: 0,
   }
-  return parse_sub(tokens, state)
+  return parse_macro(tokens, state)
 }
 
 const AstNode = class {
@@ -353,12 +326,9 @@ const AstNode = class {
   }
 }
 
-const parse_sub = function(tokens, state) {
+const parse_macro = function(tokens, state) {
   let cur_token;
   let cur_type;
-  let ast = {
-    args: {},
-  };
 
   const consume = function() {
     state.i += 1;
@@ -366,7 +336,7 @@ const parse_sub = function(tokens, state) {
       return undefined;
     cur_token = tokens[state.i];
     cur_type = cur_token.type;
-    return token;
+    return cur_token;
   }
 
   const previous = function() {
@@ -378,35 +348,63 @@ const parse_sub = function(tokens, state) {
 
   while (consume() !== undefined) {
     if (cur_type === TokenType.MACRO_NAME) {
-      ast.macro_name = cur_token.value;
-      consume();
+      let macro_name = cur_token.value;
+      let macro = macros[ast.macro_name];
       let arg_count = 0;
-      let children = [];
-      while (cur_type === TokenType.MANDATORY_ARGUMENT_START || cur_type === TokenType.OPTIONAL_ARGUMENT_START) {
-        let arg = []
+      let args = {};
+      while (cur_type === TokenType.POSITIONAL_ARGUMENT_START || cur_type === TokenType.NAMED_ARGUMENT_START) {
+        let arg;
+        if (cur_type === TokenType.POSITIONAL_ARGUMENT_START) {
+          arg = macro.index_to_arg[arg_count];
+        } else {
+          arg = macro.index_to_arg[consumearg_count];
+        }
+        let arg_name = ;
         let open_type = cur_type;
-        children.push(parse_sub(tokens, state));
-        if (previous().type !== closing_token(open_type)) {
+        let arg_children = [];
+        while (cur_type !== TokenType.POSITIONAL_ARGUMENT_END && cur_type !== TokenType.NAMED_ARGUMENT_END) {
+          arg_children.push(parse_macro(tokens, state));
+        }
+        if (cur_type !== closing_token(open_type)) {
           report_error(
             token.line,
             token.column,
-            `expected a closing ${END_MANDATORY_ARGUMENT_CHAR}`
+            `expected a closing ${END_POSITIONAL_ARGUMENT_CHAR}`
           );
         }
+        ast.args[arg_name] = arg_children;
         arg_count += 1;
       }
+      return AstNode(macro_name);
+        args: {},
+      };
       macro_node = {
         type: token.value,
         children: children
       }
-    } else if (type === TokenType.PLAINTEXT) {
-      children.push();
-    } else if (token.type !== TokenType.MANDATORY_ARGUMENT_END) {
-      return ast;
+    } else if (cur_type === TokenType.PLAINTEXT) {
+      // Non recursive case.
+      return new AstNode('plaintext', cur_token.value);
+    } else {
+      report_error(
+        token.line,
+        token.column,
+        `unexpected token`
+      );
     }
     state.i += 1;
   }
   return ast;
+}
+
+/**
+ * Parse the interior of one argument.
+ * @param {String} type - plaintext or macro
+ * @param {Object[String, Array[AstNode]|String} arguments
+ *        If type is macro, the Object with child arguments.
+ *        Otherwise, it ype is text, , the raw String.
+ */
+const parse_argument = function(tokens, state) {
 }
 
 const ast_to_output = function(ast) {

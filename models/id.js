@@ -1,4 +1,3 @@
-const { EntryPlugin } = require('webpack')
 const ourbigbook = require('../index')
 
 module.exports = (sequelize) => {

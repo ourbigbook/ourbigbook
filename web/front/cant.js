@@ -18,6 +18,11 @@ const permissions = [
       return 'You cannot like your own article or issue'
     }
   }],
+  ['updateNestedSet', (loggedInUser, username) => {
+    if (loggedInUser.username !== username) {
+      return 'You cannot update the nested set index of another user'
+    }
+  }],
   ['unlikeArticle', (loggedInUser, article) => {
     if (loggedInUser.id === article.author.id) {
       return 'You cannot unlike your own article or issue'

@@ -151,9 +151,14 @@ async function convertArticle({
   titleSource,
   transaction,
   updateNestedSetIndex,
+  updateTree,
 }) {
   if (updateNestedSetIndex === undefined) {
     updateNestedSetIndex = true
+  }
+  if (updateTree === undefined) {
+    // If false, also prevents the creation of new articles, only content updates are allowed in that case.
+    updateTree = true
   }
   let t0
   if (perf) {
@@ -477,7 +482,7 @@ async function convertArticle({
         if (parentIdRow.macro_name !== ourbigbook.Macro.HEADER_MACRO_NAME) {
           throw new ValidationError(`parentId is not a header: "${newParentId}"`)
         }
-        if (!oldRef) {
+        if (!oldRef && updateTree) {
           // If the article is new, create space to insert it there.
           // For the moving of existing articles however, we leave the space opening up to the Article.treeMoveRangeTo function instead.
           await sequelize.models.Article.treeOpenSpace({
@@ -489,6 +494,7 @@ async function convertArticle({
             shiftRefBy: 1,
             to_id_index: new_to_id_index,
             transaction,
+            updateNestedSetIndex,
             username: author.username,
           })
           if (newNestedSetIndex <= oldNestedSetIndexParent) {
@@ -601,18 +607,17 @@ async function convertArticle({
         }
       )
 
-      if (updateNestedSetIndex) {
-        // Find here because upsert not yet supported in SQLite, so above updateOnDuplicate wouldn't work.
-        // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert
-        articles = await sequelize.models.Article.getArticles({
-          count: false,
-          order: 'slug',
-          orderAscDesc: 'ASC',
-          sequelize,
-          slug: articleArgs.map(arg => sequelize.models.Article.slugTransform(arg.slug)),
-          transaction,
-        })
-
+      // Find here because upsert not yet supported in SQLite, so above updateOnDuplicate wouldn't work.
+      // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert
+      articles = await sequelize.models.Article.getArticles({
+        count: false,
+        order: 'slug',
+        orderAscDesc: 'ASC',
+        sequelize,
+        slug: articleArgs.map(arg => sequelize.models.Article.slugTransform(arg.slug)),
+        transaction,
+      })
+      if (updateTree) {
         await Promise.all([
           // Check file limit
           sequelize.models.File.count({ where: { authorId: author.id }, transaction }).then(articleCountByLoggedInUser => {
@@ -641,6 +646,7 @@ async function convertArticle({
                 old_to_id_index,
                 perf,
                 transaction,
+                updateNestedSetIndex,
                 username: author.username,
               })
             }
@@ -726,6 +732,7 @@ async function convertArticle({
                       oldParentId: synonymArticle.idid,
                       old_to_id_index: 0,
                       transaction,
+                      updateNestedSetIndex,
                       username: author.username,
                     })
                   ])
@@ -751,7 +758,7 @@ async function convertArticle({
               }
             }
           })(),
-          sequelize.models.Topic.updateTopics(articles, { newArticles: true, transaction }),
+          !oldRef && sequelize.models.Topic.updateTopics(articles, { newArticles: true, transaction }),
           !oldRef && Promise.all(articles.map(article => author.addArticleFollowSideEffects(article, { transaction }))),
         ])
       }

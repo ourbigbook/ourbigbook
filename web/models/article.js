@@ -83,8 +83,7 @@ module.exports = (sequelize) => {
       },
       depth: {
         type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 0,
+        allowNull: true,
       },
       score: {
         type: DataTypes.INTEGER,
@@ -108,13 +107,13 @@ module.exports = (sequelize) => {
       // https://stackoverflow.com/questions/192220/what-is-the-most-efficient-elegant-way-to-parse-a-flat-table-into-a-tree/42781302#42781302
       nestedSetIndex: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
       },
       // Points to the nestedSetIndex of the next sibling, or where the
       // address at which the next sibling would be if it existed.
       nestedSetNextSibling: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
       },
       followerCount: {
         type: DataTypes.INTEGER,
@@ -175,8 +174,12 @@ module.exports = (sequelize) => {
     old_to_id_index,
     perf,
     transaction,
+    updateNestedSetIndex,
     username,
   }) {
+    if (updateNestedSetIndex === undefined) {
+      updateNestedSetIndex = true
+    }
     if (logging === undefined) {
       // Log previous nested set state, and the queries done on it.
       logging = false
@@ -195,6 +198,7 @@ module.exports = (sequelize) => {
         oldNestedSetIndexParent,
         oldParentId,
         old_to_id_index,
+        updateNestedSetIndex,
         username,
       })
     }
@@ -215,6 +219,7 @@ module.exports = (sequelize) => {
           shiftRefBy: nArticlesToplevel,
           to_id_index: new_to_id_index,
           transaction,
+          updateNestedSetIndex,
           username,
         })
 
@@ -237,7 +242,7 @@ module.exports = (sequelize) => {
           console.log(await Article.treeToString({ transaction }))
         }
         await Promise.all([
-          sequelize.query(`
+          updateNestedSetIndex && sequelize.query(`
 UPDATE "Article" SET
   "nestedSetIndex" = "nestedSetIndex" + :nestedSetDelta,
   "nestedSetNextSibling" = "nestedSetNextSibling" + :nestedSetDelta,
@@ -298,6 +303,7 @@ WHERE
           shiftRefBy: -nArticlesToplevel,
           to_id_index: old_to_id_index,
           transaction,
+          updateNestedSetIndex,
           username,
         })
       }
@@ -336,9 +342,13 @@ WHERE
     parentNestedSetIndex,
     parentId,
     to_id_index,
+    updateNestedSetIndex,
     username,
     transaction,
   }) {
+    if (updateNestedSetIndex === undefined) {
+      updateNestedSetIndex = true
+    }
     if (logging === undefined) {
       logging = false
     }
@@ -360,7 +370,7 @@ WHERE
       // Decrement the depth of all descendants of the article
       // as they are going to be moved up the tree.
       await Promise.all([
-        sequelize.models.Article.decrement('depth', {
+        updateNestedSetIndex && sequelize.models.Article.decrement('depth', {
           logging: logging ? console.log : false,
           where: {
             nestedSetIndex: {
@@ -380,6 +390,7 @@ WHERE
           shiftRefBy: nestedSetNextSibling - (nestedSetIndex + 2),
           to_id_index,
           transaction,
+          updateNestedSetIndex,
           username,
         }),
       ])
@@ -404,12 +415,17 @@ WHERE
 
   // Remove this article from the nested set altogether.
   // Used when deleting the article. All children are reassigned to its parent.
-  Article.prototype.treeRemove = async function(opts={}) {
-    let logging = opts.logging
+  Article.prototype.treeRemove = async function({
+    logging,
+    transaction,
+    updateNestedSetIndex,
+  }) {
     if (logging === undefined) {
       logging = false
     }
-    const transaction = opts.transaction
+    if (updateNestedSetIndex === undefined) {
+      updateNestedSetIndex = true
+    }
     const parentRef = await this.findParentRef({ transaction })
     const parentArticleToplevelId = parentRef.from
     const parentArticle = parentArticleToplevelId.toplevelId.file[0]
@@ -422,6 +438,7 @@ WHERE
       parentNestedSetIndex: parentArticle.nestedSetIndex,
       to_id_index: parentRef.to_id_index,
       transaction,
+      updateNestedSetIndex,
       username: (await this.getAuthor({ transaction })).username,
     })
   }
@@ -526,11 +543,15 @@ WHERE
     shiftRefBy,
     to_id_index,
     transaction,
+    updateNestedSetIndex,
     username,
   }) {
     if (logging === undefined) {
       // Log previous nested set state, and the queries done on it.
       logging = false
+    }
+    if (updateNestedSetIndex === undefined) {
+      updateNestedSetIndex = true
     }
     let t0
     if (perf) {
@@ -550,6 +571,7 @@ WHERE
           shiftNestedSetBy,
           shiftRefBy,
           to_id_index,
+          updateNestedSetIndex,
           username,
         })
         console.log(await Article.treeToString({ transaction }))
@@ -570,7 +592,7 @@ WHERE
           // Increase nested set index and next sibling of all nodes that come after.
           // We need a raw query because Sequelize does not support UPDATE with JOIN:
           // https://github.com/sequelize/sequelize/issues/3957
-          sequelize.query(`
+          updateNestedSetIndex && sequelize.query(`
 UPDATE "Article" SET
   "nestedSetIndex" = "nestedSetIndex" + :shiftNestedSetBy,
   "nestedSetNextSibling" = "nestedSetNextSibling" + :shiftNestedSetBy
@@ -597,7 +619,7 @@ WHERE
           ),
 
           // Increase nested set next sibling of ancestors. Their index is unchanged.
-          sequelize.query(`
+          updateNestedSetIndex && sequelize.query(`
 UPDATE "Article" SET
   "nestedSetNextSibling" = "nestedSetNextSibling" + :shiftNestedSetBy
 WHERE
@@ -830,9 +852,7 @@ WHERE
           sequelize,
           titleSource: file.titleSource,
           transaction,
-          // Originally added because we had/have crazy semantics where previousSiblingId=undefined
-          // moves the article as the first sibling necessarily. But also this is a useful performance optimization.
-          updateNestedSetIndex: false,
+          updateTree: false,
         })
       } catch(e) {
         if (ignoreErrors) {
@@ -877,6 +897,13 @@ WHERE
         }]
       })
     }
+    const where = {}
+    if (
+      // These happen on "updateNestedNsetIndex=false updates"
+      !opts.includeNulls
+    ) {
+      where.nestedSetIndex = {[sequelize.Sequelize.Op.ne]: null}
+    }
     const include = [
       {
         model: sequelize.models.File,
@@ -887,6 +914,7 @@ WHERE
     ]
     return sequelize.models.Article.findAll({
       include,
+      where,
       order: [
         [
           { model: sequelize.models.File, as: 'file' },
@@ -894,7 +922,9 @@ WHERE
           'username',
           'ASC'
         ],
-        ['nestedSetIndex', 'ASC'],
+        ['nestedSetIndex', 'ASC NULLS FIRST'],
+        // To disambiguate the order of NULLs.
+        ['slug', 'ASC'],
       ],
       transaction: opts.transaction,
     })

@@ -1,7 +1,7 @@
-import { ApiBase } from './index'
-import { WEB_API_PATH } from '../index'
+const { ApiBase } = require('./index')
+const { WEB_API_PATH } = require('../index')
 
-class CommentApiClass extends ApiBase {
+class CommentApi extends ApiBase {
   async create(slug, comment) {
     return this.req('post',
       `comments?id=${encodeURIComponent(slug)}`,
@@ -20,4 +20,4 @@ class CommentApiClass extends ApiBase {
   }
 };
 
-module.exports = CommentApiClass
+module.exports = CommentApi

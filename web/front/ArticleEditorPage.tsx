@@ -9,7 +9,7 @@ import { convertOptions, isProduction } from 'front/config';
 
 import ListErrors from 'front/ListErrors'
 import { slugFromRouter } from 'front'
-import { ArticleApi } from 'front/api'
+import { articleApi } from 'front/api'
 import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
 import { AppContext, useCtrlEnterSubmit } from 'front'
@@ -104,9 +104,9 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
       let data, status;
       file.body = ourbigbookEditorElem.current.ourbigbookEditor.getValue()
       if (isnew) {
-        ({ data, status } = await ArticleApi.create(file));
+        ({ data, status } = await articleApi.create(file));
       } else {
-        ({ data, status } = await ArticleApi.update(
+        ({ data, status } = await articleApi.update(
           file,
           slugFromRouter(router),
         ));

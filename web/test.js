@@ -1,5 +1,9 @@
 const assert = require('assert');
 
+const ArticleApi = require('ourbigbook/web_api/article')
+const CommentApi = require('ourbigbook/web_api/comment')
+const UserApi = require('ourbigbook/web_api/user')
+
 const app = require('./app')
 const convert = require('./convert')
 const test_lib = require('./test_lib')
@@ -20,20 +24,6 @@ function assertRows(rows, rowsExpect) {
       assert.strictEqual(row[key], rowExpect[key])
     }
   }
-}
-
-async function createUserApi(server, i) {
-  const { data, status } = await sendJsonHttp(
-    server,
-    'POST',
-    '/api/users',
-    {
-      body: { user: createUserArg(i) },
-    }
-  )
-  assert.strictEqual(status, 200)
-  assert.strictEqual(data.user.username, `user${i}`)
-  return data.user
 }
 
 async function createArticles(sequelize, author, opts) {
@@ -85,23 +75,6 @@ function createUserArg(i, password=true) {
   return ret
 }
 
-async function sendJsonHttp(server, method, path, opts={}) {
-  const { body, token } = opts
-  return web_api.sendJsonHttp(
-    method,
-    path,
-    {
-      body,
-      getToken: () => opts.token,
-      http: 'http',
-      hostname: 'localhost',
-      port: server.address().port,
-      validateStatus: () => true,
-    }
-  )
-}
-
-
 // https://stackoverflow.com/questions/8175093/simple-function-to-sort-an-array-of-objects
 function sortByKey(arr, key) {
   return arr.sort((a, b) => {
@@ -114,7 +87,63 @@ function sortByKey(arr, key) {
 function testApp(cb, opts={}) {
   const canTestNext = opts.canTestNext === undefined ? false : opts.canTestNext
   return app.start(0, canTestNext && testNext, async (server) => {
-    await cb(server)
+    const test = {}
+    test.token = undefined
+    test.tokenSave = undefined
+    test.enableToken = function() {
+      test.token = test.tokenSave
+    }
+    test.disableToken = function() {
+      test.token = undefined
+    }
+    function getToken() {
+      return test.token
+    }
+    const https = false
+    test.sendJsonHttp = async function (method, path, opts={}) {
+      const { body, useToken } = opts
+      let token
+      if (useToken === undefined || useToken) {
+        token = test.token
+      } else {
+        token = undefined
+      }
+      return web_api.sendJsonHttp(
+        method,
+        path,
+        {
+          body,
+          getToken,
+          https,
+          hostname: 'localhost',
+          port: server.address().port,
+          validateStatus: () => true,
+        }
+      )
+    }
+    // Create user and save the token for future requests.
+    test.createUserApi = async function(i) {
+      const { data, status } = await test.sendJsonHttp(
+        'POST',
+        '/api/users',
+        {
+          body: { user: createUserArg(i) },
+        }
+      )
+      test.tokenSave = data.user.token
+      test.enableToken()
+      assert.strictEqual(status, 200)
+      assert.strictEqual(data.user.username, `user${i}`)
+      return data.user
+    }
+    const opts = {
+      getToken,
+      https,
+    }
+    test.articleApi = new ArticleApi(opts)
+    test.commentApi = new CommentApi(opts)
+    test.userApi = new UserApi(opts)
+    await cb(test)
     server.close()
   })
 }
@@ -160,22 +189,19 @@ it('feed shows articles by followers', async function() {
 })
 
 it('api: create an article and see it on global feed', async () => {
-  await testApp(async (server) => {
+  await testApp(async (test) => {
     let data, status, article
 
     // Create user.
-    const user = await createUserApi(server, 0)
-    const token = user.token
+    const user = await test.createUserApi(0)
 
     // Create article.
     article = createArticleArg({ i: 0 })
-    ;({data, status} = await sendJsonHttp(
-      server,
+    ;({data, status} = await test.sendJsonHttp(
       'POST',
       '/api/articles',
       {
         body: { article },
-        token,
       }
     ))
     assert.strictEqual(status, 200)
@@ -184,13 +210,9 @@ it('api: create an article and see it on global feed', async () => {
     assert.strictEqual(articles.length, 1)
 
     // See it on global feed.
-    ;({data, status} = await sendJsonHttp(
-      server,
+    ;({data, status} = await test.sendJsonHttp(
       'GET',
       '/api/articles',
-      {
-        token,
-      }
     ))
     assert.strictEqual(status, 200)
     sortByKey(data.articles, 'slug')
@@ -200,72 +222,56 @@ it('api: create an article and see it on global feed', async () => {
     ])
 
     if (testNext) {
-      ;({data, status} = await sendJsonHttp(
-        server,
-        'GET',
-        '/',
-        {
-          token,
-        }
-      ))
-      assert.strictEqual(status, 200)
-
-      // Logged out.
-      ;({data, status} = await sendJsonHttp(
-        server,
+      ;({data, status} = await test.sendJsonHttp(
         'GET',
         '/',
       ))
       assert.strictEqual(status, 200)
 
-      ;({data, status} = await sendJsonHttp(
-        server,
-        'GET',
-        '/user0',
-        {
-        token,
-        }
-      ))
-      assert.strictEqual(status, 200)
-
-      // Logged out.
-      ;({data, status} = await sendJsonHttp(
-        server,
+      ;({data, status} = await test.sendJsonHttp(
         'GET',
         '/user0',
       ))
       assert.strictEqual(status, 200)
 
-      ;({data, status} = await sendJsonHttp(
-        server,
+      ;({data, status} = await test.sendJsonHttp(
         'GET',
         '/user0/title-0',
-        {
-          token,
-        }
       ))
       assert.strictEqual(status, 200)
 
       // Logged out.
-      ;({data, status} = await sendJsonHttp(
-        server,
+      test.disableToken()
+      ;({data, status} = await test.sendJsonHttp(
+        'GET',
+        '/',
+      ))
+      assert.strictEqual(status, 200)
+
+      ;({data, status} = await test.sendJsonHttp(
+        'GET',
+        '/user0',
+      ))
+      assert.strictEqual(status, 200)
+
+      ;({data, status} = await test.sendJsonHttp(
         'GET',
         '/user0/title-0',
       ))
       assert.strictEqual(status, 200)
+      test.enableToken()
     }
   }, { canTestNext: true })
 })
 
 it('api: multiheader file creates multiple articles', async () => {
-  await testApp(async (server) => {
+  await testApp(async (test) => {
     let res,
       data,
       article
 
     // Create user.
-    const user = await createUserApi(server, 0)
-    const token = user.token
+    const user = await test.createUserApi(0)
 
     // Create article.
     article = createArticleArg({ i: 0, body: `Body 0
@@ -278,13 +284,11 @@ Body 0 0
 
 Body 0 1
 `})
-    ;({data, status} = await sendJsonHttp(
-      server,
+    ;({data, status} = await test.sendJsonHttp(
       'POST',
       '/api/articles',
       {
         body: { article },
-        token,
       }
     ))
     assert.strictEqual(status, 200)
@@ -300,13 +304,9 @@ Body 0 1
     assert.match(data.articles[2].render, /Body 0 1/)
 
     // See them on global feed.
-    ;({data, status} = await sendJsonHttp(
-      server,
+    ;({data, status} = await test.sendJsonHttp(
       'GET',
       '/api/articles',
-      {
-        token,
-      }
     ))
     assert.strictEqual(status, 200)
     sortByKey(data.articles, 'slug')
@@ -318,13 +318,9 @@ Body 0 1
     ])
 
     //// Access one of them directly.
-    //;({data, status} = await sendJsonHttp(
-    //  server,
+    //;({data, status} = await test.sendJsonHttp(
     //  'GET',
     //  '/api/articles?id=',
-    //  {
-    //    token,
-    //  }
     //))
     //assert.strictEqual(status, 200)
     //sortByKey(data.articles, 'slug')

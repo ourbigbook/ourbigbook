@@ -147,10 +147,6 @@ function assert_convert_ast(
       // before the main conversion to build up the cross-file reference database.
       options.convert_before = [];
     }
-    if (!('extra_convert_opts' in options)) {
-      // Passed to cirodown.convert.
-      options.extra_convert_opts = {};
-    }
     if (!('file_reader' in options)) {
       // Passed to cirodown.convert.
       options.file_reader = default_file_reader;
@@ -164,6 +160,13 @@ function assert_convert_ast(
     }
 
     // extra_convert_opts defaults.
+    if (!('extra_convert_opts' in options)) {
+      // Passed to cirodown.convert.
+      options.extra_convert_opts = {};
+    }
+    if (!('path_sep' in options.extra_convert_opts)) {
+      options.extra_convert_opts.path_sep = '/';
+    }
     if (!('read_include' in options.extra_convert_opts)) {
       options.extra_convert_opts.read_include = (input_path_noext)=>{
         return [input_path_noext + cirodown.CIRODOWN_EXT,
@@ -1511,6 +1514,32 @@ assert_convert_ast('cross reference to non-included header in another file',
       ],
     },
     convert_before: ['include-two-levels'],
+    input_path_noext: 'notindex',
+  },
+);
+assert_convert_ast('cross reference to scoped split header',
+  `= aa
+{scope}
+
+== bb
+
+\\x[cc][cc2]
+
+== cc
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('bb')]}),
+    a('P', [a('x', [t('cc2')], {href: [t('cc')]})]),
+    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
+  ],
+  {
+    assert_xpath_split_headers: {
+      'notindex/bb.html': [
+        "//x:a[@href='cc.html' and text()='cc2']",
+      ],
+    },
     input_path_noext: 'notindex',
   },
 );

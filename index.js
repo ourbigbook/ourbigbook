@@ -1661,7 +1661,7 @@ function closing_token(token) {
  * @param {Object} options
  *          {IdProvider} external_ids
  *          {Function[String] -> [string,string]} read_include(id) -> [file_name, content]
- *          {Number} h_level_offset - add this offset to the levels of every header
+ *          {Number} h_include_level_offset - add this offset to the levels of every header
  *          {boolean} render - if false, parse the input, but don't render it,
  *              and return undefined.
  *              The initial use case for this is to allow a faster and error-less
@@ -1721,7 +1721,12 @@ function convert(
   // Add HTML extension to x links. And therefore also output files
   // with the .html extension.
   if (!('html_x_extension' in options)) { options.html_x_extension = true; }
-  if (!('h_level_offset' in options)) { options.h_level_offset = 0; }
+  if (!('h_parse_level_offset' in options)) {
+    // When parsing, start the first header at this offset instead of h1.
+    // This is used when doing includes, since the included header is at.
+    // an offset relative to where it is included from.
+    options.h_parse_level_offset = 0;
+  }
   if (!('id_provider' in options)) { options.id_provider = undefined; }
   if (!('include_path_set' in options)) { options.include_path_set = new Set(); }
   if (!('input_path' in options)) { options.input_path = undefined; }
@@ -1957,7 +1962,7 @@ function convert_header(cur_arg_list, context) {
     }
     const header_graph_node_old_parent = header_graph_node.parent_node;
     // Add a new toplevel parent.
-    header_graph_node.parent_node = new HeaderTreeNode();
+    //header_graph_node.parent_node = new HeaderTreeNode();
     const ast_toplevel = new AstNode(
       AstType.MACRO,
       Macro.TOPLEVEL_MACRO_NAME,
@@ -1966,7 +1971,8 @@ function convert_header(cur_arg_list, context) {
       },
       first_ast.source_location,
     );
-    options.toplevel_id = first_ast.id;
+    options.toplevel_id = first_ast.level;
+    options.h_parse_level_offset = 1 - header_graph_node.get_level();
     context.in_split_headers = true;
     const output_path = output_path_from_ast(first_ast, context);
     context.toplevel_output_path = output_path;
@@ -1992,7 +1998,7 @@ function convert_include(
 ) {
   convert_options = Object.assign({}, convert_options);
   convert_options.from_include = true;
-  convert_options.h_level_offset = cur_header_level;
+  convert_options.h_parse_level_offset = cur_header_level;
   convert_options.input_path = input_path;
   convert_options.render = false;
   convert_options.toplevel_id = href;
@@ -2862,7 +2868,7 @@ function parse(tokens, options, context, extra_returns={}) {
         include_options.cur_header = ast;
         cur_header_level = parseInt(
           convert_arg_noescape(ast.args.level, context)
-        ) + options.h_level_offset;
+        ) + options.h_parse_level_offset;
         let parent_tree_node_error = false;
         let parent_id;
         if (ast.validation_output.parent.given) {
@@ -4471,11 +4477,16 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      let custom_args;
-      let level_int = ast.header_graph_node.get_level();
+      let level_int;
+      if (context.in_split_headers) {
+        level_int = 1
+      } else {
+        level_int = ast.header_graph_node.get_level();
+      }
       if (typeof level_int !== 'number') {
         throw new Error('header level is not an integer after validation');
       }
+      let custom_args;
       let level_int_capped;
       if (level_int > 6) {
         custom_args = {'data-level': new AstArgument([new PlaintextAstNode(

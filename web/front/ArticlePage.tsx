@@ -9,22 +9,25 @@ import { AppContext, DiscussionAbout, NewArticleIcon, IssueIcon, useEEdit } from
 import { webApi } from 'front/api'
 import { cant } from 'front/cant'
 import routes from 'front/routes'
-import { ArticleType } from 'front/types/ArticleType'
+import { ArticleType, ArticleLinkType  } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
 import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
 
 export interface ArticlePageProps {
+  ancestors?: ArticleLinkType[];
   article: ArticleType & IssueType;
   articlesInSamePage?: ArticleType[];
   articlesInSamePageForToc?: ArticleType[];
   comments?: CommentType[];
   commentsCount?: number;
   commentCountByLoggedInUser?: number;
+  incomingLinks?: ArticleLinkType[];
   issueArticle?: ArticleType;
   issuesCount?: number;
   latestIssues?: IssueType[];
   loggedInUser?: UserType;
+  tagged?: ArticleLinkType[];
   topIssues?: IssueType[];
   topicArticleCount?: number;
 }

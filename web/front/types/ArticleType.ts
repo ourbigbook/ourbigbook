@@ -8,6 +8,11 @@ export interface Article {
   article: ArticleType;
 }
 
+export type ArticleLinkType = {
+  slug: string;
+  titleRender: string;
+}
+
 export type ArticleType = {
   author: UserType,
   body: string;

@@ -159,6 +159,19 @@ export const getServerSidePropsArticleHoc = ({
               as: 'to',
               required: true,
               attributes: [],
+              include: [{
+                model: sequelize.models.File,
+                as: 'toplevelId',
+                required: true,
+                attributes: [],
+                include: [{
+                  model: sequelize.models.Article,
+                  as: 'file',
+                  required: true,
+                  attributes: [],
+                  where: { slug: article.slug },
+                }],
+              }],
             }]
           }]
         }),

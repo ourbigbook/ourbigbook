@@ -133,12 +133,12 @@ class AstNode {
 
   toJSON() {
     return {
-      text:       this.text,
-      args:       this.args,
-      column:     this.column,
-      line:       this.line,
       macro_name: this.macro_name,
       node_type:  this.node_type.toString(),
+      line:       this.line,
+      column:     this.column,
+      text:       this.text,
+      args:       this.args,
     }
   }
 }
@@ -318,6 +318,10 @@ class Macro {
     if (!('properties' in options)) {
       options.properties = {};
     }
+    if (!('remove_whitespace_children' in options)) {
+      // TODO this should be a property of specific arguments, not the entire macro.
+      options.remove_whitespace_children = false;
+    }
     if (!('x_style' in options)) {
       options.x_style = XStyle.full;
     }
@@ -332,6 +336,7 @@ class Macro {
     }
     this.auto_parent = options.auto_parent;
     this.auto_parent_skip = options.auto_parent_skip;
+    this.remove_whitespace_children = options.remove_whitespace_children;
     this.convert = convert;
     this.options = options;
     this.id_prefix = options.id_prefix;
@@ -570,6 +575,21 @@ class Tokenizer {
     return true;
   }
 
+  consume_optional_newline_after_argument(literal) {
+    if (
+      !this.is_end() &&
+      this.cur_c === '\n'
+    ) {
+      const peek = this.peek();
+      if (
+        peek === START_POSITIONAL_ARGUMENT_CHAR ||
+        peek === START_NAMED_ARGUMENT_CHAR
+      ) {
+        this.consume();
+      }
+    }
+  }
+
   error(message, line, column) {
     if (line === undefined)
       line = this.line
@@ -681,11 +701,12 @@ class Tokenizer {
             unterminated_literal = true;
           }
           this.push_token(TokenType.NAMED_ARGUMENT_END);
+          this.consume_optional_newline_after_argument()
         }
       } else if (this.cur_c === END_NAMED_ARGUMENT_CHAR) {
         this.push_token(TokenType.NAMED_ARGUMENT_END);
         this.consume();
-        this.consume_optional_newline();
+        this.consume_optional_newline_after_argument()
       } else if (this.cur_c === START_POSITIONAL_ARGUMENT_CHAR) {
         this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
         // Tokenize past the last open char.
@@ -702,11 +723,12 @@ class Tokenizer {
             unterminated_literal = true;
           }
           this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
+          this.consume_optional_newline_after_argument()
         }
       } else if (this.cur_c === END_POSITIONAL_ARGUMENT_CHAR) {
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
         this.consume();
-        this.consume_optional_newline();
+        this.consume_optional_newline_after_argument()
       } else if (this.cur_c in MAGIC_CHAR_ARGS) {
         // Insane shortcuts e.g. $$ math and `` code.
         let line = this.line;
@@ -1289,6 +1311,19 @@ function html_hide_hover_link(id) {
   }
 }
 
+function html_is_whitespace_text_node(ast) {
+  return ast.node_type === AstType.PLAINTEXT && html_is_whitespace(ast.text);
+}
+
+// https://stackoverflow.com/questions/2161337/can-we-use-any-other-tag-inside-ul-along-with-li/60885802#60885802
+function html_is_whitespace(string) {
+  for (const c of string) {
+    if (!HTML_WHITESPACE.has(c))
+      return false;
+  }
+  return true;
+}
+
 function html_wrap(content, tag) {
   return `<${tag}>${content}</${tag}>`
 }
@@ -1580,6 +1615,7 @@ function parse(tokens, macros, options, extra_returns={}) {
   //
   // - the insane but necessary paragraphs double newline syntax
   // - automatic ul parent to li and table to tr
+  // - remove whitespace only text children from ul
   // - extract all IDs into an ID index
   //
   // Normally only the toplevel includer will enter this code section.
@@ -1726,37 +1762,58 @@ function parse(tokens, macros, options, extra_returns={}) {
       // Loop over the child arguments. We do this rather than recurse into them
       // to be able to easily remove or add nodes  to the tree during this AST
       // post-processing.
+      //
+      // Here we do operations that only need to look into direct children, such as:
+      //
+      // - auto add ul to li
+      // - remove whitespace only text children from ul
       for (const arg_name in ast.args) {
         let arg = ast.args[arg_name];
         let new_arg = [];
         for (let i = 0; i < arg.length; i++) {
           let child_node = arg[i];
-          let new_child_nodes;
-          if (child_node.node_type === AstType.MACRO) {
+          let new_child_nodes = [];
+          let new_child_nodes_set = false;
+          if (macro.remove_whitespace_children && html_is_whitespace_text_node(child_node)) {
+            new_child_nodes_set = true;
+          } else if (child_node.node_type === AstType.MACRO) {
             let child_macro_name = child_node.macro_name;
             let child_macro = state.macros[child_macro_name];
             if (child_macro.auto_parent !== undefined) {
               // Add ul and table implicit parents.
-              let auto_parent_name = child_macro.auto_parent;
+              const auto_parent_name = child_macro.auto_parent;
+              const auto_parent_name_macro = state.macros[auto_parent_name];
               if (
                 ast.macro_name !== auto_parent_name &&
                 !child_macro.auto_parent_skip.has(ast.macro_name)
               ) {
-                let start_auto_child_index = i;
                 let start_auto_child_node = child_node;
-                i++;
-                while (
-                  i < arg.length &&
-                  arg[i].node_type === AstType.MACRO &&
-                  state.macros[arg[i].macro_name].auto_parent === auto_parent_name
-                ) {
+                const new_arg = [];
+                debugger;
+                while (i < arg.length) {
+                  const arg_i = arg[i];
+                  if (arg_i.node_type === AstType.MACRO) {
+                    if (state.macros[arg_i.macro_name].auto_parent === auto_parent_name) {
+                      new_arg.push(arg_i);
+                    } else {
+                      break;
+                    }
+                  } else if (
+                    auto_parent_name_macro.remove_whitespace_children &&
+                    html_is_whitespace_text_node(arg_i)
+                  ) {
+                    // Ignore the node.
+                  } else {
+                    break;
+                  }
                   i++;
                 }
+                new_child_nodes_set = true;
                 new_child_nodes = [new AstNode(
                   AstType.MACRO,
                   auto_parent_name,
                   {
-                    'content': arg.slice(start_auto_child_index, i),
+                    'content': new_arg,
                   },
                   start_auto_child_node.line,
                   start_auto_child_node.column,
@@ -1766,7 +1823,7 @@ function parse(tokens, macros, options, extra_returns={}) {
               }
             }
           }
-          if (new_child_nodes === undefined) {
+          if (!new_child_nodes_set) {
             new_child_nodes = [child_node];
           }
           new_arg.push(...new_child_nodes);
@@ -2038,6 +2095,7 @@ function x_href(target_id_ast, context) {
 const END_NAMED_ARGUMENT_CHAR = '}';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';
 const ESCAPE_CHAR = '\\';
+const HTML_WHITESPACE = new Set([' ', '\r', '\n', '\f', '\t']);
 const ID_SEPARATOR = '-';
 const MAGIC_CHAR_ARGS = {
   '$': Macro.MATH_MACRO_NAME,
@@ -2282,7 +2340,7 @@ const DEFAULT_MACRO_LIST = [
     html_convert_simple_elem('li'),
     {
       auto_parent: 'ul',
-      auto_parent_skip: new Set(['ol'])
+      auto_parent_skip: new Set(['ol']),
     }
   ),
   new Macro(
@@ -2428,6 +2486,9 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     html_convert_simple_elem('ol', {newline_after_open: true}),
+    {
+      remove_whitespace_children: true,
+    }
   ),
   new Macro(
     Macro.PARAGRAPH_MACRO_NAME,
@@ -2515,6 +2576,7 @@ const DEFAULT_MACRO_LIST = [
           name: Macro.TITLE_ARGUMENT_NAME,
         }),
       ],
+      remove_whitespace_children: true,
     }
   ),
   new Macro(
@@ -2641,6 +2703,7 @@ const DEFAULT_MACRO_LIST = [
     html_convert_simple_elem('tr', {newline_after_open: true}),
     {
       auto_parent: 'table',
+      remove_whitespace_children: true,
     }
   ),
   new Macro(
@@ -2651,6 +2714,9 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     html_convert_simple_elem('ul', {newline_after_open: true}),
+    {
+      remove_whitespace_children: true,
+    }
   ),
   new Macro(
     'x',

@@ -539,6 +539,10 @@ Macro.LIST_MACRO_NAME = 'l';
 Macro.MATH_MACRO_NAME = 'm';
 Macro.PARAGRAPH_MACRO_NAME = 'p';
 Macro.PLAINTEXT_MACRO_NAME = 'plaintext';
+Macro.TATBLE_MACRO_NAME = 'table';
+Macro.TD_MACRO_NAME = 'td';
+Macro.TH_MACRO_NAME = 'th';
+Macro.TR_MACRO_NAME = 'tr';
 Macro.TITLE_ARGUMENT_NAME = 'title';
 Macro.TITLE2_ARGUMENT_NAME = 'title2';
 Macro.TOC_MACRO_NAME = 'toc';
@@ -658,11 +662,23 @@ class Tokenizer {
    * @return {boolean} EOF reached?
    */
   consume_optional_newline(literal) {
+    this.log_debug('consume_optional_newline');
+    this.log_debug();
     if (
       !this.is_end() &&
       this.cur_c === '\n' &&
-      (literal || this.peek() !== '\n')
+      (
+        literal ||
+        // Insane constructs that start with a newline prevent the skip.
+        (
+          // Pararaph.
+          this.peek() !== '\n' &&
+          // Insane start.
+          this.tokenize_insane_start(this.i + 1) === undefined
+        )
+      )
     ) {
+    this.log_debug();
       return this.consume();
     }
     return true;
@@ -800,7 +816,7 @@ class Tokenizer {
           this.error(`expected character: '${NAMED_ARGUMENT_EQUAL_CHAR}' or '${END_NAMED_ARGUMENT_CHAR}' (for a boolean argument), got '${this.cur_c}'`);
         }
         if (open_length === 1) {
-          this.consume_optional_newline(true);
+          this.consume_optional_newline();
         } else {
           // Literal argument.
           let close_string = closing_char(
@@ -825,7 +841,7 @@ class Tokenizer {
         this.push_token(TokenType.POSITIONAL_ARGUMENT_START,
           START_POSITIONAL_ARGUMENT_CHAR.repeat(open_length), line, column);
         if (open_length === 1) {
-          this.consume_optional_newline(true);
+          this.consume_optional_newline();
         } else {
           // Literal argument.
           let close_string = closing_char(
@@ -839,7 +855,7 @@ class Tokenizer {
       } else if (this.cur_c === END_POSITIONAL_ARGUMENT_CHAR) {
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
         this.consume();
-        this.consume_optional_newline_after_argument()
+        this.consume_optional_newline_after_argument();
       } else if (this.cur_c in MAGIC_CHAR_ARGS) {
         // Insane shortcuts e.g. $$ math and `` code.
         let line = this.line;
@@ -936,17 +952,18 @@ class Tokenizer {
             i += INSANE_LIST_INDENT.length;
             new_list_level += 1;
           }
-          if (array_contains_array_at(this.chars, i, INSANE_LIST_START)) {
+          let insane_start = this.tokenize_insane_start(i);
+          if (insane_start !== undefined) {
             if (new_list_level <= this.list_level + 1) {
               if (this.cur_c === '\n') {
                 this.consume();
               }
               this.consume_list_indent();
-              this.push_token(TokenType.MACRO_NAME, Macro.LIST_MACRO_NAME);
+              this.push_token(TokenType.MACRO_NAME, INSANE_STARTS_TO_MACRO_NAME[insane_start]);
               this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
               this.list_level += 1;
               done = true;
-              for (const c in INSANE_LIST_START) {
+              for (const c in insane_start) {
                 this.consume();
               }
             }
@@ -1017,6 +1034,22 @@ class Tokenizer {
         break;
     }
     return value;
+  }
+
+  /**
+   * Determine if we are at the start of an insane indented sequence
+   * like an insane list '* ' or table '| '
+   *
+   * @return {Union[String,undefined]} - which insane start if any
+   *         undefined if none found.
+   */
+  tokenize_insane_start(i) {
+    for (const insane_start in INSANE_STARTS_TO_MACRO_NAME) {
+      if (array_contains_array_at(this.chars, i, insane_start)) {
+        return insane_start;
+      }
+    }
+    return undefined;
   }
 
   /**
@@ -2163,8 +2196,87 @@ function parse(tokens, options, context, extra_returns={}) {
             arg = href_arg;
           }
 
-          // Child loop that
-          // Adds ul and table implicit parents.
+          // Child loop that adds table tr implicit parents to th and td.
+          // This needs to be done on a separate pass before the tr implicit table adding.
+          // It is however very similar to the other loop: the only difference is that we eat up
+          // a trailing paragraph if followed by another.
+          {
+            const new_arg = new AstArgument([], arg.line, arg.column);
+            for (let i = 0; i < arg.length; i++) {
+              let child_node = arg[i];
+              let new_child_nodes = [];
+              let new_child_nodes_set = false;
+              if (child_node.node_type === AstType.MACRO) {
+                const child_macro_name = child_node.macro_name;
+                if (
+                  child_macro_name == Macro.TD_MACRO_NAME ||
+                  child_macro_name == Macro.TH_MACRO_NAME
+                ) {
+                  const auto_parent_name = Macro.TR_MACRO_NAME;
+                  const auto_parent_name_macro = state.macros[auto_parent_name];
+                  if (
+                    ast.macro_name !== auto_parent_name
+                  ) {
+                    const start_auto_child_node = child_node;
+                    const new_arg_auto_parent = new AstArgument([], child_node.line, child_node.column);
+                    while (i < arg.length) {
+                      const arg_i = arg[i];
+                      if (arg_i.node_type === AstType.MACRO) {
+                        if (
+                          arg_i.macro_name == Macro.TD_MACRO_NAME ||
+                          arg_i.macro_name == Macro.TH_MACRO_NAME
+                        ) {
+                          new_arg_auto_parent.push(arg_i);
+                        } else {
+                          break;
+                        }
+                      } else if (arg_i.node_type === AstType.PARAGRAPH) {
+                        if (i + 1 < arg.length) {
+                          const arg_i_next_macro_name = arg[i + 1].macro_name;
+                          if (
+                            arg_i_next_macro_name == Macro.TD_MACRO_NAME ||
+                            arg_i_next_macro_name == Macro.TH_MACRO_NAME
+                          ) {
+                            // Ignore this paragraph, it is actually only a separator between two \tr.
+                            i++;
+                          }
+                        }
+                        break;
+                      } else if (
+                        auto_parent_name_macro.name_to_arg['content'].remove_whitespace_children &&
+                        html_is_whitespace_text_node(arg_i)
+                      ) {
+                        // Ignore the whitespace node.
+                      } else {
+                        break;
+                      }
+                      i++;
+                    }
+                    new_child_nodes_set = true;
+                    new_child_nodes = new AstArgument([new AstNode(
+                      AstType.MACRO,
+                      auto_parent_name,
+                      {
+                        'content': new_arg_auto_parent,
+                      },
+                      start_auto_child_node.line,
+                      start_auto_child_node.column,
+                      {parent_node: child_node.parent_node}
+                    )], child_node.line, child_node.column);
+                    // Because the for loop will advance past it.
+                    i--;
+                  }
+                }
+              }
+              if (!new_child_nodes_set) {
+                new_child_nodes = [child_node];
+              }
+              new_arg.push(...new_child_nodes);
+            }
+            arg = new_arg;
+          }
+
+          // Child loop that adds ul and table implicit parents.
           {
             const new_arg = new AstArgument([], arg.line, arg.column);
             for (let i = 0; i < arg.length; i++) {
@@ -2188,7 +2300,7 @@ function parse(tokens, options, context, extra_returns={}) {
                     ast.macro_name !== auto_parent_name &&
                     !child_macro.auto_parent_skip.has(ast.macro_name)
                   ) {
-                    let start_auto_child_node = child_node;
+                    const start_auto_child_node = child_node;
                     const new_arg_auto_parent = new AstArgument([], child_node.line, child_node.column);
                     while (i < arg.length) {
                       const arg_i = arg[i];
@@ -2978,6 +3090,8 @@ const ESCAPE_CHAR = '\\';
 const HTML_ASCII_WHITESPACE = new Set([' ', '\r', '\n', '\f', '\t']);
 const ID_SEPARATOR = '-';
 const INSANE_LIST_START = '* ';
+const INSANE_TD_START = '| ';
+const INSANE_TH_START = '|| ';
 const INSANE_LIST_INDENT = '  ';
 const INSANE_HEADER_CHAR = '=';
 const MAGIC_CHAR_ARGS = {
@@ -2994,7 +3108,13 @@ const ESCAPABLE_CHARS = new Set([
   START_NAMED_ARGUMENT_CHAR,
   END_NAMED_ARGUMENT_CHAR,
   INSANE_LIST_START[0],
+  INSANE_TD_START[0],
 ]);
+const INSANE_STARTS_TO_MACRO_NAME = {
+  [INSANE_LIST_START]:  Macro.LIST_MACRO_NAME,
+  [INSANE_TD_START]: Macro.TD_MACRO_NAME,
+  [INSANE_TH_START]: Macro.TH_MACRO_NAME,
+};
 for (const c in MAGIC_CHAR_ARGS) {
   ESCAPABLE_CHARS.add(c);
 }
@@ -3636,7 +3756,7 @@ const DEFAULT_MACRO_LIST = [
     ),
   ),
   new Macro(
-    'table',
+    Macro.TATBLE_MACRO_NAME,
     [
       new MacroArgument({
         name: 'content',
@@ -3680,7 +3800,7 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'td',
+    Macro.TD_MACRO_NAME,
     [
       new MacroArgument({
         name: 'content',
@@ -3814,7 +3934,7 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'th',
+    Macro.TH_MACRO_NAME,
     [
       new MacroArgument({
         name: 'content',
@@ -3823,7 +3943,7 @@ const DEFAULT_MACRO_LIST = [
     html_convert_simple_elem('th'),
   ),
   new Macro(
-    'tr',
+    Macro.TR_MACRO_NAME,
     [
       new MacroArgument({
         name: 'content',
@@ -3832,7 +3952,7 @@ const DEFAULT_MACRO_LIST = [
     ],
     html_convert_simple_elem('tr', {newline_after_open: true}),
     {
-      auto_parent: 'table',
+      auto_parent: Macro.TATBLE_MACRO_NAME,
     }
   ),
   new Macro(

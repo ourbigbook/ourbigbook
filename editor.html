@@ -90,21 +90,18 @@ Sane list with explicit `ul`:
 ]
 
 And now for tables, see this one \x[table-my-table].
-\table{title=My table title}
+\table
+{title=My table title}
 {id=table-my-table}
 [
-\tr[
-  \th[Header 1]
-  \th[Header 2]
-]
-\tr[
-  \td[1 1]
-  \td[1 2]
-]
-\tr[
-  \td[2 1]
-  \td[2 2]
-]
+|| Header 1
+|| Header 2
+
+| 1 1
+| 1 2
+
+| 2 1
+| 2 2
 ]
 
 And a quotation:
@@ -116,7 +113,7 @@ Cirodown is the answer.]
 
 Ciro loves headers and headers!
 
-Reference to a header: \x[paragraphs-and-stuff]. Or if you want to show the section id: \x[paragraphs-and-stuff]{style=full}.
+Reference to a header: \x[paragraphs-code-math]. Or if you want to show the section id: \x[paragraphs-code-math]{style=full}.
 
 Reference to the following image: \x[image-my-xi-chrysanthemum].
 

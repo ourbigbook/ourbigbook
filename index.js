@@ -3693,6 +3693,13 @@ function get_title_and_description({ title, description, source, inner }) {
   return `${title}${sep}${source}${description}`
 }
 
+function github_provider_prefix(context) {
+  const github = context.options.ourbigbook_json['media-providers'].github
+  if (github) {
+    return `https://raw.githubusercontent.com/${github.remote}/master`;
+  }
+}
+
 function has_toc(context) {
   let root_node = context.header_tree;
   if (root_node.children.length === 1) {
@@ -7635,7 +7642,7 @@ function macro_image_video_resolve_params(ast, context) {
       relpath_prefix = path.relative('.', context.options.outdir)
       src = `${github_path}/${src}`
     } else {
-      src = `https://raw.githubusercontent.com/${context.options.ourbigbook_json['media-providers'].github.remote}/master/${src}`;
+      src = `${github_provider_prefix(context)}/${src}`;
     }
   }
 
@@ -9171,6 +9178,10 @@ const OUTPUT_FORMATS_LIST = [
               render_env.input_path = ''
             } else {
               render_env.input_path = context.options.input_path
+            }
+            const github_prefix = github_provider_prefix(context)
+            if (github_prefix) {
+              render_env.github_prefix = github_prefix
             }
             Object.assign(render_env, context.options.template_vars);
 

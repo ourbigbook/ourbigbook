@@ -6293,6 +6293,17 @@ Defined variables:
   <div><a href="{{ dir_relpath }}{{ html_index }}">Website source code</a></div>
   ``
 * `git_sha`: SHA of the latest git commit of the source code if in a git repository
+* `github_prefix`: this variable is set only if if the "github" <media provider>. It points to the URL prefix of the provider, e.g. if you have in your <ourbigbook.json>:
+  ``
+  "media-providers": {
+    "github": {
+      "remote": "mygithubusername/media"
+    },
+  ``
+  then you can use media from that repository with:
+  ``
+  <img src="image/x-icon" href="{{ github_prefix }}/myimage.jpg" />
+  ``
 * `html_ext`: `.html` for local renders, empty for server renders.
 
   So e.g. to link to an ID `myid` you can use:
@@ -6757,6 +6768,9 @@ The initial application of this option was to <redirect from a static website to
 
 = `media-providers`
 {parent=ourbigbook.json}
+
+= Media provider
+{synonym}
 
 The `media-providers` entry of `ourbigbook.json` specifies properties of how media such as <images> and <videos> are retrieved and rendered.
 

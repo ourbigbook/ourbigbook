@@ -14,6 +14,7 @@ import { AppContext } from 'lib'
 import ArticleAPI from 'lib/api/article'
 import CommentAPI from 'lib/api/comment'
 import { ArticleType } from 'lib/types/articleType'
+import { CommentType } from 'lib/types/commentType'
 import fetcher from 'lib/utils/fetcher'
 import routes from 'routes'
 

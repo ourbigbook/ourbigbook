@@ -31,10 +31,10 @@ export default function UserPage({
   what
 }) {
   const router = useRouter();
-  const useMin0 = {
+  const useMin0:any = {
     userIds: [user?.id],
   }
-  const useMin1 = {
+  const useMin1:any = {
     users: [user],
   }
   if (what !== 'home') {

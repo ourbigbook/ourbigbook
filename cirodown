@@ -722,7 +722,6 @@ commander.option('--dry-run-push', "don't run git push commands https://github.c
 commander.option('--embed-includes', 'http://cirosantilli.com/cirodown#embed-include', false);
 commander.option('--embed-resources', 'http://cirosantilli.com/cirodown#embed-resources', false);
 commander.option('--generate', 'http://cirosantilli.com/cirodown#generate', false);
-commander.option('--generate-multifile', 'http://cirosantilli.com/cirodown#generate-multifile', false);
 commander.option('--generate-redirects', 'http://cirosantilli.com/cirodown#redirects', false);
 commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown/#', false);
 commander.option('-l, --log <log...>', 'http://cirosantilli.com/cirodown#log');

@@ -819,6 +819,9 @@ assert_convert_ast('a header first element has an empty on-hover link',
   }
 );
 assert_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
+assert_convert_ast('one newline at the end of document is ignored', 'p1\n', [a('P', [t('p1')])]);
+assert_error('two newlines at the end of document are an error', 'p1\n\n', 1, 3);
+assert_error('three newline at the end of document an error', 'p1\n\n\n', 2, 1);
 
 // List.
 const l_with_explicit_ul_expect = [

@@ -196,7 +196,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
     const context = cirodown_extra_returns.context
     // Remove all IDs from the converted files to ensure that removed IDs won't be
     // left over hanging in the database.
-    await this.clear(Array.from(context.include_path_set), transaction);
+    await this.clear(Array.from(context.options.include_path_set), transaction);
 
     // Calculate create_ids
     const ids = cirodown_extra_returns.ids;

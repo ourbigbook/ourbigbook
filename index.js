@@ -2481,13 +2481,6 @@ async function parse_include(
     convert_options,
     convert_extra_returns,
   );
-  // Forward the include_path_set back. This is needed because convert
-  // clones that input by default to prevent inputs from being modified.
-  // I can't believe there's a better syntax for this:
-  // https://stackoverflow.com/questions/32000865/simplest-way-to-merge-es6-maps-sets
-  for (let e of convert_extra_returns.context.include_path_set) {
-    convert_options.include_path_set.add(e)
-  }
   if (options.errors !== undefined) {
     options.errors.push(...convert_extra_returns.errors);
   }
@@ -2565,7 +2558,6 @@ function convert_init_context(options={}, extra_returns={}) {
   if (options.file_provider !== undefined) {
     options.file_provider.id_provider = options.id_provider
   }
-  if (!('include_path_set' in options)) { options.include_path_set = new Set(); }
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('katex_macros' in options)) { options.katex_macros = {}; }
   if (!('log' in options)) { options.log = {}; }
@@ -2610,6 +2602,7 @@ function convert_init_context(options={}, extra_returns={}) {
   // Non-indexed-ids: auto-generated numeric ID's like p-1, p-2, etc.
   // It is not possible to link to them from inside the document, since links
   // break across versions.
+  if (!('include_path_set' in options)) { options.include_path_set = new Set(); }
   if (options.non_indexed_ids === undefined) {
     options.non_indexed_ids = {};
   }
@@ -3670,7 +3663,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     id_provider = local_id_provider;
   }
   context.id_provider = id_provider;
-  context.include_path_set.add(options.input_path);
+  options.include_path_set.add(options.input_path);
   let header_file_preview_ast, header_file_preview_ast_next
   const header_ids = []
   while (todo_visit.length > 0) {
@@ -3721,7 +3714,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         parent_arg.push(new PlaintextAstNode(message, ast.source_location));
       } else {
         const [include_path, include_content] = read_include_ret;
-        if (context.include_path_set.has(include_path)) {
+        if (options.include_path_set.has(include_path)) {
           let message = `circular include detected to: "${include_path}"`;
           parse_error(
             state,
@@ -3742,7 +3735,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                 errors: extra_returns.errors,
               }
             );
-            context.include_path_set.add(include_path);
+            options.include_path_set.add(include_path);
           } else {
             const from_include = true
             // Don't merge into a single file, render as a dummy header and an xref link instead.
@@ -4272,7 +4265,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       if (ids.length) {
         id_conflict_asts_promise = options.id_provider.get_noscopes_base_fetch(
           ids,
-          context.include_path_set,
+          options.include_path_set,
         )
       } else {
         id_conflict_asts_promise = []
@@ -5456,7 +5449,7 @@ function x_href_parts(target_id_ast, context) {
         context.to_split_headers !== undefined &&
         context.to_split_headers
       ) &&
-      context.include_path_set.has(target_input_path)
+      context.options.include_path_set.has(target_input_path)
     ) ||
     (
       // Split header link to image in current header.
@@ -5509,7 +5502,7 @@ function x_href_parts(target_id_ast, context) {
   // Fragment
   if (
     !context.in_split_headers &&
-    context.include_path_set.has(target_input_path) &&
+    context.options.include_path_set.has(target_input_path) &&
     !(context.to_split_headers !== undefined && context.to_split_headers)
   ) {
     // We are not in split headears, and the output is in the current file.
@@ -5541,7 +5534,7 @@ function x_href_parts(target_id_ast, context) {
       toplevel_ast = target_id_ast.get_header_parent(context);
     } else if (
       // The header was included inline into the current file.
-      context.include_path_set.has(target_input_path) && !context.in_split_headers
+      context.options.include_path_set.has(target_input_path) && !context.in_split_headers
     ) {
       toplevel_ast = context.toplevel_ast;
     } else {

@@ -99,7 +99,8 @@ async function createOrUpdateArticle(req, res, opts) {
     bodySource,
     forceNew: opts.forceNew,
     sequelize,
-    path: lib.validateParam(body, 'path', { validators: [ front.isString ], defaultValue: undefined }),
+    path: lib.validateParam(body, 'path', { validators: [
+      front.isString, front.isTruthy ], defaultValue: undefined }),
     render,
     titleSource,
   })

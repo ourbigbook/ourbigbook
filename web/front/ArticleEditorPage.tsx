@@ -131,12 +131,12 @@ export default function ArticleEditorPageHoc({
         if (isIssue) {
           ;({ data, status } = await webApi.issueEdit(slugString, router.query.number, file))
         } else {
-          ;({ data, status } = await webApi.articleCreateOrUpdate(
-            file,
-            {
-              path: slugFromArray(ourbigbook.path_splitext(initialFile.path)[0].split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR), { username: false }),
-            }
-          ))
+          const path = slugFromArray(ourbigbook.path_splitext(initialFile.path)[0].split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR), { username: false })
+          const opts = {}
+          if (path) {
+            opts.path = path
+          }
+          ;({ data, status } = await webApi.articleCreateOrUpdate(file, opts))
         }
       }
       setLoading(false);

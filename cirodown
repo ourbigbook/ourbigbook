@@ -50,40 +50,6 @@ class IdProviderDbAdapter {
   }
 }
 
-class SqliteFileProvider extends cirodown.FileProvider {
-  constructor(sequelize) {
-    super();
-    this.sequelize = sequelize;
-    this.get_path_entry_cache = {}
-    this.id_provider = undefined
-  }
-
-  async get_path_entry_fetch(path, context) {
-    const rows = await this.sequelize.models.File.findAll({
-      where: { path },
-      include: this.sequelize.models.Id,
-    })
-    for (const row of rows) {
-      this.get_path_entry_cache[row.path] = row
-      if (
-        // Happens on some unminimized condition when converting
-        // cirosantilli.github.io @ 04f0f5bc03b9071f82b706b3481c09d616d44d7b + 1
-        // twice with cirodown -S ., no patience to minimize and test now.
-        row.Id !== null &&
-        // We have to do this if here because otherwise it would overwrite the reconciled header
-        // we have stiched into the tree with Include.
-        !this.id_provider.id_cache[row.Id.idid]
-      ) {
-        this.id_provider.add_row_to_id_cache(row.Id, context)
-      }
-    }
-  }
-
-  get_path_entry(path) {
-    return this.get_path_entry_cache[path]
-  }
-}
-
 // Reconcile the database with information that depends only on existence of Cirodown files, notably:
 // - remove any IDs from deleted files https://github.com/cirosantilli/cirodown/issues/125
 // - prefetch all last_render timestamps in one go
@@ -529,8 +495,9 @@ async function create_db(cirodown_options, non_cirodown_options) {
   }
   const sequelize = await cirodown_nodejs_webpack_safe.create_sequelize(non_cirodown_options.db_options, Sequelize)
   non_cirodown_options.sequelize = sequelize;
-  non_cirodown_options.file_provider = new SqliteFileProvider(sequelize);
   non_cirodown_options.id_provider = new cirodown_nodejs_webpack_safe.SqliteIdProvider(sequelize);
+  non_cirodown_options.file_provider = new cirodown_nodejs_webpack_safe.SqliteFileProvider(
+    sequelize, non_cirodown_options.id_provider);
   perf_print('create_db_end', cirodown_options)
 }
 

@@ -2710,9 +2710,6 @@ function convert_init_context(options={}, extra_returns={}) {
     options.h_parse_level_offset = 0;
   }
   if (!('id_provider' in options)) { options.id_provider = undefined; }
-  if (options.file_provider !== undefined) {
-    options.file_provider.id_provider = options.id_provider
-  }
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('katex_macros' in options)) { options.katex_macros = {}; }
   if (!('log' in options)) { options.log = {}; }
@@ -3820,6 +3817,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   let macro_count_global = 0
   const macro_counts = {};
   const macro_counts_visible = {};
+  const headers_from_include = {}
   let cur_header_tree_node;
   let is_first_header = true;
   extra_returns.ids = options.indexed_ids;
@@ -3982,6 +3980,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               },
             );
             options.include_hrefs[href] = header_ast
+            headers_from_include[href] = header_ast
             header_ast.header_tree_node = new HeaderTreeNode(header_ast, parent_ast_header_tree_node);
             parent_ast_header_tree_node.add_child(header_ast.header_tree_node);
             new_child_nodes = [
@@ -4449,189 +4448,6 @@ async function parse(tokens, options, context, extra_returns={}) {
   let fetch_header_tree_ids_rows
   const prefetch_file_ids = new Set()
   if (!options.from_include) {
-    perf_print(context, 'db_queries')
-
-    let id_conflict_asts = []
-    if (options.id_provider !== undefined) {
-      const prefetch_ids = new Set()
-      for (const ref of options.add_refs_to_h) {
-        const id = render_arg_noescape(ref.content, context)
-        prefetch_ids.add(id)
-        ref.target_id = id
-      }
-      for (const ref of options.add_refs_to_x) {
-        const ast = ref.ast
-        const id = render_arg_noescape(ast.args.href, context)
-        // We store this prior to scope resolution.
-        ref.target_id = id
-
-        // We are going to walk up the scope tree and try to fetch
-        // everything as we just can't know which level is the correct
-        // level. Previously, we would do a query, go up, query, go up,
-        // interactively until found, but that is not possible anymore that
-        // we have grouped all queries at one point.
-        //
-        // This very slightly duplicates the resolution code in IdProvider.get,
-        // but it was not trivial to factor them out, so just going for this now.
-        let ids = []
-        if (id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
-          ids.push(id.substr(1))
-        } else {
-          let current_scope = ast.scope
-          if (current_scope !== undefined) {
-            current_scope += Macro.HEADER_SCOPE_SEPARATOR
-            for (let i = current_scope.length - 1; i > 0; i--) {
-              if (current_scope[i] === Macro.HEADER_SCOPE_SEPARATOR) {
-                ids.push(current_scope.substring(0, i + 1) + id)
-              }
-            }
-          }
-          ids.push(id)
-        }
-
-        // We need the target IDs of any x to render it.
-        for (const id of ids) {
-          prefetch_ids.add(id)
-          prefetch_file_ids.add(id)
-        }
-      }
-      for (const id in options.include_hrefs) {
-        // We need the target it to be able to render the dummy include title
-        // with link to the real content.
-        prefetch_ids.add(id)
-      }
-      const prefetch_refs_ids = new Set()
-
-      ;[,,,fetch_header_tree_ids_rows] = await Promise.all([
-        options.id_provider.get_noscopes_base_fetch(
-          Array.from(prefetch_ids),
-          new Set(),
-          context,
-        ),
-
-        // TODO merge the following two refs fetch into one single DB query. Lazy now.
-        // Started prototype at: https://github.com/cirosantilli/cirodown/tree/merge-ref-cache
-        // The annoying part is deciding what needs to go in which direction of the cache.
-        options.id_provider.get_refs_to_fetch(
-          [
-            // These are needed to render each header.
-            // Shows on parents.
-            REFS_TABLE_PARENT,
-            // Shows on tags.
-            REFS_TABLE_X_CHILD,
-
-            // This is needed for the Incoming links at the bottom of each output file.
-            REFS_TABLE_X,
-          ],
-          header_ids,
-          {
-            context,
-            ignore_paths_set: context.options.include_path_set,
-          },
-        ),
-        // This is needed to generate the "tagged" at the end of each output file.
-        options.id_provider.get_refs_to_fetch(
-          [
-            REFS_TABLE_X_CHILD,
-          ],
-          header_ids,
-          {
-            context,
-            reversed: true,
-            ignore_paths_set: context.options.include_path_set,
-          }
-        ),
-
-        options.id_provider.fetch_header_tree_ids(
-          options.include_hrefs,
-        ),
-      ])
-    }
-
-    // Reconcile the dummy include header with our actual knowledge from the DB, e.g.:
-    // * patch the ID of the include headers.
-    // Has to be deferred here after DB fetch obviously because we need he DB data.
-    // This is hair pulling stuff. There has to be abetter way...
-    for (const href in options.include_hrefs) {
-      const target_id_ast = context.id_provider.get(href, context);
-      const header_ast = options.include_hrefs[href]
-      if (target_id_ast === undefined) {
-        let message = `ID in include not found on database: "${href}", ` +
-          `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
-        header_ast.args[Macro.TITLE_ARGUMENT_NAME].get(0).text = error_message_in_output(message)
-        if (options.render) {
-          parse_error(state, message, header_ast.source_location);
-        }
-      } else {
-        if (target_id_ast.is_first_header_in_input_file) {
-          // We want the rendered placeholder to use its parent numbered, so as to follow the includer's numbering scheme,
-          // but the descendants to follow what they would actually render in the output as so they will show correctly on ToC.
-          header_ast.add_argument('numbered', new AstArgument(
-            [
-              new PlaintextAstNode(context.options.cirodown_json.h.numbered ? '1' : '0', header_ast.source_location),
-            ],
-            header_ast.source_location,
-          ))
-        }
-        header_ast.splitDefault = target_id_ast.splitDefault
-        propagate_numbered(header_ast, context)
-        header_ast.set_source_location(target_id_ast.source_location)
-        header_ast.header_tree_node.update_ancestor_counts(target_id_ast.header_tree_node_word_count)
-        for (const argname in target_id_ast.args) {
-          if (
-            // We have to patch the level of the target ID (1) do our new dummy one in the current tree.
-            argname !== 'level' &&
-            argname !== 'wiki' &&
-            target_id_ast.validation_output[argname].given
-          ) {
-            header_ast.args[argname] = target_id_ast.args[argname]
-          }
-        }
-      }
-      // This is a bit nasty and duplicates the header processing code,
-      // but it is a bit hard to factor them out since this is a magic include header,
-      // and all includes and headers must be parsed concurrently since includes get
-      // injected under the last header.
-      validate_ast(header_ast, context);
-
-      if (target_id_ast !== undefined) {
-        // We modify the cache here to ensure that the header ID has the full header_tree_node, which
-        // then gets feched from \x{full} (notably ToC) in order to show the link number there.
-        //
-        // Yes, this erase IDs that come from other Includes, but we don´t have a use case for that
-        // right now, e.g. the placholder include header does not show parents.
-        target_id_ast.header_tree_node = header_ast.header_tree_node
-        target_id_ast.header_parent_ids = []
-      }
-    }
-    let build_header_tree_asts
-    if (options.id_provider !== undefined) {
-      build_header_tree_asts = context.options.id_provider.build_header_tree(
-        options.include_hrefs, fetch_header_tree_ids_rows, { context })
-    }
-
-    if (context.options.file_provider !== undefined) {
-      const prefetch_files = new Set()
-      // TODO convert this to a join with the above queries. Lazy.
-      for (const prefetch_file_id of prefetch_file_ids) {
-        const prefetch_ast = context.id_provider.get_noscope(prefetch_file_id, context)
-        if (
-          // Possible in some error cases.
-          prefetch_ast !== undefined
-        ) {
-          prefetch_files.add(prefetch_ast.source_location.path)
-        }
-      }
-      if (options.id_provider !== undefined) {
-        for (const ast of build_header_tree_asts) {
-          prefetch_files.add(ast.source_location.path)
-        }
-      }
-      if (prefetch_files.size) {
-        await context.options.file_provider.get_path_entry_fetch(Array.from(prefetch_files), context)
-      }
-    }
-
     // Ast post process pass 2
     //
     // Post process the AST pre-order depth-first search after
@@ -4696,19 +4512,6 @@ async function parse(tokens, options, context, extra_returns={}) {
           ast.macro_name === Macro.HEADER_MACRO_NAME
         ) {
           propagate_numbered(ast, context)
-          if (ast.from_include) {
-            // This to ensure that the ast we get from \x will have a consistent
-            // numbering with the local parent.
-            // This code will likely be removed if we do:
-            // https://github.com/cirosantilli/cirodown/issues/188
-            const cached_ast = context.id_provider.get(ast.id, context)
-            if (
-              // Possible in error cases and TODO apparently some non-error too.
-              cached_ast !== undefined
-            ) {
-              cached_ast.numbered = ast.numbered
-            }
-          }
         }
         // Dump index of headers with includes.
         if (ast.includes.length > 0) {
@@ -5042,6 +4845,195 @@ async function parse(tokens, options, context, extra_returns={}) {
       console.error();
     }
 
+    perf_print(context, 'db_queries')
+
+    let id_conflict_asts = []
+    if (options.id_provider !== undefined) {
+      const prefetch_ids = new Set()
+      for (const ref of options.add_refs_to_h) {
+        const id = render_arg_noescape(ref.content, context)
+        prefetch_ids.add(id)
+        ref.target_id = id
+      }
+      for (const ref of options.add_refs_to_x) {
+        const ast = ref.ast
+        const id = render_arg_noescape(ast.args.href, context)
+        // We store this prior to scope resolution.
+        ref.target_id = id
+
+        // We are going to walk up the scope tree and try to fetch
+        // everything as we just can't know which level is the correct
+        // level. Previously, we would do a query, go up, query, go up,
+        // interactively until found, but that is not possible anymore that
+        // we have grouped all queries at one point.
+        //
+        // This very slightly duplicates the resolution code in IdProvider.get,
+        // but it was not trivial to factor them out, so just going for this now.
+        let ids = []
+        if (id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
+          ids.push(id.substr(1))
+        } else {
+          let current_scope = ast.scope
+          if (current_scope !== undefined) {
+            current_scope += Macro.HEADER_SCOPE_SEPARATOR
+            for (let i = current_scope.length - 1; i > 0; i--) {
+              if (current_scope[i] === Macro.HEADER_SCOPE_SEPARATOR) {
+                ids.push(current_scope.substring(0, i + 1) + id)
+              }
+            }
+          }
+          ids.push(id)
+        }
+
+        // We need the target IDs of any x to render it.
+        for (const id of ids) {
+          prefetch_ids.add(id)
+          prefetch_file_ids.add(id)
+        }
+      }
+      for (const id in options.include_hrefs) {
+        // We need the target it to be able to render the dummy include title
+        // with link to the real content.
+        prefetch_ids.add(id)
+      }
+      const prefetch_refs_ids = new Set()
+
+      let get_noscopes_base_fetch, get_refs_to_fetch, get_refs_to_fetch_reverse
+      ;[
+        get_noscopes_base_fetch,
+        get_refs_to_fetch,
+        get_refs_to_fetch_reverse,
+        fetch_header_tree_ids_rows
+      ] = await Promise.all([
+        options.id_provider.get_noscopes_base_fetch(
+          Array.from(prefetch_ids),
+          new Set(),
+          context,
+        ),
+
+        // TODO merge the following two refs fetch into one single DB query. Lazy now.
+        // Started prototype at: https://github.com/cirosantilli/cirodown/tree/merge-ref-cache
+        // The annoying part is deciding what needs to go in which direction of the cache.
+        options.id_provider.get_refs_to_fetch(
+          [
+            // These are needed to render each header.
+            // Shows on parents.
+            REFS_TABLE_PARENT,
+            // Shows on tags.
+            REFS_TABLE_X_CHILD,
+
+            // This is needed for the Incoming links at the bottom of each output file.
+            REFS_TABLE_X,
+          ],
+          header_ids,
+          {
+            context,
+            ignore_paths_set: context.options.include_path_set,
+          },
+        ),
+        // This is needed to generate the "tagged" at the end of each output file.
+        options.id_provider.get_refs_to_fetch(
+          [
+            REFS_TABLE_X_CHILD,
+          ],
+          header_ids,
+          {
+            context,
+            reversed: true,
+            ignore_paths_set: context.options.include_path_set,
+          }
+        ),
+
+        options.id_provider.fetch_header_tree_ids(
+          options.include_hrefs,
+        ),
+      ])
+    }
+
+    // Reconcile the dummy include header with our actual knowledge from the DB, e.g.:
+    // * patch the ID of the include headers.
+    // Has to be deferred here after DB fetch obviously because we need he DB data.
+    // This is hair pulling stuff. There has to be abetter way...
+    for (const href in options.include_hrefs) {
+      const target_id_ast = context.id_provider.get(href, context);
+      const header_ast = options.include_hrefs[href]
+      if (target_id_ast === undefined) {
+        let message = `ID in include not found on database: "${href}", ` +
+          `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
+        header_ast.args[Macro.TITLE_ARGUMENT_NAME].get(0).text = error_message_in_output(message)
+        if (options.render) {
+          parse_error(state, message, header_ast.source_location);
+        }
+      } else {
+        if (target_id_ast.is_first_header_in_input_file) {
+          // We want the rendered placeholder to use its parent numbered, so as to follow the includer's numbering scheme,
+          // but the descendants to follow what they would actually render in the output as so they will show correctly on ToC.
+          header_ast.add_argument('numbered', new AstArgument(
+            [
+              new PlaintextAstNode(context.options.cirodown_json.h.numbered ? '1' : '0', header_ast.source_location),
+            ],
+            header_ast.source_location,
+          ))
+        }
+        header_ast.splitDefault = target_id_ast.splitDefault
+        propagate_numbered(header_ast, context)
+        header_ast.set_source_location(target_id_ast.source_location)
+        header_ast.header_tree_node.update_ancestor_counts(target_id_ast.header_tree_node_word_count)
+        for (const argname in target_id_ast.args) {
+          if (
+            // We have to patch the level of the target ID (1) do our new dummy one in the current tree.
+            argname !== 'level' &&
+            argname !== 'wiki' &&
+            target_id_ast.validation_output[argname].given
+          ) {
+            header_ast.args[argname] = target_id_ast.args[argname]
+          }
+        }
+      }
+      // This is a bit nasty and duplicates the header processing code,
+      // but it is a bit hard to factor them out since this is a magic include header,
+      // and all includes and headers must be parsed concurrently since includes get
+      // injected under the last header.
+      validate_ast(header_ast, context);
+
+      if (target_id_ast !== undefined) {
+        // We modify the cache here to ensure that the header ID has the full header_tree_node, which
+        // then gets feched from \x{full} (notably ToC) in order to show the link number there.
+        //
+        // Yes, this erase IDs that come from other Includes, but we don´t have a use case for that
+        // right now, e.g. the placholder include header does not show parents.
+        target_id_ast.header_tree_node = header_ast.header_tree_node
+        target_id_ast.header_parent_ids = []
+      }
+    }
+    let build_header_tree_asts
+    if (options.id_provider !== undefined) {
+      build_header_tree_asts = context.options.id_provider.build_header_tree(
+        options.include_hrefs, fetch_header_tree_ids_rows, { context })
+    }
+
+    if (context.options.file_provider !== undefined) {
+      const prefetch_files = new Set()
+      // TODO convert this to a join with the above queries. Lazy.
+      for (const prefetch_file_id of prefetch_file_ids) {
+        const prefetch_ast = context.id_provider.get_noscope(prefetch_file_id, context)
+        if (
+          // Possible in some error cases.
+          prefetch_ast !== undefined
+        ) {
+          prefetch_files.add(prefetch_ast.source_location.path)
+        }
+      }
+      if (options.id_provider !== undefined) {
+        for (const ast of build_header_tree_asts) {
+          prefetch_files.add(ast.source_location.path)
+        }
+      }
+      if (prefetch_files.size) {
+        await context.options.file_provider.get_path_entry_fetch(Array.from(prefetch_files), context)
+      }
+    }
+
     // Now for some final operations that don't go over the entire Ast Tree.
     perf_print(context, 'post_process_4')
 
@@ -5102,6 +5094,21 @@ async function parse(tokens, options, context, extra_returns={}) {
     const first_toplevel_child = ast_toplevel.args.content.get(0);
     if (first_toplevel_child !== undefined) {
       first_toplevel_child.first_toplevel_child = true;
+    }
+
+    for (const id in headers_from_include) {
+      const ast = headers_from_include[id]
+      // This to ensure that the ast we get from \x will have a consistent
+      // numbering with the local parent.
+      // This code will likely be removed if we do:
+      // https://github.com/cirosantilli/cirodown/issues/188
+      const cached_ast = context.id_provider.get(ast.id, context)
+      if (
+        // Possible in error cases and TODO apparently some non-error too.
+        cached_ast !== undefined
+      ) {
+        cached_ast.numbered = ast.numbered
+      }
     }
 
     if (context.options.log['ast-pp-simple']) {

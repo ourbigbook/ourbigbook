@@ -515,7 +515,6 @@ But we chose not to do it like most markups available because it leads to too ma
 The `\include` macro allows including an external Cirodown headers under the current header.
 
 It exists to allow optional single page HTML output while still retaining the ability to:
-
 \l[split up large input files into multiple files to make renders faster during document development]
 \l[suggest an optional custom output split with one HTML output per Cirodown input, in order to avoid extremely large HTML pages which could be slow to load]
 
@@ -528,7 +527,6 @@ Headers of the included document are automatically shifted to match the level of
 If \x[html-single-page] is given, the external document is rendered embedded into the current document directly, essentially as if the source had been copy pasted (except for small corrections such as the header offsets).
 
 Otherwise, the following effects happen:
-
 \l[
   The headers of the included tree appear in the \x[table-of-contents][table of contents] of the document as links to the corresponding external files.
 
@@ -537,7 +535,6 @@ Otherwise, the following effects happen:
   As a result, you have to do an initial parse of all files in the project to extract their headers however, just as you would need to do when linking to those headers.
 ]
 \l[the include itself renders as a link to the included document]
-
 \l[\x[html-single-page]]
 
 Here is an example of inclusion of the files `not-readme.ciro` and `not-readme-2.ciro`.
@@ -1802,7 +1799,6 @@ We pick Liquid because it is server-side safe: if we ever some day offer a compi
 Path of a script that gets executed before running \x[publish][`cirodown --publish`].
 
 The script arguments are:
-
 \l[the publish output directory.
 
 That directory is guaranteed to exist when `prepublish` is called.

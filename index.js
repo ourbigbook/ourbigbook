@@ -2376,6 +2376,7 @@ function convert_init_context(options={}, extra_returns={}) {
     include_path_set: new Set(options.include_path_set),
     macros: macro_list_to_macros(),
     options: options,
+    synonym_headers: new Set(),
   };
 
   // Non-split header toplevel conversion.
@@ -3339,6 +3340,7 @@ function parse(tokens, options, context, extra_returns={}) {
             }
             include_options.cur_header.title2s.push(ast);
           }
+          context.synonym_headers.add(ast);
         } else {
           prev_header = include_options.cur_header;
           include_options.cur_header = ast;

@@ -291,6 +291,8 @@ Example: \x[cross-reference-style]{style=full}.
 
 Reference to the first header of another file: \x[not-readme].
 
+Reference to the first header of another file that is a second inclusion: \x[included-by-not-readme].
+
 Reference to another header of another file, with \x[cross-reference-style] equals "full": \x[h2-in-not-the-readme]{style=full}.
 
 Reference to an image in another file: \x[fig-not-readme-xi]{style=full}.
@@ -446,13 +448,26 @@ It exists to allow optional single page HTML output while still retaining the ab
 \l[split up large input files into multiple files to make renders faster during document development]
 \l[suggest an optional custom output split with one HTML output per Cirodown input, in order to avoid extremely large HTML pages which could be slow to load]
 
-\c[[\include]] takes one mandatory argument, which is the reltaive path without extension to the \c[.ciro] file that you want to include.
+\c[[\include]] takes one mandatory argument, which is the relative path without extension to the \c[.ciro] file that you want to include.
 
 Things would have been a bit more clean if the argument would take the ID of the header you want to include rather than the filename, which is analogous to how \x[internal-cross-references][\c[\\x]] works, but that would mean that a single page build would require an initial parse to determine IDs, so we are just going with the easier option of pointing out the file name directly.
 
 Headers of the included document are automatically shifted to match the level of the child of the level where they are being included.
 
-Wether the external page is actually embedded into the HTML directly, or just on the ToC depends on the \x[html-single-page] option.
+If \x[html-single-page] is given, the external document is rendered embedded into the current document directly, essentially as if the source had been copy pasted (except for small corrections such as the header offsets).
+
+Otherwise, the following effects happen:
+
+\l[
+  The headers of the included tree appear in the \x[table-of-contents][table of contents] of the document as links to the corresponding external files.
+
+  This is implemented simply by reading a previously generated database file much like \x[internal-cross-file-references-internals], which avoids the slowdown of parsing all included files every time.
+
+  As a result, you have to do an initial parse of all files in the project to extract their headers however, just as you would need to do when linking to those headers.
+]
+\l[the include itself renders as a link to the included document]
+
+\l[\x[html-single-page]]
 
 Here is an example of inclusion of the header \x[not-readme].
 
@@ -465,7 +480,7 @@ The very first header of a document can be of any level, although we highly reco
 \l[\c[[\h[1\]]] is used for the document title: \x[html-document-title]]
 \l[\c[[\h[1\]]] does not show on the \x[table-of-contents]]
 
-Aftter the initial header however, you must not skip a header level, e.g. the following would give an error because it skips level 3:
+After the initial header however, you must not skip a header level, e.g. the following would give an error because it skips level 3:
 
 \C[[
 \h[1][my 1]

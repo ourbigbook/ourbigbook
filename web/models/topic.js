@@ -19,13 +19,14 @@ module.exports = (sequelize) => {
   )
 
   Topic.getTopics = async ({
+    articleOrder,
+    articleWhere,
     count,
     likedBy,
     limit,
     offset,
     order,
     sequelize,
-    whereArticle,
   }) => {
     if (count === undefined) {
       count = true
@@ -38,16 +39,19 @@ module.exports = (sequelize) => {
         as: 'file',
       }]
     }
-    if (whereArticle) {
-      includeArticle.where = whereArticle
+    if (articleWhere) {
+      includeArticle.where = articleWhere
     }
     const include = [includeArticle]
-    const orderList = []
-    if (order) {
-      orderList.push([{model: sequelize.models.Article, as: 'article'}, order, 'DESC'])
+    if (order === undefined) {
+      order = 'articleCount'
     }
+    const orderList = [[order, 'DESC']]
     if (order !== 'createdAt') {
-      orderList.push([{model: sequelize.models.Article, as: 'article'}, 'createdAt', 'DESC'])
+      orderList.push(['createdAt', 'DESC'])
+    }
+    if (articleOrder !== undefined) {
+      orderList.push([{model: sequelize.models.Article, as: 'article'}, articleOrder, 'DESC'])
     }
     const args = {
       order: orderList,
@@ -65,9 +69,11 @@ module.exports = (sequelize) => {
   Topic.prototype.toJson = async function(loggedInUser) {
     return {
       articleCount: this.articleCount,
+      createdAt: this.createdAt.toISOString(),
       titleRender: this.article.titleRender,
       titleSource: this.article.file.titleSource,
       topicId: this.article.topicId,
+      updatedAt: this.updatedAt.toISOString(),
     }
   }
 

@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { AppContext, DiscussionAbout } from 'front'
+import { AppContext, ArticleIcon, DiscussionAbout, TopicIcon, UserIcon } from 'front'
 import ArticleList from 'front/ArticleList'
 import UserList from 'front/UserList'
 import CustomLink from 'front/CustomLink'
@@ -11,53 +11,64 @@ import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
 import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
+import { TopicType } from 'front/types/TopicType'
 import { DisplayAndUsername } from 'front/user'
 
 export interface IndexPageProps {
-  articles?: (ArticleType & IssueType)[];
+  articles?: (ArticleType & IssueType & TopicType)[];
   articlesCount?: number;
   issueArticle?: ArticleType;
   followed?: boolean;
+  itemType?: string;
   loggedInUser?: UserType;
   order: string;
   page: number;
   users?: UserType[];
   usersCount?: number;
-  what: string;
 }
 
-function IndexPageHoc({ isIssue=false, showUsers=false }) {
+function IndexPageHoc({
+  defaultItemType='article',
+  isHomepage=false
+}) {
   return ({
     articles,
     articlesCount,
     followed=false,
     issueArticle,
+    itemType,
     loggedInUser,
     order,
     page,
     users,
     usersCount,
-    what,
   }: IndexPageProps) => {
-    let paginationUrlFunc
-    let isUsers
-    if (isIssue) {
-      paginationUrlFunc = (page) => routes.issues(issueArticle.slug, { page, sort: order })
-    } else {
-      switch (what) {
-        case 'articles':
-          if (followed) {
-            paginationUrlFunc = (page) => routes.articlesFollowed({ page, sort: order })
-          } else {
-            paginationUrlFunc = (page) => routes.articles({ page, sort: order })
-          }
-          break
-        case 'users':
-          paginationUrlFunc = (page) => routes.users({ page, sort: order })
-          isUsers = true
-          break
-      }
+    if (itemType === undefined) {
+      itemType = defaultItemType
     }
+    let paginationUrlFunc
+    let isIssue, isUsers
+    switch (itemType) {
+      case 'article':
+        if (followed) {
+          paginationUrlFunc = (page) => routes.articlesFollowed({ page, sort: order })
+        } else {
+          paginationUrlFunc = (page) => routes.articles({ page, sort: order })
+        }
+        break
+      case 'issue':
+        paginationUrlFunc = (page) => routes.issues(issueArticle.slug, { page, sort: order })
+        isIssue = true
+        break
+      case 'topic':
+        paginationUrlFunc = (page) => routes.topics({ page, sort: order })
+        break
+      case 'user':
+        paginationUrlFunc = (page) => routes.users({ page, sort: order })
+        isUsers = true
+        break
+    }
+    const showFollowed = loggedInUser && !isIssue
     const { setTitle } = React.useContext(AppContext)
     React.useEffect(
       () => { setTitle(
@@ -69,16 +80,24 @@ function IndexPageHoc({ isIssue=false, showUsers=false }) {
       <div className="home-page content-not-ourbigbook">
         {isIssue && <DiscussionAbout article={issueArticle}/>}
         <div className="tab-list">
-          {(loggedInUser && !isIssue) &&
+          {isHomepage &&
+            <CustomLink
+              className={`tab-item${itemType === 'topic' ? ' active' : ''}`}
+              href={isIssue ? routes.issues(issueArticle.slug, { sort: 'articleCount' }) : routes.topics({ loggedInUser })}
+            >
+              <TopicIcon /> Topics
+            </CustomLink>
+          }
+          {showFollowed &&
             <>
               <CustomLink
-                className={`tab-item${what === 'articles' && order === 'createdAt' && followed ? ' active' : ''}`}
+                className={`tab-item${itemType === 'article' && order === 'createdAt' && followed ? ' active' : ''}`}
                 href={routes.articlesFollowed()}
               >
-                Latest Followed
+                <ArticleIcon /> Latest Followed
               </CustomLink>
               <CustomLink
-                className={`tab-item${what === 'articles' && order === 'score' && followed ? ' active' : ''}`}
+                className={`tab-item${itemType === 'article' && order === 'score' && followed ? ' active' : ''}`}
                 href={routes.articlesFollowed({ sort: 'score' })}
               >
                 Top Followed
@@ -86,28 +105,28 @@ function IndexPageHoc({ isIssue=false, showUsers=false }) {
             </>
           }
           <CustomLink
-            className={`tab-item${what === 'articles' && order === 'createdAt' && !followed ? ' active' : ''}`}
-            href={isIssue ? routes.issues(issueArticle.slug, { sort: 'createdAt' }) : routes.articles({ loggedInUser })}
+            className={`tab-item${itemType === 'article' && order === 'createdAt' && !followed ? ' active' : ''}`}
+            href={isIssue ? routes.issues(issueArticle.slug, { sort: 'createdAt' }) : routes.articles()}
           >
-            Latest
+            {!showFollowed && <><ArticleIcon />{' '}</>}Latest
           </CustomLink>
           <CustomLink
-            className={`tab-item${what === 'articles' && order === 'score' && !followed ? ' active' : ''}`}
-            href={isIssue ? routes.issues(issueArticle.slug, { sort: 'score' }) : routes.articles({ loggedInUser, sort: 'score' })}
+            className={`tab-item${itemType === 'article' && order === 'score' && !followed ? ' active' : ''}`}
+            href={isIssue ? routes.issues(issueArticle.slug, { sort: 'score' }) : routes.articles({ sort: 'score' })}
           >
             Top
           </CustomLink>
-          {showUsers &&
+          {isHomepage &&
             <>
               <CustomLink
-                className={`tab-item${what === 'users' && order === 'score' ? ' active' : ''}`}
+                className={`tab-item${itemType === 'user' && order === 'score' ? ' active' : ''}`}
                 href={routes.users({ sort: 'score' })}
               >
-                Top Users
+                <UserIcon /> Top Users
               </CustomLink>
               <CustomLink
-                className={`tab-item${what === 'users'  && order === 'createdAt' ? ' active' : ''}`}
-                href={routes.users()}
+                className={`tab-item${itemType === 'user'  && order === 'createdAt' ? ' active' : ''}`}
+                href={routes.users({ sort: 'createdAt' })}
               >
                 New Users
               </CustomLink>
@@ -121,25 +140,24 @@ function IndexPageHoc({ isIssue=false, showUsers=false }) {
           </CustomLink>
         </div>
         {isUsers ?
-          <UserList {...{
-            loggedInUser,
-            page,
-            paginationUrlFunc,
-            users,
-            usersCount,
-          }}/>
-          :
-          <ArticleList {...{
-            articles,
-            articlesCount,
-            isIssue,
-            issueArticle,
-            loggedInUser,
-            page,
-            paginationUrlFunc,
-            showAuthor: true,
-            what,
-          }}/>
+            <UserList {...{
+              loggedInUser,
+              page,
+              paginationUrlFunc,
+              users,
+              usersCount,
+            }}/>
+            :
+            <ArticleList {...{
+              articles,
+              articlesCount,
+              issueArticle,
+              itemType,
+              loggedInUser,
+              page,
+              paginationUrlFunc,
+              showAuthor: true,
+            }}/>
         }
       </div>
     )

@@ -726,7 +726,7 @@ function* walk_files_recursively(file_or_dir, skip_basenames, ignore_paths) {
 
 // CLI options.
 commander.option('--body-only', 'output only the content inside the HTLM body element', false);
-commander.option('--china', 'https://cirosantilli.com/cirodown#debug-perf', false);
+commander.option('--china', 'https://cirosantilli.com/cirodown#china', false);
 commander.option('--debug-perf', 'https://cirosantilli.com/cirodown#debug-perf', false);
 commander.option('--dry-run', "don't run most external commands https://github.com/cirosantilli/cirodown#dry-run", false);
 commander.option('--dry-run-push', "don't run git push commands https://github.com/cirosantilli/cirodown#dry-run-push", false);

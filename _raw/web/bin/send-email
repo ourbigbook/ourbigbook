@@ -1,0 +1,28 @@
+#!/usr/bin/env node
+
+// https://docs.ourbigbook.com/_file/web/bin/send-email
+
+const path = require('path')
+
+const commander = require('commander')
+
+const { sendEmail } = require('../api/lib')
+
+// CLI arguments
+const program = commander.program
+program.allowExcessArguments(false)
+program.argument('<to>', 'to email')
+program.argument('<subject>', 'subject')
+program.argument('<body>', 'body')
+program.parse(process.argv)
+const [to, subject, body] = program.processedArgs
+
+// main
+;(async () => {
+  await sendEmail({
+    to,
+    subject,
+    text: body,
+    html: body,
+  })
+})().finally(() => {})

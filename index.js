@@ -1240,16 +1240,26 @@ class Tokenizer {
 }
 
 class TreeNode {
+  /**
+   * @param {AstNode} value
+   * @param {TreeNode} parent_node
+   */
   constructor(value, parent_node) {
     this.value = value;
     this.parent_node = parent_node;
     this.children = [];
     this.index = undefined;
+    this.descendant_count = 0;
   }
 
   add_child(child) {
     child.index = this.children.length;
     this.children.push(child);
+    let cur_node = this;
+    while (cur_node !== undefined) {
+      cur_node.descendant_count += 1;
+      cur_node = cur_node.parent_node;
+    }
   }
 
   /** E.g. get number 1.4.2.5 of a Section.
@@ -1781,6 +1791,15 @@ function error_message_in_output(msg, context) {
     escaped_msg = html_escape_context(context, msg);
   }
   return `[CIRODOWN_ERROR: ${escaped_msg}]`
+}
+
+function get_descendant_count(tree_node) {
+  let descendant_count;
+  if (tree_node.descendant_count > 0) {
+    return ` <span class="descendant-count" title="Number of descendants.">[${tree_node.descendant_count}]</span>`;
+  } else {
+    return '';
+  }
 }
 
 /** @return {Union[String,undefined]}
@@ -4342,11 +4361,11 @@ const DEFAULT_MACRO_LIST = [
     [],
     function(ast, context) {
       let attrs = html_convert_attrs_id(ast, context);
-      let ret = `<div class="toc-container"${attrs}>\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
-      ret += `${TOC_ARROW_HTML}<a${x_href_attr(ast, context)}class="title">Table of contents</a></div>\n`;
       let todo_visit = [];
       let top_level = context.header_graph_top_level - 1;
       let root_node = context.header_graph;
+      let ret = `<div class="toc-container"${attrs}>\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
+      ret += `${TOC_ARROW_HTML}<a${x_href_attr(ast, context)}class="title">Table of contents</a> ${get_descendant_count(root_node)}</div>\n`;
       if (context.header_graph_top_level > 0) {
         root_node = root_node.children[0];
       }
@@ -4374,7 +4393,7 @@ const DEFAULT_MACRO_LIST = [
         // The inner <div></div> inside arrow is so that:
         // - outter div: takes up space to make clicking easy
         // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
-        ret += `><div${id_to_toc}>${TOC_ARROW_HTML}<a${href}>${content}</a><span>`;
+        ret += `><div${id_to_toc}>${TOC_ARROW_HTML}<a${href}>${content}</a>${get_descendant_count(tree_node)}<span class="hover-metadata">`;
 
         let toc_href = html_attr('href', '#' + my_toc_id);
         ret += ` | <a${toc_href}>${UNICODE_LINK} link</a>`;

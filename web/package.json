@@ -14,7 +14,7 @@
     "postinstall": "cd .. && npm link cirodown",
     "start": "node --unhandled-rejections=strict ./app.js",
     "start-dev": "NODE_ENV_OVERRIDE=development NODE_ENV_NEXT=production node --unhandled-rejections=strict ./app.js",
-    "start-prod": "env $(cat .env | xargs) NODE_ENV=production DATABASE_URL='postgres://node_express_sequelize_realworld_user:a@localhost:5432/node_express_sequelize_realworld' npm start",
+    "start-prod": "env $(cat .env | xargs) NODE_ENV=production npm start",
     "test": "mocha test --ignore-leaks test.js",
     "test-api": "./realworld/api/run-api-tests.sh"
   },

@@ -14,7 +14,7 @@ module.exports = {
   API_PATH_COMPONENT,
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   ESCAPE_USERNAME,
-  databaseUrl: process.env.DATABASE_URL || '',
+  databaseUrl: process.env.DATABASE_URL || 'postgres://cirodown_user:a@localhost:5432/cirodown',
   googleAnalyticsId: 'UA-47867706-4',
   isProduction: isProduction,
   isProductionNext: process.env.NODE_ENV_NEXT === undefined ?

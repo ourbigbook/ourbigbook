@@ -3507,7 +3507,7 @@ function get_link_html({
 function get_parent_argument_ast(ast, context, include_options) {
   let parent_id;
   let parent_ast;
-  parent_id = magic_title_to_id(render_arg_noescape(ast.args.parent, context), context);
+  parent_id = magic_title_to_id(convert_id_arg(ast.args.parent, context), context);
   if (is_absolute_xref(parent_id, context)) {
     parent_ast = context.db_provider.get_noscope(resolve_absolute_xref(parent_id, context), context);
   } else {
@@ -8374,9 +8374,6 @@ const OUTPUT_FORMATS_LIST = [
               parent_links.push(`<a${parent_href}${html_attr('title', 'parent header')}>${PARENT_MARKER} ${parent_content}</a>`);
             }
             parent_links = parent_links.join(HEADER_MENU_ITEM_SEP);
-            if (parent_links) {
-              items.push(parent_links);
-            }
             let descendant_count = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
             if (descendant_count !== undefined) {
               items.push(`${descendant_count}`);
@@ -8468,8 +8465,8 @@ const OUTPUT_FORMATS_LIST = [
           if (file_link_html !== undefined) {
             header_meta2.push(file_link_html);
           }
-          if (wiki_link !== undefined) {
-            header_meta2.push(wiki_link);
+          if (!first_header && parent_links !== undefined) {
+            header_meta2.push(parent_links);
           }
           if (tag_ids_html_array.length) {
             header_meta2.push(tag_ids_html);

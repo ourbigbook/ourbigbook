@@ -1798,6 +1798,17 @@ And now a table outside of \x[cirodown-example] to test how it looks directly un
 ]
 ]
 
+And a fully insane one:
+
+|| Header 1
+|| Header 2
+
+| 1 1
+| 1 2
+
+| 2 1
+| 2 2
+
 === Table sorting
 
 JavaScript interactive on-click table sorting is enabled by default, try it out by clicking on the header row:

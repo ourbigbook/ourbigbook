@@ -155,7 +155,7 @@ class AstNode {
         this.id !== undefined &&
         macro.toplevel_link
       ) {
-        out = `<div>${html_hide_hover_link(this.id)}${out}</div>`;
+        out = `<div>${html_hide_hover_link(x_href(this, context))}${out}</div>`;
       }
     }
 
@@ -1739,7 +1739,7 @@ function html_hide_hover_link(id) {
   if (id === undefined) {
     return '';
   } else {
-    let href = html_attr('href', '#' + html_escape_attr(id));
+    let href = html_attr('href', html_escape_attr(id));
     return `<span class="hide-hover"><a${href}>${UNICODE_LINK}</a></span>`;
   }
 }
@@ -2105,6 +2105,9 @@ function parse(tokens, options, context, extra_returns={}) {
           {'content': ast.args.content},
           ast.line,
           ast.column,
+          {
+            input_path: options.input_path,
+          }
         ),
         new AstNode(
           AstType.MACRO,
@@ -2120,6 +2123,9 @@ function parse(tokens, options, context, extra_returns={}) {
           },
           ast.line,
           ast.column,
+          {
+            input_path: options.input_path,
+          }
         ),
         new AstNode(
           AstType.MACRO,
@@ -2135,6 +2141,9 @@ function parse(tokens, options, context, extra_returns={}) {
           },
           ast.line,
           ast.column,
+          {
+            input_path: options.input_path,
+          }
         ),
       ]);
     } else {
@@ -2317,7 +2326,10 @@ function parse(tokens, options, context, extra_returns={}) {
                       },
                       start_auto_child_node.line,
                       start_auto_child_node.column,
-                      {parent_node: child_node.parent_node}
+                      {
+                        input_path: options.input_path,
+                        parent_node: child_node.parent_node
+                      }
                     )], child_node.line, child_node.column);
                     // Because the for loop will advance past it.
                     i--;
@@ -2385,7 +2397,10 @@ function parse(tokens, options, context, extra_returns={}) {
                       },
                       start_auto_child_node.line,
                       start_auto_child_node.column,
-                      {parent_node: child_node.parent_node}
+                      {
+                        input_path: options.input_path,
+                        parent_node: child_node.parent_node
+                      }
                     )], child_node.line, child_node.column);
                     // Because the for loop will advance past it.
                     i--;
@@ -2412,16 +2427,16 @@ function parse(tokens, options, context, extra_returns={}) {
             if (paragraph_indexes.length > 0) {
               const new_arg = new AstArgument([], arg.line, arg.column);
               if (paragraph_indexes[0] > 0) {
-                parse_add_paragraph(state, ast, new_arg, arg, 0, paragraph_indexes[0]);
+                parse_add_paragraph(state, ast, new_arg, arg, 0, paragraph_indexes[0], options);
               }
               let paragraph_start = paragraph_indexes[0] + 1;
               for (let i = 1; i < paragraph_indexes.length; i++) {
                 const paragraph_index = paragraph_indexes[i];
-                parse_add_paragraph(state, ast, new_arg, arg, paragraph_start, paragraph_index);
+                parse_add_paragraph(state, ast, new_arg, arg, paragraph_start, paragraph_index, options);
                 paragraph_start = paragraph_index + 1;
               }
               if (paragraph_start < arg.length) {
-                parse_add_paragraph(state, ast, new_arg, arg, paragraph_start, arg.length);
+                parse_add_paragraph(state, ast, new_arg, arg, paragraph_start, arg.length, options);
               }
               arg = new_arg;
             }
@@ -2630,7 +2645,7 @@ function parse(tokens, options, context, extra_returns={}) {
 
 // Maybe add a paragraph after a \n\n.
 function parse_add_paragraph(
-  state, ast, new_arg, arg, paragraph_start, paragraph_end
+  state, ast, new_arg, arg, paragraph_start, paragraph_end, options
 ) {
   parse_log_debug(state, 'function: parse_add_paragraph');
   parse_log_debug(state, 'paragraph_start: ' + paragraph_start);
@@ -2653,6 +2668,7 @@ function parse_add_paragraph(
           arg[paragraph_start].line,
           arg[paragraph_start].column,
           {
+            input_path: options.input_path,
             parent_node: ast,
           }
         )
@@ -2979,7 +2995,7 @@ exports.validate_ast = validate_ast;
 
 /**
   * @param {AstNode} target_id_ast
-  * @return {String} the href="..." that an \x cross reference to the given target_id_ast
+  * @return {String} the value of href (no quotes) that an \x cross reference to the given target_id_ast
   */
 function x_href(target_id_ast, context) {
   const [href_path, fragment] = x_href_parts(target_id_ast, context);

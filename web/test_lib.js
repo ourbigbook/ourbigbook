@@ -158,7 +158,20 @@ Link to external: http://example.com
 {synonym}
 `     }],
     ]],
-  ]],
+  ], { body: `Block math: <equation My favorite equation>
+
+$$
+\\frac{1}{\\sqrt{2}}
+$$
+{title=My favorite equation}
+
+And another: <equation My second favorite equation>
+
+$$
+\\frac{1}{\\sqrt{2}}
+$$
+{title=My second favorite equation}
+` }],
 ]
 const issueData = [
   ['Test issue', `Link to article: <test data>

@@ -498,7 +498,7 @@ Sane equivalent:
 If a \x[the-toplevel-header][non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:
 * do a \x[id-output-format] conversion on the title to remove for example any HTML tags that would be present in the conversion output
 * convert all characters to lowercase. This uses \x[javascript-case-conversion].
-* convert consecutive sequences of all non `a-z0-9` ASCII characters and hyphens `-` to a single hyphen `-`. Note that this leaves non-ASCII character untouched.
+* convert consecutive sequences of all non `a-z0-9` ASCII characters to a single hyphen `-`. Note that this leaves non-ASCII characters untouched.
 * strip leading or trailing hyphens
 Note how those rules leave non ASCII Unicode characters untouched, as capitalization and determining if something "is a letter or not" in those cases can be tricky.
 
@@ -518,7 +518,7 @@ So for example, the following automatic IDs would be generated: \x[table-example
 
 | Ciro's markdown is awesome
 | ciro-s-markdown-is-awesome
-|
+| `'` is an ASCII character, but it is not in `a-z0-9`, therefore it gets converted to a hyphen `-`
 
 | É你
 | é你
@@ -4533,7 +4533,7 @@ Create a tag to match, push and release the package:
 ``
 git add -u
 t=0.3.1
-git commit -m "Version $t"
+git commit -m "$t"
 git tag -m "$t" "$t"
 git push --follow-tags
 npm publish

@@ -155,7 +155,7 @@ commander.option('--html-embed', 'TODO embed all external resources like images 
 commander.option('--outdir <outdir>', 'if the output would be saved to a file e.g. when building a directory, use this directory as the root');
 commander.option('--output-format', 'output format');
 commander.option('--publish', "http://cirosantilli.com/cirodown#publish");
-commander.option('--publish-commit', "http://cirosantilli.com/cirodown#publish-commit");
+commander.option('--publish-commit <commit-message>', "http://cirosantilli.com/cirodown#publish-commit");
 commander.option('--show-ast', 'print the AST to stderr');
 commander.option(
   '--show-ast-inside',

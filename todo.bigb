@@ -3,6 +3,45 @@
 
 == Issues
 
+=== Render ancestors, incoming links and tagged on web
+{tag=Web}
+
+All dynamic.
+
+=== Reach the same performance as static website with dynamic tree
+{tag=Web}
+
+The move to dynamic tree slowed things down a lot for large pages such as: https://ourbigbook.com/cirosantilli[], making it is just unacceptably slow, and actually blocks any other page loads as the server does work.
+
+These were at cirosantilli.github.io at aa60ccb934bf9646d548e6b761489d31aec1a341, which has almost 7k articles.
+
+Some benchmarks on Chromium:
+* `ping cirosantilli.com`: 17 ms
+* https://cirosantilli.com `GET /`: 1.3s. Waiting for server: ping time only, the rest is content download. `content-length` from response: 300 kB zipped.
+* https://ourbigbook/cirosantilli `GET /`:
+  * Waiting for server response: 3.5s to 4s. That's our problem!
+  * Contend download: 2.5s
+* http://localhost:3000/cirosantilli `npm run dev` `GET /`:
+  * Waiting for server response: between 2 and 3s. So we reproduce relatively well locally.
+
+    curl `time_starttransfer` after a few stabilizing runs: 2.6s
+  * Contend download: 1.6s
+
+If we comment the single line in Article.tsx:
+``
+//html += render_toc_from_entry_list({ entry_list })
+``
+TTFB falls from 2.6s to 0.77s.
+
+Removing the `renderRefCallback` drops it to between 2.2 and 2.4.
+
+Limiting the ToC to 1k articles on server side leads to 0.5s. Maybe that's the first workaround we have to do until something else is understood. It is a shame that we have to go so much lower than the static website.
+
+Maybe we can use some of the techniques from: https://reactjs.org/docs/optimizing-performance.html#virtualize-long-lists[] to improve things.
+
+=== Empty Latest Followed shows as There are no articles on this website yet
+{tag=Web}
+
 === Include should work transparently with README in subdirectory
 {tag=Include}
 {tag=Web}
@@ -174,11 +213,6 @@ npx js-beautify min.html
 
 Newlines just add complexity to our codebase, and are not even getting removed from final output as things stand to take up a little bit of useless space.
 
-=== Render ancestors, incoming links and tagged on web
-{tag=Web}
-
-All dynamic.
-
 === ToC link on headers not opening collapsed toc entries
 {c}
 {tag=Bug}
@@ -213,6 +247,12 @@ Can start simple with either raw or contained, and then add both some day. GitHu
 Either with scroll or a load more button. Slightly tempted by a load more button?
 
 To implement, we just have to expose the ArticlePage.ts fetch in an API manner. The page then tracks current limit on a state variable, and just requests more from that point onwards.
+
+Starting from the commit of this line, we are also going to limit the ToC, so a load more button on ToC would also be of interest: <load more ToC entrie>.
+
+=== Load more ToC entrie
+{tag=Dynamic tree fetch}
+{tag=Web}
 
 === Word count on web
 {tag=Web}

@@ -2467,6 +2467,15 @@ assert_error('header child argument to id that does not exist gives an error',
 `,
   3, 1
 );
+assert_error('header tag argument to id that does not exist gives an error',
+  `= 1
+{tag=2}
+{tag=3}
+
+== 2
+`,
+  3, 1
+);
 // This almost worked, but "Other children" links were not showing.
 // Either we support it fully, or it blows up clearly, this immediately
 // confused me a bit on cirosantilli.com.
@@ -2476,6 +2485,17 @@ assert_error('header child and synonym arguments are incompatible',
 = 1 2
 {synonym}
 {child=2}
+
+== 2
+`,
+  5, 1
+);
+assert_error('header tag and synonym arguments are incompatible',
+  `= 1
+
+= 1 2
+{synonym}
+{tag=2}
 
 == 2
 `,
@@ -4570,6 +4590,9 @@ assert_executable(
 
 == h2 4
 
+== h2 5
+{tag=h2}
+
 == No incoming
 
 == Scope
@@ -4616,6 +4639,7 @@ assert_executable(
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-2']`,
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-3']`,
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-4']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-5']`,
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#scope/scope-2']`,
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#notindex-h2-2']`,
       ],

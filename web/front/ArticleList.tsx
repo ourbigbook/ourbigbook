@@ -28,6 +28,7 @@ export type ArticleListProps = {
   page: number;
   paginationUrlFunc?: PaginationPropsUrlFunc;
   showAuthor: boolean;
+  showBody?: boolean,
   what?: string;
 }
 

@@ -251,7 +251,7 @@ Check out this website: \a[http://example.com].
 
 If you want your link to include one of the terminating characters, e.g. `]`, all characters can be escaped with a backslash, e.g.:
 \cirodown_example[[
-Hello http://example.com\]a\}b\\c\ d world.
+Hello http://example.com/\]a\}b\\c\ d world.
 ]]
 
 Note that the `http://example.com` inside `\a[http://example.com]` only works because we do some post-processing magic that prevents its expansion, otherwise the link would expand twice:

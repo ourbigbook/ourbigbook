@@ -474,7 +474,11 @@ assert_convert_ast('image title',
     title: [t('c d')],
   }),
 ]
-)
+);
+assert_error('image with unknown provider',
+  `\\Image[ab]{provider=reserved_undefined}`,
+  1, 11
+);
 // TODO inner property test
 //assert_convert_ast('image without id does not increment image count',
 //  `\\Image[ab]

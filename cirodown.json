@@ -1,4 +1,10 @@
 {
+  "media-providers": {
+    "github": {
+      "path": "../media",
+      "remote": "cirosantilli/media"
+    }
+  },
   "prepublish": "prepublish",
   "redirects": {
     "not-readme-redirect-test": "not-readme",

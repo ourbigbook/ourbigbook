@@ -913,33 +913,35 @@ However, if you are making a huge tutorial, which can have a huge undefined numb
 
 ==== Store images in a separate media repository
 
+In this approach, you create a separate GitHub repository in addition to the main one containing the text to contain only media such as images.
+
 This approach is more suitable than \x[store-images-inside-the-repository-itself] if you are going to have a lot of images.
 
-Create a separate GitHub repository in addition to the main one containing the text, for example:
-* `./my-tutorial/`
-* `./my-tutorial-media/`
-The name `*-media` suffix is not mandatory, but if you use this default, `cirodown` will handle it for you without any further configuration.
+When using this approach, you could of course just point directly to the final image URL, e.g. as in:
+\cirodown_example[[
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+]]
+but Cirodown allows you use configurations that allow you to enter just the image basename: `Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg` which we will cover next.
 
-TODO https://github.com/cirosantilli/cirodown/issues/40 and then set the \x[media-source-type] option in your \x[cirodown-json]:
-``
-{
-  media_source_type = "media_repo"
-}
-``
+In order to get this to work, the recommended repository setup is:
+* `./main-repo/.git`: main repository at https://github.com/username/main-repo
+* `./main-repo/data/media/.git/`: media repository at https://github.com/username/main-repo-media[], and where `data/` is gitignored.
+The directory and repository names are not mandatory, but if you place media in `data/media` and name its repository by adding the `*-media` suffix, then `cirodown` will handle everything for you without any further configuration in \x[media-providers].
 
-Now, simply drop your images into the `my-tutorial-media` repository and use them just as before, and everything will just work!
-``
-\Image[Image_with_a_descriptive_title.jpeg]
-``
-`cirodown` will even automatically add and push used images in the `my-tutorial-media` repository for you \x[publish][during publishing]!
+This particular documentation repository does have a different setup as can be seen from its \a[cirodown.json]. Then, when everything is setup correctly, we can refer to images simply as:
+\cirodown_example[[
+\Image[Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]{provider=github}
+]]
+In this example, we also needed to set `{provider=github}` explicitly since it was not set as the default image provider in our `cirodown.json`. In most projects however, all of your images will be in the default repository, so this won't be needed.
+
+TODO implement: `cirodown` will even automatically add and push used images in the `my-tutorial-media` repository for you \x[publish][during publishing]!
 
 You should then use the following rules inside `my-tutorial-media`:
 * give every file a very descriptive and unique name as a full English sentence
 * never ever delete any files, nor change their content, unless it is an improvement in format that does change the information contained of the image TODO link to nice Wikimedia Commons guideline page
-
 This way, even though the repositories are not fully in sync, anyone who clones the latest version of the `*-media` directory will be able to view any version of the main repository.
 
-Then, if one day the media repository ever blows up GitHub's limit, you can just migrate the images to another image server that allows arbitrary basenames, e.g. AWS, and just configure your project to use that new media base URL with the \x[media-base-url] option.
+Then, if one day the media repository ever blows up GitHub's limit, you can just migrate the images to another image server that allows arbitrary basenames, e.g. AWS, and just configure your project to use that new media base URL with the \x[media-providers] option.
 
 The reason why images should be kept in a separate repository is that images are hundreds or thousands of times larger than hand written text.
 
@@ -1900,7 +1902,7 @@ Examples of embeddings done:
   The embedded version of the document can be viewed offline however.
 * \x[images][images] are downloaded if needed and embedded as `data:` URLs.
 
-  Images that are managed by the project itself and already locally present, such as those inside the project itself or due to \x[media-source-type] usually don't require download.
+  Images that are managed by the project itself and already locally present, such as those inside the project itself or due to \x[media-providers] usually don't require download.
 
   For images linked directly from the web, we maintain a local download cache, and skip downloads if the image is already in the cache.
 
@@ -2112,25 +2114,22 @@ Cirodown configuration file that affects the behaviour of cirodown for all files
 
 `cirodown.json` not used for input from stdin, since we are mostly doing quick tests in that case.
 
-===== `media_base_url`
-{id=media-base-url}
+===== `media-providers`
+{id=media-providers}
 
 TODO implement set the base URL where media will be served from.
 
-Default: for a GitHub repository called `my-tutorial`, append the `-media` suffix and use `my-tutorial-media`.
-
-Further rationale at: \x[where-to-store-images].
-
-===== `media_source_type`
-{id=media-source-type}
-
-TODO implement:
+TODO correct:
 * `local`: tracked in the current Git repository, no further magic is done
 \l[
-  `media_repo`: tracked in a separate media repository, defaults to `../<project-name>-media/`
+  `path`: tracked in a separate media repository, defaults to `data/<project-name>-media/`
 
   When \x[publish][publishing], Cirodown searches for files that were used in the build but not added to the media directory, and automatically does a `git add`, `commit` and `push` for you!
 ]
+
+Further rationale at: \x[where-to-store-images].
+
+See also: https://github.com/cirosantilli/cirodown/issues/40
 
 ===== `prepublish`
 {id=prepublish}
@@ -2331,7 +2330,6 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 * correct ID generation algorithm to be Unicode robust
 * local downloads and single HTML page with image / script embeds
 * image management: upload to separate media directory
-* create mechanism to link to the GitHub blob view of in-tree source files that are not added to GitHub pages, e.g. `\file`
 * parse_error: add in document error message, currently only to stderr
 * on the AST, put contents of headers inside headers
 * auto-toc after the first paragraph

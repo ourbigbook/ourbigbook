@@ -6326,7 +6326,7 @@ By default, we don't make any requests to Next.js, because starting up Next.js i
 
 In regular OurBigBook Web usage through a browser, Next.js handles all GET requests for us, and the API only handles the other modifying methods like POST.
 
-However, we are trying to keep the API working equally well for GET, and also factored out with Next.js, and that's what we use for the testing by default.
+However, we are trying to keep the API working equally well for GET, and as factored out with Next.js as possible, so just testing the API GET already gives reasonable coverage.
 
 But testing Next.js requests before deployment is a must, and is already done by default by `npm run deploy-prod` from <Heroku deployment>, and can be done manually with:
 ``
@@ -6340,6 +6340,9 @@ for for Postgres:
 ``
 npm run test-pg-next
 ``
+These tests are currently very basic, and only check page status. In the future, we can
+* add some HTML parsing to check for page contents as a reponse to GET, just as we already do in the <test system> of the <OurBigBook Library>
+* go all in an use a JavaScript enabled test system like Selenium to also test login and data modification from the browser
 
 If you are not making any changes to the website itself, e.g. only to the test system, then you can skip the slow rebuild with:
 ``

@@ -343,7 +343,11 @@ class AstNode {
       }
       let convert_function
       if (!macro.options.xss_safe && (this.xss_safe || context.options.xss_safe)) {
-        convert_function = macro.options.xss_safe_alt[output_format];
+        let xss_safe_alt = macro.options.xss_safe_alt
+        if (xss_safe_alt === undefined) {
+          xss_safe_alt = XSS_SAFE_ALT_DEFAULT
+        }
+        convert_function = xss_safe_alt[output_format]
       } else {
         convert_function = macro.convert_funcs[output_format];
       }
@@ -6829,17 +6833,6 @@ ${ast.toString()}`)
       }
     }
   }
-  if (
-    !macro.options.xss_safe &&
-    !macro.options.xss_safe_alt &&
-    !context.options.unsafe_xss &&
-    !ast.xss_safe
-  ) {
-    ast.validation_error = [
-      `XSS unsafe macro "${macro_name}" used in safe mode: https://docs.ourbigbook.com#unsafe-xss`,
-      ast.source_location
-    ];
-  }
 }
 exports.validate_ast = validate_ast
 
@@ -7670,10 +7663,15 @@ const IMAGE_VIDEO_BLOCK_NAMED_ARGUMENTS = IMAGE_VIDEO_INLINE_BLOCK_NAMED_ARGUMEN
     boolean: true,
   }),
 ]);
+const XSS_SAFE_ALT_DEFAULT = {
+  [OUTPUT_FORMAT_HTML]: (ast, context) => {
+    return html_code(render_arg(ast.args[Macro.CONTENT_ARGUMENT_NAME], context));
+  }
+}
 
 /**
- * Calculate a bunch of default parameters of the media from smart defaults if not given explicitly
- *
+* Calculate a bunch of default parameters of the media from smart defaults if not given explicitly
+*
  * @return {Object}
  *         MediaProviderType {MediaProviderType} , e.g. type, src, source.
  */
@@ -8189,11 +8187,6 @@ const DEFAULT_MACRO_LIST = [
     ],
     {
       xss_safe: false,
-      xss_safe_alt: {
-        [OUTPUT_FORMAT_HTML]: (ast, context) => {
-          return html_code(render_arg(ast.args.content, context));
-        }
-      }
     }
   ),
   new Macro(
@@ -8237,11 +8230,6 @@ const DEFAULT_MACRO_LIST = [
     {
       phrasing: true,
       xss_safe: false,
-      xss_safe_alt: {
-        [OUTPUT_FORMAT_HTML]: (ast, context) => {
-          return html_code(render_arg(ast.args.content, context));
-        }
-      }
     }
   ),
   new Macro(

@@ -269,6 +269,9 @@ class Macro {
   }
 
   x_text(ast, context, options={}) {
+    if (!('caption_prefix_span' in options)) {
+      options.caption_prefix_span = true;
+    }
     if (!('quote' in options)) {
       options.quote = false;
     }
@@ -281,9 +284,15 @@ class Macro {
     let ret = ``;
     if (options.style === XStyle.full) {
       if (options.show_caption_prefix) {
+        if (options.caption_prefix_span) {
+          ret += `<span class="caption-prefix">`;
+        }
         ret += `${ast.macro.options.caption_prefix} `;
       }
       ret += ast.macro_count;
+      if (options.show_caption_prefix && options.caption_prefix_span) {
+        ret += `</span>`;
+      }
     }
     if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
       if (options.style === XStyle.full) {
@@ -1742,6 +1751,9 @@ body {
   padding-left: 15px;
   padding-right: 15px;
 }
+.caption-prefix {
+  font-weight: bold;
+}
 /* Headers are links to self, but we want them always black. */
 h1 a:link, h2 a:link, h3 a:link, h4 a:link, h5 a:link, h6 a:link,
 h1 a:visited, h2 a:visited, h3 a:visited, h4 a:visited, h5 a:visited, h6 a:visited {
@@ -1789,7 +1801,12 @@ th, td {
 }
 /* Table of contents. */
 .toc-container ul {
+  border-left: 1px solid black;
   list-style-type: none;
+}
+.toc-container > ul {
+  border-left: 0px solid black;
+  padding-left: 0px;
 }
 </style>
 <body>
@@ -1854,6 +1871,7 @@ th, td {
           content = convert_arg(ast.args.content, context);
         } else {
           let x_text_options = {
+            caption_prefix_span: false,
             style: target_id_ast.macro.options.x_style,
             quote: true,
           };

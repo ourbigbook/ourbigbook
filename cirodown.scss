@@ -1,14 +1,14 @@
 // https://cirosantilli.com/cirodown#insane-link-parsing-rules#overview-of-files-in-this-repository
 
-@use "sass:math";
+@use 'sass:math';
 
-// CIRODOWN_ADD_IMPORTS_HERE
+@use 'normalize.css/normalize.css';
+@use 'katex/dist/katex.min.css';
+@import 'cirodown.common.scss';
 
 $caption-margin-bottom: 5px;
 $header-font-size: 24px;
 $p-margin-vert: 14px;
-
-@import 'cirodown.common.scss';
 
 @mixin hidden {
   display: none;

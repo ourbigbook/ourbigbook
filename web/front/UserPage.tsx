@@ -1,7 +1,6 @@
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import React from 'react'
-import useSWR  from 'swr'
 
 import ArticleList from 'front/ArticleList'
 import CustomLink from 'front/CustomLink'
@@ -12,7 +11,6 @@ import Maybe from 'front/Maybe'
 import FollowUserButton, { FollowUserButtonContext } from 'front/FollowUserButton'
 import UserAPI from 'front/api/user'
 import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
-import { defaultUserScoreTitle } from 'front/config'
 import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'routes'
 import { AppContext } from 'front'
@@ -24,10 +22,11 @@ export default function UserPage({
   article,
   articles,
   articlesCount,
-  comments,
-  user,
   authoredArticleCount,
+  comments,
   likedArticleCount,
+  loggedInUser,
+  user,
   what
 }) {
   const router = useRouter();
@@ -43,7 +42,6 @@ export default function UserPage({
   }
   useMin(useMin0, useMin1)
   const username = user?.username
-  const loggedInUser = useLoggedInUser()
   const isCurrentUser = loggedInUser && username === loggedInUser?.username
   let paginationUrlFunc
   switch (what) {

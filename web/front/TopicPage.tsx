@@ -1,6 +1,5 @@
 import Head from 'next/head'
 import React from 'react'
-import useSWR  from 'swr'
 import { useRouter } from 'next/router'
 
 import ArticleList from 'front/ArticleList'

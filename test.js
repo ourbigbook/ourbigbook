@@ -7,6 +7,7 @@ const util = require('util');
 
 const cirodown = require('cirodown')
 const cirodown_nodejs = require('cirodown/nodejs');
+const models = require('cirodown/models');
 
 // Common default convert options for the tests.
 const convert_opts = {
@@ -23,77 +24,6 @@ const convert_opts = {
     //tokenize': true,
   }
 };
-
-class MockIdProvider extends cirodown.IdProviderWithIgnorePath {
-  constructor(convert_input_options) {
-    super();
-    this.ids_table = {};
-    this.includes_table = {};
-  }
-
-  clear(input_path) {
-    for (let key in this.ids_table) {
-      if (this.ids_table[key].path === input_path) {
-        delete this.ids_table[key];
-      }
-    }
-    for (let key in this.includes_table) {
-      if (this.includes_table[key].defined_at === input_path) {
-        delete this.includes_table[key];
-      }
-    }
-    this.includes_table = {};
-  }
-
-  async get_includes_entries(to_id) {
-    const ret = this.includes_table[to_id];
-    if (ret === undefined) {
-      return [];
-    } else {
-      return ret;
-    }
-  }
-
-  async get_refs_to(type, to_id, reversed=false) {
-    // TODO implement. For now all functionality that dependes on it,
-    // e.g. tags will not work when mocking.
-    return []
-  }
-
-  async get_noscope_entry(id) {
-    const entry = this.ids_table[id]
-    if (entry === undefined) {
-      return undefined
-    } else {
-      return cirodown.AstNode.fromJSON(entry.ast_json);
-    }
-  }
-
-  update(extra_returns) {
-    const ids = extra_returns.ids;
-    for (const id in ids) {
-      const ast = ids[id];
-      this.ids_table[id] = {
-        id: id,
-        path: ast.source_location.path,
-        ast_json: JSON.stringify(ast)
-      };
-    }
-    const context = extra_returns.context;
-    for (const header_ast of context.headers_with_include) {
-      for (const include of header_ast.includes) {
-        if (this.includes_table[to_id] === undefined) {
-          this.includes_table[to_id] = [];
-        }
-        this.includes_table[to_id].push({
-          from_id: header_ast.id,
-          defined_at: header_ast.source_location.path,
-          to_id: include,
-        });
-      }
-    }
-  }
-}
 
 class MockFileProvider extends cirodown.FileProvider {
   constructor() {
@@ -214,9 +144,15 @@ function assert_convert_ast(
     if (options.toplevel) {
       new_convert_opts.body_only = false;
     }
-    new_convert_opts.id_provider = new MockIdProvider();
+
+    // SqliteIdProvider with in-memory database.
+    const sequelize = await cirodown_nodejs.create_sequelize({
+      storage: ':memory:',
+      logging: false,
+    })
+    new_convert_opts.id_provider = new cirodown_nodejs.SqliteIdProvider(sequelize);
     new_convert_opts.file_provider = new MockFileProvider();
-    for (let input_path_noext of options.convert_before) {
+    for (const input_path_noext of options.convert_before) {
       const extra_returns = {};
       const input_string = options.file_reader(input_path_noext);
       const input_path = input_path_noext + cirodown.CIRODOWN_EXT;
@@ -225,8 +161,10 @@ function assert_convert_ast(
       dependency_convert_opts.input_path = input_path;
       dependency_convert_opts.toplevel_id = input_path_noext;
       await cirodown.convert(input_string, dependency_convert_opts, extra_returns);
-      new_convert_opts.id_provider.update(extra_returns);
-      new_convert_opts.file_provider.update(input_path, extra_returns);
+      await Promise.all([
+        new_convert_opts.id_provider.update(extra_returns, sequelize),
+        new_convert_opts.file_provider.update(input_path, extra_returns),
+      ])
     }
     if (options.input_path_noext !== undefined) {
       new_convert_opts.input_path = options.input_path_noext + cirodown.CIRODOWN_EXT;

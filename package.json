@@ -51,7 +51,8 @@
     "index.js",
     "main.liquid.html",
     "main.scss",
-    "nodejs.js"
+    "nodejs.js",
+    "template/*"
   ],
   "keywords": [
     "asciidoctor",

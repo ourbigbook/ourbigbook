@@ -9,6 +9,7 @@ cp .gitignore gitignore
 cirodown --publish
 version="$1"
 sed "s/  \"version\":.*/  \"version\": \"${version}\",/" package.json
+./update-templates
 # To make sure package.json is up-to-date.
 npm install
 git add -u

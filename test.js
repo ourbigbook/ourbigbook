@@ -3063,6 +3063,34 @@ assert_convert_ast('scopes hierarchy resolution works across files with director
   }
 );
 
+// Subdir.
+assert_convert_ast('subdir basic',
+  `= Notindex
+
+\\x[asdf/qwer/notindex2][notindex to notindex2]
+
+\\x[asdf/qwer/notindex2-2][notindex to notindex2 2]
+`,
+  undefined,
+  {
+    assert_xpath: {
+      'notindex.html': [
+        "//x:div[@class='p']//x:a[@href='notindex2.html' and text()='notindex to notindex2']",
+        "//x:div[@class='p']//x:a[@href='notindex2.html#notindex2-2' and text()='notindex to notindex2 2']",
+      ]
+    },
+    convert_before: ['notindex2.bigb'],
+    filesystem: {
+     'notindex2.bigb': `= Notindex2
+{subdir=asdf/qwer}
+
+== Notindex2 2
+`,
+    },
+    input_path_noext: 'notindex',
+  }
+);
+
 // Headers.
 assert_convert_ast('header simple',
   `\\H[1][My header]

@@ -797,9 +797,9 @@ function katex_convert(ast, context) {
     return katex.renderToString(
       convert_arg(ast.args.content, clone_and_set(context, 'html_escape', false)),
       {
-        macros: macros,
+        macros: katex_convert.macros,
         throwOnError: true,
-        globalGroup: true
+        globalGroup: true,
       }
     );
   } catch(error) {
@@ -810,6 +810,7 @@ function katex_convert(ast, context) {
     return in_output_error(message);
   }
 }
+katex_convert.macros = {};
 
 // https://stackoverflow.com/questions/44447847/enums-in-javascript-with-es6/49709701#49709701
 function make_enum(arr) {

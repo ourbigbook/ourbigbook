@@ -203,6 +203,7 @@ class SqliteDbProvider extends ourbigbook.DbProvider {
             // I simply cannot understand how it is possible, it has to be a sequelize bug?
             // Can't easily reproduce on a minimal example however...
             // So for now, I'm just going to make a separate query afterwards to get the files...
+            // https://github.com/cirosantilli/ourbigbook/issues/240
             //required: false,
             //include: [
             //  {

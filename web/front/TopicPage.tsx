@@ -10,10 +10,11 @@ import LogoutButton from 'front/LogoutButton'
 import Maybe from 'front/Maybe'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
+import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
 
 export interface TopicPageProps {
-  articles: ArticleType[];
+  articles: (ArticleType & IssueType)[];
   articlesCount: number;
   loggedInUser?: UserType;
   page: number;

@@ -2,7 +2,7 @@ const router = require('express').Router()
 const Op = require('sequelize').Op
 
 const auth = require('../auth')
-const cant = require('../front/cant')
+const { cant } = require('../front/cant')
 const convert = require('../convert')
 const lib = require('./lib')
 const config = require('../front/config')

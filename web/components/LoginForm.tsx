@@ -4,6 +4,7 @@ import { mutate } from "swr";
 
 import ListErrors from "components/ListErrors";
 import Label from "components/Label";
+import { LOGIN_ACTION, REGISTER_ACTION } from "lib";
 import UserAPI from "lib/api/user";
 
 const LoginForm = ({ register = false }) => {
@@ -105,7 +106,7 @@ const LoginForm = ({ register = false }) => {
           type="submit"
           disabled={isLoading}
         >
-          {`${register ? 'Sign up' : 'Sign in'}`}
+          {`${register ? REGISTER_ACTION : LOGIN_ACTION}`}
         </button>
       </form>
     </>

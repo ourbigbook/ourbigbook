@@ -4,7 +4,7 @@ import { trigger } from "swr";
 
 import CustomImage from "components/CustomImage";
 import CustomLink from "components/CustomLink";
-import { slugFromRouter } from "lib"
+import { slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, decapitalize } from "lib"
 import CommentAPI from "lib/api/comment"
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 import routes from "routes";
@@ -30,11 +30,11 @@ const CommentInput = () => {
     return (
       <>
         <CustomLink href={routes.userLogin()}>
-          Sign in
+          {LOGIN_ACTION}
         </CustomLink>
         {' '}or{' '}
         <CustomLink href={routes.userNew()}>
-          sign up
+          {decapitalize(REGISTER_ACTION)}
         </CustomLink>
         {' '}to add comments on this article.
       </>

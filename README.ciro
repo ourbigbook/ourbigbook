@@ -86,7 +86,7 @@ rm node_modules/cirodown
 Cirodown is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
 
 Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation), supporting out of the box feature such as:
-* \x[internal-cross-references][references] to \x[headers], \x[images], etc. with amazing error checking and reporting: never break internal links without knoing again, and quickly find out what broke when you do
+* \x[internal-cross-references][references] to \x[header]{p}, \x[image]{p}, etc. with amazing error checking and reporting: never break internal links without knoing again, and quickly find out what broke when you do
 * KaTeX server side \x[mathematics]
 * multi file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
   * \x[internal-cross-file-references]
@@ -416,7 +416,7 @@ To also show the section auto-generated number as in "Section X.Y My title" we a
 \x[cross-reference-full-argument]{full}.
 ]]
 
-`{full}` is not needed for cross references to most macros besides \x[headers], which use `full` by default as seen by the `default_x_style_full` macro property in \x[help-macros]. This is for example the case for \x[images]. You can force this to be disabled with `{full=0}`:
+`{full}` is not needed for cross references to most macros besides \x[header]{p}, which use `full` by default as seen by the `default_x_style_full` macro property in \x[help-macros]. This is for example the case for \x[image]{p}. You can force this to be disabled with `{full=0}`:
 \CirodownExample[[
 Compare \x[image-my-test-image]{full=0} vs \x[image-my-test-image]{full=1}.
 ]]
@@ -439,7 +439,7 @@ This is because the number "Section 1.2" might already have been used in the cur
 
 === Cross reference title inflection
 
-A common usage pattern is that we want to use \x[headers]{p=0} titles in \x[cross-reference-full-argument][non-full] \x[internal-cross-references] as the definition of a concept without repeating the title, for example:
+A common usage pattern is that we want to use \x[header] titles in \x[cross-reference-full-argument][non-full] \x[internal-cross-references] as the definition of a concept without repeating the title, for example:
 ``
 == Dog
 
@@ -504,6 +504,8 @@ One example of a cat is \x[Felix the Cat].
 
 Felix is not really a \x[cats][cat], just a carton character.
 ``
+
+If plural and capitalization don't handle your common desired inflections, you can also just create custom ones with the \x[synonym].
 
 Now for a live example for quick and dirty interactive testing.
 
@@ -585,11 +587,12 @@ Now for a live example for quick and dirty interactive testing.
 
 ===== Inflection plural examples
 
-=== The `title2` argument
+= The `title2` argument
+{parent=internal-cross-references}
 
 The `title2` argument can be given to any element that has the `title` argument.
 
-Its usage is a bit like the `description=` argument of \x[images], allowing you to add some extra content to the header without affecting its ID.
+Its usage is a bit like the `description=` argument of \x[image]{p}, allowing you to add some extra content to the header without affecting its ID.
 
 Therefore, its primary use cases are:
 * give acronyms, or other short names names of fuller titles such as mathematical/programming notation
@@ -639,7 +642,10 @@ Section 2. "Orthogonal group (O(n))"
 
 Parenthesis are added automatically around all rendered `title2`.
 
-=== The `disambiguate` argument
+The `title2` argument has a special meaning when applied to a \x[header] with the \x[synonym], see \x[the-title2-argument-of-a-synonym-header].
+
+= The `disambiguate` argument
+{parent=internal-cross-references}
 
 Sometimes the short version of a name is ambiguous, and you need to add some extra text to make both its title and ID unique.
 
@@ -716,12 +722,13 @@ Note that unlike for headers, `disambiguate` does not appear on the title of ima
 
 This use case is even more useful when `title-from-src` is enable by default for the \x[media-providers] entry, so you don't have to repeat titles several times over and over.
 
-=== `\x` within `title` restrictions
+= `\x` within `title` restrictions
+{parent=internal-cross-references}
 
-If you use `\x` within a `title`, which most commonly happens for \x[images][image titles], that can generate complex dependencies, which would either be harder to implement, or lead to infinite recursion.
+If you use `\x` within a `title`, which most commonly happens for \x[image][image titles], that can generate complex dependencies, which would either be harder to implement, or lead to infinite recursion.
 
 To prevent such problems, Cirodown emits an error if you use an `\x` without content in the `title` of one of the following elements without an explicit ID:
-* \x[headers][header]. For example, the following gives an error:
+* \x[header]. For example, the following gives an error:
   ``
   = h1
   {id=myh1}
@@ -744,7 +751,7 @@ To prevent such problems, Cirodown emits an error if you use an `\x` without con
   == \x[myh1]
   {id=myh2}
   ``
-* non-header (e.g. an \x[images][image]) that links to the title of another non-header
+* non-header (e.g. an \x[image]) that links to the title of another non-header
 
   For non-headers, things are a bit more relaxed, and we can link to headers, e.g.:
   ``
@@ -820,7 +827,8 @@ or:
 {title=\x[myimage1][my content 1].}
 ``
 
-=== Internal cross file references
+= Internal cross file references
+{parent=internal-cross-references}
 
 Reference to the first header of another file:
 \CirodownExample[[
@@ -922,7 +930,8 @@ You can force `cirodown` to not use the ID database with `--no-db`:
 ./cirodown --no-db .
 ``
 
-=== Automatic ID from title
+= Automatic ID from title
+{parent=internal-cross-references}
 
 If a \x[the-toplevel-header][non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:
 * do a \x[id-output-format] conversion on the title to remove for example any HTML tags that would be present in the conversion output
@@ -956,13 +965,14 @@ So for example, the following automatic IDs would be generated: \x[table-example
 
 For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the Cirodown file without extension instead of from the `title` argument.
 
-=== Internal cross reference title link removal
+= Internal cross reference title link removal
+{parent=internal-cross-references}
 
 If the target `title` argument contains a link from either another \x[internal-cross-references] or a regular \x[links][external hyperlink], Cirodown automatically prevents that link from rendering as a link when no explicit body is given.
 
 This is done because https://stackoverflow.com/questions/9882916/are-you-allowed-to-nest-a-link-inside-of-a-link[nested links are illegal in HTML], and the result would be confusing.
 
-This use case is most common when dealing with media such as \x[images]. For example in:
+This use case is most common when dealing with media such as \x[image]{p}. For example in:
 ``
 = afds
 
@@ -992,7 +1002,7 @@ This is a nice image: \x[image-aa-zxcv-lolol-bb].
 {title=aa \x[internal-cross-reference-title-link-removal][zxcv] \a[http://example.com][lolol] bb}
 ]]
 
-== Headers
+== Header
 {title2=`\H`}
 
 \x[insane-macro-shortcuts][Insane] with `= ` (equal sign space):
@@ -1037,10 +1047,10 @@ Sane equivalent:
 
 = ID-based header levels
 {c}
-{parent=headers}
+{parent=header}
 {title2=`{parent=<parent-id>}`}
 
-In addition to the basic way of specifying header levels with an explicit level number, as mentioned at \x[headers]{full}, Cirodown also supports a more indirect ID-based mechanism.
+In addition to the basic way of specifying header levels with an explicit level number, as mentioned at \x[header]{full}, Cirodown also supports a more indirect ID-based mechanism.
 
 For example, the following fixed level syntax:
 ``
@@ -1176,7 +1186,8 @@ but it just didn't feel as good, and is a bit harder to type than just smashing 
 
 \H[13][My h13]
 
-=== Table of contents
+= Table of contents
+{parent=header}
 {title2=`\Toc`}
 
 Cirodown automatically adds a ToC at the end of the first \x[the-toplevel-header][non-toplevel header] of every document.
@@ -1196,7 +1207,8 @@ The ToC ignores \x[the-toplevel-header] if you have one.
 
 For when you want a quick outline of the header tree on the terminal, also consider the \x[log-headers] option.
 
-==== Table of contents JavaScript open close interaction
+= Table of contents JavaScript open close interaction
+{parent=table-of-contents}
 
 To the left of table of content entries you can click on an open/close icon to toggle the visibility of different levels of the table of contents.
 
@@ -1215,7 +1227,7 @@ As a result of the above rules, clicking on a node three times goes through a lo
 * node open and children closed
 * node closed
 
-Clicking on the link from a \x[headers]{p=0} up to the table of contents also automatically opens up the node for you in case it had been previously closed manually.
+Clicking on the link from a \x[header] up to the table of contents also automatically opens up the node for you in case it had been previously closed manually.
 
 === Header `scope` argument
 {id=scope}
@@ -1254,7 +1266,7 @@ For a more general introduction to all experiments, see: \x[introduction].
 
 but this would be very tedious.
 
-To keep those IDs shorter, Cirodown provides the `scope` \x[boolean-named-argument] property of \x[headers], which works analogously to C++ namespaces with the header IDs.
+To keep those IDs shorter, Cirodown provides the `scope` \x[boolean-named-argument] property of \x[header]{p}, which works analogously to C++ namespaces with the header IDs.
 
 Using `scope`, the previous example could be written more succinctly as:
 ``
@@ -1353,7 +1365,7 @@ Some quick interactive cross file link tests:
 
 = Header `splitSuffix` argument
 {id=splitsuffix}
-{parent=headers}
+{parent=header}
 
 If given, add a custom suffix to the output filename of the header when using \x[split-headers].
 
@@ -1420,7 +1432,7 @@ notindex-asdf.ciro
 
 = Header `synonym` argument
 {id=synonym}
-{parent=headers}
+{parent=header}
 
 TODO implement: https://github.com/cirosantilli/cirodown/issues/114
 
@@ -1449,8 +1461,34 @@ renders something like:
 I like to say \a[#gnu-debugger][GDB] because it is shorter than \x[#gnu-debugger][GNU Debugger].
 ``
 
+= The `title2` argument of a synonym header
+{parent=synonym}
+
+Unlike \x[the-title2-argument], the synonym does not show up by default next to the title. This is because we sometimes want that, and sometimes not. To make the title appear, you can simply add an empty `title2` argument to the synonym header as in:
+``
+= GNU Debugger
+{c}
+
+= GDB
+{c}
+{synonym}
+{title2}
+
+= Quantum computing
+
+= Quantum computer
+{synonym}
+``
+which renders something like:
+``
+= GNU Debugger (GDB)
+
+= Quantum computing
+``
+Note how we added the synonym to the title only when it is not just a simple flexion variant, since `Quantum computing (Quantum computer)` would be kind of useless would be kind of useless.
+
 = Header `wiki` argument
-{parent=headers}
+{parent=header}
 
 If given, show a link to the Wikipedia article that corresponds to the header.
 
@@ -1751,7 +1789,7 @@ And now a list outside of \x[cirodownexample] to test how it looks directly unde
 \L[b]
 \L[c]
 
-== Images
+== Image
 {title2=`\Image` and `\image`}
 
 A block image with \x[block-vs-inline-macros][capital] 'i' `Image` showcasing most of the image properties \x[image-my-test-image].
@@ -1975,7 +2013,7 @@ https://github.com/cirosantilli/cirodown/issues/40
 == Videos
 {title2=`\Video` and `\video`}
 
-Very analogous to \x[images], only differences will be documented here.
+Very analogous to \x[image]{p}, only differences will be documented here.
 
 In the case of videos, \x[where-to-store-images] becomes even more critical since videos are even larger than images, such that the following storage approaches are impractical off the bat:
 * \x[store-images-inside-the-repository-itself]
@@ -2121,7 +2159,7 @@ Hello
 
 \Comment[[[[
 TODO implement.
-We can have cross references to code blocks as for other elements such as \x[images]:
+We can have cross references to code blocks as for other elements such as \x[image]{p}:
 \CirodownExample[[[
 See this awesome code \x[my-code]:
 ``
@@ -2189,7 +2227,7 @@ $$
 $$
 ]]
 
-Equation IDs and titles and linking to equations works identically to \x[images], see that section for full details. Here is one equation reference example that links to the following insane syntax equation: \x[equation-my-first-insane-equation]:
+Equation IDs and titles and linking to equations works identically to \x[image]{p}, see that section for full details. Here is one equation reference example that links to the following insane syntax equation: \x[equation-my-first-insane-equation]:
 \CirodownExample[[
 $$
 \sqrt{1 + 1}
@@ -2324,7 +2362,7 @@ To pass further arguments to an implicit table such as `title` or `id`, you need
 | 2 2
 ]
 ]]
-The rules of when the caption shows up or not are the same as described for \x[images].
+The rules of when the caption shows up or not are the same as described for \x[image]{p}.
 
 Multiple source lines, including paragraphs, can be added to a single cell with insane syntax by indenting the cell with exactly two spaces just as for \x[lists], e.g.:
 \CirodownExample[[
@@ -2703,7 +2741,7 @@ nice
 
 Every argument in Cirodown is either positional or named.
 
-For example, in a \x[headers]{p=0} definition with an ID:
+For example, in a \x[header] definition with an ID:
 ``
 = My asdf
 {id=asdf qwer}
@@ -2790,7 +2828,7 @@ See also: \x[links].
 
 Some positional arguments are required, and if not given cirodown reports an error and does not render the node.
 
-This is for example the `level` of a \x[headers]{p=0}.
+This is for example the `level` of a \x[header].
 
 These arguments marked with the `mandatory: true` \x[help-macros] argument property.
 
@@ -2809,7 +2847,7 @@ without the `=` sign, or equivalently:
 \CirodownExample[[
 \x[boolean-named-argument]{full=1}
 ]]
-The `full=0` version is useful in the case of reference targets that unlike \x[headers] expand the title on the cross reference by default, e.g. \x[images]:
+The `full=0` version is useful in the case of reference targets that unlike \x[header]{p} expand the title on the cross reference by default, e.g. \x[image]{p}:
 \CirodownExample[[
 \x[boolean-named-argument]{full=1}
 ]]
@@ -2952,7 +2990,7 @@ and this non-recommended mixed style:
 ``
 This allows to greatly improve the readability of long argument lists by having them one per line.
 
-There is one exception to this however: inside an \x[headers][insane header], any newline is interpreted as the end of the insane header. This is why the following works as expected:
+There is one exception to this however: inside an \x[header][insane header], any newline is interpreted as the end of the insane header. This is why the following works as expected:
 ``
 == My header 2 `some code`
 {id=asdf}
@@ -3028,7 +3066,7 @@ The definition of whitespace is the same as the ASCII whitespace definition of H
 Every Cirodown macro is either block or inline:
 * a block macro is one that takes up the entire line when rendered
 
-  All block macros start with a capital letter, e.g. `\H` for \x[headers].
+  All block macros start with a capital letter, e.g. `\H` for \x[header]{p}.
 * and an inline macro is one that goes inside of a line.
 
   Every inline macro starts with a lowercase letter e.g. `\a` for \x[links].
@@ -3203,7 +3241,7 @@ Examples of embeddings done:
   Without `--embed-resources`, those CSS and JavaScript use their main cloud CDN URLs, and therefore require Internet connection to view the generated documents.
 
   The embedded version of the document can be viewed offline however.
-* \x[images] are downloaded if needed and embedded as `data:` URLs.
+* \x[image]{p} are downloaded if needed and embedded as `data:` URLs.
 
   Images that are managed by the project itself and already locally present, such as those inside the project itself or due to \x[media-providers] usually don't require download.
 
@@ -3358,7 +3396,7 @@ But we decided to expose it for fun, and to start generalizing Cirodown to multi
 
 The conversion is very simplistic, it basically just pastes the `content` of most arguments.
 
-Stuff that is primarily non-textual like \x[images] is just completely removed. We could put effort in outputting their title correctly, but meh, not worth the effort.
+Stuff that is primarily non-textual like \x[image]{p} is just completely removed. We could put effort in outputting their title correctly, but meh, not worth the effort.
 
 = Unimplemented output formats
 {parent=id-output-format}
@@ -3645,7 +3683,7 @@ If given, the \x[outdir] option forces \x[the-out-directory] to be placed in `--
 = `media-providers`
 {parent=cirodown-json}
 
-The `media-providers` entry of `cirodown.json` specifies properties of how media such as \x[images] and \x[videos][videos] are retrieved and rendered.
+The `media-providers` entry of `cirodown.json` specifies properties of how media such as \x[image]{p} and \x[videos] are retrieved and rendered.
 
 The general format of `media-providers` looks like:
 ``
@@ -3669,7 +3707,7 @@ Properties that are valid for every provider:
   The first character of the macros are case insensitive and must be given as lower case. Therefore e.g.:
   * `image` applies to both `image` and `Image`
   * giving `Image` is an error because that starts with an upper case character
-* `title-from-src` (`bool`): extract the `title` argument from the `src` by default for media such as \x[images] and \x[videos] as if the `titleFromSrc` macro argument had been given, see also: \x[image-id]
+* `title-from-src` (`bool`): extract the `title` argument from the `src` by default for media such as \x[image]{p} and \x[videos] as if the `titleFromSrc` macro argument had been given, see also: \x[image-id]
 
 Direct children of media-providers and subproperties that are valid only for them specifically:
 * `local`: tracked in the current Git repository as mentioned at \x[store-images-inside-the-repository-itself]{full}

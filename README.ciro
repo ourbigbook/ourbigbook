@@ -158,11 +158,12 @@ Another advantage over Asciidoctor is that the reference implementation of Cirod
 \h[2][Paragraphs `\p`]
 {id=paragraphs}
 
-OK, this is too common, so we opted for some insanity here: double newline is a paragraph!
-
+OK, this is too common, so we opted for some \x[insane-macro-shortcuts][insanity] here: double newline is a paragraph!
+\cirodown_example[[
 Paragraph 1.
 
 Paragraph 2.
+]]
 
 Equivalently however, you can use an explicit `\p` macros as well, which is required for example to add properties to a paragraph, e.g.:
 \cirodown_example[[
@@ -172,18 +173,25 @@ Equivalently however, you can use an explicit `\p` macros as well, which is requ
 
 Paragraphs are created automatically inside \x[macro-argument-syntax][macro argument] whenever a double newline appears.
 
-Due to their \x[insane-macro-shortcuts][insane syntax], paragraphs have to do some magic to determine where they start and end. TODO: mention the rule that paragraphs wrap only phrasing content, link to: \x[help-macros].
-
 \h[2][Links `\a`]
 {id=links}
 
-Autolink (link text is the same as the link): \a[http://example.com].
+Autolink (link text is the same as the link):
+\cirodown_example[[
+\a[http://example.com]
+]]
 
-Link with custom text: \a[http://example.com][my custom link text].
+Link with custom text:
+\cirodown_example[[
+\a[http://example.com][my custom link text]
+]]
 
+Link with multiple paragraphs inside it:
+\cirodown_example[[
 \a[http://example.com][Multiple
 
 paragraphs]
+]]
 
 \h[2][Internal cross references `\x`]
 {id=internal-cross-references}
@@ -192,7 +200,10 @@ Every macro in Cirodown can have an optional `id` and a `title` property.
 
 Those that have a `title` but no `id`, get an auto-generated ID from the title: \x[automatic-id-from-title].
 
-For macros that do have an ID, you can write a cross reference to it:
+For macros that do have an ID, you can write a cross reference to it, e.g.:
+\cirodown_example[[
+See this \x[internal-cross-references] awesome section.
+]]
 
 \h[3][x child argument]
 

@@ -18,10 +18,7 @@ html, body {
 </style>
 </head>
 <body>
-<div class="editor-page">
-<div class="input"></div>
-<div class="output cirodown"></div>
-</div>
+<div class="cirodown-editor"></div>
 <div id="example">= Cirodown hello world
 
 Welcome to Cirodown! Here's the table of contents:
@@ -195,11 +192,10 @@ my nice code
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/loader.min.js"></script>
 <script>
 const example_elem = document.getElementById('example');
-const input_elem = document.getElementsByClassName('input')[0];
-const output_elem = document.getElementsByClassName('output')[0];
-require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs' }});
+const root_elem = document.getElementsByClassName('cirodown-editor')[0];
+require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.26.1/min/vs' }});
 require(["vs/editor/editor.main"], () => {
-  cirodown_editor(input_elem, output_elem, example_elem.textContent, monaco, cirodown)
+  cirodown_editor(root_elem, example_elem.textContent, monaco, cirodown, cirodown_runtime)
 })
 </script>
 </body>

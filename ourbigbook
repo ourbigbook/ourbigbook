@@ -1068,6 +1068,8 @@ async function tryCreateOrUpdate(webApi, articleArgs, extraArgs) {
         tries > 0 && err.code === 'ECONNREFUSED'
       )) {
         retry = true
+        console.error(`connection error, retry: ${tries}`)
+        console.error(err)
       } else {
         handleWebApiErr(err)
       }
@@ -1076,7 +1078,7 @@ async function tryCreateOrUpdate(webApi, articleArgs, extraArgs) {
       break
     }
     // Give the server some time to restart after update.
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 500))
     tries++
   }
 }
@@ -2132,8 +2134,15 @@ if (cli.helpMacros) {
           }
         }
       }
+      if (!nestedSetNeedsUpdate) {
+        ;({ data, status } = await webApi.user(username))
+        assertApiStatus(status, data)
+        if (data.nestedSetNeedsUpdate) {
+          nestedSetNeedsUpdate = true
+        }
+      }
       if (nestedSetNeedsUpdate) {
-        const t1 = performance.now();
+        const t1 = performance.now()
         console.log(`nested_set`)
         await webApi.articleUpdatedNestedSet(username)
         console.log(`nested_set: ${finished_in_ms(performance.now() - t1)}`)

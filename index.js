@@ -8329,8 +8329,9 @@ function ourbigbook_code_math_block(c) {
       delim += c
     }
     const newline = ourbigbook_add_newlines_after_block(ast, context) ? '\n\n' : ''
+    const attrs = ourbigbook_convert_args(ast, context, { skip: new Set(['content']) }).join('')
     return `${delim}
-${content}${delim}${newline}`
+${content}${delim}${attrs === '' ? '' : '\n'}${attrs}${newline}`
   }
 }
 

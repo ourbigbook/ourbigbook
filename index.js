@@ -1267,7 +1267,7 @@ function parse(tokens, macros, options, extra_returns={}) {
         let header_node_title;
         if (id_provider_get === undefined) {
           header_node_title = href;
-          parse_error(state, `ID in include not found on database did you convert all files`, ast.line, ast.column);
+          parse_error(state, `ID in include not found on database, did you convert all files?`, ast.line, ast.column);
         } else {
           [target_input_path, target_id_ast] = id_provider_get;
           const x_text_options = {

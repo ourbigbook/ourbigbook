@@ -469,9 +469,10 @@ Otherwise, the following effects happen:
 
 \l[\x[html-single-page]]
 
-Here is an example of inclusion of the header \x[not-readme].
+Here is an example of inclusion of the files \c[not-readme.ciro] and \c[not-readme-2.ciro].
 
 \include[not-readme]
+\include[not-readme-2]
 
 \h[3][Skipping header levels]
 

@@ -303,7 +303,7 @@ async function convert_input(input, options, convert_input_options={}) {
     console.error();
   }
   if (convert_input_options.commander.debugPerf) {
-    console.error(`perf start ${new_options.extra_returns.debug_perf.start}`);
+    console.error(`perf start_convert ${new_options.extra_returns.debug_perf.start}`);
     console.error(`perf tokenize_pre ${new_options.extra_returns.debug_perf.tokenize_pre}`);
     console.error(`perf tokenize_post ${new_options.extra_returns.debug_perf.tokenize_post}`);
     console.error(`perf parse_start ${new_options.extra_returns.debug_perf.parse_start}`);
@@ -311,9 +311,8 @@ async function convert_input(input, options, convert_input_options={}) {
     console.error(`perf post_process_end ${new_options.extra_returns.debug_perf.post_process_end}`);
     console.error(`perf split_render_pre ${new_options.extra_returns.debug_perf.split_render_pre}`);
     console.error(`perf render_pre ${new_options.extra_returns.debug_perf.render_pre}`);
-    console.error(`perf render_2_pre ${new_options.extra_returns.debug_perf.render_2_pre}`);
     console.error(`perf render_post ${new_options.extra_returns.debug_perf.render_post}`);
-    console.error(`perf end ${new_options.extra_returns.debug_perf.end}`);
+    console.error(`perf end_convert ${new_options.extra_returns.debug_perf.end}`);
   }
   // Remove duplicate messages due to split header rendering. We could not collect
   // errors from that case at all maybe, but do we really want to run the risk of

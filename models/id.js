@@ -21,6 +21,7 @@ module.exports = (sequelize) => {
     },
     {
       indexes: [
+        { fields: ['idid'], },
         { fields: ['path'], },
       ],
     }

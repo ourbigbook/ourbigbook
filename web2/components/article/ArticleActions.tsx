@@ -5,6 +5,7 @@ import { trigger } from "swr";
 import FavoriteArticleButton from "components/common/FavoriteArticleButton";
 import CustomLink from "components/common/CustomLink";
 import Maybe from "components/common/Maybe";
+import FollowUserButton from "components/profile/FollowUserButton";
 import ArticleAPI from "lib/api/article";
 import { SERVER_BASE_URL } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
@@ -26,15 +27,14 @@ const ArticleActions = ({ article }) => {
   const canModify =
     loggedInUser && loggedInUser?.username === article?.author?.username;
   return (
-    <>
-      <span>
-        <FavoriteArticleButton
-          favorited={article.favorited}
-          favoritesCount={article.favoritesCount}
-          slug={article.slug}
-          showText={false}
-        />
-      </span>
+    <div className="article-actions">
+      <FavoriteArticleButton
+        favorited={article.favorited}
+        favoritesCount={article.favoritesCount}
+        slug={article.slug}
+        showText={true}
+      />
+      <FollowUserButton profile={article.author} />
       <Maybe test={canModify}>
         <span>
           <CustomLink
@@ -52,7 +52,7 @@ const ArticleActions = ({ article }) => {
           </button>
         </span>
       </Maybe>
-    </>
+    </div>
   );
 };
 

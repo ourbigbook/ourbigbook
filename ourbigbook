@@ -2518,7 +2518,7 @@ if (cli.helpMacros) {
             )
           }
           fs.mkdirSync(publish_out_publish_obb_dir, { recursive: true })
-          if (ourbigbook_json.web && ourbigbook_json.web.linkFromHeaderMeta) {
+          if (ourbigbook_json.web && ourbigbook_json.web.linkFromStaticHeaderMetaToWeb) {
             fs.copyFileSync(
               ourbigbook_nodejs.LOGO_PATH,
               path.join(publishOutPublishDir, ourbigbook_nodejs.LOGO_ROOT_RELPATH)

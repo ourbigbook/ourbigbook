@@ -9180,7 +9180,7 @@ assert_cli(
       `out/publish/out/github-pages/${ourbigbook.DIR_PREFIX}/subdir/index.html`,
     ],
     assert_not_exists: [
-      // logo.svg is not added when web.linkFromHeaderMeta is not enabled on ourbigbook.json
+      // logo.svg is not added when web.linkFromStaticHeaderMetaToWeb is not enabled on ourbigbook.json
       `out/publish/out/github-pages/_obb/logo.svg`,
     ],
     assert_xpath: {
@@ -9237,13 +9237,13 @@ assert_cli(
   }
 )
 assert_cli(
-  'json: web.linkFromHeaderMeta = true with publish',
+  'json: web.linkFromStaticHeaderMetaToWeb = true with publish',
   {
     args: ['--dry-run', '--split-headers', '--publish', '.'],
     filesystem: {
       'ourbigbook.json': `{
   "web": {
-    "linkFromHeaderMeta": true,
+    "linkFromStaticHeaderMetaToWeb": true,
     "username": "myusername"
   }
 }
@@ -9274,13 +9274,13 @@ assert_cli(
   }
 )
 assert_cli(
-  'json: web.host changes web.linkFromHeaderMeta host',
+  'json: web.host changes web.linkFromStaticHeaderMetaToWeb host',
   {
     args: ['.'],
     filesystem: {
       'ourbigbook.json': `{
   "web": {
-    "linkFromHeaderMeta": true,
+    "linkFromStaticHeaderMetaToWeb": true,
     "host": "asdf.com",
     "username": "myusername"
   }
@@ -9298,13 +9298,13 @@ assert_cli(
   }
 )
 assert_cli(
-  'json: web.hostCapitalized takes precedence over web.host with web.linkFromHeaderMeta',
+  'json: web.hostCapitalized takes precedence over web.host with web.linkFromStaticHeaderMetaToWeb',
   {
     args: ['.'],
     filesystem: {
       'ourbigbook.json': `{
   "web": {
-    "linkFromHeaderMeta": true,
+    "linkFromStaticHeaderMetaToWeb": true,
     "host": "asdf.com",
     "hostCapitalized": "AsDf.com",
     "username": "myusername"
@@ -9323,13 +9323,13 @@ assert_cli(
   }
 )
 assert_cli(
-  'json: web.linkFromHeaderMeta = true without publish',
+  'json: web.linkFromStaticHeaderMetaToWeb = true without publish',
   {
     args: ['--split-headers', '.'],
     filesystem: {
       'ourbigbook.json': `{
   "web": {
-    "linkFromHeaderMeta": true,
+    "linkFromStaticHeaderMetaToWeb": true,
     "username": "myusername"
   }
 }

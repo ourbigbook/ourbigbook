@@ -49,6 +49,7 @@ module.exports = {
   userIssues: (uid, opts={}) => `/${escapeUsername}/user/${uid}/discussions${encodeGetParamsWithPage(opts)}`,
   userFollowing: (uid, opts={}) => `/${escapeUsername}/user/${uid}/following${encodeGetParamsWithPage(opts)}`,
   userFollowed: (uid, opts={}) => `/${escapeUsername}/user/${uid}/followed${encodeGetParamsWithPage(opts)}`,
+  userLiked: (uid, opts={}) => `/${escapeUsername}/user/${uid}/liked${encodeGetParamsWithPage(opts)}`,
   userLikes: (uid, opts={}) => `/${escapeUsername}/user/${uid}/likes${encodeGetParamsWithPage(opts)}`,
   userFollowingArticle: (uid, opts={}) => `/${escapeUsername}/user/${uid}/followed-articles${encodeGetParamsWithPage(opts)}`,
   users: (opts={}) => `/${escapeUsername}/users${encodeGetParamsWithPage(opts, { defaultSort: 'score' })}`,

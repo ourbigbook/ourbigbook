@@ -11046,15 +11046,13 @@ assert_cli(
       'bigb-ignored.bigb': `= Bigb ignored
 `,
       'scss-ignored.scss': ``,
+      'scss-not-ignored.scss': ``,
       'subdir-ignored/style.scss': ``,
       'ourbigbook.json': `{
   "ignoreConvert": [
     "bigb-ignored\\\\.bigb",
     "scss-ignored\\\\.scss",
     "subdir-ignored"
-  ],
-  "dontIgnore": [
-    "subdir-dont/.*\\\\.ignore"
   ]
 }
 `,
@@ -11063,12 +11061,75 @@ assert_cli(
       `out/html/${ourbigbook.DIR_PREFIX}/index.html`,
       `out/html/${ourbigbook.RAW_PREFIX}/bigb-ignored.bigb`,
       `out/html/${ourbigbook.RAW_PREFIX}/scss-ignored.scss`,
+      `out/html/${ourbigbook.RAW_PREFIX}/scss-not-ignored.scss`,
+      `out/html/${ourbigbook.RAW_PREFIX}/scss-not-ignored.css`,
       `out/html/${ourbigbook.RAW_PREFIX}/subdir-ignored/style.scss`,
     ],
     assert_not_exists: [
       `out/html/bigb-ignored.html`,
       `out/html/${ourbigbook.RAW_PREFIX}/scss-ignored.css`,
       `out/html/${ourbigbook.RAW_PREFIX}/subdir-ignored/style.css.`,
+    ],
+  }
+)
+assert_cli(
+  'json: dontIgnoreConvert: overrides ignoreConvert basic',
+  {
+    args: ['.'],
+    filesystem: {
+      'scss-dont.scss': ``,
+      'scss-ignored.scss': ``,
+      'subdir/scss-ignored.scss': ``,
+      'ourbigbook.json': `{
+  "ignoreConvert": [
+    ".*\\\\.scss"
+  ],
+  "dontIgnoreConvert": [
+    "scss-dont.scss"
+  ]
+}
+`,
+    },
+    assert_exists: [
+      `out/html/${ourbigbook.RAW_PREFIX}/scss-dont.scss`,
+      `out/html/${ourbigbook.RAW_PREFIX}/scss-dont.css`,
+      `out/html/${ourbigbook.RAW_PREFIX}/scss-ignored.scss`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/scss-ignored.scss`,
+    ],
+    assert_not_exists: [
+      `out/html/${ourbigbook.RAW_PREFIX}/scss-ignored.css`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/scss-ignored.css.`,
+    ],
+  }
+)
+assert_cli(
+  'json: dontIgnoreConvert: overrides ignoreConvert for publish',
+  {
+    args: ['--dry-run', '--publish'],
+    pre_exec: publish_pre_exec,
+    filesystem: {
+      'scss-dont.scss': ``,
+      'scss-ignored.scss': ``,
+      'subdir/scss-ignored.scss': ``,
+      'ourbigbook.json': `{
+  "ignoreConvert": [
+    ".*\\\\.scss"
+  ],
+  "dontIgnoreConvert": [
+    "scss-dont.scss"
+  ]
+}
+`,
+    },
+    assert_exists: [
+      `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/scss-dont.scss`,
+      `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/scss-dont.css`,
+      `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/scss-ignored.scss`,
+      `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/subdir/scss-ignored.scss`,
+    ],
+    assert_not_exists: [
+      `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/scss-ignored.css`,
+      `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/subdir/scss-ignored.css.`,
     ],
   }
 )

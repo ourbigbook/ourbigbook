@@ -407,15 +407,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
   }
   let showFinish = false
   let message_prefix
-  function do_ignore_convert_path(p, ignore_convert_path_regexps) {
-    for (const re of ignore_convert_path_regexps) {
-      if (re.test(p)) {
-        return true
-      }
-    }
-    return false
-  }
-  const ignore_convert_path = do_ignore_convert_path(input_path, nonOurbigbookOptions.ignore_convert_path_regexps)
+  const ignore_convert_path = do_ignore_convert_path(input_path_relative_to_ourbigbook_json, nonOurbigbookOptions.ignore_convert_path_regexps, nonOurbigbookOptions.dont_ignore_convert_path_regexps)
   if (
     isbigb &&
     !ignore_convert_path
@@ -785,6 +777,20 @@ async function create_db(ourbigbook_options, nonOurbigbookOptions) {
   nonOurbigbookOptions.sequelize = sequelize;
   nonOurbigbookOptions.db_provider = new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize);
   perfPrint('create_db_end', ourbigbook_options)
+}
+
+function do_ignore_convert_path(p, ignore_convert_path_regexps, dont_ignore_convert_path_regexps) {
+  for (const re of ignore_convert_path_regexps) {
+    if (re.test(p)) {
+      for (const re2 of dont_ignore_convert_path_regexps) {
+        if (re2.test(p)) {
+          return false
+        }
+      }
+      return true
+    }
+  }
+  return false
 }
 
 function finished_in_ms(ms) {
@@ -1336,6 +1342,9 @@ if (cli.helpMacros) {
   if (!('ignoreConvert' in ourbigbook_json)) {
     ourbigbook_json.ignoreConvert = [];
   }
+  if (!('dontIgnoreConvert' in ourbigbook_json)) {
+    ourbigbook_json.dontIgnoreConvert = [];
+  }
   if (!('dontIgnore' in ourbigbook_json)) {
     ourbigbook_json.dontIgnore = [];
   }
@@ -1580,6 +1589,7 @@ if (cli.helpMacros) {
     cli,
     db_options: {},
     dont_ignore_path_regexps: ourbigbook_json.dontIgnore.map(p => RegExp(`^${p}$`)),
+    dont_ignore_convert_path_regexps: ourbigbook_json.dontIgnoreConvert.map(p => RegExp(`^${p}($|${path.sep})`)),
     file_rows_dict: {},
     encoding: ourbigbook_nodejs_webpack_safe.ENCODING,
     external_css_and_js: false,

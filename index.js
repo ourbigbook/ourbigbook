@@ -9411,6 +9411,7 @@ ${delim}${attrs === '' ? '' : '\n'}${attrs}${newline}`
   }
 }
 
+/** Get the preferred x href for the ourbigbook output format of an \x. */
 function ourbigbook_get_x_href({
   ast,
   context,
@@ -9570,7 +9571,7 @@ function ourbigbook_get_x_href({
       href = target_id[0] + href
     }
   }
-    return { href }
+  return { href, override_href: undefined }
 }
 
 function ourbigbook_li(marker) {
@@ -9955,17 +9956,29 @@ OUTPUT_FORMATS_LIST.push(
         [Macro.X_MACRO_NAME]: function(ast, context) {
           // Remove any > from the ref. There's currently no way to escape them, would cut argument short.
           let { target_id, target_ast } = x_get_target_ast(ast, context)
-          let { href, override_href } = ourbigbook_get_x_href({
+          const magic = ast.validation_output.magic.boolean
+          let href = render_arg(ast.args.href, context)
+          if (!magic && href !== magic_title_to_id(href, context)) {
+            // Explicit IDs with weird characters weird cannot be converted to insane, e.g.
+            //
+            // = Dollar
+            // {{id=$}}
+            //
+            // \x[[$]]
+            return ourbigbook_convert_simple_elem(ast, context)
+          }
+          let override_href
+          ;({ href, override_href } = ourbigbook_get_x_href({
             ast,
             context,
             target_ast,
             target_id,
-            href: render_arg(ast.args.href, context),
+            href,
             c: ast.validation_output.c.boolean,
             p: ast.validation_output.p.boolean,
-            magic: ast.validation_output.magic.boolean,
+            magic,
             scope: ast.scope,
-          })
+          }))
           if (override_href) {
             return override_href
           }

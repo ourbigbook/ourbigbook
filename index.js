@@ -6402,7 +6402,7 @@ const DEFAULT_MACRO_LIST = [
         if (context.toplevel_ast !== undefined) {
           {
             let target_ids = context.id_provider.get_from_header_ids_of_xrefs_to(INCLUDES_TABLE_NAME_X_CHILD, context.toplevel_ast.id, true);
-            body += create_link_list(context, ast, 'other-children', 'Other children', target_ids)
+            body += create_link_list(context, ast, 'tagged', 'Tagged', target_ids)
           }
 
           // Ancestors

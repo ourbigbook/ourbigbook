@@ -1,3 +1,4 @@
+const ourbigbook = require('ourbigbook')
 const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front')
 
 let isProduction;
@@ -8,7 +9,6 @@ if (process.env.NEXT_PUBLIC_NODE_ENV === undefined) {
   isProduction = process.env.NEXT_PUBLIC_NODE_ENV === 'production'
 }
 
-const API_PATH_COMPONENT = 'api'
 const escapeUsername = 'go'
 
 let databaseUrl
@@ -19,14 +19,13 @@ if (process.env.NODE_ENV === 'test') {
 }
 
 module.exports = {
-  apiPath: '/' + API_PATH_COMPONENT,
+  apiPath: '/' + ourbigbook.WEB_API_PATH,
   // Common convert options used by all frontend components: the backend and the editor.
   convertOptions: {
     body_only: true,
     html_x_extension: false,
     magic_leading_at: false,
     path_sep: '/',
-    split_headers: true,
   },
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   escapeUsername,
@@ -53,7 +52,7 @@ module.exports = {
   port: process.env.PORT || 3000,
   postgres: ourbigbook_nodejs_front.postgres,
   reservedUsernames: new Set([
-    API_PATH_COMPONENT,
+    ourbigbook.WEB_API_PATH,
     escapeUsername,
   ]),
   revalidate: 10,

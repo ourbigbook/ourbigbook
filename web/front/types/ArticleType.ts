@@ -11,7 +11,11 @@ export interface Article {
 export type ArticleType = {
   body: string;
   createdAt: number;
-  file: { author: UserType };
+  file: {
+    author: UserType,
+    title: string,
+    body: string,
+  };
   id: number;
   liked: boolean;
   render: string;

@@ -2,16 +2,15 @@ import React from 'react'
 import { mutate } from 'swr'
 import Router from 'next/router'
 
-import UserAPI from 'front/api/user'
+import { UserApi } from 'front/api'
 import { buttonActiveClass } from 'front/config'
-import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
 
 const FollowUserButton = ({
+  loggedInUser,
   user,
   showUsername,
 }) => {
-  const loggedInUser = useLoggedInUser()
   const [following, setFollowing] = React.useState(user.following)
   const [followerCount, setFollowerCount] = React.useState(user.followerCount)
   const { username } = user;
@@ -26,9 +25,9 @@ const FollowUserButton = ({
     setFollowerCount(followerCount + (following ? - 1 : 1))
     try {
       if (following) {
-        UserAPI.unfollow(username);
+        UserApi.unfollow(username);
       } else {
-        UserAPI.follow(username);
+        UserApi.follow(username);
       }
     } catch (error) {
       setFollowing(!following)

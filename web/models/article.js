@@ -73,6 +73,8 @@ module.exports = (sequelize) => {
       score: this.score,
       file: {
         author,
+        title: this.file.title,
+        body: this.file.body,
       },
       render: this.render,
     }

@@ -6,6 +6,6 @@ export interface ArticlePageProps {
   article: ArticleType;
   comments?: CommentType[];
   loggedInUser?: UserType;
-  loggedInUserVersionSlug?: string;
+  sameArticleByLoggedInUser?: string;
   topicArticleCount: number;
 }

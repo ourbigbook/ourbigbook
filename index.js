@@ -5758,10 +5758,10 @@ function x_child_db_effective_id(target_id, context, ast) {
 function x_get_href_content(ast, context) {
   const target_id = render_arg_noescape(ast.args.href, context);
   if (context.options.magic_leading_at && target_id[0] === AT_MENTION_CHAR) {
-    return [html_attr('href', WEBSITE_URL + target_id.substr(1)), target_id];
+    return [html_attr('href', WEB_URL + target_id.substr(1)), target_id];
   }
   if (target_id[0] === HASHTAG_CHAR) {
-    return [html_attr('href', WEBSITE_URL + 'go/topic/' + target_id.substr(1)), target_id];
+    return [html_attr('href', WEB_URL + 'go/topic/' + target_id.substr(1)), target_id];
   }
   const target_id_ast = context.id_provider.get(target_id, context, ast.scope);
 
@@ -6213,7 +6213,12 @@ function x_text(ast, context, options={}) {
 const AT_MENTION_CHAR = '@';
 exports.AT_MENTION_CHAR = AT_MENTION_CHAR;
 const HASHTAG_CHAR = '#';
-const WEBSITE_URL = 'https://ourbigbook.com/';
+const WEB_HOST = 'ourbigbook.com';
+exports.WEB_HOST = WEB_HOST
+const WEB_URL = `https://${WEB_HOST}/`;
+const WEB_API_PATH = 'api';
+exports.WEB_API_PATH = WEB_API_PATH;
+const WEB_API_URL = `${WEB_URL}${WEB_API_PATH}`
 const PARAGRAPH_SEP = '\n\n';
 exports.PARAGRAPH_SEP = PARAGRAPH_SEP;
 const REFS_TABLE_PARENT = 'PARENT';

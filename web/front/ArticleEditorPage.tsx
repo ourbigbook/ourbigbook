@@ -9,7 +9,7 @@ import { convertOptions, isProduction } from 'front/config';
 
 import ListErrors from 'front/ListErrors'
 import { slugFromRouter } from 'front'
-import ArticleAPI from 'front/api/article'
+import { ArticleApi } from 'front/api'
 import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
 import { AppContext, useCtrlEnterSubmit } from 'front'
@@ -29,29 +29,34 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
     } else {
       slugString = slug
     }
-    let initialArticleState;
+    let initialFileState;
+    let initialFile
     if (initialArticle) {
-      body = initialArticle.body
+      initialFile = initialArticle.file
+      body = initialFile.body
       if (slugString && isnew) {
         body += `${ourbigbook.PARAGRAPH_SEP}Adapted from: \\x[${ourbigbook.AT_MENTION_CHAR}${slugString}].`
       }
-      initialArticleState = {
-        title: initialArticle.title,
+      initialFileState = {
+        title: initialFile.title,
       }
     } else {
       body = ""
-      initialArticleState = {
+      initialFileState = {
         title: "",
       }
     }
     const [isLoading, setLoading] = React.useState(false);
     const [errors, setErrors] = React.useState([]);
-    const [article, setArticle] = React.useState(initialArticleState);
+    const [file, setFile] = React.useState(initialFileState);
     const ourbigbookEditorElem = useRef(null);
+    const loggedInUser = useLoggedInUser()
     useEffect(() => {
-      if (ourbigbookEditorElem) {
+      if (ourbigbookEditorElem && loggedInUser) {
         let editor;
         loader.init().then(monaco => {
+          const id = ourbigbook.title_to_id(file.title)
+          const input_path = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/${id}${ourbigbook.OURBIGBOOK_EXT}`
           editor = new OurbigbookEditor(
             ourbigbookEditorElem.current,
             body,
@@ -61,7 +66,8 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
             {
               convertOptions,
               handleSubmit,
-              modifyEditorInput: (oldInput) => modifyEditorInput(article.title, oldInput),
+              input_path,
+              modifyEditorInput: (oldInput) => modifyEditorInput(file.title, oldInput),
               production: isProduction,
             },
           )
@@ -81,11 +87,10 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
           }
         };
       }
-    }, [])
-    const loggedInUser = useLoggedInUser()
+    }, [loggedInUser?.username])
     const handleTitle = async (e) => {
-      setArticle(article => { return {
-        ...article,
+      setFile(file => { return {
+        ...file,
         title: e.target.value,
       }})
       await ourbigbookEditorElem.current.ourbigbookEditor.setModifyEditorInput(
@@ -97,17 +102,13 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
       }
       setLoading(true);
       let data, status;
-      article.body = ourbigbookEditorElem.current.ourbigbookEditor.getValue()
+      file.body = ourbigbookEditorElem.current.ourbigbookEditor.getValue()
       if (isnew) {
-        ({ data, status } = await ArticleAPI.create(
-          article,
-          loggedInUser?.token
-        ));
+        ({ data, status } = await ArticleApi.create(file));
       } else {
-        ({ data, status } = await ArticleAPI.update(
-          article,
+        ({ data, status } = await ArticleApi.update(
+          file,
           slugFromRouter(router),
-          loggedInUser?.token
         ));
       }
       setLoading(false);
@@ -118,7 +119,7 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
       // This is a hack for the useEffect cleanup callback issue.
       ourbigbookEditorElem.current.ourbigbookEditor.dispose()
 
-      Router.push(routes.articleView(data.article.slug), null, { scroll: true });
+      Router.push(routes.articleView(data.articles[0].slug), null, { scroll: true });
     };
     useCtrlEnterSubmit(handleSubmit)
     const handleCancel = async (e) => {
@@ -127,14 +128,13 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
       } else {
         // This is a hack for the useEffect cleanup callback issue.
         ourbigbookEditorElem.current.ourbigbookEditor.dispose()
-
         Router.push(routes.articleView(initialArticle.slug));
       }
     }
     const { setTitle } = React.useContext(AppContext)
     React.useEffect(() => {
-      setTitle(isnew ? 'New article' : `Editing: ${initialArticle?.title}`)
-    }, [isnew, initialArticle?.title])
+      setTitle(isnew ? 'New article' : `Editing: ${initialFile?.title}`)
+    }, [isnew, initialFile?.title])
     return (
       <div className="editor-page content-not-ourbigbook">
         { /* <ListErrors errors={errors} /> */ }
@@ -144,7 +144,7 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
               type="text"
               className="title"
               placeholder="Article Title"
-              value={article.title}
+              value={file.title}
               onChange={handleTitle}
             />
             <div className="actions">

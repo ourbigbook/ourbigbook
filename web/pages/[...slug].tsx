@@ -12,7 +12,7 @@ import { displayAndUsernameText } from 'front/user'
 import Article from 'front/Article'
 import ArticleInfo from 'front/ArticleInfo'
 import { AppContext } from 'front'
-import CommentAPI from 'front/api/comment'
+import { CommentApi } from 'front/api'
 import fetcher from 'front/fetcher'
 import routes from 'front/routes'
 
@@ -20,14 +20,14 @@ const ArticlePage = ({
   article,
   comments,
   loggedInUser,
-  loggedInUserVersionSlug,
+  sameArticleByLoggedInUser,
   topicArticleCount,
 }: ArticlePageProps) => {
   const router = useRouter();
 
   // We fetch comments so that the new posted comment will appear immediately after posted.
   // Note that we cannot calculate the exact new comment element because we need the server datetime.
-  const { data: commentApi, error: commentError } = useSWR(CommentAPI.url(article?.slug), fetcher(!router.isFallback));
+  const { data: commentApi, error: commentError } = useSWR(CommentApi.url(article?.slug), fetcher(!router.isFallback));
   if (commentApi !== undefined) {
     comments = commentApi.comments
   }
@@ -46,7 +46,7 @@ const ArticlePage = ({
             <span className="mobile-hide">Author: </span>
             <UserLinkWithImage user={article.file.author} showUsernameMobile={false} />
             {' '}
-            <FollowUserButton user={article.file.author} showUsername={false} />
+            <FollowUserButton {...{ user: article.file.author, loggedInUser, showUsername: false }} />
           </div>
           <div className="article-info article-info-2">
             { showOthers&&
@@ -59,14 +59,14 @@ const ArticlePage = ({
             {showOthers && showCreateMyOwn && <>{' '}</> }
             {showCreateMyOwn &&
               <>
-                {loggedInUserVersionSlug === undefined
+                {sameArticleByLoggedInUser === undefined
                   ? <CustomLink
                       href={routes.articleNewFrom(article.slug)}
                     >
                       <i className="ion-edit" /> Create my own version
                     </CustomLink>
                   : <CustomLink
-                      href={routes.articleView(loggedInUserVersionSlug)}
+                      href={routes.articleView(sameArticleByLoggedInUser)}
                     >
                       <i className="ion-eye" /> View mine
                     </CustomLink>
@@ -74,10 +74,10 @@ const ArticlePage = ({
               </>
             }
           </div>
-          <ArticleInfo {...{article}}/>
+          <ArticleInfo {...{ article, loggedInUser }}/>
         </div>
         <div className="container page">
-          <Article {...{article, comments}} />
+          <Article {...{ article, comments, loggedInUser }} />
         </div>
       </div>
     </>

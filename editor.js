@@ -203,20 +203,23 @@ class OurbigbookEditor {
     if (block === undefined) {
       block = 'center';
     }
-    const id = this.line_to_id(line_number);
-    if (
-      // Possible on empty document.
-      id !== ''
-    ) {
-      // TODO this would be awesome to make the element being targeted red,
-      // but it loses editor focus  on new paragraphs (e.g. double newline,
-      // making it unusable.
-      // window.location.hash = id;
-      document.getElementById(id).scrollIntoView({
-        behavior: 'smooth',
-        block: block,
-      });
-    };
+    if (this.line_to_id) {
+      // Can fail in case of conversion errors.
+      const id = this.line_to_id(line_number);
+      if (
+        // Possible on empty document.
+        id !== ''
+      ) {
+        // TODO this would be awesome to make the element being targeted red,
+        // but it loses editor focus  on new paragraphs (e.g. double newline,
+        // making it unusable.
+        // window.location.hash = id;
+        document.getElementById(id).scrollIntoView({
+          behavior: 'smooth',
+          block: block,
+        });
+      };
+    }
   }
 
   async setModifyEditorInput(modifyEditorInput) {

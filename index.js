@@ -2132,6 +2132,7 @@ function parse(tokens, options, context, extra_returns={}) {
   context.headers_with_include = [];
   context.header_graph = new TreeNode();
   extra_returns.debug_perf.post_process_start = globals.performance.now();
+  let prev_header;
   let cur_header;
   let cur_header_level;
   let first_header_level;
@@ -2367,6 +2368,7 @@ function parse(tokens, options, context, extra_returns={}) {
         // Required by calculate_id.
         validate_ast(ast, context);
 
+        prev_header = cur_header;
         cur_header = ast;
         cur_header_level = parseInt(
           convert_arg_noescape(ast.args.level, context)
@@ -2378,8 +2380,18 @@ function parse(tokens, options, context, extra_returns={}) {
               new PlaintextAstNode(ast.line, ast.column, ' ' + error_message_in_output(message)));
             parse_error(state, message, ast.args.level.line, ast.args.level.column);
           }
-          const parent_id = convert_arg_noescape(ast.args.parent, context)
-          const parent_tree_node = header_graph_id_stack.get(parent_id);
+          let parent_tree_node;
+          const parent_id = convert_arg_noescape(ast.args.parent, context);
+          if (
+            // Happens for the first header
+            prev_header !== undefined
+          ) {
+            const parent_ast = context.id_provider.get(
+              parent_id, context, prev_header.header_graph_node);
+            if (parent_ast !== undefined) {
+              parent_tree_node = header_graph_id_stack.get(parent_ast.id);
+            }
+          }
           if (parent_tree_node === undefined) {
             const message = `header parent either is a previous ID of a level, a future ID, or an invalid ID: ${parent_id}`;
             ast.args[Macro.TITLE_ARGUMENT_NAME].push(

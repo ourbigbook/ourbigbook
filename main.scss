@@ -2,7 +2,6 @@
 
 $color: black;
 $header-background-color: #AA0;
-$toplevel-padding: 15px;
 body {
 background-color: $color;
 font-family: $font-family;
@@ -31,7 +30,7 @@ header {
     margin-right: 0;
     padding-left: 10px;
     &:first-child {
-      padding-left: $toplevel-padding;
+      padding-left: $toplevel-horizontal-padding-left;
     }
     padding-right: 10px;
     text-decoration: none;
@@ -63,7 +62,7 @@ footer {
       text-decoration: underline;
     }
   }
-  padding: 10px $toplevel-padding;
+  padding: 10px $toplevel-horizontal-padding-right 10px $toplevel-horizontal-padding-left;
   div + div {
     margin-top: 5px;
   }

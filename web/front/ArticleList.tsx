@@ -129,8 +129,9 @@ const ArticleList = ({
         <Pagination {...{
           articlesCount,
           articlesPerPage: articleLimit,
-          showPagesMax: 10,
           currentPage: page,
+          isIssue,
+          showPagesMax: 10,
           urlFunc: paginationUrlFunc,
         }} />
       }

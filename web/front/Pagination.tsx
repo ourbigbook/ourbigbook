@@ -38,6 +38,7 @@ export const getRange = (start, end) => {
 const Pagination = ({
   articlesCount,
   articlesPerPage,
+  isIssue,
   showPagesMax,
   currentPage,
   urlFunc,
@@ -97,6 +98,9 @@ const Pagination = ({
         <Maybe test={lastPage < totalPages - 1}>
           <PaginationItem href={urlFunc(totalPages)}>{`>>`}</PaginationItem>
         </Maybe>
+        <span className="page-item total">
+          Total {isIssue ? 'threads' : 'articles'}: {articlesCount}
+        </span>
       </ul>
     </nav>
   );

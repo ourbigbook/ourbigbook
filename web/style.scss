@@ -163,6 +163,10 @@ div.article-page {
         }
       }
     }
+    .see-all {
+      font-size: 1.3em;
+      margin-bottom: 1em;
+    }
     div.article-info-2 {
       font-weight: bold;
       i {
@@ -260,11 +264,18 @@ span.shortcut {
   .comment-body {
     padding: 10px 10px;
   }
+  &:target .comment-header {
+    background-color: $target-background-color;
+  }
   .comment-header {
     border-bottom: 1px solid $color;
     border-radius: $border-radius $border-radius 0 0;
     background-color: #003300;
     padding: 10px 10px;
+    .number {
+      font-weight: bold;
+      font-size: 1.2em;
+    }
   }
 }
 
@@ -346,6 +357,9 @@ span.shortcut {
       a {
         color: $tab-bar-active-color;
       }
+    }
+    &.total {
+      margin-left: 15px;
     }
   }
 }

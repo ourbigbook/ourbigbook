@@ -106,17 +106,17 @@ function getSequelize(toplevelDir, toplevelBasename) {
 }
 
 async function sync(sequelize, opts={}) {
-  let dbExists = true;
+  let dbExists
   try {
     await sequelize.models.SequelizeMeta.findOne()
-    dbExists = false
+    dbExists = true
   } catch(e) {
     if (e instanceof DatabaseError) {
-      dbExists = true
+      dbExists = false
     }
   }
   await sequelize.sync(opts)
-  if (dbExists) {
+  if (!dbExists || opts.force) {
     await sequelize.models.SequelizeMeta.bulkCreate(
       fs.readdirSync(path.join(path.dirname(__dirname), 'migrations')).map(
         basename => { return { name: basename } }

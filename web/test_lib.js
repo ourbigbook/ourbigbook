@@ -63,6 +63,7 @@ async function generateDemoData(params) {
   await sequelize.sync({ force: true })
 
   printTimeNow = now()
+  console.error('User');
   const userArgs = [];
   for (let i = 0; i < nUsers; i++) {
     let [displayName, image, username] = userData[i % userData.length]

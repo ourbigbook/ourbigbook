@@ -2341,7 +2341,6 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 === TODO
 
-* list and code caption
 * \x[id-scope]
 * correct ID generation algorithm to be Unicode robust
 * local downloads and single HTML page with image / script embeds

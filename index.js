@@ -1234,31 +1234,62 @@ function convert(
   extra_returns.tokens = tokens;
   extra_returns.errors.push(...sub_extra_returns.errors);
   sub_extra_returns = {};
-  let ast = parse(tokens, macros, options, sub_extra_returns);
+  let context = {
+      errors: [],
+      extra_returns: extra_returns,
+      macros: macros,
+      options: options,
+  };
+
+  // Setup context.media_provider_default based on `default-for`.
+  {
+    const media_providers = cirodown_json['media-providers'];
+    context.media_provider_default = {};
+    for (const media_provider_macro_name in media_providers) {
+      const media_provider = media_providers[media_provider_macro_name];
+      if ('default-for' in media_provider) {
+        for (const default_for of media_provider['default-for']) {
+          if (default_for === 'all') {
+            for (const macro_name of MACRO_WITH_MEDIA_PROVIDER) {
+              context.media_provider_default[default_for] === media_provider_macro_name;
+            }
+          } else {
+            if (MACRO_WITH_MEDIA_PROVIDER.has(default_for)) {
+              if (context.media_provider_default[default_for] === undefined) {
+                context.media_provider_default[default_for] = media_provider_macro_name;
+              } else {
+                context.errors.push(new ErrorMessage(`multiple media providers set for macro "${default_for}"`, 1, 1));
+              }
+            } else {
+              context.errors.push(new ErrorMessage(`macro "${default_for}" does not accept media providers`, 1, 1));
+            }
+          }
+        }
+      }
+    }
+    for (const macro_name of MACRO_WITH_MEDIA_PROVIDER) {
+      if (context.media_provider_default[macro_name] === undefined) {
+        context.media_provider_default[macro_name] = 'local';
+      }
+    }
+  }
+
+  let ast = parse(tokens, macros, options, context, sub_extra_returns);
   if (options.show_ast) {
     console.error('ast:');
     console.error(JSON.stringify(ast, null, 2));
     console.error();
   }
   extra_returns.ast = ast;
-  extra_returns.context = sub_extra_returns.context;
+  extra_returns.context = context;
   extra_returns.context.include_path_set = sub_extra_returns.include_path_set;
   extra_returns.ids = sub_extra_returns.ids;
   extra_returns.errors.push(...sub_extra_returns.errors);
   let output;
   if (options.render) {
-    let errors = [];
-    let context = Object.assign(
-      sub_extra_returns.context,
-      {
-        errors: errors,
-        extra_returns: extra_returns,
-        macros: macros,
-        options: options,
-      }
-    );
+    context.extra_returns = extra_returns;
     output = ast.convert(context);
-    extra_returns.errors.push(...errors);
+    extra_returns.errors.push(...context.errors);
   }
   extra_returns.errors = extra_returns.errors.sort((a, b)=>{
     if (a.line < b.line)
@@ -1652,8 +1683,7 @@ function object_subset(source_object, keys) {
  *         - {Object} ids
  * @return {AstNode}
  */
-function parse(tokens, macros, options, extra_returns={}) {
-  extra_returns.context = {};
+function parse(tokens, macros, options, context, extra_returns={}) {
   extra_returns.errors = [];
   extra_returns.include_path_set = new Set(options.include_path_set);
   let state = {
@@ -1703,14 +1733,6 @@ function parse(tokens, macros, options, extra_returns={}) {
   let cur_header_level;
   let toplevel_parent_arg = new AstArgument([], 1, 1);
   let todo_visit = [[toplevel_parent_arg, ast_toplevel]];
-  // Some AST postprocessing decisions need information from the render step,
-  // so we define a minimal context here. This is ugly and will case problems
-  // one day, but it is also simple.
-  const id_context = {
-    errors: [],
-    macros: macros,
-    options: options,
-  };
   // IDs that are indexed: you can link to those.
   let indexed_ids = {};
   // Non-indexed-ids: auto-generated numeric ID's like p-1, p-2, etc.
@@ -1741,7 +1763,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     ast.from_include = options.from_include;
     ast.input_path = options.input_path;
     if (macro_name === Macro.INCLUDE_MACRO_NAME) {
-      const href = convert_arg_noescape(ast.args.href, id_context);
+      const href = convert_arg_noescape(ast.args.href, context);
       cur_header.includes.push(href);
       if (extra_returns.include_path_set.has(href)) {
         let message = `circular include detected to: "${href}"`;
@@ -1782,7 +1804,7 @@ function parse(tokens, macros, options, extra_returns={}) {
               show_caption_prefix: false,
               style_full: false,
             };
-            header_node_title = x_text(target_id_ast, id_context, x_text_options);
+            header_node_title = x_text(target_id_ast, context, x_text_options);
           }
           // Don't merge into a single file, render as a dummy header and an xref link instead.
           new_child_nodes = [
@@ -1894,7 +1916,7 @@ function parse(tokens, macros, options, extra_returns={}) {
           'q',
           {
             'content': convert_include(
-              convert_arg_noescape(ast.args.content, id_context),
+              convert_arg_noescape(ast.args.content, context),
               options,
               0,
               options.input_path,
@@ -1913,7 +1935,7 @@ function parse(tokens, macros, options, extra_returns={}) {
         }
         cur_header = ast;
         cur_header_level = parseInt(
-          convert_arg_noescape(ast.args.level, id_context)
+          convert_arg_noescape(ast.args.level, context)
         ) + options.h_level_offset;
         ast.level = cur_header_level;
         if ('level' in ast.args) {
@@ -1958,10 +1980,10 @@ function parse(tokens, macros, options, extra_returns={}) {
     let is_first_header = true;
     let first_header_level;
     let first_header;
-    extra_returns.context.headers_with_include = [];
-    extra_returns.context.id_provider = id_provider;
-    extra_returns.context.header_graph = new TreeNode();
-    extra_returns.context.has_toc = false;
+    context.headers_with_include = [];
+    context.id_provider = id_provider;
+    context.header_graph = new TreeNode();
+    context.has_toc = false;
     let toplevel_parent_arg = new AstArgument([], 1, 1);
 
     // First do a pass that makes any changes to the tree.
@@ -1977,7 +1999,7 @@ function parse(tokens, macros, options, extra_returns={}) {
             // Skip.
             continue;
           }
-          extra_returns.context.has_toc = true;
+          context.has_toc = true;
         } else if (macro_name === Macro.TOPLEVEL_MACRO_NAME && ast.parent_node !== undefined) {
           // Prevent this from happening. When this was committed originally,
           // it actually worked and output an `html` inside another `html`.
@@ -2140,7 +2162,7 @@ function parse(tokens, macros, options, extra_returns={}) {
         if (macro_name === Macro.HEADER_MACRO_NAME) {
           // Create the header tree.
           if (ast.level === undefined) {
-            cur_header_level = parseInt(convert_arg_noescape(ast.args.level, id_context)) + options.h_level_offset;
+            cur_header_level = parseInt(convert_arg_noescape(ast.args.level, context)) + options.h_level_offset;
             ast.level = cur_header_level;
           } else {
             // Possible for included headers.
@@ -2151,7 +2173,7 @@ function parse(tokens, macros, options, extra_returns={}) {
             is_first_header = false;
             first_header_level = cur_header_level;
             header_graph_last_level = cur_header_level - 1;
-            header_graph_stack[header_graph_last_level] = extra_returns.context.header_graph;
+            header_graph_stack[header_graph_last_level] = context.header_graph;
           }
           cur_header_tree_node = new TreeNode(ast, header_graph_stack[cur_header_level - 1]);
           ast.header_tree_node = cur_header_tree_node;
@@ -2176,7 +2198,7 @@ function parse(tokens, macros, options, extra_returns={}) {
           header_graph_stack[cur_header_level] = cur_header_tree_node;
           header_graph_last_level = cur_header_level;
           if (ast.includes.length > 0) {
-            extra_returns.context.headers_with_include.push(ast);
+            context.headers_with_include.push(ast);
           }
         }
 
@@ -2212,7 +2234,7 @@ function parse(tokens, macros, options, extra_returns={}) {
               if (macro_arg.boolean) {
                 let arg_string;
                 if (arg.length > 0) {
-                  arg_string = convert_arg_noescape(arg, id_context);
+                  arg_string = convert_arg_noescape(arg, context);
                 } else {
                   arg_string = '1';
                 }
@@ -2229,7 +2251,7 @@ function parse(tokens, macros, options, extra_returns={}) {
                 }
               }
               if (macro_arg.positive_nonzero_integer) {
-                const arg_string = convert_arg_noescape(arg, id_context);
+                const arg_string = convert_arg_noescape(arg, context);
                 const int_value = parseInt(arg_string);
                 ast.validation_output[argname]['positive_nonzero_integer'] = int_value;
                 if (!Number.isInteger(int_value) || !(int_value > 0)) {
@@ -2271,7 +2293,7 @@ function parse(tokens, macros, options, extra_returns={}) {
             if (title_arg !== undefined) {
               // ID from title.
               // TODO correct unicode aware algorithm.
-              id_text += title_to_id(convert_arg_noescape(title_arg, id_context));
+              id_text += title_to_id(convert_arg_noescape(title_arg, context));
               ast.id = id_text;
             } else if (!macro.options.phrasing) {
               // ID from element count.
@@ -2282,7 +2304,7 @@ function parse(tokens, macros, options, extra_returns={}) {
               }
             }
           } else {
-            ast.id = convert_arg_noescape(macro_id_arg, id_context);
+            ast.id = convert_arg_noescape(macro_id_arg, context);
           }
         }
         ast.index_id = index_id;
@@ -2311,7 +2333,7 @@ function parse(tokens, macros, options, extra_returns={}) {
             message += `line ${previous_ast.line} colum ${previous_ast.column}`;
             parse_error(state, message, ast.line, ast.column);
           }
-          if (index_id || macro.options.caption_number_visible(ast, id_context)) {
+          if (index_id || macro.options.caption_number_visible(ast, context)) {
             if (!(macro_name in macro_counts_visible)) {
               macro_counts_visible[macro_name] = 0;
             }
@@ -2334,11 +2356,11 @@ function parse(tokens, macros, options, extra_returns={}) {
     extra_returns.ids = indexed_ids;
 
     // Calculate header_graph_top_level.
-    let level0_header = extra_returns.context.header_graph;
+    let level0_header = context.header_graph;
     if (level0_header.children.length === 1) {
-      extra_returns.context.header_graph_top_level = first_header_level;
+      context.header_graph_top_level = first_header_level;
     } else {
-      extra_returns.context.header_graph_top_level = first_header_level - 1;
+      context.header_graph_top_level = first_header_level - 1;
     }
   }
 
@@ -2764,10 +2786,10 @@ function macro_image_video_source(ast, context) {
   }
   if (!protocol_is_known) {
     let provider;
-    if ('provider' in ast.args) {
+    if (ast.validation_output.provider.given) {
       provider = convert_arg_noescape(ast.args.provider, context);
     } else {
-      provider = 'local';
+      provider = context.media_provider_default[ast.macro_name];
     }
     if (provider === 'local') {
       const path = context.options.cirodown_json['media-providers'].local.path;
@@ -2814,6 +2836,7 @@ const MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS = [
 // https://cirosantilli.com/cirodown#known-url-protocols
 const KNOWN_URL_PROTOCOLS = new Set(['http://', 'https://']);
 const URL_SEP = '/';
+const MACRO_WITH_MEDIA_PROVIDER = new Set(['Image', 'Video']);
 const DEFAULT_MACRO_LIST = [
   new Macro(
     Macro.LINK_MACRO_NAME,

@@ -182,7 +182,7 @@ const Article = ({
                   {' '}
                   {!isIndex &&
                     <a className="by-others btn" href={routes.topic(curArticle.topicId)} title="Articles by others on the same topic">
-                      <TopicIcon title={false} /> {curArticle.topicCount}{toplevel ? <> By Others<span className="mobile-hide"> On Same Topic</span></> : ''}
+                      <TopicIcon title={false} /> {curArticle.topicCount - 1}{toplevel ? <> By Others<span className="mobile-hide"> On Same Topic</span></> : ''}
                     </a>
                   }
                   {' '}

@@ -394,7 +394,7 @@ A block image with capital 'i' can be seen at \c[I] \x[image-my-xi-chrysanthemum
   I'm not even kidding.
 }
 
-And here is an \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg] inline one with lower case 'i'.
+And here is an \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg][Xi Chrysanthemum] inline one with lower case 'i'.
 
 \h[2][Code \c[[\c]] and \c[[\C]]]
 {id=code}

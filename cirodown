@@ -73,13 +73,11 @@ const AstNode = class {
   }
 
   /**
-   * @param {Object} options - global options passed in from toplevel
-   * @param {Object} context - things that are decided on ancestor nodes,
-   *        and must trickle down to descendants.
-   *
+   * @param {Object} context
    *        If a call will change this object, it must first make a copy,
    *        otherwise future calls to non descendants would also be affected by the change.
    *
+   *        - {Object} options - global options passed in from toplevel. Never modified by calls
    *        - {bool} html_is_attr - are we inside an HTML attribute, which implies implies different
    *                 escape rules, e.g. " and ' must be escaped.
    *        - {bool} html_escape - if false, disable HTML escaping entirely. This is needed for
@@ -90,7 +88,7 @@ const AstNode = class {
    *                 - 'prefix': prefix to add if style=full, e.g. `Figure 1`, `Section 2`, etc.
    *                 - 'title': the title of the element linked to
    */
-  convert(options, context) {
+  convert(context) {
     if (context === undefined) {
       context = {};
     }
@@ -103,10 +101,10 @@ const AstNode = class {
     if (!('ids' in context)) {
       context.ids = {};
     }
-    if (!('errors' in options.extra_returns)) {
-      options.extra_returns.errors = [];
+    if (!('errors' in context)) {
+      context.errors = [];
     }
-    return macros[this.macro_name].convert(this, options, context);
+    return macros[this.macro_name].convert(this, context);
   }
 
   toJSON() {
@@ -209,6 +207,13 @@ const MacroArgument = class {
   constructor(options) {
     this.name = options.name;
   }
+}
+
+/* Clone an object, and set a given value on the cloned one. */
+const clone_and_set = function(obj, key, value) {
+  let new_obj = {...obj};
+  new_obj[key] = value;
+  return new_obj;
 }
 
 const Macro = class {
@@ -319,21 +324,32 @@ const array_equals = function(arr1, arr2) {
  * @param {Array[AstNode]}
  * @return {String}
  */
-const convert_arg = function(arg, options, context) {
+const convert_arg = function(arg, context) {
   let converted_arg = '';
   for (const ast_node of arg) {
-    converted_arg += ast_node.convert(options, context);
+    converted_arg += ast_node.convert(context);
   }
   return converted_arg;
 }
 
-/** Convert a key value fully HTML escaped strings to an attribute.
+/** Convert a key value fully HTML escaped strings to an HTML attribute.
  *
  * @param {String} key
- * @param {String} value
+ * @param {Array[AstNode]} arg
+ * @return {String} - of form ' a="b"' (with a leading space)
  */
 const html_attr = function(key, value) {
   return ` ${key}="${value}"`;
+}
+
+/** Convert an argument to an HTML attribute value.
+ *
+ * @param {Array[AstNode]} arg
+ * @param {Object} context
+ * @return {String}
+ */
+function html_attr_value(arg, context) {
+  return convert_arg(arg, clone_and_set(context, 'html_is_attr', true));
 }
 
 /** Helper to convert multiple parameters directly to HTML attributes.
@@ -348,7 +364,7 @@ const html_attr = function(key, value) {
  *        directly from the input text, but may rather have been calculated from the node.
  */
 const html_convert_attrs = function(
-  ast, options, arg_names=[], custom_args={}
+  ast, context, arg_names=[], custom_args={}
 ) {
   // Determine the arguments.
   let args = [];
@@ -365,7 +381,7 @@ const html_convert_attrs = function(
   let ret = '';
   for (const name_arg_pair of args) {
     [arg_name, arg] = name_arg_pair;
-    ret += html_attr(arg_name, convert_arg(arg, options, {html_is_attr: true}));
+    ret += html_attr(arg_name, html_attr_value(arg, context));
   }
   return ret;
 }
@@ -385,7 +401,7 @@ const title_to_id = function(title) {
  * If the ID argument is not explicitly given, derive it from the title argument.
  */
 const html_convert_attrs_id = function(
-  ast, options, arg_names=[], custom_args={}
+  ast, context, arg_names=[], custom_args={}
 ) {
   if (ast.arg_given(Macro.id_argument_name)) {
     arg_names.push(Macro.id_argument_name);
@@ -396,10 +412,10 @@ const html_convert_attrs_id = function(
     if (id_prefix !== '') {
       id_text += id_prefix + ID_SEPARATOR
     }
-    id_text += title_to_id(convert_arg(ast.args.title, options, {html_is_attr: true}));
+    id_text += title_to_id(convert_arg(ast.args.title, clone_and_set(context, 'html_is_attr', true)));
     custom_args.id = [new AstNode(AstType.PLAINTEXT, 'plaintext', id_text, ast.line, ast.column)];
   }
-  return html_convert_attrs(ast, options, arg_names, custom_args);
+  return html_convert_attrs(ast, context, arg_names, custom_args);
 }
 
 function html_escape_content(str) {
@@ -417,12 +433,40 @@ function html_escape_attr(str) {
   ;
 }
 
-const katex_convert = function(ast, options, context) {
-  let new_context = {...context};
-  new_context.html_escape = false;
+/** Helper for the most common HTML function type that does "nothing magic":
+ * only has "id" as a possible attribute, and uses ast.args.content as the
+ * main element child.
+ */
+const html_convert_simple_elem = function(elem_name, options={}) {
+  if (!('newline_after_open' in options)) {
+    options.newline_after_open = false;
+  }
+  if (!('newline_after_close' in options)) {
+    options.newline_after_close = true;
+  }
+  let newline_after_open_str;
+  if (options.newline_after_open) {
+    newline_after_open_str = '\n';
+  } else {
+    newline_after_open_str = '';
+  }
+  let newline_after_close_str;
+  if (options.newline_after_close) {
+    newline_after_close_str = '\n';
+  } else {
+    newline_after_close_str = '';
+  }
+  return function(ast, context) {
+    let attrs = html_convert_attrs_id(ast, context);
+    let content = convert_arg(ast.args.content, context);
+    return `<${elem_name}${attrs}>${newline_after_open_str}${content}</${elem_name}>${newline_after_close_str}`;
+  };
+}
+
+const katex_convert = function(ast, context) {
   try {
     return katex.renderToString(
-      convert_arg(ast.args.content, options, new_context),
+      convert_arg(ast.args.content, clone_and_set(context, 'html_escape', false)),
       {
         macros: macros,
         throwOnError: true,
@@ -431,7 +475,7 @@ const katex_convert = function(ast, options, context) {
     );
   } catch(error) {
     let message = error.toString();
-    options.extra_returns.errors.push(
+    context.errors.push(
       new ErrorMessage(message, ast.args.content[0].line, ast.args.content[0].column)
     );
     return in_output_error(message);
@@ -449,13 +493,16 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(ast, options, context) {
+    function(ast, context) {
+      let content_arg;
       if (ast.arg_given('content')) {
-        content = ast.args.content;
+        content_arg = ast.args.content;
       } else {
-        content = ast.args.href;
+        content_arg = ast.args.href;
       }
-      return `<a${html_convert_attrs_id(ast, options, ['href'])}>${convert_arg(content, options, context)}</a>`;
+      let attrs = html_convert_attrs_id(ast, context, ['href']);
+      let content = convert_arg(content_arg, context);
+      return `<a${attrs}>${content}</a>`;
     },
     {
       properties: {
@@ -470,8 +517,10 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(ast, options, context) {
-      return `<pre${html_convert_attrs_id(ast, options)}><code>${convert_arg(ast.args.content, options, context)}</code></pre>\n`;
+    function(ast, context) {
+      let attrs = html_convert_attrs_id(ast, context);
+      let content = convert_arg(ast.args.content, context);
+      return `<pre${attrs}><code>${content}</code></pre>\n`;
     },
   ),
   new Macro(
@@ -481,9 +530,7 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(ast, options, context) {
-      return `<code${html_convert_attrs_id(ast, options)}>${convert_arg(ast.args.content, options, context)}</code>`;
-    },
+    html_convert_simple_elem('code', {newline_after_close: false}),
     {
       properties: {
         phrasing: true,
@@ -500,10 +547,11 @@ let macro_list = [
         name: Macro.title_argument_name,
       }),
     ],
-    function(ast, options, context) {
-      let title = convert_arg(ast.args.title, options, context);
-      let level = convert_arg(ast.args.level, options, context);
-      return `<h${level}${html_convert_attrs_id(ast, options)}>${title}</h${level}>\n`;
+    function(ast, context) {
+      let attrs = html_convert_attrs_id(ast, context);
+      let level = convert_arg(ast.args.level, context);
+      let title = convert_arg(ast.args.title, context);
+      return `<h${level}${attrs}>${title}</h${level}>\n`;
     },
     {
       id_prefix: '',
@@ -516,9 +564,7 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(ast, options, context) {
-      return `<li${html_convert_attrs_id(ast, options)}>${convert_arg(ast.args.content, options, context)}</li>\n`;
-    },
+    html_convert_simple_elem('li'),
     {
       auto_parent: 'ul',
       auto_parent_skip: new Set(['ol'])
@@ -531,8 +577,8 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(ast, options, context) {
-      return `<div>${katex_convert(ast, options, context)}</div>\n`;
+    function(ast, context) {
+      return `<div>${katex_convert(ast, context)}</div>\n`;
     }
   ),
   new Macro(
@@ -542,8 +588,8 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(ast, options, context) {
-      return katex_convert(ast, options, context);
+    function(ast, context) {
+      return katex_convert(ast, context);
     },
     {
       properties: {
@@ -558,9 +604,7 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(ast, options, context) {
-      return `<ol${html_convert_attrs_id(ast, options)}>\n${convert_arg(ast.args.content, options, context)}</ol>\n`;
-    }
+    html_convert_simple_elem('ol', {newline_after_open: true}),
   ),
   new Macro(
     'Image',
@@ -569,12 +613,13 @@ let macro_list = [
         name: 'src',
       }),
     ],
-    function(ast, options, context) {
-      let ret = `<figure${html_convert_attrs_id(ast, options)}>
-<img${html_convert_attrs(ast, options, ['src', 'alt'])}>
-`
+    function(ast, context) {
+      let img_attrs = html_convert_attrs(ast,context, ['src', 'alt']);
+      let figure_attrs = html_convert_attrs_id(ast, context);
+      let ret = `<figure${figure_attrs}>\n<img${img_attrs}>\n`;
       if (ast.arg_given(Macro.title_argument_name)) {
-        ret += `<figcaption>${convert_arg(ast.args[Macro.title_argument_name], options, context)}</figcaption>\n`;
+        let figcaption_content = convert_arg(ast.args[Macro.title_argument_name], context);
+        ret += `<figcaption>${figcaption_content}</figcaption>\n`;
       }
       ret += '</figure>\n';
       return ret;
@@ -599,20 +644,15 @@ let macro_list = [
       new MacroArgument({
         name: 'src',
       }),
+      new MacroArgument({
+        name: 'alt',
+      }),
     ],
-    function(ast, options, context) {
-      let custom_args = {};
-      if (ast.arg_given(Macro.title_argument_name)) {
-        custom_args[alt] = ast.args.title;
-      }
-      return `<img${html_convert_attrs_id(ast, options, ['src'], custom_args)}>`;
+    function(ast, context) {
+      let img_attrs = html_convert_attrs_id(ast, context, ['src', 'alt']);
+      return `<img${img_attrs}>`;
     },
     {
-      named_args: [
-        new MacroArgument({
-          name: Macro.title_argument_name,
-        }),
-      ],
       phrasing: true,
     }
   ),
@@ -623,9 +663,7 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(ast, options, context) {
-      return `<p${html_convert_attrs_id(ast, options)}>${convert_arg(ast.args.content, options, context)}</p>\n`;
-    }
+    html_convert_simple_elem('p'),
   ),
   new Macro(
     'plaintext',
@@ -634,7 +672,7 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(ast, options, context) {
+    function(ast, context) {
       if (context.html_escape) {
         if (context.html_is_attr) {
           return html_escape_attr(ast.args);
@@ -658,8 +696,10 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(ast, options, context) {
-      return `<table${html_convert_attrs_id(ast, options)}>\n${convert_arg(ast.args.content, options, context)}</table>\n`;
+    function(ast, context) {
+      let attrs = html_convert_attrs_id(ast, context);
+      let content = convert_arg(ast.args.content, context);
+      return `<table${attrs}>\n${content}</table>\n`;
     },
   ),
   new Macro(
@@ -669,9 +709,7 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(ast, options, context) {
-      return `<td${html_convert_attrs_id(ast, options)}>${convert_arg(ast.args.content, options, context)}</td>\n`;
-    },
+    html_convert_simple_elem('td'),
   ),
   new Macro(
     'toplevel',
@@ -683,30 +721,30 @@ let macro_list = [
         name: Macro.title_argument_name,
       }),
     ],
-    function(ast, options, context) {
+    function(ast, context) {
       let title;
       if (ast.arg_given(Macro.title_argument_name)) {
         title = ast.args.title;
       } else {
         let text_title;
-        if (Macro.title_argument_name in options) {
-          text_title = options[Macro.title_argument_name];
+        if (Macro.title_argument_name in context.options) {
+          text_title = context.options[Macro.title_argument_name];
         } else {
           let message = 'missing title';
           text_title = in_output_error(message);
-          if (!options.body_only) {
-            extra_returns.errors.push(new ErrorMessage(message, line, column));
+          if (!context.options.body_only) {
+            context.errors.push(new ErrorMessage(message, line, column));
           }
         }
-        title = [new AstNode(AstType.PLAINTEXT, 'plaintext', text_title, 1, 1)];
+        title = [new AstNode(AstType.PLAINTEXT, 'plaintext', text_title, ast.line, ast.column)];
       }
       let ret = '';
-      if (!options.body_only) {
+      if (!context.options.body_only) {
         ret += `<!doctype html>
 <html lang=en>
 <head>
 <meta charset=utf-8>
-<title>${convert_arg(title, options, context)}</title>
+<title>${convert_arg(title, context)}</title>
 
 <link
   rel="stylesheet"
@@ -728,8 +766,8 @@ pre {
 <body>
 `
       }
-      ret += convert_arg(ast.args.content, options, context);
-      if (!options.body_only) {
+      ret += convert_arg(ast.args.content, context);
+      if (!context.options.body_only) {
         ret += `</body>
 </html>
 `
@@ -744,9 +782,7 @@ pre {
         name: 'content',
       }),
     ],
-    function(ast, options, context) {
-      return `<th${html_convert_attrs_id(ast, options)}>${convert_arg(ast.args.content, options, context)}</th>\n`;
-    }
+    html_convert_simple_elem('th'),
   ),
   new Macro(
     'tr',
@@ -755,9 +791,7 @@ pre {
         name: 'content',
       }),
     ],
-    function(ast, options, context) {
-      return `<tr${html_convert_attrs_id(ast, options)}>\n${convert_arg(ast.args.content, options, context)}</tr>\n`;
-    },
+    html_convert_simple_elem('tr', {newline_after_open: true}),
     {
       auto_parent: 'table',
     }
@@ -769,9 +803,7 @@ pre {
         name: 'content',
       }),
     ],
-    function(ast, options, context) {
-      return `<ul${html_convert_attrs_id(ast, options)}>\n${convert_arg(ast.args.content, options, context)}</ul>\n`;
-    },
+    html_convert_simple_elem('ul', {newline_after_open: true}),
   ),
   new Macro(
     'x',
@@ -783,16 +815,23 @@ pre {
         name: 'content',
       }),
     ],
-    function(ast, options, context) {
+    function(ast, context) {
+      let content_arg;
       if (ast.arg_given('content')) {
-        content = ast.args.content;
+        content_arg = ast.args.content;
       } else {
-        content = ast.args.href;
+        content_arg = ast.args.href;
       }
-      let new_context = {...context};
-      new_context.html_is_attr = true;
-      let href_text = '#' + convert_arg(ast.args.href, options, new_context);
-      return `<a${html_attr('href', href_text)}${html_convert_attrs_id(ast, options)}>${convert_arg(content, options, context)}</a>`;
+
+      //context.options.extra_returns.errors.push(
+      //  new ErrorMessage(message, ast.args.content[0].line,
+      //  ast.args.content[0].column)
+      //);
+
+      let attrs = html_convert_attrs_id(ast, context);
+      let href = html_attr('href', '#' + html_attr_value(ast.args.href, context));
+      let content = convert_arg(content_arg, context);
+      return `<a${href}${attrs}>${content}</a>`;
     },
     {
       named_args: [
@@ -1435,7 +1474,9 @@ const parse_report_error = function(state, message, line, column) {
 }
 
 /**
- * Main cirodown input to HTML/LaTeX/etc. output API wrapper.
+ * Main cirodown input to HTML/LaTeX/etc. output JavaScript API.
+ *
+ * The CLI interface basically just feeds this.
  *
  * @returns {String}
  */
@@ -1474,9 +1515,12 @@ const convert = function(
   }
   extra_returns.ast = ast;
   extra_returns.errors.push(...sub_extra_returns.errors);
-  options.extra_returns = {};
-  output = ast.convert(options);
-  extra_returns.errors.push(...options.extra_returns.errors);
+  let context = {
+    extra_returns: extra_returns,
+    options: options
+  };
+  output = ast.convert(context);
+  extra_returns.errors.push(...extra_returns.errors);
   if (output[output.length - 1] !== '\n') {
     output += '\n';
   }

@@ -1,10 +1,41 @@
 import CustomImage from "components/CustomImage";
+import Link from "next/link";
+import { useRouter } from "next/router";
+
 import Maybe from "components/Maybe";
-import NavLink from "components/NavLink";
 import { LOGIN_ACTION, REGISTER_ACTION } from "lib"
 import { APP_NAME } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 import routes from "routes";
+
+interface NavLinkProps {
+  href: string;
+  onClick?: () => void;
+  children: React.ReactNode;
+  className?: string;
+}
+
+const NavLink = ({ href, onClick, children, className }: NavLinkProps) => {
+  const router = useRouter();
+  const { asPath } = router;
+  const classes = ['nav-link']
+  if (encodeURIComponent(asPath) === encodeURIComponent(href)) {
+    classes.push('active')
+  }
+  if (className) {
+    classes.push(...className.split(' '))
+  }
+  return (
+    <Link href={href} passHref>
+      <a
+        onClick={onClick}
+        className={classes.join(' ')}
+      >
+        {children}
+      </a>
+    </Link>
+  );
+};
 
 const Navbar = () => {
   const loggedInUser = getLoggedInUser()

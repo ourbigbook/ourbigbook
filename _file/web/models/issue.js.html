@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>issue.js - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="issue.js"><div class="notnav"><h1><a href="">web/models/issue.js</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir/">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/models">models</a> / <a href="../../../_raw/web/models/issue.js">issue.js</a></b></div></nav></div><div class="p"><b>web/models/issue.js</b></div><div class="code"><div><pre><code>const assert = require('assert')
+
+const { DataTypes } = require('sequelize')
+
+const config = require('../front/config')
+const convert = require('../convert')
+
+module.exports = (sequelize) =&gt; {
+  const Issue = sequelize.define(
+    'Issue',
+    {
+      // OurBigBook Markup source for toplevel header title.
+      titleSource: {
+        type: DataTypes.TEXT,
+        validate: {
+          len: {
+            args: [1, config.maxArticleTitleSize],
+          },
+        },
+      },
+      // OurBigBook Markup source for body without toplevel header title..
+      bodySource: DataTypes.TEXT,
+      // Rendered toplevel header title.
+      titleRender: DataTypes.TEXT,
+      // Full rendered output including toplevel h1.
+      render: DataTypes.TEXT,
+      // User-visible numeric identifier for the issue. 1-based.
+      number: DataTypes.INTEGER,
+      // Upvote count.
+      score: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      followerCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      commentCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+    },
+    {
+      indexes: [
+        {
+          fields: ['articleId', 'number'],
+          unique: true,
+        },
+
+        // Foreign key indexes https://docs.ourbigbook.com/database-guidelines
+        { fields: ['authorId'], },
+        { fields: ['articleId'], },
+
+        // Efficient global listings.
+        { fields: ['createdAt'], },
+        { fields: ['updatedAt'], },
+        { fields: ['score'], },
+        { fields: ['followerCount'], },
+        { fields: ['commentCount'], },
+
+        // Efficient listing of issues by a given user.
+        { fields: ['authorId', 'createdAt'], },
+        { fields: ['authorId', 'updatedAt'], },
+        { fields: ['authorId', 'score'], },
+        { fields: ['authorId', 'followerCount'], },
+        { fields: ['authorId', 'commentCount'], },
+      ],
+    },
+  )
+
+  Issue.prototype.getAuthor = async function() {
+    if (this.author === undefined) {
+      return await this.getAuthor()
+    } else {
+      return this.author
+    }
+  }
+
+  Issue.prototype.getSlug = function() {
+    return `${this.article.getSlug()}#${this.number}`
+  }
+
+  Issue.prototype.rerender = async function({ convertOptionsExtra, ignoreErrors, transaction }={}) {
+    if (ignoreErrors === undefined)
+      ignoreErrors = false
+    await sequelize.transaction({ transaction }, async (transaction) =&gt; {
+      try {
+        await convert.convertIssue({
+          issue: this,
+          sequelize,
+          transaction,
+          user: this.author,
+        })
+      } catch(e) {
+        if (ignoreErrors) {
+          console.log(e)
+        } else {
+          throw e
+        }
+      }
+    })
+  }
+
+  Issue.prototype.toJson = async function(loggedInUser) {
+    // TODO do liked and followed with JOINs on caller, check if it is there and skip this if so.
+    const [followed, liked] = await Promise.all([
+      loggedInUser ? await loggedInUser.hasFollowedIssue(this.id) : false,
+      loggedInUser ? await loggedInUser.hasLikedIssue(this.id) : false,
+    ])
+    const ret = {
+      id: this.id,
+      number: this.number,
+      commentCount: this.commentCount,
+      followerCount: this.followerCount,
+      followed,
+      liked,
+      titleSource: this.titleSource,
+      bodySource: this.bodySource,
+      score: this.score,
+      titleRender: this.titleRender,
+      render: this.render,
+      createdAt: this.createdAt.toISOString(),
+      updatedAt: this.updatedAt.toISOString(),
+    }
+    if (this.author) {
+      ret.author = await this.author.toJson(loggedInUser)
+    }
+    if (this.article) {
+      ret.article = await this.article.toJson(loggedInUser)
+    }
+    return ret
+  }
+
+  Issue.createSideEffects = async function(author, article, fields, opts={}) {
+    const { transaction } = opts
+    return sequelize.transaction({ transaction: opts.transaction }, async (transaction) =&gt; {
+      const issue = await sequelize.models.Issue.create(
+        Object.assign({ articleId: article.id, authorId: author.id }, fields),
+        { transaction }
+      )
+      await author.addIssueFollowSideEffects(issue, { transaction })
+      return issue
+    })
+  }
+
+  Issue.getIssue = async function ({ includeComments, number, sequelize, slug }) {
+    const include = [
+      {
+        model: sequelize.models.Article,
+        as: 'article',
+        where: { slug },
+        include: [{
+          model: sequelize.models.File,
+          as: 'file',
+        }]
+      },
+      { model: sequelize.models.User, as: 'author' },
+    ]
+    let order
+    if (includeComments) {
+      include.push({
+        model: sequelize.models.Comment,
+        as: 'comments',
+        include: [{ model: sequelize.models.User, as: 'author' }],
+      })
+      order = [[
+        'comments', 'number', 'ASC'
+      ]]
+    }
+    return await sequelize.models.Issue.findOne({
+      where: { number },
+      include,
+      order,
+      limit: config.articleLimit,
+    })
+  }
+
+  Issue.getIssues = async ({
+    author,
+    followedBy,
+    includeArticle,
+    likedBy,
+    limit,
+    offset,
+    order,
+    orderAscDesc,
+    sequelize,
+    transaction,
+  }) =&gt; {
+    assert.notStrictEqual(sequelize, undefined)
+    if (orderAscDesc === undefined) {
+      orderAscDesc = 'DESC'
+    }
+    const authorInclude = {
+      model: sequelize.models.User,
+      as: 'author',
+      required: true,
+    }
+    if (author) {
+      authorInclude.where = { username: author }
+    }
+    const include = [authorInclude]
+    if (includeArticle) {
+      include.push({
+        model: sequelize.models.Article,
+        as: 'article',
+        include: [{
+          model: sequelize.models.File,
+          as: 'file',
+          include: [{
+            model: sequelize.models.User,
+            as: 'author',
+          }]
+        }]
+      })
+    }
+    if (followedBy) {
+      include.push({
+        model: sequelize.models.User,
+        as: 'followers',
+        where: { username: followedBy },
+      })
+    }
+    if (likedBy) {
+      include.push({
+        model: sequelize.models.User,
+        as: 'issueLikedBy',
+        where: { username: likedBy },
+      })
+    }
+    if (likedBy) {
+      include.push({
+        model: sequelize.models.User,
+        as: 'issueLikedBy',
+        where: { username: likedBy },
+      })
+    }
+    const orderList = []
+    if (order !== undefined) {
+      orderList.push([order, orderAscDesc])
+    }
+    if (order !== 'createdAt') {
+      // To make results deterministic.
+      orderList.push(['createdAt', 'DESC'])
+    }
+    return sequelize.models.Issue.findAndCountAll({
+      include,
+      limit,
+      offset,
+      order: orderList,
+      transaction,
+    })
+  }
+
+  /** Re-render multiple issues. */
+  Issue.rerender = async ({ convertOptionsExtra, ignoreErrors, log }={}) =&gt; {
+    if (log === undefined)
+      log = false
+    let offset = 0
+    while (true) {
+      const issues = await sequelize.models.Issue.findAll({
+        include: [
+          {
+            model: sequelize.models.Article,
+            as: 'article',
+          },
+          {
+            model: sequelize.models.User,
+            as: 'author',
+          }
+        ],
+        offset,
+        limit: config.maxArticlesInMemory,
+        order: [[{model: sequelize.models.Article, as: 'article'}, 'slug', 'ASC'], ['number', 'ASC']],
+      })
+      if (issues.length === 0)
+        break
+      for (const issue of issues) {
+        if (log)
+          console.log(issue.getSlug())
+        await issue.rerender({ convertOptionsExtra, ignoreErrors })
+      }
+      offset += config.maxArticlesInMemory
+    }
+  }
+
+  Issue.ALLOWED_SORTS_EXTRA = {
+    'score': undefined,
+    'follower-count': 'followerCount',
+    'comments': 'commentCount',
+  }
+
+  return Issue
+}
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/models/";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

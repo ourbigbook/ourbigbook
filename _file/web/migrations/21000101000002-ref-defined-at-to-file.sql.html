@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>21000101000002-ref-defined-at-to-file.sql - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="21000101000002-ref-defined-at-to-file.sql"><div class="notnav"><h1><a href="">web/migrations/21000101000002-ref-defined-at-to-file.sql</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir/">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/migrations">migrations</a> / <a href="../../../_raw/web/migrations/21000101000002-ref-defined-at-to-file.sql">21000101000002-ref-defined-at-to-file.sql</a></b></div></nav></div><div class="p"><b>web/migrations/21000101000002-ref-defined-at-to-file.sql</b></div><div class="code"><div><pre><code>-- Rename old column out of the way
+ALTER TABLE "Ref" RENAME COLUMN "defined_at" TO "defined_at_bak";
+ALTER INDEX "ref_defined_at_defined_at_line_defined_at_col_type" RENAME TO "ref_defined_at_bak_defined_at_line_defined_at_col_type";
+ALTER INDEX "ref_from_id_defined_at_to_id_type" RENAME TO "ref_from_id_defined_at_bak_to_id_type";
+
+-- Create the new column
+ALTER TABLE "Ref" ADD COLUMN "defined_at" INTEGER CONSTRAINT "Ref_defined_at_fkey" REFERENCES "File" (id) ON UPDATE CASCADE ON DELETE CASCADE;
+CREATE INDEX "ref_defined_at_defined_at_line_defined_at_col_type" ON "Ref" (defined_at, defined_at_line, defined_at_col, type);
+CREATE INDEX "ref_from_id_defined_at_to_id_type"  ON "Ref" (from_id, defined_at, to_id, type);
+
+-- Update values of the new column
+UPDATE "Ref" SET defined_at = "File".id FROM "File" WHERE "File"."path" = "Ref".defined_at_bak;
+
+-- Destroy the old column
+DROP INDEX "ref_defined_at_bak_defined_at_line_defined_at_col_type";
+DROP INDEX "ref_from_id_defined_at_bak_to_id_type";
+ALTER TABLE "Ref" DROP COLUMN "defined_at_bak";
+
+-- Rename Id.path string to Id.defined_at reference to File
+
+-- Create the new column
+ALTER TABLE "Id" ADD COLUMN "defined_at" INTEGER CONSTRAINT "Id_defined_at_fkey" REFERENCES "File" (id) ON UPDATE CASCADE ON DELETE CASCADE;
+CREATE INDEX "id_defined_at" ON "Id" (defined_at);
+
+-- Update values of the new column
+UPDATE "Id" SET defined_at = "File".id FROM "File" WHERE "File"."path" = "Id"."path";
+
+-- Destroy the old column
+DROP INDEX "id_path";
+ALTER TABLE "Id" DROP COLUMN "path";
+
+-- The database had been corrupted by a synonym attempt before that was implemented.
+DELETE FROM "Id" WHERE id IN (14110, 16293);
+
+-- Allow Article.file to be NULL
+ALTER TABLE "Article" ALTER "fileId" DROP NOT NULL;
+
+-- change Article -&gt; File ON DELETE CASCQADE to SET NULL
+ALTER TABLE "Article"
+  DROP CONSTRAINT "Article_fileId_fkey",
+  ADD CONSTRAINT "Article_fileId_fkey"
+     FOREIGN KEY ("fileId")
+     REFERENCES "File"("id")
+     ON UPDATE CASCADE ON DELETE SET NULL;
+
+-- change Render -&gt; File ON DELETE SET NULL to CASCADE
+ALTER TABLE "Render"
+  DROP CONSTRAINT "Render_fileId_fkey",
+  ADD CONSTRAINT "Render_fileId_fkey"
+     FOREIGN KEY ("fileId")
+     REFERENCES "File"("id")
+     ON UPDATE CASCADE ON DELETE CASCADE;
+
+-- Found this random inconsistency.
+ALTER TABLE "UserLikeIssue" RENAME COLUMN "articleId" TO "issueId";
+
+-- Get rid of uppercase IDs. Now forbidden more explicitly.
+update "Id" set idid = lower(idid) where idid != lower(idid)
+update "Id" set ast_json = '{"macro_name":"H","node_type":"MACRO","scope":"@cirosantilli","source_location":{"line":5,"column":1,"path":"@cirosantilli/Ł.bigb"},"subdir":"","first_toplevel_child":false,"is_first_header_in_input_file":false,"split_default":false,"synonym":"@cirosantilli/ł","word_count":0,"args":{"level":{"asts":[{"macro_name":"plaintext","node_type":"PLAINTEXT","scope":"@cirosantilli","source_location":{"line":5,"column":1,"path":"@cirosantilli/Ł.bigb"},"text":"1","first_toplevel_child":false,"is_first_header_in_input_file":true,"split_default":false,"word_count":0,"args":{},"header_tree_node_word_count":0}],"source_location":{"line":5,"column":1,"path":"@cirosantilli/Ł.bigb"}},"title":{"asts":[{"macro_name":"plaintext","node_type":"PLAINTEXT","scope":"@cirosantilli","source_location":{"line":5,"column":3,"path":"@cirosantilli/Ł.bigb"},"text":"L with a stroke","first_toplevel_child":false,"is_first_header_in_input_file":true,"split_default":false,"word_count":4,"args":{},"header_tree_node_word_count":4}],"source_location":{"line":5,"column":1,"path":"@cirosantilli/Ł.bigb"}},"synonym":{"asts":[],"source_location":{"line":6,"column":1,"path":"@cirosantilli/Ł.bigb"}},"title2":{"asts":[],"source_location":{"line":7,"column":1,"path":"@cirosantilli/Ł.bigb"}}},"header_tree_node_word_count":15}' where idid = lower('@cirosantilli/l-with-a-stroke');
+update "Ref" set from_id = lower(from_id) where from_id != lower(from_id)
+update "Ref" set to_id = lower(to_id) where to_id != lower(to_id)
+update "Article" set "topicId" = 'ł' where lower(slug) = 'cirosantilli/ł';
+update "Article" set "topicId" = 'ł' where lower(slug) = 'cirosantilli/ł';
+update "File" set path = '@cirosantilli/ł.bigb', toplevel_id = '@cirosantilli/ł' where lower(toplevel_id) = '@cirosantilli/ł';
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/migrations/";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

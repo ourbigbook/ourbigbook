@@ -296,9 +296,16 @@ class AstNode {
       context.x_parents = new Set();
     }
     if (
-      this.from_include &&
-      context.in_split_headers &&
-      !this.from_ourbigbook_example
+      (
+        this.from_include &&
+        context.in_split_headers &&
+        !this.from_ourbigbook_example
+      ) ||
+      (
+        context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK &&
+        this.from_ourbigbook_example &&
+        !context.id_conversion
+      )
     ) {
       return '';
     }
@@ -4320,50 +4327,57 @@ async function parse(tokens, options, context, extra_returns={}) {
     } else if (macro_name === Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME) {
       if (options.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
         parent_arg.push(ast)
-      } else {
-        parent_arg.push(...[
-          new AstNode(
-            AstType.MACRO,
-            Macro.CODE_MACRO_NAME.toUpperCase(),
-            {'content': ast.args.content},
-            ast.source_location,
-          ),
-          new AstNode(
-            AstType.MACRO,
-            Macro.PARAGRAPH_MACRO_NAME,
-            {
-              'content': new AstArgument(
-                [
-                  new PlaintextAstNode(
-                    'which renders as:',
-                    ast.source_location,
-                  )
-                ],
-                ast.source_location
-              ),
-            },
-            ast.source_location,
-          ),
-          new AstNode(
-            AstType.MACRO,
-            'Q',
-            {
-              'content': await parse_include(
-                render_arg_noescape(ast.args.content, context),
-                clone_and_set(options, 'from_ourbigbook_example', true),
-                0,
-                options.input_path,
-                undefined,
-                {
-                  start_line: ast.source_location.line + 1,
-                  errors: extra_returns.errors,
-                }
-              )
-            },
-            ast.source_location,
-          ),
-        ]);
       }
+      // We need to add these asts on OUTPUT_FORMAT_OURBIGBOOK so that we can extract their IDs later on.
+      // We then just don't render them at render time.
+      const new_asts = [
+        new AstNode(
+          AstType.MACRO,
+          Macro.CODE_MACRO_NAME.toUpperCase(),
+          { content: ast.args.content },
+          ast.source_location,
+        ),
+        new AstNode(
+          AstType.MACRO,
+          Macro.PARAGRAPH_MACRO_NAME,
+          {
+            content: new AstArgument(
+              [
+                new PlaintextAstNode(
+                  'which renders as:',
+                  ast.source_location,
+                )
+              ],
+              ast.source_location
+            ),
+          },
+          ast.source_location,
+        ),
+        new AstNode(
+          AstType.MACRO,
+          'Q',
+          {
+            content: await parse_include(
+              render_arg_noescape(ast.args.content, clone_and_set(context, 'id_conversion', true)),
+              options,
+              0,
+              options.input_path,
+              undefined,
+              {
+                start_line: ast.source_location.line + 1,
+                errors: extra_returns.errors,
+              }
+            ),
+          },
+          ast.source_location,
+        ),
+      ]
+      for (const new_ast of new_asts) {
+        new_ast.set_recursively({
+          from_ourbigbook_example: true,
+        })
+      }
+      parent_arg.push(...new_asts);
     } else {
       // Not OurBigBookExample.
       if (macro_name === Macro.HEADER_MACRO_NAME) {

@@ -298,10 +298,17 @@ Table with paragraph and list:
 \Include[tmp2]{parent=dog}
 \Include[tmp3]{parent=dog}
 
+<code In OurBigBookExample>
+
 \OurBigBookExample[[
 Hello
 
 World
+
+``
+Hello
+``
+{title=In OurBigBookExample}
 ]]
 
 \Comment[[

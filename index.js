@@ -12,7 +12,7 @@ class AstNode {
    *                                AstType.PLAINTEXT_MACRO_NAME
    *                              - elif node_type === AstType.PARAGRAPH: fixed to undefined
    *                              - else: arbitrary regular macro
-   * @param {Object[String, Array[AstNode]]} args - dict of arg names to arguments.
+   * @param {Object[String, AstArgument]} args - dict of arg names to arguments.
    *        where arguments are arrays of AstNode
    * @param {Number} line - the best representation of where the macro is starts in the document
    *                        used primarily to present useful debug messages
@@ -97,7 +97,7 @@ class AstNode {
    *        - {TreeNode} header_graph - TreeNode graph containing AstNode headers
    *        - {Object} ids - map of document IDs to their description:
    *                 - 'prefix': prefix to add if style_full, e.g. `Figure 1`, `Section 2`, etc.
-   *                 - {List[AstNode]} 'title': the title of the element linked to
+   *                 - {AstArgument} 'title': the title of the element linked to
    * @param {Object} context
    */
   convert(context) {
@@ -156,7 +156,6 @@ class AstNode {
           if (!Number.isInteger(int_value) || !(int_value > 0)) {
             error_message = [
               `argument "${argname}" of macro "${this.macro_name}" must be a positive non-zero integer, got: "${arg_string}"`,
-              // TODO https://github.com/cirosantilli/cirodown/issues/30
               arg.line, arg.column];
             break;
           }
@@ -228,6 +227,13 @@ class AstArgument extends Array {
     super(...nodes)
     this.line = line;
     this.column = column;
+  }
+
+  // https://stackoverflow.com/questions/3261587/subclassing-javascript-arrays-typeerror-array-prototype-tostring-is-not-generi/61269027#61269027
+  static get [Symbol.species]() {
+    return Object.assign(function (...items) {
+      return new AstArgument(new Array(...items))
+    }, AstArgument);
   }
 }
 
@@ -504,7 +510,7 @@ class Macro {
       // It uses Unicode char hacks to add underlines... and there are two trailing
       // chars after the final newline, so the error message is taking up two lines
       let message = error.toString().replace(/\n\xcc\xb2$/, '');
-      this.error(context, message, ast.args.content[0].line, ast.args.content[0].column);
+      this.error(context, message, ast.args.content.line, ast.args.content.column);
       return error_message_in_output(message, context);
     }
   }
@@ -1259,7 +1265,7 @@ exports.convert = convert;
  * An argument contains a list of nodes, loop over that list of nodes,
  * converting them to strings and concatenate all strings.
  *
- * @param {Array[AstNode]} arg
+ * @param {AstArgument} arg
  * @return {String}
  */
 function convert_arg(arg, context) {
@@ -1277,14 +1283,14 @@ function convert_arg(arg, context) {
  * Because IDs are used programmatically in cirodown, we don't escape
  * HTML characters at this point.
  *
- * @param {Array[AstNode]} arg
+ * @param {AstArgument} arg
  * @return {String}
  */
 function convert_arg_noescape(arg, context={}) {
   return convert_arg(arg, clone_and_set(context, 'html_escape', false));
 }
 
-/** @return {Array[AstNode]} */
+/** @return {AstArgument} */
 function convert_include(input_string, options, cur_header_level, href, start_line) {
   const include_options = Object.assign({}, options);
   include_options.from_include = true;
@@ -1325,7 +1331,7 @@ function error_message_in_output(msg, context) {
   e.g. with html_attr_value.
  *
  * @param {String} key
- * @param {Array[AstNode]} arg
+ * @param {AstArgument} arg
  * @return {String} - of form ' a="b"' (with a leading space)
  */
 function html_attr(key, value) {
@@ -1334,7 +1340,7 @@ function html_attr(key, value) {
 
 /** Convert an argument to an HTML attribute value.
  *
- * @param {Array[AstNode]} arg
+ * @param {AstArgument} arg
  * @param {Object} context
  * @return {String}
  */
@@ -1629,7 +1635,7 @@ function parse(tokens, macros, options, extra_returns={}) {
   // but let's not complicate that further either, shall we?
   let cur_header;
   let cur_header_level;
-  let toplevel_parent_arg = []
+  let toplevel_parent_arg = new AstArgument([], 1, 1);
   let todo_visit = [[toplevel_parent_arg, ast_toplevel]];
   const id_context = {'macros': macros};
   // IDs that are indexed: you can link to those.
@@ -1841,7 +1847,7 @@ function parse(tokens, macros, options, extra_returns={}) {
         let arg = ast.args[arg_name];
         // We make the new argument be empty so that children can
         // decide if they want to push themselves or not.
-        const new_arg = [];
+        const new_arg = new AstArgument([], arg.line, arg.column);
         for (const child_node of arg) {
           todo_visit.push([new_arg, child_node]);
         }
@@ -1871,7 +1877,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     extra_returns.context.id_provider = id_provider;
     extra_returns.context.header_graph = new TreeNode();
     extra_returns.context.has_toc = false;
-    let toplevel_parent_arg = []
+    let toplevel_parent_arg = new AstArgument([], 1, 1);
     const todo_visit = [[toplevel_parent_arg, ast_toplevel]];
     while (todo_visit.length > 0) {
       const [parent_arg, ast] = todo_visit.shift();
@@ -1900,14 +1906,14 @@ function parse(tokens, macros, options, extra_returns={}) {
           const message = `skipped a header level from ${header_graph_last_level} to ${ast.level}`;
           ast.args[Macro.TITLE_ARGUMENT_NAME].push(
             new PlaintextAstNode(ast.line, ast.column, ' ' + error_message_in_output(message)));
-          parse_error(state, message, ast.args.level[0].line, ast.args.level[0].column);
+          parse_error(state, message, ast.args.level.line, ast.args.level.column);
         }
         if (cur_header_level < first_header_level) {
           parse_error(
             state,
             `header level ${cur_header_level} is smaller than the level of the first header of the document ${first_header_level}`,
-            ast.args.level[0].line,
-            ast.args.level[0].column
+            ast.args.level.line,
+            ast.args.level.column
           );
         }
         let parent_tree_node = header_graph_stack[cur_header_level - 1];
@@ -2040,7 +2046,7 @@ function parse(tokens, macros, options, extra_returns={}) {
         // Child loop that
         // Adds ul and table implicit parents.
         {
-          const new_arg = [];
+          const new_arg = new AstArgument([], arg.line, arg.column);
           for (let i = 0; i < arg.length; i++) {
             let child_node = arg[i];
             let new_child_nodes = [];
@@ -2063,7 +2069,7 @@ function parse(tokens, macros, options, extra_returns={}) {
                   !child_macro.auto_parent_skip.has(ast.macro_name)
                 ) {
                   let start_auto_child_node = child_node;
-                  const new_arg_auto_parent = [];
+                  const new_arg_auto_parent = new AstArgument([], child_node.line, child_node.column);
                   while (i < arg.length) {
                     const arg_i = arg[i];
                     if (arg_i.node_type === AstType.MACRO) {
@@ -2115,7 +2121,7 @@ function parse(tokens, macros, options, extra_returns={}) {
             }
           }
           if (paragraph_indexes.length > 0) {
-            const new_arg = [];
+            const new_arg = new AstArgument([], arg.line, arg.column);
             if (paragraph_indexes[0] > 0) {
               parse_add_paragraph(state, ast, new_arg, arg, 0, paragraph_indexes[0]);
             }
@@ -2135,7 +2141,7 @@ function parse(tokens, macros, options, extra_returns={}) {
         // Push children to continue the search. We make the new argument be empty
         // so that children can decide if they want to push themselves or not.
         {
-          const new_arg = [];
+          const new_arg = new AstArgument([], arg.line, arg.column);
           for (const child_node of arg) {
             todo_visit.push([new_arg, child_node]);
           }
@@ -2277,9 +2283,6 @@ function parse_macro(state) {
         // Parse the argument name out.
         parse_consume(state);
       }
-      console.error(open_argument_line);
-      console.error(open_argument_column);
-      console.error();
       let arg_children = new AstArgument([], open_argument_line, open_argument_column);
       while (
         state.token.type !== TokenType.POSITIONAL_ARGUMENT_END &&
@@ -2658,7 +2661,7 @@ const DEFAULT_MACRO_LIST = [
         let show = convert_arg_noescape(show_arg, context);
         if (!(show === '0' || show === '1')) {
           let message = `show must be 0 or 1: "${level}"`;
-          this.error(context, message, show_arg, show_arg[0].column);
+          this.error(context, message, show_arg, show_arg.column);
           return error_message_in_output(message, context);
         }
         do_show = (show === '1');
@@ -3033,7 +3036,7 @@ const DEFAULT_MACRO_LIST = [
       const target_id_ast = context.id_provider.get(target_id);
       if (target_id_ast === undefined) {
         let message = `cross reference to unknown id: "${target_id}"`;
-        this.error(context, message, ast.args.href[0].line, ast.args.href[0].column);
+        this.error(context, message, ast.args.href.line, ast.args.href.column);
         return error_message_in_output(message, context);
       }
       const content_arg = ast.args.content;

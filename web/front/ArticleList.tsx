@@ -182,7 +182,7 @@ const ArticleList = ({
                       const title = <>
                         {isIssue &&
                           <th className="shrink">
-                            <span class="icon">#</span> id
+                            <span className="icon">#</span> id
                           </th>
                         }
                         <th className="expand">{ itemType === 'discussion' ? <IssueIcon /> : <ArticleIcon /> } Title</th>

@@ -22,6 +22,8 @@ Non-toplevel: \x[internal-cross-references].
 == Not the README header with scope
 {scope}
 
+\x[not-the-readme-header-with-scope-child]
+
 === Not the README header with scope child
 
 == Not the README header with fixed case

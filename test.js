@@ -2,6 +2,7 @@ const assert = require('assert');
 const util = require('util');
 
 const cirodown = require('cirodown')
+const cirodown_nodejs = require('cirodown/nodejs');
 
 const convert_opts = {
   body_only: true,
@@ -1069,7 +1070,7 @@ assert_error('cross reference from image title after without x content without i
 `,
   3, 18
 );
-assert_no_error("internal cross references work with scope don't throw",
+assert_no_error("internal cross references work with header scope and don't throw",
 `= h1
 
 \\x[h2-1/h3-1].
@@ -1077,9 +1078,11 @@ assert_no_error("internal cross references work with scope don't throw",
 == h2 1
 {scope}
 
+\\x[h3-1]
+
 === h3 1
 
-\\x[h3-2].
+\\x[h3-2]
 
 \\x[/h2-2]
 
@@ -1312,6 +1315,7 @@ assert_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 3);
 
 // Include.
 const include_opts = {extra_convert_opts: {
+  file_provider: new cirodown_nodejs.ZeroFileProvider(),
   html_single_page: true,
   read_include: function(input_path) {
     if (input_path === 'include-one-level-1') {

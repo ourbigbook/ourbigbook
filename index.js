@@ -7,17 +7,17 @@ class AstNode {
   /**
    * @param {AstType} node_type -
    * @param {Object} macros - dict of all String macro_name to Macro
-   * @param {String} macro_name - if node_type === AstType.PLAINTEXT: fixed to 'plaintext'
+   * @param {String} macro_name - if node_type === AstType.PLAINTEXT: fixed to AstType.PLAINTEXT_MACRO_NAME
    *                              elif node_type === AstType.PARAGRAPH: fixed to undefined
    *                              else: arbitrary regular macro
-   * @param {Object[String, Array[AstNode]|String]} args -
-   *        If type is AstType.MACRO, and the type is `Object[String, Array[AstNode]`.
-   *        Otherwise, the type is Sring.
+   * @param {Object[String, Array[AstNode]]} args - dict of arg names to arguments.
+   *        where arguments are arrays of AstNode
    * @param {Number} line - the best representation of where the macro is starts in the document
    *                        used primarily to present useful debug messages
    * @param {Number} column
+   * @param {String} text - the text content of an AstType.PLAINTEXT, undefined for other types
    */
-  constructor(node_type, macros, macro_name, args, line, column) {
+  constructor(node_type, macros, macro_name, args, line, column, text) {
     this.node_type = node_type;
     this.macro_name = macro_name;
     this.args = args;
@@ -27,26 +27,12 @@ class AstNode {
     this.id = undefined;
     this.macro = macros[this.macro_name];
     this.macro_count = undefined;
+    this.text = text
 
     // Only for headers.
     this.level = undefined;
     // {TreeNode}
     this.header_tree_node = undefined;
-
-    // Set all non-given arguments to empty plaintext nodes by default,
-    // and store which args were given or not.
-    this.args_given = new Set();
-    if (this.node_type === AstType.MACRO) {
-      for (const arg_name in this.macro.name_to_arg) {
-        if (arg_name in this.args) {
-          this.args_given.add(arg_name);
-        } else {
-          // Default arguments not given to ''.
-          this.args[arg_name] = [new AstNode(
-            AstType.PLAINTEXT, macros, 'plaintext', '', this.line, this.column)];
-        }
-      }
-    }
 
     // Set the parents of all children.
     this.parent_node = undefined;
@@ -55,10 +41,6 @@ class AstNode {
         this.args[arg_name].parent_node = this;
       }
     }
-  }
-
-  arg_given(arg_name) {
-    return this.args_given.has(arg_name);
   }
 
   /**
@@ -110,15 +92,8 @@ class AstNode {
   }
 
   toJSON() {
-    let args;
-    if (this.node_type === AstType.MACRO) {
-      args = object_subset(this.args, this.args_given);
-    } else {
-      // Plaintext nodes.
-      args = this.args;
-    }
     return {
-      args:       args,
+      args:       this.args,
       column:     this.column,
       line:       this.line,
       macro_name: this.macro_name,
@@ -394,7 +369,7 @@ class Macro {
         ret += `</span>`;
       }
     }
-    if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
+    if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
       if (options.style === XStyle.full) {
         ret += html_escape_context(context, `. `);
         if (options.quote)
@@ -414,10 +389,19 @@ Macro.HEADER_MACRO_NAME = 'h';
 Macro.ID_ARGUMENT_NAME = 'id';
 Macro.LINK_SELF = `(${UNICODE_LINK} link)`;
 Macro.PARAGRAPH_MACRO_NAME = 'p';
+Macro.PLAINTEXT_MACRO_NAME = 'plaintext';
 Macro.TITLE_ARGUMENT_NAME = 'title';
 Macro.TOC_MACRO_NAME = 'toc';
 Macro.TOC_PREFIX = 'toc-'
 Macro.TOPLEVEL_MACRO_NAME = 'toplevel';
+
+/** Helper to create plaintext nodes, since so many of the fields are fixed in that case. */
+class PlaintextAstNode extends AstNode {
+  constructor(macros, line, column, text) {
+    super(AstType.PLAINTEXT, macros, Macro.PLAINTEXT_MACRO_NAME,
+      {}, line, column, text);
+  }
+}
 
 class Token {
   /**
@@ -982,7 +966,7 @@ function html_convert_attrs(
     args.push([arg_name, custom_args[arg_name]]);
   }
   for (const arg_name of arg_names) {
-    if (ast.arg_given(arg_name)) {
+    if (arg_name in ast.args) {
       args.push([arg_name, ast.args[arg_name]]);
     }
   }
@@ -1014,8 +998,8 @@ function html_convert_attrs_id(
   ast, context, arg_names=[], custom_args={}
 ) {
   if (ast.id !== undefined) {
-    custom_args[Macro.ID_ARGUMENT_NAME] = [new AstNode(AstType.PLAINTEXT, context.macros,
-        'plaintext', ast.id, ast.line, ast.column)];
+    custom_args[Macro.ID_ARGUMENT_NAME] = [
+        new PlaintextAstNode(context.macros, ast.line, ast.column, ast.id)];
   }
   return html_convert_attrs(ast, context, arg_names, custom_args);
 }
@@ -1083,7 +1067,11 @@ function html_convert_simple_elem(elem_name, options={}) {
       link_to_self = `<span class="hide-hover"> <a${href}>${Macro.LINK_SELF}</a></span>\n`;
     }
     let attrs = html_convert_attrs_id(ast, context);
-    let content = convert_arg(ast.args.content, context);
+    let content_ast = ast.args.content;
+    if (content_ast === undefined) {
+      content_ast = [new PlaintextAstNode(macros, ast.line, ast.column, '')];
+    }
+    let content = convert_arg(content_ast, context);
     return `<${elem_name}${attrs}>${newline_after_open_str}${content}${link_to_self}</${elem_name}>${newline_after_close_str}`;
   };
 }
@@ -1185,7 +1173,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     // Calculate node ID and add it to the ID index.
     let index_id = true;
     let id_text = undefined;
-    if (ast.arg_given(Macro.ID_ARGUMENT_NAME)) {
+    if (Macro.ID_ARGUMENT_NAME in ast.args) {
       ast.id = convert_arg_noescape(ast.args[Macro.ID_ARGUMENT_NAME], id_context);
     } else {
       let id_text = '';
@@ -1193,10 +1181,10 @@ function parse(tokens, macros, options, extra_returns={}) {
       if (id_prefix !== '') {
         id_text += id_prefix + ID_SEPARATOR
       }
-      if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
+      if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
         // ID from title.
         // TODO correct unicode aware algorithm.
-        id_text += title_to_id(convert_arg_noescape(ast.args.title, id_context));
+        id_text += title_to_id(convert_arg_noescape(ast.args[Macro.TITLE_ARGUMENT_NAME], id_context));
         ast.id = id_text;
       } else if (!ast.macro.properties.phrasing) {
         // ID from element count.
@@ -1229,7 +1217,8 @@ function parse(tokens, macros, options, extra_returns={}) {
           message += `file ${input_path} `;
         }
         message += `line ${previous_ast.line} colum ${previous_ast.column}`;
-        parse_error(state, message, ast.args.line, ast.args.column);
+        console.log(ast.args);
+        parse_error(state, message, ast.line, ast.column);
       }
     }
 
@@ -1501,7 +1490,7 @@ function parse_macro(state) {
       return new AstNode(
         macro_type,
         state.macros,
-        'plaintext',
+        Macro.PLAINTEXT_MACRO_NAME,
         error_message_in_output(unknown_macro_message),
         state.token.line,
         state.token.column
@@ -1511,13 +1500,11 @@ function parse_macro(state) {
     }
   } else if (state.token.type === TokenType.PLAINTEXT) {
     // Non-recursive case.
-    let node = new AstNode(
-      AstType.PLAINTEXT,
+    let node = new PlaintextAstNode(
       state.macros,
-      'plaintext',
-      state.token.value,
       state.token.line,
-      state.token.column
+      state.token.column,
+      state.token.value,
     );
     // Consume the PLAINTEXT node out.
     parse_consume(state);
@@ -1539,13 +1526,11 @@ function parse_macro(state) {
       state,
       `unexpected token ${state.token.type.toString()}`
     );
-    let node = new AstNode(
-      AstType.PLAINTEXT,
+    let node = new PlaintextAstNode(
       state.macros,
-      'plaintext',
-      error_message_in_output('unexpected token'),
       state.token.line,
-      state.token.column
+      state.token.column,
+      error_message_in_output('unexpected token'),
     );
     // Consume past whatever happened to avoid an infinite loop.
     parse_consume(state);
@@ -1609,10 +1594,8 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      let content_arg;
-      if (ast.arg_given('content')) {
-        content_arg = ast.args.content;
-      } else {
+      let content_arg = ast.args.content;
+      if (content_arg === undefined) {
         content_arg = ast.args.href;
       }
       let attrs = html_convert_attrs_id(ast, context, ['href']);
@@ -1703,8 +1686,8 @@ const DEFAULT_MACRO_LIST = [
         return error_message_in_output(message, context);
       }
       if (level_int > 6) {
-        custom_args = {'data-level': [new AstNode(AstType.PLAINTEXT,
-          context.macros, 'plaintext', level, ast.line, ast.column)]};
+        custom_args = {'data-level': [new PlaintextAstNode(
+          context.macros, ast.line, ast.column, level)]};
         level = '6';
       } else {
         custom_args = {};
@@ -1727,7 +1710,7 @@ const DEFAULT_MACRO_LIST = [
         }
         let parent_ast = ast.header_tree_node.parent_node.value;
         let parent_href = html_attr('href', '#' + parent_ast.id);
-        let parent_body = convert_arg(parent_ast.args.title, context);
+        let parent_body = convert_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
         ret += ` | <a${parent_href}>\u2191 parent "${parent_body}"</a>`;
         ret += `</span>`;
       }
@@ -1777,8 +1760,10 @@ const DEFAULT_MACRO_LIST = [
       let katex_output = this.katex_convert(ast, context);
       let ret = ``;
       let do_show;
-      if (ast.arg_given('show')) {
-        let show_arg = ast.args.show;
+      let show_arg = ast.args.show;
+      if (show_arg === undefined) {
+        do_show = true;
+      } else {
         let show = convert_arg_noescape(show_arg, context);
         if (!(show === '0' || show === '1')) {
           let message = `show must be 0 or 1: "${level}"`;
@@ -1786,13 +1771,11 @@ const DEFAULT_MACRO_LIST = [
           return error_message_in_output(message, context);
         }
         do_show = (show === '1');
-      } else {
-        do_show = true;
       }
       if (do_show) {
         let href = html_attr('href', '#' + html_escape_attr(ast.id));
         ret += `<div class="math-container"${attrs}>`;
-        if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
+        if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
           ret += `<div class="math-caption-container">\n`;
           ret += `<span class="math-caption">${this.x_text(ast, context)}</span>`;
           ret += `<span> <a${href}>${Macro.LINK_SELF}</a></span>\n`;
@@ -1810,7 +1793,7 @@ const DEFAULT_MACRO_LIST = [
       caption_prefix: 'Equation',
       id_prefix: 'eq',
       macro_counts_ignore: function(ast, context) {
-        return ast.arg_given('show') && convert_arg_noescape(ast.args.show, context) === '0';
+        return 'show' in ast.args && convert_arg_noescape(ast.args.show, context) === '0';
       },
       named_args: [
         new MacroArgument({
@@ -1917,14 +1900,14 @@ const DEFAULT_MACRO_LIST = [
     html_convert_simple_elem('p', {link_to_self: true}),
   ),
   new Macro(
-    'plaintext',
+    Macro.PLAINTEXT_MACRO_NAME,
     [
       new MacroArgument({
         name: 'content',
       }),
     ],
     function(ast, context) {
-      return html_escape_context(context, ast.args);
+      return html_escape_context(context, ast.text);
     },
     {
       properties: {
@@ -2019,7 +2002,7 @@ const DEFAULT_MACRO_LIST = [
 
         let parent_ast = target_ast.header_tree_node.parent_node.value;
         let parent_href = html_attr('href', '#' + Macro.TOC_PREFIX + parent_ast.id);
-        let parent_body = convert_arg(parent_ast.args.title, context);
+        let parent_body = convert_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
         ret += ` | <a${parent_href}>\u2191 parent "${parent_body}"</a>`;
 
         ret += `</span></div>`;
@@ -2047,20 +2030,18 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      let title;
-      if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
-        title = ast.args.title;
-      } else {
+      let title = ast.args[Macro.TITLE_ARGUMENT_NAME];
+      if (title === undefined) {
         let text_title;
         if (Macro.TITLE_ARGUMENT_NAME in context.options) {
           text_title = context.options[Macro.TITLE_ARGUMENT_NAME];
         } else if (context.header_graph.children.length > 0) {
-          text_title = convert_arg(context.header_graph.children[0].value.args.title, context);
+          text_title = convert_arg(context.header_graph.children[0].value.args[Macro.TITLE_ARGUMENT_NAME], context);
         } else {
           text_title = 'dummy title because title is mandatory in HTML';
         }
-        title = [new AstNode(AstType.PLAINTEXT, context.macros,
-          'plaintext', text_title, ast.line, ast.column)];
+        title = [new PlaintextAstNode(context.macros,
+          ast.line, ast.column, text_title)];
       }
       let ret = '';
       if (!context.options.body_only) {
@@ -2128,17 +2109,16 @@ const DEFAULT_MACRO_LIST = [
       let id_provider_get = context.id_provider.get(target_id);
       if (id_provider_get !== undefined) {
         [target_input_path, target_id_ast] = id_provider_get;
-        let content;
-        if (ast.arg_given('content')) {
-          content = convert_arg(ast.args.content, context);
-        } else {
+        let content_arg = ast.args.content;
+        if (content_arg === undefined) {
           let x_text_options = {
             caption_prefix_span: false,
             style: target_id_ast.macro.options.x_style,
             quote: true,
           };
-          if (ast.arg_given('style')) {
-            let style_string = convert_arg_noescape(ast.args.style, context);
+          let style = ast.args.style;
+          if (style !== undefined) {
+            let style_string = convert_arg_noescape(style, context);
             if (!(style_string in XStyle)) {
               let message = `unkown x style: "${style_string}"`;
               this.error(context, message, ast.args.style[0].line, ast.args.style[0].column);
@@ -2152,6 +2132,8 @@ const DEFAULT_MACRO_LIST = [
             this.error(context, message, ast.line, ast.column);
             return error_message_in_output(message, context);
           }
+        } else {
+          content = convert_arg(content_arg, context);
         }
         let attrs = html_convert_attrs_id(ast, context);
         let href_path;

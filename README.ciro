@@ -4215,6 +4215,11 @@ npm install
 npm run dev
 ``
 
+You might also want to nuke the current database and create a demo database:
+``
+./bin/generate-demo-data.js
+``
+
 The browser automatically pops the development front-end server at http://localhost:4101[] which makes requests to the backend server that runs at http://localhost:3000[].
 
 = Local optimized frontend

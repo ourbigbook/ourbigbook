@@ -225,6 +225,8 @@ code {
 }
 
 // Paragraph.
+// Can't be p because p can only contain phrasing it is insane:
+// https://stackoverflow.com/questions/7168723/unordered-list-in-a-paragraph-element
 div.p {
   margin-bottom: $p-margin-vert;
   margin-top: $p-margin-vert;

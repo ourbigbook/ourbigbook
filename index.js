@@ -605,6 +605,7 @@ class AstNode {
             scope: ast_json.scope,
             subdir: ast_json.subdir,
             split_default: ast_json.split_default,
+            // TODO: Remove synonym from JSON, use Ref.type = synonym instead
             synonym: ast_json.synonym,
             word_count: ast_json.word_count,
           }
@@ -805,6 +806,7 @@ class AstNode {
       first_toplevel_child: this.first_toplevel_child,
       is_first_header_in_input_file: this.is_first_header_in_input_file,
       split_default: this.split_default,
+      // TODO: Remove synonym from JSON, use Ref.type = synonym instead
       synonym:    this.synonym,
       word_count: this.word_count,
     }

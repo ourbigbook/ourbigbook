@@ -3761,3 +3761,30 @@ it('api: synonym rename', async () => {
       assertStatus(status, data)
   })
 })
+
+it('api: uppercase article IDs are forbidden', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+
+    // The only way to currently obtain them on toplevel article is with the path: argument.
+    // id= does nothing on web as of writing as it gets overridden by path:.
+    article = createArticleArg({ i: 0, titleSource: 'Aa' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { path: 'bB' }))
+    assert.strictEqual(status, 422)
+
+    // Similar for synonym subobjects.
+    // TODO: Forbid uppercase IDs on web and CLI by default
+    //article = createArticleArg({ i: 0, titleSource: 'Aa', bodySource: '= Bb\n{synonym}\n{id=cC}\n' })
+    //;({data, status} = await createOrUpdateArticleApi(test, article))
+    //assert.strictEqual(status, 422)
+
+    // Similar for other subobjects.
+    // TODO: Forbid uppercase IDs on web and CLI by default
+    //article = createArticleArg({ i: 0, titleSource: 'Aa', bodySource: '\\Image[tmp.png]{id=cC}' })
+    //;({data, status} = await createOrUpdateArticleApi(test, article))
+    //assert.strictEqual(status, 422)
+  })
+})

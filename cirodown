@@ -521,13 +521,12 @@ function* walk_files_recursively(file_or_dir, skip_basenames) {
 commander.option('--body-only', 'output only the content inside the HTLM body element', false);
 commander.option('--debug-perf', 'https://cirosantilli.com/linux-kernel-module-cheat#debug-perf', false);
 commander.option('--dry-run', "don't run most external commands, see: https://github.com/cirosantilli/linux-kernel-module-cheat/tree/6d0a900f4c3c15e65d850f9d29d63315a6f976bf#dry-run-to-get-commands-for-your-project", false);
+commander.option('--embed-includes', 'http://cirosantilli.com/cirodown#embed-include', false);
+commander.option('--embed-resources', 'http://cirosantilli.com/cirodown#embed-resources', false);
 commander.option('--generate', 'http://cirosantilli.com/cirodown#generate', false);
 commander.option('--generate-redirects', 'http://cirosantilli.com/cirodown#redirects', false);
 commander.option('--generate-multifile', 'http://cirosantilli.com/cirodown#generate-multifile', false);
 commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown/#', false);
-commander.option('--html-embed', 'http://cirosantilli.com/cirodown#html-embed', false);
-commander.option('--html-single-page', 'http://cirosantilli.com/cirodown#html-single-page', false);
-commander.option('--html-split-header', 'http://cirosantilli.com/cirodown#html-split-header', false);
 commander.option('--no-html-x-extension', 'http://cirosantilli.com/cirodown#no-html-x-extension');
 commander.option('--no-db', 'ignore the ID database, mostly for testing https://cirosantilli.com/cirosantilli#internal-cross-file-references-internals');
 commander.option('--outdir <outdir>', 'if the output would be saved to a file e.g. when building a directory, use this directory as the root');
@@ -535,6 +534,7 @@ commander.option('-o, --outfile <outfile>', 'http://cirosantilli.com/cirodown#ou
 commander.option('-O, --output-format <output-format>', 'https://cirosantilli.com/cirodown#output-format', 'html');
 commander.option('-p --publish', 'http://cirosantilli.com/cirodown#publish', false);
 commander.option('-P, --publish-commit <commit-message>', 'http://cirosantilli.com/cirodown#publish-commit');
+commander.option('--split-headers', 'http://cirosantilli.com/cirodown#split-header', false);
 commander.option('--show-ast', 'print the AST to stderr', false);
 commander.option(
   '--show-ast-inside',
@@ -596,10 +596,9 @@ if (commander.helpMacros) {
   let options = {
     body_only: commander.bodyOnly,
     cirodown_json: cirodown_json,
-    html_embed: commander.htmlEmbed,
+    embed_includes: commander.embedIncludes,
+    embed_resources: commander.embedResources,
     html_x_extension: html_x_extension,
-    html_single_page: commander.htmlSinglePage,
-    html_split_header: commander.htmlSplitHeader,
     output_format: commander.outputFormat,
     outfile: commander.outfile,
     path_sep: path.sep,
@@ -637,6 +636,7 @@ if (commander.helpMacros) {
     show_parse: commander.showParse,
     show_tokens: commander.showTokensInside,
     show_tokenize: commander.showTokenize,
+    split_header: commander.splitHeader,
     template_vars: {},
     xss_unsafe: commander.xssUnsafe,
   };

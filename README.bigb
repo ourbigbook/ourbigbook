@@ -6261,6 +6261,12 @@ npm install &&
 ``
 where:
 * `npm run build-assets` needs to be re-run if any assets (e.g. CSS or Js file mentioned at <overview of files in this repository>) on the `./ourbigbook/` toplevel are modified. No need to re-run it for changes under `web/`.
+
+  To develop files from outside `web/`, also consider:
+  ``
+  npm run webpack-dev
+  ``
+  as mentioned at: <`dist` directory>.
 * \a[web/bin/generate-demo-data.js] also creates the database and is not optional. If you want to start with an empty database instead of the demo one, you can run instead \a[web/bin/sync-db.js]:
   ``
   ./bin/sync-db
@@ -7445,24 +7451,34 @@ Source files:
 * \a[ourbigbook_runtime.js]: <runtime features>
 * \a[main.scss] this file simply contains the customized CSS for https://docs.ourbigbook.com/[] and does not get otherwise distributed with OurBigBook, see: <CSS>
 
-Generated files:
-* `dist/` contains fully embedded packaged versions that work on browsers as per common JavaScript package naming convention. All the following files are generated with Webpack with:
-  ``
-  npm run webpack
-  ``
-  , which is called from `npm run build-assets`. If you are developing just one of those files interactively, e.g. just the CSS or just the JavaScript;, you could speed thing up a bit by using watch mode, which only recompiles what is needed:
-  ``
-  npm run webpack -- -w
-  ``
-  * `dist/ourbigbook.js`: OurBigBook <JavaScript API> converter for browser usage. The source entrypoint for it is located at \a[index.js]. Contains the code of every single dependency used from `node_modules` used by `index.js`. This is notably used for the live-preview of a <browser editor with preview>.
-  * `dist/ourbigbook_runtime.js`: similar `dist/ourbigbook.js`, but contains the converted output of \a[ourbigbook_runtime.js]. You should include this in every OurBigBook HTML output.
-  * `dist/ourbigbook.css`: minimized CSS needed to view OurBigBook output as intended. Embeds all OurBigBook CSS dependencies, notably the KaTeX CSS without which <mathematics> displays as garbage. The Sass entry point for it is: \a[ourbigbook.scss].
-  * `dist/editor.css`: the CSS of the editor, rendered from \a[editor.scss].
-  TODO it would be good to get a dev server running somehow, the following fails because it serves under `localhost`: When developing those output files under `dist`, you may want to run the webpack development server with:
-  ``
-  npm run webpack-dev
-  ``
-  This automatically reconverts when the input source files are modified, and does not optimize assets, leading to a faster conversion and easier debugging.
+= Generated files
+{parent=Overview of files in this repository}
+
+= `dist/` directory
+{parent=Generated files}
+
+`dist/` contains fully embedded packaged versions that work on browsers as per common JavaScript package naming convention. All the following files are generated with Webpack with:
+``
+npm run webpack
+``
+which is called from `npm run build-assets`.
+
+The files in that directory are:
+* `dist/ourbigbook.js`: OurBigBook <JavaScript API> converter for browser usage. The source entry point for it is located at \a[index.js]. Contains the code of every single dependency used from `node_modules` used by `index.js`. This is notably used for the live-preview of a <browser editor with preview>.
+* `dist/ourbigbook_runtime.js`: similar `dist/ourbigbook.js`, but contains the converted output of \a[ourbigbook_runtime.js]. You should include this in every OurBigBook HTML output.
+* `dist/ourbigbook.css`: minimized CSS needed to view OurBigBook output as intended. Embeds all OurBigBook CSS dependencies, notably the KaTeX CSS without which <mathematics> displays as garbage. The Sass entry point for it is: \a[ourbigbook.scss].
+* `dist/editor.css`: the CSS of the editor, rendered from \a[editor.scss].
+
+To develop these files, you absolutely want to use:
+``
+npm run webpack-dev
+``
+This runs Webpack in development mode, which has two huge advantages:
+* almost instantaneous compilation, as opposed to the unbearable 5 seconds+ of an optimized build
+* source maps are enabled, so you can see the fully: https://blog.jakoblind.no/debug-webpack-app-browser/
+`npm run webpack-dev` also enables watch mode, so it keeps running until you turn it off.
+
+This setup also works seamlessly when <OurBigBook Web development>[developing OurBigBook Web], just let the watch process run in a separate terminal.
 
 = The `out` directory
 {parent=Overview of files in this repository}

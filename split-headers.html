@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>-S, --split-headers - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="split-headers"><div class="notnav"><h1><a href=""><code>-S</code>, <code>--split-headers</code> <span class="meta">(Split headers)</span></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-cli"> OurBigBook CLI</a><a href=".#ourbigbook-cli-options"> OurBigBook CLI options</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#split-headers"></a><span class="metrics"><span class="wcntr"> Words: 502</span><span class="dcnt"> Articles: 1</span></span></div></nav></div><div class="p" id="_3413">Split each header into its own separate HTML output file.</div><div class="p" id="_3414">This option allows you to keep all headers in a single source file, which is much more convenient than working with a billion separate source files, and let them grow naturally as new information is added, but still be able to get a small output page on the rendered website that contains just the content of the given header. Such split pages:<div class="list"><ul id="_3415"><li id="_3416">load faster on the browser</li><li id="_3417">get way better Google PageRank for title hits</li><li id="_3418">allow for full metadata display, e.g.:<div class="list"><ul id="_3419"><li id="_3420"><a href=".#header-metadata-section">Header metadata section</a></li><li id="_3421"><a href="https://en.wikipedia.org/wiki/Disqus">Disqus</a>/<a href="https://github.com/giscus/giscus">Giscus</a> comments</li></ul></div></li></ul></div></div><div class="p" id="_3422">For example given an input file called <code>hello.bigb</code> and containing:<div class="code" id="_3423"><div><pre><code>= h1
+
+h1 content.
+
+A link to another section: \x[h1-1].
+
+== h1 1
+
+h1-1 content.
+
+== h1 1 1
+
+h1-1-1 content.
+
+== h1 1 2
+
+h1-1-2 content.</code></pre></div></div>a conversion command:<div class="code" id="_3424"><div><pre><code>ourbigbook --split-headers hello.bigb</code></pre></div></div>would produce the following output files:<div class="list"><ul id="_3425"><li id="_3426"><div class="p" id="_3427"><code>hello.html</code>: contains the entire rendered document as usual.</div><div class="p" id="_3428">Remember that this is called <code>hello.html</code> instead of <code>h1.html</code> because <a href=".#the-toplevel-header">the toplevel header ID is automatically derived from its filename</a>.</div><div class="p" id="_3429">Each header contains a on-hover link to the single-file split version of the header.</div></li><li id="_3430"><code>hello-split.html</code>: contains only the contents directly under <code>= h1</code>, but not under any of the subheaders, e.g.:<div class="list"><ul id="_3431"><li id="_3432"><code>h1 content.</code> appears in this rendered output</li><li id="_3433"><code>h1-1-1</code> does not appear in this rendered output</li></ul></div>The <code>-split</code> suffix can be customized with the <a href=".#h-splitsuffix-argument"><code>\H</code> <code>splitSuffix</code> argument</a> option.<br>The <code>-split</code> suffix is appended in order to differentiate the output path from <code>hello.html</code></li><li id="_3434"><code>h1-1.html</code>, <code>h1-1-1.html</code>, <code>h1-1-2.html</code>: contain only the contents direcly under their headers, analogously to <code>hello-split.html</code>, but now we don't need to worry about the input filename and collisiont, and just directly use the ID of each header</li></ul></div></div><div class="p" id="_3435"><code>--split-headers</code> is implied by the <a href=".#p-publish"><code>--publish</code> option</a>: the published website will automatically get the split pages. There is no way to turn it off currently. A pull request would be accepted, especially if it offers a <a href=".#ourbigbook-json"><code>ourbigbook.json</code></a> way to do it. Maybe it would be nice to have a more generalized way of setting any CLI option equivalent from the <code>ourbigbook.json</code>, and an option <code>cli</code> vs <code>cli-publish</code> so that <code>cli-publish</code> is publish only. Just lazy for now/not enough pressing use case met.</div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"></input><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 502</span><span class="dcnt"> 1</span></span></span></span></div><ul><li><div id="_toc/internal-link-targets-in-split-headers"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#internal-link-targets-in-split-headers">Internal link targets in split headers</a><span class="hover-metadata"><a class="nosplit" href=".#internal-link-targets-in-split-headers"></a><a href="#_toc" class="u"> <code>-S</code>, <code>--split-headers</code></a><span class="metrics"><span class="wcntr"> 136</span></span></span></span></div></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-cli-options">OurBigBook CLI options</a></li><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(19)</span></a></h2><div class="list"><ul><li><a href=".#a-href-argument"><code>\a</code> <code>href</code> argument</a></li><li><a href=".#conversion-process-overview">Conversion process overview</a></li><li><a href=".#features">Features</a></li><li><a href=".#file-output-directory"><code>_file</code> output directory</a></li><li><a href=".#h-file-argument"><code>\H</code> <code>file</code> argument</a></li><li><a href=".#h-splitdefault-argument"><code>\H</code> <code>splitDefault</code> argument</a></li><li><a href=".#h-splitsuffix-argument"><code>\H</code> <code>splitSuffix</code> argument</a></li><li><a href=".#h-synonym-argument"><code>\H</code> <code>synonym</code> argument</a></li><li><a href=".#h-toplevel-argument"><code>\H</code> <code>toplevel</code> argument</a></li><li><a href=".#horizontal-rule">Horizontal rule</a></li><li><a href=".#important-command-line-options">Important command line options</a></li><li><a href=".#internal-link-targets-in-split-headers">Internal link targets in split headers</a></li><li><a href=".#internal-path-links-are-smart">Internal path links are smart</a></li><li><a href=".#javascript-redirect-to-split-on-missing-id">JavaScript redirect to split on missing ID</a></li><li><a href=".#link-to-ids-not-url-path">Link to IDs, not URL path</a></li><li><a href=".#more-powerful">More powerful</a></li><li><a href=".#motivation">Motivation</a></li><li><a href=".#ourbigbook-json/outputoutoftree"><code>outputOutOfTree</code></a></li><li><a href=".#ourbigbook-web-dynamic-article-tree">OurBigBook Web dynamic article tree</a></li></ul></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#split-headers">Split header</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

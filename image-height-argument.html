@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Image height argument - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="image-height-argument"><div class="notnav"><h1><a href="">Image <code>height</code> argument</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#image"> Image</a><a href=".#image-argument"> Image argument</a></div><div class="nav"><span class="tags"> Tags: <a href=".#positive-nonzero-integer-argument">Positive nonzero integer argument</a></span><a class="nosplit" href=".#image-height-argument"></a><span class="metrics"><span class="wcntr"> Words: 184</span></span></div></nav></div><div class="p" id="_1454">By default, we fix image heights to <code>height=315</code>, and let the <code>width</code> be calculated proportionally once the image loads. We therefore ignore the actual image size. This is done to:<div class="list"><ul id="_1455"><li id="_1456">prevent reflows as the page loads images and can determine their actual sizes, especially is the user opens the page at a given ID in the middle of the page</li><li id="_1457">create a more uniform media experience by default, unless a custom image size is actually needed e.g. if the image needs to be larger</li></ul></div>When the <a href=".#mobile-guidelines">viewport is narrow enough</a>, mobile CSS takes over and forces block images to fill 100% of the page width instead, removing the scrollbar.</div><div class="p" id="_1458"><a href=".#inline-image">Inline images</a> on the other hand never get a horizontal scrollbar, they are just always capped at viewport width.</div><div class="p" id="_1459">When the <code>height</code> argument is given, it changes that default height. Width is still just calculated proportionally to this new custom height.</div><div class="p" id="_1460"><div class="code" id="_1461"><div><pre><code>\Image[logo.svg]
+{height=150}</code></pre></div></div><div class="p" id="_1462">which renders as:</div><div><blockquote id="_1463"><div class="figure"><figure id="_1464"><div class="float-wrap"><a href="_raw/logo.svg"><img src="_raw/logo.svg" loading="lazy" height="150" alt="logo.svg"></a></div></figure></div></blockquote></div></div><div class="p" id="_1465"><div class="code" id="_1466"><div><pre><code>\Image[logo.svg]
+{height=550}</code></pre></div></div><div class="p" id="_1467">which renders as:</div><div><blockquote id="_1468"><div class="figure"><figure id="_1469"><div class="float-wrap"><a href="_raw/logo.svg"><img src="_raw/logo.svg" loading="lazy" height="550" alt="logo.svg"></a></div></figure></div></blockquote></div></div><div class="p" id="_1470">Here's a very long test image:</div><div class="figure"><figure id="image-very-long-test-image"><div class="float-wrap"><a href="https://upload.wikimedia.org/wikipedia/commons/4/45/Qian_Xuan_-_Early_Autumn.jpg"><img src="https://upload.wikimedia.org/wikipedia/commons/4/45/Qian_Xuan_-_Early_Autumn.jpg" loading="lazy" height="600"></a></div><figcaption><a href="#image-very-long-test-image"><span class="caption-prefix">Figure 39. </span></a><div class="title">Very long test image</div>. <a href="https://commons.wikimedia.org/wiki/File:Qian_Xuan_-_Early_Autumn.jpg">Source</a>. And some tall inline maths: <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">a</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">b</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>.</figcaption></figure></div><div class="p" id="_1471">Here's a very long inline <a href="https://upload.wikimedia.org/wikipedia/commons/4/45/Qian_Xuan_-_Early_Autumn.jpg"><img src="https://upload.wikimedia.org/wikipedia/commons/4/45/Qian_Xuan_-_Early_Autumn.jpg" loading="lazy" height="315" alt="https://upload.wikimedia.org/wikipedia/commons/4/45/Qian_Xuan_-_Early_Autumn.jpg"  class="inline"></a> test image:</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#image-argument">Image argument</a></li><li><a href=".#image">Image</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#image-width-argument">Image <code>width</code> argument</a></li></ul></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#image-height-argument">Image height</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>TODO / Tags show up twice under scopes - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="tags-show-up-twice-under-scopes"><div class="notnav"><h1><a href="../todo">TODO</a><span class="meta"> / </span><a href="">Tags show up twice under scopes</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="../todo"> TODO</a><a href="../todo#closed-issues"> Closed issues</a></div><div class="nav"><span class="tags"> Tags: <a href="../todo#scope">Scope</a>, <a href="../todo#web">Web</a></span><a class="nosplit" href="../todo#tags-show-up-twice-under-scopes"></a><span class="metrics"><span class="wcntr"> Words: 86</span></span></div></nav></div><div class="p" id="_692">Happens on CLI, though was first noticed, and most important, on Web due to the all present user prefix.</div><div class="p" id="_693">Was already fully present on the previous deployment but we just completely missed it, e.g.: <a href="https://ourbigbook.com/cirosantilli/physics#physics-education-needs-more-focus-on-understanding-experiments-and-their-history">ourbigbook.com/cirosantilli/physics#physics-education-needs-more-focus-on-understanding-experiments-and-their-history</a></div><div class="p" id="_694">Minimal CLI example to reproduce:</div><div class="p" id="_695">subdir/asdf.bigb</div><div class="code" id="_696"><div><pre><code>= asdf</code></pre></div></div><div class="p" id="_697">subdir/qwer.bigb</div><div class="code" id="_698"><div><pre><code>= qwer
+{tag=asdf}</code></pre></div></div><div class="p" id="_699">Then in the rendering of <code>subdir/qwer.html</code>, the tag <code>asdf</code> appears twice.</div><div class="p" id="_700">The root cause is that scope resolution is finding the same thing twice, one as <code>subdir/asdf</code> and then once again with just <code>asdf</code> (which is then correctly resolved).</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href="../todo#closed-issues">Closed issues</a></li><li><a href="../todo">TODO</a></li><li><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href="../todo#tags-show-up-twice-under-scopes">Each header tag shows up twice on web</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/todo.bigb">todo.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "todo/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

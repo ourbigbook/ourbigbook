@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>\H file argument - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="h-file-argument"><div class="notnav"><h1><a href=""><code>\H</code> <code>file</code> argument</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#header"> Header</a><a href=".#h-arguments"> <code>\H</code> arguments</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#h-file-argument"></a><span class="metrics"><span class="wcntr"> Words: 624</span><span class="dcnt"> Articles: 12</span></span></div></nav></div><div class="p" id="_855">If given, the current section contains metadata about file or other resource with the given URL.</div><div class="p" id="_856">If empty, the URL of the file is extracted directly from the header. Otherwise, the given URL is used.</div><div class="p" id="_857">for example:<div class="code" id="_858"><div><pre><code>= path/to/myfile.c
+{file}
+
+An explanation of what this file is about.</code></pre></div></div>renders a bit like:<div class="code" id="_859"><div><pre><code>= path/to/myfile.c
+{id=_file/path/to/myfile.c}
+
+An explanation of what this file is about.
+
+\a[path/to/myfile.c]
+
+``
+// Contents of path/to/myfile.c
+int main() {
+  return 1;
+}
+``</code></pre></div></div>so note how:<div class="list"><ul id="_860"><li id="_861"><div class="p" id="_862"><a href=".#automatic-id-from-title">automatic ID from title</a> does not normalize the path, e.g. it does not convert <code>/</code> to <code>-</code>.</div><div class="p" id="_863">Also, a <a href=".#file-output-directory"><code>_file/</code> prefix</a> is automatically added to the ID. This is needed with <a href=".#split-headers"><code>-S</code>, <code>--split-headers</code></a> to avoid a collision between:<div class="list"><ul id="_864"><li id="_865"><code>path/to/myfile.c</code>: the actual file</li><li id="_866"><code>_file/path/to/myfile.c</code>: the metadata about that file. Note that locally the <code>.html</code> extension is added as in <code>file/path/to/myfile.c.html</code> which avoids the collision. But on a server deployment, the <code>.html</code> is not present, and there would be a conflict if we didn't add that <code>file/</code> prefix.</li></ul></div></div></li><li id="_867">a link to the is added automatically, since users won't be able to click it from the header, as clicking on the header will just link to the header itself</li><li id="_868">a preview is added. The type of preview is chosen as follows:<div class="list"><ul id="_869"><li id="_870">if the URL has an image extension, do an <a href=".#image">image</a> preview</li><li id="_871">otherwise if the URL has a video extension, or is a YouTube URL, do a <a href=".#video">video</a> preview</li><li id="_872">otherwise, don't show a preview, as we don't know anything sensible to show</li></ul></div></li></ul></div></div><div class="p" id="_873">In some cases however, especially when dealing with external URLs, we might want to have a more human readable title with a non empty <code>file</code> argument:<div class="code" id="_874"><div><pre><code>The video \x[tank-man-by-cnn-1989] is very useful.
+
+= Tank Man by CNN (1989)
+{c}
+{file=https://www.youtube.com/watch?v=YeFzeNAHEhU}
+
+An explanation of what this video is about.</code></pre></div></div>which renders something like:<div class="code" id="_875"><div><pre><code>The video \x[tank-man-by-cnn-1989] is very useful.
+
+= Tank Man by CNN (1989)
+{id=_file/https://www.youtube.com/watch?v=YeFzeNAHEhU}
+
+\Video[https://www.youtube.com/watch?v=YeFzeNAHEhU]
+
+An explanation of what this video is about.</code></pre></div></div></div><div class="p" id="_876">To make <a href=".#internal-link">internal links</a> to <code>{file}</code> headers, use the <a href=".#x-file-argument"><code>\x</code> <code>file</code> argument</a>.</div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"></input><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 624</span><span class="dcnt"> 12</span></span></span></span></div><ul><li><div id="_toc/h-file-argument-toplevel-header"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#h-file-argument-toplevel-header"><code>\H</code> <code>file</code> argument toplevel header</a><span class="hover-metadata"><a class="nosplit" href=".#h-file-argument-toplevel-header"></a><a href="#_toc" class="u"> <code>\H</code> <code>file</code> argument</a><span class="metrics"><span class="wcntr"> 104</span></span></span></span></div></li><li><div id="_toc/file-input-directory"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#file-input-directory"><code>_file</code> input directory</a><span class="hover-metadata"><a class="nosplit" href=".#file-input-directory"></a><a href="#_toc" class="u"> <code>\H</code> <code>file</code> argument</a><span class="metrics"><span class="wcntr"> 2</span></span></span></span></div></li><li class="has-child"><div id="_toc/h-file-argument-demo"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#h-file-argument-demo"><code>\H</code> <code>file</code> argument demo</a><span class="hover-metadata"><a class="nosplit" href=".#h-file-argument-demo"></a><a href="#_toc" class="u"> <code>\H</code> <code>file</code> argument</a><span class="metrics"><span class="wcntr"> 193</span><span class="dcnt"> 9</span></span></span></span></div><ul><li><div id="_toc/_file/file_demo"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#_file/file_demo">file_demo</a><span class="hover-metadata"><a class="nosplit" href=".#_file/file_demo"></a><a href="#_toc/h-file-argument-demo" class="u"> <code>\H</code> <code>file</code> argument demo</a><span class="metrics"><span class="wcntr"> 8</span></span></span></span></div></li><li><div id="_toc/_file/file_demo/file_demo_subdir"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#_file/file_demo/file_demo_subdir">file_demo/file_demo_subdir</a><span class="hover-metadata"><a class="nosplit" href=".#_file/file_demo/file_demo_subdir"></a><a href="#_toc/h-file-argument-demo" class="u"> <code>\H</code> <code>file</code> argument demo</a><span class="metrics"><span class="wcntr"> 2</span></span></span></span></div></li><li><div id="_toc/_file/file_demo/hello_world.js"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#_file/file_demo/hello_world.js">file_demo/hello_world.js</a><span class="hover-metadata"><a class="nosplit" href=".#_file/file_demo/hello_world.js"></a><a href="#_toc/h-file-argument-demo" class="u"> <code>\H</code> <code>file</code> argument demo</a><span class="metrics"><span class="wcntr"> 11</span></span></span></span></div></li><li><div id="_toc/_file/file_demo/file_demo_subdir/hello_world.js"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#_file/file_demo/file_demo_subdir/hello_world.js">file_demo/file_demo_subdir/hello_world.js</a><span class="hover-metadata"><a class="nosplit" href=".#_file/file_demo/file_demo_subdir/hello_world.js"></a><a href="#_toc/h-file-argument-demo" class="u"> <code>\H</code> <code>file</code> argument demo</a><span class="metrics"><span class="wcntr"> 2</span></span></span></span></div></li><li><div id="_toc/_file/index.js"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#_file/index.js">index.js</a><span class="hover-metadata"><a class="nosplit" href=".#_file/index.js"></a><a href="#_toc/h-file-argument-demo" class="u"> <code>\H</code> <code>file</code> argument demo</a><span class="metrics"><span class="wcntr"> 117</span></span></span></span></div></li><li><div id="_toc/_file/file_demo/my.bin"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#_file/file_demo/my.bin">file_demo/my.bin</a><span class="hover-metadata"><a class="nosplit" href=".#_file/file_demo/my.bin"></a><a href="#_toc/h-file-argument-demo" class="u"> <code>\H</code> <code>file</code> argument demo</a><span class="metrics"><span class="wcntr"> 5</span></span></span></span></div></li><li><div id="_toc/_file/Tank_man_standing_in_front_of_some_tanks.jpg"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#_file/Tank_man_standing_in_front_of_some_tanks.jpg">Tank_man_standing_in_front_of_some_tanks.jpg</a><span class="hover-metadata"><a class="nosplit" href=".#_file/Tank_man_standing_in_front_of_some_tanks.jpg"></a><a href="#_toc/h-file-argument-demo" class="u"> <code>\H</code> <code>file</code> argument demo</a><span class="metrics"><span class="wcntr"> 10</span></span></span></span></div></li><li><div id="_toc/_file/https://www.youtube.com/watch?v=YeFzeNAHEhU"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#_file/https://www.youtube.com/watch?v=YeFzeNAHEhU">https://www.youtube.com/watch?v=YeFzeNAHEhU</a><span class="hover-metadata"><a class="nosplit" href=".#_file/https://www.youtube.com/watch?v=YeFzeNAHEhU"></a><a href="#_toc/h-file-argument-demo" class="u"> <code>\H</code> <code>file</code> argument demo</a><span class="metrics"><span class="wcntr"> 8</span></span></span></span></div></li><li><div id="_toc/_file/https://example.com"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#_file/https://example.com">https://example.com</a><span class="hover-metadata"><a class="nosplit" href=".#_file/https://example.com"></a><a href="#_toc/h-file-argument-demo" class="u"> <code>\H</code> <code>file</code> argument demo</a><span class="metrics"><span class="wcntr"> 21</span></span></span></span></div></li></ul></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#h-arguments"><code>\H</code> arguments</a></li><li><a href=".#header">Header</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(8)</span></a></h2><div class="list"><ul><li><a href=".#features">Features</a></li><li><a href=".#file-output-directory"><code>_file</code> output directory</a></li><li><a href=".#h-file-argument-demo"><code>\H</code> <code>file</code> argument demo</a></li><li><a href=".#h-file-argument-toplevel-header"><code>\H</code> <code>file</code> argument toplevel header</a></li><li><a href="news#always-show-large-text-files-on-file-split-headers">Always show large text files on <code>_file</code> split headers</a></li><li><a href="news#automatically-create-file-pages-for-every-file">Automatically create <code>_file</code> pages for every file</a></li><li><a href="todo#file">File</a></li><li><a href=".#x-file-argument"><code>\x</code> <code>file</code> argument</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

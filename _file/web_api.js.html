@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>web_api.js - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="web_api.js"><div class="notnav"><h1><a href="">web_api.js</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../_dir/">(root)</a> / <a href="../_raw/web_api.js">web_api.js</a></b></div></nav></div><div class="p"><b>web_api.js</b></div><div class="code"><div><pre><code>// https://docs.ourbigbook.com#ourbigbook-web-directory-structure
+//
+// Plus some other random stuff that has to be able to run on frontend, thus no backend stuff here.
+
+const crypto = require('crypto')
+
+const axios = require('axios')
+
+const ourbigbook = require('./index');
+
+function articleHash(opts={}) {
+  const jsonStr = JSON.stringify(Object.fromEntries(Object.entries(opts).sort()))
+  return crypto.createHash('sha256').update(jsonStr).digest('hex')
+}
+
+// https://stackoverflow.com/questions/8135132/how-to-encode-url-parameters/50288717#50288717
+function encodeGetParams(p) {
+  const params = []
+  for (const key of Object.keys(p).sort()) {
+    const val = p[key]
+    if (val !== undefined) {
+      params.push(`${encodeURIComponent(key)}=${encodeURIComponent(val)}`)
+    }
+  }
+  let ret = params.join('&amp;');
+  if (ret) {
+    ret = '?' + ret
+  }
+  return ret
+}
+
+const encodeGetParamsWithOffset = (opts) =&gt; {
+  opts = Object.assign({}, opts)
+  if (opts.page !== undefined &amp;&amp; opts.limit !== undefined) {
+    opts.offset = opts.page * opts.limit
+  }
+  delete opts.page
+  return encodeGetParams(opts)
+}
+
+function read_include({exists, read, path_sep, ext}) {
+  function join(...parts) {
+    return parts.join(path_sep)
+  }
+  if (ext === undefined) {
+    ext = `.${ourbigbook.OURBIGBOOK_EXT}`
+  }
+  return async (id, input_dir) =&gt; {
+    let found = undefined;
+    let test
+    let basename = id + ext;
+    if (basename[0] === path_sep) {
+      test = id.substring(1)
+      if (await exists(test)) {
+        found = test;
+      }
+    } else {
+      const input_dir_with_sep = input_dir + path_sep
+      for (let i = input_dir_with_sep.length - 1; i &gt; 0; i--) {
+        if (input_dir_with_sep[i] === path_sep) {
+          test = input_dir_with_sep.slice(0, i + 1) + basename
+          if (await exists(test)) {
+            found = test;
+            break
+          }
+        }
+      }
+      if (found === undefined &amp;&amp; await exists(basename)) {
+        found = basename;
+      }
+    }
+    if (found === undefined) {
+      test = join(id, ourbigbook.INDEX_BASENAME_NOEXT + ext);
+      if (input_dir !=='') {
+        test = join(input_dir, test)
+      }
+      if (await exists(test)) {
+        found = test;
+      }
+      if (found === undefined) {
+        const [dir, basename] = ourbigbook.pathSplit(id, path_sep)
+        const [basename_noext, ext] = ourbigbook.pathSplitext(basename)
+        if (basename_noext === ourbigbook.INDEX_BASENAME_NOEXT) {
+          for (let index_basename_noext of ourbigbook.INDEX_FILE_BASENAMES_NOEXT) {
+            test = join(dir, index_basename_noext + ext);
+            if (await exists(test)) {
+              found = test;
+              break;
+            }
+          }
+        }
+      }
+    }
+    if (found !== undefined) {
+      return [found, await read(found)];
+    }
+    return undefined;
+  }
+}
+
+class WebApi {
+  constructor(opts) {
+    this.opts = opts
+  }
+
+  async req(method, path, opts={}) {
+    const newopts = Object.assign(
+      {},
+      this.opts,
+      opts
+    )
+    return sendJsonHttp(method, `/${ourbigbook.WEB_API_PATH}/${path}`, newopts)
+  }
+
+  async article(slug, opts={}) {
+    const { data, status } = await this.articles(Object.assign({ id: slug }, opts))
+    return { data: data.articles[0], status }
+  }
+
+  async articles(opts={}) {
+    return this.req('get', `articles${encodeGetParamsWithOffset(opts)}`)
+  }
+
+  async articleAnnounce(slug, message, opts={}) {
+    const body = {}
+    if (message) {
+      body.message = message
+    }
+    return this.req(
+      'post',
+      `articles/announce?id=${slug}${encodeGetParamsWithOffset(opts)}`,
+      { body },
+    )
+  }
+
+  async articlesHash(opts={}) {
+    return this.req('get', `articles/hash${encodeGetParamsWithOffset(opts)}`)
+  }
+
+  async articleCreate(article, opts={}) {
+    const { path, parentId, previousSiblingId, render } = opts
+    return this.req('post',
+      `articles`,
+      { body: Object.assign({ article }, opts)},
+    );
+  }
+
+  async articleCreateOrUpdate(article, opts={}) {
+    return this.req('put',
+      `articles`,
+      { body: Object.assign({ article }, opts)},
+    );
+  }
+
+  async articleDelete(slug) {
+    return this.req('delete', `articles?id=${slug}`)
+  }
+
+  async articleLike(slug) {
+    return this.req('post', `articles/like?id=${slug}`)
+  }
+
+  async articleFeed(opts={}) {
+    return this.req('get', `articles/feed${encodeGetParamsWithOffset(opts)}`)
+  }
+
+  async articleFollow(slug) {
+    return this.req('post', `articles/follow?id=${slug}`)
+  }
+
+  async articleRedirects(opts={}) {
+    return this.req('get', `articles/redirects${encodeGetParamsWithOffset(opts)}`)
+  }
+
+  async articleUnfollow(slug) {
+    return this.req('delete', `articles/follow?id=${slug}`)
+  }
+
+  async articleUnlike(slug) {
+    return this.req('delete', `articles/like?id=${encodeURIComponent(slug)}`)
+  }
+
+  async articleUpdatedNestedSet(user) {
+    return this.req('put', `articles/update-nested-set/${encodeURIComponent(user)}`)
+  }
+
+  async editorFetchFiles(paths) {
+    return this.req('post',
+      `editor/fetch-files`,
+      {
+        body: {
+          paths,
+        }
+      },
+    )
+  }
+
+  async editorGetNoscopesBaseFetch(ids, ignore_paths_set) {
+    return this.req('post',
+      `editor/get-noscopes-base-fetch`,
+      {
+        body: {
+          ids,
+          ignore_paths_set
+        }
+      },
+    )
+  }
+
+  async editorIdExists(idid) {
+    const ret = await this.req('post',
+      `editor/id-exists`,
+      {
+        body: {
+          idid,
+        }
+      },
+    )
+    return ret.data.exists
+  }
+
+  async issue(slug, number) {
+    const { data, status } = await this.issues({ id: slug, number })
+    return { data: data.issues[0], status }
+  }
+
+  async issues(opts) {
+    return this.req('get',
+      `issues${encodeGetParamsWithOffset(opts)}`,
+    )
+  }
+
+  async issueCreate(slug, issue) {
+    return this.req('post',
+      `issues?id=${encodeURIComponent(slug)}`,
+      {
+        body: { issue },
+      },
+    )
+  }
+
+  async issueDelete(slug, issueNumber) {
+    return this.req('delete', `issues/${issueNumber}?id=${encodeURIComponent(slug)}`)
+  }
+
+  async issueEdit(slug, issueNumber, issue) {
+    return this.req('put',
+      `issues/${issueNumber}?id=${encodeURIComponent(slug)}`,
+      {
+        body: { issue },
+      },
+    )
+  }
+
+  async issueFollow(slug, issueNumber) {
+    return this.req('post', `issues/${issueNumber}/follow?id=${slug}`)
+  }
+
+  async issueUnfollow(slug, issueNumber) {
+    return this.req('delete', `issues/${issueNumber}/follow?id=${encodeURIComponent(slug)}`)
+  }
+
+  async issueLike(slug, issueNumber) {
+    return this.req('post', `issues/${issueNumber}/like?id=${slug}`)
+  }
+
+  async issueUnlike(slug, issueNumber) {
+    return this.req('delete', `issues/${issueNumber}/like?id=${encodeURIComponent(slug)}`)
+  }
+
+  async comments(slug, issueNumber) {
+    return this.req('get',
+      `issues/${issueNumber}/comments?id=${encodeURIComponent(slug)}`,
+    )
+  }
+
+  async comment(slug, issueNumber, commentNumber) {
+    return this.req('get',
+      `issues/${issueNumber}/comment/${commentNumber}?id=${encodeURIComponent(slug)}`,
+    )
+  }
+
+  async commentCreate(slug, issueNumber, source) {
+    return this.req('post',
+      `issues/${issueNumber}/comments?id=${encodeURIComponent(slug)}`,
+      {
+        body: { comment: { source } },
+      },
+    )
+  }
+
+  async commentUpdate(slug, issueNumber, comentNumber, source) {
+    return this.req('put',
+      `issues/${issueNumber}/comments${commentNumber}?id=${encodeURIComponent(slug)}`,
+      {
+        body: { comment: { source } },
+      },
+    )
+  }
+
+  async commentDelete(slug, issueNumber, commentNumber) {
+    return this.req('delete', `issues/${issueNumber}/comments/${commentNumber}?id=${encodeURIComponent(slug)}`)
+  }
+
+  async min(opts={}) {
+    return this.req('get', `min${encodeGetParams(opts)}`)
+  }
+
+  async siteSettingsUpdate(opts={}) {
+    return this.req('put',
+      `site`,
+      {
+        body: opts,
+      },
+    )
+  }
+
+  async topics(opts={}) {
+    return this.req('get', `topics${encodeGetParamsWithOffset(opts)}`)
+  }
+
+  async resetPassword(email, password, code) {
+    return this.req(
+      'post',
+      `reset-password`,
+      { body: { email, password, code } }
+    )
+  }
+
+  async resetPasswordRequest(emailOrUsername, recaptchaToken) {
+    return this.req(
+      'post',
+      `reset-password-request`,
+      { body: { emailOrUsername, recaptchaToken } }
+    )
+  }
+
+  async users(opts) {
+    return this.req('get', `users${encodeGetParamsWithOffset(opts)}`)
+  }
+
+  async userCreate(attrs, recaptchaToken) {
+    return this.req('post',
+      `users`,
+      { body: { user: attrs, recaptchaToken } },
+    );
+  }
+
+  async userFollow(username){
+    return this.req('post',
+      `users/${username}/follow`,
+    );
+  }
+
+  async user(username) {
+    const { data, status } = await this.users({ username })
+    return { data: data.users[0], status }
+  }
+
+  async userLogin(attrs) {
+    return this.req('post',
+      `login`,
+      { body: { user: attrs } },
+    );
+  }
+
+  async userUpdate(username, user) {
+    return this.req('put',
+      `users/${username}`,
+      { body: { user } },
+    )
+  }
+
+  async userUpdateProfilePicture(username, bytes) {
+    return this.req('put',
+      `users/${username}/profile-picture`,
+      { body: { bytes } },
+    )
+  }
+
+  async userUnfollow(username) {
+    return this.req('delete',
+      `users/${username}/follow`,
+    );
+  }
+}
+
+// https://stackoverflow.com/questions/6048504/synchronous-request-in-node-js/53338670#53338670
+async function sendJsonHttp(method, path, opts={}) {
+  let { body, contentType, getToken, headers, https, hostname, port, validateStatus } = opts
+  let http
+  if (https) {
+    http = 'https'
+  } else {
+    http = 'http'
+  }
+  if (headers) {
+    headers = Object.assign({}, headers)
+  } else {
+    headers = {}
+  }
+  headers['Content-Type'] = contentType || "application/json"
+  if (getToken) {
+    const token = getToken()
+    if (token) {
+      headers['Authorization'] = `Token ${token}`
+    }
+  }
+  let url
+  if (hostname) {
+    const portStr = port ? `:${port}` : ''
+    url = `${http}://${hostname}${portStr}${path}`
+  } else {
+    url = path
+  }
+  const response = await axios({
+    data: body,
+    headers,
+    maxRedirects: 0,
+    method,
+    url,
+    validateStatus,
+  })
+  return {
+    data: response.data,
+    headers: response.headers,
+    status: response.status,
+  }
+}
+
+// Non-API stuff.
+
+class DbProviderBase extends ourbigbook.DbProvider {
+  constructor(opts={}) {
+    super()
+    this.id_cache = {}
+    this.ref_cache = {
+      from_id: {},
+      to_id: {},
+    }
+    this.path_to_file_cache = {}
+  }
+
+  add_file_row_to_cache(row, context) {
+    this.path_to_file_cache[row.path] = row
+    const toplevelId = row.toplevelId
+    if (
+      // Happens on some unminimized condition when converting
+      // cirosantilli.github.io @ 04f0f5bc03b9071f82b706b3481c09d616d44d7b + 1
+      // twice with ourbigbook -S ., no patience to minimize and test now.
+      toplevelId !== null
+    ) {
+      if (
+        // We have to do this if here because otherwise it would overwrite the reconciled header
+        // we have stiched into the tree with Include.
+        !this.id_cache[toplevelId.idid]
+      ) {
+        this.add_row_to_id_cache(toplevelId, context)
+      }
+    }
+  }
+
+  add_ref_row_to_cache(row, to_id_key, include_key, context) {
+    let to_id_key_dict = this.ref_cache[to_id_key][row[to_id_key]]
+    if (to_id_key_dict === undefined) {
+      to_id_key_dict = {}
+      this.ref_cache[to_id_key][row[to_id_key]] = to_id_key_dict
+    }
+    let to_id_key_dict_type = to_id_key_dict[row.type]
+    if (to_id_key_dict_type === undefined) {
+      to_id_key_dict_type = []
+      to_id_key_dict[row.type] = to_id_key_dict_type
+    }
+    to_id_key_dict_type.push(row)
+    this.add_row_to_id_cache(row[include_key], context)
+  }
+
+  add_row_to_id_cache(row, context) {
+    if (row !== null) {
+      const ast = this.row_to_ast(row, context)
+      const oldCache = this.id_cache[ast.id]
+      if (
+        // This is not just an optimization, we actually had a case that broke because
+        // this was overwriting the value from the parsed tree, which contained more
+        // information about the header tree not present in the new ast and which was required.
+        oldCache
+      ) {
+        return oldCache
+      } else {
+        if (
+          // Possible on reference to ID that does not exist and some other
+          // non error cases I didn't bother to investigate.
+          row.to !== undefined
+        ) {
+          ast.header_parent_ids = row.to.map(to =&gt; to.from_id)
+        }
+        this.id_cache[ast.id] = ast
+        return ast
+      }
+    }
+  }
+
+  get_noscopes_base(ids, ignore_paths_set) {
+    const cached_asts = []
+    for (const id of ids) {
+      if (id in this.id_cache) {
+        const ast = this.id_cache[id]
+        if (
+          ignore_paths_set === undefined ||
+          !ignore_paths_set.has(ast.input_path)
+        ) {
+          cached_asts.push(ast)
+        }
+      }
+    }
+    return cached_asts
+  }
+
+  get_file(path) {
+    return this.path_to_file_cache[path]
+  }
+
+  /** Convert a Id DB row to a JavaScript AstNode object.
+   *
+   * @param row: a row from the Ids database
+   * @return {AstNode}
+   **/
+  row_to_ast(row, context) {
+    const ast = ourbigbook.AstNode.fromJSON(row.ast_json, context)
+    ast.input_path = row.path
+    ast.id = row.idid
+    ast.toplevel_id = row.toplevel_id
+    return ast
+  }
+
+  rows_to_asts(rows, context) {
+    const asts = []
+    for (const row of rows) {
+      asts.push(this.add_row_to_id_cache(row, context))
+      for (const row_title_title of row.from) {
+        if (
+          // We need this check because the version of the header it fetches does not have .to
+          // so it could override one that did have the .to, and then other things could blow up.
+          !(row_title_title.to &amp;&amp; row_title_title.to.idid in this.id_cache)
+        ) {
+          const id2 = row_title_title.to
+          if (id2) {
+            const ret = this.add_row_to_id_cache(id2, context)
+            if (ret !== undefined) {
+              asts.push(ret)
+            }
+            // Get synonym of title title.
+            for (const synonymRef of id2.from) {
+              const ret = this.add_row_to_id_cache(synonymRef.to, context)
+              if (ret !== undefined) {
+                asts.push(ret)
+              }
+            }
+          }
+        }
+      }
+    }
+    return asts
+  }
+}
+
+const QUERY_TRUE_VAL = 'true'
+const QUERY_FALSE_VAL = 'false'
+
+function boolToQueryVal(b) {
+  return b ? QUERY_TRUE_VAL : QUERY_FALSE_VAL
+}
+
+module.exports = {
+  ARTICLE_HASH_LIMIT_MAX: 10000,
+  articleHash,
+  boolToQueryVal,
+  QUERY_TRUE_VAL,
+  QUERY_FALSE_VAL,
+  WebApi,
+  DbProviderBase,
+  encodeGetParams,
+  read_include,
+  sendJsonHttp,
+}
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

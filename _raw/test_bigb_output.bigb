@@ -1,0 +1,530 @@
+= tmp
+
+Escape chars: \\, \[, \], \{, \}, \<, \`, \$
+
+Escape at start of newline only:
+\* *
+\= =
+\|| ||
+\| |
+
+Same in list indent:
+
+* the list
+  \* *
+  \= =
+  \|| ||
+  \| |
+
+Sane inline element: \i[qwer] after.
+
+Sane inline element with named argument: \a[qwer]{external} after.
+
+Sane inline element with positional and named argument: \a[qwer][zxcv]{external} after.
+
+Test sane only inline: \testSaneOnly[inside TestSaneOnly inline]
+
+Test sane only block:
+
+\TestSaneOnly[inside TestSaneOnly block]
+
+Test sane only literal with subelement: \testSaneOnly[a \\testSaneOnly\[b\] c]{{preferLiteral=a \testSaneOnly[b] c}}
+
+Test sane only literal with http escape: \testSaneOnly[a \http://example.com c]{{preferLiteral=a http://example.com c}}
+
+Shorthand link http://example.com after.
+
+Shorthand link http://example.com[], with comma immediately following.
+
+Escaped shorthand link: \http://example.com
+
+Shorthand ref to toplevel: <>.
+
+Shorthand ref: <black cat>.
+
+Shorthand ref capital: <Black cat>.
+
+Shorthand ref plural: <black cats>.
+
+Shorthand ref tuberculosis bug https://github.com/plurals/pluralize/issues/172[]: <tuberculosis>.
+
+Shorthand ref full: <black cats>{full}.
+
+Topic link with spaces: <#rare topic with spaces>.
+
+Topic link without spaces: #RareTopic
+
+Topic link without spaces must have delimiters if followed by non-whitespace: <#RareTopic>after
+
+Same but followed by shorthand link: <#RareTopic>http://example.com
+
+Sane xref that cannot be converted to shorthand: \x[\$]
+
+Shorthand ref with greater than: <greater than>
+
+Inline code block: `f(x + 1)[]` after.
+
+Inline code block with backtick: \c[[a ` b]] after.
+
+Inline code block with backtick and double open square brackets: \c[[[a ` [[ b]]] after.
+
+Inline code block with backtick and double close square brackets: \c[[[a ` ]] b]]] after.
+
+Inline code block with backtick and triple open square brackets: \c[[[[a ` [[[ b]]]] after.
+
+\TestSaneOnly[Sane block with a single line.]
+
+\TestSaneOnly[
+Sane block with a single line.
+
+No, actually multiple lines.
+]
+
+\TestSaneOnly[
+\TestSaneOnly[Nested sane block]
+tight.
+]
+
+Sane block together with text in paragraph:
+\TestSaneOnly[To be]
+and another:
+\TestSaneOnly[or maybe not]
+and finally.
+
+Sane block together with macros paragraph:
+\TestSaneOnly[To be]
+\i[and another:]
+\TestSaneOnly[or maybe not]
+\i[and finally.]
+
+Explicit br is required at the end of an argument:
+
+\TestSaneOnly[
+aa
+bb\br
+]
+
+Explicit br is required before a paragraph:
+
+\TestSaneOnly[
+asdf\br
+
+qwer
+]
+
+Literal\
+newline
+
+Non-br macro without arguments\i
+followed by a newline
+
+Empty argument followed by paragraph:
+
+\TestSaneOnly[]
+
+and something after.
+
+Argument ending in list:
+
+\TestSaneOnly[
+* asdf
+]
+
+and something after.
+
+Literal block that renders as sane:
+
+\TestSaneOnly[To be \\i\[or\] maybe not.]
+{{preferLiteral=To be \i[or] maybe not.}}
+
+Literal block with escaped leading and trailing:
+
+\TestSaneOnly[\[asdf\]]
+{{preferLiteral=\{asdf\}}}
+
+\TestSaneOnly[
+\TestSaneOnly[inside double TestSaneOnly]
+]
+
+Literal block with multiple lines starting in \[ and ending in \]:
+
+\TestSaneOnly[]
+[[
+[
+]
+]]
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{description=\{asdf\}}
+
+Shorthand block together with paragraph:
+``
+x = 1
+``
+and another:
+``
+x = 2
+``
+
+Block code block:
+
+``
+x = 1
+x = x + 1
+``
+
+Block code with double backtick:
+
+```
+x = 1
+``
+x = x + 1
+```
+
+Block code with triple backtick:
+
+````
+x = 1
+```
+x = x + 1
+````
+
+Shorthand code block with attribute:
+
+``
+x = 1
+``
+{description=My code}
+
+Block code description is not literal by default:
+
+``
+000
+``
+{description=
+aaa\$bbb
+
+* ccc
+ddd
+}
+
+Inline math: $\sqrt{2}$ after.
+
+Block math:
+
+$$
+\sqrt{2} \\
+\sqrt{2}
+$$
+
+Block math single line:
+
+$$
+\sqrt{2}
+$$
+
+List:
+
+* p1
+
+  Sane block:
+
+  \TestSaneOnly[To be]
+
+  and another:
+
+  \TestSaneOnly[or maybe not]
+* p2
+
+List with paragraph:
+
+* p1
+
+  p1 2
+
+  p1 3
+* p2
+
+Nested list:
+
+* p1
+* p2
+  * p2 1
+  * p2 2
+    * p2 2 1
+  * p2 3
+* p3
+  * p3 1
+
+Nested list with paragraph:
+
+* p1
+* p2
+  * p2 p1
+
+    p2 p2
+
+    * p2 p2 1
+    * p2 p2 2
+
+    p2 p3
+  * p2 2
+  * p2 3
+* p3
+  * p3 1
+
+List with ID:
+
+\Ul[
+* p1
+* p2
+]
+{id=my-list}
+
+Shorthand ordered list:
+
+\Ol[
+* p1
+* p2
+]
+
+Tight list:
+* aaa
+* bbb
+and another:
+* ccc
+* ddd
+done.
+
+Nested and tight:
+* aaa
+  * bbb
+  * ccc
+  ddd
+
+* tight code in list without paragraph
+  ``
+  aaa
+  bbb
+  ``
+* after
+
+* tight block in list without paragraph
+  \TestSaneOnly[first]
+  and
+  \TestSaneOnly[second]
+  done.
+* after
+
+\TestSaneOnly[list after block tight]
+* the list
+
+List in paragraph with blocks with paragraph:
+* \TestSaneOnly[first]
+
+  \TestSaneOnly[second]
+
+List in paragraph with block followed by nested list tight:
+* \TestSaneOnly[first]
+
+  * second
+
+List immediately in list item:
+
+* * first
+  * second
+
+Link immediately after list:
+* first
+* second
+http://example.com
+
+One-word topic immediately after list:
+* first
+* second
+#mathematics
+
+Multi-word topic immediately after list:
+* first
+* second
+<#linear algebra>
+
+Internal link immediately after list:
+* first
+* second
+<dog>
+
+Inline code immediately after list:
+* first
+* second
+`my code`
+
+Inline math immediately after list:
+* first
+* second
+$\sqrt{2}$
+
+Quote in paragraph:
+> My quote in paragraph
+
+Quote on next paragraph:
+
+> My quote on next paragraph
+
+On shorthand quote after another in the same paragraph:
+
+> shorthand quote 1
+> shorthand quote 2
+
+One-word topic immediately after quote:
+
+> My quote
+#mathematics
+
+Table:
+
+|| header 1
+|| header 2
+
+| row 1 1
+| row 1 2
+
+| row 2 1
+| row 2 2
+
+Table with title:
+
+\Table[
+|| header 1
+|| header 2
+
+| row 1 1
+| row 1 2
+
+| row 2 1
+| row 2 2
+]
+{title=My table}
+
+Table with paragraph and list:
+
+|| header 1
+|| header 2
+
+| row 1 1
+
+  row 1 1 1
+
+  * row 1 1 1 1
+  * row 1 1 1 2
+    * row 1 1 1 2 1
+
+  row 1 1 2
+| row 1 2
+
+| row 2 1
+| row 2 2
+
+Table with empty cell:
+
+| row 1 1
+|
+
+| row 2 1
+| row 2 2
+
+\Comment[[
+TODO coming soon:
+
+Quote with single paragraph:
+
+> inside quote with single paragraph
+
+Quote with multiple paragraphs:
+
+> inside quote with
+
+  multiple paragraphs
+]]
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=The title of my image.}
+{description=The description of my image.}
+{id=image-my-test-image}
+{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+
+== Dog
+
+<code In OurBigBookExample>
+
+<image Tank man standing in front of some tanks.>
+
+\OurBigBookExample[[
+Hello
+
+World
+
+``
+Hello
+``
+{title=In OurBigBookExample}
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{external}
+{provider=github}
+{titleFromSrc}
+]]
+
+\Comment[[
+Hello
+
+World
+]]
+
+\Include[test-bigb-output-2]{parent=dog}
+\Include[test-bigb-output-3]{parent=dog}
+
+== Black cat
+
+== Black
+
+== Black dog
+{tag=Dog}
+{tag=Black}
+
+== My \i[Tag]
+
+== My tagged
+{tag=My Tag}
+
+== Dollar
+{id=\$}
+
+== Greater > than
+
+== My scope
+{scope}
+
+=== h1
+
+== Tank_man_standing_in_front_of_some_tanks.jpg
+{file}
+
+== not-index.bigb
+{file}
+
+Hyphens are not removed from shorthand links to file: <not-index.bigb>{file}
+
+== Header with args
+{c}
+{id=tmp-2}
+{wiki}
+
+== Synonym main
+
+= Synonym secondary
+{synonym}
+
+== Tuberculosis

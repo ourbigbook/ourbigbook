@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Image description argument - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="image-description-argument"><div class="notnav"><h1><a href="">Image <code>description</code> argument</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#image"> Image</a><a href=".#image-argument"> Image argument</a></div><div class="nav"><span class="tags"> Tags: <a href=".#description-argument"><code>description</code> argument</a>, <a href=".#named-argument">Named argument</a></span><a class="nosplit" href=".#image-description-argument"></a><span class="metrics"><span class="wcntr"> Words: 265</span></span></div></nav></div><div class="p" id="_1433">The <code>description</code> argument similar to the <a href=".#image-title-argument">image <code>title</code> argument</a> argument, but allows allowing longer explanations without them appearing in <a href=".#internal-link">internal links</a> to the image.</div><div class="p" id="_1434">For example, consider:<div class="code" id="_1435"><div><pre><code>See this image: \x[image-description-argument-test-1].
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=Tank man standing in front of some tanks}
+{id=image-description-argument-test-1}
+{description=Note how the tanks are green.}
+{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}</code></pre></div></div><div class="p" id="_1436">which renders as:</div><div><blockquote id="_1437"><div class="p" id="_1438">See this image: <a href="#image-description-argument-test-1">Figure 37. "Tank man standing in front of some tanks"</a>.</div><div class="figure"><figure id="image-description-argument-test-1"><div class="float-wrap"><a href="_raw/Tank_man_standing_in_front_of_some_tanks.jpg"><img src="_raw/Tank_man_standing_in_front_of_some_tanks.jpg" loading="lazy" height="315"></a></div><figcaption><a href="#image-description-argument-test-1"><span class="caption-prefix">Figure 37. </span></a><div class="title">Tank man standing in front of some tanks</div>. <a href="https://en.wikipedia.org/wiki/File:Tianasquare.jpg">Source</a>. Note how the tanks are green.</figcaption></figure></div></blockquote></div>In this example, the reference <code>\x[image-description-argument-test-1]</code> expands just to<div><blockquote id="_1439">Tank man standing in front of some tanks</blockquote></div>and does not include the description, which only shows on the image.</div><div class="p" id="_1440">The description can be as large as you like. If it gets really large however, you might want to consider moving the image to its own header to keep things slightly saner. This will be especially true after we eventually do: <a href="https://github.com/ourbigbook/ourbigbook/issues/180">github.com/ourbigbook/ourbigbook/issues/180</a>.</div><div class="p" id="_1441">If the description contains any element that would take its own separate line, like multiple paragraphs or a list, we automatically add a line grouping the description with the corresponding image to make that clearer, otherwise it can be hard to know which title corresponds to a far away image. Example with multiple paragraphs:<div class="code" id="_1442"><div><pre><code>Stuff before the image.
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=Tank man standing in front of some tanks}
+{id=image-description-argument-test-2}
+{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
+{description=Note how the tanks are green.
+
+But the shirt is white.}
+
+Stuff after the image description.</code></pre></div></div><div class="p" id="_1443">which renders as:</div><div><blockquote id="_1444"><div class="p" id="_1445">Stuff before the image.</div><div class="figure"><figure id="image-description-argument-test-2" class="multiline"><div class="float-wrap"><a href="_raw/Tank_man_standing_in_front_of_some_tanks.jpg"><img src="_raw/Tank_man_standing_in_front_of_some_tanks.jpg" loading="lazy" height="315"></a></div><figcaption><a href="#image-description-argument-test-2"><span class="caption-prefix">Figure 38. </span></a><div class="title">Tank man standing in front of some tanks</div>. <a href="https://en.wikipedia.org/wiki/File:Tianasquare.jpg">Source</a>. <div class="p" id="_1446">Note how the tanks are green.</div><div class="p" id="_1447">But the shirt is white.</div></figcaption></figure></div><div class="p" id="_1448">Stuff after the image description.</div></blockquote></div></div><div class="p" id="_1449">We recommend adding a period or other punctuation to the end of every description.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#image-argument">Image argument</a></li><li><a href=".#image">Image</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(3)</span></a></h2><div class="list"><ul><li><a href=".#image">Image</a></li><li><a href=".#image-caption">Image caption</a></li><li><a href=".#image-id">Image ID</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

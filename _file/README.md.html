@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>README.md - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="README.md"><div class="notnav"><h1><a href="">README.md</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../_dir/">(root)</a> / <a href="../_raw/README.md">README.md</a></b></div></nav></div><div class="p"><b>README.md</b></div><div class="code"><div><pre><code># OurBigBook Project
+
+The best way to publish your scientific knowledge.
+
+[OurBigBook.com](https://OurBigBook.com) | [docs.OurBigBook.com](https://docs.ourbigbook.com)
+
+![](logo.svg)
+
+Source code for the entire OurBigBook Project:
+
+- [OurBigBook.com](https://OurBigBook.com)
+- [`ourbigbook` CLI](https://docs.ourbigbook.com/#ourbigbook-cli)
+- [Visual Studio Code extension](https://docs.ourbigbook.com/#visual-studio-code)
+
+OurBigBook is a powerful static wiki generator and lightweight markup language to write complex structured wikis/books/blogs.
+
+The same markup source code can also be uploaded to [OurBigBook.com](https://OurBigBook.com) which has the amazing ["Topics" multi-user mind-melding magic feature](https://docs.ourbigbook.com/#ourbigbook-web-topics) 🧙
+
+A rendered version of it can be seen at: &lt;https://docs.ourbigbook.com&gt;. The source file for the homepage is: [index.bigb](index.bigb).
+
+[Get started quickly with the OurBigBook command line utility](https://docs.ourbigbook.com/#ourbigbook-cli-quick-start) by using our template project &lt;https://github.com/ourbigbook/template&gt;:
+
+```
+git clone https://github.com/ourbigbook/template
+cd template
+npm install
+npx ourbigbook .
+firefox _out/html/index.html
+firefox _out/html/not-index.html
+```
+
+The generated HTML is published at: https://ourbigbook.github.io/template
+
+A full blown **showcase knowledge base** can be seen at:
+
+* https://cirosantilli.com ([static website](https://docs.ourbigbook.com/#p-publish) publish)
+* https://ourbigbook.com/cirosantilli (equivalent on [OurBigBook.com](https://docs.ourbigbook.com/#ourbigbook-com) with dynamic website features such as [topics](https://docs.ourbigbook.com/#ourbigbook-web-topics)
+* https://github.com/cirosantilli/cirosantilli.github.io (source code for both of the above)
+
+Screenshot of the [topics feature](https://docs.ourbigbook.com/#ourbigbook-web-topics), which provides multi-user mind-melding:
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/topics/derivative.png)
+
+[Internal cross file references](https://docs.ourbigbook.com/#cross-file-reference) done right:
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/x/hilbert-space-arrow.png)
+
+You can [publish your local lightweight markup files either to OurBigBook.com or as a static website on your own domain of choice](https://docs.ourbigbook.com/#publish-your-content):
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/local-editing/bigb-publish-to-web-or-static-editor-logos.svg)
+
+You can edit locally with our [Visual Studio Code extension](https://docs.ourbigbook.com/#visual-studio-code):
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/vscode/install.png)
+
+The [Visual Studio Code extension](https://docs.ourbigbook.com/#visual-studio-code) implements features such as header trees:
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/vscode/tree.png)
+
+You can also edit directly on OurBigBook.com with the [Web Editor](https://docs.ourbigbook.com#web-editor):
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/web-editor/cirosantilli-derivative.png)
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/web-editor/topic-link.png)
+
+[Tags](https://docs.ourbigbook.com/#h-tag-argument) are just headers:
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/tag/non-toplevel-documentary-sell.png)
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/tagged-list/tagged.png)
+
+If ID prefixes are getting too repetitive, we have [ID scopes for you](https://docs.ourbigbook.com/#h-scope-argument):
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/scope/h1-breadcrumb-arrow-title.png)
+
+Experience infinitely deep [tables of contents](https://docs.ourbigbook.com/#table-of-contents):
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/dynamic-article-tree/demo.png)
+
+[Web article search](https://docs.ourbigbook.com/#ourbigbook-web-search):
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/search/physics-arrow.png)
+
+Every single section [gets its own discussion section](https://docs.ourbigbook.com/#ourbigbook-web-discussions) so you can find issues specific to any part of the text:
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_subheader_discussion_arrow.png)
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_by_Barack_Obama_discussions.png)
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_by_Barack_Obama_discussion_1.png)
+
+Send an email with a link to your articles to your followers with the [article announcement feature](https://docs.ourbigbook.com/article-announcement):
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/announce/button-arrow.png)
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

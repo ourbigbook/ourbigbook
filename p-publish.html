@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>-p, --publish - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="p-publish"><div class="notnav"><h1><a href=""><code>-p</code>, <code>--publish</code></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-cli"> OurBigBook CLI</a><a href=".#ourbigbook-cli-options"> OurBigBook CLI options</a></div><div class="nav"><span class="tags"> Tags: <a href=".#publish-your-content">Publish your content</a></span><a class="nosplit" href=".#p-publish"></a><span class="metrics"><span class="wcntr"> Words: 155</span></span></div></nav></div><div class="p" id="_3367">OurBigBook tooling is so amazing that we also take care of the HTML publishing for you!</div><div class="p" id="_3368">Once a publish target is properly setup, all you have to do is run:<div class="code" id="_3369"><div><pre><code>git add index.bigb
+git commit -m 'more content!'
+ourbigbook --publish</code></pre></div></div>and your changes will be published to the  default target specified in <a href=".#ourbigbook-json"><code>ourbigbook.json</code></a>.</div><div class="p" id="_3370">If not specified, e.g. with the the <a href=".#publish-target"><code>--publish-target</code></a> option, the default target is to <a href=".#publish-to-github-pages">publish to GitHub Pages</a>.</div><div class="p" id="_3371">Only changes committed to Git are pushed.</div><div class="p" id="_3372">Files that <code>ourbigbook</code> knows how to process get processed and only their outputs are added to the published repo, those file types are:<div class="list"><ul id="_3373"><li id="_3374"><code>.bigb</code> files are converted to <code>.html</code></li><li id="_3375"><code>.scss</code> files are converted to <code>.css</code></li></ul></div>Every other Git-tracked file is pushed as is.</div><div class="p" id="_3376">When <code>--publish</code> is given, stdin input is not accepted, and so the current directory is built by default, i.e. the following two are equivalent:<div class="code" id="_3377"><div><pre><code>./ourbigbook --publish
+./ourbigbook --publish .</code></pre></div></div></div><div class="p" id="_3378">Publishing only happens if the build has no errors.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-cli-options">OurBigBook CLI options</a></li><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(4)</span></a></h2><div class="list"><ul><li><a href=".#p-publish"><code>ourbigbook --publish</code></a></li><li><a href=".#p-publish"><code>--publish</code> option</a></li><li><a href=".#p-publish">Static</a></li><li><a href=".#p-publish">Static website</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

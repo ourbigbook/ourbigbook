@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>-w, --watch - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="watch"><div class="notnav"><h1><a href=""><code>-w</code>, <code>--watch</code></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-cli"> OurBigBook CLI</a><a href=".#ourbigbook-cli-options"> OurBigBook CLI options</a></div><div class="nav"><a class="nosplit" href=".#watch"></a><span class="metrics"><span class="wcntr"> Words: 162</span></span></div></nav></div><div class="p" id="_3519">Don't quit <code>ourbigbook</code> immediately.</div><div class="p" id="_3520">Instead, watch the selected file or directory for changes, and rebuild individual files when changes are detected.</div><div class="p" id="_3521">Watch every <code>.bigb</code> file in an entire directory:<div class="code" id="_3522"><div><pre><code>ourbigbook --watch .</code></pre></div></div>When a directory is given as the input path, this automatically first does an <a href=".#id-extraction">ID extraction</a> pass on all files to support <a href=".#cross-file-internal-link">cross file internal links</a>.</div><div class="p" id="_3523">Now you can just edit any OurBigBook file such has <code>index.bigb</code>, save the file in your editor, and refresh the webpage and your change should be visible, no need to run a <code>ourbigbook</code> command explicitly every time.</div><div class="p" id="_3524">Exit by entering Ctrl + C on the terminal.</div><div class="p" id="_3525">Watch a single file:<div class="code" id="_3526"><div><pre><code>ourbigbook --watch index.bigb</code></pre></div></div>When a single file is watched, the reference database is not automatically updated. If it is not already up-to-date, you should first update it with:<div class="code" id="_3527"><div><pre><code>ourbigbook .</code></pre></div></div>otherwise you will just get a bunch of undefined ID errors every time the input file is saved.</div><div class="p" id="_3528">TODO: integrate Live Preview: <a href="https://asciidoctor.org/docs/editing-asciidoc-with-live-preview/">asciidoctor.org/docs/editing-asciidoc-with-live-preview/</a> to also dispense the browser refresh.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-cli-options">OurBigBook CLI options</a></li><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(2)</span></a></h2><div class="list"><ul><li><a href=".#features">Features</a></li><li><a href=".#ourbigbook-json/ignore"><code>ignore</code></a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

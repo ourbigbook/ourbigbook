@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Internal link title link removal - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="internal-link-title-link-removal"><div class="notnav"><h1><a href="">Internal link title link removal</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#internal-link"> Internal link</a><a href=".#cross-file-internal-link"> Cross file internal link</a></div><div class="nav"><a class="nosplit" href=".#internal-link-title-link-removal"></a><span class="metrics"><span class="wcntr"> Words: 123</span></span></div></nav></div><div class="p" id="_2402">If the target <code>title</code> argument contains a link from either another <a href=".#internal-link">internal links</a> or a regular <a href=".#link">external hyperlink</a>, OurBigBook automatically prevents that link from rendering as a link when no explicit body is given.</div><div class="p" id="_2403">This is done because <a href="https://stackoverflow.com/questions/9882916/are-you-allowed-to-nest-a-link-inside-of-a-link">nested links are illegal in HTML</a>, and the result would be confusing.</div><div class="p" id="_2404">This use case is most common when dealing with media such as <a href=".#image">images</a>. For example in:<div class="code" id="_2405"><div><pre><code>= afds
+
+\x[image-aa-zxcv-lolol-bb]
+
+== qwer
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=aa \x[zxcv][zxcv] \a[http://example.com][lolol] bb}
+
+== zxcv</code></pre></div></div>the <code>\x[image-aa-zxcv-lolol-bb]</code> renders something like:<div class="code" id="_2406"><div><pre><code>&lt;a href="#image-aa-zxcv-lolol-bb"&gt;aa zxcv lolol bb&lt;/a&gt;</code></pre></div></div>and not:<div class="code" id="_2407"><div><pre><code>&lt;a href="#image-aa-zxcv-lolol-bb"&gt;aa &lt;a href="zxcv"&gt;zxcv&lt;/a&gt; &lt;a href="http://example.com"&gt;lolol&lt;/a&gt; bb&lt;/a&gt;</code></pre></div></div></div><div class="p" id="_2408">Live example:<div class="code" id="_2409"><div><pre><code>This is a nice image: \x[image-aa-zxcv-lolol-bb].
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=aa \x[internal-link-title-link-removal][zxcv] \a[http://example.com][lolol] bb}</code></pre></div></div><div class="p" id="_2410">which renders as:</div><div><blockquote id="_2411"><div class="p" id="_2412">This is a nice image: <a href="#image-aa-zxcv-lolol-bb">Figure 44. "aa zxcv lolol bb"</a>.</div><div class="figure"><figure id="image-aa-zxcv-lolol-bb"><div class="float-wrap"><a href="_raw/Tank_man_standing_in_front_of_some_tanks.jpg"><img src="_raw/Tank_man_standing_in_front_of_some_tanks.jpg" loading="lazy" height="315"></a></div><figcaption><a href="#image-aa-zxcv-lolol-bb"><span class="caption-prefix">Figure 44. </span></a><div class="title">aa <a href=".#internal-link-title-link-removal">zxcv</a> <a href="http://example.com">lolol</a> bb</div>. </figcaption></figure></div></blockquote></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#cross-file-internal-link">Cross file internal link</a></li><li><a href=".#internal-link">Internal link</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#internal-link-title-link-removal">Cross reference title link removal</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Project toplevel directory - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="project-toplevel-directory"><div class="notnav"><h1><a href="">Project toplevel directory</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-cli"> OurBigBook CLI</a><a href=".#index-file"> Index file</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#project-toplevel-directory"></a><span class="metrics"><span class="wcntr"> Words: 642</span><span class="dcnt"> Articles: 3</span></span></div></nav></div><div class="p" id="_3070">This directory is determined by first checking the presence of a <a href=".#ourbigbook-json"><code>ourbigbook.json</code></a> file.</div><div class="p" id="_3071">If a <a href=".#ourbigbook-json"><code>ourbigbook.json</code></a> is found, then the project toplevel directory is the directory that contains that file.<div class="list"><ul id="_3072"><li id="_3073">otherwise, if the input path is a descendant of the current working directory, then the current working directory is used, see also: <a href=".#the-current-working-directory-does-not-matter-when-there-is-a-ourbigbook-json">the current working directory does not matter when there is a <code>ourbigbook.json</code></a></li><li id="_3074">otherwise, if the input path is a directory, it is used</li><li id="_3075">otherwise, the directory containing the input file is used</li></ul></div></div><div class="p" id="_3076">For example, consider the file following file structure relative to the current working directory:<div class="code" id="_3077"><div><pre><code>path/to/notindex.bigb</code></pre></div></div></div><div class="p" id="_3078">In this case:<div class="list"><ul id="_3079"><li id="_3080">if there is no <code>ourbigbook.json</code> file:<div class="list"><ul id="_3081"><li id="_3082">if we run <code>ourbigbook .</code>: the toplevel directory is the current directory <code>.</code>, and so <code>notindex.bigb</code> has ID <code>path/to/notindex</code></li><li id="_3083">if we run <code>ourbigbook path</code>: same</li><li id="_3084">if we run <code>ourbigbook path/to</code>: same</li><li id="_3085">if we run <code>ourbigbook path/to/notindex.bigb</code>: same</li></ul></div></li><li id="_3086">if there is a <code>path/ourbigbook.json</code> file:<div class="list"><ul id="_3087"><li id="_3088">if we run <code>ourbigbook .</code>: the toplevel directory is the current directory <code>.</code> because the <code>ourbigbook.json</code> is below the entry point and is not seen, and so <code>notindex.bigb</code> has ID <code>path/to/notindex</code></li><li id="_3089">if we run <code>ourbigbook path</code>: the toplevel directory is the directory with the <code>ourbigbook.json</code>, <code>path</code>, and so <code>notindex.bigb</code> has ID <code>to/notindex</code></li><li id="_3090">if we run <code>ourbigbook path/to</code>: same</li><li id="_3091">if we run <code>ourbigbook path/to/notindex.bigb</code>: same</li></ul></div></li></ul></div></div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"></input><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 642</span><span class="dcnt"> 3</span></span></span></span></div><ul><li class="has-child"><div id="_toc/the-toplevel-index-file"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#the-toplevel-index-file">The toplevel index file</a><span class="hover-metadata"><a class="nosplit" href=".#the-toplevel-index-file"></a><a href="#_toc" class="u"> Project toplevel directory</a><span class="metrics"><span class="wcntr"> 430</span><span class="dcnt"> 2</span></span></span></span></div><ul><li><div id="_toc/the-home-article"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#the-home-article">The home article</a><span class="hover-metadata"><a class="nosplit" href=".#the-home-article"></a><a href="#_toc/the-toplevel-index-file" class="u"> The toplevel index file</a><span class="metrics"><span class="wcntr"> 237</span></span></span></span></div></li><li><div id="_toc/the-current-working-directory-does-not-matter-when-there-is-a-ourbigbook-json"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#the-current-working-directory-does-not-matter-when-there-is-a-ourbigbook-json">The current working directory does not matter when there is a <code>ourbigbook.json</code></a><span class="hover-metadata"><a class="nosplit" href=".#the-current-working-directory-does-not-matter-when-there-is-a-ourbigbook-json"></a><a href="#_toc/the-toplevel-index-file" class="u"> The toplevel index file</a><span class="metrics"><span class="wcntr"> 178</span></span></span></span></div></li></ul></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#index-file">Index file</a></li><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(8)</span></a></h2><div class="list"><ul><li><a href=".#git-tracked-project">Git tracked project</a></li><li><a href=".#index-file">Index file</a></li><li><a href=".#ourbigbook-json/ignore"><code>ignore</code></a></li><li><a href=".#outdir"><code>--outdir &lt;outdir&gt;</code></a></li><li><a href=".#template"><code>--template</code></a></li><li><a href=".#the-current-working-directory-does-not-matter-when-there-is-a-ourbigbook-json">The current working directory does not matter when there is a <code>ourbigbook.json</code></a></li><li><a href=".#the-toplevel-index-file">The toplevel index file</a></li><li><a href=".#visual-studio-code-documentation">Visual Studio Code documentation</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

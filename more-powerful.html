@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>More powerful - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="more-powerful"><div class="notnav"><h1><a href="">More powerful</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup-and-cli-overview"> OurBigBook Markup and CLI overview</a><a href=".#design-goals"> Design goals</a></div><div class="nav"><a class="nosplit" href=".#more-powerful"></a><span class="metrics"><span class="wcntr"> Words: 239</span></span></div></nav></div><div class="p" id="_312">The <a href=".#saner">high sanity of OurBigBook</a>, also makes creating new macro extensions extremely easy and intuitive.</div><div class="p" id="_313">All built-in language features use the exact same API as new extensions, which ensures that the extension API is sane forever.</div><div class="p" id="_314">Markdown is clearly missing many key features such as block attributes and <a href=".#internal-link">internal links</a>, and has no standardized extension mechanism.</div><div class="p" id="_315">The "more powerful than Asciidoctor" part is only partially true, since Asciidoctor is very featureful can do basically anything through extensions.</div><div class="p" id="_316">The difference is mostly that OurBigBook is completely and entirely focused on making amazing scientific books, and so will have key features for that application out-of-the box, notably:<div class="list"><ul id="_317"><li id="_318">amazing header/ToC/ID features including proper error reports: never have a internal broken link or duplicate ID again</li><li id="_319"><a href=".#mathematics">server side pre-rendered maths with KaTeX</a>: all divs and spans are ready, browser only applies CSS, no JavaScript gets executed</li><li id="_320"><a href=".#publish-your-content">publish</a>: we take care of website publishing for you out-of-the-box, no need to integrate into an external project like Jekyll</li><li id="_321"><a href=".#split-headers"><code>-S</code>, <code>--split-headers</code></a>:<div class="list"><ul id="_322"><li id="_323"><a href="https://github.com/asciidoctor/asciidoctor/issues/626">github.com/asciidoctor/asciidoctor/issues/626</a> feature request</li><li id="_324"><a href="https://github.com/owenh000/asciidoctor-multipage">github.com/owenh000/asciidoctor-multipage</a> third party plugin that does it</li></ul></div></li></ul></div>and we feel that some of those features have required specialized code that could not be easily implemented as a standalone macro.</div><div class="p" id="_325">Another advantage over Asciidoctor is that the reference implementation of OurBigBook is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with <a href="https://github.com/opal/opal">Opal</a>, but who wants to deal with that layer of complexity?</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#design-goals">Design goals</a></li><li><a href=".#ourbigbook-markup-and-cli-overview">OurBigBook Markup and CLI overview</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

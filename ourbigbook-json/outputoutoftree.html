@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title><code>ourbigbook.json</code> / outputOutOfTree - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="outputoutoftree"><div class="notnav"><h1><a href="../#ourbigbook-json"><code>ourbigbook.json</code></a><span class="meta"> / </span><a href=""><code>outputOutOfTree</code></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="../#ourbigbook-cli"> OurBigBook CLI</a><a href="../#ourbigbook-json"> <code>ourbigbook.json</code></a></div><div class="nav"><a class="nosplit" href="../#ourbigbook-json/outputoutoftree"></a><span class="metrics"><span class="wcntr"> Words: 111</span></span></div></nav></div><div class="p" id="_3745">Default: <code>true</code></div><div class="p" id="_3746">If <code>true</code> place the HTML output under <a href="../#the-out-directory">the <code>_out</code> directory</a> at <code>_out/html</code>.</div><div class="p" id="_3747">For example with:<div class="code" id="_3748"><div><pre><code>{
+  "outputOutOfTree": false
+}</code></pre></div></div>then<div class="code" id="_3749"><div><pre><code>ourbigbook hello.bigb</code></pre></div></div>would be place its output under:<div class="code" id="_3750"><div><pre><code>hello.html</code></pre></div></div>instead of <code>_out/html/hello.html</code>.</div><div class="p" id="_3751">Advantages of <code>outputOutOfTree=true</code>:<div class="list"><ul id="_3752"><li id="_3753">the source tree becomes cleaner, especially when using <a href="../#split-headers"><code>-S</code>, <code>--split-headers</code></a> which can produce hundreds of output files from a single input file</li><li id="_3754">if you want to track several <code>.html</code> source files in-tree, you don't need to add an exception to each of of them on the <code>.gitignore</code> as:<div class="code" id="_3755"><div><pre><code>*.html
+!/ourbigbook.liquid.html</code></pre></div></div></li></ul></div>Disadvantages:<div class="list"><ul id="_3756"><li id="_3757">you have to type more to open each output file on the terminal</li></ul></div></div><div class="p" id="_3758">This option is always forced to <code>false</code> when <a href="../#outdir"><code>--outdir &lt;outdir&gt;</code></a> is given.</div><div class="p" id="_3759">Implemented at: <a href="https://github.com/ourbigbook/ourbigbook/issues/163">github.com/ourbigbook/ourbigbook/issues/163</a></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href="../#ourbigbook-json"><code>ourbigbook.json</code></a></li><li><a href="../#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href="../#run-ourbigbook-master">Run OurBigBook master</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "ourbigbook-json/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

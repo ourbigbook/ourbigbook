@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title><code>ourbigbook.json</code> / redirects - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="redirects"><div class="notnav"><h1><a href="../#ourbigbook-json"><code>ourbigbook.json</code></a><span class="meta"> / </span><a href=""><code>redirects</code></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="../#ourbigbook-cli"> OurBigBook CLI</a><a href="../#ourbigbook-json"> <code>ourbigbook.json</code></a></div><div class="nav"><a class="nosplit" href="../#ourbigbook-json/redirects"></a><span class="metrics"><span class="wcntr"> Words: 188</span></span></div></nav></div><div class="p" id="_3778">Generate custom redirects.</div><div class="p" id="_3779">For example:<div class="code" id="_3780"><div><pre><code>"redirects": [
+  ["cirodown", "ourbigbook"]
+],</code></pre></div></div>produces a file in the output called <code>cirodown.html</code> that redirects to <code>ourbigbook.html</code>.</div><div class="p" id="_3781">Absolute URLs are also accepted, e.g.:<div class="code" id="_3782"><div><pre><code>"redirects": [
+  ["ourbigbook", "https://docs.ourbigbook.com"]
+],</code></pre></div></div>produces a file in the output called <code>ourbigbook.html</code> that redirects to <code>https://docs.ourbigbook.com</code>.</div><div class="p" id="_3783">When dealing with regular <a href="../#header">headers</a>, you generally don't want to use this option and instead use the <a href="../#h-synonym-argument"><code>\H</code> <code>synonym</code> argument</a>, which already creates the redirection for you.</div><div class="p" id="_3784">This JSON option can be useful however for dealing with things that are outside of your OurBigBook project.</div><div class="p" id="_3785">For example, at one point, this project renamed the repository <a href="https://github.com/cirosantilli/cirodown">github.com/cirosantilli/cirodown</a> to <a href="https://github.com/ourbigbook/ourbigbook">github.com/ourbigbook/ourbigbook</a>.</div><div class="p" id="_3786">Unfortunately, GitHub Pages does not generate redirects like github.com itself.</div><div class="p" id="_3787">So in this case, we've added to the <a href="../#ourbigbook-json"><code>ourbigbook.json</code></a> of the toplevel user repository <a href="https://github.com/cirosantilli/cirosantilli.github.io">github.com/cirosantilli/cirosantilli.github.io</a> the lines:<div class="code" id="_3788"><div><pre><code>"redirects": [
+  ["cirodown", "ourbigbook"]
+],</code></pre></div></div>which produces a file in the output called <code>cirodown.html</code> that redirects to <code>ourbigbook.html</code>.</div><div class="p" id="_3789">In this case, <code>cirodown</code> and <code>ourbigbook</code> don't have to be any regular IDs present in the database, those strings are just used directly.</div><div class="p" id="_3790">TODO ideally we should check for conflicts with regular output from split headers IDs or their synonyms. But lazy.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href="../#ourbigbook-json"><code>ourbigbook.json</code></a></li><li><a href="../#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "ourbigbook-json/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

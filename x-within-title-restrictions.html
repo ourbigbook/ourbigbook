@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>\x within title restrictions - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="x-within-title-restrictions"><div class="notnav"><h1><a href=""><code>\x</code> within <code>title</code> restrictions</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#internal-link"> Internal link</a></div><div class="nav"><a class="nosplit" href=".#x-within-title-restrictions"></a><span class="metrics"><span class="wcntr"> Words: 372</span></span></div></nav></div><div class="p" id="_2298">If you use <code>\x</code> within a <code>title</code>, which most commonly happens for <a href=".#image">image titles</a>, that can generate complex dependencies between IDs, which would either be harder to implement, or lead to infinite recursion.</div><div class="p" id="_2299">To prevent such problems, OurBigBook emits an error if you use an <code>\x</code> without content in the <code>title</code> of one of the following elements:<div class="list"><ul id="_2300"><li id="_2301"><div class="p" id="_2302">any <a href=".#header">header</a>. For example, the following gives an error:<div class="code" id="_2303"><div><pre><code>= h1
+{id=myh1}
+
+== \x[myh1]</code></pre></div></div></div><div class="p" id="_2304">This could be solved by either adding a content to the reference:<div class="code" id="_2305"><div><pre><code>= h1
+{id=myh1}
+
+== \x[myh1][mycontent]</code></pre></div></div>or by adding an explicit ID to the header:<div class="code" id="_2306"><div><pre><code>= h1
+{id=myh1}
+
+== \x[myh1]
+{id=myh2}</code></pre></div></div></div></li><li id="_2307"><div class="p" id="_2308">non-header (e.g. an <a href=".#image">image</a>) that links to the title of another non-header</div><div class="p" id="_2309">For non-headers, things are a bit more relaxed, and we can link to headers, e.g.:<div class="code" id="_2310"><div><pre><code>= h1
+
+\Image[myimg.jpg]
+{title=my \x[h1]}</code></pre></div></div>This is allowed because OurBigBook calculates IDs in two stages: first for all headers, and only later non non-headers.</div><div class="p" id="_2311">What you cannot do is link to another image e.g.:<div class="code" id="_2312"><div><pre><code>\Image[myimg.jpg]
+{id=myimage1}
+{title=My image 1}
+
+\Image[myimg.jpg]
+{title=my \x[h1]}</code></pre></div></div>and there the workaround are much the same as for headers: either explicitly set the <a href=".#internal-link">internal link</a> content:<div class="code" id="_2313"><div><pre><code>\Image[myimg.jpg]
+{id=myimage1}
+{title=My image 1}
+
+\Image[myimg.jpg]
+{title=my \x[h1][My image 1]}</code></pre></div></div>or explicitly set an ID:<div class="code" id="_2314"><div><pre><code>\Image[myimg.jpg]
+{id=myimage1}
+{title=My image 1}
+
+\Image[myimg.jpg]
+{id=myimage2}
+{title=my \x[h1]}</code></pre></div></div>TODO both workaround are currently broken <a href="todo#image-title-with-x-to-image-with-content-incorrectly-disallowed">Image title with x to image with content incorrectly disallowed</a>, we forgot to add a test earlier on, and things inevitably broke... Should not be hard to fix though, we are just overchecking.</div></li></ul></div></div><div class="p" id="_2315">While it is technically possible relax the above limitations and give an error only in case of loops, it would require a bit of extra work which we don't want to put in right now: <a href="https://github.com/ourbigbook/ourbigbook/issues/95">github.com/ourbigbook/ourbigbook/issues/95</a>.</div><div class="p" id="_2316">Furthermore, the above rules do not exclude infinite rendering loops, but OurBigBook detects such loops and gives a nice error message, this has been fixed at: <a href="https://github.com/ourbigbook/ourbigbook/issues/34">github.com/ourbigbook/ourbigbook/issues/34</a></div><div class="p" id="_2317">For example this would contain an infinite loop:<div class="code" id="_2318"><div><pre><code>\Image[myimg.jpg]
+{id=myimage1}
+{title=\x[myimage2]}
+
+\Image[myimg.jpg]
+{id=myimage2}
+{title=\x[myimage1]}</code></pre></div></div></div><div class="p" id="_2319">This infinite recursion is fundamentally not technically solved: the user has to manually break the loop by providing an <code>x</code> content explicitly, e.g. in either:<div class="code" id="_2320"><div><pre><code>\Image[myimg.jpg]
+{id=myimage1}
+{title=\x[myimage2][my content 2]}
+
+\Image[myimg.jpg]
+{id=myimage2}
+{title=\x[myimage1]}</code></pre></div></div>or:<div class="code" id="_2321"><div><pre><code>\Image[myimg.jpg]
+{id=myimage1}
+{title=\x[myimage2]}
+
+\Image[myimg.jpg]
+{id=myimage2}
+{title=\x[myimage1][my content 1]}</code></pre></div></div></div><div class="p" id="_2322">A closely related limitation is the simplistic approach to <a href=".#x-id-output-format"><code>\x</code> <code>id</code> output format</a>.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href=".#internal-link">Internal link</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(3)</span></a></h2><div class="list"><ul><li><a href=".#conversion-process-overview">Conversion process overview</a></li><li><a href=".#format-source"><code>--format-source</code></a></li><li><a href=".#x-id-output-format"><code>\x</code> <code>id</code> output format</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

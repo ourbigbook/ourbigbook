@@ -662,6 +662,15 @@ function git_branches(input_path) {
   return new Set(arr.map(s => s.substring(2)));
 }
 
+function git_has_commit(input_path) {
+  try {
+    cmd_get_stdout('git', ['-C', input_path, 'log'], {throw_on_error: true})
+    return true
+  } catch(err) {
+    return false
+  }
+}
+
 /**
  * @return {String} full Git SHA of the source.
  */
@@ -1190,9 +1199,13 @@ A link to another file: \\x[and-now-an-include]
 
           cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'add', '.'], cmd_options);
           source_commit = git_sha(inputPath, src_branch);
-          cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'commit', '-m', source_commit], cmd_options);
+          const args = ['-C', publish_out_publish_dir, 'commit', '-m', source_commit]
+          if (git_has_commit(publish_out_publish_dir)) {
+            args.push('--amend')
+          }
+          cmd_get_stdout('git', args, cmd_options);
           if (!commander.dryRunPush) {
-            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'push', 'origin', `${publish_branch}:${publish_branch}`], cmd_options);
+            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'push', '-f', 'origin', `${publish_branch}:${publish_branch}`], cmd_options);
           }
         }
       }

@@ -262,7 +262,12 @@ class MacroArgument {
    * @param {String} name
    */
   constructor(options) {
+    if (!('remove_whitespace_children' in options)) {
+      // https://cirosantilli.com/cirodown#remove_whitespace_children
+      options.remove_whitespace_children = false;
+    }
     this.name = options.name
+    this.remove_whitespace_children = options.remove_whitespace_children;
   }
 }
 
@@ -318,11 +323,6 @@ class Macro {
     }
     if (!('properties' in options)) {
       options.properties = {};
-    }
-    if (!('remove_whitespace_children' in options)) {
-      // TODO this should be a property of specific arguments, not the entire macro.
-      // https://cirosantilli.com/cirodown#remove_whitespace_children
-      options.remove_whitespace_children = false;
     }
     if (!('x_style' in options)) {
       options.x_style = XStyle.full;
@@ -1776,7 +1776,11 @@ function parse(tokens, macros, options, extra_returns={}) {
           let child_node = arg[i];
           let new_child_nodes = [];
           let new_child_nodes_set = false;
-          if (macro.remove_whitespace_children && html_is_whitespace_text_node(child_node)) {
+          if (
+            (arg_name in macro.name_to_arg) &&
+            macro.name_to_arg[arg_name].remove_whitespace_children &&
+            html_is_whitespace_text_node(child_node)
+          ) {
             new_child_nodes_set = true;
           } else if (child_node.node_type === AstType.MACRO) {
             let child_macro_name = child_node.macro_name;
@@ -1791,7 +1795,6 @@ function parse(tokens, macros, options, extra_returns={}) {
               ) {
                 let start_auto_child_node = child_node;
                 const new_arg = [];
-                debugger;
                 while (i < arg.length) {
                   const arg_i = arg[i];
                   if (arg_i.node_type === AstType.MACRO) {
@@ -1801,10 +1804,10 @@ function parse(tokens, macros, options, extra_returns={}) {
                       break;
                     }
                   } else if (
-                    auto_parent_name_macro.remove_whitespace_children &&
+                    auto_parent_name_macro.name_to_arg['content'].remove_whitespace_children &&
                     html_is_whitespace_text_node(arg_i)
                   ) {
-                    // Ignore the node.
+                    // Ignore the whitespace node.
                   } else {
                     break;
                   }
@@ -1886,7 +1889,6 @@ function parse_add_paragraph(
   state, new_arg, arg, paragraph_start, paragraph_end
 ) {
   parse_log_debug(state, 'function: parse_add_paragraph');
-  parse_log_debug(state, 'arg: ' + JSON.stringify(arg, null, 2));
   parse_log_debug(state, 'paragraph_start: ' + paragraph_start);
   parse_log_debug(state, 'paragraph_end: ' + paragraph_end);
   parse_log_debug(state);
@@ -2485,12 +2487,10 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        remove_whitespace_children: true,
       }),
     ],
     html_convert_simple_elem('ol', {newline_after_open: true}),
-    {
-      remove_whitespace_children: true,
-    }
   ),
   new Macro(
     Macro.PARAGRAPH_MACRO_NAME,
@@ -2543,6 +2543,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        remove_whitespace_children: true,
       }),
     ],
     function(ast, context) {
@@ -2578,7 +2579,6 @@ const DEFAULT_MACRO_LIST = [
           name: Macro.TITLE_ARGUMENT_NAME,
         }),
       ],
-      remove_whitespace_children: true,
     }
   ),
   new Macro(
@@ -2700,12 +2700,12 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        remove_whitespace_children: true,
       }),
     ],
     html_convert_simple_elem('tr', {newline_after_open: true}),
     {
       auto_parent: 'table',
-      remove_whitespace_children: true,
     }
   ),
   new Macro(
@@ -2713,12 +2713,10 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        remove_whitespace_children: true,
       }),
     ],
     html_convert_simple_elem('ul', {newline_after_open: true}),
-    {
-      remove_whitespace_children: true,
-    }
   ),
   new Macro(
     'x',

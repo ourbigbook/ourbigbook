@@ -204,10 +204,7 @@ const l_with_explicit_ul_expect = [
 assert_convert_ast('l with explicit ul and no extra spaces',
   `ab
 
-\\ul[
-\\l[cd]
-\\l[ef]
-]
+\\ul[\\l[cd]\\l[ef]]
 
 gh
 `,

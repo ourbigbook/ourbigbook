@@ -180,7 +180,14 @@ export function ourbigbook_runtime(toplevel) {
       elem.addEventListener('mouseleave', (e) => {
         const t = e.target
         const firstChild = t.children[0]
-        if (firstChild.className === SELFLINK_CLASS) {
+        if (
+          // Not sure why but this could be undefined on OurBigBook Web
+          // when clicking from e.g. /go/articles to an article and hovering
+          // off from the element that you were hoevered on to by the page change.
+          // Would be good to understand better, but no patiecnse now.
+          firstChild !== undefined &&
+          firstChild.className === SELFLINK_CLASS
+        ) {
           t.removeChild(firstChild)
         }
       })

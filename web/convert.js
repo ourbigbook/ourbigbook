@@ -92,8 +92,7 @@ async function convertArticle({
       transaction,
     })
     const idid = extra_returns.context.header_tree.children[0].ast.id
-    const filePath = `${idid}.${ourbigbook.OURBIGBOOK_EXT}`
-    if (forceNew && await sequelize.models.File.findOne({ where: { path: filePath }, transaction })) {
+    if (forceNew && await sequelize.models.File.findOne({ where: { path: input_path }, transaction })) {
       throw new ValidationError(`Article already exists: ${idid}`)
     }
     await update_database_after_convert({
@@ -102,7 +101,7 @@ async function convertArticle({
       extra_returns,
       db_provider,
       sequelize,
-      path: filePath,
+      path: input_path,
       render,
       titleSource,
       transaction,
@@ -116,7 +115,7 @@ async function convertArticle({
       if (check_db_errors.length > 0) {
         throw new ValidationError(check_db_errors)
       }
-      const file = await sequelize.models.File.findOne({ where: { path: filePath }, transaction })
+      const file = await sequelize.models.File.findOne({ where: { path: input_path }, transaction })
       const articleArgs = []
       for (const outpath in extra_returns.rendered_outputs) {
         const rendered_output = extra_returns.rendered_outputs[outpath]

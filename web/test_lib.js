@@ -529,6 +529,7 @@ async function generateDemoData(params) {
           titleSource,
           user: users[issueIdx % nUsers],
         })
+        issue.issues = article
         issues.push(issue)
         issueIdx++
         articleIssueIdx++

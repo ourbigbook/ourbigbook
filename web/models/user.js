@@ -126,6 +126,7 @@ module.exports = (sequelize) => {
           return convert.convertArticle({
             author: user,
             bodySource: User.defaultIndexBody,
+            path: ourbigbook.INDEX_BASENAME_NOEXT,
             sequelize,
             titleSource: ourbigbook.capitalize_first_letter(ourbigbook.INDEX_BASENAME_NOEXT),
             transaction: options.transaction

@@ -5862,7 +5862,13 @@ heroku maintenance:off -a ourbigbook-staging
 
 On the toplevel we have:
 * `.`: Cirodown package
-* `web`: \x[dynamic-website] package that depends on the local Cirodown package through relative path `..`
+* `web/`: \x[dynamic-website] package that depends on the local Cirodown package through relative path `..`
+
+  Every require outside of `web/` must be relative, except for executables such as \a[cirodown] or demos such as \a[api_hello.js], or else the deployment will break.
+
+  This is because we don't know of a super clean way of adding the toplevel `cirodown` package to the search path as `npm run link` does not work well on Heroku.
+
+  A known workaround to allow `npm run build-assets` is done at: \a[web/build.sh].
 
 Currently, Heroku deployment does the following:
 * install both `dependencies` and `devDependencies`
@@ -5909,9 +5915,9 @@ This is something that should be merged into Sequelize itself, or at least asked
 * \a[web/app.js]: server executable entry point, can also be used programmatically from Node.js
 * \a[web/models]: Sequelize database models. Most changes in this folder require the creation of a corresponding \a[web/migrations]
 * \a[web/migrations]: database migrations
-* \a[web/pages]: Next.js pages URL entry points
-* \a[web/front]: files that can be imported from either front-end of backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
-* `\a[web/back]`: files that can be imported only from backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
+* \a[web/pages]: Next.js URL entry points
+* \a[web/front] and \a[web/front.tsx]: files that can be imported from either front-end of backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
+* \a[web/back] and \a[web/back.ts]: files that can be imported only from backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
 
 = Step debug the dynamic website
 {parent=dynamic-website}

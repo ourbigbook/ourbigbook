@@ -14,6 +14,7 @@ function addDays(oldDate, days) {
 const date0 = new Date(2000, 0, 0, 0, 0, 0, 0)
 
 async function generateDemoData(params) {
+  // Input Param defaults.
   const nUsers = params.nUsers === undefined ? 10 : params.nUsers
   const nArticlesPerUser = params.nArticlesPerUser === undefined ? 10 : params.nArticlesPerUser
   const nMaxCommentsPerArticle = params.nMaxCommentsPerArticle === undefined ? 3 : params.nMaxCommentsPerArticle
@@ -25,13 +26,12 @@ async function generateDemoData(params) {
   const basename = params.basename
 
   const nArticles = nUsers * nArticlesPerUser
-
   const sequelize = models(directory, basename);
   await sequelize.sync({force: true})
 
   // Users
   const userArgs = [];
-  for (var i = 0; i < nUsers; i++) {
+  for (let i = 0; i < nUsers; i++) {
     const userArg = {
       username: `user${i}`,
       email: `user${i}@mail.com`,
@@ -46,9 +46,10 @@ async function generateDemoData(params) {
 
   // Follows
   const followArgs = []
-  for (var i = 0; i < nUsers; i++) {
+  for (let i = 0; i < nUsers; i++) {
     const userId = users[i].id
-    for (var j = 0; j < nFollowsPerUser; j++) {
+    let nFollowsPerUserEffective = nUsers < nFollowsPerUser ? nUsers : nFollowsPerUser
+    for (var j = 0; j < nFollowsPerUserEffective; j++) {
       followArgs.push({
         userId: userId,
         followId: users[(i + 1 + j) % nUsers].id,
@@ -59,19 +60,19 @@ async function generateDemoData(params) {
 
   // Articles
   const articleArgs = [];
-  for (var i = 0; i < nArticles; i++) {
-    const userIdx = i % nUsers
-    const date = addDays(date0, i)
-    const title = `My title ${i}`
-    const articleArg = {
-      title,
-      authorId: users[userIdx].id,
-      createdAt: date,
-      // TODO not taking effect, don't know how to do it from bulkCrate, only with instances:
-      // https://stackoverflow.com/questions/42519583/sequelize-updating-updatedat-manually
-      // https://github.com/sequelize/sequelize/issues/3759
-      updatedAt: date,
-      body: `\\i[Italic]
+  for (let userIdx = 0; userIdx < nUsers; userIdx++) {
+    for (let i = 0; i < nArticlesPerUser; i++) {
+      const date = addDays(date0, i)
+      const title = `My title ${i * (userIdx + 1)}`
+      const articleArg = {
+        title,
+        authorId: users[userIdx].id,
+        createdAt: date,
+        // TODO not taking effect, don't know how to do it from bulkCrate, only with instances:
+        // https://stackoverflow.com/questions/42519583/sequelize-updating-updatedat-manually
+        // https://github.com/sequelize/sequelize/issues/3759
+        updatedAt: date,
+        body: `\\i[Italic]
 
 \\b[Bold]
 
@@ -128,8 +129,9 @@ Table:
 
 === ${title} h3
 `,
+      }
+      articleArgs.push(articleArg)
     }
-    articleArgs.push(articleArg)
   }
   const articles = await sequelize.models.Article.bulkCreate(
     articleArgs,
@@ -142,7 +144,7 @@ Table:
   // Favorites
   let articleIdx = 0
   const favoriteArgs = []
-  for (var i = 0; i < nUsers; i++) {
+  for (let i = 0; i < nUsers; i++) {
     const userId = users[i].id
     for (var j = 0; j < nFavoritesPerUser; j++) {
       favoriteArgs.push({
@@ -156,7 +158,7 @@ Table:
 
   // Tags
   const tagArgs = []
-  for (var i = 0; i < nTags; i++) {
+  for (let i = 0; i < nTags; i++) {
     tagArgs.push({name: `tag${i}`})
   }
   const tags = await sequelize.models.Tag.bulkCreate(tagArgs)
@@ -164,7 +166,7 @@ Table:
   // ArticleTags
   let tagIdx = 0
   const articleTagArgs = []
-  for (var i = 0; i < nArticles; i++) {
+  for (let i = 0; i < nArticles; i++) {
     const articleId = articles[i].id
     for (var j = 0; j < (i % (nMaxTagsPerArticle + 1)); j++) {
       articleTagArgs.push({
@@ -179,7 +181,7 @@ Table:
   // Comments
   const commentArgs = [];
   let commentIdx = 0;
-  for (var i = 0; i < nArticles; i++) {
+  for (let i = 0; i < nArticles; i++) {
     for (var j = 0; j < (i % (nMaxCommentsPerArticle + 1)); j++) {
       const commentArg = {
         body: `my comment ${commentIdx}`,

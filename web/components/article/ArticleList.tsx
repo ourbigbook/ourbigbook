@@ -121,7 +121,7 @@ const ArticleList = (props) => {
           </thead>
           <tbody>
             {articles?.map((article, i) => (
-              <tr>
+              <tr key={article.slug}>
                 <td className="shrink">
                   <FavoriteArticleButtonContext.Provider key={article.slug} value={{
                     favorited: favorited[i],

@@ -1724,6 +1724,10 @@ body {
 h1 a:link, h2 a:link, h3 a:link, h4 a:link, h5 a:link, h6 a:link,
 h1 a:visited, h2 a:visited, h3 a:visited, h4 a:visited, h5 a:visited, h6 a:visited {
   color: black;
+  font-size: 24px;
+}
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 20px;
 }
 /* Tables */
 /* Add borders! */

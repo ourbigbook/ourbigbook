@@ -332,7 +332,7 @@ class Macro {
 // headers are used by the 'toc'.
 Macro.HEADER_MACRO_NAME = 'h';
 Macro.ID_ARGUMENT_NAME = 'id';
-Macro.LINK_SELF = `(link ${String.fromCodePoint(0x1F517)})`;
+Macro.LINK_SELF = `(${String.fromCodePoint(0x1F517)} link)`;
 Macro.PARAGRAPH_MACRO_NAME = 'p';
 Macro.TITLE_ARGUMENT_NAME = 'title';
 Macro.TOC_MACRO_NAME = 'toc';
@@ -1563,7 +1563,6 @@ const DEFAULT_MACRO_LIST = [
       }
       let attrs = html_convert_attrs_id(ast, context, [], custom_args);
       let ret = `<h${level}${attrs}><a${this.self_link(ast)} title="link to this element">`;
-      let toc_href = html_attr('href', '#' + Macro.TOC_PREFIX + ast.id);
       let x_text_options = {
         show_caption_prefix: false,
       };
@@ -1572,8 +1571,17 @@ const DEFAULT_MACRO_LIST = [
       }
       ret += this.x_text(ast, context, x_text_options);
       ret += `</a>`;
-      if (context.has_toc && (level_int !== context.header_graph_top_level)) {
-        ret += `<span> <a${toc_href}>(toc \u2191)</a></span>`;
+      if (level_int !== context.header_graph_top_level) {
+        ret += `<span> `;
+        if (context.has_toc) {
+          let toc_href = html_attr('href', '#' + Macro.TOC_PREFIX + ast.id);
+          ret += ` | <a${toc_href}>\u21d1 toc</a>`;
+        }
+        let parent_ast = ast.header_tree_node.parent_node.value;
+        let parent_href = html_attr('href', '#' + parent_ast.id);
+        let parent_body = convert_arg(parent_ast.args.title, context);
+        ret += ` | <a${parent_href}>\u2191 parent "${parent_body}"</a>`;
+        ret += `</span>`;
       }
       ret += `</h${level}>\n`;
       return ret;

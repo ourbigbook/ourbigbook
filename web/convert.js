@@ -154,9 +154,6 @@ async function convertArticle({
       },
       order: [['slug', 'ASC']],
     })
-    for (const article of articles) {
-      article.author = author
-    }
     return articles
   } else {
     return []

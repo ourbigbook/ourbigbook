@@ -2,6 +2,7 @@ const router = require('express').Router()
 const Op = require('sequelize').Op
 
 const auth = require('../auth')
+const cant = require('../front/cant')
 const convert = require('../convert')
 const lib = require('./lib')
 const config = require('../front/config')
@@ -159,12 +160,14 @@ async function validateLike(req, res, user, article, isLike) {
       404,
     )
   }
-  // TODO factor these permissions check with frontend button grayout.
-  if (article.file.authorId === user.id) {
-    throw new lib.ValidationError(
-      [`A user cannot ${isLike ? 'like' : 'unlike'} their own article`],
-      403,
-    )
+  let msg
+  if (isLike) {
+    msg = cant.likeArticle(user, article)
+  } else {
+    msg = cant.unlikeArticle(user, article)
+  }
+  if (msg) {
+    throw new lib.ValidationError([msg], 403)
   }
   if (await user.hasLikedArticle(article) === isLike) {
     throw new lib.ValidationError(

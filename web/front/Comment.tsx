@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import Maybe from 'front/Maybe'
 import { webApi } from 'front/api'
 import config from 'front/config'
-import can from 'front/can'
+import cant from 'front/cant'
 import { formatDate } from 'front/date'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 
@@ -27,7 +27,7 @@ const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
         {' on '}
         {formatDate(comment.createdAt)}
         {' '}
-        <Maybe test={can.deleteComment(loggedInUser, comment)}>
+        <Maybe test={!cant.deleteComment(loggedInUser, comment)}>
           <button
             className="btn"
             onClick={() => handleDelete(comment.id)}

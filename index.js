@@ -2793,9 +2793,10 @@ function render_ast_list(opts) {
       context.header_tree.add_child(first_ast.header_tree_node);
       context.header_tree_top_level = first_ast.header_tree_node.get_level();
     }
-    const output_path = first_ast.output_path(
+    const output_path_ret = first_ast.output_path(
       clone_and_set(context, 'to_split_headers', split)
-    ).path;
+    )
+    const { path: output_path, split_suffix } = output_path_ret
     if (options.log['split-headers']) {
       console.error(`split-headers${split ? '' : ' nosplit'}: ` + output_path);
     }
@@ -2830,6 +2831,9 @@ function render_ast_list(opts) {
     const ret = ast_toplevel.render(context)
     if (output_path !== undefined) {
       rendered_outputs_entry.full = ret
+      rendered_outputs_entry.split = split
+      rendered_outputs_entry.header_ast = first_ast
+      rendered_outputs_entry.split_suffix = split_suffix
     }
     return ret
   }
@@ -2922,7 +2926,9 @@ function convert_init_context(options={}, extra_returns={}) {
       if (!('numbered' in ourbigbook_json.h)) { ourbigbook_json.h.numbered = true; }
       if (!('openLinksOnNewTabs' in ourbigbook_json)) { ourbigbook_json.openLinksOnNewTabs = false; }
       if (!('splitDefault' in ourbigbook_json.h)) { ourbigbook_json.h.splitDefault = false; }
-      if (!('splitDefaultNotToplevel' in ourbigbook_json.h)) { ourbigbook_json.h.splitDefaultNotToplevel = false; }
+      if (!('splitDefaultNotToplevel' in ourbigbook_json.h)) {
+        ourbigbook_json.h.splitDefaultNotToplevel = false;
+      }
       {
         if (!('lint' in ourbigbook_json)) { ourbigbook_json.lint = {}; }
         const lint = ourbigbook_json.lint
@@ -3007,6 +3013,11 @@ function convert_init_context(options={}, extra_returns={}) {
     options.ref_prefix = '';
   }
   if (!('render' in options)) { options.render = true; }
+  if (!('render_include' in options)) {
+    // If false, \\Include are removed from the rendered output.
+    // Their side effects such as determining the header tree are still used.
+    options.render_include = true;
+  }
   if (!('start_line' in options)) { options.start_line = 1; }
   if (!('split_headers' in options)) {
     options.split_headers = false;
@@ -4303,14 +4314,13 @@ async function parse(tokens, options, context, extra_returns={}) {
         parent_arg.push(error_ast);
         parse_error(state, options.forbid_include, ast.source_location);
       } else {
-        if (options.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
-          parent_arg.push(ast)
-        } else {
-          const peek_ast = todo_visit[todo_visit.length - 1][1];
-          if (peek_ast.node_type === AstType.PLAINTEXT && peek_ast.text === '\n') {
-            todo_visit.pop();
-          }
           const href = render_arg_noescape(ast.args.href, context);
+          let input_dir, input_basename
+          if (options.input_path) {
+            ;[input_dir, input_basename] = path_split(options.input_path, options.path_sep)
+          } else {
+            input_dir = '.'
+          }
 
           // \Include parent argument handling.
           let parent_ast;
@@ -4355,11 +4365,14 @@ async function parse(tokens, options, context, extra_returns={}) {
             );
             parent_ast.includes.push(href);
           }
-          let input_dir, input_basename
-          if (options.input_path) {
-            ;[input_dir, input_basename] = path_split(options.input_path, options.path_sep)
-          } else {
-            input_dir = '.'
+        if (options.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
+          if (options.render_include) {
+            parent_arg.push(ast)
+          }
+        } else {
+          const peek_ast = todo_visit[todo_visit.length - 1][1];
+          if (peek_ast.node_type === AstType.PLAINTEXT && peek_ast.text === '\n') {
+            todo_visit.pop();
           }
           // https://github.com/cirosantilli/ourbigbook/issues/215
           const read_include_ret = await (options.read_include(href, input_dir));
@@ -4565,7 +4578,17 @@ async function parse(tokens, options, context, extra_returns={}) {
             ast.scope = options.toplevel_parent_scope;
           }
           ast.is_first_header_in_input_file = true;
-        } else if (options.forbid_multiheader) {
+        }
+        ast.subdir = convert_id_arg(ast.args.subdir, context)
+
+        // Required by calculate_id.
+        validate_ast(ast, context);
+
+        if (
+          !ast.is_first_header_in_input_file &&
+          !ast.validation_output.synonym.boolean &&
+          options.forbid_multiheader
+        ) {
           parse_error(
             state,
             options.forbid_multiheader,
@@ -4573,10 +4596,6 @@ async function parse(tokens, options, context, extra_returns={}) {
           );
           parent_arg.push(new PlaintextAstNode(options.forbid_multiheader, ast.source_location));
         }
-        ast.subdir = convert_id_arg(ast.args.subdir, context)
-
-        // Required by calculate_id.
-        validate_ast(ast, context);
 
         let is_synonym = ast.validation_output.synonym.boolean;
         const header_level = ast.validation_output.level.positive_nonzero_integer
@@ -9352,11 +9371,23 @@ OUTPUT_FORMATS_LIST.push(
             // not sure it would be super easy.
             return href.replace(MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS_REGEX, ' ').replace(MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS_REGEX, '$1').replace(/ +/g, ' ').replace(/^ | $/g, '')
           }
+          let level = ast.header_tree_node.get_level() - context.header_tree_top_level + 1;
+          let output_level
+          if (ast.validation_output.parent.given) {
+            output_level = 1
+          } else {
+            output_level = level
+          }
+          const skip = new Set(['level', 'title'])
+          if (level === 1) {
+            // Happens on split headers.
+            skip.add('parent')
+          }
           const args_string = ourbigbook_convert_args(
             ast,
             context,
             {
-              skip: new Set(['level', 'title']),
+              skip,
               modify_callbacks: {
                 'child': modify_callback,
                 'parent': modify_callback,
@@ -9364,7 +9395,8 @@ OUTPUT_FORMATS_LIST.push(
               }
             }
           ).join('')
-          return `${INSANE_HEADER_CHAR.repeat(ast.validation_output.level.positive_nonzero_integer)} ${render_arg(ast.args.title, context)}${args_string ? '\n' : '' }${args_string}${newline}`
+          //ast.validation_output.level.positive_nonzero_integer
+          return `${INSANE_HEADER_CHAR.repeat(output_level)} ${render_arg(ast.args.title, context)}${args_string ? '\n' : '' }${args_string}${newline}`
         },
         [Macro.INCLUDE_MACRO_NAME]: ourbigbook_convert_simple_elem,
         [Macro.LIST_ITEM_MACRO_NAME]: ourbigbook_li(INSANE_LIST_START),

@@ -166,8 +166,6 @@ while (todo_visit.length > 0) {
   const { children, opts } = expandArticleDataEntry(entry)
   entry[2] = opts
   opts.parentEntry = parentEntry
-  console.error({entry});
-  console.error({children});
   for (let i = children.length - 1; i >= 0; i--) {
     const child = children[i]
     todo_visit.push([entry, child]);
@@ -175,7 +173,6 @@ while (todo_visit.length > 0) {
       const { opts } = expandArticleDataEntry(child)
       child[2] = opts
       opts.previousSiblingEntry = children[i - 1]
-      console.error();
     }
   }
   articleDataCount++

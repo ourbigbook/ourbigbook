@@ -83,8 +83,8 @@ module.exports = {
   // Wikipedia also seems to start complaining at about that size:
   // "This article may be too long to read and navigate comfortably. Its current readable prose size is 108 kilobytes."
   // https://archive.ph/cH0Rk
-  maxArticleSize: 100000,
-  maxArticles: 1000,
+  maxArticleSize: 50000,
+  maxArticles: 10000,
   read_include_web: function(id_exists) {
     return read_include({
       exists: async (inpath) => {

@@ -1981,6 +1981,171 @@ assert_convert_ast('xss: a content and href',
   }
 );
 
+// {check} local file existence of \a and \Image and local link automodifications.
+assert_error(
+  'link: relative reference to nonexistent file leads to failure in link',
+  `\\a[i-dont-exist]
+`, 1, 3, 'README.bigb',
+  {
+    input_path_noext: 'README',
+  }
+);
+assert_error(
+  'link: relative reference to nonexistent file leads to failure in image',
+  `\\Image[i-dont-exist]
+`, 1, 7, 'README.bigb',
+  {
+    input_path_noext: 'README',
+  }
+);
+assert_convert_ast(
+  'link: relative reference to existent file does not lead to failure in link',
+  `\\a[i-exist]
+`,
+  undefined,
+  {
+    input_path_noext: 'README',
+    filesystem: {
+      'i-exist': '',
+    }
+  }
+);
+assert_convert_ast(
+  'link: relative reference to existent file does not lead to failure in image',
+  `\\Image[i-exist]
+`,
+  undefined,
+  {
+    input_path_noext: 'README',
+    filesystem: {
+      'i-exist': '',
+    }
+  }
+);
+assert_convert_ast(
+  'link: check=0 prevents existence checks in link',
+  `\\a[i-dont-exist]{check=0}
+`,
+  undefined,
+  {
+    input_path_noext: 'README',
+  }
+);
+assert_convert_ast(
+  'link: check=0 prevents existence checks in image',
+  `\\Image[i-dont-exist]{check=0}
+`,
+  undefined,
+  {
+    input_path_noext: 'README',
+  }
+);
+assert_convert_ast(
+  'link: existence checks are skipped when media provider converts them to absolute url',
+  `\\Image[i-dont-exist]
+`,
+  undefined,
+  {
+    input_path_noext: 'README',
+    extra_convert_opts: {
+      ourbigbook_json: {
+        "media-providers": {
+          "github": {
+            "default-for": ["image"],
+            "remote": "cirosantilli/media"
+          },
+        }
+      },
+    }
+  }
+);
+assert_convert_ast(
+  'link: relative links and images are corrected for different output paths with scope and split-headers',
+  `= Index
+
+== h2
+{scope}
+
+=== h3
+
+\\a[i-exist][h3 i-exist]
+
+\\Image[i-exist][h3 i-exist img]
+
+\\Video[i-exist][h3 i-exist video]
+
+\\a[subdir/i-exist-subdir][h3 i-exist-subdir]
+
+\\a[https://cirosantilli.com][h3 abs]
+`,
+  undefined,
+  {
+    input_path_noext: 'README',
+    extra_convert_opts: {
+      split_headers: true,
+    },
+    convert_before: ['subdir/README.bigb', 'subdir/not-readme.bigb'],
+    filesystem: {
+      'subdir/README.bigb': `= Subdir
+
+\\a[../i-exist][subdir i-exist]
+
+\\a[/i-exist][subdir /i-exist]
+
+\\a[i-exist-subdir][subdir i-exist-subdir]
+
+== subdir h2
+{scope}
+
+=== subdir h3
+
+\\a[../i-exist][subdir h3 i-exist]
+
+\\a[/i-exist][subdir h3 /i-exist]
+
+\\a[i-exist-subdir][subdir h3 i-exist-subdir]
+`,
+      'subdir/not-readme.bigb': `= Subdir Not Readme
+
+\\a[../i-exist][subdir not readme i-exist]
+
+\\a[i-exist-subdir][subdir not readme i-exist-subdir]
+`,
+      'i-exist': ``,
+      'subdir/i-exist-subdir': ``,
+    },
+    assert_xpath: {
+      'index.html': [
+        "//x:a[@href='i-exist' and text()='h3 i-exist']",
+        "//x:img[@src='i-exist' and @alt='h3 i-exist img']",
+        "//x:video[@src='i-exist' and @alt='h3 i-exist video']",
+        "//x:a[@href='subdir/i-exist-subdir' and text()='h3 i-exist-subdir']",
+        "//x:a[@href='https://cirosantilli.com' and text()='h3 abs']",
+      ],
+      'h2/h3.html': [
+        "//x:a[@href='../i-exist' and text()='h3 i-exist']",
+        "//x:img[@src='../i-exist' and @alt='h3 i-exist img']",
+        "//x:video[@src='../i-exist' and @alt='h3 i-exist video']",
+        "//x:a[@href='https://cirosantilli.com' and text()='h3 abs']",
+      ],
+      'subdir.html': [
+        "//x:a[@href='i-exist' and text()='subdir i-exist']",
+        "//x:a[@href='/i-exist' and text()='subdir /i-exist']",
+        "//x:a[@href='subdir/i-exist-subdir' and text()='subdir i-exist-subdir']",
+      ],
+      'subdir/subdir-h2/subdir-h3.html': [
+        "//x:a[@href='../../i-exist' and text()='subdir h3 i-exist']",
+        "//x:a[@href='/i-exist' and text()='subdir h3 /i-exist']",
+        "//x:a[@href='../i-exist-subdir' and text()='subdir h3 i-exist-subdir']",
+      ],
+      'subdir/not-readme.html': [
+        "//x:a[@href='../i-exist' and text()='subdir not readme i-exist']",
+        "//x:a[@href='i-exist-subdir' and text()='subdir not readme i-exist-subdir']",
+      ],
+    },
+  }
+);
+
 // Internal cross references \x
 assert_convert_ast('cross reference simple',
   `= My header
@@ -2761,18 +2926,6 @@ assert_convert_ast('cross reference from image title to following non-header is 
     ],
   }
 );
-assert_executable('cli: cross reference from image title to previous non-header is not allowed',
-  {
-    args: ['.'],
-    expect_exit_status: 1,
-    filesystem: {
-      'README.bigb': `\\Image[ab]{title=cd}{check=0}
-
-\\Image[ef]{title=gh \\x[image-cd]}{check=0}
-`,
-    }
-  }
-);
 assert_error('cross reference infinite recursion with explicit IDs fails gracefully',
   `= \\x[h2]
 {id=h1}
@@ -3181,7 +3334,9 @@ assert_convert_ast('cross reference to non-included file with toplevel scope',
 == h2
 
 \\Image[h2.png]{title=h2}
-`
+`,
+      'h1.png': '',
+      'h2.png': '',
     }
   }
 );
@@ -5441,7 +5596,7 @@ assert_executable('cli: id conflict with id on another file simple',
     expect_exit_status: 1,
   }
 );
-assert_convert_ast('id conflict with id on another file where conflict header has a child heder',
+assert_convert_ast('id conflict with id on another file where conflict header has a child header',
   // Bug introduced at ef9e2445654300c4ac41e1d06d3d2a1889dd0554
   `= tmp
 
@@ -6590,120 +6745,6 @@ assert_executable(
 
 == Notindex h2
 `,
-    },
-  }
-);
-
-// cli: link:
-assert_executable(
-  'cli: link: relative reference to nonexistent file leads to failure',
-  {
-    args: ['README.bigb'],
-    filesystem: {
-      'README.bigb': `\\a[i-dont-exist]
-`,
-    },
-    expect_exit_status: 1,
-  }
-);
-assert_executable(
-  "cli: link: relative reference to existent files do not lead to failure",
-  {
-    args: ['README.bigb'],
-    filesystem: {
-      'README.bigb': `\\a[i-exist]`,
-      'i-exist': ``,
-    },
-  }
-);
-assert_executable(
-  "cli: link: check=0 prevents existence checks",
-  {
-    args: ['README.bigb'],
-    filesystem: {
-      'README.bigb': `\\a[i-dont-exist]{check=0}
-`,
-    },
-  }
-);
-assert_executable(
-  'cli: link: relative links and images are corrected for different output paths with scope and split-headers',
-  {
-    args: ['--split-headers', '.'],
-    filesystem: {
-      'README.bigb': `= Index
-
-== h2
-{scope}
-
-=== h3
-
-\\a[i-exist][h3 i-exist]
-
-\\Image[i-exist][h3 i-exist img]
-
-\\Video[i-exist][h3 i-exist video]
-
-\\a[subdir/i-exist-subdir][h3 i-exist-subdir]
-
-\\a[https://cirosantilli.com][h3 abs]
-`,
-      'subdir/README.bigb': `= Subdir
-
-\\a[../i-exist][subdir i-exist]
-
-\\a[/i-exist][subdir /i-exist]
-
-\\a[i-exist-subdir][subdir i-exist-subdir]
-
-== subdir h2
-{scope}
-
-=== subdir h3
-
-\\a[../i-exist][subdir h3 i-exist]
-
-\\a[/i-exist][subdir h3 /i-exist]
-
-\\a[i-exist-subdir][subdir h3 i-exist-subdir]
-`,
-      'subdir/not-readme.bigb': `= Subdir Not Readme
-
-\\a[../i-exist][subdir not readme i-exist]
-
-\\a[i-exist-subdir][subdir not readme i-exist-subdir]
-`,
-      'i-exist': ``,
-      'subdir/i-exist-subdir': ``,
-    },
-    assert_xpath: {
-      'index.html': [
-        "//x:a[@href='i-exist' and text()='h3 i-exist']",
-        "//x:img[@src='i-exist' and @alt='h3 i-exist img']",
-        "//x:video[@src='i-exist' and @alt='h3 i-exist video']",
-        "//x:a[@href='subdir/i-exist-subdir' and text()='h3 i-exist-subdir']",
-        "//x:a[@href='https://cirosantilli.com' and text()='h3 abs']",
-      ],
-      'h2/h3.html': [
-        "//x:a[@href='../i-exist' and text()='h3 i-exist']",
-        "//x:img[@src='../i-exist' and @alt='h3 i-exist img']",
-        "//x:video[@src='../i-exist' and @alt='h3 i-exist video']",
-        "//x:a[@href='https://cirosantilli.com' and text()='h3 abs']",
-      ],
-      'subdir.html': [
-        "//x:a[@href='i-exist' and text()='subdir i-exist']",
-        "//x:a[@href='/i-exist' and text()='subdir /i-exist']",
-        "//x:a[@href='subdir/i-exist-subdir' and text()='subdir i-exist-subdir']",
-      ],
-      'subdir/subdir-h2/subdir-h3.html': [
-        "//x:a[@href='../../i-exist' and text()='subdir h3 i-exist']",
-        "//x:a[@href='/i-exist' and text()='subdir h3 /i-exist']",
-        "//x:a[@href='../i-exist-subdir' and text()='subdir h3 i-exist-subdir']",
-      ],
-      'subdir/not-readme.html': [
-        "//x:a[@href='../i-exist' and text()='subdir not readme i-exist']",
-        "//x:a[@href='i-exist-subdir' and text()='subdir not readme i-exist-subdir']",
-      ],
     },
   }
 );

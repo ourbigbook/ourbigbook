@@ -640,7 +640,7 @@ paragraphs]
 
 If `{check=0}` is given, this disables the local file existence check that is done by default for \x[relative-link]{p}.
 
-If `check` is not given explicitly, OurBigBook does the check by default if the link is not a \x[url-with-protocol] For example, the following are not checked:
+If `check` is not given explicitly, OurBigBook does the check by default if the link is not a \x[url-with-protocol]. For example, the following are not checked:
 * `http://cirosantilli.com`
 * `https://cirosantilli.com`
 * `file:///etc/fstab`
@@ -5220,12 +5220,12 @@ because with `--outfile` we know where the output is going, and so we can genera
 Default: <html output format>.
 
 = `html` output format
-{parent=unimplemented-output-formats}
+{parent=output-format}
 
 The default output format. Web pages!!!
 
 = `bigb` output format
-{parent=unimplemented-output-formats}
+{parent=output-format}
 
 Outputs as <OurBigBook Markup>, i.e. the same format as the input itself!
 

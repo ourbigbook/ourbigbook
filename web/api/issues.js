@@ -1,7 +1,7 @@
 const router = require('express').Router()
 
 const auth = require('../auth')
-const can = require('../front/can')
+const cant = require('../front/cant')
 const front = require('../front/js')
 const { convertIssue, convertComment } = require('../convert')
 const lib = require('./lib')
@@ -104,7 +104,7 @@ router.put('/:number', auth.required, async function(req, res, next) {
       getIssue(req, res),
       sequelize.models.User.findByPk(req.payload.id),
     ])
-    if (!can.editIssue(loggedInUser, issue)) {
+    if (cant.editIssue(loggedInUser, issue)) {
       return res.sendStatus(403)
     }
     const body = lib.validateParam(req, 'body')
@@ -138,15 +138,18 @@ async function validateLike(req, res, user, article, isLike) {
       404,
     )
   }
-  if (article.authorId === user.id) {
-    throw new lib.ValidationError(
-      [`A user cannot ${isLike ? 'like' : 'unlike'} their own article`],
-      403,
-    )
+  let msg
+  if (isLike) {
+    msg = cant.likeArticle(user, article)
+  } else {
+    msg = cant.unlikeArticle(user, article)
+  }
+  if (msg) {
+    throw new lib.ValidationError([msg], 403)
   }
   if (await user.hasLikedIssue(article) === isLike) {
     throw new lib.ValidationError(
-      [`User '${user.username}' ${isLike ? 'already likes' : 'does not like'} article '${article.slug}'`],
+      [`User '${user.username}' ${isLike ? 'already likes' : 'does not like'} issue '${article.number}'`],
       403,
     )
   }
@@ -283,11 +286,11 @@ router.delete('/:number/comments/:commentNumber', auth.required, async function(
     if (!comment) {
       res.sendStatus(404)
     } else {
-      if (can.deleteComment(loggedInUser, comment)) {
+      if (cant.deleteComment(loggedInUser, comment)) {
+        res.sendStatus(403)
+      } else {
         await comment.destroy()
         res.sendStatus(204)
-      } else {
-        res.sendStatus(403)
       }
     }
   } catch(error) {

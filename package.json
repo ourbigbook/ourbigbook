@@ -36,6 +36,8 @@
     "node-polyfill-webpack-plugin": "1.1.4",
     "normalize.css": "8.0.1",
     "parse5": "6.0.1",
+    "pg": "8.5.1",
+    "pg-hstore": "2.3.3",
     "resolve-url-loader": "4.0.0",
     "sass-loader": "11.0.1",
     "style-loader": "2.0.0",
@@ -61,6 +63,7 @@
     "main.scss",
     "models/*",
     "nodejs.js",
+    "nodejs_front.js",
     "nodejs_webpack_safe.js",
     "template/*"
   ],
@@ -84,6 +87,8 @@
     "start-dev": "cd web && npm run start-dev",
     "test": "NODE_OPTIONS='--unhandled-rejections=strict' mocha test --ignore-leaks",
     "testi": "NODE_OPTIONS='--unhandled-rejections=strict' node inspect ./node_modules/.bin/mocha test --ignore-leaks",
+    "test-pg": "OURBIGBOOK_POSTGRES=true npm test",
+    "test-release": "npm test && npm test-pg",
     "webpack": "webpack",
     "webpack-dev": "webpack serve"
   }

@@ -1,3 +1,5 @@
+const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front')
+
 let isProduction;
 
 if (process.env.NEXT_PUBLIC_NODE_ENV === undefined) {
@@ -47,7 +49,7 @@ module.exports = {
     (process.env.NODE_ENV_NEXT_SERVER_ONLY === 'production'),
   secret: isProduction ? process.env.SECRET : 'secret',
   port: process.env.PORT || 3000,
-  postgres: process.env.OURBIGBOOK_POSTGRES === 'true',
+  postgres: ourbigbook_nodejs_front.postgres,
   reservedUsernames: new Set([
     API_PATH_COMPONENT,
     escapeUsername,
@@ -63,20 +65,10 @@ module.exports = {
     logging: true,
     storage: 'db.sqlite3',
   },
-  production: {
+  production: Object.assign({
     url:
       databaseUrl ||
       'postgres://ourbigbook_user:a@localhost:5432/ourbigbook',
-    dialect: 'postgres',
-    dialectOptions: {
-      // https://stackoverflow.com/questions/27687546/cant-connect-to-heroku-postgresql-database-from-local-node-app-with-sequelize
-      // https://devcenter.heroku.com/articles/heroku-postgresql#connecting-in-node-js
-      // https://stackoverflow.com/questions/58965011/sequelizeconnectionerror-self-signed-certificate
-      ssl: {
-        require: true,
-        rejectUnauthorized: false,
-      }
-    },
     logging: true,
-  }
+  }, ourbigbook_nodejs_front.sequelize_postgres_opts)
 }

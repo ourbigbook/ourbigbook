@@ -181,6 +181,11 @@ div.list-container {
 }
 */
 
+div.source {
+  margin-top: 1em;
+  font-weight: bold;
+}
+
 // For elements that are injected into the rendered OurBigBook HTML.
 .ourbigbook {
   .web {
@@ -221,6 +226,10 @@ div.list-container {
       }
     }
   }
+}
+
+pre {
+  @include pre;
 }
 
 div.article-page {

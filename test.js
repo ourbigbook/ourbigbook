@@ -4328,6 +4328,29 @@ assert_executable(
   }
 );
 assert_executable(
+  'executable: directory name is removed from link to subdir h2',
+  {
+    args: ['.'],
+    filesystem: {
+      'README.ciro': `= Index
+
+\\x[subdir/index-h2][link to subdir index h2]
+    `,
+      'cirodown.json': `{}\n`,
+      'subdir/index.ciro': `= Subdir index
+
+== Index h2
+    `,
+    },
+    expect_filesystem_xpath: {
+      'index.html': [
+        xpath_header(1, 'index'),
+        "//x:a[@href='subdir/index.html#index-h2' and text()='link to subdir index h2']",
+      ]
+    },
+  }
+);
+assert_executable(
   'executable: includer should show as a parent of the includee',
   {
     args: ['--split-headers', '.'],

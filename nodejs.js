@@ -47,11 +47,6 @@ exports.PACKAGE_SASS_BASENAME = PACKAGE_SASS_BASENAME;
 const TMP_DIRNAME = 'out';
 exports.TMP_DIRNAME = TMP_DIRNAME;
 
-class ZeroFileProvider extends cirodown.FileProvider {
-  get(path) { return {toplevel_scope_cut_length: 0}; }
-}
-exports.ZeroFileProvider = ZeroFileProvider;
-
 class SqliteIdProvider extends cirodown.IdProvider {
   constructor(sequelize) {
     super();

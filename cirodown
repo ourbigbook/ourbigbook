@@ -54,14 +54,20 @@ class SqliteFileProvider extends cirodown.FileProvider {
   constructor(sequelize) {
     super();
     this.sequelize = sequelize;
-    this.get_id_cache = {}
     this.get_path_entry_cache = {}
+    this.id_provider = undefined
   }
 
   async get_path_entry_fetch(path) {
-    const rows = await this.sequelize.models.File.findAll({ where: { path } })
+    const rows = await this.sequelize.models.File.findAll({
+      where: { path },
+      include: this.sequelize.models.Id,
+    })
     for (const row of rows) {
       this.get_path_entry_cache[row.path] = row
+      if (row.Id !== null) {
+        this.id_provider.add_row_to_id_cache(row.Id)
+      }
     }
   }
 

@@ -546,6 +546,7 @@ Static book generators:
 * https://www.gitbook.com/
   * https://github.com/rust-lang/mdBook[]. Impressive integrated search feature. Like Gitbook but implemented in Rust.
 * https://github.com/facebook/docusaurus React + markdown based, written in TypeScript. So how can it be build fast? Gotta benchmark.
+* vimdoc: http://vimdoc.sourceforge.net/ They do have perfectly working <Internal cross file references>, see any page e.g. http://vimdoc.sourceforge.net/htmldoc/pattern.html[].
 
 Less related but of interest, similar philosophy to what Ciro wants, but no explicitly reusable system:
 * http://www.uprtcl.io/
@@ -5231,6 +5232,7 @@ Outputs as <OurBigBook Markup>, i.e. the same format as the input itself!
 While using `-O bigb` is not a common use case, the existence of this format has the following applications:
 * automatic source code formatting
 * manipulating source code on <ourbigbook web> to allow editing either individual sections separatelly, or multiple sections at once
+* this could be adapted to allows us to migrate updates with breaking changes to the source code more easily. Alternatively on <ourbigbook web>, we might just start storing the <ast> instead of source, and just rendering the source whenever users want to edit it.
 
 Can be tested interactively with:
 ``
@@ -7026,7 +7028,11 @@ The two pass approach is required to resolve \x[internal-cross-reference]{p}
 
 = Abstract syntax tree
 {parent=conversion-process-overview}
-{title2=AST}
+
+= AST
+{c}
+{synonym}
+{title2}
 
 The implementation of much of the functionality of OurBigBook involves manipulating the abstract syntax tree.
 

@@ -2552,6 +2552,22 @@ it('api: article tree single user', async () => {
         article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
         assert.strictEqual(status, 422)
+
+        // Circular parent loops fail gracefully with render: false.
+        article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+        ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus', render: false }))
+        // TODO bad.
+        //assert.strictEqual(status, 422)
+        // OK at least DB seems consistent.
+        {
+          const article = await sequelize.models.Article.getArticle({
+            includeParentAndPreviousSibling: true,
+            sequelize,
+            slug: 'user0/mathematics',
+          })
+          assert.strictEqual(article.parentId.idid, '@user0')
+        }
+
         // This is where it might go infinite if it hadn't been prevented above.
         article = createArticleArg({ i: 0, titleSource: 'Calculus' })
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
@@ -2703,11 +2719,19 @@ it('api: article tree single user', async () => {
         //assert_xpath("//*[@id='toc']//x:a[@href='user0/limit-of-a-function' and @data-test='6' and text()='Limit of a function']", data.articles[0].render)
 
         // Move to previous sibling. Don't give parentId on update. Parent will be derived from sibling.
-        ;({data, status} = await createOrUpdateArticleApi(test,
-          createArticleArg({ i: 0, titleSource: 'Limit' }),
-          { parentId: undefined, previousSiblingId: '@user0/derivative' }
-        ))
-        assertStatus(status, data)
+
+          // First create a link to derivative from here. This is to stress the case where there is a non-parent
+          // link to the previousSiblingId, to ensure that the Ref type is chosen on the query. This failed to exercise
+          // the bug concretely, as it is an undocumented behaviour ordering issue.
+          article = createArticleArg({ i: 0, titleSource: 'Mathematics', bodySource: '<derivative>' })
+          ;({data, status} = await createOrUpdateArticleApi(test, article))
+          assertStatus(status, data)
+
+          ;({data, status} = await createOrUpdateArticleApi(test,
+            createArticleArg({ i: 0, titleSource: 'Limit' }),
+            { parentId: undefined, previousSiblingId: '@user0/derivative' }
+          ))
+          assertStatus(status, data)
 
         // Current tree state:
         // * 0 Index

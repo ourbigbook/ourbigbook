@@ -6,7 +6,7 @@ import CustomLink from 'front/CustomLink'
 import LoadingSpinner from 'front/LoadingSpinner'
 import Maybe from 'front/Maybe'
 import UserLinkWithImage from 'front/UserLinkWithImage'
-import FollowUserButton, { FollowUserButtonContext } from 'front/FollowUserButton'
+import FollowUserButton from 'front/FollowUserButton'
 import { displayAndUsernameText } from 'front/user'
 import Article from 'front/Article'
 import ArticleInfo from 'front/ArticleInfo'
@@ -37,21 +37,6 @@ const ArticlePage = ({
     comments = commentApi.comments
   }
 
-  // TODO it is not ideal to have to setup state on every parent of LikeUserButton/FollowUserButton,
-  // but I just don't know how to avoid it nicely, especially considering that the
-  // button shows up on both profile and article pages, and thus comes from different
-  // API data, so useSWR is not a clean.
-  const [following, setFollowing] = React.useState(false)
-  const [followerCount, setFollowerCount] = React.useState(article?.author.followerCount)
-  React.useEffect(() => {
-    setFollowing(article?.author.following)
-    setFollowerCount(article?.author.followerCount)
-  }, [
-    article?.author.following,
-    article?.author.followerCount,
-  ])
-
-  if (router.isFallback) { return <LoadingSpinner />; }
   const { setTitle } = React.useContext(AppContext)
   React.useEffect(() =>
     setTitle(`${article.title} by ${displayAndUsernameText(article?.author)}`)
@@ -64,11 +49,7 @@ const ArticlePage = ({
             { 'Author: ' }
             <UserLinkWithImage user={article.author} />
             {' '}
-            <FollowUserButtonContext.Provider value={{
-              following, setFollowing, followerCount, setFollowerCount
-            }}>
-              <FollowUserButton user={article.author} showUsername={false} />
-            </FollowUserButtonContext.Provider>
+            <FollowUserButton user={article.author} showUsername={false} />
           </div>
           <div className="article-info article-info-2">
             {topicArticleCount > 1 &&

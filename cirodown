@@ -740,7 +740,7 @@ if (commander.helpMacros) {
   }
   let outdir;
   if (commander.outdir === undefined) {
-    outdir = '.';
+    outdir = cirodown_json_dir;
   } else {
     outdir = commander.outdir;
   }

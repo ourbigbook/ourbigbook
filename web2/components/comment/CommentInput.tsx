@@ -61,28 +61,27 @@ const CommentInput = () => {
       <ul className="error-messages">{/* TODO. Reference does not handle those errors either right now.
         but the unconditional (and likely buggy) presence of this is visible. */}</ul>
       <form className="card comment-form" onSubmit={handleSubmit}>
-        <fieldset>
-          <div className="card-block">
-            <textarea
-              rows={3}
-              className="form-control"
-              placeholder="Write a comment..."
-              value={content}
-              onChange={handleChange}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="card-footer">
-            <CustomImage
-              className="profile-thumb"
-              src={loggedInUser.effectiveImage}
-              alt="author profile image"
-            />
-            <button className="btn btn-sm btn-primary" type="submit">
-              Post Comment
-            </button>
-          </div>
-        </fieldset>
+        <div className="comment-form-textarea">
+          <textarea
+            rows={5}
+            className="form-control"
+            placeholder="Write a comment..."
+            value={content}
+            onChange={handleChange}
+            disabled={isLoading}
+          />
+        </div>
+        <div className="comment-form-submit">
+          <CustomImage
+            className="profile-thumb"
+            src={loggedInUser.effectiveImage}
+            alt="author profile image"
+          />
+          {' '}
+          <button className="btn btn-sm btn-primary" type="submit">
+            Post Comment
+          </button>
+        </div>
       </form>
     </>
   );

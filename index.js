@@ -1442,7 +1442,9 @@ Macro.TITLE2_ARGUMENT_NAME = 'title2';
 // - only a single ToC ever renders per document. So we can just have a fixed
 //   magic one.
 Macro.RESERVED_ID_PREFIX = '_'
-Macro.FILE_ID_PREFIX = Macro.RESERVED_ID_PREFIX + 'file' + Macro.HEADER_SCOPE_SEPARATOR
+const FILE_PREFIX = Macro.RESERVED_ID_PREFIX +  'file'
+exports.FILE_PREFIX = FILE_PREFIX
+Macro.FILE_ID_PREFIX = FILE_PREFIX + Macro.HEADER_SCOPE_SEPARATOR
 const RAW_PREFIX = Macro.RESERVED_ID_PREFIX + 'raw'
 exports.RAW_PREFIX = RAW_PREFIX
 const DIR_PREFIX = Macro.RESERVED_ID_PREFIX + 'dir'

@@ -2943,9 +2943,9 @@ assert_convert_ast('cross reference magic insane to scope',
   undefined,
   {
     assert_xpath_main: [
-      "//x:blockquote[@id='same']//x:a[@href='#my-scope/in-scope' and text()='In scope']",
+      "//x:div[@id='same']//x:blockquote//x:a[@href='#my-scope/in-scope' and text()='In scope']",
       // Case is controlled only by the last scope component.
-      "//x:blockquote[@id='lower']//x:a[@href='#my-scope/in-scope' and text()='in scope']",
+      "//x:div[@id='lower']//x:blockquote//x:a[@href='#my-scope/in-scope' and text()='in scope']",
     ],
   }
 );

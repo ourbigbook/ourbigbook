@@ -27,36 +27,38 @@ Key links:
 = Features
 {parent=ourbigbook}
 
-* \x[cross-reference][references] to any \x[header]{p} (including e.g. h2, h3, etc. in other files), \x[image]{p}, etc. with amazing \x[error-reporting][error checking and reporting]: never break internal links without knoing again, and quickly find out what broke when you do. E.g.:
+* <cross references> to any <header> (including e.g. h2, h3, etc. <internal cross file references>[in other files]), <images>, etc. with amazing \x[error-reporting][error checking and reporting]: never break internal links without knoing again, and quickly find out what broke when you do. E.g.:
 
-  README.bigb
+  animal.bigb
   ``
-  = My website
+  = Animal
 
-  See: \x[not-readme], or \x[not-readme-h2].
+  <Bats> are <flying animals>.
   ``
-  not-readme.bigb
+  Mammal.bigb
   ``
-  = Not readme
+  = Flying animal
 
-  == Not readme h2
+  == Bat
   ``
-  `README.bigb` would render something like:
+  `Animal.bigb` would render something like:
   ``
-  See: <a href="not-readme.html">not readme</a>, or <a href="not-readme#h2">not readme</a>.
+  <a href="flying-animal.html#bat">Bats</a> are <a href="flying-animal.html">flying animals</a>.
   ``
   The following would fail and point you out the file and line of the failure:
   * nonexistent id:
     ``
-    \x[id-that-does-not-exist]
+    <Weird animal not documented>
     ``
   * duplicate IDs:
     ``
-    = My h1
+    = Animal
 
-    == My h2
+    == Dog
 
-    == My h2
+    == Cat
+
+    == Dog
     ``
 * https://katex.org/[KaTeX] server side \x[mathematics], works on browsers with JavaScript disabled:
   ``
@@ -5837,12 +5839,15 @@ Default: `true`.
 {parent=id-normalize-punctuation}
 
 Some selected punctuation marks are automatically converted into their dominant corresponding pronunciations. These are:
-* `+`: `plus`
+* `%`: `percent`
 * `&`: `and`
+* `+`: `plus`
+* `@`: `at`
 
 Dashes are added around the signs if needed, e.g.:
 * `C++`: `c-plus-plus`
 * `Q&A`: `q-and-a`
+* `Folding@home`: `folding-at-home`
 
 = `lint`
 {parent=ourbigbook-json}
@@ -5888,11 +5893,12 @@ This options is exactly analogous to the \x[numbered] option, but it affects the
 = `splitDefaultNotToplevel`
 {parent=h}
 
-If given, the the toplevel output of each input source is always non-split, and a split version if not generated at all.
+If given, the toplevel output of each input source is always non-split, and a split version is not generated at all.
 
 This overrides the \x[h-splitdefault-argument] for the toplevel header.
 
 E.g.:
+
 ourbigbook.json
 ``
 {
@@ -5914,7 +5920,7 @@ When converted with:
 ``
 ourbigbook --split-headers my-first-header.bigb
 ``
-woule lead only to two output files:
+would lead only to two output files:
 * my-first-header: not split
 * my-second-header: split
 

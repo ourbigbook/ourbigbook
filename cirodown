@@ -216,7 +216,7 @@ function convert_input(input, options, convert_input_options={}) {
   // If we don't where the output will go (the case for stdout) or
   // the user did not explicitly request full embedding, inline all CSS.
   // Otherwise, include and external CSS to make each page lighter.
-  if (convert_input_options.commander.htmlEmbed) {
+  if (convert_input_options.commander.embedResources) {
     new_options.template_vars.style = fs.readFileSync(
       cirodown_nodejs.DIST_CSS_PATH,
       cirodown_nodejs.ENCODING
@@ -827,7 +827,6 @@ if (commander.helpMacros) {
     body_only: commander.bodyOnly,
     cirodown_json: cirodown_json,
     embed_includes: commander.embedIncludes,
-    embed_resources: commander.embedResources,
     html_x_extension: html_x_extension,
     output_format: commander.outputFormat,
     outfile: commander.outfile,

@@ -5682,7 +5682,7 @@ npm install ourbigbook
 There are two ways to publish your <OurBigBook> content:
 * as a <static website>. This means that you generate HTML files from <OurBigBook Markup> files and then publish them either by:
   * uploading to a static website server such as <GitHub Pages> by using the <--publish> option
-  * converting with <--publish-target> `local` and sending a zip with the pages to someone to view locally
+  * converting with <--publish-target `local`> and sending a zip with the pages to someone to view locally
 * to an <OurBigBook Web> instance such as <OurBigBook.com>. This can be done either by:
   * editing on the <OurBigBook Web editor> directly in your browser
   * uploading <OurBigBook Markup> files from your computer with the <--web> option
@@ -6547,13 +6547,20 @@ e.g.:
 out/publish/out/local
 ``
 
-Possible values:
-* `github-pages`: see also <Publish to GitHub Pages>
-* `local`: publish as a local directory that can be zipped and sent to someone else, and then correctly viewed by a browser locally by the receiver. You can then zip it from the Linux command line for example with:
-  ``
-  cd out/publish/out
-  zip -r local.zip local
-  ``
+= `--publish-target github-pages`
+{parent=`--publish-target`}
+
+Publish to https://ourbigbook.com/go/topic/github-pages[GitHub Pages]. See also: <Publish to GitHub Pages>{full}.
+
+= `--publish-target local`
+{parent=`--publish-target`}
+
+Publish as a local directory that can be zipped and sent to someone else, and then correctly viewed by a browser locally by the receiver. You can then zip it from the Linux command line for example with:
+``
+cd out/publish/out
+zip -r local.zip local
+``
+Maybe we should do the Zip step from the <OurBigBook CLI> as well. There is no Node.js standard library wrapper however apparently: https://stackoverflow.com/questions/15641243/need-to-zip-an-entire-directory-using-node-js
 
 = Publish to GitHub Pages
 {parent=`--publish-target`}
@@ -6616,7 +6623,7 @@ This option allows you to keep all headers in a single source file, which is muc
 * get way better Google PageRank for title hits
 * allow for full metadata display, e.g.:
   * <Header metadata section>
-  * https://en.wikipedia.org/wiki/Disqus[Disqus]/https://github.com/giscus/giscus[Gisqus] comments
+  * https://en.wikipedia.org/wiki/Disqus[Disqus]/https://github.com/giscus/giscus[Giscus] comments
 
 For example given an input file called `hello.bigb` and containing:
 ``
@@ -6791,6 +6798,21 @@ Defined variables:
 * `title`
 
 We pick Liquid because it is server-side safe: if we ever some day offer a compilation service, Liquid is designed to prevent arbitrary code execution and infinite loops in templates.
+
+= Template variable
+{parent=--template}
+
+= `publishTargetIsWebsite`
+{parent=Template variable}
+
+`true` iff the <--publish target> is a standard website, i.e. something that will be hosted publicly on a URL. This is currently `true` for the following publish targets:
+* `--publish-target github-pages`
+and it is `false` for the following targets:
+* `--publish-target local`
+
+This template variable is useful to remove JavaScript elements that only work on public websites and not on `localhost` or `file:`, e.g.:
+* Google Analytics
+* Giscus
 
 = `--title-to-id`
 {parent=OurBigBook CLI options}
@@ -8186,6 +8208,9 @@ We don't have an amazing automation setup as we should, but the steps are:
   ``
   ourbigbook --web --web-nested-set-bulk
   ``
+  The current limiting factor on the number of articles per user is memory of the <nested set> generation. We've managed to review this and reduce it with attribute selection, but we have not yet been able to indefinitely scale it, e.g. we would not be able to handle 1M articles per user. The root problems are:
+  * lack of depth first in SQLite due to lack of arrays, as opposed to PostgreSQL: https://stackoverflow.com/questions/65247873/preorder-tree-traversal-using-recursive-ctes-in-sql/77276675#77276675
+  * lack of proper streaming in Sequelize: https://stackoverflow.com/questions/28787889/how-can-i-set-up-sequelize-js-to-stream-data-instead-of-a-promise-callback
 
 Now let's look at the shape of the data. Total pages:
 ``

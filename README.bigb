@@ -7451,23 +7451,18 @@ Some actions are not possible currently because they were originally hardcoded f
 
 In order to mark a user as admin, direct DB acceess is required.
 
-For example, to make user `barack-obama` admin on a development run:
+For example, to make user `barack-obama` admin on a development run the \a[web/bin/make-admin] script:
 ``
-sqlite3 web/db.sqlite3 "UPDATE \"User\" SET admin = true WHERE username='barack-obama'"
+web/bin/make-admin barack-obama
 ``
-We have a helper for that at:
+Admin priviledges can be revoked with the `-f` (`--false`) flag:
 ``
-./web/bin/make-admin barack-obama
-``
-It can be called from any directory, e.g.:
-``
-cd web
-./bin/make-admin barack-obama
+web/bin/make-admin -f barack-obama
 ``
 
-Or e.g. to make `cirosantilli` admin in a <Heroku deployment> you can run:
+The same command works in a <Heroku deployment> where you can run:
 ``
-heroku psql -a ourbigbook -c "UPDATE \"User\" SET admin = true WHERE username='cirosantilli'"
+heroku run -a ourbigbook web/bin/make-admin -f barack-obama
 ``
 
 = OurBigBook Web database
@@ -7485,10 +7480,6 @@ We currently have some intentional denormalization in our database e.g.:
 These dernormalizations are not ideal, but they make things a bit easier, and some of them are almost certainly faster.
 
 To keep things slightly saner, the <file/web/bin/normalize> script can be used to view, check and update dernormalized data.
-
-= web/bin/normalize
-{file}
-{parent=OurBigBook Web directory structure}
 
 = Nested set
 {parent=OurBigBook Web database}
@@ -7978,6 +7969,10 @@ Maybe this will change if someday we ever de to have full vs minimized versions 
 * \a[web/front] and \a[web/front.tsx]: files that can be imported from either front-end of backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
 * \a[web/back] and \a[web/back.ts]: files that can be imported only from backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
 * \a[web_api.js]: helpers to access the OurBigBook HTTP REST API. These have to be outside of `web/` because <OurBigBook CLI> uses them e.g. for syncing local files to the server, and OurBigBook CLI cannot depend on OurBigBook Web components, only the other way around, otherwise we could create circular dependencies. That exact same JavaScript code is also used from the front-end! The infinite joys of homomorphic JS.
+
+= web/bin/normalize
+{file}
+{parent=OurBigBook Web directory structure}
 
 = web/bin/rerender-articles.js
 {file}
@@ -9121,6 +9116,30 @@ We are planning on using a clear green on white color scheme to reflect the curr
 
 This is a reasonable website. It is a shame that you can't easily drag and drop move/resize images on the web UI, which has led us to do that manually on the in the source images. But still, relatively easy to use, and easy to setup a marketplace in.
 
+\Image[merch/tshirtstudio/tshirt-front.jpg]
+{title=TShirt Studio black t-shirt front}
+{description=Buy at: https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-t-shirt[].}
+{height=800}
+{provider=github}
+
+\Image[merch/tshirtstudio/tshirt-back.jpg]
+{title=TShirt Studio black t-shirt back}
+{description=Buy at: https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-t-shirt[].}
+{height=800}
+{provider=github}
+
+\Image[merch/tshirtstudio/hoodie-front.jpg]
+{title=TShirt Studio black hoodie front}
+{description=Buy at: https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-zip-hoodie[].}
+{height=800}
+{provider=github}
+
+\Image[merch/tshirtstudio/hoodie-back.jpg]
+{title=TShirt Studio black hoodie back}
+{description=Buy at: https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-zip-hoodie[].}
+{height=800}
+{provider=github}
+
 = Sticker
 {c}
 {parent=Merchandise}
@@ -9138,11 +9157,13 @@ This is a reasonable website. It is a shame that you can't easily drag and drop 
   * https://www.redbubble.com/people/ourbigbook/works/133297659-ourbigbook-com-sticker-with-url-logo-and-slogan?asc=u
   They said would be unrestricted in five business days, but it was still not true after one month.
 
+  It appears that you have to upload five designs for anything to be publicly available... that service is a bit crap. Have to find a new one later on.
+
   Their delivery is a bit slow, 7 business days in theory, but took at least 21 in reality. They must be streched thin.
 
   The product quality was good when it finally arrived though.
 
-  \Image[Redbubble_sticker_21cm.jpg]
+  \Image[merch/redbubble/21cm.jpg]
   {title=Redbubble 21cm sticker}
   {provider=github}
   {height=500}

@@ -19,8 +19,17 @@ export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
         getLoggedInUser(req, res),
       ])
       if (!issue) { return { notFound: true } }
-      const [articleJson, comments, commentsCount, issueJson, issuesCount, loggedInUserJson] = await Promise.all([
+      const [
+        articleJson,
+        commentCountByLoggedInUser,
+        comments,
+        commentsCount,
+        issueJson,
+        issuesCount,
+        loggedInUserJson,
+      ] = await Promise.all([
         issue.issues.toJson(loggedInUser),
+        loggedInUser ? sequelize.models.Comment.count({ where: { authorId: loggedInUser.id } }) : null,
         Promise.all(issue.comments.map(comment => comment.toJson(loggedInUser))),
         sequelize.models.Comment.count({ where: { issueId: issue.id } }),
         issue.toJson(loggedInUser),
@@ -36,6 +45,7 @@ export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
       }
       if (loggedInUser) {
         props.loggedInUser = loggedInUserJson
+        props.commentCountByLoggedInUser = commentCountByLoggedInUser
       }
       return { props }
     } else {

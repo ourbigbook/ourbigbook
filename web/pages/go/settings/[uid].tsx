@@ -1,22 +1,26 @@
 import Router from 'next/router'
 import React from 'react'
 
+import { contactUrl } from 'front/config'
 import Label from 'front/Label'
 import ListErrors from 'front/ListErrors'
 import LogoutButton from 'front/LogoutButton'
 import { AppContext, setupUserLocalStorage, useCtrlEnterSubmit } from 'front'
 import { webApi } from 'front/api'
 import checkLogin from 'front/checkLogin'
-import useLoggedInUser from 'front/useLoggedInUser'
 import storage from 'front/storage'
 import routes from 'front/routes'
 import { UserType } from 'front/types/UserType'
 
 interface SettingsProps {
+  loggedInUser?: UserType;
   user?: UserType;
 }
 
-const Settings = ({ user: user0 }) => {
+const Settings = ({
+  user: user0,
+  loggedInUser,
+}) => {
   const [isLoading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState([]);
   const [userInfo, setUserInfo] = React.useState(user0);
@@ -37,12 +41,18 @@ const Settings = ({ user: user0 }) => {
     if (status !== 200) {
       setErrors(data.errors.body);
     }
-    if (data.user) {
+    if (
+      data.user &&
+      // Possible for admin edits.
+      data.user.username === loggedInUser.username
+    ) {
       await setupUserLocalStorage(data.user, setErrors)
     }
     Router.push(routes.user(data.user.username));
   };
   useCtrlEnterSubmit(handleSubmit)
+  const maxArticleSizeLabel = "Maximum number of article pages, issues and comments (maxArticles)"
+  const maxArticlesLabel = "Maximum article/issue/comment size (maxArticleSize)"
   const title = 'Account settings'
   const { setTitle } = React.useContext(AppContext)
   React.useEffect(() => { setTitle(title) }, [])
@@ -107,9 +117,35 @@ const Settings = ({ user: user0 }) => {
           >
             Update Settings
           </button>
+          <h2>Extra information</h2>
+          <p>Signup IP: {userInfo.ip || 'not set'}</p>
+          {cant.setUserLimits(loggedInUser)
+            ? <>
+                <p>Limits:</p>
+                <ul>
+                  <li>{maxArticleSizeLabel}: {userInfo.maxArticleSize}</li>
+                  <li>{maxArticlesLabel}: {userInfo.maxArticles}</li>
+                </ul>
+                <div>You may <a href={contactUrl}>ask an admin</a> to raise any of those limits for you.</div>
+              </>
+            : <>
+                <Label label={maxArticlesLabel}>
+                  <input
+                    type="number"
+                    value={userInfo.maxArticleSize}
+                    onChange={updateState("maxArticleSize")}
+                  />
+                </Label>
+                <Label label={maxArticleSizeLabel}>
+                  <input
+                    type="number"
+                    value={userInfo.maxArticles}
+                    onChange={updateState("maxArticles")}
+                  />
+                </Label>
+              </>
+            }
         </form>
-        <h2>Extra information</h2>
-        <div>Signup IP: {userInfo.ip || 'not set'}</div>
       </>
     </div>
   );
@@ -126,16 +162,21 @@ export async function getServerSideProps(context) {
     typeof uid === 'string'
   ) {
     const sequelize = req.sequelize
-    const loggedInUser = await getLoggedInUser(req, res)
-    const user = await sequelize.models.User.findOne({
-      where: { username: uid },
-    })
+    const [loggedInUser, user] = await Promise.all([
+      getLoggedInUser(req, res),
+      sequelize.models.User.findOne({
+        where: { username: uid },
+      }),
+    ])
     if (!user) { return { notFound: true } }
     const props: SettingsProps = {}
     if (cant.viewUserSettings(loggedInUser, user)) {
       return { notFound: true }
     } else {
-      props.user = await user.toJson(loggedInUser)
+      ;[props.user, props.loggedInUser] = await Promise.all([
+        user.toJson(loggedInUser),
+        loggedInUser.toJson(loggedInUser),
+      ])
     }
     return { props }
   } else {

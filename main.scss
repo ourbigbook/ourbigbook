@@ -60,6 +60,8 @@ h1:hover span a:link, h2:hover span a:link, h3:hover span a:link, h4:hover span 
 h1:hover span a:visited, h2:hover span a:visited, h3:hover span a:visited, h4:hover span a:visited, h5:hover span a:visited, h6:hover span a:visited {
   color: blue;
 }
+
+// Figures.
 figure {
   margin-bottom: $paragraph_margin_bottom;
 }
@@ -112,12 +114,21 @@ th, td {
 }
 
 // Table of contents.
-.toc-container ul {
-  border-left: 1px solid black;
-  list-style-type: none;
+.toc-container {
+  div a + span {
+    @include hidden;
+  }
+  div:hover a + span {
+    @include visible;
+  }
+  ul {
+    border-left: 1px solid black;
+    list-style-type: none;
+  }
+  > ul {
+    border-left: 0px solid black;
+    padding-left: 0px;
+  }
 }
-.toc-container > ul {
-  border-left: 0px solid black;
-  padding-left: 0px;
-}
+
 }

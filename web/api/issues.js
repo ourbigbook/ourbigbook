@@ -1,6 +1,7 @@
 const router = require('express').Router()
 
 const auth = require('../auth')
+const can = require('../front/can')
 const front = require('../front/js')
 const { convertIssue, convertComment } = require('../convert')
 const lib = require('./lib')
@@ -88,7 +89,7 @@ router.post('/', auth.required, async function(req, res, next) {
   }
 })
 
-// Update article.
+// Update issue.
 router.put('/:number', auth.required, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
@@ -96,6 +97,9 @@ router.put('/:number', auth.required, async function(req, res, next) {
       getIssue(req, res),
       sequelize.models.User.findByPk(req.payload.id),
     ])
+    if (!can.editIssue(loggedInUser, issue)) {
+      return res.sendStatus(403)
+    }
     const body = lib.validateParam(req, 'body')
     const issueData = lib.validateParam(body, 'issue')
     const bodySource = lib.validateParam(issueData, 'bodySource', {
@@ -219,12 +223,7 @@ router.delete('/:number/comments/:commentNumber', auth.required, async function(
     if (!comment) {
       res.sendStatus(404)
     } else {
-      if (
-        // Only admins can do it.
-        loggedInUser.admin
-        // Users can delete their own comments
-        //req.payload.id.toString() === comment.author.id.toString()
-      ) {
+      if (can.deleteComment(loggedInUser, comment)) {
         await comment.destroy()
         res.sendStatus(204)
       } else {

@@ -27,7 +27,6 @@ export const getServerSidePropsArticleHoc = ({ includeIssues, loggedInUserCache 
           where: { topicId: article.topicId },
         }),
       ])
-      console.error({articleJson});
       const props: ArticlePageProps = {
         article: articleJson,
         topicArticleCount,

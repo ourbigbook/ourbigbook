@@ -136,6 +136,7 @@ module.exports = (sequelize) => {
       effectiveImage: this.image || 'https://static.productionready.io/images/smiley-cyrus.jpg',
       followerCount: this.followerCount,
       articleScoreSum: this.articleScoreSum,
+      admin: this.admin,
     }
     if (loggedInUser) {
       ret.following = await loggedInUser.hasFollow(this.id)
@@ -252,6 +253,10 @@ module.exports = (sequelize) => {
         otherUser.decrement('followerCount', { transaction }),
       ])
     })
+  }
+
+  User.prototype.canEditIssue = function(issue) {
+    return issue.authorId === this.id
   }
 
   User.defaultIndexTitle = 'Index'

@@ -11,6 +11,7 @@ import Article from 'front/Article'
 import ArticleInfo from 'front/ArticleInfo'
 import { AppContext, useEEdit } from 'front'
 import { webApi } from 'front/api'
+import can from 'front/can'
 import fetcher from 'front/fetcher'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
@@ -49,11 +50,11 @@ const ArticlePageHoc = (isIssue) => {
     React.useEffect(() =>
       // TODO here we would like to have a plaintext render of the title.
       // https://github.com/cirosantilli/ourbigbook/issues/250
-      setTitle(`${article.titleSource} by ${displayAndUsernameText(author)}`)
+      setTitle(`${isIssue ? article.titleSource : article.file.titleSource} by ${displayAndUsernameText(author)}`)
     )
     const showOthers = topicArticleCount > 1
     const showCreateMyOwn = !loggedInUser || author.username !== loggedInUser.username
-    const canEdit = loggedInUser && loggedInUser?.username === article?.author?.username
+    const canEdit = loggedInUser && (isIssue ? can.editIssue(loggedInUser, article) : loggedInUser.username === article.author.username)
     useEEdit(canEdit, article.slug)
     return (
       <>

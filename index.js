@@ -8936,6 +8936,8 @@ OUTPUT_FORMATS_LIST.push(
               href = target_id[0] + href
             }
           }
+          // Remove any > from the ref. There's currently no way to escape them, would cut argument short.
+          href = href.replace(/[ >]+/g, ' ')
           return `<${href}>${ourbigbook_convert_args(ast, context, { skip: new Set(['c', 'href', 'magic', 'p']) }).join('')}`
         },
         'Video': ourbigbook_convert_simple_elem,

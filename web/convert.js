@@ -137,7 +137,6 @@ async function convertArticle({
   titleSource,
   transaction,
 }) {
-  perf = true
   let t0
   if (perf) {
     t0 = performance.now();

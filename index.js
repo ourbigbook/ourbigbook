@@ -6669,7 +6669,6 @@ function renderTocFromEntryList({ add_test_instrumentation, entry_list, descenda
     }
     ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
     let toc_href = htmlAttr('href', '#' + htmlEscapeAttr(my_toc_id));
-    //ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${htmlAttr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
     // c for current
     ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${htmlAttr('class', 'c')}>${UNICODE_LINK} link</a>`;
     if (link_to_split) {
@@ -6677,7 +6676,6 @@ function renderTocFromEntryList({ add_test_instrumentation, entry_list, descenda
     }
     if (parent_href) {
       // p for parent
-      //ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${htmlAttr('title', 'parent ToC entry')}>${PARENT_MARKER} ${parent_content}</a>`;
       ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${htmlAttr('class', 'p')}>${PARENT_MARKER} ${parent_content}</a>`;
     }
     if (entry.descendant_count_html) {

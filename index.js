@@ -1380,6 +1380,9 @@ function html_convert_simple_elem(elem_name, options={}) {
   if (!('newline_after_close' in options)) {
     options.newline_after_close = false;
   }
+  if (!('wrap' in options)) {
+    options.wrap = false;
+  }
   let newline_after_open_str;
   if (options.newline_after_open) {
     newline_after_open_str = '\n';
@@ -1402,6 +1405,9 @@ function html_convert_simple_elem(elem_name, options={}) {
     let content_ast = ast.args.content;
     let content = convert_arg(content_ast, context);
     let res = `<${elem_name}${extra_attrs_string}${attrs}>${newline_after_open_str}${content}</${elem_name}>${newline_after_close_str}`;
+    if (options.wrap) {
+      res = html_elem('div', res);
+    }
     return res;
   };
 }
@@ -1456,7 +1462,7 @@ function html_is_whitespace(string) {
   return true;
 }
 
-function html_wrap(content, tag) {
+function html_elem(tag, content) {
   return `<${tag}>${content}</${tag}>`;
 }
 
@@ -2972,7 +2978,10 @@ const DEFAULT_MACRO_LIST = [
         remove_whitespace_children: true,
       }),
     ],
-    html_convert_simple_elem('ul', {newline_after_open: true}),
+    html_convert_simple_elem('ul', {
+      newline_after_open: true,
+      wrap: true,
+    }),
   ),
   new Macro(
     'x',

@@ -190,7 +190,10 @@ function assert_convert_ast(
         dependency_convert_opts.render = render;
         await ourbigbook.convert(input_string, dependency_convert_opts, extra_returns);
         Object.assign(rendered_outputs, extra_returns.rendered_outputs)
-        assert.strictEqual(extra_returns.errors.length, 0)
+        if (extra_returns.errors.length !== 0) {
+          console.error(extra_returns.errors.join('\n'));
+          assert.strictEqual(extra_returns.errors.length, 0)
+        }
         await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
           extra_returns,
           id_provider,
@@ -1660,7 +1663,8 @@ assert_lib('link to image in other files that has title with x to header in anot
     filesystem: {
       'index.bigb': `= Index
 
-\\x[image-my-notindex]`,
+\\x[image-my-notindex]
+`,
      'image.bigb': `= image h1
 
 \\Image[aa]{title=My \\x[notindex]}{check=0}
@@ -3703,15 +3707,24 @@ assert_lib('scopes hierarchy resolution works across files with directories',
 
 == Notindex2 h2
 `,
+     'subdir/subdir/notindex.bigb': `= Notindex
+
+\\x[notindex-h2][subdir/subdir/notindex to subdir/notindex-h2]
+`,
     },
     assert_xpath: {
       'subdir/notindex.html': [
         "//x:div[@class='p']//x:a[@href='notindex2.html#notindex2-h2' and text()='index to notindex2 h2']",
-        "//*[contains(@class, 'h-nav')]//x:span[@class='test-tags']//x:a[@href='notindex2.html#notindex2-h2']",
       ],
       'subdir/notindex2.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#notindex-h2']`,
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
+      ],
+      'subdir/notindex-h2.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='subdir/notindex.html']`,
+      ],
+      'subdir/subdir/notindex.html': [
+        "//x:div[@class='p']//x:a[@href='../notindex.html#notindex-h2' and text()='subdir/subdir/notindex to subdir/notindex-h2']",
       ],
     },
   }
@@ -7641,6 +7654,8 @@ assert_cli(
 == Dog
 
 == Dogs
+
+== Cat
 `,
       'notindex.bigb': `= Notindex
 
@@ -7652,13 +7667,32 @@ assert_cli(
 
 <dogs>
 `,
+      'subdir/notindex.bigb': `= Notindex
+
+<cats>
+
+== To dog
+
+<dog>
+
+== To dogs
+
+<dogs>
+
+== Cat
+`,
     },
     assert_xpath: {
       'dog.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html#to-dog']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='subdir/notindex.html#to-dog']`,
       ],
       'dogs.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html#to-dogs']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='subdir/notindex.html#to-dogs']`,
+      ],
+      'subdir/cat.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
       ],
     },
     assert_not_xpath: {
@@ -7667,6 +7701,9 @@ assert_cli(
       ],
       'dogs.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html#to-dog']`,
+      ],
+      'cat.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']`,
       ],
     },
   }

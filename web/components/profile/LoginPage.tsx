@@ -3,6 +3,7 @@ import Label from "components/common/Label";
 
 import CustomLink from "components/common/CustomLink";
 import LoginForm from "components/profile/LoginForm";
+import routes from "routes";
 
 const makeLoginPage = ({ register = false }) => {
   return () => (
@@ -18,7 +19,7 @@ const makeLoginPage = ({ register = false }) => {
             : <>Sign in</>
           }
         </h1>
-        <CustomLink href={register ? "/user/login" : "/user/register" } >
+        <CustomLink href={register ? routes.userLogin() : routes.userNew()} >
           {`${register ? 'Have' : 'Need' }`} an account?
         </CustomLink>
         <LoginForm register={register} />

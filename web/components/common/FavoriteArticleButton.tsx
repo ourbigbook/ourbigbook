@@ -1,8 +1,8 @@
-import axios from "axios";
 import React from "react";
 import Router from "next/router";
 
-import { BUTTON_ACTIVE_CLASS, SERVER_BASE_URL } from "lib/utils/constant";
+import { ArticleAPI } from "/lib/api/article";
+import { BUTTON_ACTIVE_CLASS } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 
 export const FavoriteArticleButtonContext = React.createContext(undefined);
@@ -30,21 +30,9 @@ const FavoriteArticleButton = (props) => {
     setFavoritesCount(favoritesCount + (favorited ? - 1 : 1))
     try {
       if (favorited) {
-        await axios.delete(`${SERVER_BASE_URL}/articles/${props.slug}/favorite`, {
-          headers: {
-            Authorization: `Token ${loggedInUser?.token}`,
-          },
-        });
+        await ArticleAPI.unfavorite(props.slug, loggedInUser?.token)
       } else {
-        await axios.post(
-          `${SERVER_BASE_URL}/articles/${props.slug}/favorite`,
-          {},
-          {
-            headers: {
-              Authorization: `Token ${loggedInUser?.token}`,
-            },
-          }
-        );
+        await ArticleAPI.favorite(props.slug, loggedInUser?.token)
       }
     } catch (error) {
       setFavorited(!favorited)

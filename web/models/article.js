@@ -45,7 +45,7 @@ module.exports = (sequelize) => {
           const id = extra_returns.context.header_graph.children[0].value.id
           const author = await article.getAuthor()
           if (!article.slug) {
-            article.slug = `${author.username}/${id}`
+            article.slug = Article.makeSlug(author.username, id)
           }
         }
       },
@@ -84,5 +84,10 @@ module.exports = (sequelize) => {
       render: this.render,
     }
   }
+
+  Article.makeSlug = (uid, pid) => {
+    return `${uid}/${pid}`
+  }
+
   return Article
 }

@@ -10,7 +10,7 @@
     "build-nodeps": "next build",
     "build-dev-nodeps": "NODE_ENV_OVERRIDE=development npm run build-nodeps",
     "deploy": "git push -f heroku master",
-    "dev": "NODE_OPTIONS='--unhandled-rejections=strict' nodemon -w app.js -w ../index.js ./app.js",
+    "dev": "NODE_OPTIONS='--unhandled-rejections=strict' nodemon -w . -w ../index.js ./app.js",
     "postinstall": "cd .. && npm link cirodown",
     "start": "node --unhandled-rejections=strict ./app.js",
     "start-dev": "NODE_ENV_OVERRIDE=development NODE_ENV_NEXT=production node --unhandled-rejections=strict ./app.js",

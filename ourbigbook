@@ -456,7 +456,10 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
           fs.writeFileSync(output_path, extra_returns.rendered_outputs[outpath].full);
         }
       }
-      if (new_options.split_headers) {
+      if (
+        new_options.split_headers &&
+        ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML
+      ) {
         for (const header_ast of extra_returns.context.synonym_headers) {
           let new_options_redir = Object.assign({}, new_options);
           new_options_redir.db_provider = extra_returns.context.db_provider;

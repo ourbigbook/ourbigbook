@@ -9694,7 +9694,10 @@ OUTPUT_FORMATS_LIST.push(
           }
           let level = ast.header_tree_node.get_level() - context.header_tree_top_level + 1;
           let output_level
-          if (ast.validation_output.parent.given) {
+          if (
+            ast.validation_output.parent.given ||
+            ast.validation_output.synonym.boolean
+          ) {
             output_level = 1
           } else {
             output_level = level

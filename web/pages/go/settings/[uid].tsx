@@ -10,29 +10,16 @@ import checkLogin from 'front/checkLogin'
 import useLoggedInUser from 'front/useLoggedInUser'
 import storage from 'front/storage'
 import routes from 'front/routes'
+import UserType from 'front/types/UserType'
 
-const Settings = () => {
+interface SettingsProps {
+  user?: UserType;
+}
+
+const Settings = ({ user: user0 }) => {
   const [isLoading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState([]);
-  const [userInfo, setUserInfo] = React.useState({
-    image: "",
-    username: "",
-    displayName: "",
-    email: "",
-    password: "",
-  });
-  const loggedInUser = useLoggedInUser()
-  React.useEffect(() => {
-    if (!loggedInUser) return;
-    setUserInfo({ ...userInfo, ...loggedInUser });
-  }, [loggedInUser]);
-  React.useEffect(() => {
-    const loggedInUser = storage("user")
-    const isLoggedIn = checkLogin(loggedInUser);
-    if (!isLoggedIn) {
-      Router.push(`/`);
-    }
-  })
+  const [userInfo, setUserInfo] = React.useState(user0);
   const updateState = (field) => (e) => {
     const state = userInfo;
     const newState = { ...state, [field]: e.target.value };
@@ -53,7 +40,7 @@ const Settings = () => {
     if (data.user) {
       await setupUserLocalStorage(data.user, setErrors)
     }
-    Router.push(routes.user(loggedInUser.username));
+    Router.push(routes.user(data.user.username));
   };
   useCtrlEnterSubmit(handleSubmit)
   const title = 'Account settings'
@@ -99,6 +86,9 @@ const Settings = () => {
               placeholder="Email"
               value={userInfo.email}
               onChange={updateState("email")}
+              // https://github.com/cirosantilli/ourbigbook/issues/268
+              disabled={true}
+              title="Cannot be currently modified"
             />
           </Label>
           <Label label="Password">
@@ -118,9 +108,37 @@ const Settings = () => {
             Update Settings
           </button>
         </form>
+        <h2>Extra information</h2>
+        <div>Signup IP: {userInfo.ip || 'not set'}</div>
       </>
     </div>
   );
 };
 
 export default Settings;
+
+import { getLoggedInUser } from 'back'
+import { cant } from 'front/cant'
+
+export async function getServerSideProps(context) {
+  const { params: { uid }, req, res } = context
+  if (
+    typeof uid === 'string'
+  ) {
+    const sequelize = req.sequelize
+    const loggedInUser = await getLoggedInUser(req, res)
+    const user = await sequelize.models.User.findOne({
+      where: { username: uid },
+    })
+    if (!user) { return { notFound: true } }
+    const props: SettingsProps = {}
+    if (cant.viewUserSettings(loggedInUser, user)) {
+      return { notFound: true }
+    } else {
+      props.user = await user.toJson(loggedInUser)
+    }
+    return { props }
+  } else {
+    throw new TypeError
+  }
+}

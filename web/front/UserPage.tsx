@@ -4,6 +4,7 @@ import React from 'react'
 
 import { AppContext, useEEdit } from 'front'
 import ArticleList from 'front/ArticleList'
+import { cant  } from 'front/cant'
 import CustomLink from 'front/CustomLink'
 import CustomImage from 'front/CustomImage'
 import LoadingSpinner from 'front/LoadingSpinner'
@@ -105,9 +106,9 @@ export default function UserPage({
           <DisplayAndUsername user={user}></DisplayAndUsername>
           {' '}
           <FollowUserButton {...{ loggedInUser, user, showUsername: false }}/>
-          <Maybe test={isCurrentUser}>
+          <Maybe test={!cant.viewUserSettings(loggedInUser, user)}>
             <CustomLink
-              href={routes.userEdit()}
+              href={routes.userEdit(user.username)}
               className="btn btn-sm btn-outline-secondary action-btn"
             >
               <i className="ion-gear-a" /> Settings

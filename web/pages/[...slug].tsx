@@ -131,7 +131,7 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
                 favorited, setFavorited, score, setScore
               }}>
                 <FavoriteArticleButton
-                  slug={article.slug}
+                  article={article}
                   showText={false}
                 />
               </FavoriteArticleButtonContext.Provider>

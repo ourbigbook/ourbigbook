@@ -155,7 +155,7 @@ const ArticleList = (props) => {
                     setScore: setScore[i],
                   }}>
                     <FavoriteArticleButton
-                      slug={article.slug}
+                      article={article}
                       showText={false}
                     />
                   </FavoriteArticleButtonContext.Provider>

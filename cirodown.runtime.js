@@ -25,7 +25,7 @@ window.onload = function() {
               if (toc_arrow_child_2.tagName === 'LI') {
                 if (toc_arrow_child_2.classList.contains(CLOSE_CLASS)) {
                   all_children_open = false;
-                } else {
+                } else if (toc_arrow_child_2.classList.contains('has-child')) {
                   all_children_closed = false;
                 }
               }

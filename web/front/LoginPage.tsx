@@ -8,7 +8,7 @@ import routes from 'routes'
 import { LOGIN_ACTION, REGISTER_ACTION } from 'front'
 import { AppContext } from 'front'
 
-const makeLoginPage = ({ register = false }) => {
+const LoginPageHoc = ({ register = false }) => {
   const action = register ? REGISTER_ACTION : LOGIN_ACTION
   return () => {
     const { setTitle } = React.useContext(AppContext)
@@ -25,4 +25,4 @@ const makeLoginPage = ({ register = false }) => {
   }
 }
 
-export default makeLoginPage;
+export default LoginPageHoc;

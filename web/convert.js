@@ -172,6 +172,7 @@ async function convertArticle({
   if (convertOptionsExtra === undefined) {
     convertOptionsExtra = {}
   }
+  let nestedSetNeedsUpdate = true
   await sequelize.transaction({ transaction }, async (transaction) => {
     if (render === undefined) {
       render = true
@@ -464,6 +465,7 @@ async function convertArticle({
       } else {
         new_to_id_index = 0
       }
+      nestedSetNeedsUpdate = newParentId !== oldParentId || new_to_id_index !== old_to_id_index
 
       //const whereAuthorInclude = {
       //  model: sequelize.models.File,
@@ -769,7 +771,7 @@ async function convertArticle({
   if (perf) {
     console.error(`perf: convertArticle.finish: ${performance.now() - t0} ms`);
   }
-  return { articles, extra_returns }
+  return { articles, extra_returns, nestedSetNeedsUpdate }
 }
 
 async function convertComment({

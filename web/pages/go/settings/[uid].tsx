@@ -10,7 +10,7 @@ import checkLogin from 'front/checkLogin'
 import useLoggedInUser from 'front/useLoggedInUser'
 import storage from 'front/storage'
 import routes from 'front/routes'
-import UserType from 'front/types/UserType'
+import { UserType } from 'front/types/UserType'
 
 interface SettingsProps {
   user?: UserType;

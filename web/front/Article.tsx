@@ -109,12 +109,14 @@ const Article = ({
       }
     </>
   }
-  let linkPref: string
+  let linkPref: string|undefined
+  if (!isIssue) {
+    linkPref = '../'.repeat(article.slug.split('/').length - 1)
+  }
   const articlesInSamePageMap = React.useRef(null)
   if (articlesInSamePageMap.current === null) {
     const articlesInSamePageMapVal = {}
     if (!isIssue) {
-      linkPref = '../'.repeat(article.slug.split('/').length - 1)
       for (const article of articlesInSamePage) {
         articlesInSamePageMapVal[article.slug] = article
       }

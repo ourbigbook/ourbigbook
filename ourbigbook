@@ -47,6 +47,7 @@ const PUBLISH_TARGETS = {
 }
 const SQLITE_MAGIC_MEMORY_NAME = ':memory:'
 exports.SQLITE_MAGIC_MEMORY_NAME = SQLITE_MAGIC_MEMORY_NAME
+const WEB_MAX_RETRIES = 5
 
 class DbProviderDbAdapter {
   constructor(non_ourbigbook_options) {
@@ -1787,7 +1788,7 @@ if (cli.helpMacros) {
             // By following reverse order we don't have to worry about setting up previousSiblingId:
             // we just use the fact that the API automatically inserts as first sibling when not given.
             // TODO actually add siblings later on, as that will allow updating the page tree.
-            // https://docs.ourbigbook.com/pass-previoussiblingid-on-web-upload
+            // https://docs.ourbigbook.com/todo/pass-previoussiblingid-on-web-upload
             to_id_index_order: 'DESC',
             definedAtFileId: treeToplevelFileId,
           }
@@ -1879,18 +1880,47 @@ if (cli.helpMacros) {
                     parentId = `${ourbigbook.AT_MENTION_CHAR}${username}/${parentIdNoUsername}`
                   }
                 }
-                try {
-                  ;({ data, status } = await webApi.articleCreateOrUpdate(
-                    articleArgs,
-                    {
-                      path: articlePath,
-                      render,
-                      parentId
-                      // TODO pass previousSiblingid here as well: https://docs.ourbigbook.com/pass-previoussiblingid-on-web-upload
+                let previousSiblingId
+                if (!render) {
+                  const parentArticle = idToArticleMeta[article.parentId]
+                  if (parentArticle.lastChildProcessed) {
+                    previousSiblingId
+                  }
+                }
+                let tries = 0
+                // Retry the transaction a few times. This designed to work well during development when nodemon
+                // restarts the server after a file update that adds some logging, often for perf. This way
+                // you can just turn logs on and off during a large conversion and it will just keep running fine.
+                while (true) {
+                  let retry = false
+                  try {
+                    ;({ data, status } = await webApi.articleCreateOrUpdate(
+                      articleArgs,
+                      {
+                        path: articlePath,
+                        render,
+                        parentId
+                        // TODO pass previousSiblingid here as well: https://docs.ourbigbook.com/toto/pass-previoussiblingid-on-web-upload
+                      }
+                    ))
+                  } catch(err) {
+                    if (tries < WEB_MAX_RETRIES || (
+                      // Happens if the server is restarted in the middle of a conversion after it was killed by nodemon.
+                      tries === 0 && err.code === 'ECONNRESET' &&
+                      // Here we are waiting for the server to get up again.
+                      tries > 0 && err.code === 'ECONNREFUSED'
+                    )) {
+                      retry = true
+                    } else {
+                      handleWebApiErr(err)
                     }
-                  ))
-                } catch(err) {
-                  handleWebApiErr(err)
+                  }
+                  if (!retry) {
+                    break
+                  }
+                  // Give the server some time to restart after update.
+                  await new Promise(r => setTimeout(r, 500));
+                  tries++
                 }
                 assertApiStatus(status, data)
                 const t1 = performance.now()

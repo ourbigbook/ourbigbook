@@ -1469,7 +1469,12 @@ function macro_list_to_macros() {
 }
 exports.macro_list_to_macros = macro_list_to_macros;
 
-function macro_image_video_convert_function(content_func) {
+function macro_image_video_convert_function(content_func, source_func) {
+  if (source_func === undefined) {
+    source_func = function(ast, context, src) {
+      return convert_arg(ast.args.source, context);
+    }
+  }
   return function(ast, context) {
     let rendered_attrs = html_convert_attrs(ast, context, ['src']);
     let figure_attrs = html_convert_attrs_id(ast, context);
@@ -1484,18 +1489,16 @@ function macro_image_video_convert_function(content_func) {
     if (description !== '') {
       description = '. ' + description;
     }
-    let source
-    if (ast.args.source === undefined) {
-      source = '';
-    } else {
-      source = `<a ${html_attr('href', convert_arg(ast.args.source, context))}>Source</a>.`;
+    let src = convert_arg(ast.args.src, context);
+    let source = source_func(ast, context, src);
+    if (ast.args.source !== '') {
+      source = `<a ${html_attr('href', source)}>Source</a>.`;
       if (description === '') {
         source = '. ' + source;
       } else {
         source = ' ' + source;
       }
     }
-    let src = convert_arg(ast.args.src, context);
     let alt_arg;
     const has_caption = ast.id !== undefined && ast.index_id;
     if (ast.args.alt === undefined) {
@@ -2687,31 +2690,6 @@ const DEFAULT_MACRO_LIST = [
     ),
   ),
   new Macro(
-    'Video',
-    MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
-    macro_image_video_convert_function(function (ast, context, src, rendered_attrs, alt) {
-      if ('youtube' in ast.args) {
-        return `<iframe width="560" height="315" src="https://www.youtube.com/embed/${src}" ` +
-               `frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; ` +
-               `picture-in-picture" allowfullscreen></iframe>`;
-      } else {
-        return `<video${rendered_attrs} controls>${alt}</video>\n`;
-      }
-    }),
-    Object.assign(
-      {
-        caption_prefix: 'Video',
-        id_prefix: 'video',
-        named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS.concat(
-          new MacroArgument({
-            name: 'youtube',
-            boolean: true,
-          }),
-        ),
-      },
-    ),
-  ),
-  new Macro(
     'image',
     [
       new MacroArgument({
@@ -3047,5 +3025,41 @@ const DEFAULT_MACRO_LIST = [
         phrasing: true,
       }
     }
+  ),
+  new Macro(
+    'Video',
+    MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
+    macro_image_video_convert_function(
+      function (ast, context, src, rendered_attrs, alt) {
+        if ('youtube' in ast.args) {
+          return `<iframe width="560" height="315" src="https://www.youtube.com/embed/${src}" ` +
+                `frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; ` +
+                `picture-in-picture" allowfullscreen></iframe>`;
+        } else {
+          return `<video${rendered_attrs} controls>${alt}</video>\n`;
+        }
+      },
+      function (ast, context, src) {
+        if ('source' in ast.args) {
+          return convert_arg(ast.args.source, context);
+        } else if ('youtube' in ast.args) {
+          return `https://youtube.com/watch?v=${src}`;
+        } else {
+          return '';
+        }
+      }
+    ),
+    Object.assign(
+      {
+        caption_prefix: 'Video',
+        id_prefix: 'video',
+        named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS.concat(
+          new MacroArgument({
+            name: 'youtube',
+            boolean: true,
+          }),
+        ),
+      },
+    ),
   ),
 ];

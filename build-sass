@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// https://cirosantilli.com/cirodown#build-sass
+// https://cirosantilli.com/cirodown#overview-of-files-in-this-repository
 
 const fs = require('fs');
 const path = require('path');
@@ -14,6 +14,9 @@ const fonts_dist_dir = path.join(cirodown_nodejs.DIST_PATH, 'fonts')
 fs.mkdirSync(cirodown_nodejs.DIST_PATH, {recursive: true})
 fs.mkdirSync(fonts_dist_dir, {recursive: true})
 
+// Copy fonts to dist/ dir.
+// This is a hack that will hopefully go away when if
+// we manage to get it working with Webpack: https://github.com/cirosantilli/cirodown/issues/157
 const dir = fs.opendirSync(katex_fonts_src_dir)
 let dirent
 while ((dirent = dir.readSync()) !== null) {

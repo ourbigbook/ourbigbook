@@ -38,6 +38,7 @@
   "files": [
     "gitignore",
     "cirodown",
+    "cirodown.common.scss",
     "dist/**/*",
     "index.js",
     "main.liquid.html",

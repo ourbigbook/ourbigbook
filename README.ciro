@@ -5771,9 +5771,10 @@ psql -c 'GRANT ALL PRIVILEGES ON DATABASE cirodown TO cirodown_user'
 = Local development run with PostgreSQL
 {parent=local-run-as-identical-to-deployment-as-possible}
 
-If you have determined that a bug is PostgreSQL specific, and it is easier to debug it interactively:
+If you have determined that a bug is PostgreSQL specific, and it is easier to debug it interactively, first create the database as mentioned at \x[local-run-as-identical-to-deployment-as-possible] and then:
 ``
-CIRODOWN_POSTGRES=true npmd
+CIRODOWN_POSTGRES=true ./bin/generate-demo-data.js
+CIRODOWN_POSTGRES=true npm run dev
 ``
 
 = Heroku deployment

@@ -4,7 +4,9 @@ import Head from "next/head";
 import React from "react";
 import useSWR  from "swr";
 
-import { cirodown_runtime } from 'cirodown/cirodown.runtime.js';
+// TODO use the one from dist.
+import cirodown_runtime from 'cirodown/cirodown_runtime.js';
+//import { cirodown_runtime } from 'cirodown/dist/cirodown_runtime.js';
 
 import ArticleMeta from "components/article/ArticleMeta";
 import Comment from "components/comment/Comment";

@@ -5,8 +5,10 @@
   "main": "app.js",
   "scripts": {
     "back-test": "NODE_ENV=test npm run dev",
-    "build": "./bin/sync-db.js && next build",
-    "build-dev": "./bin/sync-db.js && NODE_ENV_OVERRIDE=development npm run build",
+    "build": "cd .. && npm run build-assets && cd - && ./bin/sync-db.js && npm run build-nodeps",
+    "build-dev": "NODE_ENV_OVERRIDE=development npm run build",
+    "build-nodeps": "next build",
+    "build-dev-nodeps": "NODE_ENV_OVERRIDE=development npm run build-nodeps",
     "deploy": "git push heroku-next next:master",
     "dev": "nodemon -w app.js -w ../index.js ./app.js",
     "postinstall": "cd .. && npm link cirodown",

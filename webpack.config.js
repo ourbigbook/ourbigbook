@@ -11,7 +11,7 @@ const nodeModulesPath = path.resolve(__dirname, 'node_modules');
 module.exports = {
   entry: {
     cirodown: ['./index.js'],
-    cirodown_runtime: ['./cirodown.runtime.js'],
+    cirodown_runtime: ['./cirodown_runtime.js'],
     // Couldn't get the Katex working this way.
     // https://github.com/KaTeX/KaTeX/discussions/3115
     // cirodown: ['./cirodown.scss'],

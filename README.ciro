@@ -701,10 +701,13 @@ Sane equivalent:
 
 If a \x[the-toplevel-header][non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:
 * do a \x[id-output-format] conversion on the title to remove for example any HTML tags that would be present in the conversion output
-* convert all characters to lowercase. This uses \x[javascript-case-conversion].
+* convert all characters to lowercase. This uses \x[javascript-case-conversion]. Note that this does convert non-ASCII characters to lowercase, e.g. `É` to `é`.
+* if \x[cirodown-json-id-normalize] is `true` (the default) do \x[u]
 * convert consecutive sequences of all non `a-z0-9` ASCII characters to a single hyphen `-`. Note that this leaves non-ASCII characters untouched.
 * strip leading or trailing hyphens
-Note how those rules leave non ASCII Unicode characters untouched, as capitalization and determining if something "is a letter or not" in those cases can be tricky.
+Note how those rules leave non-ASCII Unicode characters untouched, except for:
+* capitalization changes wher applicable, e.g. `É` to `é`
+as capitalization and determining if something "is a letter or not" in those cases can be tricky.
 
 For toplevel headers, see: \x[the-id-of-the-first-header-is-derived-from-the-filename].
 
@@ -714,19 +717,32 @@ So for example, the following automatic IDs would be generated: \x[table-example
 [
 || title
 || id
+|| normalize
 || comments
 
 | My favorite title
 | my-favorite-title
+| any
 |
 
 | Ciro's markdown is awesome
 | ciro-s-markdown-is-awesome
+| any
 | `'` is an ASCII character, but it is not in `a-z0-9`, therefore it gets converted to a hyphen `-`
 
 | É你
+| e你
+| true
+| The Latin https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, is converted to its lower case form `é` as per the \x[javascript-case-conversion].
+
+ Then, due to \x[ascii-normalization], `é` is converted to `e`.
+
+ The Chinese character `你` is left untouched as Chinese characters have no case, and no ASCII analogue.
+
+| É你
 | é你
-| The Latin https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, is converted to its lower case form `é` as per the \x[javascript-case-conversion]. The Chinese `你` is left untouched as Chinese characters have no case.
+| false
+| Same as the previous, but `é` is not converted to `e` since \x[ascii-normalization] is turned off.
 ]
 
 For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the Cirodown file without extension instead of from the `title` argument.
@@ -4347,6 +4363,38 @@ cirodown web/myfile.ciro
 converts it because it was explicitly requested.
 
 TODO: also ignore during \x[watch].
+
+= `cirodown.json` `id`
+{parent=cirodown-json-schema}
+
+Dictionary of options that control \x[automatic-id-from-title] generation.
+
+= `cirodown.json` `id` `normalize`
+{parent=cirodown-json-id}
+
+If `true`, does \x[ascii-normalization] on the title.
+
+Default: `true`.
+
+= ASCII normalization
+{c}
+{parent=cirodown-json-id-normalize}
+
+ASCII normalization is a custom Cirodown defined normalization that converts many characters that look like latin characters into latin characters.
+
+For now, we are using the `deburr` method of Lodash: https://lodash.com/docs/4.17.15#deburr[], which only affects latin-like characters.
+
+One notable effect is that it converts variants of ASCII letters to ASCII letters. E.g. `é` to `e` removing the accent.
+
+This operation is kind of a superset of Unicode normalization acting only on Latin-like characters. where unicode basically only removes things like diactricts.
+
+Cirodown normalization also does other natural transformations that Unicode does not do, e.g. `æ` to `ae`.
+
+Bibliography:
+* https://stackoverflow.com/questions/990904/remove-accents-diacritics-in-a-string-in-javascript
+* https://github.com/cirosantilli/cirodown/issues/162
+
+For example
 
 = `cirodown.json` `lint`
 {parent=cirodown-json-schema}

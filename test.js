@@ -3374,7 +3374,7 @@ assert_convert_ast('one paragraph implicit split headers',
   }
 );
 function assert_split_header_output_keys(description, options, keys_expect) {
-  it(description, ()=>{
+  it(description, async ()=>{
     const input_string = `= h1
 
 == h1 1
@@ -3394,7 +3394,7 @@ function assert_split_header_output_keys(description, options, keys_expect) {
       file_provider: new MockFileProvider(),
     }, options);
     const extra_returns = {};
-    cirodown.convert(
+    await cirodown.convert(
       input_string,
       new_options,
       extra_returns

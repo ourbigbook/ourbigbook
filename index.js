@@ -333,10 +333,10 @@ class AstNode {
   }
 
   /* Return split_default, if not in a HEADER, inherit from the parent header. */
-  get_split_default(context) {
+  async get_split_default(context) {
     let ast;
     if (this.macro_name !== Macro.HEADER_MACRO_NAME) {
-      ast = this.get_header_parent(context)
+      ast = await this.get_header_parent(context)
     }
     if (ast === undefined) {
       ast = this;
@@ -344,11 +344,11 @@ class AstNode {
     return ast.split_default;
   }
 
-  is_header_descendant(other, context) {
+  async is_header_descendant(other, context) {
     let cur_ast = this;
     const other_id = other.id;
     while (true) {
-      cur_ast = cur_ast.get_header_parent(context);
+      cur_ast = await cur_ast.get_header_parent(context);
       if (cur_ast === undefined) {
         return false;
       }
@@ -559,7 +559,7 @@ class IdProvider {
    *         undefined: ID not found
    *         Otherwise, the ast node for the given ID
    */
-  get(id, context, header_graph_node) {
+  async get(id, context, header_graph_node) {
     if (id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
       return this.get_noscope(id.substr(1), context);
     } else {
@@ -570,14 +570,14 @@ class IdProvider {
       ) {
         let parent_scope_id = calculate_scope(header_graph_node.parent_node.value, context);
         if (parent_scope_id !== undefined) {
-          let resolved_scope_id = this.get_noscope(
+          let resolved_scope_id = await this.get_noscope(
             parent_scope_id + Macro.HEADER_SCOPE_SEPARATOR + id, context);
           if (resolved_scope_id !== undefined) {
             return resolved_scope_id;
           }
           for (let i = parent_scope_id.length - 1; i > 0; i--) {
             if (parent_scope_id[i] === Macro.HEADER_SCOPE_SEPARATOR) {
-              let resolved_scope_id = this.get_noscope(
+              let resolved_scope_id = await this.get_noscope(
                 parent_scope_id.substring(0, i + 1) + id, context);
               if (resolved_scope_id !== undefined) {
                 return resolved_scope_id;
@@ -2295,10 +2295,10 @@ async function convert_header(cur_arg_list, context, has_toc) {
     first_ast.header_graph_node = clone_object(first_ast.header_graph_node);
     context.header_graph.add_child(first_ast.header_graph_node);
     context.header_graph_top_level = first_ast.header_graph_node.get_level();
-    const output_path = await output_path_from_ast(
+    const output_path = (await output_path_from_ast(
       first_ast,
       clone_and_set(context, 'to_split_headers', true)
-    )[0];
+    ))[0];
     if (options.log['split-headers']) {
       console.error('split-headers: ' + output_path);
     }
@@ -3000,7 +3000,7 @@ async function macro_image_video_block_convert_function(ast, context) {
   let ret = `<figure${figure_attrs}>\n`
   let href_prefix;
   if (ast.id !== undefined) {
-    href_prefix = html_self_link(ast, context);
+    href_prefix = await html_self_link(ast, context);
   } else {
     href_prefix = undefined;
   }
@@ -3169,7 +3169,7 @@ async function output_path_parts(input_path, id, context, split_suffix=undefined
   let dirname_ret;
   let basename_ret;
   const [id_dirname, id_basename] = path_split(id, URL_SEP);
-  const to_split_headers = is_to_split_headers(header_ast, context);
+  const to_split_headers = await is_to_split_headers(header_ast, context);
   if (
     first_header_or_before ||
     (
@@ -4916,8 +4916,8 @@ async function x_href(target_id_ast, context) {
 // id='subdir/subdir-h2'     -> ['subdir', 'subdir-h2']
 // id='subdir/notindex'      -> ['subdir', 'notindex']
 // id='subdir/notindex-h2'   -> ['subdir', 'notindex-h2']
-function is_to_split_headers(ast, context) {
-  return (context.to_split_headers === undefined && ast.get_split_default(context)) ||
+async function is_to_split_headers(ast, context) {
+  return (context.to_split_headers === undefined && await ast.get_split_default(context)) ||
          (context.to_split_headers !== undefined && context.to_split_headers);
 }
 
@@ -4938,7 +4938,7 @@ async function x_href_parts(target_id_ast, context) {
   if (target_id_ast.synonym !== undefined) {
     target_id_ast = await context.id_provider.get(target_id_ast.synonym, context);
   }
-  let to_split_headers = is_to_split_headers(target_id_ast, context);
+  let to_split_headers = await is_to_split_headers(target_id_ast, context);
   // Linking to the toplevel of the current output path.
   let to_current_toplevel =
       // Linkting to the current output file.
@@ -5145,7 +5145,7 @@ async function x_text(ast, context, options={}) {
         (
           // Possible in case of broken header parent=.
           context.toplevel_ast !== undefined &&
-          ast.is_header_descendant(context.toplevel_ast, context)
+          await ast.is_header_descendant(context.toplevel_ast, context)
         )
       )
     ) {
@@ -5461,7 +5461,7 @@ const MACRO_IMAGE_VIDEO_OPTIONS = {
     }
 
     // Title from src.
-    const media_provider_type = await macro_image_video_resolve_params(ast, context).media_provider_type;
+    const media_provider_type = (await macro_image_video_resolve_params(ast, context)).media_provider_type;
     if (
       ast.validation_output.titleFromSrc.boolean ||
       (
@@ -5617,7 +5617,7 @@ const DEFAULT_MACRO_LIST = [
       let content = await convert_arg(ast.args.content, context);
       let ret = `<div class="code-caption-container"${attrs}>\n`;
       if (ast.validation_output[Macro.TITLE_ARGUMENT_NAME].given) {
-        ret += `\n<div class="caption">${await x_text(ast, context, {href_prefix: html_self_link(ast, context)})}</div>\n`;
+        ret += `\n<div class="caption">${await x_text(ast, context, {href_prefix: await html_self_link(ast, context)})}</div>\n`;
       }
       ret += html_code(content);
       ret += `</div>`;
@@ -5735,7 +5735,7 @@ const DEFAULT_MACRO_LIST = [
       let ret = '';
       // Div that contains h + on hover span.
       ret += `<div class="h"${id_attr}>`;
-      ret += `<h${level_int_capped}${attrs}><a${html_self_link(ast, context)} title="link to this element">`;
+      ret += `<h${level_int_capped}${attrs}><a${await html_self_link(ast, context)} title="link to this element">`;
       let x_text_options = {
         show_caption_prefix: false,
         show_number: !is_top_level,

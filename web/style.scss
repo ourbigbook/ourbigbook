@@ -54,7 +54,7 @@ button, a.btn {
   padding: 2px 5px;
   text-decoration: none;
   vertical-align: middle;
-  &:not(.disabled) {
+  &:not(.disabled):not(:disabled) {
     &, &:hover.active {
       background-color: #181818;
       color: $button-fg-color;
@@ -71,7 +71,7 @@ button, a.btn {
       //border-color: $button-bg-color;
     }
   }
-  &.disabled {
+  &.disabled, &:disabled {
     cursor: default;
     background-color: #444;
     color: white;
@@ -451,6 +451,10 @@ span.shortcut {
   display: none !important;
 }
 
+.home-page.pinned-article {
+  font-weight: bold;
+}
+
 .loading-spinner {
   position: relative;
   width: 40px;
@@ -533,6 +537,7 @@ img.profile-thumb {
 } // div.main
 
 footer {
+  font-weight: bold;
   margin-top: 10px;
   padding: 10px $toplevel-padding;
   a {

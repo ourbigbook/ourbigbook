@@ -786,7 +786,9 @@ WHERE
       return target
     }
     const file = {}
-    addToDictWithoutUndefined(file, this.file, ['titleSource', 'bodySource', 'path', 'hash'])
+    if (this.file) {
+      addToDictWithoutUndefined(file, this.file, ['titleSource', 'bodySource', 'path', 'hash'])
+    }
     const ret = {
       followed,
       liked,

@@ -8018,7 +8018,7 @@ More subjective rationale, motivation and planning aspects of the project are do
 
 <OurBigBook Web> is a bit like <#Wikipedia>, but where each user can have their own version of each page, and it <can my OurBigBook.com content be edited or removed by other users?>[cannot be edited by others without permission].
 
-And it is also a bit like <#Obsidian>, because you can also edit your notes in plaintext markup files and publish either on OurBigBook.com or as a static HTML website on your own domain.
+And it is also a bit like <#Obsidian>: you can optionally keep all your notes in plaintext markup files in your computer and publish either on OurBigBook.com or as a static HTML website on your own domain.
 
 The goal of the <OurBigBook Project> is to make university students write perfect natural sciences books for free as they are trying to learn for their lectures.
 

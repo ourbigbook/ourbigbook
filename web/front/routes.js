@@ -41,6 +41,7 @@ module.exports = {
   issue,
   issuesAll: (opts={}) => `/${escapeUsername}/discussions${encodeGetParamsWithPage(opts)}`,
   issues: (slug, opts={}) => `/${escapeUsername}/discussions/${slug}${encodeGetParamsWithPage(opts)}`,
+  siteSettings: () => `/${escapeUsername}/site-settings`,
   userEdit: (uid) => `/${escapeUsername}/settings/${uid}`,
   userLogin: () => `/${escapeUsername}/login`,
   userNew: () => `/${escapeUsername}/register`,

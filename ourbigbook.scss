@@ -91,11 +91,38 @@ $toc-arrow-width: 0.7em;
 word-wrap: break-word;
 
 a {
+  &.split::before {
+    font-family: "fa-solid-900";
+    font-weight: 900;
+    // adjust https://fontawesome.com/v5/icons/adjust?f=classic&s=solid
+    content: "\f042";
+  }
+  &.nosplit::before {
+    font-family: "fa-solid-900";
+    font-weight: 900;
+    // circle https://fontawesome.com/v5/icons/circle?f=classic&s=solid
+    content: "\f111";
+  }
   &:visited {
     color: $a-color-visited;
   }
   &.toc {
     color: $a-color;
+  }
+}
+
+span {
+  &.wcnt::before, &.wcntr::before {
+    font-family: "fa-regular-400";
+    font-weight: 400;
+    // comment https://fontawesome.com/v5/icons/comment?f=classic&s=solid
+    content: "\f075";
+  }
+  &.dcnt::before {
+    font-family: "fa-solid-900";
+    font-weight: 900;
+    // book https://fontawesome.com/v5/icons/book?f=classic&s=solid
+    content: "\f02d";
   }
 }
 
@@ -360,6 +387,20 @@ ol, ul {
       }
       div:target span.not-arrow span.hover-metadata {
         @include visible;
+      }
+      // Current
+      .c::before {
+        font-family: "fa-solid-900";
+        font-weight: 900;
+        // link https://fontawesome.com/v5/icons/link?f=classic&s=solid
+        content: "\f0c1";
+      }
+      // parent
+      .p::before {
+        font-family: "fa-solid-900";
+        font-weight: 900;
+        // up arrow https://fontawesome.com/v5/icons/arrow-up?f=classic&s=solid
+        content: "\f062";
       }
 
       div {

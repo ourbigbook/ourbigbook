@@ -6660,6 +6660,22 @@ The JWT token is only given to users after account verification. Having the JWT 
   * Sequelize
   * SQLite for local development, PostgreSQL for deployment
 
+= OurBigBook Web URL standards
+{c}
+{parent=OurBigBook Web architecture}
+
+Next.js imposes one constraint: ISR only works with URL parameters like `/articles/<page>`, not GET parameters like `/articles?page=1`.
+
+As of writing however, we don't use any ISR as it adds a lot of complication. But still, we are trying to stick to the general principle that if something might ever be ISR'ed in the future, then we would like to keep it as parameter rather then GET. It feels sane.
+
+The only things that we are ever consider ISR'ing are the pre-rendered version of articles and issues, excluding any metadata of those that changes often or depends on logged in users.
+
+All lists of things will never be ISR'ed, as those can change constantly. One conclusion of this is that:
+* page number
+* ordering
+* other search-like parameters
+which appear only in lists of things, will always be part of the GET query, and not params.
+
 = OurBigBook Web directory structure
 {c}
 {parent=OurBigBook Web architecture}

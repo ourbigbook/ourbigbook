@@ -738,7 +738,7 @@ it('api: create an article and see it on global feed', async () => {
         // Issue list for article.
         ;({data, status} = await test.sendJsonHttp(
           'GET',
-          routes.issuesLatest('user0/title-0'),
+          routes.issues('user0/title-0'),
         ))
         assertStatus(status, data)
 
@@ -759,14 +759,14 @@ it('api: create an article and see it on global feed', async () => {
         // Topic.
         ;({data, status} = await test.sendJsonHttp(
           'GET',
-          routes.topicArticlesTop('title-0'),
+          routes.topic('title-0'),
         ))
         assertStatus(status, data)
 
         // Empty topic.
         ;({data, status} = await test.sendJsonHttp(
           'GET',
-          routes.topicArticlesTop('dontexist'),
+          routes.topic('dontexist'),
         ))
         // Maybe we want 404?
         assertStatus(status, data)

@@ -17,24 +17,22 @@ export interface TopicPageProps {
   articles: (ArticleType & IssueType)[];
   articlesCount: number;
   loggedInUser?: UserType;
+  order: string;
   page: number;
   what: string;
 }
 
-export const TopicPage = ({ articles, articlesCount, loggedInUser, page, what }: TopicPageProps) => {
+export const TopicPage = ({
+  articles,
+  articlesCount,
+  loggedInUser,
+  order,
+  page,
+  what
+}: TopicPageProps) => {
   const router = useRouter();
   const topicId = slugFromArray(router.query.id)
-  let paginationUrlFunc
-  switch (what) {
-    case 'top':
-    case 'top-followed':
-      paginationUrlFunc = (page) => routes.topicArticlesTop(topicId, page)
-      break
-    case 'latest':
-    case 'latest-followed':
-      paginationUrlFunc = (page) => routes.topicArticlesLatest(topicId, page)
-      break
-  }
+  const paginationUrlFunc = (page) => routes.topic(topicId, { page, sort: order })
   const { setTitle } = React.useContext(AppContext)
   React.useEffect(() => { setTitle(topicId) }, [topicId])
   if (router.isFallback) { return <LoadingSpinner />; }
@@ -42,26 +40,17 @@ export const TopicPage = ({ articles, articlesCount, loggedInUser, page, what }:
     <div className="topic-page content-not-ourbigbook">
       <div className="tab-list">
         <CustomLink
-          className={`tab-item${what === 'top' ? ' active' : ''}`}
-          href={routes.topicArticlesTop(topicId)}
+          className={`tab-item${order === 'score' ? ' active' : ''}`}
+          href={routes.topic(topicId, { sort: 'score' })}
         >
           Top articles
         </CustomLink>
         <CustomLink
-          className={`tab-item${what === 'latest' ? ' active' : ''}`}
-          href={routes.topicArticlesLatest(topicId)}
+          className={`tab-item${order === 'createdAt' ? ' active' : ''}`}
+          href={routes.topic(topicId, { sort: 'createdAt' })}
         >
           Latest articles
         </CustomLink>
-        {false && <>
-          { /* Maybe one day, but initially, best article == best user. */ }
-          <CustomLink
-            href={routes.topicUsersView(topicId)}
-            className={`tab-item${what === 'users' ? ' active' : ''}`}
-          >
-            Top Authors (TODO implement)
-          </CustomLink>
-        </>}
       </div>
       <ArticleList {...{
         articles,

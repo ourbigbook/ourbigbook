@@ -3536,11 +3536,25 @@ $$
 
 \\Include[subdir/included-by-subdir-index]
 
+== Scope
+{scope}
+
+=== h3
+
+\\x[scope][scope/h3 to scope]
+
+\\x[h3][scope/h3 to scope/h3]
+
 == Index h2
 `,
   'subdir/notindex.ciro': `= Subdir notindex
 
 == Notindex h2
+
+== Notindex scope
+{scope}
+
+=== h3
 `,
   'subdir/included-by-subdir-index.ciro': `= Included by subdir index
 
@@ -3633,19 +3647,37 @@ assert_executable(
       ],
       'subdir/index.html': [
         xpath_header(1, 'subdir'),
+        xpath_header_split(1, 'subdir', 'split.html', cirodown.SPLIT_MARKER),
         xpath_header(2, 'index-h2'),
+        xpath_header_split(2, 'index-h2', 'index-h2.html', cirodown.SPLIT_MARKER),
+        xpath_header(2, 'scope'),
+        xpath_header_split(2, 'scope', 'scope.html', cirodown.SPLIT_MARKER),
+        xpath_header(3, 'scope/h3'),
+        xpath_header_split(3, 'scope/h3', 'scope/h3.html', cirodown.SPLIT_MARKER),
         "//x:a[@href='../index.html' and text()='link to toplevel']",
         "//x:a[@href='../index.html#h2' and text()='link to toplevel subheader']",
       ],
       'subdir/split.html': [
         xpath_header(1, 'index'),
+        xpath_header_split(1, 'subdir', 'index.html', cirodown.NOSPLIT_MARKER),
         // Check that split suffix works. Should be has-split-suffix-split.html,
         // not has-split-suffix.html.
         "//x:div[@class='p']//x:a[@href='has-split-suffix-split.html' and text()='link to has split suffix']",
       ],
+      'subdir/scope/h3.html': [
+        xpath_header(1, 'h3'),
+        xpath_header_split(1, 'h3', '../index.html#scope/h3', cirodown.NOSPLIT_MARKER),
+        "//x:div[@class='p']//x:a[@href='../index.html#scope' and text()='scope/h3 to scope']",
+        "//x:div[@class='p']//x:a[@href='../index.html#scope/h3' and text()='scope/h3 to scope/h3']",
+      ],
       'subdir/notindex.html': [
         xpath_header(1, 'notindex'),
         xpath_header(2, 'notindex-h2'),
+        xpath_header_split(2, 'notindex-h2', 'notindex-h2.html', cirodown.SPLIT_MARKER),
+      ],
+      'subdir/notindex-scope/h3.html': [
+        xpath_header(1, 'h3'),
+        xpath_header_split(1, 'h3', '../notindex.html#notindex-scope/h3', cirodown.NOSPLIT_MARKER),
       ],
       'subdir/split.html': [
         xpath_header(1, 'subdir'),

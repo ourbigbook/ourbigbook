@@ -469,9 +469,26 @@ My paragraph 2.
 `
 );
 assert_convert('header 7',
-  '\\h[7][My header]\n',
-  '<h6 data-level="7" id="my-header"><a href="#my-header">1. My header</a></h6>\n'
+  `\\h[1][1]
+\\h[2][2]
+\\h[3][3]
+\\h[4][4]
+\\h[5][5]
+\\h[6][6]
+\\h[7][7]
+`,
+  `<h1 id="1"><a href="#1">1. 1</a></h1>
+<h2 id="2"><a href="#2">2. 2</a></h2>
+<h3 id="3"><a href="#3">3. 3</a></h3>
+<h4 id="4"><a href="#4">4. 4</a></h4>
+<h5 id="5"><a href="#5">5. 5</a></h5>
+<h6 id="6"><a href="#6">6. 6</a></h6>
+<h6 data-level="7" id="7"><a href="#7">7. 7</a></h6>
+`
 );
+assert_error('header must be an integer', '\\h[a][b]\n', 1, 4);
+assert_error('header must not be zero', '\\h[0][b]\n', 1, 4);
+assert_error('header skip level is an error', '\\h[1][a]\n\\h[3][b]\n', 2, 4);
 
 // Code.
 assert_convert('code inline',

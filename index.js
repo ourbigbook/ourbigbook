@@ -139,6 +139,7 @@ class ErrorMessage {
 class MacroArgument {
   /**
    * @param {String} name
+   * @param {function} validate
    */
   constructor(options) {
     this.name = options.name;
@@ -296,8 +297,9 @@ class Macro {
     return ret;
   }
 }
-Macro.ID_ARGUMENT_NAME = 'id'
-Macro.TITLE_ARGUMENT_NAME = 'title'
+Macro.ID_ARGUMENT_NAME = 'id';
+Macro.HEADER_MACRO_NAME = 'h';
+Macro.TITLE_ARGUMENT_NAME = 'title';
 
 class Token {
   /**
@@ -597,6 +599,17 @@ class Tokenizer {
     for (let i = 0; i < close_string.length; i++)
       this.consume();
     return true;
+  }
+}
+
+class TreeNode {
+  constructor(value, parent_node) {
+    this.value = value;
+    this.parent_node = parent_node;
+    this.children = [];
+  }
+  add_child(child) {
+    this.children.push(child);
   }
 }
 
@@ -940,6 +953,9 @@ function parse(tokens, macros, options, extra_returns={}) {
   let todo_visit = [ast_toplevel];
   let macro_counts = {};
   extra_returns.ids = {};
+  let header_tree_last_level = 0;
+  extra_returns.header_tree = new TreeNode();
+  let header_tree_stack = {0: extra_returns.header_tree};
   while (todo_visit.length > 0) {
     const node = todo_visit.shift();
     const macro_name = node.macro_name;
@@ -970,6 +986,26 @@ function parse(tokens, macros, options, extra_returns={}) {
       macro_count = macro_counts[macro_name] + 1;
       macro_counts[macro_name] = macro_count;
       node.macro_count = macro_count;
+    }
+
+    // Linear count of each macro type for macros that have IDs.
+    if (macro_name === Macro.HEADER_MACRO_NAME) {
+      let level = parseInt(convert_arg_noescape(node.args.level, id_context));
+      let new_tree_node = new TreeNode(node, header_tree_stack[level - 1]);
+      if ((level - header_tree_last_level) > 1) {
+        parse_error(
+          state,
+          `skipped a header level from ${header_tree_last_level} to ${level}`,
+          node.args.level[0].line,
+          node.args.level[0].column
+        );
+      }
+      let parent_tree_node = header_tree_stack[level - 1];
+      if (parent_tree_node !== undefined) {
+        parent_tree_node.add_child(new_tree_node);
+      }
+      header_tree_stack[level] = new_tree_node;
+      header_tree_last_level = level;
     }
 
     // Loop over the child arguments.
@@ -1366,11 +1402,10 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'h',
+    Macro.HEADER_MACRO_NAME,
     [
       new MacroArgument({
         name: 'level',
-        type: 'int',
       }),
       new MacroArgument({
         name: Macro.TITLE_ARGUMENT_NAME,
@@ -1378,8 +1413,15 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       let custom_args;
-      let level = convert_arg(ast.args.level, context);
-      if (parseInt(level) > 6) {
+      let level_arg = ast.args.level;
+      let level = convert_arg_noescape(level_arg, context);
+			let level_int = parseInt(level);
+			if (!Number.isInteger(level_int) || !(level_int > 0)) {
+					let message = `level must be a positive non-zero integer: "${level}"`;
+					this.error(context, message, level_arg[0].line, level_arg[0].column);
+					return error_message_in_output(message);
+      }
+      if (level_int > 6) {
         custom_args = {'data-level': [new AstNode(AstType.PLAINTEXT,
           context.macros, 'plaintext', level, ast.line, ast.column)]};
         level = '6';
@@ -1454,15 +1496,6 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'ol',
-    [
-      new MacroArgument({
-        name: 'content',
-      }),
-    ],
-    html_convert_simple_elem('ol', {newline_after_open: true}),
-  ),
-  new Macro(
     'Image',
     [
       new MacroArgument({
@@ -1518,6 +1551,15 @@ const DEFAULT_MACRO_LIST = [
     {
       phrasing: true,
     }
+  ),
+  new Macro(
+    'ol',
+    [
+      new MacroArgument({
+        name: 'content',
+      }),
+    ],
+    html_convert_simple_elem('ol', {newline_after_open: true}),
   ),
   new Macro(
     'p',
@@ -1590,6 +1632,23 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     html_convert_simple_elem('td'),
+  ),
+  new Macro(
+    'toc',
+    [],
+    function(ast, context) {
+      let ret = `<div>The TOC!</div>`;
+      //let attrs = html_convert_attrs_id(ast, context);
+      //let content = convert_arg(ast.args.content, context);
+      //let ret = ``;
+      //ret += `<div class="table-container"${attrs}>\n`;
+      //if (ast.id !== undefined) {
+      //  ret += `<div class="table-caption">${this.x_text(ast, context)}</div>\n`;
+      //}
+      //ret += `<table>\n${content}</table>\n`;
+      //ret += `</div>\n`;
+      return ret;
+    },
   ),
   new Macro(
     'toplevel',

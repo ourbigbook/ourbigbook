@@ -30,13 +30,18 @@ const ArticleInfo = ({
       article={article}
       showText={true}
     />
-    {' Created: '}
-    <span className="article-dates">
-      {formatDate(article.createdAt)}
+    {' '}
+    <span className="mobile-hide">
+      {'Created: '}
+      <span className="article-dates">
+        {formatDate(article.createdAt)}
+      </span>
     </span>
     {article.createdAt !== article.updatedAt &&
       <>
-        {' Updated: '}
+        <span className="mobile-hide">
+          {' Updated: '}
+        </span>
         <span className="article-dates">
           {formatDate(article.updatedAt)}
         </span>

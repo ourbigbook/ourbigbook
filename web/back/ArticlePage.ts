@@ -1,5 +1,6 @@
 import sequelize from 'db'
 import { getLoggedInUser } from 'back'
+import { ArticlePageProps } from 'front/ArticlePage'
 
 export function getServerSidePropsArticleHoc(addComments?, loggedInUserCache?) {
   return async ({ params: { slug }, req, res }) => {
@@ -19,7 +20,7 @@ export function getServerSidePropsArticleHoc(addComments?, loggedInUserCache?) {
         where: { topicId: article.topicId },
       }),
     ])
-    const props:any = {
+    const props:ArticlePageProps = {
       article: articleJson,
       topicArticleCount,
     }

@@ -4,12 +4,11 @@ import CustomLink from 'front/CustomLink'
 import CustomImage from 'front/CustomImage'
 import { UserType } from 'front/types/userType'
 import routes from 'front/routes'
-import { DisplayAndUsername } from 'front/user'
+import { DisplayAndUsername, DisplayAndUsernameProps } from 'front/user'
 
-const UserLinkWithImage = ({ user, showUsername }: {
-  user: UserType,
-  showUsername?: boolean,
-}) => {
+const UserLinkWithImage = ({
+  user, showUsername, showUsernameMobile
+}: DisplayAndUsernameProps) => {
   if (!user) return null;
   return (
     <CustomLink
@@ -22,9 +21,11 @@ const UserLinkWithImage = ({ user, showUsername }: {
         alt="author profile image"
       />
       {' '}
-      <DisplayAndUsername
-      showUsername={showUsername}
-      user={user}
+      <DisplayAndUsername {...{
+        showUsername,
+        showUsernameMobile,
+        user,
+      }}
       ></DisplayAndUsername>
     </CustomLink>
   )

@@ -206,7 +206,6 @@ has the following effects:
 \l[add the current header to the list of extra parents of the child]
 
 This allows a section to have multiple parents, e.g. to include it into multiple categories. For example:
-
 ``
 \h[1][Animals]
 

@@ -10,6 +10,7 @@ import {
   AppContext,
   disableButton,
   enableButton,
+  SettingsIcon,
   useCtrlEnterSubmit ,
 } from 'front'
 import { webApi } from 'front/api'
@@ -86,7 +87,7 @@ const SiteSettings = ({
   React.useEffect(() => { setTitle(title) }, [])
   return (
     <div className="settings-page content-not-ourbigbook">
-      <h1>{title}</h1>
+      <h1><SettingsIcon /> {title}</h1>
       <p>This page contains global settings that affect the entire website. It can only be edited by <a href={`${config.docsAdminUrl}`}>admins</a>.</p>
       <>
         <MapErrors errors={errors} />

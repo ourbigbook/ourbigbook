@@ -13,12 +13,14 @@ import { OurbigbookEditor } from 'ourbigbook/editor.js';
 import { convertOptions, docsUrl, forbidMultiheaderMessage, sureLeaveMessage, isProduction, read_include_web } from 'front/config';
 
 import {
+  ArticleIcon,
   ArticleBy,
   capitalize,
   disableButton,
   enableButton,
   CancelIcon,
   HelpIcon,
+  IssueIcon,
   slugFromArray
 } from 'front'
 import ErrorList from 'front/ErrorList'
@@ -507,8 +509,14 @@ export default function EditorPageHoc({
               <div className="header" ref={ourbigbookHeaderElem}>
                 <h1>
                   {isNew
-                    ? `New ${itemType}`
+                    ? <>
+                        {isIssue ? <IssueIcon /> : <ArticleIcon />}
+                        {' '}
+                        New {itemType}
+                      </>
                     : <>
+                        {isIssue ? <IssueIcon /> : <ArticleIcon />}
+                        {' '}
                         Editing
                         {' '}
                         {isIssue

@@ -5395,6 +5395,19 @@ This is the <index file> present in the <project toplevel directory>.
 Being the toplevel index file has the following implications compared to other <index files>:
 * its ID is derived from the header itself, not the directory, see also: <the ID of the first header is derived from the filename>
 
+= The index article
+{parent=The toplevel index file}
+
+The "index article" is the first article of the <The toplevel index file>. E.g. in:
+
+README.bigb
+``
+= John Smith's Homepage
+
+== I like dogs
+``
+then "John Smith's Homepage" is the index article of the project, but "I like dogs" is not.
+
 = The current working directory does not matter when there is a `ourbigbook.json`
 {parent=The toplevel index file}
 
@@ -6309,7 +6322,7 @@ This will get out of sync sooner or later with the code, but this should still s
 
 Defined variables:
 * `body`: the rendered body
-* `dir_replath`: relative path from the rendered output to the <`_dir` directory>. Sample usage to link to the root directory listing:
+* `dir_relpath`: relative path from the rendered output to the <`_dir` directory>. Sample usage to link to the root directory listing:
   ``
   <div><a href="{{ dir_relpath }}{{ html_index }}">Website source code</a></div>
   ``
@@ -6343,8 +6356,21 @@ Defined variables:
   <div>Source code for this page: <a href="{{ raw_relpath }}/{{ input_path }}">{{ input_path }}</a></div>
   {% endif %}
   ``
+* `is_root_relpath`. Boolean. True if the toplevel being rendered on this output file is the <the index article>. E.g. in:
+
+  README.bigb
+
+  ``
+  = John Smith's homepage
+
+  == Mathematics
+  ``
+  with <split header> conversion, the value of `is_root_relpath` would be:
+  * `index.html`: true
+  * `split.html`: true
+  * `mathematics.html`: false
 * `root_page`: relative path to the toplevel page, e.g. either `index.html`, `../index.html` locally or `./`, `../` on server oriented rendereing
-* `root_replath`: relative path from the rendered output to the toplevel directory.
+* `root_relpath`: relative path from the rendered output to the toplevel directory.
 
   This allows for toplevel resources like CSS to be found seamlessly form inside subdirectories, specially when rendering locally.
 
@@ -6362,13 +6388,13 @@ Defined variables:
   <link rel="stylesheet" type="text/css" href="../main.css">
   ``
 
-  And if the output path were instead just `myohterfile.html`, `root_replath` expands to an empty string, giving again the correct:
+  And if the output path were instead just `myohterfile.html`, `root_relpath` expands to an empty string, giving again the correct:
   ``
   <link rel="stylesheet" type="text/css" href="main.css">
   ``
 
   This will ideally be replaced with a more generic link to arbitrary ID mechnism at some point: https://github.com/ourbigbook/ourbigbook/issues/135
-* `raw_replath`: relative path from the rendered output to the <`_raw` directory>. Should be used to prefix all non-<OurBigBook Markup> output resources, which is the directory where such files are placed during conversion, e.g.
+* `raw_relpath`: relative path from the rendered output to the <`_raw` directory>. Should be used to prefix all non-<OurBigBook Markup> output resources, which is the directory where such files are placed during conversion, e.g.
   ``
   <link rel="shortcut icon" href="{{ raw_relpath }}/logo.svg" />
   ``

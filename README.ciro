@@ -5740,6 +5740,10 @@ Then, every new release can be done automatically with the \a[release] script, e
 ``
 ./release 0.7.2
 ``
+or to just increment the minor version, e.g. from the current `0.7.1` to `0.7.2` you could can omit the version argument:
+``
+./release
+``
 That script does the following actions, aborting immediately if any of them fails:
 * runs \x[test-system][the tests]
 * publishes this documentation

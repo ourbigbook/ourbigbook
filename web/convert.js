@@ -133,7 +133,7 @@ async function convertArticle({
         forbid_multiheader: forbidMultiheaderMessage,
         // 1 to remove the @ from every single ID, but still keep the `username` prefix.
         // This is necessary so we can use the same h2 render for articles under a scope for both 
-        // renderings inside and outside of the scope. With dynamic fetch on web, we cannot know if the
+        // renderings inside and outside of the scope. With dynamic article tree on web, we cannot know if the
         // page will be visible from inside or outside the toplevel scope, so if we use a cut up version:
         // `my-scope/section-id` as just `section-id` from something outside of `my-scope`, then there could
         // be ambiguity with other headeres with ID `section-id`. We could keep multiple h2 renderings around

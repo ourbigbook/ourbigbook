@@ -12,7 +12,7 @@ All dynamic.
 {tag=Web}
 {tag=CSS}
 
-Just keep making viewport smaller an smaller, until it happen.
+Just keep making viewport smaller an smaller, until it happen. Sample width that reproduces: 680px.
 
 Removing `white-space: pre-wrap` solves it. But then the space between `(beta)` and `OurBigBook.com` gets removed.
 

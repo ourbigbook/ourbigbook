@@ -3242,10 +3242,7 @@ and one particularly important query is to dump a list of all known IDs:
 sqlite3 out/db.sqlite3 'select id from ids'
 ``
 
-You can force `cirodown` to not use the ID database with `--no-db`:
-``
-./cirodown --no-db .
-``
+You can force `cirodown` to not use the ID database with the \x[no-db] command line option
 
 = Internal cross reference title link removal
 {parent=internal-cross-file-reference}
@@ -4312,6 +4309,11 @@ Sample output excerpt for this document:
 This option can also serve as a debug tool for header tree related features (confession: that was its original motivation!).
 
 TODO
+
+= `--no-db`
+{parent=cirodown-executable-options}
+
+Don't use the \x[id-database] during this run. This implies that the on-disk database is not read, and also not written to. Instead, a temporary clean in-memory database is used.
 
 = `--no-html-x-extension`
 {parent=cirodown-executable-options}

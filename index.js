@@ -965,7 +965,7 @@ class DictIdProvider extends IdProvider {
         if (from_ids !== undefined) {
           for (const from_id in from_ids) {
             const defined_ats = from_ids[from_id].defined_at
-            for (const defined_at of defined_ats) {
+            for (const defined_at in defined_ats) {
               ret.push({ id: from_id, defined_at })
             }
           }
@@ -2040,12 +2040,16 @@ exports.HeaderTreeNode = HeaderTreeNode
 
 /** Add an entry to the data structures that keep the map of incoming
  * and outgoing \x and \x {child} links. */
-function add_to_refs_to(toid, context, fromid, relation_type, child_index) {
-  add_to_refs_to_one_way(false, toid,   context, fromid, relation_type, child_index)
-  add_to_refs_to_one_way(true,  fromid, context, toid,   relation_type, child_index)
+function add_to_refs_to(toid, context, fromid, relation_type, opts={}) {
+  add_to_refs_to_one_way(false, toid,   context, fromid, relation_type, opts)
+  add_to_refs_to_one_way(true,  fromid, context, toid,   relation_type, opts)
 }
 
-function add_to_refs_to_one_way(reverse, toid, context, fromid, relation_type, child_index) {
+function add_to_refs_to_one_way(reverse, toid, context, fromid, relation_type, opts={}) {
+  let { child_index, source_location, inflected } = opts
+  if (inflected === undefined) {
+    inflected = false
+  }
   let from_to_dict_false = context.refs_to[reverse];
   let from_ids;
   if (toid in from_to_dict_false) {
@@ -2063,12 +2067,19 @@ function add_to_refs_to_one_way(reverse, toid, context, fromid, relation_type, c
   }
   let from_ids_relation_type_fromid = from_ids_relation_type[fromid]
   if (from_ids_relation_type_fromid === undefined) {
-    from_ids_relation_type_fromid = { defined_at: new Set(), child_index }
+    from_ids_relation_type_fromid = { defined_at: {}, child_index }
     from_ids_relation_type[fromid] = from_ids_relation_type_fromid
   }
-  from_ids_relation_type_fromid.defined_at.add(
-    context.options.input_path
-  )
+  let from_ids_relation_type_fromid_defined_at = from_ids_relation_type_fromid.defined_at[context.options.input_path]
+  if (from_ids_relation_type_fromid_defined_at === undefined) {
+    from_ids_relation_type_fromid_defined_at = []
+    from_ids_relation_type_fromid.defined_at[context.options.input_path] = from_ids_relation_type_fromid_defined_at
+  }
+  from_ids_relation_type_fromid_defined_at.push({
+    line: source_location.line,
+    column: source_location.column,
+    inflected,
+  })
 }
 
 /**
@@ -2234,8 +2245,11 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
               context,
               local_id,
               REFS_TABLE_PARENT,
-              ast.header_tree_node.index,
-            );
+              {
+                child_index: ast.header_tree_node.index,
+                source_location: ast.source_location,
+              }
+            )
           }
         }
       } else {
@@ -4113,7 +4127,10 @@ async function parse(tokens, options, context, extra_returns={}) {
             context,
             parent_ast.id,
             REFS_TABLE_PARENT,
-            parent_ast_header_tree_node.children.length
+            {
+              child_index: parent_ast_header_tree_node.children.length,
+              source_location: ast.source_location,
+            },
           );
           parent_ast.includes.push(href);
         }
@@ -4645,13 +4662,18 @@ async function parse(tokens, options, context, extra_returns={}) {
           ast,
           title_ast_ancestors: Object.assign([], title_ast_ancestors),
           target_id,
+          inflected: false,
         })
         if (fetch_plural) {
           // In the case of magic, also fetch a singularized version from DB. We don't know
           // which one is the correct one, so just fetch both and decide at render time.
           const href_arg = ast.args.href
           const last_ast = href_arg.get(href_arg.length() - 1);
-          if (last_ast.node_type === AstType.PLAINTEXT) {
+          if (
+            // Possible for unterminated insane link.
+            last_ast &&
+            last_ast.node_type === AstType.PLAINTEXT
+          ) {
             const old_text = last_ast.text
             const new_text = pluralize(old_text,  context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK ? 2 : 1)
             if (new_text !== old_text) {
@@ -4662,6 +4684,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                 ast,
                 title_ast_ancestors: Object.assign([], title_ast_ancestors),
                 target_id,
+                inflected: true,
               })
             }
           }
@@ -5110,9 +5133,9 @@ async function parse(tokens, options, context, extra_returns={}) {
         ref.ast
       )
       if (ref.child) {
-        add_to_refs_to(target_id_effective, context, ref.ast.id, ref.type);
+        add_to_refs_to(target_id_effective, context, ref.ast.id, ref.type, { source_location: ref.ast.source_location });
       } else {
-        add_to_refs_to(ref.ast.id, context, target_id_effective, ref.type);
+        add_to_refs_to(ref.ast.id, context, target_id_effective, ref.type, { source_location: ref.ast.source_location });
       }
     }
     for (const ref of options.refs_to_x) {
@@ -5133,7 +5156,16 @@ async function parse(tokens, options, context, extra_returns={}) {
           !ast.from_include
         ) {
           // Update xref database for incoming links.
-          const from_ids = add_to_refs_to(target_id_effective, context, parent_id, REFS_TABLE_X);
+          const from_ids = add_to_refs_to(
+            target_id_effective,
+            context,
+            parent_id,
+            REFS_TABLE_X,
+            {
+              source_location: ast.source_location,
+              inflected: ref.inflected,
+            }
+          );
         }
 
         // Update xref database for child/parent relationships.
@@ -5147,12 +5179,18 @@ async function parse(tokens, options, context, extra_returns={}) {
             fromid = target_id_effective;
           }
           if (toid !== undefined) {
-            add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD);
+            add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD, { source_location: ast.source_location });
           }
         }
       }
       for (const title_ast of ref.title_ast_ancestors) {
-        add_to_refs_to(target_id_effective, context, title_ast.id, REFS_TABLE_X_TITLE_TITLE);
+        add_to_refs_to(
+          target_id_effective,
+          context,
+          title_ast.id,
+          REFS_TABLE_X_TITLE_TITLE,
+          { source_location: title_ast.source_location }
+        );
       }
     }
     const first_toplevel_child = ast_toplevel.args.content.get(0);
@@ -6481,6 +6519,7 @@ const HTML_ASCII_WHITESPACE = new Set([' ', '\r', '\n', '\f', '\t']);
 const HTML_EXT = 'html';
 exports.HTML_EXT = HTML_EXT;
 const ID_SEPARATOR = '-';
+exports.ID_SEPARATOR = ID_SEPARATOR
 const INSANE_LIST_START = '* ';
 const INSANE_TD_START = '| ';
 const INSANE_TH_START = '|| ';

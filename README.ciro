@@ -4,8 +4,6 @@ A Markup language to write multipage or single page HTML / PDF books, blogs, etc
 
 The source for this document is at: https://github.com/cirosantilli/cirodown/blob/master/README.ciro and a rendered version can be seen at: https://cirosantilli.com/cirodown and a live in-browser demo at: https://cirosantilli.com/cirodown/editor[].
 
-\Toc
-
 == Quick start
 
 Showcase website: https://www.cirosantilli.com source at https://github.com/cirosantilli/cirosantilli.github.io That is the initial motivation.
@@ -1042,15 +1040,15 @@ but it just didn't feel as good, and is a bit harder to type than just smashing 
 === Table of contents
 {title2=`\Toc`}
 
-Only one ToC shows per document.
+Cirodown automatically adds a ToC at the end of the first \x[the-toplevel-header][non-toplevel header] of every document.
 
-Any ToC besides the first one is ignored. TODO make it into an error instead?
+You may customize ToC placement with `\Toc` macro, but just don't do it, it will just go against common convention and confuse readers.
 
-The ToC ignores `\H[1]` by default, as we encourage that header level to appear only once and represent the main title under which the entire document goes.
+Only one ToC is rendered per document. Any ToC besides the first one is ignored. In particular, this means that \x[includes] with \x[html-single-page] work seamlessly and render a single table of contents, even if multiple `\Toc` macros are present in the included pages.
 
-`\Toc` from \x[includes] are ignored.
+The ToC ignores \x[the-toplevel-header] if you have one.
 
-For when you want a quick outline of the header tree on the terminal, also consider: `--show-headers`.
+For when you want a quick outline of the header tree on the terminal, also consider the \x[show-headers] option.
 
 ==== Table of contents JavaScript open close interaction
 

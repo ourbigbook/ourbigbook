@@ -3764,13 +3764,13 @@ function getDescription(description_arg, context) {
         context.macros[ast.macro_name].options.phrasing ||
         ast.node_type === AstType.PLAINTEXT
       )) {
-        multiline_caption = ' multiline-caption'
+        multiline_caption = true
         break
       }
     }
   }
   if (multiline_caption === undefined) {
-    multiline_caption = ''
+    multiline_caption = false
   }
 
   return { description, force_separator, multiline_caption }
@@ -4045,7 +4045,7 @@ function htmlRenderSimpleElem(elem_name, options={}) {
         force_separator
       })
       const title_and_description = getTitleAndDescription({ title, description, inner })
-      res += `<div${multiline_caption ?  ` class="${multiline_caption.substring(1)}"` : ''}${attrs}>`;
+      res += `<div${attrs}><div${multiline_caption ?  ` class="${MULTILINE_CAPTION_CLASS}"` : ''}>`;
       res += `<div class="caption">${title_and_description}</div>`;
       elem_attrs = ''
     } else {
@@ -4053,7 +4053,7 @@ function htmlRenderSimpleElem(elem_name, options={}) {
     }
     res += `<${elem_name}${elem_attrs}${getTestData(ast, context)}>${content}</${elem_name}>`;
     if (show_caption) {
-      res += `</div>`;
+      res += `</div></div>`;
     }
     if (options.wrap) {
       res = htmlElem('div', res);
@@ -4341,13 +4341,7 @@ function macroImageVideoBlockConvertFunction(ast, context) {
   let rendered_attrs = htmlRenderAttrs(ast, context, ['height', 'width']);
   let figure_attrs = htmlRenderAttrsId(ast, context);
   let { description, force_separator, multiline_caption } = getDescription(ast.args.description, context)
-  let figure_class
-  if (multiline_caption) {
-    figure_class = htmlAttr('class', multiline_caption.slice(1))
-  } else {
-    figure_class = ''
-  }
-  let ret = `<figure${figure_attrs}${figure_class}>`
+  let ret = `<figure${figure_attrs}><div${multiline_caption ?  ` class="${MULTILINE_CAPTION_CLASS}"` : ''}>`
   let href_prefix;
   if (ast.id !== undefined) {
     href_prefix = htmlSelfLink(ast, context);
@@ -4401,7 +4395,7 @@ function macroImageVideoBlockConvertFunction(ast, context) {
     const title_and_description = getTitleAndDescription({ title, description, source, inner })
     ret += `<figcaption>${title_and_description}</figcaption>`;
   }
-  ret += '</figure>';
+  ret += '</div></figure>';
   return ret;
 }
 
@@ -7657,6 +7651,7 @@ const IMAGE_EXTENSIONS = new Set([
   'tiff',
   'webp',
 ])
+const MULTILINE_CAPTION_CLASS = 'multiline'
 const OURBIGBOOK_JSON_BASENAME = 'ourbigbook.json';
 exports.OURBIGBOOK_JSON_BASENAME = OURBIGBOOK_JSON_BASENAME
 const OURBIGBOOK_JSON_DEFAULT = {
@@ -8845,10 +8840,10 @@ const OUTPUT_FORMATS_LIST = [
         'br': function(ast, context) { return '<br>' },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: function(ast, context) {
           const { title_and_description, multiline_caption } = htmlTitleAndDescription(ast, context, { addTitleDiv: true })
-          let ret = `<div class="code${multiline_caption}"${htmlRenderAttrsId(ast, context)}>`
+          let ret = `<div class="code"${htmlRenderAttrsId(ast, context)}><div${multiline_caption ?  ` class="${MULTILINE_CAPTION_CLASS}"` : ''}>`
           ret += htmlCode(renderArg(ast.args.content, context))
           ret += title_and_description
-          ret += `</div>`
+          ret += `</div></div>`
           return ret
         },
         [Macro.CODE_MACRO_NAME]: htmlRenderSimpleElem('code'),
@@ -9391,12 +9386,14 @@ const OUTPUT_FORMATS_LIST = [
           let ret = ``
           if (ast.validation_output.show.boolean) {
             const { href, multiline_caption, title_and_description } = htmlTitleAndDescription(ast, context, { addTitleDiv: true })
-            ret += `<div class="math${multiline_caption}"${htmlRenderAttrsId(ast, context)}>`
+            ret += `<div class="math"${htmlRenderAttrsId(ast, context)}>`
+            ret += `<div${multiline_caption ?  ` class="${MULTILINE_CAPTION_CLASS}"` : ''}>`
             ret += `<div class="equation">`
             ret += `<div>${katex_output}</div>`
             ret += `<div class="number"><a${href}>(${context.macros[ast.macro_name].options.get_number(ast, context)})</a></div>`
             ret += `</div>`
             ret += title_and_description
+            ret += `</div>`
             ret += `</div>`
           }
           return ret
@@ -9426,7 +9423,7 @@ const OUTPUT_FORMATS_LIST = [
           let content = renderArg(ast.args.content, context);
           let ret = ``;
           let { description, force_separator, multiline_caption } = getDescription(ast.args.description, context)
-          ret += `<div class="table${multiline_caption}"${attrs}>`;
+          ret += `<div class="table"${attrs}><div${multiline_caption ?  ` class="${MULTILINE_CAPTION_CLASS}"` : ''}>`;
           // TODO not using caption because I don't know how to allow the caption to be wider than the table.
           // I don't want the caption to wrap to a small table size.
           //
@@ -9449,7 +9446,7 @@ const OUTPUT_FORMATS_LIST = [
             ret += `<div class="caption">${title_and_description}</div>`;
           }
           ret += `<table>${content}</table>`;
-          ret += `</div>`;
+          ret += `</div></div>`;
           return ret;
         },
         [Macro.TD_MACRO_NAME]: htmlRenderSimpleElem('td'),

@@ -245,7 +245,7 @@ div.p {
 // Figures.
 figure {
   margin: $p-margin-vert 0;
-  &.multiline-caption {
+  &.multiline {
     @include multiline-caption;
   }
   figcaption {
@@ -435,7 +435,7 @@ pre {
   @include pre;
 }
 
-div.multiline-caption {
+div.multiline {
   @include multiline-caption;
 }
 
@@ -443,7 +443,7 @@ div.multiline-caption {
 .table {
   margin: $p-margin-vert 0;
   overflow-x: auto;
-  &.multiline-caption {
+  &.multiline {
     @include multiline-caption;
   }
   table {

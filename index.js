@@ -3073,9 +3073,6 @@ function convert_init_context(options={}, extra_returns={}) {
       }
       if (!('xPrefix' in ourbigbook_json)) { ourbigbook_json.xPrefix = undefined; }
     }
-    if ('publishOptions' in ourbigbook_json) {
-      lodash.merge(ourbigbook_json, ourbigbook_json.publishOptions)
-    }
   if (!('embed_includes' in options)) { options.embed_includes = false; }
   // Check if file exists.
   if (!('fs_exists_sync' in options)) { options.fs_exists_sync }
@@ -3155,6 +3152,9 @@ function convert_init_context(options={}, extra_returns={}) {
     // than a regular developmt compilation.
     options.publish = false
   }
+    if (options.publish && 'publishOptions' in ourbigbook_json) {
+      lodash.merge(ourbigbook_json, ourbigbook_json.publishOptions)
+    }
   if (!('read_include' in options)) { options.read_include = () => undefined; }
   if (!('read_file' in options)) { options.read_file = () => undefined; }
   if (!('ref_prefix' in options)) {

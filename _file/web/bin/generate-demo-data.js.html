@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>generate-demo-data.js - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="generate-demo-data.js"><div class="notnav"><h1><a href="">web/bin/generate-demo-data.js</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir/">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/bin">bin</a> / <a href="../../../_raw/web/bin/generate-demo-data.js">generate-demo-data.js</a></b></div></nav></div><div class="p"><b>web/bin/generate-demo-data.js</b></div><div class="code"><div><pre><code>#!/usr/bin/env node
+// https://ourbigbook/ourbigbook/demo-data
+
+const assert = require('assert')
+const path = require('path')
+
+const commander = require('commander');
+
+const config = require('../front/config')
+
+function cliInt(value, dummyPrevious) {
+  const parsedValue = parseInt(value);
+  if (isNaN(parsedValue)) {
+    throw new commander.InvalidOptionArgumentError('Not a number.');
+  }
+  return parsedValue;
+}
+
+const program = commander.program
+program.allowExcessArguments(false)
+program.option('-a, --articles-per-user &lt;n&gt;', 'n articles per user', cliInt);
+program.option('-i, --max-issues-per-article &lt;n&gt;', 'maximum number of issues per article', cliInt);
+program.option('-c, --max-comments-per-article &lt;n&gt;', 'maximum number of comments per issues', cliInt);
+program.option('-f, --follows-per-user &lt;n&gt;', 'n follows per user', cliInt);
+program.option('-l, --likes-per-user &lt;n&gt;', 'n likes per user', cliInt);
+program.option('--force-production', 'allow running in production, DELETES ALL DATA', false);
+program.option('-C, --clear', 'clear the database and create demo data from scratch instead of just updating existing entries', false);
+program.option('--empty', 'ignore everything else and make an empty database instead. Implies --reset', false);
+program.option('-u, --users &lt;n&gt;', 'n users', cliInt);
+program.parse(process.argv);
+const opts = program.opts()
+
+if (!opts.forceProduction) {
+  assert(!config.isProduction)
+}
+(async () =&gt; {
+const test_lib = require('../test_lib')
+const sequelize = await test_lib.generateDemoData({
+  clear: opts.clear,
+  directory: path.dirname(__dirname),
+  empty: opts.empty,
+  nArticlesPerUser: opts.articlesPerUser,
+  nMaxCommentsPerIssue: opts.nMaxCommentsPerIssue,
+  nMaxIssuesPerArticle: opts.maxIssuesPerArticle,
+  nLikesPerUser: opts.likesPerUser,
+  nFollowsPerUser: opts.followsPerUser,
+  nUsers: opts.users,
+  verbose: true,
+})
+await sequelize.close()
+})()
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/bin/";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

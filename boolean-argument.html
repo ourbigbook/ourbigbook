@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Boolean argument - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="boolean-argument"><div class="notnav"><h1><a href="">Boolean argument</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#ourbigbook-markup-syntax"> OurBigBook Markup syntax</a><a href=".#macro-argument"> Macro argument</a><a href=".#macro-argument-type"> Macro argument type</a></div><div class="nav"><a class="nosplit" href=".#boolean-argument"></a><span class="metrics"><span class="wcntr"> Words: 123</span></span></div></nav></div><div class="p" id="_2705">Name arguments marked in <a href=".#help-macros"><code>--help-macros</code></a> as <code>boolean: true</code> must either:<div class="list"><ul id="_2706"><li id="_2707">take no value and no <code>=</code> sign, in which case the value is implicitly set to <code>1</code></li><li id="_2708">take value exactly <code>0</code> or <code>1</code></li><li id="_2709">not be given, in which case a custom per-macro default is used. That value is the <code>default</code> from <a href=".#help-macros"><code>--help-macros</code></a>, or <code>0</code> if such default is not given</li></ul></div></div><div class="p" id="_2710">For example, the <a href=".#x-full-argument"><code>\x</code> <code>full</code> argument</a> of <a href=".#internal-link">internal links</a> is correctly written as:<div class="code" id="_2711"><div><pre><code>\x[boolean-argument]{full}</code></pre></div></div><div class="p" id="_2712">which renders as:</div><div><blockquote id="_2713"><div class="p" id="_2714"><a href=".#boolean-argument">Section "Boolean argument"</a></div></blockquote></div>without the <code>=</code> sign, or equivalently:<div class="code" id="_2715"><div><pre><code>\x[boolean-argument]{full=1}</code></pre></div></div><div class="p" id="_2716">which renders as:</div><div><blockquote id="_2717"><div class="p" id="_2718"><a href=".#boolean-argument">Section "Boolean argument"</a></div></blockquote></div>The <code>full=0</code> version is useful in the case of reference targets that unlike <a href=".#header">headers</a> expand the title on the <a href=".#internal-link">internal link</a> by default, e.g. <a href=".#image">images</a>:<div class="code" id="_2719"><div><pre><code>\x[boolean-argument]{full=1}</code></pre></div></div><div class="p" id="_2720">which renders as:</div><div><blockquote id="_2721"><div class="p" id="_2722"><a href=".#boolean-argument">Section "Boolean argument"</a></div></blockquote></div></div><div class="p" id="_2723">The name "boolean argument" is given by analogy to the <a href="https://stackoverflow.com/questions/16109358/what-is-the-correct-readonly-attribute-syntax-for-input-text-elements/24588427#24588427">"boolean attribute" concept in HTML5</a>.</div><h2 id="_tagged"><a href="#_tagged"><span title="Tags" class="fa-solid-900 icon"></span> Tagged <span class="meta">(10)</span></a></h2><div class="list"><ul><li><a href=".#a-external-argument"><code>\a</code> <code>external</code> argument</a></li><li><a href=".#a-ref-argument"><code>\a</code> <code>ref</code> argument</a></li><li><a href=".#h-numbered-argument"><code>\H</code> <code>numbered</code> argument</a></li><li><a href=".#h-splitdefault-argument"><code>\H</code> <code>splitDefault</code> argument</a></li><li><a href=".#h-toplevel-argument"><code>\H</code> <code>toplevel</code> argument</a></li><li><a href=".#image-border-argument">Image <code>border</code> argument</a></li><li><a href=".#image-external-argument">Image <code>external</code> argument</a></li><li><a href=".#x-magic-argument"><code>\x</code> <code>magic</code> argument</a></li><li><a href=".#x-p-argument"><code>\x</code> <code>p</code> argument</a></li><li><a href=".#x-topic-argument"><code>\x</code> <code>topic</code> argument</a></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#macro-argument-type">Macro argument type</a></li><li><a href=".#macro-argument">Macro argument</a></li><li><a href=".#ourbigbook-markup-syntax">OurBigBook Markup syntax</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(9)</span></a></h2><div class="list"><ul><li><a href=".#h-numbered-argument"><code>\H</code> <code>numbered</code> argument</a></li><li><a href=".#h-scope-argument"><code>\H</code> <code>scope</code> argument</a></li><li><a href=".#h-splitdefault-argument"><code>\H</code> <code>splitDefault</code> argument</a></li><li><a href=".#image-id">Image ID</a></li><li><a href=".#internal-link-title-inflection">Internal link title inflection</a></li><li><a href=".#positional-argument-default-values">Positional argument default values</a></li><li><a href=".#store-images-in-wikimedia-commons">Store images in Wikimedia Commons</a></li><li><a href=".#x-child-argument"><code>\x</code> <code>child</code> argument</a></li><li><a href=".#x-full-argument"><code>\x</code> <code>full</code> argument</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

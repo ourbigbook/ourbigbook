@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>ourbigbook.vim - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ourbigbook.vim"><div class="notnav"><h1><a href="">vim/syntax/ourbigbook.vim</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir/">(root)</a> / <a href="../../../_dir/vim">vim</a> / <a href="../../../_dir/vim/syntax">syntax</a> / <a href="../../../_raw/vim/syntax/ourbigbook.vim">ourbigbook.vim</a></b></div></nav></div><div class="p"><b>vim/syntax/ourbigbook.vim</b></div><div class="code"><div><pre><code>if exists("b:current_syntax")
+  finish
+endif
+
+let b:current_syntax = "ourbigbook"
+
+syntax match ourbigbookDelimiter '[\[\]]'
+syntax match ourbigbookDelimiterX '\[' nextgroup=ourbigbookArgumentX contained
+syntax match ourbigbookDelimiter '[{}]' nextgroup=ourbigbookArgumentName
+syntax match ourbigbookArgumentName '[a-zA-Z0-9_]\+' contained nextgroup=ourbigbookArgumentNameEquals contains=@NoSpell
+syntax match ourbigbookArgumentName 'child' contained nextgroup=ourbigbookArgumentNameEqualsParent contains=@NoSpell
+syntax match ourbigbookArgumentName 'parent' contained nextgroup=ourbigbookArgumentNameEqualsParent contains=@NoSpell
+syntax match ourbigbookArgumentName 'tag' contained nextgroup=ourbigbookArgumentNameEqualsParent contains=@NoSpell
+syntax match ourbigbookArgumentNameEquals '=' contained nextgroup=ourbigbookArgumentNameEquals
+syntax match ourbigbookArgumentNameEqualsParent '=' contained nextgroup=ourbigbookArgumentParent
+highlight ourbigbookDelimiter          gui=bold cterm=bold term=bold
+highlight ourbigbookDelimiterX         gui=bold cterm=bold term=bold
+highlight link ourbigbookMacroXAngle           Label
+highlight link ourbigbookMacroXAngleBeforeHash Label
+highlight link ourbigbookDelimiterXAngleClose  Label
+highlight ourbigbookArgumentNameEquals gui=bold cterm=bold term=bold
+highlight link ourbigbookArgumentName Label
+
+syntax match ourbigbookHeader "^=\+ .*$"
+highlight link ourbigbookHeader Title
+
+"syntax region ourbigbookCode start=/^\s*`\{2,}$/ end=/^\s*`\{2,}$/ contains=@NoSpell
+"syntax match ourbigbookCode /`[^`]\+`/ contains=@NoSpell
+syntax region ourbigbookCode start=/\z(`\+\)/ end=/\z1/ contains=@NoSpell
+highlight link ourbigbookCode Identifier
+" TODO can't find a way to match N times [ with n times] ]
+"syntax region ourbigbookLiteral start=/\z(\[\{2,}\)/ end=/\z1/ contains=@NoSpell
+syntax region ourbigbookLiteral start=/\[\[/ end=/\]\]/ contains=@NoSpell
+syntax region ourbigbookLiteral start=/\[\[\[/ end=/\]\]\]/ contains=@NoSpell
+syntax region ourbigbookLiteral start=/\[\[\[\[/ end=/\]\]\]\]/ contains=@NoSpell
+syntax region ourbigbookLiteral start=/{{/ end=/}}/ contains=@NoSpell
+syntax region ourbigbookLiteral start=/{{{/ end=/}}}/ contains=@NoSpell
+syntax region ourbigbookLiteral start=/{{{{/ end=/}}}}/ contains=@NoSpell
+highlight link ourbigbookLiteral Identifier
+
+" TODO get TeX syntax highlighting inside $$ $$ working some day:
+" https://vim.fandom.com/wiki/Different_syntax_highlighting_within_regions_of_a_file
+" https://github.com/plasticboy/vim-markdown/blob/8e5d86f7b85234d3d1b4207dceebc43a768ed5d4/syntax/markdown.vim#L149
+"syntax include @tex syntax/tex.vim
+"syntax region ourbigbookMath start=/\z(\$\+\)/ end=/\z1/ contains=@tex keepend
+syntax region ourbigbookMath start=/\z(\$\+\)/ end=/\z1/ contains=@NoSpell
+highlight link ourbigbookMath Identifier
+
+syntax match ourbigbookMacro /\\[a-zA-Z0-9_]\+/ contains=@NoSpell
+" special a/x handling. treat ID like URL to prevent
+" syntax errors so frequent in that case due to lowercasing.
+syntax match ourbigbookMacroX '\\\(a\|x\|[Ii]mage\)\&gt;' nextgroup=ourbigbookDelimiterX contains=@NoSpell
+syntax match ourbigbookMacroXAngle '&lt;' nextgroup=ourbigbookArgumentXAngle contains=@NoSpell
+syntax match ourbigbookMacroXAngleBeforeHash '&lt;\(#\)\@\=' nextgroup=ourbigbookMacroXHashSane contains=@NoSpell
+syntax match ourbigbookMacroXHashSane '#' contained nextgroup=ourbigbookArgumentXAngle contains=@NoSpell
+syntax match ourbigbookArgumentX /[^\]]\+/ contained contains=@NoSpell
+syntax match ourbigbookArgumentXAngleOrHash /[^&gt;]\+/ contained nextgroup=ourbigbookDelimiterXAngleClose contains=@NoSpell
+syntax match ourbigbookArgumentXAngle /[^&gt;]\+/ contained nextgroup=ourbigbookDelimiterXAngleClose contains=@NoSpell
+syntax match ourbigbookDelimiterXAngleClose '&gt;' contained contains=@NoSpell
+syntax match ourbigbookArgumentParent /[^}]\+/ contained contains=@NoSpell
+" Shorthand link.
+syntax match ourbigbookMacroXHashShorthand '#' nextgroup=ourbigbookArgumentXShorthand contains=@NoSpell
+syntax match ourbigbookArgumentXShorthand '[^[{\] \n]\+' contained contains=@NoSpell
+
+highlight link ourbigbookMacro  Label
+highlight link ourbigbookMacroX Label
+
+syntax match ourbigbookUrl 'https\?://[^[{\] \n]\+' contains=@NoSpell
+highlight link ourbigbookUrl            Special
+highlight link ourbigbookArgumentX      Special
+highlight link ourbigbookArgumentXAngle Special
+highlight link ourbigbookArgumentXShorthand Special
+highlight link ourbigbookArgumentParent Special
+highlight link ourbigbookMacroXHashShorthand Label
+highlight link ourbigbookMacroXHashSane Label
+
+" Backslash escapes of magic chars.
+syntax match ourbigbookNone /\\[&lt;$`[\]{}#]/
+highlight link ourbigbookNone NONE
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/vim/syntax/";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

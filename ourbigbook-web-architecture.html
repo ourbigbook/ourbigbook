@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>OurBigBook Web architecture - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ourbigbook-web-architecture"><div class="notnav"><h1><a href="">OurBigBook Web architecture</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-web"> OurBigBook Web</a><a href=".#ourbigbook-web-development"> OurBigBook Web development</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#ourbigbook-web-architecture"></a><span class="metrics"><span class="wcntr"> Words: 1k</span><span class="dcnt"> Articles: 16</span></span></div></nav></div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"></input><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 1k</span><span class="dcnt"> 16</span></span></span></span></div><ul><li><div id="_toc/ourbigbook-web-security"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#ourbigbook-web-security">OurBigBook Web security</a><span class="hover-metadata"><a class="nosplit" href=".#ourbigbook-web-security"></a><a href="#_toc" class="u"> OurBigBook Web architecture</a></span></span></div></li><li><div id="_toc/ourbigbook-web-csrf-security"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#ourbigbook-web-csrf-security">OurBigBook Web CSRF security</a><span class="hover-metadata"><a class="nosplit" href=".#ourbigbook-web-csrf-security"></a><a href="#_toc" class="u"> OurBigBook Web architecture</a><span class="metrics"><span class="wcntr"> 152</span></span></span></span></div></li><li><div id="_toc/ourbigbook-web-tech-stack"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#ourbigbook-web-tech-stack">OurBigBook Web tech stack</a><span class="hover-metadata"><a class="nosplit" href=".#ourbigbook-web-tech-stack"></a><a href="#_toc" class="u"> OurBigBook Web architecture</a><span class="metrics"><span class="wcntr"> 33</span></span></span></span></div></li><li class="has-child"><div id="_toc/ourbigbook-web-ui-guidelines"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#ourbigbook-web-ui-guidelines">OurBigBook Web UI guidelines</a><span class="hover-metadata"><a class="nosplit" href=".#ourbigbook-web-ui-guidelines"></a><a href="#_toc" class="u"> OurBigBook Web architecture</a><span class="metrics"><span class="wcntr"> 282</span><span class="dcnt"> 1</span></span></span></span></div><ul><li><div id="_toc/ourbigbook-web-with-javascript-disabled"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#ourbigbook-web-with-javascript-disabled">OurBigBook Web with JavaScript disabled</a><span class="hover-metadata"><a class="nosplit" href=".#ourbigbook-web-with-javascript-disabled"></a><a href="#_toc/ourbigbook-web-ui-guidelines" class="u"> OurBigBook Web UI guidelines</a><span class="metrics"><span class="wcntr"> 120</span></span></span></span></div></li></ul><li class="has-child"><div id="_toc/ourbigbook-web-url-standards"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#ourbigbook-web-url-standards">OurBigBook Web URL standards</a><span class="hover-metadata"><a class="nosplit" href=".#ourbigbook-web-url-standards"></a><a href="#_toc" class="u"> OurBigBook Web architecture</a><span class="metrics"><span class="wcntr"> 414</span><span class="dcnt"> 3</span></span></span></span></div><ul><li><div id="_toc/ourbigbook-web-url-standards-get-param-vs-url-component"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#ourbigbook-web-url-standards-get-param-vs-url-component">OurBigBook Web URL standards: GET param vs url component</a><span class="hover-metadata"><a class="nosplit" href=".#ourbigbook-web-url-standards-get-param-vs-url-component"></a><a href="#_toc/ourbigbook-web-url-standards" class="u"> OurBigBook Web URL standards</a><span class="metrics"><span class="wcntr"> 151</span></span></span></span></div></li><li><div id="_toc/ourbigbook-web-url-standards-article-id-comes-last-due-to-slash"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#ourbigbook-web-url-standards-article-id-comes-last-due-to-slash">OurBigBook Web URL standards: article ID comes last due to slash</a><span class="hover-metadata"><a class="nosplit" href=".#ourbigbook-web-url-standards-article-id-comes-last-due-to-slash"></a><a href="#_toc/ourbigbook-web-url-standards" class="u"> OurBigBook Web URL standards</a><span class="metrics"><span class="wcntr"> 63</span></span></span></span></div></li><li><div id="_toc/ourbigbook-web-api-standards"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#ourbigbook-web-api-standards">OurBigBook Web API standards</a><span class="hover-metadata"><a class="nosplit" href=".#ourbigbook-web-api-standards"></a><a href="#_toc/ourbigbook-web-url-standards" class="u"> OurBigBook Web URL standards</a><span class="metrics"><span class="wcntr"> 102</span></span></span></span></div></li></ul><li class="has-child"><div id="_toc/ourbigbook-web-directory-structure"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#ourbigbook-web-directory-structure">OurBigBook Web directory structure</a><span class="hover-metadata"><a class="nosplit" href=".#ourbigbook-web-directory-structure"></a><a href="#_toc" class="u"> OurBigBook Web architecture</a><span class="metrics"><span class="wcntr"> 427</span><span class="dcnt"> 6</span></span></span></span></div><ul><li class="has-child"><div id="_toc/web-cli-utils"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#web-cli-utils">Web CLI utils <span class="meta">(web/bin)</span></a><span class="hover-metadata"><a class="nosplit" href=".#web-cli-utils"></a><a href="#_toc/ourbigbook-web-directory-structure" class="u"> OurBigBook Web directory structure</a><span class="metrics"><span class="wcntr"> 302</span><span class="dcnt"> 5</span></span></span></span></div><ul><li><div id="_toc/_file/web/bin/normalize"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#_file/web/bin/normalize">web/bin/normalize</a><span class="hover-metadata"><a class="nosplit" href=".#_file/web/bin/normalize"></a><a href="#_toc/web-cli-utils" class="u"> Web CLI utils</a><span class="metrics"><span class="wcntr"> 60</span></span></span></span></div></li><li><div id="_toc/_file/web/bin/rerender-articles.js"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#_file/web/bin/rerender-articles.js">web/bin/rerender-articles.js</a><span class="hover-metadata"><a class="nosplit" href=".#_file/web/bin/rerender-articles.js"></a><a href="#_toc/web-cli-utils" class="u"> Web CLI utils</a><span class="metrics"><span class="wcntr"> 167</span></span></span></span></div></li><li><div id="_toc/_file/web/bin/rerender-issues.js"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#_file/web/bin/rerender-issues.js">web/bin/rerender-issues.js</a><span class="hover-metadata"><a class="nosplit" href=".#_file/web/bin/rerender-issues.js"></a><a href="#_toc/web-cli-utils" class="u"> Web CLI utils</a><span class="metrics"><span class="wcntr"> 5</span></span></span></span></div></li><li><div id="_toc/_file/web/bin/rerender-comments.js"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#_file/web/bin/rerender-comments.js">web/bin/rerender-comments.js</a><span class="hover-metadata"><a class="nosplit" href=".#_file/web/bin/rerender-comments.js"></a><a href="#_toc/web-cli-utils" class="u"> Web CLI utils</a><span class="metrics"><span class="wcntr"> 5</span></span></span></span></div></li><li><div id="_toc/_file/web/bin/set-password"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#_file/web/bin/set-password">web/bin/set-password</a><span class="hover-metadata"><a class="nosplit" href=".#_file/web/bin/set-password"></a><a href="#_toc/web-cli-utils" class="u"> Web CLI utils</a><span class="metrics"><span class="wcntr"> 33</span></span></span></span></div></li></ul></li></ul></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-web-development">OurBigBook Web development</a></li><li><a href=".#ourbigbook-web">OurBigBook Web</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

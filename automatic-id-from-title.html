@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Automatic ID from title - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="automatic-id-from-title"><div class="notnav"><h1><a href="">Automatic ID from title</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a  href="#_ancestors">&nbsp;...</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#header"> Header</a><a href=".#h-arguments"> <code>\H</code> arguments</a><a href=".#h-synonym-argument"> <code>\H</code> <code>synonym</code> argument</a><a href=".#h-title-argument"> <code>\H</code> <code>title</code> argument</a></div><div class="nav"><a class="nosplit" href=".#automatic-id-from-title"></a><span class="metrics"><span class="wcntr"> Words: 381</span></span></div></nav></div><div class="p" id="_1082">If a <a href=".#the-toplevel-header">non-toplevel</a> macro has the <code>title</code> argument is present but no explicit <code>id</code> argument is given, an <a href=".#element-id">Element ID</a> is created automatically from the <code>title</code>, by applying the following transformations:<div class="list"><ul id="_1083"><li id="_1084">do a <a href=".#id-output-format"><code>id</code> output format</a> conversion on the title to remove for example any HTML tags that would be present in the conversion output</li><li id="_1085">convert all characters to lowercase. This uses <a href=".#javascript-case-conversion">JavaScript case conversion</a>. Note that this does convert non-ASCII characters to lowercase, e.g. <code>É</code> to <code>é</code>.</li><li id="_1086">if <a href=".#ourbigbook-json/id-normalize-latin"><code>id</code> <code>normalize</code> <code>latin</code></a> is <code>true</code> (the default) do <a href=".#ourbigbook-json/latin-normalization">Latin normalization</a>. This converts e.g. <code>é</code> to <code>e</code>.</li><li id="_1087">if <a href=".#ourbigbook-json/id-normalize-punctuation"><code>id</code> <code>normalize</code> <code>punctuation</code></a> is <code>true</code> (the default) do <a href=".#ourbigbook-json/punctuation-normalization">Punctuation normalization</a>. This converts e.g. <code>+</code> to <code>plus</code>.</li><li id="_1088">convert consecutive sequences of all non <code>a-z0-9</code> ASCII characters to a single hyphen <code>-</code>. Note that this leaves non-ASCII characters untouched.</li><li id="_1089">strip leading or trailing hyphens</li></ul></div>Note how those rules leave non-ASCII Unicode characters untouched, except for:<div class="list"><ul id="_1090"><li id="_1091">capitalization changes wher applicable, e.g. <code>É</code> to <code>é</code></li></ul></div>as capitalization and determining if something "is a letter or not" in those cases can be tricky.</div><div class="p" id="_1092">For toplevel headers, see: <a href=".#the-id-of-the-first-header-is-derived-from-the-filename">the ID of the first header is derived from the filename</a>.</div><div class="p" id="_1093">So for example, the following automatic IDs would be generated: <a href="#table-examples-of-automatically-generated-ids">Table 2. "Examples of automatically generated IDs"</a>.</div><div class="table" id="table-examples-of-automatically-generated-ids"><div><div class="caption"><a href="#table-examples-of-automatically-generated-ids"><span class="caption-prefix">Table 2. </span></a><div class="title">Examples of automatically generated IDs</div>. </div><table><thead><tr id="_1094"><th id="_1095">title</th><th id="_1096">id</th><th id="_1097">latin normalization</th><th id="_1098">punctuation normalization</th><th id="_1099">comments</th></tr></thead><tbody><tr id="_1100"><td id="_1101">My favorite title</td><td id="_1102">my-favorite-title</td><td id="_1103"></td><td id="_1104"></td><td id="_1105"></td></tr><tr id="_1106"><td id="_1107">Ciro's markdown is awesome</td><td id="_1108">ciro-s-markdown-is-awesome</td><td id="_1109"></td><td id="_1110"></td><td id="_1111"><code>'</code> is an ASCII character, but it is not in <code>a-z0-9</code>, therefore it gets converted to a hyphen <code>-</code></td></tr><tr id="_1112"><td id="_1113">É你</td><td id="_1114">e你</td><td id="_1115">true</td><td id="_1116"></td><td id="_1117"><div class="p" id="_1118">The Latin <a href="https://en.wikipedia.org/wiki/Acute_accent">acute accented</a> <code>e</code>, <code>É</code>, is converted to its lower case form <code>é</code> as per the <a href=".#javascript-case-conversion">JavaScript case conversion</a>.</div><div class="p" id="_1119">Then, due to <a href=".#ourbigbook-json/latin-normalization">Latin normalization</a>, <code>é</code> is converted to <code>e</code>.</div><div class="p" id="_1120">The Chinese character <code>你</code> is left untouched as Chinese characters have no case, and no ASCII analogue.</div></td></tr><tr id="_1121"><td id="_1122">É你</td><td id="_1123">é你</td><td id="_1124">false</td><td id="_1125"></td><td id="_1126">Same as the previous, but <code>é</code> is not converted to <code>e</code> since <a href=".#ourbigbook-json/latin-normalization">Latin normalization</a> is turned off.</td></tr><tr id="_1127"><td id="_1128">C++ is great</td><td id="_1129">c-plus-plus-is-great</td><td id="_1130"></td><td id="_1131">true</td><td id="_1132">This is the effect of <a href=".#ourbigbook-json/punctuation-normalization">Punctuation normalization</a>.</td></tr><tr id="_1133"><td id="_1134">I <i>love</i> dogs.</td><td id="_1135">i-love-dogs</td><td id="_1136"></td><td id="_1137"></td><td id="_1138"><code>love</code> is extracted from the italic tags <code>&lt;i&gt;love&lt;/i&gt;</code> with <a href=".#id-output-format"><code>id</code> output format</a> conversion.</td></tr><tr id="_1139"><td id="_1140">β Centauri</td><td id="_1141">beta-centauri</td><td id="_1142"></td><td id="_1143"></td><td id="_1144">Our Latin normalization is amazing and knows Greek!</td></tr></tbody></table></div></div><div class="p" id="_1145">For <a href=".#the-toplevel-header">the toplevel header</a>, its ID is derived from the basename of the OurBigBook file without extension instead of from the <code>title</code> argument.</div><div class="p" id="_1146">TODO:<div class="list"><ul id="_1147"><li id="_1148">maybe we should also remove some or all non-ASCII punctuation. All can be done with <code>\\p{IsPunctuation}</code>: <a href="https://stackoverflow.com/questions/13925454/check-if-string-is-a-punctuation-character">stackoverflow.com/questions/13925454/check-if-string-is-a-punctuation-character</a> but we need to check that we really want to remove all of them.</li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(7)</span></a></h2><div class="list"><ol><li><a href=".#h-title-argument"><code>\H</code> <code>title</code> argument</a></li><li><a href=".#h-synonym-argument"><code>\H</code> <code>synonym</code> argument</a></li><li><a href=".#h-arguments"><code>\H</code> arguments</a></li><li><a href=".#header">Header</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(14)</span></a></h2><div class="list"><ul><li><a href=".#description-argument"><code>description</code> argument</a></li><li><a href=".#disambiguate-argument"><code>disambiguate</code> argument</a></li><li><a href=".#element-id">Element ID</a></li><li><a href=".#h-file-argument"><code>\H</code> <code>file</code> argument</a></li><li><a href=".#h-title-argument"><code>\H</code> <code>title</code> argument</a></li><li><a href=".#id-argument"><code>id</code> argument</a></li><li><a href=".#id-output-format"><code>id</code> output format</a></li><li><a href=".#id-target-from-title">ID target from title</a></li><li><a href=".#internal-link">Internal link</a></li><li><a href=".#ourbigbook-json/id"><code>ourbigbook.json</code> <code>id</code></a></li><li><a href=".#the-id-of-the-first-header-is-derived-from-the-filename">The ID of the first header is derived from the filename</a></li><li><a href=".#title-argument"><code>title</code> argument</a></li><li><a href=".#title-to-id"><code>--title-to-id</code></a></li><li><a href=".#x-magic-argument"><code>\x</code> <code>magic</code> argument</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Code block - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="code-block"><div class="notnav"><h1><a href="">Code block <span class="meta">(<code>``</code>, <code>`</code>, <code>\C</code>, <code>\c</code>)</span></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a></div><div class="nav"><a href="#_toc" class="toc"></a><span class="tags"> Tags: <a href=".#macro-with-shorthand-syntax">Macro with shorthand syntax</a></span><a class="nosplit" href=".#code-block"></a><span class="metrics"><span class="wcntr"> Words: 738</span><span class="dcnt"> Articles: 3</span></span></div></nav></div><div class="p" id="_737">Inline code (code that should appear in the middle of a paragraph rather than on its own line) is done with a single backtick (<code>`</code>) <a href=".#macro-shorthand-syntax">macro shorthand syntax</a>:<div class="code" id="_738"><div><pre><code>My inline `x = 'hello\n'` is awesome.</code></pre></div></div><div class="p" id="_739">which renders as:</div><div><blockquote id="_740"><div class="p" id="_741">My inline <code>x = 'hello\n'</code> is awesome.</div></blockquote></div>and block code (code that should appear on their own line) is done with two or more backticks (<code>``</code>):<div class="code" id="_742"><div><pre><code>``
+f() {
+  return 'hello\n';
+}
+``</code></pre></div></div><div class="p" id="_743">which renders as:</div><div><blockquote id="_744"><div class="code" id="_745"><div><pre><code>f() {
+  return 'hello\n';
+}</code></pre></div></div></blockquote></div></div><div class="p" id="_746">The sane version of inline code is a lower case <code>c</code>:<div class="code" id="_747"><div><pre><code>My inline \c[[x = 'hello\n']] is awesome.</code></pre></div></div><div class="p" id="_748">which renders as:</div><div><blockquote id="_749"><div class="p" id="_750">My inline <code>x = 'hello\n'</code> is awesome.</div></blockquote></div>and the sane version of block math is with an upper case <code>C</code>:<div class="code" id="_751"><div><pre><code>\C[[
+f() {
+  return 'hello\n';
+}
+]]</code></pre></div></div><div class="p" id="_752">which renders as:</div><div><blockquote id="_753"><div class="code" id="_754"><div><pre><code>f() {
+  return 'hello\n';
+}</code></pre></div></div></blockquote></div></div><div class="p" id="_755">The capital vs lower case theme is also used in other elements, see: <a href=".#block-vs-inline-macros">block vs inline macros</a>.</div><div class="p" id="_756">If the content of the sane code block has many characters that you would need to <a href=".#escape-characters">escape</a>, you will often want to use <a href=".#literal-arguments">literal arguments</a>, which work just like the do for any other argument. For example:<div class="code" id="_757"><div><pre><code>\C[[[
+A paragraph.
+
+\C[[
+And now, some long, long code, with lots
+of chars that you would need to escape:
+\ [  ] {  }
+]]
+
+A paragraph.
+]]]</code></pre></div></div><div class="p" id="_758">which renders as:</div><div><blockquote id="_759"><div class="code" id="_760"><div><pre><code>A paragraph.
+
+\C[[
+And now, some long, long code, with lots
+of chars that you would need to escape:
+\ [  ] {  }
+]]
+
+A paragraph.</code></pre></div></div></blockquote></div>Note that the initial newline is skipped automatically in code blocks, just as for any other element, due to: <a href=".#argument-leading-and-trailing-newline-removal">argument leading newline removal</a>, so you don't have to worry about it.</div><div class="p" id="_761">The distinction between inline <code>\c</code> and block <code>\C</code> code blocks is needed because in HTML, <a href="https://stackoverflow.com/questions/5371787/can-i-have-a-pre-tag-inside-a-p-tag-in-tumblr/58603596#58603596"><code>pre</code> cannot go inside <code>P</code></a>.</div><div class="p" id="_762">We could have chosen to do some magic to differentiate between them, e.g. checking if the block is the only element in a paragraph, but we decided not to do that to keep the language saner.</div><div class="p" id="_763">And now a code block outside of <a href=".#ourbigbookexample"><code>\OurBigBookExample</code></a> to test how it looks directly under <a href=".#toplevel">the <code>\Toplevel</code> implicit macro</a>:</div><div class="code" id="_764"><div><pre><code>Hello
+
+Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello
+    HelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHello
+Hello</code></pre></div></div><div class="p" id="_765">Now with short description with math and underline:</div><div class="code" id="_766"><div><pre><code>Hello
+
+Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello
+    HelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHello
+Hello</code></pre><div class="caption"><a href="#_766"><span class="caption-prefix">Code 1. </span></a>My long code! <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.5806em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal">a</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">b</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span></div></div></div><div class="p" id="_767">And now a very long inline code: <code>Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello</code></div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"></input><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 738</span><span class="dcnt"> 3</span></span></span></span></div><ul><li class="has-child"><div id="_toc/c-argument"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#c-argument"><code>\C</code> argument</a><span class="hover-metadata"><a class="nosplit" href=".#c-argument"></a><a href="#_toc" class="u"> Code block</a><span class="metrics"><span class="wcntr"> 88</span><span class="dcnt"> 2</span></span></span></span></div><ul><li><div id="_toc/c-description-argument"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#c-description-argument"><code>\C</code> <code>description</code> argument</a><span class="hover-metadata"><a class="nosplit" href=".#c-description-argument"></a><a href="#_toc/c-argument" class="u"> <code>\C</code> argument</a><span class="metrics"><span class="wcntr"> 49</span></span></span></span></div></li><li><div id="_toc/c-title-argument"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#c-title-argument"><code>\C</code> <code>title</code> argument</a><span class="hover-metadata"><a class="nosplit" href=".#c-title-argument"></a><a href="#_toc/c-argument" class="u"> <code>\C</code> argument</a><span class="metrics"><span class="wcntr"> 39</span></span></span></span></div></li></ul></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(8)</span></a></h2><div class="list"><ul><li><a href=".#block-vs-inline-macros">Block vs inline macros</a></li><li><a href=".#description-argument"><code>description</code> argument</a></li><li><a href=".#escape-characters">Escape characters</a></li><li><a href=".#line-break">Line break</a></li><li><a href=".#literal-arguments">Literal arguments</a></li><li><a href=".#macro-shorthand-syntax">Macro shorthand syntax</a></li><li><a href=".#macro-with-shorthand-syntax">Macro with shorthand syntax</a></li><li><a href=".#ourbigbook-markup-quick-start">OurBigBook Markup quick start</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

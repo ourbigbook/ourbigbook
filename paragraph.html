@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Paragraph - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="paragraph"><div class="notnav"><h1><a href="">Paragraph <span class="meta">(<code>\P</code>)</span></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a></div><div class="nav"><span class="tags"> Tags: <a href=".#macro-with-shorthand-syntax">Macro with shorthand syntax</a></span><a class="nosplit" href=".#paragraph"></a><span class="metrics"><span class="wcntr"> Words: 162</span></span></div></nav></div><div class="p" id="_1813">The <a href=".#macro-shorthand-syntax">shorthand</a> syntax is simply to leave a blank line with two consecutive newlines. For example:<div class="code" id="_1814"><div><pre><code>Paragraph 1.
+
+Paragraph 2.</code></pre></div></div><div class="p" id="_1815">which renders as:</div><div><blockquote id="_1816"><div class="p" id="_1817">Paragraph 1.</div><div class="p" id="_1818">Paragraph 2.</div></blockquote></div></div><div class="p" id="_1819">Equivalently however, you can use an explicit <code>\P</code> macros as well, which is required for example to add properties to a paragraph, e.g.:<div class="code" id="_1820"><div><pre><code>\P{id=paragraph-1}[Paragraph 1]
+\P{id=paragraph-2}[Paragraph 2]</code></pre></div></div><div class="p" id="_1821">which renders as:</div><div><blockquote id="_1822"><div class="p" id="_1823"><div id="paragraph-1"><div><div class="caption"><a href="#paragraph-1"><span class="caption-prefix">P 1</span></a></div><div>Paragraph 1</div></div></div><div id="paragraph-2"><div><div class="caption"><a href="#paragraph-2"><span class="caption-prefix">P 2</span></a></div><div>Paragraph 2</div></div></div></div></blockquote></div></div><div class="p" id="_1824">Paragraphs are created automatically inside <a href=".#macro-argument">macro argument</a> whenever a double newline appears.</div><div class="p" id="_1825">Note that OurBigBook paragraphs render in HTML as <code>div</code> with <code>class="p"</code> and not as <code>p</code>. This means that you can add basically anything inside them, e.g. a list:<div class="code" id="_1826"><div><pre><code>My favorite list is:
+\Ul[
+\li[aa]
+\li[bb]
+]
+because it is simple.</code></pre></div></div>which renders as a single paragraph.</div><div class="p" id="_1827">One major advantage of this, is that when writing documentation, you often want to keep lists or code blocks inside a given paragraph, so that it is easy to reference the entire paragraph with an ID. Think for example of paragraphs in the C++ standard.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(4)</span></a></h2><div class="list"><ul><li><a href=".#macro-with-shorthand-syntax">Macro with shorthand syntax</a></li><li><a href=".#newline-removal">Newline removal</a></li><li><a href=".#ourbigbook-markup-quick-start">OurBigBook Markup quick start</a></li><li><a href=".#saner">Saner</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

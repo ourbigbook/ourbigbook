@@ -102,7 +102,12 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
     if (req.body.user) {
       // only update fields that were actually passed...
       if (typeof req.body.user.username !== 'undefined') {
-        user.username = req.body.user.username
+        //user.username = req.body.user.username
+        if (user.username !== req.body.user.username) {
+          throw new lib.ValidationError(
+            [`username cannot be modified currently, would change from ${user.username} to ${req.body.user.username}`],
+          )
+        }
       }
       if (typeof req.body.user.displayName !== 'undefined') {
         user.displayName = req.body.user.displayName

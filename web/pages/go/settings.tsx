@@ -53,6 +53,7 @@ const Settings = () => {
     if (data?.user) {
       await setupUserLocalStorage(data, setErrors)
     }
+    Router.push(routes.userView(loggedInUser.username));
   };
   useCtrlEnterSubmit(handleSubmit)
   const title = 'Account settings'
@@ -65,6 +66,16 @@ const Settings = () => {
       <>
         <ListErrors errors={errors} />
         <form onSubmit={handleSubmit}>
+          <Label label="Username">
+            <input
+              type="text"
+              disabled={true}
+              placeholder="Username"
+              value={userInfo.username}
+              title="Cannot be currently modified"
+              //onChange={updateState("username")}
+            />
+          </Label>
           <Label label="Display name">
             <input
               type="text"
@@ -79,14 +90,6 @@ const Settings = () => {
               placeholder="URL of profile picture"
               value={userInfo.image ? userInfo.image : ""}
               onChange={updateState("image")}
-            />
-          </Label>
-          <Label label="Username">
-            <input
-              type="text"
-              placeholder="Username"
-              value={userInfo.username}
-              onChange={updateState("username")}
             />
           </Label>
           <Label label="Email">

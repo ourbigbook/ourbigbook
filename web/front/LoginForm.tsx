@@ -62,13 +62,15 @@ const LoginForm = ({ register = false }) => {
         }
       } else {
         ({ data, status } = await webApi.userLogin({ username, password }));
-        if (data.verified) {
-          if (data.user) {
-            await setupUserLocalStorage(data.user, setErrors)
-            Router.back()
+        if (status === 200) {
+          if (data.verified) {
+            if (data.user) {
+              await setupUserLocalStorage(data.user, setErrors)
+              Router.back()
+            }
+          } else {
+            Router.push(routes.userVerify(data.user.email))
           }
-        } else {
-          Router.push(routes.userVerify(data.user.email))
         }
       }
       if (status !== 200 && data.errors) {

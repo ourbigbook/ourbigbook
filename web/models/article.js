@@ -38,7 +38,7 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       score: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0,
       },
@@ -88,7 +88,6 @@ module.exports = (sequelize) => {
       user ? user.hasFavorite(this.id) : false,
       authorPromise.then(author => author.toJson(user)),
     ])
-    console.error(typeof(this.score));
     return {
       slug: this.slug,
       topicId: this.topicId,

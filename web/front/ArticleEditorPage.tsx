@@ -150,13 +150,14 @@ export default function ArticleEditorPageHoc({
     const [file, setFile] = React.useState(initialFileState);
     const ourbigbookEditorElem = useRef(null);
     const maxReached = hasReachedMaxItemCount(loggedInUser, articleCountByLoggedInUser, pluralize(itemType))
+    let editor
     useEffect(() => {
       if (
         ourbigbookEditorElem &&
         loggedInUser &&
         !maxReached
       ) {
-        let editor;
+        let editor
         loader.init().then(monaco => {
           //const id = ourbigbook.title_to_id(file.titleSource)
           editor = new OurbigbookEditor(
@@ -168,12 +169,10 @@ export default function ArticleEditorPageHoc({
             {
               convertOptions: lodash.merge({
                 db_provider: new RestDbProvider(),
-                //input_path: `${window.location.pathname.slice(1)}.${ourbigbook.OURBIGBOOK_EXT}`,
                 input_path: initialFile?.path || `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/asdf.${ourbigbook.OURBIGBOOK_EXT}`,
                 read_include: read_include_web((idid) => webApi.editorIdExists(idid)),
                 ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`,
                 x_external_prefix: '../'.repeat(window.location.pathname.match(/\//g).length - 1),
-                //input_path: `${.slice(1)}.${ourbigbook.OURBIGBOOK_EXT}`,
               }, convertOptions),
               handleSubmit,
               initialLine: initialArticle ? initialArticle.titleSourceLine : undefined,
@@ -250,16 +249,17 @@ export default function ArticleEditorPageHoc({
       } else {
         setErrors(data.errors);
       }
-
     };
     useCtrlEnterSubmit(handleSubmit)
     const handleCancel = async (e) => {
-      if (isNew) {
-        Router.push(`/`);
-      } else {
-        // This is a hack for the useEffect cleanup callback issue.
-        ourbigbookEditorElem.current.ourbigbookEditor.dispose()
-        Router.push(routes.article(initialArticle.slug));
+      if (!ourbigbookEditorElem.current.ourbigbookEditor.modified || confirm('Are you sure you want to abandon your changes?')) {
+        if (isNew) {
+          Router.push(`/`);
+        } else {
+          // This is a hack for the useEffect cleanup callback issue.
+          ourbigbookEditorElem.current.ourbigbookEditor.dispose()
+          Router.push(routes.article(initialArticle.slug));
+        }
       }
     }
     const { setTitle } = React.useContext(AppContext)
@@ -304,17 +304,17 @@ export default function ArticleEditorPageHoc({
                     <button
                       className="btn"
                       type="button"
-                      onClick={handleCancel}
+                      disabled={isLoading}
+                      onClick={handleSubmit}
                     >
-                      <i className="ion-close" />&nbsp;Cancel
+                      <i className="ion-checkmark" />&nbsp;{isNew ? `Publish ${capitalize(itemType)}` : 'Save Changes'}
                     </button>
                     <button
                       className="btn"
                       type="button"
-                      disabled={isLoading}
-                      onClick={handleSubmit}
+                      onClick={handleCancel}
                     >
-                      <i className="ion-checkmark" />&nbsp;{isNew ? 'Create' : 'Submit'}
+                      <i className="ion-close" />&nbsp;Cancel
                     </button>
                   </div>
                 </div>

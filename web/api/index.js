@@ -6,7 +6,6 @@ router.get('/', function(req, res) {
   res.json({message: 'backend is up'})
 });
 router.use('/', require('./users'))
-router.use('/profiles', require('./profiles'))
 router.use('/articles', require('./articles'))
 router.use('/comments', require('./comments'))
 router.use('/tags', require('./tags'))

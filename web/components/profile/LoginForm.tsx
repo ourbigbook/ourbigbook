@@ -44,13 +44,6 @@ const LoginForm = ({ register = false }) => {
         setErrors(data.errors);
       }
       if (data?.user) {
-        // We fetch from /profiles/:username again because the return from /users/login above
-        // does not contain the image placeholder.
-        const { data: profileData, status: profileStatus } = await UserAPI.get(data.user.username);
-        if (profileStatus !== 200) {
-          setErrors(profileData.errors);
-        }
-        data.user.effectiveImage = profileData.profile.image;
         window.localStorage.setItem("user", JSON.stringify(data.user));
         mutate("user", data.user);
         Router.push("/");

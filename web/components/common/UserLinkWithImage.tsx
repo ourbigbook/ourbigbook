@@ -2,10 +2,10 @@
 
 import CustomLink from "components/common/CustomLink";
 import CustomImage from "components/common/CustomImage";
-import { Author } from "lib/types/articleType";
+import { User } from "lib/types/userType";
 import routes from "routes";
 
-const UserLinkWithImage = ({ user }: { user: Author }) => {
+const UserLinkWithImage = ({ user }: { user: User }) => {
   if (!user) return null;
   return (
     <CustomLink
@@ -13,7 +13,7 @@ const UserLinkWithImage = ({ user }: { user: Author }) => {
       className="author username"
     >
       <CustomImage
-        src={user.image}
+        src={user.effectiveImage}
         className="profile-thumb"
         alt="author profile image"
       />

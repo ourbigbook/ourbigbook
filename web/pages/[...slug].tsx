@@ -110,7 +110,7 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
                   <CustomLink
                     href={routes.topicArticlesView(article.topicId)}
                   >
-                    <i className="ion-ios-people" /> View the top articles by other authors about the same topic
+                    <i className="ion-ios-people" /> Top articles by other authors about the same topic
                   </CustomLink>
                 </div>
                 <div className="article-actions">

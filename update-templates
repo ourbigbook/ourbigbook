@@ -25,7 +25,7 @@ update-template() (
   if [ -n "$subdir" ]; then cd -; fi
 )
 
-# TODO https://github.com/cirosantilli/ourbigbook/issues/160
+# TODO https://github.com/ourbigbook/ourbigbook/issues/160
 update-template subdir ourbigbook-template-subdir docs
 update-template min ourbigbook-template-min
 update-template default ourbigbook-template

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// https://cirosantilli/ourbigbook/demo-data
+// https://ourbigbook/ourbigbook/demo-data
 
 const assert = require('assert')
 const path = require('path')

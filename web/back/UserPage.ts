@@ -14,10 +14,12 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       typeof uid === 'string'
     ) {
       const sequelize = req.sequelize
-      const loggedInUser = await getLoggedInUser(req, res)
-      const user = await sequelize.models.User.findOne({
-        where: { username: uid },
-      })
+      const [loggedInUser, user] = await Promise.all([
+        getLoggedInUser(req, res),
+        sequelize.models.User.findOne({
+          where: { username: uid },
+        }),
+      ])
       if (!user) {
         return {
           notFound: true
@@ -81,29 +83,8 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           includeArticle: true,
         }) :
         []
-      const likesPromise = itemType === 'like' ? sequelize.models.UserLikeArticle.findAndCountAll({
-          include: [
-            {
-              model: sequelize.models.Article,
-              as: 'article',
-              include: [{
-                model: sequelize.models.File,
-                as: 'file',
-                include: [{
-                  model: sequelize.models.User,
-                  as: 'author',
-                  where: { id: user.id },
-                }]
-              }]
-            },
-            {
-              model: sequelize.models.User,
-              as: 'user',
-            },
-          ],
-          order: [[order, 'DESC']],
-          offset,
-        }) : []
+      const likesPromise = itemType === 'like' ? sequelize.models.User.findAndCountArticleLikesReceived(
+        user.id, { offset, order }) : []
       const usersPromise = itemType === 'user' ? sequelize.models.User.getUsers({
         followedBy,
         following,
@@ -112,16 +93,21 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         order,
         sequelize,
       }) : []
+      const updateNewScoreLastCheckPromise = (what === 'liked' && loggedInUser && user.id === loggedInUser.id) ?
+        user.update({ newScoreLastCheck: Date.now() }) : null
       const [
         articles,
         userJson,
+        loggedInUserJson,
         likes,
         users,
       ] = await Promise.all([
         articlesPromise,
         user.toJson(loggedInUser),
+        loggedInUser ? loggedInUser.toJson() : undefined,
         likesPromise,
         usersPromise,
+        updateNewScoreLastCheckPromise,
       ])
       const props: UserPageProps = {
         itemType,
@@ -131,7 +117,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         what,
       }
       if (loggedInUser) {
-        props.loggedInUser = await loggedInUser.toJson()
+        props.loggedInUser = loggedInUserJson
       }
       if (itemType === 'user') {
         props.users = await Promise.all(users.rows.map(user => user.toJson(loggedInUser)))
@@ -147,7 +133,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           article.likedByDate = like.createdAt
           articles.push(article)
         }
-        props.articles = await Promise.all(articles.map(user => user.toJson(loggedInUser)))
+        props.articles = await Promise.all(articles.map(article => article.toJson(loggedInUser)))
         props.articlesCount = likes.count
       } else {
         const articleContext = Object.assign({}, context, { params: { slug: [ uid ] } })

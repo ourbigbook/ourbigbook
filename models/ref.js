@@ -61,7 +61,7 @@ module.exports = (sequelize) => {
     [ourbigbook.REFS_TABLE_X]: 1,
     // https://docs.ourbigbook.com/secondary-children
     [ourbigbook.REFS_TABLE_X_CHILD]: 2,
-    // https://github.com/cirosantilli/ourbigbook/issues/198
+    // https://github.com/ourbigbook/ourbigbook/issues/198
     [ourbigbook.REFS_TABLE_X_TITLE_TITLE]: 3,
   };
   return Ref;

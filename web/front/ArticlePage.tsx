@@ -2,16 +2,12 @@ import Router, { useRouter } from 'next/router'
 import React from 'react'
 
 import CustomLink from 'front/CustomLink'
-import LoadingSpinner from 'front/LoadingSpinner'
-import Maybe from 'front/Maybe'
 import UserLinkWithImage from 'front/UserLinkWithImage'
-import FollowUserButton from 'front/FollowUserButton'
-import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
+import { displayAndUsernameText } from 'front/user'
 import Article from 'front/Article'
-import { AppContext, DiscussionAbout, NewArticleIcon, IssueIcon, SeeIcon, TimeIcon, TopicIcon, useEEdit, UserIcon } from 'front'
+import { AppContext, DiscussionAbout, NewArticleIcon, IssueIcon, useEEdit } from 'front'
 import { webApi } from 'front/api'
 import { cant } from 'front/cant'
-import fetcher from 'front/fetcher'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
@@ -53,7 +49,7 @@ const ArticlePageHoc = (isIssue=false) => {
     const { setTitle } = React.useContext(AppContext)
     React.useEffect(() =>
       // TODO here we would like to have a plaintext render of the title.
-      // https://github.com/cirosantilli/ourbigbook/issues/250
+      // https://github.com/ourbigbook/ourbigbook/issues/250
       setTitle(`${article.titleSource} by ${displayAndUsernameText(author)}`)
     )
     const showOthers = topicArticleCount !== undefined && topicArticleCount > 1

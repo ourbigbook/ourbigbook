@@ -99,9 +99,14 @@ function cmd_get_stdout(cmd, args=[], options={}) {
   if (!('dry_run' in options)) {
     options.dry_run = false;
   }
+  if (!('show_cmd' in options)) {
+    options.show_cmd = true;
+  }
   let out;
   const cmd_str = ([cmd].concat(args)).join(' ');
-  console.log(cmd_str);
+  if (options.show_cmd) {
+    console.log(cmd_str);
+  }
   if (!options.dry_run) {
     out = child_process.spawnSync(cmd, args);
   }
@@ -328,6 +333,17 @@ function convert_path(base_path, input_path, options, convert_input_options) {
   return output;
 }
 
+/**
+ * @return {String} full Git SHA of the source.
+ */
+function git_sha(input_path, src_branch) {
+  const args = ['-C', input_path, 'log', '-n1', '--pretty=%H'];
+  if (src_branch !== undefined) {
+    args.push(src_branch);
+  }
+  return cmd_get_stdout('git', args, {show_cmd: false, throw_on_error: true}).slice(0, -1);
+}
+
 /** https://stackoverflow.com/questions/5827612/node-js-fs-readdir-recursive-directory-search
  *
  * @param {Set} skip_basenames
@@ -435,6 +451,20 @@ if (commander.helpMacros) {
   } else {
     options.template = undefined;
   }
+  if (inputPath === undefined && (publish || commander.watch)) {
+    inputPath = '.';
+  }
+  let input_dir;
+  if (fs.lstatSync(inputPath).isFile()) {
+    input_dir = path.dirname(inputPath);
+  } else {
+    input_dir = inputPath;
+  }
+  try {
+    options.template_vars.git_sha = git_sha(input_dir);
+  } catch(error) {
+    // Not in a git repo.
+  }
   if (commander.generate || commander.generateMultifile) {
     let outdir;
     if (commander.outdir !== undefined) {
@@ -505,9 +535,6 @@ A link to another file: \\x[and-now-an-include]
     include_contains_external: false,
     out_css_path: cirodown_nodejs.PACKAGE_OUT_CSS_LOCAL_PATH,
   };
-  if (inputPath === undefined && (publish || commander.watch)) {
-    inputPath = '.';
-  }
   if (commander.outfile !== undefined) {
     convert_input_options.output_path = commander.outfile;
   }
@@ -701,10 +728,7 @@ A link to another file: \\x[and-now-an-include]
           // Copy the CSS into the repository.
           fs.copyFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_PATH, convert_input_options.out_css_path)
           cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'add', '.'], cmd_options);
-          source_commit = cmd_get_stdout('git', ['-C', inputPath, 'log', '-n1', '--pretty=%H', src_branch], cmd_options).slice(0, -1);
-          if (commander.dryRun) {
-            source_commit = '0000111122223333444455556666777788889999';
-          }
+          source_commit = git_sha(inputPath, src_branch);
           cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'commit', '-m', source_commit], cmd_options);
           cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'push', 'origin', `${publish_branch}:${publish_branch}`], cmd_options);
         }

@@ -1082,6 +1082,54 @@ Some quick interactive cross file link tests:
 * \x[not-readme-with-scope/h2]
 * \x[not-readme-with-scope/image-my-image]
 
+=== Header `wiki` argument
+
+If given, show a link to the Wikipedia article that corresponds to the header.
+
+If a value is not given, automatically link to the Wiki page that matches the header exactly with spaces converted to underscores.
+
+Here is an example with an explicit wiki argument:
+
+``
+==== Tiananmen Square
+{wiki=Tiananmen_Square}
+``
+
+which looks like:
+
+= Tiananmen Square
+{id=wiki-explicit}
+{parent=header-wiki-argument}
+{wiki=Tiananmen_Square}
+
+or equivalently with the value deduced from the title:
+
+``
+= Tiananmen Square
+{wiki}
+``
+
+which looks like:
+
+= Tiananmen Square
+{id=wiki-implicit}
+{parent=header-wiki-argument}
+{wiki}
+
+You can only link to subsections of wiki pages with explicit links as in:
+
+``
+= History or Tiananmen Square
+{wiki=Tiananmen_Square#History}
+``
+
+which looks like:
+
+= History or Tiananmen Square
+{id=wiki-explicit-subsection}
+{parent=header-wiki-argument}
+{wiki=Tiananmen_Square#History}
+
 === Header explicit levels vs nesting design choice
 
 Arguably, the language would be even saner if we did:
@@ -2254,15 +2302,30 @@ Every argument in Cirodown is either positional or named.
 
 For example, in a \x[headers]{p=0} definition with an ID:
 ``
-= My asdf{id=asdf qwer}{scope}
+= My asdf
+{id=asdf qwer}
+{scope}
+``
+which is equivalent to the \x[insane-macro-shortcuts][sane] version:
+``
+\H[1][My asdf]
+{id=asdf qwer}
+{scope}
 ``
 we have:
 * two positional argument: `[1]` and `[My asdf]`. Those are surrounded by square brackets `[]` and have no name
 * two named arguments: `{id=asdf qwer}` and `{scope}`.
 
-  The first one has name `id` and the mandatory separator `=`, followed by the value `asdf qwer`.
+  The first one has name `id`, followed by the separator `=`, followed by the value `asdf qwer`.
 
-  The `scope` one does not need `=` because it is a \x[boolean-named-arguments].
+  The separator `=` always is optional. If not given, it is equivalent to an empty value, e.g.:
+  ``
+  {id=}
+  ``
+  is the same as:
+  ``
+  {id}
+  ``
 
 You can determine if a macro is positional or named by using \x[help-macros]. Its output contains something like:
 ``
@@ -2287,7 +2350,7 @@ You can determine if a macro is positional or named by using \x[help-macros]. It
 ``
 and so we see that `level` and `content` are positional arguments, and `id` and `scope` are named arguments.
 
-Generally, positional arguments are few (otherwise it would be hard to know which is which is which), and are almost always used for a given element so tha they save us from typing the name too many times.
+Generally, positional arguments are few (otherwise it would be hard to know which is which is which), and are almost always used for a given element so that they save us from typing the name too many times.
 
 The order of positional arguments must of course be fixed, but named arguments can go anywhere. We can even mix positional and named arguments however we want, although this is not advised for clarity.
 

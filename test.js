@@ -756,6 +756,11 @@ assert_convert_ast('p with id after', '\\P[cd]{id=ab}\n',
 // https://github.com/cirosantilli/cirodown/issues/101
 assert_error('named argument given multiple times',
   '\\P[ab]{id=cd}{id=ef}', 1, 14);
+assert_error('non-empty named argument without = is an error', '\\P{id ab}[cd]', 1, 6);
+assert_convert_ast('empty named argument without = is allowed',
+  '\\P[cd]{id=}\n',
+  [a('P', [t('cd')], {'id': []})]
+);
 
 // Newline after close.
 assert_convert_ast('text after block element',
@@ -1766,7 +1771,6 @@ assert_error('backslash without macro', '\\ a', 1, 1);
 assert_error('unknown macro', '\\reserved_undefined', 1, 1);
 assert_error('too many positional arguments', '\\P[ab][cd]', 1, 7);
 assert_error('unknown named macro argument', '\\c{reserved_undefined=abc}[]', 1, 4);
-assert_error('named argument without =', '\\P{id ab}[cd]', 1, 6);
 assert_error('missing mandatory positional argument href of a', '\\a', 1, 1);
 assert_error('missing mandatory positional argument level of h', '\\H', 1, 1);
 assert_error('stray open positional argument start', 'a[b\n', 1, 2);

@@ -5296,7 +5296,9 @@ const DEFAULT_MACRO_LIST = [
       // Handle relative links:
       // * check existence
       // * modify paths to account for scope + --split-headers
-      const is_relative_link = !protocol_is_given(href)
+      const is_relative_link =
+        (ast.validation_output.relative.given && ast.validation_output.relative.boolean) || 
+        (!ast.validation_output.relative.given && !protocol_is_given(href))
       if (is_relative_link) {
         if (
           ast.validation_output.check.boolean &&
@@ -5326,6 +5328,10 @@ const DEFAULT_MACRO_LIST = [
           name: 'check',
           boolean: true,
           default: '1',
+        }),
+        new MacroArgument({
+          name: 'relative',
+          boolean: true,
         }),
         new MacroArgument({
           name: 'ref',

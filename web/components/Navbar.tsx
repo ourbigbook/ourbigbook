@@ -1,25 +1,18 @@
-import React from "react";
-import Link from "next/link";
-
 import CustomImage from "components/CustomImage";
-import CustomLink from "components/CustomLink";
 import Maybe from "components/Maybe";
 import NavLink from "components/NavLink";
 import { LOGIN_ACTION, REGISTER_ACTION } from "lib"
 import { APP_NAME } from "lib/utils/constant";
-import { usePageDispatch } from "lib/context/PageContext";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 import routes from "routes";
 
 const Navbar = () => {
-  const setPage = usePageDispatch();
   const loggedInUser = getLoggedInUser()
-  const handleClick = React.useCallback(() => setPage(0), []);
   return (
     <nav className="navbar">
-      <CustomLink href={routes.home()} onClick={handleClick} className="navbar-brand">
+      <a href={routes.home()} className="navbar-brand">
         {APP_NAME}
-      </CustomLink>
+      </a>
       <a href="https://cirosantilli.com/ourbigbook-com">About this website</a>
       <div className="navbar-list">
         <Maybe test={loggedInUser}>
@@ -29,7 +22,6 @@ const Navbar = () => {
           </NavLink>
           <NavLink
             href={routes.userView(loggedInUser?.username)}
-            onClick={handleClick}
             className="profile"
           >
             <CustomImage

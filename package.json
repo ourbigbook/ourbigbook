@@ -39,7 +39,7 @@
   "scripts": {
     "browserify": "npx browserify --outfile out/index.js --standalone cirodown index.js",
     "prepublishOnly": "./prepublishOnly",
-    "readme": "./cirodown README.ciro > index.html",
+    "readme": "./cirodown  -o index.html README.ciro",
     "sass": "./build-sass",
     "test": "mocha test --ignore-leaks"
   },

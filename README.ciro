@@ -5779,6 +5779,12 @@ createdb cirodown
 psql -c 'GRANT ALL PRIVILEGES ON DATABASE cirodown TO cirodown_user'
 ``
 
+You can inspect the database interactively with:
+``
+psql cirodown
+``
+and then running SQL commands.
+
 = Local development run with PostgreSQL
 {parent=local-run-as-identical-to-deployment-as-possible}
 

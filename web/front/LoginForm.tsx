@@ -51,7 +51,7 @@ const LoginForm = ({ register = false }) => {
       }
       if (data?.user) {
         await setupUserLocalStorage(data, setErrors)
-        Router.push("/");
+        Router.back()
       }
     } catch (error) {
       console.error(error);

@@ -24,6 +24,66 @@ const encodeGetParamsWithOffset = (opts) => {
   return encodeGetParams(opts)
 }
 
+function read_include({exists, read, path_sep, ext}) {
+  function join(...parts) {
+    return parts.join(path_sep)
+  }
+  if (ext === undefined) {
+    ext = `.${ourbigbook.OURBIGBOOK_EXT}`
+  }
+  return async (id, input_dir) => {
+    let found = undefined;
+    let test
+    let basename = id + ext;
+    if (basename[0] === path_sep) {
+      test = id.substr(1)
+      if (await exists(test)) {
+        found = test;
+      }
+    } else {
+      const input_dir_with_sep = input_dir + path_sep
+      for (let i = input_dir_with_sep.length - 1; i > 0; i--) {
+        if (input_dir_with_sep[i] === path_sep) {
+          test = input_dir_with_sep.slice(0, i + 1) + basename
+          if (await exists(test)) {
+            found = test;
+            break
+          }
+        }
+      }
+      if (found === undefined && await exists(basename)) {
+        found = basename;
+      }
+    }
+    if (found === undefined) {
+      test = join(id, ourbigbook.INDEX_BASENAME_NOEXT + ext);
+      if (input_dir !=='') {
+        test = join(input_dir, test)
+      }
+      if (await exists(test)) {
+        found = test;
+      }
+      if (found === undefined) {
+        const [dir, basename] = ourbigbook.path_split(id, path_sep)
+        const [basename_noext, ext] = ourbigbook.path_splitext(basename)
+        if (basename_noext === ourbigbook.INDEX_BASENAME_NOEXT) {
+          for (let index_basename_noext of ourbigbook.INDEX_FILE_BASENAMES_NOEXT) {
+            test = join(dir, index_basename_noext + ext);
+            if (await exists(test)) {
+              found = test;
+              break;
+            }
+          }
+        }
+      }
+    }
+    if (found !== undefined) {
+      return [found, await read(found)];
+    }
+    return undefined;
+  }
+}
+
 class WebApi {
   constructor(opts) {
     this.opts = opts
@@ -79,6 +139,17 @@ class WebApi {
     return this.req('delete', `articles/like?id=${encodeURIComponent(slug)}`)
   }
 
+  async editorFetchFiles(paths) {
+    return this.req('post',
+      `editor/fetch-files`,
+      {
+        body: {
+          paths,
+        }
+      },
+    )
+  }
+
   async editorGetNoscopesBaseFetch(ids, ignore_paths_set) {
     return this.req('post',
       `editor/get-noscopes-base-fetch`,
@@ -91,17 +162,16 @@ class WebApi {
     )
   }
 
-  async editorFetchFiles(paths) {
+  async editorIdExists(idid) {
     return this.req('post',
-      `editor/fetch-files`,
+      `editor/id-exists`,
       {
         body: {
-          paths,
+          idid,
         }
       },
     )
   }
-
   async issues(opts) {
     return this.req('get',
       `issues${encodeGetParamsWithOffset(opts)}`,
@@ -340,5 +410,6 @@ module.exports = {
   WebApi,
   DbProviderBase,
   encodeGetParams,
+  read_include,
   sendJsonHttp,
 }

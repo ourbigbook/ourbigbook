@@ -9,7 +9,7 @@ const {
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 
 const { ValidationError } = require('./api/lib')
-const { convertOptions, maxArticleTitleSize } = require('./front/config')
+const { convertOptions, maxArticleTitleSize, read_include_web } = require('./front/config')
 const { modifyEditorInput } = require('./front/js')
 const routes = require('./front/routes')
 
@@ -33,8 +33,7 @@ async function convert({
   if (path === undefined) {
     path = titleSource ? ourbigbook.title_to_id(titleSource) : 'asdf'
   }
-  path += `.${ourbigbook.OURBIGBOOK_EXT}`
-  const input_path = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${path}`
+  const input_path = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${path}.${ourbigbook.OURBIGBOOK_EXT}`
   await ourbigbook.convert(
     input,
     lodash.merge({
@@ -46,22 +45,7 @@ async function convert({
           splitDefaultNotToplevel: true,
         },
       },
-      read_include: ourbigbook_nodejs_webpack_safe.read_include({
-        exists: async (inpath) => {
-          const suf = ourbigbook.Macro.HEADER_SCOPE_SEPARATOR + ourbigbook.INDEX_BASENAME_NOEXT
-          let idid
-          if (inpath.endsWith(suf)) {
-            idid = inpath.slice(0, -suf.length)
-          } else {
-            idid = inpath
-          }
-          return (await sequelize.models.Id.count({ where: { idid }, transaction })) > 0
-        },
-        // Only needed for --embed-includes, which is not implemented on the dynamic website for now.
-        read: (inpath) => '',
-        path_sep: ourbigbook.Macro.HEADER_SCOPE_SEPARATOR,
-        ext: '',
-      }),
+      read_include: read_include_web(async (idid) => (await sequelize.models.Id.count({ where: { idid }, transaction })) > 0),
       ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${author.username}`,
       render,
       split_headers: splitHeaders === undefined ? true : splitHeaders,

@@ -192,10 +192,17 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
     let scripts_str = ``;
     let includes = [];
     let scripts = [];
+    let fonts = [];
+    let fonts_local = [];
     let includes_local = [];
     let scripts_local = [];
     let template_includes_relative = [];
     let template_scripts_relative = [];
+    const fonts_dist = [
+      'fa-brands-400',
+      'fa-regular-400',
+      'fa-solid-900',
+    ].map(f => path.join(cirodown_nodejs.DIST_PATH, f + '.woff2'))
     if (non_cirodown_options.publish) {
       template_includes_relative.push(
         path.relative(
@@ -209,9 +216,13 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
           non_cirodown_options.out_js_path
         )
       );
+      fonts_local.push(...fonts_dist.map(f => path.relative(
+        non_cirodown_options.outdir, f
+      )))
     } else {
       includes_local.push(non_cirodown_options.out_css_path);
       scripts_local.push(non_cirodown_options.out_js_path);
+      fonts_local.push(...fonts_dist)
     }
     if (
       cirodown_options.outfile !== undefined &&
@@ -223,9 +234,13 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
       for (const script of scripts_local) {
         scripts.push(path.relative(path.dirname(cirodown_options.outfile), script));
       }
+      for (const font of fonts_local) {
+        fonts.push(path.relative(path.dirname(cirodown_options.outfile), font));
+      }
     } else {
       includes.push(...includes_local);
       scripts.push(...scripts_local);
+      fonts.push(...fonts_local);
     }
 
     for (const include of includes) {
@@ -234,7 +249,13 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
     for (const script of scripts) {
       scripts_str += `<script src="${script}"></script>\n`;
     }
-
+    for (const font of fonts) {
+      includes_str += `@font-face {
+  font-family: ${path.parse(font).name};
+  src: url(${font});
+}
+`
+    }
     new_options.template_vars.style = `\n${includes_str}`;
     new_options.template_vars.post_body = `${scripts_str}`;
     new_options.template_styles_relative = template_includes_relative;

@@ -20,14 +20,17 @@ const path = require('path');
 const pluralize = require('pluralize');
 
 // consts used by classes.
-const HEADER_MENU_ITEM_SEP = ' | ';
-const UNICODE_LINK = String.fromCodePoint(0x1F517);
-const NOSPLIT_MARKER = 'nosplit';
-exports.NOSPLIT_MARKER = NOSPLIT_MARKER;
-const SPLIT_MARKER = 'split';
-exports.SPLIT_MARKER = SPLIT_MARKER;
-const PARENT_MARKER = '\u{2191} parent';
+const HEADER_MENU_ITEM_SEP = '<span class="sep"></span>';
+const UNICODE_LINK = '<span class="fa-solid-900">\u{f0c1}</span>';
+const NOSPLIT_MARKER_TEXT = 'nosplit'
+exports.NOSPLIT_MARKER_TEXT = NOSPLIT_MARKER_TEXT;
+const NOSPLIT_MARKER = `<span class="fa-solid-900">\u{f111}</span> ${NOSPLIT_MARKER_TEXT}`;
+const SPLIT_MARKER_TEXT = 'split'
+exports.SPLIT_MARKER_TEXT = SPLIT_MARKER_TEXT;
+const SPLIT_MARKER = `<span class="fa-solid-900">\u{f042}</span> ${SPLIT_MARKER_TEXT}`;
+const PARENT_MARKER = '<span class="fa-solid-900">\u{f062}</span>';
 exports.PARENT_MARKER = PARENT_MARKER;
+const TOC_MARKER = '<span class="fa-solid-900">\u{f03a}</span> toc'
 
 class AstNode {
   /**
@@ -2950,28 +2953,35 @@ function get_descendant_count(tree_node) {
   ];
 }
 
-function get_descendant_count_html(tree_node, long_style) {
-  if (long_style === undefined) {
-    long_style = false;
+function get_descendant_count_html(context, tree_node, options) {
+  if (options.long_style === undefined) {
+    options.long_style = false;
+  }
+  if (options.show_descendant_count === undefined) {
+    options.show_descendant_count = true;
   }
   const [descendant_count, word_count, descendant_word_count] = get_descendant_count(tree_node);
   let ret;
-  if (tree_node.word_count > 0 || descendant_count > 0) {
-    ret = `<span class="metrics">`;
-    ret += `${long_style ? 'words: ' : ''}<span class="word-count" title="word count for this node">${format_number_approx(word_count)}</span>`;
-    if (descendant_count > 0) {
-      ret += `${long_style ? `, descendant words:` : ','} <span class="word-count-descendant" title="word count for this node + descendants">${format_number_approx(descendant_word_count)}</span>` +
-            `${long_style ? `, descendants:` : ','} <span class="descendant-count" title="number of descendant nodes">${format_number_approx(descendant_count)}</span>`;
-    }
-    ret += `</span>`
-  } else {
-    ret = '';
+  let word_count_html = ''
+  const icon = '<span class="fa-regular-400">\u{f075}</span>'
+  const words_str = options.long_style ? `words: ` : ''
+  if (descendant_word_count > 0 && (context.options.add_test_instrumentation || options.show_descendant_count)) {
+    word_count_html += `<span title="word count for this node + all descendants">${icon} ${words_str}<span class="word-count-descendant">${format_number_approx(descendant_word_count)}</span></span>`
+  }
+  if (tree_node.word_count > 0 && context.options.add_test_instrumentation || !options.show_descendant_count) {
+    word_count_html += `<span title="word count for this node">${icon} ${words_str}<span class="word-count">${format_number_approx(word_count)}</span></span>`;
+  }
+  if (descendant_count > 0 && context.options.add_test_instrumentation) {
+    word_count_html += `<span class="descendant-count">${format_number_approx(descendant_count)}</span>`
+  }
+  if (word_count_html !== '') {
+    ret = `<span class="metrics">${word_count_html}</span>`;
   }
   return ret;
 }
 
-function get_descendant_count_html_sep(tree_node, long_style) {
-  let ret = get_descendant_count_html(tree_node, long_style);
+function get_descendant_count_html_sep(context, tree_node, options) {
+  let ret = get_descendant_count_html(context, tree_node, options);
   if (ret !== '') {
     ret = `<span class="metrics-sep">${HEADER_MENU_ITEM_SEP + ret}</span>`;
   }
@@ -6659,7 +6669,7 @@ const DEFAULT_MACRO_LIST = [
         let toc_href;
         if (!is_top_level && context.has_toc) {
           toc_href = html_attr('href', '#' + toc_id(ast, context));
-          ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href} class="cirodown-h-to-toc"${html_attr('title', 'ToC entry for this header')}>\u21d1 toc</a>`;
+          ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href} class="cirodown-h-to-toc"${html_attr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`;
         }
 
         // Parent links.
@@ -6674,7 +6684,7 @@ const DEFAULT_MACRO_LIST = [
         if (parent_links) {
           ret += `${HEADER_MENU_ITEM_SEP}${parent_links}`;
         }
-        let descendant_count = get_descendant_count_html(ast.header_tree_node, true);
+        let descendant_count = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
         if (descendant_count !== '') {
           ret += `${HEADER_MENU_ITEM_SEP}${descendant_count}`;
         }
@@ -6693,7 +6703,7 @@ const DEFAULT_MACRO_LIST = [
             wiki += '_(' + (render_arg(ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME], context)).replace(/ /g, '_')  + ')'
           }
         }
-        wiki_link = `<a href="https://en.wikipedia.org/wiki/${html_escape_attr(wiki)}">Wikipedia</a>`;
+        wiki_link = `<a href="https://en.wikipedia.org/wiki/${html_escape_attr(wiki)}"><span class="fa-brands-400" title="Wikipedia">\u{f266}</span> wiki</a>`;
       }
 
       // Calculate file_link_html
@@ -6734,7 +6744,7 @@ const DEFAULT_MACRO_LIST = [
         );
         tag_ids_html_array.push(x_ast.render(new_context));
       }
-      const tag_ids_html = 'Tags: ' + tag_ids_html_array.join(', ');
+      const tag_ids_html = `<span title="tags" class="fa-solid-900">\u{f02c}</span> tags: ` + tag_ids_html_array.join(', ');
 
       // Calculate header_meta and header_meta2
       let header_meta = [];
@@ -6761,9 +6771,9 @@ const DEFAULT_MACRO_LIST = [
           header_meta2.push(link_to_split);
         }
         if (context.has_toc) {
-          header_meta2.push(`<a${html_attr('href', '#' + Macro.TOC_ID)}>\u{21d3} toc</a>`);
+          header_meta2.push(`<a${html_attr('href', '#' + Macro.TOC_ID)}>${TOC_MARKER}</a>`);
         }
-        let descendant_count_html = get_descendant_count_html(ast.header_tree_node, true);
+        let descendant_count_html = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
         if (descendant_count_html !== '') {
           header_meta2.push(descendant_count_html);
         }
@@ -7234,7 +7244,7 @@ const DEFAULT_MACRO_LIST = [
       if (root_node.children.length === 1) {
         root_node = root_node.children[0];
       }
-      let descendant_count_html = get_descendant_count_html_sep(root_node, false);
+      let descendant_count_html = get_descendant_count_html_sep(context, root_node, { long_style: false, show_descendant_count: true });
       ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title"${x_href_attr(ast, context)}>Table of contents</a><span class="hover-metadata">${descendant_count_html}</span></span></div>\n`;
       for (let i = root_node.children.length - 1; i >= 0; i--) {
         todo_visit.push([root_node.children[i], 1]);
@@ -7282,7 +7292,7 @@ const DEFAULT_MACRO_LIST = [
           // The inner <div></div> inside arrow is so that:
           // - outter div: takes up space to make clicking easy
           // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
-          let descendant_count_html = get_descendant_count_html_sep(tree_node, false);
+          let descendant_count_html = get_descendant_count_html_sep(context, tree_node, { long_style: false, show_descendant_count: false });
           let linear_count_str
           if (context.options.add_test_instrumentation) {
             linear_count_str = html_attr('data-test', linear_count)

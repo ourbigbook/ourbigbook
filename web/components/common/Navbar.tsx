@@ -8,6 +8,7 @@ import NavLink from "components/common/NavLink";
 import { APP_NAME } from "lib/utils/constant";
 import { usePageDispatch } from "lib/context/PageContext";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
+import routes from "routes";
 
 const Navbar = () => {
   const setPage = usePageDispatch();
@@ -15,17 +16,17 @@ const Navbar = () => {
   const handleClick = React.useCallback(() => setPage(0), []);
   return (
     <nav className="navbar">
-      <CustomLink href="/" as="/" onClick={handleClick} className="navbar-brand">
+      <CustomLink href={routes.home()} onClick={handleClick} className="navbar-brand">
         {APP_NAME}
       </CustomLink>
       <div className="navbar-list">
         <Maybe test={loggedInUser}>
-          <NavLink href="/editor">
+          <NavLink href={routes.articleNew()}>
             <i className="ion-compose" />
             &nbsp;New
           </NavLink>
           <NavLink
-            href={`/profile/${loggedInUser?.username}`}
+            href={routes.userView(loggedInUser?.username)}
             onClick={handleClick}
             className="profile"
           >
@@ -38,10 +39,10 @@ const Navbar = () => {
           </NavLink>
         </Maybe>
         <Maybe test={!loggedInUser}>
-          <NavLink href="/user/login">
+          <NavLink href={routes.userLogin()}>
             Sign in
           </NavLink>
-          <NavLink href="/user/register">
+          <NavLink href={routes.userNew()}>
             Sign up
           </NavLink>
         </Maybe>

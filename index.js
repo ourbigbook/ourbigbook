@@ -5044,6 +5044,7 @@ const INSANE_TD_START = '| ';
 const INSANE_TH_START = '|| ';
 const INSANE_LIST_INDENT = '  ';
 const INSANE_HEADER_CHAR = '=';
+exports.INSANE_HEADER_CHAR = INSANE_HEADER_CHAR
 const LOG_OPTIONS = new Set([
   'ast-inside',
   'parse',
@@ -5063,6 +5064,7 @@ const MAGIC_CHAR_ARGS = {
 }
 const NAMED_ARGUMENT_EQUAL_CHAR = '=';
 const START_NAMED_ARGUMENT_CHAR = '{';
+exports.START_NAMED_ARGUMENT_CHAR = START_NAMED_ARGUMENT_CHAR;
 const START_POSITIONAL_ARGUMENT_CHAR = '[';
 const ESCAPABLE_CHARS = new Set([
   ESCAPE_CHAR,

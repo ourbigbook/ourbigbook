@@ -7,6 +7,8 @@ const ArticleAPI = {
   all: (page, limit = 10) =>
     axios.get(`${SERVER_BASE_URL}/articles?${getQuery(limit, page)}`),
 
+  articleUrl: (slug) => `${SERVER_BASE_URL}/articles/${encodeURIComponent(slug)}`,
+
   byAuthor: (author, page = 0, limit = 5) =>
     axios.get(
       `${SERVER_BASE_URL}/articles?author=${encodeURIComponent(
@@ -22,35 +24,11 @@ const ArticleAPI = {
       )}`
     ),
 
-  delete: (id, token) =>
-    axios.delete(`${SERVER_BASE_URL}/articles/${id}`, {
-      headers: {
-        Authorization: `Token ${token}`,
-      },
-    }),
+  commentsUrl: (slug) => `${SERVER_BASE_URL}/articles/comments/${slug}`,
 
-  favorite: (slug) =>
-    axios.post(`${SERVER_BASE_URL}/articles/${slug}/favorite`),
-
-  favoritedBy: (author, page) =>
-    axios.get(
-      `${SERVER_BASE_URL}/articles?favorited=${encodeURIComponent(
-        author
-      )}&${getQuery(10, page)}`
-    ),
-
-  feed: (page, limit = 10) =>
-    axios.get(`${SERVER_BASE_URL}/articles/feed?${getQuery(limit, page)}`),
-
-  get: (slug) =>
-    axios.get(`${SERVER_BASE_URL}/articles/${encodeURIComponent(slug)}`),
-
-  unfavorite: (slug) =>
-    axios.delete(`${SERVER_BASE_URL}/articles/${slug}/favorite`),
-
-  update: async (article, pid, token) => {
-    const { data, status } = await axios.put(
-      `${SERVER_BASE_URL}/articles/${pid}`,
+  create: async (article, token) => {
+    const { data, status } = await axios.post(
+      `${SERVER_BASE_URL}/articles`,
       JSON.stringify({ article }),
       {
         headers: {
@@ -65,9 +43,49 @@ const ArticleAPI = {
     };
   },
 
-  create: async (article, token) => {
-    const { data, status } = await axios.post(
-      `${SERVER_BASE_URL}/articles`,
+  delete: (id, token) =>
+    axios.delete(`${SERVER_BASE_URL}/articles/${id}`, {
+      headers: {
+        Authorization: `Token ${token}`,
+      },
+    }),
+
+  favorite: (slug, token) =>
+    axios.post(
+      `${SERVER_BASE_URL}/articles/favorite/${slug}`,
+      {},
+      {
+        headers: {
+          Authorization: `Token ${token}`,
+        },
+      }
+    ),
+
+  favoritedBy: (author, page) =>
+    axios.get(
+      `${SERVER_BASE_URL}/articles?favorited=${encodeURIComponent(
+        author
+      )}&${getQuery(10, page)}`
+    ),
+
+  feed: (page, limit = 10) =>
+    axios.get(`${SERVER_BASE_URL}/articles/feed?${getQuery(limit, page)}`),
+
+  get: (slug) => axios.get(ArticleAPI.articleUrl(slug)),
+
+  unfavorite: (slug, token) =>
+    axios.delete(
+      `${SERVER_BASE_URL}/articles/favorite/${encodeURIComponent(slug)}`,
+      {
+        headers: {
+          Authorization: `Token ${token}`,
+        },
+      }
+    ),
+
+  update: async (article, pid, token) => {
+    const { data, status } = await axios.put(
+      `${SERVER_BASE_URL}/articles/${pid}`,
       JSON.stringify({ article }),
       {
         headers: {

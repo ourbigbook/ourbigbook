@@ -10,9 +10,9 @@ export const getStaticPathsProfile: GetStaticPaths = async () => {
   }
 }
 
-export const getStaticPropsProfile: GetStaticProps = async ({ params: { pid } }) => {
+export const getStaticPropsProfile: GetStaticProps = async ({ params: { uid } }) => {
   const user = await sequelize.models.User.findOne({
-    where: { username: pid },
+    where: { username: uid },
   })
   if (!user) {
     return {

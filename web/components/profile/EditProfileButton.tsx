@@ -2,6 +2,7 @@ import React from "react";
 
 import CustomLink from "components/common/CustomLink";
 import Maybe from "components/common/Maybe";
+import routes from "routes";
 
 interface EditProfileButtonProps {
   isCurrentUser: boolean;
@@ -10,7 +11,7 @@ interface EditProfileButtonProps {
 const EditProfileButton = ({ isCurrentUser }: EditProfileButtonProps) => (
   <Maybe test={isCurrentUser}>
     <CustomLink
-      href="/settings"
+      href={routes.userEdit()}
       className="btn btn-sm btn-outline-secondary action-btn"
     >
       <i className="ion-gear-a" /> Edit Profile Settings

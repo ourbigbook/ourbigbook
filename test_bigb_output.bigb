@@ -30,6 +30,21 @@ Inline code block with backtick and double close square brackets: \c[[[a ` ]] b]
 
 Inline code block with backtick and triple open square brackets: \c[[[[a ` [[[ b]]]] after.
 
+Sane block together with paragraph:
+\Q[To be]
+and another:
+\Q[or maybe not]
+and finally.
+
+Insane block together with paragraph:
+``
+x = 1
+``
+and another:
+``
+x = 2
+``
+
 Block code block:
 
 ``
@@ -65,6 +80,14 @@ $$
 List:
 
 * p1
+
+  Sane block:
+
+  \Q[To be]
+
+  and another:
+
+  \Q[or maybe not]
 * p2
 
 List with paragraph:

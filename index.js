@@ -2829,8 +2829,9 @@ function convert_init_context(options={}, extra_returns={}) {
       options.unsafe_xss = false;
     }
   }
-  extra_returns.errors = [];
   extra_returns.debug_perf = {};
+  extra_returns.errors = [];
+  extra_returns.rendered_headers = {};
   const context = {
     perf_prev: 0,
     katex_macros: Object.assign({}, options.katex_macros),
@@ -6006,7 +6007,7 @@ function x_href_attr(target_id_ast, context) {
  *   part of a link to self to be applied e.g. to <>Figure 1<>, of undefined
  *   if this link should not be given.
  */
-function x_text(ast, context, options={}) {
+function x_text_base(ast, context, options={}) {
   if (!('caption_prefix_span' in options)) {
     options.caption_prefix_span = true;
   }
@@ -6035,6 +6036,7 @@ function x_text(ast, context, options={}) {
     options.show_caption_prefix = true;
   }
   const macro = context.macros[ast.macro_name];
+  let inner
   let style_full;
   if ('style_full' in options) {
     style_full = options.style_full;
@@ -6133,7 +6135,8 @@ function x_text(ast, context, options={}) {
         title_arg.get(title_arg.length() - 1).text = pluralize(last_ast.text, options.pluralize ? 2 : 1);
       }
     }
-    ret += render_arg(title_arg, context);
+    inner = render_arg(title_arg, context);
+    ret += inner
     if (style_full) {
       const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
       const title2_arg = ast.args[Macro.TITLE2_ARGUMENT_NAME];
@@ -6162,7 +6165,11 @@ function x_text(ast, context, options={}) {
       }
     }
   }
-  return ret;
+  return { full: ret, inner }
+}
+
+function x_text(ast, context, options={}) {
+  return x_text_base(ast, context, options).full
 }
 
 // consts
@@ -6696,7 +6703,9 @@ const DEFAULT_MACRO_LIST = [
         show_caption_prefix: false,
         style_full: true,
       };
-      ret += x_text(ast, context, x_text_options);
+      const x_text_base_ret = x_text_base(ast, context, x_text_options);
+      context.extra_returns.rendered_headers[ast.id] = x_text_base_ret.inner;
+      ret += x_text_base_ret.full;
       ret += `</a>`;
       ret += `</h${level_int_capped}>\n`;
 

@@ -138,28 +138,28 @@ router.put('/', auth.required, async function(req, res, next) {
   }
 })
 
-// delete article
-router.delete('/', auth.required, async function(req, res, next) {
-  try {
-    const article = await lib.getArticle(req, res)
-    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-    if (!user) {
-      return res.sendStatus(401)
-    }
-    if (article.isToplevelIndex(user)) {
-      throw new lib.ValidationError('Cannot delete the toplevel index')
-    }
-    if (article.author.id.toString() === req.payload.id.toString()) {
-      return article.destroy().then(function() {
-        return res.sendStatus(204)
-      })
-    } else {
-      return res.sendStatus(403)
-    }
-  } catch(error) {
-    next(error);
-  }
-})
+//// delete article
+//router.delete('/', auth.required, async function(req, res, next) {
+//  try {
+//    const article = await lib.getArticle(req, res)
+//    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
+//    if (!user) {
+//      return res.sendStatus(401)
+//    }
+//    if (article.isToplevelIndex(user)) {
+//      throw new lib.ValidationError('Cannot delete the toplevel index')
+//    }
+//    if (article.author.id.toString() === req.payload.id.toString()) {
+//      return article.destroy().then(function() {
+//        return res.sendStatus(204)
+//      })
+//    } else {
+//      return res.sendStatus(403)
+//    }
+//  } catch(error) {
+//    next(error);
+//  }
+//})
 
 // Likes.
 

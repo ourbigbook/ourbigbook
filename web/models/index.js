@@ -38,7 +38,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
   const Comment = require('./comment')(sequelize)
   const SequelizeMeta = require('./sequelize_meta')(sequelize)
   const User = require('./user')(sequelize)
-  ourbigbook_models.addModels(sequelize)
+  ourbigbook_models.addModels(sequelize, true)
   const File = sequelize.models.File
 
   // Associations.

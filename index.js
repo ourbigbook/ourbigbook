@@ -2082,6 +2082,7 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
       ast.id === undefined
     ) {
       const macro_id_arg = ast.args[Macro.ID_ARGUMENT_NAME];
+      const new_context = clone_and_set(context, 'id_conversion', true);
       if (macro_id_arg === undefined) {
         let id_text = '';
         const id_prefix = context.macros[ast.macro_name].id_prefix;
@@ -2090,7 +2091,6 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
           if (id_prefix !== '') {
             id_text += id_prefix + ID_SEPARATOR
           }
-          const new_context = clone_and_set(context, 'id_conversion', true);
           new_context.id_conversion_for_header = is_header;
           title_text = render_arg_noescape(title_arg, new_context)
           if (
@@ -2130,7 +2130,7 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
           //}
         }
       } else {
-        ast.id = render_arg_noescape(macro_id_arg, context);
+        ast.id = render_arg_noescape(macro_id_arg, new_context);
       }
       if (Macro.RESERVED_IDS.has(ast.id)) {
         let message = `reserved ID "${ast.id}"`;
@@ -4480,7 +4480,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         options.add_refs_to_x.push({
           ast,
           title_ast_ancestors: Object.assign([], title_ast_ancestors),
-          target_id: render_arg_noescape(ast.args.href, context),
+          target_id: x_target_id(ast, context),
         })
       }
 
@@ -5752,11 +5752,22 @@ function x_child_db_effective_id(target_id, context, ast) {
   }
 }
 
+function x_target_id(ast, context) {
+  return render_arg_noescape(ast.args.href,
+    // This was added because it was blowing up in the edge case of
+    // \x[\m[1]] and others during parse to setup the x DB
+    // because we hadn't validate validated elements
+    // there yet. Not sure we could, no patience.
+    // This fix relies on the expectation that id_conversion will
+    // not rely on validate_ast. Maybe that is reasonable.
+    clone_and_set(context, 'id_conversion', true))
+}
+
 /**
  * @return {[String, String]} [href, content] pair for the x node.
  */
 function x_get_href_content(ast, context) {
-  const target_id = render_arg_noescape(ast.args.href, context);
+  const target_id = x_target_id(ast, context);
   if (context.options.magic_leading_at && target_id[0] === AT_MENTION_CHAR) {
     return [html_attr('href', WEB_URL + target_id.substr(1)), target_id];
   }

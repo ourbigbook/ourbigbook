@@ -39,6 +39,8 @@ cd cirodown-test
 git init
 git remote add origin git@github.com:USERNAME/cirodown-test.git
 cirodown --generate
+git add .
+git commit -m 'First commit'
 cirodown --publish
 ``
 Or to start with a more complex template suitable for multifile projects use \x[generate-multifile][use `--generate-multifile`] instead:
@@ -821,6 +823,30 @@ Therefore, images could easily fill up the maximum repository size you are allow
 
 TODO implement: mechanism where you enter a textual description of the image inside the code body, and it then converts to an image, adds to the `-media` repo and pushes all automatically. Start with dot.
 
+\h[2][Videos (`\Video` and `\video`)]
+{id=videos}
+
+Very analogous to \x[images], only differences will be documented here.
+
+First, \x[where-to-store-images] becomes even more critical here since videos are even larger than images. Arguably, the only reasonable option is to sell your soul to YouTube with the `youtube` \x[boolean-named-arguments][boolean named argument]. Here is an example: \x[sample-video-from-youtube].
+\cirodown_example[[
+\Video[YeFzeNAHEhU]{youtube}
+{id=sample-video-from-youtube}
+{title=Nice sample video embedded from YouTube}
+]]
+When this option is given, the Video address should only to contain the YouTube video ID, which shows in the YouTube URL for the video as:
+``
+https://www.youtube.com/watch?v=<video-id>
+``
+
+But you can also use raw video files from any location that can serve them of course, e.g. here is one stored in this repository: \x[sample-video-in-repository].
+\cirodown_example[[
+\Video[video.mp4]
+{id=sample-video-in-repository}
+{title=Nice sample video stored in this repository}
+{source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
+]]
+
 \h[2][Code \c[[`]], \c[[``]], `\c` and `\C`]
 {id=code}
 
@@ -892,30 +918,6 @@ cd
 {id=my-code}
 ]]]
 ]]]]
-
-\h[2][Videos (`\Video` and `\video`)]
-{id=videos}
-
-Very analogous to \x[images], only differences will be documented here.
-
-First, \x[where-to-store-images] becomes even more critical here since videos are even larger than images. Arguably, the only reasonable option is to sell your soul to YouTube with the `youtube` \x[boolean-named-arguments][boolean named argument]. Here is an example: \x[sample-video-from-youtube].
-\cirodown_example[[
-\Video[YeFzeNAHEhU]{youtube}
-{id=sample-video-from-youtube}
-{title=Nice sample video embedded from YouTube}
-]]
-When this option is given, the Video address should only to contain the YouTube video ID, which shows in the YouTube URL for the video as:
-``
-https://www.youtube.com/watch?v=<video-id>
-``
-
-But you can also use raw video files from any location that can serve them of course, e.g. here is one stored in this repository: \x[sample-video-in-repository].
-\cirodown_example[[
-\Video[video.mp4]
-{id=sample-video-in-repository}
-{title=Nice sample video stored in this repository}
-{source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
-]]
 
 \h[2][Mathematics `$`, `$$`, `\m` and `\M`]
 {id=math}

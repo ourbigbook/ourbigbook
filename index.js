@@ -1497,7 +1497,7 @@ function macro_image_video_convert_function(content_func, source_func) {
     }
     let src = convert_arg(ast.args.src, context);
     let source = source_func(ast, context, src);
-    if (ast.args.source !== '') {
+    if (source !== '') {
       source = `<a ${html_attr('href', source)}>Source</a>.`;
       if (description === '') {
         source = '. ' + source;

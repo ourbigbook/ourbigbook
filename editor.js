@@ -270,7 +270,11 @@ class OurbigbookEditor {
     // Haven't done yet because lazy to boot into Windows:
     // https://stackoverflow.com/questions/56525822/how-to-set-eol-to-lf-for-windows-so-that-api-gets-value-with-n-not-r-n/74624712#74624712
     // https://github.com/microsoft/monaco-editor/issues/3440
-    return this.editor.getValue().replaceAll('\r\n', '\n').replace(/(\n+)?$/, '\n')
+    let ret = this.editor.getValue().replaceAll('\r\n', '\n').replace(/^(\n+)?$/, '')
+    if (ret.length) {
+      ret = ret.replace(/(\n+)?$/, '\n')
+    }
+    return ret
   }
 
   scrollPreviewToSourceLine(line_number, block) {

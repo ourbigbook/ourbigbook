@@ -1254,13 +1254,13 @@ cd
 ]]]
 ]]]]
 
-Block code can have a title, e.g. see this one: \x[my-nice-code]{full}:
+Block code can have a title, e.g. see this one: \x[code-my-nice-code]{full}:
 \cirodown_example[[
 ``
 ab
 cd
 ``
-{id=my-nice-code}
+{id=code-my-nice-code}
 {title=My nice code block.}
 ]]
 

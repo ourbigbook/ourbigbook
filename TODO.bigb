@@ -15,12 +15,6 @@
 
 == Issues
 
-=== h1 arguments broken on web
-{tag=Bug}
-{tag=Web}
-
-Both preview and render.
-
 === Add sibling/add child buttons next to self headers and toc
 {tag=Web}
 
@@ -77,6 +71,14 @@ Was removed at: <remove word count on web> because would require actually implem
 We should likely not show it on link hover however, only headers, as doing so would mean having to update every single page that links to a header for correctness. If this is ever done, it should be Js runtime stuff only.
 
 == Closed issues
+
+=== h1 arguments broken on web
+{tag=Bug}
+{tag=Web}
+
+Both preview and render.
+
+OK, was not the arguments in general, was `{wiki}` alone with which I was testing, thank God!
 
 === Capture link clicks to headers in current page and don't change page
 {tag=Dynamic tree fetch}

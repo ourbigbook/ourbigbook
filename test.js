@@ -5380,7 +5380,26 @@ assert_lib_stdin('header: forbid_multiheader option allows synonyms',
     },
   }
 );
-
+assert_lib_stdin('header: wiki argument without value adds a link to wikipedia based on the title',
+  `= My topic
+{wiki}
+`,
+  {
+    assert_xpath_stdout: [
+      "//x:a[@href='https://en.wikipedia.org/wiki/My_topic']",
+    ]
+  }
+);
+assert_lib_stdin('header: wiki argument with a value adds a link to wikipedia with that value',
+  `= My topic
+{wiki=Another_one}
+`,
+  {
+    assert_xpath_stdout: [
+      "//x:a[@href='https://en.wikipedia.org/wiki/Another_one']",
+    ]
+  }
+);
 
 // Code.
 assert_lib_ast('code: inline sane',

@@ -118,7 +118,6 @@ const Settings = ({
             Update Settings
           </button>
           <h2>Extra information</h2>
-          <p>Verified: {userInfo.ip || 'not set'}</p>
           <p>Signup IP: {userInfo.ip || 'not set'}</p>
           {cant.setUserLimits(loggedInUser)
             ? <>
@@ -145,7 +144,10 @@ const Settings = ({
                   />
                 </Label>
               </>
-            }
+          }
+          {loggedInUser.admin &&
+            <p>Verified: {userInfo.verified.toString()}</p>
+          }
         </form>
       </>
     </div>

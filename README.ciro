@@ -291,7 +291,7 @@ Example: \x[cross-reference-style]{style=full}.
 
 Reference to the first header of another file: \x[not-readme].
 
-Reference to another header of another file, with \x[cross-reference-style] full: \x[h2-in-not-the-readme]{style=full}.
+Reference to another header of another file, with \x[cross-reference-style] equals "full": \x[h2-in-not-the-readme]{style=full}.
 
 Reference to an image in another file: \x[fig-not-readme-xi]{style=full}.
 
@@ -511,9 +511,11 @@ rather than:
 
 This is because in this case, we guess that the \c[h2] is the toplevel
 
-\h[4][The toplevel header ID is derived from the filename]
+\h[4][The ID of the first header is derived from the filename]
 
-The default ID of a toplevel header is derived from the basename of the Cirodown file rather than from the toplevel header title.
+TODO: we kind of wanted this to be the ID of the toplevel header instead of the first header, but this would require an extra postprocessing pass (to determine if the first header is toplevel or not), which might affect performance, so we are not doing it right now.
+
+When the Cirodown input comes from a file (and not e.g. stdin), the default ID of the first header in the document is derived from the basename of the Cirodown input source file rather than from its title.
 
 This is specially relevant when \x[includes][including] other files.
 

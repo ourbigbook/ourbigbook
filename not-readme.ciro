@@ -5,3 +5,9 @@
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {title=Figure in not the README}
 {id=fig-not-readme-xi}
+
+\h[2][Some references back to the README]
+
+Toplevel: \x[cirodown].
+
+Non-toplevel: \x[internal-cross-references].

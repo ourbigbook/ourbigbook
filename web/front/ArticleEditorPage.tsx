@@ -7,17 +7,18 @@ import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js';
 import { OurbigbookEditor } from 'ourbigbook/editor.js';
 import { convertOptions, convertOptionsJson, isProduction } from 'front/config';
 
+import { ArticlePageProps } from 'front/ArticlePage'
+import { slugFromArray } from 'front'
 import ListErrors from 'front/ListErrors'
-import { slugFromRouter } from 'front'
-import { webApi } from 'front/api'
 import useLoggedInUser from 'front/useLoggedInUser'
+import { webApi } from 'front/api'
 import routes from 'front/routes'
 import { AppContext, useCtrlEnterSubmit } from 'front'
 import { modifyEditorInput } from 'front/js';
 
 export default function ArticleEditorPageHoc(options = { isnew: false}) {
   const { isnew } = options
-  const editor = ({ article: initialArticle, loggedInUser }: ArticlePageProps) => {
+  const editor = ({ article: initialArticle }: ArticlePageProps) => {
     const router = useRouter();
     const {
       query: { slug },
@@ -50,6 +51,7 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
     const [errors, setErrors] = React.useState([]);
     const [file, setFile] = React.useState(initialFileState);
     const ourbigbookEditorElem = useRef(null);
+    const loggedInUser = useLoggedInUser()
     useEffect(() => {
       if (ourbigbookEditorElem && loggedInUser) {
         let editor;
@@ -64,7 +66,7 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
             ourbigbook_runtime,
             {
               convertOptions: Object.assign({
-                input_path: initialFile.path,
+                input_path: initialFile?.path,
                 ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`,
                 ourbigbook_json: convertOptionsJson,
               }, convertOptions),
@@ -111,7 +113,7 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
         ({ data, status } = await webApi.articleCreateOrUpdate(
           file,
           {
-            path: slugFromRouter(router),
+            path: slugFromArray(initialFile.path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR), { username: false }),
           }
         ));
       }
@@ -123,7 +125,13 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
       // This is a hack for the useEffect cleanup callback issue.
       ourbigbookEditorElem.current.ourbigbookEditor.dispose()
 
-      Router.push(routes.articleView(data.articles[0].slug), null, { scroll: true });
+      let redirTarget
+      if (isnew) {
+        redirTarget = routes.articleView(data.articles[0].slug)
+      } else {
+        redirTarget = routes.articleView(slug.join('/'))
+      }
+      Router.push(redirTarget, null, { scroll: true });
     };
     useCtrlEnterSubmit(handleSubmit)
     const handleCancel = async (e) => {

@@ -4922,6 +4922,59 @@ error: tmp.bigb:3:1: IDs that start with "_" are reserved: "_toc"
 {c}
 {parent=OurBigBook}
 
+= `ourbigbook` executable
+{synonym}
+{title2}
+
+= Static Website
+{synonym}
+
+OurBigBook CLI is a program that users can run in their own computers, and which converts input <OurBigBook Markup> files (file extension: `.bigb`) into `.html` files which make up a wiki or book.
+
+The HTML files can then be either viewd from your filesystem on a browser, or uploaded and hosted very cheaply or for free so that others can see it, e.g. on <publish to GitHub Pages>[GitHub Pages].
+
+Or if you are a programmer: OurBigBook CLI is a Static Wiki generator that can be invoked from the command line with the <ourbigbook executable>.
+
+OurBigBook CLI is how https://cirosantilli.com[] is published.
+
+OurBigBook Web takes as input the exact same format of OurBigBook Markup files used by OurBigBook CLI. TODO support/improve import/export to/from OurBigBook Web, see also: <--web>.
+
+The OurBigBook CLI calls the <OurBigBook Library> to convert each input file.
+
+Convert a `.bigb` file to HTML and output the HTML to a file with the same basename without extension, e.g.:
+``
+ourbigbook hello.bigb
+firefox hello.html
+``
+
+Files named `README.bigb` are automatically converted to `index.html` so that they will show on both GitHub READMEs and at the website's base address:
+``
+ourbigbook README.bigb
+firefox hello.html
+``
+
+Convert all `.bigb` files in a directory to HTML files next to each corresponding `.bigb` file, e.g. `somefile.bigb` to `somefile.html`:
+``
+ourbigbook .
+``
+The HTML output files are placed right next to each corresponding `.bigb`.
+
+The output file can be selected explicitly with: <outfile>.
+
+Output to stdout instead of saving it to a file:
+``
+ourbigbook --stdout README.bigb
+``
+
+In order to resolve <cross file references>, this actually does two passes:
+* first an ID extraction pass, which parses all inputs and dumps their IDs to the ID database
+* then a second render pass, which uses the IDs in the ID database
+
+Convert a `.bigb` file from stdin to HTML and output the contents of `<body>` to stdout:
+``
+printf 'ab\ncd\n' | ourbigbook --body-only
+``
+
 = OurBigBook CLI quick start
 {parent=OurBigBook CLI}
 
@@ -5054,56 +5107,6 @@ Try out the JavaScript API with \a[lib_hello.js]:
 ``
 npm install ourbigbook
 ./lib_hello.js
-``
-
-= `ourbigbook` executable
-{synonym}
-{title2}
-
-OurBigBook CLI is a program that users can run in their own computers, and which converts input <OurBigBook Markup> files (file extension: `.bigb`) into `.html` files which make up a wiki or book.
-
-The HTML files can then be either viewd from your filesystem on a browser, or uploaded and hosted very cheaply or for free so that others can see it, e.g. on <publish to GitHub Pages>[GitHub Pages].
-
-Or if you are a programmer: OurBigBook CLI is a Static Wiki generator that can be invoked from the command line with the <ourbigbook executable>.
-
-OurBigBook CLI is how https://cirosantilli.com[] is published.
-
-OurBigBook Web takes as input the exact same format of OurBigBook Markup files used by OurBigBook CLI. TODO support/improve import/export to/from OurBigBook Web, see also: <--web>.
-
-The OurBigBook CLI calls the <OurBigBook Library> to convert each input file.
-
-Convert a `.bigb` file to HTML and output the HTML to a file with the same basename without extension, e.g.:
-``
-ourbigbook hello.bigb
-firefox hello.html
-``
-
-Files named `README.bigb` are automatically converted to `index.html` so that they will show on both GitHub READMEs and at the website's base address:
-``
-ourbigbook README.bigb
-firefox hello.html
-``
-
-Convert all `.bigb` files in a directory to HTML files next to each corresponding `.bigb` file, e.g. `somefile.bigb` to `somefile.html`:
-``
-ourbigbook .
-``
-The HTML output files are placed right next to each corresponding `.bigb`.
-
-The output file can be selected explicitly with: <outfile>.
-
-Output to stdout instead of saving it to a file:
-``
-ourbigbook --stdout README.bigb
-``
-
-In order to resolve <cross file references>, this actually does two passes:
-* first an ID extraction pass, which parses all inputs and dumps their IDs to the ID database
-* then a second render pass, which uses the IDs in the ID database
-
-Convert a `.bigb` file from stdin to HTML and output the contents of `<body>` to stdout:
-``
-printf 'ab\ncd\n' | ourbigbook --body-only
 ``
 
 = Index file
@@ -5467,7 +5470,7 @@ If given however, the links render without the `.html` as in:
 ``
 which is what is needed for servers such as GitHub Pages, which automatically remove the `.html` extension from paths.
 
-This option is automatically implied when publishing to targets that remove the `.html` extension such as GitHub pages.
+This option is automatically implied when <Publish to GitHub Pages>[publishing to targets that remove the `.html` extension such as GitHub pages].
 
 = `--no-render`
 {parent=OurBigBook CLI options}
@@ -5765,6 +5768,12 @@ One day, one day. Maybe.
 {id=publish}
 {parent=OurBigBook CLI options}
 
+= Publishing
+{synonym}
+
+= Published
+{synonym}
+
 OurBigBook tooling is so amazing that we also take care of the HTML publishing for you!
 
 Once publish target is properly setup, all you have to do is run:
@@ -5843,6 +5852,10 @@ With great power comes great responsibility of course, but who cares!
 = `-S`, `--split-headers`
 {id=split-headers}
 {parent=OurBigBook CLI options}
+{title2=Split headers}
+
+= Split header
+{synonym}
 
 Split each header into its own separate HTML output file.
 
@@ -6290,6 +6303,13 @@ It would also mean that metadata such as comments would be visible in two separa
 
 So instead of filtering the duplicate articles on every index, we just don't generate them in the first place.
 
+= `htmlXExtension`
+{parent=ourbigbook.json}
+
+If `false`, implies <--no-html-x-extension>.
+
+The initial application of this option was to <redirect from a static website to a dynamic website>{full}.
+
 = `media-providers`
 {parent=ourbigbook.json}
 
@@ -6402,6 +6422,13 @@ If given, use this fixed date as the author and comitter date of the publish com
 
 All Git date formats are accepted as documented in `man git-commit`, e.g. `2005-04-07T22:13:13`.
 
+= `publishOptions`
+{parent=ourbigbook.json}
+
+<ourbigbook.json> options that should be used only when <publishing>.
+
+If given these options override pre-existing ones when publishing.
+
 = `publishRemoteUrl`
 {parent=ourbigbook.json}
 
@@ -6450,12 +6477,19 @@ In this case, `cirodown` and `ourbigbook` don't have to be any regular IDs prese
 
 TODO ideally we should check for conflicts with regular output from split headers IDs or their synonyms. But lazy.
 
-= `reroutePrefix`
+= `toSplitHeaders`
 {parent=ourbigbook.json}
 
-If given, prepend the given string to every single <internal cross file reference>.
+Make every <internal cross reference> point to the <split header> version of the pages of the website. Do this even if those pages don't exist, or if they are not the default target e.g. as per the <`\H` `splitDefault` argument>.
 
-The use case of this is if you are migrating from one domain to another, and want to keep old files around to not break links, but would rather redirect users to the new preferred pages instead to gather PageRank there.
+The initial application of this option was to <redirect from a static website to a dynamic website>{full}.
+
+= `xPrefix`
+{parent=ourbigbook.json}
+
+If given, prepend the given string to every single <internal cross file reference> output.
+
+The initial application of this option was to <redirect from a static website to a dynamic website>{full}.
 
 E.g. suppose that you previously had at `myoldsite.com` you had:
 
@@ -6482,7 +6516,7 @@ Originally that would render as:
 But then if you set in `ourbigbook.json`:
 ``
 {
-  "reroutePrefix": "https://mynewsite.com/"
+  "publishXPrefix": "https://mynewsite.com/"
 }
 ``
 it will instead render as:
@@ -6512,6 +6546,30 @@ we get on `subdir/notindex.html`:
 and not:
 ``
 <a href="https://mynewsite.com/notindex2.html">
+``
+
+= Redirect from a static website to a dynamic website
+{c}
+{parent=OurBigBook CLI}
+
+This section describes how to generate mass redirects from a <static website> such as https://cirosantilli.com to a <OurBigBook Web> dynamic website such as https://ougbook.com/cirosantilli[].
+
+The use case of this is if you are migrating from one domain to another, and want to keep old files around to not break links, but would rather redirect users to the new preferred pages instead to gather PageRank there.
+
+This happened in our case when Ciro felt that <OurBigBook Web> had reach enough maturity to be a reasonable reader alternative to the static website.
+
+Basically what you want to do in that case is to use the following options:
+* <ourbigbook.json/toSplitHeaders>
+* <ourbigbook.json/htmlXExtension>
+* <ourbigbook.json/xPrefix>
+* <ourbigbook.json/publishOptions>
+as in:
+``
+"publishOptions": {
+  "toSplitHeaders": true,
+  "htmlXExtension": false,
+  "xPrefix": "https://ourbigbook.com/cirosantilli/"
+},
 ``
 
 = OurBigBook Library
@@ -8762,6 +8820,12 @@ This version of the logo was useful when designing project <T-shirts> on <tshirt
 * leaving some extra margin around allows us to make the image a bit less huge and imposing
 }
 
+\Image[logo-transparent-with-text-and-slogan-2000.png]
+{height=300}
+{provider=github}
+{title=logo-transparent-with-text-and-slogan-2000.png}
+{description=This is perhaps a superior alternative to <Image logo-transparent-with-text.svg> for <merchandise>, as the <project slogan> could clarify further what the merchandise is all about.}
+
 Some rationale:
 * the lowercase `b` followed by uppercase `B` gives the idea of big and small
 * the small `o` looks a bit like a degree symbol, which feels sciency. It also contributes to the idea of small to big: `o` is smallest, `b` a bit larger, and `B` actually big
@@ -8813,3 +8877,14 @@ obb
 \Image[text-logo/3x3-1000.png]
 {title=3x3-1000.png text logo}
 {provider=github}
+
+= Project slogan
+{parent=Publicity}
+
+We were thinking something like:
+\Q[Learn for real]
+but we wonder if that wouldn't be too close to: https://www.learningforreal.org/[]. Maybe not.
+
+Another one that is also somewhat taken is:
+\Q[You be the teacher]
+https://www.teacherspayteachers.com/Product/You-Be-The-Teacher-Independent-Research-Project-Distance-Learning-3785062

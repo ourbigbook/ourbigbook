@@ -569,7 +569,7 @@ function generate_redirect_base(outpath, redirect_href) {
 </head>
 <body>
 <h1>Redirecting...</h1>
-<a href="${redirect_href}">Click here if you are not redirected.<a>
+<a href="${redirect_href}">Click here if you are not redirected.</a>
 <script>location='${redirect_href}'</script>
 </body>
 </html>
@@ -843,7 +843,7 @@ if (commander.helpMacros) {
     html_x_extension = false;
     split_headers = true;
   } else {
-    html_x_extension = commander.htmlXExtension;
+    html_x_extension = commander.htmlXExtension === false ? false : undefined;
     split_headers = commander.splitHeaders;
   }
 
@@ -858,7 +858,7 @@ if (commander.helpMacros) {
     ourbigbook_json,
     embed_includes: commander.embedIncludes,
     fs_exists_sync: (my_path) => fs.existsSync(path.join(ourbigbook_json_dir, my_path)),
-    html_x_extension: html_x_extension,
+    html_x_extension,
     output_format,
     outfile: commander.outfile,
     path_sep: path.sep,

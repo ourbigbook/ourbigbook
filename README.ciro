@@ -284,11 +284,16 @@ Literal URL \text[[http://example.com]] but why?
 
 Every macro in Cirodown can have an optional `id` and many also have a reserved `title` property.
 
-When a macro in the document has a `title` but no `id` given, get an auto-generated ID from the title: \x[automatic-id-from-title].
+When a macro in the document has a `title` argument but no `id` argument given, get an auto-generated ID from the title: \x[automatic-id-from-title].
 
-For macros that do have an ID, you can write a cross reference to it, e.g.:
+For macros that do have an ID, derived from `title` or not, you can write a cross reference to it, e.g.:
 \cirodown_example[[
 See this \x[internal-cross-references] awesome section.
+]]
+
+An explicit link body can be given just as for regular HTTP \x[links] as:
+\cirodown_example[[
+See this \x[internal-cross-references][ awesome section].
 ]]
 
 === x `child` argument
@@ -1662,6 +1667,22 @@ The naming convention is as follows:
 
 Maybe it would be saner to go "block if and only if uppercase", and automate that in the code. But it means more shift pressing...
 
+=== Plaintext conversion
+
+In some cases, we want to extract plaintext versions of complex nested elements.
+
+TODO implement:
+``
+For example, when the \x[internal-cross-references][ID of a node is derived from its title], we don't want the default element to have complex HTML tags on it:
+\cirodown_example[[
+\x[title-with-code]
+
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+{title=title `with code`}
+]]
+In this example, see how the contents of the code block \c[`with code`] were rendered as plaintext and used for the ID.
+``
+
 == Tooling
 
 Unlike all languages which rely on ad-hoc tooling, we will support every single tool that is required and feasible to be in this repository in this repository, in a centralized manner.
@@ -2165,7 +2186,6 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 * list and code caption
 * \x[id-scope]
 * correct ID generation algorithm to be Unicode robust
-* handle ID calculation from title if title has HTML elements, e.g. headers with code. Use that for the title as well. This has to be done with a context argument that makes implementing macros output just the text without tags
 * local downloads and single HTML page with image / script embeds
 * image management: upload to separate media directory
 * create mechanism to link to the GitHub blob view of in-tree source files that are not added to GitHub pages, e.g. `\file`

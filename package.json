@@ -21,6 +21,7 @@
     "katex": "cirosantilli/KaTeX#branch-7e359f0f8d2dffeb2edec8a20aba283c074bee6f",
     "liquidjs": "9.11.7",
     "lodash": "4.17.20",
+    "npm": "8.7.0",
     "pluralize": "8.0.0",
     "read": "^1.0.7",
     "sass": "1.34.0",
@@ -52,7 +53,7 @@
     "xpath": "0.0.32"
   },
   "engines": {
-    "node": "14.17.0",
+    "node": "16.14.2",
     "npm": "8.7.0"
   },
   "files": [

@@ -264,6 +264,14 @@ div.tab-list {
   cursor: pointer;
 }
 
+.pagination {
+  .page-item {
+    &.active {
+      font-weight: bold;
+    }
+  }
+}
+
 .profile-thumb {
   height: 26px;
   vertical-align: middle;

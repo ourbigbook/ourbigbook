@@ -1,6 +1,7 @@
 import marked from "marked";
-import React from "react";
 import { useRouter } from 'next/router'
+import Head from "next/head";
+import React from "react";
 import useSWR  from "swr";
 
 import { cirodown_runtime } from 'cirodown/cirodown.runtime.js';
@@ -32,9 +33,18 @@ function renderRefCallback(elem) {
 const ArticlePage = ({ article, comments }: ArticlePageProps) => {
   const router = useRouter();
   if (router.isFallback) { return <LoadingSpinner />; }
+
+  // Fetch user-specific data.
+  // Article determines if the curent user favorited the article or not
   const { data: articleApi, error } = useSWR(`${SERVER_BASE_URL}/articles/${article.slug}`, fetcher);
   if (articleApi !== undefined) {
     article = articleApi.article
+  }
+  // We fetch comments so that the new posted comment will appear immediately after posted.
+  // Note that we cannot calculate the exact new coment element because we need the server datetime.
+  const { data: commentApi, error: commentError } = useSWR(`${SERVER_BASE_URL}/articles/${article.slug}/comments`, fetcher);
+  if (commentApi !== undefined) {
+    comments = commentApi.comments
   }
 
   // TODO it is not ideal to have to setup state on every parent of FavoriteUserButton/FollowUserButton,
@@ -53,9 +63,12 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
 
   const markup = { __html: article.render };
   return (
-    <div className="article-page">
-      <div className="banner">
-        <div className="container">
+    <>
+      <Head>
+        <title>{article.title}</title>
+      </Head>
+      <div className="article-page">
+        <div className="banner content-not-cirodown">
           <FavoriteArticleButtonContext.Provider value={{
             favorited, setFavorited, favoritesCount, setFavoritesCount
           }}>
@@ -66,35 +79,31 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
             </FollowUserButtonContext.Provider>
           </FavoriteArticleButtonContext.Provider>
         </div>
-      </div>
-      <div className="container page">
-        <div className="row article-content">
-          <div className="col-md-12">
-            <div
-              dangerouslySetInnerHTML={markup}
-              className="cirodown"
-              ref={renderRefCallback}
-            />
-            <ul className="tag-list">
-              {article.tagList?.map((tag) => (
-                <li className="tag-default tag-pill tag-outline" key={tag}>{tag}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-        <hr />
-        <div className="row">
-          <div className="col-xs-12 col-md-8 offset-md-2">
-            <div>
-              <CommentInput />
-              {comments?.map((comment: CommentType) => (
-                <Comment key={comment.id} comment={comment} />
-              ))}
+        <div className="container page">
+          <div
+            dangerouslySetInnerHTML={markup}
+            className="cirodown"
+            ref={renderRefCallback}
+          />
+          <ul className="tag-list">
+            {article.tagList?.map((tag) => (
+              <li className="tag-default tag-pill tag-outline" key={tag}>{tag}</li>
+            ))}
+          </ul>
+          <hr />
+          <div className="row">
+            <div className="col-xs-12 col-md-8 offset-md-2">
+              <div>
+                <CommentInput />
+                {comments?.map((comment: CommentType) => (
+                  <Comment key={comment.id} comment={comment} />
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

@@ -81,19 +81,30 @@ const ArticleList = (props) => {
   }
   return (
     <>
-      {articles?.map((article, i) => {
-        return (
-          <FavoriteArticleButtonContext.Provider key={article.slug} value={{
-            favorited: favorited[i],
-            setFavorited: setFavorited[i],
-            favoritesCount: favoritesCount[i],
-            setFavoritesCount: setFavoritesCount[i],
-          }}>
-            <ArticlePreview key={article.slug} article={article} />
-          </FavoriteArticleButtonContext.Provider>
-        )
-      })}
-      <Maybe test={articlesCount && articlesCount > DEFAULT_LIMIT}>
+      <table className="article-list">
+        <thead>
+          <tr>
+            <th>Score</th>
+            <th>Author</th>
+            <th>Title</th>
+            <th>Created</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          {articles?.map((article, i) => (
+            <FavoriteArticleButtonContext.Provider key={article.slug} value={{
+              favorited: favorited[i],
+              setFavorited: setFavorited[i],
+              favoritesCount: favoritesCount[i],
+              setFavoritesCount: setFavoritesCount[i],
+            }}>
+              <ArticlePreview key={article.slug} article={article} />
+            </FavoriteArticleButtonContext.Provider>
+          ))}
+        </tbody>
+      </table>
+      <Maybe test={articlesCount && articlesCount > 20}>
         <Pagination
           total={pageCount}
           limit={DEFAULT_LIMIT}

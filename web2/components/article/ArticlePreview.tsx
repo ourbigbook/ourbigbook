@@ -14,8 +14,14 @@ const ArticlePreview = ({ article }) => {
   const [currentIndex, setCurrentIndex] = React.useState(-1);
   if (!article) return;
   return (
-    <div className="article-preview">
-      <div className="article-meta">
+    <tr>
+      <td>
+        <FavoriteArticleButton
+          favorited={preview.favorited}
+          favoritesCount={preview.favoritesCount}
+          slug={preview.slug} />
+      </td>
+      <td>
         <CustomLink
           href="/profile/[pid]"
           as={`/profile/${preview.author.username}`}
@@ -25,57 +31,22 @@ const ArticlePreview = ({ article }) => {
             className="profile-thumb"
             alt="author profile image"
           />
+          {' '}
+          {preview.author.username}
         </CustomLink>
-        <div className="info">
-          <CustomLink
-            href="/profile/[pid]"
-            as={`/profile/${preview.author.username}`}
-            className="author"
-          >
-            <span onClick={() => setPage(0)}>{preview.author.username}</span>
-          </CustomLink>
-          <span className="date">
-            {formatDate(preview.createdAt)}
-          </span>
-        </div>
-        <div className="pull-xs-right">
-          <FavoriteArticleButton
-            favorited={preview.favorited}
-            favoritesCount={preview.favoritesCount}
-            slug={preview.slug} />
-        </div>
-      </div>
-      <CustomLink
-        href="/article/[pid]"
-        as={`/article/${preview.slug}`}
-        className="preview-link"
-      >
-        <h1>{preview.title}</h1>
-        <span>Read more...</span>
-        <ul className="tag-list">
-          {preview.tagList.map((tag, index) => {
-            return (
-              <Link href={`/?tag=${tag}`} as={`/?tag=${tag}`} key={index}>
-                <li
-                  className="tag-default tag-pill tag-outline"
-                  onClick={(e) => e.stopPropagation()}
-                  onMouseOver={() => {
-                    setHover(true);
-                    setCurrentIndex(index);
-                  }}
-                  onMouseLeave={() => {
-                    setHover(false);
-                    setCurrentIndex(-1);
-                  }}
-                >
-                  {tag}
-                </li>
-              </Link>
-            );
-          })}
-        </ul>
-      </CustomLink>
-    </div>
+      </td>
+      <td>
+        <CustomLink
+          href="/article/[pid]"
+          as={`/article/${preview.slug}`}
+          className="preview-link"
+        >
+          {preview.title}
+        </CustomLink>
+      </td>
+      <td>{formatDate(preview.createdAt)}</td>
+      <td>{formatDate(preview.updatedAt)}</td>
+    </tr>
   );
 };
 

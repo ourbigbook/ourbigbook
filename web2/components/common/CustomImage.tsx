@@ -8,7 +8,7 @@ interface CustomImageProps {
 }
 
 const CustomImage = ({ src, alt, className }: CustomImageProps) => {
-  const props = {}
+  const props: any = {}
   if (className) {
     props.className = className
   }

@@ -1026,7 +1026,7 @@ if (commander.helpMacros) {
         await generate_redirects(non_cirodown_options, cirodown_json, outdir);
       }
       const watcher = require('chokidar').watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES})
-      const convert = async (subpath) => convert_path_to_file(path.join(input_dir, subpath), cirodown_options, non_cirodown_options)
+      const convert = async (subpath) => convert_path_to_file(subpath, cirodown_options, non_cirodown_options)
       watcher.on('change', convert).on('add', convert)
     } else {
       if (input_path_is_file) {

@@ -163,9 +163,12 @@ router.post('/users', async function(req, res, next) {
     }
     sendEmail({
       user,
-      subject: `Verify your OurBigBook.com account`,
-      html: `<p>Click <a href="${req.protocol}://${req.get('host')}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}">this verification link</a>.</p>`,
-      text: `Your verification link is: ${req.protocol}://${req.get('host')}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}`,
+      subject: `Verify your new OurBigBook.com account`,
+      html: `<p>Welcome to OurBigBook.com!</p><p>Please <a href="${req.protocol}://${req.get('host')}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}">click this link to verify your account</a>.</p>`,
+      text: `Welcome to OurBigBook.com!
+
+Please click this link to verify your account: ${req.protocol}://${req.get('host')}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}
+`,
     })
     return res.json({ user: await user.toJson(user) })
   } catch(error) {

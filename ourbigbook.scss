@@ -274,6 +274,12 @@ div.h {
     h2, h3, h4, h5, h6 {
       font-size: $header-font-size;
     }
+    h1, h2, h3, h4, h5, h6 {
+      div.number {
+        color: $color;
+        display: inline-block;
+      }
+    }
     &:not(:last-child) {
       margin-bottom: 10px;
     }
@@ -504,6 +510,13 @@ ol, ul {
       $toc-sep: 0.3em;
       margin-bottom: $toc-sep;
       margin-top: $toc-sep;
+      // .n for Number
+      // i because it's short.
+      i.n {
+        color: $color;
+        font-style: normal;
+        display: inline-block;
+      }
       @media only screen and (min-width: $max-mobile-width + 1) {
         div:hover span.not-arrow span.hover-metadata {
           @include visible;
@@ -619,6 +632,7 @@ ol, ul {
   }
 }
 
+// Titles of non-header things like images, videos, quotes and code.
 div.title {
   display: inline-block;
   font-weight: bold;

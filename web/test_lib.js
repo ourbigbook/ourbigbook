@@ -147,6 +147,18 @@ const articleData = [
           ['Test subscope 2 2', []],
         ], { headerArgs: '{scope}' }],
       ], { headerArgs: '{scope}' }],
+      ['Barack Obama',
+        [
+          ['Mathematics', []],
+        ],
+        {
+          headerArgs: '{scope}',
+          body: `This is a a scope named after the first test user.
+
+The goal of this is to test this possible edge case of short URL fragments e.g. when you visit <mathematics>.
+`,
+        }
+      ],
       ['Test tag', [
         ['Test tagged', [], { headerArgs: '{tag=Test tagger}' }],
         ['Test tagger', []],

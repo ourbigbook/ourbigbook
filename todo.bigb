@@ -3,25 +3,14 @@
 
 == Issues
 
-=== Handle article renaming with synonym redirection on web somehow
+=== Handle web upload after local article renaming with synonym redirection set
 {tag=Web}
+{tag=Web upload}
 
-Web upload breaks if you rename a header and synonym the old one.
+Web upload breaks with duplicate ID if you rename a header and synonym the old one.
 
 === Synonym redirects on web
 {tag=Web}
-
-=== Enable web math defines on web editor
-{tag=Math}
-{tag=Web}
-{tag=Editor}
-
-=== Enable web math defines on web editor
-{tag=Math}
-{tag=Web}
-{tag=Editor}
-
-They're not enabled there, conversion just fails and user can't submit because button is grayed out. Via API already works however, supposing the user has defined them: <enable web math defines default on non-web>.
 
 === Enable web math defines default on non-web
 {tag=Math}
@@ -556,6 +545,13 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== Enable web math defines on web editor
+{tag=Math}
+{tag=Web}
+{tag=Editor}
+
+They're not enabled there, conversion just fails and user can't submit because button is grayed out. Via API already works however, supposing the user has defined them: <enable web math defines default on non-web>.
 
 === Store auto-formated bigb source on web
 {tag=Bug}

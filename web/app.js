@@ -95,7 +95,9 @@ async function start(port, startNext, cb) {
 
   // Handle API routes.
   {
-    config.convertOptions.katex_macros = ourbigbook_nodejs_webpack_safe.preload_katex(path.join(__dirname, 'ourbigbook.tex'))
+    // This is not visible on frontend unfortunately, we just have to redo it there again.
+    const tex_path = path.join(path.dirname(require.resolve(path.join('ourbigbook', 'package.json'))), 'default.tex')
+    config.convertOptions.katex_macros = ourbigbook_nodejs_webpack_safe.preload_katex_from_file(tex_path)
     const router = express.Router()
     router.use(config.apiPath, api)
     app.use(router)

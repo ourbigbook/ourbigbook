@@ -58,6 +58,7 @@
     "npm": "8.7.0"
   },
   "files": [
+    "default.tex",
     "web_api.js",
     "gitignore",
     "ourbigbook",

@@ -18,7 +18,8 @@ const {
   read_include_web
 } = require('./front/config')
 const { hasReachedMaxItemCount, modifyEditorInput } = require('./front/js')
-const routes = require('./front/routes')
+const routes = require('./front/routes');
+const e = require('cors');
 
 // Subset of convertArticle for usage in issues and comments.
 // This is a much simpler procedure as it does not alter the File/Article database.

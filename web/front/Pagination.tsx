@@ -1,5 +1,4 @@
 import React from 'react'
-import { trigger } from 'swr'
 
 import Maybe from 'front/Maybe'
 

@@ -302,22 +302,6 @@ async function convert_input(input, options, convert_input_options={}) {
     console.error(JSON.stringify(new_options.extra_returns.ast, null, 2));
     console.error();
   }
-  if (convert_input_options.commander.debugPerf) {
-    for (let e of [
-     'start_convert',
-     'tokenize_pre',
-     'tokenize_post',
-     'parse_start',
-     'post_process_start',
-     'post_process_end',
-     'split_render_pre',
-     'render_pre',
-     'render_post',
-     'end_convert',
-    ]) {
-      console.error(`perf ${e} ${new_options.extra_returns.debug_perf[e]}`);
-    }
-  }
   // Remove duplicate messages due to split header rendering. We could not collect
   // errors from that case at all maybe, but do we really want to run the risk of
   // missing errors?
@@ -328,9 +312,7 @@ async function convert_input(input, options, convert_input_options={}) {
   if (new_options.extra_returns.errors.length > 0) {
     convert_input_options.had_error = true;
   }
-  if (convert_input_options.commander.debugPerf) {
-    console.error(`perf convert_input_end ${performance.now()}`);
-  }
+  cirodown.perf_print(new_options.extra_returns.context, 'convert_input_end')
   return output;
 }
 
@@ -359,9 +341,7 @@ async function convert_path(input_path, options, convert_input_options) {
   }
 
   // Update the Sqlite databse with results from the conversion.
-  if (convert_input_options.commander.debugPerf) {
-    console.error(`perf convert_path_pre_sqlite ${performance.now()}`);
-  }
+  cirodown.perf_print(context, 'convert_path_pre_sqlite')
   if ('sequelize' in convert_input_options) {
     // Calculate create_ids
     const ids = new_convert_input_options.extra_returns.ids;
@@ -375,9 +355,7 @@ async function convert_path(input_path, options, convert_input_options) {
       })
     }
 
-    if (convert_input_options.commander.debugPerf) {
-      console.error(`perf convert_path_pre_sqlite_transaction ${performance.now()}`);
-    }
+    cirodown.perf_print(context, 'convert_path_pre_sqlite_transaction')
     let toplevel_id;
     if (context.toplevel_ast !== undefined) {
       toplevel_id = context.toplevel_ast.id;
@@ -443,17 +421,13 @@ async function convert_path(input_path, options, convert_input_options) {
         )
       ])
     });
-    if (convert_input_options.commander.debugPerf) {
-      console.error(`perf convert_path_post_sqlite_transaction ${performance.now()}`);
-    }
+    cirodown.perf_print(context, 'convert_path_post_sqlite_transaction')
   }
 
   if (new_convert_input_options.had_error) {
     convert_input_options.had_error = true;
   }
-  if (convert_input_options.commander.debugPerf) {
-    console.error(`perf convert_path_end ${performance.now()}`);
-  }
+  cirodown.perf_print(context, 'convert_path_end')
   return output;
 }
 
@@ -821,10 +795,12 @@ if (commander.helpMacros) {
     split_headers = commander.splitHeaders;
   }
 
-  let options = {
+  // Options that will be passed directly to cirodown.convert.
+  const options = {
     add_test_instrumentation: commander.addTestInstrumentation,
     body_only: commander.bodyOnly,
     cirodown_json: cirodown_json,
+    debug_perf: commander.debugPerf,
     embed_includes: commander.embedIncludes,
     fs_exists_sync: (my_path) => fs.existsSync(path.join(cirodown_json_dir, my_path)),
     html_x_extension: html_x_extension,
@@ -873,7 +849,7 @@ if (commander.helpMacros) {
   }
 
   options.log = {};
-  let convert_input_options_log = {};
+  const convert_input_options_log = {};
   if (commander.log !== undefined) {
     for (const log of commander.log) {
       if (cirodown.LOG_OPTIONS.has(log)) {
@@ -991,7 +967,7 @@ if (commander.helpMacros) {
   }
   // Options that are not directly passed to cirodown.convert
   // but rather used only by this cirodown executable.
-  let convert_input_options = {
+  const convert_input_options = {
     cirodown_json_dir,
     commander,
     db_options: {

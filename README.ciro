@@ -5588,6 +5588,8 @@ perf convert_path_post_sqlite_transaction 582.256645001471
 perf convert_path_end 582.3469280004501
 ``
 
+Note that `--debug-perf` currently does not take sub-converts into account, e.g. \x[include] and \x[cirodownexample] both call the toplevel conversion  function `convert`, and therefore go through all the conversion intervals, but we do not take those it account, and just dump them all into the same toplevel interval that they happen in, currently between `post_process_start` and `post_process_end`.
+
 = Speed comparison to other markup language implementations
 {parent=performance}
 
@@ -5656,7 +5658,7 @@ On Ubuntu 20.04 \a[https://cirosantilli.com/linux-kernel-module-cheat/#p51][Leno
 
 On P51:
 
-* `time cirodown --no-render . && time cirodown -S --debug-perf README.ciro`:
+* `time ./cirodown --no-render . && time ./cirodown -S --debug-perf README.ciro`:
 
   * cirodown 39e633f08b2abce10331b884c04d70dbe6d4565a before moving Cirodown to Sequelize: 14s
     ``

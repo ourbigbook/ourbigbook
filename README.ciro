@@ -4321,6 +4321,36 @@ This option can also serve as a debug tool for header tree related features (con
 
 TODO
 
+= `--log perf`
+{parent=log}
+
+print \x[performance] statistics to stderr, for example
+``
+./cirodown --log=perf README.ciro
+``
+could output:
+``
+perf start: 181.33060800284147
+perf tokenize_pre: 181.4424349963665
+perf tokenize_post: 318.333980999887
+perf parse_start: 319.1866770014167
+perf post_process_start: 353.5477180033922
+perf post_process_end: 514.1527540013194
+perf render_pre: 514.1708239987493
+perf render_post: 562.834307000041
+perf end: 564.0349840000272
+perf convert_input_end 566.1234430000186
+perf convert_path_pre_sqlite 566.1564619988203
+perf convert_path_pre_sqlite_transaction 566.2528780028224
+perf convert_path_post_sqlite_transaction 582.256645001471
+perf convert_path_end 582.3469280004501
+``
+which sohws how long different parts of the conversion took to help identify bottlenecks.
+
+This option can also be useful to mark phases of the conversion to identify from which phase other logs are coming from, e.g.:
+
+Note that `--log perf` currently does not take sub-converts into account, e.g. \x[include] and \x[cirodownexample] both call the toplevel conversion  function `convert`, and therefore go through all the conversion intervals, but we do not take those it account, and just dump them all into the same toplevel interval that they happen in, currently between `post_process_start` and `post_process_end`.
+
 = `--no-db`
 {parent=cirodown-executable-options}
 
@@ -5579,32 +5609,7 @@ Output:
 = Performance
 {parent=developing-cirodown}
 
-= `--debug-perf`
-{parent=performance}
-
-print performance statistics to stderr, for example
-``
-./cirodown --debug-perf README.ciro
-``
-could output:
-``
-perf start: 181.33060800284147
-perf tokenize_pre: 181.4424349963665
-perf tokenize_post: 318.333980999887
-perf parse_start: 319.1866770014167
-perf post_process_start: 353.5477180033922
-perf post_process_end: 514.1527540013194
-perf render_pre: 514.1708239987493
-perf render_post: 562.834307000041
-perf end: 564.0349840000272
-perf convert_input_end 566.1234430000186
-perf convert_path_pre_sqlite 566.1564619988203
-perf convert_path_pre_sqlite_transaction 566.2528780028224
-perf convert_path_post_sqlite_transaction 582.256645001471
-perf convert_path_end 582.3469280004501
-``
-
-Note that `--debug-perf` currently does not take sub-converts into account, e.g. \x[include] and \x[cirodownexample] both call the toplevel conversion  function `convert`, and therefore go through all the conversion intervals, but we do not take those it account, and just dump them all into the same toplevel interval that they happen in, currently between `post_process_start` and `post_process_end`.
+To log some performance statistics, use: 
 
 = Speed comparison to other markup language implementations
 {parent=performance}
@@ -5674,7 +5679,7 @@ On Ubuntu 20.04 \a[https://cirosantilli.com/linux-kernel-module-cheat/#p51][Leno
 
 On P51:
 
-* `time ./cirodown --no-render . && time ./cirodown -S --debug-perf README.ciro`:
+* `time ./cirodown --no-render . && time ./cirodown -S --log=perf README.ciro`:
 
   * cirodown 39e633f08b2abce10331b884c04d70dbe6d4565a before moving Cirodown to Sequelize: 14s
     ``

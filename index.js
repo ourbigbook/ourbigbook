@@ -4650,7 +4650,7 @@ function perf_print(context, name) {
     const delta = now - context.perf_prev
     context.extra_returns.debug_perf[name] = now
     context.perf_prev = now
-    if (context.options.debug_perf) {
+    if (context.options.log.perf) {
       console.error(`perf ${name} t=${now} dt=${delta}`);
     }
   }
@@ -5292,6 +5292,7 @@ exports.INSANE_HEADER_CHAR = INSANE_HEADER_CHAR
 const LOG_OPTIONS = new Set([
   'ast-inside',
   'parse',
+  'perf',
   'split-headers',
   'tokens-inside',
   'tokenize',

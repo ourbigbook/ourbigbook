@@ -270,6 +270,10 @@ iframe {
   }
 }
 
+.metrics > :not(:first-child)  {
+  margin-left: 0.5em;
+}
+
 pre {
   background-color: $code-background-color;
   margin: 8px 0;

@@ -83,7 +83,7 @@ function xpath_header_split(n, id, href, marker) {
   } else {
     href_xpath = `@href='${href}' and `
   }
-  return `${xpath_header(n, id)}//x:a[${href_xpath}text()=' ${marker}']`;
+  return `${xpath_header(n, id)}//x:a[${href_xpath}@class='${marker}']`;
 }
 
 // xpath to match the parent link inside of a header.

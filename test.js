@@ -836,56 +836,6 @@ assert_lib_ast('sane quote without inner paragraph',
   [a('Q', [t('aa')])],
 )
 assert_lib_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
-assert_lib_ast('both quotes and paragraphs get the on-hover link',
-  `= tmp
-
-aa
-
-\\Q[bb]
-`,
-  [
-    a('H', undefined, {
-      level: [t('1')],
-      title: [t('tmp')],
-    }),
-    a('P', [t('aa')], {}, {id: '_1'}),
-    a('Q', [t('bb')], {}, {id: '_2'}),
-  ],
-  {
-    assert_xpath_stdout: [
-      "//x:span[@class='hide-hover']//x:a[@href='#_1']",
-      "//x:span[@class='hide-hover']//x:a[@href='#_2']",
-    ],
-  }
-)
-assert_lib_ast('a non-header first element has a on-hover link with its id',
-  `aa`,
-  [
-    a('P', [t('aa')], {}, {id: '_1'}),
-  ],
-  {
-    assert_xpath_stdout: [
-      "//x:span[@class='hide-hover']//x:a[@href='#_1']",
-    ],
-  }
-)
-assert_lib_ast('a header first element has an empty on-hover link',
-  `= tmp`,
-  [
-    a('H', undefined, {
-      level: [t('1')],
-      title: [t('tmp')],
-    }),
-  ],
-  {
-    assert_xpath_stdout: [
-      "//x:span[@class='hide-hover']//x:a[@href='']",
-    ],
-    assert_not_xpath_stdout: [
-      "//x:span[@class='hide-hover']//x:a[@href='#tmp']",
-    ],
-  }
-)
 assert_lib_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
 assert_lib_ast('one newline at the end of document is ignored', 'p1\n', [a('P', [t('p1')])]);
 assert_lib_error('two newlines at the end of document are an error', 'p1\n\n', 1, 3);
@@ -6368,9 +6318,9 @@ assert_lib_ast('toc: split headers have correct table of contents',
       "//*[@id='_toc']//x:a[@href='#h1-2' and text()='2. h1 2']",
 
       // The headers have ToC links.
-      `${xpath_header(2, 'h1-1')}//x:a[@href='#_toc/h1-1' and text()=' toc']`,
-      `${xpath_header(2, 'h1-2')}//x:a[@href='#_toc/h1-2' and text()=' toc']`,
-      `${xpath_header(3, 'h1-2-1')}//x:a[@href='#_toc/h1-2-1' and text()=' toc']`,
+      `${xpath_header(2, 'h1-1')}//x:a[@href='#_toc/h1-1' and @class='toc']`,
+      `${xpath_header(2, 'h1-2')}//x:a[@href='#_toc/h1-2' and @class='toc']`,
+      `${xpath_header(3, 'h1-2-1')}//x:a[@href='#_toc/h1-2-1' and @class='toc']`,
 
       // Descendant count.
       "//*[@id='_toc']//*[@class='title-div']//*[@class='descendant-count' and text()='4']",

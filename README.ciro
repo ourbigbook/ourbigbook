@@ -1018,7 +1018,7 @@ TODO superior `\newcommand` version pending upstream tag bump: https://github.co
 First here is an invisible block (with `{show=0}`) defining with a `\newcommand` definition after this paragraph:
 
 \cirodown_example[[
-$$[[
+$$
 \newcommand{\foo}[0]{bar}
 $${show=0}
 ]]
@@ -1029,7 +1029,6 @@ Then the second math block uses those definitions:
 ``
 $$
 \foo
-]]
 $$
 ``
 

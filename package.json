@@ -20,7 +20,8 @@
   "devDependencies": {
     "browserify": "16.5.0",
     "mocha": "6.2.2",
-    "mocha-list-tests": "1.0.2"
+    "mocha-list-tests": "1.0.2",
+    "xpath-html": "^1.0.2"
   },
   "files": [
     "gitignore",

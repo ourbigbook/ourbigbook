@@ -1,5 +1,9 @@
 const assert = require('assert');
+const fs = require('fs');
 const util = require('util');
+
+// https://stackoverflow.com/questions/25753368/performant-parsing-of-pages-with-node-js-and-xpath
+const xpath = require("xpath-html");
 
 const cirodown = require('cirodown')
 const cirodown_nodejs = require('cirodown/nodejs');
@@ -12,7 +16,15 @@ const convert_opts = {
   //show_tokenize: true,
 };
 
-function assert_convert_ast_func(input_string, expected_ast_output_subset, options={}) {
+function assert_convert_ast_func(
+  input_string, expected_ast_output_subset, options={}
+) {
+  options = Object.assign({}, options);
+  if (!('assert_xpath_matches' in options)) {
+    // Not ideal, but sometimes there's no other easy way
+    // to test rendered stuff.
+    options.assert_xpath_matches = undefined;
+  }
   if (!('extra_convert_opts' in options)) {
     options.extra_convert_opts = {};
   }
@@ -25,7 +37,7 @@ function assert_convert_ast_func(input_string, expected_ast_output_subset, optio
   if (options.toplevel) {
     new_convert_opts.body_only = false;
   }
-  cirodown.convert(input_string, new_convert_opts, extra_returns);
+  const output = cirodown.convert(input_string, new_convert_opts, extra_returns);
   const has_subset_extra_returns = {fail_reason: ''};
   let is_subset;
   let content;
@@ -57,6 +69,15 @@ function assert_convert_ast_func(input_string, expected_ast_output_subset, optio
     console.error('input ' + util.inspect(input_string));
     assert.strictEqual(extra_returns.errors.length, 0);
     assert.ok(is_subset);
+  }
+  if (options.assert_xpath_matches) {
+    const xpath_matches = xpath.fromPageSource(output).findElements(options.assert_xpath_matches);
+    if (xpath_matches.length !== 1) {
+      console.error('xpath: ' + options.assert_xpath_matches);
+      console.error('output:');
+      console.error(output);
+      assert.strictEqual(xpath_matches.length, 1);
+    }
   }
 }
 
@@ -1792,7 +1813,10 @@ assert_convert_ast('x reference to include header',
     ]),
     a('Toc'),
   ].concat(include_two_levels_ast_args),
-  include_opts
+  Object.assign({
+    assert_xpath_matches: "//a[@href='#include-two-levels' and text()='ee']"},
+    include_opts
+  ),
 );
 assert_convert_ast('include multilevel with paragraph',
   `= aa

@@ -52,13 +52,19 @@ const Home = ({ articles, articlesCount, page, what }) => {
         }
     }
   })()
-  const { data, error } = useSWR(fetchUrl, fetcher(!!loggedInUser && requiredLogin));
-  if (requiredLogin) {
-    ({ articles, articlesCount } = data || {
-      articles: [],
-      articlesCount: 0,
-    });
-  }
+  const { data, error } = useSWR(
+    () => {
+      if (!loggedInUser) {
+        throw new Error()
+      }
+      return fetchUrl
+    },
+    fetcher(requiredLogin),
+  );
+  ;({ articles, articlesCount } = data || {
+    articles: [],
+    articlesCount: 0,
+  })
   let articleList
   if (!requiredLogin || loggedInUser) {
     articleList = <ArticleList {...{

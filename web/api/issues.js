@@ -5,7 +5,7 @@ const ourbigbook = require('ourbigbook')
 const auth = require('../auth')
 const front = require('../front/js')
 const { convert } = require('../convert')
-const { getArticle, validateParam, validatePositiveInteger } = require('./lib')
+const { getArticle, ValidationError, validateParam, validatePositiveInteger } = require('./lib')
 const { modifyEditorInput } = require('../front/js')
 
 router.param('comment', function(req, res, next, id) {
@@ -129,7 +129,7 @@ router.get('/:number/comments', auth.optional, async function(req, res, next) {
     } else {
       user = null
     }
-    const comments = await article.getComments({
+    const comments = await issue.getComments({
       order: [['number', 'DESC']],
       include: [{ model: req.app.get('sequelize').models.User, as: 'author' }],
       limit: front.DEFAULT_LIMIT,

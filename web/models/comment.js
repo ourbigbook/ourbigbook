@@ -21,7 +21,7 @@ module.exports = (sequelize) => {
       id: this.id,
       number: this.number,
       source: this.source,
-      render: this.source,
+      render: this.render,
       createdAt: this.createdAt.toISOString(),
       updatedAt: this.updatedAt.toISOString(),
       author: (await this.author.toJson(loggedInUser))

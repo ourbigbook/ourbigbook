@@ -3595,6 +3595,21 @@ async function parse(tokens, options, context, extra_returns={}) {
   let todo_visit = [[toplevel_parent_arg, ast_toplevel]];
   // IDs that are indexed: you can link to those.
   const line_to_id_array = [];
+  context.line_to_id = function(line) {
+    let index = binary_search(line_to_id_array,
+      [line, undefined], binary_search_line_to_id_array_fn);
+    if (index < 0) {
+      index = -(index + 1)
+    }
+    if (index == line_to_id_array.length) {
+      if (line_to_id_array.length > 0) {
+        index = line_to_id_array.length - 1;
+      } else {
+        return undefined;
+      }
+    }
+    return line_to_id_array[index][1];
+  };
   let macro_count_global = 0
   const macro_counts = {};
   const macro_counts_visible = {};
@@ -3612,6 +3627,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   if (include_options.indexed_ids === undefined) {
     include_options.indexed_ids = {};
   }
+  extra_returns.ids = include_options.indexed_ids;
   if (include_options.header_graph_stack === undefined) {
     include_options.header_graph_stack = new Map();
   }
@@ -4171,6 +4187,23 @@ async function parse(tokens, options, context, extra_returns={}) {
             AstType.PARAGRAPH, undefined, undefined, ast.source_location
           )].concat(parent_arg_push_after)
         }
+
+        // Add children/tags to the child database.
+        // https://cirosantilli.com/cirodown#h-child-argment
+        const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
+        if (children !== undefined) {
+          for (let child of children) {
+            add_refs_to_h.push({ ast, child: true, content: child.args.content, type: REFS_TABLE_X_CHILD })
+          }
+        }
+        const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
+        if (tags !== undefined) {
+          for (let tag of tags) {
+            add_refs_to_h.push({ ast, child: false, content: tag.args.content, type: REFS_TABLE_X_CHILD })
+          }
+        }
+      } else if (macro_name === Macro.X_MACRO_NAME) {
+        add_refs_to_x.push({ ast })
       }
 
       // Push this node into the parent argument list.
@@ -4198,6 +4231,89 @@ async function parse(tokens, options, context, extra_returns={}) {
     console.error('ast-pp-simple: after pass 1');
     console.error(ast_toplevel.toString());
     console.error();
+  }
+
+  perf_print(context, 'db_queries')
+
+  let id_conflict_asts = []
+  if (options.id_provider !== undefined) {
+    const prefetch_ids = new Set()
+    for (const ref of add_refs_to_h) {
+      const id = render_arg_noescape(ref.content, context)
+      ref.target_id = id
+    }
+    const prefetch_file_ids = new Set()
+    for (const ref of add_refs_to_x) {
+      const id = render_arg_noescape(ref.ast.args.href, context)
+      // We need the target IDs of any x to render it.
+      prefetch_ids.add(id)
+      prefetch_file_ids.add(id)
+      ref.target_id = id
+    }
+    for (const id in include_hrefs) {
+      // We need the target it to be able to render the dummy include title
+      // with link to the real content.
+      prefetch_ids.add(id)
+    }
+    const prefetch_refs_ids = new Set()
+
+    // Get IDs to check for ID conflicts.
+    const ids = Object.keys(include_options.indexed_ids)
+    let id_conflict_asts_promise
+    if (ids.length) {
+      id_conflict_asts_promise = options.id_provider.get_noscopes_base_fetch(
+        ids,
+        context.include_path_set,
+      )
+    } else {
+      id_conflict_asts_promise = []
+    }
+
+    ;[id_conflict_asts,,,] = await Promise.all([
+      id_conflict_asts_promise,
+      options.id_provider.get_noscopes_base_fetch(
+        Array.from(prefetch_ids),
+      ),
+
+      // TODO merge these two into one single DB query. Lazy now.
+      // Started prototype at: https://github.com/cirosantilli/cirodown/tree/merge-ref-cache
+      // The annoying part is deciding what needs to go in which direction of the cache.
+      options.id_provider.get_refs_to_fetch(
+        [
+          // These are needed to render each header.
+          // Shows on parents.
+          REFS_TABLE_INCLUDE,
+          // Shows on tags.
+          REFS_TABLE_X_CHILD,
+
+          // This is needed for the Incoming links at the bottom of each output file.
+          REFS_TABLE_X,
+        ],
+        header_ids,
+      ),
+      // This is needed to generate the "tagged" at the end of each output file.
+      options.id_provider.get_refs_to_fetch(
+        [
+          REFS_TABLE_X_CHILD,
+        ],
+        header_ids,
+        true
+      ),
+    ])
+
+    const prefetch_files = new Set()
+    for (const prefetch_file_id of prefetch_file_ids) {
+      const prefetch_ast = context.id_provider.get_noscope(prefetch_file_id, context)
+      if (
+        // Possible in some error cases.
+        prefetch_ast !== undefined
+      ) {
+        prefetch_files.add(prefetch_ast.source_location.path)
+      }
+    }
+    if (prefetch_files.size) {
+      await context.options.file_provider.get_path_entry_fetch(Array.from(prefetch_files))
+    }
   }
 
   // Ast post process pass 2
@@ -4525,21 +4641,6 @@ async function parse(tokens, options, context, extra_returns={}) {
           // TODO start with the toplevel.
           cur_header_graph_node = ast.header_graph_node;
           children_in_header = true;
-
-          // Add children/tags to the child database.
-          // https://cirosantilli.com/cirodown#h-child-argment
-          const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
-          if (children !== undefined) {
-            for (let child of children) {
-              add_refs_to_h.push({ ast, child: true, content: child.args.content, type: REFS_TABLE_X_CHILD })
-            }
-          }
-          const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
-          if (tags !== undefined) {
-            for (let tag of tags) {
-              add_refs_to_h.push({ ast, child: false, content: tag.args.content, type: REFS_TABLE_X_CHILD })
-            }
-          }
         } else {
           ast.header_graph_node = new HeaderTreeNode(ast, cur_header_graph_node);
           if (ast.in_header) {
@@ -4558,10 +4659,6 @@ async function parse(tokens, options, context, extra_returns={}) {
           let ret = calculate_id(ast, context, include_options.non_indexed_ids, include_options.indexed_ids, macro_counts,
             macro_count_global, macro_counts_visible, state, false, line_to_id_array);
           macro_count_global = ret.macro_count_global
-
-          if (macro_name === Macro.X_MACRO_NAME) {
-            add_refs_to_x.push({ ast })
-          }
         }
 
         // Push children to continue the search. We make the new argument be empty
@@ -4575,179 +4672,6 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
         }
       }
-    }
-  }
-  extra_returns.ids = include_options.indexed_ids;
-  const first_toplevel_child = ast_toplevel.args.content[0];
-  if (first_toplevel_child !== undefined) {
-    first_toplevel_child.first_toplevel_child = true;
-  }
-  if (context.options.log['ast-pp-simple']) {
-    console.error('ast-pp-simple: after pass 2');
-    console.error(ast_toplevel.toString());
-    console.error();
-  }
-
-  context.line_to_id = function(line) {
-    let index = binary_search(line_to_id_array,
-      [line, undefined], binary_search_line_to_id_array_fn);
-    if (index < 0) {
-      index = -(index + 1)
-    }
-    if (index == line_to_id_array.length) {
-      if (line_to_id_array.length > 0) {
-        index = line_to_id_array.length - 1;
-      } else {
-        return undefined;
-      }
-    }
-    return line_to_id_array[index][1];
-  };
-
-  perf_print(context, 'db_queries')
-
-  if (options.id_provider !== undefined) {
-
-    const prefetch_ids = new Set()
-    for (const ref of add_refs_to_h) {
-      const id = render_arg_noescape(ref.content, context)
-      ref.target_id = id
-    }
-    const prefetch_file_ids = new Set()
-    for (const ref of add_refs_to_x) {
-      const id = render_arg_noescape(ref.ast.args.href, context)
-      // We need the target IDs of any x to render it.
-      prefetch_ids.add(id)
-      prefetch_file_ids.add(id)
-      ref.target_id = id
-    }
-    for (const id in include_hrefs) {
-      // We need the target it to be able to render the dummy include title
-      // with link to the real content.
-      prefetch_ids.add(id)
-    }
-    const prefetch_refs_ids = new Set()
-
-    // Check for ID conflicts.
-    const ids = Object.keys(include_options.indexed_ids)
-    let id_conflict_asts_promise
-    if (ids.length) {
-      id_conflict_asts_promise = options.id_provider.get_noscopes_base_fetch(
-        ids,
-        context.include_path_set,
-      )
-    } else {
-      id_conflict_asts_promise = true
-    }
-
-    const [id_conflict_asts,,,] = await Promise.all([
-      id_conflict_asts_promise,
-      options.id_provider.get_noscopes_base_fetch(
-        Array.from(prefetch_ids),
-      ),
-
-      // TODO merge these two into one single DB query. Lazy now.
-      // Started prototype at: https://github.com/cirosantilli/cirodown/tree/merge-ref-cache
-      // The annoying part is deciding what needs to go in which direction of the cache.
-      options.id_provider.get_refs_to_fetch(
-        [
-          // These are needed to render each header.
-          // Shows on parents.
-          REFS_TABLE_INCLUDE,
-          // Shows on tags.
-          REFS_TABLE_X_CHILD,
-
-          // This is needed for the Incoming links at the bottom of each output file.
-          REFS_TABLE_X,
-        ],
-        header_ids,
-      ),
-      // This is needed to generate the "tagged" at the end of each output file.
-      options.id_provider.get_refs_to_fetch(
-        [
-          REFS_TABLE_X_CHILD,
-        ],
-        header_ids,
-        true
-      ),
-    ])
-
-    // Setup refs DB. At this point, it shouldn't do any DB queries, as they should all have been prefetched.
-    for (const ref of add_refs_to_h) {
-      const target_id_effective = x_child_db_effective_id(
-        ref.target_id,
-        context,
-        ref.ast
-      )
-      if (ref.child) {
-        add_to_refs_to(target_id_effective, context, ref.ast.id, ref.type);
-      } else {
-        add_to_refs_to(ref.ast.id, context, target_id_effective, ref.type);
-      }
-    }
-    for (const ref of add_refs_to_x) {
-      const ast = ref.ast
-      const target_id_effective = x_child_db_effective_id(
-        ref.target_id,
-        context,
-        ast
-      )
-      const parent_id = ast.get_header_parent_id();
-      if (
-        // Happens on some special elements e.g. the ToC.
-        parent_id !== undefined
-      ) {
-        // TODO add test and enable this possible fix.
-        if (
-          // We don't want the "This section is present in another page" to count as a link.
-          !ast.from_include
-        ) {
-          // Update xref database for incoming links.
-          const from_ids = add_to_refs_to(target_id_effective, context, parent_id, REFS_TABLE_X);
-        }
-
-        // Update xref database for child/parent relationships.
-        {
-          let toid, fromid;
-          if (ast.validation_output.child.boolean) {
-            fromid = parent_id;
-            toid = target_id_effective;
-          } else if (ast.validation_output.parent.boolean) {
-            toid = parent_id;
-            fromid = target_id_effective;
-          }
-          if (toid !== undefined) {
-            add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD);
-          }
-        }
-      }
-    }
-
-    // Check for ID conflicts.
-    if (ids.length) {
-      for (const other_ast of id_conflict_asts) {
-        const message = duplicate_id_error_message(
-          other_ast.id,
-          other_ast.source_location.path,
-          other_ast.source_location.line,
-          other_ast.source_location.column,
-        )
-        parse_error(state, message, include_options.indexed_ids[other_ast.id].source_location);
-      }
-    }
-
-    const prefetch_files = new Set()
-    for (const prefetch_file_id of prefetch_file_ids) {
-      const prefetch_ast = context.id_provider.get_noscope(prefetch_file_id, context)
-      if (
-        // Possible in some error cases.
-        prefetch_ast !== undefined
-      ) {
-        prefetch_files.add(prefetch_ast.source_location.path)
-      }
-    }
-    if (prefetch_files.size) {
-      await context.options.file_provider.get_path_entry_fetch(Array.from(prefetch_files))
     }
   }
 
@@ -4781,7 +4705,78 @@ async function parse(tokens, options, context, extra_returns={}) {
     validate_ast(header_ast, context);
   }
 
-  perf_print(context, 'post_process_end')
+  // Check for ID conflicts.
+  for (const other_ast of id_conflict_asts) {
+    const message = duplicate_id_error_message(
+      other_ast.id,
+      other_ast.source_location.path,
+      other_ast.source_location.line,
+      other_ast.source_location.column,
+    )
+    parse_error(state, message, include_options.indexed_ids[other_ast.id].source_location);
+  }
+
+  // Setup refs DB.
+  for (const ref of add_refs_to_h) {
+    const target_id_effective = x_child_db_effective_id(
+      ref.target_id,
+      context,
+      ref.ast
+    )
+    if (ref.child) {
+      add_to_refs_to(target_id_effective, context, ref.ast.id, ref.type);
+    } else {
+      add_to_refs_to(ref.ast.id, context, target_id_effective, ref.type);
+    }
+  }
+  for (const ref of add_refs_to_x) {
+    const ast = ref.ast
+    const target_id_effective = x_child_db_effective_id(
+      ref.target_id,
+      context,
+      ast
+    )
+    const parent_id = ast.get_header_parent_id();
+    if (
+      // Happens on some special elements e.g. the ToC.
+      parent_id !== undefined
+    ) {
+      // TODO add test and enable this possible fix.
+      if (
+        // We don't want the "This section is present in another page" to count as a link.
+        !ast.from_include
+      ) {
+        // Update xref database for incoming links.
+        const from_ids = add_to_refs_to(target_id_effective, context, parent_id, REFS_TABLE_X);
+      }
+
+      // Update xref database for child/parent relationships.
+      {
+        let toid, fromid;
+        if (ast.validation_output.child.boolean) {
+          fromid = parent_id;
+          toid = target_id_effective;
+        } else if (ast.validation_output.parent.boolean) {
+          toid = parent_id;
+          fromid = target_id_effective;
+        }
+        if (toid !== undefined) {
+          add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD);
+        }
+      }
+    }
+  }
+
+  const first_toplevel_child = ast_toplevel.args.content[0];
+  if (first_toplevel_child !== undefined) {
+    first_toplevel_child.first_toplevel_child = true;
+  }
+  if (context.options.log['ast-pp-simple']) {
+    console.error('ast-pp-simple: after pass 2');
+    console.error(ast_toplevel.toString());
+    console.error();
+  }
+
   return ast_toplevel;
 }
 

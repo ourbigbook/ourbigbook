@@ -61,7 +61,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
   async clear(input_paths) {
     return Promise.all([
       this.sequelize.models.Id.destroy({ where: { path: input_paths } }),
-      this.sequelize.models.Ref.destroy({ where: { from_path: input_paths } }),
+      this.sequelize.models.Ref.destroy({ where: { defined_at: input_paths } }),
     ])
   }
 
@@ -75,7 +75,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
     }
     return Promise.all([
       this.sequelize.models.Id.destroy({ where: { path: { [Op.like]: prefix_literal } } }),
-      this.sequelize.models.Ref.destroy({ where: { from_path: { [Op.like]: prefix_literal } } }),
+      this.sequelize.models.Ref.destroy({ where: { defined_at: { [Op.like]: prefix_literal } } }),
     ])
   }
 
@@ -102,15 +102,17 @@ class SqliteIdProvider extends cirodown.IdProvider {
   }
 
   async get_from_header_ids_of_xrefs_to(type, to_id, reversed=false) {
-    let to_id_key;
+    let to_id_key, other_key;
     if (reversed) {
       to_id_key = 'from_id'
+      other_key = 'to_id'
     } else {
       to_id_key = 'to_id'
+      other_key = 'from_id'
     }
     const entries = await this.sequelize.models.Ref.findAll({ where: {
       [to_id_key]: to_id, type: this.sequelize.models.Ref.Types[type] } })
-    return new Set(entries.map(entry => entry.from_id))
+    return new Set(entries.map(e => e[other_key]))
   }
 }
 
@@ -406,7 +408,7 @@ async function convert_path(input_path, cirodown_options, non_cirodown_options) 
         for (const include of header_ast.includes) {
           refs.push({
             from_id: header_ast.id,
-            from_path: header_ast.source_location.path,
+            defined_at: TODO,
             to_id: include,
             type: non_cirodown_options.sequelize.models.Ref.Types.INCLUDE
           })
@@ -422,7 +424,6 @@ async function convert_path(input_path, cirodown_options, non_cirodown_options) 
               // need to fix and remove this if.
               from_id !== undefined
             ) {
-              const from_header = await context.id_provider.get(from_id);
               if (
                 // Can happen when the database is not yet populated,
                 // leading to ID not being present.
@@ -430,7 +431,7 @@ async function convert_path(input_path, cirodown_options, non_cirodown_options) 
               ) {
                 refs.push({
                   from_id,
-                  from_path: from_header.source_location.path,
+                  defined_at: TODO,
                   to_id,
                   type: non_cirodown_options.sequelize.models.Ref.Types[type]
                 })

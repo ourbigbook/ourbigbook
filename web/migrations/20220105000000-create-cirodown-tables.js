@@ -7,7 +7,7 @@ module.exports = {
             type: DataTypes.TEXT,
             allowNull: false,
           },
-          from_path: {
+          defined_at: {
             type: DataTypes.TEXT,
             allowNull: false,
           },
@@ -22,7 +22,7 @@ module.exports = {
         },
         {
           indexes: [
-            { fields: ['from_path'], },
+            { fields: ['defined_at'], },
             { fields: ['from_id', 'type'], },
             { fields: ['to_id', 'type'], },
           ],

@@ -1385,7 +1385,7 @@ This use case is even more useful when `title-from-src` is enable by default for
 
 If given, the current section contains metadata about file or other resource with the given URL.
 
-If empty, the URl of the file is extracted directly from the header. Otherwise, the given URL is used.
+If empty, the URL of the file is extracted directly from the header. Otherwise, the given URL is used.
 
 for example:
 ``
@@ -1411,9 +1411,9 @@ An explanation of what this file is about.
 so note how:
 * <automatic ID from title> does not normalize the path, e.g. it does not convert `/` to `-`.
 
-  Also, a `file/` prefix is automatically added to the ID. This is needed with <split headers> to avoid a collision between:
+  Also, a `_file/` prefix is automatically added to the ID. This is needed with <split headers> to avoid a collision between:
   * `path/to/myfile.c`: the actual file
-  * `file/path/to/myfile.c`: the metadata about that file. Note that locally the `.html` extension is added as in `file/path/to/myfile.c.html` which avoids the collision. But on a server deployment, the `.html` is not present, and there would be a conflict if we didn't add that `file/` prefix.
+  * `_file/path/to/myfile.c`: the metadata about that file. Note that locally the `.html` extension is added as in `file/path/to/myfile.c.html` which avoids the collision. But on a server deployment, the `.html` is not present, and there would be a conflict if we didn't add that `file/` prefix.
 * a link to the is added automatically, since users won't be able to click it from the header, as clicking on the header will just link to the header itself
 * a preview is added. The type of preview is chosen as follows:
   * if the URL has an image extension, do an <image> preview
@@ -1423,6 +1423,8 @@ so note how:
 In some cases however, especially when dealing with external URLs, we might want to have a more human readable title with a `file` specified as in:
 ``
 The video \x[tank-man-by-cnn-1989] is very useful.
+
+To make <internal cross references> to `{file}` headers, use the <`\x` `file` argument>.
 
 = Tank Man by CNN (1989)
 {file=https://www.youtube.com/watch?v=YeFzeNAHEhU}
@@ -1445,11 +1447,41 @@ An explanation of what this video is about.
 = `\H` `file` argument demo
 {parent=H file argument}
 
+= web/front
+{file}
+{parent=H file argument demo}
+
+An explanation of what this directory is about.
+
+TODO currently we don't render any preview for directories. One day we will: https://github.com/ourbigbook/ourbigbook/issues/175
+
+= file_demo/hello_world.js
+{file}
+{parent=H file argument demo}
+
+An explanation of what this text file is about.
+
+Another line.
+
+= index.js
+{file}
+{parent=H file argument demo}
+
+Large text files are not previewed, as they would take up too much useless vertical space and disk memory/bandwidth.
+
+= file_demo/my.bin
+{file}
+{parent=H file argument demo}
+
+Binary files are not rendered.
+
 = Tank_man_standing_in_front_of_some_tanks.jpg
 {file}
 {parent=H file argument demo}
 
-An explanation of what this video is about.
+An explanation of what this image is about.
+
+Another line.
 
 = Tank Man by CNN (1989)
 {file=https://www.youtube.com/watch?v=YeFzeNAHEhU}
@@ -4237,10 +4269,17 @@ Oh, and cows are also <mammals>{parent}.
 
 But <cats> can't.
 
-= `\x` `parent` argument
-{parent=x child argument}
+= `\x` `file` argument
+{parent=x arguments}
 
-The `parent` argument is exactly like the <\x child argument>, but it reverses the direction of the parent/child relation.
+Allows to link to <headers> with the <`\H` `file` argument>, e.g.:
+``
+= My header
+
+Check out this amazing file: <path/to/myfile.txt>
+
+== path/to/myfile.txt
+``
 
 = `\x` `full` argument
 {parent=x arguments}
@@ -4318,6 +4357,11 @@ There may be some cases where you might still want to use <cross reference title
 Pluralizes or singularizes the last word of the target title.
 
 For more details, see: <cross reference title inflection>{full}.
+
+= `\x` `parent` argument
+{parent=x arguments}
+
+The `parent` argument is exactly like the <\x child argument>, but it reverses the direction of the parent/child relation.
 
 = `\x` `ref` argument
 {parent=x arguments}
@@ -7484,7 +7528,7 @@ We currently have some intentional denormalization in our database e.g.:
 
 These dernormalizations are not ideal, but they make things a bit easier, and some of them are almost certainly faster.
 
-To keep things slightly saner, the <file/web/bin/normalize> script can be used to view, check and update dernormalized data.
+To keep things slightly saner, the <web/bin/normalize>{file} script can be used to view, check and update dernormalized data.
 
 = Nested set
 {parent=OurBigBook Web database}

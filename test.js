@@ -1018,6 +1018,10 @@ bbb
 assert_error('toplevel explicit content',
   `[]`, 1, 1,
 );
+// https://github.com/cirosantilli/cirodown/issues/10
+assert_error('explicit toplevel macro',
+  `\\toplevel`, 1, 1,
+);
 
 // Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception, or worse, not blowing up at all!

@@ -1,4 +1,5 @@
 import { defaultUserScoreTitle } from 'front/config'
+import { UserType } from 'front/types/userType'
 
 export function displayAndUsernameText(user) {
   let ret = ''
@@ -12,7 +13,16 @@ export function displayAndUsernameText(user) {
   return ret
 }
 
-export function DisplayAndUsername({ user, showUsername }) {
+export function DisplayAndUsername(
+  {
+    user,
+    showUsername
+  }
+  : {
+    user: UserType,
+    showUsername?: boolean,
+  }
+) {
   let ret = ''
   if (showUsername === undefined) {
     showUsername = true

@@ -581,7 +581,7 @@ commander.option('--help-macros', 'print the metadata of all macros to stdout in
 commander.option('-l, --log <log...>', 'http://cirosantilli.com/cirodown#log');
 commander.option('--no-html-x-extension', 'http://cirosantilli.com/cirodown#no-html-x-extension');
 commander.option('--no-db', 'ignore the ID database, mostly for testing https://cirosantilli.com/cirosantilli#internal-cross-file-references-internals');
-commander.option('--outdir <outdir>', 'if the output would be saved to a file e.g. when building a directory, use this directory as the root');
+commander.option('--outdir <outdir>', 'http://cirosantilli.com/cirodown#outdir');
 commander.option('-o, --outfile <outfile>', 'http://cirosantilli.com/cirodown#outfile');
 commander.option('-O, --output-format <output-format>', 'https://cirosantilli.com/cirodown#output-format', 'html');
 commander.option('-p --publish', 'http://cirosantilli.com/cirodown#publish', false);
@@ -829,7 +829,7 @@ A link to another file: \\x[and-now-an-include]
     if (!fs.existsSync(inputPath)) {
       cli_error(`input_path does not exist: "${inputPath}"`);
     }
-    let tmpdir = path.join(cirodown_json_dir, TMP_DIRNAME);
+    let tmpdir = path.join(outdir, TMP_DIRNAME);
     let publish_dir;
     let publish_out_dir;
     let cmd_options = {

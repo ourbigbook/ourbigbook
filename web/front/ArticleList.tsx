@@ -115,7 +115,7 @@ const ArticleList = ({
           </thead>
           <tbody>
             {articles?.map((article, i) => (
-              <tr key={itemType === 'issue' ? article.number : itemType === 'article' ? article.slug : article.topicId}>
+              <tr key={itemType === 'discussion' ? article.number : itemType === 'article' ? article.slug : article.topicId}>
                 {itemType === 'topic' ?
                   <td className="shrink right bold">
                     {article.articleCount}
@@ -133,7 +133,7 @@ const ArticleList = ({
                 }
                 <td className="expand title">
                   <CustomLink
-                    href={itemType === 'issue' ? routes.issue(issueArticle.slug, article.number) :
+                    href={itemType === 'discussion' ? routes.issue(issueArticle.slug, article.number) :
                           itemType === 'article' ? routes.article(article.slug) :
                           routes.topic(article.topicId, { sort: 'score' })
                     }

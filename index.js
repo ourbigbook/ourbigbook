@@ -1405,6 +1405,8 @@ class HeaderTreeNode {
     let indexes = [];
     let cur_node = this;
     while (
+      // Possible in skipped header levels.
+      cur_node !== undefined &&
       cur_node.value !== undefined &&
       cur_node.get_level() !== header_graph_top_level
     ) {
@@ -5056,13 +5058,13 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       let attrs = html_convert_attrs_id(ast, context);
       let todo_visit = [];
-      let top_level = context.header_graph_top_level - 1;
+      let top_level = 0;
       let root_node = context.header_graph;
       let ret = `<div class="toc-container"${attrs}>\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
-      ret += `${TOC_ARROW_HTML}<a class="title"${x_href_attr(ast, context)}>Table of contents</a> ${get_descendant_count(root_node)}</div>\n`;
-      if (root_node.value !== undefined) {
+      if (root_node.children.length === 1) {
         root_node = root_node.children[0];
       }
+      ret += `${TOC_ARROW_HTML}<a class="title"${x_href_attr(ast, context)}>Table of contents</a> ${get_descendant_count(root_node)}</div>\n`;
       for (let i = root_node.children.length - 1; i >= 0; i--) {
         todo_visit.push([root_node.children[i], 1]);
       }

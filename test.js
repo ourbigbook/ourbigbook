@@ -2322,6 +2322,10 @@ assert_convert_ast('split headers have correct table of contents',
       "//x:h2//x:a[@href='#toc-h1-1' and text()='\u21d1 toc']",
       "//x:h2//x:a[@href='#toc-h1-2' and text()='\u21d1 toc']",
       "//x:h3//x:a[@href='#toc-h1-2-1' and text()='\u21d1 toc']",
+
+      // Descendant count.
+      "//*[@id='toc']//*[@class='title-div']//*[@class='descendant-count' and text()='[4]']",
+      "//*[@id='toc']//*[@id='toc-h1-2']//*[@class='descendant-count' and text()='[2]']",
     ],
     assert_xpath_split_headers: {
       'notindex-split.html': [
@@ -2343,6 +2347,10 @@ assert_convert_ast('split headers have correct table of contents',
         // ToC links in split headers have parent toc entry links.
         "//*[@id='toc']//*[@id='toc-h1-2-1']//x:a[@href='#toc' and text()='\u2191 parent \"h1 2\"']",
         "//*[@id='toc']//*[@id='toc-h1-2-1-1']//x:a[@href='#toc-h1-2-1' and text()='\u2191 parent \"h1 2 1\"']",
+
+        // Descendant count.
+        "//*[@id='toc']//*[@class='title-div']//*[@class='descendant-count' and text()='[2]']",
+        "//*[@id='toc']//*[@id='toc-h1-2-1']//*[@class='descendant-count' and text()='[1]']",
       ],
     },
     assert_not_xpath_split_headers: {

@@ -10686,6 +10686,7 @@ Before the first time you release, you need to login to NPM with:
 ``
 npm login
 ``
+Releases should always be made with the official https://www.npmjs.com/~ourbigbook-admin user.
 
 Then, every new release can be done automatically with the \a[release] script, e.g. to release a version 0.7.2:
 ``
@@ -10900,6 +10901,17 @@ The logo can be seen at: <image Logo of the OurBigBook Project>.
 This file was actually manually created, and therefore counts as code and can be tracked on this git repository.
 
 Since it does not contain text, only geometric primitives, this SVG file does not rely on any external system fonts and is fully reproducible.
+}
+
+\Image[logo.png]
+{height=150}
+{title=logo-256.png}
+{provider=github}
+{description=
+256x256 PNG version of <image logo.svg>, ideal for profile pictures that don't support SVG. Generated with:
+``
+convert logo.svg -resize 256x logo-256.png
+``
 }
 
 \Image[logo-transparent.svg]

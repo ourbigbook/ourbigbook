@@ -475,6 +475,7 @@ if (commander.helpMacros) {
   }
   let options = {
     body_only: commander.bodyOnly,
+    cirodown_json: cirodown_json,
     html_embed: commander.htmlEmbed,
     html_x_extension: html_x_extension,
     html_single_page: commander.htmlSinglePage,

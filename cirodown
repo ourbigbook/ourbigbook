@@ -131,7 +131,6 @@ const Argument = class {
    */
   constructor(options) {
     this.name = options.name;
-    this.named_only = false;
   }
 }
 
@@ -193,6 +192,16 @@ const Macro = class {
       throw new Error('name already taken: ' + name);
     }
   }
+
+  toJSON() {
+    return {
+      name: this.name,
+      positional_args: this.positional_args,
+      named_args: this.named_args,
+      properties: this.properties,
+    }
+  }
+
 }
 Macro.id_macro_name = 'id'
 
@@ -968,6 +977,7 @@ if (require.main === module) {
   // CLI options.
   const program = require('commander');
   program.option('--body-only', 'output only the content inside the HTLM body element', false);
+  program.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown/#', false);
   program.option('--show-ast', 'print the AST to stderr');
   program.option(
     '--show-ast-inside',
@@ -995,42 +1005,46 @@ if (require.main === module) {
   program.parse(process.argv);
 
   // Action.
-  const encoding = 'utf8';
-  let input;
-  let title;
-  if (inputPath === undefined) {
-    title = 'stdin';
-    input = fs.readFileSync(0, encoding);
+  if (program.helpMacros) {
+    console.log(JSON.stringify(macros, null, 2));
   } else {
-    title = inputPath;
-    input = fs.readFileSync(inputPath, encoding);
+    const encoding = 'utf8';
+    let input;
+    let title;
+    if (inputPath === undefined) {
+      title = 'stdin';
+      input = fs.readFileSync(0, encoding);
+    } else {
+      title = inputPath;
+      input = fs.readFileSync(inputPath, encoding);
+    }
+    let extra_returns = {};
+    let output = convert(
+      input,
+      {
+        body_only: program.bodyOnly,
+        show_ast: program.showAstInside,
+        show_parse: program.showParse,
+        show_tokens: program.showTokensInside,
+        show_tokenize: program.showTokenize,
+        title: title,
+      },
+      extra_returns
+    );
+    console.log(output);
+    if (program.showTokens) {
+      console.error('tokens:');
+      console.error(JSON.stringify(extra_returns.tokens, null, 2));
+      console.error();
+    }
+    if (program.showAst) {
+      console.error('ast:');
+      console.error(JSON.stringify(extra_returns.ast, null, 2));
+      console.error();
+    }
+    for (const error of extra_returns.errors) {
+      console.error(error.toString());
+    }
+    process.exit(extra_returns.errors.length > 0);
   }
-  let extra_returns = {};
-  let output = convert(
-    input,
-    {
-      body_only: program.bodyOnly,
-      show_ast: program.showAstInside,
-      show_parse: program.showParse,
-      show_tokens: program.showTokensInside,
-      show_tokenize: program.showTokenize,
-      title: title,
-    },
-    extra_returns
-  );
-  console.log(output);
-  if (program.showTokens) {
-    console.error('tokens:');
-    console.error(JSON.stringify(extra_returns.tokens, null, 2));
-    console.error();
-  }
-  if (program.showAst) {
-    console.error('ast:');
-    console.error(JSON.stringify(extra_returns.ast, null, 2));
-    console.error();
-  }
-  for (const error of extra_returns.errors) {
-    console.error(error.toString());
-  }
-  process.exit(extra_returns.errors.length > 0);
 }

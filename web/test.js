@@ -101,7 +101,7 @@ function createArticleArg(opts, author) {
   if (opts.hasOwnProperty('titleSource')) {
     ret.titleSource = opts.titleSource
   } else {
-    ret.titleSource = `title ${i}`
+    ret.titleSource = `Title ${i}`
   }
   if (opts.hasOwnProperty('bodySource')) {
     ret.bodySource = opts.bodySource
@@ -258,11 +258,11 @@ it('User.findAndCountArticlesByFollowed', async function() {
   const article3_1 = await createArticle(sequelize, user3, { i: 1 })
 
   const { count, rows } = await user0.findAndCountArticlesByFollowed(1, 3)
-  assert.strictEqual(rows[0].titleRender, 'title 0')
+  assert.strictEqual(rows[0].titleRender, 'Title 0')
   assert.strictEqual(rows[0].file.authorId, user3.id)
-  assert.strictEqual(rows[1].titleRender, 'title 3')
+  assert.strictEqual(rows[1].titleRender, 'Title 3')
   assert.strictEqual(rows[1].file.authorId, user1.id)
-  assert.strictEqual(rows[2].titleRender, 'title 2')
+  assert.strictEqual(rows[2].titleRender, 'Title 2')
   assert.strictEqual(rows[2].file.authorId, user1.id)
   assert.strictEqual(rows.length, 3)
   // 6 manually from all follows + 2 for the automatically created indexes.
@@ -547,7 +547,7 @@ it('api: create an article and see it on global feed', async () => {
       article = createArticleArg({ i: 0 })
       ;({data, status} = await createArticleApi(test, article))
       assertStatus(status, data)
-      assertRows(data.articles, [{ titleRender: 'title 0' }])
+      assertRows(data.articles, [{ titleRender: 'Title 0' }])
 
     // Create article errors
 
@@ -606,7 +606,7 @@ it('api: create an article and see it on global feed', async () => {
       // Access the article directly
       ;({data, status} = await test.webApi.article('user0/title-0'))
       assertStatus(status, data)
-      assert.strictEqual(data.titleRender, 'title 0')
+      assert.strictEqual(data.titleRender, 'Title 0')
       assert.strictEqual(data.titleSource, 'Title 0')
       assert.match(data.render, /Body 0\./)
 
@@ -615,7 +615,7 @@ it('api: create an article and see it on global feed', async () => {
       ;({data, status} = await test.webApi.articles())
       assertStatus(status, data)
       assertRows(data.articles, [
-        { titleRender: 'title 0', slug: 'user0/title-0', render: /Body 0/ },
+        { titleRender: 'Title 0', slug: 'user0/title-0', render: /Body 0/ },
         { titleRender: 'Index', slug: 'user2' },
         { titleRender: 'Index', slug: 'user1' },
         { titleRender: 'Index', slug: 'user0' },
@@ -626,7 +626,7 @@ it('api: create an article and see it on global feed', async () => {
       ;({data, status} = await test.webApi.articles({ author: 'user0' }))
       assertStatus(status, data)
       assertRows(data.articles, [
-        { titleRender: 'title 0', slug: 'user0/title-0', render: /Body 0/ },
+        { titleRender: 'Title 0', slug: 'user0/title-0', render: /Body 0/ },
         { titleRender: 'Index', slug: 'user0' },
       ])
 
@@ -639,7 +639,7 @@ it('api: create an article and see it on global feed', async () => {
 
       ;({data, status} = await test.webApi.article('user0/title-0'))
       assertStatus(status, data)
-      assert.strictEqual(data.titleRender, 'title 0')
+      assert.strictEqual(data.titleRender, 'Title 0')
       assert.match(data.render, /Body 0 hacked\./)
 
       // Undo it for test sanity.
@@ -651,6 +651,7 @@ it('api: create an article and see it on global feed', async () => {
       // Edit article with render: false followed by render: true without parameters.
       // Take bodySource parameter from the database state of the previous render: false.
 
+        // render: false
         article = createArticleArg({ i: 0, bodySource: 'Body 0 hacked.' })
         ;({data, status} = await createOrUpdateArticleApi(test,
           article,
@@ -660,6 +661,15 @@ it('api: create an article and see it on global feed', async () => {
         // Maybe we could return the pre-existing aticle here.
         assertRows(data.articles, [])
 
+        // Also take this chance to check that /sha256 renderOutdated is correct.
+        ;({data, status} = await test.webApi.articlesSha256({ author: 'user0' }))
+        assertStatus(status, data)
+        assertRows(data.articles, [
+          { path: '@user0/index.bigb',   renderOutdated: false, },
+          { path: '@user0/title-0.bigb', renderOutdated: true,  },
+        ])
+
+        // render: true
         article = createArticleArg({ i: 0, bodySource: undefined })
         ;({data, status} = await createOrUpdateArticleApi(test,
           article,
@@ -667,6 +677,14 @@ it('api: create an article and see it on global feed', async () => {
         ))
         assertStatus(status, data)
         assertRows(data.articles, [{ render: /Body 0 hacked\./ }])
+
+        // And now not outdated after render.
+        ;({data, status} = await test.webApi.articlesSha256({ author: 'user0' }))
+        assertStatus(status, data)
+        assertRows(data.articles, [
+          { path: '@user0/index.bigb',   renderOutdated: false, },
+          { path: '@user0/title-0.bigb', renderOutdated: false,  },
+        ])
 
         // Undo it for test sanity.
         article = createArticleArg({ i: 0 })
@@ -720,7 +738,7 @@ it('api: create an article and see it on global feed', async () => {
       assertStatus(status, data)
       assertRows(data.articles, [
         { titleRender: 'Index', slug: 'user0', score: 1 },
-        { titleRender: 'title 0', slug: 'user0/title-0', render: /Body 0/, score: 0 },
+        { titleRender: 'Title 0', slug: 'user0/title-0', render: /Body 0/, score: 0 },
       ])
 
       // Invalid sort.
@@ -825,13 +843,13 @@ it('api: create an article and see it on global feed', async () => {
       ;({data, status} = await createOrUpdateArticleApi(test, article))
       assertStatus(status, data)
       articles = data.articles
-      assert.strictEqual(articles[0].titleRender, 'title 1')
+      assert.strictEqual(articles[0].titleRender, 'Title 1')
       assert.strictEqual(articles.length, 1)
 
       // Access the article directly
       ;({data, status} = await test.webApi.article('user0/title-1'))
       assertStatus(status, data)
-      assert.strictEqual(data.titleRender, 'title 1')
+      assert.strictEqual(data.titleRender, 'Title 1')
       assert.match(data.render, /Body 1/)
 
       // Update article with PUT.
@@ -842,7 +860,7 @@ it('api: create an article and see it on global feed', async () => {
       // Access the article directly
       ;({data, status} = await test.webApi.article('user0/title-1'))
       assertStatus(status, data)
-      assert.strictEqual(data.titleRender, 'title 1')
+      assert.strictEqual(data.titleRender, 'Title 1')
       assert.match(data.render, /Body 2/)
 
     // User following.
@@ -1428,20 +1446,20 @@ it('api: create an article and see it on global feed', async () => {
 //    // Create article.
 //    article = createArticleArg({ i: 0, bodySource: `Body 0.
 //
-//== title 0 0
+//== Title 0 0
 //
 //Body 0 0.
 //
-//== title 0 1
+//== Title 0 1
 //
 //Body 0 1.
 //`})
 //    ;({data, status} = await createArticleApi(test, article))
 //    assertStatus(status, data)
 //    assertRows(data.articles, [
-//      { titleRender: 'title 0', slug: 'user0/title-0' },
-//      { titleRender: 'title 0 0', slug: 'user0/title-0-0' },
-//      { titleRender: 'title 0 1', slug: 'user0/title-0-1' },
+//      { titleRender: 'Title 0', slug: 'user0/title-0' },
+//      { titleRender: 'Title 0 0', slug: 'user0/title-0-0' },
+//      { titleRender: 'Title 0 1', slug: 'user0/title-0-1' },
 //    ])
 //    assert.match(data.articles[0].render, /Body 0\./)
 //    assert.match(data.articles[0].render, /Body 0 0\./)
@@ -1455,35 +1473,35 @@ it('api: create an article and see it on global feed', async () => {
 //    sortByKey(data.articles, 'slug')
 //    assertRows(data.articles, [
 //      { titleRender: 'Index', slug: 'user0' },
-//      { titleRender: 'title 0', slug: 'user0/title-0' },
-//      { titleRender: 'title 0 0', slug: 'user0/title-0-0' },
-//      { titleRender: 'title 0 1', slug: 'user0/title-0-1' },
+//      { titleRender: 'Title 0', slug: 'user0/title-0' },
+//      { titleRender: 'Title 0 0', slug: 'user0/title-0-0' },
+//      { titleRender: 'Title 0 1', slug: 'user0/title-0-1' },
 //    ])
 //
 //    // Access one of the articles directly.
 //    ;({data, status} = await test.webApi.article('user0/title-0-0'))
 //    assertStatus(status, data)
-//    assert.strictEqual(data.titleRender, 'title 0 0')
+//    assert.strictEqual(data.titleRender, 'Title 0 0')
 //    assert.match(data.render, /Body 0 0\./)
 //    assert.doesNotMatch(data.render, /Body 0 1\./)
 //
 //    // Modify the file.
 //    article = createArticleArg({ i: 0, bodySource: `Body 0.
 //
-//== title 0 0 hacked
+//== Title 0 0 hacked
 //
 //Body 0 0 hacked.
 //
-//== title 0 1
+//== Title 0 1
 //
 //Body 0 1.
 //`})
 //    ;({data, status} = await createOrUpdateArticleApi(test, article))
 //    assertStatus(status, data)
 //    assertRows(data.articles, [
-//      { titleRender: 'title 0', slug: 'user0/title-0' },
-//      { titleRender: 'title 0 0 hacked', slug: 'user0/title-0-0-hacked' },
-//      { titleRender: 'title 0 1', slug: 'user0/title-0-1' },
+//      { titleRender: 'Title 0', slug: 'user0/title-0' },
+//      { titleRender: 'Title 0 0 hacked', slug: 'user0/title-0-0-hacked' },
+//      { titleRender: 'Title 0 1', slug: 'user0/title-0-1' },
 //    ])
 //    assert.match(data.articles[0].render, /Body 0\./)
 //    assert.match(data.articles[0].render, /Body 0 0 hacked\./)
@@ -1497,10 +1515,10 @@ it('api: create an article and see it on global feed', async () => {
 //    sortByKey(data.articles, 'slug')
 //    assertRows(data.articles, [
 //      { titleRender: 'Index',     slug: 'user0', },
-//      { titleRender: 'title 0',   slug: 'user0/title-0',  render: /Body 0 0 hacked\./ },
-//      { titleRender: 'title 0 0', slug: 'user0/title-0-0', render: /Body 0 0\./ },
-//      { titleRender: 'title 0 0 hacked', slug: 'user0/title-0-0-hacked', render: /Body 0 0 hacked\./ },
-//      { titleRender: 'title 0 1', slug: 'user0/title-0-1', render: /Body 0 1\./ },
+//      { titleRender: 'Title 0',   slug: 'user0/title-0',  render: /Body 0 0 hacked\./ },
+//      { titleRender: 'Title 0 0', slug: 'user0/title-0-0', render: /Body 0 0\./ },
+//      { titleRender: 'Title 0 0 hacked', slug: 'user0/title-0-0-hacked', render: /Body 0 0 hacked\./ },
+//      { titleRender: 'Title 0 1', slug: 'user0/title-0-1', render: /Body 0 1\./ },
 //    ])
 //
 //    // Topic shows only one subarticle.
@@ -1508,7 +1526,7 @@ it('api: create an article and see it on global feed', async () => {
 //    assertStatus(status, data)
 //    sortByKey(data.articles, 'slug')
 //    assertRows(data.articles, [
-//      { titleRender: 'title 0 0', slug: 'user0/title-0-0', render: /Body 0 0\./ },
+//      { titleRender: 'Title 0 0', slug: 'user0/title-0-0', render: /Body 0 0\./ },
 //    ])
 //  })
 //})

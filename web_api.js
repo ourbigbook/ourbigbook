@@ -102,6 +102,10 @@ class WebApi {
     return this.req('get', `articles${encodeGetParamsWithOffset(opts)}`)
   }
 
+  async articlesSha256(opts={}) {
+    return this.req('get', `articles/sha256${encodeGetParamsWithOffset(opts)}`)
+  }
+
   async articleCreate(article, opts={}) {
     const { path, parentId, previousSiblingId, render } = opts
     return this.req('post',

@@ -1,5 +1,5 @@
 const ourbigbook = require('../index')
-const last_render = require('./last_render')
+const render = require('./render')
 
 module.exports = (sequelize, web=false) => {
   const { DataTypes } = sequelize.Sequelize
@@ -17,6 +17,9 @@ module.exports = (sequelize, web=false) => {
       //unique: true,
     },
     last_parse: {
+      // Used to skip parsing unmodified files on CLI. We could also
+      // do SHA checking there, but would likely be a slower, possibly not noticable.
+      // Not used on Web, where we just mass return SHA2s so CLI uploader can check.
       type: DataTypes.DATE,
       allowNull: true,
     },

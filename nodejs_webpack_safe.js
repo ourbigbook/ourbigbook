@@ -508,6 +508,7 @@ async function update_database_after_convert({
   non_ourbigbook_options,
   renderType,
   path,
+  // boolean
   render,
   sequelize,
   sha256,
@@ -534,7 +535,6 @@ async function update_database_after_convert({
   let file_bulk_create_last_parse
   if (extra_returns.errors.length > 0) {
     file_bulk_create_last_parse = null
-    file_bulk_create_last_render = null
     file_bulk_create_opts.ignoreDuplicates = true
   } else {
     file_bulk_create_opts.updateOnDuplicate = [
@@ -546,16 +546,6 @@ async function update_database_after_convert({
       'sha256',
     ]
     file_bulk_create_last_parse = Date.now()
-    if (
-      render &&
-      // Some day we might have one timestamp per output format.
-      // But lazy now, just never use timestamp for --format-source.
-      !non_ourbigbook_options.commander.formatSource
-    ) {
-      file_bulk_create_last_render = file_bulk_create_last_parse
-    } else {
-      file_bulk_create_last_render = null
-    }
   }
 
   // This was the 80% bottleneck at Ourbigbook f8fc9eacfa794b95c1d9982a04b62603e6d0bb83
@@ -594,20 +584,33 @@ async function update_database_after_convert({
       ))
     }
     ;[fileBulkCreate, idProviderUpdate] = await Promise.all(promises)
-    if (file_bulk_create_last_render) {
-      // Re-find here until SQLite RETURNING gets used.
-      const file = await sequelize.models.File.findOne({ where: { path }, transaction })
-      await sequelize.models.LastRender.upsert(
+    // Re-find here until SQLite RETURNING gets used by sequelize.
+    const file = await sequelize.models.File.findOne({ where: { path }, transaction })
+    if (!render) {
+      // Mark all existing renderings as outdated.
+      await sequelize.models.Render.update(
         {
-          date: file_bulk_create_last_render,
-          type: sequelize.models.LastRender.Types[renderType],
-          fileId: file.id,
+          outdated: true,
         },
         {
+          where: {
+            fileId: file.id,
+          },
           transaction,
         }
       )
     }
+    // Create a rendering for the current type if one does not exist.
+    await sequelize.models.Render.upsert(
+      {
+        outdated: !render,
+        type: sequelize.models.Render.Types[renderType],
+        fileId: file.id,
+      },
+      {
+        transaction,
+      }
+    )
   });
   ourbigbook.perf_print(context, 'convert_path_post_sqlite_transaction')
   return { file: fileBulkCreate[0] }

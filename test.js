@@ -574,7 +574,7 @@ function assert_cli(
       const fullpath = path.join(tmpdir, relpath);
       assert.ok(fs.existsSync(fullpath), `path does not exist: ${fullpath}`);
       const content = fs.readFileSync(fullpath).toString(ourbigbook_nodejs_webpack_safe.ENCODING);
-      assert.strictEqual(options.assert_bigb[relpath], content, { message: assert_msg_bigb });
+      assert.strictEqual(options.assert_bigb[relpath], content, assert_msg_bigb);
     }
     if (!ourbigbook_nodejs_front.postgres) {
       for (const relpath of options.expect_exists_sqlite) {

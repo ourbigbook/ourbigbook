@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# https://docs.ourbigbook.com/ourbigbook-web-postgresql-setup
+set -eu
+script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+db=ourbigbook
+db_cli=ourbigbook_cli
+user=ourbigbook_user
+psql -c "DROP DATABASE IF EXISTS $db"
+psql -c "DROP DATABASE IF EXISTS $db_cli"
+psql -c "DROP OWNED BY $user"
+psql -c "DROP USER IF EXISTS $user"
+createdb "$db"
+createdb "$db_cli"
+psql -c "CREATE ROLE $user with login password 'a'"
+psql -c "GRANT ALL PRIVILEGES ON DATABASE $db TO $user"
+psql -c "GRANT ALL PRIVILEGES ON DATABASE $db_cli TO $user"
+env="$script_dir/../.env"
+sed -i '/^SECRET=/d' "$env"
+echo "SECRET=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)" >> "$env"

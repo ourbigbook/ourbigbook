@@ -702,7 +702,8 @@ Sane equivalent:
 If a \x[the-toplevel-header][non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:
 * do a \x[id-output-format] conversion on the title to remove for example any HTML tags that would be present in the conversion output
 * convert all characters to lowercase. This uses \x[javascript-case-conversion]. Note that this does convert non-ASCII characters to lowercase, e.g. `É` to `é`.
-* if \x[cirodown-json-id-normalize] is `true` (the default) do \x[u]
+* if \x[cirodown-json/id-normalize-latin] is `true` (the default) do \x[cirodown-json/latin-normalization]. This converts e.g. `é` to `e`.
+* if \x[cirodown-json/id-normalize-punctuation] is `true` (the default) do \x[cirodown-json/punctuation-normalization]. This converts e.g. `+` to `plus`.
 * convert consecutive sequences of all non `a-z0-9` ASCII characters to a single hyphen `-`. Note that this leaves non-ASCII characters untouched.
 * strip leading or trailing hyphens
 Note how those rules leave non-ASCII Unicode characters untouched, except for:
@@ -717,32 +718,43 @@ So for example, the following automatic IDs would be generated: \x[table-example
 [
 || title
 || id
-|| normalize
+|| latin normalization
+|| punctuation normalization
 || comments
 
 | My favorite title
 | my-favorite-title
-| any
+|
+|
 |
 
 | Ciro's markdown is awesome
 | ciro-s-markdown-is-awesome
-| any
+|
+|
 | `'` is an ASCII character, but it is not in `a-z0-9`, therefore it gets converted to a hyphen `-`
 
 | É你
 | e你
 | true
+|
 | The Latin https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, is converted to its lower case form `é` as per the \x[javascript-case-conversion].
 
- Then, due to \x[ascii-normalization], `é` is converted to `e`.
+  Then, due to \x[cirodown-json/latin-normalization], `é` is converted to `e`.
 
- The Chinese character `你` is left untouched as Chinese characters have no case, and no ASCII analogue.
+  The Chinese character `你` is left untouched as Chinese characters have no case, and no ASCII analogue.
 
 | É你
 | é你
 | false
-| Same as the previous, but `é` is not converted to `e` since \x[ascii-normalization] is turned off.
+|
+| Same as the previous, but `é` is not converted to `e` since \x[cirodown-json/latin-normalization] is turned off.
+
+| C++ is great
+| c-plus-plus-is-great
+|
+| true
+| This is the effect of \x[cirodown-json/punctuation-normalization].
 ]
 
 For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the Cirodown file without extension instead of from the `title` argument.
@@ -1370,8 +1382,6 @@ notindex-asdf.ciro
 = Synonym
 {synonym}
 
-TODO implement: https://github.com/cirosantilli/cirodown/issues/114
-
 This option is similar to \x[h-title2-argument] but it additionally:
 * creates a new ID that you can refer to, and renders it with the alternate chosen title
 * the rendered ID on \x[internal-cross-reference]{p} is the same as what it is a synonym for
@@ -1402,6 +1412,8 @@ Furthermore, if `--split-headers` is used, another file is generated:
 gdb.html
 ``
 which contains a redirection from `gdb.html` to `gnu-debugger.html`.
+
+Implemented at: https://github.com/cirosantilli/cirodown/issues/114
 
 = `\H` `title2` argument of a synonym header
 {parent=h-synonym-argument}
@@ -4369,16 +4381,16 @@ TODO: also ignore during \x[watch].
 
 Dictionary of options that control \x[automatic-id-from-title] generation.
 
-= `cirodown.json` `id` `normalize`
+= `id` `normalize` `latin`
 {parent=cirodown-json-id}
 
-If `true`, does \x[ascii-normalization] on the title.
+If `true`, does \x[cirodown-json/latin-normalization] on the title.
 
 Default: `true`.
 
-= ASCII normalization
+= Latin normalization
 {c}
-{parent=cirodown-json-id-normalize}
+{parent=id-normalize-latin}
 
 ASCII normalization is a custom Cirodown defined normalization that converts many characters that look like latin characters into latin characters.
 
@@ -4394,7 +4406,24 @@ Bibliography:
 * https://stackoverflow.com/questions/990904/remove-accents-diacritics-in-a-string-in-javascript
 * https://github.com/cirosantilli/cirodown/issues/162
 
-For example
+= `id` `normalize` `punctuation`
+{parent=cirodown-json-id}
+
+If `true`, does \x[punctuation-normalization] on the title.
+
+Default: `true`.
+
+= Punctuation normalization
+{c}
+{parent=id-normalize-punctuation}
+
+Some selected punctuation marks are automatically converted into thier dominant corresponding pronounciations. These are:
+* `+`: `plus`
+* `&`: `and`
+
+Dashes are added around the signs if needed, e.g.:
+* `C++`: `c-plus-plus`
+* `Q&A`: `q-and-a`
 
 = `cirodown.json` `lint`
 {parent=cirodown-json-schema}

@@ -2383,7 +2383,10 @@ function convert_init_context(options={}, extra_returns={}) {
       {
         if (!('id' in cirodown_json)) { cirodown_json.id = {}; }
         const id = cirodown_json.id
-        if (!('normalize' in id)) { id['normalize'] = true; }
+        if (!('normalize' in id)) { id.normalize = {}; }
+        const normalize = id.normalize
+        if (!('latin' in normalize)) { normalize.latin = true; }
+        if (!('punctuation' in normalize)) { normalize.punctuation = true; }
       }
     }
   if (!('embed_includes' in options)) { options.embed_includes = false; }
@@ -3034,6 +3037,23 @@ function make_enum(arr) {
 
 function noext(str) {
   return str.substring(0, str.lastIndexOf('.'));
+}
+
+// https://cirosantilli.com/cirodown#ascii-normalization
+function normalize_latin_character(c) {
+  return lodash.deburr(c)
+}
+
+const NORMALIZE_PUNCTUATION_CHARACTER_MAP = {
+  '+': 'plus',
+  '&': 'and',
+}
+function normalize_punctuation_character(c) {
+  if (c in NORMALIZE_PUNCTUATION_CHARACTER_MAP) {
+    return ID_SEPARATOR + NORMALIZE_PUNCTUATION_CHARACTER_MAP[c] + ID_SEPARATOR
+  } else {
+    return c
+  }
 }
 
 // https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties/17781518#17781518
@@ -4480,20 +4500,21 @@ function symbol_to_string(symbol) {
   return symbol.toString().slice(7, -1);
 }
 
-// https://cirosantilli.com/cirodown#ascii-normalization
-function normalize_ascii_character(c) {
-  return lodash.deburr(c)
-}
-
 /** TODO correct unicode aware algorithm. */
 function title_to_id(title, options) {
   if (options === undefined) {
     options = {}
   }
+  if (options.normalize === undefined) {
+    options.normalize = {}
+  }
   const new_chars = [];
   for (let c of title) {
-    if (options.normalize) {
-      c = normalize_ascii_character(c)
+    if (options.normalize.latin) {
+      c = normalize_latin_character(c)
+    }
+    if (options.normalize.punctuation) {
+      c = normalize_punctuation_character(c)
     }
     c = c.toLowerCase();
     if (!is_ascii(c) || /[a-z0-9-]/.test(c)) {

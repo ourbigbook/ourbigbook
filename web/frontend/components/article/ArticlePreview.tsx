@@ -1,5 +1,6 @@
+/** @jsx jsx */
+import { css, jsx } from '@emotion/react'
 import axios from "axios";
-import Link from "next/link";
 import Router from "next/router";
 import React from "react";
 import useSWR from "swr";
@@ -92,7 +93,10 @@ const ArticlePreview = ({ article }) => {
           <CustomImage
             src={preview.author.image}
             alt="author's profile image"
-            style={{ height: "1.5em", verticalAlign: "middle" }}
+            css={css`
+              height: 1.5em;
+              vertical-align: middle;
+            `}
           />
         </CustomLink>
         <CustomLink
@@ -115,6 +119,11 @@ const ArticlePreview = ({ article }) => {
       <td>
         <span className="date">
           {formatDate(preview.createdAt)}
+        </span>
+      </td>
+      <td>
+        <span className="date">
+          {formatDate(preview.updatedAt)}
         </span>
       </td>
     </tr>

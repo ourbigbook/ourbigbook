@@ -3,6 +3,7 @@ import React from 'react'
 import Script from 'next/script'
 
 import { LOGIN_ACTION, REGISTER_ACTION, useCtrlEnterSubmit, setCookie, setupUserLocalStorage } from 'front'
+import { AppContext } from 'front'
 import config from 'front/config'
 import MapErrors from 'front/MapErrors'
 import Label from 'front/Label'
@@ -12,6 +13,7 @@ import routes from 'front/routes'
 const LoginForm = ({ register = false }) => {
   const [isLoading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState([]);
+  const { prevPageNoSignup } = React.useContext(AppContext)
   let email, setEmail;
   let displayName, setDisplayName;
   if (register) {
@@ -66,11 +68,11 @@ const LoginForm = ({ register = false }) => {
           if (data.verified) {
             if (data.user) {
               await setupUserLocalStorage(data.user, setErrors)
-              // TODO would be cool to have proper return home here.
-              // But as it stands it is too broken, notably our default redirection pattern now is page -> signup -> signin.
-              // so after signin user goes back to signup, making it feel like the signin failed.
+              // Can't simply user Router.back() here because our default redirection pattern now
+              // is page -> signup -> signin, so after signin user goes back to signup, making it
+              // feel like the signin failed.
               //Router.back()
-              Router.push(routes.home())
+              Router.push(prevPageNoSignup ? prevPageNoSignup : routes.home())
             }
           } else {
             Router.push(routes.userVerify(data.user.email))

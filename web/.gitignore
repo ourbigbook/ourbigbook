@@ -50,3 +50,6 @@ db.sqlite3-journal
 /out/
 /.now/
 .now
+
+# typescript
+tsconfig.tsbuildinfo

@@ -95,7 +95,13 @@ const ArticlePageHoc = (isIssue=false) => {
                   {' '}
                   <CustomLink href={routes.issues(issueArticle.slug)} className="btn"><IssueIcon /> See All ({issuesCount})</CustomLink>
                   {' '}
-                  <CustomLink className="btn" href={routes.issueNew(issueArticle.slug)}><NewArticleIcon /> New Discussion</CustomLink>
+                  <CustomLink
+                    className="btn"
+                    href={routes.issueNew(issueArticle.slug)}
+                    updatePreviousPage={true}
+                  >
+                    <NewArticleIcon /> New Discussion
+                  </CustomLink>
                 </>
               }
             </div>

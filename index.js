@@ -1703,7 +1703,7 @@ class Tokenizer {
             ) ||
             // Immediately at the start of an argument.
             this.tokens.length > 0 && (
-              this.tokens[this.tokens.length - 1].type === TokenType.NAMED_ARGUMENT_START ||
+              this.tokens[this.tokens.length - 1].type === TokenType.NAMED_ARGUMENT_NAME ||
               this.tokens[this.tokens.length - 1].type === TokenType.POSITIONAL_ARGUMENT_START
             )
           )
@@ -8778,6 +8778,17 @@ function ourbigbook_add_newlines_after_block(ast, context) {
     )
   ) {
     return 2
+    // TODO
+    //let n = 2
+    //if (context.last_render) {
+    //  if (context.last_render[context.last_render.length - 1] === '\n') {
+    //    n--
+    //    if (context.last_render[context.last_render.length - 2] === '\n') {
+    //      n--
+    //    }
+    //  }
+    //}
+    //return n
   } else {
     return 0
   }

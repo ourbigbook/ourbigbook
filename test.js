@@ -8715,7 +8715,8 @@ assert_cli(
       'notindex.bigb': `= Notindex\n`,
     },
     assert_exists: [
-      'out/db.sqlite3'
+      // This would be good to assert, but it then fails the test on PostgreSQL
+      //'out/db.sqlite3'
     ],
     assert_not_exists: [
       'out/html/notindex.html'

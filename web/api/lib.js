@@ -21,6 +21,9 @@ class ValidationError extends Error {
   constructor(errors, status) {
     super();
     this.errors = errors
+    if (status === undefined) {
+      status = 422
+    }
     this.status = status
   }
 }

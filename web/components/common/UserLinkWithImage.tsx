@@ -2,9 +2,9 @@
 
 import CustomLink from "components/common/CustomLink";
 import CustomImage from "components/common/CustomImage";
-import { Author } from "lib/types/Article";
+import { Author } from "lib/types/articleType";
 
-const UserLinkWithImage = ({ user }: Author) => {
+const UserLinkWithImage = ({ user }: { user: Author }) => {
   if (!user) return null;
   return (
     <CustomLink

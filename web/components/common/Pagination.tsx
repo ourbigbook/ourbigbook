@@ -96,7 +96,7 @@ const Pagination = ({
   );
 
   return (
-    <nav class="pagination">
+    <nav className="pagination">
       <PaginationItem onClick={handleFirstClick}>{`<<`}</PaginationItem>
       <Maybe test={hasPreviousPage}>
         <PaginationItem onClick={handlePrevClick}>{`<`}</PaginationItem>

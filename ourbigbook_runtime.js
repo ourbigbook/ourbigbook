@@ -26,12 +26,16 @@ const SELFLINK_CLASS = 'selflink'
 const CSS_MAX_MOBILE_WIDTH = 635
 
 // toplevel: if given, is an Element (not document) under which OurBigBook Marktup runtime will take effect.
-export function ourbigbook_runtime(toplevel) {
+export function ourbigbook_runtime(toplevel, opts={}) {
   if (toplevel === undefined) {
     toplevel = document;
     myDocument = document
   } else {
     myDocument = toplevel.ownerDocument
+  }
+  let hoverSelfLinkCallback = opts.hoverSelfLinkCallback
+  if (opts.hoverSelfLinkCallback === undefined) {
+    hoverSelfLinkCallback = () => {}
   }
 
   if (
@@ -175,6 +179,7 @@ export function ourbigbook_runtime(toplevel) {
           a.href = `#${e.target.id}`
           a.className = SELFLINK_CLASS
           e.target.prepend(a)
+          hoverSelfLinkCallback(a)
         }
       })
       elem.addEventListener('mouseleave', (e) => {

@@ -147,6 +147,18 @@ const articleData = [
           ['Test subscope 2 2', []],
         ], { headerArgs: '{scope}' }],
       ], { headerArgs: '{scope}' }],
+      ['Barack Obama',
+        [
+          ['Mathematics', []],
+        ],
+        {
+          headerArgs: '{scope}',
+          body: `This is a a scope named after the first test user.
+
+The goal of this is to test this possible edge case of short URL fragments e.g. when you visit <mathematics>.
+`,
+        }
+      ],
       ['Test tag', [
         ['Test tagged', [], { headerArgs: '{tag=Test tagger}' }],
         ['Test tagger', []],
@@ -158,6 +170,10 @@ const articleData = [
         ], { body: `Link to outsider: <test child 2>
 
 Link to parent: <test child>
+
+Link to external subelement: <equation my favorite equation>
+
+Link to external subelement long: <equation Test data long before ID>
 
 Link to child: <test child 1 1>
 
@@ -176,6 +192,9 @@ Link to topic: <#mathematics>
 `
         }],
       ]],
+      // This is used to check if we are jumping to an ID at the bottom of the page correctly.
+      ['Test data long before ID', [], { body: 'spacer\n\n'.repeat(50) + `$$\\frac{1}{\\sqrt{2}}$\${title=Test data long before ID}` }],
+
     ],
     {
       body: `Block math: <equation My favorite equation>

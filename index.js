@@ -1762,7 +1762,7 @@ function convert(
     options.input_path,
   )).tokenize();
   extra_returns.debug_perf.tokenize_post = globals.performance.now();
-  if (options.log.['tokens-inside']) {
+  if (options.log['tokens-inside']) {
     console.error('tokens:');
     for (let i = 0; i < tokens.length; i++) {
       console.error(`${i}: ${JSON.stringify(tokens[i], null, 2)}`);
@@ -1821,7 +1821,7 @@ function convert(
   }
 
   let ast = parse(tokens, options, context, sub_extra_returns);
-  if (options.log.['ast-inside']) {
+  if (options.log['ast-inside']) {
     console.error('ast:');
     console.error(JSON.stringify(ast, null, 2));
     console.error();
@@ -1853,8 +1853,8 @@ function convert(
       // Because the following conversion would redefine them.
       context.katex_macros = {};
     }
-    if (options.log.split_headers) {
-      console.error('split_headers non-split: ' + options.input_path);
+    if (options.log['split-headers']) {
+      console.error('split-headers non-split: ' + options.input_path);
     }
     // Non-split header toplevel conversion.
     let outpath;
@@ -1943,8 +1943,8 @@ function convert_header(cur_arg_list, context) {
     context.options = options;
     const first_ast = cur_arg_list[0];
     const header_graph_node = first_ast.header_graph_node;
-    if (options.log.split_headers) {
-      console.error('split_headers: ' + first_ast.id);
+    if (options.log['split-headers']) {
+      console.error('split-headers: ' + first_ast.id);
     }
     const header_graph_node_old_parent = header_graph_node.parent_node;
     // Add a new toplevel parent.
@@ -4083,9 +4083,11 @@ const INSANE_HEADER_CHAR = '=';
 const LOG_OPTIONS = new Set([
   'ast-inside',
   'parse',
+  'split-headers',
   'tokens-inside',
   'tokenize',
 ]);
+exports.LOG_OPTIONS = LOG_OPTIONS;
 const OUTPUT_FORMAT_CIRODOWN = 'cirodown';
 const OUTPUT_FORMAT_HTML = 'html';
 const OUTPUT_FORMAT_ID = 'id';
@@ -4912,8 +4914,6 @@ const DEFAULT_MACRO_LIST = [
         // The inner <div></div> inside arrow is so that:
         // - outter div: takes up space to make clicking easy
         // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
-        console.error(content);
-        console.error(href);
         ret += `><div${id_to_toc}>${TOC_ARROW_HTML}<a${href}>${content}</a>${get_descendant_count(tree_node)}<span class="hover-metadata">`;
 
         let toc_href = html_attr('href', '#' + my_toc_id);

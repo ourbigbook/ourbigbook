@@ -2949,7 +2949,7 @@ const DEFAULT_MACRO_LIST = [
     'Image',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
     macro_image_video_block_convert_function(function (ast, context, src, rendered_attrs, alt) {
-      return `<a${html_attr('href', src)}><img${html_attr('src', src)}${rendered_attrs}${alt}></a>\n`;
+      return `<a${html_attr('href', src)}><img${html_attr('src', src)}${html_attr('loading', 'lazy')}${rendered_attrs}${alt}></a>\n`;
     }),
     Object.assign(
       {
@@ -3329,8 +3329,7 @@ const DEFAULT_MACRO_LIST = [
             start = '';
           }
           return `<iframe width="560" height="${DEFAULT_MEDIA_HEIGHT}" src="https://www.youtube.com/embed/${src}${start}" ` +
-                `frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; ` +
-                `picture-in-picture" allowfullscreen></iframe>`;
+                `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
         } else {
           let start;
           if ('start' in ast.args) {

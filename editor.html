@@ -3,6 +3,7 @@
 <head>
 <meta charset=utf-8>
 <title>Cirodown editor demo</title>
+<link rel="stylesheet" href="out/main.min.css">
 <style>
 html, body {
   height: 100%;
@@ -23,7 +24,7 @@ html, body {
   overflow: auto;
   width: 50%;
 }
-#output {
+#output-container {
   border: 1px black solid;
   flex-grow: 1;
   height: 100%;
@@ -36,15 +37,9 @@ html, body {
 <body>
 <div id="container">
 <div id="input" contenteditable="true"></div>
+<div id="output-container" class="cirodown">
 <div id="output">
-<link
-  scoped
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css"
-  crossorigin="anonymous"
->
-<link scoped rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css"/>
-<link scoped rel="stylesheet" href="out/main.css"/>
+</div>
 </div>
 </div>
 </body>

@@ -313,6 +313,18 @@ class AstNode {
     }
   }
 
+  /* Return split_default, if not in a HEADER, inherit from the parent header. */
+  get_split_default(context) {
+    let ast;
+    if (this.macro_name !== Macro.HEADER_MACRO_NAME) {
+      ast = this.get_header_parent(context)
+    }
+    if (ast === undefined) {
+      ast = this;
+    }
+    return ast.split_default;
+  }
+
   is_header_descendant(other, context) {
     let cur_ast = this;
     const other_id = other.id;
@@ -2066,23 +2078,25 @@ function convert(
     // For non-split header toplevel conversion.
     let outpath;
     if (context.options.outfile === undefined) {
-      let id;
-      if (context.options.toplevel_id === undefined) {
-        const toplevel_header_node = context.header_graph.children[0];
-        if (toplevel_header_node === undefined) {
-          id = undefined
+      if (context.options.input_path !== undefined) {
+        let id;
+        if (context.options.toplevel_id === undefined) {
+          const toplevel_header_node = context.header_graph.children[0];
+          if (toplevel_header_node === undefined) {
+            id = undefined
+          } else {
+            const toplevel_header_ast = toplevel_header_node.value;
+            id = toplevel_header_ast.id;
+          }
         } else {
-          const toplevel_header_ast = toplevel_header_node.value;
-          id = toplevel_header_ast.id;
+          id = context.options.toplevel_id;
         }
-      } else {
-        id = context.options.toplevel_id;
+        outpath = output_path(
+          context.options.input_path,
+          id,
+          clone_and_set(context, 'to_split_headers', false)
+        )[0];
       }
-      outpath = output_path(
-        context.options.input_path,
-        id,
-        clone_and_set(context, 'to_split_headers', false)
-      )[0];
     } else {
       outpath = context.options.outfile;
     }
@@ -2246,7 +2260,10 @@ function convert_header(cur_arg_list, context, has_toc) {
     first_ast.header_graph_node = clone_object(first_ast.header_graph_node);
     context.header_graph.add_child(first_ast.header_graph_node);
     context.header_graph_top_level = first_ast.header_graph_node.get_level();
-    const output_path = output_path_from_ast(first_ast, context)[0];
+    const output_path = output_path_from_ast(
+      first_ast,
+      clone_and_set(context, 'to_split_headers', true)
+    )[0];
     if (options.log['split-headers']) {
       console.error('split-headers: ' + output_path);
     }
@@ -3002,7 +3019,10 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
         !to_split_headers && !ast.split_default
       ) {
         basename_ret = renamed_basename_noext;
-      } else if (!to_split_headers && ast.split_default) {
+      } else if (
+        !to_split_headers &&
+        ast.split_default
+      ) {
         basename_ret = '';
       }
 
@@ -3018,10 +3038,15 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
       basename_ret = renamed_basename_noext;
     }
   } else {
-    // Non-toplevel elements in split header mode are simple,
-    // the ID just gives the output path directly.
-    dirname_ret = id_dirname;
-    basename_ret = id_basename;
+    if (to_split_headers) {
+      // Non-toplevel elements in split header mode are simple,
+      // the ID just gives the output path directly.
+      dirname_ret = id_dirname;
+      basename_ret = id_basename;
+    } else {
+      dirname_ret = dirname;
+      basename_ret = renamed_basename_noext;
+    }
   }
 
   // Add -split, -nosplit or custom suffixes.
@@ -3393,6 +3418,12 @@ function parse(tokens, options, context, extra_returns={}) {
         const header_level = parseInt(
           convert_arg_noescape(ast.args.level, context)
         )
+        // splitDefault propagation to children.
+        if (ast.validation_output.splitDefault.given) {
+          ast.split_default = ast.validation_output.splitDefault.boolean;
+        } else if (include_options.cur_header !== undefined) {
+          ast.split_default = include_options.cur_header.split_default;
+        }
         if (is_synonym) {
           if (include_options.cur_header === undefined) {
             const message = `the first header of an input file cannot be a synonym`;
@@ -3417,14 +3448,6 @@ function parse(tokens, options, context, extra_returns={}) {
           cur_header_level = header_level + options.h_parse_level_offset;;
         }
 
-        // splitDefault propagation to children.
-        if (ast.validation_output.synonym.given.splitDefault) {
-          ast.split_default = ast.validation_output.synonym.boolean.splitDefault;
-        } else if (is_first_header) {
-          ast.split_default = true;
-        } else {
-          ast.split_default = include_options.cur_header.split_default;
-        }
         let parent_tree_node_error = false;
         let parent_id;
         if (ast.validation_output.parent.given) {
@@ -4527,7 +4550,7 @@ function x_href(target_id_ast, context) {
 // id='subdir/notindex'      -> ['subdir', 'notindex']
 // id='subdir/notindex-h2'   -> ['subdir', 'notindex-h2']
 function is_to_split_headers(ast, context) {
-  return (context.to_split_headers === undefined && ast.split_default) ||
+  return (context.to_split_headers === undefined && ast.get_split_default(context)) ||
          (context.to_split_headers !== undefined && context.to_split_headers);
 }
 
@@ -4555,7 +4578,8 @@ function x_href_parts(target_id_ast, context) {
       !context.in_split_headers &&
       context.to_split_headers === undefined &&
       context.include_path_set.has(target_input_path)
-    )
+    ) ||
+    target_id_ast.id === context.options.toplevel_id
   ) {
     href_path = '';
   } else {
@@ -4569,6 +4593,9 @@ function x_href_parts(target_id_ast, context) {
       target_id_ast,
       context,
     );
+    console.error('target_output_path_basename ' + target_output_path_basename);
+    console.error('full_output_path ' + full_output_path);
+    console.error('context.toplevel_output_path ' + context.toplevel_output_path);
     if (full_output_path === context.toplevel_output_path) {
       href_path = ''
     } else {
@@ -4597,12 +4624,21 @@ function x_href_parts(target_id_ast, context) {
   }
 
   // Fragment
-  const to_split_headers = is_to_split_headers(target_id_ast, context);
+  let to_split_headers = is_to_split_headers(target_id_ast, context);
+  if (
+    !context.in_split_headers &&
+    context.include_path_set.has(target_input_path)
+  ) {
+    // We are not split headears, and the output is in the current file.
+    // Therefore, don't use the split header target no matter what its
+    // splitDefault is, use the non-split one.
+    to_split_headers = false;
+  }
   let fragment;
   if (
     // Linking to a toplevel ID.
     target_id_ast.first_toplevel_child ||
-    // Linking towards a split header.
+    // Linking towards a split header not included in the current output.
     (
       target_id_ast.macro_name === Macro.HEADER_MACRO_NAME &&
       to_split_headers
@@ -4643,6 +4679,12 @@ function x_href_parts(target_id_ast, context) {
     }
     fragment = remove_toplevel_scope(target_id_ast.id, toplevel_ast, context);
   }
+  console.error('to_split_headers ' + to_split_headers);
+  console.error('target_id_ast.first_toplevel_child ' + target_id_ast.first_toplevel_child);
+  console.error('target_id_ast.macro_name ' + target_id_ast.macro_name);
+  console.error('target_id_ast.get_split_default(context) ' + target_id_ast.get_split_default(context));
+  console.error('fragment ' + fragment);
+  console.error('ast.split_default ' + target_id_ast.split_default);
 
   // return
   return [html_escape_attr(href_path), html_escape_attr(fragment)];
@@ -6090,7 +6132,16 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
+      if (
+        ast.args.content !== undefined &&
+        ast.args.content[0] !== undefined
+      ) {
+        console.error();
+        console.error('text ' + ast.args.content[0].text);
+      }
       const [href, content, target_ast] = x_get_href_content(ast, context);
+      console.error('content ' + content);
+      console.error();
       if (context.x_parents.size === 0) {
         // Counts.
         let counts_str;

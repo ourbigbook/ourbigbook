@@ -6,7 +6,7 @@ import { getOrderAndPage } from 'front/js'
 import { IndexPageProps } from 'front/IndexPage'
 import { MyGetServerSideProps } from 'front/types'
 
-export const getServerSidePropsIndexHoc = ({ followed=false }): MyGetServerSideProps => {
+export const getServerSidePropsIndexHoc = ({ followed=false }={}): MyGetServerSideProps => {
   return async ({ query, req, res }) => {
     const [order, pageNum, err] = getOrderAndPage(req, query.page)
     if (err) { res.statusCode = 422 }

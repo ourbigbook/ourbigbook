@@ -17,7 +17,7 @@ export interface IndexPageProps {
   articles?: (ArticleType & IssueType)[];
   articlesCount?: number;
   issueArticle?: ArticleType;
-  followed: boolean;
+  followed?: boolean;
   loggedInUser?: UserType;
   order: string;
   page: number;
@@ -30,7 +30,7 @@ function IndexPageHoc({ isIssue=false, showUsers=false }) {
   return ({
     articles,
     articlesCount,
-    followed,
+    followed=false,
     issueArticle,
     loggedInUser,
     order,

@@ -6,7 +6,10 @@ import { CommentType } from 'front/types/CommentType'
 
 export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
   return async ({ params: { slug, number: numberString }, req, res }) => {
-    if (slug instanceof Array) {
+    if (
+      slug instanceof Array &&
+      typeof numberString === 'string'
+    ) {
       const sequelize = req.sequelize
       typecastInteger
       const [number, ok] = typecastInteger(numberString)

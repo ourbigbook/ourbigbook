@@ -1745,8 +1745,6 @@ Lists sections that are \x[secondary-children] of the current section.
 
 The header hierarchy descendants already show under the \x[table-of-contents].
 
-TODO: list all descendants rather than just direct children, just like the table of contents. Possibly add "Other children" to the bottom of the table of contents.
-
 = Image
 {parent=macro}
 {title2=`\Image` and `\image`}

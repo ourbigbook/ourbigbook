@@ -62,19 +62,16 @@ async function generateDemoData(params) {
   for (var i = 0; i < nArticles; i++) {
     const userIdx = i % nUsers
     const date = addDays(date0, i)
+    const title = `My title ${i}`
     const articleArg = {
-      title: `My title ${i}`,
+      title,
       authorId: users[userIdx].id,
       createdAt: date,
       // TODO not taking effect, don't know how to do it from bulkCrate, only with instances:
       // https://stackoverflow.com/questions/42519583/sequelize-updating-updatedat-manually
       // https://github.com/sequelize/sequelize/issues/3759
       updatedAt: date,
-      body: `== h2
-
-=== h3
-
-\\i[Italic]
+      body: `\\i[Italic]
 
 \\b[Bold]
 
@@ -126,6 +123,10 @@ Table:
 | c
 | 3
 | 3.3
+
+== ${title} h2
+
+=== ${title} h3
 `,
     }
     articleArgs.push(articleArg)

@@ -1,8 +1,4 @@
-import Head from "next/head"
-import React from "react"
-
-import Footer from "components/common/Footer"
-import Navbar from "components/common/Navbar"
+import Layout from "components/layout"
 import ContextProvider from "lib/context"
 
 import 'ionicons/css/ionicons.min.css'
@@ -12,14 +8,16 @@ import 'cirodown/dist/cirodown.css'
 import 'cirodown/editor.scss'
 import 'style.scss'
 
-const MyApp = ({ Component, pageProps }) => (
-  <>
-    <ContextProvider>
-      <Navbar />
-      <Component {...pageProps} />
-      <Footer />
-    </ContextProvider>
-  </>
-);
+const MyApp = ({ Component, pageProps }) => {
+  return (
+    <>
+      <ContextProvider>
+        <Layout isEditor={!!Component.isEditor}>
+          <Component {...pageProps} />
+        </Layout>
+      </ContextProvider>
+    </>
+  )
+}
 
 export default MyApp;

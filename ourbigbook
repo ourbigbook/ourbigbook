@@ -1176,11 +1176,13 @@ if (cli.helpMacros) {
         cliWhere.defaultUsernameForHost = true
       }
       const host_row = await non_ourbigbook_options.sequelize.models.Cli.findOne({ where: cliWhere })
-      if (host_row === null) {
-        ;[err, username] = await read({ prompt: 'Username: ' })
-      } else if (username === undefined) {
-        username = host_row.username
-        console.log(`Using previous username: ${username}\n`);
+      if (username === undefined) {
+        if (host_row === null) {
+          ;[err, username] = await read({ prompt: 'Username: ' })
+        } else  {
+          username = host_row.username
+          console.log(`Using previous username: ${username}\n`);
+        }
       }
       const webApi = new WebApi({
         getToken: () => token,
@@ -1426,6 +1428,7 @@ if (cli.helpMacros) {
             // By following reverse order we don't have to worry about setting up previousSiblingId:
             // we just use the fact that the API automatically inserts as first sibling when not given.
             // TODO actually add siblings later on, as that will allow updating the page tree.
+            // https://docs.ourbigbook.com/pass-previoussiblingid-on-web-upload
             to_id_index_order: 'DESC',
             definedAt: treeDefinedAt,
           }
@@ -1516,10 +1519,10 @@ if (cli.helpMacros) {
                 ;({ data, status } = await webApi.articleCreateOrUpdate(
                   articleArgs,
                   {
-                    // TODO https://docs.ourbigbook.com/todo/remove-the-path-parameter-from-the-article-creation-api
                     path: articlePath,
                     render,
                     parentId
+                    // TODO pass previousSiblingid here as well: https://docs.ourbigbook.com/pass-previoussiblingid-on-web-upload
                   }
                 ))
               } catch(err) {

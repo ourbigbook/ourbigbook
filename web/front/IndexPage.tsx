@@ -4,11 +4,22 @@ import ArticleList from 'front/ArticleList'
 import CustomLink from 'front/CustomLink'
 import ErrorMessage from 'front/ErrorMessage'
 import Maybe from 'front/Maybe'
-import useLoggedInUser from 'front/useLoggedInUser'
-import routes from 'front/routes'
 import useMin from 'front/api/useMin'
 import { appName, aboutHref, articleLimit, apiPath } from 'front/config'
-import fetcher from 'fetcher'
+import fetcher from 'front/fetcher'
+import useLoggedInUser from 'front/useLoggedInUser'
+import routes from 'front/routes'
+import { ArticleType } from 'front/types/articleType'
+import { UserType } from 'front/types/userType'
+
+export interface IndexPageProps {
+  articles: ArticleType[];
+  articlesCount: number;
+  loggedInUser?: UserType;
+  page: number;
+  what: string;
+}
+
 
 const IndexPage = ({
   articles,
@@ -16,7 +27,7 @@ const IndexPage = ({
   loggedInUser,
   page,
   what
-}) => {
+}: IndexPageProps) => {
   let paginationUrlFunc
   switch (what) {
     case 'top':

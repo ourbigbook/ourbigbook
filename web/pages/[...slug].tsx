@@ -13,7 +13,7 @@ import Article from 'front/Article'
 import ArticleInfo from 'front/ArticleInfo'
 import { AppContext } from 'front'
 import CommentAPI from 'front/api/comment'
-import fetcher from 'fetcher'
+import fetcher from 'front/fetcher'
 import routes from 'front/routes'
 
 const ArticlePage = ({
@@ -34,19 +34,19 @@ const ArticlePage = ({
 
   const { setTitle } = React.useContext(AppContext)
   React.useEffect(() =>
-    setTitle(`${article.title} by ${displayAndUsernameText(article?.author)}`)
+    setTitle(`${article.title} by ${displayAndUsernameText(article?.file?.author)}`)
   )
   const showOthers = topicArticleCount > 1
-  const showCreateMyOwn = !loggedInUser || article.author.username !== loggedInUser.username
+  const showCreateMyOwn = !loggedInUser || article.file.author.username !== loggedInUser.username
   return (
     <>
       <div className="article-page">
         <div className="content-not-ourbigbook article-meta">
           <div className="article-info">
             <span className="mobile-hide">Author: </span>
-            <UserLinkWithImage user={article.author} showUsernameMobile={false} />
+            <UserLinkWithImage user={article.file.author} showUsernameMobile={false} />
             {' '}
-            <FollowUserButton user={article.author} showUsername={false} />
+            <FollowUserButton user={article.file.author} showUsername={false} />
           </div>
           <div className="article-info article-info-2">
             { showOthers&&

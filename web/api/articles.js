@@ -125,7 +125,7 @@ async function createOrUpdateArticle(req, res, opts) {
     // the previous value is not kept, since undefined is the only way to indicate parent.
     { defaultValue: undefined }
   )
-  const articles = await convert.convertArticle({
+  const articles = (await convert.convertArticle({
     author: loggedInUser,
     bodySource,
     forceNew: opts.forceNew,
@@ -136,7 +136,7 @@ async function createOrUpdateArticle(req, res, opts) {
     previousSiblingId,
     render,
     titleSource,
-  })
+  })).articles
   return res.json({ articles: await Promise.all(articles.map(article => article.toJson(loggedInUser))) })
 }
 

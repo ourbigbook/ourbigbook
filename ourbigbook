@@ -1170,9 +1170,9 @@ if (commander.helpMacros) {
               const lines = source.split('\n')
               let title = lines[0].match(titleRegex)[1]
               const inpathParse = path.parse(inpath)
-              const basenameNoext = path.join(inpathParse.dir, inpathParse.name)
+              const pathNoext = path.join(inpathParse.dir, inpathParse.name)
               if (rendered_outputs_entry.split_suffix) {
-                inpath = basenameNoext.slice(0, -(rendered_outputs_entry.split_suffix.length + 1)) + `.${ourbigbook.OURBIGBOOK_EXT}`
+                inpath = pathNoext.slice(0, -(rendered_outputs_entry.split_suffix.length + 1)) + `.${ourbigbook.OURBIGBOOK_EXT}`
               }
               let addId
               let addSubdir

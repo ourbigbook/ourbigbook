@@ -4903,6 +4903,12 @@ Values not documented in other sections:
 
   This is useful to debug the program if `ourbigbook.convert` blows up on the next stages before returning.
 * `db`: show database transactions done by OurBigBook, to help debug stuff like \x[internal-cross-file-reference]{p}
+* `mem`: show process memory usage as per Node.js' `process.memoryUsage()` after each \x[log-perf] step: https://stackoverflow.com/questions/12023359/what-do-the-return-values-of-node-js-process-memoryusage-stand-for[]. Implies \x[log-perf].
+
+  To use this options, you must run OurBigBook with the `--expose-gc` command line option, e.g. with:
+  ``
+  node --expose-gc $(which ourbigbook) myfile.bigb
+  ``
 * `parse`: parsing steps
 * `tokenize`: tokenization steps
 * `tokens`: final parsed token stream

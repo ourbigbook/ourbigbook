@@ -53,24 +53,23 @@ function assert_convert_ast(
 ) {
   it(description, async function () {
     options = Object.assign({}, options);
-    if (!('assert_xpath_matches' in options)) {
+    if (!('assert_xpath_main' in options)) {
       // Not ideal, but sometimes there's no other easy way
       // to test rendered stuff. All in list must match.
-      options.assert_xpath_matches = [];
+      options.assert_xpath_main = [];
     }
-    if (!('assert_not_xpath_matches' in options)) {
-      options.assert_not_xpath_matches = [];
+    if (!('assert_not_xpath_main' in options)) {
+      options.assert_not_xpath_main = [];
     }
-    if (!('assert_xpath_split_headers' in options)) {
-      // Map of output paths for split headers mode. Each output
-      // path must match all xpath expresssions in its list.
-      //
-      // Automatically set split_headers if not explicitly disabled.
-      options.assert_xpath_split_headers = {};
+    if (!('assert_xpath' in options)) {
+      // Assert xpath on other outputs besides the main output.
+      // These can come either from split headers, from from separate
+      // files via convert_before.
+      options.assert_xpath = {};
     }
-    if (!('assert_not_xpath_split_headers' in options)) {
-      // Like assert_xpath_split_headers but assert it does not match.
-      options.assert_not_xpath_split_headers = {};
+    if (!('assert_not_xpath' in options)) {
+      // Like assert_xpath but assert it does not match.
+      options.assert_not_xpath = {};
     }
     if (!('convert_before' in options)) {
       // List of strings. Convert files at these paths from default_file_reader
@@ -111,15 +110,6 @@ function assert_convert_ast(
       })
     }
     options.extra_convert_opts.fs_exists_sync = (my_path) => options.filesystem[my_path] !== undefined
-    if (
-      (
-        Object.keys(options.assert_xpath_split_headers).length > 0 ||
-        Object.keys(options.assert_not_xpath_split_headers).length > 0
-      ) &&
-      !('split_headers' in options.extra_convert_opts)
-    ) {
-      options.extra_convert_opts.split_headers = true;
-    }
     if (!('input_path_noext' in options) && options.extra_convert_opts.split_headers) {
       options.input_path_noext = cirodown.INDEX_BASENAME_NOEXT;
     }
@@ -272,24 +262,24 @@ function assert_convert_ast(
         }
       }
     }
-    for (const xpath_expr of options.assert_xpath_matches) {
-      assert_xpath_matches(xpath_expr, output);
+    for (const xpath_expr of options.assert_xpath_main) {
+      assert_xpath_main(xpath_expr, output);
     }
-    for (const xpath_expr of options.assert_not_xpath_matches) {
-      assert_xpath_matches(xpath_expr, output, { count: 0 });
+    for (const xpath_expr of options.assert_not_xpath_main) {
+      assert_xpath_main(xpath_expr, output, { count: 0 });
     }
-    for (const key in options.assert_xpath_split_headers) {
+    for (const key in options.assert_xpath) {
       const output = rendered_outputs[key];
       assert.notStrictEqual(output, undefined, `${key} not in ${Object.keys(extra_returns.rendered_outputs)}`);
-      for (const xpath_expr of options.assert_xpath_split_headers[key]) {
-        assert_xpath_matches(xpath_expr, output, {message: key});
+      for (const xpath_expr of options.assert_xpath[key]) {
+        assert_xpath_main(xpath_expr, output, {message: key});
       }
     }
-    for (const key in options.assert_not_xpath_split_headers) {
+    for (const key in options.assert_not_xpath) {
       const output = rendered_outputs[key];
       assert.notStrictEqual(output, undefined);
-      for (const xpath_expr of options.assert_not_xpath_split_headers[key]) {
-        assert_xpath_matches(xpath_expr, output, {
+      for (const xpath_expr of options.assert_not_xpath[key]) {
+        assert_xpath_main(xpath_expr, output, {
           count: 0,
           message: key,
         });
@@ -359,17 +349,17 @@ function assert_executable(
     if (!('args' in options)) {
       options.args = [];
     }
+    if (!('assert_xpath' in options)) {
+      options.assert_xpath = {};
+    }
+    if (!('assert_xpath_stdout' in options)) {
+      options.assert_xpath_stdout = [];
+    }
     if (!('cwd' in options)) {
       options.cwd = '.';
     }
     if (!('filesystem' in options)) {
       options.filesystem = {};
-    }
-    if (!('expect_stdout_xpath' in options)) {
-      options.expect_stdout_xpath = [];
-    }
-    if (!('expect_filesystem_xpath' in options)) {
-      options.expect_filesystem_xpath = {};
     }
     if (!('expect_filesystem_not_xpath' in options)) {
       options.expect_filesystem_not_xpath = {};
@@ -423,20 +413,20 @@ function assert_executable(
     });
     const assert_msg = exec_assert_message(out, cmd, args, cwd);
     assert.strictEqual(out.status, options.expect_exit_status, assert_msg);
-    for (const xpath_expr of options.expect_stdout_xpath) {
-      assert_xpath_matches(
+    for (const xpath_expr of options.assert_xpath_stdout) {
+      assert_xpath_main(
         xpath_expr,
         out.stdout.toString(cirodown_nodejs.ENCODING),
         {message: assert_msg},
       );
     }
-    for (const relpath in options.expect_filesystem_xpath) {
+    for (const relpath in options.assert_xpath) {
       const assert_msg_xpath = `path should match xpath: ${relpath}\n\n` + assert_msg;
       const fullpath = path.join(tmpdir, relpath);
       assert.ok(fs.existsSync(fullpath), assert_msg_xpath);
       const html = fs.readFileSync(fullpath).toString(cirodown_nodejs.ENCODING);
-      for (const xpath_expr of options.expect_filesystem_xpath[relpath]) {
-        assert_xpath_matches(xpath_expr, html, {message: assert_msg_xpath});
+      for (const xpath_expr of options.assert_xpath[relpath]) {
+        assert_xpath_main(xpath_expr, html, {message: assert_msg_xpath});
       }
     }
     for (const relpath in options.expect_filesystem_not_xpath) {
@@ -445,7 +435,7 @@ function assert_executable(
       assert.ok(fs.existsSync(fullpath), assert_msg_xpath);
       const html = fs.readFileSync(fullpath).toString(cirodown_nodejs.ENCODING);
       for (const xpath_expr of options.expect_filesystem_not_xpath[relpath]) {
-        assert_xpath_matches(xpath_expr, html, {message: assert_msg_xpath, count: 0});
+        assert_xpath_main(xpath_expr, html, {message: assert_msg_xpath, count: 0});
       }
     }
     for (const relpath of options.expect_exists) {
@@ -467,7 +457,7 @@ function assert_no_error(description, input, options) {
   assert_convert_ast(description, input, undefined, options)
 }
 
-function assert_xpath_matches(xpath_expr, string, options={}) {
+function assert_xpath_main(xpath_expr, string, options={}) {
   const xpath_matches = xpath_html(string, xpath_expr);
   if (!('count' in options)) {
     options.count = 1;
@@ -482,7 +472,7 @@ function assert_xpath_matches(xpath_expr, string, options={}) {
     } else {
       count_str = ` count=${options.count}`
     }
-    console.error(`assert_xpath_matches${count_str}: ` + options.message);
+    console.error(`assert_xpath_main${count_str}: ` + options.message);
     console.error('xpath: ' + xpath_expr);
     console.error('string:');
     console.error(string);
@@ -735,7 +725,7 @@ aa
     a('Q', [t('bb')], {}, {id: '_2'}),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:span[@class='hide-hover']//x:a[@href='#_1']",
       "//x:span[@class='hide-hover']//x:a[@href='#_2']",
     ],
@@ -747,7 +737,7 @@ assert_convert_ast('a non-header first element has a on-hover link with its id',
     a('P', [t('aa')], {}, {id: '_1'}),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:span[@class='hide-hover']//x:a[@href='#_1']",
     ],
   }
@@ -761,10 +751,10 @@ assert_convert_ast('a header first element has an empty on-hover link',
     }),
   ],
   {
-    assertnot_xpath_matches: [
+    assert_xpath_main: [
       "//x:span[@class='hide-hover']//x:a[@href='']",
     ],
-    assert_not_xpath_matches: [
+    assert_not_xpath_main: [
       "//x:span[@class='hide-hover']//x:a[@href='#tmp']",
     ],
   }
@@ -1252,7 +1242,7 @@ assert_convert_ast('table with id has caption',
     ], {}, { id: 'ab' }),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Table 1']",
     ]
   }
@@ -1274,7 +1264,7 @@ assert_convert_ast('table with title has caption',
     ], {}, { id: 'table-a-b' }),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Table 1']",
     ]
   }
@@ -1296,7 +1286,7 @@ assert_convert_ast('table with description has caption',
     ], {}, { id: '_1' }),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Table 1']",
     ]
   }
@@ -1316,7 +1306,7 @@ assert_convert_ast('table without id, title, nor description does not have capti
     ]),
   ],
   {
-    assert_not_xpath_matches: [
+    assert_not_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Table 1']",
     ]
   }
@@ -1358,11 +1348,11 @@ assert_convert_ast('table without id, title, nor description does not increment 
     ]),
   ],
   {
-    assert_not_xpath_matches: [
+    assert_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Table 1']",
       "//x:span[@class='caption-prefix' and text()='Table 2']",
     ],
-    assert_not_xpath_matches: [
+    assert_not_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Table 3']",
     ],
   },
@@ -1383,7 +1373,7 @@ gh
 ],
   {
     filesystem: { cd: '' },
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:img[@src='cd']",
     ],
   },
@@ -1402,7 +1392,7 @@ gh
 ],
   {
     filesystem: { cd: '' },
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:video[@src='cd']",
     ],
   },
@@ -1438,7 +1428,7 @@ assert_convert_ast('image with id has caption',
     }),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
     ]
   }
@@ -1452,7 +1442,7 @@ assert_convert_ast('image with title has caption',
     }, {}, { id: 'b-b' }),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
     ]
   }
@@ -1466,7 +1456,7 @@ assert_convert_ast('image with description has caption',
     }, {}, { id: '_1' }),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
     ]
   }
@@ -1480,7 +1470,7 @@ assert_convert_ast('image with source has caption',
     }, {}, { id: '_1' }),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
     ]
   }
@@ -1494,7 +1484,7 @@ assert_convert_ast('image without id, title, description nor source does not hav
     }, {}, { id: '_1' }),
   ],
   {
-    assert_not_xpath_matches: [
+    assert_not_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
     ]
   }
@@ -1512,11 +1502,11 @@ assert_convert_ast('image without id, title, description nor source does not inc
     a('Image', undefined, { src: [t('cc')], }, {}, { id: 'cc' }),
   ],
   {
-    assert_not_xpath_matches: [
+    assert_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
       "//x:span[@class='caption-prefix' and text()='Figure 2']",
     ],
-    assert_not_xpath_matches: [
+    assert_not_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Figure 3']",
     ],
   },
@@ -1540,7 +1530,7 @@ assert_convert_ast('link to image in nother files that has title with x to heade
 \\x[image-my-notindex]`,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:a[@href='image.html#image-my-notindex' and text()='Figure \"My notindex h1\"']",
     ],
     convert_before: [
@@ -1912,7 +1902,7 @@ assert_convert_ast('xss: a content and href',
   '\\a[ab&<>"\'cd][ef&<>"\'gh]{check=0}\n',
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:a[@href=concat('ab&<>\"', \"'\", 'cd') and text()=concat('ef&<>\"', \"'\", 'gh')]",
     ]
   }
@@ -2091,7 +2081,7 @@ assert_convert_ast('cross reference to non-included header in another file',
 `,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:a[@href='another-file.html' and text()='another file']",
     ],
     convert_before: [
@@ -2115,7 +2105,7 @@ assert_convert_ast('cross reference to included header in another file',
 `,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:a[@href='another-file.html' and text()='another file']",
       "//x:a[@href='another-file.html#another-file-h2' and text()='another file h2']",
     ],
@@ -2189,7 +2179,7 @@ assert_convert_ast('cross reference to non-included ids in another file',
     ),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       // Empty URL points to start of the document, which is exactly what we want.
       // https://stackoverflow.com/questions/5637969/is-an-empty-href-valid
       "//x:div[@class='p']//x:a[@href='' and text()='notindex']",
@@ -2205,7 +2195,7 @@ assert_convert_ast('cross reference to non-included ids in another file',
       xpath_header_split(1, 'notindex', 'notindex-split.html', cirodown.SPLIT_MARKER_TEXT),
       xpath_header_split(2, 'bb', 'bb.html', cirodown.SPLIT_MARKER_TEXT),
     ],
-    assert_xpath_split_headers: {
+    assert_xpath: {
       'notindex-split.html': [
         "//x:a[@href='include-two-levels.html' and text()='ee']",
         "//x:a[@href='include-two-levels.html#gg' and text()='gg']",
@@ -2233,6 +2223,7 @@ assert_convert_ast('cross reference to non-included ids in another file',
       // https://github.com/cirosantilli/cirodown/issues/116
       'include-two-levels-subdir/index.ciro',
     ],
+    extra_convert_opts: { split_headers: true },
     filesystem: Object.assign({}, default_filesystem, {
       'bb.png': ''
     }),
@@ -2247,7 +2238,7 @@ assert_convert_ast('cross reference to non-included image in another file',
 `,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:div[@class='p']//x:a[@href='notindex2.html#image-bb' and text()='Figure \"bb\"']",
     ],
     convert_before: [
@@ -2680,12 +2671,12 @@ assert_convert_ast('cross reference to toplevel scoped split header',
     a('P', [a('x', [t('cc to image bb')], {href: [t('image-bb')]})]),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       // Not `#notindex/image-bb`.
       // https://cirosantilli.com/cirodown#header-scope-argument-of-toplevel-headers
       "//x:a[@href='#image-bb' and text()='bb to image bb']",
     ],
-    assert_xpath_split_headers: {
+    assert_xpath: {
       'notindex/bb.html': [
         "//x:a[@href='../notindex.html#cc' and text()='bb to cc']",
         "//x:a[@href='#image-bb' and text()='bb to image bb']",
@@ -2695,6 +2686,7 @@ assert_convert_ast('cross reference to toplevel scoped split header',
       ],
     },
     input_path_noext: 'notindex',
+    extra_convert_opts: { split_headers: true },
     filesystem: { 'bb.png': '' },
   },
 );
@@ -2723,13 +2715,14 @@ assert_convert_ast('cross reference to non-toplevel scoped split header',
     a('P', [a('x', [t('tmp 3 to tmp 3')], {href: [t('tmp-3')]})]),
   ],
   {
-    assert_xpath_split_headers: {
+    assert_xpath: {
       'tmp-2/tmp-3.html': [
         "//x:a[@href='../tmp.html' and text()='tmp 3 to tmp']",
         "//x:a[@href='../tmp.html#tmp-2' and text()='tmp 3 to tmp 2']",
         "//x:a[@href='../tmp.html#tmp-2/tmp-3' and text()='tmp 3 to tmp 3']",
       ],
     },
+    extra_convert_opts: { split_headers: true },
     input_path_noext: 'tmp',
   },
 );
@@ -2750,13 +2743,13 @@ assert_convert_ast('cross reference to non-included file with toplevel scope',
     a('P', [a('x', undefined, {href: [t('toplevel-scope/image-h2')]})]),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       // Not `toplevel-scope.html#toplevel-scope`.
       "//x:div[@class='p']//x:a[@href='toplevel-scope.html' and text()='toplevel scope']",
       // Not `toplevel-scope.html#toplevel-scope/h2`.
       "//x:div[@class='p']//x:a[@href='toplevel-scope.html#h2' and text()='h2']",
     ],
-    assert_xpath_split_headers: {
+    assert_xpath: {
       // TODO https://github.com/cirosantilli/cirodown/issues/139
       //'notindex-split.html': [
       //  "//x:a[@href='toplevel-scope.html#image-h1' and text()='image h1']",
@@ -2765,6 +2758,7 @@ assert_convert_ast('cross reference to non-included file with toplevel scope',
     },
     convert_before: ['toplevel-scope.ciro'],
     input_path_noext: 'notindex',
+    extra_convert_opts: { split_headers: true },
     filesystem: {
       'toplevel-scope.ciro': `= Toplevel scope
 {scope}
@@ -2796,7 +2790,7 @@ assert_convert_ast('toplevel scope gets removed from IDs in the file',
     a('H', undefined, {level: [t('2')], title: [t('h2')]}),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       xpath_header(1, 'notindex'),
       "//x:div[@class='p']//x:a[@href='' and text()='link to notindex']",
       "//x:div[@class='p']//x:a[@href='#h2' and text()='link to h2']",
@@ -2842,7 +2836,7 @@ assert_convert_ast('x leading slash to escape scopes works across files',
 //== Notindex h2
 //`,
 //    },
-//    assert_xpath_matches: [
+//    assert_xpath_main: [
 //      "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='index scope 2 to notindex h2']",
 //    ]
 //  }
@@ -2854,12 +2848,13 @@ assert_convert_ast('scopes hierarchy resolution works across files with director
 `,
   undefined,
   {
-    assert_xpath_split_headers: {
+    assert_xpath: {
       'subdir/notindex.html': [
         "//x:div[@class='p']//x:a[@href='notindex2.html#notindex2-h2' and text()='index to notindex2 h2']",
       ]
     },
     convert_before: ['subdir/notindex2.ciro'],
+    extra_convert_opts: { split_headers: true },
     filesystem: {
      'subdir/notindex2.ciro': `= Notindex2
 
@@ -2888,13 +2883,13 @@ assert_convert_ast('header simple',
     a('H', undefined, {level: [t('4')], title: [t('My header 4')]}),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       // The toplevel header does not have any numerical prefix, e.g. "1. My header",
       // it is just "My header".
       xpath_header(1, 'notindex', "x:a[@href='' and text()='My header']"),
       xpath_header(2, 'my-header-2', "x:a[@href='#my-header-2' and text()='1. My header 2']"),
     ],
-    assert_xpath_split_headers: {
+    assert_xpath: {
       'my-header-2.html': [
         // The toplevel split header does not get a numerical prefix.
         xpath_header(1, 'my-header-2', "x:a[@href='' and text()='My header 2']"),
@@ -2904,6 +2899,7 @@ assert_convert_ast('header simple',
         xpath_header(1, 'my-header-3', "x:a[@href='' and text()='My header 3']"),
       ],
     },
+    extra_convert_opts: { split_headers: true },
     input_path_noext: 'notindex',
   },
 );
@@ -3069,7 +3065,7 @@ assert_error('header tag and synonym arguments are incompatible',
 //`,
 //  undefined,
 //  {
-//    assert_xpath_matches: [
+//    assert_xpath_main: [
 //      "//x:blockquote//x:a[@href='#1-2' and text()='Section 1. \"1 2\"']",
 //    ],
 //  }
@@ -3090,7 +3086,7 @@ assert_convert_ast('full link to synonym with title2 does not get dummy empty pa
 `,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:blockquote//x:a[@href='#1-2' and text()='Section 1. \"1 3\"']",
     ],
   }
@@ -3180,7 +3176,7 @@ assert_convert_ast('header numbered argument',
   header_numbered_input,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:blockquote//x:a[@href='#tmp-2' and text()='Section 1. \"tmp 2\"']",
       "//x:blockquote//x:a[@href='#tmp-4' and text()='Section \"tmp 4\"']",
       "//x:blockquote//x:a[@href='#tmp-8' and text()='Section 1.1. \"tmp 8\"']",
@@ -3194,7 +3190,7 @@ assert_convert_ast('header numbered argument',
       "//*[@id='toc']//x:a[@href='#tmp-2-2' and text()='2. tmp 2 2']",
       "//*[@id='toc']//x:a[@href='#tmp-2-2-3' and text()='2.1. tmp 2 2 3']",
     ],
-    assert_xpath_split_headers: {
+    assert_xpath: {
       'tmp-6.html': [
         "//*[@id='toc']//x:a[@href='tmp-7.html' and text()='1. tmp 7']",
         "//*[@id='toc']//x:a[@href='tmp-8.html' and text()='1.1. tmp 8']",
@@ -3203,13 +3199,14 @@ assert_convert_ast('header numbered argument',
         "//*[@id='toc']//x:a[@href='tmp-8.html' and text()='1. tmp 8']",
       ],
     },
+    extra_convert_opts: { split_headers: true },
   },
 );
 assert_convert_ast('header numbered cirodown.json',
   header_numbered_input,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:blockquote//x:a[@href='#tmp-2' and text()='Section \"tmp 2\"']",
       "//x:blockquote//x:a[@href='#tmp-4' and text()='Section \"tmp 4\"']",
       "//x:blockquote//x:a[@href='#tmp-8' and text()='Section 1.1. \"tmp 8\"']",
@@ -3223,7 +3220,7 @@ assert_convert_ast('header numbered cirodown.json',
       "//*[@id='toc']//x:a[@href='#tmp-2-2' and text()='tmp 2 2']",
       "//*[@id='toc']//x:a[@href='#tmp-2-2-3' and text()='tmp 2 2 3']",
     ],
-    assert_xpath_split_headers: {
+    assert_xpath: {
       'tmp-6.html': [
         "//*[@id='toc']//x:a[@href='tmp-7.html' and text()='1. tmp 7']",
         "//*[@id='toc']//x:a[@href='tmp-8.html' and text()='1.1. tmp 8']",
@@ -3232,7 +3229,10 @@ assert_convert_ast('header numbered cirodown.json',
         "//*[@id='toc']//x:a[@href='tmp-8.html' and text()='1. tmp 8']",
       ],
     },
-    extra_convert_opts: { cirodown_json: { h: { numbered: false } } }
+    extra_convert_opts: {
+      split_headers: true,
+      cirodown_json: { h: { numbered: false } }
+    }
   },
 );
 assert_convert_ast('header splitDefault on cirodown.json',
@@ -3244,17 +3244,20 @@ assert_convert_ast('header splitDefault on cirodown.json',
 `,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//*[@id='toc']//x:a[@href='notindex.html' and text()='1. Notindex']",
       "//*[@id='toc']//x:a[@href='notindex-h2.html' and text()='1.1. Notindex h2']",
     ],
-    assert_xpath_split_headers: {
+    assert_xpath: {
       'notindex.html': [
         "//*[@id='toc']//x:a[@href='notindex-h2.html' and text()='1. Notindex h2']",
       ],
     },
     convert_before: ['notindex.ciro'],
-    extra_convert_opts: { cirodown_json: { h: { splitDefault: true } } },
+    extra_convert_opts: {
+      split_headers: true,
+      cirodown_json: { h: { splitDefault: true } }
+    },
     filesystem: {
       'notindex.ciro': `= Notindex
 
@@ -3414,7 +3417,7 @@ aa
     a('C', [t('aa\n')], { id: [t('bb')] }, { id: 'bb'} ),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Code 1']",
     ]
   }
@@ -3429,7 +3432,7 @@ aa
     a('C', [t('aa\n')], { title: [t('b b')] }, { id: 'code-b-b'} ),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Code 1']",
     ]
   }
@@ -3444,7 +3447,7 @@ aa
     a('C', [t('aa\n')], { description: [t('b b')] }, { id: '_1'} ),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Code 1']",
     ]
   }
@@ -3458,7 +3461,7 @@ aa
     a('C', [t('aa\n')], {}, { id: '_1'} ),
   ],
   {
-    assert_not_xpath_matches: [
+    assert_not_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Code 1']",
     ]
   }
@@ -3484,11 +3487,11 @@ cc
     a('C', [t('cc\n')], { id: [t('22')] }, { id: '22'} ),
   ],
   {
-    assert_not_xpath_matches: [
+    assert_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Code 1']",
       "//x:span[@class='caption-prefix' and text()='Code 2']",
     ],
-    assert_not_xpath_matches: [
+    assert_not_xpath_main: [
       "//x:span[@class='caption-prefix' and text()='Code 3']",
     ],
   },
@@ -3602,7 +3605,7 @@ assert_convert_ast('word count simple',
 `,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//*[contains(@class, 'h-nav')]//*[@class='word-count' and text()='3']",
     ],
   }
@@ -3616,7 +3619,7 @@ I like \\x[my-h2]
 `,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       // TODO the desired value is 4. 2 is not terrible though, better than 3 if we were considering the href.
       "//*[contains(@class, 'h-nav')]//*[@class='word-count' and text()='2']",
     ],
@@ -3633,15 +3636,16 @@ assert_convert_ast('word count descendant in source',
 `,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//*[contains(@class, 'h-nav')]//*[@class='word-count' and text()='3']",
       "//*[contains(@class, 'h-nav')]//*[@class='word-count-descendant' and text()='5']",
     ],
-    assert_xpath_split_headers: {
+    assert_xpath: {
       'h2.html': [
         "//*[contains(@class, 'h-nav')]//*[@class='word-count' and text()='2']",
       ]
-    }
+    },
+    extra_convert_opts: { split_headers: true },
   }
 );
 assert_convert_ast('word count descendant from include without embed includes',
@@ -3653,7 +3657,7 @@ assert_convert_ast('word count descendant from include without embed includes',
 `,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//*[contains(@class, 'h-nav')]//*[contains(@class, 'word-count') and text()='3']",
       "//*[contains(@class, 'h-nav')]//*[contains(@class, 'word-count-descendant') and text()='5']",
     ],
@@ -3760,7 +3764,7 @@ assert_convert_ast('xss: H id',
 `,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:div[@class=\"h\" and @id=concat('&<>\"', \"'\")]",
     ]
   }
@@ -3787,7 +3791,7 @@ assert_convert_ast('split headers have correct table of contents',
     a('H', undefined, {level: [t('4')], title: [t('h1 2 1 1')]}),
   ],
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       // There is a self-link to the Toc.
       "//*[@id='toc']",
       "//*[@id='toc']//x:a[@href='#toc' and text()='Table of contents']",
@@ -3811,7 +3815,7 @@ assert_convert_ast('split headers have correct table of contents',
       "//*[@id='toc']//*[@class='title-div']//*[@class='descendant-count' and text()='4']",
       "//*[@id='toc']//*[@id='toc-h1-2']//*[@class='descendant-count' and text()='2']",
     ],
-    assert_xpath_split_headers: {
+    assert_xpath: {
       'notindex-split.html': [
         // Split output files get their own ToCs.
         "//*[@id='toc']",
@@ -3837,11 +3841,12 @@ assert_convert_ast('split headers have correct table of contents',
         "//*[@id='toc']//*[@id='toc-h1-2-1']//*[@class='descendant-count' and text()='1']",
       ],
     },
-    assert_not_xpath_split_headers: {
+    assert_not_xpath: {
       // A node without no children headers has no ToC,
       // as it would just be empty and waste space.
       'h1-2-1-1.html': ["//*[text()='Table of contents']"],
     },
+    extra_convert_opts: { split_headers: true },
     input_path_noext: 'notindex',
   },
 );
@@ -3862,7 +3867,7 @@ assert_convert_ast('table of contents contains included headers numbered without
 `,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:blockquote//x:a[@href='notindex2.html' and text()='Section 1. \"Notindex2\"']",
       "//*[@id='toc']//x:a[@href='notindex2.html' and @data-test='0' and text()='1. Notindex2']",
       "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2' and @data-test='1' and text()='1.1. Notindex2 h2']",
@@ -3872,7 +3877,7 @@ assert_convert_ast('table of contents contains included headers numbered without
       "//*[@id='toc']//x:a[@href='notindex3.html#notindex3-h3' and @data-test='5' and text()='1.2.1.2. Notindex3 h3']",
       "//*[@id='toc']//x:a[@href='#notindex-h2' and @data-test='6' and text()='2. Notindex h2']",
     ],
-    assert_xpath_split_headers: {
+    assert_xpath: {
       'notindex-split.html': [
         // Links to external source files keep the default split just like regular links.
         "//*[@id='toc']//x:a[@href='notindex2.html' and text()='1. Notindex2']",
@@ -3884,6 +3889,7 @@ assert_convert_ast('table of contents contains included headers numbered without
       'notindex3.ciro',
       'notindex2.ciro',
     ],
+    extra_convert_opts: { split_headers: true },
     filesystem: {
       'notindex2.ciro': `= Notindex2
 
@@ -3912,7 +3918,7 @@ assert_convert_ast('table of contents respects numbered=0 of included headers',
 `,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//*[@id='toc']//x:a[@href='notindex2.html' and text()='1. Notindex2']",
       "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='Notindex2 h2']",
       "//*[@id='toc']//x:a[@href='#notindex-h2' and text()='2. Notindex h2']",
@@ -3942,7 +3948,7 @@ assert_convert_ast('table of contents include placeholder header has no number w
 `,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:blockquote//x:a[@href='notindex2.html' and text()='Section \"Notindex2\"']",
       "//*[@id='toc']//x:a[@href='notindex2.html' and text()='Notindex2']",
       "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='1. Notindex2 h2']",
@@ -3967,12 +3973,12 @@ assert_convert_ast('table of contents does not show synonyms of included headers
 `,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//*[@id='toc']//x:a[@href='notindex2.html' and text()='1. Notindex2']",
       "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='1.1. Notindex2 h2']",
       "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2-2' and text()='1.2. Notindex2 h2 2']",
     ],
-    assert_not_xpath_matches: [
+    assert_not_xpath_main: [
       "//*[@id='toc']//x:a[contains(text(),'synonym')]",
     ],
     convert_before: [
@@ -4001,19 +4007,22 @@ assert_convert_ast('header numbered=0 in cirodown.json works across source files
 `,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//*[@id='toc']//x:a[@href='notindex.html' and text()='Notindex']",
       "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
       "//*[@id='toc']//x:a[@href='#h2' and text()='H2']",
     ],
-    assert_xpath_split_headers: {
+    assert_xpath: {
       'notindex.html': [
         "//*[@id='toc']//x:a[@href='#notindex-h2' and text()='Notindex h2']",
       ],
     },
 
     convert_before: ['notindex.ciro'],
-    extra_convert_opts: { cirodown_json: { h: { numbered: false } } },
+    extra_convert_opts: {
+      split_headers: true,
+      cirodown_json: { h: { numbered: false } }
+    },
     filesystem: {
       'notindex.ciro': `= Notindex
 
@@ -4030,13 +4039,16 @@ assert_convert_ast('split header with an include and no headers has a single tab
 `,
   undefined,
   {
-    assert_xpath_split_headers: {
+    assert_xpath: {
       'split.html': [
         "//*[@id='toc']",
       ],
     },
     convert_before: ['notindex.ciro'],
-    extra_convert_opts: { cirodown_json: { h: { numbered: false } } },
+    extra_convert_opts: {
+      split_headers: true,
+      cirodown_json: { h: { numbered: false } }
+    },
     filesystem: {
       'notindex.ciro': `= Notindex
 `,
@@ -4053,18 +4065,19 @@ assert_convert_ast('toplevel scope gets removed on table of contents of included
 `,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:blockquote//x:a[@href='notindex.html#notindex-h2' and text()='Section 1.1. \"Notindex h2\"']",
       "//*[@id='toc']//x:a[@href='notindex.html' and text()='1. Notindex']",
       "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='1.1. Notindex h2']",
     ],
-    assert_xpath_split_headers: {
+    assert_xpath: {
       'split.html': [
         "//*[@id='toc']//x:a[@href='notindex.html' and text()='1. Notindex']",
         "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='1.1. Notindex h2']",
       ],
     },
     convert_before: ['notindex.ciro'],
+    extra_convert_opts: { split_headers: true },
     filesystem: {
       'notindex.ciro': `= Notindex
 {scope}
@@ -4089,7 +4102,7 @@ assert_executable('executable: toplevel scope gets removed on table of contents 
 == Notindex h2
 `,
     },
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'index.html': [
         "//*[@id='toc']//x:a[@href='notindex.html' and text()='1. Notindex']",
         "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='1.1. Notindex h2']",
@@ -4278,10 +4291,12 @@ assert_convert_ast('cross reference to embed include header',
     a('Toc'),
   ].concat(include_two_levels_ast_args),
   Object.assign({
-    assert_xpath_matches: [
-      "//x:div[@class='p']//x:a[@href='#include-two-levels' and text()='ee']",
-      "//x:div[@class='p']//x:a[@href='#gg' and text()='gg']",
-    ]},
+      assert_xpath_main: [
+        "//x:div[@class='p']//x:a[@href='#include-two-levels' and text()='ee']",
+        "//x:div[@class='p']//x:a[@href='#gg' and text()='gg']",
+      ],
+      extra_convert_opts: { split_headers: true },
+    },
     include_opts
   ),
 );
@@ -4410,7 +4425,7 @@ assert_convert_ast('include without parent header with embed includes',
     a('P', [t('ff')]),
   ],
   {
-    //assert_xpath_matches: [
+    //assert_xpath_main: [
     //  // TODO getting corrupt <hNaN>
     //  xpath_header(1, 'include-one-level-1'),
     //  xpath_header(1, 'include-one-level-2'),
@@ -4452,7 +4467,7 @@ assert_convert_ast('include without parent header without embed includes',
       'include-one-level-1.ciro',
       'include-one-level-2.ciro',
     ],
-    assert_xpath_matches: [
+    assert_xpath_main: [
       // TODO getting corrupt <hNaN>
       //xpath_header(1, 'include-one-level-1'),
       //xpath_header(1, 'include-one-level-2'),
@@ -4539,7 +4554,7 @@ assert_convert_ast('relative include in subdirectory',
       'top.ciro': `= Top
 `,
     },
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//*[@id='toc']//x:a[@href='notindex.html' and @data-test='0' and text()='1. Notindex']",
       "//*[@id='toc']//x:a[@href='notindex2.html' and @data-test='1' and text()='1.1. Notindex2']",
       "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and @data-test='2' and text()='1.2. Notindex h2']",
@@ -4561,13 +4576,52 @@ assert_convert_ast('include from parent to subdirectory',
     filesystem: {
       'subdir/index.ciro': `= Index
 
-== h2`,
+== h2
+`,
       'subdir/notindex.ciro': `= Notindex
 
 == Notindex h2
 `,
     },
     input_path_noext: 'index',
+  }
+);
+assert_convert_ast('subdir/index.ciro outputs to subdir without trailing slash with html_x_extension=true',
+  `= Subdir
+
+\\x[subdir/notindex][link to subdir notindex]
+`,
+  undefined,
+  {
+    convert_before: ['subdir/notindex.ciro', 'subdir/index.ciro'],
+    filesystem: {
+      'subdir/notindex.ciro': `= Notindex
+`,
+    },
+    input_path_noext: 'subdir/index',
+    extra_convert_opts: { html_x_extension: true },
+    assert_xpath_main: [
+      "//x:a[@href='subdir/notindex.html' and text()='link to subdir notindex']",
+    ]
+  }
+);
+assert_convert_ast('subdir/index.ciro outputs to subdir without trailing slash with html_x_extension=false',
+  `= Subdir
+
+\\x[subdir/notindex][link to subdir notindex]
+`,
+  undefined,
+  {
+    convert_before: ['subdir/notindex.ciro', 'subdir/index.ciro'],
+    filesystem: {
+      'subdir/notindex.ciro': `= Notindex
+`,
+    },
+    input_path_noext: 'subdir/index',
+    extra_convert_opts: { html_x_extension: false },
+    assert_xpath_main: [
+      "//x:a[@href='subdir/notindex' and text()='link to subdir notindex']",
+    ]
   }
 );
 
@@ -4594,7 +4648,7 @@ assert_convert_ast('CirodownExample that links to id in another file',
   `\\CirodownExample[[\\x[notindex\\]]]`,
   undefined,
   {
-    assert_xpath_matches: [
+    assert_xpath_main: [
       "//x:a[@href='notindex.html' and text()='notindex h1']",
     ],
     convert_before: ['notindex.ciro'],
@@ -4809,7 +4863,7 @@ assert_convert_ast('one paragraph implicit split headers',
   'ab\n',
   [a('P', [t('ab')])],
   {
-    extra_convert_opts: {split_headers: true},
+    extra_convert_opts: { split_headers: true },
     input_path_noext: 'notindex',
   }
 );
@@ -4850,7 +4904,7 @@ assert_executable(
   {
     stdin: 'aabb',
     expect_not_exists: ['out'],
-    expect_stdout_xpath: ["//x:div[@class='p' and text()='aabb']"],
+    assert_xpath_stdout: ["//x:div[@class='p' and text()='aabb']"],
   }
 );
 assert_executable(
@@ -4859,7 +4913,7 @@ assert_executable(
   {
     stdin: '\\a[asdf]',
     expect_not_exists: ['out'],
-    expect_stdout_xpath: ["//x:a[@href='asdf']"],
+    assert_xpath_stdout: ["//x:a[@href='asdf']"],
     filesystem: { 'asdf': '' },
   }
 );
@@ -4870,7 +4924,7 @@ assert_executable(
     filesystem: {
       'notindex.ciro': `= Notindex\n`,
     },
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'notindex.html': [xpath_header(1, 'notindex')],
     }
   }
@@ -4989,6 +5043,8 @@ $$
 
 \\x[has-split-suffix][link to has split suffix]
 
+\\x[notindex][link to subdir notindex]
+
 \\Include[included-by-subdir-index]
 
 == Scope
@@ -5025,7 +5081,7 @@ assert_executable(
   {
     args: ['--split-headers', '.'],
     filesystem: complex_filesystem,
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'h2-2.html': [
         // These headers are not children of the current toplevel header.
         // Therefore, they do not get a number like "Section 2.".
@@ -5100,6 +5156,7 @@ assert_executable(
         // to make sure we don't have to rewrite everything.
         //"//*[@id='toc']//x:a[@href='included-by-index-split.html' and text()='1. Included by index']",
       ],
+      // TODO modify to subdir.html
       'subdir/index.html': [
         xpath_header(1),
         xpath_header_split(1, '', 'split.html', cirodown.SPLIT_MARKER_TEXT),
@@ -5111,6 +5168,7 @@ assert_executable(
         xpath_header_split(3, 'scope/h3', 'scope/h3.html', cirodown.SPLIT_MARKER_TEXT),
         "//x:a[@href='../index.html' and text()='link to toplevel']",
         "//x:a[@href='../index.html#h2' and text()='link to toplevel subheader']",
+        "//x:a[@href='notindex.html' and text()='link to subdir notindex']",
       ],
       'subdir/split.html': [
         xpath_header(1, ''),
@@ -5203,7 +5261,7 @@ assert_executable(
 == Index h2
 `,
     },
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'index.html': [
         xpath_header(1, 'index'),
         "//x:a[@href='subdir/index.html#index-h2' and text()='link to subdir index h2']",
@@ -5228,7 +5286,7 @@ assert_executable(
   'included-by-index.ciro': `= Included by index
 `,
     },
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'included-by-index.html': [
         xpath_header_parent(1, 'included-by-index', 'index.html', 'Index'),
         xpath_header_parent(1, 'included-by-index', 'not-readme.html', 'Not readme'),
@@ -5268,7 +5326,7 @@ assert_executable(
     expect_exists: [
       'out/publish/out/publish/dist/cirodown.css',
     ],
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'out/publish/out/publish/index.html': [
         "//x:div[@class='p']//x:a[@href='notindex' and text()='link to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex#notindex-h2' and text()='link to notindex h2']",
@@ -5318,7 +5376,7 @@ assert_executable(
       'scss.css',
       'index.html',
     ],
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'subdir/index.html': [xpath_header(1)],
       'subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
@@ -5347,7 +5405,7 @@ assert_executable(
       'subdir/out',
       'xml.xml',
     ],
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'subdir/index.html': [xpath_header(1, '')],
       'subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
@@ -5366,7 +5424,7 @@ assert_executable(
     // Place out next to cirodown.json which should be the toplevel.
     expect_exists: ['out'],
     expect_not_exists: ['subdir/out', 'index.html', 'subdir/index.html'],
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'subdir/notindex.html': [xpath_header(1, 'notindex')],
     },
   }
@@ -5383,7 +5441,7 @@ assert_executable(
     // Don't know a better place to place out, so just put it int subdir.
     expect_exists: ['out'],
     expect_not_exists: ['subdir/out', 'index.html', 'subdir/index.html'],
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'subdir/notindex.html': [xpath_header(1, 'notindex')],
     },
   }
@@ -5408,7 +5466,7 @@ assert_executable(
       'subdir/index.html',
       'subdir/notindex.html',
     ],
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'my_outdir/index.html': [xpath_header(1, '')],
       'my_outdir/subdir/index.html': [xpath_header(1, '')],
       'my_outdir/subdir/notindex.html': [xpath_header(1, 'notindex')],
@@ -5456,7 +5514,7 @@ assert_executable(
 {synonym}
 `,
     },
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'index.html': [
         "//x:div[@class='p']//x:a[@href='#h2' and text()='h2']",
         "//x:div[@class='p']//x:a[@href='#h2' and text()='My h2 synonym']",
@@ -5492,7 +5550,7 @@ assert_executable(
 {synonym}
 `,
     },
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'asdf/my-h2-synonym.html': [
         "//x:script[text()=\"location='index.html#h2'\"]",
       ],
@@ -5575,7 +5633,7 @@ assert_executable(
 `,
       'img.jpg': '',
     },
-    expect_filesystem_xpath: {
+    assert_xpath: {
       // This is he split one.
       'index.html': [
         "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
@@ -5791,7 +5849,7 @@ assert_executable(
       'README.ciro': `= Index
 `,
     },
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'index.html': [
         // The start of a minified CSS rule from cirodown.scss.
         "//x:style[contains(text(),'.cirodown{')]",
@@ -5918,7 +5976,7 @@ assert_executable(
       'i-exist': ``,
       'subdir/i-exist-subdir': ``,
     },
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'index.html': [
         "//x:a[@href='i-exist' and text()='h3 i-exist']",
         "//x:img[@src='i-exist' and @alt='h3 i-exist img']",
@@ -5983,7 +6041,7 @@ assert_executable(
       'myproject/scss.css',
       'myproject/cirodown.json',
     ],
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'myproject/index.html': [
           xpath_header(1, ''),
       ],
@@ -6023,7 +6081,7 @@ assert_executable(
       'myproject/out',
       'myproject/scss.css',
     ],
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'myproject/index.html': [
           xpath_header(1, ''),
       ],
@@ -6067,7 +6125,7 @@ assert_executable(
 </html>
 `
     },
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'index.html': [
         "//x:a[@id='root-relpath' and @href='']",
         "//x:a[@id='root-page' and @href='']",
@@ -6168,7 +6226,7 @@ assert_executable(
 == Notindex h2 2
 `,
     },
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'index.html': [
         // Would like to test like this, but it doesn't seem implemented in this crappy xpath implementation.
         // So we revert to instrumentation instead then.
@@ -6234,7 +6292,7 @@ assert_executable(
 \\x[index]{parent}
 `,
     },
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'index.html': [
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html']`,
       ],
@@ -6387,7 +6445,7 @@ assert_executable(
   'executable: when invoking with a single file timestamps are automatically ignored and render is forced',
   {
     args: ['notindex.ciro'],
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'notindex.html': [
         `//x:a[@href='index.html#h2' and text()='h2 hacked']`,
       ],
@@ -6426,7 +6484,7 @@ assert_executable(
       'README.ciro': `asdf
 `,
     },
-    expect_filesystem_xpath: {
+    assert_xpath: {
       'index.html': [
         "//x:div[@class='p' and text()='asdf']",
       ],

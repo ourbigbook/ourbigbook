@@ -129,7 +129,10 @@ class OurbigbookEditor {
         { token: 'literalStart', foreground: 'FFFF00', fontStyle: 'bold' },
         { token: 'literalInside', foreground: 'FFFF88' },
         { token: 'macro', foreground: 'FF8800', fontStyle: 'bold' },
-      ]
+      ],
+      // This option became mandatory after some update, even if empty, otherwise:
+      // Cannot read properties of undefined (reading 'editor.foreground')
+      colors: {},
     });
     const editor = monaco.editor.create(
       input_elem,

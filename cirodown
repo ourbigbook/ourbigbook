@@ -34,6 +34,11 @@ const DEFAULT_IGNORE_BASENAMES = [
 ];
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
 
+class IdProviderDbAdapter {
+  constructor(convert_input_options) {
+  }
+}
+
 class SqliteIdProvider extends cirodown.IdProvider {
   constructor(convert_input_options) {
     super();
@@ -52,35 +57,13 @@ class SqliteIdProvider extends cirodown.IdProvider {
     this.delete_includes_stmt.run(input_path);
   }
 
-  get_noscope(id, context) {
-    let get_ret = this.get_id_stmt.get(id);
-    if (get_ret === undefined) {
-      return undefined;
-    } else {
-      const ast = cirodown.AstNode.fromJSON(get_ret.ast_json);
-      ast.input_path = get_ret.path;
-      ast.id = id;
-      if (context !== undefined) {
-        cirodown.validate_ast(ast, context);
-      }
-      return ast;
-    }
+  get_noscope_entry(id) {
+    return this.get_id_stmt.get(id);
   }
 
-  get_includes(to_id, context) {
-    let all_rets = this.get_includes_stmt.all(to_id);
-    let ret = [];
-    for (const all_ret of all_rets) {
-      const from_ast = this.get(all_ret.from_id, context);
-      if (from_ast === undefined) {
-        throw 'parent ID of include not in database, not sure how this can happen so throwing';
-      } else {
-        ret.push(from_ast);
-      }
-    }
-    return ret;
+  get_includes_entries(to_id) {
+    return this.get_includes_stmt.all(to_id);
   }
-
 }
 
 class SqliteFileProvider extends cirodown.FileProvider {
@@ -92,17 +75,12 @@ class SqliteFileProvider extends cirodown.FileProvider {
       `SELECT * FROM ${convert_input_options.files_table_name} WHERE toplevel_id = ?`);
   }
 
-  get(path) {
-    let get_ret = this.get_file_stmt.get(path);
-    if (get_ret === undefined) {
-      return undefined;
-    } else {
-      return get_ret;
-    }
-  }
-
   get_id(id) {
     return this.get_file_by_id_stmt.get(id);
+  }
+
+  get_path_entry(path) {
+    return this.get_file_stmt.get(path);
   }
 }
 

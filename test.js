@@ -6040,7 +6040,7 @@ it(`api: x does not blow up without ID provider`, async function () {
 
 // TODO
 const bigb_input = fs.readFileSync(path.join(__dirname, 'test_bigb_output.bigb'), ourbigbook_nodejs_webpack_safe.ENCODING)
-assert_convert_ast('bigb output format is unchanged for the preferred format',
+assert_convert_ast('bigb output: format is unchanged for the preferred format',
   // https://github.com/cirosantilli/ourbigbook/issues/83
   bigb_input,
   undefined,

@@ -192,6 +192,8 @@ Another advantage over Asciidoctor is that the reference implementation of Cirod
 Static wiki generators: this is perhaps the best way of classifying this project :-)
 * https://github.com/gollum/gollum[]: already has a local server editor! But no WYSIWYG nor live preview. Git integration by default, so when you save on the UI already generates a Git commit. We could achieve that with: https://github.com/isomorphic-git/isomorphic-git[], would be really nice.
 * https://github.com/wcchin/markypydia
+* https://obsidian.md/ closed source, Markdown with \x[internal-cross-file-reference] + a SaaS. Appears to require payment for any publishing. 28k followers 2021: https://twitter.com/obsdmd[]. Founders are likely Canadians of Asian descent from Waterloo University: https://www.linkedin.com/in/lishid/ | https://www.linkedin.com/in/ericaxu/ also working in parallel on https://dynalist.io/
+* https://www.gitbook.com/
 
 Static book generators:
 * https://github.com/rstudio/bookdown[], https://bookdown.org/[]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: https://bookdown.org/yihui/bookdown/pandoc.html[], thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.
@@ -208,6 +210,24 @@ Less related but of interest, similar philosophy to what Ciro wants, but no expl
 * https://physics.info/
 * https://hypertextbook.com/
 * https://tutorial.math.lamar.edu/
+
+= Motivation
+{parent=design-goals}
+
+Ciro Santilli developed Cirodown to perfectly satisfy his writing style, which is basically "create one humongous document where you document everything you know about a subject so everyone can understand it, and just keep adding to it".
+
+https://cirosantilli.com[] is the first major document that he has created in Cirodown.
+
+He decided to finally create this new system after having repeatedly facing limitations of Asciidoctor which were ignored/wontfixed upstream, because Ciro's  writing style is not as common/targeted by Asciidoctor.
+
+Following large documents Ciro worked extensively on:
+* https://github.com/cirosantilli/china-dictatorship
+* https://github.com/cirosantilli/linux-kernel-module-cheat
+made the limitations of Asciidoctor clear to Ciro, and were major motivation in this work.
+
+The key limitations have repeatedly annoyed Ciro were:
+* cannot go over header level 6, addressed at: \x[unlimited-header-levels]
+* the need for \x[split-headers] to avoid one too large HTML output that will never get indexed properly by search engines, and takes a few seconds to load on any browser, which is unacceptable user experience
 
 = Macro
 {parent=cirodown}

@@ -2853,6 +2853,7 @@ function render_ast_list(opts) {
         options.renderH2 &&
         first_ast.macro_name === Macro.HEADER_MACRO_NAME
       ) {
+        options.split_headers = false
         const parent_ast = first_ast.get_header_parent_asts(context)[0];
         context.header_tree = new HeaderTreeNode();
         if (parent_ast) {
@@ -6138,16 +6139,20 @@ function render_toc_from_entry_list({ add_test_instrumentation, entry_list, desc
   ret += `</span></div>\n`
   for (let i = 0; i < entry_list.length; i++) {
     const entry = entry_list[i]
-    const {
+    let {
       content,
       href,
       level,
       has_child,
+      id_prefix,
       link_to_split,
       parent_href,
       parent_content,
       target_id,
     } = entry
+    if (id_prefix === undefined) {
+      id_prefix = ''
+    }
     if (level > top_level) {
       ret += `<ul>\n`;
     } else if (level < top_level) {
@@ -6160,7 +6165,7 @@ function render_toc_from_entry_list({ add_test_instrumentation, entry_list, desc
       ret += html_class_attr([TOC_HAS_CHILD_CLASS]);
     }
     ret += '>'
-    const my_toc_id = toc_id(target_id);
+    const my_toc_id = toc_id(id_prefix + target_id);
     let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, html_escape_attr(my_toc_id));
     let linear_count_str
     if (add_test_instrumentation) {

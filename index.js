@@ -2889,10 +2889,13 @@ function render_ast_list(opts) {
 
         first_ast.header_tree_node = clone_object(first_ast.header_tree_node);
         first_ast.header_tree_node.parent_ast = header_tree_h1
+        first_ast.first_toplevel_child = false
         //header_tree_h1.add_child(first_ast.header_tree_node)
 
         context.skipOutputEntry = true
         context.forceHeadersHaveTocLink = true
+        context.toplevel_id = header_tree_h1.id
+        first_ast.toplevel_id = header_tree_h1.id
         rendered_outputs_entry.h2Render = first_ast.render(context)
       }
     }

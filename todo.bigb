@@ -4,6 +4,17 @@
 
 == Issues
 
+=== Render large files on split headers
+{tag=File}
+
+Currently files that are large don't render in either multi nor split headers.
+
+But instead we want it to render on split headers because the _raw version does not always show on GitHub pages, but rather gets downloaded which is bad.
+
+The `{file}` version is also cool as it allows easy navigation to other files, and comments to be added.
+
+This is currently not so easy to implement because things are done at the ast tree level rather than at render time, which is bad. So the same ast ends up going for both split and nosplit renders.
+
 === split and nosplit links missing from cirosantilli.com
 
 https://cirosantilli.com/brazilian-music-split doesn't have nosplit

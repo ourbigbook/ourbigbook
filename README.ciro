@@ -52,13 +52,13 @@ The language is designed to be philosophically isomorphic to HTML to:
 
 More precisely:
 
-\l[macro names map to tag names, e.g.: \c[\\a]] to \c[<a]]
+\l[macro names map to tag names, e.g.: \c[\\a] to \c[<a]]
 \l[
   one of the arguments of macros, maps to the content of the HTML element, and the others map to attributes.
 
   E.g., in a link:
 
-  \C[[\a[http://example.com][Link text]]]
+  \C[[\a[http://example.com][Link text\]]]
 
   the first macro argument:
 
@@ -192,7 +192,7 @@ So for example, the following automatic IDs would be generated:
   \td[We leave the non ASCII uppercase \a[https://en.wikipedia.org/wiki/Acute_accent][acute accented] \c[e], \c[É], untouched by default]
 ]
 
-\h[2][Headers \c[[\h[1]]], \c[[\h[2]]], etc.]
+\h[2][Headers \c[[\h[1\]]], \c[[\h[2\]]], etc.]
 {id=headers}
 
 \h[3][Unlimited header levels]
@@ -544,9 +544,11 @@ For example, an anchor with the first positional argument present (the URL), but
 
 \C[[\a[http://example.com]]]
 
-has the special generates automatic links as in:
+has the special effect of generating automatic links as in:
 
-\C[[\a[http://example.com][http://example.com]]]
+\C[[
+\a[http://example.com][http://example.com]
+]]
 
 See also: \x[links].
 
@@ -640,7 +642,7 @@ The rule is that:
 \l[if the first character of a literal argument is a sequence of \c[\\], and it is followed by another argument open character (e.g. \c[\[]), remove the first \c[\\] and treat the other characters as regular text]
 \l[if the last character of a literal argument is a \c[\\], ignore it and treat the following closing character (e.g. \c[\]]) as regular text]
 
-See the following open examples:
+See the following open input / output:
 
 \C[[[
 \c[[\ b]]
@@ -661,7 +663,7 @@ See the following open examples:
 
 and close examples:
 
-\C[[[
+\C[[[[
 \c[[a \]]
 <code>a \</code>
 
@@ -670,7 +672,7 @@ and close examples:
 
 \c[[a \\]]]
 <code>a \]</code>
-]]]
+]]]]
 
 \h[4][Argument leading newline removal]
 
@@ -727,7 +729,7 @@ This allows seamlessly indenting complex nested content to make it more readable
 
 For example, a list with complex content could be written without indentation as:
 
-\C[[
+\C[[[
 \l[a]
 \l[
 b
@@ -739,11 +741,11 @@ And now some code
 And a paragraph.
 ]
 \l[c]
-]]
+]]]
 
 but it would be more readable as the equivalent:
 
-\C[[
+\C[[[
 \l[a]
 \l[
   b
@@ -755,7 +757,7 @@ but it would be more readable as the equivalent:
   And a paragraph.
 ]
 \l[c]
-]]
+]]]
 
 If a something tries to reduce the current indentation level, then that leads to an error:
 
@@ -885,4 +887,4 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \h[3][Related projects]
 
-\l[\a[https://github.com/rstudio/bookdown], \a[https://bookdown.org/]]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: https://bookdown.org/yihui/bookdown/pandoc.html[], thus will never run on browser without huge translation layers. But does have an obscene ammount of output formats however.
+\l[\a[https://github.com/rstudio/bookdown], \a[https://bookdown.org/]]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: \a[https://bookdown.org/yihui/bookdown/pandoc.html], thus will never run on browser without huge translation layers. But does have an obscene ammount of output formats however.

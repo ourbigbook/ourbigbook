@@ -34,8 +34,19 @@ module.exports = {
   convertOptions: {
     add_test_instrumentation: isTest,
     body_only: true,
-    html_x_extension: false,
+    // 1 to remove the @ from every single ID, but still keep the `username` prefix.
+    // This is necessary so we can use the same h2 render for articles under a scope for both 
+    // renderings inside and outside of the scope. With dynamic fetch on web, we cannot know if the
+    // page will be visible from inside or outside the toplevel scope, so if we use a cut up version:
+    // `my-scope/section-id` as just `section-id` from something outside of `my-scope`, then there could
+    // be ambiguity with other headeres with ID `section-id`. We could keep multiple h2 renderings around
+    // for different situations, but let's not muck around with that for now. This option will also remove
+    // the @username prefix, which is implemented as a scope. This does have an advantage: we can use the same
+    // rendering on topic pages, and in the future on collections, which require elements by different users
+    // to show fine under a single page.
+    fixedScopeRemoval: ourbigbook.AT_MENTION_CHAR.length,
     forbid_include: '\\Include is not allowed on OurBigBook Web, the article tree can be manipulated directly via the UI',
+    html_x_extension: false,
     renderH2: true,
     path_sep: '/',
     // https://docs.ourbigbook.com/todo/word-count-on-web

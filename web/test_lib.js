@@ -62,6 +62,16 @@ const articleData = [
       ['Test scope 2', []],
     ], { headerArgs: '{scope}' }],
     ['Test tag', [], { headerArgs: '{tag=Mathematics}' }],
+    ['Test child', [
+      ['Test child 1', [
+        ['Test child 1 1', []],
+      ], { body: `Link to outsider: <mathematics>
+
+Link to parent: <test child>
+
+Link to child: <test child 1 1>
+` }],
+    ]],
   ]],
   ['Mathematics', [
     ['Algebra', [
@@ -335,6 +345,10 @@ async function generateDemoData(params) {
       } else {
         headerArgs += '\n\n'
       }
+      let body = opts.body
+      if (body === undefined) {
+        body = makeBody(titleSource)
+      }
       const id_noscope = await title_to_id(titleSource)
       toplevelTopicIds.add(id_noscope)
       return {
@@ -343,7 +357,7 @@ async function generateDemoData(params) {
         createdAt: date,
         // TODO not taking effect. Appears to be because of the hook.
         updatedAt: date,
-        bodySource: `${headerArgs}${makeBody(titleSource)}`,
+        bodySource: `${headerArgs}${body}`,
         opts,
       }
     }

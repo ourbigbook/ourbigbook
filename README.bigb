@@ -20,8 +20,8 @@ Key links:
 * \x[design-goals]{full}: feature overview
 * https://github.com/cirosantilli/ourbigbook[]: OurBigBook source code
 * https://github.com/cirosantilli/ourbigbook/blob/master/README.bigb[]: source for this document
-* https://cirosantilli.com/ourbigbook[]: rendered version of this document
-* https://cirosantilli.com/ourbigbook/editor[]: live in-browser demo
+* https://docs.ourbigbook.com[]: rendered version of this document
+* https://docs.ourbigbook.com/editor[]: live in-browser demo
 * https://cirosantilli.com/ourbigbook-template[]: good template to get started, see \x[quick-start]{full}
 
 = Features
@@ -286,7 +286,7 @@ Key links:
     ======== h8
     ``
   * generate lists of \x[incoming-links] between internal headers: it shows every internal link coming into the current page
-* is written in JavaScript and therefore runs natively on the browser to allow live previews as shown at: https://cirosantilli.com/ourbigbook/editor[]
+* is written in JavaScript and therefore runs natively on the browser to allow live previews as shown at: https://docs.ourbigbook.com/editor[]
 * helps you with the publishing:
   * `ourbigbook --publish` publishes in a single command to the configured target (default GitHub pages): \x[publish]{full}
   * OurBigBook tries to deal with media such as images and video intelligently for you, e.g.: \x[where-to-store-images]{full}. E.g. you can keep media in a separate media repository, `my-media-repository`, and then by configuring on \x[ourbigbook-json]:
@@ -318,7 +318,7 @@ Key links:
 = Play with the template
 {parent=quick-start}
 
-Learn the syntax basics in 5 minutes: https://cirosantilli.com/ourbigbook/editor[].
+Learn the syntax basics in 5 minutes: https://docs.ourbigbook.com/editor[].
 
 Play with https://github.com/cirosantilli/ourbigbook-template[a OurBigBook template] locally:
 ``
@@ -1843,7 +1843,7 @@ This option is useful if the root of your website is written in OurBigBook, and 
 
 For example, https://cirosantilli.com with source at https://github.com/cirosantilli/cirosantilli.github.io has a quick section about OurBigBook: https://cirosantilli.com#ourbigbook[].
 
-Therefore, without a custom suffix, the split header version of that header would go to https://cirosantilli.com/ourbigbook[], which would collide with this documentation, that is present in a separate repository: https://github.com/cirosantilli/ourbigbook[].
+Therefore, without a custom suffix, the split header version of that header would go to https://docs.ourbigbook.com[], which would collide with this documentation, that is present in a separate repository: https://github.com/cirosantilli/ourbigbook[].
 
 Therefore a `splitSuffix` property is used, making the split header version fall under `/ourbigbook-split`, and leaving the nicer `/ourbigbook` for the more important project toplevel.
 
@@ -6016,7 +6016,7 @@ This option can be useful however for dealing with things that are outside of yo
 
 For example, at one point, this project renamed the repository https://github.com/cirosantilli/cirodown[] to https://github.com/cirosantilli/ourbigbook[].
 
-Unfortunatly, GitHub Pages does not generate redirects like github.com itself.
+Unfortunately, GitHub Pages does not generate redirects like github.com itself.
 
 So in this case, we've added to the \x[ourbigbook-json] of the toplevel user repository https://github.com/cirosantilli/cirosantilli.github.io the lines:
 ``
@@ -6727,7 +6727,7 @@ There are two versions of this editor:
   chrome editor.html
   ``
 
-  It also appears at https://cirosantilli.com/ourbigbook/editor[] hosted simply under GitHub pages.
+  It also appears at https://docs.ourbigbook.com/editor[] hosted simply under GitHub pages.
 * a similar looking editor will also appear on the \x[ourbigbook-web], but this time linked to the database.
 
   That more advanced editor will actually save results back to the database, and show allow preview of features such as linking to headers of other pages.
@@ -7045,7 +7045,7 @@ Source files:
 * \a[test.js]: contains all the Mocha tests, see also: \x[test-system]
 * \a[README.md]: minimal Markdown README until GitHub / NPM support OurBigBook :-)
 * \a[ourbigbook_runtime.js]: <runtime features>
-* \a[main.scss] this file simply contains the customized CSS for https://cirosantilli.com/ourbigbook/[] and does not get otherwise distributed with OurBigBook, see: \x[css]
+* \a[main.scss] this file simply contains the customized CSS for https://docs.ourbigbook.com/[] and does not get otherwise distributed with OurBigBook, see: \x[css]
 
 Generated files:
 * `dist/` contains fully embedded packaged versions that work on browsers as per common JavaScript package naming convention. All the following files are generated with Webpack with:

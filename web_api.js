@@ -1,4 +1,4 @@
-// https://cirosantilli.com/ourbigbook#ourbigbook-web-directory-structure
+// https://docs.ourbigbook.com#ourbigbook-web-directory-structure
 
 const axios = require('axios')
 

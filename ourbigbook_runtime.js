@@ -1,4 +1,4 @@
-// https://cirosantilli.com/ourbigbook#insane-link-parsing-rules
+// https://docs.ourbigbook.com#insane-link-parsing-rules
 
 // We got these to work perfectly at one point with webpack style-loader.
 // But we just want the separate .css.
@@ -42,7 +42,7 @@ export function ourbigbook_runtime(toplevel) {
   const toc_arrows = toplevel.querySelectorAll(`.${TOC_CONTAINER_CLASS} div.arrow`);
   for (const toc_arrow of toc_arrows) {
     toc_arrow.addEventListener('click', () => {
-      // https://cirosantilli.com/ourbigbook#table-of-contents-javascript-open-close-interaction
+      // https://docs.ourbigbook.com#table-of-contents-javascript-open-close-interaction
       const parent_li = toc_arrow.parentElement.parentElement;
       let all_children_closed = true;
       let all_children_open = true;

@@ -164,10 +164,6 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
   if ('input_path' in non_cirodown_options) {
     new_options.input_path = non_cirodown_options.input_path;
   }
-  if ('sequelize' in non_cirodown_options) {
-    new_options.id_provider = non_cirodown_options.id_provider;
-    new_options.file_provider = non_cirodown_options.file_provider;
-  }
   if ('title' in non_cirodown_options) {
     new_options.title = non_cirodown_options.title;
   }
@@ -238,18 +234,6 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
   }
   // Finally, do the conversion!
   const output = await cirodown.convert(input, new_options, new_options.extra_returns);
-  for (const id in new_options.extra_returns.rendered_outputs) {
-    const output_path = path.join(non_cirodown_options.outdir, id);
-    fs.mkdirSync(path.dirname(output_path), {recursive: true});
-    fs.writeFileSync(output_path, new_options.extra_returns.rendered_outputs[id]);
-  }
-  if (new_options.split_headers) {
-    for (const header_ast of new_options.extra_returns.context.synonym_headers) {
-      let new_options_redir = Object.assign({}, new_options);
-      new_options_redir.id_provider = new_options_redir.extra_returns.context.id_provider;
-      await generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, non_cirodown_options.outdir);
-    }
-  }
   if (non_cirodown_options.log.tokens) {
     console.error('tokens:');
     console.error(JSON.stringify(new_options.extra_returns.tokens, null, 2));
@@ -297,8 +281,30 @@ async function convert_path(input_path, cirodown_options, non_cirodown_options) 
     input_path_relative_to_cirodown_json = path.join(path_relative_to_cirodown_json, input_path_parse.base);
   }
   new_non_cirodown_options.input_path = input_path_relative_to_cirodown_json;
+  if ('sequelize' in non_cirodown_options) {
+    new_options.id_provider = non_cirodown_options.id_provider;
+    new_options.file_provider = non_cirodown_options.file_provider;
+  }
   const output = await convert_input(input, new_options, new_non_cirodown_options);
-  const context = new_non_cirodown_options.extra_returns.context;
+  const extra_returns = new_non_cirodown_options.extra_returns
+  let first_output_path
+  for (const id in extra_returns.rendered_outputs) {
+    const output_path = path.join(non_cirodown_options.outdir, id);
+    if (first_output_path === undefined) {
+      first_output_path = output_path
+    }
+    fs.mkdirSync(path.dirname(output_path), {recursive: true});
+    fs.writeFileSync(output_path, extra_returns.rendered_outputs[id]);
+  }
+  if (new_options.split_headers) {
+    for (const header_ast of extra_returns.context.synonym_headers) {
+      let new_options_redir = Object.assign({}, new_options);
+      new_options_redir.id_provider = extra_returns.context.id_provider;
+      await generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, non_cirodown_options.outdir);
+    }
+  }
+
+  const context = extra_returns.context;
   if (non_cirodown_options.log.headers) {
     console.error(context.header_graph.toString());
   }
@@ -344,7 +350,7 @@ async function convert_path(input_path, cirodown_options, non_cirodown_options) 
     non_cirodown_options.had_error = true;
   }
   cirodown.perf_print(context, 'convert_path_end')
-  return output;
+  return { output, first_output_path };
 }
 
 /** Convert filetypes that cirodown knows how to convert, and just copy those that we don't, e.g.:
@@ -358,22 +364,26 @@ async function convert_path(input_path, cirodown_options, non_cirodown_options) 
  * The output file name is derived from the input file name with the output extension.
  */
 async function convert_path_to_file(input_path, cirodown_options, non_cirodown_options={}) {
-  let output;
-  let input_path_parse = path.parse(input_path);
-  if (input_path_parse.ext === cirodown.CIRODOWN_EXT) {
+  function convert_path_to_file_print_starting(cirodown_options) {
     let message_prefix;
     if (cirodown_options.render) {
       message_prefix = 'convert';
     } else {
       message_prefix = 'extract_ids';
     }
-    let message = `${message_prefix} ${input_path}`;
+    const message = `${message_prefix} ${input_path}`;
+    const t0 = performance.now()
     console.log(message);
+    return { message, t0 };
+  }
+
+  let msg_ret
+  let output, first_output_path;
+  let input_path_parse = path.parse(input_path);
+  if (input_path_parse.ext === cirodown.CIRODOWN_EXT) {
+    msg_ret = convert_path_to_file_print_starting(cirodown_options)
     const new_non_cirodown_options = Object.assign({}, non_cirodown_options);
-    let t0 = performance.now();
-    output = await convert_path(input_path, cirodown_options, new_non_cirodown_options);
-    let t1 = performance.now();
-    console.log(`${message} finished in ${t1 - t0} ms`);
+    ;({output, first_output_path} = await convert_path(input_path, cirodown_options, new_non_cirodown_options))
     if (new_non_cirodown_options.had_error) {
       non_cirodown_options.had_error = true;
     }
@@ -391,9 +401,10 @@ async function convert_path_to_file(input_path, cirodown_options, non_cirodown_o
     fs.mkdirSync(path.dirname(output_path_noext), {recursive: true});
     if (cirodown_options.render) {
       if (input_path_parse.ext === SASS_EXT) {
-        console.log(`sass ${input_path}`);
+        first_output_path = output_path_noext + '.css'
+        msg_ret = convert_path_to_file_print_starting(cirodown_options)
         fs.writeFileSync(
-          output_path_noext + '.css',
+          first_output_path,
           sass.renderSync({
             data: fs.readFileSync(path.join(input_path), non_cirodown_options.encoding),
             outputStyle: 'compressed',
@@ -406,11 +417,28 @@ async function convert_path_to_file(input_path, cirodown_options, non_cirodown_o
         // Otherwise, just copy the file over if needed.
         const output_path = output_path_noext + input_path_parse.ext;
         if (output_path !== path.resolve(input_path)) {
-          console.log(`copy ${input_path}`);
+          console.log(`copy ${input_path} -> ${path.relative(process.cwd(), output_path)}`);
           fs.copyFileSync(input_path, output_path);
         }
       }
     }
+  }
+
+  if (msg_ret !== undefined) {
+    let t1 = performance.now();
+    let output_path_str
+    if (
+      cirodown_options.render &&
+      // Happens if:
+      // - input file is toplevel README and has no headers. Previously unknown bug, that does not get converted at all!
+      // - conversion to .tex
+      first_output_path !== undefined
+    ) {
+      output_path_str = ` -> ${path.relative(process.cwd(), first_output_path)}`
+    } else {
+      output_path_str = ''
+    }
+    console.log(`${msg_ret.message}${output_path_str} finished in ${t1 - msg_ret.t0} ms`);
   }
   if (cirodown_options.perf) {
     console.error(`perf convert_path_to_file_end ${performance.now()}`);

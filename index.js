@@ -3070,6 +3070,7 @@ function convert_init_context(options={}, extra_returns={}) {
     options.render_metadata = true;
   }
   if (!('start_line' in options)) { options.start_line = 1; }
+  if (!('show_descendant_count' in options)) { options.show_descendant_count = true; }
   if (!('split_headers' in options)) {
     options.split_headers = false;
   }
@@ -3344,6 +3345,9 @@ function get_descendant_count(tree_node) {
 }
 
 function get_descendant_count_html(context, tree_node, options) {
+  if (!context.options.show_descendant_count) {
+    return undefined
+  }
   if (options.long_style === undefined) {
     options.long_style = false;
   }

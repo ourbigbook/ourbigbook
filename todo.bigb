@@ -4,6 +4,212 @@
 
 == Issues
 
+=== Nested set index corruption
+{tag=Web}
+{tag=Bug}
+{id=5}
+
+There is an outstanding nested set index corruption going on which hasn't been identified yet. Running on Heroku:
+``
+web/bin/rerender-articles.js
+``
+blew up with:
+``
+cirosantilli/simply-connected-space
+cirosantilli/simulation
+/app/web/convert.js:459
+        throw new ValidationError(`the parent choice "${newParentId}" would create an infinite loop`)
+              ^
+
+ValidationError
+    at /app/web/convert.js:459:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async /app/web/node_modules/sequelize/dist/lib/sequelize.js:463:24
+    at async Object.convertArticle (/app/web/convert.js:176:3)
+    at async /app/web/models/article.js:844:9
+    at async /app/web/node_modules/sequelize/dist/lib/sequelize.js:463:24
+    at async Article.rerender (/app/web/models/article.js:842:5)
+    at async Article.rerender (/app/web/models/article.js:1615:9)
+    at async /app/web/bin/rerender-articles.js:19:1 {
+  info: undefined,
+  errors: 'the parent choice "@cirosantilli/conceptual-model" would create an infinite loop',
+  status: 422
+}
+``
+and the DB check:
+``
+heroku run web/bin/normalize -c nested-set -u cirosantilli
+``
+failed with:
+``
+AssertionError [ERR_ASSERTION]: nested-set: (slug, nestedSetIndex, nestedSetNextSibling, depth): actual: (cirosantilli/natural-science, 419, 3414, 2) !== expected: (@cirosantilli/natural-science, 419, 3411, 2)
+    at Object.normalize (/app/web/models/index.js:400:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async /app/web/bin/normalize:28:3 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 3414,
+  expected: 3411,
+  operator: 'strictEqual'
+}
+``
+
+The local source corresponding to that was:
+``
+= Conceptual model
+{parent=Scientific method}
+{wiki}
+
+= Model
+{synonym}
+
+= Simulation
+{parent=Conceptual model}
+{wiki}
+``
+and it hadn't changed in a long time according to git log, also:
+``
+= Natural science
+{parent=Science}
+{wiki}
+
+...
+
+= Thermo Electron
+{c}
+{parent=Thermo Fisher Scientific}
+{title2=1956-}
+{wiki}
+
+= Natural science YouTube channel
+{parent=Natural science}
+{wiki}
+
+= The Thought Emporium
+{c}
+{parent=Natural science YouTube channel}
+{wiki}
+
+\Include[linguistics]{parent=science}
+
+...
+
+= Scientific method
+{parent=Science}
+{wiki}
+``
+are three consecutive siblings.
+
+Some related database lines via:
+``
+bin/psql -A -F' ' <<EOF >db.tmp
+select "nestedSetIndex","nestedSetNextSibling",slug from "Article" where slug like 'cirosantilli/%' order by "nestedSetIndex"
+EOF
+``
+are:
+``
+  419 | 3414 | cirosantilli/natural-science
+
+ 3411 | 3412 | cirosantilli/thermo-electron
+ 3412 | 3414 | cirosantilli/natural-science-youtube-channel
+ 3413 | 3414 | cirosantilli/the-thought-emporium
+ 3414 | 3553 | cirosantilli/linguistics
+
+ 3551 | 3553 | cirosantilli/chinese-slang
+ 3552 | 3553 | cirosantilli/shabi
+ 3553 | 3864 | cirosantilli/scientific-method
+``
+Humm, that index looks correct, what's going on?
+
+I hack:
+``
+
+@@ -392,6 +392,7 @@ async function normalize({
+         const articles = await Article.treeFindInOrder({ username, transaction })
+         if (check) {
+           const nestedSetsFromRefs = await Article.getNestedSetsFromRefs(username, { transaction })
++          nestedSetsFromRefs.map(e => console.error(`${e.nestedSetIndex} ${e.nestedSetNextSibling} ${e.id}`))
+``
+and see:
+``
+3550 3864 @cirosantilli/scientific-method
+``
+There's an offset of 3 somewhere!
+
+OK the first glaring error in the DB is social science right in the middle of physics things:
+``
+1497 1498 cirosantilli/physx
+1500 1801 cirosantilli/social-science
+1501 1503 cirosantilli/3d-ridig-body-dynamics-benchmark
+1502 1503 cirosantilli/simbenchmark
+``
+Also https://ourbigbook.com/cirosantilli/social-science gave 500.
+
+Possibly related:
+``
+1501 1503 cirosantilli/3d-ridig-body-dynamics-benchmark
+``
+was a recent change, and part of this complex source code move that can be simplified to:
+```
+--- a/science.bigb
++++ b/science.bigb
+@@ -345,40 +345,7 @@ https://www.youtube.com/watch?v=H_H_TF5Kxks This Lab is RIDICULOUS (2021) gives
+-= 3D physics engine
+-{parent=Physics engine}
+-{tag=3D}
+-
+-= 3D physics engine benchmark
+-{parent=3D physics engine}
+```
+to:
+```
+@@ -512,3 +512,117 @@ This idealization does not seems to be possible at all in the context of <Maxwel
+ = Rigid body
+ {parent=Point particle}
+ {wiki}
++
++= Rigid body dynamics
++{parent=Rigid body}
++
++= 3D rigid body dynamics
++{parent=Rigid body dynamics}
++{tag=3D}
++
++= 3D rigid body dynamics simulator
++{parent=3D rigid body dynamics}
++
++= 3D physics engine
++{synonym}
++
++= PhysX
++{c}
++{parent=3D rigid body dynamics simulator}
++{tag=C++ library}
++
++= 3D ridig body dynamics benchmark
++{parent=3D rigid body dynamics}
++
++= 3D physics engine benchmark
++{synonym}
++
++= SimBenchmark
++{parent=3D ridig body dynamics benchmark}
+```
+so it contains two simultaneous renames, before:
+``
+= 3D physics engine
+  = 3D physics engine benchmark
+``
+after:
+``
+= 3D rigid body dynamics
+  = 3D rigid body dynamics simulator (3D physics engine)
+    = PhysX
+  = 3D ridig body dynamics benchmark (3D physics engine benchmark)
+    = SimBenchmark
+``
+Gotta try to make a minimal test reproduction for this mess.
+
 === Render large files on split headers
 {tag=File}
 

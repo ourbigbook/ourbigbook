@@ -101,6 +101,7 @@ Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally pu
   \l[cross file includes that work as links on multi output file mode, and true includes in single output file mode]
   \l[cross file configuration files to factor out common page parts like headers and footers]
 ]
+\l[runs on the browser to allow live previews, and therefore is written in JavaScript]
 
 \h[3][Saner]
 
@@ -2126,9 +2127,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \h[3][TODO]
 
-\l[cirodown: google analytics]
 \l[list and code caption]
-\l[input indentation skip]
 \l[\x[id-scope]]
 \l[correct ID generation algorithm to be Unicode robust]
 \l[handle ID calculation from title if title has HTML elements, e.g. headers with code. Use that for the title as well. This has to be done with a context argument that makes implementing macros output just the text without tags]
@@ -2136,11 +2135,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[image management: upload to separate media directory]
 \l[create mechanism to link to the GitHub blob view of in-tree source files that are not added to GitHub pages, e.g. `\file`]
 \l[parse_error: add in document error message, currently only to stderr]
-\l[LaTeX output]
 \l[on the AST, put contents of headers inside headers]
-\l[parallel build across files on `./cirodown .`]
-\l[includes without double newline between them]
-\l[proper reporting of which source file error is in when including, add a source field to the AST in addition to line and column]
 \l[auto-toc after the first paragraph]
 \l[capitalization property of headers]
 

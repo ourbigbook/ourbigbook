@@ -18,6 +18,7 @@
     "mocha-list-tests": "1.0.2"
   },
   "files": [
+    ".gitignore",
     "cirodown",
     "cirodown.js",
     "cirodown.embed.min.css",

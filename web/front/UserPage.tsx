@@ -26,7 +26,7 @@ import UserList from 'front/UserList'
 export interface UserPageProps {
   article?: ArticleType & IssueType;
   articles?: (ArticleType & IssueType & TopicType)[];
-  articlesInSamePage: ArticleType[];
+  articlesInSamePage?: ArticleType[];
   articlesCount?: number;
   authoredArticleCount: number;
   comments?: CommentType[];

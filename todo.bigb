@@ -3,6 +3,24 @@
 
 == Issues
 
+=== Use same parent title if the current user has a matching article when clicking "Create my own version of article" 
+{tag=Web}
+{tag=Topic}
+
+=== Delete articles
+{tag=Web}
+
+This is a bit hard to to properly as it requires checking that a billion dependant objects are also deleted:
+* issues
+* comments of those issues
+* file
+* IDs defined in that article
+* change the parentId of all chidren to the parent article of the deleted article, and also updated nested set index
+Some of those can go on cascades, but others will require side-effects.
+
+Related:
+* https://github.com/cirosantilli/ourbigbook/issues/216
+
 === Serialize parsed build-in KaTeX macros
 {tag=Math}
 
@@ -1176,6 +1194,8 @@ This tag is about `ourbigbook --web` uploading from the local filesystem to OurB
 ==== Issue
 
 ==== Offline development
+
+==== Topic
 
 === CLI
 

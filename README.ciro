@@ -485,9 +485,11 @@ If the document has only a single header of the highest level, e.g. like the fol
 \h[3][My 3 2]
 ]]
 
-then this has some magical effects
+then this has some magical effects.
 
-One of those effects is that header IDs won't show that level. For example, the headers would render like:
+\h[4][The toplevel header IDs don't show]
+
+Header IDs won't show for the toplevel level. For example, the headers would render like:
 
 \C[[
 My 2
@@ -509,7 +511,11 @@ rather than:
 
 This is because in this case, we guess that the \c[h2] is the toplevel
 
-Another effect is that if not explicitly given, the default ID of a toplevel header is derived from the basename of the Cirodown file rather than from the toplevel header title. This is specially relevant when \x[includes][including] other files.
+\h[4][The toplevel header ID is derived from the filename]
+
+The default ID of a toplevel header is derived from the basename of the Cirodown file rather than from the toplevel header title.
+
+This is specially relevant when \x[includes][including] other files.
 
 For example, in file named \c[my-file.ciro] which contains:
 
@@ -518,6 +524,18 @@ For example, in file named \c[my-file.ciro] which contains:
 ]]
 
 the ID of the header is \c[my-file] rather than \c[awesome-cirodown-file]. See also: \x[automatic-id-from-title].
+
+If the file is an \x[index-files][index file], then the basename of the parent directory is used instead, e.g. the toplevel ID of a file:
+
+\C[[my-subdir/README.ciro]]
+
+would be:
+
+\C[[#my-subdir]]
+
+rather than:
+
+\C[[#README.ciro]]
 
 \h[2][Lists \c[[\l]]]
 {id=lists}
@@ -1191,13 +1209,23 @@ Convert all \c[.ciro] files in a directory to HTML files next to each correspond
 cirodown .
 ]]
 
-\c[README.ciro] is treated magically and gets converted to \c[index.html] instead of \c[README.html], so that it will appear on both the root of the HTML output and on the GitHub home page once GitHub adds Cirodown support.
-
 Convert a \c[.ciro] file from stdin to HTML and output the contents of \c[<body>] to stdout:
 
 \C[[
 printf 'ab\ncd\n' | cirodown --body-only
 ]]
+
+\h[4][Index files]
+
+The following basenames are considered "index files":
+
+\l[\c[README.ciro]]
+\l[\c[index.ciro]]
+
+Those basenames have the following magic properties:
+
+\l[the default output file name for an index file in HTML output is always \c[index.html], including that of \c[README.ciro]. This way it will appear on both the root of the HTML output and on the GitHub home page once GitHub adds Cirodown support.]
+\l[the default \x[the-toplevel-header][toplevel header] ID of an index files is derived from the parent directory basename rather than from the source file basename]
 
 \h[4][\c[cirodown] executable most important options]
 {id=cirodown-executable-most-important-options}
@@ -1338,6 +1366,31 @@ If given, the \x[includes][\c[include]] macro parses the target file to be inclu
 Otherwise, \c[include] only adds the headers of the other file to the table of contents of the current one, but not the body of the other file. The ToC entries then point to the headers of the included external files.
 
 You may want to use this option together with \x[html-embed] to produce fully self-contained individual HTML files for your project.
+
+\h[5][\c[--no-html-x-extension]]
+{id=html-x-no-extension}
+
+If not given, \x[internal-cross-references] render with the \c[.html] extension as in:
+
+\C[[
+<a href=not-readme.html#h2-in-not-the-readme>
+]]
+
+This way, those links will work when rendering locally to \c[.html] files which is the default behaviour of:
+
+\C[[
+cirodown .
+]]
+
+If given however, the links render without the \c[.html] as in:
+
+\C[[
+<a href=not-readme#h2-in-not-the-readme>
+]]
+
+which is what is needed for servers such as GitHub Pages, which automatically remove the \c[.html] extension from paths.
+
+This option is automatically implied when publishing to targets that remove the \c[.html] extension such as GitHub pages.
 
 \h[4][\c[cirodown.json]]
 {id=cirodown-json}

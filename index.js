@@ -835,13 +835,18 @@ class Tokenizer {
     let unterminated_literal = false;
     let start_line;
     let start_column;
+    let in_insane_header = false;
     while (!this.is_end()) {
       this.log_debug('tokenize loop');
       this.log_debug('this.i: ' + this.i);
       this.log_debug('this.line: ' + this.line);
       this.log_debug('this.column: ' + this.column);
       this.log_debug('this.cur_c: ' + this.cur_c);
-      this.log_debug();
+      if (in_insane_header && this.cur_c === '\n') {
+        in_insane_header = false;
+        this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
+        this.consume_optional_newline_after_argument()
+      }
       this.consume_list_indent();
       start_line = this.line;
       start_column = this.column;
@@ -936,7 +941,7 @@ class Tokenizer {
         if (open_length > 1) {
           macro_name = macro_name.toUpperCase();
         }
-        this.push_token(TokenType.MACRO_NAME, macro_name, this.line, this.column);
+        this.push_token(TokenType.MACRO_NAME, macro_name);
         this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
         if (!this.tokenize_literal(open_char, close_string)) {
           unterminated_literal = true;
@@ -976,7 +981,7 @@ class Tokenizer {
             array_contains_array_at(this.chars, this.i, 'http://') ||
             array_contains_array_at(this.chars, this.i, 'https://')
           ) {
-            this.push_token(TokenType.MACRO_NAME, Macro.LINK_MACRO_NAME, this.line, this.column);
+            this.push_token(TokenType.MACRO_NAME, Macro.LINK_MACRO_NAME);
             this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
             let link_text = '';
             while (this.consume_plaintext_char()) {
@@ -1021,7 +1026,7 @@ class Tokenizer {
                 this.consume();
               }
               this.consume_list_indent();
-              this.push_token(TokenType.MACRO_NAME, Macro.LIST_MACRO_NAME, this.line, this.column);
+              this.push_token(TokenType.MACRO_NAME, Macro.LIST_MACRO_NAME);
               this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
               this.list_level += 1;
               done = true;
@@ -1031,8 +1036,34 @@ class Tokenizer {
             }
           }
         }
+
+        // Insane headers.
+        if (!done && (
+          this.i === 0 ||
+          this.chars[this.i - 1] === '\n'
+        )) {
+          let i = this.i;
+          let new_header_level = 0;
+          debugger;
+          while (this.chars[i] === INSANE_HEADER_CHAR) {
+            i += 1;
+            new_header_level += 1;
+          }
+          if (new_header_level > 0 && this.chars[i] === ' ') {
+            this.push_token(TokenType.MACRO_NAME, Macro.HEADER_MACRO_NAME);
+            this.push_token(TokenType.POSITIONAL_ARGUMENT_START, INSANE_HEADER_CHAR.repeat(new_header_level));
+            this.push_token(TokenType.PLAINTEXT, new_header_level.toString());
+            this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
+            this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
+            for (let i = 0; i <= new_header_level; i++)
+              this.consume();
+            in_insane_header = true;
+            done = true;
+          }
+        }
+
+        // Character is nothing else, so finally it is a regular plaintext character.
         if (!done) {
-          // Character is nothing else, so finally it is a regular plaintext character.
           this.consume_plaintext_char();
         }
       }
@@ -1040,9 +1071,17 @@ class Tokenizer {
     if (unterminated_literal) {
       this.error(`unterminated literal argument`, start_line, start_column);
     }
+
+    // Close any open headers at the end of the document.
+    if (in_insane_header) {
+      this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
+    }
+
+    // Close any open list levels at the end of the document.
     for (let i = 0; i < this.list_level; i++) {
       this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
     }
+
     this.push_token(TokenType.PARAGRAPH);
     this.push_token(TokenType.INPUT_END);
     return this.tokens;
@@ -2553,6 +2592,7 @@ const HTML_ASCII_WHITESPACE = new Set([' ', '\r', '\n', '\f', '\t']);
 const ID_SEPARATOR = '-';
 const INSANE_LIST_START = '* ';
 const INSANE_LIST_INDENT = '  ';
+const INSANE_HEADER_CHAR = '=';
 const MAGIC_CHAR_ARGS = {
   '$': Macro.MATH_MACRO_NAME,
   '`': Macro.CODE_MACRO_NAME,

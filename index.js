@@ -120,7 +120,7 @@ class AstNode {
       context.katex_macros = {};
     }
     if (!('macros' in context)) {
-      throw new Error('contenxt does not have a mandatory .macros property');
+      throw new Error('context does not have a mandatory .macros property');
     }
     const macro = context.macros[this.macro_name];
     let out;
@@ -129,25 +129,44 @@ class AstNode {
     {
       let error_message = undefined;
       const name_to_arg = macro.name_to_arg;
+      const validation_output = {};
       for (const argname in name_to_arg) {
+        validation_output[argname] = {};
         const macro_arg = name_to_arg[argname];
         if (macro_arg.mandatory && !(argname in this.args)) {
-          error_message = `missing mandatory argument ${argname} of ${this.macro_name}`;
+          error_message = [
+            `missing mandatory argument ${argname} of ${this.macro_name}`,
+            this.line, this.column];
           break;
         }
         if (macro_arg.boolean && (argname in this.args)) {
           const arg = this.args[argname];
           if (arg.length > 0) {
-            error_message = `boolean arguments like "${argname}" of "${this.macro_name}" cannot have values, use just "{${argname}}" instead`;
+            error_message = [
+              `boolean arguments like "${argname}" of "${this.macro_name}" cannot have values, use just "{${argname}}" instead`,
+              arg[0].line, arg[0].column];
+            break;
+          }
+        }
+        if (macro_arg.positive_nonzero_integer) {
+          const arg = this.args[argname];
+          const arg_string = convert_arg_noescape(arg, context);
+          const int_value = parseInt(arg_string);
+          validation_output[argname]['positive_nonzero_integer'] = int_value;
+          if (!Number.isInteger(int_value) || !(int_value > 0)) {
+            error_message = [
+              `argument "${argname}" of macro "${this.macro_name}" must be a positive non-zero integer, got: "${arg_string}"`,
+              // TODO https://github.com/cirosantilli/cirodown/issues/30
+              this.line, this.column];
             break;
           }
         }
       }
       if (error_message === undefined) {
-        out = macro.convert(this, context);
+        out = macro.convert(this, context, validation_output);
       } else {
-        macro.error(context, error_message, this.line, this.column);
-        out = error_message_in_output(error_message, context);
+        macro.error(context, error_message[0], error_message[1], error_message[2]);
+        out = error_message_in_output(error_message[0], context);
       }
     }
 
@@ -340,6 +359,9 @@ class MacroArgument {
       // https://cirosantilli.com/cirodown#mandatory-positional-arguments
       options.mandatory = false;
     }
+    if (!('positive_nonzero_integer' in options)) {
+      options.positive_nonzero_integer = false;
+    }
     if (!('remove_whitespace_children' in options)) {
       // https://cirosantilli.com/cirodown#remove_whitespace_children
       options.remove_whitespace_children = false;
@@ -348,6 +370,7 @@ class MacroArgument {
     this.elide_link_only = options.elide_link_only;
     this.mandatory = options.mandatory;
     this.name = options.name;
+    this.positive_nonzero_integer = options.positive_nonzero_integer;
     this.remove_whitespace_children = options.remove_whitespace_children;
   }
 }
@@ -1600,7 +1623,7 @@ function parse(tokens, macros, options, extra_returns={}) {
   let cur_header_level;
   let toplevel_parent_arg = []
   let todo_visit = [[toplevel_parent_arg, ast_toplevel]];
-  const id_context = {'macros': macros};
+  context.id_context = {'macros': macros};
   // IDs that are indexed: you can link to those.
   let indexed_ids = {};
   // Non-indexed-ids: auto-generated numeric ID's like p-1, p-2, etc.
@@ -1629,7 +1652,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     ast.from_include = options.from_include;
     ast.input_path = options.input_path;
     if (macro_name === Macro.INCLUDE_MACRO_NAME) {
-      const href = convert_arg_noescape(ast.args.href, id_context);
+      const href = convert_arg_noescape(ast.args.href, context.id_context);
       cur_header.includes.push(href);
       if (options.include_path_set.has(href)) {
         let message = `circular include detected to: "${href}"`;
@@ -1670,7 +1693,7 @@ function parse(tokens, macros, options, extra_returns={}) {
               show_caption_prefix: false,
               style_full: false,
             };
-            header_node_title = Macro.x_text(target_id_ast, id_context, x_text_options);
+            header_node_title = Macro.x_text(target_id_ast, context.id_context, x_text_options);
           }
           // Don't merge into a single file, render as a dummy header and an xref link instead.
           new_child_nodes = [
@@ -1778,7 +1801,7 @@ function parse(tokens, macros, options, extra_returns={}) {
           AstType.MACRO,
           'q',
           {'content': convert_include(
-              convert_arg_noescape(ast.args.content, id_context),
+              convert_arg_noescape(ast.args.content, context.id_context),
               options,
               0,
               options.input_path,
@@ -1797,7 +1820,7 @@ function parse(tokens, macros, options, extra_returns={}) {
         }
         cur_header = ast;
         cur_header_level = parseInt(
-          convert_arg_noescape(ast.args.level, id_context)
+          convert_arg_noescape(ast.args.level, context.id_context)
         ) + options.h_level_offset;
         ast.level = cur_header_level;
       }
@@ -1850,7 +1873,7 @@ function parse(tokens, macros, options, extra_returns={}) {
       if (macro_name === Macro.HEADER_MACRO_NAME) {
         // Create the header tree.
         if (ast.level === undefined) {
-          cur_header_level = parseInt(convert_arg_noescape(ast.args.level, id_context)) + options.h_level_offset;
+          cur_header_level = parseInt(convert_arg_noescape(ast.args.level, context.id_context)) + options.h_level_offset;
           ast.level = cur_header_level;
         } else {
           // Possible for included headers.
@@ -1901,7 +1924,7 @@ function parse(tokens, macros, options, extra_returns={}) {
       parent_arg.push(ast);
 
       // Linear count of each macro type for macros that have IDs.
-      if (!macro.options.macro_counts_ignore(ast, id_context)) {
+      if (!macro.options.macro_counts_ignore(ast, context.id_context)) {
         if (!(macro_name in macro_counts)) {
           macro_counts[macro_name] = 0;
         }
@@ -1928,7 +1951,7 @@ function parse(tokens, macros, options, extra_returns={}) {
           if (title_arg !== undefined) {
             // ID from title.
             // TODO correct unicode aware algorithm.
-            id_text += title_to_id(convert_arg_noescape(title_arg, id_context));
+            id_text += title_to_id(convert_arg_noescape(title_arg, context.id_context));
             ast.id = id_text;
           } else if (!macro.options.phrasing) {
             // ID from element count.
@@ -1939,7 +1962,7 @@ function parse(tokens, macros, options, extra_returns={}) {
             }
           }
         } else {
-          ast.id = convert_arg_noescape(macro_id_arg, id_context);
+          ast.id = convert_arg_noescape(macro_id_arg, context.id_context);
         }
       }
       ast.index_id = index_id;
@@ -2510,6 +2533,7 @@ const DEFAULT_MACRO_LIST = [
       new MacroArgument({
         name: 'level',
         mandatory: true,
+        positive_nonzero_integer: true,
       }),
       new MacroArgument({
         name: Macro.TITLE_ARGUMENT_NAME,
@@ -2520,11 +2544,6 @@ const DEFAULT_MACRO_LIST = [
       let level_arg = ast.args.level;
       let level = convert_arg_noescape(level_arg, context);
       let level_int = ast.level;
-      if (!Number.isInteger(level_int) || !(level_int > 0)) {
-        let message = `level must be a positive non-zero integer: "${level}"`;
-        this.error(context, message, level_arg[0].line, level_arg[0].column);
-        return error_message_in_output(message, context);
-      }
       if (level_int > 6) {
         custom_args = {'data-level': [new PlaintextAstNode(
           ast.line, ast.column, level)]};

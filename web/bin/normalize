@@ -28,6 +28,7 @@ const sequelize = models.getSequelize(path.dirname(__dirname))
   await models.normalize({
     check: opts.check,
     fix: opts.fix,
+    log: true,
     print: opts.print,
     sequelize,
     usernames: opts.username,

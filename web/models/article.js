@@ -813,23 +813,33 @@ WHERE
     return ret
   }
 
-  Article.prototype.rerender = async function(opts = {}) {
+  Article.prototype.rerender = async function({ convertOptionsExtra, ignoreErrors, transaction }={}) {
     const file = await this.getFileCached()
-    const transaction = opts.transaction
+    if (ignoreErrors === undefined)
+      ignoreErrors = false
     await sequelize.transaction({ transaction }, async (transaction) => {
-      await convert.convertArticle({
-        author: file.author,
-        bodySource: file.bodySource,
-        forceNew: false,
-        path: ourbigbook.path_splitext(file.path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR).slice(1).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR))[0],
-        render: true,
-        sequelize,
-        titleSource: file.titleSource,
-        transaction,
-        // Originally added because we had/have crazy semantics where previousSiblingId=undefined
-        // moves the article as the first sibling necessarily. But also this is a useful performance optimization.
-        updateNestedSetIndex: false,
-      })
+      try {
+        await convert.convertArticle({
+          author: file.author,
+          bodySource: file.bodySource,
+          convertOptionsExtra,
+          forceNew: false,
+          path: ourbigbook.path_splitext(file.path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR).slice(1).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR))[0],
+          render: true,
+          sequelize,
+          titleSource: file.titleSource,
+          transaction,
+          // Originally added because we had/have crazy semantics where previousSiblingId=undefined
+          // moves the article as the first sibling necessarily. But also this is a useful performance optimization.
+          updateNestedSetIndex: false,
+        })
+      } catch(e) {
+        if (ignoreErrors) {
+          console.log(e)
+        } else {
+          throw e
+        }
+      }
     })
   }
 
@@ -1501,23 +1511,33 @@ LIMIT ${limit}` : ''}
   }
 
   /** Re-render multiple articles. */
-  Article.rerender = async (opts={}) => {
-    if (opts.log === undefined) {
-      opts.log = false
-    }
+  Article.rerender = async ({ convertOptionsExtra, ignoreErrors, log, slugs }={}) => {
+    if (log === undefined)
+      log = false
     const where = {}
-    if (opts.slugs.length) {
-      where.slug = opts.slugs
+    if (slugs.length) {
+      where.slug = slugs
     }
-    const articles = await sequelize.models.Article.findAll({
-      where,
-      include: [{ model: sequelize.models.File, as: 'file' }],
-    })
-    for (const article of articles) {
-      if (opts.log) {
-        console.log(`authorId=${article.file.authorId} title=${article.file.titleSource}`);
+    let offset = 0
+    while (true) {
+      const articles = await sequelize.models.Article.findAll({
+        where,
+        include: [{
+          model: sequelize.models.File,
+          as: 'file',
+        }],
+        order: [['slug', 'ASC']],
+        offset,
+        limit: config.maxArticlesInMemory,
+      })
+      if (articles.length === 0)
+        break
+      for (const article of articles) {
+        if (log)
+          console.log(article.slug)
+        await article.rerender({ convertOptionsExtra, ignoreErrors })
       }
-      await article.rerender()
+      offset += config.maxArticlesInMemory
     }
   }
 

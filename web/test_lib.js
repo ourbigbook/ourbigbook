@@ -10,6 +10,7 @@ const perf_hooks = require('perf_hooks')
 const lodash = require('lodash')
 
 const ourbigbook = require('ourbigbook')
+const back_js = require('./back/js')
 const convert = require('./convert')
 const models = require('./models')
 
@@ -128,22 +129,23 @@ const articleData = [
       ]],
     ], { toplevel: true }],
   ]],
-  ['Test data', [
-    ['Test scope', [
-      ['Test scope 1', [
-        ['Test scope 1 1', []],
-        ['Test scope 1 2', []],
+  ['Test data',
+    [
+      ['Test scope', [
+        ['Test scope 1', [
+          ['Test scope 1 1', []],
+          ['Test scope 1 2', []],
+        ]],
+        ['Test scope 2', []],
+      ], { headerArgs: '{scope}' }],
+      ['Test tag', [
+        ['Test tagged', [], { headerArgs: '{tag=Test tagger}' }],
+        ['Test tagger', []],
       ]],
-      ['Test scope 2', []],
-    ], { headerArgs: '{scope}' }],
-    ['Test tag', [
-      ['Test tagged', [], { headerArgs: '{tag=Test tagger}' }],
-      ['Test tagger', []],
-    ]],
-    ['Test child', [
-      ['Test child 1', [
-        ['Test child 1 1', []],
-      ], { body: `Link to outsider: <test child 2>
+      ['Test child', [
+        ['Test child 1', [
+          ['Test child 1 1', []],
+        ], { body: `Link to outsider: <test child 2>
 
 Link to parent: <test child>
 
@@ -151,14 +153,20 @@ Link to child: <test child 1 1>
 
 Link to external: http://example.com
 ` }],
-      ['Test child 2', [], { body: `Link to synonym: <Test child with synonym 2>
+        ['Test child 2', [], { body: `Link to synonym: <Test child with synonym 2>
 ` }],
-      ['Test child with synonym', [], {
-        body: `= Test child with synonym 2
+        ['Test child with synonym', [], {
+          body: `= Test child with synonym 2
 {synonym}
-`     }],
-    ]],
-  ], { body: `Block math: <equation My favorite equation>
+
+= Test child with synonym 3
+{synonym}
+`
+        }],
+      ]],
+    ],
+    {
+      body: `Block math: <equation My favorite equation>
 
 $$
 \\frac{1}{\\sqrt{2}}
@@ -171,7 +179,11 @@ $$
 \\frac{1}{\\sqrt{2}}
 $$
 {title=My second favorite equation}
-` }],
+
+Ourbigbook defined LaTeX macro: $\\abs{x}$
+`
+    }
+  ],
 ]
 const issueData = [
   ['Test issue', `Link to article: <test data>
@@ -314,6 +326,7 @@ async function generateDemoData(params) {
 
   const nArticles = nUsers * nArticlesPerUser
   const sequelize = models.getSequelize(directory, basename);
+  const katex_macros = back_js.preloadKatex()
   await models.sync(sequelize, { force: empty || clear })
   if (!empty) {
     const sourceRoot = path.join(__dirname, 'tmp', 'demo')
@@ -470,17 +483,17 @@ async function generateDemoData(params) {
         } else {
           parentId = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
         }
-        const args = {
+        const before = now();
+        const { articles: newArticles, extra_returns } = await convert.convertArticle({
           author,
           bodySource: articleArg.bodySource,
+          convertOptionsExtra: { katex_macros },
           enforceMaxArticles: false,
           parentId,
           render,
           sequelize,
           titleSource: articleArg.titleSource,
-        }
-        const before = now();
-        const { articles: newArticles, extra_returns } = await convert.convertArticle(args)
+        })
         const after = now();
         opts.topicId = extra_returns.context.header_tree.children[0].ast.id.substr(
           ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1)

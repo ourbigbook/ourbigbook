@@ -139,7 +139,11 @@ div.list-container {
     tr {
       td, th {
         border: 1px solid $table-border-color;
-        padding: 5px 10px;
+        padding: $table-padding-top $table-padding-sides;
+        &.like {
+          // Too tall otherwise.
+          padding: 0;
+        }
         &.center {
           text-align: center;
         }

@@ -388,6 +388,9 @@ class Macro {
     if (!('caption_prefix' in options)) {
       options.caption_prefix = capitalize_first_letter(name);
     }
+    if (!('default_x_style_full' in options)) {
+      options.default_x_style_full = true;
+    }
     if (!('get_number' in options)) {
       options.get_number = function(ast, context) { return ast.macro_count_indexed; }
     }
@@ -402,14 +405,11 @@ class Macro {
     if (!('named_args' in options)) {
       options.named_args = [];
     }
-    if (!('properties' in options)) {
-      options.properties = {};
+    if (!('phrasing' in options)) {
+      options.phrasing = false;
     }
     if (!('toplevel_link' in options)) {
       options.toplevel_link = true;
-    }
-    if (!('x_style_full' in options)) {
-      options.x_style_full = true;
     }
     this.name = name;
     this.positional_args = positional_args;
@@ -422,15 +422,11 @@ class Macro {
     }
     this.auto_parent = options.auto_parent;
     this.auto_parent_skip = options.auto_parent_skip;
-    this.remove_whitespace_children = options.remove_whitespace_children;
     this.convert = convert;
-    this.options = options;
     this.id_prefix = options.id_prefix;
-    this.properties = options.properties;
+    this.options = options;
+    this.remove_whitespace_children = options.remove_whitespace_children;
     this.toplevel_link = options.toplevel_link;
-    if (!('phrasing' in this.properties)) {
-      this.properties['phrasing'] = false;
-    }
     this.name_to_arg = {};
     for (const arg of this.positional_args) {
       let name = arg.name;
@@ -446,6 +442,7 @@ class Macro {
       name: Macro.ID_ARGUMENT_NAME,
     })
     this.name_to_arg[Macro.ID_ARGUMENT_NAME] = this.named_args[Macro.ID_ARGUMENT_NAME];
+    delete this.options.named_args;
   }
 
   check_name(name) {
@@ -486,11 +483,16 @@ class Macro {
   }
 
   toJSON() {
+    const options = this.options;
+    const ordered_options = {};
+    Object.keys(options).sort().forEach(function(key) {
+      ordered_options[key] = options[key];
+    });
     return {
       name: this.name,
+      options: ordered_options,
       positional_args: this.positional_args,
       named_args: this.named_args,
-      properties: this.properties,
     }
   }
 
@@ -518,12 +520,16 @@ class Macro {
     if (!('show_caption_prefix' in options)) {
       options.show_caption_prefix = true;
     }
-    if (!('style_full' in options)) {
-      options.style_full = true;
+    const macro = context.macros[ast.macro_name];
+    let style_full;
+    if ('style_full' in options) {
+      style_full = options.style_full;
+    } else {
+      style_full = macro.options.default_x_style_full;
     }
     let ret = ``;
     let number;
-    if (options.style_full) {
+    if (style_full) {
       if (options.href_prefix !== undefined) {
         ret += `<a${options.href_prefix}>`
       }
@@ -531,9 +537,9 @@ class Macro {
         if (options.caption_prefix_span) {
           ret += `<span class="caption-prefix">`;
         }
-        ret += `${context.macros[ast.macro_name].options.caption_prefix} `;
+        ret += `${macro.options.caption_prefix} `;
       }
-      number = context.macros[ast.macro_name].options.get_number(ast, context);
+      number = macro.options.get_number(ast, context);
       if (number !== undefined) {
         ret += number;
       }
@@ -545,7 +551,7 @@ class Macro {
       }
     }
     if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
-      if (options.style_full) {
+      if (style_full) {
         if (number !== undefined) {
           ret += html_escape_context(context, `. `);
         }
@@ -553,7 +559,7 @@ class Macro {
           ret += html_escape_context(context, `"`);
       }
       ret += convert_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-      if (options.style_full && options.quote) {
+      if (style_full && options.quote) {
         ret += html_escape_context(context, `"`);
       }
     }
@@ -1466,14 +1472,22 @@ function html_elem(tag, content) {
   return `<${tag}>${content}</${tag}>`;
 }
 
+/**
+ * @return {Object} dict of macro name to macro
+ */
 function macro_list_to_macros() {
   const macros = {};
-  for (const macro of DEFAULT_MACRO_LIST) {
+  for (const macro of macro_list()) {
     macros[macro.name] = macro;
   }
   return macros;
 }
-exports.macro_list_to_macros = macro_list_to_macros;
+
+/** At some point we will generalize this to on-the-fly macro definitions. */
+function macro_list() {
+  return DEFAULT_MACRO_LIST;
+}
+exports.macro_list = macro_list;
 
 function macro_image_video_convert_function(content_func, source_func) {
   if (source_func === undefined) {
@@ -1916,7 +1930,7 @@ function parse(tokens, macros, options, extra_returns={}) {
             // TODO correct unicode aware algorithm.
             id_text += title_to_id(convert_arg_noescape(title_arg, id_context));
             ast.id = id_text;
-          } else if (!macro.properties.phrasing) {
+          } else if (!macro.options.phrasing) {
             // ID from element count.
             if (ast.macro_count !== undefined) {
               id_text += ast.macro_count;
@@ -2124,7 +2138,7 @@ function parse_add_paragraph(
   if (paragraph_start < paragraph_end) {
     const macro = state.macros[arg[paragraph_start].macro_name];
     const slice = arg.slice(paragraph_start, paragraph_end);
-    if (macro.properties.phrasing || slice.length > 1) {
+    if (macro.options.phrasing || slice.length > 1) {
       // If the first element after the double newline is phrasing content,
       // create a paragraph and put all elements until the next paragraph inside
       // that paragraph.
@@ -2384,6 +2398,7 @@ const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [
     elide_link_only: true,
   }),
 ];
+const MACRO_IMAGE_VIDEO_OPTIONS = {}
 const MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS = [
   new MacroArgument({
     name: 'src',
@@ -2417,9 +2432,7 @@ const DEFAULT_MACRO_LIST = [
       return `<a${attrs}>${content}</a>`;
     },
     {
-      properties: {
-        phrasing: true,
-      }
+      phrasing: true,
     }
   ),
   new Macro(
@@ -2446,9 +2459,7 @@ const DEFAULT_MACRO_LIST = [
     ],
     html_convert_simple_elem('code', {newline_after_close: false}),
     {
-      properties: {
-        phrasing: true,
-      }
+      phrasing: true,
     }
   ),
   new Macro(
@@ -2490,9 +2501,7 @@ const DEFAULT_MACRO_LIST = [
       return '';
     },
     {
-      properties: {
-        phrasing: true,
-      }
+      phrasing: true,
     }
   ),
   new Macro(
@@ -2528,9 +2537,7 @@ const DEFAULT_MACRO_LIST = [
       let x_text_options = {
         show_caption_prefix: false,
       };
-      if (level_int === context.header_graph_top_level) {
-        x_text_options.style_full = false;
-      }
+      x_text_options.style_full = level_int !== context.header_graph_top_level;
       ret += Macro.x_text(ast, context, x_text_options);
       ret += `</a>`;
       ret += `<span> `;
@@ -2562,6 +2569,7 @@ const DEFAULT_MACRO_LIST = [
     {
       caption_prefix: 'Section',
       id_prefix: '',
+      default_x_style_full: false,
       get_number: function(ast, context) {
         let header_tree_node = ast.header_tree_node;
         if (header_tree_node === undefined) {
@@ -2570,7 +2578,6 @@ const DEFAULT_MACRO_LIST = [
           return header_tree_node.get_nested_number(context.header_graph_top_level);
         }
       },
-      x_style_full: false,
     }
   ),
   new Macro(
@@ -2676,9 +2683,7 @@ const DEFAULT_MACRO_LIST = [
       return this.katex_convert(ast, context);
     },
     {
-      properties: {
-        phrasing: true,
-      }
+      phrasing: true,
     }
   ),
   new Macro(
@@ -2693,6 +2698,7 @@ const DEFAULT_MACRO_LIST = [
         id_prefix: 'fig',
         named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS,
       },
+      MACRO_IMAGE_VIDEO_OPTIONS,
     ),
   ),
   new Macro(
@@ -2758,9 +2764,7 @@ const DEFAULT_MACRO_LIST = [
       return html_escape_context(context, ast.text);
     },
     {
-      properties: {
-        phrasing: true,
-      }
+      phrasing: true,
     }
   ),
   new Macro(
@@ -2855,7 +2859,7 @@ const DEFAULT_MACRO_LIST = [
           ret += `</li>\n`;
         }
         let target_ast = tree_node.value;
-        let content = Macro.x_text(target_ast, context, {show_caption_prefix: false});
+        let content = Macro.x_text(target_ast, context, {style_full: true, show_caption_prefix: false});
         let target_id = html_escape_attr(target_ast.id);
         let href = html_attr('href', '#' + target_id);
         let id_to_toc = html_attr('id', Macro.TOC_PREFIX + target_id);
@@ -3007,9 +3011,11 @@ const DEFAULT_MACRO_LIST = [
       if (content_arg === undefined) {
         let x_text_options = {
           caption_prefix_span: false,
-          style_full: 'full' in ast.args,
           quote: true,
         };
+        if ('full' in ast.args) {
+          x_text_options.style_full = true;
+        }
         content = Macro.x_text(target_id_ast, context, x_text_options);
         if (content === ``) {
           let message = `empty cross reference body: "${target_id}"`;
@@ -3030,9 +3036,7 @@ const DEFAULT_MACRO_LIST = [
           boolean: true,
         }),
       ],
-      properties: {
-        phrasing: true,
-      }
+      phrasing: true,
     }
   ),
   new Macro(
@@ -3069,6 +3073,7 @@ const DEFAULT_MACRO_LIST = [
           }),
         ),
       },
+      MACRO_IMAGE_VIDEO_OPTIONS,
     ),
   ),
 ];

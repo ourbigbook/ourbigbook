@@ -407,6 +407,8 @@ assert_convert_ast('escape right curly brace',    'a\\}b\n',  [a('p', [t('a}b')]
 // Positional arguments.
 // Has no content argument.
 assert_convert_ast('p with no content argument', '\\p\n', [a('p')]);
+// TODO
+//assert_convert_ast('table with no content argument', '\\table\n', [a('table')]);
 // Has empty content argument.
 assert_convert_ast('p with empty content argument', '\\p[]\n', [a('p', [])]);
 

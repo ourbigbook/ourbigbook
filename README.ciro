@@ -112,7 +112,7 @@ But hopefully, having starting from a saner point will still produce a saner end
 
 It is intended that this will be an acceptable downside as Cirodown will be used primarily large complex content such as books rather than forum posts, and will therefore primarily written either:
 \l[in text editors locally, where users have more features than in random browser textareas]
-\l[in a dedicated website that will revolutionize education, and therefore have a good JavaScript editing interface: \a[https://github.com/cirosantilli/write-free-science-books-to-get-famous-website]]
+\l[in a dedicated website that will revolutionize education, and therefore have a good JavaScript editing interface: https://github.com/cirosantilli/write-free-science-books-to-get-famous-website]
 
 For example, originally Cirodown had exactly five magic characters, with similar functions as in LaTeX:
 \l[`\` backslash to start a macro, like LaTeX]
@@ -422,11 +422,9 @@ sqlite3 out/db.sqlite3 .dump
 \h[3][Automatic ID from title]
 
 If a \x[the-toplevel-header][non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:
-
 \l[convert all of `A-Z` characters to lowercase]
 \l[convert consecutive sequences of all non `a-z0-9` ASCII characters to a single hyphen `-`. Note that this leaves non-ASCII character untouched.]
 \l[strip leading or trailing hyphens]
-
 Note how those rules leave non ASCII Unicode characters untouched, as capitalization and determining if something "is a letter or not" in those cases can be tricky.
 
 So for example, the following automatic IDs would be generated: \x[table-examples-of-automatically-generated-ids].
@@ -696,6 +694,12 @@ List item with a paragraph inside of it:
 \l[c]
 ]]
 
+And now a list outside of \x[cirodown-example] to test how it looks directly under \x[toplevel]:
+
+\l[a]
+\l[b]
+\l[c]
+
 \h[2][Images `\image`]
 {id=images}
 
@@ -755,6 +759,11 @@ Paragraph after.
 ]]
 Maybe we could improve this with some CSS styling, but generally when you want multiple paragraphs inside the image, you might instead be better off making an \x[internal-cross-file-references][internal cross reference] to the the image and adding your extended explanation outside.
 
+And now an image outside of \x[cirodown-example] to test how it looks directly under \x[toplevel]:
+
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+{id=fig-my-xi-chrysanthemum-toplevel}
+
 \h[3][Where to store images]
 
 If you are making a limited repository that will not have a ton of images, then you can get away with simply git tracking your images in the main repository.
@@ -776,10 +785,8 @@ However, if you are making a huge tutorial, which can have a huge undefined numb
 We recommend the following approach instead.
 
 Create a separate GitHub repository in addition to the main one containing the text, for example:
-
 \l[`./my-tutorial/`]
 \l[`./my-tutorial-media/`]
-
 The name `*-media` suffix is not mandatory, but if you use this default, `cirodown` will handle it for you without any further configuration.
 
 And then set the \x[media-source-type] option in your \x[cirodown-json]:
@@ -1019,6 +1026,24 @@ Explicit container to add further properties: \x[table-my-table].
 ]]
 The rules of when the caption shows up or not are the same as described for \x[images].
 
+And now a table outside of \x[cirodown-example] to test how it looks directly under \x[toplevel]:
+
+\table{title=My table title}
+[
+\tr[
+  \th[Header 1]
+  \th[Header 2]
+]
+\tr[
+  \td[1 1]
+  \td[1 2]
+]
+\tr[
+  \td[2 1]
+  \td[2 2]
+]
+]
+
 \h[2][Quotations `\q`]
 {id=quotations}
 
@@ -1058,6 +1083,7 @@ My inline \comment[[inside comment]] is awesome.
 ]]]
 
 \h[2][`cirodown_example`]
+{id=cirodown-example}
 
 Shows both the Cirodown code and its rendered output, e.g.:
 \cirodown_example[[[
@@ -1123,10 +1149,8 @@ d
 \h[4][Insane macro shortcut extra arguments]
 
 Insane arguments always work by abbreviating:
-
 \l[the macro name]
 \l[one or more of its positional arguments, which are fixed as either \x[literal-arguments][literal or non-literal] for a given insane construct]
-
 This means that you can add further arguments as usual.
 
 For example, an insane code block with an id can be written as:
@@ -1229,7 +1253,11 @@ The following are therefore all equivalent:
 
 Just like named arguments, positional arguments are never mandatory.
 
-If not given, most positional arguments will default to an empty string.
+\h[5][Positional argument default values]
+
+All positional arguments have a default and don't blow up if not given.
+
+Most positional arguments will default to an empty string.
 
 However, some positional arguments can have special effects if not given.
 
@@ -1537,12 +1565,10 @@ printf 'ab\ncd\n' | cirodown --body-only
 \h[4][Index files]
 
 The following basenames are considered "index files":
-
 \l[`README.ciro`]
 \l[`index.ciro`]
 
 Those basenames have the following magic properties:
-
 \l[the default output file name for an index file in HTML output is always `index.html`, including that of `README.ciro`. This way it will appear on both the root of the HTML output and on the GitHub home page once GitHub adds Cirodown support.]
 \l[the default \x[the-toplevel-header][toplevel header] ID of an index files is derived from the parent directory basename rather than from the source file basename]
 
@@ -1567,7 +1593,6 @@ cd out/publish/out/publish/
 Generate a simple repository template for a new project.
 
 This includes common files that almost all projects will want to have, e.g.:
-
 \l[`package.json` specifying the Cirodown version]
 \l[`.gitignore` to prevent output from being committed accidentally]
 
@@ -1594,7 +1619,6 @@ Embed as many external resources as possible into a single HTML file.
 The use case for this option is to produce a single HTML file for an entire build that is fully self contained, and can therefore be given to consumers and viewed offline, much like a PDF.
 
 Examples of embeddings done:
-
 \l[
   CSS and JavaScript are copy pasted in place into the HTML.
 
@@ -1618,14 +1642,12 @@ Examples of embeddings done:
 ]
 
 Keep in mind that certain things can never be embedded, e.g.:
-
 \l[YouTube videos, since YouTube does not offer any download API]
 
 \h[5][`--html-single-page`]
 {id=html-single-page}
 
 If given:
-
 \l[the \x[includes][`include`] macro parses the target file to be included and includes it in-place]
 \l[\x[internal-cross-file-references] are disabled, and the cross file ID database does not get updated.
 
@@ -1748,7 +1770,6 @@ cirodown --publish .
 {id=publish-commit}
 
 Like \x[publish], but also automatically:
-
 \l[`git add -u` to automatically add change to any files that have been previously git tracked]
 \l[`git commit -m <commit-message>` to create a new commit with those changes]
 
@@ -1842,8 +1863,7 @@ If the `prepublish` script returns with a non-zero exit value, the publish is ab
 \h[5][`media_source_type`]
 {id=media-source-type}
 
-TODO implement
-
+TODO implement:
 \l[`local`: tracked in the current Git repository, no further magic is done]
 \l[
   `media_repo`: tracked in a separate media repository, defaults to `../<project-name>-media/`
@@ -1873,12 +1893,10 @@ Then, if the project picks up steam, we can start considering a full WYSISYG.
 It would be amazing to have a WebKit interface that works both on browser for the and locally.
 
 Possibilities we could reuse:
-
 \l[
 Editor.js
 
 Returns JSON AST!
-
 \l[website: https://editorjs.io/ json output]
 \l[source: https://github.com/codex-team/editor.js]
 \l[WYSIWYG: no]
@@ -1887,7 +1905,7 @@ Returns JSON AST!
 \l[
   StackEdit
 
-  \l[website: \a[https://stackedit.io]]
+  \l[website: https://stackedit.io]
   \l[source: https://github.com/benweet/stackedit]
   \l[demo: https://stackedit.io/app]
   \l[WYSIWYG: no]
@@ -1896,18 +1914,18 @@ Returns JSON AST!
 \l[
   Editor.md
 
-  \l[website: \a[https://github.com/pandao/editor.md]]
-  \l[source: \a[https://github.com/pandao/editor.md]]
-  \l[demo: \a[https://pandao.github.io/editor.md]]
+  \l[website: https://github.com/pandao/editor.md]
+  \l[source: https://github.com/pandao/editor.md]
+  \l[demo: https://pandao.github.io/editor.md]
   \l[WYSIWYG: no]
   \l[preview scroll sync: yes but buggy when tested 2019-12-12 on live website]
 ]
 \l[
   Quill.md
 
-  \l[website: \a[https://quilljs.com]]
-  \l[source: \a[https://github.com/pandao/editor.md]]
-  \l[demo: \a[https://pandao.github.io/editor.md]]
+  \l[website: https://quilljs.com]
+  \l[source: https://github.com/pandao/editor.md]
+  \l[demo: https://pandao.github.io/editor.md]
   \l[WYSIWYG: yes]
   \l[markdown output: no https://github.com/quilljs/quill/issues/74]
 ]
@@ -2046,6 +2064,5 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[\a[https://gohugo.io/][Hugo]. Pretty good, similar feature set to ours. But Go based, so hard on browser, and adds adhoc features on top of markdown once again]
 
 Less related but of interest:
-
-\l[\a[http://www.uprtcl.io/]]
-\l[\a[https://libretexts.org]]
+\l[http://www.uprtcl.io/]
+\l[https://libretexts.org]

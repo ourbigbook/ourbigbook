@@ -6,4 +6,4 @@ The real README is of course [README.ciro](README.ciro)
 
 A rendered version can be seen at: <https://cirosantilli.com/cirodown>
 
-A live demo can be seen at: <https://cirosantilli.com/cirodown/editor>
+A live in-browser demo can be seen at: <https://cirosantilli.com/cirodown/editor>

@@ -200,6 +200,7 @@ Static book generators:
   * https://github.com/vimwiki/vimwiki
 * https://github.com/hplgit/doconce
 * https://www.gwern.net/About#source is pretty interesting, uses https://github.com/jaspervdj/Hakyll/ + some custom stuff.
+* https://github.com/JerrySievert/bookmarkdown
 
 Less related but of interest, similar philosophy to what Ciro wants, but no explicitly reusable system:
 * http://www.uprtcl.io/
@@ -791,7 +792,7 @@ is equivalent to the following ID-based version:
 
 The main advantages of this syntax are felt when you have a huge document with \x[unlimited-header-levels][very large header depths]. In that case:
 * it becomes easy to get levels wrong with so many large level numbers to deal with. It is much harder to get an ID wrong.
-* when you want to move headers around to improve organization, things are quite painful without a refactoring tool (which we intend to provide in the \x[editor-with-preview]), as you need to fix up the levels of every single header.
+* when you want to move headers around to improve organization, things are quite painful without a refactoring tool (which we intend to provide in the \x[browser-editor-with-preview]), as you need to fix up the levels of every single header.
 
   If you are using the ID-based syntax however, you only have to move the chunk of headers, and change the `parent` argument of a single top-level header being moved.
 
@@ -3652,7 +3653,7 @@ Values not documented in other sections:
 
 This nifty little option outputs to stderr what the header graph looks like!
 
-It is a bit like a \x[table-of-contents] in your terminal, for when you need to have a look at the outline of the document to decide where to place a new header, but are not in the mood to open a browser or use the \x[editor-with-preview].
+It is a bit like a \x[table-of-contents] in your terminal, for when you need to have a look at the outline of the document to decide where to place a new header, but are not in the mood to open a browser or use the \x[browser-editor-with-preview].
 
 Sample output excerpt for this document:
 ``
@@ -4170,60 +4171,6 @@ The better approach would be to implement a converter in Haskell from anything t
 
 And from Cirodown to anything, create new output formats inside Cirodown to those other formats.
 
-= Editor with preview
-{parent=tooling}
-
-TODO make amazing. Being tracked under: https://github.com/cirosantilli/cirodown/labels/editor
-
-We must achieve an editor setup with synchronized live side-by-side preview.
-
-Likely, we will first do a non WYSIWYG editor with side by side preview with scroll sync.
-
-Then, if the project picks up steam, we can start considering a full WYSIWYG.
-
-It would be amazing to have a WebKit interface that works both on browser for the and locally.
-
-Possibilities we could reuse:
-* Editor.js
-
-  Returns JSON AST!
-
-  * website: https://editorjs.io/
-  * source: https://github.com/codex-team/editor.js
-  * WYSIWYG: yes
-  * preview scroll sync: yes
-* StackEdit
-  * markup implementation: PageDown
-  * website: https://stackedit.io
-  * source: https://github.com/benweet/stackedit
-  * demo: https://stackedit.io/app
-  * WYSIWYG: no
-  * preview scroll sync: yes
-* Editor.md
-  * website: https://github.com/pandao/editor.md
-  * source: https://github.com/pandao/editor.md
-  * demo: https://pandao.github.io/editor.md
-  * WYSIWYG: no
-  * preview scroll sync: yes but buggy when tested 2019-12-12 on live website
-* https://github.com/markdown-it/markdown-it[markdown-it]
-
-  Custom editor and highlight via https://github.com/highlightjs/highlight.js/[highlight.js].
-
-  * markup implementation: custom
-  * website: https://markdown-it.github.io
-  * source: https://github.com/markdown-it/markdown-it
-  * WYSIWYG: no
-  * preview scroll sync: yes
-  * editor hangs on large input: yes
-* Quill.md
-  * website: https://quilljs.com
-  * source: https://github.com/quilljs/quill/
-  * demo: https://pandao.github.io/editor.md
-  * WYSIWYG: yes
-  * markdown output: no https://github.com/quilljs/quill/issues/74
-* https://ui.toast.com/tui-editor/
-* https://www.froala.com/wysiwyg-editor
-
 = Dynamic website
 {parent=tooling}
 
@@ -4331,6 +4278,102 @@ git push heroku master
   * Express.js
   * Sequelize
   * SQLite for local development, PostgreSQL for deployment
+
+= Editor support
+{parent=tooling}
+
+= Vim
+{parent=editor-support}
+
+You can install the support with https://github.com/VundleVim/Vundle.vim[Vundle] with:
+``
+Bundle 'cirosantilli/cirodown', {'rtp': 'vim'}
+``
+or by directly dropping the files named below under your `~/.vim/`, e.g. `vim/syntax/cirodown.vim`
+
+The following support is provided:
+* \a[vim/syntax/cirodown.vim]: syntax highlighting
+* \a[vim/snippets/cirodown.vim]: snippets for https://github.com/honza/vim-snippets[], which you also have to install first for them to work.
+
+  For example, with those snippets installed, you can easily create links to headers. Suppose you have:
+  ``
+  = My long header
+  ``
+  To create an internal cross reference to it you can:
+  * copy `My long header` to the clipboard, see copy to clipboard shortcuts at: https://stackoverflow.com/questions/3961859/how-to-copy-to-clipboard-in-vim/67890119#67890119
+  * type `\x` and then hit tab
+  and it will automatically expand to:
+  ``
+  \x[my-long-header]
+  ``
+  This provides a resonable alternative for ID calculation, until a ctags-like setup gets implemented (never/\x[browser-editor-with-preview]-only? ;-))
+
+  Simiplarly for \x[h-parent-argument] you can do:
+  ``
+  {p
+  ``
+  would expand to:
+  ``
+  {parent=my-long-header}
+  ``
+
+  Syntax highlighting can likely never be perfect without a full parser (which is slow), but even the imperfect approximate setup (as provided for most other languages) is already a huge usability improvement.
+
+  We will attempt to err on the side of "misses some stuff but does not destroy the entire page below" whenever possible.
+
+= Browser editor with preview
+{parent=editor-support}
+
+TODO make amazing. Being tracked under: https://github.com/cirosantilli/cirodown/labels/editor
+
+We must achieve an editor setup with synchronized live side-by-side preview.
+
+Likely, we will first do a non WYSIWYG editor with side by side preview with scroll sync.
+
+Then, if the project picks up steam, we can start considering a full WYSIWYG.
+
+It would be amazing to have a WebKit interface that works both on browser for the and locally.
+
+Possibilities we could reuse:
+* Editor.js
+
+  Returns JSON AST!
+
+  * website: https://editorjs.io/
+  * source: https://github.com/codex-team/editor.js
+  * WYSIWYG: yes
+  * preview scroll sync: yes
+* StackEdit
+  * markup implementation: PageDown
+  * website: https://stackedit.io
+  * source: https://github.com/benweet/stackedit
+  * demo: https://stackedit.io/app
+  * WYSIWYG: no
+  * preview scroll sync: yes
+* Editor.md
+  * website: https://github.com/pandao/editor.md
+  * source: https://github.com/pandao/editor.md
+  * demo: https://pandao.github.io/editor.md
+  * WYSIWYG: no
+  * preview scroll sync: yes but buggy when tested 2019-12-12 on live website
+* https://github.com/markdown-it/markdown-it[markdown-it]
+
+  Custom editor and highlight via https://github.com/highlightjs/highlight.js/[highlight.js].
+
+  * markup implementation: custom
+  * website: https://markdown-it.github.io
+  * source: https://github.com/markdown-it/markdown-it
+  * WYSIWYG: no
+  * preview scroll sync: yes
+  * editor hangs on large input: yes
+* Quill.md
+  * website: https://quilljs.com
+  * source: https://github.com/quilljs/quill/
+  * demo: https://pandao.github.io/editor.md
+  * WYSIWYG: yes
+  * markdown output: no https://github.com/quilljs/quill/issues/74
+* https://ui.toast.com/tui-editor/
+* https://www.froala.com/wysiwyg-editor
 
 = Error reporting
 {parent=tooling}

@@ -5,6 +5,7 @@ import { mutate } from 'swr'
 import ourbigbook from 'ourbigbook/dist/ourbigbook.js';
 
 import { webApi } from 'front/api'
+import CustomLink from 'front/CustomLink'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
 import { IssueType } from 'front/types/IssueType'
@@ -29,6 +30,22 @@ export function DiscussionAbout(
   return <h1>Discussion{issue ? ` #${issue.number}` : ''}: <a href={routes.articleView(article.slug)}
     >"<span className="comment-body ourbigbook-title" dangerouslySetInnerHTML={{ __html: article.titleRender }}
     />" by { article.author.displayName }</a></h1>
+}
+
+export function SignupOrLogin(
+  { to }:
+  { to: string }
+) {
+  return <>
+    <CustomLink href={routes.userNew()}>
+      {REGISTER_ACTION}
+    </CustomLink>
+    {' '}or{' '}
+    <CustomLink href={routes.userLogin()}>
+      {decapitalize(LOGIN_ACTION)}
+    </CustomLink>
+    {' '}{to}.
+  </>
 }
 
 export function slugFromArray(arr, { username }: { username?: boolean } = {}) {

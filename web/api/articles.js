@@ -68,7 +68,7 @@ router.get('/feed', auth.required, async function(req, res, next) {
   }
 })
 
-// Create File and corrsponding Articles. The File must not already exist.
+// Create File and corresponding Articles. The File must not already exist.
 router.post('/', auth.required, async function(req, res, next) {
   try {
     return await createOrUpdateArticle(req, res, { forceNew: true })
@@ -77,7 +77,7 @@ router.post('/', auth.required, async function(req, res, next) {
   }
 })
 
-// Create or Update File and corrsponding Articles. The File must not already exist.
+// Create or Update File and corresponding Articles. The File must not already exist.
 router.put('/', auth.required, async function(req, res, next) {
   try {
     return await createOrUpdateArticle(req, res, { forceNew: false })

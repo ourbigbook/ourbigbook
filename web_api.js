@@ -132,7 +132,7 @@ class WebApi {
     )
   }
 
-  async commentDelete(slug, issueNumber, commentId) {
+  async commentDelete(slug, issueNumber, commentNumber) {
     return this.req('delete', `/issues/${issueNumber}/comments/${commentNumber}?id=${encodeURIComponent(slug)}`)
   }
 

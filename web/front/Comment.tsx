@@ -7,14 +7,14 @@ import { formatDate } from 'front/date'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 
 const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
-  const canModify =
-    loggedInUser && loggedInUser?.username === comment?.author?.username;
+  // TODO factor permissions out with backend.
+  const canModify = loggedInUser && loggedInUser?.admin;
   const router = useRouter();
   const {
-    query: { pid },
+    query: { number: issueNumber, slug },
   } = router;
   const handleDelete = async (commentId) => {
-    await webApi.commentDelete(pid, commentId)
+    await webApi.commentDelete(slug.join('/'), issueNumber, comment.number)
     setComments(comments => comments.filter(comment => comment.id !== id))
   };
   return (

@@ -250,6 +250,13 @@ div.editor-page {
   div.header {
     flex-grow: 0;
     flex-shrink: 0;
+    h1 {
+      font-size: 1.8em;
+      margin-bottom: 0.5em;
+    }
+    div.help {
+      margin-bottom: 0.7em;
+    }
   }
   div.title-and-actions {
     display: flex;

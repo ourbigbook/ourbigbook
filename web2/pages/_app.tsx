@@ -6,14 +6,6 @@ import Navbar from "components/common/Navbar"
 import ContextProvider from "lib/context"
 import 'cirodown/cirodown.scss'
 import 'katex/dist/katex.css'
-import Tablesort from 'tablesort/src/tablesort.js'
-// TODO Uncaught ReferenceError: Tablesort is not defined
-//https://github.com/tristen/tablesort/issues/165
-//import 'tablesort/src/sorts/tablesort.date.js'
-//import 'tablesort/src/sorts/tablesort.dotsep.js'
-//import 'tablesort/src/sorts/tablesort.filesize.js'
-//import 'tablesort/src/sorts/tablesort.monthname.js'
-//import 'tablesort/src/sorts/tablesort.number.js'
 import "style.scss"
 
 const MyApp = ({ Component, pageProps }) => (

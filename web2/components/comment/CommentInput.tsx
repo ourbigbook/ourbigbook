@@ -76,7 +76,8 @@ const CommentInput = () => {
             <CustomImage
               className="comment-author-img"
               src={loggedInUser.effectiveImage}
-              alt="Comment author's profile image"
+              className="profile-thumb"
+              alt="author profile image"
             />
             <button className="btn btn-sm btn-primary" type="submit">
               Post Comment

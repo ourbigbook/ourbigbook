@@ -3745,7 +3745,7 @@ On Ubuntu 20.04 \a[https://cirosantilli.com/linux-kernel-module-cheat/#p51][Leno
   Holy cow, it is 200x faster than Asciidoctor!
 * https://github.com/markdown-it/markdown-it[markdown-it] at 5789a3fe9693aa3ef6aa882b0f57e0ea61efafc0 to get an idea of a JavaScript markdown implementation:
   ``
-  time markdown-it /home/ciro/bak/git/cirodown/tmp.md > tmp.md.html
+  time markdown-it tmp.md > tmp.md.html
   ``
   outputs:
   ``

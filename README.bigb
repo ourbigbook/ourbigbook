@@ -6966,7 +6966,7 @@ Note that doing `sync-db` also requires `NODE_ENV=production` as in:
 ``
 NODE_ENV=production OURBIGBOOK_POSTGRES=true ./bin/sync-db.js
 ``
-because we have to shell out to the ugly migration CLI, and that only understands `NODE_ENV`.
+because we have to shell out to the ugly <OurBigBook Web database migration setup>[migration] CLI, and that only understands `NODE_ENV`.
 
 = OurBigBook Web step debug
 {parent=OurBigBook Web development}
@@ -7492,7 +7492,7 @@ Maybe this will change if someday we ever de to have full vs minimized versions 
 
 * \a[web/app.js]: server executable entry point, can also be used programmatically from Node.js
 * \a[web/models]: Sequelize database models. Most changes in this folder require the creation of a corresponding \a[web/migrations]
-* \a[web/migrations]: database migrations
+* \a[web/migrations]: database migrations, see also: <OurBigBook Web database migration setup>{full}
 * \a[web/pages]: Next.js URL entry points
 * \a[web/front] and \a[web/front.tsx]: files that can be imported from either front-end of backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
 * \a[web/back] and \a[web/back.ts]: files that can be imported only from backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
@@ -7510,7 +7510,7 @@ Notably, this would be mandatory in case of CSS changes that require correspondi
 
 As the website grows, we will likely need to do a lazy version of this that marks pages as outdated, and then renders on the fly, plus a background thread that always updates outdated pages.
 
-The functionality of this script should be called from a migration whenever such HTML changes are required. TODO link to an example. We had one at `web/migrations/20220321000000-output-update-ancestor.js` that seemed to work, but lost it. It was simple though. Just you have to instantiate your own Sequelize instance after making the model change to move any data.
+The functionality of this script should be called from a <OurBigBook Web database migration setup>[migration] whenever such HTML changes are required. TODO link to an example. We had one at `web/migrations/20220321000000-output-update-ancestor.js` that seemed to work, but lost it. It was simple though. Just you have to instantiate your own Sequelize instance after making the model change to move any data.
 
 = Runtime feature
 {parent=OurBigBook}

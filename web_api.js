@@ -36,7 +36,7 @@ class WebApi {
     return sendJsonHttp(method, `/${WEB_API_PATH}/${path}`, newopts)
   }
 
-  async articleAll(opts={}) {
+  async articles(opts={}) {
     return this.req('get', `articles${encodeGetParamsWithOffset(opts)}`)
   }
 
@@ -60,8 +60,9 @@ class WebApi {
     return this.req('get', `articles/feed${encodeGetParamsWithOffset(opts)}`)
   }
 
-  async articleGet(slug) {
-    return this.req('get', `articles?id=${encodeURIComponent(slug)}`)
+  async article(slug) {
+    const { data, status } = await this.articles({ id: slug })
+    return { data: data.articles[0], status }
   }
 
   async articleUnlike(slug) {
@@ -80,15 +81,15 @@ class WebApi {
     return `/${WEB_API_PATH}/articles?id=${encodeURIComponent(slug)}`
   }
 
-  async issueAll(opts) {
+  async issues(opts) {
     return this.req('get',
-      `/issues${encodeGetParamsWithOffset(opts)}`,
+      `issues${encodeGetParamsWithOffset(opts)}`,
     )
   }
 
   async issueCreate(slug, issue) {
     return this.req('post',
-      `/issues?id=${encodeURIComponent(slug)}`,
+      `issues?id=${encodeURIComponent(slug)}`,
       {
         body: { issue },
       },
@@ -96,12 +97,12 @@ class WebApi {
   }
 
   async issueDelete(slug, issueNumber) {
-    return this.req('delete', `/issues/${issueNumber}/comments/${commentNumber}?id=${encodeURIComponent(slug)}`)
+    return this.req('delete', `issues/${issueNumber}/comments/${commentNumber}?id=${encodeURIComponent(slug)}`)
   }
 
   async issueEdit(slug, issueNumber, issue) {
     return this.req('put',
-      `/issues/${issueNumber}?id=${encodeURIComponent(slug)}`,
+      `issues/${issueNumber}?id=${encodeURIComponent(slug)}`,
       {
         body: { issue },
       },
@@ -116,15 +117,15 @@ class WebApi {
     return this.req('delete', `issues/${issueNumber}/like?id=${encodeURIComponent(slug)}`)
   }
 
-  async commentGet(slug, issueNumber) {
+  async comments(slug, issueNumber) {
     return this.req('get',
-      `/issues/${issueNumber}/comments?id=${encodeURIComponent(slug)}`,
+      `issues/${issueNumber}/comments?id=${encodeURIComponent(slug)}`,
     )
   }
 
   async commentCreate(slug, issueNumber, source) {
     return this.req('post',
-      `/issues/${issueNumber}/comments?id=${encodeURIComponent(slug)}`,
+      `issues/${issueNumber}/comments?id=${encodeURIComponent(slug)}`,
       {
         body: { comment: { source } },
       },
@@ -133,7 +134,7 @@ class WebApi {
 
   async commentUpdate(slug, issueNumber, comentNumber, source) {
     return this.req('put',
-      `/issues/${issueNumber}/comments${commentNumber}?id=${encodeURIComponent(slug)}`,
+      `issues/${issueNumber}/comments${commentNumber}?id=${encodeURIComponent(slug)}`,
       {
         body: { comment: { source } },
       },
@@ -141,10 +142,10 @@ class WebApi {
   }
 
   async commentDelete(slug, issueNumber, commentNumber) {
-    return this.req('delete', `/issues/${issueNumber}/comments/${commentNumber}?id=${encodeURIComponent(slug)}`)
+    return this.req('delete', `issues/${issueNumber}/comments/${commentNumber}?id=${encodeURIComponent(slug)}`)
   }
 
-  async userAll(opts) {
+  async users(opts) {
     return this.req('get', `users${encodeGetParamsWithOffset(opts)}`)
   }
 
@@ -155,18 +156,15 @@ class WebApi {
     );
   }
 
-  async userCurrent() {
-    return this.req('get', `/users`)
-  }
-
   async userFollow(username){
     return this.req('post',
       `users/${username}/follow`,
     );
   }
 
-  async userGet(username) {
-    return this.req('get', `users/${username}`)
+  async user(username) {
+    const { data, status } = await this.users({ username })
+    return { data: data.users[0], status }
   }
 
   async userLogin(attrs) {
@@ -176,16 +174,9 @@ class WebApi {
     );
   }
 
-  async userSave(user) {
+  async userUpdate(username, user) {
     return this.req('put',
-      `users`,
-      { body : { user } },
-    );
-  }
-
-  async userUpdate(user) {
-    return this.req('put',
-      `users/${user.username}`,
+      `users/${username}`,
       { body: { user } },
     )
   }

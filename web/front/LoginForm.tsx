@@ -85,17 +85,15 @@ const LoginForm = ({ register = false }) => {
       <ListErrors errors={errors} />
       <form onSubmit={handleSubmit}>
         {register &&
-          <>
-            <Label label="Display name">
-              <input
-                autoComplete="name"
-                type="text"
-                placeholder="John Smith"
-                value={displayName}
-                onChange={handleDisplayNameChange}
-              />
-            </Label>
-          </>
+          <Label label="Display name">
+            <input
+              autoComplete="name"
+              type="text"
+              placeholder="John Smith"
+              value={displayName}
+              onChange={handleDisplayNameChange}
+            />
+          </Label>
         }
         <Label label={ register ? "Username (cannot be modified later)" : "Username or email" }>
           <input
@@ -107,17 +105,15 @@ const LoginForm = ({ register = false }) => {
           />
         </Label>
         {register &&
-          <>
-            <Label label="Email">
-              <input
-                autoComplete="email"
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={handleEmailChange}
-              />
-            </Label>
-          </>
+          <Label label="Email">
+            <input
+              autoComplete="email"
+              type="email"
+              placeholder="john.smith@mail.com"
+              value={email}
+              onChange={handleEmailChange}
+            />
+          </Label>
         }
         <Label label="Password">
           <input

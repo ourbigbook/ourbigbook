@@ -180,6 +180,7 @@ module.exports = (sequelize) => {
     offset,
     order,
     sequelize,
+    slug,
     topicId,
   }) => {
     let where = {}
@@ -204,12 +205,20 @@ module.exports = (sequelize) => {
         where: { username: likedBy },
       })
     }
+    if (slug) {
+      where.slug = slug
+    }
     if (topicId) {
       where.topicId = topicId
     }
+    const orderList = [[order, 'DESC']]
+    if (order !== 'createdAt') {
+      // To make results deterministic.
+      orderList.push(['createdAt', 'DESC'])
+    }
     return sequelize.models.Article.findAndCountAll({
       where,
-      order: [[order, 'DESC']],
+      order: orderList,
       limit,
       offset,
       include,

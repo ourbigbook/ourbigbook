@@ -68,7 +68,7 @@ export const getServerSidePropsUserHoc = (what) => {
     }
     if (what === 'home') {
       const articleProps = (await getServerSidePropsArticleHoc(true, loggedInUser)({
-        params: { slug: [ params.uid ] }, req }))
+        params: { slug: [ params.uid ] }, req, res }))
       Object.assign(props, articleProps.props)
     } else {
       props.articles = await Promise.all(articles.rows.map(article => article.toJson(loggedInUser)))

@@ -57,64 +57,11 @@ module.exports = (sequelize) => {
     {
       hooks: {
         beforeValidate: async (article, options) => {
-          const transaction = options.transaction
-          let extra_returns = {};
-          const author = await article.getAuthor({ transaction })
-          const id = cirodown.title_to_id(article.title)
-          const input = modifyEditorInput(article.title, article.body)
-          article.render = await cirodown.convert(
-            input,
-            {
-              body_only: true,
-              html_x_extension: false,
-              id_provider,
-              file_provider,
-              magic_leading_at: false,
-              input_path: `${cirodown.AT_MENTION_CHAR}${author.username}/${id}${cirodown.CIRODOWN_EXT}`,
-              path_sep: path.sep,
-              read_include: cirodown_nodejs_webpack_safe.read_include({
-                exists: async (inpath) => {
-                  const suf = cirodown.Macro.HEADER_SCOPE_SEPARATOR + cirodown.INDEX_BASENAME_NOEXT
-                  let idid
-                  if (inpath.endsWith(suf)) {
-                    idid = inpath.slice(0, -suf.length)
-                  } else {
-                    idid = inpath
-                  }
-                  return (await sequelize.models.Id.count({ where: { idid }, transaction })) > 0
-                },
-                // Only needed for --embed-includes, which is not implemented on the dynamic website for now.
-                read: (inpath) => '',
-                path_sep: cirodown.Macro.HEADER_SCOPE_SEPARATOR,
-                ext: '',
-              }),
-              remove_leading_at: true,
-            },
-            extra_returns,
-          )
-          if (extra_returns.errors.length > 0) {
-            const errsNoDupes = remove_duplicates_sorted_array(
-              extra_returns.errors.map(e => e.toString()))
-            throw new ValidationError(errsNoDupes, 422)
-          }
-          const idid = extra_returns.context.header_tree.children[0].ast.id
-          await update_database_after_convert({
-            extra_returns,
-            id_provider,
-            sequelize,
-            path: idid,
-            render: true,
-            transaction,
-          })
-          // https://github.com/sequelize/sequelize/issues/8586#issuecomment-422877555
-          options.fields.push('render');
-          article.topicId = idid.slice(cirodown.AT_MENTION_CHAR.length + author.username.length + 1)
+          await article.convert(options.transaction)
+          options.fields.push('render')
           options.fields.push('topicId')
-          if (!article.slug) {
-            article.slug = `${idid.slice(cirodown.AT_MENTION_CHAR.length)}`
-            options.fields.push('slug')
-          }
-        }
+          options.fields.push('slug')
+        },
       },
       // TODO updatedAt lazy to create migration now.
       indexes: [
@@ -125,6 +72,63 @@ module.exports = (sequelize) => {
       ],
     }
   )
+
+  Article.prototype.convert = async function(transaction) {
+    const article = this
+    const extra_returns = {};
+    const author = await article.getAuthor({ transaction })
+    const id = cirodown.title_to_id(article.title)
+    const input = modifyEditorInput(article.title, article.body)
+    article.render = await cirodown.convert(
+      input,
+      {
+        body_only: true,
+        html_x_extension: false,
+        id_provider,
+        file_provider,
+        magic_leading_at: false,
+        input_path: `${cirodown.AT_MENTION_CHAR}${author.username}/${id}${cirodown.CIRODOWN_EXT}`,
+        path_sep: path.sep,
+        read_include: cirodown_nodejs_webpack_safe.read_include({
+          exists: async (inpath) => {
+            const suf = cirodown.Macro.HEADER_SCOPE_SEPARATOR + cirodown.INDEX_BASENAME_NOEXT
+            let idid
+            if (inpath.endsWith(suf)) {
+              idid = inpath.slice(0, -suf.length)
+            } else {
+              idid = inpath
+            }
+            return (await sequelize.models.Id.count({ where: { idid }, transaction })) > 0
+          },
+          // Only needed for --embed-includes, which is not implemented on the dynamic website for now.
+          read: (inpath) => '',
+          path_sep: cirodown.Macro.HEADER_SCOPE_SEPARATOR,
+          ext: '',
+        }),
+        remove_leading_at: true,
+      },
+      extra_returns,
+    )
+    if (extra_returns.errors.length > 0) {
+      const errsNoDupes = remove_duplicates_sorted_array(
+        extra_returns.errors.map(e => e.toString()))
+      throw new ValidationError(errsNoDupes, 422)
+    }
+    const idid = extra_returns.context.header_tree.children[0].ast.id
+    await update_database_after_convert({
+      extra_returns,
+      id_provider,
+      sequelize,
+      path: idid,
+      render: true,
+      transaction,
+    })
+    // https://github.com/sequelize/sequelize/issues/8586#issuecomment-422877555
+    article.topicId = idid.slice(cirodown.AT_MENTION_CHAR.length + author.username.length + 1)
+    if (!article.slug) {
+      article.slug = `${idid.slice(cirodown.AT_MENTION_CHAR.length)}`
+    }
+  }
 
   Article.prototype.toJson = async function(user) {
     const authorPromise = this.author ? this.author : this.getAuthor()
@@ -186,6 +190,19 @@ module.exports = (sequelize) => {
       offset: Number(offset),
       include: include,
     })
+  }
+
+  Article.rerender = async (opts={}) => {
+    if (opts.log === undefined) {
+      opts.log = false
+    }
+    for (const article of await sequelize.models.Article.findAll()) {
+      if (opts.log) {
+        console.error(`authorId=${article.authorId} title=${article.title}`);
+      }
+      await article.convert()
+      await article.save()
+    }
   }
 
   return Article

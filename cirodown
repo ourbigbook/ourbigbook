@@ -563,10 +563,11 @@ const Tokenizer = class {
         if (this.cur_c !== NAMED_ARGUMENT_EQUAL_CHAR) {
           this.error(`expected character: '${NAMED_ARGUMENT_EQUAL_CHAR}' got '${this.cur_c}'`);
         }
+        // Consume the = sign.
         this.consume();
+        this.consume_optional_newline(true);
         if (open_length > 1) {
           // Literal argument.
-          this.consume_optional_newline(true);
           let close_string = closing_char(
             START_NAMED_ARGUMENT_CHAR).repeat(open_length);
           this.tokenize_plaintext_until_string(close_string);
@@ -582,9 +583,9 @@ const Tokenizer = class {
         let open_length = this.tokenize_func(
           (c)=>{return c === START_POSITIONAL_ARGUMENT_CHAR}
         ).length;
+        this.consume_optional_newline(true);
         if (open_length > 1) {
           // Literal argument.
-          this.consume_optional_newline(true);
           let close_string = closing_char(
             START_POSITIONAL_ARGUMENT_CHAR).repeat(open_length);
           this.tokenize_plaintext_until_string(close_string);

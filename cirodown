@@ -110,8 +110,8 @@ function convert_files_in_directory_extract_ids(input_path, options, convert_inp
  */
 function convert_input(input, options, convert_input_options={}) {
   const new_options = Object.assign({}, options);
-  if ('input_path' in convert_input_options) {
-    new_options.input_path = convert_input_options.input_path;
+  if ('input_path_noext_renamed' in convert_input_options) {
+    new_options.input_path = convert_input_options.input_path_noext_renamed;
   }
   if ('db' in convert_input_options) {
     new_options.id_provider = new SqliteIdProvider(
@@ -186,7 +186,6 @@ function convert_path(input_path, options, convert_input_options) {
   }
   let new_options = Object.assign({}, options);
   let new_convert_input_options = Object.assign({}, convert_input_options);
-  new_convert_input_options.input_path = input_path;
   let input = fs.readFileSync(input_path, new_convert_input_options.encoding);
   let input_path_parse = path.parse(input_path);
   let input_path_basename_noext = input_path_parse.name;
@@ -200,16 +199,15 @@ function convert_path(input_path, options, convert_input_options) {
     toplevel_id = input_path_basename_noext;
   }
   new_options.toplevel_id = toplevel_id;
-
+  let input_path_basename_noext_renamed;
+  if (input_path_basename_noext in IO_RENAME_MAP) {
+    input_path_basename_noext_renamed = IO_RENAME_MAP[input_path_basename_noext];
+  } else {
+    input_path_basename_noext_renamed = input_path_basename_noext
+  }
+  input_path_noext_renamed = path.join(input_path_parse.dir, input_path_basename_noext_renamed);
+  new_convert_input_options.input_path_noext_renamed = input_path_noext_renamed;
   if ('db' in convert_input_options) {
-    let input_path_basename_noext_renamed;
-    if (input_path_basename_noext in IO_RENAME_MAP) {
-      input_path_basename_noext_renamed = IO_RENAME_MAP[input_path_basename_noext];
-    } else {
-      input_path_basename_noext_renamed = input_path_basename_noext
-    }
-    input_path_noext_renamed = path.join(input_path_parse.dir, input_path_basename_noext_renamed);
-
     // Remove all IDs from the path, so that they will be removed from the database
     // if they were removed from the file. Done before conversion, so that we won't
     // find duplicates with the file itself.
@@ -380,9 +378,7 @@ if (commander.helpMacros) {
         )`
       ).run();
     }
-    if (!options.html_single_page) {
-      convert_input_options.db = db;
-    }
+    convert_input_options.db = db;
     convert_input_options.ids_table_name = ids_table_name;
 
     if (commander.watch) {

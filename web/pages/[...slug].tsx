@@ -99,66 +99,64 @@ const ArticlePage = ({
   return (
     <>
       <div className="article-page">
-        <div className="banner content-not-cirodown">
-          <div className="article-meta">
-            <div className="article-info">
-              { 'Author: ' }
-              <UserLinkWithImage user={article.author} />
-              {' '}
-              <FollowUserButtonContext.Provider value={{
-                following, setFollowing, followerCount, setFollowerCount
-              }}>
-                <FollowUserButton user={article.author} showUsername={false} />
-              </FollowUserButtonContext.Provider>
-            </div>
-            <div className="article-info article-info-2">
-              {topicArticleCount > 1 &&
-                <CustomLink
-                  href={routes.topicArticlesTop(article.topicId)}
-                >
-                  <i className="ion-ios-people" /> Top articles by other authors about the same topic ({topicArticleCount})
-                </CustomLink>
-              }
-            </div>
-            <div className="article-actions">
-              <LikeArticleButtonContext.Provider value={{
-                liked, setLiked, score, setScore
-              }}>
-                <LikeArticleButton
-                  article={article}
-                  showText={true}
-                />
-              </LikeArticleButtonContext.Provider>
-              {' Created: '}
-              <span className="article-dates">
-                {formatDate(article.createdAt)}
-              </span>
-              {article.createdAt !== article.updatedAt &&
-                <>
-                  {' Updated: '}
-                  <span className="article-dates">
-                    {formatDate(article.updatedAt)}
-                  </span>
-                </>
-              }
-              <Maybe test={canModify}>
-                {' '}
-                <span>
-                  <CustomLink
-                    href={routes.articleEdit(article.slug)}
-                    className="btn"
-                  >
-                    <i className="ion-edit" /> Edit
-                  </CustomLink>
-                  <button
-                    className="btn"
-                    onClick={handleDelete}
-                  >
-                    <i className="ion-trash-a" /> Delete
-                  </button>
+        <div className="content-not-cirodown article-meta">
+          <div className="article-info">
+            { 'Author: ' }
+            <UserLinkWithImage user={article.author} />
+            {' '}
+            <FollowUserButtonContext.Provider value={{
+              following, setFollowing, followerCount, setFollowerCount
+            }}>
+              <FollowUserButton user={article.author} showUsername={false} />
+            </FollowUserButtonContext.Provider>
+          </div>
+          <div className="article-info article-info-2">
+            {topicArticleCount > 1 &&
+              <CustomLink
+                href={routes.topicArticlesTop(article.topicId)}
+              >
+                <i className="ion-ios-people" /> Top articles by other authors about the same topic ({topicArticleCount})
+              </CustomLink>
+            }
+          </div>
+          <div className="article-info-3">
+            <LikeArticleButtonContext.Provider value={{
+              liked, setLiked, score, setScore
+            }}>
+              <LikeArticleButton
+                article={article}
+                showText={true}
+              />
+            </LikeArticleButtonContext.Provider>
+            {' Created: '}
+            <span className="article-dates">
+              {formatDate(article.createdAt)}
+            </span>
+            {article.createdAt !== article.updatedAt &&
+              <>
+                {' Updated: '}
+                <span className="article-dates">
+                  {formatDate(article.updatedAt)}
                 </span>
-              </Maybe>
-            </div>
+              </>
+            }
+            <Maybe test={canModify}>
+              {' '}
+              <span>
+                <CustomLink
+                  href={routes.articleEdit(article.slug)}
+                  className="btn"
+                >
+                  <i className="ion-edit" /> Edit
+                </CustomLink>
+                <button
+                  className="btn"
+                  onClick={handleDelete}
+                >
+                  <i className="ion-trash-a" /> Delete
+                </button>
+              </span>
+            </Maybe>
           </div>
         </div>
         <div className="container page">

@@ -32,6 +32,7 @@ exports.SPLIT_MARKER_TEXT = SPLIT_MARKER_TEXT;
 const SPLIT_MARKER = `<span class="fa-solid-900">\u{f042}</span> ${SPLIT_MARKER_TEXT}`;
 const PARENT_MARKER = '<span class="fa-solid-900">\u{f062}</span>';
 exports.PARENT_MARKER = PARENT_MARKER;
+const NEXT_ANCESTOR_MARKER = '<span class="fa-solid-900">\u{f061}</span>';
 const TOC_MARKER_SYMBOL = '<span class="fa-solid-900">\u{f03a}</span>'
 const TOC_MARKER = `${TOC_MARKER_SYMBOL} toc`
 
@@ -406,6 +407,32 @@ class AstNode {
   add_argument(argname, arg) {
     this.args[argname] = arg
     this.setup_argument(argname, arg)
+  }
+
+  /** Get all ancestors Asts of this Ast ordered from nearest to furthest.
+   * @return {List[AstNode}.
+   */
+  ancestors(context) {
+    const ancestors = [];
+    let cur_ast = this
+    let ancestor_id_set = new Set()
+    while (true) {
+      cur_ast = cur_ast.get_header_parent_asts(context)[0];
+      if (cur_ast === undefined) {
+        break
+      }
+      if (ancestor_id_set.has(cur_ast.id)) {
+        // This fixes https://github.com/ourbigbook/ourbigbook/issues/204 so long as we are
+        // rendering. Doing something before render would be ideal however, likely on the check_db step.
+        const message = `parent IDs lead to infinite ancestor loop: ${ancestors.map(a => a.id).join(' -> ')} -> ${cur_ast.id}`;
+        render_error(context, message, this.source_location);
+        break
+      } else {
+        ancestor_id_set.add(cur_ast.id)
+      }
+      ancestors.push(cur_ast);
+    }
+    return ancestors
   }
 
   // Return the full scope of a given node. This includes the concatenation of both:
@@ -7392,6 +7419,9 @@ function x_text(ast, context, options={}) {
 // consts
 
 // Dynamic website stuff.
+const ANCESTORS_ID_UNRESERVED = 'ancestors'
+const ANCESTORS_ID = `${Macro.RESERVED_ID_PREFIX}${ANCESTORS_ID_UNRESERVED}`
+const ANCESTORS_MAX = 6
 const AT_MENTION_CHAR = '@';
 exports.AT_MENTION_CHAR = AT_MENTION_CHAR;
 const HASHTAG_CHAR = '#';
@@ -8760,16 +8790,6 @@ const OUTPUT_FORMATS_LIST = [
                 items.push(`${link_to_split}`);
               }
             }
-
-            // Parent links.
-            let parent_asts = ast.get_header_parent_asts(context)
-            parent_links = [];
-            for (const parent_ast of parent_asts) {
-              let parent_href = x_href_attr(parent_ast, context);
-              let parent_content = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-              parent_links.push(`<a${parent_href}${html_attr('title', 'parent header')}>${PARENT_MARKER} ${parent_content}</a>`);
-            }
-            parent_links = parent_links.join(HEADER_MENU_ITEM_SEP);
             let descendant_count = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
             if (descendant_count !== undefined) {
               items.push(`${descendant_count}`);
@@ -8907,11 +8927,43 @@ const OUTPUT_FORMATS_LIST = [
           // Calculate header_meta and header_meta
           let header_meta = [];
           let header_meta2 = [];
+          let header_meta_ancestors = [];
           if (file_link_html !== undefined) {
             header_meta.push(file_link_html);
           }
-          if (parent_links) {
-            header_meta.push(parent_links);
+          if (first_header) {
+            const ancestors = ast.ancestors(context)
+            const nAncestor = ancestors.length
+            const parent_asts = ancestors.slice(0, ANCESTORS_MAX).reverse()
+            parent_links = [];
+            let i = 0
+            if (nAncestor > ANCESTORS_MAX) {
+              parent_links.push(`<a ${html_attr('href', `#${ANCESTORS_ID}`)} ${html_attr('title', 'parent header')}>${PARENT_MARKER} &nbsp;...</a>`);
+              i++
+            }
+            for (const parent_ast of parent_asts) {
+              const parent_href = x_href_attr(parent_ast, context);
+              const parent_content = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+              let marker = i == 0 ? PARENT_MARKER : NEXT_ANCESTOR_MARKER
+              parent_links.push(`<a${parent_href}${html_attr('title', 'parent header')}>${marker} ${parent_content}</a>`);
+              i++
+            }
+            parent_links = parent_links.join(HEADER_MENU_ITEM_SEP);
+            if (parent_links) {
+              header_meta_ancestors.push(parent_links);
+            }
+          } else {
+            const parent_asts = ast.get_header_parent_asts(context)
+            parent_links = [];
+            for (const parent_ast of parent_asts) {
+              const parent_href = x_href_attr(parent_ast, context);
+              const parent_content = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+              parent_links.push(`<a${parent_href}${html_attr('title', 'parent header')}>${PARENT_MARKER} ${parent_content}</a>`);
+            }
+            parent_links = parent_links.join(HEADER_MENU_ITEM_SEP);
+            if (parent_links) {
+              header_meta.push(parent_links);
+            }
           }
           if (first_header) {
             if (has_toc(context)) {
@@ -8945,7 +8997,7 @@ const OUTPUT_FORMATS_LIST = [
           if (header_has_meta) {
             ret += `<nav class="h-nav h-nav-toplevel">`;
           }
-          for (const meta of [web_meta, header_meta, header_meta2]) {
+          for (const meta of [web_meta, header_meta_ancestors, header_meta, header_meta2]) {
             if (meta.length > 0) {
               ret += `<div class="nav"> ${meta.join(HEADER_MENU_ITEM_SEP)}</div>`;
             }
@@ -9102,30 +9154,10 @@ const OUTPUT_FORMATS_LIST = [
 
             // Ancestors
             {
-              const ancestors = [];
-              let cur_ast = context.toplevel_ast;
-              let ancestor_id_set = new Set()
-              while (true) {
-                cur_ast = cur_ast.get_header_parent_asts(context)[0];
-                if (cur_ast === undefined) {
-                  break
-                }
-                if (ancestor_id_set.has(cur_ast.id)) {
-                  // This fixes https://github.com/ourbigbook/ourbigbook/issues/204 so long as we are
-                  // rendering. Doing something before render would be ideal however, likely on the check_db step.
-                  const message = `parent IDs lead to infinite ancestor loop: ${ancestors.map(a => a.id).join(' -> ')} -> ${cur_ast.id}`;
-                  render_error(context, message, context.toplevel_ast.source_location);
-                  break
-                } else {
-                  ancestor_id_set.add(cur_ast.id)
-                }
-                ancestors.push(cur_ast);
-              }
+              const ancestors = context.toplevel_ast.ancestors(context)
               if (ancestors.length !== 0) {
                 // TODO factor this out more with real headers.
-                const id = `ancestors`
-                const idWithPrefix = `${Macro.RESERVED_ID_PREFIX}${id}`
-                body += `<div>${html_hide_hover_link(`#${idWithPrefix}`)}<h2 id="${idWithPrefix}"><a href="#${idWithPrefix}">Ancestors</a></h2></div>\n`;
+                body += `<div>${html_hide_hover_link(`#${ANCESTORS_ID}`)}<h2 id="${ANCESTORS_ID}"><a href="#${ANCESTORS_ID}">Ancestors</a></h2></div>\n`;
                 const ancestor_id_asts = [];
                 for (const ancestor of ancestors) {
                   //let counts_str;
@@ -9176,7 +9208,7 @@ const OUTPUT_FORMATS_LIST = [
                   'content': new AstArgument(ancestor_id_asts)
                 }
                 if (context.options.add_test_instrumentation) {
-                  ulArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(id)]
+                  ulArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(ANCESTORS_ID_UNRESERVED)]
                 }
                 const incoming_ul_ast = new AstNode(
                   AstType.MACRO,

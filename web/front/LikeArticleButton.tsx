@@ -8,6 +8,7 @@ import routes from 'front/routes'
 const LikeArticleButton = ({
   article,
   isIssue,
+  issueArticle,
   loggedInUser,
   showText,
 }) => {
@@ -37,9 +38,17 @@ const LikeArticleButton = ({
     setScore(score + (liked ? - 1 : 1))
     try {
       if (liked) {
-        await webApi.articleUnlike(article.slug)
+        if (isIssue) {
+          await webApi.issueUnlike(issueArticle.slug, article.number)
+        } else {
+          await webApi.articleUnlike(article.slug)
+        }
       } else {
-        await webApi.articleLike(article.slug)
+        if (isIssue) {
+          await webApi.issueLike(issueArticle.slug, article.number)
+        } else {
+          await webApi.articleLike(article.slug)
+        }
       }
     } catch (error) {
       setLiked(!liked)

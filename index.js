@@ -852,6 +852,8 @@ function convert(
   if (!('show_parse' in options)) { options.show_parse = false; }
   if (!('show_tokenize' in options)) { options.show_tokenize = false; }
   if (!('show_tokens' in options)) { options.show_tokens = false; }
+  // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
+  if (!('toplevel_id' in options)) { options.toplevel_id = undefined; }
   macros = macro_list_to_macros();
   extra_returns.errors = [];
   let sub_extra_returns;
@@ -1158,8 +1160,9 @@ function parse(tokens, macros, options, extra_returns={}) {
   const macro_counts = {};
   let header_graph_last_level;
   const header_graph_stack = new Map();
-  let first_header = true;
+  let is_first_header = true;
   let first_header_level;
+  let first_header;
   let indexed_ids = {};
   // Non-indexed-ids: auto-generated numeric ID's like p-1, p-2, etc.
   // It is not possible to link to them from inside the document, since links
@@ -1195,66 +1198,13 @@ function parse(tokens, macros, options, extra_returns={}) {
       ast.macro_count = macro_count;
     }
 
-    // Calculate node ID and add it to the ID index.
-    let index_id = true;
-    let id_text = undefined;
-    let macro_arg = ast.args[Macro.ID_ARGUMENT_NAME];
-    if (macro_arg === undefined) {
-      let id_text = '';
-      let id_prefix = macros[ast.macro_name].id_prefix;
-      if (id_prefix !== '') {
-        id_text += id_prefix + ID_SEPARATOR
-      }
-      let title_arg = ast.args[Macro.TITLE_ARGUMENT_NAME];
-      if (title_arg !== undefined) {
-        // ID from title.
-        // TODO correct unicode aware algorithm.
-        id_text += title_to_id(convert_arg_noescape(title_arg, id_context));
-        ast.id = id_text;
-      } else if (!macro.properties.phrasing) {
-        // ID from element count.
-        if (ast.macro_count !== undefined) {
-          id_text += ast.macro_count;
-          index_id = false;
-          ast.id = id_text;
-        }
-      }
-    } else {
-      ast.id = convert_arg_noescape(macro_arg, id_context);
-    }
-    if (ast.id !== undefined) {
-      const id_provider_get = id_provider.get(ast.id);
-      let previous_ast = undefined;
-      if (id_provider_get === undefined) {
-        let non_indexed_id = non_indexed_ids[ast.id];
-        if (non_indexed_id !== undefined) {
-          input_path = options.input_path;
-          previous_ast = non_indexed_id;
-        }
-      } else {
-        [input_path, previous_ast] = id_provider_get;
-      }
-      if (previous_ast === undefined) {
-        non_indexed_ids[ast.id] = ast;
-        if (index_id) {
-          indexed_ids[ast.id] = ast;
-        }
-      } else {
-        let message = `duplicate ID "${ast.id}", previous one defined at `;
-        if (input_path !== undefined) {
-          message += `file ${input_path} `;
-        }
-        message += `line ${previous_ast.line} colum ${previous_ast.column}`;
-        parse_error(state, message, ast.line, ast.column);
-      }
-    }
-
     // Header tree.
     if (macro_name === Macro.HEADER_MACRO_NAME) {
       let level = parseInt(convert_arg_noescape(ast.args.level, id_context));
       ast.level = level;
-      if (first_header) {
-        first_header = false;
+      if (is_first_header) {
+        first_header = ast;
+        is_first_header = false;
         first_header_level = level;
         header_graph_last_level = level - 1;
         header_graph_stack[header_graph_last_level] = extra_returns.context.header_graph;
@@ -1284,9 +1234,67 @@ function parse(tokens, macros, options, extra_returns={}) {
       header_graph_stack[level] = new_tree_node;
       header_graph_last_level = level;
     }
-
     if (macro_name === Macro.TOC_MACRO_NAME) {
       extra_returns.context.has_toc = true;
+    }
+
+    // Calculate node ID and add it to the ID index.
+    let index_id = true;
+    let id_text = undefined;
+    let macro_id_arg = ast.args[Macro.ID_ARGUMENT_NAME];
+    if (macro_id_arg === undefined) {
+      if (ast === first_header && options.toplevel_id !== undefined) {
+        // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
+        ast.id = options.toplevel_id;
+      } else {
+        let id_text = '';
+        let id_prefix = macros[ast.macro_name].id_prefix;
+        if (id_prefix !== '') {
+          id_text += id_prefix + ID_SEPARATOR
+        }
+        let title_arg = ast.args[Macro.TITLE_ARGUMENT_NAME];
+        if (title_arg !== undefined) {
+          // ID from title.
+          // TODO correct unicode aware algorithm.
+          id_text += title_to_id(convert_arg_noescape(title_arg, id_context));
+          ast.id = id_text;
+        } else if (!macro.properties.phrasing) {
+          // ID from element count.
+          if (ast.macro_count !== undefined) {
+            id_text += ast.macro_count;
+            index_id = false;
+            ast.id = id_text;
+          }
+        }
+      }
+    } else {
+      ast.id = convert_arg_noescape(macro_id_arg, id_context);
+    }
+    if (ast.id !== undefined) {
+      const id_provider_get = id_provider.get(ast.id);
+      let previous_ast = undefined;
+      if (id_provider_get === undefined) {
+        let non_indexed_id = non_indexed_ids[ast.id];
+        if (non_indexed_id !== undefined) {
+          input_path = options.input_path;
+          previous_ast = non_indexed_id;
+        }
+      } else {
+        [input_path, previous_ast] = id_provider_get;
+      }
+      if (previous_ast === undefined) {
+        non_indexed_ids[ast.id] = ast;
+        if (index_id) {
+          indexed_ids[ast.id] = ast;
+        }
+      } else {
+        let message = `duplicate ID "${ast.id}", previous one defined at `;
+        if (input_path !== undefined) {
+          message += `file ${input_path} `;
+        }
+        message += `line ${previous_ast.line} colum ${previous_ast.column}`;
+        parse_error(state, message, ast.line, ast.column);
+      }
     }
 
     // Loop over the child arguments.

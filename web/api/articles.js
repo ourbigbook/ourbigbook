@@ -112,7 +112,7 @@ router.post('/', auth.required, async function(req, res, next) {
     }
     let article = new (req.app.get('sequelize').models.Article)(req.body.article)
     article.authorId = user.id
-    await article.save()
+    await article.saveSideEffects()
     article.author = user
     return res.json({ article: await article.toJson(user) })
   } catch(error) {
@@ -154,6 +154,9 @@ router.delete('/', auth.required, async function(req, res, next) {
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
     if (!user) {
       return res.sendStatus(401)
+    }
+    if (article.isToplevelIndex(user)) {
+      throw new lib.ValidationError('Cannot delete the toplevel index')
     }
     if (article.author.id.toString() === req.payload.id.toString()) {
       return article.destroy().then(function() {

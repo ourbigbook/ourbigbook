@@ -78,7 +78,7 @@ router.post('/users', async function(req, res, next) {
     user.displayName = req.body.user.displayName
     user.email = req.body.user.email
     req.app.get('sequelize').models.User.setPassword(user, req.body.user.password)
-    await user.save()
+    await user.saveSideEffects()
     await authenticate(req, res, next)
   } catch(error) {
     next(error);
@@ -102,9 +102,6 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
       }
       if (typeof req.body.user.email !== 'undefined') {
         user.email = req.body.user.email
-      }
-      if (typeof req.body.user.bio !== 'undefined') {
-        user.bio = req.body.user.bio
       }
       if (typeof req.body.user.image !== 'undefined') {
         user.image = req.body.user.image

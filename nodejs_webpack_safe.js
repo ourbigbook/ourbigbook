@@ -430,6 +430,7 @@ async function update_database_after_convert({
   sequelize,
   path,
   render,
+  transaction,
 }) {
   const context = extra_returns.context;
   cirodown.perf_print(context, 'convert_path_pre_sqlite_transaction')
@@ -460,7 +461,7 @@ async function update_database_after_convert({
   // Likely would not have been a bottleneck if we new more about databases/had more patience
   // and instead of doing INSERT one by one we would do a single insert with a bunch of data.
   // The move to Sequelize made that easier with bulkCreate. But keeping the transaction just in case
-  await sequelize.transaction(async (transaction) => {
+  await sequelize.transaction({ transaction }, async (transaction) => {
     file_bulk_create_opts.transaction = transaction
     await Promise.all([
       id_provider.update(

@@ -1,9 +1,11 @@
 const crypto = require('crypto')
+const Sequelize = require('sequelize')
 const jwt = require('jsonwebtoken')
+
+const cirodown = require('cirodown')
 
 const config = require('../config')
 
-const Sequelize = require('sequelize')
 const { DataTypes, Op } = Sequelize
 
 sampleUsername = ', here is a good example: my-good-username-123'
@@ -70,7 +72,6 @@ module.exports = (sequelize) => {
           }
         }
       },
-      bio: DataTypes.STRING,
       image: DataTypes.STRING(2048),
       hash: DataTypes.STRING(1024),
       salt: DataTypes.STRING,
@@ -86,6 +87,17 @@ module.exports = (sequelize) => {
       },
     },
     {
+      hooks: {
+        afterCreate: async (user, options) => {
+          // Create the index page for the user.
+          const article = new sequelize.models.Article({
+            title: cirodown.capitalize_first_letter(cirodown.INDEX_BASENAME_NOEXT),
+            body: 'Welcome to my home page!\n',
+            authorId: user.id,
+          })
+          return article.saveSideEffects()
+        }
+      },
       indexes: [{ fields: ['username'] }, { fields: ['email'] }]
     }
   )
@@ -109,7 +121,6 @@ module.exports = (sequelize) => {
       id: this.id,
       username: this.username,
       displayName: this.displayName,
-      bio: this.bio === undefined ? '' : this.bio,
       image: this.image,
       effectiveImage: this.image || 'https://static.productionready.io/images/smiley-cyrus.jpg',
       followerCount: this.followerCount,
@@ -210,6 +221,12 @@ module.exports = (sequelize) => {
         this.addFollow(otherUser.id, { transaction }),
         otherUser.increment('followerCount', { transaction }),
       ])
+    })
+  }
+
+  User.prototype.saveSideEffects = async function() {
+    await sequelize.transaction(async (transaction) => {
+      return this.save({ transaction })
     })
   }
 

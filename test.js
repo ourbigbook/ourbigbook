@@ -1608,6 +1608,20 @@ assert_convert_ast('escape left square bracket',  'a\\[b\n',  [a('P', [t('a[b')]
 assert_convert_ast('escape right square bracket', 'a\\]b\n',  [a('P', [t('a]b')])]);
 assert_convert_ast('escape left curly brace',     'a\\{b\n',  [a('P', [t('a{b')])]);
 assert_convert_ast('escape right curly brace',    'a\\}b\n',  [a('P', [t('a}b')])]);
+assert_convert_ast('escape header id', `= tmp
+
+\\x["'<>&]
+
+== tmp 2
+{id="'<>&}
+`,
+  undefined,
+  {
+    assert_xpath_main: [
+      "//*[@id=concat('\"', \"'<>&\")]",
+    ],
+  }
+);
 
 // Positional arguments.
 // Has no content argument.

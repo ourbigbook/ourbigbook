@@ -468,7 +468,7 @@ Static book generators:
   * https://github.com/rust-lang/mdBook[]. Impressive integrated search feature. Like Gitbook but implemented in Rust.
 * https://github.com/facebook/docusaurus React + markdown based, written in TypeScript. So how can it be build fast? Gotta benchmark.
 * vimdoc: http://vimdoc.sourceforge.net/ They do have perfectly working <Internal cross file references>, see any page e.g. http://vimdoc.sourceforge.net/htmldoc/pattern.html[].
-* typst: https://github.com/typst/typst An attempt at a LaTeX killer.
+* typst: https://github.com/typst/typst An attempt at a LaTeX killer. Has its own typesetting engine, does not simply transpile to LaTeX. Meant to be faster and simpler to write. No HTML output as of writing: https://github.com/typst/typst/issues/721
 
 Less related but of interest, similar philosophy to what Ciro wants, but no explicitly reusable system:
 * http://www.uprtcl.io/
@@ -7028,13 +7028,16 @@ Default: `true`.
 {c}
 {parent=id normalize latin}
 
-ASCII normalization is a custom OurBigBook defined normalization that converts many characters that look like latin characters into latin characters.
+ASCII normalization is a custom OurBigBook defined normalization that converts many characters that look like Latin characters into Latin characters.
 
-For now, we are using the `deburr` method of Lodash: https://lodash.com/docs/4.17.15#deburr[], which only affects latin-like characters.
+For now, we are using the `deburr` method of Lodash: https://lodash.com/docs/4.17.15#deburr[], which only affects Latin-like characters. 
+
+In addition to `deburr` we also convert:
+* en-dash and em-dash to simple ASCII dash `-`. Wikipedia Loves en-dashes in their article titles!
 
 One notable effect is that it converts variants of ASCII letters to ASCII letters. E.g. `é` to `e` removing the accent.
 
-This operation is kind of a superset of Unicode normalization acting only on Latin-like characters. where unicode basically only removes things like diactricts.
+This operation is kind of a superset of Unicode normalization acting only on Latin-like characters, where Unicode basically only removes things like diacritics.
 
 OurBigBook normalization also does other natural transformations that Unicode does not do, e.g. `æ` to `ae`.
 

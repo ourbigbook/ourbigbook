@@ -56,19 +56,21 @@ class IdProviderDbAdapter {
 async function reconcile_db_and_filesystem(input_path, cirodown_options, non_cirodown_options) {
   const sequelize = non_cirodown_options.sequelize
   if (sequelize) {
+    const new_non_cirodown_options = cirodown.clone_and_set(
+      non_cirodown_options, 'cirodown_paths_converted_only', true)
     await convert_directory(
       input_path,
       cirodown_options,
-      cirodown.clone_and_set(non_cirodown_options,
-        'cirodown_paths_converted_only', true),
+      new_non_cirodown_options,
     );
+    const cirodown_paths_converted = new_non_cirodown_options.cirodown_paths_converted
     const [,,file_rows] = await Promise.all([
       sequelize.models.Id.destroy({
-        where: { path: { [Op.not]: non_cirodown_options.cirodown_paths_converted } } }),
+        where: { path: { [Op.not]: cirodown_paths_converted } } }),
       sequelize.models.Ref.destroy({
-        where: { defined_at: { [Op.not]: non_cirodown_options.cirodown_paths_converted } } }),
+        where: { defined_at: { [Op.not]: cirodown_paths_converted } } }),
       sequelize.models.File.findAll({
-        where: { path: non_cirodown_options.cirodown_paths_converted } }),
+        where: { path: cirodown_paths_converted } }),
     ])
     const file_rows_dict = {}
     for (const file_row of file_rows) {

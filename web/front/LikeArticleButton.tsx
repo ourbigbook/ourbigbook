@@ -68,7 +68,7 @@ const LikeArticleButton = ({
   let buttonClassName;
   let title;
   if (loggedInUser && cantLike) {
-    buttonClassName = 'disabled-hover'
+    buttonClassName = 'disabled'
     title = cantLike
   } else {
     buttonClassName = liked ? buttonActiveClass : ''

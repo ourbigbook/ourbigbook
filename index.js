@@ -47,7 +47,11 @@ class AstNode {
     this.line = line;
     this.input_path = options.input_path;
     this.column = column;
+    // This is the Nth macro of this type that appears in the document.
     this.macro_count = undefined;
+    // This is the Nth indexed macro (one that can be linked to)
+    // of this type that appears in the document.
+    this.macro_count_indexed = undefined;
     this.parent_node = options.parent_node;
 
     // For elements that are of AstType.PLAINTEXT.
@@ -56,6 +60,8 @@ class AstNode {
     // For elements that have an id.
     // {String} or undefined.
     this.id = options.id;
+    // The ID of this element has been indexed.
+    this.index_id = undefined
     this.force_no_index = options.force_no_index;
 
     // This was added to the tree from an include.
@@ -330,7 +336,7 @@ class Macro {
       options.caption_prefix = capitalize_first_letter(name);
     }
     if (!('get_number' in options)) {
-      options.get_number = function(ast, context) { return ast.macro_count; }
+      options.get_number = function(ast, context) { return ast.macro_count_indexed; }
     }
     if (!('id_prefix' in options)) {
       options.id_prefix = title_to_id(name);
@@ -1697,6 +1703,7 @@ function parse(tokens, macros, options, extra_returns={}) {
   // Normally only the toplevel includer will enter this code section.
   if (!options.from_include) {
     const macro_counts = {};
+    const macro_counts_indexed = {};
     let header_graph_last_level;
     const header_graph_stack = new Map();
     is_first_header = true;
@@ -1808,6 +1815,7 @@ function parse(tokens, macros, options, extra_returns={}) {
           ast.id = convert_arg_noescape(macro_id_arg, id_context);
         }
       }
+      ast.index_id = index_id;
       if (ast.id !== undefined && !ast.force_no_index) {
         const previous_ast = id_provider.get(ast.id);
         let input_path;
@@ -1832,6 +1840,15 @@ function parse(tokens, macros, options, extra_returns={}) {
           }
           message += `line ${previous_ast.line} colum ${previous_ast.column}`;
           parse_error(state, message, ast.line, ast.column);
+        }
+
+        if (index_id) {
+          if (!(macro_name in macro_counts_indexed)) {
+            macro_counts_indexed[macro_name] = 0;
+          }
+          const macro_count = macro_counts_indexed[macro_name] + 1;
+          macro_counts_indexed[macro_name] = macro_count;
+          ast.macro_count_indexed = macro_count;
         }
       }
 
@@ -2468,6 +2485,11 @@ const DEFAULT_MACRO_LIST = [
     {
       caption_prefix: 'Equation',
       id_prefix: 'eq',
+      get_number: function(ast, context) {
+        // Override because unlike other elements such as images, equations
+        // always get numbers even if not indexed.
+        return ast.macro_count;
+      },
       macro_counts_ignore: function(ast, context) {
         return 'show' in ast.args && convert_arg_noescape(ast.args.show, context) === '0';
       },
@@ -2519,7 +2541,7 @@ const DEFAULT_MACRO_LIST = [
       let src = html_attr('href', convert_arg(ast.args.src, context));
       ret += `<a${src}><img${img_attrs}>`;
       ret += `</a>\n`;
-      if (ast.id !== undefined) {
+      if (ast.id !== undefined && ast.index_id) {
         ret += `<figcaption>${Macro.x_text(ast, context, {href_prefix: href_prefix})}</figcaption>\n`;
       }
       ret += '</figure>\n';
@@ -2641,9 +2663,11 @@ const DEFAULT_MACRO_LIST = [
         //
         //Caption on top as per: https://tex.stackexchange.com/questions/3243/why-should-a-table-caption-be-placed-above-the-table */
         let href = html_attr('href', '#' + html_escape_attr(ast.id));
-        ret += `<div class="table-caption-container">\n`;
-        ret += `<span class="table-caption">${Macro.x_text(ast, context, {href_prefix: href})}</span>`;
-        ret += `</div>\n`;
+        if (ast.id !== undefined && ast.index_id) {
+          ret += `<div class="table-caption-container">\n`;
+          ret += `<span class="table-caption">${Macro.x_text(ast, context, {href_prefix: href})}</span>`;
+          ret += `</div>\n`;
+        }
       }
       ret += `<table>\n${content}</table>\n`;
       ret += `</div>\n`;

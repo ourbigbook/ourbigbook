@@ -33,7 +33,7 @@ import {
   INCOMING_LINKS_ID_UNRESERVED,
   INCOMING_LINKS_MARKER,
   Macro,
-  PARENT_MARKER,
+  HTML_PARENT_MARKER,
   SYNONYM_LINKS_ID_UNRESERVED,
   SYNONYM_LINKS_MARKER,
   TAGGED_ID_UNRESERVED,
@@ -428,7 +428,7 @@ const Article = ({
               {linkList(tagged, TAGGED_ID_UNRESERVED, TAGS_MARKER, 'Tagged', linkPref)}
               {(ancestors.length !== 0) && <>
                 <h2 id={ANCESTORS_ID}><a
-                  href={`#${ANCESTORS_ID}`} dangerouslySetInnerHTML={{ __html: PARENT_MARKER + ' Ancestors' }}
+                  href={`#${ANCESTORS_ID}`} dangerouslySetInnerHTML={{ __html: HTML_PARENT_MARKER + ' Ancestors' }}
                   className="ourbigbook-title">
                 </a></h2>
                 <ol>

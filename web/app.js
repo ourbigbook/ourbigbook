@@ -139,6 +139,9 @@ async function start(port, startNext, cb) {
       }
     })
     server.on('close', async function () {
+      if (startNext) {
+        await nextApp.close()
+      }
       await sequelize.close()
       resolve()
     })

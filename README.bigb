@@ -6344,6 +6344,7 @@ npm run test-pg-next
 If you are not making any changes to the website itself, e.g. only to the test system, then you can skip the slow rebuild with:
 ``
 test-next-nobuild
+test-pg-next-nobuild
 ``
 
 Note that Next.js tests are just present inside other tests, e.g. `api: create an article and see it on global feed` also tests some stuff when not testing Next.js. Running `npm run test-next` simply enables the Next.js tests on top of the non Next.js ones that get run by default.

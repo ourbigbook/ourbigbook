@@ -123,6 +123,7 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
       }
       await user.save()
     }
+    user.token = user.generateJWT()
     return res.json({ user: await user.toJson(user) })
   } catch(error) {
     next(error);

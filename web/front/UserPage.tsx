@@ -143,7 +143,7 @@ export default function UserPage({
             </>
           }
         </div>
-        {user.admin && <h2><i className="ion-star" /> <a href={`${config.docsAdminUrl}`}>{config.appName} admin</a> <i className="ion-star" /> </h2>}
+        {user.admin && <h2><i className="ion-star" /> <a href={`${config.docsAdminUrl}`}>Admin</a> <i className="ion-star" /> </h2>}
         <CustomImage
           src={user.effectiveImage}
           alt="User's profile image"

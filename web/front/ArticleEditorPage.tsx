@@ -105,6 +105,21 @@ export interface EditorPageProps {
   titleSourceLine?: number;
 }
 
+function titleToPath(loggedInUser, topicId) {
+  return `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/${topicId}.${ourbigbook.OURBIGBOOK_EXT}`
+}
+
+const idExistsCache = {}
+async function cachedIdExists(idid) {
+  if (idid in idExistsCache) {
+    return idExistsCache[idid]
+  } else {
+    const ret = await webApi.editorIdExists(idid)
+    idExistsCache[idid] = ret
+    return ret
+  }
+}
+
 export default function ArticleEditorPageHoc({
   isIssue=false,
   isNew=false,
@@ -154,19 +169,16 @@ export default function ArticleEditorPageHoc({
     const saveButtonElem = useRef(null);
     const maxReached = hasReachedMaxItemCount(loggedInUser, articleCountByLoggedInUser, pluralize(itemType))
     let editor
-    const idExistsCache = new Set()
-    function cachedIdExists(idid) {
-      if (idExistsCache.has(idid)) {
-        return true
-      } else {
-        if (webApi.editorIdExists(idid)) {
-          idExistsCache.add(idid)
-          return true
-        }
-        return false
-      }
-    }
-    function checkTitle(titleSource) {
+    const finalConvertOptions = lodash.merge({
+      db_provider: new RestDbProvider(),
+      input_path: initialFile?.path || titleToPath(loggedInUser, 'asdf'),
+      ourbigbook_json: {
+        openLinksOnNewTabs: true,
+      },
+      read_include: read_include_web(cachedIdExists),
+      ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`,
+    }, convertOptions)
+    async function checkTitle(titleSource) {
       let titleErrors = []
       if (titleSource) {
         let newTopicId = ourbigbook.title_to_id(titleSource)
@@ -178,7 +190,13 @@ export default function ArticleEditorPageHoc({
         } else {
           showToUserNew = newTopicId
         }
-        if (!isNew && !isIssue && initialArticle.topicId !== newTopicId) {
+        if (isNew) {
+          // finalConvertOptions.input_path
+          const id = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/${newTopicId}`
+          if (await cachedIdExists(id)) {
+            titleErrors.push(`Article ID already taken: "${id}" `)
+          }
+        } else if (!isIssue && initialArticle.topicId !== newTopicId) {
           let showToUserOld
           if (initialArticle?.topicId === '') {
             showToUserOld = ourbigbook.INDEX_BASENAME_NOEXT
@@ -192,9 +210,10 @@ export default function ArticleEditorPageHoc({
       }
       setTitleErrors(titleErrors)
     }
-    useEffect(() => {
-      checkTitle(file.titleSource)
-    }, [saveButtonElem, file.titleSource])
+    useEffect(async () => {
+      // Initial check here, then check only on title update.
+      await checkTitle(file.titleSource)
+    }, [])
     useEffect(() => {
       if (hasConvertError || titleErrors.length) {
         disableButton(saveButtonElem.current, 'Cannot submit due to errors')
@@ -210,6 +229,7 @@ export default function ArticleEditorPageHoc({
       ) {
         let editor
         loader.init().then(monaco => {
+          finalConvertOptions.x_external_prefix = '../'.repeat(window.location.pathname.match(/\//g).length - 1)
           editor = new OurbigbookEditor(
             ourbigbookEditorElem.current,
             bodySource,
@@ -217,21 +237,22 @@ export default function ArticleEditorPageHoc({
             ourbigbook,
             ourbigbook_runtime,
             {
-              convertOptions: lodash.merge({
-                db_provider: new RestDbProvider(),
-                input_path: initialFile?.path || `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/asdf.${ourbigbook.OURBIGBOOK_EXT}`,
-                ourbigbook_json: {
-                  openLinksOnNewTabs: true,
-                },
-                read_include: read_include_web(cachedIdExists),
-                ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`,
-                x_external_prefix: '../'.repeat(window.location.pathname.match(/\//g).length - 1),
-              }, convertOptions),
+              convertOptions: finalConvertOptions,
               handleSubmit,
               initialLine: initialArticle ? initialArticle.titleSourceLine : undefined,
               modifyEditorInput: (oldInput) => modifyEditorInput(file.titleSource, oldInput),
               postBuildCallback: (extra_returns) => {
                 setHasConvertError(extra_returns.errors.length > 0)
+                const first_header = extra_returns.context.header_tree.children[0]
+                if (isNew && first_header) {
+                  const id = first_header.ast.id
+                  // TODO
+                  // Not working because finalConvertOptions.input_path setting in handleTitle
+                  // not taking effect. This would be the better way to check for it.
+                  //if (file.titleSource && cachedIdExists(id)) {
+                  //  setTitleErrors([`Article ID already taken: "${id}"`])
+                  //}
+                }
               },
               production: isProduction,
               scrollPreviewToSourceLineCallback: (opts={}) => {
@@ -282,6 +303,12 @@ export default function ArticleEditorPageHoc({
         ...file,
         titleSource,
       }})
+      await checkTitle(titleSource)
+      // TODO this would be slighty better, but not taking effect, I simply can't understand why,
+      // there appear to be no copies of convertOptions under editor...
+      //if (titleSource) {
+      //  finalConvertOptions.input_path = titleToPath(loggedInUser, ourbigbook.title_to_id(titleSource))
+      //}
       await ourbigbookEditorElem.current.ourbigbookEditor.setModifyEditorInput(
         oldInput => modifyEditorInput(e.target.value, oldInput))
     }

@@ -86,8 +86,10 @@ class AstNode {
     // {String} or undefined.
     this.id = options.id;
     // The ID of this element has been indexed.
-    this.index_id = undefined
+    this.index_id = undefined;
     this.force_no_index = options.force_no_index;
+    // The ToC will go before this header.
+    this.toc_header = false;
 
     // This was added to the tree from an include.
     this.from_include = options.from_include;
@@ -2197,7 +2199,7 @@ function parse(tokens, options, context, extra_returns={}) {
     parse_error(state, `unexpected tokens at the end of input`);
   }
 
-  // Post process the AST breadth first minimally to support includes.
+  // Post process the AST depth first minimally to support includes.
   //
   // This could in theory be done in a single pass with the next one,
   // but that is much more hard to implement and maintain, because we
@@ -2599,7 +2601,7 @@ function parse(tokens, options, context, extra_returns={}) {
     }
   }
 
-  // Post process the AST breadth first after inclusions are resolved to support things like:
+  // Post process the AST breadth-first after inclusions are resolved to support things like:
   //
   // - the insane but necessary paragraphs double newline syntax
   // - automatic ul parent to li and table to tr
@@ -2608,6 +2610,29 @@ function parse(tokens, options, context, extra_returns={}) {
   //
   // Normally only the toplevel includer will enter this code section.
   if (!options.from_include) {
+    // Calculate header_graph_top_level.
+    if (context.header_graph.children.length === 1) {
+      context.header_graph_top_level = first_header_level;
+      const toplevel_header_node = context.header_graph.children[0];
+      const toplevel_header_ast = toplevel_header_node.value;
+      if (toplevel_header_node.children.length > 0) {
+        toplevel_header_node.children[0].value.toc_header = true;
+      }
+      context.toplevel_id = toplevel_header_ast.id;
+      if (toplevel_header_ast.validation_output.scope.boolean) {
+        context.toplevel_scope_cut_length = toplevel_header_ast.id.length + 1;
+      } else {
+        context.toplevel_scope_cut_length = 0;
+      }
+    } else {
+      context.header_graph_top_level = first_header_level - 1;
+      context.toplevel_scope_cut_length = 0;
+      context.toplevel_id = undefined;
+      if (context.header_graph.children.length > 0) {
+        context.header_graph.children[0].value.toc_header = true;;
+      }
+    }
+
     context.has_toc = false;
     let toplevel_parent_arg = new AstArgument([], 1, 1);
 
@@ -2620,7 +2645,7 @@ function parse(tokens, options, context, extra_returns={}) {
         const macro = context.macros[macro_name];
 
         if (macro_name === Macro.TOC_MACRO_NAME) {
-          if (ast.from_include) {
+          if (ast.from_include || context.has_toc) {
             // Skip.
             continue;
           }
@@ -2634,16 +2659,32 @@ function parse(tokens, options, context, extra_returns={}) {
           parse_error(state, message, ast.line, ast.column);
         }
 
+        if (
+          // These had been validated earlier during header processing.
+          macro_name === Macro.HEADER_MACRO_NAME
+          && !context.has_toc
+        ) {
+          if (ast.toc_header) {
+            parent_arg.push(new AstNode(
+              AstType.MACRO,
+              Macro.TOC_MACRO_NAME,
+              {},
+              ast.line,
+              ast.column,
+              {
+                input_path: ast.input_path,
+                parent_node: ast.parent_node
+              }
+            ));
+            context.has_toc = true;
+          }
+        } else {
+          validate_ast(ast, context);
+        }
+
         // Push this node into the parent argument list.
         // This allows us to skip nodes, or push multiple nodes if needed.
         parent_arg.push(ast);
-
-        if (
-          // These had been validated earlier during header processing.
-          macro_name !== Macro.HEADER_MACRO_NAME
-        ) {
-          validate_ast(ast, context);
-        }
 
         // Loop over the child arguments. We do this rather than recurse into them
         // to be able to easily remove or add nodes to the tree during this AST
@@ -2900,22 +2941,6 @@ function parse(tokens, options, context, extra_returns={}) {
           }
         }
       }
-    }
-
-    // Calculate header_graph_top_level.
-    if (context.header_graph.children.length === 1) {
-      context.header_graph_top_level = first_header_level;
-      const toplevel_header_ast = context.header_graph.children[0].value;
-      context.toplevel_id = toplevel_header_ast.id;
-      if (toplevel_header_ast.validation_output.scope.boolean) {
-        context.toplevel_scope_cut_length = toplevel_header_ast.id.length + 1;
-      } else {
-        context.toplevel_scope_cut_length = 0;
-      }
-    } else {
-      context.header_graph_top_level = first_header_level - 1;
-      context.toplevel_scope_cut_length = 0;
-      context.toplevel_id = undefined;
     }
   }
   extra_returns.ids = include_options.indexed_ids;

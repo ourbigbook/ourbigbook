@@ -2094,7 +2094,7 @@ Implemented at: https://github.com/ourbigbook/ourbigbook/issues/114
 
 = `\H` `title` argument
 {parent=H synonym argument}
-{tag=title argument}
+{tag=`title` argument}
 
 Contains the main content of the header. The <insane syntax>:
 ``
@@ -2876,7 +2876,7 @@ Analogous to the <\a href argument>.
 
 = Image `title` argument
 {parent=Image argument}
-{tag=title argument}
+{tag=`title` argument}
 
 Analogous to the <\H title argument>.
 

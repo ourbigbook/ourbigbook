@@ -4927,15 +4927,28 @@ assert_lib_ast('header: 7 parent',
 assert_lib_ast('header: parent does title to ID conversion',
   `= 1
 
-= a b%c
+= a b%c \`d\`
 {parent=1}
 
 = 3
-{parent=a b%c}
+{parent=a b%c \`d\`}
 `,
   [
     a('H', undefined, {level: [t('1')], title: [t('1')]}),
-    a('H', undefined, {level: [t('2')], title: [t('a b%c')]}, { id: 'a-b-percent-c' }),
+    a(
+      'H',
+      undefined,
+      {
+        level: [t('2')],
+        title: [
+          t('a b%c '),
+          a('c', [t('d')]),
+        ],
+      },
+      {
+        id: 'a-b-percent-c-d'
+      }
+    ),
     a('H', undefined, {level: [t('3')], title: [t('3')]}),
   ],
 );
@@ -4994,11 +5007,11 @@ assert_lib('header: tag and child argument does title to ID conversion',
     filesystem: {
       'notindex.bigb': `= 1
 
-== a b%c
+== a b%c \`d\`
 {child=d e%f}
 
 == 3
-{tag=a b%c}
+{tag=a b%c \`d\`}
 
 == d e%f
 `,

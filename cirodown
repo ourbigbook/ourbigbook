@@ -261,7 +261,7 @@ function* walk_files_recursively(file_or_dir, skip_basenames) {
 commander.option('--body-only', 'output only the content inside the HTLM body element', false);
 commander.option('--dry-run', "don't run most external commands, see: https://github.com/cirosantilli/linux-kernel-module-cheat/tree/6d0a900f4c3c15e65d850f9d29d63315a6f976bf#dry-run-to-get-commands-for-your-project", false);
 commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown/#', false);
-commander.option('--html-embed', 'embed all external resources like images and linked CSS into a single HTML file', false);
+commander.option('--html-embed', 'http://cirosantilli.com/cirodown#html-embed', false);
 commander.option('--html-single-page', 'http://cirosantilli.com/cirodown#html-single-page', false);
 commander.option('--no-html-x-extension', 'http://cirosantilli.com/cirodown#no-html-x-extension');
 commander.option('--outdir <outdir>', 'if the output would be saved to a file e.g. when building a directory, use this directory as the root');

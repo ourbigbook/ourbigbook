@@ -1,6 +1,21 @@
 $caption_margin_bottom: 5px;
-$code_background_color: #eeeeee;
 $paragraph_margin_bottom: #c6538c;
+
+// Light
+$a-color: #0000EE;
+$a-color-visited: rgb(85, 26, 139);
+$background-color: white;
+$code-background-color: #eeeeee;
+$color: black;
+$target-background-color: #FFFFCC;
+
+// Dark
+$a-color: #0000FF;
+$a-color-visited: #AA44AA;
+$background-color: black;
+$code-background-color: #333333;
+$color: #00BB00;
+$target-background-color: #440044;
 
 @mixin hidden {
   display: none;
@@ -21,6 +36,8 @@ $paragraph_margin_bottom: #c6538c;
 
 .cirodown {
 
+background-color: $background-color;
+color: $color;
 padding-left: 15px;
 padding-right: 15px;
 .caption-prefix {
@@ -38,18 +55,22 @@ padding-right: 15px;
 // Highlight the element referred by the current hash
 // so that the user can easily know which one it is.
 :target {
-  background-color: #FFFFCC;
+  background-color: $target-background-color;
 }
 
 a {
+  color: $a-color;
   text-decoration: none;
   &:hover {
     text-decoration: underline;
   }
+  &:visited {
+    color: $a-color-visited;
+  }
 }
 
 code {
-  background-color: $code_background_color;
+  background-color: $code-background-color;
 }
 
 // Figures.
@@ -59,9 +80,9 @@ figure {
 
 h1, h2, h3, h4, h5, h6 {
   > a:first-child {
-    color: black;
+    color: $color;
     &:visited {
-      color: black;
+      color: $color;
     }
   }
   font-size: 24px;
@@ -102,7 +123,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 pre {
-  background-color: $code_background_color;
+  background-color: $code-background-color;
   margin: 8px 0;
   padding: 8px 8px;
 }

@@ -299,8 +299,9 @@ class Macro {
     return ret;
   }
 }
-Macro.ID_ARGUMENT_NAME = 'id';
 Macro.HEADER_MACRO_NAME = 'h';
+Macro.ID_ARGUMENT_NAME = 'id';
+Macro.LINK_SELF = `(link ${String.fromCodePoint(0x1F517)})`;
 Macro.TITLE_ARGUMENT_NAME = 'title';
 Macro.TOC_PREFIX = 'toc-'
 
@@ -1441,7 +1442,7 @@ const DEFAULT_MACRO_LIST = [
       let toc_href = html_attr('href', '#' + Macro.TOC_PREFIX + ast.id);
       ret += this.x_text(ast, context, {show_caption_prefix: false});
       ret += `</a>`;
-      ret += `<span> <a${toc_href}>(toc \u2191)</a></span>\n`;
+      ret += `<span> <a${toc_href}>(toc \u2191)</a></span>`;
       ret += `</h${level}>\n`;
       return ret;
     },
@@ -1476,7 +1477,12 @@ const DEFAULT_MACRO_LIST = [
       let ret = ``;
       ret += `<div class="math-containter"${attrs}>`;
       if (ast.id !== undefined) {
-        ret += `<div class="math-caption">${this.x_text(ast, context)}</div>\n`;
+        let target_id = html_escape_attr(ast.id);
+        let href = html_attr('href', '#' + target_id);
+        ret += `<div class="math-caption-container">\n`;
+        ret += `<span class="math-caption">${this.x_text(ast, context)}</span>`;
+        ret += `<span> <a${href}>${Macro.LINK_SELF}</a></span>\n`;
+        ret += `</div>\n`;
       }
       ret += `<div>${this.katex_convert(ast, context)}</div>\n`;
       ret += `</div>\n`;
@@ -1624,7 +1630,12 @@ const DEFAULT_MACRO_LIST = [
         // }
         //
         //Caption on top as per: https://tex.stackexchange.com/questions/3243/why-should-a-table-caption-be-placed-above-the-table */
-        ret += `<div class="table-caption">${this.x_text(ast, context)}</div>\n`;
+        let target_id = html_escape_attr(ast.id);
+        let href = html_attr('href', '#' + target_id);
+        ret += `<div class="table-caption-container">\n`;
+        ret += `<span class="table-caption">${this.x_text(ast, context)}</span>`;
+        ret += `<span> <a${href}>${Macro.LINK_SELF})</a></span>\n`;
+        ret += `</div>\n`;
       }
       ret += `<table>\n${content}</table>\n`;
       ret += `</div>\n`;
@@ -1724,7 +1735,6 @@ const DEFAULT_MACRO_LIST = [
 >
 <link href="https://netdna.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet"/>
 <style>
-.katex { font-size: 1.5em; }
 :target {
   background-color: #FFFFCC;
 }
@@ -1751,6 +1761,14 @@ h1:hover span a:link, h2:hover span a:link, h3:hover span a:link, h4:hover span 
 h1:hover span a:visited, h2:hover span a:visited, h3:hover span a:visited, h4:hover span a:visited, h5:hover span a:visited, h6:hover span a:visited {
   color: blue;
 }
+/* Math. */
+.katex { font-size: 1.5em; }
+.math-caption-container > :last-child {
+  display: none;
+}
+.math-caption-container:hover > :last-child {
+  display: inline;
+}
 /* Tables */
 /* Add borders! */
 table {
@@ -1762,6 +1780,12 @@ table, th, td {
 th, td {
   padding-left: 2px;
   padding-right: 2px;
+}
+.table-caption-container > :last-child {
+  display: none;
+}
+.table-caption-container:hover > :last-child {
+  display: inline;
 }
 /* Table of contents. */
 .toc-container ul {

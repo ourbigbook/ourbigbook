@@ -1634,7 +1634,7 @@ assert_lib_stdin('image provider that does match actual source',
   `\\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]{provider=wikimedia}`,
 );
 assert_lib_ast('image with id has caption',
-  `\\Image[aa]{id=bb}{check=0}\n`,
+  `\\Image[aa]{id=bb}{external}\n`,
   [
     a('Image', undefined, {
       src: [t('aa')],
@@ -1648,7 +1648,7 @@ assert_lib_ast('image with id has caption',
   }
 );
 assert_lib_ast('image with title has caption',
-  `\\Image[aa]{title=b b}{check=0}\n`,
+  `\\Image[aa]{title=b b}{external}\n`,
   [
     a('Image', undefined, {
       src: [t('aa')],
@@ -1662,7 +1662,7 @@ assert_lib_ast('image with title has caption',
   }
 );
 assert_lib_ast('image with description has caption',
-  `\\Image[aa]{description=b b}{check=0}\n`,
+  `\\Image[aa]{description=b b}{external}\n`,
   [
     a('Image', undefined, {
       src: [t('aa')],
@@ -1676,7 +1676,7 @@ assert_lib_ast('image with description has caption',
   }
 );
 assert_lib_ast('image with source has caption',
-  `\\Image[aa]{source=b b}{check=0}\n`,
+  `\\Image[aa]{source=b b}{external}\n`,
   [
     a('Image', undefined, {
       src: [t('aa')],
@@ -1690,7 +1690,7 @@ assert_lib_ast('image with source has caption',
   }
 );
 assert_lib_ast('image without id, title, description nor source does not have caption',
-  `\\Image[aa]{check=0}
+  `\\Image[aa]{external}
 `,
   [
     a('Image', undefined, {
@@ -1704,11 +1704,11 @@ assert_lib_ast('image without id, title, description nor source does not have ca
   }
 )
 assert_lib_ast('image without id, title, description nor source does not increment the image count',
-  `\\Image[aa]{id=aa}{check=0}
+  `\\Image[aa]{id=aa}{external}
 
-\\Image[bb]{check=0}
+\\Image[bb]{external}
 
-\\Image[cc]{id=cc}{check=0}
+\\Image[cc]{id=cc}{external}
 `,
   [
     a('Image', undefined, { src: [t('aa')], }, {}, { id: 'aa' }),
@@ -1726,7 +1726,7 @@ assert_lib_ast('image without id, title, description nor source does not increme
   },
 )
 assert_lib_ast('image title with x to header in another file',
-  `\\Image[aa]{title=My \\x[notindex]}{check=0}`,
+  `\\Image[aa]{title=My \\x[notindex]}{external}`,
   [
     a('Image', undefined, { src: [t('aa')], }, {}, { id: 'my-notindex-h1' }),
   ],
@@ -1748,7 +1748,7 @@ assert_lib('link to image in other files that has title with x to header in anot
 `,
      'image.bigb': `= image h1
 
-\\Image[aa]{title=My \\x[notindex]}{check=0}
+\\Image[aa]{title=My \\x[notindex]}{external}
 `,
      'notindex.bigb': `= notindex h1
 `,
@@ -1772,7 +1772,7 @@ assert_lib('link to image in other files that has title with two x to other head
 `,
      'notindex.bigb': `= Notindex
 
-\\Image[aa]{title=My \\x[notindex-2] \\x[notindex-3]}{check=0}
+\\Image[aa]{title=My \\x[notindex-2] \\x[notindex-3]}{external}
 
 == Notindex 2
 
@@ -2133,12 +2133,12 @@ assert_lib_ast('link: simple to local file that exists',
   ],
   { filesystem: { 'local-path.txt': '' } }
 );
-assert_lib_error('link: simple to local file that does not exist give an error without check=0',
+assert_lib_error('link: simple to local file that does not exist give an error without external',
   'a \\a[local-path.txt] b\n',
   1, 5,
 );
-assert_lib_stdin('link: simple to local file that does not exist does not give an error with check=0',
-  'a \\a[local-path.txt]{check=0} b\n',
+assert_lib_stdin('link: simple to local file that does not exist does not give an error with external',
+  'a \\a[local-path.txt]{external} b\n',
 );
 assert_lib_ast('link: auto insane start end document',
   'http://example.com',
@@ -2298,11 +2298,11 @@ assert_lib_ast('link: with multiple paragraphs',
   ]
 );
 assert_lib_ast('xss: content and href',
-  '\\a[ab&\\<>"\'cd][ef&\\<>"\'gh]{check=0}\n',
+  '\\a[ab&\\<>"\'cd][ef&\\<>"\'gh]{external}\n',
   undefined,
   {
     assert_xpath_stdout: [
-      `//x:a[@href=concat('${ourbigbook.RAW_PREFIX}/ab&<>"', "'", 'cd') and text()=concat('ef&<>"', "'", 'gh')]`,
+      `//x:a[@href=concat('ab&<>"', "'", 'cd') and text()=concat('ef&<>"', "'", 'gh')]`,
     ]
   }
 );
@@ -2348,8 +2348,8 @@ assert_lib_ast(
   }
 );
 assert_lib_ast(
-  'link: check=0 prevents existence checks in link',
-  `\\a[i-dont-exist]{check=0}
+  'link: external prevents existence checks in link',
+  `\\a[i-dont-exist]{external}
 `,
   undefined,
   {
@@ -2357,8 +2357,17 @@ assert_lib_ast(
   }
 );
 assert_lib_ast(
-  'link: check=0 prevents existence checks in image',
-  `\\Image[i-dont-exist]{check=0}
+  'link: external prevents existence checks in block image',
+  `\\Image[i-dont-exist]{external}
+`,
+  undefined,
+  {
+    input_path_noext: 'README',
+  }
+);
+assert_lib_ast(
+  'link: external prevents existence checks in inline image',
+  `\\image[i-dont-exist]{external}
 `,
   undefined,
   {
@@ -2408,12 +2417,16 @@ assert_lib(
 \\a[subdir/i-exist-subdir][h3 i-exist-subdir]
 
 \\a[https://cirosantilli.com][h3 abs]
+
+\\a[file:///etc/fstab][h3 file:///etc/fstab]
 `,
       'subdir/README.bigb': `= Subdir
 
 \\a[../i-exist][subdir i-exist]
 
 \\a[/i-exist][subdir /i-exist]
+
+\\a[/i-dont-exist][subdir /i-dont-exist external]{external}
 
 \\a[i-exist-subdir][subdir i-exist-subdir]
 
@@ -2425,6 +2438,8 @@ assert_lib(
 \\a[../i-exist][subdir h3 i-exist]
 
 \\a[/i-exist][subdir h3 /i-exist]
+
+\\a[/i-dont-exist][subdir h3 /i-dont-exist external]{external}
 
 \\a[i-exist-subdir][subdir h3 i-exist-subdir]
 `,
@@ -2450,18 +2465,21 @@ assert_lib(
       ],
       'h2/h3.html': [
         `//x:a[@href='../${ourbigbook.RAW_PREFIX}/i-exist' and text()='h3 i-exist']`,
+        `//x:a[@href='file:///etc/fstab' and text()='h3 file:///etc/fstab']`,
         `//x:img[@src='../${ourbigbook.RAW_PREFIX}/i-exist' and @alt='h3 i-exist img']`,
         `//x:video[@src='../${ourbigbook.RAW_PREFIX}/i-exist' and @alt='h3 i-exist video']`,
         `//x:a[@href='https://cirosantilli.com' and text()='h3 abs']`,
       ],
       'subdir.html': [
         `//x:a[@href='${ourbigbook.RAW_PREFIX}/i-exist' and text()='subdir i-exist']`,
-        `//x:a[@href='/i-exist' and text()='subdir /i-exist']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/i-exist' and text()='subdir /i-exist']`,
+        `//x:a[@href='/i-dont-exist' and text()='subdir /i-dont-exist external']`,
         `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/i-exist-subdir' and text()='subdir i-exist-subdir']`,
       ],
       'subdir/subdir-h2/subdir-h3.html': [
         `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/i-exist' and text()='subdir h3 i-exist']`,
-        `//x:a[@href='/i-exist' and text()='subdir h3 /i-exist']`,
+        `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/i-exist' and text()='subdir h3 /i-exist']`,
+        `//x:a[@href='/i-dont-exist' and text()='subdir h3 /i-dont-exist external']`,
         `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/i-exist-subdir' and text()='subdir h3 i-exist-subdir']`,
       ],
       'subdir/not-readme.html': [
@@ -3182,7 +3200,7 @@ assert_lib('x: cross reference to non-included image in another file',
 
 == Notindex2 2
 
-\\Image[aa]{check=0}
+\\Image[aa]{external}
 {title=bb}
 `
     },
@@ -3229,7 +3247,7 @@ assert_lib('x: to image in another file that has x title in another file',
 `,
      'tmp2.bigb': `= Tmp2
 
-\\Image[a]{check=0}
+\\Image[a]{external}
 {title=\\x[tmp2-2]}
 
 == Tmp2 2
@@ -3318,7 +3336,7 @@ assert_lib_ast('x: cross reference magic in title',
 
 == My header
 
-\\Image[a.png]{check=0}
+\\Image[a.png]{external}
 {title=<My headers> are amazing}
 
 \\x[image-my-headers-are-amazing]
@@ -3655,9 +3673,9 @@ assert_lib_error('cross reference from header title to previous header is not al
 == \\x[h1] aa
 `, 3, 4);
 assert_lib_ast('cross reference from image title to previous non-header is not allowed',
-  `\\Image[ab]{title=cd}{check=0}
+  `\\Image[ab]{title=cd}{external}
 
-\\Image[ef]{title=gh \\x[image-cd]}{check=0}
+\\Image[ef]{title=gh \\x[image-cd]}{external}
 `,
   undefined,
   {
@@ -3668,9 +3686,9 @@ assert_lib_ast('cross reference from image title to previous non-header is not a
   }
 );
 assert_lib_ast('cross reference from image title to following non-header is not allowed',
-  `\\Image[ef]{title=gh \\x[image-cd]}{check=0}
+  `\\Image[ef]{title=gh \\x[image-cd]}{external}
 
-\\Image[ab]{title=cd}{check=0}
+\\Image[ab]{title=cd}{external}
 `,
   undefined,
   {
@@ -5255,7 +5273,7 @@ assert_lib('header: toplevel argument',
 
 ==== h 1 1 1
 
-\\Image[asdf.png]{title=1 1 1}{check=0}
+\\Image[asdf.png]{title=1 1 1}{external}
 
 \\Include[notindex]
 

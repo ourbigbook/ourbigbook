@@ -3,6 +3,57 @@
 
 == Issues
 
+=== Internal cross reference to non-existent ID is not checked before render the second time we try to convert
+{id=1}
+{tag=Bug}
+{tag=Error checking}
+
+Worse, this can lead to errors escaping!
+
+README.bigb
+``
+= Index
+
+<asdf>
+``
+Then the first:
+``
+ourbigbook .
+``
+fails as desired before any rendering takes place:
+``
+extract_ids: README.bigb
+extract_ids: README.bigb finished in 45.4546590000391 ms
+error:
+README.bigb:3:2: cross reference to unknown id: "asdf"
+``
+Then the second:
+``
+ourbigbook .
+``
+fails differently, incorrectly trying to render but failing:
+``
+extract_ids: README.bigb
+extract_ids: README.bigb skipped by timestamp
+render: README.bigb
+error: README.bigb:3:2: cross reference to unknown id: "asdf" at render time
+copy README.bigb -> out/html/_raw/README.bigb
+render: README.bigb -> out/html/index.html finished in 51.55012200027704 ms
+``
+with an error at render time. And then the third:
+``
+ourbigbook .
+``
+skips by timestamp, and therefore leaves the incorrect `README.bigb` in place:
+``
+extract_ids: README.bigb
+extract_ids: README.bigb skipped by timestamp
+render: README.bigb
+copy README.bigb -> out/html/_raw/README.bigb
+render: README.bigb skipped by timestamp
+copy ourbigbook.json -> out/html/_raw/ourbigbook.json
+``
+
 === Don't use helper synthetic AST nodes, render at render time instead
 {id=remove-synthetic-asts}
 {tag=File}
@@ -395,7 +446,7 @@ All dynamic.
 {tag=Editor}
 {tag=Web}
 
-=== Live error checking as ou type on editor if chosen previous sibling is not a child of the selected parent article
+=== Live error checking as you type on editor if chosen previous sibling is not a child of the selected parent article
 {tag=Editor}
 {tag=Error checking}
 {tag=Web}

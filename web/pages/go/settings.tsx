@@ -10,7 +10,7 @@ import UserAPI from 'front/api/user'
 import checkLogin from 'front/checkLogin'
 import useLoggedInUser from 'front/useLoggedInUser'
 import storage from 'front/storage'
-import routes from 'routes'
+import routes from 'front/routes'
 
 const Settings = () => {
   const [isLoading, setLoading] = React.useState(false);

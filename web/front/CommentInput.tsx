@@ -7,7 +7,7 @@ import CustomLink from 'front/CustomLink'
 import { useCtrlEnterSubmit, slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, decapitalize } from 'front'
 import CommentAPI from 'front/api/comment'
 import useLoggedInUser from 'front/useLoggedInUser'
-import routes from 'routes'
+import routes from 'front/routes'
 
 const CommentInput = () => {
   const loggedInUser = useLoggedInUser()

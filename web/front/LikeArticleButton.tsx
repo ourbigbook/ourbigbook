@@ -4,7 +4,7 @@ import Router from 'next/router'
 import ArticleAPI from 'front/api/article'
 import { buttonActiveClass } from 'front/config'
 import useLoggedInUser from 'front/useLoggedInUser'
-import routes from 'routes'
+import routes from 'front/routes'
 
 const LikeArticleButton = ({
   article,

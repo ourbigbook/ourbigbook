@@ -628,6 +628,7 @@ Macro.HEADER_MACRO_NAME = 'h';
 Macro.ID_ARGUMENT_NAME = 'id';
 Macro.INCLUDE_MACRO_NAME = 'include';
 Macro.LINK_MACRO_NAME = 'a';
+Macro.LIST_MACRO_NAME = 'l';
 Macro.MATH_MACRO_NAME = 'm';
 Macro.PARAGRAPH_MACRO_NAME = 'p';
 Macro.PLAINTEXT_MACRO_NAME = 'plaintext';
@@ -680,6 +681,7 @@ class Tokenizer {
     this.extra_returns.errors = [];
     this.i = 0;
     this.line = start_line;
+    this.list_level = 0;
     this.tokens = [];
     this.show_tokenize = show_tokenize;
     this.log_debug('Tokenizer');
@@ -715,6 +717,24 @@ class Tokenizer {
     }
     this.cur_c = this.chars[this.i];
     return true;
+  }
+
+  consume_list_indent() {
+    if (this.i > 0 && this.chars[this.i - 1] === '\n') {
+      let new_list_level = 0;
+      while (array_contains_array_at(this.chars, this.i, INSANE_LIST_INDENT)) {
+        if (new_list_level < this.list_level) {
+          for (const c in INSANE_LIST_INDENT) {
+            this.consume();
+          }
+        }
+        new_list_level += 1;
+      }
+      for (let i = 0; i < this.list_level - new_list_level; i++) {
+        this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
+      }
+      this.list_level = new_list_level;
+    }
   }
 
   consume_plaintext_char() {
@@ -819,6 +839,7 @@ class Tokenizer {
       this.log_debug('this.i: ' + this.i);
       this.log_debug('this.cur_c: ' + this.cur_c);
       this.log_debug();
+      this.consume_list_indent();
       start_line = this.line;
       start_column = this.column;
       if (this.cur_c === ESCAPE_CHAR) {
@@ -919,23 +940,32 @@ class Tokenizer {
         }
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
         this.consume_optional_newline_after_argument()
-      } else if (this.cur_c === '\n') {
-        if (this.peek() === '\n') {
-          this.push_token(TokenType.PARAGRAPH);
-          this.consume();
-          this.consume();
-          if (this.cur_c === '\n') {
-            this.error('paragraph with more than two newlines, use just two');
-          }
-        } else {
-          this.consume_plaintext_char();
+      } else if (this.cur_c === '\n' && this.peek() === '\n') {
+        this.consume();
+        this.consume();
+        // We must close list level changes before the paragraph, e.g. in:
+        //
+        // ``
+        // * aa
+        // * bb
+        //
+        // cc
+        // ``
+        //
+        // the paragraph goes after `ul`, it does not stick to `bb`
+        this.consume_list_indent();
+        this.push_token(TokenType.PARAGRAPH);
+        if (this.cur_c === '\n') {
+          this.error('paragraph with more than two newlines, use just two');
         }
       } else {
         let done = false;
+
+        // Insane autolink.
         if (
           this.i === 0 ||
-          this.chars[this.i - 1] === ' ' ||
           this.chars[this.i - 1] === '\n' ||
+          this.chars[this.i - 1] === ' ' ||
           this.tokens[this.tokens.length - 1].type === TokenType.POSITIONAL_ARGUMENT_START ||
           this.tokens[this.tokens.length - 1].type === TokenType.NAMED_ARGUMENT_NAME
         ) {
@@ -943,7 +973,6 @@ class Tokenizer {
             array_contains_array_at(this.chars, this.i, 'http://') ||
             array_contains_array_at(this.chars, this.i, 'https://')
           ) {
-            // Insane autolink.
             this.push_token(TokenType.MACRO_NAME, Macro.LINK_MACRO_NAME, this.line, this.column);
             this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
             let link_text = '';
@@ -964,6 +993,38 @@ class Tokenizer {
             done = true;
           }
         }
+
+        // Insane lists.
+        if (!done && (
+          this.i === 0 ||
+          this.cur_c === '\n' ||
+          this.tokens[this.tokens.length - 1].type === TokenType.PARAGRAPH)
+        ) {
+          let i = this.i;
+          if (this.cur_c === '\n') {
+            i += 1;
+          }
+          let new_list_level = 0;
+          while (array_contains_array_at(this.chars, i, INSANE_LIST_INDENT)) {
+            i += INSANE_LIST_INDENT.length;
+            new_list_level += 1;
+          }
+          if (array_contains_array_at(this.chars, i, INSANE_LIST_START)) {
+            if (new_list_level <= this.list_level + 1) {
+              if (this.cur_c === '\n') {
+                this.consume();
+              }
+              this.consume_list_indent();
+              this.push_token(TokenType.MACRO_NAME, Macro.LIST_MACRO_NAME, this.line, this.column);
+              this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
+              this.list_level += 1;
+              done = true;
+              for (const c in INSANE_LIST_START) {
+                this.consume();
+              }
+            }
+          }
+        }
         if (!done) {
           // Character is nothing else, so finally it is a regular plaintext character.
           this.consume_plaintext_char();
@@ -972,6 +1033,9 @@ class Tokenizer {
     }
     if (unterminated_literal) {
       this.error(`unterminated literal argument`, start_line, start_column);
+    }
+    for (let i = 0; i < this.list_level; i++) {
+      this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
     }
     this.push_token(TokenType.PARAGRAPH);
     this.push_token(TokenType.INPUT_END);
@@ -2481,6 +2545,8 @@ const END_POSITIONAL_ARGUMENT_CHAR = ']';
 const ESCAPE_CHAR = '\\';
 const HTML_ASCII_WHITESPACE = new Set([' ', '\r', '\n', '\f', '\t']);
 const ID_SEPARATOR = '-';
+const INSANE_LIST_START = '* ';
+const INSANE_LIST_INDENT = '  ';
 const MAGIC_CHAR_ARGS = {
   '$': Macro.MATH_MACRO_NAME,
   '`': Macro.CODE_MACRO_NAME,
@@ -2494,6 +2560,7 @@ const ESCAPABLE_CHARS = new Set([
   END_POSITIONAL_ARGUMENT_CHAR,
   START_NAMED_ARGUMENT_CHAR,
   END_NAMED_ARGUMENT_CHAR,
+  INSANE_LIST_START[0],
 ]);
 for (const c in MAGIC_CHAR_ARGS) {
   ESCAPABLE_CHARS.add(c);
@@ -2737,7 +2804,7 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'l',
+    Macro.LIST_MACRO_NAME,
     [
       new MacroArgument({
         name: 'content',

@@ -20,8 +20,8 @@ export function decapitalize(s) {
   return s[0].toLowerCase() + s.slice(1)
 }
 
-export function slugFromArray(arr, opts) {
-  const { username } = opts
+export function slugFromArray(arr, opts={}) {
+  let { username } = opts
   if (username === undefined) {
     username = true
   }
@@ -29,7 +29,7 @@ export function slugFromArray(arr, opts) {
   return arr.slice(start).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
 }
 
-export function slugFromRouter(router, opts) {
+export function slugFromRouter(router, opts={}) {
   let arr = router.query.slug
   if (!arr) {
     return router.query.uid

@@ -1112,10 +1112,13 @@ if (commander.helpMacros) {
         }
         let body = ''
         if (addId) {
-          body += `{id=${addId}}\n`
+          // Restore this if we ever remove the separate path magic input.
+          // Also id of toplevel header is currently ignored as of writing:
+          //body += `{id=${addId}}\n`
         }
         if (addSubdir) {
-          body += `{subdir=${addSubdir}}\n`
+          // Restore this if we ever remove the separate path magic input.
+          //body += `{subdir=${addSubdir}}\n`
         }
         body += lines.slice(bodyStart).join('\n')
         articles.push({ title, body, inpath })

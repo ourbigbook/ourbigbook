@@ -5641,7 +5641,7 @@ And from Cirodown to anything, create new output formats inside Cirodown to thos
 = Dynamic website
 {parent=tooling}
 
-An implementation of: https://cirosantilli.com/write-free-books-to-get-famous-website
+An implementation of: https://cirosantilli.com/ourbigbook-com
 
 The source of the dynamic website is located under \a[web/].
 

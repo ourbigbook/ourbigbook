@@ -4414,7 +4414,8 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
         options.add_refs_to_x.push({
           ast,
-          title_ast_ancestors: Object.assign([], title_ast_ancestors)
+          title_ast_ancestors: Object.assign([], title_ast_ancestors),
+          target_id: render_arg_noescape(ast.args.href, context),
         })
       }
 
@@ -4857,9 +4858,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       }
       for (const ref of options.add_refs_to_x) {
         const ast = ref.ast
-        const id = render_arg_noescape(ast.args.href, context)
-        // We store this prior to scope resolution.
-        ref.target_id = id
+        const id = ref.target_id
 
         // We are going to walk up the scope tree and try to fetch
         // everything as we just can't know which level is the correct

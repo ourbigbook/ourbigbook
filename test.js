@@ -4779,6 +4779,16 @@ assert_error('unterminated literal positional argument', '\\c[[\n', 1, 3);
 assert_error('unterminated literal named argument', '\\c{{id=\n', 1, 3);
 assert_error('unterminated insane inline code', '`\n', 1, 1);
 
+// API minimal tests.
+it(`api: x does not blow up without ID provider`, async function () {
+  const out = await cirodown.convert(`= h1
+
+\\x[h2]
+
+== h2
+`, {'body_only': true})
+})
+
 // cirodown executable tests.
 assert_executable(
   'executable: input from stdin produces output on stdout',

@@ -547,6 +547,8 @@ Its usage is a bit like the `description=` argument of \x[images], allowing you 
 
 Therefore, its primary use cases are:
 * give acronyms, or other short names names of fuller titles such as mathematical/programming notation
+
+  One primary reason to not use the acronyms is to avoid possible ID ambiguities with other acronyms.
 * give the header in different languages
 
 When you do want to affect the ID to remove ambiguities, use \x[the-disambiguate-argument] instead of `title2`.

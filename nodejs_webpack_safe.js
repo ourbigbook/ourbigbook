@@ -30,7 +30,7 @@ const db_options = {
   },
 }
 
-class SqliteIdProvider extends ourbigbook.IdProvider {
+class SqliteDbProvider extends ourbigbook.DbProvider {
   constructor(sequelize) {
     super();
     this.sequelize = sequelize
@@ -39,6 +39,7 @@ class SqliteIdProvider extends ourbigbook.IdProvider {
       from_id: {},
       to_id: {},
     }
+    this.path_to_file_cache = {}
   }
 
   async clear(input_paths, transaction) {
@@ -197,9 +198,42 @@ class SqliteIdProvider extends ourbigbook.IdProvider {
           {
             model: this.sequelize.models.Id,
             as: include_key,
+            // TODO for the love of God, adding this makes it return just a single Ref row
+            // on SQLite at least. I even ran the raw query manually, and that does return multiple rows
+            // I simply cannot understand how it is possible, it has to be a sequelize bug?
+            // Can't easily reproduce on a minimal example however...
+            // So for now, I'm just going to make a separate query afterwards to get the files...
+            //required: false,
+            //include: [
+            //  {
+            //    model: this.sequelize.models.File,
+            //    required: false,
+            //  },
+            //],
           }
         ]
       })
+
+      // Fetch files. In theory should be easily done on above query as JOIN,
+      // but for some reason it is not working as mentioned on the TODO...
+      const file_paths = []
+      for (const row of rows) {
+        if (row[include_key]) {
+          file_paths.push(row[include_key].path)
+        }
+      }
+      const file_rows = await this.sequelize.models.File.findAll({
+        where: { path: file_paths },
+        include: [
+          {
+            model: this.sequelize.models.Id,
+          }
+        ],
+      })
+      for (const file_row of file_rows) {
+        this.add_file_row_to_cache(file_row, context)
+      }
+
       for (const row of rows) {
         let to_id_key_dict = this.ref_cache[to_id_key][row[to_id_key]]
         if (to_id_key_dict === undefined) {
@@ -452,40 +486,35 @@ ORDER BY "RecRefs".level DESC
       sequelize.models.Ref.bulkCreate(refs, { transaction }),
     ])
   }
-}
 
-class SqliteFileProvider extends ourbigbook.FileProvider {
-  constructor(sequelize, id_provider) {
-    super();
-    this.sequelize = sequelize;
-    this.id_provider = id_provider
-    this.get_path_entry_cache = {}
+  add_file_row_to_cache(row, context) {
+    this.path_to_file_cache[row.path] = row
+    if (
+      // Happens on some unminimized condition when converting
+      // cirosantilli.github.io @ 04f0f5bc03b9071f82b706b3481c09d616d44d7b + 1
+      // twice with ourbigbook -S ., no patience to minimize and test now.
+      row.Id !== null &&
+      // We have to do this if here because otherwise it would overwrite the reconciled header
+      // we have stiched into the tree with Include.
+      !this.id_cache[row.Id.idid]
+    ) {
+      this.add_row_to_id_cache(row.Id, context)
+    }
   }
 
-  async get_path_entry_fetch(path, context) {
+  async fetch_files(path, context) {
     const rows = await this.sequelize.models.File.findAll({
       where: { path },
       // We need to fetch these for toplevel scope removal.
       include: this.sequelize.models.Id,
     })
     for (const row of rows) {
-      this.get_path_entry_cache[row.path] = row
-      if (
-        // Happens on some unminimized condition when converting
-        // cirosantilli.github.io @ 04f0f5bc03b9071f82b706b3481c09d616d44d7b + 1
-        // twice with ourbigbook -S ., no patience to minimize and test now.
-        row.Id !== null &&
-        // We have to do this if here because otherwise it would overwrite the reconciled header
-        // we have stiched into the tree with Include.
-        !this.id_provider.id_cache[row.Id.idid]
-      ) {
-        this.id_provider.add_row_to_id_cache(row.Id, context)
-      }
+      this.add_file_row_to_cache(row, context)
     }
   }
 
-  get_path_entry(path) {
-    return this.get_path_entry_cache[path]
+  get_file(path) {
+    return this.path_to_file_cache[path]
   }
 }
 
@@ -530,7 +559,7 @@ async function update_database_after_convert({
   authorId,
   body,
   extra_returns,
-  id_provider,
+  db_provider,
   is_render_after_extract,
   sequelize,
   path,
@@ -595,7 +624,7 @@ async function update_database_after_convert({
       // update would override \x magic plural/singular check_db removal.
       !is_render_after_extract
     ) {
-      promises.push(id_provider.update(
+      promises.push(db_provider.update(
         extra_returns,
         sequelize,
         transaction,
@@ -852,8 +881,7 @@ function remove_duplicates_sorted_array(arr) {
 }
 
 module.exports = {
-  SqliteFileProvider,
-  SqliteIdProvider,
+  SqliteDbProvider,
   check_db,
   create_sequelize,
   db_options,

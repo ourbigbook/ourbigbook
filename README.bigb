@@ -6082,7 +6082,7 @@ An example can be seen under \a[lib_hello.js].
 Note that while doing a simple conversion is easy, things get harder if you want to take multifile features in consideration, notably \x[cross-file-reference-internals].
 
 This is because these features require interacting with the \x[id-database], and we don't do that from the default `ourbigbook.convert` API because different deployments will have very different implementations, notably:
-* local Node.js run uses SQLite, an implementation can be seen in the \a[ourbigbook] file class `SqliteIdProvider` and `SqliteFileProvider`
+* local Node.js run uses SQLite, an implementation can be seen in the \a[ourbigbook] file class `SqliteDbProvider`
 * the in-browser version that runs in the browser editor of the \x[ourbigbook-web] makes API calls to the server
 
 = OurBigBook Web

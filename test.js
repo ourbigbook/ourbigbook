@@ -164,7 +164,7 @@ function assert_convert_ast(
       new_convert_opts.output_format = ourbigbook.OUTPUT_FORMAT_OURBIGBOOK
     }
 
-    // SqliteIdProvider with in-memory database.
+    // SqliteDbProvider with in-memory database.
     const sequelize = await ourbigbook_nodejs_webpack_safe.create_sequelize({
         storage: ':memory:',
         logging: false,
@@ -174,10 +174,8 @@ function assert_convert_ast(
     )
     let exception
     try {
-      const id_provider = new ourbigbook_nodejs_webpack_safe.SqliteIdProvider(sequelize);
-      new_convert_opts.id_provider = id_provider
-      new_convert_opts.file_provider = new ourbigbook_nodejs_webpack_safe.SqliteFileProvider(
-        sequelize, id_provider);
+      const db_provider = new ourbigbook_nodejs_webpack_safe.SqliteDbProvider(sequelize);
+      new_convert_opts.db_provider = db_provider
       const rendered_outputs = {}
       async function convert(input_path, render) {
         //console.error({input_path});
@@ -196,7 +194,7 @@ function assert_convert_ast(
         }
         await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
           extra_returns,
-          id_provider,
+          db_provider,
           is_render_after_extract: render && convert_before_norender_set.has(input_path),
           sequelize,
           path: input_path,
@@ -231,7 +229,7 @@ function assert_convert_ast(
         if (new_convert_opts.input_path !== undefined) {
           await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
             extra_returns,
-            id_provider,
+            db_provider,
             sequelize,
             path: new_convert_opts.input_path,
             render: true,
@@ -3642,6 +3640,33 @@ assert_lib(
     },
   }
 );
+assert_lib(
+  'incoming link from subdir without direct link to it resolves correctly',
+  // Hit a bug where the incoming link was resolving wrongly to subdir/notindex.html#subdir/to-dog
+  // because the File was not being fetched from DB. Adding an explicit link from "Dog" to "To dog"
+  // would then fix it as it fetched the File.
+  {
+    convert_dir: true,
+    extra_convert_opts: { split_headers: true },
+    filesystem: {
+      'README.bigb': `= Index
+
+== Dog
+`,
+      'subdir/notindex.bigb': `= Notindex
+
+== To dog
+
+<dog>
+`,
+    },
+    assert_xpath: {
+      'dog.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='subdir/notindex.html#to-dog']`,
+      ],
+    },
+  }
+);
 assert_lib('x leading slash to escape scopes works across files',
   {
     convert_dir: true,
@@ -4981,32 +5006,6 @@ assert_lib('lib: toplevel scope gets removed on table of contents of included he
   },
 );
 
-assert_cli('cli: toplevel scope gets removed on table of contents of included headers',
-  {
-    args: ['--split-headers', '.'],
-    filesystem: {
-      'index.bigb': `= Index
-
-\\Include[notindex]
-`,
-      'notindex.bigb': `= Notindex
-{scope}
-
-== Notindex h2
-`,
-    },
-    assert_xpath: {
-      'index.html': [
-        "//*[@id='toc']//x:a[@href='notindex.html' and text()='1. Notindex']",
-        "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='1.1. Notindex h2']",
-      ],
-      'split.html': [
-        "//*[@id='toc']//x:a[@href='notindex.html' and text()='1. Notindex']",
-        "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='1.1. Notindex h2']",
-      ],
-    },
-  },
-);
 assert_convert_ast('the toc is added before the first h1 when there are multiple toplevel h1',
   `aa
 
@@ -5861,34 +5860,6 @@ assert_convert_ast('id conflict with id on another file simple',
 `,
     },
     input_path_noext: 'index'
-  }
-);
-assert_cli('cli: id conflict with id on another file simple',
-  {
-    args: ['.'],
-    filesystem: {
-      'index.bigb': `= index
-
-== notindex h2
-`,
-      'notindex.bigb': `= notindex
-
-== notindex h2
-`,
-    },
-    expect_exit_status: 1,
-  }
-);
-assert_cli('cli: cross reference to undefined ID fails without render',
-  {
-    args: ['--no-render', '.'],
-    filesystem: {
-      'index.bigb': `= index
-
-\\x[not-defined]
-`,
-    },
-    expect_exit_status: 1,
   }
 );
 assert_convert_ast('id conflict with id on another file where conflict header has a child header',
@@ -7732,5 +7703,60 @@ assert_cli('cli: ourbigbook.json redirects',
         "//x:script[text()=\"location='https://tourl.com'\"]",
       ],
     },
+  }
+);
+
+assert_cli('cli: toplevel scope gets removed on table of contents of included headers',
+  {
+    args: ['--split-headers', '.'],
+    filesystem: {
+      'index.bigb': `= Index
+
+\\Include[notindex]
+`,
+      'notindex.bigb': `= Notindex
+{scope}
+
+== Notindex h2
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        "//*[@id='toc']//x:a[@href='notindex.html' and text()='1. Notindex']",
+        "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='1.1. Notindex h2']",
+      ],
+      'split.html': [
+        "//*[@id='toc']//x:a[@href='notindex.html' and text()='1. Notindex']",
+        "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='1.1. Notindex h2']",
+      ],
+    },
+  },
+);
+assert_cli('cli: id conflict with id on another file simple',
+  {
+    args: ['.'],
+    filesystem: {
+      'index.bigb': `= index
+
+== notindex h2
+`,
+      'notindex.bigb': `= notindex
+
+== notindex h2
+`,
+    },
+    expect_exit_status: 1,
+  }
+);
+assert_cli('cli: cross reference to undefined ID fails without render',
+  {
+    args: ['--no-render', '.'],
+    filesystem: {
+      'index.bigb': `= index
+
+\\x[not-defined]
+`,
+    },
+    expect_exit_status: 1,
   }
 );

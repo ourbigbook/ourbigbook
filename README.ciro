@@ -4034,11 +4034,13 @@ or from the \x[cirodown-json] file with an entry of form:
 "unsafe-xss": true
 ``
 
-== Tooling
+= Tooling
+{parent=cirodown}
 
 Unlike all languages which rely on ad-hoc tooling, we will support every single tool that is required and feasible to be in this repository in this repository, in a centralized manner.
 
-=== `cirodown` executable
+= `cirodown` executable
+{parent=tooling}
 
 Convert a `.ciro` file to HTML and output the HTML to a file with the same basename without extension, e.g.:
 ``
@@ -4952,6 +4954,19 @@ cirodown .
 ``
 is required to generate the ID database.
 
+= JavaScript API
+{parent=tooling}
+
+The main entry point for the JavaScript API is the `cirodown.convert` function.
+
+An example can be seen under \a[api_hello.js].
+
+Note that while doing a simple conversion is easy, things get harder if you want to take multifile features in consideration, notably \x[internal-cross-file-reference-internals].
+
+This is because these features require interacting with the \x[id-database], and we don't do that from the default `cirodown.convert` API because different deployments will have very different implementations, notably:
+* local Node.js run uses sqlite, an implementation can be seen in the \a[cirodown] file class `SqliteIdProvider` and `SqliteFileProvider`
+* the in-browser version that runs in the browser editor of the \x[dynamic-website] makes API calls to the server
+
 = Conversion to/from other formats
 {parent=tooling}
 
@@ -5445,6 +5460,17 @@ npm test -- -g 'one paragraph'
 ``
 as per: https://stackoverflow.com/questions/10832031/how-to-run-a-single-test-with-mocha TODO: what if the test name is a substring?
 
+There are two types of test in our test suite:
+* tests that call the `cirodown.convert` \x[javascript-api] directly. These tests don't create file in the filesystem, and just mock the filesystem instead with a dictionary. TODO: use an in-memory sqlite DB to remove DB mocking effort/errors.
+* tests that call the \x[cirodown-executable] itself:
+  * their titles are prefixed with `executable: `
+  * they tend to be slower than the API test
+  * can test functionality that is done outside of the `cirodown.convert` JavaScript API, so they are more end to end
+  * don't do any mocking, and could therefore be more representative
+  * work by creating an actual physical filesystem under `out/test/<test-title>` with the Cirodown files and other files like `cirodown.json`, and then running the executable on that directory.
+
+    `npm test` first deletes the `out/test` directory before running the tests. After running, the generated files are kept so you can inspect them to help debug any issues.
+
 Step debug during a test run. Add the statement:
 ``
 debugger;
@@ -5463,11 +5489,11 @@ Note however that this does not work for tests that run the `cirodown` executabl
 ``
 but not working, related: https://stackoverflow.com/questions/23612087/gulp-target-to-debug-mocha-tests So for now, we are just printing the command being run as in:
 ``
-cmd: cd out/test/iyLn7v && cirodown --split-headers .
+cmd: cd out/test/executable-cirodown-json-outputOutOfTree && cirodown --split-headers .
 ``
 so you can just re-run it manually with `node inspect` as in:
 ``
-cd out/test/iyLn7v && node inspect "../../../cirodown" --split-headers .
+cd out/test/executable-cirodown-json-outputOutOfTree && node inspect "../../../cirodown" --split-headers .
 ``
 This works since the `tmp` directory is not deleted in case of failure.
 

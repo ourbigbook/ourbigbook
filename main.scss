@@ -49,7 +49,7 @@ footer {
   a {
     text-decoration: none;
     &:hover {
-      text-decoration: none;
+      text-decoration: underline;
     }
   }
   padding: 10px $toplevel-padding;

@@ -2103,6 +2103,7 @@ ab
 );
 
 // Links.
+// \a
 assert_convert_ast('link simple to external URL',
   'a \\a[http://example.com][example link] b\n',
   [
@@ -2258,6 +2259,41 @@ assert_convert_ast('link auto containing escapes',
     ])
   ]
 );
+assert_convert_ast('link auto sane http https removal',
+  '\\a[http://example.com] \\a[https://example.com] \\a[ftp://example.com]',
+  [
+    a('P', [
+      a('a', undefined, {'href': [t('http://example.com')]}),
+      t(' '),
+      a('a', undefined, {'href': [t('https://example.com')]}),
+      t(' '),
+      a('a', undefined, {'href': [t('ftp://example.com')]}),
+    ]),
+  ],
+  {
+    assert_xpath_main: [
+      "//x:a[@href='http://example.com' and text()='example.com']",
+      "//x:a[@href='https://example.com' and text()='example.com']",
+      "//x:a[@href='ftp://example.com' and text()='ftp://example.com']",
+    ]
+  }
+);
+assert_convert_ast('link auto insane http https removal',
+  'http://example.com https://example.com',
+  [
+    a('P', [
+      a('a', undefined, {'href': [t('http://example.com')]}),
+      t(' '),
+      a('a', undefined, {'href': [t('https://example.com')]}),
+    ]),
+  ],
+  {
+    assert_xpath_main: [
+      "//x:a[@href='http://example.com' and text()='example.com']",
+      "//x:a[@href='https://example.com' and text()='example.com']",
+    ]
+  }
+);
 assert_convert_ast('link with multiple paragraphs',
   '\\a[http://example.com][aaa\n\nbbb]\n',
   [
@@ -2272,6 +2308,15 @@ assert_convert_ast('link with multiple paragraphs',
       ),
     ]),
   ]
+);
+assert_convert_ast('xss: a content and href',
+  '\\a[ab&\\<>"\'cd][ef&\\<>"\'gh]{check=0}\n',
+  undefined,
+  {
+    assert_xpath_main: [
+      "//x:a[@href=concat('ab&<>\"', \"'\", 'cd') and text()=concat('ef&<>\"', \"'\", 'gh')]",
+    ]
+  }
 );
 assert_convert_ast('xss: a content and href',
   '\\a[ab&\\<>"\'cd][ef&\\<>"\'gh]{check=0}\n',

@@ -502,7 +502,7 @@ Therefore, images could easily fill up the maximum repository size you are allow
 
 \h[3][Image generators]
 
-TODO implement: mechanism where you enter a textual description of the image inside the code body, and it then converts to an image, adds to the \c[-media] repo and pushes all automatically.
+TODO implement: mechanism where you enter a textual description of the image inside the code body, and it then converts to an image, adds to the \c[-media] repo and pushes all automatically. Start with dot.
 
 \h[2][Code \c[[\c]] and \c[[\C]]]
 {id=code}

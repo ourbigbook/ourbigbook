@@ -711,10 +711,16 @@ class Tokenizer {
   /**
    * @param {String} input_string
    */
-  constructor(input_string, extra_returns={}, show_tokenize=false, start_line=1) {
+  constructor(
+    input_string,
+    extra_returns={},
+    show_tokenize=false,
+    start_line=1,
+    input_path=undefined
+  ) {
     this.chars = Array.from(input_string);
     this.cur_c = this.chars[0];
-    this.source_location = new SourceLocation(start_line, 1);
+    this.source_location = new SourceLocation(start_line, 1, input_path);
     this.extra_returns = extra_returns;
     this.extra_returns.errors = [];
     this.i = 0;
@@ -1681,8 +1687,13 @@ function convert(
   let sub_extra_returns;
   sub_extra_returns = {};
   extra_returns.debug_perf.tokenize_pre = globals.performance.now();
-  let tokens = (new Tokenizer(input_string, sub_extra_returns,
-    options.show_tokenize, options.start_line)).tokenize();
+  let tokens = (new Tokenizer(
+    input_string,
+    sub_extra_returns,
+    options.show_tokenize,
+    options.start_line,
+    options.input_path,
+  )).tokenize();
   extra_returns.debug_perf.tokenize_post = globals.performance.now();
   if (options.show_tokens) {
     console.error('tokens:');

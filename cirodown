@@ -682,6 +682,7 @@ function git_toplevel(input_path) {
   }).slice(0, -1);
 }
 
+// https://stackoverflow.com/questions/37521893/determine-if-a-path-is-subdirectory-of-another-in-node-js
 function is_subpath(parent, child) {
   const relative = path.relative(parent, child);
   return relative && !relative.startsWith('..') && !path.isAbsolute(relative);
@@ -790,6 +791,20 @@ if (commander.helpMacros) {
   }
 
   // Determine the cirodown.json file by walking up the directory tree.
+  let input_path_is_file;
+  if (inputPath === undefined) {
+    // Input from stdin.
+    input_dir = undefined;
+    input_path_is_file = false;
+  } else {
+    input_path_is_file = fs.lstatSync(inputPath).isFile();
+    if (input_path_is_file) {
+      input_dir = path.dirname(inputPath);
+    } else {
+      input_dir = inputPath;
+    }
+  }
+
   let cirodown_json_dir;
   if (inputPath !== undefined) {
     let curdir = path.resolve(inputPath);
@@ -811,8 +826,17 @@ if (commander.helpMacros) {
       curdir = path.dirname(curdir)
     }
     if (cirodown_json_dir === undefined) {
-      // No cirodown.json found. So just use cwd.
-      cirodown_json_dir = process.cwd();
+      // No cirodown.json found.
+      const cwd = process.cwd();
+      if (is_subpath(cwd, inputPath)) {
+        cirodown_json_dir = cwd
+      } else {
+        if (input_path_is_file) {
+          cirodown_json_dir = path.dirname(inputPath)
+        } else {
+          cirodown_json_dir = inputPath
+        }
+      }
     }
   }
   let split_headers;
@@ -901,18 +925,7 @@ if (commander.helpMacros) {
     options.template = fs.readFileSync(template_path).toString();
   }
 
-  let input_path_is_file;
-  if (inputPath === undefined) {
-    // Input from stdin.
-    input_dir = undefined;
-    input_path_is_file = false;
-  } else {
-    input_path_is_file = fs.lstatSync(inputPath).isFile();
-    if (input_path_is_file) {
-      input_dir = path.dirname(inputPath);
-    } else {
-      input_dir = inputPath;
-    }
+  if (inputPath !== undefined) {
     try {
       options.template_vars.git_sha = git_sha(input_dir);
     } catch(error) {

@@ -950,15 +950,22 @@ Wikimedia Commons is another great possibility to upload your images to:
 {source=https://commons.wikimedia.org/wiki/File:Gel_electrophoresis_insert_comb.jpg}
 ]]
 
-TODO https://github.com/cirosantilli/cirodown/issues/31 Cirodown likes Wikimedia Commons so much that we automatically parse the image URL and if it is from Wikimedia Commons, automatically deduce the `source` for you. So the above image renders the same without the `source` argument:
+Cirodown likes Wikimedia Commons so much that we automatically parse the image URL and if it is from Wikimedia Commons, automatically deduce the `source` for you. So the above image renders the same without the `source` argument:
 \cirodown_example[[
-\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
+\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
 ]]
 
 And a quick test for a more complex thumb resized URL:
 \cirodown_example[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
 ]]
+
+If you really absolutely want to turn off the `source`, you can explicitly set:
+\cirodown_example[[
+\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
+{source=}
+]]
+but you don't want to do that for the most commonly Wikimedia Commons used license of CC-BY+ , do you? :-)
 
 Upsides:
 * makes it easier for other writers to find and reuse your images

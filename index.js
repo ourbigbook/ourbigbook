@@ -400,6 +400,9 @@ class Macro {
     if (!('caption_prefix' in options)) {
       options.caption_prefix = capitalize_first_letter(name);
     }
+    if (!('content_func' in options)) {
+      options.content_func = function() { throw new Error('unimplemented'); };
+    }
     if (!('default_x_style_full' in options)) {
       options.default_x_style_full = true;
     }
@@ -419,6 +422,9 @@ class Macro {
     }
     if (!('phrasing' in options)) {
       options.phrasing = false;
+    }
+    if (!('source_func' in options)) {
+      options.source_func = function() { throw new Error('unimplemented'); };
     }
     if (!('toplevel_link' in options)) {
       options.toplevel_link = true;
@@ -1610,7 +1616,6 @@ function macro_list() {
 }
 exports.macro_list = macro_list;
 
-
 const macro_image_video_block_convert_function_source_types = make_enum([
   'UNKNOWN',
   'WIKIMEDIA',
@@ -1619,75 +1624,59 @@ const macro_image_video_block_convert_function_source_types = make_enum([
 const macro_image_video_block_convert_function_source_types_wikimedia_re = new RegExp('^https?://upload.wikimedia.org/wikipedia/commons/');
 const macro_image_video_block_convert_function_source_types_youtube_re = new RegExp('^https?://(youtube.com|youtu.be)/');
 const macro_image_video_block_convert_function_wikimedia_source_url = 'https://commons.wikimedia.org/wiki/File:';
-const macro_image_video_block_convert_function_wikimedia_source_image_re = new RegExp('^\s+px-');
+const macro_image_video_block_convert_function_wikimedia_source_image_re = new RegExp('^\\d+px-');
 const macro_image_video_block_convert_function_wikimedia_source_video_re = new RegExp('^([^.]+\.[^.]+).*');
 
-function macro_image_video_block_convert_function(content_func, source_func) {
-  if (source_func === undefined) {
-    source_func = function(ast, context, src, source_type) {
-      return convert_arg(ast.args.source, context);
+function macro_image_video_block_convert_function(ast, context) {
+  let rendered_attrs = html_convert_attrs(ast, context, ['height', 'width']);
+  let figure_attrs = html_convert_attrs_id(ast, context);
+  let ret = `<figure${figure_attrs}>\n`
+  let href_prefix;
+  if (ast.id !== undefined) {
+    href_prefix = html_self_link(ast);
+  } else {
+    href_prefix = undefined;
+  }
+  let description = convert_arg(ast.args.description, context);
+  if (description !== '') {
+    description = '. ' + description;
+  }
+  let {src, source, source_type} = macro_image_video_source(ast, context);
+  if (source !== '') {
+    source = `<a ${html_attr('href', source)}>Source</a>.`;
+    if (description === '') {
+      source = '. ' + source;
+    } else {
+      source = ' ' + source;
     }
   }
-  return function(ast, context) {
-    let rendered_attrs = html_convert_attrs(ast, context, ['height', 'width']);
-    let figure_attrs = html_convert_attrs_id(ast, context);
-    let ret = `<figure${figure_attrs}>\n`
-    let href_prefix;
-    if (ast.id !== undefined) {
-      href_prefix = html_self_link(ast);
-    } else {
-      href_prefix = undefined;
-    }
-    let description = convert_arg(ast.args.description, context);
-    if (description !== '') {
-      description = '. ' + description;
-    }
-
-    let src = convert_arg_noescape(ast.args.src, context);
-    let source_type;
-    if (src.match(macro_image_video_block_convert_function_source_types_wikimedia_re)) {
-      source_type = macro_image_video_block_convert_function_source_types.WIKIMEDIA;
-    } else if (src.match(macro_image_video_block_convert_function_source_types_youtube_re)) {
-      source_type = macro_image_video_block_convert_function_source_types.YOUTUBE;
-    } else {
-      source_type = macro_image_video_block_convert_function_source_types.UNKNOWN;
-    }
-    let source = source_func(ast, context, src, source_type);
-    if (source !== '') {
-      source = `<a ${html_attr('href', source)}>Source</a>.`;
-      if (description === '') {
-        source = '. ' + source;
-      } else {
-        source = ' ' + source;
-      }
-    }
-    let alt_arg;
-    const has_caption = ast.id !== undefined && (
-      ast.index_id ||
-      context.macros[ast.macro_name].options.caption_number_visible(ast)
-    );
-    if (ast.args.alt === undefined) {
-      if (has_caption) {
-        alt_arg = undefined;
-      } else {
-        alt_arg = ast.args.src;
-      }
-    } else {
-      alt_arg = ast.args.alt;
-    }
-    let alt;
-    if (alt_arg === undefined) {
-      alt = '';
-    } else {
-      alt = html_attr('alt', html_escape_attr(convert_arg(alt_arg, context)));;
-    }
-    ret += content_func(ast, context, src, rendered_attrs, alt, source_type);
+  let alt_arg;
+  const macro = context.macros[ast.macro_name];
+  const has_caption = ast.id !== undefined && (
+    ast.index_id ||
+    macro.options.caption_number_visible(ast, context)
+  );
+  if (ast.args.alt === undefined) {
     if (has_caption) {
-      ret += `<figcaption>${Macro.x_text(ast, context, {href_prefix: href_prefix})}${description}${source}</figcaption>\n`;
+      alt_arg = undefined;
+    } else {
+      alt_arg = ast.args.src;
     }
-    ret += '</figure>\n';
-    return ret;
-  };
+  } else {
+    alt_arg = ast.args.alt;
+  }
+  let alt;
+  if (alt_arg === undefined) {
+    alt = '';
+  } else {
+    alt = html_attr('alt', html_escape_attr(convert_arg(alt_arg, context)));;
+  }
+  ret += macro.options.content_func(ast, context, src, rendered_attrs, alt, source_type);
+  if (has_caption) {
+    ret += `<figcaption>${Macro.x_text(ast, context, {href_prefix: href_prefix})}${description}${source}</figcaption>\n`;
+  }
+  ret += '</figure>\n';
+  return ret;
 }
 
 // https://stackoverflow.com/questions/44447847/enums-in-javascript-with-es6/49709701#49709701
@@ -1765,6 +1754,9 @@ function parse(tokens, macros, options, extra_returns={}) {
   let cur_header_level;
   let toplevel_parent_arg = new AstArgument([], 1, 1);
   let todo_visit = [[toplevel_parent_arg, ast_toplevel]];
+  // Some AST postprocessing decisions need information from the render step,
+  // so we define a minimal context here. This is ugly and will case problems
+  // one day, but it is also simple.
   const id_context = {'macros': macros};
   // IDs that are indexed: you can link to those.
   let indexed_ids = {};
@@ -2366,7 +2358,7 @@ function parse(tokens, macros, options, extra_returns={}) {
             message += `line ${previous_ast.line} colum ${previous_ast.column}`;
             parse_error(state, message, ast.line, ast.column);
           }
-          if (index_id || macro.options.caption_number_visible(ast)) {
+          if (index_id || macro.options.caption_number_visible(ast, id_context)) {
             if (!(macro_name in macro_counts_visible)) {
               macro_counts_visible[macro_name] = 0;
             }
@@ -2732,10 +2724,25 @@ const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [
     positive_nonzero_integer: true,
   }),
 ];
+function macro_image_video_source(ast, context) {
+  let src = convert_arg_noescape(ast.args.src, context);
+  let source_type;
+  if (src.match(macro_image_video_block_convert_function_source_types_wikimedia_re)) {
+    source_type = macro_image_video_block_convert_function_source_types.WIKIMEDIA;
+  } else if (src.match(macro_image_video_block_convert_function_source_types_youtube_re)) {
+    source_type = macro_image_video_block_convert_function_source_types.YOUTUBE;
+  } else {
+    source_type = macro_image_video_block_convert_function_source_types.UNKNOWN;
+  }
+  return {
+    source: context.macros[ast.macro_name].options.source_func(ast, context, src, source_type),
+    src: src,
+    type: source_type,
+  }
+}
 const MACRO_IMAGE_VIDEO_OPTIONS = {
-  caption_number_visible: function (ast) {
-    // TODO source derived from youtube/wikimedia.
-    return 'source' in ast.args || 'description' in ast.args;
+  caption_number_visible: function (ast, context) {
+    return 'description' in ast.args || macro_image_video_source(ast, context).source !== '';
   }
 }
 const MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS = [
@@ -3013,27 +3020,26 @@ const DEFAULT_MACRO_LIST = [
   new Macro(
     'Image',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
-    macro_image_video_block_convert_function(
-      function (ast, context, src, rendered_attrs, alt, source_type) {
-        return `<a${html_attr('href', src)}><img${html_attr('src',
-          html_escape_attr(src))}${html_attr('loading', 'lazy')}${rendered_attrs}${alt}></a>\n`;
-      },
-      function (ast, context, src, source_type) {
-        if ('source' in ast.args) {
-          return convert_arg(ast.args.source, context);
-        } else if (source_type == macro_image_video_block_convert_function_source_types.WIKIMEDIA) {
-          return macro_image_video_block_convert_function_wikimedia_source_url +
-            basename(html_escape_attr(src)).replace(macro_image_video_block_convert_function_wikimedia_source_image_re, '');
-        } else {
-          return '';
-        }
-      }
-    ),
+    macro_image_video_block_convert_function,
     Object.assign(
       {
         caption_prefix: 'Figure',
+        content_func: function (ast, context, src, rendered_attrs, alt, source_type) {
+          return `<a${html_attr('href', src)}><img${html_attr('src',
+            html_escape_attr(src))}${html_attr('loading', 'lazy')}${rendered_attrs}${alt}></a>\n`;
+        },
         id_prefix: 'fig',
         named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS,
+        source_func: function (ast, context, src, source_type) {
+          if ('source' in ast.args) {
+            return convert_arg(ast.args.source, context);
+          } else if (source_type == macro_image_video_block_convert_function_source_types.WIKIMEDIA) {
+            return macro_image_video_block_convert_function_wikimedia_source_url +
+              basename(html_escape_attr(src)).replace(macro_image_video_block_convert_function_wikimedia_source_image_re, '');
+          } else {
+            return '';
+          }
+        }
       },
       MACRO_IMAGE_VIDEO_OPTIONS,
     ),
@@ -3397,83 +3403,65 @@ const DEFAULT_MACRO_LIST = [
   new Macro(
     'Video',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
-    macro_image_video_block_convert_function(
-      function (ast, context, src, rendered_attrs, alt, source_type) {
-        if (
-          ast.validation_output.youtube.boolean ||
-          (
-            source_type === macro_image_video_block_convert_function_source_types.YOUTUBE &&
-            !ast.validation_output.youtube.given
-          )
-        ) {
-          let url_start_time;
-          let video_id;
-          if (ast.validation_output.youtube.boolean) {
-            video_id = src;
-          } else {
-            const url = new URL(src);
-            const url_params = url.searchParams;
-            if (url_params.has('t')) {
-              url_start_time = url_params.get('t');
-            }
-            if (url.hostname === 'youtube.com') {
-              if (url_params.has('v')) {
-                video_id = url_params.get('v')
-              } else {
-                let message = `youtube URL without video ID "${src}"`;
-                render_error(context, message, ast.line, ast.column);
-                return error_message_in_output(message, context);
-              }
-            } else {
-              video_id = url.pathname.substr(1);
-            }
-          }
-          let start_time;
-          if ('start' in ast.args) {
-            start_time = ast.validation_output.start.positive_nonzero_integer;
-          } else if (url_start_time !== undefined) {
-            start_time = html_escape_attr(url_start_time);
-          }
-          let start;
-          if (start_time !== undefined) {
-            start = `?start=${start_time}`;
-          } else {
-            start = '';
-          }
-          return `<iframe width="560" height="${DEFAULT_MEDIA_HEIGHT}" src="https://www.youtube.com/embed/${html_escape_attr(video_id)}${start}" ` +
-                 `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-        } else {
-          let start;
-          if ('start' in ast.args) {
-            // https://stackoverflow.com/questions/5981427/start-html5-video-at-a-particular-position-when-loading
-            start = `#t=${ast.validation_output.start.positive_nonzero_integer}`;
-          } else {
-            start = '';
-          }
-          return `<video${html_attr('src', src + start)}${rendered_attrs} controls>${alt}</video>\n`;
-        }
-      },
-      function (ast, context, src, source_type) {
-        if ('source' in ast.args) {
-          return convert_arg(ast.args.source, context);
-        } else if (ast.validation_output.youtube.boolean) {
-          return `https://youtube.com/watch?v=${html_escape_attr(src)}`;
-        } else if (source_type === macro_image_video_block_convert_function_source_types.WIKIMEDIA) {
-          return macro_image_video_block_convert_function_wikimedia_source_url +
-            basename(html_escape_attr(src)).replace(macro_image_video_block_convert_function_wikimedia_source_video_re, '$1');
-        } else if (
-          source_type == macro_image_video_block_convert_function_source_types.YOUTUBE &&
-          !ast.validation_output.youtube.given
-        ) {
-          return html_escape_attr(src);
-        } else {
-          return '';
-        }
-      }
-    ),
+    macro_image_video_block_convert_function,
     Object.assign(
       {
         caption_prefix: 'Video',
+        content_func: function (ast, context, src, rendered_attrs, alt, source_type) {
+          if (
+            ast.validation_output.youtube.boolean ||
+            (
+              source_type === macro_image_video_block_convert_function_source_types.YOUTUBE &&
+              !ast.validation_output.youtube.given
+            )
+          ) {
+            let url_start_time;
+            let video_id;
+            if (ast.validation_output.youtube.boolean) {
+              video_id = src;
+            } else {
+              const url = new URL(src);
+              const url_params = url.searchParams;
+              if (url_params.has('t')) {
+                url_start_time = url_params.get('t');
+              }
+              if (url.hostname === 'youtube.com') {
+                if (url_params.has('v')) {
+                  video_id = url_params.get('v')
+                } else {
+                  let message = `youtube URL without video ID "${src}"`;
+                  render_error(context, message, ast.line, ast.column);
+                  return error_message_in_output(message, context);
+                }
+              } else {
+                video_id = url.pathname.substr(1);
+              }
+            }
+            let start_time;
+            if ('start' in ast.args) {
+              start_time = ast.validation_output.start.positive_nonzero_integer;
+            } else if (url_start_time !== undefined) {
+              start_time = html_escape_attr(url_start_time);
+            }
+            let start;
+            if (start_time !== undefined) {
+              start = `?start=${start_time}`;
+            } else {
+              start = '';
+            }
+            return `<iframe width="560" height="${DEFAULT_MEDIA_HEIGHT}" src="https://www.youtube.com/embed/${html_escape_attr(video_id)}${start}" ` +
+                  `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+          } else {
+            let start;
+            if ('start' in ast.args) {
+              // https://stackoverflow.com/questions/5981427/start-html5-video-at-a-particular-position-when-loading
+              start = `#t=${ast.validation_output.start.positive_nonzero_integer}`;
+            } else {
+              start = '';
+            }
+            return `<video${html_attr('src', src + start)}${rendered_attrs} controls>${alt}</video>\n`;
+          }
+        },
         id_prefix: 'video',
         named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS.concat(
           new MacroArgument({
@@ -3485,6 +3473,23 @@ const DEFAULT_MACRO_LIST = [
             boolean: true,
           }),
         ),
+        source_func: function (ast, context, src, source_type) {
+          if ('source' in ast.args) {
+            return convert_arg(ast.args.source, context);
+          } else if (ast.validation_output.youtube.boolean) {
+            return `https://youtube.com/watch?v=${html_escape_attr(src)}`;
+          } else if (source_type === macro_image_video_block_convert_function_source_types.WIKIMEDIA) {
+            return macro_image_video_block_convert_function_wikimedia_source_url +
+              basename(html_escape_attr(src)).replace(macro_image_video_block_convert_function_wikimedia_source_video_re, '$1');
+          } else if (
+            source_type == macro_image_video_block_convert_function_source_types.YOUTUBE &&
+            !ast.validation_output.youtube.given
+          ) {
+            return html_escape_attr(src);
+          } else {
+            return '';
+          }
+        }
       },
       MACRO_IMAGE_VIDEO_OPTIONS,
     ),

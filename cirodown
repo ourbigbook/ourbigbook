@@ -52,7 +52,7 @@ class IdProviderDbAdapter {
   }
 }
 
-class SqliteIdProvider extends cirodown.IdProvider {
+class SqliteIdProvider extends cirodown.IdProviderWithIgnorePath {
   constructor(sequelize) {
     super();
     this.sequelize = sequelize
@@ -101,7 +101,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
       to_id, type: this.sequelize.models.Ref.Types.INCLUDE } })
   }
 
-  async get_from_header_ids_of_xrefs_to(type, to_id, reversed=false) {
+  async get_refs_to(type, to_id, reversed=false) {
     let to_id_key, other_key;
     if (reversed) {
       to_id_key = 'from_id'
@@ -110,9 +110,15 @@ class SqliteIdProvider extends cirodown.IdProvider {
       to_id_key = 'to_id'
       other_key = 'from_id'
     }
-    const entries = await this.sequelize.models.Ref.findAll({ where: {
-      [to_id_key]: to_id, type: this.sequelize.models.Ref.Types[type] } })
-    return new Set(entries.map(e => e[other_key]))
+    return this.sequelize.models.Ref.findAll({
+      where: {
+        [to_id_key]: to_id, type: this.sequelize.models.Ref.Types[type]
+      },
+      attributes: [
+        [other_key, 'id'],
+        'defined_at',
+      ]
+    })
   }
 }
 
@@ -396,50 +402,40 @@ async function convert_path(input_path, cirodown_options, non_cirodown_options) 
     // left over hanging in the database.
     await non_cirodown_options.id_provider.clear(Array.from(context.include_path_set));
 
+    // calculate refs
+    const refs = []
+    // We only need to inspect the false because the information is redundant with the true,
+    // it is only a primitive indexing mechanism.
+    for (const to_id in context.refs_to[false]) {
+      const types = context.refs_to[false][to_id];
+      for (const type in types) {
+        const from_ids = types[type];
+        for (const from_id in from_ids) {
+          if (
+            // TODO happens on CirodownExample, likely also include,
+            // need to fix and remove this if.
+            from_id !== undefined
+          ) {
+            const defined_ats = from_ids[from_id];
+            for (const defined_at of defined_ats) {
+              refs.push({
+                from_id,
+                defined_at,
+                to_id,
+                type: non_cirodown_options.sequelize.models.Ref.Types[type]
+              })
+            }
+          }
+        }
+      }
+    }
+
     // This was the 80% bottleneck at Cirodown f8fc9eacfa794b95c1d9982a04b62603e6d0bb83
     // before being converted to a single transaction!
     // Likely would not have been a bottleneck if we new more about databases/had more patience
     // and instead of doing INSERT one by one we would do a single insert with a bunch of data.
     // The move to Sequelize made that easier with bulkCreate. But keeping the transaction just in case
     await non_cirodown_options.sequelize.transaction(async (transaction) => {
-      // Calculate refs.
-      const refs = []
-      for (const header_ast of context.headers_with_include) {
-        for (const include of header_ast.includes) {
-          refs.push({
-            from_id: header_ast.id,
-            defined_at: TODO,
-            to_id: include,
-            type: non_cirodown_options.sequelize.models.Ref.Types.INCLUDE
-          })
-        }
-      }
-      for (const to_id in context.xref_from_to_dict[false]) {
-        const types = context.xref_from_to_dict[false][to_id];
-        for (const type in types) {
-          const from_ids = types[type];
-          for (const from_id of from_ids) {
-            if (
-              // TODO happens on CirodownExample, likely also include,
-              // need to fix and remove this if.
-              from_id !== undefined
-            ) {
-              if (
-                // Can happen when the database is not yet populated,
-                // leading to ID not being present.
-                from_header !== undefined
-              ) {
-                refs.push({
-                  from_id,
-                  defined_at: TODO,
-                  to_id,
-                  type: non_cirodown_options.sequelize.models.Ref.Types[type]
-                })
-              }
-            }
-          }
-        }
-      }
       await Promise.all([
         non_cirodown_options.sequelize.models.Id.bulkCreate(create_ids, { transaction }),
         non_cirodown_options.sequelize.models.Ref.bulkCreate(refs, { transaction }),

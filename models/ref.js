@@ -13,7 +13,7 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: false,
       },
-      from_path: {
+      defined_at: {
         type: DataTypes.TEXT,
         allowNull: false,
       },
@@ -28,7 +28,7 @@ module.exports = (sequelize) => {
     },
     {
       indexes: [
-        { fields: ['from_path'], },
+        { fields: ['defined_at'], },
         { fields: ['from_id', 'type'], },
         { fields: ['to_id', 'type'], },
       ],
@@ -36,7 +36,7 @@ module.exports = (sequelize) => {
   )
   Ref.Types = {
     // https://cirosantilli.com/cirodown/include
-    'INCLUDE': 0,
+    [cirodown.REFS_TABLE_INCLUDE]: 0,
     // https://cirosantilli.com/cirodown/internal-cross-reference
     [cirodown.REFS_TABLE_X]: 1,
     // https://cirosantilli.com/cirodown/secondary-children

@@ -24,7 +24,7 @@ const convert_opts = {
   }
 };
 
-class MockIdProvider extends cirodown.IdProvider {
+class MockIdProvider extends cirodown.IdProviderWithIgnorePath {
   constructor(convert_input_options) {
     super();
     this.ids_table = {};
@@ -54,14 +54,19 @@ class MockIdProvider extends cirodown.IdProvider {
     }
   }
 
-  get_from_header_ids_of_xrefs_to(type, to_id) {
+  async get_refs_to(type, to_id, reversed=false) {
     // TODO implement. For now all functionality that dependes on it,
     // e.g. tags will not work when mocking.
-    return new Set();
+    return []
   }
 
   async get_noscope_entry(id) {
-    return this.ids_table[id];
+    const entry = this.ids_table[id]
+    if (entry === undefined) {
+      return undefined
+    } else {
+      return cirodown.AstNode.fromJSON(entry.ast_json);
+    }
   }
 
   update(extra_returns) {
@@ -3817,6 +3822,25 @@ assert_executable(
   }
 );
 assert_executable(
+  'executable: includer should how as a parent of the includee',
+  {
+    args: ['--split-headers', '.'],
+    filesystem: {
+      'README.ciro': `= Index
+
+\\Include[included-by-index]
+`,
+  'included-by-index.ciro': `= Included by index
+`,
+    },
+    expect_filesystem_xpath: {
+      'included-by-index.html': [
+        xpath_header_parent(1, 'included-by-index', 'index.html', 'Index'),
+      ],
+    }
+  }
+);
+assert_executable(
   'executable: --dry-run --split-headers --publish works',
   {
     args: ['--dry-run', '--split-headers', '--publish', '.'],
@@ -4701,7 +4725,7 @@ assert_executable(
       'h2-2.html': [
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html#h2']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#h2']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#notindex-h2']`,
       ],
       'scope/scope-1.html': [
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html']`,

@@ -2203,7 +2203,7 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
         ast.macro_count_visible = macro_count;
       }
       binary_search_insert(line_to_id_array,
-        [ast.source_location.line, ast.id], binary_search_line_to_id_array_fn);
+        [ast.source_location.line, ast.synonym || ast.id], binary_search_line_to_id_array_fn);
     }
   }
   return { title_text, macro_count_global }

@@ -1,8 +1,10 @@
 const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
+
 const secret = require('../config').secret
 
-const { DataTypes } = require('sequelize')
+const Sequelize = require('sequelize')
+const { DataTypes, Op } = Sequelize
 
 module.exports = (sequelize) => {
   let User = sequelize.define(
@@ -53,51 +55,14 @@ module.exports = (sequelize) => {
         }
       },
       bio: DataTypes.STRING,
-      image: {
-        type: DataTypes.STRING,
-        defaultValue: 'https://static.productionready.io/images/smiley-cyrus.jpg'
-      },
-      favorites: {
-        type: DataTypes.STRING,
-        set(v) {
-          this.setDataValue('favorites', Array.isArray(v) ? v.join(',') : '')
-        },
-        get() {
-          const favorites = this.getDataValue('favorites')
-          if (!favorites) return []
-          return favorites.split(',').map(v => Number(v))
-        }
-      },
-      following: {
-        type: DataTypes.STRING,
-        set(v) {
-          this.setDataValue('following', Array.isArray(v) ? v.join(',') : '')
-        },
-        get() {
-          const following = this.getDataValue('following')
-          if (!following) return []
-          return following.split(',').map(v => Number(v))
-        }
-      },
+      image: DataTypes.STRING,
       hash: DataTypes.STRING(1024),
       salt: DataTypes.STRING
     },
     {
-      underscored: true,
-      tableName: 'users',
       indexes: [{ fields: ['username'] }, { fields: ['email'] }]
     }
   )
-
-  User.prototype.validPassword = function(password) {
-    let hash = crypto.pbkdf2Sync(password, this.salt, 10000, 512, 'sha512').toString('hex')
-    return this.hash === hash
-  }
-
-  User.prototype.setPassword = function(password) {
-    this.salt = crypto.randomBytes(16).toString('hex')
-    this.hash = crypto.pbkdf2Sync(password, this.salt, 10000, 512, 'sha512').toString('hex')
-  }
 
   User.prototype.generateJWT = function() {
     let today = new Date()
@@ -124,62 +89,76 @@ module.exports = (sequelize) => {
     };
   }
 
-  User.prototype.toProfileJSONFor = function(user) {
+  User.prototype.toProfileJSONFor = async function(user) {
     let data = {
       username: this.username,
       bio: this.bio === undefined ? '' : this.bio,
-      image: this.image,
-      following: user ? user.isFollowing(this.id) : false
+      image: this.image || 'https://static.productionready.io/images/smiley-cyrus.jpg',
+      following: user ? (await user.hasFollow(this.id)) : false
     }
     return data
   }
 
-  User.prototype.favorite = function(id) {
-    if (this.favorites.indexOf(id) === -1) {
-      this.favorites = this.favorites.concat([id])
-    }
-
-    return this.save()
-  }
-
-  User.prototype.unfavorite = function(id) {
-    let index = this.favorites.indexOf(id)
-    if (index !== -1) {
-      let array = this.favorites.slice()
-      array.splice(index, 1)
-      this.favorites = array
-    }
-    return this.save()
-  }
-
-  User.prototype.isFavorite = function(id) {
-    return this.favorites.some(function(favoriteId) {
-      return favoriteId.toString() === id.toString()
+  User.prototype.findAndCountArticlesByFollowed = async function(offset, limit) {
+    return sequelize.models.Article.findAndCountAll({
+      offset: offset,
+      limit: limit,
+      subQuery: false,
+      order: [[
+        'createdAt',
+        'DESC'
+      ]],
+      include: [
+        {
+          model: sequelize.models.User,
+          as: 'author',
+          required: true,
+          include: [
+            {
+              model: sequelize.models.UserFollowUser,
+              on: {
+                followId: {[Op.col]: 'author.id' },
+              },
+              attributes: [],
+              where: {userId: this.id},
+            }
+          ],
+        },
+      ],
     })
   }
 
-  User.prototype.follow = function(id) {
-    if (this.following.indexOf(id) === -1) {
-      this.following = this.following.concat([id])
-    }
-
-    return this.save()
+  User.prototype.getArticleCountByFollowed = async function() {
+    return (await User.findByPk(this.id, {
+      subQuery: false,
+      attributes: [
+        [Sequelize.fn('COUNT', Sequelize.col('follows.authoredArticles.id')), 'count']
+      ],
+      include: [
+        {
+          model: User,
+          as: 'follows',
+          attributes: [],
+          through: {attributes: []},
+          include: [{
+              model: sequelize.models.Article,
+              as: 'authoredArticles',
+              attributes: [],
+          }],
+        },
+      ],
+    })).dataValues.count
   }
 
-  User.prototype.unfollow = function(id) {
-    let index = this.following.indexOf(id)
-    if (index !== -1) {
-      let array = this.following.slice()
-      array.splice(index, 1)
-      this.following = array
-    }
-    return this.save()
+  User.validPassword = function(user, password) {
+    let hash = crypto.pbkdf2Sync(password, user.salt, 10000, 512, 'sha512').toString('hex')
+    return user.hash === hash
   }
 
-  User.prototype.isFollowing = function(id) {
-    return this.following.some(function(followId) {
-      return followId.toString() === id.toString()
-    })
+  User.setPassword = function(user, password) {
+    user.salt = crypto.randomBytes(16).toString('hex')
+    user.hash = crypto.pbkdf2Sync(password, user.salt, 10000, 512, 'sha512').toString('hex')
   }
+
   return User
 }

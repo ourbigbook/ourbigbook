@@ -1,18 +1,16 @@
-import styled from "@emotion/styled";
+/* Helper for a link that accepts parameters such as className */
+
 import Link from "next/link";
 import React from "react";
 
 interface CustomLinkProps {
   href: string;
-  as: string;
+  as?: string;
   className?: string;
   onClick?: () => void;
   children: React.ReactNode;
+  shallow?: boolean;
 }
-
-const Anchor = styled("a")`
-  text-decoration: none !important;
-`;
 
 const CustomLink = ({
   className,
@@ -20,12 +18,16 @@ const CustomLink = ({
   as,
   onClick,
   children,
-}: CustomLinkProps) => (
-  <Link href={href} as={as} passHref>
-    <Anchor onClick={onClick} className={className || ""}>
+  shallow,
+}: CustomLinkProps) => {
+  if (shallow === undefined) {
+    shallow = false;
+  }
+  return (<Link href={href} as={as} passHref shallow={shallow}>
+    <a onClick={onClick} className={className || ""}>
       {children}
-    </Anchor>
-  </Link>
-);
+    </a>
+  </Link>)
+}
 
 export default CustomLink;

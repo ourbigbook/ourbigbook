@@ -1,6 +1,6 @@
 import React from "react";
 
-import useSessionStorage from "../hooks/useSessionStorage";
+import useSessionStorage from "lib/hooks/useSessionStorage";
 
 export type PageDispatch = React.Dispatch<any>;
 

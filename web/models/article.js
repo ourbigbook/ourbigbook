@@ -14,77 +14,60 @@ module.exports = (sequelize) => {
         },
         set(v) {
           this.setDataValue('slug', v.toLowerCase())
-        }
-      },
-      title: DataTypes.STRING,
-      body: DataTypes.STRING,
-      favoritesCount: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0,
-        field: 'favorites_count'
-      },
-      tagList: {
-        type: DataTypes.STRING,
-        field: 'tag_list',
-        set(v) {
-          this.setDataValue('tagList', Array.isArray(v) ? v.join(',') + ',-' : '')
         },
-        get() {
-          const tagList = this.getDataValue('tagList')
-          if (!tagList) return []
-          return tagList.split(',').slice(0, -1)
-        }
-      }
+        allowNull: false,
+      },
+      title: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      body: {
+        type: DataTypes.STRING(65536),
+        allowNull: false,
+      },
     },
     {
-      underscored: true,
-      tableName: 'articles',
       hooks: {
         beforeValidate: (article, options) => {
           if (!article.slug) {
             article.slug = slug(article.title) + '-' + ((Math.random() * Math.pow(36, 6)) | 0).toString(36)
           }
         }
-      }
+      },
+      // TODO for sorting by latest.
+      //indexes: [
+      //  {
+      //    fields: ['createdAt'],
+      //  },
+      //],
     }
   )
 
-  Article.associate = function() {
-    Article.belongsTo(sequelize.models.User, {
-      as: 'Author',
-      foreignKey: {
-        allowNull: false
-      }
-    })
-    Article.hasMany(sequelize.models.Comment)
-  }
-
-  Article.prototype.updateFavoriteCount = function() {
-    let article = this
-    return sequelize.models.User.count({ where: { favorites: { [Op.in]: [article.id] } } }).then(function(count) {
-      article.favoritesCount = count
-      return article.save()
-    })
-  }
-
-  Article.prototype.toJSONFor = function(author, user) {
+  Article.prototype.toJSONFor = async function(user) {
+    let authorPromise;
+    if (this.authorPromise === undefined) {
+      authorPromise = this.getAuthor()
+    } else {
+      authorPromise = new Promise(resolve => {resolve(this.author)})
+    }
+    const [tags, favorited, favoritesCount, author] = await Promise.all([
+      this.getTags(),
+      user ? user.hasFavorite(this.id) : false,
+      this.countFavoritedBy(),
+      authorPromise.then(author => author.toProfileJSONFor(user)),
+    ])
     return {
       slug: this.slug,
       title: this.title,
       body: this.body,
-      // Stringify here otherwise: `object` ("[object Date]") cannot be serialized as JSON.
-      // https://github.com/vercel/next.js/discussions/11498
-      // https://github.com/vercel/next.js/discussions/13696
-      // https://github.com/vercel/next.js/issues/11993
       createdAt: this.createdAt.toISOString(),
       updatedAt: this.updatedAt.toISOString(),
-      tagList: this.tagList,
-      favorited: user ? user.isFavorite(this.id) : false,
-      favoritesCount: this.favoritesCount,
-      author: author.toProfileJSONFor(user),
+      tagList: tags.map(tag => tag.name),
+      favorited,
+      favoritesCount,
+      author,
       render: cirodown.convert('= ' + this.title + '\n\n' + this.body, {body_only: true}),
     }
   }
-
   return Article
 }

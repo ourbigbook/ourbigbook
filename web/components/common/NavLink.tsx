@@ -1,4 +1,3 @@
-import styled from "@emotion/styled";
 import Link from "next/link";
 import { useRouter } from "next/router";
 
@@ -7,26 +6,27 @@ interface NavLinkProps {
   as: string;
   onClick?: () => void;
   children: React.ReactNode;
+  className?: string;
 }
 
-const Anchor = styled("a")`
-  text-decoration: none;
-`;
-
-const NavLink = ({ href, as, onClick, children }: NavLinkProps) => {
+const NavLink = ({ href, as, onClick, children, className }: NavLinkProps) => {
   const router = useRouter();
   const { asPath } = router;
-
+  const classes = ['nav-link']
+  if (encodeURIComponent(asPath) === encodeURIComponent(as)) {
+    classes.push('active')
+  }
+  if (className) {
+    classes.push(...className.split(' '))
+  }
   return (
     <Link href={href} as={as} passHref>
-      <Anchor
+      <a
         onClick={onClick}
-        className={`${
-          encodeURIComponent(asPath) === encodeURIComponent(as) && `active`
-        }`}
+        className={classes.join(' ')}
       >
         {children}
-      </Anchor>
+      </a>
     </Link>
   );
 };

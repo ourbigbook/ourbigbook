@@ -4,11 +4,17 @@
   "description": "cirodown web",
   "main": "app.js",
   "scripts": {
-    "build": "next build",
-    "build-dev": "NODE_ENV_OVERRIDE=development npm run build",
-    "dev": "nodemon --unhandled-rejections=strict --exec 'ts-node app.js'",
+    "back-test": "NODE_ENV=test npm run dev",
+    "build": "./bin/sync-db.js && next build",
+    "build-dev": "./bin/sync-db.js && NODE_ENV_OVERRIDE=development npm run build",
+    "deploy": "git push heroku-next next:master",
+    "dev": "nodemon -w app.js -w ../index.js ./app.js",
     "postinstall": "cd .. && npm link cirodown",
-    "start": "NODE_OPTIONS='--unhandled-rejections=strict' ts-node app.js"
+    "start": "node --unhandled-rejections=strict ./app.js",
+    "start-dev": "NODE_ENV_OVERRIDE=development NODE_ENV_NEXT=production node --unhandled-rejections=strict ./app.js",
+    "start-prod": "env $(cat .env | xargs) NODE_ENV=production DATABASE_URL='postgres://node_express_sequelize_realworld_user:a@localhost:5432/node_express_sequelize_realworld' npm start",
+    "test": "mocha test --ignore-leaks test.js",
+    "test-api": "./realworld/api/run-api-tests.sh"
   },
   "repository": {
     "type": "git",
@@ -16,24 +22,23 @@
   },
   "license": "AGPL",
   "dependencies": {
-    "@emotion/core": "10.0.28",
-    "@emotion/react": "11.4.0",
-    "@emotion/styled": "10.0.27",
-    "axios": "0.19.2",
+    "@types/node": "^14.0.27",
+    "@types/react": "^16.9.44",
+    "axios": "^0.19.2",
     "body-parser": "1.15.0",
     "cirodown": "..",
+    "commander": "6.2.1",
     "cors": "2.7.1",
-    "emotion": "10.0.27",
-    "emotion-server": "10.0.27",
     "errorhandler": "1.4.3",
     "express": "4.13.4",
     "express-jwt": "3.3.0",
     "express-session": "1.13.0",
+    "ionicons": "2.0.1",
     "jsonwebtoken": "7.1.9",
-    "lazysizes": "5.2.2",
+    "marked": "^1.1.1",
     "method-override": "2.3.5",
     "methods": "1.1.2",
-    "morgan": "1.7.0",
+    "morgan": "^1.7.0",
     "next": "10.2.2",
     "passport": "0.3.2",
     "passport-local": "1.0.0",
@@ -44,9 +49,9 @@
     "sass": "1.34.0",
     "sequelize": "6.5.1",
     "slug": "0.9.1",
+    "termit": "0.4.4",
     "swr": "0.3.0",
-    "ts-node": "^10.0.0",
-    "underscore": "1.8.3"
+    "typescript": "3.9.7"
   },
   "prettier": {
     "printWidth": 120,
@@ -56,12 +61,16 @@
   "devDependencies": {
     "@types/node": "14.0.27",
     "@types/react": "16.9.44",
-    "concurrent": "0.3.2",
-    "eslint": "4.19.1",
+    "eslint": "7.11.0",
     "eslint-plugin-prettier": "2.6.0",
+    "mocha": "6.2.2",
+    "newman": "5.2.3",
     "nodemon": "1.11.0",
     "prettier": "1.12.1",
     "sqlite3": "5.0.2",
     "typescript": "3.9.7"
-  }
+  },
+  "cacheDirectories": [
+    "node_modules"
+  ]
 }

@@ -6832,16 +6832,20 @@ const DEFAULT_MACRO_LIST = [
           name: 'splitSuffix',
         }),
         new MacroArgument({
-          name: Macro.HEADER_TAG_ARGNAME,
-          multiple: true,
-        }),
-        new MacroArgument({
           name: Macro.SYNONYM_ARGUMENT_NAME,
           boolean: true,
         }),
         new MacroArgument({
+          name: Macro.HEADER_TAG_ARGNAME,
+          multiple: true,
+        }),
+        new MacroArgument({
           name: Macro.TITLE2_ARGUMENT_NAME,
         }),
+        // Should I?
+        //new MacroArgument({
+        //  name: 'tutorial',
+        //}),
         new MacroArgument({
           name: 'wiki',
         }),

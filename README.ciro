@@ -377,6 +377,84 @@ To also show the section auto-generated number as in "Section X.Y My title" we a
 Compare \x[fig-my-test-image]{full=0} vs \x[fig-my-test-image]{full=1}.
 ]]
 
+=== Restrictions of using `\x` within `title
+{id=x-within-title-restrictions}
+
+If you use `\x` within a `title`, which most commonly happens for \x[images][image titles], that can generate complex dependencies, which would either be harder to implement, or lead to infinite recursion: https://github.com/cirosantilli/cirodown/issues/34
+
+To prevent such problems, Cirodown emits an error if:
+* you use an `\x` without explicit `content` argument inside a `\title` that has no ID
+* an infinite `x` recursion is detected
+
+For example, consider the code:
+``
+\Image[image.jpg]{title=That \x[this-my-id3]}
+
+\Image[image.jpg]{title=My id3}
+
+\Image[image.jpg]{title=This \x[my-id3]}
+``
+
+Wee see therefore a complex ID dependency emerge:
+* `\Image[image.jpg]{title=My id3}` has `my-id3`
+* `\Image[image.jpg]{title=This \x[my-id3]}` renders the title as `This My Id3`, and so would have ID `this-my-id3`
+* `\Image[image.jpg]{title=That \x[this-my-id3]}` can finally render the title as `That This My Id3` and get ID `that-this-my-id3`
+
+While it is technically possible to implement this, it would require a bit of extra work which we don't want to put in right now, and it would be very confusing for end users reading the source anyways.
+
+As a result, the above example currently gives errors, and you could make an equivalent explicit version that has no errors either by giving explicit titles to each image that has an `x` in it (this is normally the saner approach):
+\cirodown_example[[
+\Image[image.jpg]
+{id=that-this-my-id3}
+{title=That \x[this-my-id3]}
+
+\Image[image.jpg]{title=My id3}
+
+\Image[image.jpg]
+{id=this-my-id3}
+{title=This \x[my-id3]}
+]]
+or by setting explicit content to every `x` inside a `title` for which an ID wasn't given as in:
+``
+\cirodown_example[[
+\Image[image.jpg]
+{title=That \x[this-my-id3][This My id3]}
+
+\Image[image.jpg]{title=My id3}
+
+\Image[image.jpg]
+{id=this-my-id3}
+{title=This \x[my-id3][My id3]}
+]]
+
+And for an example of infinite recursion, consider:
+``
+= \x[cd]
+{id=ab}
+
+== \x[ab]
+{id=cd}
+``
+
+In this example, we note that the `\x` in the first header expands
+
+This circular dependency case if fundamentally unsolvable automatically, the only alternative is for the user to provide an explicit `x` content to at least one of the `x` to break the circular dependency as in either:
+``
+= \x[cd][cd]
+{id=ab}
+
+== \x[ab]
+{id=cd}
+``
+or:
+``
+= \x[cd]
+{id=ab}
+
+== \x[ab][ab]
+{id=cd}
+``
+
 === Internal cross file references
 
 Reference to the first header of another file:

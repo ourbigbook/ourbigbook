@@ -963,10 +963,10 @@ assert_convert_ast('cross reference circular loop infinite recursion explicit bo
     }),
   ]
 );
-assert_convert_ast('cross reference from image title works',
+assert_convert_ast('cross reference from image title before with x content without image id works',
   `= ab
 
-\\Image[cd]{title=\\x[ab]}
+\\Image[cd]{title=\\x[ab][cd]}
 `,
   [
     a('h', undefined, {
@@ -975,9 +975,89 @@ assert_convert_ast('cross reference from image title works',
     }),
     a('Image', undefined, {
       src: [t('cd')],
+      title: [a('x', [t('cd')], {'href': [t('ab')]})],
+    }),
+  ]
+);
+assert_convert_ast('cross reference from image title before without x content with image id works',
+  `= ab
+
+\\Image[cd]{title=\\x[ab]}{id=cd}
+`,
+  [
+    a('h', undefined, {
+      level: [t('1')],
+      title: [t('ab')],
+    }),
+    a('Image', undefined, {
+      id: [t('cd')],
+      src: [t('cd')],
       title: [a('x', undefined, {'href': [t('ab')]})],
     }),
   ]
+);
+// https://cirosantilli.com/cirodown#x-within-title-restrictions
+assert_error('cross reference from image title before without x content without image is an error',
+  `= ab
+
+\\Image[cd]{title=\\x[ab]}
+`,
+  3, 18
+);
+assert_convert_ast('cross reference from image title after with x content without image works',
+  `= ab
+
+\\Image[cd]{title=\\x[ef][gh]}
+
+== ef
+`,
+  [
+    a('h', undefined, {
+      level: [t('1')],
+      title: [t('ab')],
+    }),
+    a('Image', undefined, {
+      src: [t('cd')],
+      title: [a('x', [t('gh')], {'href': [t('ef')]})],
+    }),
+    a('h', undefined, {
+      level: [t('2')],
+      title: [t('ef')],
+    }),
+  ]
+);
+assert_convert_ast('cross reference from image title after without x content with image works',
+  `= ab
+
+\\Image[cd]{title=\\x[ef]}{id=gh}
+
+== ef
+`,
+  [
+    a('h', undefined, {
+      level: [t('1')],
+      title: [t('ab')],
+    }),
+    a('Image', undefined, {
+      id: [t('gh')],
+      src: [t('cd')],
+      title: [a('x', undefined, {'href': [t('ef')]})],
+    }),
+    a('h', undefined, {
+      level: [t('2')],
+      title: [t('ef')],
+    }),
+  ]
+);
+// https://cirosantilli.com/cirodown#x-within-title-restrictions
+assert_error('cross reference from image title after without x content without image is an error',
+  `= ab
+
+\\Image[cd]{title=\\x[ef]}
+
+== ef
+`,
+  3, 18
 );
 //// https://github.com/cirosantilli/cirodown/issues/45
 //assert_convert_ast('cross reference to plaintext id calculated from title',

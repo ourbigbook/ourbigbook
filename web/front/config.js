@@ -77,7 +77,7 @@ module.exports = {
   /** @type {boolean | 'blocking'} */
   fallback: 'blocking',
   forbidMultiheaderMessage: 'headers are currently not allowed when in Articles on OurBigBook Web, create new articles with the "New" button instead',
-  googleAnalyticsId: 'UA-47867706-4',
+  googleAnalyticsId: 'G-R721ZZTW7L',
   // An ID separator that should be used or all IDs in the website to avoid conflicts with OurBigBook Markup output,
   // of which users can control IDs to some extent. Usage is like: prefix + sep + number.
   isTest,

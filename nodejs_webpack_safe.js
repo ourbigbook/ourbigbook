@@ -454,10 +454,6 @@ ORDER BY "RecRefs".level DESC
       this.add_file_row_to_cache(row, context)
     }
   }
-
-  get_file(path) {
-    return this.path_to_file_cache[path]
-  }
 }
 
 async function create_sequelize(db_options_arg, Sequelize, sync_opts={}) {

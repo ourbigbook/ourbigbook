@@ -86,7 +86,7 @@ rm node_modules/cirodown
 Cirodown is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
 
 Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation), supporting out of the box feature such as:
-* \x[internal-cross-references][references] to \x[headers], \x[images], etc. with amazing error checking and reporting: never break internal links gain
+* \x[internal-cross-references][references] to \x[headers], \x[images], etc. with amazing error checking and reporting: never break internal links without knoing again, and quickly find out what broke when you do
 * KaTeX server side \x[mathematics]
 * multi file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
   * \x[internal-cross-file-references]
@@ -1136,7 +1136,14 @@ Cirodown automatically adds a ToC at the end of the first \x[the-toplevel-header
 
 You may customize ToC placement with `\Toc` macro, but just don't do it, it will just go against common convention and confuse readers.
 
+This is especially important when considering \x[split-headers], where you almost always want an automatically generated ToC for every split header, otherwise you would need to add them all manually.
+
 Only one ToC is rendered per document. Any ToC besides the first one is ignored. In particular, this means that \x[includes] with \x[embed-includes] work seamlessly and render a single table of contents, even if multiple `\Toc` macros are present in the included pages.
+
+The \x[internal-cross-references][ID] of the ToC is always fixed to `#toc`. If you try to use that for another element, you will get the following error:
+``
+error: tmp.ciro:3:1: reserved ID "toc"
+``
 
 The ToC ignores \x[the-toplevel-header] if you have one.
 
@@ -3269,6 +3276,8 @@ With great power comes great responsibility of course, but who cares!
 {parent=cirodown-executable-options}
 
 Split each header into its own separate HTML output file.
+
+This option allows you to keep all headers in a single file, which is much more convenient than working with a billion separate source files, and let them grow naturally as new information is added, but still be able to get a small output page on the rendered website that contains just the content of the given header. Such split pages load faster on the browser, and might get better Google PageRank.
 
 For example given an input file called `hello.ciro` and containing:
 ``

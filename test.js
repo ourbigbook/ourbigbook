@@ -1541,6 +1541,8 @@ assert_convert_ast('cross reference to non-included header in another file',
         "//x:a[@href='bb.html#image-bb' and text()='image bb 1']",
       ],
       'bb.html': [
+        // Cross-page split-header parent link.
+        "//x:h1//x:a[@href='notindex-split.html' and text()='\u2191 parent \"aa\"']",
         "//x:a[@href='notindex-split.html' and text()='notindex2']",
         "//x:a[@href='' and text()='bb2']",
         // Link to the split version.
@@ -1582,144 +1584,6 @@ it('output_path_parts', ()=>{
     ['', 'index']
   );
 });
-assert_convert_ast('cross reference to scoped split header',
-  `= aa
-{scope}
-
-== bb
-
-\\x[cc][cc2]
-
-\\x[image-bb][image bb 1]
-
-\\Image[bb.png]{title=bb}
-
-== cc
-
-\\x[image-bb][image bb 2]
-`,
-  [
-    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
-    a('Toc'),
-    a('H', undefined, {level: [t('2')], title: [t('bb')]}),
-    a('P', [a('x', [t('cc2')], {href: [t('cc')]})]),
-    a('P', [a('x', [t('image bb 1')], {href: [t('image-bb')]})]),
-    a(
-      'Image',
-      undefined,
-      {
-        src: [t('bb.png')],
-        title: [t('bb')],
-      },
-    ),
-    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
-    a('P', [a('x', [t('image bb 2')], {href: [t('image-bb')]})]),
-  ],
-  {
-    assert_xpath_matches: [
-      // Not `#notindex/image-bb`.
-      // https://cirosantilli.com/cirodown#header-scope-argument-of-toplevel-headers
-      "//x:a[@href='#image-bb' and text()='image bb 1']",
-    ],
-    assert_xpath_split_headers: {
-      'notindex/bb.html': [
-        "//x:a[@href='cc.html' and text()='cc2']",
-        // TODO
-        "//x:a[@href='#image-bb' and text()='image bb 1']",
-      ],
-      'notindex/cc.html': [
-        // TODO
-        "//x:a[@href='bb.html#image-bb' and text()='image bb 2']",
-      ],
-    },
-    input_path_noext: 'notindex',
-  },
-);
-assert_convert_ast('split headers have correct table of contents',
-  `= h1
-
-== h1-1
-
-== h1-2
-
-=== h1-2-1
-`,
-  [
-    a('H', undefined, {level: [t('1')], title: [t('h1')]}),
-    a('Toc'),
-    a('H', undefined, {level: [t('2')], title: [t('h1-1')]}),
-    a('H', undefined, {level: [t('2')], title: [t('h1-2')]}),
-    a('H', undefined, {level: [t('3')], title: [t('h1-2-1')]}),
-  ],
-  {
-    assert_xpath_split_headers: {
-      // TODO
-      // The split output files get their own ToCs.
-      //'notindex-split.html': ["//x:a[@href='toc-1' and text()='Table of contents']"],
-      'h1-2.html': [
-        // TODO
-        // The split output files get their own ToCs.
-        "//x:a[@href='#toc-1' and text()='Table of contents']",
-        // The Toc entries of split output headers automatically cull out a level
-        // of the full number tree. E.g this entry is `2.1` on the toplevel ToC,
-        // but on this sub-ToC it is just `1.`.
-        "//x:a[@href='h1-2-1.html' and text()='1. h1-2-1']",
-      ],
-    },
-    assert_not_xpath_split_headers: {
-      // A node without no children headers has no ToC,
-      // as it would just be empty and waste space.
-      'h1-2-1.html': ["//*[text()='Table of contents']"],
-    },
-    input_path_noext: 'notindex',
-  },
-);
-// https://cirosantilli.com/cirodown#header-scope-argument-of-toplevel-headers
-assert_convert_ast('cross reference to non-included file with toplevel scope',
-  `\\x[toplevel-scope]
-
-\\x[toplevel-scope/h2]
-
-\\x[toplevel-scope/image-h1][image h1]
-
-\\x[toplevel-scope/image-h2][image h2]
-`,
-  [
-    a('P', [a('x', undefined, {href: [t('toplevel-scope')]})]),
-    a('P', [a('x', undefined, {href: [t('toplevel-scope/h2')]})]),
-    a('P', [a('x', undefined, {href: [t('toplevel-scope/image-h1')]})]),
-    a('P', [a('x', undefined, {href: [t('toplevel-scope/image-h2')]})]),
-  ],
-  {
-    assert_xpath_matches: [
-      // Not `toplevel-scope.html#toplevel-scope`.
-      "//x:div[@class='p']//x:a[@href='toplevel-scope.html' and text()='toplevel scope']",
-      // Not `toplevel-scope.html#toplevel-scope/h2`.
-      "//x:div[@class='p']//x:a[@href='toplevel-scope.html#h2' and text()='h2']",
-    ],
-    assert_xpath_split_headers: {
-      'notindex-split.html': [
-        "//x:a[@href='toplevel-scope.html#image-h1' and text()='image h1']",
-        "//x:a[@href='toplevel-scope.html/h2.html#image-h2' and text()='image h2']",
-      ],
-    },
-    convert_before: ['toplevel-scope'],
-    input_path_noext: 'notindex',
-    file_reader: (path)=> {
-      if (path === 'toplevel-scope') {
-        return `= Toplevel scope
-{scope}
-
-\\Image[h1.png]{title=h1}
-
-== h2
-
-\\Image[h2.png]{title=h2}
-`;
-      }
-    }
-  }
-);
 assert_convert_ast('include simple with paragraph with no embed',
   `= aa
 
@@ -2028,6 +1892,105 @@ assert_error('broken parent still generates a header ID',
 
 `, 6, 1
 );
+assert_convert_ast('cross reference to scoped split header',
+  `= aa
+{scope}
+
+== bb
+
+\\x[cc][cc2]
+
+\\x[image-bb][image bb 1]
+
+\\Image[bb.png]{title=bb}
+
+== cc
+
+\\x[image-bb][image bb 2]
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('bb')]}),
+    a('P', [a('x', [t('cc2')], {href: [t('cc')]})]),
+    a('P', [a('x', [t('image bb 1')], {href: [t('image-bb')]})]),
+    a(
+      'Image',
+      undefined,
+      {
+        src: [t('bb.png')],
+        title: [t('bb')],
+      },
+    ),
+    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
+    a('P', [a('x', [t('image bb 2')], {href: [t('image-bb')]})]),
+  ],
+  {
+    assert_xpath_matches: [
+      // Not `#notindex/image-bb`.
+      // https://cirosantilli.com/cirodown#header-scope-argument-of-toplevel-headers
+      "//x:a[@href='#image-bb' and text()='image bb 1']",
+    ],
+    assert_xpath_split_headers: {
+      'notindex/bb.html': [
+        "//x:a[@href='cc.html' and text()='cc2']",
+        // TODO
+        "//x:a[@href='#image-bb' and text()='image bb 1']",
+      ],
+      'notindex/cc.html': [
+        // TODO
+        "//x:a[@href='bb.html#image-bb' and text()='image bb 2']",
+      ],
+    },
+    input_path_noext: 'notindex',
+  },
+);
+// https://cirosantilli.com/cirodown#header-scope-argument-of-toplevel-headers
+assert_convert_ast('cross reference to non-included file with toplevel scope',
+  `\\x[toplevel-scope]
+
+\\x[toplevel-scope/h2]
+
+\\x[toplevel-scope/image-h1][image h1]
+
+\\x[toplevel-scope/image-h2][image h2]
+`,
+  [
+    a('P', [a('x', undefined, {href: [t('toplevel-scope')]})]),
+    a('P', [a('x', undefined, {href: [t('toplevel-scope/h2')]})]),
+    a('P', [a('x', undefined, {href: [t('toplevel-scope/image-h1')]})]),
+    a('P', [a('x', undefined, {href: [t('toplevel-scope/image-h2')]})]),
+  ],
+  {
+    assert_xpath_matches: [
+      // Not `toplevel-scope.html#toplevel-scope`.
+      "//x:div[@class='p']//x:a[@href='toplevel-scope.html' and text()='toplevel scope']",
+      // Not `toplevel-scope.html#toplevel-scope/h2`.
+      "//x:div[@class='p']//x:a[@href='toplevel-scope.html#h2' and text()='h2']",
+    ],
+    assert_xpath_split_headers: {
+      'notindex-split.html': [
+        "//x:a[@href='toplevel-scope.html#image-h1' and text()='image h1']",
+        "//x:a[@href='toplevel-scope.html/h2.html#image-h2' and text()='image h2']",
+      ],
+    },
+    convert_before: ['toplevel-scope'],
+    input_path_noext: 'notindex',
+    file_reader: (path)=> {
+      if (path === 'toplevel-scope') {
+        return `= Toplevel scope
+{scope}
+
+\\Image[h1.png]{title=h1}
+
+== h2
+
+\\Image[h2.png]{title=h2}
+`;
+      }
+    }
+  }
+);
 
 //// Headers.
 // TODO inner ID property test
@@ -2292,6 +2255,79 @@ bb
     a('H', undefined, {level: [t('2')], title: [t('cc')]}),
 ]
 );
+assert_convert_ast('split headers have correct table of contents',
+  `= h1
+
+== h1 1
+
+== h1 2
+
+=== h1 2 1
+
+==== h1 2 1 1
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('h1')]}),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('h1 1')]}),
+    a('H', undefined, {level: [t('2')], title: [t('h1 2')]}),
+    a('H', undefined, {level: [t('3')], title: [t('h1 2 1')]}),
+    a('H', undefined, {level: [t('4')], title: [t('h1 2 1 1')]}),
+  ],
+  {
+    assert_xpath_matches: [
+      // There is a self-link to the Toc.
+      "//*[@id='toc']",
+      "//*[@id='toc']//x:a[@href='#toc' and text()='Table of contents']",
+
+      // ToC links have parent toc entry links.
+      // Toplevel entries point to the ToC toplevel.
+      "//*[@id='toc']//*[@id='toc-h1-1']//x:a[@href='#toc' and text()='\u2191 parent \"h1\"']",
+      "//*[@id='toc']//*[@id='toc-h1-2']//x:a[@href='#toc' and text()='\u2191 parent \"h1\"']",
+      // Inner entries point to their parent entries.
+      "//*[@id='toc']//*[@id='toc-h1-2-1']//x:a[@href='#toc-h1-2' and text()='\u2191 parent \"h1 2\"']",
+
+      // The headers have ToC links.
+      "//x:h2//x:a[@href='#toc-h1-1' and text()='\u21d1 toc']",
+      "//x:h2//x:a[@href='#toc-h1-2' and text()='\u21d1 toc']",
+      "//x:h3//x:a[@href='#toc-h1-2-1' and text()='\u21d1 toc']",
+    ],
+    assert_xpath_split_headers: {
+      'notindex-split.html': [
+        // Split output files get their own ToCs.
+        "//*[@id='toc']",
+        "//*[@id='toc']//x:a[@href='#toc' and text()='Table of contents']",
+      ],
+      'h1-2.html': [
+        // Split output files get their own ToCs.
+        "//*[@id='toc']",
+        "//*[@id='toc']//x:a[@href='#toc' and text()='Table of contents']",
+
+        // The Toc entries of split output headers automatically cull out a level
+        // of the full number tree. E.g this entry is `2.1` on the toplevel ToC,
+        // but on this sub-ToC it is just `1.`.
+        "//*[@id='toc']//x:a[@href='h1-2-1.html' and text()='1. h1 2 1']",
+        "//*[@id='toc']//x:a[@href='h1-2-1-1.html' and text()='1.1. h1 2 1 1']",
+
+        // ToC links in split headers have parent toc entry links.
+        "//*[@id='toc']//*[@id='toc-h1-2-1']//x:a[@href='#toc' and text()='\u2191 parent \"h1 2\"']",
+        //"//*[@id='toc']//*[@id='toc-h1-2-1-1']//x:a[@href='#toc-h1-2-1' and text()='\u2191 parent \"h1 2 1\"']",
+      ],
+    },
+    assert_not_xpath_split_headers: {
+      // A node without no children headers has no ToC,
+      // as it would just be empty and waste space.
+      'h1-2-1-1.html': ["//*[text()='Table of contents']"],
+    },
+    input_path_noext: 'notindex',
+  },
+);
+assert_error('toc is a reserved id',
+  `= h1
+
+== toc
+`,
+  3, 1);
 
 // Math. Minimal testing since this is mostly factored out with code tests.
 assert_convert_ast('math inline sane',

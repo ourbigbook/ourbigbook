@@ -108,7 +108,7 @@ But alas, as Ciro started implementing and using it, he started to bring some Ma
 
 And so this "degraded" slightly into a language slightly saner than Asciidoctor but with an amazing Node.js implementation that makes it better for book writing and website publishing.
 
-But hopefully, haveing starting from a saner point will still produce a saner end result, e.g. there are sane constructs for every insane one.
+But hopefully, having starting from a saner point will still produce a saner end result, e.g. there are sane constructs for every insane one.
 
 It is intended that this will be an acceptable downside as Cirodown will be used primarily large complex content such as books rather than forum posts, and will therefore primarily written either:
 \l[in text editors locally, where users have more features than in random browser textareas]
@@ -222,9 +222,14 @@ paragraphs]
 
 \h[3][Insane link parsing rules]
 
-\l[must be preceeded by a space ` `, newline `\n` or the start of the document]
+\l[must be preceded by a space ` `, newline `\n` or the start of the document]
 \l[the recognized protocols are: `http` and `https`]
-\l[ends at space ` `, newline `\n` or the end of the document]
+\l[ends when either the end of the document or one of the following characters is found:
+\l[space ` `]
+\l[newline `\n`]
+\l[close square bracket `]`]
+\l[close curly bracket `}`]
+]
 
 As a consequence, of those rules, it is impossible to have an insane link followed immediately by a period, e.g.:
 \cirodown_example[[
@@ -235,10 +240,22 @@ You must instead use the sane syntax for that:
 Check out this website: \a[http://example.com].
 ]]
 
-Also note that the `http://example.com` inside `\a[http://example.com]` is not treated as an insane autolink itself because `h` is preceeded by `[h]`. If you wrote it with a space as in: `\a[ http://example.com]` then it would be expanded, which is likely not what you want:
+If you want your link to include one of the terminating characters, e.g. `]`, all characters can be escaped with a backslash, e.g.:
+\cirodown_example[[
+Hello http://example.com\]a\}b\\c\ d world.
+]]
+
+Also note that the `http://example.com` inside `\a[http://example.com]` is not treated as an insane autolink itself because `h` is preceded by `[`. If you wrote it with a space as in: `\a[ http://example.com]` then it would be expanded, which is likely not what you want:
 \cirodown_example[[
 \a[ http://example.com]
 ]]
+
+\Comment[[[
+TODO literal link mechanism:
+\cirodown_example[[
+Literal URL \empty[]http://example.com but why?
+]]
+]]]
 
 \h[2][Internal cross references `\x`]
 {id=internal-cross-references}

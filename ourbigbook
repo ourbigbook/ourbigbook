@@ -212,6 +212,7 @@ async function convert_directory(input_path, ourbigbook_options, non_ourbigbook_
   for (const one_path of walk_directory_recursively(
     input_path,
     DEFAULT_IGNORE_BASENAMES_SET,
+    non_ourbigbook_options.ignore_paths,
     non_ourbigbook_options.ignore_path_regexps,
     non_ourbigbook_options.dont_ignore_path_regexps,
     non_ourbigbook_options.ourbigbook_json_dir,
@@ -594,6 +595,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
           const name = dirent.name
           if (!ignore_path(
             DEFAULT_IGNORE_BASENAMES_SET,
+            non_ourbigbook_options.ignore_paths,
             non_ourbigbook_options.ignore_path_regexps,
             non_ourbigbook_options.dont_ignore_path_regexps,
             path.join(input_path, name)
@@ -828,10 +830,9 @@ function git_has_commit(input_path) {
   }
 }
 
-function git_is_in_repo(input_path) {
+function git_is_in_repo(ourbigbook_json_dir) {
   try {
-    cmd_get_stdout('git', ['-C', input_path, 'status'], { throw_on_error: true, show_cmd: false })
-    return true
+    return cmd_get_stdout('git', ['-C', ourbigbook_json_dir, 'rev-parse', '--show-toplevel'], { throw_on_error: true, show_cmd: false }).slice(0, -1) === ourbigbook_json_dir
   } catch(err) {
     return false
   }
@@ -913,13 +914,22 @@ function renderTemplate(templateRelpath, outdir, env) {
 }
 
 /** Skip path from ourbigbook conversion. */
-function ignore_path(ignore_basenames, ignore_path_regexps, dont_ignore_path_regexps, _path) {
+function ignore_path(
+  ignore_basenames,
+  ignore_paths,
+  ignore_path_regexps,
+  dont_ignore_path_regexps,
+  _path
+) {
   for (const re of dont_ignore_path_regexps) {
     if (re.test(_path)) {
       return false
     }
   }
-  if (ignore_basenames.has(path.basename(_path)))
+  if (
+    ignore_paths.has(_path) ||
+    ignore_basenames.has(path.basename(_path))
+  )
     return true
   for (const re of ignore_path_regexps) {
     if (re.test(_path)) {
@@ -937,16 +947,35 @@ function ignore_path(ignore_basenames, ignore_path_regexps, dont_ignore_path_reg
  * @param {Set} skip_basenames
  * @param {Set} ignore_paths
  */
-function* walk_directory_recursively(file_or_dir, ignore_basenames, ignore_path_regexps, dont_ignore_path_regexps, ourbigbook_json_dir) {
+function* walk_directory_recursively(
+  file_or_dir,
+  ignore_basenames,
+  ignore_paths,
+  ignore_path_regexps,
+  dont_ignore_path_regexps,
+  ourbigbook_json_dir
+) {
   yield file_or_dir;
   if (fs.lstatSync(file_or_dir).isDirectory()) {
     const dirents = fs.readdirSync(file_or_dir, {withFileTypes: true});
     for (const dirent of dirents) {
       const abs = path.join(file_or_dir, dirent.name)
-      const rel = path.relative(ourbigbook_json_dir, abs);
-      if (!ignore_path(DEFAULT_IGNORE_BASENAMES_SET, ignore_path_regexps, dont_ignore_path_regexps, rel)) {
+      if (!ignore_path(
+        ignore_basenames,
+        ignore_paths,
+        ignore_path_regexps,
+        dont_ignore_path_regexps,
+        path.relative(ourbigbook_json_dir, abs),
+      )) {
         if (dirent.isDirectory()) {
-          yield* walk_directory_recursively(abs, ignore_basenames, ignore_path_regexps, dont_ignore_path_regexps, ourbigbook_json_dir);
+          yield* walk_directory_recursively(
+            abs,
+            ignore_basenames,
+            ignore_paths,
+            ignore_path_regexps,
+            dont_ignore_path_regexps,
+            ourbigbook_json_dir,
+          )
         } else {
           yield abs;
         }
@@ -1338,6 +1367,7 @@ if (cli.helpMacros) {
     had_error: false,
     is_render_after_extract: false,
     ignore_path_regexps: ourbigbook_json.ignore.map(p => RegExp(`^${p}$`)),
+    ignore_paths: new Set(),
     input_path_is_file,
     log: non_ourbigbook_options_log,
     out_css_path: ourbigbook_nodejs.DIST_CSS_PATH,
@@ -1842,16 +1872,26 @@ if (cli.helpMacros) {
         let publish_remote_url;
         let src_branch;
 
+        // TODO ehck if root is a git repo instead.
+        const isInGitRepo = git_is_in_repo(ourbigbook_json_dir)
+        let include_path_set
+        cmd_options_no_dry = Object.assign({}, cmd_options)
+        cmd_options_no_dry.dry_run = false
+        // Commands that retrieve information and don't change state.
+        cmd_options_info = Object.assign({}, cmd_options_no_dry)
+        cmd_options_info.show_cmd = false
+        if (isInGitRepo) {
+          non_ourbigbook_options.ignore_paths = new Set([
+            ...non_ourbigbook_options.ignore_paths,
+            ...cmd_get_stdout('git', ['-C', inputPath, 'ls-files', '--ignored', '--others', '--exclude-standard', '--directory'], cmd_options_info).split('\n').slice(0, -1).map(s => s.replace(/\/$/, ''))
+          ])
+        }
+
         if (publish) {
           // Clone the source to ensure that only git tracked changes get built and published.
-          if (!git_is_in_repo(inputPath)) {
+          if (!isInGitRepo) {
             cli_error('--publish must point to a path inside a git repository');
           }
-          cmd_options_no_dry = Object.assign({}, cmd_options)
-          cmd_options_no_dry.dry_run = false
-          // Commands that retrieve information and don't change state.
-          cmd_options_info = Object.assign({}, cmd_options_no_dry)
-          cmd_options_info.show_cmd = false
           if (publish_uses_git) {
             // TODO ideally we should use the default remote for the given current branch, but there doesn't seem
             // to be a super easy way for now, so we just hardcode origin to start with.

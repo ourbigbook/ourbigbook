@@ -94,6 +94,7 @@
     "test-pg": "OURBIGBOOK_POSTGRES=true npm test",
     "test-release": "npm test && npm run test-pg",
     "webpack": "webpack",
-    "webpack-dev": "webpack serve"
+    "webpack-dev": "webpack serve",
+    "web-setup": "npm run link && npm run build-assets && cd web/ && npm install"
   }
 }

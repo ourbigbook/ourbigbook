@@ -1053,7 +1053,14 @@ assert_convert_ast('p with id after', '\\P[cd]{id=ab}\n',
 // https://github.com/cirosantilli/cirodown/issues/101
 assert_error('named argument given multiple times',
   '\\P[ab]{id=cd}{id=ef}', 1, 14);
-assert_error('non-empty named argument without = is an error', '\\P{id ab}[cd]', 1, 6);
+assert_error(
+  'non-empty named argument without = is an error',
+  '\\P{id ab}[cd]',
+  1, 6, 'notindex.ciro',
+  {
+    input_path_noext: 'notindex',
+  }
+);
 assert_convert_ast('empty named argument without = is allowed',
   '\\P[cd]{id=}\n',
   [a('P', [t('cd')], {id: []})]

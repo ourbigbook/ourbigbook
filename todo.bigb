@@ -3,6 +3,17 @@
 
 == Issues
 
+=== Multiheader editing
+{tag=Web}
+
+Maybe we should only do this after: https://github.com/cirosantilli/ourbigbook/issues/248 to prevent data loss.
+
+One possibility is to prevent deletion/renaming of headers. We could just check the new ID list agains the previous ID list.
+
+This was possible previously on Web, but we forbade it for simplicity of implementation sake.
+
+We can then think about how the UI would look like, there might be a "Edit article and descendants" button on toplevel only for example.
+
 === Allow user to edit other user's articles
 {tag=Web}
 
@@ -14,14 +25,10 @@ Current use case: allow admin to edit other user's articles e.g. as part of mode
 {tag=ToC}
 {tag=Web}
 
-=== Add sibling/add child buttons next to self headers and toc
+= Add sibling/add child buttons next to self headers and toc
 {synonym}
 
 Self headers done. ToC missing.
-
-=== Progress spinner after submit
-{tag=UI}
-{tag=Web}
 
 === Progress spinner after submit
 {tag=UI}

@@ -6649,6 +6649,8 @@ This is where OurBigBook comes to your rescue. There are two ways that it can he
 
 Topics group articles that have the same title by different users. This feature allows you to find the best article for a given topic, and it is one of the key innovations of <OurBigBook Web>. 
 
+Topics are a bit like Twitter hashtags or Quora questions: their goal is to centralize knowledge about a specific subject by different people at a single location. 
+
 \Image[Integral_by_Barack_showing_fundamental_theorem_of_calculus_child_topic.png]
 {height=600}
 {border}
@@ -8846,6 +8848,11 @@ We are thinking about the following layout:
 
 We are planning on using a clear green on white color scheme to reflect the current website CSS.
 
+= tshirtstudio.com
+{parent=T-shirt}
+
+This is a reasonable website. It is a shame that you can't easily drag and drop move/resize images on the web UI, which has led us to do that manually on the in the source images. But still, relatively easy to use, and easy to setup a marketplace in.
+
 = Sticker
 {c}
 {parent=Merchandise}
@@ -8858,11 +8865,6 @@ We are planning on using a clear green on white color scheme to reflect the curr
 * https://stickerapp.co.uk/ does not seem to have a marketplace, 2 pounds/unit on an 11 unit order, so much cheaper. But why would we need 11 is the question. Just going with the marketplace for now.
 
   Standard delivery in a bout 7 business days.
-
-= tshirtstudio.com
-{parent=T-shirt}
-
-This is a reasonable website. It is a shame that you can't easily drag and drop move/resize images on the web UI, which has led us to do that manually on the in the source images. But still, relatively easy to use, and easy to setup a marketplace in.
 
 = Project logo
 {parent=Publicity}
@@ -8970,7 +8972,7 @@ https://www.teacherspayteachers.com/Product/You-Be-The-Teacher-Independent-Resea
 = OurBigBook.com Fellowship
 {parent=Publicity}
 
-The <OurBigBook.com Projct> has sporadically offered a scholarship called the "OurBigBook.com Fellowship". Its recipients are called the "OurBigBook.com Fellows".
+The <OurBigBook Project> has sporadically offered a scholarship called the "OurBigBook.com Fellowship". Its recipients are called the "OurBigBook.com Fellows".
 
 The goal of the fellowship is to pay brilliant students to focus exclusively on pursuing ambitious goals in STEM research and education for a pre-determined length of time, without having to worry about earning money in the short term.
 
@@ -8989,12 +8991,18 @@ The following ethical guidelines are however highly encouraged:
   * at "funding slide" (usually the last one) of a presentation for work done during, or that you feel is a direct consequence of the scholarship
   * by marking yourself as a "OurBigBook.com Fellow" on LinkedIn, under the organization: https://www.linkedin.com/company/ourbigbook for the period of award
 * keep in touch. Let us know about any large successes (or failures!) you've have as the consequence of the funding, e.g. publications, starting a cool new job, or deciding to quit academia.
-* give back culture: if one day, in a potentially far and undefined future, recipients achieve a stable financial situation, they are encouraged to give back to the OurBigBook.com Fellowship fund an amount at least equal to their funding.
+* give back culture: if one day, in a potentially far and undefined future, recipients achieve a stable financial situation with some money to spare, they are encouraged to give back to the OurBigBook.com Fellowship fund an amount at least equal to their funding.
 
   This enables us to keep sustainably investing in new brilliant talent who needs the money.
 
   We are more than happy to take the consider the fellow's suggestion for a recipient of their choice.
-* pivoting is OK.
+
+  Remember that an investment in the American stock market doubles every 10 years. So if you do go into a money making area, can you as a "person investment", match, or even beat the market? :-) Or conversely, the sooner you give back, the less you are morally required to give back.
+
+  Fellows who go on to work on charitable causes, including academia, absolutely don't have to give back. If you are able to give back by doing a corresponding ammount of good to the world all the better.
+* pivoting is OK. If you decide half way that your initial project plan is crap, change! We can only notice that something won't work once we try to do it for real. At least now you know!
+
+	If you do pivot to something that makes money immediately however, consider returning the remaining value of the scholarship.
 
 = OurBigBook.com Fellows
 {parent=OurBigBook.com Fellowship}

@@ -4,8 +4,9 @@ A Markup language to write HTML / PDF books that is saner and more powerful than
 
 \toc
 
-\h2[Design goals]
+\h2
 [id-scope=true]
+[Design goals]
 
 Cirodown is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
 
@@ -13,7 +14,7 @@ Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally pu
 
 It is meant to be both saner and more powerful than Markdown and Asciidoctor.
 
-The tradeoff for those features is that the language is slightly heaver to read and write.
+The tradeoff for those features is that the language is slightly heavier to read and write.
 
 It is intended that this will be an acceptable downside as Cirodown will be used primarily large complex content such as books rather than forum posts, and will therefore primarily written either:
 
@@ -30,7 +31,7 @@ To be saner than both Markdown and Asciidoctor, Cirodown has exactly three magic
 
 And double blank newlines for \x[paragraphs][paragraphs] if you are pedantic.
 
-This removes the learning curve of the endless edge cases of Markdown and Asciidoctor much smaller.
+This makes the end tail learning curve of the endless edge cases found in Markdown and Asciidoctor disappear.
 
 Furthermore, that language is designed to be philosophically isomorphic to HTML to
 
@@ -69,14 +70,24 @@ The "more powerful than Asciidoctor" part is only partially true, since Asciidoc
 
 The difference is mostly that Cirodown is completely and entirely focused on making amazing scientific books, and so will have key features for that application out-of-the box.
 
-\h2[Paragraphs]
+\h2
+[id=paragraphs]
+[Paragraphs \c[\p]]
+
+OK, this is too common, so we opted for some insanity here: double newline is a paragraph!
 
 Paragraph 1.
 
 Paragraph 2.
 
-\h2[Links \c[\a]]
+Equivalently however, you can use an explicit \c[\p] as well, which is required for example to add properties to a paragraph:
+
+\p[id=paragraph-1][Paragraph 1]
+\p[id=paragraph-2][Paragraph 2]
+
+\h2
 [id=links]
+[Links \c[\a]]
 
 Link with custom text: \a[http://example.com][my custom link text].
 
@@ -86,8 +97,9 @@ Autolink with an empty link content: \a[http://example.com][].
 
 paragraphs]
 
-\h2[Headers and references \c[\h1], \c[\h2], etc. and \c[\x]]
+\h2
 [id=headers-and-references]
+[Headers and references \c[\h1], \c[\h2], etc. and \c[\x]]
 
 Cross reference (mnemonic \c[x] for "cross") to a header with implicit ID derived from title: \x[my-h3][reference to my h3].
 
@@ -101,8 +113,9 @@ Reference to a header with explicit ID: \x[my-h3-custom-id][].
 
 Content of my h3.
 
-\h3[My h3 number 2]
+\h3
 [id=my-h3-custom-id]
+[My h3 number 2]
 
 Content of my h3 number 2.
 
@@ -134,8 +147,9 @@ Reference to the first header of another file: \x[not-readme][]. That header get
 
 Reference to an internal header of another file: \x[not-readme/h2-in-not-the-readme][]. By default, That header ID gets prefixed by the ID of the top header.
 
-\h3[Table of contents \c[\toc]]
+\h3
 [id=table-of-contents]
+[Table of contents \c[\toc]]
 
 We can add table of contents anywhere in the document, e.g. here is another one:
 
@@ -151,16 +165,19 @@ This property is true by default for cross file references, although it can be t
 
 References withing a single scope do not need the parent scope prefix.
 
-\h3[Includes \c[\include]]
+\h3
 [id=includes]
+[Includes \c[\include]]
 
 The \c[\include] macro achieves the following goals:
 
-\l[show a single header at multiple locations in the table of contents. This makes the TOC into a full blown graph rather than a tree.
+\l[
+show a single header at multiple locations in the table of contents. This makes the TOC into a full blown graph rather than a tree.
 
 This can be used to implement a tag entirely within the ToC!
 ]
-\l[determine where external files will be placed in \c[`--single-page` mode.
+\l[
+determine where external files will be placed in \c[`--single-page` mode.
 
 When compiling to HTML, we can choose to either:
 
@@ -212,18 +229,10 @@ It is also required if you want ordered lists:
 \l[third]
 ]
 
-Nested:
+Nested lists with implicit containers:
 
-\l[a]
-\l2[a1]
-\l2[a2]
-\l2[a2]
-\l[b]
-\l[c]
-
-Equivalent:
-
-\l[a
+\l[
+a
 
 \l[a1]
 \l[a2]
@@ -232,10 +241,11 @@ Equivalent:
 \l[b]
 \l[c]
 
-With paragraphs:
+List item with a paragraph inside of it:
 
 \l[a]
-\l[I have
+\l[
+I have
 
 Multiple paragraphs.
 
@@ -246,22 +256,23 @@ Multiple paragraphs.
 ]
 \l[c]
 
-\h2[Tables \c[\table], \c[\tr], \c[\th] and \c[\td]]
+\h2
 [id=tables]
+[Tables \c[\table], \c[\tr], \c[\th] and \c[\td]]
 
-Similar to lists. Implicit container:
+Similar to lists. Implicit container with optional indentation to improve readability:
 
 \tr[
-\th[Header 1]
-\th[Header 2]
+  \th[Header 1]
+  \th[Header 2]
 ]
 \tr[
-\td[1 1]
-\td[1 2]
+  \td[1 1]
+  \td[1 2]
 ]
 \tr[
-\td[2 1]
-\td[2 2]
+  \td[2 1]
+  \td[2 2]
 ]
 
 Explicit container to add further properties: \x[table-my-table][].
@@ -271,20 +282,22 @@ Explicit container to add further properties: \x[table-my-table][].
 [id=table-my-table]
 [
 \tr[
-\th[Header 1]
-\th[Header 2]
+  \th[Header 1]
+  \th[Header 2]
 ]
 \tr[
-\td[1 1]
-\td[1 2]
+  \td[1 1]
+  \td[1 2]
 ]
 \tr[
-\td[2 1]
-\td[2 2]
+  \td[2 1]
+  \td[2 2]
 ]
 ]
 
-\h2[Figures]
+\h2
+[id=figures]
+[Figures \c[\img]]
 
 See this image \x[image-lotus-flower][]:
 
@@ -292,13 +305,15 @@ See this image \x[image-lotus-flower][]:
 [title=A lotus flower]
 [id=image-lotus-flower]
 [source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg]
-[description=We can have multiple paragraphs here.
+[description=
+We can have multiple paragraphs here.
 
 I'm not even kidding.
 ]
 
-\h2[Code \c[\c]]
+\h2
 [id=code]
+[Code \c[\c]]
 
 My inline \c[code block] is awesome.
 
@@ -313,8 +328,9 @@ of
 code
 ]
 
-\h2[Math \c[\m]]
+\h2
 [id=math]
+[Math \c[\m]]
 
 Via KaTeX server side, oh yes!
 
@@ -339,8 +355,18 @@ Display math:
 
 Each macro argument is of either of two types:
 
-\l[literal: the content will not be parsed further by Cirodown. You only need to escape the closing \c[\]]
-\l[non-literal: the content will be parsed further by Cirodown, and possibly expand in to further nested HTML. You need to escape all of: \c[\\], \c[\[] and \c[\]]]
+\l[literal: the content will not be parsed further by Cirodown.
+
+You only need to escape the closing square bracket \c[\].
+]
+\l[non-literal: the content will be parsed further by Cirodown, and possibly expand in to further nested HTML.
+
+You need to escape all of:
+
+\l[\c[\\]]
+\l[\c[\[]]
+\l[\c[\]]]
+]
 
 For example, the content of \x[code] and \x[math] macro arguments is literal as you would expect, so we could escape it as:
 
@@ -364,11 +390,140 @@ If the first character of a code block is a \[ however, then you do need to esca
 
 \c[\[ first char was an open brace]
 
-\h3[Macro argument order]
+\h3[Macro argument syntax]
 
-TODO: optional params have key always and can come in any order. Mandatory params are either "at start" or "at end", and mandatory params with potentially nested content are usually left for "at end", with the exception of headers, which are a fake nesting.
+\h4[Optional vs mandatory arguments]
+
+Every macro argument is of either two types:
+
+\l[
+optional.
+
+Gets prefixed by a key `name=`.
+
+Must come before the mandatory ones, but the order between the optional ones is arbitrary.
+]
+\l[
+mandatory
+
+Not prefixed by keys.
+
+Must always be present, and must come after the optional ones.
+
+Mandatory arguments can however be empty which is indicated by an empty pair of square brackets:
+
+\c[\[\]]
+
+Macros can process this empty value magically or not as documented on their API.
+
+For example, \x[links][] have two mandatory arguments: the URL and text, and the link API treats an empty text as a copy of the URL, which is a common use case:
+
+\c[[
+\a[http://example.com][]
+]]
+]
+
+If a macro has no mandatory arguments, and if a given call has no optional arguments, then the macro does not need any square brackets, e.g. for \x[table-of-contents][]:
+
+\h4[JavaScript interface for arguments]
+
+The JavaScript interface sees arguments as follows:
+
+\c[
+function macro_name(args)
+]
+
+where args is a dict such that:
+
+\l[optional arguments have the key / value pairs explicitly given on the call]
+\l[
+mandatory arguments have a key documented by the API, and the value on the call.
+
+For example, the link API names its arguments \c[href] and \c[text].
+]
+
+\h4[Newlines between arguments]
+
+The macro name and the first argument, and two consecutive arguments, can be optionally separated by exactly one newline character, e.g.:
+
+\c[[
+\h2
+[id-scope=true]
+[Design goals]
+]]
+
+is equivalent to:
+
+\c[[
+\h2[id-scope=true][Design goals]
+]]
+
+and this non-recommended mixed style:
+
+\c[[
+\h2[id-scope=true]
+[Design goals]
+]]
+
+This allows to greatly improve the readability of long argument lists by having them one per line.
+
+\h4[Argument leading and trailing newline removal]
+
+If the very first, or very last character of an argument is a newline, then that character is ignored.
+
+For example:
+
+\c[[
+\c[
+a
+
+b
+]
+]]
+
+generates something like:
+
+\c[
+<pre><code>a
+
+b</code></pre>
+]
+
+instead of:
+
+\c[
+<pre><code>
+a
+
+b
+</code></pre>
+]
+
+This is extremely convenient to improve the readability of code blocks and similar constructs.
+
+If you absolutely need an opening newline, just add a second leading or trailing newline to the macro argument, e.g.:
+
+\c[[
+\c[
+
+a
+
+b
+
+]
+]]
 
 \h2[Tooling]
+
+\h3[Multifile and server]
+
+In addition to being a single input single output file conversion tool, our implementation will completely overtake the functions currently done by of Jekyll or other static website generators.
+
+We believe that this is the only way to achieve a perfect unified development experience.
+
+Firstly, the same executable that does single file conversion, when pointed to a directory enter a multi-file mode that does the desired multi-file conversion, resolving for example \x[Cross file references][].
+
+Furthermore, the exact same executable will have a server mode speed up interactive development with a off-the-shelf text editor (as opposed to a \x[editor-and-preview][the planned dedicated editor]).
 
 \h3[Server and dependency resolution]
 
@@ -376,4 +531,12 @@ TODO xref dep resolution, on demand rebuild
 
 \h3[Editor and preview]
 
+We must achieve an editor setup with synchronized live side-by-side preview.
+
+It would be amazing to have a WebKit interface that works both on browser for the and locally.
+
 TODO
+
+\h3[Macro dump]
+
+The compiler executable will have a \c[--dump-macros] option that will dump all macros, describing all of their arguments and including help strings registered by the macro definition API.

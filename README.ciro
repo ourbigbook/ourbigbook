@@ -839,7 +839,6 @@ Reference to a subdirectory:
 ]]
 
 TODO https://github.com/cirosantilli/cirodown/issues/116
-
 ``
 \x[subdir/h2]
 \x[subdir/notindex]

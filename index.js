@@ -2091,7 +2091,6 @@ function convert_init_context(options={}, extra_returns={}) {
   if (!('render' in options)) { options.render = true; }
   if (!('start_line' in options)) { options.start_line = 1; }
   // A toplevel scope, to implement conversion of files in subdirectories.
-  if (!('scope' in options)) { options.scope = undefined; }
   if (!('split_headers' in options)) { options.split_headers = false; }
   if (!('template' in options)) { options.template = undefined; }
   if (!('template_vars' in options)) { options.template_vars = {}; }
@@ -2103,6 +2102,10 @@ function convert_init_context(options={}, extra_returns={}) {
   // Otherwise, derive the ID from the title.
   // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
   if (!('toplevel_id' in options)) { options.toplevel_id = undefined; }
+  if (!('toplevel_scope' in options)) {
+    // Set for files in subdirectories.
+    options.toplevel_scope = undefined;
+  }
   if (options.xss_unsafe === undefined) {
     const xss_unsafe = cirodown_json['xss-unsafe'];
     if (xss_unsafe !== undefined) {
@@ -2132,6 +2135,7 @@ function convert_init_context(options={}, extra_returns={}) {
   context.toplevel_output_path = outpath;
   return context;
 }
+
 /* Like x_href, but called with options as convert,
  * so that we don't have to fake a complex context. */
 function convert_x_href(target_id, options) {
@@ -3073,6 +3077,11 @@ function parse(tokens, options, context, extra_returns={}) {
         // Create the header tree.
         if (is_first_header) {
           ast.id = options.toplevel_id;
+          // TODO need to generalize this to scope != id. Or create
+          // a fake header parent with scope. Or store a new property.
+          // that we can fake.
+          // ast.cur_header_graph_node.value.validation_output.scope.boolean 
+          //ast.scope = toplevel_scope
           ast.is_first_header_in_input_file = true;
           is_first_header = false;
         }

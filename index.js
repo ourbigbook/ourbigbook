@@ -885,7 +885,7 @@ class Tokenizer {
         } else if (this.cur_c === END_NAMED_ARGUMENT_CHAR) {
           // Boolean argument.
         } else {
-          this.error(`expected character: '${NAMED_ARGUMENT_EQUAL_CHAR}' or '${END_NAMED_ARGUMENT_CHAR}' (for a boolean argument), got '${this.cur_c}'`);
+          this.error(`expected character: '${NAMED_ARGUMENT_EQUAL_CHAR}' or '${END_NAMED_ARGUMENT_CHAR}', got '${this.cur_c}'`);
         }
         if (open_length === 1) {
           this.consume_optional_newline();

@@ -400,4 +400,3 @@ class CirodownCanvasDemo {
     this.height = canvas_width
   }
 }
-export default cirodown_runtime

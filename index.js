@@ -6247,7 +6247,7 @@ const DEFAULT_MACRO_LIST = [
         for (const script of context.options.template_scripts_relative) {
           relative_scripts.push(`<script src="${context.options.template_vars.root_relpath}${script}"></script>\n`);
         }
-        render_env.post_body = relative_scripts.join('') + render_env.post_body + "<script>cirodown_runtime()</script>\n";
+        render_env.post_body = relative_scripts.join('') + render_env.post_body + "<script>cirodown_runtime.cirodown_runtime()</script>\n";
         let relative_styles = [];
         for (const style of context.options.template_styles_relative) {
           relative_styles.push(`@import "${context.options.template_vars.root_relpath}${style}";\n`);

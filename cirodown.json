@@ -1,3 +1,4 @@
 {
-    "prepublish": "prepublish"
+    "prepublish": "prepublish",
+    "template": "main.liquid.html"
 }

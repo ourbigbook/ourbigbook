@@ -1000,6 +1000,7 @@ function convert(
   if (!('show_parse' in options)) { options.show_parse = false; }
   if (!('show_tokenize' in options)) { options.show_tokenize = false; }
   if (!('show_tokens' in options)) { options.show_tokens = false; }
+  if (!('template' in options)) { options.template = undefined; }
   // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
   if (!('toplevel_id' in options)) { options.toplevel_id = undefined; }
   const macros = macro_list_to_macros();
@@ -2667,22 +2668,34 @@ const DEFAULT_MACRO_LIST = [
         }
         title = [new PlaintextAstNode(ast.line, ast.column, text_title)];
       }
-      let ret = '';
-      if (!context.options.body_only) {
-        ret += `<!doctype html>
+      let ret;
+      const body = convert_arg(ast.args.content, context);
+      if (context.options.body_only) {
+        ret = body;
+      } else {
+        let template;
+        if (context.options.template !== undefined) {
+          template = context.options.template;
+        } else {
+          template = `<!doctype html>
 <html lang=en>
 <head>
 <meta charset=utf-8>
-<title>${convert_arg(title, context)}</title>
-<style>${context.options.css}</style>
+<title>{{ title }}</title>
+<style>{{ style }}</style>
 <body class="cirodown">
-`;
-      }
-      ret += convert_arg(ast.args.content, context);
-      if (!context.options.body_only) {
-        ret += `</body>
+{{ body }}
+</body>
 </html>
-`
+`;
+        }
+        const { Liquid } = require('liquidjs');
+        const render_env = {
+          body: body,
+          style: context.options.css,
+          title: convert_arg(title, context),
+        };
+        ret = (new Liquid()).parseAndRenderSync(template, render_env);
       }
       return ret;
     }

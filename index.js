@@ -22,8 +22,14 @@ class AstNode {
     if (!('from_include' in options)) {
       options.from_include = false;
     }
+    if (!('force_no_index' in options)) {
+      options.force_no_index = false;
+    }
     if (!('id' in options)) {
       options.id = undefined;
+    }
+    if (!('input_path' in options)) {
+      options.input_path = undefined;
     }
     if (!('text' in options)) {
       options.text = undefined;
@@ -34,6 +40,7 @@ class AstNode {
     this.macro_name = macro_name;
     this.args = args;
     this.line = line;
+    this.input_path = options.input_path;
     this.column = column;
     this.macro_count = undefined;
 
@@ -43,6 +50,7 @@ class AstNode {
     // For elements that have an id.
     // {String} or undefined.
     this.id = options.id;
+    this.force_no_index = options.force_no_index;
 
     // This was added to the tree from an include.
     this.from_include = options.from_include;
@@ -172,6 +180,13 @@ class ErrorMessage {
  * - local: sqlite database
  */
 class IdProvider {
+  /**
+   * @return remove all IDs from this ID provider for the given path.
+   *         For example, on a local ID database cache, this would clear
+   *         all IDs from the cache.
+   */
+  clear(input_path_noext_renamed) { throw 'unimplemented'; }
+
   /**
    * @param {String} id
    * @return {Union[Array[String,AstNode],undefined]}.
@@ -1206,6 +1221,9 @@ function parse(tokens, macros, options, extra_returns={}) {
   let cur_header_tree_node;
   let is_first_header = true;
   if (options.id_provider !== undefined) {
+    // Remove all remote IDs from the current file, to prevent false duplicates
+    // when we start setting those IDs again.
+    options.id_provider.clear(options.input_path);
     id_provider = new ChainedIdProvider(
       local_id_provider,
       options.id_provider
@@ -1218,6 +1236,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     const [parent_arg, ast] = todo_visit.shift();
     const macro_name = ast.macro_name;
     ast.from_include = options.from_include;
+    ast.input_path = options.input_path;
     if (macro_name === Macro.INCLUDE_MACRO_NAME) {
       const href = convert_arg_noescape(ast.args.href, id_context);
       if (options.include_path_set.has(href)) {
@@ -1293,6 +1312,7 @@ function parse(tokens, macros, options, extra_returns={}) {
               ast.line,
               ast.column,
               {
+                force_no_index: true,
                 from_include: true,
                 id: href,
               },
@@ -1370,9 +1390,12 @@ function parse(tokens, macros, options, extra_returns={}) {
   }
 
   // Post process the AST breadth first after inclusions are resolved to support:
-  // * the insane but necessary paragraphs double newline syntax
-  // * automatic ul parent to li and table to tr
-  // * extract all IDs into an ID index
+  //
+  // - the insane but necessary paragraphs double newline syntax
+  // - automatic ul parent to li and table to tr
+  // - extract all IDs into an ID index
+  //
+  // Normally only the toplevel includer will enter this code section.
   if (!options.from_include) {
     const macro_counts = {};
     let header_graph_last_level;
@@ -1480,7 +1503,7 @@ function parse(tokens, macros, options, extra_returns={}) {
           ast.id = convert_arg_noescape(macro_id_arg, id_context);
         }
       }
-      if (ast.id !== undefined && !ast.from_include) {
+      if (ast.id !== undefined && !ast.force_no_index) {
         const id_provider_get = id_provider.get(ast.id);
         let previous_ast = undefined;
         if (id_provider_get === undefined) {

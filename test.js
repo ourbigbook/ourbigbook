@@ -40,7 +40,7 @@ class MockFileProvider extends cirodown.FileProvider {
     return this.path_index[path];
   }
 
-  async get_path_entry_warm_cache() {
+  async get_path_entry_fetch() {
   }
 
   update(input_path, extra_returns) {

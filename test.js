@@ -179,7 +179,7 @@ function assert_convert_ast(
       options.extra_convert_opts.path_sep = '/';
     }
     if (!('read_include' in options.extra_convert_opts)) {
-      options.extra_convert_opts.read_include = (input_path_noext)=>{
+      options.extra_convert_opts.read_include = (input_path_noext) => {
         return [input_path_noext + cirodown.CIRODOWN_EXT,
            options.file_reader(input_path_noext)];
       };
@@ -357,6 +357,9 @@ function assert_executable(
     if (!('args' in options)) {
       options.args = [];
     }
+    if (!('cwd' in options)) {
+      options.cwd = '.';
+    }
     if (!('filesystem' in options)) {
       options.filesystem = {};
     }
@@ -386,6 +389,7 @@ function assert_executable(
       this.timeout(options.timeout);
     }
     const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'cirodown'));
+    const cwd = path.join(tmpdir, options.cwd)
     for (const relpath in options.filesystem) {
       const dirpath = path.join(tmpdir, path.parse(relpath).dir);
       if (!fs.existsSync(dirpath)) {
@@ -395,11 +399,11 @@ function assert_executable(
     }
     process.env.PATH = process.cwd() + ':' + process.env.PATH
     for (const [cmd, args] of options.pre_exec) {
-      const out = child_process.spawnSync(cmd, args, {cwd: tmpdir});
+      const out = child_process.spawnSync(cmd, args, {cwd: cwd});
       assert.strictEqual(out.status, 0, exec_assert_message(out, cmd, args, tmpdir));
     }
     const out = child_process.spawnSync('cirodown', options.args, {
-      cwd: tmpdir,
+      cwd: cwd,
       input: options.stdin,
     });
     const assert_msg = exec_assert_message(out, 'cirodown', options.args, tmpdir);
@@ -3919,6 +3923,32 @@ assert_executable(
         "//x:a[@href='../i-exist' and text()='subdir not readme i-exist']",
         "//x:a[@href='i-exist-subdir' and text()='subdir not readme i-exist-subdir']",
       ],
+    },
+  }
+);
+
+// executable cwd tests
+assert_executable(
+  "executable: conversion works with cwd outside project directory",
+  {
+    args: ['myproject'],
+    filesystem: {
+      'myproject/README.ciro': `= Index
+
+\\Include[not-readme]
+
+\\Include[subdir]
+
+\\Include[subdir/notindex]
+`,
+      'myproject/not-readme.ciro': `= Not readme
+`,
+      'myproject/subdir/index.ciro': `= Subdir
+`,
+      'myproject/subdir/notindex.ciro': `= Subdir Notindex
+`,
+      'myproject/cirodown.json': `{}
+`,
     },
   }
 );

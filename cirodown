@@ -459,6 +459,7 @@ function convert_path(input_path, options, convert_input_options) {
 function convert_path_to_file(base_path, input_path, options, convert_input_options={}) {
   let output;
   let input_path_parse = path.parse(input_path);
+  const input_path_full = path.join(base_path, input_path)
   if (input_path_parse.ext === cirodown.CIRODOWN_EXT) {
     let message_prefix;
     if (options.render) {
@@ -470,7 +471,7 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
     console.log(message);
     const new_convert_input_options = Object.assign({}, convert_input_options);
     let t0 = performance.now();
-    output = convert_path(path.join(base_path, input_path), options, new_convert_input_options);
+    output = convert_path(input_path_full, options, new_convert_input_options);
     let t1 = performance.now();
     console.log(`${message} finished in ${t1 - t0} ms`);
     if (new_convert_input_options.had_error) {
@@ -501,9 +502,9 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
       } else {
         // Otherwise, just copy the file over if needed.
         const output_path = output_path_noext + input_path_parse.ext;
-        if (output_path !== path.resolve(input_path)) {
+        if (output_path !== path.resolve(input_path_full)) {
           console.log(`copy ${input_path}`);
-          fs.copyFileSync(input_path, output_path);
+          fs.copyFileSync(input_path_full, output_path);
         }
       }
     }
@@ -807,15 +808,15 @@ if (commander.helpMacros) {
     output_format: commander.outputFormat,
     outfile: commander.outfile,
     path_sep: path.sep,
-    read_include: function(id) {
+    read_include: (id) => {
       let found = undefined;
       let test = id + cirodown.CIRODOWN_EXT;
-      if (fs.existsSync(test)) {
+      if (fs.existsSync(path.join(cirodown_json_dir, test))) {
         found = test;
       }
       test = path.join(id, cirodown.INDEX_BASENAME_NOEXT + cirodown.CIRODOWN_EXT);
       if (found === undefined) {
-        if (fs.existsSync(test)) {
+        if (fs.existsSync(path.join(cirodown_json_dir, test))) {
           found = test;
         }
         if (found === undefined) {
@@ -823,7 +824,7 @@ if (commander.helpMacros) {
           if (id_parse.name === cirodown.INDEX_BASENAME_NOEXT) {
             for (let index_basename_noext of cirodown.INDEX_FILE_BASENAMES_NOEXT) {
               test = path.join(id_parse.dir, index_basename_noext + cirodown.CIRODOWN_EXT);
-              if (fs.existsSync(test)) {
+              if (fs.existsSync(path.join(cirodown_json_dir, test))) {
                 found = test;
                 break;
               }
@@ -832,7 +833,7 @@ if (commander.helpMacros) {
         }
       }
       if (found !== undefined) {
-        return [found, fs.readFileSync(found, cirodown_nodejs.ENCODING)];
+        return [found, fs.readFileSync(path.join(cirodown_json_dir, found), cirodown_nodejs.ENCODING)];
       };
       return undefined;
     },

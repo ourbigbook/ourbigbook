@@ -3478,6 +3478,8 @@ assert_convert_ast(
 
 == No incoming
 
+== Scope 1
+
 == Scope
 {scope}
 
@@ -3562,6 +3564,9 @@ assert_convert_ast(
     assert_not_xpath: {
       'no-incoming.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']`,
+      ],
+      'scope-1.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html#scope/scope-2']`,
       ],
     },
   }
@@ -3678,9 +3683,12 @@ assert_convert_ast('scopes hierarchy resolution works across files with director
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#notindex-h2']`,
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
       ],
+      'subdir/subdir/notindex.html': [
+        "//x:div[@class='p']//x:a[@href='../notindex2.html#notindex-h2' and text()='subdir/subdir/notindex to subdir/notindex-h2']",
+      ],
     },
-    convert_before_norender: ['subdir/notindex.bigb', 'subdir/notindex2.bigb'],
-    convert_before: ['subdir/notindex2.bigb'],
+    convert_before_norender: ['subdir/notindex.bigb', 'subdir/notindex2.bigb', 'subdir/subdir/notindex.bigb'],
+    convert_before: ['subdir/notindex2.bigb', 'subdir/subdir/notindex.bigb'],
     extra_convert_opts: {
       // Get rid of this and fix:
       // https://github.com/cirosantilli/ourbigbook/issues/229
@@ -3690,7 +3698,13 @@ assert_convert_ast('scopes hierarchy resolution works across files with director
     filesystem: {
      'subdir/notindex2.bigb': `= Notindex2
 
+== Notindex h2
+
 == Notindex2 h2
+`,
+     'subdir/subdir/notindex.bigb': `= Notindex
+
+\\x[notindex-h2][subdir/subdir/notindex to subdir/notindex-h2]
 `,
     },
     input_path_noext: 'subdir/notindex',

@@ -94,10 +94,13 @@ function testApp(cb, opts={}) {
     test.disableToken = function() {
       test.token = undefined
     }
-    function getToken() {
-      return test.token
+    const jsonHttpOpts = {
+      getToken: function () { return test.token },
+      https: false,
+      port: server.address().port,
+      hostname: 'localhost',
+      validateStatus: () => true,
     }
-    const https = false
     test.sendJsonHttp = async function (method, path, opts={}) {
       const { body, useToken } = opts
       let token
@@ -109,35 +112,19 @@ function testApp(cb, opts={}) {
       return web_api.sendJsonHttp(
         method,
         path,
-        {
-          body,
-          getToken,
-          https,
-          hostname: 'localhost',
-          port: server.address().port,
-          validateStatus: () => true,
-        }
+        Object.assign({ body }, jsonHttpOpts)
       )
     }
     // Create user and save the token for future requests.
     test.createUserApi = async function(i) {
-      const { data, status } = await test.sendJsonHttp(
-        'POST',
-        '/api/users',
-        {
-          body: { user: createUserArg(i) },
-        }
-      )
+      const { data, status } = await test.webApi.userCreate(createUserArg(i))
       test.tokenSave = data.user.token
       test.enableToken()
       assert.strictEqual(status, 200)
       assert.strictEqual(data.user.username, `user${i}`)
       return data.user
     }
-    test.webApi = new WebApi({
-      getToken,
-      https,
-    })
+    test.webApi = new WebApi(jsonHttpOpts)
     await cb(test)
     server.close()
   })
@@ -192,23 +179,14 @@ it('api: create an article and see it on global feed', async () => {
 
     // Create article.
     article = createArticleArg({ i: 0 })
-    ;({data, status} = await test.sendJsonHttp(
-      'POST',
-      '/api/articles',
-      {
-        body: { article },
-      }
-    ))
+    ;({data, status} = await test.webApi.articleCreate(article))
     assert.strictEqual(status, 200)
     articles = data.articles
     assert.strictEqual(articles[0].title, 'Title 0')
     assert.strictEqual(articles.length, 1)
 
     // See it on global feed.
-    ;({data, status} = await test.sendJsonHttp(
-      'GET',
-      '/api/articles',
-    ))
+    ;({data, status} = await test.webApi.articleAll())
     assert.strictEqual(status, 200)
     sortByKey(data.articles, 'slug')
     assertRows(data.articles, [
@@ -279,13 +257,7 @@ Body 0 0
 
 Body 0 1
 `})
-    ;({data, status} = await test.sendJsonHttp(
-      'POST',
-      '/api/articles',
-      {
-        body: { article },
-      }
-    ))
+    ;({data, status} = await test.webApi.articleCreate(article))
     assert.strictEqual(status, 200)
     assertRows(data.articles, [
       { title: 'Title 0', slug: 'user0/title-0' },
@@ -299,10 +271,7 @@ Body 0 1
     assert.match(data.articles[2].render, /Body 0 1/)
 
     // See them on global feed.
-    ;({data, status} = await test.sendJsonHttp(
-      'GET',
-      '/api/articles',
-    ))
+    ;({data, status} = await test.webApi.articleAll())
     assert.strictEqual(status, 200)
     sortByKey(data.articles, 'slug')
     assertRows(data.articles, [
@@ -312,18 +281,11 @@ Body 0 1
       { title: 'Title 0 1', slug: 'user0/title-0-1' },
     ])
 
-    //// Access one of them directly.
-    //;({data, status} = await test.sendJsonHttp(
-    //  'GET',
-    //  '/api/articles?id=',
-    //))
-    //assert.strictEqual(status, 200)
-    //sortByKey(data.articles, 'slug')
-    //assertRows(data.articles, [
-    //  { title: 'Index', slug: 'user0' },
-    //  { title: 'Title 0', slug: 'user0/title-0' },
-    //  { title: 'Title 0 0', slug: 'user0/title-0-0' },
-    //  { title: 'Title 0 1', slug: 'user0/title-0-1' },
-    //])
+    // Access one of them directly.
+    ;({data, status} = await test.webApi.articleGet('user0/title-0-0'))
+    assert.strictEqual(status, 200)
+    assert.strictEqual(data.article.title, 'Title 0 0')
+    assert.match(data.article.render, /Body 0 0/)
+    assert.doesNotMatch(data.article.render, /Body 0 1/)
   })
 })

@@ -42,9 +42,9 @@ const LoginForm = ({ register = false }) => {
     try {
       let data, status;
       if (register) {
-        ({ data, status } = await webApi.userRegister(displayName, username, email, password));
+        ({ data, status } = await webApi.userCreate({ displayName, username, email, password }));
       } else {
-        ({ data, status } = await webApi.userLogin(email, password));
+        ({ data, status } = await webApi.userLogin({ email, password }));
       }
       if (status !== 200 && data?.errors) {
         setErrors(data.errors);

@@ -301,6 +301,7 @@ WITH RECURSIVE
   ORDER BY level, from_id, to_id_index
 ) AS "RecRefs"
 ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
+   AND "${this.sequelize.models.Id.tableName}".macro_name = '${cirodown.Macro.HEADER_MACRO_NAME}'
 `,
         { replacements: {
           starting_ids,
@@ -367,9 +368,7 @@ ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
         }
         ast.header_tree_node = new cirodown.HeaderTreeNode(ast, parent_ast_header_tree_node);
         if (parent_ast) {
-          if (ast.macro_name === cirodown.Macro.HEADER_MACRO_NAME) {
-            parent_ast_header_tree_node.add_child(ast.header_tree_node);
-          }
+          parent_ast_header_tree_node.add_child(ast.header_tree_node);
         }
         cirodown.propagate_numbered(ast, context)
         parent_ast = ast

@@ -1926,7 +1926,7 @@ My inline \image[Tank_man_standing_in_front_of_some_tanks.jpg][test image] is aw
 ]]
 Inline images can't have captions.
 
-And now an image outside of \x[cirodownexample] to test how it looks directly under \x[toplevel]:
+And now for an image outside of \x[cirodownexample] to test how it looks directly under \x[toplevel]: \x[image-my-test-image-toplevel]{full}.
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {id=image-my-test-image-toplevel}

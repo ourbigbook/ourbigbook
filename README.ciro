@@ -2645,7 +2645,9 @@ A lot of effort has been put into making error reporting as good as possible in 
 
 Error reporting is for example tested with `assert_error` tests in \a[test.js].
 
-Please report any error reporting bug you find, as it will be seriously tracked. Notably, Cirodown should never throw an exception due to a syntax error, as that prevents error messages from being output at all.
+Please report any error reporting bug you find, as it will be seriously tracked under the: https://github.com/cirosantilli/cirodown/issues?q=label%3Aerror-reporting+[`error-reporting` label].
+
+Notably, Cirodown should never throw an exception due to a syntax error, as that prevents error messages from being output at all.
 
 = Order of reported errors
 {parent=error-reporting}

@@ -1274,6 +1274,33 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
+    'Comment',
+    [
+      new MacroArgument({
+        name: 'content',
+      }),
+    ],
+    function(ast, context) {
+      return '';
+    }
+  ),
+  new Macro(
+    'comment',
+    [
+      new MacroArgument({
+        name: 'content',
+      }),
+    ],
+    function(ast, context) {
+      return '';
+    },
+    {
+      properties: {
+        phrasing: true,
+      }
+    }
+  ),
+  new Macro(
     'h',
     [
       new MacroArgument({

@@ -11,15 +11,17 @@ const ArticleMeta = ({ article }) => {
   console.error(article.updatedAt);
   return (
     <div className="article-meta">
-      <UserLinkWithImage user={article.author} />
-      {' '}
-      {formatDate(article.createdAt)}
-      {article.createdAt !== article.updatedAt &&
-        <>
-          {' '}
-          Updated: {formatDate(article.updatedAt)}
-        </>
-      }
+      <div className="article-info">
+        <UserLinkWithImage user={article.author} />
+        {' '}
+        {formatDate(article.createdAt)}
+        {article.createdAt !== article.updatedAt &&
+          <>
+            {' '}
+            Updated: {formatDate(article.updatedAt)}
+          </>
+        }
+      </div>
       <ArticleActions article={article} />
     </div>
   );

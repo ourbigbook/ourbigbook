@@ -1785,7 +1785,6 @@ if (cli.helpMacros) {
           if (t0 !== undefined) {
             msg += ` finished in ${t1 - t0} ms`
           }
-          console.error(msg);
         }
         let data, status, i = 0
         const webPathToSha = {}

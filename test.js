@@ -2922,7 +2922,15 @@ assert_executable(
 
 \\x[subdir/notindex-h2][link to subdir notindex h2]
 
+$$
+\\newcommand{\\mycmd}[0]{hello}
+$$
+
 == h2
+
+$$
+\\mycmd
+$$
 `,
       'notindex.ciro': `= Notindex`,
       'toplevel-scope.ciro': `= Toplevel scope

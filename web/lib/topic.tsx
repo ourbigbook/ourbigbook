@@ -8,7 +8,7 @@ import CustomLink from "components/CustomLink";
 import LoadingSpinner from "components/LoadingSpinner";
 import LogoutButton from "components/LogoutButton";
 import Maybe from "components/Maybe";
-import { slugFromArray} from "lib";
+import { AppContext, slugFromArray} from "lib";
 import { SERVER_BASE_URL } from "lib/utils/constant";
 import fetcher from "lib/utils/fetcher";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
@@ -20,15 +20,11 @@ export const TopicHoc = (tab) => {
     const loggedInUser = getLoggedInUser()
     if (router.isFallback) { return <LoadingSpinner />; }
     const topicId = slugFromArray(router.query.id)
+    const { setTitle } = React.useContext(AppContext)
+    React.useEffect(() => { setTitle(topicId) }, [topicId])
     return (
       <>
-        <Head>
-          <title>{topicId}</title>
-        </Head>
         <div className="topic-page content-not-cirodown">
-          <div className="user-info">
-            <h1>{topicId}</h1>
-          </div>
           {false && <>
             { /* Maybe one day, but initially, best article == best user. */ }
             <div className="tab-list">

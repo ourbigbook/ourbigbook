@@ -6,12 +6,24 @@ const util = require('util');
 const cirodown = require('./cirodown')
 
 var assert_convert = function(input_string, expected_output) {
-  let output = cirodown.convert(input_string, {verbose: true});
+  let extra_returns = {fail: false};
+  let output = cirodown.convert(
+    input_string,
+    {
+      show_ast: true,
+      show_input: true,
+      show_output: true,
+      //show_parse: true,
+      show_tokens: true,
+    },
+    extra_returns
+  );
   if (output != expected_output) {
     console.log('input ' + util.inspect(input_string));
     console.log('output ' + util.inspect(output));
     console.log('expect ' + util.inspect(expected_output));
     assert.strictEqual(output, expected_output);
+    assert.strictEqual(extra_returns.fail, false);
   }
 }
 

@@ -128,7 +128,11 @@ img {
 }
 
 // Math.
-.katex { font-size: 1.5em; }
+// https://stackoverflow.com/questions/50896041/katex-font-size/57355836#57355836
+.katex { font-size: 1.2em; }
+// Make block math larger, otherwise fractions and other tall constructs become tiny.
+// Users should avoid tall constructs inline.
+.math-container { .katex { font-size: 1.5em; } }
 .math-container {
   align-items: center;
   margin-bottom: $p-margin-vert;

@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+
+const assert = require('assert');
+const cirodown = require('./cirodown')
+
+var assert_convert = function(input_string, output_string) {
+  assert.strictEqual(cirodown.convert(input_string), output_string);
+}
+assert_convert('ab\n', '<p>ab</p>\n')
+assert_convert('p1\n\np2\n', '<p>p1</p>\n<p>p2</p>\n')

@@ -1,0 +1,79 @@
+#!/usr/bin/env node
+
+const fs = require('fs');
+
+const token_types = {
+  START_DIV: 0,
+  END_DIV: 1,
+  PLAINTEXT: 2,
+}
+
+let Token = class {
+  /**
+   * @param {String} type
+   * @param {String} value
+   */
+  constructor(type, value='') {
+    this.type = type;
+    this.value = value;
+  }
+}
+
+/**
+ * @param {String} input_string
+ * @returns {Array[Token]}
+ */
+let tokenize = function(input_string) {
+  let chars = Array.from(text);
+  let tokens = [new Token(token_types.START_DIV)];
+  // https://stackoverflow.com/questions/21397316/split-javascript-string-into-array-of-codepoints-taking-into-account-surrogat/42596897#42596897
+  i = 0;
+  while (i < chars.length) {
+    c = chars[i];
+    if (c === '\n') {
+      if (chars[i + 1] === '\n') {
+        tokens.push(new Token(token_types.END_DIV));
+        i += 1;
+        done = true;
+      } else {
+        tokens.push(new Token(token_types.PLAINTEXT, c));
+      }
+    } else {
+      tokens.push(new Token(token_types.PLAINTEXT, c));
+    }
+    i++;
+  }
+  return tokens;
+}
+
+let tokens_to_output = function(tokens) {
+  output = '';
+  for (const token of tokens) {
+    if (token.type == token_types.START_DIV) {
+      output += '<p>'
+    } else if (token.type == token_types.END_DIV) {
+      output += '</p>\n'
+    } else if (token.type == token_types.PLAINTEXT) {
+      output += token.value;
+    }
+  }
+  return output;
+}
+
+exports.convert = function(input_string, options = {}) {
+  let tokens = tokenize(input_string);
+  if (options.verbose) {
+    console.log(tokens);
+  }
+  return tokens_to_output(tokens);
+}
+
+if (require.main === module) {
+  let input;
+  if (process.argv.length > 2) {
+    input = fs.readFileSync(process.argv[2], 'utf8');
+  } else {
+    input = fs.readFileSync(0, 'utf8');
+  }
+  console.log(exports.convert(input));
+}

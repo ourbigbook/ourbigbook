@@ -6291,6 +6291,70 @@ In this case, `cirodown` and `ourbigbook` don't have to be any regular IDs prese
 
 TODO ideally we should check for conflicts with regular output from split headers IDs or their synonyms. But lazy.
 
+= `reroutePrefix`
+{parent=ourbigbook.json}
+
+If given, prepend the given string to every single <internal cross file reference>.
+
+The use case of this is if you are migrating from one domain to another, and want to keep old files around to not break links, but would rather redirect users to the new preferred pages instead to gather PageRank there.
+
+E.g. suppose that you previously had at `myoldsite.com` you had:
+
+animal.bigb
+``
+= Animal
+
+<Dogs> don't eat <bananas>.
+
+== Dog
+``
+
+plant.bigb
+``
+= Plant
+
+== Banana
+``
+Originally that would render as:
+``
+<a href="#dog">Dogs</a> don't eat <a href="plant#banana">bananas</a>.
+``
+
+But then if you set in `ourbigbook.json:
+``
+{
+  "reroutePrefix": "https://mynewsite.com/"
+}
+``
+it will instead render as:
+``
+<a href="#dog">Dogs</a> don't eat <a href="https://mynewsite.com/plant#banana">bananas</a>.
+``
+where:
+* dogs: untouched as it links to the same page as the current one
+* bananas: the prefix is added, as it is on another page
+
+<Scopes> are automatically resolved so that they will also be present in the target. E.g. in:
+
+subdir/notindex.bigb
+``
+<notindex2>
+``
+
+subdir/notindex2.bigb
+``
+= Notindex2
+``
+
+we get on `subdir/notindex.html`:
+``
+<a href="https://mynewsite.com/subdir/notindex2.html">
+``
+and not:
+``
+<a href="https://mynewsite.com/notindex2.html">
+``
+
 = OurBigBook Library
 {c}
 {parent=OurBigBook}

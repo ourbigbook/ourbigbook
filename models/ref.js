@@ -12,32 +12,42 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: false,
       },
+      to_id: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      type: {
+        type: DataTypes.SMALLINT,
+        allowNull: false,
+      },
       defined_at: {
         type: DataTypes.TEXT,
         allowNull: false,
       },
-      to_id: {
-        type: DataTypes.TEXT,
+      defined_at_line: {
+        type: DataTypes.INTEGER,
+      },
+      defined_at_col: {
+        type: DataTypes.INTEGER,
+      },
+      inflected: {
+        // This is as was given in the \x after trying pluralization/singularization
+        // due to {magic} attempts, difffering from the raw inflection given.
+        type: DataTypes.BOOLEAN,
         allowNull: false,
       },
       to_id_index: {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
-      type: {
-        type: DataTypes.SMALLINT,
-        allowNull: false,
-      },
     },
     {
       indexes: [
-        { fields: ['defined_at'], },
+        // For the query that checks for corresponding \x magic inflections.
+        { fields: ['defined_at', 'defined_at_line', 'defined_at_col', 'type'], },
         { fields: ['from_id', 'type'], },
         { fields: ['to_id', 'type'], },
-        {
-          fields: ['from_id', 'defined_at', 'to_id', 'type'],
-          unique: true
-        },
+        { fields: ['from_id', 'defined_at', 'to_id', 'type'], },
       ],
     }
   )

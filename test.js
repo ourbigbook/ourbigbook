@@ -170,14 +170,17 @@ function assert_convert_ast(
         await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
           extra_returns,
           id_provider,
+          is_render_after_extract: render && convert_before_norender_set.has(input_path),
           sequelize,
           path: input_path,
           render,
         })
       }
+      const convert_before_norender_set = new Set(options.convert_before_norender)
       for (const input_path of options.convert_before_norender) {
         await convert(input_path, false)
       }
+      await ourbigbook_nodejs_webpack_safe.check_db(sequelize, options.convert_before_norender)
       for (const input_path of options.convert_before) {
         await convert(input_path, true)
       }
@@ -3437,6 +3440,179 @@ assert_convert_ast('toplevel scope gets removed from IDs in the file',
     ],
   }
 );
+assert_convert_ast(
+  'cross reference incoming links and other children simple',
+  `= Index
+
+\\x[index]
+
+\\x[h2]
+
+\\x[notindex]
+
+\\x[h2-2]{child}
+
+\\x[scope/scope-1]
+
+== h2
+{child=h2-3}
+{child=h2-4}
+{child=notindex-h2-2}
+
+\\x[index]
+
+\\x[notindex]
+
+\\x[h2-2]{child}
+
+\\x[scope/scope-2]{child}
+
+== h2 2
+
+== h2 3
+
+== h2 4
+
+== h2 5
+{tag=h2}
+
+== No incoming
+
+== Scope
+{scope}
+
+=== Scope 1
+
+=== Scope 2
+
+\\x[scope-1]
+
+\\x[scope-3]{child}
+
+=== Scope 3
+
+== Dog
+
+== Cats
+`,
+  undefined,
+  {
+    input_path_noext: 'README',
+    extra_convert_opts: {
+      split_headers: true,
+    },
+    convert_before_norender: ['notindex.bigb', 'README.bigb'],
+    convert_before: ['notindex.bigb'],
+    filesystem: {
+      'notindex.bigb': `= Notindex
+
+\\x[index]
+
+\\x[h2]
+
+== Notindex h2
+{tag=h2-2}
+
+=== Notindex h3
+
+== Notindex h2 2
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        // Would like to test like this, but it doesn't seem implemented in this crappy xpath implementation.
+        // So we revert to instrumentation instead then.
+        //`//x:h2[@id='incoming-links']/following:://x:a[@href='#h2']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='#h2']`,
+        // https://github.com/cirosantilli/ourbigbook/issues/155
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='#h2-2']`,
+      ],
+      'h2.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
+        // https://github.com/cirosantilli/ourbigbook/issues/155
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-2']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-3']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-4']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-5']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#scope/scope-2']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#notindex-h2-2']`,
+      ],
+      'h2-2.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html#h2']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#notindex-h2']`,
+      ],
+      'scope/scope-1.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html']`,
+        // https://github.com/cirosantilli/ourbigbook/issues/173
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html#scope/scope-2']`,
+      ],
+      'scope/scope-2.html': [
+        // https://github.com/cirosantilli/ourbigbook/issues/173
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='../index.html#scope/scope-3']`,
+      ],
+      'notindex.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html#h2']`,
+      ],
+    },
+    assert_not_xpath: {
+      'no-incoming.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']`,
+      ],
+    },
+  }
+);
+assert_convert_ast(
+  // We can have confusion between singular and plural here unless proper resolution is done.
+  'lib: cross reference incoming links and other children with magic',
+  `= Index
+
+== Dog
+
+== Dogs
+`,
+  undefined,
+  {
+    input_path_noext: 'README',
+    extra_convert_opts: {
+      split_headers: true,
+    },
+    convert_before_norender: ['notindex.bigb', 'README.bigb'],
+    convert_before: ['notindex.bigb'],
+    filesystem: {
+      'notindex.bigb': `= Notindex
+
+== To dog
+
+<dog>
+
+== To dogs
+
+<dogs>
+`,
+    },
+    assert_xpath: {
+      'dog.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html#to-dog']`,
+      ],
+      'dogs.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html#to-dogs']`,
+      ],
+    },
+    assert_not_xpath: {
+      'dog.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html#to-dogs']`,
+      ],
+      'dogs.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html#to-dog']`,
+      ],
+    },
+  }
+);
 assert_convert_ast('x leading slash to escape scopes works across files',
   `\\x[/notindex]`,
   undefined,
@@ -5670,6 +5846,18 @@ assert_executable('cli: id conflict with id on another file simple',
     expect_exit_status: 1,
   }
 );
+assert_executable('cli: cross reference to undefined ID fails without render',
+  {
+    args: ['--no-render', '.'],
+    filesystem: {
+      'index.bigb': `= index
+
+\\x[not-defined]
+`,
+    },
+    expect_exit_status: 1,
+  }
+);
 assert_convert_ast('id conflict with id on another file where conflict header has a child header',
   // Bug introduced at ef9e2445654300c4ac41e1d06d3d2a1889dd0554
   `= tmp
@@ -5746,6 +5934,7 @@ assert_error('stray named argument end}', 'a}b', 1, 2);
 assert_error('unterminated literal positional argument', '\\c[[\n', 1, 3);
 assert_error('unterminated literal named argument', '\\c{{id=\n', 1, 3);
 assert_error('unterminated insane inline code', '`\n', 1, 1);
+assert_error('unterminated insane link', '<ab', 1, 1);
 assert_error('unescaped trailing backslash', '\\', 1, 1);
 
 // API minimal tests.
@@ -7113,122 +7302,6 @@ assert_executable(
 );
 
 assert_executable(
-  'cli: incoming links and other children',
-  {
-    args: ['-S', '.'],
-    filesystem: {
-      'README.bigb': `= Index
-
-\\x[index]
-
-\\x[h2]
-
-\\x[notindex]
-
-\\x[h2-2]{child}
-
-\\x[scope/scope-1]
-
-== h2
-{child=h2-3}
-{child=h2-4}
-{child=notindex-h2-2}
-
-\\x[index]
-
-\\x[notindex]
-
-\\x[h2-2]{child}
-
-\\x[scope/scope-2]{child}
-
-== h2 2
-
-== h2 3
-
-== h2 4
-
-== h2 5
-{tag=h2}
-
-== No incoming
-
-== Scope
-{scope}
-
-=== Scope 1
-
-=== Scope 2
-
-\\x[scope-1]
-
-\\x[scope-3]{child}
-
-=== Scope 3
-`,
-      'notindex.bigb': `= Notindex
-
-\\x[index]
-
-\\x[h2]
-
-== Notindex h2
-{tag=h2-2}
-
-=== Notindex h3
-
-== Notindex h2 2
-`,
-    },
-    assert_xpath: {
-      'index.html': [
-        // Would like to test like this, but it doesn't seem implemented in this crappy xpath implementation.
-        // So we revert to instrumentation instead then.
-        //`//x:h2[@id='incoming-links']/following:://x:a[@href='#h2']`,
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='']`,
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='#h2']`,
-        // https://github.com/cirosantilli/ourbigbook/issues/155
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='#h2-2']`,
-      ],
-      'h2.html': [
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
-        // https://github.com/cirosantilli/ourbigbook/issues/155
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-2']`,
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-3']`,
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-4']`,
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-5']`,
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#scope/scope-2']`,
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#notindex-h2-2']`,
-      ],
-      'h2-2.html': [
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html#h2']`,
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#notindex-h2']`,
-      ],
-      'scope/scope-1.html': [
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html']`,
-        // https://github.com/cirosantilli/ourbigbook/issues/173
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html#scope/scope-2']`,
-      ],
-      'scope/scope-2.html': [
-        // https://github.com/cirosantilli/ourbigbook/issues/173
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='../index.html#scope/scope-3']`,
-      ],
-      'notindex.html': [
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html#h2']`,
-      ],
-    },
-    assert_not_xpath: {
-      'no-incoming.html': [
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']`,
-      ],
-    },
-  }
-);
-assert_executable(
   "cli: multiple incoming child and parent links don't blow up",
   {
     args: ['.'],
@@ -7535,6 +7608,47 @@ assert_executable('cli: cross file ancestors work on single file conversions in 
     assert_not_xpath: {
       'subdir.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']`,
+      ],
+    },
+  }
+);
+assert_executable(
+  // See also corresponding lib:.
+  'cli: cross reference incoming links and other children with magic',
+  {
+    args: ['-S', '.'],
+    filesystem: {
+      'README.bigb': `= Index
+
+== Dog
+
+== Dogs
+`,
+      'notindex.bigb': `= Notindex
+
+== To dog
+
+<dog>
+
+== To dogs
+
+<dogs>
+`,
+    },
+    assert_xpath: {
+      'dog.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html#to-dog']`,
+      ],
+      'dogs.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html#to-dogs']`,
+      ],
+    },
+    assert_not_xpath: {
+      'dog.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html#to-dogs']`,
+      ],
+      'dogs.html': [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html#to-dog']`,
       ],
     },
   }

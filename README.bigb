@@ -27,7 +27,7 @@ Key links:
 = Features
 {parent=ourbigbook}
 
-* \x[internal-cross-reference][references] to any \x[header]{p} (including e.g. h2, h3, etc. in other files), \x[image]{p}, etc. with amazing \x[error-reporting][error checking and reporting]: never break internal links without knoing again, and quickly find out what broke when you do. E.g.:
+* \x[cross-reference][references] to any \x[header]{p} (including e.g. h2, h3, etc. in other files), \x[image]{p}, etc. with amazing \x[error-reporting][error checking and reporting]: never break internal links without knoing again, and quickly find out what broke when you do. E.g.:
 
   README.bigb
   ``
@@ -68,7 +68,7 @@ Key links:
   {title=Quadratic equation}
   ``
 * multi-file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
-  * \x[internal-cross-file-reference]{p}
+  * \x[cross-file-reference]{p}
   * single-source multi-format output based on \x[include]{p} and build options:
     * by default, one HTML per source with includes rendered as links between pages, e.g.:
 
@@ -107,7 +107,7 @@ Key links:
 
       ==== Not readme h2
       ``
-    * supports both local serverless rendering to HTML files for local viewing, and server oriented rendering such as GitHub pages, e.g. \x[internal-cross-reference]{p} automatically get `.html` extension and or not. E.g.:
+    * supports both local serverless rendering to HTML files for local viewing, and server oriented rendering such as GitHub pages, e.g. \x[cross-reference]{p} automatically get `.html` extension and or not. E.g.:
       * locally, a link `\x[not-readme]` would render as `<a href="not-readme.html">` and `not-readme.bigb` produces `not-readme.html`
       * when publishing, `\x[not-readme]` would render as `<a  href="not-readme">` and `not-readme.bigb` also produces `not-readme.html`, which the server converts to just `http://my-website.com/not-readme`
   * cross file configuration files to factor out common page parts like headers, footers and other metadata, e.g.:
@@ -393,7 +393,7 @@ If one of the input files starts getting too large, usually the toplevel `README
 npx ourbigbook README.bigb
 npx ourbigbook not-readme.bigb
 ``
-Note however that when those individual files have a \x[internal-cross-file-reference] to something defined in `not-readme.bigb`, e.g. via `\x[h2-in-not-the-readme]`, then you must first do a first pass once with:
+Note however that when those individual files have a \x[cross-file-reference] to something defined in `not-readme.bigb`, e.g. via `\x[h2-in-not-the-readme]`, then you must first do a first pass once with:
 ``
 npx ourbigbook .
 ``
@@ -509,7 +509,7 @@ The \x[saner][high sanity of OurBigBook], also makes creating new macro extensio
 
 All built-in language features use the exact same API as new extensions, which ensures that the extension API is sane forever.
 
-Markdown is clearly missing many key features such as block attributes and \x[internal-cross-reference]{p}, and has no standardized extension mechanism.
+Markdown is clearly missing many key features such as block attributes and \x[cross-reference]{p}, and has no standardized extension mechanism.
 
 The "more powerful than Asciidoctor" part is only partially true, since Asciidoctor is very featureful can do basically anything through extensions.
 
@@ -533,7 +533,7 @@ Static wiki generators: this is perhaps the best way of classifying this project
   * https://github.com/dreverri/gollum-site
   Does not appear to check that any links are correct.
 * https://github.com/wcchin/markypydia
-* https://obsidian.md/ closed source, Markdown with \x[internal-cross-file-reference] + a SaaS. Appears to require payment for any publishing. 28k followers 2021: https://twitter.com/obsdmd[]. Founders are likely Canadians of Asian descent from Waterloo University: https://www.linkedin.com/in/lishid/ | https://www.linkedin.com/in/ericaxu/ also working in parallel on https://dynalist.io/ 2020 review at: https://www.youtube.com/watch?v=aK2fOQRNSxc Has offline editor with side-by-side preview. Compares with https://roamresearch.com/[Roam] and https://roamresearch.com/[Notion], but can't find any public publishing on those, seem to be enterprise only things.
+* https://obsidian.md/ closed source, Markdown with \x[cross-file-reference] + a SaaS. Appears to require payment for any publishing. 28k followers 2021: https://twitter.com/obsdmd[]. Founders are likely Canadians of Asian descent from Waterloo University: https://www.linkedin.com/in/lishid/ | https://www.linkedin.com/in/ericaxu/ also working in parallel on https://dynalist.io/ 2020 review at: https://www.youtube.com/watch?v=aK2fOQRNSxc Has offline editor with side-by-side preview. Compares with https://roamresearch.com/[Roam] and https://roamresearch.com/[Notion], but can't find any public publishing on those, seem to be enterprise only things.
 
 Static book generators:
 * https://github.com/rstudio/bookdown[], https://bookdown.org/[]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: https://bookdown.org/yihui/bookdown/pandoc.html[], thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.
@@ -1006,7 +1006,7 @@ Equivalent sane:
 \H[3][My h3]
 ``
 
-Custom ID for \x[internal-cross-reference]{p} on insane headers:
+Custom ID for \x[cross-reference]{p} on insane headers:
 ``
 = My h1
 {id=h1}
@@ -1165,7 +1165,7 @@ As a consequence of this, the toplevel index file cannot \x[include][be included
 = `\H` `c` argument
 {parent=h-arguments}
 
-If given, makes the header capitalized by default on \x[internal-cross-file-reference]{p}.
+If given, makes the header capitalized by default on \x[cross-file-reference]{p}.
 
 More details at: \x[cross-reference-title-inflection]{full}.
 
@@ -1362,7 +1362,7 @@ An explanation of what this video is about.
 This \x[boolean-argument] determines whether renderings of a header will have section numbers or not. This affects all of:
 * \x[header]{p} themselves
 * \x[table-of-contents] links
-* \x[internal-cross-reference]{p} with the \x[x-full-argument]
+* \x[cross-reference]{p} with the \x[x-full-argument]
 This option can be set by default for all files with:
 
 By default, headers are numbered as in a book, e.g.:
@@ -1667,7 +1667,7 @@ Note how:
 = `scope` resolution
 {parent=h-scope-argument}
 
-When nested scopes are involved, \x[internal-cross-reference]{p} resolution peels off the scopes one by one trying to find the closes match, e.g. the following works as expected:
+When nested scopes are involved, \x[cross-reference]{p} resolution peels off the scopes one by one trying to find the closes match, e.g. the following works as expected:
 ``
 = h1
 {scope}
@@ -1739,7 +1739,7 @@ Some quick interactive cross file link tests:
 = `\H` `splitDefault` argument
 {parent=h-arguments}
 
-When using \x[split-headers], \x[internal-cross-reference]{p} always point to non-split pages as mentioned at \x[internal-cross-reference-targets-in-split-headers].
+When using \x[split-headers], \x[cross-reference]{p} always point to non-split pages as mentioned at \x[cross-reference-targets-in-split-headers].
 
 If the `splitDefault` \x[boolean-argument] is given however:
 * the split header becomes the default, e.g. `index.html` is now the split one, and `nosplit.html` is the non-split one
@@ -1875,7 +1875,7 @@ notindex-asdf.bigb
 
 This option is similar to \x[h-title2-argument] but it additionally:
 * creates a new ID that you can refer to, and renders it with the alternate chosen title
-* the rendered ID on \x[internal-cross-reference]{p} is the same as what it is a synonym for
+* the rendered ID on \x[cross-reference]{p} is the same as what it is a synonym for
 * the synonym header is not rendered at all, including in the \x[table-of-contents]
 * when using \x[split-headers], a redirect output file is generated from the synonym to the main ID
 
@@ -2266,7 +2266,7 @@ Have a look at this amazing image: \x[image-my-test-image].
 ]]
 This exemplifies the following parameters:
 * `title`: analogous to the \x[h-title-argument]. Shows up preeminently, and sets a default ID if one is not given.
-* \x[image-description-argument][`description`]: similar to `title`, but allow for further explanations without them appearing in \x[internal-cross-reference][cross references] to the image
+* \x[image-description-argument][`description`]: similar to `title`, but allow for further explanations without them appearing in \x[cross-reference][cross references] to the image
 * `source`: a standardized way to credit an image by linking to a URL that contains further image metadata
 For further discussion on the effects of ID see: \x[image-id]{full}.
 
@@ -2324,7 +2324,7 @@ Note that the `123` is not linked to the `Figure <number>.`, but just a sequenti
 
 This type of ID is of course not stable across document revisions however, since if an image is added before that one, the link will break. So give an ID or title for anything that you expect users to link to.
 
-Also, it is not possible to link to such images with an \x[internal-cross-reference], like any other OurBigBook element with autogenerated temporary IDs.
+Also, it is not possible to link to such images with an \x[cross-reference], like any other OurBigBook element with autogenerated temporary IDs.
 
 Another issue to consider is that in paged output formats like PDF, the image could float away from the text that refers to the image, so you basically always want to refer to image by ID, and not just by saying "the following image".
 
@@ -2527,7 +2527,7 @@ Analogous to the \x[a-check-argument] when checking if the \x[image-src-argument
 {parent=image-argument}
 {tag=named-argument}
 
-The `description` argument similar to the \x[image-title-argument] argument, but allows allowing longer explanations without them appearing in \x[internal-cross-reference][cross references] to the image.
+The `description` argument similar to the \x[image-title-argument] argument, but allows allowing longer explanations without them appearing in \x[cross-reference][cross references] to the image.
 
 For example, consider:
 \OurBigBookExample[[
@@ -2587,9 +2587,9 @@ It exists to allow optional single page HTML output while still retaining the ab
 * split up large input files into multiple files to make renders faster during document development
 * suggest an optional custom output split with one HTML output per OurBigBook input, in order to avoid extremely large HTML pages which could be slow to load
 
-`\Include` takes one mandatory argument: the ID of the section to be included, much like \x[internal-cross-reference]{p}.
+`\Include` takes one mandatory argument: the ID of the section to be included, much like \x[cross-reference]{p}.
 
-There is however one restriction: only \x[the-toplevel-header]{p} can be pointed to. This restriction allows us to easily find the included file in the filesystem, and dispenses the need to do a first `./ourbigbook` run to generate the \x[internal-cross-file-reference-internals][ID database]. This works because \x[the-id-of-the-first-header-is-derived-from-the-filename].
+There is however one restriction: only \x[the-toplevel-header]{p} can be pointed to. This restriction allows us to easily find the included file in the filesystem, and dispenses the need to do a first `./ourbigbook` run to generate the \x[cross-file-reference-internals][ID database]. This works because \x[the-id-of-the-first-header-is-derived-from-the-filename].
 
 Headers of the included document are automatically shifted to match the level of the child of the level where they are being included.
 
@@ -2598,7 +2598,7 @@ If \x[embed-includes] is given, the external document is rendered embedded into 
 Otherwise, the following effects happen:
 * The headers of the included tree appear in the \x[table-of-contents] of the document as links to the corresponding external files.
 
-  This is implemented simply by reading a previously generated database file much like \x[internal-cross-file-reference-internals], which avoids the slowdown of parsing all included files every time.
+  This is implemented simply by reading a previously generated database file much like \x[cross-file-reference-internals], which avoids the slowdown of parsing all included files every time.
 
   As a result, you have to do an initial parse of all files in the project to extract their headers however, just as you would need to do when linking to those headers.
 * the include itself renders as a link to the included document
@@ -3310,7 +3310,7 @@ This is especially important when considering \x[split-headers], where you almos
 
 Only one ToC is rendered per document. Any ToC besides the first one is ignored. In particular, this means that \x[include]{p} with \x[embed-includes] work seamlessly and render a single table of contents, even if multiple `\Toc` macros are present in the included pages.
 
-The \x[internal-cross-reference][ID] of the ToC is always fixed to `#toc`. If you try to use that for another element, you will get the following error:
+The \x[cross-reference][ID] of the ToC is always fixed to `#toc`. If you try to use that for another element, you will get the following error:
 ``
 error: tmp.bigb:3:1: reserved ID "toc"
 ``
@@ -3434,8 +3434,11 @@ Both of this cases could be worked around with JavaScript:
 
 The time to start playing the video at in seconds. Works for both `youtube` and non-YouTube videos.
 
-= Internal cross reference
+= Cross reference
 {parent=macro}
+
+= Internal cross reference
+{synonym}
 
 = `\x` macro
 {title2}
@@ -3445,53 +3448,53 @@ Every macro in OurBigBook can have an optional `id` and many also have a reserve
 
 When a macro in the document has a `title` argument but no `id` argument given, get an auto-generated ID from the title: \x[automatic-id-from-title].
 
-Usually, the most convenient way to write internal cross references is with the insane syntax with delimited angled braces:
+Usually, the most convenient way to write cross references is with the insane syntax with delimited angled braces:
 \OurBigBookExample[[
-<Internal cross references> are awesome.
+<Cross references> are awesome.
 ]]
-More details at: \x[insane-internal-cross-reference].
+More details at: \x[insane-cross-reference].
 
 The sane equivalent to this is:
 \OurBigBookExample[[
-\x[internal-cross-reference]{c}{p} are awesome section.
+\x[cross-reference]{c}{p} are awesome section.
 ]]
 Note how that is more verbose, especially because here we use both the \x[x-c-argument] and  \x[x-p-argument] to capitalize and pluraize as desired.
 
 Another sane equivalent would be to add an explicit link body as in:
 \OurBigBookExample[[
-\x[internal-cross-reference][Internal cross references] are awesome.
+\x[cross-reference][Cross references] are awesome.
 ]]
 
-= Insane internal cross reference
-{parent=internal-cross-reference}
+= Insane cross reference
+{parent=cross-reference}
 {tag=insane-macro-shortcut}
 {title2=`<>`}
 
-When you use an insane internal cross reference (`<>`) such as in:
+When you use an insane cross reference (`<>`) such as in:
 \OurBigBookExample[[
-<Internal cross references> are awesome.
+<Cross references> are awesome.
 ]]
 it gets expanded exactly to the sane equivalent:
 ``
-\x[Internal cross references]{magic} are alwasome
+\x[Cross references]{magic} are alwasome
 ``
-so we see that the \x[x-magic-argument] gets added. It is that argument that for example adds the missing `-`, and removes the pluralization to find the correct ID `internal-cross-reference`.  For more details, see the documentation of the \x[x-magic-argument].
+so we see that the \x[x-magic-argument] gets added. It is that argument that for example adds the missing `-`, and removes the pluralization to find the correct ID `cross-reference`.  For more details, see the documentation of the \x[x-magic-argument].
 
-Like other <insane> constructs, <insane internal cross references> are exactly equivalent to the sane version, so you can just add other arguments after the construct, e.g.:
+Like other <insane> constructs, <insane cross references> are exactly equivalent to the sane version, so you can just add other arguments after the construct, e.g.:
 \OurBigBookExample[[
-<Internal cross references>{full} are awesome.
+<Cross references>{full} are awesome.
 ]]
 which gets converted to exact the same as the sane:
 \OurBigBookExample[[
-\x[internal-cross-reference]{full} are awesome.
+\x[cross-reference]{full} are awesome.
 ]]
 
 = Cross reference title inflection
-{parent=internal-cross-reference}
+{parent=cross-reference}
 
-In most cases it is generally more convenient to simply use the \x[x-magic-argument] through <insane internal cross references> instead of the `c` and `p` arguments as described on the rest of this section, see also: <inflection vs magic>{full}.
+In most cases it is generally more convenient to simply use the \x[x-magic-argument] through <insane cross references> instead of the `c` and `p` arguments as described on the rest of this section, see also: <inflection vs magic>{full}.
 
-A common usage pattern is that we want to use \x[header] titles in \x[x-full-argument][non-full] \x[internal-cross-reference]{p} as the definition of a concept without repeating the title, for example:
+A common usage pattern is that we want to use \x[header] titles in \x[x-full-argument][non-full] \x[cross-reference]{p} as the definition of a concept without repeating the title, for example:
 ``
 == Dog
 
@@ -3646,7 +3649,7 @@ Now for a live example for quick and dirty interactive testing.
 {parent=cross-reference-title-inflection-example}
 
 = Inflection vs magic
-{parent=internal-cross-reference}
+{parent=cross-reference}
 
 The <x magic argument> was introduced later, and basically became a better alternative to <cross reference title inflection> in all but the following cases:
 * <H disambiguate argument>: disambiguate prevents the determination of plural inflection, e.g. in:
@@ -3666,9 +3669,23 @@ The <x magic argument> was introduced later, and basically became a better alter
   ``
   I like <pythons (animal)>.
   ``
+* plural headers. We only attempt to singularize arguments for now, not pluralize them. So if you had:
+  ``
+  My <dog> is nice.
+
+  == Dogs
+  ``
+  you would instead need to write:
+  ``
+  My <dog>{p=0} is nice.
+  ``
+  or:
+  ``
+  My <dog>[dog] is nice.
+  ``
 
 = `\x` within `title` restrictions
-{parent=internal-cross-reference}
+{parent=cross-reference}
 
 If you use `\x` within a `title`, which most commonly happens for \x[image][image titles], that can generate complex dependencies between IDs, which would either be harder to implement, or lead to infinite recursion.
 
@@ -3774,8 +3791,11 @@ or:
 
 A closely related limitation is the simplistic approach to \x[x-id-output-format].
 
+= Cross file reference
+{parent=cross-reference}
+
 = Internal cross file reference
-{parent=internal-cross-reference}
+{synonym}
 
 Reference to the first header of another file:
 \OurBigBookExample[[
@@ -3809,7 +3829,7 @@ Reference to another header of another file, with \x[x-full-argument][`full`]:
 \OurBigBookExample[[
 \x[h2-in-not-the-readme]{full}.
 ]]
-Note that when `full` is used with references in another file in \x[embed-includes][multi page mode], the number is not rendered as explained at: \x[x-full-argument-in-internal-cross-file-references]{full}.
+Note that when `full` is used with references in another file in \x[embed-includes][multi page mode], the number is not rendered as explained at: \x[x-full-argument-in-cross-file-references]{full}.
 
 Reference to an image in another file:
 \OurBigBookExample[[
@@ -3854,8 +3874,8 @@ rather than:
 ``
 This is why IDs must be unique for elements across all pages.
 
-= Internal cross file reference internals
-{parent=internal-cross-file-reference}
+= Cross file reference internals
+{parent=cross-file-reference}
 {title2=`db.sqlite3`}
 
 = ID database
@@ -3890,10 +3910,10 @@ sqlite3 out/db.sqlite3 'select id from ids'
 
 You can force `ourbigbook` to not use the ID database with the \x[no-db] command line option
 
-= Internal cross reference title link removal
-{parent=internal-cross-file-reference}
+= Cross reference title link removal
+{parent=cross-file-reference}
 
-If the target `title` argument contains a link from either another \x[internal-cross-reference]{p} or a regular \x[link][external hyperlink], OurBigBook automatically prevents that link from rendering as a link when no explicit body is given.
+If the target `title` argument contains a link from either another \x[cross-reference]{p} or a regular \x[link][external hyperlink], OurBigBook automatically prevents that link from rendering as a link when no explicit body is given.
 
 This is done because https://stackoverflow.com/questions/9882916/are-you-allowed-to-nest-a-link-inside-of-a-link[nested links are illegal in HTML], and the result would be confusing.
 
@@ -3924,11 +3944,11 @@ Live example:
 This is a nice image: \x[image-aa-zxcv-lolol-bb].
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title=aa \x[internal-cross-reference-title-link-removal][zxcv] \a[http://example.com][lolol] bb}
+{title=aa \x[cross-reference-title-link-removal][zxcv] \a[http://example.com][lolol] bb}
 ]]
 
 = `\x` arguments
-{parent=internal-cross-reference}
+{parent=cross-reference}
 
 = `\x` `c` argument
 {parent=x-arguments}
@@ -4071,10 +4091,10 @@ To also show the section auto-generated number as in "Section X.Y My title" we a
 Compare \x[image-my-test-image]{full=0} vs \x[image-my-test-image]{full=1}.
 ]]
 
-= `\x` `full` argument in internal cross file references
+= `\x` `full` argument in cross file references
 {parent=x-full-argument}
 
-For example in the following \x[internal-cross-file-reference]:
+For example in the following \x[cross-file-reference]:
 \OurBigBookExample[[
 \x[h2-in-not-the-readme]{full}.
 ]]
@@ -4092,7 +4112,7 @@ This is because the number "Section 1.2" might already have been used in the cur
 {parent=x-arguments}
 {tag=boolean-argument}
 
-This argument makes writing many internal links more convenient, and it was notably introduced because it serves as the sane version of \x[insane-internal-cross-reference]{p}.
+This argument makes writing many internal links more convenient, and it was notably introduced because it serves as the sane version of \x[insane-cross-reference]{p}.
 
 If given e.g. as in:
 ``
@@ -4123,16 +4143,16 @@ the link treated magically as follows:
   then the output would still contain the `<i>` italic tag.
 
   If we had a scope as in `\x[my scope/Internal references]`, then each scope part is checked separately. E.g. in this case we would have upper case `Internal references`, even though `my scope` is lowercase, and so `{c}` would be set.
-
 * the ID is calculated as follows:
   * if the ID starts with `file/`, use it as is, to work better with the <h file argument>
-  * \x[automatic-id-from-title] conversion is performed, with you exception: forwards slashs `/` are kept, in order to make <scopes> work.
+  * otherwise:
+    * \x[automatic-id-from-title] conversion is performed, with you exception: forwards slashs `/` are kept, in order to make <scopes> work.
 
-    In our case, there aren't any slashes `/`, so it just gives `internal-reference`. But if instead we had e.g.: `\x[my scope/internal reference]{magic}`, then we would reach `my-scope/internal-reference` and not `my-scope-internal-reference`.
+      In our case, there aren't any slashes `/`, so it just gives `internal-references`. But if instead we had e.g.: `\x[my scope/internal reference]{magic}`, then we would reach `my-scope/internal-reference` and not `my-scope-internal-reference`.
+    * if there is a match to an existing ID use it. `internal-references` in the plural does not match, so go to the next step
+    * if the above failed, try singularizing the last word as in the <x p argument> with `p=0` before doing \x[automatic-id-from-title] conversion. This gives `internal-reference`, which does exist, and so we use that.
 
-  * the last word is singularized as in the `x-p-argument` with `p=0`, giving `Internal reference`
-
-There are some cases where you might stilt want to use <cross reference title inflection> however, see: <inflection vs magic>{full}.
+There may be some cases where you might still want to use <cross reference title inflection> however, see: <inflection vs magic>{full}.
 
 = `\x` `p` argument
 {parent=x-arguments}
@@ -4194,7 +4214,7 @@ Insane in our context does not mean worse. It just mean "harder for the computer
 
 * \x[paragraph]{child}{full}: `\n\n` (double newline)
 * \x[link]{child}{full}: `a http://example.com b` (space followed by `http://`)
-* \x[internal-cross-reference]{child}{full}: `<Internal cross references>` (angle brackets), see: \x[insane-internal-cross-reference]{full}
+* \x[cross-reference]{child}{full}: `<Cross references>` (angle brackets), see: \x[insane-cross-reference]{full}
 * \x[mathematics]{child}{full}: `$`, described at: \x[insane-code-and-math-shortcuts]
 * \x[code-block]{child}{full}: \c[[`]], described at: \x[insane-code-and-math-shortcuts]
 * \x[list]{child}{full}: `* ` and indentation
@@ -4429,7 +4449,7 @@ Name arguments marked in \x[help-macros] as `boolean: true` must either:
 * take value exactly `0` or `1`
 * not be given, in which case a custom per-macro default is used. That value is the `default` from \x[help-macros], or `0` if such default is not given
 
-For example, the \x[x-full-argument] of <internal cross references> is correctly written as:
+For example, the \x[x-full-argument] of <cross references> is correctly written as:
 \OurBigBookExample[[
 \x[boolean-argument]{full}
 ]]
@@ -4613,7 +4633,7 @@ But in \x[literal-arguments][non-literal macro arguments], you have to use a bac
 * `\[` and `\]`: open and close \x[positional-vs-named-arguments][positional macro arguments]
 * `\{` and `\}`: open and close \x[positional-vs-named-arguments][optional macro arguments]
 * escapes for <macros with insane shortcut>:
-  * `<` (open angle brackets, less than sign): \x[insane-macro-shortcut] for \x[insane-internal-cross-reference]{p}
+  * `<` (open angle brackets, less than sign): \x[insane-macro-shortcut] for \x[insane-cross-reference]{p}
   * `$` (dollar sign): \x[insane-macro-shortcut] for \x[mathematics]
   * \c[[`]] (backtick): \x[insane-macro-shortcut] for \x[code-block]{p}
 
@@ -4790,7 +4810,7 @@ Output to stdout instead of saving it to a file:
 ourbigbook --stdout README.bigb
 ``
 
-In order to resolve \x[internal-cross-file-reference]{p}, this actually does two passes:
+In order to resolve \x[cross-file-reference]{p}, this actually does two passes:
 * first an ID extraction pass, which parses all inputs and dumps their IDs to the ID database
 * then a second render pass, which uses the IDs in the ID database
 
@@ -4925,7 +4945,7 @@ Similar to \x[dry-run], but it runs all git commands except for `git push`, whic
 Makes \x[include]{p} render the included content in the same output file as the include is located, instead of the default behaviour of creating links.
 
 In addition to this:
-* \x[internal-cross-file-reference]{p} are disabled, and the cross file ID database does not get updated.
+* \x[cross-file-reference]{p} are disabled, and the cross file ID database does not get updated.
 
   It should be possible to work around this, but we are starting with the simplest implementation that forbids it.
 
@@ -5041,7 +5061,7 @@ Values not documented in other sections:
 * `ast-inside`: print the AST from inside the `ourbigbook.convert` call before it returns.
 
   This is useful to debug the program if `ourbigbook.convert` blows up on the next stages before returning.
-* `db`: show database transactions done by OurBigBook, to help debug stuff like \x[internal-cross-file-reference]{p}
+* `db`: show database transactions done by OurBigBook, to help debug stuff like \x[cross-file-reference]{p}
 * `mem`: show process memory usage as per Node.js' `process.memoryUsage()` after each \x[log-perf] step: https://stackoverflow.com/questions/12023359/what-do-the-return-values-of-node-js-process-memoryusage-stand-for[]. Implies \x[log-perf].
 
   To use this options, you must run OurBigBook with the `--expose-gc` command line option, e.g. with:
@@ -5119,7 +5139,7 @@ Don't use the \x[id-database] during this run. This implies that the on-disk dat
 = `--no-html-x-extension`
 {parent=ourbigbook-cli-options}
 
-If not given, \x[internal-cross-reference]{p} render with the `.html` extension as in:
+If not given, \x[cross-reference]{p} render with the `.html` extension as in:
 ``
 <a href=not-readme.html#h2-in-not-the-readme>
 ``
@@ -5555,17 +5575,17 @@ would produce the following output files:
 
 `--split-headers` is implied by \x[publish]: the published website will automatically get the split pages. There is no way to turn it off currently. A pull request would be accepted, especially if it offers a \x[ourbigbook-json] way to do it. Maybe it would be nice to have a more generalized way of setting any CLI option equivalent from the `ourbigbook.json`, and an option `cli` vs `cli-publish` so that `cli-publish` is publish only. Just lazy for now/not enough pressing use case met.
 
-= Internal cross reference targets in split headers
+= Cross reference targets in split headers
 {parent=split-headers}
 
-By default, all internal cross references point to the non-split version of headers, including those found in split headers.
+By default, all cross references point to the non-split version of headers, including those found in split headers.
 
 The rationale for this is that it gives readers the most context around the header by simply scrolling.
 
-For example, considering the example document at \x[split-headers], \x[internal-cross-reference]{p} such as `\x[h1-1]` would point:
+For example, considering the example document at \x[split-headers], \x[cross-reference]{p} such as `\x[h1-1]` would point:
 * from the non-split `hello.html` to the section in the current non-split file `#h1-1`
 * from split `hello-split.html` to the same section in non-split file with `hello.html#h1-1`
-The same applies to \x[internal-cross-file-reference]{p} when there are multiple input files.
+The same applies to \x[cross-file-reference]{p} when there are multiple input files.
 
 In order to make the split version be the default for some headers, you can use the \x[h-splitdefault-argument].
 
@@ -5671,7 +5691,7 @@ Watch every `.bigb` file in an entire directory:
 ``
 ourbigbook --watch .
 ``
-When a directory is given as the input path, this automatically first does an ID extraction pass on all files to support \x[internal-cross-file-reference]{p}.
+When a directory is given as the input path, this automatically first does an ID extraction pass on all files to support \x[cross-file-reference]{p}.
 
 Now you can just edit any OurBigBook file such has `README.bigb`, save the file in your editor, and refresh the webpage and your change should be visible, no need to run a `ourbigbook` command explicitly every time.
 
@@ -6059,7 +6079,7 @@ The main entry point for the JavaScript API is the `ourbigbook.convert` function
 
 An example can be seen under \a[lib_hello.js].
 
-Note that while doing a simple conversion is easy, things get harder if you want to take multifile features in consideration, notably \x[internal-cross-file-reference-internals].
+Note that while doing a simple conversion is easy, things get harder if you want to take multifile features in consideration, notably \x[cross-file-reference-internals].
 
 This is because these features require interacting with the \x[id-database], and we don't do that from the default `ourbigbook.convert` API because different deployments will have very different implementations, notably:
 * local Node.js run uses SQLite, an implementation can be seen in the \a[ourbigbook] file class `SqliteIdProvider` and `SqliteFileProvider`
@@ -6706,7 +6726,7 @@ The following support is provided:
   ``
   = My long header
   ``
-  To create an internal cross reference to it you can:
+  To create an cross reference to it you can:
   * copy `My long header` to the clipboard, see copy to clipboard shortcuts at: https://stackoverflow.com/questions/3961859/how-to-copy-to-clipboard-in-vim/67890119#67890119
   * type `\x` and then hit tab
   and it will automatically expand to:
@@ -6823,7 +6843,7 @@ should always deterministically lead to a resolution of all problems.
 
 Error messages are normally sorted by file, line and column, regardless of which conversion stage they happened (e.g. a tokeniser error first gets reported before a parser error).
 
-There is however one important exception to that: broken internal cross references are always reported last.
+There is however one important exception to that: broken cross references are always reported last.
 
 For example, consider the following syntactically wrong document:
 ```
@@ -7088,7 +7108,7 @@ Generated files:
 OurBigBook stores some metadata and outputs it generates/needs inside the `./out/` directory that it creates inside the \x[outdir].
 
 Overview of files it contains:
-* `db.sqlite3`: \x[internal-cross-file-reference-internals]
+* `db.sqlite3`: \x[cross-file-reference-internals]
 * `publish`: a git clone of the source of the main repository to ensure that untracked files won't accidentally go into the output
   * `publish/out/db.sqlite3`: like `out/db.sqlite3` but from the clean clone of `out/publish`
   * `publish/out/publish`: the final generated output directory that gets published, e.g. as in \x[publish-to-github-pages]
@@ -7124,7 +7144,7 @@ A conversion follows the following steps done for each file to be converted:
 
   This step is skipped when using the \x[no-render] option, or during ID extraction.
 
-  TODO it is intended that it should not be possible for there to be rendering errors once the previous steps have concluded successfully. This is currently not the case for at least one known scenario however: \x[internal-cross-reference]{p} that are not defined.
+  TODO it is intended that it should not be possible for there to be rendering errors once the previous steps have concluded successfully. This is currently not the case for at least one known scenario however: \x[cross-reference]{p} that are not defined.
 
   Sub-steps include:
   * DB queries: this is the first thing we do during the rendering step.
@@ -7155,12 +7175,17 @@ A conversion follows the following steps done for each file to be converted:
 
 Conversion of a directory with multiple input files works as follows:
 * do one conversion pass without render
-* do a global database check for all files that have been parsed which checks in one go for:
+* do a global database check/fixup for all files that have been parsed which checks in one go for:
+  * check that all <cross reference> targets exist.
+
+    When using the <x magic argument>:
+    * only one of the plural/singular needs to exist
+    * we then decide which one to use and delete the other one. Both are initially placed in the database during the ID extraction phase.
   * duplicate IDs
   * references from one non-header title to another non-header title as mentioned at \x[x-within-title-restrictions]
   Ideally, failure of any of the above checks should lead to the database not being updated with new values, but that is not the case as of writing.
 * do one conversion pass with render. To speed up conversion, we might at some point start storing a parsed JSON after the first conversion pass, and then just deserialize it and convert the deserialized output directly without re-parsing.
-The two pass approach is required to resolve \x[internal-cross-reference]{p}
+The two pass approach is required to resolve \x[cross-reference]{p}
 
 = Abstract syntax tree
 {parent=conversion-process-overview}

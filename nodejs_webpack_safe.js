@@ -540,7 +540,11 @@ async function update_database_after_convert({
     file_bulk_create_last_render = null
     file_bulk_create_opts.ignoreDuplicates = true
   } else {
-    file_bulk_create_opts.updateOnDuplicate = ['last_parse']
+    file_bulk_create_opts.updateOnDuplicate = [
+      'title',
+      'body',
+      'last_parse',
+    ]
     file_bulk_create_last_parse = Date.now()
     if (render) {
       file_bulk_create_opts.updateOnDuplicate.push('last_render')
@@ -579,6 +583,7 @@ async function update_database_after_convert({
         file_bulk_create_opts,
       )
     ])
+    console.error(fileBulkCreate);
   });
   ourbigbook.perf_print(context, 'convert_path_post_sqlite_transaction')
   return { file: fileBulkCreate[0] }

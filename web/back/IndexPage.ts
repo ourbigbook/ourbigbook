@@ -56,6 +56,14 @@ export const getServerSidePropsIndexHoc = (what): MyGetServerSideProps => {
           offset,
           order: [[order, 'DESC']],
           limit: articleLimit,
+          include: [{
+            model: req.sequelize.models.File,
+            as: 'file',
+            include: [{
+              model: req.sequelize.models.User,
+              as: 'author',
+            }],
+          }],
         })
         articles = await Promise.all(articlesAndCounts.rows.map(
           (article) => {return article.toJson(loggedInUser) }))

@@ -6127,6 +6127,7 @@ This is something that should be merged into Sequelize itself, or at least asked
 * \a[web/pages]: Next.js URL entry points
 * \a[web/front] and \a[web/front.tsx]: files that can be imported from either front-end of backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
 * \a[web/back] and \a[web/back.ts]: files that can be imported only from backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
+* \a[web_api]: helpers to access the OurBigBook HTTP REST API. These have to be outside of `web/` because \x[ourbigbook-cli] uses them e.g. for syncing local files to the server, and OurBigBook CLI cannot depend on OurBigBook Web components, only the other way around, otherwise we could create circular dependencies. That exact same JavaScript code is also used from the front-end! The infinite joys of homomorphic JS.
 
 = web/bin/rerender-articles.js
 {file}

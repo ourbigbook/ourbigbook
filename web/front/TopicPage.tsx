@@ -65,6 +65,7 @@ export const TopicPage = ({ articles, articlesCount, loggedInUser, page, what }:
       <ArticleList {...{
         articles,
         articlesCount,
+        loggedInUser,
         page,
         paginationUrlFunc,
         showAuthor: true,

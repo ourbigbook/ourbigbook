@@ -42,7 +42,7 @@ export const getServerSidePropsArticleHoc = (addComments?, loggedInUserCache?): 
           sequelize.models.Article.findOne({ where: { slug } })
         ])
         if (loggedInUserVersionArticle) {
-          props.loggedInUserVersionSlug = slug
+          props.sameArticleByLoggedInUser = slug
         }
       }
       if (addComments) {

@@ -1,11 +1,10 @@
 import Router from 'next/router'
 import React from 'react'
-import { mutate } from 'swr'
 
 import ListErrors from 'front/ListErrors'
 import Label from 'front/Label'
-import { AUTH_COOKIE_NAME, AUTH_LOCAL_STORAGE_NAME, LOGIN_ACTION, REGISTER_ACTION, useCtrlEnterSubmit, setCookie  } from 'front'
-import UserAPI from 'front/api/user'
+import { UserApi } from 'front/api'
+import { LOGIN_ACTION, REGISTER_ACTION, useCtrlEnterSubmit, setCookie, setupUserLocalStorage } from 'front'
 
 const LoginForm = ({ register = false }) => {
   const [isLoading, setLoading] = React.useState(false);
@@ -43,26 +42,15 @@ const LoginForm = ({ register = false }) => {
     try {
       let data, status;
       if (register) {
-        ({ data, status } = await UserAPI.register(displayName, username, email, password));
+        ({ data, status } = await UserApi.register(displayName, username, email, password));
       } else {
-        ({ data, status } = await UserAPI.login(email, password));
+        ({ data, status } = await UserApi.login(email, password));
       }
       if (status !== 200 && data?.errors) {
         setErrors(data.errors);
       }
       if (data?.user) {
-        // We fetch from /profiles/:username again because the return from /users/login above
-        // does not contain the image placeholder.
-        const { data: userData, status: userStatus } = await UserAPI.get(
-          data.user.username
-        )
-        if (userStatus !== 200) {
-          setErrors(userData.errors)
-        }
-        data.user.effectiveImage = userData.user.effectiveImage
-        window.localStorage.setItem(AUTH_LOCAL_STORAGE_NAME, JSON.stringify(data.user));
-        setCookie(AUTH_COOKIE_NAME, data.user.token)
-        mutate("user", data.user);
+        await setupUserLocalStorage(data, setErrors)
         Router.push("/");
       }
     } catch (error) {

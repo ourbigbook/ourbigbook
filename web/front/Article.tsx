@@ -7,7 +7,6 @@ import { CommentType } from 'front/types/CommentType'
 //import { ourbigbook_runtime } from 'ourbigbook/ourbigbook_runtime.js';
 import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js'
 
-
 function renderRefCallback(elem) {
   if (elem) {
     ourbigbook_runtime(elem);
@@ -17,6 +16,7 @@ function renderRefCallback(elem) {
 const Article = ({
   article,
   comments,
+  loggedInUser,
 }) => {
   const markup = { __html: article.render };
   return <>
@@ -28,10 +28,10 @@ const Article = ({
     <div className="comments content-not-ourbigbook">
       <h1>Comments</h1>
         <div className="comment-form-holder">
-          <CommentInput />
+          <CommentInput {...{ loggedInUser }}/>
         </div>
         {comments?.map((comment: CommentType) => (
-          <Comment key={comment.id} comment={comment} />
+          <Comment {...{ key: comment.id, comment, loggedInUser }} />
         ))}
     </div>
   </>

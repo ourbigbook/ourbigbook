@@ -59,6 +59,7 @@ async function convert({
         ext: '',
       }),
       remove_leading_at: true,
+      split_headers: true,
     }, convertOptions),
     extra_returns,
   )
@@ -80,7 +81,7 @@ async function convert({
     title,
     transaction,
   })
-  const file = await sequelize.models.File.findOne({ where: { path: filePath } })
+  const file = await sequelize.models.File.findOne({ where: { path: filePath }, transaction })
   const check_db_errors = await ourbigbook_nodejs_webpack_safe.check_db(
     sequelize,
     [input_path],
@@ -105,7 +106,7 @@ async function convert({
   )
   // Find here because upsert not yet supported in SQLite.
   // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert
-  return sequelize.models.Article.findAll({
+  const articles = await sequelize.models.Article.findAll({
     where: { slug: articleArgs.map(arg => arg.slug) },
     include: {
       model: sequelize.models.File,
@@ -113,6 +114,10 @@ async function convert({
     },
     order: [['slug', 'ASC']],
   })
+  for (const article of articles) {
+    article.file.author = author
+  }
+  return articles
 }
 
 module.exports = {

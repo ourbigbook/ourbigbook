@@ -22,6 +22,12 @@ async function getArticle(req, res) {
   }
 }
 
+// https://stackoverflow.com/questions/14382725/how-to-get-the-correct-ip-address-of-a-client-into-a-node-socket-io-app-hosted-o/14382990#14382990
+// Works on Heroku 2021.
+function getClientIp(req) {
+  return req.header('x-forwarded-for')
+}
+
 // When this class is thrown and would blows up on toplevel, we catch it instead
 // and gracefully return the specified error to the client instead of doing a 500.
 class ValidationError extends Error {
@@ -41,13 +47,20 @@ function validatePositiveInteger(s) {
   return [i, ok]
 }
 
+function validateTruthy(s) {
+  return [s, !!s]
+}
+
 function validate(inputString, validator, prop) {
+  if (validator == undefined) {
+    validator = validateTruthy
+  }
   let [val, ok] = validator(inputString)
   if (ok) {
     return val
   } else {
     throw new ValidationError(
-      { [prop]: [`validator ${validator.name} failed on ${msg}"${param}"`] },
+      { [prop]: [`validator ${validator.name} failed on ${prop} = "${inputString}"`] },
       422,
     )
   }
@@ -64,6 +77,7 @@ function validateParam(obj, prop, validator, defaultValue) {
 
 module.exports = {
   getArticle,
+  getClientIp,
   ValidationError,
   validatePositiveInteger,
   validate,

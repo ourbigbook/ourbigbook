@@ -9,13 +9,14 @@ import UserLinkWithImage from 'front/UserLinkWithImage'
 import { AppContext } from 'front'
 import { articleLimit } from 'front/config'
 import { formatDate } from 'front/date'
-import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
+import { UserType } from 'front/types/UserType'
 
 export type ArticleListProps = {
   articles: ArticleType[];
   articlesCount: number;
+  loggedInUser?: UserType,
   page: number;
   paginationUrlFunc: PaginationPropsUrlFunc;
   showAuthor: boolean;
@@ -25,12 +26,12 @@ export type ArticleListProps = {
 const ArticleList = ({
   articles,
   articlesCount,
+  loggedInUser,
   page,
   paginationUrlFunc,
   showAuthor,
   what
 }: ArticleListProps) => {
-  const loggedInUser = useLoggedInUser()
   const router = useRouter();
   const { asPath, pathname, query } = router;
   const { like, follow, tag, uid } = query;
@@ -88,10 +89,11 @@ const ArticleList = ({
             {articles?.map((article, i) => (
               <tr key={article.slug}>
                 <td className="shrink center">
-                  <LikeArticleButton
-                    article={article}
-                    showText={false}
-                  />
+                  <LikeArticleButton {...{
+                    article,
+                    loggedInUser,
+                    showText: false,
+                  }} />
                 </td>
                 <td className="expand title">
                   <CustomLink

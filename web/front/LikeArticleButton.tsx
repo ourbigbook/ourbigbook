@@ -1,16 +1,15 @@
 import React from 'react'
 import Router from 'next/router'
 
-import ArticleAPI from 'front/api/article'
+import { ArticleApi } from 'front/api'
 import { buttonActiveClass } from 'front/config'
-import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
 
 const LikeArticleButton = ({
   article,
+  loggedInUser,
   showText,
 }) => {
-  const loggedInUser = useLoggedInUser()
   const currentUserIsAuthor = article?.file?.author.username === loggedInUser?.username
   const [liked, setLiked] = React.useState(article.liked)
   const [score, setScore] = React.useState(article.score)
@@ -37,9 +36,9 @@ const LikeArticleButton = ({
     setScore(score + (liked ? - 1 : 1))
     try {
       if (liked) {
-        await ArticleAPI.unlike(article.slug, loggedInUser?.token)
+        await ArticleApi.unlike(article.slug)
       } else {
-        await ArticleAPI.like(article.slug, loggedInUser?.token)
+        await ArticleApi.like(article.slug)
       }
     } catch (error) {
       setLiked(!liked)

@@ -86,6 +86,7 @@ router.post('/users', async function(req, res, next) {
     user.username = req.body.user.username
     user.displayName = req.body.user.displayName
     user.email = req.body.user.email
+    user.ip = lib.getClientIp(req)
     req.app.get('sequelize').models.User.setPassword(user, req.body.user.password)
     await user.saveSideEffects()
     await authenticate(req, res, next)

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { AUTH_COOKIE_NAME, getCookie } from 'front'
 
 const updateOptions = () => {
   if (typeof window === "undefined") return {};
@@ -8,7 +9,7 @@ const updateOptions = () => {
   if (!!user.token) {
     return {
       headers: {
-        Authorization: `Token ${user.token}`,
+        Authorization: `Token ${getCookie(AUTH_COOKIE_NAME)}`,
       },
     };
   }

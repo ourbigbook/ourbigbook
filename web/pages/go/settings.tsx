@@ -1,12 +1,11 @@
 import Router from 'next/router'
 import React from 'react'
-import { mutate } from 'swr'
 
 import Label from 'front/Label'
 import ListErrors from 'front/ListErrors'
 import LogoutButton from 'front/LogoutButton'
-import { AppContext, useCtrlEnterSubmit  } from 'front'
-import UserAPI from 'front/api/user'
+import { AppContext, setupUserLocalStorage, useCtrlEnterSubmit } from 'front'
+import { UserApi } from 'front/api'
 import checkLogin from 'front/checkLogin'
 import useLoggedInUser from 'front/useLoggedInUser'
 import storage from 'front/storage'
@@ -47,16 +46,13 @@ const Settings = () => {
     if (!user.password) {
       delete user.password;
     }
-    const { data, status } = await UserAPI.update(user, loggedInUser?.token)
+    const { data, status } = await UserApi.update(user)
     setLoading(false);
     if (status !== 200) {
       setErrors(data.errors.body);
     }
     if (data?.user) {
-      data.user.token = (await storage('user')).token
-      window.localStorage.setItem("user", JSON.stringify(data.user));
-      mutate("user", data.user);
-      Router.push(routes.userView(user.username));
+      await setupUserLocalStorage(data, setErrors)
     }
   };
   useCtrlEnterSubmit(handleSubmit)

@@ -9,9 +9,8 @@ import LoadingSpinner from 'front/LoadingSpinner'
 import LogoutButton from 'front/LogoutButton'
 import Maybe from 'front/Maybe'
 import FollowUserButton from 'front/FollowUserButton'
-import UserAPI from 'front/api/user'
+import { UserApi } from 'front/api'
 import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
-import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
 import { AppContext } from 'front'
 import Article from 'front/Article'
@@ -86,7 +85,7 @@ export default function UserPage({
         <h1>
           <DisplayAndUsername user={user}></DisplayAndUsername>
           {' '}
-          <FollowUserButton user={user} showUsername={false}/>
+          <FollowUserButton {...{ loggedInUser, user, showUsername: false }}/>
           <Maybe test={isCurrentUser}>
             <CustomLink
               href={routes.userEdit()}
@@ -133,12 +132,13 @@ export default function UserPage({
       </div>
       {what === 'home'
         ? <>
-            <ArticleInfo {...{article}}/>
-            <Article {...{article, comments}} />
+            <ArticleInfo {...{ article, loggedInUser }}/>
+            <Article {...{ article, comments }} />
           </>
         : <ArticleList {...{
             articles,
             articlesCount,
+            loggedInUser,
             page,
             paginationUrlFunc,
             showAuthor: what === 'likes',

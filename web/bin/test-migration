@@ -1,8 +1,48 @@
 #!/usr/bin/env bash
 
+# https://docs.ourbigbook.com/test-migration
+
 set -eu
 
-d="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/tmp/test-migration"
+if [ "$OURBIGBOOK_POSTGRES" = true ]; then
+  db=postgres
+else
+  db=sqlite3
+fi
+
+reset() (
+  if [ "$db" = sqlite3 ]; then
+    rm -f "${script_dir}/db.sqlite3"
+  else
+    #"${script_dir}/psql-setup"
+    db=ourbigbook
+    db_cli=ourbigbook_cli
+    user=ourbigbook_user
+    psql -c "DROP DATABASE IF EXISTS $db"
+    psql -c "DROP DATABASE IF EXISTS $db_cli"
+    psql -c "DROP OWNED BY $user"
+    psql -c "DROP USER IF EXISTS $user"
+    createdb "$db"
+    createdb "$db_cli"
+    psql -c "CREATE ROLE $user with login password 'a'"
+    psql -c "GRANT ALL PRIVILEGES ON DATABASE $db TO $user"
+    psql -c "GRANT ALL PRIVILEGES ON DATABASE $db_cli TO $user"
+    echo "SECRET=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)" >> "$script_dir/../.env"
+  fi
+)
+
+schema() (
+  out="$d/$1.$db.schema"
+  if [ "$db" = sqlite3 ]; then
+    sqlite3 db.sqlite3 .schema > "$out"
+  else
+    #"${script_dir}/pg_dump" -s
+    PGPASSWORD=a pg_dump -U ourbigbook_user -h localhost ourbigbook -s > "$out"
+  fi
+)
+
+script_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+d="${script_dir}/tmp/test-migration"
 rm -rf "$d"
 mkdir -p "$d"
 
@@ -10,30 +50,41 @@ git add migrations
 git commit --amend --no-edit
 
 # Cean from scratch sanity check.
-rm -f db.sqlite3
-./bin/generate-demo-data.js --clear "$@"
-sqlite3 db.sqlite3 .schema > "$d/new-clean.sqlite3.schema"
+reset
+"${script_dir}/generate-demo-data.js" --clear "$@"
+schema new-clean
 
 # Go back to old DB.
 git checkout HEAD~
-rm -f db.sqlite3
-./bin/generate-demo-data.js --clear "$@"
-sqlite3 db.sqlite3 .schema > "$d/old.sqlite3.schema"
+reset
+"${script_dir}/generate-demo-data.js" --clear "$@"
+schema old
 
 # Migrate.
 git checkout -
-./bin/sync-db.js "$@"
-sqlite3 db.sqlite3 .schema > "$d/new-migration.sqlite3.schema"
+if [ "$db" = postgres ]; then
+  export NODE_ENV=production
+fi
+"${script_dir}/psql" -c 'SELECT * FROM "SequelizeMeta";'
+"${script_dir}/sync-db.js"
+schema new-migration
 
 # Compare the above.
-sort "$d/old.sqlite3.schema"           > "$d/old.sqlite3.schema.sort"
-sort "$d/new-clean.sqlite3.schema"     > "$d/new-clean.sqlite3.schema.sort"
-sort "$d/new-migration.sqlite3.schema" > "$d/new-migration.sqlite3.schema.sort"
-diff -u "$d/old.sqlite3.schema.sort" "$d/new-clean.sqlite3.schema.sort" || true
-diff="$(diff -u "$d/new-clean.sqlite3.schema.sort" "$d/new-migration.sqlite3.schema.sort" || true)"
-echo
-echo "$diff"
-if [ ! -z "$diff" ]; then
-  echo 'error: Clean DB and migrated are different'
-  exit 1
+if [ "$db" = sqlite3 ]; then
+  sort "$d/old.$db.schema"           > "$d/old.$db.schema.sort"
+  sort "$d/new-clean.$db.schema"     > "$d/new-clean.$db.schema.sort"
+  sort "$d/new-migration.$db.schema" > "$d/new-migration.$db.schema.sort"
+  diff -u "$d/old.$db.schema.sort" "$d/new-clean.$db.schema.sort" || true
+  diff="$(diff -u "$d/new-clean.$db.schema.sort" "$d/new-migration.$db.schema.sort" || true)"
+  echo
+  echo "$diff"
+  if [ ! -z "$diff" ]; then
+    echo 'error: Clean DB and migrated are different'
+    exit 1
+  fi
+else
+  # PostgreSQL statements are not one per line so it is harder to automatically compare things correctly,
+  # eye inspection for now.
+  diff -u "$d/old.$db.schema" "$d/new-clean.$db.schema" || true
+  diff -u "$d/new-clean.$db.schema" "$d/new-migration.$db.schema" || true
 fi

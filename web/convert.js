@@ -37,7 +37,6 @@ async function convert({
 }) {
   const db_provider = new SqliteDbProvider(sequelize)
   const extra_returns = {};
-  bodySource = bodySource.replace(/\n+$/, '')
   const source = modifyEditorInput(titleSource, bodySource).new
   let input_path_given
   if (path === undefined) {

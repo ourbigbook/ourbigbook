@@ -14,7 +14,6 @@ import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
 import { AppContext } from 'front'
-import useMin from 'front/api/useMin'
 import Article from 'front/Article'
 import ArticleInfo from 'front/ArticleInfo'
 import { IndexPageProps } from 'front/IndexPage'
@@ -48,17 +47,6 @@ export default function UserPage({
   what
 }: UserPageProps) {
   const router = useRouter();
-  const useMin0: any = {
-    userIds: [user?.id],
-  }
-  const useMin1: any = {
-    users: [user],
-  }
-  if (what !== 'home') {
-    useMin0.articleIds = articles.map(article => article.id),
-    useMin1.articles = articles
-  }
-  useMin(useMin0, useMin1)
   const username = user?.username
   const isCurrentUser = loggedInUser && username === loggedInUser?.username
   let paginationUrlFunc

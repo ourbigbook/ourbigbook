@@ -9,7 +9,6 @@ import LoadingSpinner from 'front/LoadingSpinner'
 import LogoutButton from 'front/LogoutButton'
 import Maybe from 'front/Maybe'
 import routes from 'front/routes'
-import useMin from 'front/api/useMin'
 import { ArticleType } from 'front/types/ArticleType'
 import { UserType } from 'front/types/UserType'
 
@@ -24,10 +23,6 @@ export interface TopicPageProps {
 export const TopicPage = ({ articles, articlesCount, loggedInUser, page, what }: TopicPageProps) => {
   const router = useRouter();
   const topicId = slugFromArray(router.query.id)
-  useMin(
-    { articleIds: articles.map(article => article.id) },
-    { articles }
-  )
   let paginationUrlFunc
   switch (what) {
     case 'top':

@@ -64,7 +64,6 @@ const CommentInput = () => {
         <div className="comment-form-textarea">
           <textarea
             rows={5}
-            className="form-control"
             placeholder="Write a comment..."
             value={content}
             onChange={handleChange}

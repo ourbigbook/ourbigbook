@@ -49,7 +49,6 @@ const LoginForm = () => {
       <form onSubmit={handleSubmit}>
         <Label label="Email">
           <input
-            className="form-control form-control-lg"
             type="email"
             placeholder="Email"
             value={email}
@@ -58,7 +57,6 @@ const LoginForm = () => {
         </Label>
         <Label label="Email">
           <input
-            className="form-control form-control-lg"
             type="password"
             placeholder="Password"
             value={password}

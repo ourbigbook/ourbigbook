@@ -11,23 +11,36 @@ interface CustomLinkProps {
   onClick?: () => void;
   children: React.ReactNode;
   shallow?: boolean;
+  newTab?: boolean;
 }
 
 const CustomLink = ({
+  children,
   className,
   href,
+  newTab=false,
   onClick,
-  children,
   shallow,
 }: CustomLinkProps) => {
   if (shallow === undefined) {
     shallow = false;
   }
-  return (<Link href={href} passHref shallow={shallow}>
-    <a onClick={onClick} className={className || ""}>
-      {children}
-    </a>
-  </Link>)
+  const innerProps: any = {
+    onClick,
+    className,
+  }
+  if (newTab) {
+    innerProps.href = href
+    innerProps.target = '_blank'
+  }
+  const inner = <a {...innerProps}>{children}</a>
+  if (newTab) {
+    return inner
+  } else {
+    return <Link href={href} passHref shallow={shallow}>
+      {inner}
+    </Link>
+  }
 }
 
 export default CustomLink;

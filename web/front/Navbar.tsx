@@ -14,9 +14,10 @@ interface NavLinkProps {
   onClick?: () => void;
   children: React.ReactNode;
   className?: string;
+  newTab?: boolean
 }
 
-const NavLink = ({ href, onClick, children, className }: NavLinkProps) => {
+const NavLink = ({ href, onClick, children, className, newTab=false }: NavLinkProps) => {
   const router = useRouter();
   const classes = ['nav-link']
   // This would mark toplevel nav items as selected or not. But it doesn't make
@@ -28,35 +29,37 @@ const NavLink = ({ href, onClick, children, className }: NavLinkProps) => {
     classes.push(...className.split(' '))
   }
   return (
-    <CustomLink
-      href={href}
-      onClick={onClick}
-      className={classes.join(' ')}
-    >
+    <CustomLink {...{
+      href,
+      onClick,
+      className: classes.join(' '),
+      newTab,
+    }} >
       {children}
     </CustomLink>
   );
 };
 
-const Navbar = () => {
+const Navbar = ({ isEditor }) => {
   const loggedInUser = useLoggedInUser()
   const router = useRouter();
   return (
     <nav className="navbar">
-      <CustomLink href={routes.home()} className="navbar-brand">
+      <CustomLink href={routes.home()} className="navbar-brand" newTab={isEditor}>
         <CustomImage src="/logo.svg" className="logo"/>
         {appName}
       </CustomLink>
-      <a href={aboutUrl} className="about">About us</a>
+      <a href={aboutUrl} className="about" target={ isEditor ? '_blank' : '_self' }>About us</a>
       <div className="navbar-list">
         <Maybe test={loggedInUser}>
-          <NavLink href={routes.articleNew()}>
+          <NavLink href={routes.articleNew()} newTab={isEditor}>
             <NewArticleIcon />
             &nbsp;New
           </NavLink>
           <NavLink
             href={routes.user(loggedInUser?.username)}
             className="profile"
+            newTab={isEditor}
           >
             <CustomImage
               className="profile-thumb"
@@ -67,10 +70,10 @@ const Navbar = () => {
           </NavLink>
         </Maybe>
         <Maybe test={!loggedInUser}>
-          <NavLink href={routes.userLogin()} className="login">
+          <NavLink href={routes.userLogin()} className="login" newTab={isEditor}>
             {LOGIN_ACTION}
           </NavLink>
-          <NavLink href={routes.userNew()} className="signup">
+          <NavLink href={routes.userNew()} className="signup" newTab={isEditor}>
             {REGISTER_ACTION}
           </NavLink>
         </Maybe>

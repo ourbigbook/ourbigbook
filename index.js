@@ -147,7 +147,7 @@ class AstNode {
     // AstArgument
     this.parent_argument = undefined;
     this.split_default = options.split_default;
-    // {HeaderTreeNode} that points to the element.
+    // {HeaderDagNode} that points to the element.
     // This is used for both headers and non headers:
     // the only difference is that non-headers are not connected as
     // children of their parent. But they still know who the parent is.
@@ -225,7 +225,7 @@ class AstNode {
    *                 content that is passed for an external tool for processing, for example
    *                 Math equations to KaTeX, In that case, the arguments need to be passed as is,
    *                 otherwise e.g. `1 < 2` would escape the `<` to `&lt;` and KaTeX would receive bad input.
-   *        - {HeaderTreeNode} header_graph - HeaderTreeNode graph containing AstNode headers
+   *        - {HeaderDagNode} header_graph - HeaderDagNode graph containing AstNode headers
    *        - {Object} ids - map of document IDs to their description:
    *                 - 'prefix': prefix to add for a  full reference, e.g. `Figure 1`, `Section 2`, etc.
    *                 - {AstArgument} 'title': the title of the element linked to
@@ -771,7 +771,7 @@ class IdProvider {
 
   /**
    * @param {String} id
-   * @param {HeaderTreeNode} header_dag_node
+   * @param {HeaderDagNode} header_dag_node
    * @return {Union[AstNode,undefined]}.
    *         undefined: ID not found
    *         Otherwise, the ast node for the given ID
@@ -1831,7 +1831,7 @@ class Tokenizer {
   }
 }
 
-class HeaderTreeNode {
+class HeaderDagNode {
   /**
    * Structure:
    *
@@ -1849,7 +1849,7 @@ class HeaderTreeNode {
    * And every non-header element also gets a parent link to its header without child down:
    *
    * @param {AstNode} value
-   * @param {HeaderTreeNode} parent_node
+   * @param {HeaderDagNode} parent_node
    */
   constructor(value, parent_node, options={}) {
     this.value = value;
@@ -1939,7 +1939,7 @@ class HeaderTreeNode {
     }
   }
 }
-exports.HeaderTreeNode = HeaderTreeNode
+exports.HeaderDagNode = HeaderDagNode
 
 /** Add an entry to the data structures that keep the map of incoming
  * and outgoing \x and \x {child} links. */
@@ -2575,7 +2575,7 @@ function convert_header(cur_arg_list, context, has_toc) {
     // want to keep the header tree intact, but at the same time also uniquely point
     // to one of the headers. So let's fake a tree node that has only one child we care
     // about. And the child does not have this fake parent to be able to see actual parents.
-    context.header_graph = new HeaderTreeNode();
+    context.header_graph = new HeaderDagNode();
     // Clone this, because we are going to modify it, and it would affect
     // non-split headers and final outputs afterwards.
     first_ast.header_dag_node = clone_object(first_ast.header_dag_node);
@@ -3781,7 +3781,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   // Another possibility would be to do it in the middle of the initial parse,
   // but let's not complicate that further either, shall we?
   context.headers_with_include = [];
-  context.header_graph = new HeaderTreeNode();
+  context.header_graph = new HeaderDagNode();
   perf_print(context, 'post_process_1')
   let prev_header;
   let cur_header_level;
@@ -3944,7 +3944,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               },
             );
             options.include_hrefs[href] = header_ast
-            header_ast.header_dag_node = new HeaderTreeNode(header_ast, parent_ast_header_dag_node);
+            header_ast.header_dag_node = new HeaderDagNode(header_ast, parent_ast_header_dag_node);
             parent_ast_header_dag_node.add_child(header_ast.header_dag_node);
             new_child_nodes = [
               header_ast,
@@ -4201,7 +4201,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         if (is_synonym) {
           ast.scope = options.cur_header.scope;
         } else {
-          cur_header_dag_node = new HeaderTreeNode(ast, options.header_graph_stack.get(cur_header_level - 1));
+          cur_header_dag_node = new HeaderDagNode(ast, options.header_graph_stack.get(cur_header_level - 1));
           if (cur_header_level - header_graph_last_level > 1) {
             header_level_skip_error = header_graph_last_level;
           }
@@ -4903,7 +4903,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           cur_header_dag_node = ast.header_dag_node;
           children_in_header = true;
         } else {
-          ast.header_dag_node = new HeaderTreeNode(ast, cur_header_dag_node);
+          ast.header_dag_node = new HeaderDagNode(ast, cur_header_dag_node);
           if (ast.in_header) {
             children_in_header = true;
           } else {

@@ -1,6 +1,8 @@
 # https://cirosantilli.com/cirodown#vim
 # For these snippets, you have to first copy the header text to the clipboard.
 # The expansion result then calculates the ID for that header and injects it.
+snippet {c
+	{child=`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`}
 snippet {p
 	{parent=`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`}
 snippet \x

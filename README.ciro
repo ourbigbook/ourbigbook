@@ -5018,8 +5018,8 @@ Further discussion at: https://github.com/cirosantilli/cirodown/issues/156
 
 Any pending migrations are done automatically during deployment as part of `npm run build`, more precisely they are run from \a[web/bin/sync-db.js].
 
-We also have a custom setup where:
-* if the database is not initialized, just creates the database from the latest model descriptions
+We also have a custom setup where, if the database is not initialized, we first:
+* just creates the database from the latest model descriptions
 * manually fill in the `SequelizeMeta` migration tracking table with all available migrations to tell sequelize that all migrations have been done up to this point
 This is something that should be merged into sequelize itself, or at least asked on Stack Overflow, but lazy now.
 

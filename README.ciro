@@ -4272,8 +4272,9 @@ then visit the running website at: http://localhost:3000/
 {c}
 {parent=dynamic-website}
 
-Got it running perfectly at as of April 2021 https://cirosantilli-realworld-express.herokuapp.com/ with the following steps:
+Got it running perfectly at as of April 2021 https://cirosantilli-realworld-express.herokuapp.com/ with the following steps.
 
+Initial setup:
 ``
 sudo snap install --classic heroku
 heroku git:remote -a cirodown
@@ -4288,6 +4289,10 @@ heroku config:set DISABLE_ESLINT_PLUGIN=true
 # Notably to skip ultra-slow sqlite native build.
 heroku config:set NPM_CONFIG_PRODUCTION=true YARN_PRODUCTION=true
 heroku config:set SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)"
+``
+
+Every deployment:
+``
 git push heroku master
 ``
 

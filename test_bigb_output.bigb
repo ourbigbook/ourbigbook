@@ -236,6 +236,11 @@ World
 {tag=dog}
 {tag=black}
 
+== My scope
+{scope}
+
+=== h1
+
 == Header with args
 {id=tmp-2}
 {c}

@@ -3655,6 +3655,10 @@ function macro_image_video_block_convert_function(ast, context) {
   return ret;
 }
 
+function magic_title_to_id(target_id) {
+  return title_to_id(target_id, { keep_scope_sep: true })
+}
+
 // https://stackoverflow.com/questions/44447847/enums-in-javascript-with-es6/49709701#49709701
 function make_enum(arr) {
   let obj = {};
@@ -4587,7 +4591,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         let target_id = convert_id_arg(ast.args.href, context)
         validate_ast(ast, context);
         if (ast.validation_output.magic.boolean) {
-          target_id = title_to_id(target_id)
+          target_id = magic_title_to_id(target_id)
         }
         options.refs_to_x.push({
           ast,
@@ -4604,7 +4608,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             const new_text = pluralize(old_text,  1)
             if (new_text !== old_text) {
               last_ast.text = new_text
-              const target_id = title_to_id(convert_id_arg(ast.args.href, context))
+              const target_id = magic_title_to_id(convert_id_arg(ast.args.href, context))
               last_ast.text = old_text
               options.refs_to_x.push({
                 ast,
@@ -5760,7 +5764,12 @@ function title_to_id(title, options={}) {
       c = normalize_punctuation_character(c)
     }
     c = c.toLowerCase();
-    if (!is_ascii(c) || /[a-z0-9-]/.test(c)) {
+    const scope_sep = options.keep_scope_sep ? Macro.HEADER_SCOPE_SEPARATOR : ''
+    const ok_chars_regexp = new RegExp(`[a-z0-9-${scope_sep}]`)
+    if (
+      !is_ascii(c) ||
+      ok_chars_regexp.test(c)
+    ) {
       new_chars.push(c);
     } else {
       new_chars.push(ID_SEPARATOR);
@@ -5921,13 +5930,13 @@ function x_get_href_content(ast, context) {
   }
   let target_id_eff
   if (ast.validation_output.magic.boolean) {
-    target_id_eff = title_to_id(target_id)
+    target_id_eff = magic_title_to_id(target_id)
   } else {
     target_id_eff = target_id
   }
   let target_id_ast = context.id_provider.get(target_id_eff, context, ast.scope);
   if (ast.validation_output.magic.boolean && !target_id_ast) {
-    target_id_eff = title_to_id(pluralize(target_id, 1))
+    target_id_eff = magic_title_to_id(pluralize(target_id, 1))
     target_id_ast = context.id_provider.get(target_id_eff, context, ast.scope);
   }
 
@@ -5968,7 +5977,9 @@ function x_get_href_content(ast, context) {
     if (ast.validation_output.magic.boolean) {
       const first_ast = href_arg.get(0);
       if (first_ast.node_type === AstType.PLAINTEXT) {
-        const c = first_ast.text[0]
+        const sep_idx = first_ast.text.lastIndexOf(Macro.HEADER_SCOPE_SEPARATOR)
+        const idx = sep_idx === -1 ? 0 : sep_idx + 1
+        const c = first_ast.text[idx]
         if (c !== c.toLowerCase()) {
           x_text_options.capitalize = true
         }

@@ -798,4 +798,4 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \h[3][Related projects]
 
-\l[\a[https://github.com/rstudio/bookdown], \a[https://bookdown.org/]]
+\l[\a[https://github.com/rstudio/bookdown], \a[https://bookdown.org/]]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: https://bookdown.org/yihui/bookdown/pandoc.html[], thus will never run on browser without huge translation layers. But does have an obscene ammount of output formats however.

@@ -17,18 +17,24 @@ const AstNode = class {
    * @param {Number} line - the best representation of where the macro is starts in the document
    *                        used primarily to present useful debug messages
    * @param {Number} column
+   * @param {Object} attrs
+   *                 {boolean} is_block: is the macro surrounded directly by \n\n paragraphs
    */
-  constructor(node_type, macro_name, args, line, column) {
+  constructor(node_type, macro_name, args, line, column, attrs={}) {
     this.node_type = node_type;
     this.macro_name = macro_name;
     this.args = args;
     this.line = line;
     this.column = column;
+    this.attrs = attrs;
+    if (!('is_block' in this.attrs)) {
+      this.attrs.is_block = false;
+    }
   }
 
-  convert(options, extra_returns={}) {
-    if (!('errors' in extra_returns)) {
-      extra_returns.errors = [];
+  convert(options) {
+    if (!('errors' in options.extra_returns)) {
+      options.extra_returns.errors = [];
     }
     return macros[this.macro_name].convert(this.args, options);
   }
@@ -131,6 +137,9 @@ const Argument = class {
 
 const Macro = class {
   /**
+   * Encapsulates properties of macros, including how to convert
+   * them to various output formats.
+   *
    * @param {String} name
    * @param {Array[Argument]} args
    * @param {Function} convert
@@ -178,10 +187,10 @@ const array_equals = function(arr1, arr2) {
  *
  * @param {List[AstNode]} arg
  */
-const convert_arg = function(arg) {
+const convert_arg = function(arg, options) {
   let converted_arg = '';
   for (const ast_node of arg) {
-    converted_arg += ast_node.convert()
+    converted_arg += ast_node.convert(options);
   }
   return converted_arg;
 }
@@ -203,7 +212,7 @@ let macro_list = [
       } else {
         content = args.content;
       }
-      return `<a href="${convert_arg(args.href)}">${convert_arg(content)}</a>`
+      return `<a href="${convert_arg(args.href, options)}">${convert_arg(content, options)}</a>`;
     },
     {
       phrasing: true,
@@ -217,7 +226,15 @@ let macro_list = [
       }),
     ],
     function(args, options) {
-      return `<code>${convert_arg(args.content)}</code>`
+      let ret = '';
+      if (this.attrs.is_block) {
+        ret += '<pre>'
+      }
+      `<code>${convert_arg(args.content, options)}</code>`;
+      if (this.attrs.is_block) {
+        ret += '</pre>\n'
+      }
+      return ret;
     },
     {
       phrasing: true,
@@ -237,17 +254,17 @@ let macro_list = [
       }),
     ],
     function(args, options) {
-      let content = convert_arg(args.content);
+      let content = convert_arg(args.content, options);
       let id;
       if ('id' in args) {
-        id = convert_arg(args.id);
+        id = convert_arg(args.id, options);
       } else {
         // TODO correct unicode aware algorithm.
         //let content_chars = content
         id = content.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
       }
-      let level = convert_arg(args.level);
-      return `<h${level} id="${id}">${content}</h${level}>\n`
+      let level = convert_arg(args.level, options);
+      return `<h${level} id="${id}">${content}</h${level}>\n`;
     }
   ),
   new Macro(
@@ -258,7 +275,7 @@ let macro_list = [
       }),
     ],
     function(args, options) {
-      return `<p>${convert_arg(args.content)}</p>\n`
+      return `<p>${convert_arg(args.content, options)}</p>\n`;
     }
   ),
   new Macro(
@@ -293,10 +310,10 @@ let macro_list = [
         if ('title' in options) {
           title = options['title'];
         } else {
-          title = IN_OUTPUT_ERROR_PREFIX + 'missing title';
+          let message = 'missing title';
+          title = IN_OUTPUT_ERROR_PREFIX + message;
           if (!options.body_only) {
-            report_error_noline('HTML requires a non-empty title');
-            // TODO report error with exit status.
+            extra_returns.errors.push(new ErrorMessage(message, line, column));
           }
         }
         title = [new AstNode(AstType.PLAINTEXT, 'plaintext', title, 1, 1)];
@@ -308,11 +325,13 @@ let macro_list = [
 <html lang=en>
 <head>
 <meta charset=utf-8>
-<title>${convert_arg(title)}</title>
+<title>${convert_arg(title, options)}</title>
+<style>
+</style>
 <body>
 `
       }
-      ret += convert_arg(args.content);
+      ret += convert_arg(args.content, options);
       if (!options.body_only) {
         ret += `</body>
 </html>
@@ -582,7 +601,10 @@ const parse_add_paragraph = function(
       )
     );
   } else {
-    new_arg.push(...slice);
+    for (const ast of slice) {
+      ast.attrs.is_block = true;
+      new_arg.push(ast);
+    }
   }
 }
 
@@ -757,8 +779,8 @@ const convert = function(
   }
   extra_returns.ast = ast;
   extra_returns.errors.push(...sub_extra_returns.errors);
-  sub_extra_returns = {};
-  output = ast.convert(options, sub_extra_returns);
+  options.extra_returns = {};
+  output = ast.convert(options);
   extra_returns.errors.push(...sub_extra_returns.errors);
   if (output[output.length - 1] !== '\n') {
     output += '\n';

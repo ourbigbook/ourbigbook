@@ -5,7 +5,7 @@ import Router, { useRouter } from 'next/router'
 import ourbigbook from 'ourbigbook/dist/ourbigbook.js';
 import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js';
 import { OurbigbookEditor } from 'ourbigbook/editor.js';
-import { convertOptions, isProduction } from 'front/config';
+import { convertOptions, convertOptionsJson, isProduction } from 'front/config';
 
 import ListErrors from 'front/ListErrors'
 import { slugFromRouter } from 'front'
@@ -64,7 +64,9 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
             ourbigbook,
             ourbigbook_runtime,
             {
-              convertOptions,
+              convertOptions: Object.assign({
+                ourbigbook_json: convertOptionsJson,
+              }, convertOptions),
               handleSubmit,
               input_path,
               modifyEditorInput: (oldInput) => modifyEditorInput(file.title, oldInput),

@@ -11,11 +11,11 @@ Cirodown is designed entirely to allow writing complex professional HTML and PDF
 
 Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation), supporting out of the box feature such as:
 
-\l[references to headers, images, etc.]
+\l[\x[internal-cross-references][references] to \c[headers], \x[images][images], etc.]
 \l[titles on figures, equations, math, etc.]
-\l[KaTeX server side math]
+\l[KaTeX server side \x[math]]
 \l[references across input files]
-\l[table of contents that crosses input files]
+\l[\x[table-of-contents][table of contents] that crosses input files]
 
 It is meant to be both saner and more powerful than Markdown and Asciidoctor.
 
@@ -380,19 +380,21 @@ Explicit container to add further properties: \x[table-my-table].
 ]
 
 \h[2][Images \c[[\image]]]
-{id=image}
+{id=images}
 
-See this image \x[image-lotus-flower]:
+A block image with capital 'i' can be seen at \c[I] \x[xi-chrysanthemum]:
 
-\image[https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Lotus_flower_%28978659%29.jpg/640px-Lotus_flower_%28978659%29.jpg]
-{title=A lotus flower}
-{id=image-lotus-flower}
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg]
+{title=Xi Chrysanthemum}
+{id=image-}
 {source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
 {description=
   We can have multiple paragraphs here, just for any other parameter argument.
 
   I'm not even kidding.
 }
+
+And here is an \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg][Xi Chrysanthemum] inline one with lower case 'i'.
 
 \h[2][Code \c[[\c]] and \c[[\C]]]
 {id=code}

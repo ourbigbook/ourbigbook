@@ -7,7 +7,7 @@ const cirodown = require('./cirodown')
 
 const convert_opts = {
   body_only: true,
-  show_ast: true,
+  //show_ast: true,
   //show_parse: true,
   //show_tokens: true,
   //show_tokenize: true,
@@ -38,7 +38,7 @@ const assert_error = function(input_string, line, column) {
   let extra_returns = {fail: false};
   let output = cirodown.convert(input_string, convert_opts, extra_returns);
   assert.ok(extra_returns.errors.length >= 1);
-  let error = extra_returns.errors.length[0];
+  let error = extra_returns.errors[0];
   assert.strictEqual(error.line, line);
   assert.strictEqual(error.column, column);
 }
@@ -143,9 +143,11 @@ c
 `
 )});
 
-// Errors. Check that they return gracefully
+// Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception.
 // TODO
-//it('unknown macro', ()=>{assert_error('\\reserved_undefined')}
-//it('unknown macro argument', ()=>{assert_convert('\\c{reserved_undefined=abc}')}
+it('unknown macro', ()=>{assert_error('\\reserved_undefined', 1, 2)});
+it('missing positional argument', ()=>{assert_convert('\\p')});
+it('too many positional arguments', ()=>{assert_convert('\\p[ab][cd]')});
+it('unknown named macro argument', ()=>{assert_error('\\c{reserved_undefined=abc}[]', 1, 4)});
 it('named argument without =', ()=>{assert_error('\\p{id ab}[cd]', 1, 6)});

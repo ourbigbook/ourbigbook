@@ -534,7 +534,11 @@ The following are therefore all equivalent:
 \h{id_scope=myscope}[1]{id=asdf qwer}[My asdf]
 ]]
 
-Positional arguments are not mandatory: you can skip the last ones, and this could lead to special sensible defaults.
+Just like named arguments, positional arguments are never mandatory.
+
+If not given, most positional arguments will default to an empty string.
+
+However, some positional arguments can have special effects if not given.
 
 For example, an anchor with the first positional argument present (the URL), but not the second positional argument (the link text) as in:
 
@@ -846,6 +850,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[math]
 \l[LaTeX output]
 \l[pass CLIs to test command to enable token and ast logging]
+\l[correct ID generation algorithm to be Unicode robust]
 
 \h[3][Related projects]
 

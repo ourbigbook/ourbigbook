@@ -519,12 +519,12 @@ async function update_database_after_convert({
   bodySource,
   extra_returns,
   db_provider,
+  had_error,
   is_render_after_extract,
   non_ourbigbook_options,
   renderType,
   path,
-  // boolean
-  render,
+  render, // boolean
   sequelize,
   sha256,
   transaction,
@@ -618,7 +618,7 @@ async function update_database_after_convert({
     // Create a rendering for the current type if one does not exist.
     await sequelize.models.Render.upsert(
       {
-        outdated: !render,
+        outdated: !render || had_error,
         type: sequelize.models.Render.Types[renderType],
         fileId: file.id,
       },

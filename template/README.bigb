@@ -32,13 +32,10 @@ $$
 
 Ciro loves maths, and so equations can have titles, and references to math equations just work! See e.g.: \x[my-favorite-equation]
 $$
-\newcommand{\va}[1]{\overrightarrow{#1}}
-\newcommand{\B}[0]{\va{\mathbf{B}}}
-\newcommand{\E}[0]{\va{\mathbf{E}}}
+\newcommand{\mycmd}[1]{\nabla \cdot #1}
 \newcommand{\divergence}[1]{\nabla \cdot #1}
-\newcommand{\vacuumPermittivity}[0]{\varepsilon_0}
-\divergence{\E} = \frac{\rho}{\vacuumPermittivity} \\
-\divergence{\B} = 0
+\divergence{\va{E}} = \frac{\rho}{\mycmd{\va{E}}} \\
+\divergence{\va{\B}} = 0
 $$
 {title=This is my favorite equation in the entire world!!!}
 {id=my-favorite-equation}

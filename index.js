@@ -8142,7 +8142,16 @@ const OUTPUT_FORMATS_LIST = [
             for (const script of context.options.template_scripts_relative) {
               relative_scripts.push(`<script src="${context.options.template_vars.root_relpath}${script}"></script>\n`);
             }
-            render_env.post_body = relative_scripts.join('') + render_env.post_body + "<script>ourbigbook_runtime.ourbigbook_runtime()</script>\n";
+            const toplevel_scope = calculate_scope(context.toplevel_ast)
+            const ourbigbook_redirect_prefix_raw = toplevel_scope ? `${toplevel_scope}${URL_SEP}` : ''
+            const ourbigbook_redirect_prefix = JSON.stringify(ourbigbook_redirect_prefix_raw).replace(/</g, '\\u003c')
+            const data_script = `<script>
+ourbigbook_split_headers = ${context.options.split_headers};
+ourbigbook_html_x_extension = ${context.options.html_x_extension};
+ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
+</script>
+`
+            render_env.post_body = data_script + relative_scripts.join('') + render_env.post_body + "<script>ourbigbook_runtime.ourbigbook_runtime()</script>\n";
             let relative_styles = [];
             for (const style of context.options.template_styles_relative) {
               relative_styles.push(`@import "${context.options.template_vars.root_relpath}${style}";\n`);

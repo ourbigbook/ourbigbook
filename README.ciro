@@ -1,0 +1,379 @@
+\h1[Cirodown]
+
+A Markup language to write HTML / PDF books that is saner and more powerful than Markdown and Asciidoctor and nicer to write than XML and JSON with reference implementation in JavaScript. No implementation yet.
+
+\toc
+
+\h2[Design goals]
+[id-scope=true]
+
+Cirodown is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
+
+Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation).
+
+It is meant to be both saner and more powerful than Markdown and Asciidoctor.
+
+The tradeoff for those features is that the language is slightly heaver to read and write.
+
+It is intended that this will be an acceptable downside as Cirodown will be used primarily large complex content such as books rather than forum posts, and will therefore primarily written either:
+
+\l[in text editors locally, where users have more features than in random browser textareas]
+\l[in a dedicated website that will revolutionize education, and therefore have a good JavaScript editing interface: \a[https://github.com/cirosantilli/write-free-science-books-to-get-famous-website][]]
+
+\h3[Saner]
+
+To be saner than both Markdown and Asciidoctor, Cirodown has exactly three magic characters:
+
+\l[\c[\\] backslash to start a macro, like LaTeX]
+\l[\c[\[] left square bracket to start an argument of a macro]
+\l[\c[\]] right square bracket]
+
+And double blank newlines for \x[paragraphs][paragraphs] if you are pedantic.
+
+This removes the learning curve of the endless edge cases of Markdown and Asciidoctor much smaller.
+
+Furthermore, that language is designed to be philosophically isomorphic to HTML to
+
+\l[further reduce the learning curve]
+\l[ensure that most of HTML constructs can be reached, including arbitrary nesting]
+
+More precisely:
+
+\l[macro names map to tag names, e.g.: \c[\a] to \c[<a]]
+\l[one of the arguments of macros, maps to the content of the HTML element, and the others map to attributes.
+
+E.g., in a link:
+
+\c[[\a[http://example.com][Link text]]]
+
+the first macro argument:
+
+\c[http://example.com]
+
+maps to the \c[href] of \c[<a], and the second macro argument:
+
+\c[Link text]
+
+maps to the internal content of \c[<a>Link text<>]
+]
+
+\h3[More powerful]
+
+The \x[saner][high sanity of Cirodown], also makes creating new macro extensions extremely easy and intuitive.
+
+All built-in language features use the exact same API as new extensions, which ensures that the extension API is sane forever.
+
+Markdown is clearly missing many key features such as block attributes and internal cross references, and has no standardized extension mechanism.
+
+The "more powerful than Asciidoctor" part is only partially true, since Asciidoctor is very featureful can do basically anything through extensions.
+
+The difference is mostly that Cirodown is completely and entirely focused on making amazing scientific books, and so will have key features for that application out-of-the box.
+
+\h2[Paragraphs]
+
+Paragraph 1.
+
+Paragraph 2.
+
+\h2[Links \c[\a]]
+[id=links]
+
+Link with custom text: \a[http://example.com][my custom link text].
+
+Autolink with an empty link content: \a[http://example.com][].
+
+\a[http://example.com][Multiple
+
+paragraphs]
+
+\h2[Headers and references \c[\h1], \c[\h2], etc. and \c[\x]]
+[id=headers-and-references]
+
+Cross reference (mnemonic \c[x] for "cross") to a header with implicit ID derived from title: \x[my-h3][reference to my h3].
+
+Empty link title expands to the header title: \x[my-h3][].
+
+Or to get a full "Section X.Y My h3" we add the optional \c[\[style=full\]] param: \x[style=full][my-h3][].
+
+Reference to a header with explicit ID: \x[my-h3-custom-id][].
+
+\h3[My h3]
+
+Content of my h3.
+
+\h3[My h3 number 2]
+[id=my-h3-custom-id]
+
+Content of my h3 number 2.
+
+\h4[Unlimited header levels]
+
+There is no limit to how many levels we can have! HTML is limited to \c[h6], so Cirodown just renders \c[<div class="header">] instead.
+
+\h5[My h5]
+
+\h6[My h6]
+
+\h7[My h7]
+
+\h8[My h8]
+
+\h10[My h9]
+
+\h10[My h10]
+
+\h11[My h11]
+
+\h12[My h12]
+
+\h13[My h12]
+
+\h3[Cross file references]
+
+Reference to the first header of another file: \x[not-readme][]. That header gets its ID from the file name by default.
+
+Reference to an internal header of another file: \x[not-readme/h2-in-not-the-readme][]. By default, That header ID gets prefixed by the ID of the top header.
+
+\h3[Table of contents \c[\toc]]
+[id=table-of-contents]
+
+We can add table of contents anywhere in the document, e.g. here is another one:
+
+\toc
+
+Table of contents only include the items which live in child headers relative to the current location.
+
+\h4[id-scope]
+
+If this header attribute is \c[true], then the ID of all children are prefixed with the ID of this header + a slash \c[/].
+
+This property is true by default for cross file references, although it can be turned off explicitly with \c[id-scope=false].
+
+References withing a single scope do not need the parent scope prefix.
+
+\h3[Includes \c[\include]]
+[id=includes]
+
+The \c[\include] macro achieves the following goals:
+
+\l[show a single header at multiple locations in the table of contents. This makes the TOC into a full blown graph rather than a tree.
+
+This can be used to implement a tag entirely within the ToC!
+]
+\l[determine where external files will be placed in \c[`--single-page` mode.
+
+When compiling to HTML, we can choose to either:
+
+\l[compile as multiple pages]: default, includes show on ToC and render as \x[headers-and-references][internal cross references]: \c[[\[x][]]
+\l[compile as a single page]: selected with the \c[cirodown --single-page] option
+]
+
+If an external header would be included multiple times in a single output page, the ToC contents are duplicated, but the content itself cannot be because that would lead to ID conflicts and large pages.
+
+Therefore, in this case you are forced to specify which include will actually expand to the \c[canonical] attribute:
+
+\c[[
+\include[not-the-readme]
+[canonical=true]
+]]
+
+\h2[Lists]
+
+With implicit container:
+
+\l[a]
+\l[b]
+\l[c]
+
+Equivalent with explicit container:
+
+\ul[
+\l[a]
+\l[b]
+\l[c]
+]
+
+The explicit container is required if you want to add properties to the list, e.g. a title and an ID: \x[list-my-id]:
+
+\ul
+[title=My list title]
+[id=list-my-id]
+[
+\l[a]
+\l[b]
+\l[c]
+]
+
+It is also required if you want ordered lists:
+
+\ol[
+\l[first]
+\l[second]
+\l[third]
+]
+
+Nested:
+
+\l[a]
+\l2[a1]
+\l2[a2]
+\l2[a2]
+\l[b]
+\l[c]
+
+Equivalent:
+
+\l[a
+
+\l[a1]
+\l[a2]
+\l[a2]
+]
+\l[b]
+\l[c]
+
+With paragraphs:
+
+\l[a]
+\l[I have
+
+Multiple paragraphs.
+
+\l[And]
+\l[also]
+\l[a]
+\l[list]
+]
+\l[c]
+
+\h2[Tables \c[\table], \c[\tr], \c[\th] and \c[\td]]
+[id=tables]
+
+Similar to lists. Implicit container:
+
+\tr[
+\th[Header 1]
+\th[Header 2]
+]
+\tr[
+\td[1 1]
+\td[1 2]
+]
+\tr[
+\td[2 1]
+\td[2 2]
+]
+
+Explicit container to add further properties: \x[table-my-table][].
+
+\table
+[title=My table title]
+[id=table-my-table]
+[
+\tr[
+\th[Header 1]
+\th[Header 2]
+]
+\tr[
+\td[1 1]
+\td[1 2]
+]
+\tr[
+\td[2 1]
+\td[2 2]
+]
+]
+
+\h2[Figures]
+
+See this image \x[image-lotus-flower][]:
+
+\img[https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Lotus_flower_%28978659%29.jpg/640px-Lotus_flower_%28978659%29.jpg]
+[title=A lotus flower]
+[id=image-lotus-flower]
+[source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg]
+[description=We can have multiple paragraphs here.
+
+I'm not even kidding.
+]
+
+\h2[Code \c[\c]]
+[id=code]
+
+My inline \c[code block] is awesome.
+
+Code block:
+
+\c[
+Large
+
+block
+of
+
+code
+]
+
+\h2[Math \c[\m]]
+[id=math]
+
+Via KaTeX server side, oh yes!
+
+Just like code, but LaTeX math goes in.
+
+My inline \m[\sqrt{1 + 1}] is awesome.
+
+Escape the closing bracket with backslash: \m[1 - [1 + 1\] = -1].
+
+Escape the closing bracket with double open and close: \m[[1 - [1 + 1\] = -1]] is awesome.
+
+Display math:
+
+\m[
+\sqrt{1 + 1}
+\sqrt{1 + 1}
+]
+
+\h2[Cirodown syntax]
+
+\h3[Escape characters]
+
+Each macro argument is of either of two types:
+
+\l[literal: the content will not be parsed further by Cirodown. You only need to escape the closing \c[\]]
+\l[non-literal: the content will be parsed further by Cirodown, and possibly expand in to further nested HTML. You need to escape all of: \c[\\], \c[\[] and \c[\]]]
+
+For example, the content of \x[code] and \x[math] macro arguments is literal as you would expect, so we could escape it as:
+
+\c[Cirodown links look like this: \c[http://example.com\][Example.\]]
+
+Alternatively we can also use multiple open and close separators like a heredoc, e.g. with 2:
+
+\c[[Cirodown links look like this: \c[http://example.com][Example.]]]
+
+or similarly 3:
+
+\c[[[
+A line.
+[[
+Another one.
+]]
+And another one.
+]]]
+
+If the first character of a code block is a \[ however, then you do need to escape it to prevent ambiguity with the heredoc syntax, e.g.:
+
+\c[\[ first char was an open brace]
+
+\h3[Macro argument order]
+
+TODO: optional params have key always and can come in any order. Mandatory params are either "at start" or "at end", and mandatory params with potentially nested content are usually left for "at end", with the exception of headers, which are a fake nesting.
+
+\h2[Tooling]
+
+\h3[Server and dependency resolution]
+
+TODO xref dep resolution, on demand rebuild
+
+\h3[Editor and preview]
+
+TODO

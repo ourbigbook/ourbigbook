@@ -10,8 +10,9 @@ function modifyEditorInput(title, body) {
   // = h1
   // {c}
   if (body) {
+    ret += '\n'
     if (body[0] !== cirodown.START_NAMED_ARGUMENT_CHAR) {
-      ret += '\n\n'
+      ret += '\n'
     }
     ret += body
   }

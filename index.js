@@ -126,6 +126,7 @@ class AstNode {
     // An element with {scope} set does not get this option set (except if due to ancestors),
     // only its children do.
     this.scope = options.scope;
+    this.subdir = options.subdir;
 
     // For elements that are of AstType.PLAINTEXT.
     this.text = options.text
@@ -487,6 +488,7 @@ class AstNode {
             header_tree_node_word_count: ast_json.header_tree_node_word_count,
             is_first_header_in_input_file: ast_json.is_first_header_in_input_file,
             scope: ast_json.scope,
+            subdir: ast_json.subdir,
             split_default: ast_json.split_default,
             synonym: ast_json.synonym,
             word_count: ast_json.word_count,
@@ -620,6 +622,7 @@ class AstNode {
       node_type:  symbol_to_string(this.node_type),
       scope:      this.scope,
       source_location: this.source_location,
+      subdir:     this.subdir,
       text:       this.text,
       first_toplevel_child: this.first_toplevel_child,
       is_first_header_in_input_file: this.is_first_header_in_input_file,
@@ -2140,6 +2143,9 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
         ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id
       }
     }
+    if (ast.id && ast.subdir) {
+      ast.id = ast.subdir + Macro.HEADER_SCOPE_SEPARATOR + ast.id
+    }
     ast.index_id = index_id;
     if (ast.id !== undefined && !ast.force_no_index) {
       let non_indexed_ast = non_indexed_ids[ast.id];
@@ -2190,6 +2196,14 @@ function calculate_scope(ast) {
   let parent_scope;
   if (ast.scope !== undefined) {
     parent_scope = ast.scope;
+  }
+  if (ast.subdir) {
+    if (parent_scope) {
+      parent_scope += Macro.HEADER_SCOPE_SEPARATOR
+    } else {
+      parent_scope = ''
+    }
+    parent_scope += ast.subdir
   }
 
   let self_scope;
@@ -2645,6 +2659,20 @@ async function parse_include(
     options.errors.push(...convert_extra_returns.errors);
   }
   return convert_extra_returns.ast.args.content;
+}
+
+// Convert an argument as an ID, notably:
+// - no HTML escapes
+// - plaintext conversion
+function convert_id_arg(arg, context) {
+  return render_arg_noescape(arg,
+    // This was added because it was blowing up in the edge case of
+    // \x[\m[1]] and others during parse to setup the x DB
+    // because we hadn't validate validated elements
+    // there yet. Not sure we could, no patience.
+    // This fix relies on the expectation that id_conversion will
+    // not rely on validate_ast. Maybe that is reasonable.
+    clone_and_set(context, 'id_conversion', true))
 }
 
 function convert_init_context(options={}, extra_returns={}) {
@@ -4161,6 +4189,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
           ast.is_first_header_in_input_file = true;
         }
+        ast.subdir = convert_id_arg(ast.args.subdir, context)
 
         // Required by calculate_id.
         validate_ast(ast, context);
@@ -4480,7 +4509,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         options.add_refs_to_x.push({
           ast,
           title_ast_ancestors: Object.assign([], title_ast_ancestors),
-          target_id: x_target_id(ast, context),
+          target_id: convert_id_arg(ast.args.href, context),
         })
       }
 
@@ -5752,22 +5781,11 @@ function x_child_db_effective_id(target_id, context, ast) {
   }
 }
 
-function x_target_id(ast, context) {
-  return render_arg_noescape(ast.args.href,
-    // This was added because it was blowing up in the edge case of
-    // \x[\m[1]] and others during parse to setup the x DB
-    // because we hadn't validate validated elements
-    // there yet. Not sure we could, no patience.
-    // This fix relies on the expectation that id_conversion will
-    // not rely on validate_ast. Maybe that is reasonable.
-    clone_and_set(context, 'id_conversion', true))
-}
-
 /**
  * @return {[String, String]} [href, content] pair for the x node.
  */
 function x_get_href_content(ast, context) {
-  const target_id = x_target_id(ast, context);
+  const target_id = convert_id_arg(ast.args.href, context);
   if (context.options.magic_leading_at && target_id[0] === AT_MENTION_CHAR) {
     return [html_attr('href', WEB_URL + target_id.substr(1)), target_id];
   }
@@ -6964,6 +6982,9 @@ const DEFAULT_MACRO_LIST = [
         }),
         new MacroArgument({
           name: 'splitSuffix',
+        }),
+        new MacroArgument({
+          name: 'subdir',
         }),
         new MacroArgument({
           name: Macro.SYNONYM_ARGUMENT_NAME,

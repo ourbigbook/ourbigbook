@@ -426,9 +426,13 @@ HTML is randomly limited to \c[h6], so Cirodown just renders higher levels as an
 \h[3][Table of contents \c[[\toc]]]
 {id=table-of-contents}
 
-Only one ToC shows per document. Any ToC besides the first one is ignored.
+Only one ToC shows per document.
+
+Any ToC besides the first one is ignored. TODO make it into an error instead?
 
 The ToC ignores \c[[\h[1\]]] by default, as we encourage that header level to appear only once and represent the main title under which the entire document goes.
+
+\c[[\toc]] from \x[includes][includes] are ignored.
 
 \h[4][id_scope]
 

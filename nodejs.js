@@ -21,6 +21,8 @@ const PACKAGE_NODE_MODULES_PATH = path.join(PACKAGE_PATH, 'node_modules');
 exports.PACKAGE_NODE_MODULES_PATH = PACKAGE_NODE_MODULES_PATH;
 const PACKAGE_PACKAGE_JSON_PATH = path.join(PACKAGE_PATH, 'package.json');
 exports.PACKAGE_PACKAGE_JSON_PATH = PACKAGE_PACKAGE_JSON_PATH;
+const PACKAGE_SASS_BASENAME = PACKAGE_NAME + '.scss';
+exports.PACKAGE_SASS_BASENAME = PACKAGE_SASS_BASENAME;
 const LOCAL_INCLUDES = [
   path.join(PACKAGE_NODE_MODULES_PATH, 'katex', 'dist', 'katex.min.css'),
   path.join(PACKAGE_NODE_MODULES_PATH, 'normalize.css', 'normalize.css'),

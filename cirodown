@@ -420,7 +420,7 @@ if (commander.helpMacros) {
   let publish = commander.publish || commander.publishCommit !== undefined;
   let html_x_extension;
   let cirodown_json = {};
-  if (fs.existsSync(CIRODOWN_JSON)) {
+  if (inputPath !== undefined && fs.existsSync(CIRODOWN_JSON)) {
     Object.assign(cirodown_json, JSON.parse(fs.readFileSync(CIRODOWN_JSON)));
   }
   if (publish) {
@@ -451,19 +451,23 @@ if (commander.helpMacros) {
   } else {
     options.template = undefined;
   }
-  if (inputPath === undefined && (publish || commander.watch)) {
-    inputPath = '.';
-  }
   let input_dir;
-  if (fs.lstatSync(inputPath).isFile()) {
-    input_dir = path.dirname(inputPath);
+  if (inputPath === undefined) {
+    if (publish || commander.watch) {
+      inputPath = '.';
+    }
+    input_dir = undefined;
   } else {
-    input_dir = inputPath;
-  }
-  try {
-    options.template_vars.git_sha = git_sha(input_dir);
-  } catch(error) {
-    // Not in a git repo.
+    if (fs.lstatSync(inputPath).isFile()) {
+      input_dir = path.dirname(inputPath);
+    } else {
+      input_dir = inputPath;
+    }
+    try {
+      options.template_vars.git_sha = git_sha(input_dir);
+    } catch(error) {
+      // Not in a git repo.
+    }
   }
   if (commander.generate || commander.generateMultifile) {
     let outdir;

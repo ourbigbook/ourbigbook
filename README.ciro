@@ -1819,6 +1819,10 @@ We pick Liquid because it is server-side safe: if we ever some day offer a compi
 \h[4][`cirodown.json`]
 {id=cirodown-json}
 
+Cirodown configuration file that affects the behaviour of cirodown for all files in the directory.
+
+`cirodown.json` not used for input from stdin, since we are mostly doing quick tests in that case.
+
 \h[5][`prepublish`]
 {id=prepublish}
 

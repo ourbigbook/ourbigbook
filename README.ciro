@@ -86,7 +86,7 @@ The difference is mostly that Cirodown is completely and entirely focused on mak
 Another advantage over Asciidoctor is that the reference implementation of Cirodown is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with \a[https://github.com/opal/opal][Opal], but who wants to deal with that layer of complexity?
 
 \h[2][Paragraphs \c[[\p]]]
-[paragraphs]
+{id=paragraphs}
 
 OK, this is too common, so we opted for some insanity here: double newline is a paragraph!
 
@@ -126,7 +126,7 @@ would parse as:
 Note how the second argument has had newlines added because it contains
 
 \h[2][Links \c[[\a]]]
-[links]
+{id=links}
 
 Autolink (link text is the same as the link): \a[http://example.com].
 
@@ -137,7 +137,7 @@ Link with custom text: \a[http://example.com][my custom link text].
 paragraphs]
 
 \h[2][Internal cross references \c[[\x]]]
-[internal-cross-references]
+{id=internal-cross-references}
 
 Every macro in Cirodown can have an optional \c[id] and a \c[title] property.
 
@@ -146,7 +146,7 @@ Those that have a \c[title] but no \c[id], get an auto-generated ID from the tit
 For macros that do have an ID, you can write a cross reference to it:
 
 \C[[
-\h[2][My title][my-id]
+\h[2][My title]{id=my-id}
 
 Read this \x[my-id][amazing section].
 ]]
@@ -154,7 +154,7 @@ Read this \x[my-id][amazing section].
 If the second argument, the \c[content], is not present, it expand to the header title, e.g.:
 
 \C[[
-\h[2][My title][my-id]
+\h[2][My title]{id=my-id}
 
 Read this \x[my-id].
 ]]
@@ -162,15 +162,15 @@ Read this \x[my-id].
 is the same as:
 
 \C[[
-\h[2][My title][my-id]
+\h[2][My title]{id=my-id}
 
 Read this \x[my-id][My title].
 ]]
 
-To also show the section auto-generated number as in"Section X.Y My title" we add the optional \c{\{style=full\}} param to the cross reference, for example:
+To also show the section auto-generated number as in "Section X.Y My title" we add the optional \c{\{style=full\}} param to the cross reference, for example:
 
 \C[[
-\h[2][My title][my-id]
+\h[2][My title]{id=my-id}
 
 Read this \x[my-id]{style=full}.
 ]]
@@ -215,7 +215,7 @@ So for example, the following automatic IDs would be generated:
 ]
 
 \h[2][Headers \c[[\h[1]]], \c[[\h[2]]], etc.]
-[headers]
+{id=headers}
 
 \h[3][Unlimited header levels]
 
@@ -276,7 +276,7 @@ rather than having explicit levels.
 But we chose not to do it like most markups available because it leads to too many nestiing levels, and hard to determine where you are without tooling.
 
 \h[3][Includes \c[[\include]]]
-[includes]
+{id=includes}
 
 The \c[[\include]] macro achieves the following goals:
 
@@ -303,7 +303,7 @@ Therefore, in this case you are forced to specify which include will actually ex
 ]]
 
 \h[2][Lists \c[[\l]]]
-[lists]
+{id=lists}
 
 With implicit container:
 
@@ -365,7 +365,7 @@ List item with a paragraph inside of it:
 \l[c]
 
 \h[2][Tables \c[[\table]], \c[[\tr]], \c[[\th]] and \c[[\td]]]
-[tables]
+{id=tables}
 
 Similar to lists. Implicit container with optional indentation to improve readability:
 
@@ -402,7 +402,7 @@ Explicit container to add further properties: \x[table-my-table].
 ]
 
 \h[2][Figures \c[[\img]]]
-[figures]
+{id=figures}
 
 See this image \x[image-lotus-flower]:
 
@@ -417,7 +417,7 @@ See this image \x[image-lotus-flower]:
 }
 
 \h[2][Code \c[[\c]] and \c[[\C]]]
-[code]
+{id=code}
 
 Inline code blocks (code blocks that should appear in the middle of a paragraph) are done with lower case \c[c]:
 
@@ -476,7 +476,7 @@ The distinction between inline \c[c] and block \c[C] code blocks is needed becau
 We could have chosen to do some magic to differentiate between them, e.g. checking if the block is the only element in a paragraph, but we decided not to do that to keep the language saner.
 
 \h[2][Math \c[[\m]] and \c[[\M]]]
-[math]
+{id=math}
 
 Via KaTeX server side, oh yes!
 
@@ -573,7 +573,7 @@ and this non-recommended mixed style:
 This allows to greatly improve the readability of long argument lists by having them one per line.
 
 \h[4][Literal arguments]
-[literal]
+{id=literal}
 
 TODO
 
@@ -783,7 +783,7 @@ Everything that you need to write Cirodown tooling, is present in the main API.
 All tooling will be merged into one singl repo.
 
 \h[3][The \c[[\toplevel]] implicit macro]
-[topelevel]
+{id=topelevel}
 
 Every Cirodown document is implicitly put inside a \c[[\toplevel]] document and:
 

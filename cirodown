@@ -28,11 +28,14 @@ const AstNode = class {
     this.column = column;
   }
 
-  convert(options) {
+  /**
+   * @param {Object} options - global options passed in from toplevel
+   */
+  convert(options, is_attr) {
     if (!('errors' in options.extra_returns)) {
       options.extra_returns.errors = [];
     }
-    return macros[this.macro_name].convert(this, options);
+    return macros[this.macro_name].convert(this, options, is_attr);
   }
 
   toJSON() {
@@ -88,6 +91,7 @@ const TokenType = make_enum([
   'POSITIONAL_ARGUMENT_END',
   'NAMED_ARGUMENT_START',
   'NAMED_ARGUMENT_END',
+  'NAMED_ARGUMENT_NAME',
 ]);
 
 const AstType = make_enum([
@@ -162,6 +166,9 @@ const Macro = class {
     let i = 0;
     for (const arg of args) {
       let name = arg.name;
+      if (name == Macro.id_macro_name) {
+        throw new Error(`name "${Macro.id_macro_name}" is reserved and automatically added`);
+      }
       if (name in this.name_to_arg) {
         throw new Error('name already taken: ' + name);
       }
@@ -169,8 +176,12 @@ const Macro = class {
       this.index_to_arg[i] = arg;
       i += 1;
     }
+    this.name_to_arg[Macro.id_macro_name] = new Argument({
+      name: Macro.id_macro_name,
+    })
   }
 }
+Macro.id_macro_name = 'id'
 
 // https://stackoverflow.com/questions/7837456/how-to-compare-arrays-in-javascript
 const array_equals = function(arr1, arr2) {
@@ -187,13 +198,46 @@ const array_equals = function(arr1, arr2) {
  * Convert a list of arguments and join them up.
  *
  * @param {List[AstNode]} arg
+ * @param {Object} options - global options passed in from toplevel
+ * @param {boolean} is_attr - are we inside an HTML attribute?
+ *        If the parent is, then the child must also be.
  */
-const convert_arg = function(arg, options) {
+const convert_arg = function(arg, options, is_attr=false) {
   let converted_arg = '';
   for (const ast_node of arg) {
-    converted_arg += ast_node.convert(options);
+    converted_arg += ast_node.convert(options, is_attr);
   }
   return converted_arg;
+}
+
+/** Helper to convert multiple parameteres directly to HTML attributes.
+ *
+ * The ID is automatically included.
+ */
+const html_convert_attrs = function(args, options, arg_names=[]) {
+  let ret = '';
+  arg_names.push(Macro.id_macro_name);
+  for (const arg_name of arg_names) {
+    if (arg_name in args) {
+      ret += ` ${arg_name}="${convert_arg(args[arg_name], options, true)}"`;
+    }
+  }
+  return ret;
+}
+
+function html_escape_content(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+  ;
+}
+
+function html_escape_attr(str) {
+  return html_escape_content(str)
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+  ;
 }
 
 let macro_list = [
@@ -207,13 +251,13 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(ast, options) {
+    function(ast, options, is_attr) {
       if ((!('content' in ast.args))) {
         content = ast.args.href;
       } else {
         content = ast.args.content;
       }
-      return `<a href="${convert_arg(ast.args.href, options)}">${convert_arg(content, options)}</a>`;
+      return `<a href="${convert_arg(ast.args.href, options, true)}">${convert_arg(content, options, is_attr)}</a>`;
     },
     {
       phrasing: true,
@@ -226,8 +270,8 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(ast, options) {
-      return `<pre><code>${convert_arg(ast.args.content, options)}</code></pre>\n`;
+    function(ast, options, is_attr) {
+      return `<pre><code>${convert_arg(ast.args.content, options, is_attr)}</code></pre>\n`;
     },
   ),
   new Macro(
@@ -237,8 +281,8 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(ast, options) {
-      return `<code>${convert_arg(ast.args.content, options)}</code>`;
+    function(ast, options, is_attr) {
+      return `<code>${convert_arg(ast.args.content, options, is_attr)}</code>`;
     },
     {
       phrasing: true,
@@ -253,21 +297,18 @@ let macro_list = [
       new Argument({
         name: 'content',
       }),
-      new Argument({
-        name: 'id',
-      }),
     ],
-    function(ast, options) {
-      let content = convert_arg(ast.args.content, options);
+    function(ast, options, is_attr) {
+      let content = convert_arg(ast.args.content, options, is_attr);
       let id;
       if ('id' in ast.args) {
-        id = convert_arg(ast.args.id, options);
+        id = convert_arg(ast.args.id, options, is_attr);
       } else {
         // TODO correct unicode aware algorithm.
         //let content_chars = content
         id = content.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
       }
-      let level = convert_arg(ast.args.level, options);
+      let level = convert_arg(ast.args.level, options, is_attr);
       return `<h${level} id="${id}">${content}</h${level}>\n`;
     }
   ),
@@ -278,8 +319,8 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(ast, options) {
-      return `<p>${convert_arg(ast.args.content, options)}</p>\n`;
+    function(ast, options, is_attr) {
+      return `<p${html_convert_attrs(ast.args, options)}>${convert_arg(ast.args.content, options, is_attr)}</p>\n`;
     }
   ),
   new Macro(
@@ -289,8 +330,12 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(ast, options) {
-      return ast.args;
+    function(ast, options, is_attr) {
+      if (is_attr) {
+        return html_escape_attr(ast.args);
+      } else {
+        return html_escape_content(ast.args);
+      }
     },
     {
       phrasing: true,
@@ -306,7 +351,7 @@ let macro_list = [
         name: 'title',
       }),
     ],
-    function(ast, options) {
+    function(ast, options, is_attr) {
       let title;
       if ('title' in ast.args) {
         title = ast.args.title;
@@ -329,7 +374,7 @@ let macro_list = [
 <html lang=en>
 <head>
 <meta charset=utf-8>
-<title>${convert_arg(title, options)}</title>
+<title>${convert_arg(title, options, is_attr)}</title>
 <style>
 code {
   background-color: 111111;
@@ -338,7 +383,7 @@ code {
 <body>
 `
       }
-      ret += convert_arg(ast.args.content, options);
+      ret += convert_arg(ast.args.content, options, is_attr);
       if (!options.body_only) {
         ret += `</body>
 </html>
@@ -360,6 +405,7 @@ const ESCAPE_CHAR = '\\';
 const START_POSITIONAL_ARGUMENT_CHAR = '[';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';
 const START_NAMED_ARGUMENT_CHAR = '{';
+const NAMED_ARGUMENT_EQUAL_CHAR = '=';
 const END_NAMED_ARGUMENT_CHAR = '}';
 const ESCAPABLE_CHARS = new Set([
   ESCAPE_CHAR,
@@ -381,11 +427,11 @@ const char_is_alphanumeric = function(c) {
   )
 }
 
-// Valid macro name characters.
-const char_is_macro = function (c) {
+// Valid macro name / argument characters.
+// Compatible with JavaScript-like function names / variables.
+const char_is_identifier = function (c) {
   return char_is_alphanumeric(c) || c === '_';
 };
-char_is_macro.chars = new Set(['-', '_']);
 
 const closing_char = function(c) {
   if (c === START_POSITIONAL_ARGUMENT_CHAR)
@@ -434,6 +480,9 @@ const Tokenizer = class {
     this.push_token(TokenType.MACRO_NAME, 'toplevel');
     this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
     while (!this.is_end()) {
+      this.log_debug('tokenize loop');
+      this.log_debug('this.cur_c: ' + this.cur_c);
+      this.log_debug();
       if (this.cur_c === '\\') {
         let start_line = this.line;
         let start_column = this.column;
@@ -443,7 +492,7 @@ const Tokenizer = class {
         } else if (ESCAPABLE_CHARS.has(this.cur_c)) {
           this.consume_plaintext_char();
         } else {
-          let macro_name = this.tokenize_func(char_is_macro);
+          let macro_name = this.tokenize_func(char_is_identifier);
           this.consume_optional_newline();
           this.push_token(
             TokenType.MACRO_NAME,
@@ -453,9 +502,27 @@ const Tokenizer = class {
           );
         }
       } else if (this.cur_c === START_NAMED_ARGUMENT_CHAR) {
+        this.push_token(TokenType.NAMED_ARGUMENT_START);
+        // Tokenize past the last open char.
+        let open_length = this.tokenize_func(
+          (c)=>{return c === START_NAMED_ARGUMENT_CHAR}
+        ).length;
+        let arg_name = this.tokenize_func(char_is_identifier);
+        this.push_token(TokenType.NAMED_ARGUMENT_NAME, arg_name);
         this.consume();
+        if (this.cur_c !== NAMED_ARGUMENT_EQUAL_CHAR) {
+          this.error(`was expecting the character: ${NAMED_ARGUMENT_EQUAL_CHAR}`);
+        }
         this.consume_optional_newline();
+        if (open_length > 1) {
+          // Literal argument.
+          let close_string = closing_char(
+            START_NAMED_ARGUMENT_CHAR).repeat(open_length);
+          this.tokenize_plaintext_until_string(close_string);
+          this.push_token(TokenType.NAMED_ARGUMENT_END);
+        }
       } else if (this.cur_c === END_NAMED_ARGUMENT_CHAR) {
+        this.push_token(TokenType.NAMED_ARGUMENT_END);
         this.consume();
         this.consume_optional_newline();
       } else if (this.cur_c === START_POSITIONAL_ARGUMENT_CHAR) {
@@ -467,7 +534,8 @@ const Tokenizer = class {
         this.consume_optional_newline();
         if (open_length > 1) {
           // Literal argument.
-          let close_string = closing_char(START_POSITIONAL_ARGUMENT_CHAR).repeat(open_length);
+          let close_string = closing_char(
+            START_POSITIONAL_ARGUMENT_CHAR).repeat(open_length);
           this.tokenize_plaintext_until_string(close_string);
           this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
         }
@@ -549,6 +617,10 @@ const Tokenizer = class {
   }
 
   push_token(token, value, token_line, token_column) {
+    this.log_debug('push_token');
+    this.log_debug('token: ' + token.toString());
+    this.log_debug('value: ' + value);
+    this.log_debug();
     if (token_line === undefined)
       token_line = this.line;
     if (token_column === undefined)
@@ -559,9 +631,8 @@ const Tokenizer = class {
   // Create a token with all consecutive chars that are accepted
   // by the given function.
   tokenize_func(f) {
-    this.log_debug('tokenize_func');
+    this.log_debug('tokenize func');
     this.log_debug('this.cur_c: ' + this.cur_c);
-    this.log_debug();
     let value = '';
     while (f(this.cur_c)) {
       value += this.cur_c;
@@ -591,6 +662,8 @@ const parse = function(tokens, options, extra_returns={}) {
     token: tokens[0],
     tokens: tokens,
   };
+  // Call parse_macro on the toplevel macro. The entire document is
+  // under that macro, so this will recursively parse everything.
   let ast = parse_macro(state);
   if (state.i < tokens.length) {
     parse_report_error(state, `unexpected tokens at the end of input`);
@@ -686,7 +759,7 @@ const parse_macro = function(state) {
     let macro_name = state.token.value;
     let macro_line = state.token.line;
     let macro_column = state.token.column;
-    let arg_count = 0;
+    let positional_arg_count = 0;
     let args = {};
     let macro;
     let macro_type;
@@ -705,17 +778,22 @@ const parse_macro = function(state) {
       state.token.type === TokenType.NAMED_ARGUMENT_START
     ) {
       let arg_name;
-      if (state.token.type === TokenType.POSITIONAL_ARGUMENT_START) {
+      let open_type = state.token.type;
+      if (open_type === TokenType.POSITIONAL_ARGUMENT_START) {
         if (macro_type === AstType.ERROR) {
-          arg_name = arg_count.toString();
+          arg_name = positional_arg_count.toString();
         } else {
           // TODO check if argument exists, and handle error otherwise.
-          arg_name = macro.index_to_arg[arg_count].name;
+          arg_name = macro.index_to_arg[positional_arg_count].name;
+          positional_arg_count += 1;
         }
       } else {
-        //arg = macro.index_to_arg[parse_consume(state)];
+        // Named argument.
+        // Parse the argument name out.
+        parse_consume(state);
+        arg_name = state.token.value;
+        // TODO check if argument exists, and handle error otherwise.
       }
-      let open_type = state.token.type;
       let arg_children = [];
       // Consume the *_ARGUMENT_START token out.
       parse_consume(state);
@@ -731,7 +809,6 @@ const parse_macro = function(state) {
           `expected a closing ${END_POSITIONAL_ARGUMENT_CHAR} found ${state.token.type.toString()}`);
       }
       args[arg_name] = arg_children;
-      arg_count += 1;
       // Consume the *_ARGUMENT_END token out.
       parse_consume(state);
     }
@@ -817,7 +894,9 @@ const convert = function(
   let tokens = (new Tokenizer(input_string, sub_extra_returns, options.show_tokenize)).tokenize();
   if (options.show_tokens) {
     console.error('tokens:');
-    console.error(JSON.stringify(tokens, null, 2));
+    for (let i = 0; i < tokens.length; i++) {
+      console.error(`${i}: ${JSON.stringify(tokens[i], null, 2)}`);
+    }
     console.error();
   }
   extra_returns.tokens = tokens;
@@ -832,7 +911,7 @@ const convert = function(
   extra_returns.ast = ast;
   extra_returns.errors.push(...sub_extra_returns.errors);
   options.extra_returns = {};
-  output = ast.convert(options);
+  output = ast.convert(options, false);
   extra_returns.errors.push(...sub_extra_returns.errors);
   if (output[output.length - 1] !== '\n') {
     output += '\n';
@@ -858,7 +937,9 @@ if (require.main === module) {
   program.option(
     '--show-tokens-inside',
     'print the token stream to stderr from inside convert before it returns. ' +
-      'Useful to debug the program if conversion blow up on the next stages.'
+      'Useful to debug the program if conversion blow up on the next stages. ' +
+      'Also adds token index to the output, which makes debugging the parser ' +
+      'way easier.'
   );
   let inputPath;
   program.arguments(

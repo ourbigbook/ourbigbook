@@ -2482,7 +2482,7 @@ Have a look at this amazing image: \x[image-my-test-image].
 This exemplifies the following parameters:
 * `title`: analogous to the <\H title argument>. Shows up preeminently, and sets a default ID if one is not given. It is recommended that you don't add a period `.` to it, as that would show in <cross references>
 * <image description argument>[`description`]: similar to `title`, but allow for further explanations without them appearing in <cross reference>[cross references] to the image
-* `source`: a standardized way to credit an image by linking to a URL that contains further image metadata
+* <image `source` argument>[`source`]: a standardized way to credit an image by linking to a URL that contains further image metadata
 For further discussion on the effects of ID see: <image ID>{full}.
 
 And this is how you make an inline image inline one with lower case `i`:
@@ -2778,6 +2778,27 @@ Stuff after the image description.
 ]]
 
 We recommend adding a period or other punctuation to the end of every description.
+
+= Image `source` argument
+{parent=Image argument}
+{tag=Named argument}
+
+Where the image was taken from, e.g.:
+\OurBigBookExample[[
+\Image[https://upload.wikimedia.org/wikipedia/commons/6/68/Akha_cropped_hires.JPG]
+{title=A couple}
+{source=https://en.wikipedia.org/wiki/Human}
+]]
+
+The `source` is automatically inferred for certain known websites, e.g.:
+* Wikimedia `https://upload.wikimedia.org/wikipedia/commons`
+  * from: https://upload.wikimedia.org/wikipedia/commons/6/68/Akha_cropped_hires.JPG
+  * to: https://en.wikipedia.org/wiki/File:Akha_cropped_hires.JPG
+  Example:
+  \OurBigBookExample[[
+  \Image[https://upload.wikimedia.org/wikipedia/commons/6/68/Akha_cropped_hires.JPG]
+  {title=A couple no source}
+  ]]
 
 = Image `src` argument
 {parent=Image argument}
@@ -9153,9 +9174,13 @@ Some blobs were unfortunately added to this repository earlier on, but when we s
 = Merchandise
 {parent=Publicity}
 
-= T-shirt
+= Clothing
 {c}
 {parent=Merchandise}
+
+= T-shirt
+{c}
+{synonym}
 
 We are thinking about the following layout:
 * front: "OurBigBook.com" on upper left chest text
@@ -9164,8 +9189,10 @@ We are thinking about the following layout:
   * logo below text centered
 We are planning on using a clear green on white color scheme to reflect the current website CSS.
 
+TODO ideas: understand what students wear, and the copy it with our logo. E.g. for https://ourbigbook.com/go/topic/oxbridge[Oxbridge], one could design https://ourbigbook.com/go/topic/oxbridge[college puffer jackets].
+
 = tshirtstudio.com
-{parent=T-shirt}
+{parent=Clothing}
 
 All items available at: https://www.tshirtstudio.com/marketplace/ourbigbook-com from <tshirtstudio.com>. Each sale includes a 5 dollar/euro/pound donation to the project.
 
@@ -9411,6 +9438,7 @@ Websites that accept banners:
 * YouTube
 * Reddit
 * Patreon
+* Facebook
 
 = Demo videos
 {parent=Publicity}

@@ -2,8 +2,8 @@ import { useRouter } from "next/router";
 import React from "react";
 import { trigger } from "swr";
 
-import CustomImage from "components/common/CustomImage";
-import CustomLink from "components/common/CustomLink";
+import CustomImage from "components/CustomImage";
+import CustomLink from "components/CustomLink";
 import { slugFromRouter } from "lib"
 import CommentAPI from "lib/api/comment"
 import getLoggedInUser from "lib/utils/getLoggedInUser";

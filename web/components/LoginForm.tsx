@@ -2,8 +2,8 @@ import Router from "next/router";
 import React from "react";
 import { mutate } from "swr";
 
-import ListErrors from "components/common/ListErrors";
-import Label from "components/common/Label";
+import ListErrors from "components/ListErrors";
+import Label from "components/Label";
 import UserAPI from "lib/api/user";
 
 const LoginForm = ({ register = false }) => {

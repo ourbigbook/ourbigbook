@@ -19,11 +19,17 @@ export const getStaticPropsProfile: GetStaticProps = async ({ params: { uid } })
       notFound: true
     }
   }
+  const [profile, authoredArticleCount, favoritedArticleCount] = await Promise.all([
+    user.toJson(),
+    user.countAuthoredArticles(),
+    user.countFavorites(),
+  ])
   return {
     revalidate,
     props: {
-      //articleCount: await user.countArticles(),
-      profile: await user.toJson(),
+      profile,
+      authoredArticleCount,
+      favoritedArticleCount,
     },
   }
 }

@@ -1,10 +1,10 @@
 import React from "react";
 import Link from "next/link";
 
-import CustomImage from "components/common/CustomImage";
-import CustomLink from "components/common/CustomLink";
-import Maybe from "components/common/Maybe";
-import NavLink from "components/common/NavLink";
+import CustomImage from "components/CustomImage";
+import CustomLink from "components/CustomLink";
+import Maybe from "components/Maybe";
+import NavLink from "components/NavLink";
 import { APP_NAME } from "lib/utils/constant";
 import { usePageDispatch } from "lib/context/PageContext";
 import getLoggedInUser from "lib/utils/getLoggedInUser";

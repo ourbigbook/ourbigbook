@@ -4921,7 +4921,7 @@ assert_lib_error('header: synonym without preceeding header fails gracefully',
 // This is not the ideal behaviour, the above test would be the ideal.
 // But it will be good enough for now.
 // https://github.com/ourbigbook/ourbigbook/issues/200
-assert_lib_ast('header: full link to synonym with title2 does not get dummy empty parenthesis',
+assert_lib_ast('header: title2 full link to synonym with title2 does not get dummy empty parenthesis',
   `= 1
 
 \\Q[\\x[1-3]{full}]
@@ -4938,6 +4938,39 @@ assert_lib_ast('header: full link to synonym with title2 does not get dummy empt
       "//x:blockquote//x:a[@href='#1-2' and text()='Section 1. \"1 3\"']",
     ],
   }
+);
+assert_lib_ast('header: title2 shows next to title',
+  `= Asdf
+{title2=qwer}
+{title2=zxcv}
+`,
+  undefined,
+  {
+    assert_xpath_stdout: [
+      xpath_header(1, 'asdf', "x:a[@href='' and text()='Asdf (qwer, zxcv)']"),
+    ],
+  }
+);
+assert_lib_error('header: title2 of synonym must be empty',
+  `= 1
+
+= 1 2
+{synonym}
+{title2=asdf}
+`,
+  // 5, 9 would be better, pointing to the start of asdf
+  5, 1
+);
+assert_lib_error('header: title2 of synonym cannot be given multiple times',
+  `= 1
+
+= 1 2
+{synonym}
+{title2}
+{title2}
+`,
+  // 6, 1 would be better, pointing to second title2
+  5, 1
 );
 assert_lib('header: synonym basic',
   // https://github.com/ourbigbook/ourbigbook/issues/114

@@ -540,6 +540,7 @@ Macro.MATH_MACRO_NAME = 'm';
 Macro.PARAGRAPH_MACRO_NAME = 'p';
 Macro.PLAINTEXT_MACRO_NAME = 'plaintext';
 Macro.TITLE_ARGUMENT_NAME = 'title';
+Macro.TITLE2_ARGUMENT_NAME = 'title2';
 Macro.TOC_MACRO_NAME = 'toc';
 Macro.TOC_PREFIX = 'toc-'
 Macro.TOPLEVEL_MACRO_NAME = 'toplevel';
@@ -2919,7 +2920,10 @@ function x_text(ast, context, options={}) {
     if (style_full && options.quote) {
       ret += html_escape_context(context, `"`);
     }
+    // https://cirosantilli.com/cirodown#cross-reference-title-inflection
     if (options.from_x) {
+
+      // {c}
       let first_ast = title_arg[0];
       if (
         ast.macro_name === Macro.HEADER_MACRO_NAME &&
@@ -2939,6 +2943,8 @@ function x_text(ast, context, options={}) {
         }
         title_arg[0].text = first_c + txt.substring(1);
       }
+
+      // {p}
       let last_ast = title_arg[title_arg.length - 1];
       if (
         options.pluralize &&
@@ -2951,8 +2957,13 @@ function x_text(ast, context, options={}) {
       }
     }
     ret += convert_arg(title_arg, context);
-    if (style_full && options.quote) {
-      ret += html_escape_context(context, `"`);
+    if (style_full) {
+      if (Macro.TITLE2_ARGUMENT_NAME in ast.args) {
+        ret += ' ' + convert_arg(ast.args[Macro.TITLE2_ARGUMENT_NAME], context);
+      }
+      if (options.quote) {
+        ret += html_escape_context(context, `"`);
+      }
     }
   }
   return ret;
@@ -3372,6 +3383,9 @@ const DEFAULT_MACRO_LIST = [
         new MacroArgument({
           name: 'scope',
           boolean: true,
+        }),
+        new MacroArgument({
+          name: Macro.TITLE2_ARGUMENT_NAME,
         }),
       ],
     }

@@ -1788,6 +1788,13 @@ f()
 \\Q[To be]
 {title=My title 2.}
 {description=My quote 2.}
+
+\\Image[http://a]
+{description=My image no title.}
+
+\\Image[http://a]
+{description=My image source no title.}
+{source=http://example.com}
 `
     },
     assert_xpath: {
@@ -1810,6 +1817,8 @@ f()
         "//x:div[@class='caption' and text()='. My title 2. My table 2.']",
         "//x:div[@class='caption' and text()='. My title 1. My quote 1.']",
         "//x:div[@class='caption' and text()='. My title 2. My quote 2.']",
+        "//x:figcaption[text()='. My image no title.']",
+        "//x:figcaption[text()='. My image source no title.']",
       ],
     },
   }

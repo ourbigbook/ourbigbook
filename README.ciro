@@ -382,7 +382,7 @@ Explicit container to add further properties: \x[table-my-table].
 \h[2][Images \c[[\image]]]
 {id=images}
 
-A block image with capital 'i' can be seen at \c[I] \x[image-my-xi-chrysanthemum]:
+A block image with capital 'i' \c[Image] can be seen at \x[image-my-xi-chrysanthemum]:
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg]
 {title=Xi Chrysanthemum}
@@ -926,10 +926,9 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \h[3][TODO]
 
 \l[toc]
-\l[xrefs]
+\l[figure numbers, header numbers]
+\l[xref full]
 \l[indentation skip]
-\l[math]
-\l[pass CLIs to test command to enable token and ast logging]
 \l[correct ID generation algorithm to be Unicode robust]
 \l[LaTeX output]
 \l[local downloads and single HTML page with image / script embeds]

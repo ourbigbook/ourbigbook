@@ -243,10 +243,8 @@ pre {
   overflow-x: auto;
 }
 
-.code {
-  &.multiline-caption {
-    @include multiline-caption;
-  }
+div.multiline-caption {
+  @include multiline-caption;
 }
 
 // Tables

@@ -3,10 +3,10 @@
 import { useRouter } from 'next/router'
 import useSWR from 'swr'
 
-import fetcher from 'lib/utils/fetcher'
-import { SERVER_BASE_URL } from 'lib/utils/constant'
+import fetcher from 'fetcher'
+import { SERVER_BASE_URL } from 'constant'
 import { minPath } from 'shared'
-import getLoggedInUser from 'lib/utils/getLoggedInUser'
+import getLoggedInUser from 'getLoggedInUser'
 
 export default function useMin(query, assign) {
   const router = useRouter();

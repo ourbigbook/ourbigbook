@@ -3,10 +3,10 @@ import { useRouter } from 'next/router';
 import React, { useEffect } from 'react';
 
 import { googleAnalyticsId, isProduction } from 'config';
-import CustomLink from 'components/CustomLink'
-import Navbar from 'components/Navbar'
-import { AppContext, AppContextProvider } from 'lib'
-import { APP_NAME } from 'lib/utils/constant'
+import CustomLink from 'front/CustomLink'
+import Navbar from 'front/Navbar'
+import { AppContext, AppContextProvider } from 'front'
+import { APP_NAME } from 'constant'
 
 // Css
 // migrating the local cirodown to webpack: https://github.com/cirosantilli/cirodown/issues/157

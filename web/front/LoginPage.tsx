@@ -1,12 +1,12 @@
 import Head from 'next/head'
-import Label from 'components/Label'
+import Label from 'front/Label'
 import React from 'react'
 
-import CustomLink from 'components/CustomLink'
-import LoginForm from 'components/LoginForm'
+import CustomLink from 'front/CustomLink'
+import LoginForm from 'front/LoginForm'
 import routes from 'routes'
-import { LOGIN_ACTION, REGISTER_ACTION } from 'lib'
-import { AppContext } from 'lib'
+import { LOGIN_ACTION, REGISTER_ACTION } from 'front'
+import { AppContext } from 'front'
 
 const makeLoginPage = ({ register = false }) => {
   const action = register ? REGISTER_ACTION : LOGIN_ACTION

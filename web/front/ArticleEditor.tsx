@@ -7,12 +7,12 @@ import { cirodown_runtime } from 'cirodown/dist/cirodown_runtime.js';
 import { CirodownEditor } from 'cirodown/editor.js';
 import { isProduction } from 'config';
 
-import ListErrors from 'components/ListErrors'
-import { slugFromRouter } from 'lib'
-import ArticleAPI from 'lib/api/article'
-import getLoggedInUser from 'lib/utils/getLoggedInUser'
+import ListErrors from 'front/ListErrors'
+import { slugFromRouter } from 'front'
+import ArticleAPI from 'front/api/article'
+import getLoggedInUser from 'getLoggedInUser'
 import routes from 'routes'
-import { AppContext } from 'lib'
+import { AppContext } from 'front'
 import { modifyEditorInput } from 'shared';
 
 export default function makeArticleEditor(isnew: boolean = false) {

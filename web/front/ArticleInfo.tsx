@@ -2,11 +2,11 @@ import Router, { useRouter } from 'next/router'
 import React from 'react'
 import useSWR, { trigger } from 'swr'
 
-import CustomLink from 'components/CustomLink'
-import ArticleAPI from 'lib/api/article'
-import getLoggedInUser from 'lib/utils/getLoggedInUser'
-import { formatDate } from 'lib/utils/date'
-import LikeArticleButton, { LikeArticleButtonContext } from 'components/LikeArticleButton'
+import CustomLink from 'front/CustomLink'
+import ArticleAPI from 'front/api/article'
+import getLoggedInUser from 'getLoggedInUser'
+import { formatDate } from 'date'
+import LikeArticleButton, { LikeArticleButtonContext } from 'front/LikeArticleButton'
 import routes from 'routes'
 
 const ArticleInfo = ({

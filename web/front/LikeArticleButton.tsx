@@ -1,9 +1,9 @@
 import React from 'react'
 import Router from 'next/router'
 
-import ArticleAPI from 'lib/api/article'
-import { BUTTON_ACTIVE_CLASS } from 'lib/utils/constant'
-import getLoggedInUser from 'lib/utils/getLoggedInUser'
+import ArticleAPI from 'front/api/article'
+import { BUTTON_ACTIVE_CLASS } from 'constant'
+import getLoggedInUser from 'getLoggedInUser'
 import routes from 'routes'
 
 export const LikeArticleButtonContext = React.createContext(undefined);

@@ -459,8 +459,9 @@ async function create_db(cirodown_options, non_cirodown_options) {
 async function generate_redirect(cirodown_options, redirect_src_id, redirect_target_id, outdir) {
   cirodown_options = Object.assign({}, cirodown_options);
   cirodown_options.input_path = redirect_src_id;
-  const outpath = path.join(outdir, redirect_src_id + '.' + cirodown.HTML_EXT);
-  cirodown_options.outfile = outpath;
+  const outpath_basename = redirect_src_id + '.' + cirodown.HTML_EXT
+  const outpath = path.join(outdir, outpath_basename);
+  cirodown_options.outfile = outpath_basename;
   const redirect_href = await cirodown.convert_x_href(redirect_target_id, cirodown_options);
   if (redirect_href === undefined) {
     cli_error(`redirection target ID "${redirect_target_id}" not found`);

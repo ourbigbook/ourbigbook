@@ -7,7 +7,7 @@ import ArticleAPI from 'front/api/article'
 import useLoggedInUser from 'front/useLoggedInUser'
 import { formatDate } from 'date'
 import LikeArticleButton from 'front/LikeArticleButton'
-import routes from 'routes'
+import routes from 'front/routes'
 
 const ArticleInfo = ({
   article,

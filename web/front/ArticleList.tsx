@@ -10,7 +10,7 @@ import { AppContext } from 'front'
 import { articleLimit } from 'front/config'
 import { formatDate } from 'date'
 import useLoggedInUser from 'front/useLoggedInUser'
-import routes from 'routes'
+import routes from 'front/routes'
 
 type Options = {
   articles: undefined;

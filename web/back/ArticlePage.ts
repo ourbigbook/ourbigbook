@@ -24,7 +24,15 @@ export function getServerSidePropsArticleHoc(addComments?, loggedInUserCache?) {
       topicArticleCount,
     }
     if (loggedInUser) {
-      props.loggedInUser = await loggedInUser.toJson()
+      const slug = `${loggedInUser.username}/${article.topicId}`
+      let loggedInUserVersionArticle
+      ;[props.loggedInUser, loggedInUserVersionArticle] = await Promise.all([
+        loggedInUser.toJson(),
+        sequelize.models.Article.findOne({ where: { slug } })
+      ])
+      if (loggedInUserVersionArticle) {
+        props.loggedInUserVersionSlug = slug
+      }
     }
     const ret: any = { props }
     if (addComments) {

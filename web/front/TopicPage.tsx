@@ -7,7 +7,7 @@ import CustomLink from 'front/CustomLink'
 import LoadingSpinner from 'front/LoadingSpinner'
 import LogoutButton from 'front/LogoutButton'
 import Maybe from 'front/Maybe'
-import routes from 'routes'
+import routes from 'front/routes'
 import useMin from 'front/api/useMin'
 import { AppContext, slugFromArray} from 'front'
 

@@ -7,7 +7,7 @@ import Maybe from 'front/Maybe'
 import { LOGIN_ACTION, REGISTER_ACTION } from 'front'
 import { appName, aboutHref } from 'front/config'
 import useLoggedInUser from 'front/useLoggedInUser'
-import routes from 'routes'
+import routes from 'front/routes'
 
 interface NavLinkProps {
   href: string;

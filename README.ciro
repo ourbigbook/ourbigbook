@@ -421,7 +421,12 @@ But we chose not to do it like most markups available because it leads to too ma
 \h[3][Includes \c[[\include]]]
 {id=includes}
 
-The \c[[\include]] macro allows including an external Cirodown headers into the current one.
+The \c[[\include]] macro allows including an external Cirodown headers under the current header.
+
+It exists to allow optional single page HTML output while still retaining the ability to:
+
+\l[split up large input files into multiple files to make renders faster during document development]
+\l[suggest an optional custom output split with one HTML output per Cirodown input, in order to avoid extremely large HTML pages which could be slow to load]
 
 \c[[\include]] takes on mandatory argument, which is the ID of the header you want to include, which is analogous to how \x[internal-cross-references][\c[\\x]] works.
 
@@ -1516,19 +1521,20 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[cirodown : google analytics]
 \l[custom header, footer and HEAD based on files like header.html, footer.html]
 \l[\x[id-scope]]
-\l[browser live quick test]
+\l[publish browser live quick test, Can be done by: hack convert_path_to_file to forward not just cirodown HTML output but also tracked HTML, CSS, JS, PNG, JPG, files, and then add an explicit include in the cirodown.json to force inclusion of out/index.js and out/main.min.css]
 \l[list and code caption]
 \l[image description and source]
 \l[input indentation skip]
 \l[correct ID generation algorithm to be Unicode robust]
 \l[local downloads and single HTML page with image / script embeds]
 \l[image management: upload to separate media directory]
-\l[handle ID calculation from title if title has HTML elements, e.g. headers with code. Use that for the title as well.]
+\l[handle ID calculation from title if title has HTML elements, e.g. headers with code. Use that for the title as well. This has to be done with a context argument that makes implementing macros output just the text without tags]
 \l[multiple newlines blow up (5 or six), create test and decide best behaviour]
-\l[LaTeX output]
 \l[autolinks http]
 \l[paragraphs rendered as divs, can show anything inside e.g. lists, code blocks]
 \l[create mechanism to link to the GitHub blob view of in-tree source files that are not added to GitHub pages, e.g. \c[\\file]]
+\l[avoid infinite recursion with xref]
+\l[LaTeX output]
 
 \h[2][Related projects]
 

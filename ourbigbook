@@ -2392,17 +2392,18 @@ if (cli.helpMacros) {
             const commitCmdOptions = { ...cmdOptsNoStdout }
             const name = runCmd('git', ['-C', inputPath, 'config', '--get', 'user.name'], cmdOpts)
             const email = runCmd('git', ['-C', inputPath, 'config', '--get', 'user.email'], cmdOpts)
-            commitCmdOptions.env_extra = Object.assign(
-              {},
-              commitCmdOptions.env_extra,
-              {
-                GIT_COMMITTER_EMAIL: email,
-                GIT_COMMITTER_NAME: name,
-                GIT_AUTHOR_EMAIL: email,
-                GIT_AUTHOR_NAME: name,
-              },
-            )
-            args.push(...['--author', `${name} <${email}>`])
+            if (name && email) {
+              commitCmdOptions.env_extra = {
+                ...commitCmdOptions.env_extra,
+                ...{
+                  GIT_COMMITTER_EMAIL: email,
+                  GIT_COMMITTER_NAME: name,
+                  GIT_AUTHOR_EMAIL: email,
+                  GIT_AUTHOR_NAME: name,
+                },
+              }
+              args.push(...['--author', `${name} <${email}>`])
+            }
             if (ourbigbook_json.publishCommitDate) {
               args.push(...['--date', ourbigbook_json.publishCommitDate])
               Object.assign(commitCmdOptions.env_extra, { GIT_COMMITTER_DATE: ourbigbook_json.publishCommitDate })

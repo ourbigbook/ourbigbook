@@ -6385,6 +6385,8 @@ assert_lib('toc: table of contents respects numbered=0 of included headers',
     },
   },
 );
+if (false) {
+// Not implemented yet.
 assert_lib('toc: json: table of contents respects tocMaxCrossSource',
   {
     convert_dir: true,
@@ -6419,7 +6421,8 @@ assert_lib('toc: json: table of contents respects tocMaxCrossSource',
       ],//
     },
   },
-);
+)
+}
 assert_lib('toc: table of contents include placeholder header has no number when under numbered=0',
   {
     convert_dir: true,

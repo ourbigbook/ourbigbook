@@ -8001,8 +8001,38 @@ Whenever you save any changes to the backend server, we listen to this and autom
 
 For frontend, changes are automatically recompiled by the webpack development server, so you can basically just refresh pages and they will be updated straightaway.
 
-= Demo data
+= Generated data
 {parent=OurBigBook Web development}
+
+= Wikipedia bot
+{parent=Generated data}
+{title2=wikibot}
+
+* <OurBigBook.com> user: https://ourbigbook.com/wikibot
+* <Static website> render: https://docs.ourbigbook.com/wikibot
+* <Static website> source code: https://github.com/ourbigbook/wikibot
+
+This bot imports the Wikipedia article category tree into OurBigBook. Only titles are currently imported, not the actual article content.
+
+This is just an exploratory step to future exports or generative AI.
+
+We don't have an amazing automation setup as we should, but the steps are:
+* obtain `enwiki.sqlite` containing the tables `page` and `categorylinks` https://stackoverflow.com/questions/17432254/wikipedia-category-hierarchy-from-dumps/77313490#77313490
+* Run https://cirosantilli.com/_raw/wikipedia/sqlite_preorder.py[], potentially differently parametrized, as:
+  ``
+  (
+    rm -rf out
+    ./sqlite_preorder.py -D3 -d6 -M100000 -m -N enwiki.sqlite Mathematics Physics Chemistry Biology Technology
+    cd out
+    ls . | grep -E '\.bigb$' | xargs sed -i '$ d'
+    echo '{}' > ourbigbook.json
+    echo '*.tmp' > .gitignore
+    ourbigbook .
+  )
+  ``
+
+= Demo data
+{parent=Generated data}
 
 You can generate demo data for <OurBigBook Web> with \a[web/bin/generate-demo-data.js], e.g.:
 ``
@@ -10248,11 +10278,20 @@ Some blobs were unfortunately added to this repository earlier on, but when we s
 = Project governance
 {parent=Developing OurBigBook}
 
-The <OurBigBook Project> currently has a single top level executive, the OurBigBook Admin, who has ultimate power over the project.
+The <OurBigBook Project> currently has a single top level executive, the <OurBigBook Admin>, who has ultimate power over the project.
 
 There is currently no legal incorporated entity.
 
 These will likely change if the project ever gets any traction, but for now things are being ran in an informal manner only.
+
+= OurBigBook Admin
+{parent=Project governance}
+
+Toplevel executive of the <OurBigBook Project>, who has ultimate power over the project.
+
+OurBigBook.com account: https://ourbigbook.com/ourbigbook
+
+GitHub account: https://github.com/ourbigbook-admin
 
 = Publicity
 {parent=Developing OurBigBook}

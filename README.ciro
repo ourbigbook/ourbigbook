@@ -4824,6 +4824,11 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 = Release procedure
 {parent=developing-cirodown}
 
+Make sure tests pass:
+``
+npm test
+``
+
 Manually update the \a[package.json] version:
 ``
 vim package.json

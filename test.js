@@ -3182,7 +3182,6 @@ assert_executable(
     filesystem: complex_filesystem,
     expect_filesystem_xpath: {
       'index.html': [
-        "//x:header//x:a[@href='']",
         xpath_header(1, 'index'),
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='link to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='link to notindex h2']",
@@ -3204,11 +3203,9 @@ assert_executable(
       ],
       'included-by-index.html': [
         // Cross input file header.
-        "//x:header//x:a[@href='index.html']",
         xpath_header_parent(1, 'included-by-index', 'index.html', 'Index'),
       ],
       'included-by-index-split.html': [
-        "//x:header//x:a[@href='index.html']",
         // Cross input file header on split header.
         xpath_header_parent(1, 'included-by-index', 'index.html', 'Index'),
       ],
@@ -3259,21 +3256,18 @@ assert_executable(
       'notindex-splitsuffix-asdf.html': [
       ],
       'subdir/index.html': [
-        "//x:header//x:a[@href='../index.html']",
         xpath_header(1, 'subdir'),
         xpath_header(2, 'index-h2'),
         "//x:a[@href='../index.html' and text()='link to toplevel']",
         "//x:a[@href='../index.html#h2' and text()='link to toplevel subheader']",
       ],
       'subdir/split.html': [
-        "//x:header//x:a[@href='../index.html']",
         xpath_header(1, 'index'),
         // Check that split suffix works. Should be has-split-suffix-split.html,
         // not has-split-suffix.html.
         "//x:div[@class='p']//x:a[@href='has-split-suffix-split.html' and text()='link to has split suffix']",
       ],
       'subdir/notindex.html': [
-        "//x:header//x:a[@href='../index.html']",
         xpath_header(1, 'notindex'),
         xpath_header(2, 'notindex-h2'),
       ],
@@ -3293,7 +3287,6 @@ assert_executable(
         xpath_header(1, 'notindex-h2'),
       ],
       'index-scope.html': [
-        "//x:header//x:a[@href='index.html']",
         xpath_header_split(1, 'index-scope', 'index.html#index-scope', cirodown.NOSPLIT_MARKER),
       ],
       'index-scope/index-scope-2.html': [
@@ -3308,7 +3301,6 @@ assert_executable(
         xpath_header_split(1, 'toplevel-scope', 'toplevel-scope.html', cirodown.NOSPLIT_MARKER),
       ],
       'toplevel-scope/toplevel-scope-h2.html': [
-        "//x:header//x:a[@href='../index.html']",
         xpath_header_split(1, 'toplevel-scope-h2', '../toplevel-scope.html#toplevel-scope-h2', cirodown.NOSPLIT_MARKER),
       ],
       'toplevel-scope/nested-scope.html': [

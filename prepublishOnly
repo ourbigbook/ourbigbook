@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Runs before NPM publish.
+# https://docs.npmjs.com/cli/v7/using-npm/scripts
 set -eu
 ./build
 npm run readme

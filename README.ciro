@@ -145,7 +145,7 @@ is the same as:
 Read this \x[my-id][My title].
 ]]
 
-To also show the section auto-generated number as in "Section X.Y My title" we add the optional \c{\{style=full\}} param to the cross reference, for example:
+To also show the section auto-generated number as in "Section X.Y My title" we add the optional \c[[{style=full}]] param to the cross reference, for example:
 
 \C[[
 \h[2][My title]{id=my-id}
@@ -220,7 +220,7 @@ There is no limit to how many levels we can have! HTML is limited to \c[h6], so 
 \h[13][My h12]
 
 \h[3][Table of contents \c[[\toc]]]
-[table-of-contents]
+{id=table-of-contents}
 
 We can add table of contents anywhere in the document, e.g. here is another one:
 
@@ -230,9 +230,9 @@ Table of contents only include the items which live in child headers relative to
 
 \h[4][id_scope]
 
-If this header attribute is \c{true}, then the ID of all children are prefixed with the ID of this header + a slash \c{/}.
+If this header attribute is \c[true], then the ID of all children are prefixed with the ID of this header + a slash \c[/].
 
-This property is true by default for cross file references, although it can be turned off explicitly with \c{id-scope=false}.
+This property is true by default for cross file references, although it can be turned off explicitly with \c[id-scope=false].
 
 References withing a single scope do not need the parent scope prefix.
 
@@ -274,7 +274,7 @@ The \c[[\include]] macro achieves the following goals:
 
 If an external header would be included multiple times in a single output page, the ToC contents are duplicated, but the content itself cannot be because that would lead to ID conflicts and large pages.
 
-Therefore, in this case you are forced to specify which include will actually expand to the \c{canonical} attribute:
+Therefore, in this case you are forced to specify which include will actually expand to the \c[canonical] attribute:
 
 \C[[
 \include[not-the-readme]{canonical=true}
@@ -519,7 +519,7 @@ You can determine if a macro is positional or named by using \x[help-macros]. It
     },
 ]]
 
-and so we see that `level` and `content` are positional arguments, and `id` and `id_scope` are named arguments.
+and so we see that \c[level] and \c[content] are positional arguments, and \c[id] and \c[id_scope] are named arguments.
 
 Generally, positional arguments are few (otherwise it would be hard to know which is which is which), and are almost always used for a given element so tha they save us from typing the name too many times.
 
@@ -882,7 +882,7 @@ And now, some content!
 ]
 ]]
 
-In terms of HTML, the `\toplevel` element corresponds to the `<html>`, `<head>`, `<header>` and `<footer>` elements of a document.
+In terms of HTML, the \c[\\toplevel] element corresponds to the \c[<html>], \c[<head>], \c[<header>] and \c[<footer>] elements of a document.
 
 \h[3][Formal grammar]
 
@@ -892,11 +892,12 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \l[toc]
 \l[xrefs]
+\l[indentation skip]
 \l[math]
-\l[LaTeX output]
 \l[pass CLIs to test command to enable token and ast logging]
 \l[correct ID generation algorithm to be Unicode robust]
+\l[LaTeX output]
 
 \h[3][Related projects]
 
-\l[\a[https://github.com/rstudio/bookdown], \a[https://bookdown.org/]]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: \a[https://bookdown.org/yihui/bookdown/pandoc.html], thus will never run on browser without huge translation layers. But does have an obscene ammount of output formats however.
+\l[\a[https://github.com/rstudio/bookdown], \a[https://bookdown.org/]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: \a[https://bookdown.org/yihui/bookdown/pandoc.html], thus will never run on browser without huge translation layers. But does have an obscene ammount of output formats however.]

@@ -60,6 +60,23 @@ assert_convert('three paragraphs',
 );
 
 // List.
+assert_convert('l with explicit ul',
+  `ab
+
+\\ul[
+\\l[cd]
+\\l[ef]
+]
+
+gh`,
+  `<p>ab</p>
+<ul>
+<li>cd</li>
+<li>ef</li>
+</ul>
+<p>gh</p>
+`
+);
 assert_convert('l with implicit ul',
   `ab
 

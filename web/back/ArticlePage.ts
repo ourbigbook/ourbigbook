@@ -1,7 +1,4 @@
-import { GetStaticProps, GetStaticPaths } from 'next'
-import sequelize from 'db';
-import { fallback, revalidate } from 'front/config'
-
+import sequelize from 'db'
 import { getLoggedInUser } from 'back'
 
 export function makeGetServerSidePropsArticle(addComments?, loggedInUserCache?) {

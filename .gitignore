@@ -21,8 +21,14 @@ tmp.*
 *.tmp.*
 
 # Web.
-!web/**/*.css
-!web/**/*.html
-web/frontend/build
-web/db.sqlite3
-web/.env
+/!web/**/*.css
+/!web/**/*.html
+/web/build
+/web/db.sqlite3
+/web/.env
+
+# next.js
+/web/.next/
+/web/out/
+/web/.now/
+/web/.now

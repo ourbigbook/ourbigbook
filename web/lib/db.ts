@@ -1,9 +1,9 @@
 import path from 'path';
 
-const models = require("cirodown-backend/models");
+const models = require("../models");
 
 // TODO sync. But we have to stop the server
 // before listen for that. Don't know how to do it.
-const sequelize = models(path.join(process.cwd(), '..'));
+const sequelize = models(path.join(process.cwd()));
 
 export default sequelize;

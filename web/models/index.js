@@ -20,7 +20,7 @@ module.exports = (toplevelPath) => {
         rejectUnauthorized: false
       }
     };
-    sequelize = new Sequelize(process.env.DATABASE_URL, sequelizeParams);
+    sequelize = new Sequelize(config.databaseUrl, sequelizeParams);
   } else {
     sequelizeParams.dialect = 'sqlite';
     sequelizeParams.storage = path.join(toplevelPath, 'db.sqlite3');

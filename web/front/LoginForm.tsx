@@ -9,18 +9,18 @@ import { LOGIN_ACTION, REGISTER_ACTION, useCtrlEnterSubmit, setCookie, setupUser
 const LoginForm = ({ register = false }) => {
   const [isLoading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState([]);
-  let username, setUsername;
+  let email, setEmail;
   let displayName, setDisplayName;
   if (register) {
-    [username, setUsername] = React.useState("");
+    [email, setEmail] = React.useState("");
     [displayName, setDisplayName] = React.useState("");
   }
-  const [email, setEmail] = React.useState("");
+  const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
-  let handleUsernameChange, handleDisplayNameChange;
+  let handleEmailChange, handleDisplayNameChange;
   if (register) {
-    handleUsernameChange = React.useCallback(
-      (e) => setUsername(e.target.value),
+    handleEmailChange = React.useCallback(
+      (e) => setEmail(e.target.value),
       []
     );
     handleDisplayNameChange = React.useCallback(
@@ -28,8 +28,8 @@ const LoginForm = ({ register = false }) => {
       []
     );
   }
-  const handleEmailChange = React.useCallback(
-    (e) => setEmail(e.target.value),
+  const handleUsernameChange = React.useCallback(
+    (e) => setUsername(e.target.value),
     []
   );
   const handlePasswordChange = React.useCallback(
@@ -44,7 +44,7 @@ const LoginForm = ({ register = false }) => {
       if (register) {
         ({ data, status } = await webApi.userCreate({ displayName, username, email, password }));
       } else {
-        ({ data, status } = await webApi.userLogin({ email, password }));
+        ({ data, status } = await webApi.userLogin({ username, password }));
       }
       if (status !== 200 && data?.errors) {
         setErrors(data.errors);
@@ -74,26 +74,30 @@ const LoginForm = ({ register = false }) => {
                 onChange={handleDisplayNameChange}
               />
             </Label>
-            <Label label="Username">
+          </>
+        }
+        <Label label={ register ? "Username (cannot be modified later)" : "Username or email" }>
+          <input
+            autoComplete="username"
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={handleUsernameChange}
+          />
+        </Label>
+        {register &&
+          <>
+            <Label label="Email">
               <input
-                autoComplete="username"
-                type="text"
-                placeholder="Username"
-                value={username}
-                onChange={handleUsernameChange}
+                autoComplete="email"
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={handleEmailChange}
               />
             </Label>
           </>
         }
-        <Label label="Email">
-          <input
-            autoComplete="email"
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={handleEmailChange}
-          />
-        </Label>
         <Label label="Password">
           <input
             autoComplete={register ? "new-password" : "current-password"}

@@ -52,7 +52,7 @@ npm link cirodown
 xdg-open index.html
 xdg-open not-readme.html
 ``
-or render README.ciro and all \x[includes] into a single HTML page with \x[embed-includes] and view it:
+or render README.ciro and all \x[include]{p} into a single HTML page with \x[embed-includes] and view it:
 ``
 ./cirodown --embed-includes .
 xdg-open index.html
@@ -92,7 +92,7 @@ Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally pu
   * \x[internal-cross-file-references]
   * \x[table-of-contents] that crosses input files
   * `inotifywait` watch rebuild server
-  * single-source multi-format output based on \x[includes] and build options:
+  * single-source multi-format output based on \x[include]{p} and build options:
     * one HTML per source with includes rendered as links between pages
     * \x[embed-includes] single file output. Includes are parsed smartly, not just source copy pasted, e.g. included headers are shifted from `h1` to `h2` correctly
     * \x[split-headers] option to output each header of an input file into a separate output file
@@ -1236,7 +1236,7 @@ You may customize ToC placement with `\Toc` macro, but just don't do it, it will
 
 This is especially important when considering \x[split-headers], where you almost always want an automatically generated ToC for every split header, otherwise you would need to add them all manually.
 
-Only one ToC is rendered per document. Any ToC besides the first one is ignored. In particular, this means that \x[includes] with \x[embed-includes] work seamlessly and render a single table of contents, even if multiple `\Toc` macros are present in the included pages.
+Only one ToC is rendered per document. Any ToC besides the first one is ignored. In particular, this means that \x[include]{p} with \x[embed-includes] work seamlessly and render a single table of contents, even if multiple `\Toc` macros are present in the included pages.
 
 The \x[internal-cross-references][ID] of the ToC is always fixed to `#toc`. If you try to use that for another element, you will get the following error:
 ``
@@ -1411,7 +1411,7 @@ When using \x[split-headers], \x[internal-cross-references] always point to non-
 
 If the `splitDefault` \x[boolean-named-argument] is given however:
 * the split header becomes the default, e.g. `index.html` is now the split one, and `nosplit.html` is the non-split one
-* the header it is given for, and all of its descendant headers will use the split header as the default internal cross target, unless the header is already rendered in the current page. This does not propagate across \x[includes] however.
+* the header it is given for, and all of its descendant headers will use the split header as the default internal cross target, unless the header is already rendered in the current page. This does not propagate across \x[include]{p} however.
 
 For example, consider `README.ciro`:
 ``
@@ -1451,9 +1451,9 @@ Then the following links would be generated:
   * `notreadme to h2`: `h2.html`, because `h2` is `splitDefault`
   * `notreadme to notreadme h2`: `notreadme.html#notreadme-h2`, because `notreadme-h2` is not `splitDefault`
 
-The major application of this is that Ciro likes to work with a huge `README.ciro` containing thousands of random small topics.
+The major application of this is that Ciro likes to work with a huge `README.ciro` containing thousands of random small topics. This is the case for example for: https://cirosantilli.com
 
-And splitting those into separate source files would be quite laborious, as it would require duplicating IDs on the filename, and setting up \x[includes].
+And splitting those into separate source files would be quite laborious, as it would require duplicating IDs on the filename, and setting up \x[include]{p}.
 
 However, after this README reaches a certain size, page loads start becoming annoyingly slow, even despite already loading large assets like \x[image]{p} video \x[video]{p} only on hover or click: the annoying slowness comes from the loading of the HTML itself before the browser can jump to the ID.
 
@@ -1665,7 +1665,7 @@ But we chose not to do it like most markups available because it leads to too ma
 
 Ciro later "invented" (?) \x[id-based-header-levels], which he feels reaches the perfect balance between the advantages of those two options.
 
-=== Includes
+=== Include
 {title2=`\Include`}
 
 The `\Include` macro allows including an external Cirodown headers under the current header.
@@ -1714,6 +1714,49 @@ This is what they actually render as:
 \Include[not-readme-with-scope]
 \Include[subdir]
 \Include[subdir/notindex]
+
+= `\Include` `parent` argument
+{parent=include}
+
+This option is analogous to \x[id-based-header-levels], but for includes.
+
+For example, consider you have:
+``
+= Animal
+
+== Dog
+
+== Cat
+
+== Bat
+``
+and now you want to split `Cat` to `cat.ciro`.
+
+If you wrote:
+``
+= Animal
+
+== Dog
+
+\Include[cat]
+
+== Bat
+``
+Cat would be a child of Dog, since that is the previous header, which is not what we want.
+
+Instead, we want to write:
+``
+= Animal
+
+== Dog
+
+\Include[cat]{parent=animal}
+
+== Bat
+``
+and now Cat will be a child of Animal as desired.
+
+Implemented at: https://github.com/cirosantilli/cirodown/issues/127
 
 === Skipping header levels
 
@@ -1768,7 +1811,7 @@ TODO: we kind of wanted this to be the ID of the toplevel header instead of the 
 
 When the Cirodown input comes from a file (and not e.g. stdin), the default ID of the first header in the document is derived from the basename of the Cirodown input source file rather than from its title.
 
-This is specially relevant when \x[includes][including] other files.
+This is specially relevant when \x[include][including] other files.
 
 For example, in file named `my-file.ciro` which contains:
 ``
@@ -1788,7 +1831,7 @@ For the toplevel index file however, the ID is just taken from the header itself
 
 For example, a \x[publish-to-github-pages][GitHub pages] root directory must be named as `<username>.github.io`. And users may need to rename directories to avoid naming conflicts.
 
-As a consequence of this, the toplevel index file cannot \x[includes][be included in other files].
+As a consequence of this, the toplevel index file cannot \x[include][be included in other files].
 
 == Lists
 {title2=`* `, `\L`, `\Ul`, `\Ol`}
@@ -3401,7 +3444,7 @@ Inspiration: https://github.com/cirosantilli/linux-kernel-module-cheat/tree/6d0a
 = `--embed-includes`
 {parent=cirodown-executable-options}
 
-Makes \x[includes] render the included content in the same output file as the include is located, instead of the default behaviour of creating links.
+Makes \x[include]{p} render the included content in the same output file as the include is located, instead of the default behaviour of creating links.
 
 In addition to this:
 * \x[internal-cross-file-references] are disabled, and the cross file ID database does not get updated.

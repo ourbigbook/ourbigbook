@@ -12,6 +12,7 @@ async function setArticleTags(req, article, tagList) {
     {ignoreDuplicates: true}
   ).then(tags => {
     // IDs may be missing from the above, so we have to do a find.
+    // https://stackoverflow.com/questions/13244393/sqlite-insert-or-ignore-and-return-original-rowid
     // https://github.com/sequelize/sequelize/issues/11223#issuecomment-864185973
     req.app.get('sequelize').models.Tag.findAll({
       where: {name: tagList}

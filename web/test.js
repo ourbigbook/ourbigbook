@@ -1530,8 +1530,13 @@ it('api: resource limits', async () => {
       assertStatus(status, data)
 
       // maxArticles resource limit is enforced for non-admins.
-      article = createArticleArg({ i: 2, bodySource: 'abcd' })
+      article = createArticleArg({ i: 2, bodySource: 'abc' })
       ;({data, status} = await createArticleApi(test, article))
+      assert.strictEqual(status, 403)
+
+      // maxArticles resource limit is enforced for non-admins when creating article with PUT.
+      article = createArticleArg({ i: 2, bodySource: 'abc' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article))
       assert.strictEqual(status, 403)
 
       // OK 2 for admin.
@@ -1543,7 +1548,7 @@ it('api: resource limits', async () => {
 
       // maxArticles resource limit is not enforced for admins.
       test.loginUser(admin)
-      article = createArticleArg({ i: 2, bodySource: 'abcd' })
+      article = createArticleArg({ i: 2, bodySource: 'abc' })
       ;({data, status} = await createArticleApi(test, article))
       assertStatus(status, data)
       test.loginUser(user)

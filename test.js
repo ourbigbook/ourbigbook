@@ -348,7 +348,7 @@ function assert_lib(
         }
       }
       for (const key in options.assert_bigb) {
-        assert.strictEqual(rendered_outputs[key].full, options.assert_bigb[key]);
+        assert.strictEqual(rendered_outputs[key].full, options.assert_bigb[key], `bigb output different than expected for "${key}"`);
       }
       for (const key in options.assert_xpath) {
         const output = rendered_outputs[key];
@@ -5304,14 +5304,14 @@ assert_lib_error('header: empty include in header title fails gracefully',
 `,
   3, 4
 );
-assert_lib_error('empty x in header title fails gracefully',
+assert_lib_error('header: empty x in header title fails gracefully',
   `= tmp
 
 == \\x
 `,
   3, 4
 );
-assert_lib_error('header inside header fails gracefully',
+assert_lib_error('header: inside header fails gracefully',
   `= \\H[2]
 `,
   1, 3, 'tmp.bigb',
@@ -5319,10 +5319,35 @@ assert_lib_error('header inside header fails gracefully',
     input_path_noext: 'tmp',
   }
 );
+assert_lib_error('header: forbid_multiheader option forbids multiple headers',
+  `= h1
+
+== h2
+`,
+  3, 1, 'tmp.bigb',
+  {
+    convert_opts: {
+      forbid_multiheader: 'denied',
+    },
+    input_path_noext: 'tmp',
+  }
+);
+assert_lib_stdin('header: forbid_multiheader option allows synonyms',
+  `= h1
+
+= h2
+{synonym}
+`,
+  {
+    convert_opts: {
+      forbid_multiheader: 'denied',
+    },
+  }
+);
 
 
 // Code.
-assert_lib_ast('code inline sane',
+assert_lib_ast('code: inline sane',
   'a \\c[b c] d\n',
   [
     a('P', [
@@ -5332,7 +5357,7 @@ assert_lib_ast('code inline sane',
     ]),
   ],
 );
-assert_lib_ast('code inline insane simple',
+assert_lib_ast('code: inline insane simple',
   'a `b c` d\n',
   [
     a('P', [
@@ -5343,7 +5368,7 @@ assert_lib_ast('code inline insane simple',
   ]
 );
 // https://github.com/cirosantilli/ourbigbook/issues/171
-assert_lib_ast('code inline insane with only a backslash',
+assert_lib_ast('code: inline insane with only a backslash',
   'a `\\` d\n',
   [
     a('P', [
@@ -5353,11 +5378,11 @@ assert_lib_ast('code inline insane with only a backslash',
     ]),
   ]
 );
-assert_lib_ast('code inline insane escape backtick',
+assert_lib_ast('code: inline insane escape backtick',
   'a \\`b c\n',
   [a('P', [t('a `b c')])]
 );
-assert_lib_ast('code block literal sane',
+assert_lib_ast('code: block literal sane',
   `a
 
 \\C[[
@@ -5373,7 +5398,7 @@ d
     a('P', [t('d')]),
   ]
 );
-assert_lib_ast('code block insane',
+assert_lib_ast('code: block insane',
   `a
 
 \`\`
@@ -5389,7 +5414,7 @@ d
     a('P', [t('d')]),
   ]
 );
-assert_lib_ast('code with id has caption',
+assert_lib_ast('code: with id has caption',
   `\`\`
 aa
 \`\`
@@ -5404,7 +5429,7 @@ aa
     ]
   }
 );
-assert_lib_ast('code with title has caption',
+assert_lib_ast('code: with title has caption',
   `\`\`
 aa
 \`\`
@@ -5419,7 +5444,7 @@ aa
     ]
   }
 );
-assert_lib_ast('code with description has caption',
+assert_lib_ast('code: with description has caption',
   `\`\`
 aa
 \`\`
@@ -5434,7 +5459,7 @@ aa
     ]
   }
 );
-assert_lib_ast('code without id, title, nor description does not have caption',
+assert_lib_ast('code: without id, title, nor description does not have caption',
   `\`\`
 aa
 \`\`
@@ -5448,7 +5473,7 @@ aa
     ]
   }
 )
-assert_lib_ast('code without id, title, nor description does not increment the code count',
+assert_lib_ast('code: without id, title, nor description does not increment the code count',
   `\`\`
 aa
 \`\`
@@ -7828,6 +7853,55 @@ assert_lib('bigb output: x convert parent, tag and child IDs to insane magic',
 
 = Escape scope
 {parent=/Myscope}
+`,
+    }
+  }
+)
+assert_lib('bigb output: split_headers',
+  {
+    convert_opts: { split_headers: true },
+    convert_dir: true,
+    filesystem: {
+      'notindex.bigb': `= Notindex
+
+Paragraph in notindex.
+
+== Notindex 2
+
+Paragraph in notindex 2.
+
+= Notindex 3
+{parent=Notindex 2}
+
+Paragraph in notindex 3.
+`,
+    },
+    assert_bigb: {
+      'notindex.bigb': `= Notindex
+
+Paragraph in notindex.
+
+== Notindex 2
+
+Paragraph in notindex 2.
+
+= Notindex 3
+{parent=Notindex 2}
+
+Paragraph in notindex 3.
+`,
+      'notindex-split.bigb': `= Notindex
+
+Paragraph in notindex.
+`,
+      'notindex-2.bigb': `= Notindex 2
+
+Paragraph in notindex 2.
+`,
+      // Parent is auto-removed on splits.
+      'notindex-3.bigb': `= Notindex 3
+
+Paragraph in notindex 3.
 `,
     }
   }

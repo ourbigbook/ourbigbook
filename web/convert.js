@@ -10,7 +10,7 @@ const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 
 const { ValidationError } = require('./api/lib')
 const { convertOptions, forbidMultiheaderMessage, maxArticleTitleSize, read_include_web } = require('./front/config')
-const { modifyEditorInput } = require('./front/js')
+const { hasReachedMaxItemCount, modifyEditorInput } = require('./front/js')
 const routes = require('./front/routes')
 
 // Subset of convertArticle for usage in issues and comments.
@@ -125,7 +125,7 @@ async function convertArticle({
           // Happens when updating a page.
           parentId = oldRef.from.idid
         } else if (previousSiblingId === undefined) {
-          throw new ValidationError(`parentId argument is mandatory for new articles, but article ID "${toplevelId}" does not exist yet`)
+          throw new ValidationError(`missing parentId argument is mandatory for new articles and article ID "${toplevelId}" does not exist yet so it is new`)
         }
       }
     }
@@ -286,15 +286,21 @@ async function convertArticle({
       )
       // Find here because upsert not yet supported in SQLite.
       // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert
-      articles = await sequelize.models.Article.findAll({
-        where: { slug: articleArgs.map(arg => arg.slug) },
-        include: {
-          model: sequelize.models.File,
-          as: 'file',
-        },
-        order: [['slug', 'ASC']],
-        transaction,
-      }),
+      let articleCountByLoggedInUser
+      [articleCountByLoggedInUser, articles] = await Promise.all([
+        sequelize.models.File.count({ where: { authorId: author.id }, transaction }),
+        sequelize.models.Article.findAll({
+          where: { slug: articleArgs.map(arg => arg.slug) },
+          include: {
+            model: sequelize.models.File,
+            as: 'file',
+          },
+          order: [['slug', 'ASC']],
+          transaction,
+        }),
+      ])
+      const err = hasReachedMaxItemCount(author, articleCountByLoggedInUser - 1, 'articles')
+      if (err) { throw new ValidationError(err, 403) }
       await sequelize.models.Topic.updateTopics(articles, { newArticles: true, transaction })
     } else {
       articles = []

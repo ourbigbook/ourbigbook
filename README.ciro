@@ -925,6 +925,18 @@ Don't quit \c[cirodown] immediately.
 
 Instead, watch the selected file or directory for changes, and rebuild as they are made.
 
+Watch a single file:
+
+\C[[
+./cirodown --watch README.ciro
+]]
+
+Watch every \c[.ciro] file in an entire directory:
+
+\C[[
+./cirodown --watch .
+]]
+
 Save the output to \c[.html] files automatically instead of outputting it to stdout as done without \c[--watch].
 
 Exit by entering Ctrl + C on the terminal.

@@ -50,6 +50,9 @@ const ArticleList = (props) => {
         }`;
       case 'global':
         return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&offset=${page * DEFAULT_LIMIT}`;
+      case 'topic-articles':
+      case 'topic-users': // TODO top users for a topic.
+        return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&offset=${page * DEFAULT_LIMIT}&topicId=${props.topicId}`;
       default:
         throw new Error(`Unknown search: ${props.what}`)
     }

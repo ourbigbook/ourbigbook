@@ -2579,16 +2579,14 @@ async function convert(
           !child_ast.from_include &&
           !child_ast.validation_output.synonym.boolean
         ) {
-          if (!(context.options.ourbigbook_json.h.splitDefaultNotToplevel && header_count === 1)) {
-            convert_header(cur_arg_list, context, has_toc);
-          }
+          convert_header(cur_arg_list, context, has_toc, header_count);
           cur_arg_list = [];
           has_toc = false;
           header_count++
         }
         cur_arg_list.push(child_ast);
       }
-      convert_header(cur_arg_list, context, has_toc);
+      convert_header(cur_arg_list, context, has_toc, header_count);
       // Because the following conversion would redefine them.
     }
     perf_print(context, 'render_post')
@@ -2668,12 +2666,16 @@ function render_arg_noescape(arg, context={}) {
 
 /* Convert one header (or content before the first header)
  * in --split-headers mode. */
-function convert_header(cur_arg_list, context, has_toc) {
+function convert_header(cur_arg_list, context, has_toc, header_count) {
   if (
     // Can fail if:
     // * the first thing in the document is a header
     // * the document has no headers
-    cur_arg_list.length > 0
+    cur_arg_list.length > 0 &&
+    !(
+      context.options.ourbigbook_json.h.splitDefaultNotToplevel &&
+      header_count === 1
+    )
   ) {
     context = Object.assign({}, context);
     const options = Object.assign({}, context.options);
@@ -3678,10 +3680,18 @@ function link_to_split_opposite(ast, context) {
   }
   let other_context = clone_and_set(context, 'to_split_headers', !context.in_split_headers);
   let other_href = x_href_attr(ast, other_context);
-  if (context.options.ourbigbook_json.h.splitDefaultNotToplevel) {
+  if (
+    // I'm not going to lie, I bruteforced this. Sue me.
+    context.options.ourbigbook_json.h.splitDefaultNotToplevel &&
+    (
+      context.options.ourbigbook_json.h.splitDefault ||
+      !context.in_split_headers
+    )
+  ) {
     // This is dirty. But I am dirty.
-    // Seriously, checking this more cleanly would require
+    // But seriously, checking this more cleanly would require
     // unpacking a bunch of stuff down below from the toplevel scope removal.
+    // Related: https://github.com/cirosantilli/ourbigbook/issues/271
     const other_href_same = x_href_attr(ast, context);
     if (other_href === other_href_same) {
       return undefined

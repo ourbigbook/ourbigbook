@@ -1320,8 +1320,6 @@ function calculate_id(ast, context, id_provider, non_indexed_ids,
       }
       let title_arg = macro.options.get_title_arg(ast, context);
       if (title_arg !== undefined) {
-        // ID from title.
-        // TODO correct unicode aware algorithm.
         context.extra_returns.x_no_content_in_title_no_id = false;
         id_text += title_to_id(convert_arg_noescape(title_arg, clone_and_set(context, 'in_title_no_id', true)));
         if (context.extra_returns.x_no_content_in_title_no_id) {
@@ -3043,9 +3041,10 @@ function symbol_to_string(symbol) {
   return symbol.toString().slice(7, -1);
 }
 
+/** TODO correct unicode aware algorithm. */
 function title_to_id(title) {
   return title.toLowerCase()
-    .replace(/[^a-z0-9-]+/g, ID_SEPARATOR)
+    .replace(/([^a-z0-9]|-)+/g, ID_SEPARATOR)
     .replace(new RegExp('^' + ID_SEPARATOR + '+'), '')
     .replace(new RegExp(ID_SEPARATOR + '+$'), '')
   ;

@@ -26,7 +26,8 @@
     "test-next-nobuild": "NODE_ENV_NEXT_SERVER_ONLY=production OURBIGBOOK_TEST_NEXT=true npm test -- --timeout 100000",
     "test-next": "npm run build-dev-nodeps && npm run test-next-nobuild",
     "test-pg": "OURBIGBOOK_POSTGRES=true npm test --",
-    "test-pg-next": "npm run build-dev-nodeps && OURBIGBOOK_TEST_NEXT=production npm run test-pg -- --timeout 100000",
+    "test-pg-next-nobuild": "NODE_ENV_NEXT_SERVER_ONLY=production OURBIGBOOK_TEST_NEXT=true npm run test-pg -- --timeout 100000",
+    "test-pg-next": "npm run build-dev-nodeps && npm run test-pg-next-nobuild -- ",
     "tsc": "tsc"
   },
   "repository": {

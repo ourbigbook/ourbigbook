@@ -8413,19 +8413,20 @@ function ourbigbook_convert_args(ast, context, options={}) {
   const named_args = Macro.COMMON_ARGNAMES.concat(macro.options.named_args.map(arg => arg.name)).filter(
     (argname) => !skip.has(argname) && ast.validation_output[argname].given
   )
-  let argname_idx = 0
+  const ret_args = []
   for (const arg of macro.positional_args) {
+    const ret_arg = []
     const argname = arg.name
     if (!skip.has(argname) && ast.validation_output[argname].given) {
       const { delim_repeat, rendered_arg } = ourbigbook_prefer_literal(
         ast, context, ast.args[argname], arg, START_POSITIONAL_ARGUMENT_CHAR, END_POSITIONAL_ARGUMENT_CHAR)
-      ret.push(START_POSITIONAL_ARGUMENT_CHAR.repeat(delim_repeat))
+      ret_arg.push(START_POSITIONAL_ARGUMENT_CHAR.repeat(delim_repeat))
       if (arg.remove_whitespace_children) {
-        ret.push('\n')
+        ret_arg.push('\n')
       } else {
         if (rendered_arg.indexOf('\n') !== -1) {
           if (rendered_arg[0] !== '\n') {
-            ret.push('\n')
+            ret_arg.push('\n')
           }
           // TODO this alters rendered output, adds newline, e.g.:
           // \Q[My line
@@ -8433,27 +8434,19 @@ function ourbigbook_convert_args(ast, context, options={}) {
           // ends in \n in the output. Leading \n however removed already:
           // see <Argument leading newline removal>.
           if (rendered_arg[rendered_arg.length - 1] !== '\n') {
-            ret.push('\n')
+            ret_arg.push('\n')
           }
         }
       }
-      ret.push(
+      ret_arg.push(
         rendered_arg +
         END_POSITIONAL_ARGUMENT_CHAR.repeat(delim_repeat)
       )
-      if (
-        !macro.options.phrasing
-        && (
-          argname_idx !== macro.positional_args.length - 1 ||
-          named_args.length > 0
-        )
-      ) {
-        ret.push('\n')
-      }
     }
-    argname_idx++
+    if (ret_arg.length) {
+      ret_args.push(ret_arg)
+    }
   }
-  argname_idx = 0
   for (const argname of named_args) {
     const arg = macro.named_args[argname]
     const validation_output = ast.validation_output[argname]
@@ -8463,8 +8456,8 @@ function ourbigbook_convert_args(ast, context, options={}) {
     } else {
       ast_args = [ast.args[argname]]
     }
-    let multiple_idx = 0
     for (const ast_arg of ast_args) {
+      const ret_arg = []
       const macro_arg = macro.name_to_arg[argname]
       const { delim_repeat, rendered_arg } = ourbigbook_prefer_literal(
         ast, context, ast_arg, arg, START_NAMED_ARGUMENT_CHAR, END_NAMED_ARGUMENT_CHAR)
@@ -8479,26 +8472,26 @@ function ourbigbook_convert_args(ast, context, options={}) {
       } else if(rendered_arg === '') {
         skip_val = true
       }
-      ret.push(
+      ret_arg.push(
         START_NAMED_ARGUMENT_CHAR.repeat(delim_repeat) +
         argname
       )
       if (!skip_val) {
-        ret.push(NAMED_ARGUMENT_EQUAL_CHAR + rendered_arg)
+        ret_arg.push(NAMED_ARGUMENT_EQUAL_CHAR + rendered_arg)
       }
-      ret.push(END_NAMED_ARGUMENT_CHAR.repeat(delim_repeat))
-      if (
-        !macro.options.phrasing &&
-        (
-          argname_idx !== named_args.length - 1 ||
-          multiple_idx !== ast_args.length - 1
-        )
-      ) {
-        ret.push('\n')
+      ret_arg.push(END_NAMED_ARGUMENT_CHAR.repeat(delim_repeat))
+      if (ret_arg.length) {
+        ret_args.push(ret_arg)
       }
-      multiple_idx++
     }
-    argname_idx++
+  }
+  let i = 0
+  for (const ret_arg of ret_args) {
+    ret.push(...ret_arg)
+    if (!macro.options.phrasing && i !== ret_args.length - 1) {
+      ret.push('\n')
+    }
+    i++
   }
   return ret
 }

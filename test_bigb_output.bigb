@@ -257,6 +257,8 @@ Table with paragraph and list:
 {description=The description of my image.}
 {source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
 
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+
 == Dog
 
 \Include[tmp2]{parent=dog}

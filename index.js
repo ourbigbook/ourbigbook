@@ -3760,7 +3760,7 @@ function has_toc(context) {
 function header_check_child_tag_exists(ast, context, childrenOrTags, type) {
   let ret = ''
   for (let child of childrenOrTags) {
-    const target_id = magic_title_to_id(render_arg_noescape(child.args.content, context))
+    const target_id = magic_title_arg_to_id(child.args.content, context)
     const target_ast = context.db_provider.get(target_id, context, ast.header_tree_node.ast.scope)
     if (target_ast === undefined) {
       let message = `unknown ${type} id: "${target_id}"`
@@ -4277,6 +4277,15 @@ function macro_image_video_block_convert_function(ast, context) {
   return ret;
 }
 
+/** Convert args such as tag= or \x[]{magic} to their final target ID. */
+function magic_title_arg_to_id(arg, context) {
+  const id_context = clone_and_set(context, 'id_conversion', true)
+  return magic_title_to_id(render_arg_noescape(arg, id_context), id_context)
+}
+
+/**
+ * @param string target_id
+ */
 function magic_title_to_id(target_id, context) {
   if (target_id.startsWith(Macro.FILE_ID_PREFIX))
     return target_id
@@ -5268,7 +5277,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           const tags_or_children = ast.args[argname]
           if (tags_or_children !== undefined) {
             for (const tag_or_child of tags_or_children) {
-              const target_id = magic_title_to_id(render_arg_noescape(tag_or_child.args.content, context), context)
+              const target_id = magic_title_arg_to_id(tag_or_child.args.content, context)
               for (const target_id_with_scope of get_all_possible_scope_resolutions(ast.calculate_scope(), target_id, context)) {
                 options.refs_to_h.push({
                   ast,

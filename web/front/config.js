@@ -27,10 +27,10 @@ module.exports = {
     magic_leading_at: false,
     path_sep: '/',
     remove_leading_at: true,
-  },
-  convertOptionsJson: {
-    h: {
-      numbered: false,
+    ourbigbook_json: {
+      h: {
+        numbered: false,
+      },
     },
   },
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.

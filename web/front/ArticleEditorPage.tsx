@@ -1,11 +1,12 @@
 import Editor, { DiffEditor, useMonaco, loader } from '@monaco-editor/react'
 import React, { useRef, useEffect } from 'react'
 import Router, { useRouter } from 'next/router'
+import lodash from 'lodash'
 
 import ourbigbook from 'ourbigbook/dist/ourbigbook.js';
 import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js';
 import { OurbigbookEditor } from 'ourbigbook/editor.js';
-import { convertOptions, convertOptionsJson, isProduction } from 'front/config';
+import { convertOptions, isProduction } from 'front/config';
 
 import { ArticlePageProps } from 'front/ArticlePage'
 import { slugFromArray } from 'front'
@@ -65,10 +66,9 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
             ourbigbook,
             ourbigbook_runtime,
             {
-              convertOptions: Object.assign({
+              convertOptions: lodash.merge({
                 input_path: initialFile?.path,
                 ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`,
-                ourbigbook_json: convertOptionsJson,
               }, convertOptions),
               handleSubmit,
               modifyEditorInput: (oldInput) => modifyEditorInput(file.title, oldInput),

@@ -6185,8 +6185,10 @@ function remove_toplevel_scope(id, toplevel_ast, context) {
 // https://docs.ourbigbook.com#index-files
 const INDEX_BASENAME_NOEXT = 'index';
 exports.INDEX_BASENAME_NOEXT = INDEX_BASENAME_NOEXT;
+const README_BASENAME_NOEXT = 'README';
+exports.README_BASENAME_NOEXT = README_BASENAME_NOEXT;
 const INDEX_FILE_BASENAMES_NOEXT = new Set([
-  'README',
+  README_BASENAME_NOEXT,
   INDEX_BASENAME_NOEXT,
 ]);
 exports.INDEX_FILE_BASENAMES_NOEXT = INDEX_FILE_BASENAMES_NOEXT;
@@ -7256,6 +7258,8 @@ const IMAGE_EXTENSIONS = new Set([
   'tiff',
   'webp',
 ])
+const OURBIGBOOK_JSON_BASENAME = 'ourbigbook.json';
+exports.OURBIGBOOK_JSON_BASENAME = OURBIGBOOK_JSON_BASENAME
 const OUTPUT_FORMAT_OURBIGBOOK = 'bigb';
 exports.OUTPUT_FORMAT_OURBIGBOOK = OUTPUT_FORMAT_OURBIGBOOK
 const OUTPUT_FORMAT_HTML = 'html';

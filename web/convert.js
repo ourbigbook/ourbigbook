@@ -168,7 +168,16 @@ async function convertArticle({
       titleSource,
       transaction,
     })
-    if (render) {
+
+    // Update nestedSetIndex and other things that can only be updated after the initial non-render pass.
+    //
+    // nestedSetIndex requires the initial non-render pass because it can only be calculated correctly
+    //
+    // Note however that nestedSetIndex is also calculated incrementally on the render pass, and as a result,
+    // article instances returned by this function do not have the correct final value for it.
+    if (
+      render
+    ) {
       const oldRef = await sequelize.models.Ref.findOne({
         where: {
           to_id: toplevelId,
@@ -432,20 +441,20 @@ async function convertArticle({
             // We need a raw query because Sequelize does not support UPDATE with JOIN:
             // https://github.com/sequelize/sequelize/issues/3957
             await sequelize.query(`
-  UPDATE "Article" SET
-    "nestedSetIndex" = "nestedSetIndex" + :nestedSetSize,
-    "nestedSetNextSibling" = "nestedSetNextSibling" + :nestedSetSize
-  WHERE
-    "nestedSetIndex" >= :nestedSetIndex AND
-    "id" IN (
-      SELECT "Article"."id" from "Article"
-      INNER JOIN "File"
-        ON "Article"."fileId" = "File"."id"
-      INNER JOIN "User"
-        ON "File"."authorId" = "User"."id"
-      WHERE "User"."username" = :authorUsername
-    )
-  `,
+UPDATE "Article" SET
+  "nestedSetIndex" = "nestedSetIndex" + :nestedSetSize,
+  "nestedSetNextSibling" = "nestedSetNextSibling" + :nestedSetSize
+WHERE
+  "nestedSetIndex" >= :nestedSetIndex AND
+  "id" IN (
+    SELECT "Article"."id" from "Article"
+    INNER JOIN "File"
+      ON "Article"."fileId" = "File"."id"
+    INNER JOIN "User"
+      ON "File"."authorId" = "User"."id"
+    WHERE "User"."username" = :authorUsername
+  )
+`,
               {
                 transaction,
                 replacements: {
@@ -484,20 +493,20 @@ async function convertArticle({
             //  transaction,
             //}),
             await sequelize.query(`
-  UPDATE "Article" SET
-    "nestedSetNextSibling" = "nestedSetNextSibling" + :nestedSetSize
-  WHERE
-    "nestedSetIndex" ${ancestorUpdateIndexWhere} AND
-    "nestedSetNextSibling" >= :nestedSetIndex AND
-    "id" IN (
-      SELECT "Article"."id" from "Article"
-      INNER JOIN "File"
-        ON "Article"."fileId" = "File"."id"
-      INNER JOIN "User"
-        ON "File"."authorId" = "User"."id"
-      WHERE "User"."username" = :authorUsername
-    )
-  `,
+UPDATE "Article" SET
+  "nestedSetNextSibling" = "nestedSetNextSibling" + :nestedSetSize
+WHERE
+  "nestedSetIndex" ${ancestorUpdateIndexWhere} AND
+  "nestedSetNextSibling" >= :nestedSetIndex AND
+  "id" IN (
+    SELECT "Article"."id" from "Article"
+    INNER JOIN "File"
+      ON "Article"."fileId" = "File"."id"
+    INNER JOIN "User"
+      ON "File"."authorId" = "User"."id"
+    WHERE "User"."username" = :authorUsername
+  )
+`,
               {
                 transaction,
                 replacements: {
@@ -619,24 +628,19 @@ async function convertArticle({
           // individualHooks: true,
         }
       )
-      // Find here because upsert not yet supported in SQLite.
-      // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert
       let articleCountByLoggedInUser
       let nestedSetDelta = nestedSetIndex - oldNestedSetIndex
       let depthDelta = newDepth - oldDepth
       ;[articleCountByLoggedInUser, articles, _] = await Promise.all([
         sequelize.models.File.count({ where: { authorId: author.id }, transaction }),
-        sequelize.models.Article.findAll({
-          where: { slug: articleArgs.map(arg => arg.slug) },
-          include: {
-            model: sequelize.models.File,
-            as: 'file',
-            include: {
-              model: sequelize.models.User,
-              as: 'author',
-            },
-          },
-          order: [['slug', 'ASC']],
+        // Find here because upsert not yet supported in SQLite, so above updateOnDuplicate wouldn't work.
+        // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert
+        sequelize.models.Article.getArticles({
+          count: false,
+          order: 'slug',
+          orderAscDesc: 'ASC',
+          sequelize,
+          slug: articleArgs.map(arg => arg.slug),
           transaction,
         }),
         articleMoved

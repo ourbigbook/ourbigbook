@@ -315,7 +315,7 @@ module.exports = (sequelize) => {
   }
 
   User.defaultIndexTitle = 'Index'
-  User.defaultIndexBody = 'Welcome to my home page!'
+  User.defaultIndexBody = 'Welcome to my home page!\n'
 
   User.getUsers = async function({
     limit,

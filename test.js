@@ -1354,14 +1354,18 @@ assert_convert_ast('link auto insane with literal square brackets around it',
   ])]
 );
 // TODO we want it to work like this.
-//assert_convert_ast('link auto insane can be escaped with a backslash',
-//  '\\http://example.com\n',
-//  [t('http://example.com')]
-//);
-//assert_convert_ast('link auto insane is not a link if the domain is empty',
-//  'http://\n',
-//  [t('http://')]
-//);
+assert_convert_ast('link auto insane can be escaped with a backslash',
+  '\\http://example.com\n',
+  [a('P', [t('http://example.com')])],
+);
+assert_convert_ast('link auto insane is not a link if the domain is empty at eof',
+  'http://\n',
+  [a('P', [t('http://')])],
+);
+assert_convert_ast('link auto insane is not a link if the domain is empty at space',
+  'http:// a\n',
+  [a('P', [t('http:// a')])],
+);
 assert_convert_ast('link auto insane start end named argument',
   '\\Image[aaa.jpg]{description=http://example.com}\n',
   [a('Image', undefined, {

@@ -203,6 +203,12 @@ class AstArgument extends Array {
     super(...nodes)
     this.line = line;
     this.column = column;
+    let i = 0;
+    nodes.forEach(function(node) {
+      node.parent_argument = this;
+      node.parent_argument_index = i;
+      i++;
+    });
   }
 
   // https://stackoverflow.com/questions/3261587/subclassing-javascript-arrays-typeerror-array-prototype-tostring-is-not-generi/61269027#61269027
@@ -210,6 +216,18 @@ class AstArgument extends Array {
     return Object.assign(function (...items) {
       return new AstArgument(new Array(...items))
     }, AstArgument);
+  }
+
+  push(...new_nodes) {
+    const old_length = this.length;
+    const ret = super.push(...new_nodes);
+    let i = 0;
+    new_nodes.forEach(node => {
+      node.parent_argument = this;
+      node.parent_argument_index = old_length + i;
+      i++;
+    });
+    return ret;
   }
 }
 
@@ -3823,7 +3841,10 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    html_convert_simple_elem('td'),
+    html_convert_simple_elem('td', {newline_after_close: true}),
+    {
+      newline_after_close: true,
+    }
   ),
   new Macro(
     Macro.TOC_MACRO_NAME,
@@ -3957,7 +3978,7 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    html_convert_simple_elem('th'),
+    html_convert_simple_elem('th', {newline_after_close: true}),
   ),
   new Macro(
     Macro.TR_MACRO_NAME,
@@ -3967,7 +3988,45 @@ const DEFAULT_MACRO_LIST = [
         remove_whitespace_children: true,
       }),
     ],
-    html_convert_simple_elem('tr', {newline_after_open: true}),
+    function(ast, context) {
+      let content_ast = ast.args.content;
+      let content = convert_arg(content_ast, context);
+      let res = '';
+      if (ast.args.content[0].macro_name === Macro.TH_MACRO_NAME) {
+        if (
+          ast.parent_argument_index === 0 ||
+          ast.parent_argument[ast.parent_argument_index - 1].args.content[0].macro_name !== Macro.TH_MACRO_NAME
+        ) {
+          res += `<thead>\n`;
+        }
+      }
+      if (ast.args.content[0].macro_name === Macro.TD_MACRO_NAME) {
+        if (
+          ast.parent_argument_index === 0 ||
+          ast.parent_argument[ast.parent_argument_index - 1].args.content[0].macro_name !== Macro.TD_MACRO_NAME
+        ) {
+          res += `<tbody>\n`;
+        }
+      }
+      res += `<tr>\n${content}</tr>\n`;
+      if (ast.args.content[0].macro_name === Macro.TH_MACRO_NAME) {
+        if (
+          ast.parent_argument_index === ast.parent_argument.length - 1 ||
+          ast.parent_argument[ast.parent_argument_index + 1].args.content[0].macro_name !== Macro.TH_MACRO_NAME
+        ) {
+          res += `</thead>\n`;
+        }
+      }
+      if (ast.args.content[0].macro_name === Macro.TD_MACRO_NAME) {
+        if (
+          ast.parent_argument_index === ast.parent_argument.length - 1 ||
+          ast.parent_argument[ast.parent_argument_index + 1].args.content[0].macro_name !== Macro.TD_MACRO_NAME
+        ) {
+          res += `</tbody>\n`;
+        }
+      }
+      return res;
+    },
     {
       auto_parent: Macro.TATBLE_MACRO_NAME,
     }

@@ -9,11 +9,12 @@ import Maybe from 'front/Maybe'
 import { appName, aboutHref, articleLimit, apiPath } from 'front/config'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
+import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
 import { DisplayAndUsername } from 'front/user'
 
 export interface IndexPageProps {
-  articles?: ArticleType[];
+  articles?: (ArticleType & IssueType)[];
   articlesCount?: number;
   issueArticle?: ArticleType;
   loggedInUser?: UserType;

@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import Maybe from 'front/Maybe'
 import { webApi } from 'front/api'
 import config from 'front/config'
-import cant from 'front/cant'
+import { cant } from 'front/cant'
 import { formatDate } from 'front/date'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 

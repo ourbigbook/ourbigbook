@@ -28,7 +28,7 @@ npm install
 npx cirodown .
 firefox index.html
 ``
-That template can be seen rendered live at: http://cirosantilli.com/cirodown-generate-multifile/
+That template can be seen rendered live at: http://cirosantilli.com/cirodown-generate-multifile/ Other templates are documented at: \x[generate].
 
 To \x[publish-to-github-pages] on your repository you can just fork the repository https://github.com/cirosantilli/cirodown-template to your own https://github.com/johndoe/cirodown-template and then:
 ``

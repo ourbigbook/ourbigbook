@@ -5374,10 +5374,11 @@ const DEFAULT_MACRO_LIST = [
         custom_args = {};
         level_int_capped = level_int_output;
       }
-      let attrs = html_convert_attrs_id(ast, context, [], custom_args);
+      let attrs = html_convert_attrs(ast, context, [], custom_args);
+      let id_attr = html_convert_attrs_id(ast, context);
       let ret = '';
       // Div that contains h + on hover span.
-      ret += `<div class="h">`;
+      ret += `<div ${id_attr}class="h">`;
       ret += `<h${level_int_capped}${attrs}><a${html_self_link(ast, context)} title="link to this element">`;
       let x_text_options = {
         show_caption_prefix: false,

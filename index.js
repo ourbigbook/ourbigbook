@@ -7589,12 +7589,18 @@ const OUTPUT_FORMATS_LIST = [
             custom_args = {};
             level_int_capped = level_int_output;
           }
-          let attrs = html_render_attrs(ast, context, [], custom_args);
+          let attrs = html_render_attrs(ast, context, [], custom_args)
           let id_attr = html_render_attrs_id(ast, context);
           let ret = '';
           // Div that contains h + on hover span.
           ret += `<div class="h"${id_attr}>`;
-          ret += `<h${level_int_capped}${attrs}><a${html_self_link(ast, context)} title="link to this element">`;
+          let self_link_context
+          if (context.options.split_headers) {
+            self_link_context = clone_and_set(context, 'to_split_headers', true)
+          } else {
+            self_link_context = context
+          }
+          ret += `<h${level_int_capped}${attrs}><a${x_href_attr(ast, self_link_context)}>`;
           let x_text_options = {
             show_caption_prefix: false,
             style_full: true,
@@ -8142,7 +8148,7 @@ const OUTPUT_FORMATS_LIST = [
             for (const script of context.options.template_scripts_relative) {
               relative_scripts.push(`<script src="${context.options.template_vars.root_relpath}${script}"></script>\n`);
             }
-            const toplevel_scope = calculate_scope(context.toplevel_ast)
+            const toplevel_scope = context.toplevel_ast ? calculate_scope(context.toplevel_ast) : undefined
             const ourbigbook_redirect_prefix_raw = toplevel_scope ? `${toplevel_scope}${URL_SEP}` : ''
             const ourbigbook_redirect_prefix = JSON.stringify(ourbigbook_redirect_prefix_raw).replace(/</g, '\\u003c')
             const data_script = `<script>

@@ -3570,8 +3570,8 @@ assert_convert_ast('header simple',
     assert_xpath_main: [
       // The toplevel header does not have any numerical prefix, e.g. "1. My header",
       // it is just "My header".
-      xpath_header(1, 'notindex', "x:a[@href='' and text()='My header']"),
-      xpath_header(2, 'my-header-2', "x:a[@href='#my-header-2' and text()='1. My header 2']"),
+      xpath_header(1, 'notindex', "x:a[@href='notindex-split.html' and text()='My header']"),
+      xpath_header(2, 'my-header-2', "x:a[@href='my-header-2.html' and text()='1. My header 2']"),
     ],
     assert_xpath: {
       'my-header-2.html': [
@@ -6731,8 +6731,8 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
 
         // Headers.
-        xpath_header(1, 'toplevel', "x:a[@href='' and text()='Toplevel']"),
-        xpath_header(2, 'h2', "x:a[@href='#h2' and text()='1. H2']"),
+        xpath_header(1, 'toplevel', "x:a[@href='index.html' and text()='Toplevel']"),
+        xpath_header(2, 'h2', "x:a[@href='h2.html' and text()='1. H2']"),
 
         // Spilt/nosplit.
         xpath_header_split(1, 'toplevel', 'index.html', ourbigbook.SPLIT_MARKER_TEXT),
@@ -6773,8 +6773,8 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='notindex h2 to my image h2']",
 
         // Headers.
-        xpath_header(1, 'notindex', "x:a[@href='' and text()='Notindex']"),
-        xpath_header(2, 'notindex-h2', "x:a[@href='#notindex-h2' and text()='1. Notindex h2']"),
+        xpath_header(1, 'notindex', "x:a[@href='notindex-split.html' and text()='Notindex']"),
+        xpath_header(2, 'notindex-h2', "x:a[@href='notindex-h2.html' and text()='1. Notindex h2']"),
 
         // Spilt/nosplit.
         xpath_header_split(1, 'notindex', 'notindex-split.html', ourbigbook.SPLIT_MARKER_TEXT),

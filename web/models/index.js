@@ -338,12 +338,15 @@ async function normalize({
   fix,
   print,
   sequelize,
-  usernames=[],
+  usernames,
   transaction,
   whats,
 }={}) {
   if (whats.length === 0 || (!check && !fix && !print)) {
     throw new Error(`nothing to be done`)
+  }
+  if (usernames === undefined) {
+    usernames = []
   }
   if (usernames.length === 0) {
     usernames = (await sequelize.models.User.findAll({
@@ -373,9 +376,10 @@ async function normalize({
           for (let i = 0; i < nestedSetsFromRefs.length; i++) {
             const article = articles[i]
             const fromRef = nestedSetsFromRefs[i]
-            const msg = `${what} ${article.slug} ${article.nestedSetIndex} ${article.nestedSetNextSibling} !== ${fromRef.id} ${fromRef.nestedSetIndex} ${fromRef.nestedSetNextSibling}`
+            const msg = `${what}: (slug, nestedSet, nestedSetIndex, depth): actual: (${article.slug}, ${article.nestedSetIndex}, ${article.nestedSetNextSibling}, ${article.depth}) !== expected: (${fromRef.id}, ${fromRef.nestedSetIndex}, ${fromRef.nestedSetNextSibling}, ${fromRef.depth})`
             assert.strictEqual(article.nestedSetIndex, fromRef.nestedSetIndex, msg)
             assert.strictEqual(article.nestedSetNextSibling, fromRef.nestedSetNextSibling, msg)
+            assert.strictEqual(article.depth, fromRef.depth, msg)
             assert.strictEqual(`@${article.slug}`, fromRef.id, msg)
           }
         }

@@ -81,39 +81,41 @@ const ArticleList = (props) => {
   }
   return (
     <>
-      <table className="article-list">
-        <thead>
-          <tr>
-            <th>Score</th>
-            <th>Author</th>
-            <th>Title</th>
-            <th>Created</th>
-            <th>Updated</th>
-          </tr>
-        </thead>
-        <tbody>
-          {articles?.map((article, i) => (
-            <FavoriteArticleButtonContext.Provider key={article.slug} value={{
-              favorited: favorited[i],
-              setFavorited: setFavorited[i],
-              favoritesCount: favoritesCount[i],
-              setFavoritesCount: setFavoritesCount[i],
-            }}>
-              <ArticlePreview key={article.slug} article={article} />
-            </FavoriteArticleButtonContext.Provider>
-          ))}
-        </tbody>
-      </table>
-      <Maybe test={articlesCount && articlesCount > 20}>
-        <Pagination
-          total={pageCount}
-          limit={DEFAULT_LIMIT}
-          pageCount={10}
-          currentPage={page}
-          lastIndex={lastIndex}
-          fetchURL={fetchURL}
-        />
-      </Maybe>
+      <div className="article-list-container">
+        <table className="article-list">
+          <thead>
+            <tr>
+              <th className="shrink">Author</th>
+              <th className="shrink">Score</th>
+              <th className="expand">Title</th>
+              <th className="shrink">Created</th>
+              <th className="shrink">Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            {articles?.map((article, i) => (
+              <FavoriteArticleButtonContext.Provider key={article.slug} value={{
+                favorited: favorited[i],
+                setFavorited: setFavorited[i],
+                favoritesCount: favoritesCount[i],
+                setFavoritesCount: setFavoritesCount[i],
+              }}>
+                <ArticlePreview key={article.slug} article={article} />
+              </FavoriteArticleButtonContext.Provider>
+            ))}
+          </tbody>
+        </table>
+        <Maybe test={articlesCount && articlesCount > 20}>
+          <Pagination
+            total={pageCount}
+            limit={DEFAULT_LIMIT}
+            pageCount={10}
+            currentPage={page}
+            lastIndex={lastIndex}
+            fetchURL={fetchURL}
+          />
+        </Maybe>
+      </div>
     </>
   );
 };

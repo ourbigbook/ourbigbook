@@ -3,7 +3,7 @@ import { mutate } from "swr";
 import Router from "next/router";
 
 import UserAPI from "lib/api/user";
-import { SERVER_BASE_URL } from "lib/utils/constant";
+import { BUTTON_ACTIVE_CLASS } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 
 export const FollowUserButtonContext = React.createContext(undefined);
@@ -15,7 +15,6 @@ const FollowUserButton = ({
   const {following, setFollowing} = React.useContext(FollowUserButtonContext);
   const { username } = profile;
   const isCurrentUser = loggedInUser && username === loggedInUser?.username;
-  if (loggedInUser && isCurrentUser) { return null; }
   const handleClick = (e) => {
     e.preventDefault();
     if (!loggedInUser) {
@@ -31,13 +30,11 @@ const FollowUserButton = ({
   };
   return (
     <button
-      className={`btn btn-sm action-btn ${
-        following ? "btn-secondary" : "btn-outline-secondary"
-      }`}
+      className={following ? BUTTON_ACTIVE_CLASS : ''}
       onClick={handleClick}
     >
       <i className="ion-plus-round" />
-      {" "}&nbsp;{" "}
+      {" "}
       {following ? "Unfollow" : "Follow"} {username}
     </button>
   );

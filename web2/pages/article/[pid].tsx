@@ -90,15 +90,13 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
               <li className="tag-default tag-pill tag-outline" key={tag}>{tag}</li>
             ))}
           </ul>
-          <hr />
-          <div className="row">
-            <div className="col-xs-12 col-md-8 offset-md-2">
-              <div>
-                <CommentInput />
-                {comments?.map((comment: CommentType) => (
-                  <Comment key={comment.id} comment={comment} />
-                ))}
-              </div>
+          <div className="comments content-not-cirodown">
+            <h1>Comments</h1>
+            <div>
+              <CommentInput />
+              {comments?.map((comment: CommentType) => (
+                <Comment key={comment.id} comment={comment} />
+              ))}
             </div>
           </div>
         </div>

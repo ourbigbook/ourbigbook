@@ -8,8 +8,6 @@ body {
 margin: 0;
 background-color: $background-color;
 
-// TODO duplicated from /cirodown.scss. I don't have the patience to factor them out right now.
-
 /* Scrollbar behaviour.
  * We would like to get rid of the X scrollbar and keep only the Y one.
  * The below would remove both on Chromium 81 and neither on Firefox 75.
@@ -26,8 +24,28 @@ scrollbar-width: none;
 }
 */
 
-button {
+button, a.btn {
+  $button-bg-color: rgb(239, 239, 239);
+  $button-fg-color: black;
+  border-radius: 3px;
   cursor: pointer;
+  display: inline-block;
+  font-size: 15px;
+  font-weight: bold;
+  line-height: 28px;
+  padding: 2px 5px;
+  text-decoration: none;
+  margin: 0;
+  &, &:hover.active {
+    background-color: $button-bg-color;
+    color: $button-fg-color;
+    border: 1px solid $button-fg-color;
+  }
+  &:hover, &.active {
+    background-color: #FF1493;
+    color: white;
+    //border-color: $button-bg-color;
+  }
 }
 
 nav.navbar, footer {
@@ -147,11 +165,26 @@ footer {
   }
   */
 }
-table.article-list {
-  margin-bottom: 20px;
-  tr {
-    td > * {
-      vertical-align: middle;
+div.article-list-container {
+  padding-right: $toplevel-padding;
+  table.article-list {
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    width: 100%;
+    tr {
+      td, th {
+        border: 1px solid $color;
+        padding: 5px 10px;
+        &.shrink {
+          white-space: nowrap
+        }
+        &.expand {
+          width: 100%
+        }
+        &.title {
+          font-weight: bold;
+        }
+      }
     }
   }
 }
@@ -163,5 +196,10 @@ table.article-list {
 
 .profile-thumb {
   height: 26px;
+  vertical-align: middle;
+}
+
+.username {
+  font-weight: bold;
 }
 }

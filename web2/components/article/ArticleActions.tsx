@@ -3,7 +3,6 @@ import React from "react";
 import { trigger } from "swr";
 
 import FavoriteArticleButton from "components/common/FavoriteArticleButton";
-import FollowUserButton from "components/profile/FollowUserButton";
 import CustomLink from "components/common/CustomLink";
 import Maybe from "components/common/Maybe";
 import ArticleAPI from "lib/api/article";
@@ -28,28 +27,25 @@ const ArticleActions = ({ article }) => {
     loggedInUser && loggedInUser?.username === article?.author?.username;
   return (
     <>
-      <Maybe test={!canModify}>
-        <span>
-          <FavoriteArticleButton
-            favorited={article.favorited}
-            favoritesCount={article.favoritesCount}
-            slug={article.slug}
-            showText={false}
-          />
-          <FollowUserButton profile={article.author} />
-        </span>
-      </Maybe>
+      <span>
+        <FavoriteArticleButton
+          favorited={article.favorited}
+          favoritesCount={article.favoritesCount}
+          slug={article.slug}
+          showText={false}
+        />
+      </span>
       <Maybe test={canModify}>
         <span>
           <CustomLink
             href="/editor/[pid]"
             as={`/editor/${article.slug}`}
-            className="btn btn-outline-secondary btn-sm"
+            className="btn"
           >
             <i className="ion-edit" /> Edit Article
           </CustomLink>
           <button
-            className="btn btn-outline-danger btn-sm"
+            className="btn"
             onClick={handleDelete}
           >
             <i className="ion-trash-a" /> Delete Article

@@ -1,4 +1,14 @@
 /* Shared across local cirodown and web. */
+
+// Light
+$a-color: #0000EE;
+$a-color-visited: rgb(85, 26, 139);
+$background-color: white;
+$code-background-color: #eeeeee;
+$color: black;
+$target-background-color: #FFFFCC;
+
+// Dark.
 $a-color: #88CCFF;
 $a-color-visited: #FFAAFF;
 $background-color: black;
@@ -7,9 +17,13 @@ $color: #00FF00;
 $color-discreet: #00BB00;
 $target-background-color: #442222;
 
+$font-family: Arial, Helvetica, sans-serif;
+
 @mixin body {
   background-color: $background-color;
   color: $color;
+  font-family: $font-family;
+  font-size: 16px;
   a {
     color: $a-color;
     text-decoration: none;

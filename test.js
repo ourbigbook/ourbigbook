@@ -6834,6 +6834,28 @@ assert_lib('bigb output: pluralize fail',
     }
   }
 );
+assert_lib('bigb output: acronym plural',
+  // https://github.com/plurals/pluralize/issues/127
+  {
+    filesystem: {
+      'notindex.bigb': `= Notindex
+
+== PC
+
+<PCs>
+`,
+    },
+    convert_dir: true,
+    assert_bigb: {
+      'notindex.bigb': `= Notindex
+
+== PC
+
+<PCs>
+`,
+    }
+  }
+);
 assert_lib('bigb output: to file',
   {
     filesystem: {

@@ -4767,7 +4767,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             last_ast.node_type === AstType.PLAINTEXT
           ) {
             const old_text = last_ast.text
-            const new_text = pluralize(old_text, 1)
+            const new_text = pluralize_wrap(old_text, 1)
             if (new_text !== old_text) {
               last_ast.text = new_text
               const target_id = magic_title_to_id(convert_id_arg(ast.args.href, context))
@@ -5317,7 +5317,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK &&
             ast.validation_output.p.boolean
           ) {
-            const id_plural = pluralize(id.replaceAll(ID_SEPARATOR, ' ')).replaceAll(' ', ID_SEPARATOR)
+            const id_plural = pluralize_wrap(id.replaceAll(ID_SEPARATOR, ' ')).replaceAll(' ', ID_SEPARATOR)
             if (id !== id_plural) {
               // We need to also fetch this to decide if we can use magic plural or not, in case
               // there are separate IDs for both singular and plural. But we don't want to put it into
@@ -5883,6 +5883,18 @@ function perf_print(context, name) {
 }
 exports.perf_print = perf_print
 
+// https://github.com/plurals/pluralize/issues/127
+function pluralize_wrap(s, n) {
+  let ret = pluralize(s, n)
+  if (n === undefined || n > 1 && s !== ret) {
+    const last = ret[ret.length - 1]
+    if (last === 'S') {
+      ret = ret.substring(0, ret.length - 1) + last.toLowerCase()
+    }
+  }
+  return ret
+}
+
 function propagate_numbered(ast, context) {
   // numbered propagation to children.
   // Note that the property only affects descendants, but not the node itself.
@@ -6107,7 +6119,7 @@ function x_get_target_ast_base({
   }
   let target_ast = context.db_provider.get(target_id_eff, context, scope);
   if (do_singularize && !target_ast) {
-    target_id_eff = magic_title_to_id(pluralize(target_id, 1))
+    target_id_eff = magic_title_to_id(pluralize_wrap(target_id, 1))
     target_ast = context.db_provider.get(target_id_eff, context, scope);
   }
   return { target_id: target_id_eff, target_ast }
@@ -6173,7 +6185,7 @@ function x_get_href_content(ast, context) {
       const last_ast = href_arg.get(href_arg.length() - 1);
       if (last_ast.node_type === AstType.PLAINTEXT) {
         const text = first_ast.text
-        if (text !== pluralize(text, 1)) {
+        if (text !== pluralize_wrap(text, 1)) {
           x_text_options.pluralize = true
         }
       }
@@ -6553,7 +6565,7 @@ function x_text_base(ast, context, options={}) {
         title_arg = lodash.clone(title_arg)
         title_arg.asts = lodash.clone(title_arg.asts)
         title_arg.set(title_arg.length() - 1, new PlaintextAstNode(last_ast.text, last_ast.source_location));
-        title_arg.get(title_arg.length() - 1).text = pluralize(last_ast.text, options.pluralize ? 2 : 1);
+        title_arg.get(title_arg.length() - 1).text = pluralize_wrap(last_ast.text, options.pluralize ? 2 : 1);
       }
     }
     inner = render_arg(title_arg, context);
@@ -8571,7 +8583,7 @@ function ourbigbook_get_x_href({
 }) {
   href = href.replaceAll(ID_SEPARATOR, ' ')
   if (p) {
-    const href_plural = pluralize(href, 2)
+    const href_plural = pluralize_wrap(href, 2)
     let target_ast_plural = context.db_provider.get(magic_title_to_id(href_plural), context)
     if (
       // When we have \x without magic to a destination that exists
@@ -8593,7 +8605,7 @@ function ourbigbook_get_x_href({
   }
   let was_magic_plural, was_magic_uppercase
   if (magic && !for_header_parent) {
-    const href_singular = pluralize(href, 1)
+    const href_singular = pluralize_wrap(href, 1)
     if (!target_ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME] && href !== href_singular) {
       was_magic_plural = true
     }
@@ -8649,7 +8661,7 @@ function ourbigbook_get_x_href({
         was_magic_plural ||
         p
       ) {
-        const href_plural = pluralize(href, 2)
+        const href_plural = pluralize_wrap(href, 2)
         let disambiguate_sep
         if (disambiguate) {
           disambiguate_sep = ID_SEPARATOR + disambiguate
@@ -8665,7 +8677,7 @@ function ourbigbook_get_x_href({
         const plural_id = `${target_scope}${magic_title_to_id(href_plural)}${disambiguate_sep}`
         const plural_target = context.db_provider.get(plural_id, context)
         if (!plural_target || plural_target.id !== target_ast.id) {
-          const singular_id = `${target_scope}${magic_title_to_id(pluralize(href, 1))}${disambiguate_sep}`
+          const singular_id = `${target_scope}${magic_title_to_id(pluralize_wrap(href, 1))}${disambiguate_sep}`
           const singular_target = context.db_provider.get(singular_id, context)
           if ((!singular_target || singular_target.id !== target_ast.id) && !explicit_id) {
             // This can happen due to pluralize bugs:

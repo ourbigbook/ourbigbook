@@ -336,7 +336,7 @@ The following sections cover different ways to use tools from the OurBigBook:
     ]]
 * is written in JavaScript and therefore runs natively on the browser to allow live previews as shown at: https://docs.ourbigbook.com/editor[]
 * helps you with the publishing:
-  * `ourbigbook --publish` publishes in a single command to the configured target (default GitHub pages): <publish>{full}
+  * <ourbigbook --publish> publishes in a single command to the configured target (default <GitHub Pages>)
   * OurBigBook tries to deal with media such as images and video intelligently for you, e.g.: <where to store images>{full}. E.g. you can keep media in a separate media repository, `my-media-repository`, and then by configuring on <ourbigbook.json>:
     ``
     "media-providers": {
@@ -498,9 +498,15 @@ The key limitations have repeatedly annoyed Ciro were:
 {c}
 {parent=OurBigBook}
 
+= `.bigb` extension
+{synonym}
+{title2}
+
 OurBigBook Markup is the https://en.wikipedia.org/wiki/Lightweight_markup_language[lightweight markup language] used in the <OurBigBook> project.
 
 It works both on the <OurBigBook Web> dynamic website, and on <OurBigBook CLI> static websites from the command line.
+
+<OurBigBook Markup> files use the `.bigb` extension.
 
 = OurBigBook Markup quick start
 {c}
@@ -731,6 +737,9 @@ The general macro syntax is described at <OurBigBook Markup syntax>{full}.
 = `\a`
 {synonym}
 {title2}
+
+= `\a` macro
+{synonym}
 
 <Insane> autolink, i.e. the link text is the same as the link address:
 \OurBigBookExample[[
@@ -1395,65 +1404,6 @@ renders exactly as:
 The header `child` syntax is generally preferred because at some point while editing the content of the header, you might accidentally remove mentions to e.g. `\x[bat]{child}`, and then the relationship would be lost.
 
 The <\H tag argument> does the same as the <\x child argument> but in the opposite direction.
-
-= `\H` `disambiguate` argument
-{parent=H arguments}
-
-Sometimes the short version of a name is ambiguous, and you need to add some extra text to make both its title and ID unique.
-
-For example, the word "Python" could either refer to:
-* the programming language: https://en.wikipedia.org/wiki/Python_(programming_language)
-* the genus of snakes: https://en.wikipedia.org/wiki/Python_(genus)
-
-The `disambiguate` <positional vs named arguments>[name argument], which is automatically defined for all macros, helps you deal more neatly with such problems.
-
-Have a look at this example:
-\OurBigBookExample[[
-My favorite snakes are \x[python-genus]{p}!
-
-My favorite programming language is \x[python-programming-language]!
-
-\x[python-genus]{full}
-
-\x[python-programming-language]{full}
-
-= Python
-{disambiguate=genus}
-{parent=h-disambiguate-argument}
-
-= Python
-{c}
-{disambiguate=programming language}
-{parent=h-disambiguate-argument}
-{title2=.py}
-{wiki}
-]]
-from which we observe how `disambiguate`:
-* gets added to the ID after conversion following the same rules as <automatic ID from title>
-* shows up on the header between parenthesis, much like Wikipedia, as well as in <\x full argument>[`full` cross references]
-* does not show up on non-`full` references. This makes it much more likely that you will be able to reuse the title automatically on a cross reference without `content`: we wouldn't want to say "My favorite programming language is Python (programming language)" all the time, would we?
-* gets added to the default <\H wiki argument> inside parenthesis, following Wikipedia convention, therefore increasing the likelihood that you will be able to go with the default Wikipedia value
-
-Besides disambiguating headers, the `disambiguate` argument has a second related application: disambiguating IDs of images. For example:
-\OurBigBookExample[[
-\x[image-the-title-of-my-disambiguate-image]{full=0}
-
-\x[image-the-title-of-my-disambiguate-image-2]{full=0}
-
-\x[image-the-title-of-my-disambiguate-image]{full}
-
-\x[image-the-title-of-my-disambiguate-image-2]{full}
-
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title=The title of my disambiguate image}
-
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title=The title of my disambiguate image}
-{disambiguate=2}
-]]
-Note that unlike for headers, `disambiguate` does not appear on the title of images at all. It serves only to create an unique ID that can be later referred to. Headers are actually the only case where `disambiguate` shows up on the visible rendered output. We intend on making this application obsolete however with:
-
-This use case is even more useful when `title-from-src` is enable by default for the <ourbigbook.json/media-providers> entry, so you don't have to repeat titles several times over and over.
 
 = `\H` `file` argument
 {parent=H arguments}
@@ -2553,6 +2503,9 @@ so we see that this basically provides a type of breadcrumb navigation.
 {parent=Macro}
 {title2=`\Image` and `\image`}
 
+= `\Image` macro
+{synonym}
+
 A block image with <block vs inline macros>[capital] 'i' `Image` showcasing most of the image properties <image my test image>.
 \OurBigBookExample[[
 Have a look at this amazing image: \x[image-my-test-image].
@@ -2690,7 +2643,7 @@ In this example, we also needed to set `{provider=github}` explicitly since it w
 ``
 is an error.
 
-TODO implement: `ourbigbook` will even automatically add and push used images in the `my-tutorial-media` repository for you <publish>[during publishing]!
+TODO implement: `ourbigbook` will even automatically add and push used images in the `my-tutorial-media` repository for you <static website>[during publishing]!
 
 You should then use the following rules inside `my-tutorial-media`:
 * give every file a very descriptive and unique name as a full English sentence
@@ -3052,6 +3005,9 @@ This shows what includes render as.
 = Italic
 {parent=Macro}
 {title2=`\i`}
+
+= `\i` macro
+{synonym}
 
 \OurBigBookExample[[Some \i[italic] text.]]
 
@@ -3443,7 +3399,7 @@ Equivalently however, you can use an explicit `\P` macros as well, which is requ
 \P{id=paragraph-2}[Paragraph 2]
 ]]
 
-Paragraphs are created automatically inside <macro argument syntax>[macro argument] whenever a double newline appears.
+Paragraphs are created automatically inside <macro argument> whenever a double newline appears.
 
 Note that OurBigBook paragraphs render in HTML as `div` with `class="p"` and not as `p`. This means that you can add basically anything inside them, e.g. a list:
 ``
@@ -4316,7 +4272,7 @@ This property does not affect how the <table of contents> is rendered. We could 
 Read this \x[my-id][amazing section].
 ``
 
-If the second argument, the `content`, is not present, it expand to the header title, e.g.:
+If the second argument, the <`content` argument>, is not present, it expand to the header title, e.g.:
 ``
 == My title{id=my-id}
 
@@ -4645,11 +4601,14 @@ Since underscores `_`  or hyphens `=` are not allowed, https://en.wikipedia.org/
 OurBigBookExample
 ``
 
-= Macro argument syntax
+= Macro argument
 {parent=OurBigBook Markup syntax}
 
+= Macro argument syntax
+{synonym}
+
 = Positional vs named arguments
-{parent=Macro argument syntax}
+{parent=Macro argument}
 {title2=`[...]` vs `{key=...}`}
 
 Every argument in OurBigBook is either positional or named.
@@ -4702,7 +4661,7 @@ You can determine if a macro is positional or named by using <--help-macros>. It
       }
     },
 ``
-and so we see that `level` and `content` are positional arguments, and `id` and `scope` are named arguments.
+and so we see that `level` and the <`content` argument> are positional arguments, and `id` and `scope` are named arguments.
 
 Generally, positional arguments are few (otherwise it would be hard to know which is which is which), and are almost always used for a given element so that they save us from typing the name too many times.
 
@@ -4762,7 +4721,7 @@ See: <positional vs named arguments>{full}.
 {child=x c argument}
 {child=x p argument}
 {child=x ref argument}
-{parent=Macro argument syntax}
+{parent=Macro argument}
 
 Name arguments marked in <--help-macros> as `boolean: true` must either:
 * take no value and no `=` sign, in which case the value is implicitly set to `1`
@@ -4778,13 +4737,90 @@ The `full=0` version is useful in the case of reference targets that unlike <hea
 
 The name "boolean argument" is given by analogy to the https://stackoverflow.com/questions/16109358/what-is-the-correct-readonly-attribute-syntax-for-input-text-elements/24588427#24588427["boolean attribute" concept in HTML5].
 
-= Common arguments
+= Common argument
 {c}
-{parent=Macro argument syntax}
+{parent=Macro argument}
+
+<Common arguments> are argument names that are present in all macros.
+
+= `id` argument
+{parent=Common argument}
+
+Explicitly sets the ID of a macro.
+
+In <OurBigBook Markup>, every single macro has an ID, which can be either:
+* explicit: extracted from some input given by the user, either the <`id` argument> or the <`title` argument>. Explicit IDs can be referenced in <Internal cross references> and must be unique
+* implicit: automatically generated numerical ID. Implicit IDs cannot be referenced in <Internal cross references> and don't need to be unique. Their primary application is generating on hover links next to everything you hover, e.g. arbitrary paragraphs.
+
+The most common way to assign an ID is implicitly with <automatic ID from title> conversion for macros that have a <`title` argument>.
+
+The <`id` argument> allows to either override the <automatic ID from title>, or provide an explicit ID for elements that don't have a <`title` argument>.
+
+= `disambiguate` argument
+{parent=Common argument}
+
+= `\H` `disambiguate` argument
+{synonym}
+
+Sometimes the short version of a name is ambiguous, and you need to add some extra text to make both its title and ID unique.
+
+For example, the word "Python" could either refer to:
+* the programming language: https://en.wikipedia.org/wiki/Python_(programming_language)
+* the genus of snakes: https://en.wikipedia.org/wiki/Python_(genus)
+
+The `disambiguate` <named argument> helps you deal more neatly with such problems.
+
+Have a look at this example:
+\OurBigBookExample[[
+My favorite snakes are \x[python-genus]{p}!
+
+My favorite programming language is \x[python-programming-language]!
+
+\x[python-genus]{full}
+
+\x[python-programming-language]{full}
+
+= Python
+{disambiguate=genus}
+{parent=disambiguate-argument}
+
+= Python
+{c}
+{disambiguate=programming language}
+{parent=disambiguate-argument}
+{title2=.py}
+{wiki}
+]]
+from which we observe how `disambiguate`:
+* gets added to the ID after conversion following the same rules as <automatic ID from title>
+* shows up on the header between parenthesis, much like Wikipedia, as well as in <\x full argument>[`full` cross references]
+* does not show up on non-`full` references. This makes it much more likely that you will be able to reuse the title automatically on a cross reference without the <`content` argument>: we wouldn't want to say "My favorite programming language is Python (programming language)" all the time, would we?
+* gets added to the default <\H wiki argument> inside parenthesis, following Wikipedia convention, therefore increasing the likelihood that you will be able to go with the default Wikipedia value
+
+Besides disambiguating headers, the `disambiguate` argument has a second related application: disambiguating IDs of images. For example:
+\OurBigBookExample[[
+\x[image-the-title-of-my-disambiguate-image]{full=0}
+
+\x[image-the-title-of-my-disambiguate-image-2]{full=0}
+
+\x[image-the-title-of-my-disambiguate-image]{full}
+
+\x[image-the-title-of-my-disambiguate-image-2]{full}
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=The title of my disambiguate image}
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=The title of my disambiguate image}
+{disambiguate=2}
+]]
+Note that unlike for headers, `disambiguate` does not appear on the title of images at all. It serves only to create an unique ID that can be later referred to. Headers are actually the only case where `disambiguate` shows up on the visible rendered output. We intend on making this application obsolete however with:
+
+This use case is even more useful when `title-from-src` is enable by default for the <ourbigbook.json/media-providers> entry, so you don't have to repeat titles several times over and over.
 
 = JavaScript interface for arguments
 {c}
-{parent=Macro argument syntax}
+{parent=Macro argument}
 
 The JavaScript interface sees arguments as follows:
 ``
@@ -4797,7 +4833,7 @@ where args is a dict such that:
   For example, the link API names its arguments `href` and `text`.
 
 = Literal arguments
-{parent=Macro argument syntax}
+{parent=Macro argument}
 {title2=`[[...]]` and `{{key=...}}`}
 
 Arguments that are opened with more than one square brackets `[` or curly braces `{` are literal arguments.
@@ -4862,7 +4898,7 @@ and close examples:
 ``
 
 = Argument leading and trailing newline removal
-{parent=Macro argument syntax}
+{parent=Macro argument}
 
 = Argument leading newline removal
 {synonym}
@@ -4903,7 +4939,7 @@ The newline is however considered if it would be part of some <insane macro shor
 where the insane list requires a leading newline `\n* ` to work. That newline is not ignored, even though it comes immediately after the `\Q[` opening.
 
 = Argument newlines between arguments removal
-{parent=Macro argument syntax}
+{parent=Macro argument}
 
 The macro name and the first argument, and any two consecutive arguments, can be optionally separated by exactly one newline character, e.g.:
 ``
@@ -4931,14 +4967,14 @@ There is one exception to this however: inside an <header>[insane header], any n
 and the `id` gets assigned to the header rather than the trailing code element.
 
 = Document trailing newline removal
-{parent=Macro argument syntax}
+{parent=Macro argument}
 
 If the document ends one newline, it is ignored.
 
 If it is two or more, then that generates an error.
 
 = Escape characters
-{parent=Macro argument syntax}
+{parent=Macro argument}
 
 Every character that cannot be a <macro identifier> can be escaped with a backslash `\`. If you try to escape a macro identifier it of course treats the thing as a macro instead and fails, e.g. in `\a` it would try to use a macro called `\a`, not escape the character `a`.
 
@@ -4967,7 +5003,11 @@ The escape rules for literal arguments are described at: <literal arguments>{ful
 This is good for short arguments of regular text, but for longer blocks like <code blocks> or <mathematics>, you may want to use <literal arguments>
 
 = Macro argument property
-{parent=Macro argument syntax}
+{parent=Macro argument}
+
+Each <macro argument> can have certain properties associated to it.
+
+These properties have programmatic effects, and allow users and developers to more easily understand and create new macro arguments.
 
 = `remove_whitespace_children`
 {parent=Macro argument property}
@@ -4989,7 +5029,7 @@ but rather as:
 ``
 \Ul[\L[aa]\L[bb]]
 ``
-because the `content` argument of `ul` is marked with `remove_whitespace_children` and automatically removes any whitespace children (such as a newline) as a result.
+because the <`content` argument> of `ul` is marked with `remove_whitespace_children` and automatically removes any whitespace children (such as a newline) as a result.
 
 This also applies to consecutive sequences of <auto parent> macros, e.g.:
 ``
@@ -5024,6 +5064,38 @@ AstNode: H
         AstNode: x
 ``
 
+= Pseudo-macro argument property
+{parent=Macro argument}
+
+This section documents ways to classify macro arguments that are analogous to <macro argument properties>, but which don't yet have clear and uniform programmatic effects and so are a bit more hand wavy for now.
+
+= `content` argument
+{c}
+{parent=Pseudo-macro argument property}
+
+The <`content` argument> of macros contains the "main content" of the macro, i.e. the textual content that will show the most proeminently once the macro is rendered. It is usually, but not always, the first <positional argument> of macros. We should probably make it into an official <macro argument property> at some point.
+
+In most cases, it is quite obvious which argument is the <`content` argument>, e.g.:
+* <`\i` macro>: in `\i[asdf qwer]` then `asdf qwer` is the <`content` argument>
+* <`\a` macro>: in `\a[https://example.com][example website]` then `example website` is the <`content` argument>
+
+Some macros however don't have a <`content` argument>, especially when they don't show any textual acontent as their primary rendered output, e.g.:
+* <`\Image` macro>: this macro has `title` byt not content, e.g. as in: `\Image[flower.jpg]{title=}`, since the primary content is the `Image` rather than any specific text
+
+Philosophically, the <`content` argument> of a macro is analogous to the `innerHTML` of an HTML tag, as opposed to attributes such as `href=` and so on. The difference is that in <OurBigBook Markup>, every macro argument can contain child elements, while in HTML only the `innerHTML`, but not the attributes, can.
+
+= `title` argument
+{c}
+{parent=Pseudo-macro argument property}
+
+The <`title` argument> is an argument that gets used in <automatic ID from title> calculation of macro IDs.
+
+The <`title` argument> currently appears as both <positional arguments> and <named arguments>
+
+Examples:
+* <headers>: `= My header` is equivalent to `\H[1][My header]`, and `My header` is the <`title` argument>, which is a <positional argument> in this case
+* <images>: in `\Image[flower.jpg]{title=My header}` and `My header` is the <`title` argument>, which is a <named argument> in this case
+
 = OurBigBook Markup concepts
 {parent=OurBigBook Markup}
 
@@ -5046,7 +5118,7 @@ parses exactly like:
 \L[bb]
 ``
 
-The children are always added as arguments of the `content` argument of the implicit parent.
+The children are always added as arguments of the <`content` argument> of the implicit parent.
 
 If present, the `auto_parent` macro property determines which auto-parent gets added to those macros.
 
@@ -5160,12 +5232,15 @@ error: tmp.bigb:3:1: IDs that start with "_" are reserved: "_toc"
 {synonym}
 {title2}
 
-= Static Website
-{synonym}
+OurBigBook CLI is the executable program called `ourbigbook` which comes when you install `npm install ourbigbook`. It is the main command line utility of the <OurBigBook Project>.
 
-OurBigBook CLI is a program that users can run in their own computers, and which converts input <OurBigBook Markup> files (file extension: `.bigb`) into `.html` files which make up a wiki or book.
+Its functionality will also be exposed on GUI <editor support> such as <Visual Studio Code> to make things nicer for non-technical users.
 
-The HTML files can then be either viewd from your filesystem on a browser, or uploaded and hosted very cheaply or for free so that others can see it, e.g. on <publish to GitHub Pages>[GitHub Pages].
+The main functionalities of the executable are to:
+* convert <OurBigBook Markup> files to HTML files or other formats
+
+  The HTML files can then be either viewd from your filesystem on a browser, or uploaded and hosted very cheaply or for free so that others can see it, e.g. on <GitHub Pages>.
+* <publish your content>, either to <OurBigBook Web> or as a <static website>
 
 Or if you are a programmer: OurBigBook CLI is a Static Wiki generator that can be invoked from the command line with the <ourbigbook executable>.
 
@@ -5345,6 +5420,39 @@ npm install ourbigbook
 ./lib_hello.js
 ``
 
+= Publish your content
+{parent=OurBigBook CLI}
+
+= Publish
+{synonym}
+
+= Publishing
+{synonym}
+
+= Published
+{synonym}
+
+There are two ways to publish your <OurBigBook> content:
+* as a <static website>. This means that you generate HTML files from <OurBigBook Markup> files and then publish them either by:
+  * uploading to a static website server such as <GitHub Pages> by using the <--publish> option
+  * converting with <--publish-target> `local` and sending a zip with the pages to someone to view locally
+* to an <OurBigBook Web> instance such as <OurBigBook.com>. This can be done either by:
+  * editing on the <OurBigBook Web editor> directly in your browser
+  * uploading <OurBigBook Markup> files from your computer with the <--web> option
+A fundamental design choice of the <OurBigBook Project> is that, except for bugs, a single <OurBigBook Markup> source tree can be published in both of those ways without any changes.
+
+The trade-offs between the two options are:
+* <static websites> are cheaper to host, including many free options such as <GitHub Pages>.
+
+  This means that you are likely to always have several free or cheap choices of where to upload your content to, making it essentially all but https://en.wiktionary.org/wiki/TEOTWAWKI[TEOTWAWKI]-proof
+
+  Pages will also load slightly fatser.
+* <OurBigBook Web> has killer multi-user features: <OurBigBook Web Topics>, article upvotes and <OurBigBook Web discussions>
+
+  Its main downside is that it is more expensive to host.
+
+  The <OurBigBook Project> will do its best to keep <OurBigBook.com> uploading as free as possible, but upload limits necessarily have to be more strict than those of static websites, as the underlying operating cost is larger.
+
 = Index file
 {parent=OurBigBook CLI}
 
@@ -5458,7 +5566,7 @@ firefox china.html
 = `--dry-run`
 {parent=OurBigBook CLI options}
 
-The `--dry-run` option is a good way to debug <publish>[`--publish` option], as it builds the publish output files without doing any git commands that would be annoying to revert. So after doing:
+The `--dry-run` option is a good way to debug the <--publish option>, as it builds the publish output files without doing any git commands that would be annoying to revert. So after doing:
 ``
 ourbigbook --dry-run --publish .
 ``
@@ -5969,11 +6077,15 @@ This was tracked at: https://github.com/ourbigbook/ourbigbook/issues/83
 = `id` output format
 {parent=output format}
 
-This output format is mostly a joke.
+This output format is used an intermediate step in <automatic ID from title>, that unlike the regular HTML output does not have any tags.
 
-It is an intermediate step in <automatic ID from title>, that unlike HTML output does not have any tags.
+It does not have serious applications to end users. We decided to expose it from the CLI mostly for fun, as it posed no extra work at all as it is treated internally exactly like any other conversion format.
 
-So for example, converting:
+The <`id` output format> conversion is very simplistic: it basically just extracts the <`content` argument> of most macros.
+
+An important exception to that behaviour is the first argument of the <`\x` macro>: see <\x id output format>.
+
+For example, converting:
 ``
 \i[asdf]
 ``
@@ -5990,31 +6102,22 @@ This conversion type is useful in situations that users don't expect conversion 
 ``
 = My \i[asdf]
 ``
-and then following the <automatic ID from title> algorithm, that header would have the more commonly desired ID `my-asdf`, and not `my-<i>asdf</i>`.
+and then following the <automatic ID from title> algorithm, that header would have the more commonly desired ID `my-asdf`, and not `my-<i>asdf</i>` or `my-i-asdf-i`.
 
-Besides being more intuitive, this also guarantees greater format portability, in case we ever decide to support other output formats!
-
-We decided to expose this format from the CLI just for fun, as it posed no extra work at all as it is treated internally exactly like any other conversion format.
-
-And it also was a good start generalizing OurBigBook to multiple outputs, as this is a simple format.
-
-The conversion is very simplistic, it basically just pastes the `content` of most macros. Important exceptions to that include:
-* `\x`: see <\x id output format>
-
-So for example if we had:
+Similarly, any <macro argument> that references an ID undergoes <`id` output format> conversion. E.g. the above header could be referenced by:
 ``
-= Title with more
-{id=title}
-
-\Image[my.png]{title=My \i[nice] \x[title]
+<My \i[asdf]>
 ``
-then the image ID would be `image-my-nice-title`:
-* `image-` automatically added prefix
-* `my `: literal text
-* `nice`: extract the content of the <italic>
-* `title`: note how we use the `href` `title` instead of what is actually rendered, `Title with more`, because `\x` is treated somewhat specially for performance reasons
+which is equivalent to:
+``
+\x[my-asdf]
+``
 
-Stuff that is primarily non-textual like <images> is just completely removed. We could put effort in outputting their title correctly, but meh, not worth the effort.
+Besides being more intuitive, this conversion also guarantees greater format portability, in case we ever decide to support other output formats besides HTML!
+
+<Macros> that don't have a <`content` argument> are just completely removed, i.e. typically non-textual macros such as <images>. We could put effort in outputting their title argument correctly, but meh, not worth the effort.
+
+The <`id` output format> also serves as a good start generalizing OurBigBook to multiple outputs, as this is a simple format.
 
 = `\x` `id` output format
 {parent=id output format}
@@ -6031,12 +6134,11 @@ For example in:
 \x[image-i-like-dog]
 
 \Image[dog.jpg]
-{title=I like \x[dog]}
+{title=I \i[like] \x[dog]}
 
 == Dog hacked
 {id=dog}
 ``
-note that the ID of the image is `image-i-like-dog`, i.e. `\x[dog]` is not expanded to `Dog hacked`, the `href` is used directly.
 
 If you wanted `image-i-like-dog-hacked` instead, you would need to explicitly give it as in:
 ``
@@ -6089,14 +6191,17 @@ TODO: https://github.com/ourbigbook/ourbigbook/issues/38
 
 One day, one day. Maybe.
 
-= `-p, --publish`
-{id=publish}
+= `-p`, `--publish`
 {parent=OurBigBook CLI options}
+{tag=Publish your content}
 
-= Publishing
+= `--publish` option
 {synonym}
 
-= Published
+= Static website
+{synonym}
+
+= `ourbigbook --publish`
 {synonym}
 
 OurBigBook tooling is so amazing that we also take care of the HTML publishing for you!
@@ -6130,7 +6235,7 @@ Publishing only happens if the build has no errors.
 {id=publish-commit}
 {parent=OurBigBook CLI options}
 
-Like <publish>, but also automatically:
+Like the <--publish option>, but also automatically:
 * `git add -u` to automatically add change to any files that have been previously git tracked
 * `git commit -m <commit-message>` to create a new commit with those changes
 
@@ -6143,6 +6248,7 @@ With great power comes great responsibility of course, but who cares!
 
 = `--publish-target`
 {parent=OurBigBook CLI options}
+{tag=Publish your content}
 
 What type of target to publish for. The generated output of each publish target is stored under:
 ``
@@ -6163,6 +6269,9 @@ Possible values:
 
 = Publish to GitHub Pages
 {parent=`--publish-target`}
+
+= GitHub Pages
+{synonym}
 
 = Published to GitHub Pages
 {synonym}
@@ -6262,7 +6371,7 @@ would produce the following output files:
   The `-split` suffix is appended in order to differentiate the output path from `hello.html`
 * `h1-1.html`, `h1-1-1.html`, `h1-1-2.html`: contain only the contents direcly under their headers, analogously to `hello-split.html`, but now we don't need to worry about the input filename and collisiont, and just directly use the ID of each header
 
-`--split-headers` is implied by <publish>: the published website will automatically get the split pages. There is no way to turn it off currently. A pull request would be accepted, especially if it offers a <ourbigbook.json> way to do it. Maybe it would be nice to have a more generalized way of setting any CLI option equivalent from the `ourbigbook.json`, and an option `cli` vs `cli-publish` so that `cli-publish` is publish only. Just lazy for now/not enough pressing use case met.
+`--split-headers` is implied by the <--publish option>: the published website will automatically get the split pages. There is no way to turn it off currently. A pull request would be accepted, especially if it offers a <ourbigbook.json> way to do it. Maybe it would be nice to have a more generalized way of setting any CLI option equivalent from the `ourbigbook.json`, and an option `cli` vs `cli-publish` so that `cli-publish` is publish only. Just lazy for now/not enough pressing use case met.
 
 = Cross reference targets in split headers
 {parent=split headers}
@@ -6443,6 +6552,7 @@ TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with
 = `-W`, `--web`
 {id=web}
 {parent=OurBigBook CLI options}
+{tag=Publish your content}
 
 = Web upload
 {synonym}
@@ -6848,7 +6958,7 @@ Direct children of media-providers and subproperties that are valid only for the
 * `github`: tracked in a separate Git repository as mentioned at <store images in a separate media repository>{full}
   * `path`: analogous to `path` for `local`: a local location for this GitHub provider, where the repository can optionally be cloned.
 
-    When not during a <publish> run, OurBigBook checks if the path exists locally, and if it does, then it uses that local directory as the source intead of the GitHub repository.
+    When not during a run with the <--publish option>, OurBigBook checks if the path exists locally, and if it does, then it uses that local directory as the source intead of the GitHub repository.
 
     This allows you to develop locally without Internet and see the latest version of the images without pushing them.
 
@@ -6905,7 +7015,7 @@ Implemented at: https://github.com/ourbigbook/ourbigbook/issues/163
 = `prepublish`
 {parent=ourbigbook.json}
 
-Path of a script that gets executed before running <publish>[`ourbigbook --publish`].
+Path of a script that gets executed after conversion, and before upload, when running with the <--publish option>.
 
 The script arguments are:
 * the publish output directory.
@@ -6928,7 +7038,7 @@ All Git date formats are accepted as documented in `man git-commit`, e.g. `2005-
 = `publishOptions`
 {parent=ourbigbook.json}
 
-<ourbigbook.json> options that should be used only on the published output when <publishing>.
+<ourbigbook.json> options that should be used only on the published output when publishing with the <--publish option>.
 
 If given these options override pre-existing options on the published output.
 
@@ -7387,6 +7497,7 @@ Each article has their own discussion section. This way you can easily see if ot
 = OurBigBook Web editor
 {c}
 {parent=OurBigBook Web user manual}
+{tag=Publish your content}
 
 <OurBigBook Web> comes with a browser text editor where users can create and edit their articles in <OurBigBook Markup>.
 
@@ -9688,7 +9799,7 @@ All tooling will be merged into one single repo.
 
 Every OurBigBook document is implicitly put inside a `\Toplevel` document and:
 * any optionally given arguments at the very beginning of the document will be treated as arguments of the `\Toplevel` macro
-* anything else will be put inside the `content` argument of the `\Toplevel` macro
+* anything else will be put inside the <`content` argument> of the `\Toplevel` macro
 
 E.g., a OurBigBook document that contains:
 ``

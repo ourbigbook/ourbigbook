@@ -2869,7 +2869,10 @@ function x_text(ast, context, options={}) {
     options.from_x = false;
   }
   if (!('pluralize' in options)) {
-    options.pluralize = false;
+    // true: make plural
+    // false: make singular
+    // undefined: don't touch it
+    options.pluralize = undefined;
   }
   if (!('show_caption_prefix' in options)) {
     options.show_caption_prefix = true;
@@ -2947,13 +2950,13 @@ function x_text(ast, context, options={}) {
       // {p}
       let last_ast = title_arg[title_arg.length - 1];
       if (
-        options.pluralize &&
+        options.pluralize !== undefined &&
         !style_full &&
         first_ast.node_type === AstType.PLAINTEXT
       ) {
         title_arg = new AstArgument(title_arg, title_arg.line, title_arg.column);
         title_arg[title_arg.length - 1] = new PlaintextAstNode(last_ast.line, last_ast.column, last_ast.text);
-        title_arg[title_arg.length - 1].text = pluralize(last_ast.text);
+        title_arg[title_arg.length - 1].text = pluralize(last_ast.text, options.pluralize ? 2 : 1);
       }
     }
     ret += convert_arg(title_arg, context);
@@ -3888,7 +3891,7 @@ const DEFAULT_MACRO_LIST = [
           capitalize: ast.validation_output.c.boolean,
           from_x: true,
           quote: true,
-          pluralize: ast.validation_output.p.boolean,
+          pluralize: ast.validation_output.p.given ? ast.validation_output.p.boolean : undefined,
         };
         if (ast.validation_output.full.given) {
           x_text_options.style_full = ast.validation_output.full.boolean;

@@ -55,7 +55,7 @@ module.exports = (sequelize) => {
           )
           // https://github.com/sequelize/sequelize/issues/8586#issuecomment-422877555
           options.fields.push('render');
-          const id = extra_returns.context.header_tree.children[0].value.id
+          const id = extra_returns.context.header_tree.children[0].ast.id
           article.topicId = id
           options.fields.push('topicId')
           if (!article.slug) {

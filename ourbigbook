@@ -1660,38 +1660,43 @@ if (cli.helpMacros) {
           // Commands that retrieve information and don't change state.
           cmd_options_info = Object.assign({}, cmd_options_no_dry)
           cmd_options_info.show_cmd = false
-          const origin_url = cmd_get_stdout('git', ['-C', inputPath, 'config', '--get', 'remote.origin.url'], cmd_options_info).slice(0, -1);
-          if (ourbigbook_json.publishRemoteUrl) {
-            publish_remote_url = ourbigbook_json.publishRemoteUrl
-          } else {
-            publish_remote_url = origin_url
-          }
-          if (!publish_remote_url) {
-            publish_remote_url = 'git@github.com:ourbigbook/ourbigbook.git';
-          }
-          src_branch = cmd_get_stdout('git', ['-C', inputPath, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options_info).slice(0, -1);
-          source_commit = git_sha(inputPath, src_branch);
-          const parsed_remote_url = require("git-url-parse")(publish_remote_url);
-          if (parsed_remote_url.source !== 'github.com') {
-            cli_error('only know how  to publish to origin == github.com currently, please send a patch');
-          }
-          let remote_url_path_components = parsed_remote_url.pathname.split(path.sep);
-          if (remote_url_path_components[2].startsWith(remote_url_path_components[1] + '.github.io')) {
-            publish_branch = 'master';
-          } else {
-            publish_branch = 'gh-pages';
-          }
-          if (
-            publish_remote_url === origin_url &&
-            src_branch === publish_branch
-          ) {
-            cli_error(`source and publish branches are the same: ${publish_branch}`);
+          if (publish_uses_git) {
+            // TODO ideally we should use the default remote for the given current branch, but there doesn't seem
+            // to be a super easy way for now, so we just hardcode origin to start with.
+            // https://stackoverflow.com/questions/171550/find-out-which-remote-branch-a-local-branch-is-tracking
+            const origin_url = cmd_get_stdout('git', ['-C', inputPath, 'config', '--get', 'remote.origin.url'], cmd_options_info).slice(0, -1);
+            if (ourbigbook_json.publishRemoteUrl) {
+              publish_remote_url = ourbigbook_json.publishRemoteUrl
+            } else {
+              publish_remote_url = origin_url
+            }
+            if (!publish_remote_url) {
+              publish_remote_url = 'git@github.com:ourbigbook/ourbigbook.git';
+            }
+            src_branch = cmd_get_stdout('git', ['-C', inputPath, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options_info).slice(0, -1);
+            const parsed_remote_url = require("git-url-parse")(publish_remote_url);
+            if (parsed_remote_url.source !== 'github.com') {
+              cli_error('only know how  to publish to origin == github.com currently, please send a patch');
+            }
+            let remote_url_path_components = parsed_remote_url.pathname.split(path.sep);
+            if (remote_url_path_components[2].startsWith(remote_url_path_components[1] + '.github.io')) {
+              publish_branch = 'master';
+            } else {
+              publish_branch = 'gh-pages';
+            }
+            if (
+              publish_remote_url === origin_url &&
+              src_branch === publish_branch
+            ) {
+              cli_error(`source and publish branches are the same: ${publish_branch}`);
+            }
           }
           fs.mkdirSync(publish_dir, {recursive: true});
           if (cli.publishCommit !== undefined) {
             cmd_get_stdout('git', ['-C', inputPath, 'add', '-u'], cmd_options);
             cmd_get_stdout( 'git', [ '-C', inputPath, 'commit', '-m', cli.publishCommit ], cmd_options);
           }
+          source_commit = git_sha(inputPath, src_branch);
           if (fs.existsSync(publish_git_dir)) {
             cmd_get_stdout('git', ['-C', publish_dir, 'checkout', '--', '.'], cmd_options_no_dry);
             cmd_get_stdout('git', ['-C', publish_dir, 'fetch'], cmd_options_no_dry);
@@ -1790,7 +1795,7 @@ if (cli.helpMacros) {
           // Generate special files needed for a given publish target.
           for (const p in publish_create_files) {
             const outpath = path.join(publish_out_publish_dir, p)
-            fs.mkdirSync(path.dirname(outpath));
+            fs.mkdirSync(path.dirname(outpath), { recursive: true });
             fs.writeFileSync(outpath, publish_create_files[p])
           }
 

@@ -6100,6 +6100,7 @@ function x_text(ast, context, options={}) {
 
 // Dynamic website stuff.
 const AT_MENTION_CHAR = '@';
+exports.AT_MENTION_CHAR = AT_MENTION_CHAR;
 const HASHTAG_CHAR = '#';
 const WEBSITE_URL = 'https://ourbigbook.com/';
 const REFS_TABLE_PARENT = 'PARENT';

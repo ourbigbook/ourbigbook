@@ -23,7 +23,6 @@ const db_options = {
     freezeTableName: true,
   },
 }
-exports.db_options = db_options
 
 class SqliteIdProvider extends cirodown.IdProvider {
   constructor(sequelize) {
@@ -373,7 +372,6 @@ ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
     ])
   }
 }
-exports.SqliteIdProvider = SqliteIdProvider;
 
 async function create_sequelize(db_options, Sequelize) {
   const db_path = db_options.storage
@@ -389,7 +387,6 @@ async function create_sequelize(db_options, Sequelize) {
   }
   return sequelize
 }
-exports.create_sequelize = create_sequelize;
 
 async function update_database_after_convert({
   extra_returns,
@@ -450,4 +447,16 @@ async function update_database_after_convert({
   });
   cirodown.perf_print(context, 'convert_path_post_sqlite_transaction')
 }
-exports.update_database_after_convert = update_database_after_convert
+
+// https://stackoverflow.com/questions/9355403/deleting-duplicates-on-sorted-array/61974900#61974900
+function remove_duplicates_sorted_array(arr) {
+  return arr.filter((e, i, a) => e !== a[i - 1]);
+}
+
+module.exports = {
+  SqliteIdProvider,
+  create_sequelize,
+  db_options,
+  remove_duplicates_sorted_array,
+  update_database_after_convert,
+}

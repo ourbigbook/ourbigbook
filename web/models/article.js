@@ -2,7 +2,12 @@ const cirodown = require('cirodown')
 const { DataTypes, Op } = require('sequelize')
 
 const { modifyEditorInput } = require('../shared')
-const { update_database_after_convert, SqliteIdProvider } = require('cirodown/nodejs_webpack_safe')
+const { ValidationError } = require('../api/lib')
+const {
+  update_database_after_convert,
+  remove_duplicates_sorted_array,
+  SqliteIdProvider,
+} = require('cirodown/nodejs_webpack_safe')
 
 module.exports = (sequelize) => {
   const id_provider = new SqliteIdProvider(sequelize)
@@ -49,15 +54,17 @@ module.exports = (sequelize) => {
         beforeValidate: async (article, options) => {
           let extra_returns = {};
           const author = await article.getAuthor()
+          const id = cirodown.title_to_id(article.title)
           article.render = await cirodown.convert(
             modifyEditorInput(article.title, article.body),
             {
               body_only: true,
               html_x_extension: false,
               id_provider,
-              input_path: cirodown.title_to_id(article.title) + cirodown.CIRODOWN_EXT,
+              input_path: `${cirodown.AT_MENTION_CHAR}${author.username}/${id}${cirodown.CIRODOWN_EXT}`,
               read_include: (id) => {
-                const included_article = sequelize.models.Article.findOne({ where: { slug: Article.makeSlug(author.username, id) } }) 
+                const included_article = sequelize.models.Article.findOne({
+                  where: { slug: Article.makeSlug(author.username, id) } }) 
                 let found = undefined;
                 if (included_article) {
                   return [id, included_article.body]
@@ -68,7 +75,11 @@ module.exports = (sequelize) => {
             },
             extra_returns,
           )
-          const id = extra_returns.context.header_tree.children[0].ast.id
+          if (extra_returns.errors.length > 0) {
+            const errsNoDupes = remove_duplicates_sorted_array(
+              extra_returns.errors.map(e => e.toString()))
+            throw new ValidationError(errsNoDupes, 422)
+          }
           await update_database_after_convert({
             extra_returns,
             id_provider,

@@ -15,7 +15,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
   let sequelize;
   if (config.isProduction || config.postgres) {
     sequelizeParams.dialect = config.production.dialect;
-    sequelizeParams.dialectOptions = config.production.dialect;
+    sequelizeParams.dialectOptions = config.production.dialectOptions;
     sequelize = new Sequelize(config.production.url, sequelizeParams);
   } else {
     sequelizeParams.dialect = config.development.dialect;

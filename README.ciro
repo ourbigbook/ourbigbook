@@ -522,7 +522,6 @@ Static wiki generators: this is perhaps the best way of classifying this project
   Does not appear to check that any links are correct.
 * https://github.com/wcchin/markypydia
 * https://obsidian.md/ closed source, Markdown with \x[internal-cross-file-reference] + a SaaS. Appears to require payment for any publishing. 28k followers 2021: https://twitter.com/obsdmd[]. Founders are likely Canadians of Asian descent from Waterloo University: https://www.linkedin.com/in/lishid/ | https://www.linkedin.com/in/ericaxu/ also working in parallel on https://dynalist.io/ 2020 review at: https://www.youtube.com/watch?v=aK2fOQRNSxc Has offline editor with side-by-side preview. Compares with https://roamresearch.com/[Roam] and https://roamresearch.com/[Notion], but can't find any public publishing on those, seem to be enterprise only things.
-* https://www.gitbook.com/
 
 Static book generators:
 * https://github.com/rstudio/bookdown[], https://bookdown.org/[]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: https://bookdown.org/yihui/bookdown/pandoc.html[], thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.
@@ -532,6 +531,8 @@ Static book generators:
 * https://github.com/hplgit/doconce
 * https://www.gwern.net/About#source is pretty interesting, uses https://github.com/jaspervdj/Hakyll/ + some custom stuff.
 * https://github.com/JerrySievert/bookmarkdown
+* https://www.gitbook.com/
+  * https://github.com/rust-lang/mdBook[]. Impressive integrated search feature. Like Gitbook but implemented in Rust.
 
 Less related but of interest, similar philosophy to what Ciro wants, but no explicitly reusable system:
 * http://www.uprtcl.io/

@@ -46,6 +46,9 @@ class AstNode {
    *                 {String} text - the text content of an AstType.PLAINTEXT, undefined for other types
    */
   constructor(node_type, macro_name, args, source_location, options={}) {
+    if (!('count_words' in options)) {
+      options.count_words = true;
+    }
     if (!('first_toplevel_child' in options)) {
       options.first_toplevel_child = false;
     }
@@ -63,6 +66,9 @@ class AstNode {
     }
     if (!('header_parent_ids' in options)) {
       options.header_parent_ids = [];
+    }
+    if (!('header_graph_node_word_count' in options)) {
+      options.header_graph_node_word_count = 0;
     }
     if (!('is_first_header_in_input_file' in options)) {
       // Either the first header on a regular toplevel input,
@@ -144,6 +150,8 @@ class AstNode {
     // children of their parent. But they still know who the parent is.
     // This was originally required for header scope resolution.
     this.header_graph_node = options.header_graph_node;
+    // For DB serialization since we don't current serialize header_graph_node.
+    this.header_graph_node_word_count = options.header_graph_node_word_count
 
     // When fetching Nodes from the database, we only get their ID,
     // so we can't construct a full proper header_graph_node from that alone.
@@ -178,15 +186,18 @@ class AstNode {
     // Array of AstNode of synonym headers of this one that have title2 set.
     this.title2s = []
 
+
+    this.count_words = options.count_words
     if (this.node_type === AstType.PLAINTEXT) {
       this.word_count = this.text.split(/\s+/).filter(i => i).length;
     } else {
       this.word_count = 0;
     }
     for (const argname in args) {
-      this.setup_argument(argname, args[argname]);
-      for (const argument of args[argname]) {
-        argument.parent_node = this
+      const arg = args[argname]
+      this.setup_argument(argname, arg);
+      for (const ast of arg) {
+        ast.parent_node = this
       }
     }
   }
@@ -251,7 +262,7 @@ class AstNode {
     }
     if (!('validate_ast' in context)) {
       // Do validate_ast to this element and the entire subtree.
-      // This allwos for less verbose manual construction of trees with
+      // This allows for less verbose manual construction of trees with
       // a single dummy source_location.
       context.validate_ast = false;
     }
@@ -420,6 +431,7 @@ class AstNode {
       {
         text: json.text,
         first_toplevel_child: json.first_toplevel_child,
+        header_graph_node_word_count: json.header_graph_node_word_count,
         is_first_header_in_input_file: json.is_first_header_in_input_file,
         scope: json.scope,
         split_default: json.split_default,
@@ -478,6 +490,25 @@ class AstNode {
         if (arg.source_location === undefined) {
           arg.source_location = source_location
         }
+        for (const ast of arg) {
+          todo_visit_asts.push(ast)
+        }
+      }
+    }
+  }
+
+  // Set attrs to this AstNode and all its descdendants.
+  set_recursively(attrs) {
+    const todo_visit_asts = [this]
+    const todo_visit_args = []
+    while (todo_visit_asts.length > 0) {
+      const ast = todo_visit_asts.pop();
+      Object.assign(ast, attrs)
+      for (const argname in ast.args) {
+        todo_visit_args.push(ast.args[argname])
+      }
+      while (todo_visit_args.length > 0) {
+        const arg = todo_visit_args.pop();
         for (const ast of arg) {
           todo_visit_asts.push(ast)
         }
@@ -552,6 +583,9 @@ class AstNode {
       word_count: this.word_count,
       args:       this.args,
     }
+    if (this.header_graph_node !== undefined) {
+      ret.header_graph_node_word_count = this.header_graph_node.word_count
+    }
     return ret;
   }
 }
@@ -572,7 +606,6 @@ class AstArgument extends Array {
     // String
     this.argument_name = undefined;
     let i = 0;
-    let astargument = this;
     // TODO understand why there are empty elements in the array.
     // for of leads to undefineds due to that.
     nodes.forEach(node => {
@@ -846,6 +879,9 @@ class MacroArgument {
       // https://cirosantilli.com/cirodown#boolean-named-arguments
       options.boolean = false;
     }
+    if (!('count_words' in options)) {
+      options.count_words = false;
+    }
     if (!('default' in options)) {
       // https://cirosantilli.com/cirodown#boolean-named-arguments
       options.default = undefined;
@@ -866,6 +902,7 @@ class MacroArgument {
       options.remove_whitespace_children = false;
     }
     this.boolean = options.boolean;
+    this.count_words = options.count_words;
     this.multiple = options.multiple;
     this.default = options.default;
     this.elide_link_only = options.elide_link_only;
@@ -1754,24 +1791,23 @@ class HeaderTreeNode {
    * @param {AstNode} value
    * @param {HeaderTreeNode} parent_node
    */
-  constructor(value, parent_node) {
+  constructor(value, parent_node, options={}) {
     this.value = value;
     this.parent_node = parent_node;
     this.children = [];
     this.index = undefined;
     this.descendant_count = 0;
     this.descendant_word_count = 0;
-    this.word_count = 0;
-    if (value !== undefined && !value.in_header) {
+    if (value !== undefined) {
       this.word_count = value.word_count;
-      let cur_node = this.parent_node;
-      if (cur_node !== undefined && cur_node.parent_node !== undefined) {
-        cur_node = cur_node.parent_node;
-        while (cur_node !== undefined) {
-          cur_node.descendant_word_count += this.word_count;
-          cur_node = cur_node.parent_node;
+      if (!value.in_header) {
+        let cur_node = this.parent_node;
+        if (cur_node !== undefined && cur_node.parent_node !== undefined) {
+          cur_node.update_ancestor_counts(this.word_count + value.header_graph_node_word_count)
         }
       }
+    } else {
+      this.word_count = 0;
     }
   }
 
@@ -1833,6 +1869,14 @@ class HeaderTreeNode {
       todo_visit.push(...cur_node.children.reverse());
     }
     return ret.join('\n');
+  }
+
+  update_ancestor_counts(add) {
+    let cur_node = this.parent_node
+    while (cur_node !== undefined) {
+      cur_node.descendant_word_count += add;
+      cur_node = cur_node.parent_node;
+    }
   }
 }
 exports.HeaderTreeNode = HeaderTreeNode
@@ -2849,8 +2893,8 @@ function get_descendant_count_html(tree_node, long_style) {
     ret = `<span class="metrics">`;
     ret += `${long_style ? 'words: ' : ''}<span class="word-count" title="word count for this node">${format_number_approx(word_count)}</span>`;
     if (descendant_count > 0) {
-      ret += `${long_style ? `${HEADER_MENU_ITEM_SEP} descendant words:` : ','} <span class="word-count-descendant" title="word count for this node + descendants">${format_number_approx(descendant_word_count)}</span>` +
-            `${long_style ? `${HEADER_MENU_ITEM_SEP} descendants:` : ','} <span class="descendant-count" title="number of descendant nodes">${format_number_approx(descendant_count)}</span>`;
+      ret += `${long_style ? `, descendant words:` : ','} <span class="word-count-descendant" title="word count for this node + descendants">${format_number_approx(descendant_word_count)}</span>` +
+            `${long_style ? `, descendants:` : ','} <span class="descendant-count" title="number of descendant nodes">${format_number_approx(descendant_count)}</span>`;
     }
     ret += `</span>`
   } else {
@@ -3883,6 +3927,10 @@ async function parse(tokens, options, context, extra_returns={}) {
             ];
             for (const child_node of new_child_nodes) {
               child_node.set_source_location(ast.source_location)
+              child_node.set_recursively({
+                count_words: false,
+                from_include,
+              })
             }
           }
           // Push all included nodes, but don't recurse because:
@@ -4403,7 +4451,8 @@ async function parse(tokens, options, context, extra_returns={}) {
 
     // Ast post process pass 2
     //
-    // Post process the AST breadth-first after inclusions are resolved to support things like:
+    // Post process the AST pre-order depth-first search after
+    // inclusions are resolved to support things like:
     //
     // - the insane but necessary paragraphs double newline syntax
     // - automatic ul parent to li and table to tr
@@ -4698,8 +4747,17 @@ async function parse(tokens, options, context, extra_returns={}) {
           // so that children can decide if they want to push themselves or not.
           {
             const new_arg = new AstArgument([], arg.source_location);
+            const macro_arg_count_words = macro_arg !== undefined && macro_arg.count_words
             for (let i = arg.length - 1; i >= 0; i--) {
-              todo_visit.push([new_arg, arg[i]]);
+              const child_ast = arg[i]
+
+              // Propagate count_words.
+              if (!child_ast.count_words || !macro_arg_count_words) {
+                child_ast.count_words = false
+                child_ast.word_count = 0
+              }
+
+              todo_visit.push([new_arg, child_ast]);
             }
             // Update the argument.
             ast.args[arg_name] = new_arg;
@@ -4707,9 +4765,15 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
       }
     }
+    if (context.options.log['ast-pp-simple']) {
+      console.error('ast-pp-simple: after pass 2');
+      console.error(ast_toplevel.toString());
+      console.error();
+    }
 
     // Now do a pass that collects information that may be affected by
     // the tree modifications of the previous step, e.g. ID generation.
+    perf_print(context, 'post_process_3')
     {
       const todo_visit = [ast_toplevel];
       while (todo_visit.length > 0) {
@@ -4754,6 +4818,14 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
       }
     }
+    if (context.options.log['ast-pp-simple']) {
+      console.error('ast-pp-simple: after pass 3');
+      console.error(ast_toplevel.toString());
+      console.error();
+    }
+
+    // Now for some final operations that don't go over the entire Ast Tree.
+    perf_print(context, 'post_process_4')
 
     // Patch the ID of the include headers.
     // Deferred here after ID cache warming to group all DB queries.
@@ -4775,9 +4847,10 @@ async function parse(tokens, options, context, extra_returns={}) {
         };
         header_node_title = x_text(target_id_ast, context, x_text_options);
         header_ast.set_source_location(target_id_ast.source_location)
+        header_ast.header_graph_node.update_ancestor_counts(target_id_ast.header_graph_node_word_count)
       }
       header_ast.args[Macro.TITLE_ARGUMENT_NAME][0].text = header_node_title
-      // This is a bit nasty and duplicates the below header processing code,
+      // This is a bit nasty and duplicates the header processing code,
       // but it is a bit hard to factor them out since this is a magic include header,
       // and all includes and headers must be parsed concurrently since includes get
       // injected under the last header.
@@ -4863,13 +4936,15 @@ async function parse(tokens, options, context, extra_returns={}) {
     if (first_toplevel_child !== undefined) {
       first_toplevel_child.first_toplevel_child = true;
     }
+
     if (context.options.log['ast-pp-simple']) {
-      console.error('ast-pp-simple: after pass 2');
+      console.error('ast-pp-simple: after pass 4');
       console.error(ast_toplevel.toString());
       console.error();
     }
   }
 
+  perf_print(context, 'parse_end')
   return ast_toplevel;
 }
 
@@ -5955,9 +6030,11 @@ const IMAGE_INLINE_BLOCK_COMMON_NAMED_ARGUMENTS = [
 const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = IMAGE_INLINE_BLOCK_COMMON_NAMED_ARGUMENTS.concat([
   new MacroArgument({
     name: Macro.TITLE_ARGUMENT_NAME,
+    count_words: true,
   }),
   new MacroArgument({
     name: 'description',
+    count_words: true,
   }),
   new MacroArgument({
     name: 'source',
@@ -6115,6 +6192,7 @@ const DEFAULT_MACRO_LIST = [
       }),
       new MacroArgument({
         name: 'content',
+        count_words: true,
       }),
     ],
     function(ast, context) {
@@ -6159,6 +6237,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        count_words: true,
       }),
     ],
     html_render_simple_elem(
@@ -6184,6 +6263,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        count_words: true,
       }),
     ],
     function(ast, context) {
@@ -6211,9 +6291,11 @@ const DEFAULT_MACRO_LIST = [
       named_args: [
         new MacroArgument({
           name: Macro.TITLE_ARGUMENT_NAME,
+          count_words: true,
         }),
         new MacroArgument({
           name: 'description',
+          count_words: true,
         }),
       ],
     },
@@ -6224,6 +6306,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        count_words: true,
       }),
     ],
     html_render_simple_elem('code', {newline_after_close: false}),
@@ -6281,6 +6364,7 @@ const DEFAULT_MACRO_LIST = [
       }),
       new MacroArgument({
         name: Macro.TITLE_ARGUMENT_NAME,
+        count_words: true,
       }),
     ],
     function(ast, context) {
@@ -6566,6 +6650,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        count_words: true,
       }),
     ],
     html_render_simple_elem('li', {newline_after_close: true}),
@@ -6580,6 +6665,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        count_words: true,
       }),
     ],
     function(ast, context) {
@@ -6631,6 +6717,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        count_words: true,
       }),
     ],
     function(ast, context) {
@@ -6646,6 +6733,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        count_words: true,
       }),
     ],
     html_render_simple_elem(
@@ -6736,6 +6824,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        count_words: true,
         remove_whitespace_children: true,
       }),
     ],
@@ -6746,6 +6835,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        count_words: true,
       }),
     ],
     html_render_simple_elem(
@@ -6760,6 +6850,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        count_words: true,
       }),
     ],
     function(ast, context) {
@@ -6789,6 +6880,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        count_words: true,
       }),
     ],
     html_render_simple_elem(
@@ -6832,6 +6924,7 @@ const DEFAULT_MACRO_LIST = [
       new MacroArgument({
         name: 'content',
         remove_whitespace_children: true,
+        count_words: true,
       }),
     ],
     function(ast, context) {
@@ -6869,9 +6962,11 @@ const DEFAULT_MACRO_LIST = [
       named_args: [
         new MacroArgument({
           name: 'description',
+          count_words: true,
         }),
         new MacroArgument({
           name: Macro.TITLE_ARGUMENT_NAME,
+          count_words: true,
         }),
       ],
     }
@@ -6881,6 +6976,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        count_words: true,
       }),
     ],
     html_render_simple_elem('td', {newline_after_close: true}),
@@ -6994,6 +7090,7 @@ const DEFAULT_MACRO_LIST = [
     Macro.TOPLEVEL_MACRO_NAME,
     [
       new MacroArgument({
+        count_words: true,
         name: 'content',
       }),
     ],
@@ -7178,6 +7275,7 @@ const DEFAULT_MACRO_LIST = [
       named_args: [
         new MacroArgument({
           name: Macro.TITLE_ARGUMENT_NAME,
+          count_words: true,
         }),
       ],
     }
@@ -7187,6 +7285,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        count_words: true,
       }),
     ],
     html_render_simple_elem('th', {newline_after_close: true}),
@@ -7196,6 +7295,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        count_words: true,
         remove_whitespace_children: true,
       }),
     ],
@@ -7247,6 +7347,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'content',
+        count_words: true,
         remove_whitespace_children: true,
       }),
     ],
@@ -7264,6 +7365,7 @@ const DEFAULT_MACRO_LIST = [
       }),
       new MacroArgument({
         name: 'content',
+        count_words: true,
       }),
     ],
     function(ast, context) {

@@ -5,12 +5,19 @@ const util = require('util');
 
 const AstNode = class {
   /**
-   * @param {String} type - plaintext or macro
-   * @param {Object[String, Array[AstNode]|String} arguments
-   *        If type is macro, the Object with child arguments.
+   * @param {AstType} node_type -
+   * @param {String} macro_name - if node_type == AstType.PLAINTEXT: fixed to 'plaintext'
+   *                              elif node_type == AstType.PARAGRAPH: fixed to undefined
+   *                              else: arbitrary regular macro
+   * @param {Object[String, Array[AstNode]|String} args
+   *        If type is macro, the Object with child args.
    *        Otherwise, it ype is text, , the raw String.
+   * @param {Number} line - the best representation of where the macro is starts in the document
+   *                        used primarily to present useful debug messages
+   * @param {Number} column
    */
-  constructor(macro_name, args, line, column) {
+  constructor(node_type, macro_name, args, line, column) {
+    this.node_type = node_type;
     this.macro_name = macro_name;
     this.args = args;
     this.line = line;
@@ -20,6 +27,16 @@ const AstNode = class {
   convert(options) {
     let macro = macros[this.macro_name];
     return macro.convert(this.args, options);
+  }
+
+  toJSON() {
+    return {
+      node_type:  this.node_type.toString(),
+      macro_name: this.macro_name,
+      args:       this.args,
+      line:       this.line,
+      column:     this.column
+    }
   }
 }
 
@@ -65,6 +82,12 @@ const TokenType = make_enum([
   'POSITIONAL_ARGUMENT_END',
   'NAMED_ARGUMENT_START',
   'NAMED_ARGUMENT_END',
+]);
+
+const AstType = make_enum([
+  'MACRO',
+  'PLAINTEXT',
+  'PARAGRAPH',
 ]);
 
 const Token = class {
@@ -208,7 +231,7 @@ let macro_list = [
             // TODO report error with exit status.
           }
         }
-        args.title = new AstNode('plaintext', title);
+        args.title = new AstNode(AstType.PLAINTEXT, 'plaintext', title, 1, 1);
       }
       let ret = '';
       if (!options.body_only) {
@@ -322,6 +345,10 @@ const tokenize = function(input_string, extra_returns={}) {
     return true;
   }
 
+  const peek = function() {
+    return chars[i + 1];
+  }
+
   const consume_optional_newline = function() {
     if (!is_end() && cur_c === '\n') {
       consume();
@@ -329,7 +356,7 @@ const tokenize = function(input_string, extra_returns={}) {
   }
 
   const is_end = function() {
-    return i === input_string.length;
+    return i === chars.length;
   }
 
   const push_token = function(token, value, token_line, token_column) {
@@ -350,9 +377,14 @@ const tokenize = function(input_string, extra_returns={}) {
     consume();
   }
 
+  // Ignore the last newline of the file.
+  // It is good practice to always have a newline
+  // at the end of files, but it doesn't really mean
+  // that the user wants the last element to contain one.
+  if (chars[chars.length - 1] === '\n') {
+    chars.pop();
+  }
   push_token(TokenType.MACRO_NAME, 'toplevel');
-  push_token(TokenType.POSITIONAL_ARGUMENT_START);
-  push_token(TokenType.MACRO_NAME, 'p');
   push_token(TokenType.POSITIONAL_ARGUMENT_START);
   while (!is_end()) {
     if (cur_c === '\\') {
@@ -395,13 +427,10 @@ const tokenize = function(input_string, extra_returns={}) {
       consume();
       consume_optional_newline();
     } else if (cur_c === '\n') {
-      consume();
-      if (is_end()) {
-        // End of document, do nothing.
-      } else if (cur_c === '\n') {
-        // Double newline.
+      if (peek() === '\n') {
         push_token(TokenType.PARAGRAPH);
         done = true;
+        consume();
         consume();
       } else {
         tokenize_plaintext_char();
@@ -410,7 +439,7 @@ const tokenize = function(input_string, extra_returns={}) {
       tokenize_plaintext_char();
     }
   }
-  push_token(TokenType.POSITIONAL_ARGUMENT_END);
+  // Close the opening of toplevel.
   push_token(TokenType.POSITIONAL_ARGUMENT_END);
   return tokens;
 }
@@ -429,7 +458,56 @@ const parse = function(tokens, options, extra_returns={}) {
   if (state.i < tokens.length) {
     parse_report_error(state, `unexpected tokens at the end of input`);
   }
+
+  // Post process the AST to support the insane paragraphs double newline syntax.
+  // Loop over it, search for all PARAGRAPH entries, and add paragraph nodes.
+  let todo_visit = [ast];
+  while (todo_visit.length > 0) {
+    const node = todo_visit.shift();
+    for (const arg_name in node.args) {
+      const arg = node.args[arg_name];
+      let paragraph_indexes = [];
+      for (let i = 0; i < arg.length; i++) {
+        const ast_node = arg[i];
+        if (ast_node.node_type === AstType.PARAGRAPH) {
+          paragraph_indexes.push(i);
+        }
+        todo_visit.push(ast_node);
+      }
+      if (paragraph_indexes.length > 0) {
+        let new_arg = [];
+        let paragraph_start = 0;
+        for (const paragraph_index of paragraph_indexes) {
+          parse_add_paragraph(state, new_arg, arg, paragraph_start, paragraph_index);
+          paragraph_start = paragraph_index + 1;
+        }
+        parse_add_paragraph(state, new_arg, arg, paragraph_start, arg.length);
+        node.args[arg_name] = new_arg;
+      }
+    }
+  }
+
   return ast;
+}
+
+const parse_add_paragraph = function(
+  state, new_arg, arg, paragraph_start, paragraph_end
+) {
+  parse_log_debug(state, 'function: parse_add_paragraph');
+  parse_log_debug(state, 'paragraph_start: ' + paragraph_start);
+  parse_log_debug(state, 'paragraph_end: ' + paragraph_end);
+  parse_log_debug(state);
+  new_arg.push(
+    new AstNode(
+      AstType.MACRO,
+      'p',
+      {
+        'content': arg.slice(paragraph_start, paragraph_end)
+      },
+      arg[paragraph_start].line,
+      arg[paragraph_start].column,
+    )
+  );
 }
 
 // Consume one token.
@@ -438,7 +516,7 @@ const parse_consume = function(state) {
   if (state.i >= state.tokens.length)
     return undefined;
   state.token = state.tokens[state.i];
-  parse_log_debug(state, 'function: consume');
+  parse_log_debug(state, 'function: parse_consume');
   parse_log_debug(state, 'state.i = ' + state.i.toString())
   parse_log_debug(state, 'state.token = ' + JSON.stringify(state.token));
   parse_log_debug(state);
@@ -447,7 +525,7 @@ const parse_consume = function(state) {
 
 const parse_log_debug = function(state, msg='') {
   if (state.options.show_parse) {
-    console.error(msg);
+    console.error('show_parse: ' + msg);
   }
 }
 
@@ -495,10 +573,11 @@ const parse_macro = function(state) {
       // Consume the *_ARGUMENT_END token out.
       parse_consume(state);
     }
-    return new AstNode(macro_name, args, macro_line, macro_column);
+    return new AstNode(AstType.MACRO, macro_name, args, macro_line, macro_column);
   } else if (state.token.type === TokenType.PLAINTEXT) {
     // Non-recursive case.
     let node = new AstNode(
+      AstType.PLAINTEXT,
       'plaintext',
       state.token.value,
       state.token.line,
@@ -509,8 +588,9 @@ const parse_macro = function(state) {
     return node;
   } else if (state.token.type === TokenType.PARAGRAPH) {
     let node = new AstNode(
-      'paragraph',
-      state.token.value,
+      AstType.PARAGRAPH,
+      undefined,
+      undefined,
       state.token.line,
       state.token.column
     );
@@ -523,6 +603,7 @@ const parse_macro = function(state) {
       `unexpected token ${state.token.type.toString()}`
     );
     let node = new AstNode(
+      AstType.PLAINTEXT,
       'plaintext',
       IN_OUTPUT_ERROR_PREFIX + 'unexpected token',
       state.token.line,
@@ -554,6 +635,8 @@ const convert = function(
     options = {};
   }
   if (!'body_only'   in options) { options.body_only   = false; }
+  // Analogous to show_tokens but for the AST.
+  if (!'show_ast' in options) { options.show_ast = false; }
   // Parse internals.
   if (!'show_parse'  in options) { options.show_parse  = false; }
   // Show tokens before parse, in case parse blows up.
@@ -572,9 +655,18 @@ const convert = function(
   extra_returns.errors.push(...sub_extra_returns.errors);
   sub_extra_returns = {};
   let ast = parse(tokens, options, sub_extra_returns);
+  if (options.show_ast) {
+    console.error('ast:');
+    console.error(JSON.stringify(ast, null, 2));
+    console.error();
+  }
   extra_returns.ast = ast;
   extra_returns.errors.push(...sub_extra_returns.errors);
-  return ast.convert(options);
+  output = ast.convert(options)
+  if (output[output.length - 1] !== '\n') {
+    output += '\n';
+  }
+  return output;
 }
 
 exports.convert = convert;

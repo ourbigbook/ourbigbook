@@ -127,8 +127,7 @@ class AstNode {
 
     for (const argname in args) {
       for (const arg of args[argname]) {
-        arg.parent_node = this;
-        arg.argument_name = argname;
+        this.setup_argument(argname, arg);
       }
     }
   }
@@ -242,6 +241,11 @@ class AstNode {
     } else {
       return context.id_provider.get(header_parent_id, context);
     }
+  }
+
+  setup_argument(argname, arg) {
+    arg.parent_node = this;
+    arg.argument_name = argname;
   }
 
   /** Manual implementation. There must be a better way, but I can't find it... */
@@ -3115,7 +3119,14 @@ function parse(tokens, options, context, extra_returns={}) {
         if (is_first_header) {
           ast.id = options.toplevel_id;
           if (options.toplevel_has_scope) {
+            // TODO why isn't the fake argument below enough?
             ast.validation_output.scope.boolean = true;
+            // We also need to fake an argument here, because that will
+            // get serialiezd to the database, which his needed for
+            // toplevel scope removal from external links.
+            const scope_arg = new AstArgument([], ast.source_location);
+            ast.args.scope = scope_arg;
+            ast.setup_argument('scope', scope_arg);
           }
           if (options.toplevel_parent_scope !== undefined) {
             ast.scope = options.toplevel_parent_scope;
@@ -3998,6 +4009,12 @@ exports.validate_ast = validate_ast;
  */
 function x_get_href_content(ast, context) {
   const target_id = convert_arg_noescape(ast.args.href, context);
+  if (target_id[0] === AT_MENTION_CHAR) {
+    return [html_attr('href', WEBSITE_URL + target_id.substr(1)), target_id];
+  }
+  if (target_id[0] === HASHTAG_CHAR) {
+    return [html_attr('href', WEBSITE_URL + 'notuser/' + target_id.substr(1)), target_id];
+  }
   const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);
   let href;
   if (target_id_ast === undefined) {
@@ -4333,6 +4350,11 @@ function x_text(ast, context, options={}) {
   }
   return ret;
 }
+
+// Dynamic website stuff.
+const AT_MENTION_CHAR = '@';
+const HASHTAG_CHAR = '#';
+const WEBSITE_URL = 'https://hostname.com/';
 
 const END_NAMED_ARGUMENT_CHAR = '}';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';

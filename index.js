@@ -1755,100 +1755,21 @@ function convert(
   options,
   extra_returns={},
 ) {
-  extra_returns.debug_perf = {};
-  extra_returns.debug_perf.start = globals.performance.now();
-  if (options === undefined) {
-    options = {};
-  }
-  if (!('body_only' in options)) { options.body_only = false; }
-  if (!('cirodown_json' in options)) { options.cirodown_json = {}; }
-    const cirodown_json = options.cirodown_json;
-    {
-      if (!('media-providers' in cirodown_json)) { cirodown_json['media-providers'] = {}; }
-      {
-        const media_providers = cirodown_json['media-providers'];
+  let context = convert_init_context(options, extra_returns);
 
-        for (const media_provider_type of MEDIA_PROVIDER_TYPES) {
-          if (!(media_provider_type in media_providers)) {
-            media_providers[media_provider_type] = {};
-          }
-          const media_provider = media_providers[media_provider_type];
-          if (!('title-from-src' in media_provider)) {
-            media_provider['title-from-src'] = false;
-          }
-        }
-        if (!('path' in media_providers.local)) {
-          media_providers.local.path = '';
-        }
-        if (!('remote' in media_providers.github)) {
-          media_providers.github.remote = 'TODO determine from git remote origin if any';
-        }
-        for (const media_provider_name in media_providers) {
-          const media_provider = media_providers[media_provider_name];
-          if (!('title-from-src' in media_provider)) {
-            media_provider['title-from-src'] = false;
-          }
-        }
-      }
-    }
-  if (!('embed_includes' in options)) { options.embed_includes = false; }
-  if (!('file_provider' in options)) { options.file_provider = undefined; }
-  if (!('from_include' in options)) { options.from_include = false; }
-  if (!('html_embed' in options)) { options.html_embed = false; }
-  // Add HTML extension to x links. And therefore also output files
-  // with the .html extension.
-  if (!('html_x_extension' in options)) { options.html_x_extension = true; }
-  if (!('h_parse_level_offset' in options)) {
-    // When parsing, start the first header at this offset instead of h1.
-    // This is used when doing includes, since the included header is at.
-    // an offset relative to where it is included from.
-    options.h_parse_level_offset = 0;
-  }
-  if (!('id_provider' in options)) { options.id_provider = undefined; }
-  if (!('include_path_set' in options)) { options.include_path_set = new Set(); }
-  if (!('input_path' in options)) { options.input_path = undefined; }
-  if (!('log' in options)) { options.log = {}; }
-  // Override the default calculated output file for the main input.
-  if (!('outfile' in options)) { options.outfile = undefined; }
-  if (!('output_format' in options)) { options.output_format = OUTPUT_FORMAT_HTML; }
-  if (!('path_sep' in options)) { options.path_sep = undefined; }
-  if (!('render' in options)) { options.render = true; }
-  if (!('start_line' in options)) { options.start_line = 1; }
-  // A toplevel scope, to implement conversion of files in subdirectories.
-  if (!('scope' in options)) { options.scope = undefined; }
-  if (!('split_headers' in options)) { options.split_headers = false; }
-  if (!('template' in options)) { options.template = undefined; }
-  if (!('template_vars' in options)) { options.template_vars = {}; }
-    if (!('head' in options.template_vars)) { options.template_vars.head = ''; }
-    if (!('root_relpath' in options.template_vars)) { options.template_vars.root_relpath = ''; }
-    if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
-    if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
-  // If given, force the toplevel header to have this ID.
-  // Otherwise, derive the ID from the title.
-  // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
-  if (!('toplevel_id' in options)) { options.toplevel_id = undefined; }
-  if (options.xss_unsafe === undefined) {
-    const xss_unsafe = cirodown_json['xss-unsafe'];
-    if (xss_unsafe !== undefined) {
-      options.xss_unsafe = xss_unsafe;
-    } else {
-      options.xss_unsafe = false;
-    }
-  }
-  const macros = macro_list_to_macros();
-  extra_returns.errors = [];
+  // Tokenize.
   let sub_extra_returns;
   sub_extra_returns = {};
   extra_returns.debug_perf.tokenize_pre = globals.performance.now();
   let tokens = (new Tokenizer(
     input_string,
     sub_extra_returns,
-    options.log.tokenize,
-    options.start_line,
-    options.input_path,
+    context.options.log.tokenize,
+    context.options.start_line,
+    context.options.input_path,
   )).tokenize();
   extra_returns.debug_perf.tokenize_post = globals.performance.now();
-  if (options.log['tokens-inside']) {
+  if (context.options.log['tokens-inside']) {
     console.error('tokens:');
     for (let i = 0; i < tokens.length; i++) {
       console.error(`${i}: ${JSON.stringify(tokens[i], null, 2)}`);
@@ -1858,17 +1779,10 @@ function convert(
   extra_returns.tokens = tokens;
   extra_returns.errors.push(...sub_extra_returns.errors);
   sub_extra_returns = {};
-  let context = {
-    errors: [],
-    extra_returns: extra_returns,
-    include_path_set: new Set(options.include_path_set),
-    macros: macros,
-    options: options,
-  };
 
   // Setup context.media_provider_default based on `default-for`.
   {
-    const media_providers = cirodown_json['media-providers'];
+    const media_providers = context.options.cirodown_json['media-providers'];
     context.media_provider_default = {};
     for (const media_provider_name in media_providers) {
       const media_provider = media_providers[media_provider_name];
@@ -1906,8 +1820,8 @@ function convert(
     }
   }
 
-  let ast = parse(tokens, options, context, sub_extra_returns);
-  if (options.log['ast-inside']) {
+  let ast = parse(tokens, context.options, context, sub_extra_returns);
+  if (context.options.log['ast-inside']) {
     console.error('ast:');
     console.error(JSON.stringify(ast, null, 2));
     console.error();
@@ -1918,11 +1832,11 @@ function convert(
   Object.assign(extra_returns.debug_perf, sub_extra_returns.debug_perf);
   extra_returns.errors.push(...sub_extra_returns.errors);
   let output;
-  if (options.render) {
+  if (context.options.render) {
     context.extra_returns.rendered_outputs = {};
     extra_returns.debug_perf.render_pre = globals.performance.now();
     // Split header conversion.
-    if (options.split_headers) {
+    if (context.options.split_headers) {
       const content = ast.args.content;
       // Gather up each header (must be a direct child of toplevel)
       // and all elements that belong to that header (up to the next header).
@@ -1948,22 +1862,12 @@ function convert(
       convert_header(cur_arg_list, context);
       // Because the following conversion would redefine them.
     }
-    if (options.log['split-headers']) {
-      console.error('split-headers non-split: ' + options.input_path);
+    if (context.options.log['split-headers']) {
+      console.error('split-headers non-split: ' + context.options.input_path);
     }
-    // Non-split header toplevel conversion.
-    let outpath;
-    if (options.outfile !== undefined) {
-      outpath = options.outfile;
-    } else if (options.input_path !== undefined) {
-      outpath = output_path(options.input_path, options.toplevel_id, context)[0];
-    }
-    context.katex_macros = {};
-    context.in_split_headers = false;
-    context.toplevel_output_path = outpath;
     output = ast.convert(context);
-    if (outpath !== undefined) {
-      context.extra_returns.rendered_outputs[outpath] = output;
+    if (context.toplevel_output_path !== undefined) {
+      context.extra_returns.rendered_outputs[context.toplevel_output_path] = output;
     }
     extra_returns.debug_perf.render_post = globals.performance.now();
     extra_returns.errors.push(...context.errors);
@@ -2127,6 +2031,120 @@ function convert_include(
   }
   return convert_extra_returns.ast.args.content;
 }
+
+function convert_init_context(options={}, extra_returns={}) {
+  extra_returns.debug_perf = {};
+  extra_returns.debug_perf.start = globals.performance.now();
+  options = Object.assign({}, options);
+  if (!('body_only' in options)) { options.body_only = false; }
+  if (!('cirodown_json' in options)) { options.cirodown_json = {}; }
+    const cirodown_json = options.cirodown_json;
+    {
+      if (!('media-providers' in cirodown_json)) { cirodown_json['media-providers'] = {}; }
+      {
+        const media_providers = cirodown_json['media-providers'];
+
+        for (const media_provider_type of MEDIA_PROVIDER_TYPES) {
+          if (!(media_provider_type in media_providers)) {
+            media_providers[media_provider_type] = {};
+          }
+          const media_provider = media_providers[media_provider_type];
+          if (!('title-from-src' in media_provider)) {
+            media_provider['title-from-src'] = false;
+          }
+        }
+        if (!('path' in media_providers.local)) {
+          media_providers.local.path = '';
+        }
+        if (!('remote' in media_providers.github)) {
+          media_providers.github.remote = 'TODO determine from git remote origin if any';
+        }
+        for (const media_provider_name in media_providers) {
+          const media_provider = media_providers[media_provider_name];
+          if (!('title-from-src' in media_provider)) {
+            media_provider['title-from-src'] = false;
+          }
+        }
+      }
+    }
+  if (!('embed_includes' in options)) { options.embed_includes = false; }
+  if (!('file_provider' in options)) { options.file_provider = undefined; }
+  if (!('from_include' in options)) { options.from_include = false; }
+  if (!('html_embed' in options)) { options.html_embed = false; }
+  // Add HTML extension to x links. And therefore also output files
+  // with the .html extension.
+  if (!('html_x_extension' in options)) { options.html_x_extension = true; }
+  if (!('h_parse_level_offset' in options)) {
+    // When parsing, start the first header at this offset instead of h1.
+    // This is used when doing includes, since the included header is at.
+    // an offset relative to where it is included from.
+    options.h_parse_level_offset = 0;
+  }
+  if (!('id_provider' in options)) { options.id_provider = undefined; }
+  if (!('include_path_set' in options)) { options.include_path_set = new Set(); }
+  if (!('input_path' in options)) { options.input_path = undefined; }
+  if (!('log' in options)) { options.log = {}; }
+  // Override the default calculated output file for the main input.
+  if (!('outfile' in options)) { options.outfile = undefined; }
+  if (!('output_format' in options)) { options.output_format = OUTPUT_FORMAT_HTML; }
+  if (!('path_sep' in options)) { options.path_sep = undefined; }
+  if (!('render' in options)) { options.render = true; }
+  if (!('start_line' in options)) { options.start_line = 1; }
+  // A toplevel scope, to implement conversion of files in subdirectories.
+  if (!('scope' in options)) { options.scope = undefined; }
+  if (!('split_headers' in options)) { options.split_headers = false; }
+  if (!('template' in options)) { options.template = undefined; }
+  if (!('template_vars' in options)) { options.template_vars = {}; }
+    if (!('head' in options.template_vars)) { options.template_vars.head = ''; }
+    if (!('root_relpath' in options.template_vars)) { options.template_vars.root_relpath = ''; }
+    if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
+    if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
+  // If given, force the toplevel header to have this ID.
+  // Otherwise, derive the ID from the title.
+  // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
+  if (!('toplevel_id' in options)) { options.toplevel_id = undefined; }
+  if (options.xss_unsafe === undefined) {
+    const xss_unsafe = cirodown_json['xss-unsafe'];
+    if (xss_unsafe !== undefined) {
+      options.xss_unsafe = xss_unsafe;
+    } else {
+      options.xss_unsafe = false;
+    }
+  }
+  extra_returns.errors = [];
+  let context = {
+    katex_macros: {},
+    in_split_headers: false,
+    errors: [],
+    extra_returns: extra_returns,
+    include_path_set: new Set(options.include_path_set),
+    macros: macro_list_to_macros(),
+    options: options,
+  };
+
+  // Non-split header toplevel conversion.
+  let outpath;
+  if (context.options.outfile !== undefined) {
+    outpath = context.options.outfile;
+  } else if (context.options.input_path !== undefined) {
+    outpath = output_path(context.options.input_path, context.options.toplevel_id, context)[0];
+  }
+  context.toplevel_output_path = outpath;
+  return context;
+}
+/* Like x_href, but called with options as convert,
+ * so that we don't have to fake a complex context. */
+function convert_x_href(target_id, options) {
+  const context = convert_init_context(options);
+  context.id_provider = options.id_provider;
+  const target_id_ast = context.id_provider.get(target_id, context);
+  if (target_id_ast === undefined) {
+    return undefined
+  } else {
+    return x_href(target_id_ast, context);
+  }
+}
+exports.convert_x_href = convert_x_href;
 
 function dirname(str, sep) {
   return path_split(str, sep)[0];
@@ -2737,7 +2755,6 @@ function parse(tokens, options, context, extra_returns={}) {
   const line_to_id_array = [];
   const macro_counts = {};
   const macro_counts_visible = {};
-  let id_provider;
   let cur_header_graph_node;
   // Prepare convert options for the child. Copy options so that the
   // toplevel call won't change the input options, but children calls wlil.
@@ -2763,6 +2780,7 @@ function parse(tokens, options, context, extra_returns={}) {
     include_options.is_first_global_header = true;
   }
   let local_id_provider = new DictIdProvider(include_options.indexed_ids);
+  let id_provider;
   if (options.id_provider !== undefined) {
     // Remove all remote IDs from the current file, to prevent false duplicates
     // when we start setting those IDs again.
@@ -3020,7 +3038,7 @@ function parse(tokens, options, context, extra_returns={}) {
           ) {
             let parent_ast;
             if (parent_id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
-              parent_ast = id_provider.get_noscope(parent_id.substr(1), context);
+              parent_ast = context.id_provider.get_noscope(parent_id.substr(1), context);
             } else {
               // We can't use context.id_provider.get here because we don't know who
               // the parent node is, because scope can affect that choice.
@@ -3987,7 +4005,6 @@ function x_href(target_id_ast, context) {
     ret += '#' + fragment;
   return ret;
 }
-exports.x_href = x_href;
 
 function x_href_parts(target_id_ast, context) {
   if (target_id_ast.macro_name === Macro.TOC_MACRO_NAME) {

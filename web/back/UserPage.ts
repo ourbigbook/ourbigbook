@@ -4,7 +4,7 @@ import { articleLimit  } from 'front/config'
 import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
 import { getLoggedInUser } from 'back'
 
-export const getServerSidePropsUserHoc = (what): GetServerSideProps => {
+export const getServerSidePropsUserHoc = (what) => {
   return async ({ params, req }) => {
     const loggedInUser = await getLoggedInUser(req)
     const user = await sequelize.models.User.findOne({
@@ -68,7 +68,7 @@ export const getServerSidePropsUserHoc = (what): GetServerSideProps => {
     }
     if (what === 'home') {
       const articleProps = (await getServerSidePropsArticleHoc(true, loggedInUser)({
-        params: { slug: [ params.uid ] } }))
+        params: { slug: [ params.uid ] }, req }))
       Object.assign(props, articleProps.props)
     } else {
       props.articles = await Promise.all(articles.rows.map(article => article.toJson(loggedInUser)))

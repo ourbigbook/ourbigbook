@@ -1,3 +1,5 @@
+import { GetServerSideProps } from 'next'
+
 import sequelize from 'db'
 import { articleLimit  } from 'front/config'
 import { getLoggedInUser } from 'back'
@@ -38,7 +40,7 @@ export const getServerSidePropsTopicHoc = (what): GetServerSideProps => {
       order,
       topicId: params.id,
     })
-    const props = {
+    const props: any = {
       articles: await Promise.all(articles.rows.map(article => article.toJson(loggedInUser))),
       articlesCount: articles.count,
       page,

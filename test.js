@@ -2966,7 +2966,8 @@ assert_error('include circular dependency 1 -> 2 <-> 3',
 //  include_opts
 //);
 
-// ID auto-gneration and macro counts.
+// ID auto-gneration.
+// https://cirosantilli.com/cirodown/automatic-id-from-title
 assert_convert_ast('id autogeneration simple',
   '\\P[aa]\n',
   [a('P', [t('aa')], {}, {id: 'p-1'})],
@@ -2982,17 +2983,30 @@ assert_convert_ast('id autogeneration nested',
     a('P', [t('bb')], {}, {id: 'p-2'}),
   ],
 );
-assert_convert_ast('id autogeneration unicode',
-  `= 0A.你Éz
+assert_convert_ast('id autogeneration unicode normalize',
+  `= 0A.你ÉŁŒz
 
-\\x[0a-你éz]
+\\x[0a-你eloez]
 `,
   [
-    a('H', undefined, {title: [t('0A.你Éz')]}, {id: '0a-你éz'}),
+    a('H', undefined, {title: [t('0A.你ÉŁŒz')]}, {id: '0a-你eloez'}),
     a('P', [
-      a('x', undefined, {href: [t('0a-你éz')]})
+      a('x', undefined, {href: [t('0a-你eloez')]})
     ])
   ],
+);
+assert_convert_ast('id autogeneration unicode no normalize',
+  `= 0A.你ÉŁŒz
+
+\\x[0a-你éłœz]
+`,
+  [
+    a('H', undefined, {title: [t('0A.你ÉŁŒz')]}, {id: '0a-你éłœz'}),
+    a('P', [
+      a('x', undefined, {href: [t('0a-你éłœz')]})
+    ])
+  ],
+  { extra_convert_opts: { cirodown_json: { id: { 'normalize': false, } } } }
 );
 assert_convert_ast('id autogeneration with disambiguate',
   `= ab
@@ -3007,7 +3021,6 @@ assert_convert_ast('id autogeneration with disambiguate',
     ])
   ],
 );
-
 assert_error('id autogeneration with undefined reference in title fails gracefully',
   `= \\x[reserved_undefined]
 `, 1, 5);

@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
 # https://cirosantilli.com/cirodown#do-the-release
 set -eux
+if [ $# -lt 1 ]; then
+  echo 'Missing version'
+  exit 1
+else
+  version="$1"
+fi
 npm test
 # I call bullshit.
 # https://stackoverflow.com/questions/24976950/how-do-i-include-a-gitignore-file-as-part-of-my-npm-module
 cp .gitignore gitignore
 # This also does npm run build-assets
 cirodown --publish
-version="$1"
-sed "s/  \"version\":.*/  \"version\": \"${version}\",/" package.json
+sed -i "s/  \"version\":.*/  \"version\": \"${version}\",/" package.json
 ./update-templates
 # To make sure package.json is up-to-date.
 npm run link

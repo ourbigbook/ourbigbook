@@ -32,7 +32,8 @@ exports.SPLIT_MARKER_TEXT = SPLIT_MARKER_TEXT;
 const SPLIT_MARKER = `<span class="fa-solid-900">\u{f042}</span> ${SPLIT_MARKER_TEXT}`;
 const PARENT_MARKER = '<span class="fa-solid-900">\u{f062}</span>';
 exports.PARENT_MARKER = PARENT_MARKER;
-const TOC_MARKER = '<span class="fa-solid-900">\u{f03a}</span> toc'
+const TOC_MARKER_SYMBOL = '<span class="fa-solid-900">\u{f03a}</span>'
+const TOC_MARKER = `${TOC_MARKER_SYMBOL} toc`
 
 class AstNode {
   /**
@@ -333,7 +334,7 @@ class AstNode {
       return ' '
     }
     const macro = context.macros[this.macro_name];
-    let out;
+    let out, render_pre;
     if (this.validation_error === undefined) {
       let output_format;
       if (context.id_conversion) {
@@ -352,7 +353,11 @@ class AstNode {
         render_error(context, message, this.source_location);
         out = error_message_in_output(message, context);
       } else {
-        out = convert_function(this, context);
+        const opts = {
+          extra_returns: {}
+        }
+        out = convert_function(this, context, opts);
+        render_pre = opts.extra_returns.render_pre
       }
     } else {
       render_error(
@@ -375,6 +380,9 @@ class AstNode {
         macro.toplevel_link
       ) {
         out = OUTPUT_FORMATS[context.options.output_format].toplevel_child_modifier(this, context, out);
+        if (render_pre) {
+          out = OUTPUT_FORMATS[context.options.output_format].toplevel_child_modifier(undefined, context, render_pre) + out
+        }
       }
     }
 
@@ -6178,7 +6186,7 @@ function render_error_x_undefined(ast, context, target_id, options={}) {
 function render_toc_from_entry_list({ add_test_instrumentation, entry_list, descendant_count_html }) {
   let top_level = 0;
   let ret = `<div id="${Macro.TOC_ID}"class="toc-container">\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
-  ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc" href="#${Macro.TOC_ID}">Table of contents</a>`
+  ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc" href="#${Macro.TOC_ID}">${TOC_MARKER_SYMBOL} Table of contents</a>`
   if (descendant_count_html) {
     ret += `<span class="hover-metadata">${descendant_count_html}</span>`;
   }
@@ -8210,8 +8218,13 @@ const OUTPUT_FORMATS_LIST = [
     {
       ext: HTML_EXT,
       toplevel_child_modifier: function(ast, context, out) {
-        return `<div>${html_hide_hover_link(x_href(ast, context))}${out}</div>
-`;
+        let link_to_self
+        if (ast) {
+          link_to_self = html_hide_hover_link(x_href(ast, context))
+        } else {
+          link_to_self = ''
+        }
+        return `<div>${link_to_self}${out}</div>`
       },
       convert_funcs: {
         [Macro.LINK_MACRO_NAME]: function(ast, context) {
@@ -8258,7 +8271,10 @@ const OUTPUT_FORMATS_LIST = [
         [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: unconvertible,
         'Comment': function(ast, context) { return ''; },
         'comment': function(ast, context) { return ''; },
-        [Macro.HEADER_MACRO_NAME]: function(ast, context) {
+        [Macro.HEADER_MACRO_NAME]: function(ast, context, opts={}) {
+          if (opts.extra_returns === undefined) {
+            opts.extra_returns = {}
+          }
           if (context.in_header) {
             // Previously was doing an infinite loop when rendering the parent header.
             // But not valid HTML, so I don't think it is worth allowing at all:
@@ -8311,7 +8327,7 @@ const OUTPUT_FORMATS_LIST = [
           ) {
             let render_toc_ret = render_toc(context)
             if (render_toc_ret !== '') {
-              ret += render_toc_ret
+              opts.extra_returns.render_pre = render_toc_ret
               hasToc = true
             }
           }

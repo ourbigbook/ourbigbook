@@ -12,6 +12,8 @@ function getSequelize(toplevelDir, toplevelBasename) {
   const sequelizeParams = Object.assign(
     {
       logging: config.verbose ? console.log : false,
+      // https://stackoverflow.com/questions/52260934/how-to-measure-query-execution-time-in-seqilize
+      benchmark: true,
     },
     ourbigbook_nodejs_webpack_safe.db_options,
   );

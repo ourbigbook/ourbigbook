@@ -268,19 +268,10 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
     let scripts_str = ``;
     let includes = [];
     let scripts = [];
-    let fonts = [];
-    let fonts_local = [];
     let includes_local = [];
     let scripts_local = [];
     let template_includes_relative = [];
     let template_scripts_relative = [];
-    let template_fonts_relative = [];
-    const fonts_dist_basename = [
-      'fa-brands-400',
-      'fa-regular-400',
-      'fa-solid-900',
-    ].map(f => f + '.woff2')
-    const fonts_dist = fonts_dist_basename.map(f => path.join(cirodown_nodejs.DIST_PATH, f))
     if (non_cirodown_options.publish) {
       template_includes_relative.push(
         path.relative(
@@ -294,11 +285,9 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
           non_cirodown_options.out_js_path
         )
       );
-      template_fonts_relative.push(...fonts_dist_basename)
     } else {
       includes_local.push(non_cirodown_options.out_css_path);
       scripts_local.push(non_cirodown_options.out_js_path);
-      fonts_local.push(...fonts_dist)
     }
     if (
       cirodown_options.outfile !== undefined &&
@@ -310,13 +299,9 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
       for (const script of scripts_local) {
         scripts.push(path.relative(path.dirname(cirodown_options.outfile), script));
       }
-      for (const font of fonts_local) {
-        fonts.push(path.relative(path.dirname(cirodown_options.outfile), font));
-      }
     } else {
       includes.push(...includes_local);
       scripts.push(...scripts_local);
-      fonts.push(...fonts_local);
     }
 
     for (const include of includes) {
@@ -325,17 +310,10 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
     for (const script of scripts) {
       scripts_str += `<script src="${script}"></script>\n`;
     }
-    for (const font of fonts) {
-      // TODO move this into cirodown.css to not repeat it for every single file.
-      // Requires thinking about relative paths in webpack CSS resolution, don't want to do that now.
-      includes_str += `@font-face { font-family: ${path.parse(font).name}; src: url(${font}); }
-`
-    }
     new_options.template_vars.style = `\n${includes_str}`;
     new_options.template_vars.post_body = `${scripts_str}`;
     new_options.template_styles_relative = template_includes_relative;
     new_options.template_scripts_relative = template_scripts_relative;
-    new_options.template_fonts_relative = template_fonts_relative;
   }
   // Finally, do the conversion!
   const output = await cirodown.convert(input, new_options, new_options.extra_returns);

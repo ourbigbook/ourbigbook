@@ -6,6 +6,9 @@
 @use 'katex/dist/katex.min.css';
 @use 'tablesort/tablesort.css';
 @import 'cirodown.common.scss';
+@font-face { font-family: fa-brands-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-brands-400.woff2); }
+@font-face { font-family: fa-regular-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2); }
+@font-face { font-family: fa-solid-900; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2); }
 
 $caption-margin-bottom: 5px;
 $header-font-size: 24px;

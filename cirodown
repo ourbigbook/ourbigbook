@@ -11,12 +11,12 @@ const git_url_parse = require("git-url-parse");
 const cirodown = require('cirodown');
 const cirodown_nodejs = require('cirodown/nodejs');
 
+const OUT_DIRNAME = 'out';
 const DEFAULT_IGNORE_BASENAMES = [
   '.git',
   'node_modules',
-  'out',
+  OUT_DIRNAME,
 ];
-
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
 const ENCODING = 'utf8';
 const IO_RENAME_MAP = {
@@ -230,6 +230,31 @@ if (commander.helpMacros) {
     if (!fs.existsSync(inputPath)) {
       cli_error(`input_path does not exist: "${inputPath}"`);
     }
+    let input_path_is_file;
+    let outdir;
+    if (fs.lstatSync(inputPath).isFile()) {
+      input_path_is_file = true;
+      outdir = OUT_DIRNAME;
+    } else {
+      input_path_is_file = false;
+      outdir = path.join(inputPath, OUT_DIRNAME);
+    }
+
+    // Setup the ID database.
+    fs.mkdirSync(outdir, {recursive: true});
+    const db_path = path.join(outdir, 'db.sqlite3');
+    if (!fs.existsSync(db_path)) {
+      var sqlite3 = require('sqlite3').verbose();
+      var db = new sqlite3.Database(db_path);
+      db.run(`CREATE TABLE ids (
+        path TEXT,
+        id TEXT,
+        title TEXT,
+        macro TEXT,
+      `);
+      db.close();
+    }
+
     if (commander.watch) {
       if (publish) {
         cli_error('--publish and --watch are incompatible');
@@ -241,7 +266,7 @@ if (commander.helpMacros) {
         convert_path_to_file(path, options, convert_input_options);
       });
     } else {
-      if (fs.lstatSync(inputPath).isFile()) {
+      if (input_path_is_file) {
         if (publish) {
           cli_error('--publish must take a directory as input, not a file');
         }
@@ -250,7 +275,7 @@ if (commander.helpMacros) {
       } else {
         let actual_input;
         let publish_branch;
-        let publish_dir = path.join(inputPath, 'out', 'publish');
+        let publish_dir = path.join(outdir, 'publish');
         let remote_url;
         let src_branch;
         let cmd_options = {
@@ -297,7 +322,7 @@ if (commander.helpMacros) {
 
           // Set some variables especially for publishing.
           actual_input = publish_dir;
-          commander.outdir = path.join(publish_dir, 'out', 'publish');
+          commander.outdir = path.join(publish_dir, OUT_DIRNAME, 'publish');
         } else {
           actual_input = inputPath;
         }

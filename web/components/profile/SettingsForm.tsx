@@ -61,60 +61,63 @@ const SettingsForm = () => {
     <React.Fragment>
       <ListErrors errors={errors} />
       <form onSubmit={submitForm}>
-        <fieldset>
-          <fieldset className="form-group">
-            <input
-              className="form-control"
-              type="text"
-              placeholder="URL of profile picture"
-              value={userInfo.image}
-              onChange={updateState("image")}
-            />
-          </fieldset>
-          <fieldset className="form-group">
-            <input
-              className="form-control form-control-lg"
-              type="text"
-              placeholder="Username"
-              value={userInfo.username}
-              onChange={updateState("username")}
-            />
-          </fieldset>
-          <fieldset className="form-group">
-            <textarea
-              className="form-control form-control-lg"
-              rows={8}
-              placeholder="Short bio about you"
-              value={userInfo.bio}
-              onChange={updateState("bio")}
-            />
-          </fieldset>
-          <fieldset className="form-group">
-            <input
-              className="form-control form-control-lg"
-              type="email"
-              placeholder="Email"
-              value={userInfo.email}
-              onChange={updateState("email")}
-            />
-          </fieldset>
-          <fieldset className="form-group">
-            <input
-              className="form-control form-control-lg"
-              type="password"
-              placeholder="New Password"
-              value={userInfo.password}
-              onChange={updateState("password")}
-            />
-          </fieldset>
-          <button
-            className="btn btn-lg btn-primary pull-xs-right"
-            type="submit"
-            disabled={isLoading}
-          >
-            Update Settings
-          </button>
-        </fieldset>
+        <label>
+          <div className="label">Profile picture</div>
+          <input
+            className="form-control"
+            type="text"
+            placeholder="URL of profile picture"
+            value={userInfo.image}
+            onChange={updateState("image")}
+          />
+        </label>
+        <label>
+          <div className="label">Username</div>
+          <input
+            className="form-control form-control-lg"
+            type="text"
+            placeholder="Username"
+            value={userInfo.username}
+            onChange={updateState("username")}
+          />
+        </label>
+        <label>
+          <div className="label">Bio</div>
+          <textarea
+            className="form-control form-control-lg"
+            rows={8}
+            placeholder="Short bio about you"
+            value={userInfo.bio}
+            onChange={updateState("bio")}
+          />
+        </label>
+        <label>
+          <div className="label">Email</div>
+          <input
+            className="form-control form-control-lg"
+            type="email"
+            placeholder="Email"
+            value={userInfo.email}
+            onChange={updateState("email")}
+          />
+        </label>
+        <label>
+          <div className="label">Password</div>
+          <input
+            className="form-control form-control-lg"
+            type="password"
+            placeholder="New Password"
+            value={userInfo.password}
+            onChange={updateState("password")}
+          />
+        </label>
+        <button
+          className="btn btn-lg btn-primary pull-xs-right"
+          type="submit"
+          disabled={isLoading}
+        >
+          Update Settings
+        </button>
       </form>
     </React.Fragment>
   );

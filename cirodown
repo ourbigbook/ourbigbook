@@ -800,6 +800,10 @@ if (commander.helpMacros) {
     if (publish || commander.watch || commander.generate) {
       inputPath = '.';
     }
+  } else {
+    if (commander.generate) {
+      cli_error('canot give an input path with --generate');
+    }
   }
 
   // Determine the cirodown.json file by walking up the directory tree.
@@ -950,7 +954,11 @@ if (commander.helpMacros) {
   }
   let outdir;
   if (commander.outdir === undefined) {
-    outdir = cirodown_json_dir;
+    if (commander.generate) {
+      outdir = '.'
+    } else {
+      outdir = cirodown_json_dir;
+    }
   } else {
     outdir = commander.outdir;
   }

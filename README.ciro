@@ -2,6 +2,7 @@
 
 A Markup language to write complex structured HTML wikis/books that is \x[saner] and more powerful than Markdown and Asciidoctor, with reference implementation in JavaScript:
 
+* \x[design-goals]{full}: feature overview
 * https://github.com/cirosantilli/cirodown/blob/master/README.ciro[]: source for this document
 * https://cirosantilli.com/cirodown[]: rendered version of this document
 * https://cirosantilli.com/cirodown/editor[]: live in-browser demo
@@ -11,8 +12,6 @@ A Markup language to write complex structured HTML wikis/books that is \x[saner]
 If Mark had his Down, why can't Ciro have his own? ;-)
 
 == Quick start
-
-Showcase website: https://www.cirosantilli.com source at 
 
 Live in-browser demo: https://cirosantilli.com/cirodown/editor
 
@@ -97,6 +96,7 @@ Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally pu
   * single-source multi-format output based on \x[includes] and build options:
     * one HTML per source with includes rendered as links between pages
     * \x[embed-includes] single file output
+    * \x[split-headers] option to output one spearate header per output flie
   * cross file configuration files to factor out common page parts like headers and footers
 * advanced header/ID related features:
   * \x[scope]
@@ -3345,7 +3345,13 @@ TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with
 
 Select a custom https://github.com/harttle/liquidjs[Liquid template] file for the output.
 
-The recommended file name for this file is `main.liquid.html`, which is already ignored by default from the published output.
+The recommended file name for this file is:
+``
+main.liquid.html
+``
+which is already ignored by default from the published output.
+
+This repository has a sample `main.liquid.html` at: \a[main.liquid.html].
 
 If not given, the default template at one point was:
 ``
@@ -3366,6 +3372,23 @@ This will get out of sync sooner or later with the code, but this should still s
 Defined variables:
 * `body`: the rendered body
 * `git_sha`: SHA of the latest git commit of the source code if in a git repository
+* `root_replath`: relative path from the rendered output to the toplevel directory.
+
+  This allows for toplevel resources like CSS to be found semelessly form inside subdirectories, specially when rendering locally.
+
+  For example, for the toplevel \x[css] `main.css` which is generated from \a[main.scss], we can use:
+  ``
+  <link rel="stylesheet" type="text/css" href="{{ root_relpath }}main.css">
+  ``
+
+  Then, when a file is locally, for example under a subdirectory `mysubdir/myfile.html`, Cirodown will set:
+  ``
+  root_relpath=../
+  ``
+  giving the desired:
+  ``
+  <link rel="stylesheet" type="text/css" href="../main.css">
+  ``
 * `style`: default Cirodown stylesheets
 * `title`
 
@@ -3745,8 +3768,18 @@ Our CSS is located at \a[main.scss] and gets processed through https://sass-lang
 
 To generate the CSS during development after any changes to that file, you must run:
 ``
-npm sass
+npm run sass
 ``
+which generates the final CSS file:
+``
+main.css
+``
+
+You then need to explicitly include that `main.css` file in your \x[template]. For example, our \a[main.liquid.html] contains a line:
+``
+<link rel="stylesheet" type="text/css" href="{{ root_relpath }}main.css">
+``
+where `root_relpath` is explained under \x[template]{full}.
 
 === Formal grammar
 

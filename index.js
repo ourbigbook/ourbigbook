@@ -3748,6 +3748,7 @@ function getDescription(description_arg, context) {
 }
 
 function getLinkHtml({
+  ast,
   attrs,
   content,
   context,
@@ -3768,7 +3769,13 @@ function getLinkHtml({
       media_provider_type: 'local',
       source_location,
     }))
-    return `<a${htmlAttr('href', href)}${attrs}>${content}${error}</a>`;
+    let testData
+    if (ast) {
+      testData = getTestData(ast, context)
+    } else {
+      testData = ''
+    }
+    return `<a${htmlAttr('href', href)}${attrs}${testData}>${content}${error}</a>`;
   } else {
     // Don't create a link if we are a child of another link, as that is invalid HTML.
     return content;
@@ -3810,6 +3817,15 @@ function getRootRelpath(output_path, context) {
     root_relpath += URL_SEP;
   }
   return root_relpath
+}
+
+function getTestData(ast, context) {
+  let test_data_arg = ast.args[Macro.TEST_DATA_ARGUMENT_NAME]
+  if (test_data_arg === undefined) {
+    return ''
+  } else {
+    return htmlAttr(Macro.TEST_DATA_HTML_PROP, renderArg(test_data_arg, context))
+  }
 }
 
 function getTitleAndDescription({ title, description, source, inner }) {
@@ -3984,15 +4000,6 @@ function htmlRenderSimpleElem(elem_name, options={}) {
     }
     let content = renderArg(ast.args.content, context);
 
-    // testData
-    let test_data_arg = ast.args[Macro.TEST_DATA_ARGUMENT_NAME]
-    let test_data_attr;
-    if (test_data_arg === undefined) {
-      test_data_attr = ''
-    } else {
-      test_data_attr = htmlAttr(Macro.TEST_DATA_HTML_PROP, renderArg(test_data_arg, context))
-    }
-
     let res = ''
     const show_caption = ast.index_id || (ast.validation_output.description && ast.validation_output.description.given)
     let elem_attrs
@@ -4009,7 +4016,7 @@ function htmlRenderSimpleElem(elem_name, options={}) {
     } else {
       elem_attrs = `${extra_attrs_string}${attrs}`
     }
-    res += `<${elem_name}${elem_attrs}${test_data_attr}>${content}</${elem_name}>`;
+    res += `<${elem_name}${elem_attrs}${getTestData(ast, context)}>${content}</${elem_name}>`;
     if (show_caption) {
       res += `</div>`;
     }
@@ -7516,6 +7523,8 @@ const ANCESTORS_MAX = 6
 exports.ANCESTORS_MAX = ANCESTORS_MAX
 const AT_MENTION_CHAR = '@';
 exports.AT_MENTION_CHAR = AT_MENTION_CHAR;
+const FILE_ROOT_PLACEHOLDER = '(root)'
+exports.FILE_ROOT_PLACEHOLDER = FILE_ROOT_PLACEHOLDER
 const HTML_REF_MARKER = '<sup class="ref">[ref]</sup>'
 const INSANE_TOPIC_CHAR = '#';
 const WEB_API_PATH = 'api';
@@ -8758,6 +8767,7 @@ const OUTPUT_FORMATS_LIST = [
             attrs += ' target="_blank"'
           }
           return getLinkHtml({
+            ast,
             attrs,
             content,
             context,
@@ -9137,8 +9147,8 @@ const OUTPUT_FORMATS_LIST = [
 
           // {file} handling
           const renderPostAsts = []
-          const renderPostAstsContext = cloneAndSet(context, 'validateAst', true);
-          renderPostAstsContext.source_location = ast.source_location;
+          const renderPostAstsContext = cloneAndSet(context, 'validateAst', true)
+          renderPostAstsContext.source_location = ast.source_location
           if (ast.file && context.options.output_format) {
             let type, content
             if (ast.file.match(media_provider_type_youtube_re)) {
@@ -9148,24 +9158,67 @@ const OUTPUT_FORMATS_LIST = [
               ;({ type, content } = context.options.read_file(
                 path.join(indir, ast.file), context))
             }
+
+            // This section is about.
+            const pathArg = []
+            if (protocolIsGiven(ast.file)) {
+              pathArg.push(
+                new AstNode(AstType.MACRO,
+                  Macro.LINK_MACRO_NAME,
+                  {
+                    href: new AstArgument([
+                      new PlaintextAstNode(ast.file)
+                    ]),
+                  }
+                ),
+              )
+            } else {
+              let curp = ''
+              // Show (root) or not. It is a bit ugly, so going for not right now...
+              const showRoot = false
+              if (showRoot) {
+                pathArg.push(
+                  new AstNode(AstType.MACRO,
+                    Macro.LINK_MACRO_NAME,
+                    {
+                      content: new AstArgument([
+                        new PlaintextAstNode(FILE_ROOT_PLACEHOLDER)
+                      ]),
+                      href: new AstArgument([
+                        new PlaintextAstNode(URL_SEP)
+                      ]),
+                    }
+                  ),
+                )
+              }
+              for (const p of ast.file.split(URL_SEP)) {
+                if (!(!showRoot && curp === '')) {
+                  pathArg.push(new PlaintextAstNode(URL_SEP))
+                }
+                curp += `${URL_SEP}${p}`
+                const astNodeArgs = {
+                  content: new AstArgument([
+                    new PlaintextAstNode(p)
+                  ]),
+                  href: new AstArgument([
+                    new PlaintextAstNode(curp)
+                  ]),
+                }
+                if (context.options.add_test_instrumentation) {
+                  astNodeArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(ast.id + ID_SEPARATOR + curp)]
+                }
+                pathArg.push(new AstNode(AstType.MACRO, Macro.LINK_MACRO_NAME, astNodeArgs))
+              }
+            }
             renderPostAsts.push(new AstNode(AstType.MACRO, Macro.PARAGRAPH_MACRO_NAME, {
               content: new AstArgument([
                 new PlaintextAstNode(`This section is about the ${type}: `),
                 new AstNode(AstType.MACRO, 'b', {
-                  content: new AstArgument([
-                    new AstNode(AstType.MACRO,
-                      Macro.LINK_MACRO_NAME,
-                      {
-                        content: new AstArgument(),
-                        href: new AstArgument(
-                          [new PlaintextAstNode(ast.file)],
-                        ),
-                      }
-                    ),
-                  ])
+                  content: new AstArgument(pathArg)
                 }),
               ])
             }))
+
             if (IMAGE_EXTENSIONS.has(pathSplitext(ast.file)[1])) {
               renderPostAsts.push(new AstNode(
                 AstType.MACRO,

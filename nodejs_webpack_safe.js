@@ -298,10 +298,10 @@ WITH RECURSIVE
     WHERE t.from_id = ts.to_id AND type = :type
   )
   SELECT * FROM tree_search
-  ORDER BY level, from_id, to_id_index
 ) AS "RecRefs"
 ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
    AND "${this.sequelize.models.Id.tableName}".macro_name = '${cirodown.Macro.HEADER_MACRO_NAME}'
+ORDER BY "RecRefs".level, "RecRefs".from_id, "RecRefs".to_id_index
 `,
         { replacements: {
           starting_ids,
@@ -318,30 +318,30 @@ ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
   async fetch_ancestors(toplevel_id) {
     if (toplevel_id) {
       ;const [rows, meta] = await this.sequelize.query(`SELECT * FROM "${this.sequelize.models.Id.tableName}"
-  INNER JOIN (
-  WITH RECURSIVE
-    tree_search (to_id, level, from_id) AS (
-      SELECT
-        to_id,
-        0,
-        from_id
-      FROM "${this.sequelize.models.Ref.tableName}"
-      WHERE to_id = :toplevel_id AND type = :type
+INNER JOIN (
+WITH RECURSIVE
+  tree_search (to_id, level, from_id) AS (
+    SELECT
+      to_id,
+      0,
+      from_id
+    FROM "${this.sequelize.models.Ref.tableName}"
+    WHERE to_id = :toplevel_id AND type = :type
 
-      UNION ALL
+    UNION ALL
 
-      SELECT
-        ts.from_id,
-        ts.level + 1,
-        t.from_id
-      FROM "${this.sequelize.models.Ref.tableName}" t, tree_search ts
-      WHERE t.to_id = ts.from_id AND type = :type
-    )
-    SELECT * FROM tree_search
-    ORDER BY level DESC
-  ) AS "RecRefs"
-  ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."from_id"
-  `,
+    SELECT
+      ts.from_id,
+      ts.level + 1,
+      t.from_id
+    FROM "${this.sequelize.models.Ref.tableName}" t, tree_search ts
+    WHERE t.to_id = ts.from_id AND type = :type
+  )
+  SELECT * FROM tree_search
+) AS "RecRefs"
+ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."from_id"
+ORDER BY "RecRefs".level DESC
+`,
         { replacements: {
           toplevel_id,
           type: this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_PARENT],

@@ -167,16 +167,18 @@ it('api: create an article and see it on global feed', async () => {
     article = data.article
     assert.strictEqual(article.title, 'Title 0')
 
-    //// See it on global feed.
-    //;[res, data] = await sendJsonHttp({
-    //  server,
-    //  method: 'GET',
-    //  path: '/api/articles',
-    //  token,
-    //})
-    //assert.strictEqual(data.articles[0].title, 'My title 0')
-    //assert.strictEqual(data.articles[0].author.username, 'user0')
-    //assert.strictEqual(data.articlesCount, 1)
+    // See it on global feed.
+    ;[res, data] = await sendJsonHttp({
+      server,
+      method: 'GET',
+      path: '/api/articles',
+      token,
+    })
+    assert.strictEqual(data.articles[0].title, 'Title 0')
+    assert.strictEqual(data.articles[0].author.username, 'user0')
+    assert.strictEqual(data.articles[1].title, 'Index')
+    assert.strictEqual(data.articles[1].author.username, 'user0')
+    assert.strictEqual(data.articlesCount, 2)
 
     //// See the tags on the global feed.
     //;[res, data] = await sendJsonHttp({
@@ -200,14 +202,14 @@ it('api: create an article and see it on global feed', async () => {
     //  path: `/api/articles/${article.slug}`,
     //  body: {
     //    article: {
-    //      title: 'My title 0 hacked',
+    //      title: 'Title 0 hacked',
     //      tagList: ['tag0', 'tag2'],
     //    },
     //  },
     //  token,
     //})
     //assert.strictEqual(res.statusCode, 200)
-    //assert.strictEqual(data.article.title, 'My title 0 hacked')
+    //assert.strictEqual(data.article.title, 'Title 0 hacked')
 
     //// See it on global feed.
     //;[res, data] = await sendJsonHttp({
@@ -216,7 +218,7 @@ it('api: create an article and see it on global feed', async () => {
     //  path: '/api/articles',
     //  token,
     //})
-    //assert.strictEqual(data.articles[0].title, 'My title 0 hacked')
+    //assert.strictEqual(data.articles[0].title, 'Title 0 hacked')
     //assert.strictEqual(data.articles[0].author.username, 'user0')
     //assert.strictEqual(data.articlesCount, 1)
 

@@ -6,12 +6,13 @@ function getPage(page) {
   return page === undefined || page === 1 ? '' : `/${page}`
 }
 
-const encodeGetParamsWithPage = (opts) => {
+const encodeGetParamsWithPage = (opts, opts2={}) => {
   opts = Object.assign({}, opts)
   if (opts.page === 1) {
     delete opts.page
   }
-  if (opts.sort === 'createdAt') {
+  const defaultSort = opts2.defaultSort || 'createdAt'
+  if (opts.sort === defaultSort) {
     delete opts.sort
   }
   return encodeGetParams(opts)
@@ -20,16 +21,7 @@ const encodeGetParamsWithPage = (opts) => {
 module.exports = {
   home: () => `/`,
   articlesFollowed: (opts={}) => `/${encodeGetParamsWithPage(opts)}`,
-  articles: (opts={}) => {
-    let url
-    if (opts.loggedInUser) {
-      delete opts.loggedInUser
-      url = `/${escapeUsername}/articles`
-    } else {
-      url = `/`
-    }
-    return `${url}${encodeGetParamsWithPage(opts)}`
-  },
+  articles: (opts={}) => `/${escapeUsername}/articles/${encodeGetParamsWithPage(opts)}`,
   articleEdit: slug => `/${escapeUsername}/edit/${slug}`,
   articleNew: () => `/${escapeUsername}/new`,
   articleNewFrom: (slug) => `/${escapeUsername}/new/${slug}`,
@@ -47,6 +39,16 @@ module.exports = {
   userFollowing: (uid, opts={}) => `/${escapeUsername}/user/${uid}/following${encodeGetParamsWithPage(opts)}`,
   userFollowed: (uid, opts={}) => `/${escapeUsername}/user/${uid}/followed${encodeGetParamsWithPage(opts)}`,
   userLikes: (uid, opts={}) => `/${escapeUsername}/user/${uid}/likes${encodeGetParamsWithPage(opts)}`,
-  users: (opts={}) => `/${escapeUsername}/users${encodeGetParamsWithPage(opts)}`,
+  users: (opts={}) => `/${escapeUsername}/users${encodeGetParamsWithPage(opts, { defaultSort: 'score' })}`,
   topic: (id, opts={}) => `/${escapeUsername}/topic/${id}${encodeGetParamsWithPage(opts)}`,
+  topics: (opts={}) => {
+    let url
+    if (opts.loggedInUser) {
+      delete opts.loggedInUser
+      url = `/${escapeUsername}/topics`
+    } else {
+      url = `/`
+    }
+    return `${url}${encodeGetParamsWithPage(opts, { defaultSort: 'score' })}`
+  },
 }

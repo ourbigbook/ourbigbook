@@ -2,7 +2,7 @@ import Head from 'next/head'
 import React from 'react'
 import { useRouter } from 'next/router'
 
-import { AppContext, slugFromArray} from 'front'
+import { AppContext, ArticleIcon, TopicIcon, slugFromArray} from 'front'
 import ArticleList from 'front/ArticleList'
 import CustomLink from 'front/CustomLink'
 import LoadingSpinner from 'front/LoadingSpinner'
@@ -40,13 +40,13 @@ export const TopicPage = ({
   if (router.isFallback) { return <LoadingSpinner />; }
   return (
     <div className="topic-page content-not-ourbigbook">
-      <h1 className="ourbigbook-title" dangerouslySetInnerHTML={{ __html: topic.titleRender }}></h1>
+      <h1><TopicIcon /> <span className="ourbigbook-title" dangerouslySetInnerHTML={{ __html: topic.titleRender }} /></h1>
       <div className="tab-list">
         <CustomLink
           className={`tab-item${order === 'score' ? ' active' : ''}`}
           href={routes.topic(topicId, { sort: 'score' })}
         >
-          Top articles
+          <ArticleIcon /> Top articles
         </CustomLink>
         <CustomLink
           className={`tab-item${order === 'createdAt' ? ' active' : ''}`}

@@ -11,7 +11,7 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
   { query, req, res }
 ) => {
   const loggedInUser = await getLoggedInUser(req, res)
-  const [order, pageNum, err] = getOrderAndPage(req, query.page)
+  const [order, pageNum, err] = getOrderAndPage(req, query.page, { defaultOrder: 'score' })
   if (err) { res.statusCode = 422 }
   const offset = pageNum * articleLimit
   const { count: usersCount, rows: userRows } = await req.sequelize.models.User.findAndCountAll({
@@ -22,11 +22,11 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
   const users: UserType[] = await Promise.all(userRows.map(
     (user) => { return user.toJson(loggedInUser) }))
   const props: IndexPageProps = {
+    itemType: 'user',
     order,
     page: pageNum,
     users,
     usersCount,
-    what: 'users',
   }
   if (loggedInUser) {
     props.loggedInUser = await loggedInUser.toJson()

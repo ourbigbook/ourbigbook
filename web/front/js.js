@@ -9,8 +9,8 @@ function getClientIp(req) {
   return req.header('x-forwarded-for')
 }
 
-function getOrderAndPage(req, page) {
-  const [order, orderErr] = getOrder(req)
+function getOrderAndPage(req, page, opts={}) {
+  const [order, orderErr] = getOrder(req, opts)
   const [pageNum, pageErr] = getPage(page)
   let errs = []
   if (orderErr) {
@@ -22,11 +22,14 @@ function getOrderAndPage(req, page) {
   return [order, pageNum, errs.length ? errs : undefined]
 }
 
-function getOrder(req) {
+function getOrder(req, opts={}) {
   let sort = req.query.sort;
-  const default_ = 'createdAt'
+  const default_ = opts.defaultOrder || 'createdAt'
   if (sort) {
-    if (sort === 'createdAt' || sort === 'score') {
+    if (
+      sort === 'createdAt' ||
+      sort === 'score'
+    ) {
       return [sort]
     } else {
       return [default_, `Invalid sort value: '${sort}'`]

@@ -134,9 +134,6 @@ module.exports = (sequelize) => {
     sequelize,
     slug,
   }) {
-    if (limit === undefined) {
-      limit = config.articleLimit
-    }
     const include = [{
       model: sequelize.models.File,
       as: 'file',
@@ -161,7 +158,6 @@ module.exports = (sequelize) => {
       include,
       order,
       subQuery: false,
-      limit,
     })
   }
 

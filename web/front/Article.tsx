@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { SignupOrLogin } from 'front'
+import { IssueIcon, SignupOrLogin } from 'front'
 import Comment from 'front/Comment'
 import CommentInput from 'front/CommentInput'
 import { CommentType } from 'front/types/CommentType'
@@ -34,7 +34,7 @@ const Article = ({
     seeAllCreateNew = <>
       {latestIssues.length > 0 &&
         <>
-          <a href={routes.issues(article.slug)}><i className="ion-eye" /> See all { issuesCount } threads</a>.{' '}
+          <a href={routes.issues(article.slug)}><i className="ion-eye" /> See all { issuesCount } threads</a>{' '}
         </>
       }
       {loggedInUser
@@ -52,7 +52,7 @@ const Article = ({
     <div className="comments content-not-ourbigbook">
       {isIssue
         ? <>
-            <h2><i className="ion-ios-chatbubble" /> Comments ({ commentsCount })</h2>
+            <h2><IssueIcon /> Comments ({ commentsCount })</h2>
             <div className="comment-form-holder">
               <CommentInput {...{ comments, setComments, issueNumber: article.number, loggedInUser }}/>
             </div>
@@ -68,7 +68,7 @@ const Article = ({
             )}
           </>
         : <>
-            <h2><i className="ion-ios-chatbubble" /> Discussion ({ issuesCount })</h2>
+            <h2><IssueIcon /> Discussion ({ issuesCount })</h2>
             { seeAllCreateNew }
             { latestIssues.length > 0 ?
                 <>
@@ -79,7 +79,7 @@ const Article = ({
                     comments,
                     commentsCount,
                     issueArticle: article,
-                    isIssue: true,
+                    itemType: 'issue',
                     loggedInUser,
                     page: 0,
                     showAuthor: true,
@@ -92,7 +92,7 @@ const Article = ({
                     comments,
                     commentsCount,
                     issueArticle: article,
-                    isIssue: true,
+                    itemType: 'issue',
                     loggedInUser,
                     page: 0,
                     showAuthor: true,

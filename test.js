@@ -32,11 +32,7 @@ class MockFileProvider extends cirodown.FileProvider {
     this.id_index = {};
   }
 
-  async get_id(id) {
-    return this.id_index[id];
-  }
-
-  async get_path_entry(path) {
+  get_path_entry(path) {
     return this.path_index[path];
   }
 

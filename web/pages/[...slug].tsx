@@ -183,7 +183,5 @@ export default ArticlePage;
 // Server only.
 
 import { getStaticPathsArticle, getStaticPropsArticle } from "lib/article";
-import { revalidate } from "config";
-
 export const getStaticPaths = getStaticPathsArticle;
-export const getStaticProps = getStaticPropsArticle(revalidate, true);;
+export const getStaticProps = getStaticPropsArticle(true, true);

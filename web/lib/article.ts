@@ -1,14 +1,15 @@
 import { GetStaticProps, GetStaticPaths } from 'next'
-import sequelize from "lib/db";
+import sequelize from 'lib/db';
+import { fallback, revalidate } from 'config'
 
 export const getStaticPathsArticle: GetStaticPaths = async () => {
   return {
-    fallback: true,
+    fallback,
     paths: [],
   }
 }
 
-export function getStaticPropsArticle(revalidate?, addComments?) {
+export function getStaticPropsArticle(addRevalidate?, addComments?) {
   return async ({ params: { slug } }) => {
     const article = await sequelize.models.Article.findOne({
       where: { slug: slug.join('/') },
@@ -38,7 +39,7 @@ export function getStaticPropsArticle(revalidate?, addComments?) {
       })
       ret.props.comments = await Promise.all(comments.map(comment => comment.toJson()))
     }
-    if (revalidate !== undefined) {
+    if (addRevalidate) {
       ret.revalidate = revalidate
     }
     return ret;

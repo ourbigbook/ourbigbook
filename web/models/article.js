@@ -1,3 +1,5 @@
+const path = require('path')
+
 const cirodown = require('cirodown')
 const { DataTypes, Op } = require('sequelize')
 
@@ -55,13 +57,15 @@ module.exports = (sequelize) => {
           let extra_returns = {};
           const author = await article.getAuthor()
           const id = cirodown.title_to_id(article.title)
+          const input = modifyEditorInput(article.title, article.body)
           article.render = await cirodown.convert(
-            modifyEditorInput(article.title, article.body),
+            input,
             {
               body_only: true,
               html_x_extension: false,
               id_provider,
               input_path: `${cirodown.AT_MENTION_CHAR}${author.username}/${id}${cirodown.CIRODOWN_EXT}`,
+              path_sep: path.sep,
               read_include: (id) => {
                 const included_article = sequelize.models.Article.findOne({
                   where: { slug: Article.makeSlug(author.username, id) } }) 

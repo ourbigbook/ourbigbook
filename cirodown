@@ -360,6 +360,22 @@ let macro_list = [
     }
   ),
   new Macro(
+    'l',
+    [
+      new MacroArgument({
+        name: 'content',
+      }),
+    ],
+    function(ast, options, is_attr) {
+      return `<li${html_convert_attrs(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</li>`;
+    },
+    {
+      properties: {
+        phrasing: true,
+      }
+    }
+  ),
+  new Macro(
     'p',
     [
       new MacroArgument({
@@ -1134,7 +1150,18 @@ if (require.main === module) {
       console.error(JSON.stringify(extra_returns.ast, null, 2));
       console.error();
     }
-    for (const error of extra_returns.errors) {
+    let sorted_errors = extra_returns.errors.sort((a, b)=>{
+      if (a.line < b.line)
+        return -1;
+      if (a.line > b.line)
+        return 1;
+      if (a.column < b.column)
+        return -1;
+      if (a.column > b.column)
+        return 1;
+      return 0;
+    });
+    for (const error of sorted_errors) {
       console.error(error.toString());
     }
     process.exit(extra_returns.errors.length > 0);

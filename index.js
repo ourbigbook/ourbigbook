@@ -8225,19 +8225,21 @@ const OUTPUT_FORMATS_LIST = [
               // - include to file that does exists without embed includes before extracting IDs fails gracefully
               target_ast !== undefined
             ) {
-              // ToC entries always link to the same split/nosplit type, except for included sources.
-              // This might be handled more generally through: https://github.com/cirosantilli/ourbigbook/issues/146
-              // but for now we are just taking care of this specific and important ToC subcase.
-              let cur_context;
-              if (ast.source_location.path === target_ast.source_location.path) {
-                cur_context = clone_and_set(context, 'to_split_headers', context.in_split_headers);
-              } else {
-                cur_context = context;
-              }
+              // I had this at one point, but it was too confusing that \x links linked to split, and ToC to nonsplit.
+              // If we want to keep split self contained, then we have to do it everywhere I think, not just ToC.
+              //// ToC entries always link to the same split/nosplit type, except for included sources.
+              //// This might be handled more generally through: https://github.com/cirosantilli/ourbigbook/issues/146
+              //// but for now we are just taking care of this specific and important ToC subcase.
+              //let cur_context;
+              //if (ast.source_location.path === target_ast.source_location.path) {
+              //  cur_context = clone_and_set(context, 'to_split_headers', context.in_split_headers);
+              //} else {
+              //  cur_context = context;
+              //}
 
-              let content = x_text(target_ast, cur_context, {style_full: true, show_caption_prefix: false});
-              let href = x_href_attr(target_ast, cur_context);
-              const my_toc_id = toc_id(target_ast, cur_context);
+              let content = x_text(target_ast, context, {style_full: true, show_caption_prefix: false});
+              let href = x_href_attr(target_ast, context);
+              const my_toc_id = toc_id(target_ast, context);
               let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, html_escape_attr(my_toc_id));
               // The inner <div></div> inside arrow is so that:
               // - outter div: takes up space to make clicking easy
@@ -8253,13 +8255,13 @@ const OUTPUT_FORMATS_LIST = [
 
               let toc_href = html_attr('href', '#' + html_escape_attr(my_toc_id));
               ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
-              if (cur_context.options.split_headers) {
-                const link_to_split = link_to_split_opposite(target_ast, cur_context)
+              if (context.options.split_headers) {
+                const link_to_split = link_to_split_opposite(target_ast, context)
                 if (link_to_split) {
                   ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
                 }
               }
-              let parent_ast = target_ast.get_header_parent_asts(cur_context)[0];
+              let parent_ast = target_ast.get_header_parent_asts(context)[0];
               if (
                 // Possible on broken h1 level.
                 parent_ast !== undefined
@@ -8267,11 +8269,11 @@ const OUTPUT_FORMATS_LIST = [
                 let parent_href_target;
                 if (
                   parent_ast.header_tree_node !== undefined &&
-                  parent_ast.header_tree_node.get_level() === cur_context.header_tree_top_level
+                  parent_ast.header_tree_node.get_level() === context.header_tree_top_level
                 ) {
                   parent_href_target = Macro.TOC_ID;
                 } else {
-                  parent_href_target = toc_id(parent_ast, cur_context);
+                  parent_href_target = toc_id(parent_ast, context);
                 }
                 let parent_href = html_attr('href', '#' + parent_href_target);
                 let parent_body = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);

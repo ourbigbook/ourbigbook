@@ -334,7 +334,7 @@ function assert_convert_ast(
         const output = rendered_outputs[key];
         assert.notStrictEqual(output, undefined, `"${key}" not in ${Object.keys(rendered_outputs)}`);
         for (const xpath_expr of options.assert_xpath[key]) {
-          assert_xpath_main(xpath_expr, output.full, {message: key});
+          assert_xpath_main(xpath_expr, output.full, { message: key, main: false });
         }
       }
       for (const key in options.assert_not_xpath) {
@@ -344,6 +344,7 @@ function assert_convert_ast(
           assert_xpath_main(xpath_expr, output.full, {
             count: 0,
             message: key,
+            main: false,
           });
         }
       }
@@ -4587,11 +4588,11 @@ assert_convert_ast('header numbered argument',
     ],
     assert_xpath: {
       'tmp-6.html': [
-        "//*[@id='toc']//x:a[@href='tmp-7.html' and text()='1. tmp 7']",
-        "//*[@id='toc']//x:a[@href='tmp-8.html' and text()='1.1. tmp 8']",
+        "//*[@id='toc']//x:a[@href='index.html#tmp-7' and text()='1. tmp 7']",
+        "//*[@id='toc']//x:a[@href='index.html#tmp-8' and text()='1.1. tmp 8']",
       ],
       'tmp-7.html': [
-        "//*[@id='toc']//x:a[@href='tmp-8.html' and text()='1. tmp 8']",
+        "//*[@id='toc']//x:a[@href='index.html#tmp-8' and text()='1. tmp 8']",
       ],
     },
     extra_convert_opts: { split_headers: true },
@@ -4617,11 +4618,11 @@ assert_convert_ast('header numbered ourbigbook.json',
     ],
     assert_xpath: {
       'tmp-6.html': [
-        "//*[@id='toc']//x:a[@href='tmp-7.html' and text()='1. tmp 7']",
-        "//*[@id='toc']//x:a[@href='tmp-8.html' and text()='1.1. tmp 8']",
+        "//*[@id='toc']//x:a[@href='index.html#tmp-7' and text()='1. tmp 7']",
+        "//*[@id='toc']//x:a[@href='index.html#tmp-8' and text()='1.1. tmp 8']",
       ],
       'tmp-7.html': [
-        "//*[@id='toc']//x:a[@href='tmp-8.html' and text()='1. tmp 8']",
+        "//*[@id='toc']//x:a[@href='index.html#tmp-8' and text()='1. tmp 8']",
       ],
     },
     extra_convert_opts: {
@@ -5210,10 +5211,11 @@ assert_convert_ast('split headers have correct table of contents',
         // The Toc entries of split output headers automatically cull out a level
         // of the full number tree. E.g this entry is `2.1` on the toplevel ToC,
         // but on this sub-ToC it is just `1.`.
-        "//*[@id='toc']//x:a[@href='h1-2-1.html' and text()='1. h1 2 1']",
-        "//*[@id='toc']//x:a[@href='h1-2-1-1.html' and text()='1.1. h1 2 1 1']",
+        "//*[@id='toc']//x:a[@href='notindex.html#h1-2-1' and text()='1. h1 2 1']",
+        "//*[@id='toc']//x:a[@href='notindex.html#h1-2-1-1' and text()='1.1. h1 2 1 1']",
 
-        // ToC links in split headers have parent toc entry links.
+        // We have gone a bit back and forth on split vs nosplit here.
+        // Related: https://github.com/cirosantilli/ourbigbook/issues/146
         `//*[@id='toc']//*[@id='toc-h1-2-1']//x:a[@href='#toc' and text()=' \"h1 2\"']`,
         `//*[@id='toc']//*[@id='toc-h1-2-1-1']//x:a[@href='#toc-h1-2-1' and text()=' \"h1 2 1\"']`,
 
@@ -5280,7 +5282,7 @@ assert_lib('table of contents contains included headers numbered without embed i
         // Links to external source files keep the default split just like regular links.
         "//*[@id='toc']//x:a[@href='notindex2.html' and text()='1. Notindex2']",
         "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='1.1. Notindex2 h2']",
-        "//*[@id='toc']//x:a[@href='notindex-h2.html' and text()='2. Notindex h2']",
+        "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='2. Notindex h2']",
       ],
     },
   },
@@ -7453,8 +7455,9 @@ assert_cli(
         // OurBigBookExample renders in split header.
         "//x:blockquote[text()='A Ourbigbook example!']",
 
-        // ToC entries point to the split version of articles.
-        "//*[@id='toc']//x:a[@href='h2.html' and text()='2. h2']",
+        // We have gone back and forth on split vs nosplit here a bit.
+        // Related: https://github.com/cirosantilli/ourbigbook/issues/146
+        "//*[@id='toc']//x:a[@href='index.html#h2' and text()='2. h2']",
         // ToC entries of includes always point directly to the separate file.
         "//*[@id='toc']//x:a[@href='included-by-index.html' and text()='1. Included by index']",
         // TODO This is more correct with the `1. `. Maybe wait for https://github.com/cirosantilli/ourbigbook/issues/126

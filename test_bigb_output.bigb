@@ -300,6 +300,8 @@ Table with paragraph and list:
 
 <code In OurBigBookExample>
 
+<image Tank man standing in front of some tanks>
+
 \OurBigBookExample[[
 Hello
 
@@ -309,6 +311,10 @@ World
 Hello
 ``
 {title=In OurBigBookExample}
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{check=0}
+{titleFromSrc}
 ]]
 
 \Comment[[

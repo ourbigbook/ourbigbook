@@ -756,7 +756,7 @@ A link to another file: \\x[and-now-an-include]
       inputPath !== undefined &&
       input_path_is_file
     ) {
-      outfile = cirodown.output_path(inputPath, options.output_format, path.sep);
+      outfile = cirodown.output_path(inputPath, undefined, {}, options.output_format);
     }
   } else {
     outfile = commander.outfile;
@@ -795,9 +795,10 @@ A link to another file: \\x[and-now-an-include]
         tmpdir = path.join(publish_dir, TMP_DIRNAME);
         publish_out_dir = path.join(publish_dir, TMP_DIRNAME);
       }
-      if (outfile !== undefined) {
-        cli_error(`--outfile given but multiple output files must be generated, maybe you want --outdir?`);
-      }
+    }
+    let multiple_output_files = !input_path_is_file || commander.htmlSplitHeader;
+    if (multiple_output_files && outfile !== undefined) {
+      cli_error(`--outfile given but multiple output files wil be generated, maybe you want --outdir?`);
     }
 
     // Setup the ID database.

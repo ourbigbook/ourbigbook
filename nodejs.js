@@ -84,7 +84,15 @@ class SqliteIdProvider extends cirodown.IdProvider {
     ])
   }
 
-  async get_noscope_entries(ids, ignore_paths_set, options={}) {
+  add_row_to_id_cache(row) {
+    const ast = cirodown.AstNode.fromJSON(row.ast_json)
+    ast.input_path = row.path
+    ast.id = row.idid
+    this.id_cache[ast.id] = ast
+    return ast
+  }
+
+  async get_noscopes_base(ids, ignore_paths_set, options={}) {
     if (!('use_db' in options)) {
       // TODO remove this entirely, never use_db here.
       options.use_db = false
@@ -119,18 +127,14 @@ class SqliteIdProvider extends cirodown.IdProvider {
       if (non_cached_ids.length) {
         const rows = await this.sequelize.models.Id.findAll({ where })
         for (const row of rows) {
-          const ast = cirodown.AstNode.fromJSON(row.ast_json)
-          ast.input_path = row.path
-          ast.id = row.idid
-          non_cached_asts.push(ast)
-          this.id_cache[ast.id] = ast
+          non_cached_asts.push(this.add_row_to_id_cache(row))
         }
       }
     }
     return cached_asts.concat(non_cached_asts)
   }
 
-  async get_refs_to_warm_cache(types, to_ids, reversed=false) {
+  async get_refs_to_fetch(types, to_ids, reversed=false) {
     if (to_ids.length) {
       let to_id_key, other_key;
       if (reversed) {
@@ -140,6 +144,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
         to_id_key = 'to_id'
         other_key = 'from_id'
       }
+      const include_key = other_key.split('_')[0]
       const rows = await this.sequelize.models.Ref.findAll({
         where: {
           [to_id_key]: to_ids,
@@ -150,6 +155,12 @@ class SqliteIdProvider extends cirodown.IdProvider {
           'defined_at',
           to_id_key,
           'type',
+        ],
+        include: [
+          {
+            model: this.sequelize.models.Id,
+            as: include_key,
+          }
         ]
       })
       for (const row of rows) {
@@ -164,11 +175,12 @@ class SqliteIdProvider extends cirodown.IdProvider {
           to_id_key_dict[row.type] = to_id_key_dict_type
         }
         to_id_key_dict_type.push(row)
+        this.add_row_to_id_cache(row[include_key])
       }
     }
   }
 
-  get_refs_to(type, to_id, reversed=false) {
+  async get_refs_to(type, to_id, reversed=false) {
     let to_id_key, other_key;
     if (reversed) {
       to_id_key = 'from_id'

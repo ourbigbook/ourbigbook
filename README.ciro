@@ -4519,25 +4519,41 @@ Here we use PostgreSQL instead of SQLite with the prebuilt static frontend.
 For when you really need to debug some deployment stuff locally
 
 Setup:
-
 ``
 createdb node_express_sequelize_realworld
 psql -c "CREATE ROLE node_express_sequelize_realworld_user with login password 'a'"
 psql -c 'GRANT ALL PRIVILEGES ON DATABASE node_express_sequelize_realworld TO node_express_sequelize_realworld_user'
 echo "SECRET=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)" >> .env
+./bin/generate-demo-data.js
 npm run build
 ``
 
 Run:
 
 ``
-env $(cat .env | xargs) \
-NODE_ENV=production \
-DATABASE_URL='postgres://node_express_sequelize_realworld_user:a@localhost:5432/node_express_sequelize_realworld' \
-npm start
+npm run start-prod
 ``
 
 then visit the running website at: http://localhost:3000/
+
+To optionally nuke the database and create the demo data:
+``
+NODE_ENV=production DATABASE_URL='postgres://node_express_sequelize_realworld_user:a@localhost:5432/node_express_sequelize_realworld' ./bin/generate-demo-data.js --force-production
+``
+or alternatively to start from a clean database:
+``
+psql -c "DROP DATABASE node_express_sequelize_realworld"
+createdb node_express_sequelize_realworld
+psql -c 'GRANT ALL PRIVILEGES ON DATABASE node_express_sequelize_realworld TO node_express_sequelize_realworld_user'
+``
+
+= Local development run with PostgreSQL
+{parent=local-run-as-identical-to-deployment-as-possible}
+
+If you have determined that a bug is PostgreSQL specific, and it is easier to debug it interactively:
+``
+CIRODOWN_POSTGRES=true DATABASE_URL='postgres://node_express_sequelize_realworld_user:a@localhost:5432/node_express_sequelize_realworld' npmd
+``
 
 = Heroku deployment
 {c}

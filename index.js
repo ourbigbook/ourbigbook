@@ -73,7 +73,13 @@ class AstNode {
 
     // For elements that have an id.
     // {String} or undefined.
+    // Includes scope. Ideally, we should remove that requirement to not duplicate.
+    // the information. // But it will require a large hard refactor... lazy.
     this.id = options.id;
+
+    // Current running scope. This is inherited from the scope of the parent element.
+    // An element with {scope} set does not get this option set, only its children do.
+    this.scope = options.scope;
 
     // For elements that are of AstType.PLAINTEXT.
     this.text = options.text
@@ -250,6 +256,7 @@ class AstNode {
         first_toplevel_child: json.first_toplevel_child,
         is_first_header_in_input_file: json.is_first_header_in_input_file,
         header_graph_node_parent_id: json.header_graph_node_parent_id,
+        scope: json.scope,
       }
     );
     let nodes = [toplevel_ast];
@@ -283,6 +290,7 @@ class AstNode {
     const ret = {
       macro_name: this.macro_name,
       node_type:  symbol_to_string(this.node_type),
+      scope:      this.scope,
       source_location: this.source_location,
       text:       this.text,
       args:       this.args,
@@ -419,8 +427,12 @@ class IdProvider {
     if (id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
       return this.get_noscope(id.substr(1), context);
     } else {
-      if (header_graph_node !== undefined) {
-        let parent_scope_id = get_parent_scope_id(header_graph_node, context);
+      if (
+        header_graph_node !== undefined &&
+        header_graph_node.parent_node !== undefined &&
+        header_graph_node.parent_node.value !== undefined
+      ) {
+        let parent_scope_id = calculate_scope(header_graph_node.parent_node.value, context);
         if (parent_scope_id !== undefined) {
           let resolved_scope_id = this.get_noscope(
             parent_scope_id + Macro.HEADER_SCOPE_SEPARATOR + id, context);
@@ -1620,10 +1632,14 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
       let message = `reserved ID "${ast.id}"`;
       parse_error(state, message, ast.source_location);
     }
-    if (ast.id !== undefined && ast.header_graph_node) {
-      const parent_scope_id = get_parent_scope_id(ast.header_graph_node, context);
-      if (parent_scope_id !== undefined) {
-        ast.id = parent_scope_id + Macro.HEADER_SCOPE_SEPARATOR + ast.id
+    if (
+      ast.id !== undefined &&
+      ast.header_graph_node &&
+      ast.header_graph_node.parent_node !== undefined &&
+      ast.header_graph_node.parent_node.value !== undefined
+    ) {
+      if (ast.scope !== undefined) {
+        ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id
       }
     }
   }
@@ -1666,16 +1682,55 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
   }
 }
 
-/* Walk up to the first parent header that has a scope in it. */
-function calculate_scope_length(toplevel_ast, context) {
-  while (toplevel_ast !== undefined) {
-    if (
-      toplevel_ast.validation_output.scope !== undefined &&
-      toplevel_ast.validation_output.scope.boolean
-    ) {
-      return toplevel_ast.id.length + 1
+// Return the full scope of a given node. This includes the concatenation of both:
+// * any scopes of any parents
+// * the ID of the node if it has a scope set for itself
+// If none of those provide scopes, return undefined.
+function calculate_scope(ast, context) {
+  let parent_scope;
+  if (ast.scope !== undefined) {
+    parent_scope = ast.scope;
+  }
+
+  let self_scope;
+  if (
+      ast.validation_output.scope !== undefined &&
+      ast.validation_output.scope.boolean
+  ) {
+    self_scope = ast.id;
+    if (parent_scope !== undefined) {
+      self_scope = self_scope.substr(parent_scope.length + 1);
     }
-    toplevel_ast = toplevel_ast.get_header_parent(context);
+  } else {
+    self_scope = '';
+  }
+
+  let ret = '';
+  if (parent_scope !== undefined) {
+    ret += parent_scope;
+  }
+  if (
+    parent_scope !== undefined &&
+    self_scope !== ''
+  ) {
+    ret += Macro.HEADER_SCOPE_SEPARATOR;
+  }
+  if (self_scope !== '') {
+    ret += self_scope;
+  }
+  if (ret === '') {
+    return undefined;
+  }
+  return ret;
+}
+
+/* Calculate the length of the scope of a child header given its parent ast. */
+function calculate_scope_length(parent_ast, context) {
+  if (parent_ast !== undefined) {
+    let scope = calculate_scope(parent_ast, context);
+    if (scope !== undefined) {
+      return scope.length + 1;
+    }
   }
   return 0;
 }
@@ -2102,9 +2157,14 @@ function convert_init_context(options={}, extra_returns={}) {
   // Otherwise, derive the ID from the title.
   // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
   if (!('toplevel_id' in options)) { options.toplevel_id = undefined; }
-  if (!('toplevel_scope' in options)) {
-    // Set for files in subdirectories.
-    options.toplevel_scope = undefined;
+  if (!('toplevel_has_scope' in options)) {
+    // Set for files in subdirectories. Means that the toplevel header has {scope} set.
+    options.toplevel_has_scope = false;
+  }
+  if (!('toplevel_parent_scope' in options)) {
+    // Set for files in subdirectories. Means that the (faked non existent)
+    // parent toplevel header has {scope} set.
+    options.toplevel_parent_scope = undefined;
   }
   if (options.xss_unsafe === undefined) {
     const xss_unsafe = cirodown_json['xss-unsafe'];
@@ -2177,30 +2237,6 @@ function get_descendant_count(tree_node) {
   } else {
     return '';
   }
-}
-
-/** @return {Union[String,undefined]}
- *          If the node has a parent header with a scope, return the ID of that header.
- *          Otherwise, return undefined.
- */
-function get_parent_scope_id(header_graph_node, context) {
-  let cur_header_graph_node = header_graph_node.parent_node;
-  while (
-    // Possible in case of malformed document e.g. with
-    // non-integer header level.
-    cur_header_graph_node !== undefined &&
-    cur_header_graph_node.value !== undefined
-  ) {
-    if (cur_header_graph_node.value.validation_output.scope.boolean) {
-      // The ID of the first scoped parent already contains all further scopes prepended to it.
-      return cur_header_graph_node.value.id;
-    }
-    cur_header_graph_node = cur_header_graph_node.parent_node;
-  }
-  return undefined;
-  // TODO attempt for https://github.com/cirosantilli/cirodown/issues/116
-  // but broke image related stuff.
-  //return context.options.scope;
 }
 
 /** Convert a key value already fully HTML escaped strings
@@ -3076,12 +3112,14 @@ function parse(tokens, options, context, extra_returns={}) {
 
         // Create the header tree.
         if (is_first_header) {
+          console.error(options.toplevel_id);
           ast.id = options.toplevel_id;
-          // TODO need to generalize this to scope != id. Or create
-          // a fake header parent with scope. Or store a new property.
-          // that we can fake.
-          // ast.cur_header_graph_node.value.validation_output.scope.boolean 
-          //ast.scope = toplevel_scope
+          if (options.toplevel_has_scope) {
+            ast.validation_output.scope.boolean = true
+          }
+          if (options.toplevel_parent_scope !== undefined) {
+            ast.scope = options.toplevel_parent_scope;
+          }
           ast.is_first_header_in_input_file = true;
           is_first_header = false;
         }
@@ -3107,6 +3145,10 @@ function parse(tokens, options, context, extra_returns={}) {
         const parent_tree_node = include_options.header_graph_stack.get(cur_header_level - 1);
         if (parent_tree_node !== undefined) {
           parent_tree_node.add_child(cur_header_graph_node);
+          const parent_ast = parent_tree_node.value;
+          if (parent_ast !== undefined) {
+            ast.scope = calculate_scope(parent_ast, context);
+          }
         }
         const old_graph_node = include_options.header_graph_stack.get(cur_header_level);
         include_options.header_graph_stack.set(cur_header_level, cur_header_graph_node);
@@ -3486,6 +3528,9 @@ function parse(tokens, options, context, extra_returns={}) {
           cur_header_graph_node = ast.header_graph_node;
         } else {
           ast.header_graph_node = new HeaderTreeNode(ast, cur_header_graph_node);
+          if (cur_header_graph_node !== undefined) {
+            ast.scope = calculate_scope(cur_header_graph_node.value, context);
+          }
         }
 
         if (
@@ -4112,28 +4157,6 @@ function x_href_parts(target_id_ast, context) {
       }
     }
     fragment = remove_toplevel_scope(target_id_ast.id, toplevel_ast, context);
-    //if (
-    //  // The header was included inline into the current file.
-    //  context.include_path_set.has(target_input_path) ||
-    //  // The header is in the current file.
-    //  target_input_path == context.options.input_path ||
-    //  to_split_headers
-    //) {
-    //  fragment = remove_toplevel_scope(target_id_ast, context);
-    //} else {
-    //  const file_provider_ret = context.options.file_provider.get(target_input_path);
-    //  if (file_provider_ret === undefined) {
-    //    let message = `file not found on database: "${target_input_path}", needed for toplevel scope removal`;
-    //    render_error(context, message, target_id_ast.source_location);
-    //    return error_message_in_output(message, context);
-    //  } else {
-    //    if (file_provider_ret.toplevel_id === target_id_ast.id) {
-    //      fragment = target_id_ast.id;
-    //    } else {
-    //      fragment = target_id_ast.id.substr(file_provider_ret.toplevel_scope_cut_length);
-    //    }
-    //  }
-    //}
   }
 
   // return

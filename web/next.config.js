@@ -1,10 +1,10 @@
-const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
+//const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 
 module.exports = {
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    config.plugins.push(new MonacoWebpackPlugin({
-      languages: ['javascript', 'typescript'],
-    }))
+    //config.plugins.push(new MonacoWebpackPlugin({
+    //  languages: ['javascript', 'typescript'],
+    //}))
     return config
   },
 }

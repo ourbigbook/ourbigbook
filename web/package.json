@@ -24,6 +24,7 @@
   },
   "license": "AGPL-3.0",
   "dependencies": {
+    "@monaco-editor/react": "4.2.1",
     "@types/node": "14.0.27",
     "@types/react": "16.9.44",
     "axios": "0.19.2",
@@ -40,7 +41,6 @@
     "method-override": "2.3.5",
     "methods": "1.1.2",
     "monaco-editor": "0.26.1",
-    "monaco-editor-webpack-plugin": "4.1.1",
     "morgan": "1.7.0",
     "next": "11.0.1",
     "passport": "0.3.2",

@@ -195,7 +195,7 @@ const example_elem = document.getElementById('example');
 const root_elem = document.getElementsByClassName('cirodown-editor')[0];
 require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.26.1/min/vs' }});
 require(["vs/editor/editor.main"], () => {
-  cirodown_editor(root_elem, example_elem.textContent, monaco, cirodown, cirodown_runtime)
+  cirodown_editor(root_elem, example_elem.textContent, monaco, cirodown, cirodown_runtime.cirodown_runtime)
 })
 </script>
 </body>

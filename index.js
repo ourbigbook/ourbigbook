@@ -1925,6 +1925,7 @@ function convert(
     if (context.options.log['split-headers']) {
       console.error('split-headers non-split: ' + context.options.input_path);
     }
+    context.katex_macros = {};
     output = ast.convert(context);
     if (context.toplevel_output_path !== undefined) {
       context.extra_returns.rendered_outputs[context.toplevel_output_path] = output;

@@ -755,9 +755,9 @@ commander.option('--generate-redirects', 'http://cirosantilli.com/cirodown#redir
 commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown#help-macros', false);
 commander.option('-l, --log <log...>', 'http://cirosantilli.com/cirodown#log');
 commander.option('--no-html-x-extension', 'http://cirosantilli.com/cirodown#no-html-x-extension');
-commander.option('--no-db', 'ignore the ID database, mostly for testing https://cirosantilli.com/cirosantilli#internal-cross-file-references-internals');
-commander.option('--no-render', "only extract IDs, don't render: https://cirosantilli.com/cirosantilli#no-render");
-commander.option('-T, --no-render-timestamp', "don't skip render by timestamp: https://cirosantilli.com/cirosantilli#no-render-timestamp");
+commander.option('--no-db', 'ignore the ID database, mostly for testing https://cirosantilli.com/cirodown#internal-cross-file-references-internals');
+commander.option('--no-render', "only extract IDs, don't render: https://cirosantilli.com/cirodown#no-render");
+commander.option('-T, --no-render-timestamp', "don't skip render by timestamp: https://cirosantilli.com/cirodown#no-render-timestamp");
 commander.option('--outdir <outdir>', 'http://cirosantilli.com/cirodown#outdir');
 commander.option('-o, --outfile <outfile>', 'http://cirosantilli.com/cirodown#outfile');
 commander.option('-O, --output-format <output-format>', 'https://cirosantilli.com/cirodown#output-format', 'html');

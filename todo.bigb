@@ -37,9 +37,11 @@ https://ourbigbook.com/api/articles
 
 For user cirosantilli, just pushed cirosantilli.github.io at aa60ccb934bf9646d548e6b761489d31aec1a341, which has almost 7k articles.
 
-The PUT to https://ourbigbook.com/api/articles is taking about 4+s on ourbigbook.com "Waiting for server response".
+The PUT to https://ourbigbook.com/api/articles is taking about 3s to 4s on ourbigbook.com "Waiting for server response", 3.44s would be an average.
 
-Locally on sqlite is only 800 ms. TODO test locally on psql.
+Locally on sqlite is only 800 ms.
+
+TODO test locally on psql.
 
 This was after dynamic article tree, one suspicion is that it might be linked to maintaining the nested set state on a large set of articles. I really hope that's not it, as it would be hard to fix.
 

@@ -4,6 +4,7 @@ set -eu
 in="$1"
 out="${in%.*}.ciro"
 cp "$in" "$out"
+perl -pi -e 's/<<([^>]*)>>/\\x[\1]/g' "$out"
 perl -pi -e 's/xref2?:([^[]*)\[\]/\\x[\1]/g' "$out"
 perl -pi -e 's/xref2?:([^[]*)\[xrefstyle=full\]/\\x[\1]{full}/g' "$out"
 perl -pi -e 's/video2?::([^[]*)\[\]/\\Video[\1]/g' "$out"

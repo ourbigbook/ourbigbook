@@ -4,6 +4,11 @@
 
 == Issues
 
+=== Convert ordered list Ol to a boolean argument of unordered lists Ul
+{tag=File autogen}
+
+We are better than HTML, we have arguments! This is just a style matter, HTML was wrong to add it to content model.
+
 === Allow linking to auto-generated files
 {tag=File autogen}
 
@@ -1052,6 +1057,23 @@ The main issue with that is the possibly changing `_raw/js/matterjs/examples.htm
 Instead we should do the same handling as is currently done for `\a[]` and `\Image[]` on thes paths.
 
 == Closed issues
+
+=== Ordered list lost when rendering to bigb output format
+{tag=`bigb` output format}
+
+Added a commented out test to \a[test_bigb_output.bigb]:
+``
+\Ol[
+* p1
+* p2
+]
+``
+renders to just:
+``
+* p1
+* p2
+``
+Also it might be possible to get an extra newline due to this which breaks web upload, but we don't have a min repro currently.
 
 === Render large files on split headers
 {tag=File}

@@ -460,7 +460,8 @@ Macro.CODE_MACRO_NAME = 'c';
 Macro.HEADER_MACRO_NAME = 'h';
 Macro.ID_ARGUMENT_NAME = 'id';
 Macro.INCLUDE_MACRO_NAME = 'include';
-Macro.LINK_SELF = `(${UNICODE_LINK} link)`;
+Macro.LINK_SELF_SHORT = UNICODE_LINK;
+Macro.LINK_SELF = `(${Macro.LINK_SELF_SHORT} link)`;
 Macro.MATH_MACRO_NAME = 'm';
 Macro.PARAGRAPH_MACRO_NAME = 'p';
 Macro.PLAINTEXT_MACRO_NAME = 'plaintext';
@@ -1154,6 +1155,76 @@ function html_convert_attrs_id(
   return html_convert_attrs(ast, context, arg_names, custom_args);
 }
 
+/** Helper for the most common HTML function type that does "nothing magic":
+ * only has "id" as a possible attribute, and uses ast.args.content as the
+ * main element child.
+ */
+function html_convert_simple_elem(elem_name, options={}) {
+  if (!('attrs' in options)) {
+    options.attrs = {};
+  }
+  if (!('link_to_self' in options)) {
+    options.link_to_self = false;
+  }
+  if (!('newline_after_open' in options)) {
+    options.newline_after_open = false;
+  }
+  if (!('newline_after_close' in options)) {
+    options.newline_after_close = false;
+  }
+  if (!('wrap' in options)) {
+  // To get the left padding toplevel margin right, elements that have
+  // backtround color like code blocks or left hanging stuff like lists
+  // need a wrapper div. But some don't, like paragraphs, so we allow them
+  // to remove this wrapper as an optimization to get smaller HTML.
+    options.wrap = true;
+  }
+  let newline_after_open_str;
+  if (options.newline_after_open) {
+    newline_after_open_str = '\n';
+  } else {
+    newline_after_open_str = '';
+  }
+  let newline_after_close_str;
+  if (options.newline_after_close) {
+    newline_after_close_str = '\n';
+  } else {
+    newline_after_close_str = '';
+  }
+  return function(ast, context) {
+    let link_to_self;
+    if (!options.link_to_self || (ast.id === undefined)) {
+      link_to_self = '';
+    } else {
+      link_to_self = html_hide_hover_link(ast.id);
+    }
+    let attrs = html_convert_attrs_id(ast, context);
+    let extra_attrs_string = '';
+    for (const key in options.attrs) {
+      extra_attrs_string += html_attr(key, options.attrs[key]);
+    }
+    let content_ast = ast.args.content;
+    if (content_ast === undefined) {
+      content_ast = [new PlaintextAstNode(ast.line, ast.column, '')];
+    }
+    let do_wrap = options.wrap && !context.macros[ast.macro_name].properties.phrasing;
+    let link_to_self_in
+    if (do_wrap) {
+      link_to_self_in = ``;
+    } else {
+      link_to_self_in = link_to_self;
+    }
+    let content = convert_arg(content_ast, context);
+    let res = `<${elem_name}${extra_attrs_string}${attrs}>${link_to_self_in}${newline_after_open_str}${content}</${elem_name}>${newline_after_close_str}`;
+    // TODO this could be optimized further to only add the wrapper on toplevel direct children,
+    // but it would require tracking the parent elem on AstNode, which we don't do it.
+    if (do_wrap) {
+      res = html_wrap(link_to_self + res, 'div');
+    }
+    return res;
+  };
+}
+
 function html_escape_attr(str) {
   return html_escape_content(str)
     .replace(/"/g, '&quot;')
@@ -1182,55 +1253,13 @@ function html_escape_context(context, str) {
   }
 }
 
-/** Helper for the most common HTML function type that does "nothing magic":
- * only has "id" as a possible attribute, and uses ast.args.content as the
- * main element child.
- */
-function html_convert_simple_elem(elem_name, options={}) {
-  if (!('attrs' in options)) {
-    options.attrs = {};
-  }
-  if (!('link_to_self' in options)) {
-    options.link_to_self = false;
-  }
-  if (!('newline_after_open' in options)) {
-    options.newline_after_open = false;
-  }
-  if (!('newline_after_close' in options)) {
-    options.newline_after_close = true;
-  }
-  let newline_after_open_str;
-  if (options.newline_after_open) {
-    newline_after_open_str = '\n';
-  } else {
-    newline_after_open_str = '';
-  }
-  let newline_after_close_str;
-  if (options.newline_after_close) {
-    newline_after_close_str = '\n';
-  } else {
-    newline_after_close_str = '';
-  }
-  return function(ast, context) {
-    let link_to_self;
-    if (!options.link_to_self || (ast.id === undefined)) {
-      link_to_self = '';
-    } else {
-      let href = html_attr('href', '#' + html_escape_attr(ast.id));
-      link_to_self = `<span class="hide-hover"> <a${href}>${Macro.LINK_SELF}</a></span>\n`;
-    }
-    let attrs = html_convert_attrs_id(ast, context);
-    let extra_attrs = '';
-    for (const key in options.attrs) {
-      extra_attrs += html_attr(key, options.attrs[key]);
-    }
-    let content_ast = ast.args.content;
-    if (content_ast === undefined) {
-      content_ast = [new PlaintextAstNode(ast.line, ast.column, '')];
-    }
-    let content = convert_arg(content_ast, context);
-    return `<${elem_name}${attrs}>${newline_after_open_str}${content}${link_to_self}</${elem_name}>${newline_after_close_str}`;
-  };
+function html_hide_hover_link(id) {
+  let href = html_attr('href', '#' + html_escape_attr(id));
+  return `<span class="hide-hover"> <a${href}>${Macro.LINK_SELF_SHORT}</a></span>`;
+}
+
+function html_wrap(content, tag) {
+  return `<${tag}>${content}</${tag}>`
 }
 
 function macro_list_to_macros() {
@@ -2011,7 +2040,7 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       let attrs = html_convert_attrs_id(ast, context);
       let content = convert_arg(ast.args.content, context);
-      return `<pre${attrs}><code>${content}</code></pre>\n`;
+      return `<div>${html_hide_hover_link(ast.id)}<pre${attrs}><code>${content}</code></pre></div>\n`;
     },
   ),
   new Macro(
@@ -2190,7 +2219,7 @@ const DEFAULT_MACRO_LIST = [
       }
       if (do_show) {
         let href = html_attr('href', '#' + html_escape_attr(ast.id));
-        ret += `<div class="math-container"${attrs}>`;
+        ret += `<div class="math-container"${attrs}>${html_hide_hover_link(ast.id)}`;
         if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
           ret += `<div class="math-caption-container">\n`;
           ret += `<span class="math-caption">${Macro.x_text(ast, context)}</span>`;
@@ -2319,6 +2348,7 @@ const DEFAULT_MACRO_LIST = [
       {
         attrs: {'class': 'p'},
         link_to_self: true,
+        wrap: false,
       }
     ),
   ),
@@ -2345,7 +2375,12 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    html_convert_simple_elem('blockquote'),
+    html_convert_simple_elem(
+      'blockquote',
+      {
+        link_to_self: true
+      }
+    ),
   ),
   new Macro(
     'table',
@@ -2358,7 +2393,7 @@ const DEFAULT_MACRO_LIST = [
       let attrs = html_convert_attrs_id(ast, context);
       let content = convert_arg(ast.args.content, context);
       let ret = ``;
-      ret += `<div class="table-container"${attrs}>\n`;
+      ret += `<div class="table-container"${attrs}>${html_hide_hover_link(ast.id)}\n`;
       if (ast.id !== undefined) {
         // TODO not using caption because I don't know how to allow the caption to be wider than the table.
         // I don't want the caption to wrap to a small table size.

@@ -1,4 +1,5 @@
 $caption_margin_bottom: 5px;
+$p-margin-vert: 16px;
 $paragraph_margin_bottom: #c6538c;
 
 // Light
@@ -38,18 +39,26 @@ $target-background-color: #442222;
 
 background-color: $background-color;
 color: $color;
-padding-left: 15px;
+padding-left: 0;
 padding-right: 15px;
 .caption-prefix {
   font-weight: bold;
 }
 
-// Hide by default, show if last child of hovered element.
-.hide-hover:last-child {
+> * {
+  padding-left: 20px;
+}
+
+// Hide by default, show if first child of hovered element.
+.hide-hover:first-child {
   @include hidden;
 }
-:hover > .hide-hover:last-child {
+> :hover > .hide-hover:first-child {
   @include visible;
+}
+.hide-hover {
+  position: absolute;
+  left: 0;
 }
 
 // Highlight the element referred by the current hash
@@ -79,20 +88,26 @@ code {
   background-color: $code-background-color;
 }
 
+div.p {
+  margin-bottom: $p-margin-vert;
+  margin-top: $p-margin-vert;
+  // For the links.
+}
+
 // Figures.
 figure {
   margin-bottom: $paragraph_margin_bottom;
 }
 
 h1, h2, h3, h4, h5, h6 {
+  font-size: 24px;
+  margin: 20px 0 8px;
   > a:first-child {
     color: $color;
     &:visited {
       color: $color;
     }
   }
-  font-size: 24px;
-  margin: 20px 0 8px;
   a + span {
     @include hidden;
   }
@@ -104,6 +119,8 @@ h1, h2, h3, h4, h5, h6 {
 // Math.
 .katex { font-size: 1.5em; }
 .math-container {
+  margin-bottom: $p-margin-vert;
+  margin-top: $p-margin-vert;
   align-items: center;
   margin-bottom: $paragraph_margin_bottom;
   .math-caption-container {

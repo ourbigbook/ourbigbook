@@ -7,10 +7,9 @@ const util = require('util');
 
 const { Sequelize } = require('sequelize')
 
-const cirodown = require('cirodown')
-const cirodown_nodejs = require('cirodown/nodejs');
-const cirodown_nodejs_webpack_safe = require('cirodown/nodejs_webpack_safe');
-const models = require('cirodown/models');
+const cirodown = require('./index')
+const cirodown_nodejs_webpack_safe = require('./nodejs_webpack_safe');
+const models = require('./models');
 
 const PATH_SEP = cirodown.Macro.HEADER_SCOPE_SEPARATOR
 
@@ -336,7 +335,7 @@ function assert_error(description, input, line, column, path, options={}) {
   );
 }
 
-const testdir = path.join(__dirname, cirodown_nodejs.TMP_DIRNAME, 'test')
+const testdir = path.join(__dirname, cirodown_nodejs_webpack_safe.TMP_DIRNAME, 'test')
 fs.rmdirSync(testdir, { recursive: true});
 fs.mkdirSync(testdir);
 
@@ -425,7 +424,7 @@ function assert_executable(
     for (const xpath_expr of options.assert_xpath_stdout) {
       assert_xpath_main(
         xpath_expr,
-        out.stdout.toString(cirodown_nodejs.ENCODING),
+        out.stdout.toString(cirodown_nodejs_webpack_safe.ENCODING),
         {message: assert_msg},
       );
     }
@@ -433,7 +432,7 @@ function assert_executable(
       const assert_msg_xpath = `path should match xpath: ${relpath}\n\n` + assert_msg;
       const fullpath = path.join(tmpdir, relpath);
       assert.ok(fs.existsSync(fullpath), assert_msg_xpath);
-      const html = fs.readFileSync(fullpath).toString(cirodown_nodejs.ENCODING);
+      const html = fs.readFileSync(fullpath).toString(cirodown_nodejs_webpack_safe.ENCODING);
       for (const xpath_expr of options.assert_xpath[relpath]) {
         assert_xpath_main(xpath_expr, html, {message: assert_msg_xpath});
       }
@@ -442,7 +441,7 @@ function assert_executable(
       const assert_msg_xpath = `path should not match xpath: ${relpath}\n\n` + assert_msg;
       const fullpath = path.join(tmpdir, relpath);
       assert.ok(fs.existsSync(fullpath), assert_msg_xpath);
-      const html = fs.readFileSync(fullpath).toString(cirodown_nodejs.ENCODING);
+      const html = fs.readFileSync(fullpath).toString(cirodown_nodejs_webpack_safe.ENCODING);
       for (const xpath_expr of options.assert_not_xpath[relpath]) {
         assert_xpath_main(xpath_expr, html, {message: assert_msg_xpath, count: 0});
       }
@@ -611,10 +610,10 @@ function exec_assert_message(out, cmd, args, cwd, msg_extra) {
   }
   ret += `cmd: cd ${cwd} && ${cmd} ${args.join(' ')}
 stdout:
-${out.stdout.toString(cirodown_nodejs.ENCODING)}
+${out.stdout.toString(cirodown_nodejs_webpack_safe.ENCODING)}
 
 stderr:
-${out.stderr.toString(cirodown_nodejs.ENCODING)}`;
+${out.stderr.toString(cirodown_nodejs_webpack_safe.ENCODING)}`;
   return ret;
 }
 

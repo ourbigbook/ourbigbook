@@ -114,17 +114,17 @@ async function generateDemoData(params) {
 
   console.error('Article');
   const articleArgs = [];
-  for (let userIdx = 0; userIdx < nUsers; userIdx++) {
-    for (let i = 0; i < nArticlesPerUser; i++) {
-      const date = addDays(date0, i)
+  let dateI = 0
+  for (let i = 0; i < nArticlesPerUser; i++) {
+    for (let userIdx = 0; userIdx < nUsers; userIdx++) {
+      const date = addDays(date0, dateI)
+      dateI++
       const title = `My title ${i * (userIdx + 1)}`
       const articleArg = {
         title,
         authorId: users[userIdx].id,
         createdAt: date,
-        // TODO not taking effect, don't know how to do it from bulkCrate, only with instances:
-        // https://stackoverflow.com/questions/42519583/sequelize-updating-updatedat-manually
-        // https://github.com/sequelize/sequelize/issues/3759
+        // TODO not taking effect. Appears to be because of the hook.
         updatedAt: date,
         body: `\\i[Italic]
 

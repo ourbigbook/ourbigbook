@@ -4,8 +4,12 @@ async function getArticle(req, res) {
       where: { slug: req.query.id },
       include: [{ model: req.app.get('sequelize').models.User, as: 'author' }]
     })
-    if (!article)
-      res.status(404)
+    if (!article) {
+      throw new ValidationError(
+        [`Article slug not found: "${req.query.id}"`],
+        404,
+      )
+    }
     return article
   }
 }
@@ -27,20 +31,25 @@ function validatePositiveInteger(s) {
 }
 exports.validatePositiveInteger = validatePositiveInteger
 
+function validate(inputString, validator, msg='') {
+  let [val, ok] = validator(inputString)
+  if (ok) {
+    return val
+  } else {
+    throw new ValidationError(
+      [`validator ${validator.name} failed on ${msg}"${param}"`],
+      422,
+    )
+  }
+}
+exports.validate = validate
+
 function validateParam(obj, prop, validator, defaultValue) {
   let param = obj[prop]
   if (typeof param === 'undefined') {
     return defaultValue
   } else {
-    let [val, ok] = validator(param)
-    if (ok) {
-      return val
-    } else {
-      throw new ValidationError(
-        [`validator ${validator.name} failed on ${prop} = "${param}"`],
-        422,
-      )
-    }
+    return validate(param, validator, `${prop} = `)
   }
 }
 exports.validateParam = validateParam

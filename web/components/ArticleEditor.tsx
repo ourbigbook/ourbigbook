@@ -10,9 +10,9 @@ import ListErrors from "components/ListErrors";
 import { slugFromRouter } from "lib"
 import ArticleAPI from "lib/api/article";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
-import { modifyEditorInput } from "lib/shared";
 import routes from "routes";
 import { AppContext } from 'lib'
+import { modifyEditorInput } from 'shared';
 
 function editorReducer(state, action) {
   switch (action.type) {

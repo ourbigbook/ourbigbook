@@ -106,6 +106,7 @@ module.exports = (sequelize) => {
 
   User.prototype.toJson = async function(loggedInUser) {
     const ret = {
+      id: this.id,
       username: this.username,
       displayName: this.displayName,
       bio: this.bio === undefined ? '' : this.bio,
@@ -184,39 +185,39 @@ module.exports = (sequelize) => {
   }
 
   User.prototype.addLikeSideEffects = async function(article) {
-    await sequelize.transaction(async t => {
+    await sequelize.transaction(async transaction => {
       await Promise.all([
-        this.addLike(article.id, { transaction: t }),
-        article.getAuthor().then(author => author.increment('articleScoreSum', { transaction: t })),
-        article.increment('score', { transaction: t }),
+        this.addLike(article.id, { transaction }),
+        article.getAuthor({ transaction }).then(author => author.increment('articleScoreSum', { transaction })),
+        article.increment('score', { transaction }),
       ])
     })
   }
 
   User.prototype.removeLikeSideEffects = async function(article) {
-    await sequelize.transaction(async t => {
+    await sequelize.transaction(async transaction => {
       await Promise.all([
-        this.removeLike(article.id, { transaction: t }),
-        article.getAuthor().then(author => author.decrement('articleScoreSum', { transaction: t })),
-        article.decrement('score', { transaction: t }),
+        this.removeLike(article.id, { transaction }),
+        article.getAuthor().then(author => author.decrement('articleScoreSum', { transaction })),
+        article.decrement('score', { transaction }),
       ])
     })
   }
 
   User.prototype.addFollowSideEffects = async function(otherUser) {
-    await sequelize.transaction(async t => {
+    await sequelize.transaction(async transaction => {
       await Promise.all([
-        this.addFollow(otherUser.id, { transaction: t }),
-        otherUser.increment('followerCount', { transaction: t }),
+        this.addFollow(otherUser.id, { transaction }),
+        otherUser.increment('followerCount', { transaction }),
       ])
     })
   }
 
   User.prototype.removeFollowSideEffects = async function(otherUser) {
-    await sequelize.transaction(async t => {
+    await sequelize.transaction(async transaction => {
       await Promise.all([
-        this.removeFollow(otherUser.id, { transaction: t }),
-        otherUser.decrement('followerCount', { transaction: t }),
+        this.removeFollow(otherUser.id, { transaction }),
+        otherUser.decrement('followerCount', { transaction }),
       ])
     })
   }

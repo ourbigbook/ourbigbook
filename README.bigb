@@ -5,9 +5,9 @@
 https://ourbigbook.com source code + a compatible local CLI static wiki generator and markup language to write complex structured wikis/books/blogs with reference implementation in JavaScript.
 
 This repository (The OurBigBook Project) contains two main things:
-* \x[ourbigbook-cli]: a static Wiki generator that can be invoked from the command line with the \x[ourbigbook-executable]. The OurBigBook CLI calls the OurBigBook Library to convert each input file.
+* \x[ourbigbook-cli]: a static Wiki generator that can be invoked from the command line with the \x[ourbigbook-executable]. The OurBigBook CLI calls the \x[ourbigbook-library] to convert each input file.
 
-  The markup language used is called OurBigBook Markup (file extension: `.bigb`), and it is compatible with https://ourbigbook.com[], TODO support import/export to/from https://ourbigbook.com[] to local filesystem.
+  The markup language used is called \x[ourbigbook-markup] (file extension: `.bigb`), and it is compatible with https://ourbigbook.com[], TODO support import/export to/from https://ourbigbook.com[] to local filesystem.
 * \x[ourbigbook-web]: the source code of https://ourbigbook.com[], which is a regular database-backed dynamic website. This is basically separate package that depends on the OurBigBook Library:
   * information about OurBigBook Web is present at: \x[ourbigbook-web]{full}
   * the source code of the OurBigBook Web is present under `web/`
@@ -572,12 +572,24 @@ The key limitations have repeatedly annoyed Ciro were:
 * cannot go over header level 6, addressed at: \x[unlimited-header-levels]
 * the need for \x[split-headers] to avoid one too large HTML output that will never get indexed properly by search engines, and takes a few seconds to load on any browser, which is unacceptable user experience
 
-= Macro
+= OurBigBook Markup
+{c}
 {parent=ourbigbook}
+
+OurBigBook Markup is the markup language used in the \x[ourbigbook] project.
+
+It works both on the \x[ourbigbook-web] dynamic website, and on \x[ourbigbook-cli] static websites from the command line.
+
+= Macro
+{parent=ourbigbook-markup}
 
 This section documents all OurBigBook macros.
 
-The general macro syntax is described at \x[ourbigbook-syntax]{full}.
+Macros are magic commands that do cool stuff, e.g. `\Image` to create an image.
+
+The most common macros also have \x[insane-macro-shortcuts] to keep the syntax shorter.
+
+The general macro syntax is described at \x[ourbigbook-markup-syntax]{full}.
 
 = Link
 {parent=macro}
@@ -4060,12 +4072,12 @@ but later on we might add more precise reference fields like the page of a book 
 
 Implemented at: https://github.com/cirosantilli/ourbigbook/issues/137
 
-= OurBigBook syntax
+= OurBigBook Markup syntax
 {c}
-{parent=ourbigbook}
+{parent=ourbigbook-markup}
 
 = Insane macro shortcuts
-{parent=ourbigbook-syntax}
+{parent=ourbigbook-markup-syntax}
 
 = Insane syntax
 {synonym}
@@ -4182,7 +4194,7 @@ nice
 ]]
 
 = Macro argument syntax
-{parent=ourbigbook-syntax}
+{parent=ourbigbook-markup-syntax}
 
 = Positional vs named arguments
 {parent=macro-argument-syntax}
@@ -4544,8 +4556,14 @@ AstNode: H
         AstNode: x
 ``
 
-=== `auto_parent` macro property
+= OurBigBook Markup concepts
+{parent=ourbigbook-markup}
+
+These are shared concepts that are used across other sections.
+
+= `auto_parent` macro property
 {id=auto-parent}
+{parent=ourbigbook-markup-concepts}
 
 Some sequences of macros such as `l` from \x[list]{p} and `tr` from \x[table]{p} automatically generate implicit parents, e.g.:
 ``
@@ -4564,7 +4582,8 @@ The children are always added as arguments of the `content` argument of the impl
 
 If present, the `auto_parent` macro property determines which auto-parent gets added to those macros.
 
-=== Block vs inline macros
+= Block vs inline macros
+{parent=ourbigbook-markup-concepts}
 
 Every OurBigBook macro is either block or inline:
 * a block macro is one that takes up the entire line when rendered
@@ -4579,7 +4598,8 @@ Some macros have both a block and an inline version, and like any other macro, t
 * \x[code-block]{p}
 * \x[comment]{p}
 
-=== Known URL protocols
+= Known URL protocols
+{parent=ourbigbook-markup-concepts}
 
 Certain common URL protocols are treated as "known" by OurBigBook, and when found they have special effects in some parts of the conversion.
 
@@ -4591,8 +4611,9 @@ Effects of known protocols include:
 * \x[insane-link-parsing-rules]: mark the start of insane links
 * \x[store-images-in-a-separate-media-repository]: mark an image `src` to ignore `provider`
 
-=== JavaScript case conversion
+= JavaScript case conversion
 {c}
+{parent=ourbigbook-markup-concepts}
 
 Some parts of OurBigBook use "JavaScript case conversion".
 
@@ -4604,45 +4625,9 @@ The most important fact about those functions is that they do convert non-ASCII 
 
 These conversions are also specified in the Unicode standard.
 
-=== Security
-
-= `--unsafe-ace`
-{parent=security}
-
-OurBigBook is designed to not allow arbitrary code execution by default on any OurBigBook command.
-
-This means that it it should be safe to just download any OurBigBook repository, and convert it with the OurBigBook executable, even if you don't trust its author.
-
-This option enables actions that would allow such code execution, so you should only pass it if you trust the repository author. Enabled functionality includes:
-* \x[ourbigbook-json/prepublish]
-
-Note however that you have to be careful in general, since e.g. a malicious author could create a package with their own malicious version of the `ourbigbook` executable, that you could unknowingly run with with the standard `npx ourbigbook` execution.
-
-= unsafe-xss
-{title2=`--unsafe-xss`}
-{parent=security}
-
-OurBigBook HTML output is designed to be XSS safe by default, any non-XSS safe constructs must be enabled with a non-default flag or setting, see: \x[unsafe-xss].
-
-Of course, we are walking on eggs, and this is hard to assert, so the best thing to do later on will be to parse the output e.g. with https://developer.mozilla.org/en-US/docs/Web/API/DOMParser[`DOMParser`] to ensure that it is valid and does not contain any `script` tags, but it is not as simple as that: https://stackoverflow.com/questions/37435077/execute-javascript-for-xss-without-script-tags/61588322#61588322
-
-XSS unsafe constructs lead to errors by default. XSS unsafe constructs can be allowed \x[ourbigbook-executable][from the command] line with:
-``
-./ourbigbook --unsafe-xss
-``
-or from the \x[ourbigbook-json] file with an entry of form:
-``
-"unsafe-xss": true
-``
-
-= Tooling
-{parent=ourbigbook}
-
-Unlike all languages which rely on ad-hoc tooling, we will support every single tool that is required and feasible to be in this repository in this repository, in a centralized manner.
-
 = OurBigBook CLI
 {c}
-{parent=tooling}
+{parent=ourbigbook}
 
 = `ourbigbook` executable
 {title2}
@@ -5416,6 +5401,13 @@ Defined variables:
 
 We pick Liquid because it is server-side safe: if we ever some day offer a compilation service, Liquid is designed to prevent arbitrary code execution and infinite loops in templates.
 
+= `--unsafe-ace`
+{parent=ourbigbook-cli-options}
+{tag=security}
+
+This option enables actions that would allow \x[arbitrary-code-execution], so you should only pass it if you trust the repository author. Enabled functionality includes:
+* \x[ourbigbook-json/prepublish]
+
 = `ourbigbook.json`
 {parent=ourbigbook-cli}
 {scope}
@@ -5683,8 +5675,13 @@ In this case, `cirodown` and `ourbigbook` don't have to be any regular IDs prese
 
 TODO ideally we should check for conflicts with regular output from split headers IDs or their synonyms. But lazy.
 
+= OurBigBook Library
+{parent=ourbigbook}
+
 = JavaScript API
-{parent=tooling}
+{c}
+{title2}
+{synonym}
 
 The main entry point for the JavaScript API is the `ourbigbook.convert` function.
 
@@ -5693,21 +5690,13 @@ An example can be seen under \a[api_hello.js].
 Note that while doing a simple conversion is easy, things get harder if you want to take multifile features in consideration, notably \x[internal-cross-file-reference-internals].
 
 This is because these features require interacting with the \x[id-database], and we don't do that from the default `ourbigbook.convert` API because different deployments will have very different implementations, notably:
-* local Node.js run uses sqlite, an implementation can be seen in the \a[ourbigbook] file class `SqliteIdProvider` and `SqliteFileProvider`
+* local Node.js run uses SQLite, an implementation can be seen in the \a[ourbigbook] file class `SqliteIdProvider` and `SqliteFileProvider`
 * the in-browser version that runs in the browser editor of the \x[ourbigbook-web] makes API calls to the server
-
-= Conversion to/from other formats
-{parent=tooling}
-
-The only thing we have for now is the quick and dirty \a[adoc-to-ciro].
-
-The better approach would be to implement a converter in Haskell from anything to OurBigBook.
-
-And from OurBigBook to anything, create new output formats inside OurBigBook to those other formats.
 
 = OurBigBook Web
 {c}
-{parent=tooling}
+{parent=ourbigbook}
+{title2=OurBigBook.com}
 
 = Dynamic website
 {title2}
@@ -5840,7 +5829,12 @@ But otherwise you will just normally use the \x[local-run-as-identical-to-deploy
 ``
 npm run build-dev-nodeps
 ``
-instead, which builds only the stuf under `web/`.
+instead, which builds only the stuff under `web/`.
+
+TypeScript type checking an also be run in isolation as mentioned at \x[ourbigbook-web-typescript-type-checking]{full} with:
+``
+npm run typecheck
+``
 
 = Local run as identical to deployment as possible
 {parent=ourbigbook-web}
@@ -6157,6 +6151,36 @@ The tests include two broad classes of tests:
 * smaller unit tests that only call certain functions directly
 * TODO: create frontend tests: https://github.com/cirosantilli/node-express-sequelize-nextjs-realworld-example-app/issues/11
 
+= OurBigBook Web TypeScript type checking
+{parent=ourbigbook-web}
+
+TypeScript type checking of \x[ourbigbook-web] is run automatically during build, e.g. by:
+``
+npm run build-dev
+``
+as mentioned at \x[local-optimized-frontend].
+
+To speed up the development loop further, you can run just the TypeScript type checking with:
+``
+cd web
+nmp run typecheck
+``
+The output format is also a bit nicer that what is shown in `npm run build-dev`.
+
+= Tooling
+{parent=ourbigbook}
+
+Unlike all languages which rely on ad-hoc tooling, we will support every single tool that is required and feasible to be in this repository in this repository, in a centralized manner.
+
+= Conversion to/from other formats
+{parent=tooling}
+
+The only thing we have for now is the quick and dirty \a[adoc-to-ciro].
+
+The better approach would be to implement a converter in Haskell from anything to OurBigBook.
+
+And from OurBigBook to anything, create new output formats inside OurBigBook to those other formats.
+
 = Editor support
 {parent=tooling}
 
@@ -6347,6 +6371,37 @@ error: tmp.bigb:3:3: cross reference to unknown id: "b"
 error: tmp.bigb:4:3: cross reference to unknown id: "b"
 error: tmp.bigb:5:3: cross reference to unknown id: "b"
 ...
+``
+
+= Security
+{parent=ourbigbook}
+
+= Arbitrary code execution
+{parent=security}
+
+OurBigBook is designed to not allow arbitrary code execution by default on any \x[ourbigbook-cli] command.
+
+This means that it it should be safe to just download any untrusted OurBigBook repository, and convert it with the \x[ourbigbook-executable], even if you don't trust its author.
+
+In order to allow code execution for pre/post processing tasks e.g. from \x[ourbigbook-json/prepublish], use the \x[unsafe-ace] option.
+
+Note however that you have to be careful in general, since e.g. a malicious author could create a package with their own malicious version of the `ourbigbook` executable, that you could unknowingly run with with the standard `npx ourbigbook` execution.
+
+= unsafe-xss
+{title2=`--unsafe-xss`}
+{parent=security}
+
+OurBigBook HTML output is designed to be XSS safe by default, any non-XSS safe constructs must be enabled with a non-default flag or setting, see: \x[unsafe-xss].
+
+Of course, we are walking on eggs, and this is hard to assert, so the best thing to do later on will be to parse the output e.g. with https://developer.mozilla.org/en-US/docs/Web/API/DOMParser[`DOMParser`] to ensure that it is valid and does not contain any `script` tags, but it is not as simple as that: https://stackoverflow.com/questions/37435077/execute-javascript-for-xss-without-script-tags/61588322#61588322
+
+XSS unsafe constructs lead to errors by default. XSS unsafe constructs can be allowed \x[ourbigbook-executable][from the command] line with:
+``
+./ourbigbook --unsafe-xss
+``
+or from the \x[ourbigbook-json] file with an entry of form:
+``
+"unsafe-xss": true
 ``
 
 = Developing OurBigBook

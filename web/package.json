@@ -24,7 +24,8 @@
     "start-prod": "./prod.sh npm start",
     "test": "NODE_ENV=test mocha test --ignore-leaks test.js",
     "test-api": "./realworld/api/run-api-tests.sh",
-    "test-pg": "OURBIGBOOK_POSTGRES=true npm test --"
+    "test-pg": "OURBIGBOOK_POSTGRES=true npm test --",
+    "typecheck": "tsc"
   },
   "repository": {
     "type": "git",

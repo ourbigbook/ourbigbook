@@ -1,10 +1,28 @@
 #!/usr/bin/env node
 
 const assert = require('assert');
+const util = require('util');
+
 const cirodown = require('./cirodown')
 
-var assert_convert = function(input_string, output_string) {
-  assert.strictEqual(cirodown.convert(input_string), output_string);
+var assert_convert = function(input_string, expected_output) {
+  let output = cirodown.convert(input_string);
+  if (output != expected_output) {
+    console.log('input ' + util.inspect(input_string));
+    console.log('output ' + util.inspect(output));
+    console.log('expect ' + util.inspect(expected_output));
+    assert.strictEqual(output, expected_output);
+  }
 }
+
+// Paragraphs.
 assert_convert('ab\n', '<p>ab</p>\n')
 assert_convert('p1\n\np2\n', '<p>p1</p>\n<p>p2</p>\n')
+
+// Links.
+assert_convert('a \\a[http://example.com][example link] b\n', '<p>a <a href="http://example.com">example link</a></p>\n')
+assert_convert('a \\a[http://example.com][] b\n', '<p>a <a href="http://example.com">http://example.com</a></p>\n')
+assertconvert(
+  '\\a[http://example.com][Multiple\n\nparagraphs]',
+  '<p>a <a href="http://example.com"><p>Multiple</p>\n<p>paragraphs</p></a></p>\n'
+)

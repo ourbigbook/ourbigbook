@@ -3076,7 +3076,7 @@ We must achieve an editor setup with synchronized live side-by-side preview.
 
 Likely, we will first do a non WYSIWYG editor with side by side preview with scroll sync.
 
-Then, if the project picks up steam, we can start considering a full WYSISYG.
+Then, if the project picks up steam, we can start considering a full WYSIWYG.
 
 It would be amazing to have a WebKit interface that works both on browser for the and locally.
 
@@ -3084,11 +3084,13 @@ Possibilities we could reuse:
 * Editor.js
 
   Returns JSON AST!
-  * website: https://editorjs.io/ json output
+
+  * website: https://editorjs.io/
   * source: https://github.com/codex-team/editor.js
-  * WYSIWYG: no
+  * WYSIWYG: yes
   * preview scroll sync: yes
 * StackEdit
+  * markup implementation: PageDown
   * website: https://stackedit.io
   * source: https://github.com/benweet/stackedit
   * demo: https://stackedit.io/app
@@ -3100,9 +3102,18 @@ Possibilities we could reuse:
   * demo: https://pandao.github.io/editor.md
   * WYSIWYG: no
   * preview scroll sync: yes but buggy when tested 2019-12-12 on live website
+* https://github.com/markdown-it/markdown-it[markdown-it]
+
+  Custom editor and highlight via https://github.com/highlightjs/highlight.js/[highlight.js].
+
+  * markup implementation: custom
+  * website: https://markdown-it.github.io
+  * source: https://github.com/markdown-it/markdown-it
+  * WYSIWYG: no
+  * preview scroll sync: yes
 * Quill.md
   * website: https://quilljs.com
-  * source: https://github.com/pandao/editor.md
+  * source: https://github.com/quilljs/quill/
   * demo: https://pandao.github.io/editor.md
   * WYSIWYG: yes
   * markdown output: no https://github.com/quilljs/quill/issues/74
@@ -3274,6 +3285,16 @@ On Ubuntu 20.04 \a[https://cirosantilli.com/linux-kernel-module-cheat/#p51][Leno
   sys     0m0.021s
   ``
   Holy cow, it is 200x faster than Asciidoctor!
+* https://github.com/markdown-it/markdown-it[markdown-it] at 5789a3fe9693aa3ef6aa882b0f57e0ea61efafc0 to get an idea of a JavaScript markdown implementation:
+  ``
+  time markdown-it /home/ciro/bak/git/cirodown/tmp.md > tmp.md.html
+  ``
+  outputs:
+  ``
+  real    0m0.361s
+  user    0m0.590s
+  sys     0m0.060s
+  ``
 * `cat` just to find the absolute floor:
   ``
   time cat tmp.ciro > tmp.tmp

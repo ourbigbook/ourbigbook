@@ -1,5 +1,6 @@
 import React from 'react'
 
+import { AppContext } from 'front'
 import ArticleList from 'front/ArticleList'
 import CustomLink from 'front/CustomLink'
 import ErrorMessage from 'front/ErrorMessage'
@@ -39,6 +40,8 @@ const IndexPage = ({
       paginationUrlFunc = routes.articlesLatestFollowed
       break
   }
+  const { setTitle } = React.useContext(AppContext)
+  React.useEffect(() => { setTitle('') }, [])
   return (
     <div className="home-page content-not-ourbigbook">
       <div className="tab-list">

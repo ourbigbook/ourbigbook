@@ -99,11 +99,10 @@ class MockFileProvider extends cirodown.FileProvider {
     const context = extra_returns.context;
     const entry = {
       path: input_path,
-      toplevel_scope_cut_length: context.toplevel_scope_cut_length,
-      toplevel_id: context.toplevel_id,
+      toplevel_id: context.toplevel_ast.id,
     };
     this.path_index[input_path] = entry;
-    this.id_index[context.toplevel_id] = entry;
+    this.id_index[context.toplevel_ast.id] = entry;
   }
 }
 
@@ -1969,7 +1968,7 @@ assert_convert_ast('cross reference to non-included file with toplevel scope',
     assert_xpath_split_headers: {
       'notindex-split.html': [
         "//x:a[@href='toplevel-scope.html#image-h1' and text()='image h1']",
-        "//x:a[@href='toplevel-scope.html/h2.html#image-h2' and text()='image h2']",
+        "//x:a[@href='toplevel-scope/h2.html#image-h2' and text()='image h2']",
       ],
     },
     convert_before: ['toplevel-scope'],

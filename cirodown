@@ -389,7 +389,7 @@ function convert_path(base_path, input_path, options, convert_input_options) {
     );
     const insert_file_stmt = convert_input_options.db.prepare(
       `INSERT OR REPLACE INTO '${convert_input_options.files_table_name}' ` +
-      `(path, toplevel_scope_cut_length, toplevel_id) VALUES (?, ?, ?);`
+      `(path, toplevel_id) VALUES (?, ?);`
     );
     if (convert_input_options.commander.debugPerf) {
       console.error(`perf convert_path_pre_sqlite_transaction ${performance.now()}`);
@@ -406,10 +406,13 @@ function convert_path(base_path, input_path, options, convert_input_options) {
           insert_include_stmt.run(header_ast.id, header_ast.source_location.path, include);
         }
       }
+      let toplevel_id;
+      if (context.toplevel_ast !== undefined) {
+        toplevel_id = context.toplevel_ast.id;
+      }
       insert_file_stmt.run(
         input_path,
-        context.toplevel_scope_cut_length,
-        context.toplevel_id
+        toplevel_id
       );
     })();
     if (convert_input_options.commander.debugPerf) {
@@ -803,7 +806,6 @@ A link to another file: \\x[and-now-an-include]
         db.prepare(`
           CREATE TABLE '${files_table_name}' (
             path TEXT PRIMARY KEY,
-            toplevel_scope_cut_length INT,
             toplevel_id TEXT UNIQUE
           )`
         ).run();

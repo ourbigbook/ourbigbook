@@ -371,9 +371,10 @@ div.tab-list {
   margin: 5px 0 10px;
   overflow: hidden;
   .tab-item {
+    border-radius: 5px;
     line-height: 1.5em;
     overflow: hidden;
-    padding-right: 10px;
+    padding: 5px;
     // TODO https://docs.ourbigbook.com/todo/firefox-tab-lists-don-t-wrap
     // we want "pre" here to prevent individual items from breaking up.
     // But bloody Firefox then prevent the entire line from breaking up and hides items!
@@ -384,6 +385,7 @@ div.tab-list {
     }
     &:hover {
       color: $tab-bar-active-color;
+      background-color: $code-background-color;
     }
   }
 }
@@ -542,6 +544,7 @@ span.shortcut {
       }
       &:hover {
         a {
+          font-weight: bold;
           color: $tab-bar-active-color;
         }
       }
@@ -592,6 +595,7 @@ img.profile-thumb {
 } // div.main
 
 footer {
+  line-height: 1.5em;
   margin-top: 10px;
   padding: 10px $toplevel-padding;
   a {

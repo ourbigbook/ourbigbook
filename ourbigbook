@@ -318,7 +318,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
   let msg_ret
   let output, first_output_path;
   let timestamp_skip = false
-  if (input_path_parse.ext === ourbigbook.OURBIGBOOK_EXT) {
+  if (input_path_parse.ext === `.${ourbigbook.OURBIGBOOK_EXT}`) {
     let full_path = path.resolve(input_path);
     let input_path_parse = path.parse(full_path);
     let path_relative_to_ourbigbook_json;
@@ -362,10 +362,13 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
       const extra_returns = new_non_ourbigbook_options.extra_returns
       for (const outpath in extra_returns.rendered_outputs) {
         const output_path = path.join(non_ourbigbook_options.outdir, outpath);
+        if (output_path === full_path) {
+          cli_error(`output path equals input path: "${outpath}"`);
+        }
         if (first_output_path === undefined) {
           first_output_path = output_path
         }
-        fs.mkdirSync(path.dirname(output_path), {recursive: true});
+        fs.mkdirSync(path.dirname(output_path), { recursive: true });
         fs.writeFileSync(output_path, extra_returns.rendered_outputs[outpath].full);
       }
       if (new_options.split_headers) {
@@ -795,6 +798,9 @@ if (commander.helpMacros) {
   }
 
   // Options that will be passed directly to ourbigbook.convert().
+  if (!(commander.outputFormat in ourbigbook.OUTPUT_FORMATS)) {
+    cli_error(`unknown output format: ${commander.outputFormat}`)
+  }
   const ourbigbook_options = {
     add_test_instrumentation: commander.addTestInstrumentation,
     body_only: commander.bodyOnly,
@@ -943,7 +949,7 @@ if (commander.helpMacros) {
       commander.outdir === undefined &&
       ourbigbook_json.outputOutOfTree
     ) {
-      outdir = path.join(tmpdir, 'html')
+      outdir = path.join(tmpdir, commander.outputFormat)
     }
   }
   // Options that are not directly passed to ourbigbook.convert
@@ -1097,7 +1103,7 @@ if (commander.helpMacros) {
           } else {
             title = 'Index'
           }
-          inpath = `index${ourbigbook.OURBIGBOOK_EXT}`
+          inpath = `index.${ourbigbook.OURBIGBOOK_EXT}`
         } else {
           const titleId = ourbigbook.title_to_id(title)
           if (titleId !== inpathParse.name) {

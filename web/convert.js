@@ -37,7 +37,7 @@ async function convert({
   body = body.replace(/\n+$/, '')
   const input = modifyEditorInput(title, body).new
   if (!path) {
-    path = `${ourbigbook.title_to_id(title)}${ourbigbook.OURBIGBOOK_EXT}`
+    path = `${ourbigbook.title_to_id(title)}.${ourbigbook.OURBIGBOOK_EXT}`
   }
   const input_path = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${path}`
   await ourbigbook.convert(
@@ -80,7 +80,7 @@ async function convert({
     throw new ValidationError(errsNoDupes)
   }
   const idid = extra_returns.context.header_tree.children[0].ast.id
-  const filePath = `${idid}${ourbigbook.OURBIGBOOK_EXT}`
+  const filePath = `${idid}.${ourbigbook.OURBIGBOOK_EXT}`
   if (forceNew && await sequelize.models.File.findOne({ where: { path: filePath }, transaction })) {
     throw new ValidationError(`Article already exists: ${idid}`)
   }

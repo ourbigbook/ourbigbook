@@ -455,7 +455,7 @@ The distinction between inline \c[c] and block \c[C] code blocks is needed becau
 
 We could have chosen to do some magic to differentiate between them, e.g. checking if the block is the only element in a paragraph, but we decided not to do that to keep the language saner.
 
-\h[2][Math \c[[\m]] and \c[[\M]]]
+\h[2][Mathematics \c[[\m]] and \c[[\M]]]
 {id=math}
 
 Via KaTeX server side, oh yes!
@@ -472,7 +472,13 @@ Display math is done with upper case \c[M]:
 
 \M[[
 \sqrt{1 + 1} \\
-\sqrt
+\sqrt{1 + 1}
+]]
+
+HTML escaping happens as you would expect, e.g. < shows fine in:
+
+\M[[
+1 < 2
 ]]
 
 \h[2][Cirodown syntax]

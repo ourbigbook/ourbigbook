@@ -437,7 +437,13 @@ function assert_xpath_matches(xpath_expr, string, options={}) {
     options.message = '';
   }
   if (xpath_matches.length !== options.count) {
-    console.error('assert_xpath_matches: ' + options.message);
+    let count_str
+    if (options.count === 1) {
+      count_str = ''
+    } else {
+      count_str = ` count=${options.count}`
+    }
+    console.error(`assert_xpath_matches${count_str}: ` + options.message);
     console.error('xpath: ' + xpath_expr);
     console.error('string:');
     console.error(string);
@@ -456,7 +462,10 @@ function assert_xpath_matches(xpath_expr, string, options={}) {
  */
 function ast_arg_has_subset(arg, subset, extra_returns) {
   if (arg.length !== subset.length) {
-    extra_returns.fail_reason = `arg.length !== subset.length ${arg.length} ${subset.length}`;
+    extra_returns.fail_reason = `arg.length !== subset.length ${arg.length} ${subset.length}
+arg: ${arg}
+subset: ${subset}
+`;
     return false;
   }
   for (let i = 0; i < arg.length; i++) {
@@ -1172,26 +1181,138 @@ assert_convert_ast('auto_parent consecutive implicit tr and l',
   ]),
 ]
 );
-// TODO html test
-//assert_convert('table with id has caption',
-//  `\\Table{id=ab}[
-//\\Tr[
-//\\Td[00]
-//\\Td[01]
-//]
-//]
-//`,
-//  `<div class="table-container" id="ab">
-//<div class="table-caption">Table 1</div>
-//<table>
-//<tr>
-//<td>00</td>
-//<td>01</td>
-//</tr>
-//</table>
-//</div>
-//`
-//);
+assert_convert_ast('table with id has caption',
+  `\\Table{id=ab}
+[
+| 00
+| 01
+]
+`,
+  [
+    a('Table', [
+      a('Tr', [
+        a('Td', [t('00')]),
+        // TODO get rid of the \n.
+        a('Td', [t('01\n')]),
+      ]),
+    ], {}, { id: 'ab' }),
+  ],
+  {
+    assert_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Table 1']",
+    ]
+  }
+);
+assert_convert_ast('table with title has caption',
+  `\\Table{title=a b}
+[
+| 00
+| 01
+]
+`,
+  [
+    a('Table', [
+      a('Tr', [
+        a('Td', [t('00')]),
+        // TODO get rid of the \n.
+        a('Td', [t('01\n')]),
+      ]),
+    ], {}, { id: 'table-a-b' }),
+  ],
+  {
+    assert_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Table 1']",
+    ]
+  }
+);
+assert_convert_ast('table with description has caption',
+  `\\Table{description=a b}
+[
+| 00
+| 01
+]
+`,
+  [
+    a('Table', [
+      a('Tr', [
+        a('Td', [t('00')]),
+        // TODO get rid of the \n.
+        a('Td', [t('01\n')]),
+      ]),
+    ], {}, { id: '_1' }),
+  ],
+  {
+    assert_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Table 1']",
+    ]
+  }
+);
+assert_convert_ast('table without id, title, nor description does not have caption',
+  `\\Table[
+| 00
+| 01
+]
+`,
+  [
+    a('Table', [
+      a('Tr', [
+        a('Td', [t('00')]),
+        a('Td', [t('01\n')]),
+      ]),
+    ]),
+  ],
+  {
+    assert_not_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Table 1']",
+    ]
+  }
+);
+assert_convert_ast('table without id, title, nor description does not increment the table count',
+  `\\Table{id=0}[
+| 00
+| 01
+]
+
+\\Table[
+| 10
+| 11
+]
+
+\\Table{id=1}[
+| 20
+| 21
+]
+`,
+  [
+    a('Table', [
+      a('Tr', [
+        a('Td', [t('00')]),
+        a('Td', [t('01\n')]),
+      ]),
+    ]),
+    a('Table', [
+      a('Tr', [
+        a('Td', [t('10')]),
+        a('Td', [t('11\n')]),
+      ]),
+    ]),
+    a('Table', [
+      a('Tr', [
+        a('Td', [t('20')]),
+        a('Td', [t('21\n')]),
+      ]),
+    ]),
+  ],
+  {
+    assert_not_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Table 1']",
+      "//x:span[@class='caption-prefix' and text()='Table 2']",
+    ],
+    assert_not_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Table 3']",
+    ],
+  },
+);
 
 // Images.
 assert_convert_ast('image simple',
@@ -1254,20 +1375,82 @@ assert_no_error('image provider that does match actual source',
   `\\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]{provider=wikimedia}`,
   1, 96
 );
-// TODO inner property test
-//assert_convert_ast('image without id does not increment image count',
-//  `\\Image[ab]
-//\\Image[cd]{id=ef}
-//`,
-//  `<figure>
-//<img src="ab">
-//</figure>
-//<figure id="ef">
-//<a href="#ef"><img src="cd"></a>
-//<figcaption>Image 1</figcaption>
-//</figure>
-//`
-//)
+assert_convert_ast('image with id has caption',
+  `\\Image[aa]{id=bb}{check=0}\n`,
+  [
+    a('Image', undefined, {
+      src: [t('aa')],
+      id: [t('bb')],
+    }),
+  ],
+  {
+    assert_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Figure 1']",
+    ]
+  }
+);
+assert_convert_ast('image with title has caption',
+  `\\Image[aa]{title=b b}{check=0}\n`,
+  [
+    a('Image', undefined, {
+      src: [t('aa')],
+      title: [t('b b')],
+    }, {}, { id: 'b-b' }),
+  ],
+  {
+    assert_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Figure 1']",
+    ]
+  }
+);
+assert_convert_ast('image with description has caption',
+  `\\Image[aa]{description=b b}{check=0}\n`,
+  [
+    a('Image', undefined, {
+      src: [t('aa')],
+      description: [t('b b')],
+    }, {}, { id: '_1' }),
+  ],
+  {
+    assert_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Figure 1']",
+    ]
+  }
+);
+assert_convert_ast('image with source has caption',
+  `\\Image[aa]{source=b b}{check=0}\n`,
+  [
+    a('Image', undefined, {
+      src: [t('aa')],
+      source: [t('b b')],
+    }, {}, { id: '_1' }),
+  ],
+  {
+    assert_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Figure 1']",
+    ]
+  }
+);
+assert_convert_ast('image without id, title, description nor source still gets a caption and increments the image count',
+  `\\Image[aa]{check=0}
+
+\\Image[aa]{check=0}
+`,
+  [
+    a('Image', undefined, {
+      src: [t('aa')],
+    }, {}, { id: '_1' }),
+    a('Image', undefined, {
+      src: [t('aa')],
+    }, {}, { id: '_3' }),
+  ],
+  {
+    assert_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Figure 1']",
+      "//x:span[@class='caption-prefix' and text()='Figure 2']",
+    ]
+  }
+);
 
 // Escapes.
 assert_convert_ast('escape backslash',            'a\\\\b\n', [a('P', [t('a\\b')])]);
@@ -1275,13 +1458,6 @@ assert_convert_ast('escape left square bracket',  'a\\[b\n',  [a('P', [t('a[b')]
 assert_convert_ast('escape right square bracket', 'a\\]b\n',  [a('P', [t('a]b')])]);
 assert_convert_ast('escape left curly brace',     'a\\{b\n',  [a('P', [t('a{b')])]);
 assert_convert_ast('escape right curly brace',    'a\\}b\n',  [a('P', [t('a}b')])]);
-
-//// HTML Escapes.
-// TODO html or subfunction test
-//assert_convert_ast('html escapes',
-//  '\\a[ab&<>"\'cd][ef&<>"\'gh]\n',
-//  '<a href="ab&amp;&lt;&gt;&quot;&#039;cd">ef&amp;&lt;&gt;"\'gh</a>\n'
-//);
 
 // Positional arguments.
 // Has no content argument.
@@ -1525,7 +1701,6 @@ assert_convert_ast('link auto insane with literal square brackets around it',
     a('a', undefined, {'href': [t('http://example.com]')]})
   ])]
 );
-// TODO we want it to work like this.
 assert_convert_ast('link auto insane can be escaped with a backslash',
   '\\http://example.com\n',
   [a('P', [t('http://example.com')])],
@@ -1625,6 +1800,15 @@ assert_convert_ast('link with multiple paragraphs',
       ),
     ]),
   ]
+);
+assert_convert_ast('xss: a content and href',
+  '\\a[ab&<>"\'cd][ef&<>"\'gh]{check=0}\n',
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//x:a[@href=concat('ab&<>\"', \"'\", 'cd') and text()=concat('ef&<>\"', \"'\", 'gh')]",
+    ]
+  }
 );
 
 // Internal cross references \x
@@ -2826,11 +3010,11 @@ c
 
 d
 `,
-[
-  a('P', [t('a')]),
-  a('C', [t('b\nc\n')]),
-  a('P', [t('d')]),
-]
+  [
+    a('P', [t('a')]),
+    a('C', [t('b\nc\n')]),
+    a('P', [t('d')]),
+  ]
 );
 assert_convert_ast('code block insane',
   `a
@@ -2842,12 +3026,101 @@ c
 
 d
 `,
-[
-  a('P', [t('a')]),
-  a('C', [t('b\nc\n')]),
-  a('P', [t('d')]),
-]
+  [
+    a('P', [t('a')]),
+    a('C', [t('b\nc\n')]),
+    a('P', [t('d')]),
+  ]
 );
+assert_convert_ast('code with id has caption',
+  `\`\`
+aa
+\`\`
+{id=bb}
+`,
+  [
+    a('C', [t('aa\n')], { id: [t('bb')] }, { id: 'bb'} ),
+  ],
+  {
+    assert_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Code 1']",
+    ]
+  }
+);
+assert_convert_ast('code with title has caption',
+  `\`\`
+aa
+\`\`
+{title=b b}
+`,
+  [
+    a('C', [t('aa\n')], { title: [t('b b')] }, { id: 'code-b-b'} ),
+  ],
+  {
+    assert_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Code 1']",
+    ]
+  }
+);
+assert_convert_ast('code with description has caption',
+  `\`\`
+aa
+\`\`
+{description=b b}
+`,
+  [
+    a('C', [t('aa\n')], { description: [t('b b')] }, { id: '_1'} ),
+  ],
+  {
+    assert_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Code 1']",
+    ]
+  }
+);
+assert_convert_ast('code without id, title, nor description does not have caption',
+  `\`\`
+aa
+\`\`
+`,
+  [
+    a('C', [t('aa\n')], {}, { id: '_1'} ),
+  ],
+  {
+    assert_not_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Code 1']",
+    ]
+  }
+)
+assert_convert_ast('code without id, title, nor description does not increment the table count',
+  `\`\`
+aa
+\`\`
+{id=00}
+
+\`\`
+bb
+\`\`
+
+\`\`
+cc
+\`\`
+{id=22}
+`,
+  [
+    a('C', [t('aa\n')], { id: [t('00')] }, { id: '00'} ),
+    a('C', [t('bb\n')], {}, { id: '_1'} ),
+    a('C', [t('cc\n')], { id: [t('22')] }, { id: '22'} ),
+  ],
+  {
+    assert_not_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Code 1']",
+      "//x:span[@class='caption-prefix' and text()='Code 2']",
+    ],
+    assert_not_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Code 3']",
+    ],
+  },
+)
 
 // lint h-parent
 assert_no_error('header parent works with cirodown.json lint h-parent = parent and no includes',
@@ -3099,6 +3372,34 @@ assert_error('toc is a reserved id',
 //    ]})
 //  ]
 //);
+assert_convert_ast('explicit toc after implicit toc is removed',
+  `= aa
+
+bb
+
+== cc
+
+\\Toc
+
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('P', [t('bb')]),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
+]
+);
+assert_convert_ast('xss: H id',
+  `= tmp
+{id=&<>"'}
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//x:div[@class=\"h\" and @id=concat('&<>\"', \"'\")]",
+    ]
+  }
+);
 
 // Math. Minimal testing since this is mostly factored out with code tests.
 assert_convert_ast('math inline sane',

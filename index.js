@@ -457,7 +457,7 @@ class AstNode {
         const ast = thing.value
         let plaintext
         if (ast.node_type === AstType.PLAINTEXT) {
-          plaintext = ` "${ast.text}"`
+          plaintext = ` ${JSON.stringify(ast.text)}`
         } else {
           plaintext = ''
         }
@@ -2834,6 +2834,9 @@ function check_and_update_local_link({
       }
     }
   }
+  if (error) {
+    error = error_message_in_output(error, context)
+  }
 
   // Modify relative paths to account for scope + --split-headers
   if (
@@ -2854,6 +2857,36 @@ function check_and_update_local_link({
   return { href, error }
 }
 
+// Get description and other closely related attributes.
+async function get_description(description_arg, context) {
+  let description = await render_arg(description_arg, context);
+  let force_separator
+  if (description === '') {
+    force_separator = false
+  } else {
+    description = ' ' + description;
+    force_separator = true;
+  }
+
+  let multiline_caption
+  if (description_arg) {
+    for (const ast of description_arg) {
+      if (!(
+        context.macros[ast.macro_name].options.phrasing ||
+        ast.node_type === AstType.PLAINTEXT
+      )) {
+        multiline_caption = ' multiline-caption'
+        break
+      }
+    }
+  }
+  if (multiline_caption === undefined) {
+    multiline_caption = ''
+  }
+
+  return { description, force_separator, multiline_caption }
+}
+
 async function get_link_html({
   attrs,
   check,
@@ -2868,17 +2901,14 @@ async function get_link_html({
       attrs = ''
     }
     let error
-    ({ href, error } = check_and_update_local_link({
+    ;({ href, error } = check_and_update_local_link({
       check,
       context,
       href,
       relative,
       source_location,
     }))
-    if (error) {
-      content += error_message_in_output(error, context)
-    }
-    return `<a${html_attr('href', href)}${attrs}>${content}</a>`;
+    return `<a${html_attr('href', href)}${attrs}>${content}${error}</a>`;
   } else {
     // Don't create a link if we are a child of another link, as that is invalid HTML.
     return content;
@@ -3177,11 +3207,12 @@ function id_is_suffix(suffix, full) {
   );
 }
 
+// @return [href: string, content: string ], both XSS safe.
 async function link_get_href_content(ast, context) {
-  const href = await render_arg(ast.args.href, context)
+  const href = await render_arg(ast.args.href, clone_and_set(context, 'html_is_attr', true))
   let content = await render_arg(ast.args.content, context);
   if (content === '') {
-    content = href;
+    content = await render_arg(ast.args.href, context);
   }
   return [href, content];
 }
@@ -3241,18 +3272,19 @@ const macro_image_video_block_convert_function_wikimedia_source_video_re = new R
 async function macro_image_video_block_convert_function(ast, context) {
   let rendered_attrs = await html_convert_attrs(ast, context, ['height', 'width']);
   let figure_attrs = await html_convert_attrs_id(ast, context);
-  let ret = `<figure${figure_attrs}>\n`
+  let { description, force_separator, multiline_caption } = await get_description(ast.args.description, context)
+  let figure_class
+  if (multiline_caption) {
+    figure_class = html_attr('class', multiline_caption.slice(1))
+  } else {
+    figure_class = ''
+  }
+  let ret = `<figure${figure_attrs}${figure_class}>\n`
   let href_prefix;
   if (ast.id !== undefined) {
     href_prefix = await html_self_link(ast, context);
   } else {
     href_prefix = undefined;
-  }
-  let description = await render_arg(ast.args.description, context);
-  let force_separator = false;
-  if (description !== '') {
-    description = ' ' + description;
-    force_separator = true;
   }
   let {error_message, media_provider_type, source, src, is_url}
     = await macro_image_video_resolve_params_with_source(ast, context);
@@ -3284,7 +3316,7 @@ async function macro_image_video_block_convert_function(ast, context) {
     ast, context, src, rendered_attrs, alt, media_provider_type, is_url);
   if (has_caption) {
     ret += `<figcaption>${await x_text(ast, context, {href_prefix:
-      href_prefix, force_separator: force_separator})}${source}${description}</figcaption>\n`;
+      href_prefix, force_separator})}${source}${description}</figcaption>\n`;
   }
   ret += '</figure>\n';
   return ret;
@@ -5721,6 +5753,10 @@ const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [
     name: Macro.TITLE_ARGUMENT_NAME,
   }),
   new MacroArgument({
+    name: 'check',
+    boolean: true,
+  }),
+  new MacroArgument({
     name: 'description',
   }),
   new MacroArgument({
@@ -5955,23 +5991,34 @@ const DEFAULT_MACRO_LIST = [
     async function(ast, context) {
       let attrs = await html_convert_attrs_id(ast, context);
       let content = await render_arg(ast.args.content, context);
-      let ret = `<div class="code-caption-container"${attrs}>\n`;
-      if (ast.validation_output[Macro.TITLE_ARGUMENT_NAME].given) {
-        ret += `\n<div class="caption">${await x_text(ast, context, {href_prefix: await html_self_link(ast, context)})}</div>\n`;
+      let { description, force_separator, multiline_caption } = await get_description(ast.args.description, context)
+      let ret = `<div class="code${multiline_caption}"${attrs}>\n`;
+      if (ast.index_id || ast.validation_output.description.given) {
+        ret += `\n<div class="caption">${
+          await x_text(ast, context, {
+            href_prefix: await html_self_link(ast, context),
+            force_separator
+          })}${description}</div>\n`;
       }
       ret += html_code(content);
       ret += `</div>`;
       return ret;
     },
     {
+      caption_number_visible: async function (ast, context) {
+        return 'description' in ast.args
+      },
       caption_prefix: 'Code',
       id_prefix: 'code',
       named_args: [
         new MacroArgument({
           name: Macro.TITLE_ARGUMENT_NAME,
         }),
+        new MacroArgument({
+          name: 'description',
+        }),
       ],
-    }
+    },
   ),
   new Macro(
     // Inline code.
@@ -6443,14 +6490,13 @@ const DEFAULT_MACRO_LIST = [
         caption_prefix: 'Figure',
         image_video_content_func: function (ast, context, src, rendered_attrs, alt, media_provider_type, is_url) {
           let error
-          ({ href: src, error } = check_and_update_local_link({
+          const check = ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined
+          ;({ href: src, error } = check_and_update_local_link({
+            check,
             context,
             href: src,
             source_location: ast.args.src.source_location,
           }))
-          if (error) {
-            error = error_message_in_output(error, context)
-          }
           return `<a${html_attr('href', src)}><img${html_attr('src',
             html_escape_attr(src))
           }${html_attr('loading', 'lazy')}${rendered_attrs}${alt}></a>${error}\n`;
@@ -6501,7 +6547,7 @@ const DEFAULT_MACRO_LIST = [
       let img_attrs = await html_convert_attrs_id(ast, context, ['height', 'width']);
       let {error_message, src} = await macro_image_video_resolve_params(ast, context);
       src = html_attr('src', html_escape_attr(src));
-      return `<img${src}${img_attrs}${alt}>`;
+      return `<img${src}${html_attr('loading', 'lazy')}${img_attrs}${alt}>`;
     },
     {
       named_args: [
@@ -6646,32 +6692,38 @@ const DEFAULT_MACRO_LIST = [
       let attrs = await html_convert_attrs_id(ast, context);
       let content = await render_arg(ast.args.content, context);
       let ret = ``;
-      ret += `<div class="table-container"${attrs}>\n`;
-      if (ast.id !== undefined) {
-        // TODO not using caption because I don't know how to allow the caption to be wider than the table.
-        // I don't want the caption to wrap to a small table size.
-        //
-        // If we ever solve that, re-add the following style:
-        //
-        // caption {
-        //   color: black;
-        //   text-align: left;
-        // }
-        //
-        //Caption on top as per: https://tex.stackexchange.com/questions/3243/why-should-a-table-caption-be-placed-above-the-table */
-        let href = html_attr('href', '#' + html_escape_attr(ast.id));
-        if (ast.id !== undefined && ast.index_id) {
-          ret += `<div class="table-caption-container">\n`;
-          ret += `<span class="table-caption">${await x_text(ast, context, {href_prefix: href})}</span>`;
-          ret += `</div>\n`;
-        }
+      let { description, force_separator, multiline_caption } = await get_description(ast.args.description, context)
+      ret += `<div class="table${multiline_caption}"${attrs}>\n`;
+      // TODO not using caption because I don't know how to allow the caption to be wider than the table.
+      // I don't want the caption to wrap to a small table size.
+      //
+      // If we ever solve that, re-add the following style:
+      //
+      // caption {
+      //   color: black;
+      //   text-align: left;
+      // }
+      //
+      //Caption on top as per: https://tex.stackexchange.com/questions/3243/why-should-a-table-caption-be-placed-above-the-table */
+      let href = html_attr('href', '#' + html_escape_attr(ast.id));
+      if (ast.index_id || ast.validation_output.description.given) {
+        ret += `<div class="caption">${await x_text(ast, context, {
+          href_prefix: href,
+          force_separator,
+        })}${description}</div>`;
       }
       ret += `<table>\n${content}</table>\n`;
       ret += `</div>\n`;
       return ret;
     },
     {
+      caption_number_visible: async function (ast, context) {
+        return 'description' in ast.args
+      },
       named_args: [
+        new MacroArgument({
+          name: 'description',
+        }),
         new MacroArgument({
           name: Macro.TITLE_ARGUMENT_NAME,
         }),
@@ -7193,14 +7245,13 @@ const DEFAULT_MACRO_LIST = [
                   `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
           } else {
             let error
-            ({ href: src, error } = check_and_update_local_link({
+            const check = ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined
+            ;({ href: src, error } = check_and_update_local_link({
+              check,
               context,
               href: src,
               source_location: ast.args.src.source_location,
             }))
-            if (error) {
-              error = error_message_in_output(error, context)
-            }
             let start;
             if ('start' in ast.args) {
               // https://stackoverflow.com/questions/5981427/start-html5-video-at-a-particular-position-when-loading

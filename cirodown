@@ -26,6 +26,19 @@ const AstNode = class {
     this.args = args;
     this.line = line;
     this.column = column;
+    const macro = macros[this.macro_name];
+    // Store which args were given or not.
+    this.args_given = new Set();
+    if (this.node_type === AstType.MACRO) {
+      for (const arg_name in macro.name_to_arg) {
+        if (arg_name in this.args) {
+          this.args_given.add(arg_name);
+        } else {
+          // Default arguments not given to ''.
+          this.args[arg_name] = '';
+        }
+      }
+    }
   }
 
   /**
@@ -125,7 +138,7 @@ const Token = class {
   }
 }
 
-const Argument = class {
+const MacroArgument = class {
   /**
    * @param {String} name
    */
@@ -140,7 +153,7 @@ const Macro = class {
    * them to various output formats.
    *
    * @param {String} name
-   * @param {Array[Argument]} args
+   * @param {Array[MacroArgument]} args
    * @param {Function} convert
    * @param {Object}
    *        {boolean} phrasing - is this phrasing content?
@@ -164,9 +177,6 @@ const Macro = class {
     if (!('phrasing' in this.properties)) {
       this.properties['phrasing'] = false;
     }
-    if (!('phrasing_if_has_paragraph_sibling' in this.properties)) {
-      this.properties['phrasing_if_has_paragraph_sibling'] = false;
-    }
     this.name_to_arg = {};
     for (const arg of this.positional_args) {
       let name = arg.name;
@@ -178,7 +188,7 @@ const Macro = class {
       this.name_to_arg[name] = arg;
     }
     // Add the ID argument.
-    this.named_args[Macro.id_macro_name] = new Argument({
+    this.named_args[Macro.id_macro_name] = new MacroArgument({
       name: Macro.id_macro_name,
     })
     this.name_to_arg[Macro.id_macro_name] = this.named_args[Macro.id_macro_name];
@@ -235,14 +245,22 @@ const convert_arg = function(arg, options, is_attr=false) {
 /** Helper to convert multiple parameteres directly to HTML attributes.
  *
  * The ID is automatically included.
+ *
+ * @param {AstNode} ast
+ * @param {Object} options
+ * @param {Array[String]} arg_names - which argument names should be added as properties.
+ *        Default: ['id'] if the 'id' argument was given.
  */
-const html_convert_attrs = function(args, options, arg_names=[]) {
+const html_convert_attrs = function(ast, options, arg_names) {
   let ret = '';
-  arg_names.push(Macro.id_macro_name);
-  for (const arg_name of arg_names) {
-    if (arg_name in args) {
-      ret += ` ${arg_name}="${convert_arg(args[arg_name], options, true)}"`;
+  if (arg_names === undefined) {
+    arg_names = [];
+    if (ast.args_given.has(Macro.id_macro_name)) {
+      arg_names.push(Macro.id_macro_name);
     }
+  }
+  for (const arg_name of arg_names) {
+    ret += ` ${arg_name}="${convert_arg(ast.args[arg_name], options, true)}"`;
   }
   return ret;
 }
@@ -266,18 +284,18 @@ let macro_list = [
   new Macro(
     'a',
     [
-      new Argument({
+      new MacroArgument({
         name: 'href',
       }),
-      new Argument({
+      new MacroArgument({
         name: 'content',
       }),
     ],
     function(ast, options, is_attr) {
-      if ((!('content' in ast.args))) {
-        content = ast.args.href;
-      } else {
+      if (ast.args_given.has('content')) {
         content = ast.args.content;
+      } else {
+        content = ast.args.href;
       }
       return `<a href="${convert_arg(ast.args.href, options, true)}">${convert_arg(content, options, is_attr)}</a>`;
     },
@@ -290,7 +308,7 @@ let macro_list = [
   new Macro(
     'C',
     [
-      new Argument({
+      new MacroArgument({
         name: 'content',
       }),
     ],
@@ -301,7 +319,7 @@ let macro_list = [
   new Macro(
     'c',
     [
-      new Argument({
+      new MacroArgument({
         name: 'content',
       }),
     ],
@@ -317,17 +335,17 @@ let macro_list = [
   new Macro(
     'h',
     [
-      new Argument({
+      new MacroArgument({
         name: 'level',
       }),
-      new Argument({
+      new MacroArgument({
         name: 'content',
       }),
     ],
     function(ast, options, is_attr) {
       let content = convert_arg(ast.args.content, options, is_attr);
       let id;
-      if ('id' in ast.args) {
+      if (ast.args_given.has('id')) {
         id = convert_arg(ast.args.id, options, is_attr);
       } else {
         // TODO correct unicode aware algorithm.
@@ -341,18 +359,18 @@ let macro_list = [
   new Macro(
     'p',
     [
-      new Argument({
+      new MacroArgument({
         name: 'content',
       }),
     ],
     function(ast, options, is_attr) {
-      return `<p${html_convert_attrs(ast.args, options)}>${convert_arg(ast.args.content, options, is_attr)}</p>\n`;
+      return `<p${html_convert_attrs(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</p>\n`;
     }
   ),
   new Macro(
     'plaintext',
     [
-      new Argument({
+      new MacroArgument({
         name: 'content',
       }),
     ],
@@ -372,16 +390,16 @@ let macro_list = [
   new Macro(
     'toplevel',
     [
-      new Argument({
+      new MacroArgument({
         name: 'content',
       }),
-      new Argument({
+      new MacroArgument({
         name: 'title',
       }),
     ],
     function(ast, options, is_attr) {
       let title;
-      if ('title' in ast.args) {
+      if (ast.args_given.has('title')) {
         title = ast.args.title;
       } else {
         if ('title' in options) {

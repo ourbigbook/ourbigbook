@@ -180,6 +180,9 @@ class AstNode {
     }
     for (const argname in args) {
       this.setup_argument(argname, args[argname]);
+      for (const argument of args[argname]) {
+        argument.parent_node = this
+      }
     }
   }
 
@@ -456,12 +459,20 @@ class AstNode {
         } else {
           plaintext = ''
         }
-        const pref = `${indent_str}ast `
-        if (ast.node_type === AstType.PLAINTEXT || ast.node_type === AstType.MACRO) {
-          ret.push(`${pref}${ast.macro_name}${plaintext}`)
+        let idstr
+        if (ast.id) {
+          idstr = ` id="${ast.id}"`
         } else {
-          ret.push(`${pref}${ast.node_type.toString()}`)
+          idstr = ''
         }
+        const pref = `${indent_str}ast `
+        let typestr
+        if (ast.node_type === AstType.PLAINTEXT || ast.node_type === AstType.MACRO) {
+          typestr = `${ast.macro_name}${plaintext}${idstr}`
+        } else {
+          typestr = `${ast.node_type.toString()}`
+        }
+        ret.push(`${pref}${typestr} parent_node=${ast.parent_node === undefined}`)
         if (ast.node_type === AstType.MACRO) {
           const args = ast.args
           const argnames = Object.keys(args).sort().reverse()
@@ -3507,8 +3518,13 @@ async function parse(tokens, options, context, extra_returns={}) {
   if (state.token.type !== TokenType.INPUT_END) {
     parse_error(state, `unexpected tokens at the end of input`);
   }
+  if (context.options.log['ast-pp-simple']) {
+    console.error('After parse');
+    console.error(ast_toplevel.toString());
+    console.error();
+  }
 
-  // Post process pass 1
+  // Ast post process pass 1
   //
   // Post process the AST depth first minimally to support includes.
   //
@@ -4166,8 +4182,13 @@ async function parse(tokens, options, context, extra_returns={}) {
   if (header_file_preview_ast_next) {
     ast_toplevel.args.content.push(header_file_preview_ast_next)
   }
+  if (context.options.log['ast-pp-simple']) {
+    console.error('After pass 1');
+    console.error(ast_toplevel.toString());
+    console.error();
+  }
 
-  // Post process pass 2
+  // Ast post process pass 2
   //
   // Post process the AST breadth-first after inclusions are resolved to support things like:
   //
@@ -4589,6 +4610,11 @@ async function parse(tokens, options, context, extra_returns={}) {
   const first_toplevel_child = ast_toplevel.args.content[0];
   if (first_toplevel_child !== undefined) {
     first_toplevel_child.first_toplevel_child = true;
+  }
+  if (context.options.log['ast-pp-simple']) {
+    console.error('After pass 2');
+    console.error(ast_toplevel.toString());
+    console.error();
   }
 
   context.line_to_id = function(line) {
@@ -5587,6 +5613,7 @@ const INSANE_HEADER_CHAR = '=';
 exports.INSANE_HEADER_CHAR = INSANE_HEADER_CHAR
 const LOG_OPTIONS = new Set([
   'ast-inside',
+  'ast-pp-simple',
   'parse',
   'perf',
   'split-headers',

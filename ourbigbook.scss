@@ -46,6 +46,14 @@ div.float-wrap {
   box-sizing: border-box;
 }
 
+@mixin link-icon {
+  font-family: "fa-solid-900";
+  font-weight: 900;
+  font-size: $icon-font-size;
+  // link https://fontawesome.com/v5/icons/link?f=classic&s=solid
+  content: "\f0c1";
+}
+
 @mixin multiline-caption {
   border-left: 1px solid $color;
   padding-left: 8px;
@@ -61,6 +69,11 @@ div.float-wrap {
 @mixin visible {
   display: inline;
   //visibility: visible;
+}
+
+@mixin hide-hover {
+  position: absolute;
+  left: 0;
 }
 
 // CSS border triangles.
@@ -175,8 +188,7 @@ padding-left: 0;
   }
 }
 .hide-hover {
-  position: absolute;
-  left: 0;
+  @include hide-hover;
 }
 
 // Highlight the element referred by the current hash
@@ -407,11 +419,7 @@ ol, ul {
       }
       // Current
       .c::before {
-        font-family: "fa-solid-900";
-        font-weight: 900;
-        font-size: $icon-font-size;
-        // link https://fontawesome.com/v5/icons/link?f=classic&s=solid
-        content: "\f0c1";
+        @include link-icon;
       }
       .c::after {
         content: " link";
@@ -558,6 +566,20 @@ video {
     // This makes it show up inside the padding-left of this element.
     // https://stackoverflow.com/questions/10487292/position-absolute-but-relative-to-parent
     position: relative;
+
+    // On hover links on left margin.
+    &:not(.nolink) {
+      > :first-child {
+        @include hidden;
+        @include hide-hover;
+        &::before {
+          @include link-icon;
+        }
+      }
+      &:hover > :first-child {
+        @include visible;
+      }
+    }
   }
   @media only screen and (max-width: $max-mobile-width) {
     padding-right: $toplevel-horizontal-padding-mobile;

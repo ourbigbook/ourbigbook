@@ -81,7 +81,7 @@ const ArticleList = ({
         }
         break
       default:
-        message = 'There are no articles matching this search'
+        message = `There are no ${isIssue ? 'discussions' : 'articles'} matching this search`
     }
     return <div className="article-preview">
       {message}
@@ -91,7 +91,7 @@ const ArticleList = ({
   if (paginationUrlFunc) {
     pagination = <Pagination {...{
         currentPage: page,
-        what: isIssue ? 'threads' : itemType === 'like' ? 'likes' : 'articles',
+        what: isIssue ? 'discussions' : itemType === 'like' ? 'likes' : 'articles',
         itemsCount: articlesCount,
         itemsPerPage: articleLimit,
         urlFunc: paginationUrlFunc,

@@ -64,8 +64,10 @@ require(["vs/editor/editor.main"], function () {
     const editor = monaco.editor.create(
         input_elem,
         {
+            folding: false,
             minimap: {enabled: false},
             theme: 'vs-dark',
+            wordWrap: 'on',
             value: `= Cirodown hello world
 
 Welcome to Cirodown! Here's the table of contents:

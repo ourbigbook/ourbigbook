@@ -6778,7 +6778,7 @@ const DEFAULT_MACRO_LIST = [
         }
         let toc_href;
         if (!is_top_level && context.has_toc) {
-          toc_href = html_attr('href', '#' + toc_id(ast, context));
+          toc_href = html_attr('href', '#' + html_escape_attr(toc_id(ast, context)));
           ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href} class="ourbigbook-h-to-toc"${html_attr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`;
         }
 
@@ -7413,7 +7413,7 @@ const DEFAULT_MACRO_LIST = [
           let content = x_text(target_id_ast, cur_context, {style_full: true, show_caption_prefix: false});
           let href = x_href_attr(target_id_ast, cur_context);
           const my_toc_id = toc_id(target_id_ast, cur_context);
-          let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, my_toc_id);
+          let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, html_escape_attr(my_toc_id));
           // The inner <div></div> inside arrow is so that:
           // - outter div: takes up space to make clicking easy
           // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
@@ -7426,7 +7426,7 @@ const DEFAULT_MACRO_LIST = [
           }
           ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
 
-          let toc_href = html_attr('href', '#' + my_toc_id);
+          let toc_href = html_attr('href', '#' + html_escape_attr(my_toc_id));
           ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
           if (cur_context.options.split_headers) {
             const link_to_split = link_to_split_opposite(target_id_ast, cur_context)

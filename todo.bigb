@@ -3,16 +3,6 @@
 
 == Issues
 
-=== Find a way to show index.html raw files that get overriden by directory listings
-{id=2}
-{tag=File}
-
-Edit: implemented the `_index` thing. But actually, would be saner with a separate `_dir/` prefix for directories. Otherwise a recursive wget/zip would not work out of box which makes me sad.
-
-E.g. `subdir/index.html` which would show up under `_raw/subdir/index.html` gets overriden by the directory listing of `subdir/` which goes to the same location.
-
-One possibility would be to add an underscore: `_raw/subdir/_index.html` for the file. And another underscore for `_index.html` and so on.
-
 === Option to add zip of local conversion to converted GitHub pages website
 {tag=Publish}
 
@@ -733,6 +723,16 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== Find a way to show index.html raw files that get overriden by directory listings
+{id=2}
+{tag=File}
+
+Edit: first implemented the `_index` thing. But actually noticed would be saner with a separate `_dir/` prefix for directories. Otherwise a recursive wget/zip would not work out of box which makes me sad. It is a bit sad that you can't just remove a path from `_raw/path/to/file.txt` to go to `_raw/path/to/` as you need `_dir/path/to/` instead. But so bet it.
+
+E.g. `subdir/index.html` which would show up under `_raw/subdir/index.html` gets overriden by the directory listing of `subdir/` which goes to the same location.
+
+One possibility would be to add an underscore: `_raw/subdir/_index.html` for the file. And another underscore for `_index.html` and so on.
 
 === Automatically add `source` to archive.org images
 {tag=Image}

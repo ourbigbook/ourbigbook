@@ -8535,8 +8535,8 @@ assert_cli(
       `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/subdir/myfile.txt`,
 
       // Directories listings are generated.
-      `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/index.html`,
-      `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/subdir/index.html`,
+      `out/publish/out/github-pages/${ourbigbook.DIR_PREFIX}/index.html`,
+      `out/publish/out/github-pages/${ourbigbook.DIR_PREFIX}/subdir/index.html`,
     ],
     assert_xpath: {
       'out/publish/out/github-pages/index.html': [
@@ -9832,12 +9832,10 @@ assert_cli(
     },
     assert_exists: [
       `${ourbigbook.RAW_PREFIX}/myfile.txt`,
-      `${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
-
-      // index.html escaped as _index.html
+      `${ourbigbook.RAW_PREFIX}/index.html`,
       `${ourbigbook.RAW_PREFIX}/_index.html`,
-      `${ourbigbook.RAW_PREFIX}/__index.html`,
-      `${ourbigbook.RAW_PREFIX}/subdir/_index.html`,
+      `${ourbigbook.RAW_PREFIX}/subdir/index.html`,
+      `${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
     ],
     assert_not_exists: [
       // Ignored directories are not listed.
@@ -9845,57 +9843,54 @@ assert_cli(
     ],
     assert_xpath: {
       [`index.html`]: [
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='View file']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/subdir2/index.html' and text()='View file']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/index.html' and text()='link to root']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='link to subdir']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='View file']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html' and text()='View file']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/index.html' and text()='link to root']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='link to subdir']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
 
-        // index.html -> _index.html renames
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/_index.html' and text()='index to index.html']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/__index.html' and text()='index to _index.html']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/_index.html' and text()='index to subdir/index.html']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/index.html' and text()='index to index.html']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/_index.html' and text()='index to _index.html']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='index to subdir/index.html']`,
       ],
       [`subdir.html`]: [
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/index.html' and text()='link to root']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='link to subdir']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/index.html' and text()='link to root']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='link to subdir']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
       ],
       [`subdir/subdir2.html`]: [
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/index.html' and text()='link to root']`,
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='link to subdir']`,
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
+        `//x:a[@href='../${ourbigbook.DIR_PREFIX}/index.html' and text()='link to root']`,
+        `//x:a[@href='../${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='link to subdir']`,
+        `//x:a[@href='../${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
       ],
-      [`${ourbigbook.RAW_PREFIX}/index.html`]: [
-        "//x:a[@href='myfile.txt' and text()='myfile.txt']",
-        "//x:a[@href='README.bigb' and text()='README.bigb']",
-        "//x:a[@href='subdir/index.html' and text()='subdir/']",
+      [`${ourbigbook.DIR_PREFIX}/index.html`]: [
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/myfile.txt' and text()='myfile.txt']`,
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/README.bigb' and text()='README.bigb']`,
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/index.html' and text()='index.html']`,
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/_index.html' and text()='_index.html']`,
 
-        // index.html -> _index.html renames
-        "//x:a[@href='_index.html' and text()='index.html']",
-        "//x:a[@href='__index.html' and text()='_index.html']",
+        `//x:a[@href='subdir/index.html' and text()='subdir/']`,
       ],
-      [`${ourbigbook.RAW_PREFIX}/subdir/index.html`]: [
-        "//x:a[@href='myfile-subdir.txt' and text()='myfile-subdir.txt']",
-        "//x:a[@href='subdir2/index.html' and text()='subdir2/']",
-        "//x:a[@href='../index.html' and text()='(root)']",
+      [`${ourbigbook.DIR_PREFIX}/subdir/index.html`]: [
+        `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt' and text()='myfile-subdir.txt']`,
+        `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='index.html']`,
 
-        // index.html -> _index.html renames
-        "//x:a[@href='_index.html' and text()='index.html']",
+        `//x:a[@href='subdir2/index.html' and text()='subdir2/']`,
+        `//x:a[@href='../index.html' and text()='(root)']`,
       ],
-      [`${ourbigbook.RAW_PREFIX}/subdir/subdir2/index.html`]: [
-        "//x:a[@href='../../index.html' and text()='(root)']",
-        "//x:a[@href='../index.html' and text()='subdir']",
+      [`${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html`]: [
+        `//x:a[@href='../../index.html' and text()='(root)']`,
+        `//x:a[@href='../index.html' and text()='subdir']`,
       ],
     },
     assert_not_xpath: {
-      [`${ourbigbook.RAW_PREFIX}/index.html`]: [
+      [`${ourbigbook.DIR_PREFIX}/index.html`]: [
         // ../ not added to root listing.
         "//x:a[text()='(root)']",
 
         // Ignored files don't show on listing.
-        "//x:a[@href='.git']",
-        "//x:a[@href='.git/']",
+        "//x:a[text()='.git']",
+        "//x:a[text()='.git/']",
       ],
     },
   }
@@ -9916,6 +9911,12 @@ assert_cli(
 
 \\a[subdir/subdir2][link to subdir2]
 
+\\a[index.html][index to index.html]
+
+\\a[_index.html][index to _index.html]
+
+\\a[subdir/index.html][index to subdir/index.html]
+
 == subdir
 {file}
 
@@ -9931,7 +9932,10 @@ assert_cli(
 \\a[subdir2][link to subdir2]
 `,
       'myfile.txt': `ab`,
+      'index.html': '',
+      '_index.html': '',
       'subdir/myfile-subdir.txt': `ab`,
+      'subdir/index.html': '',
       'subdir/subdir2/index.bigb': `= Subdir2
 
 \\a[../..][link to root]
@@ -9945,6 +9949,9 @@ assert_cli(
     },
     assert_exists: [
       `${ourbigbook.RAW_PREFIX}/myfile.txt`,
+      `${ourbigbook.RAW_PREFIX}/index.html`,
+      `${ourbigbook.RAW_PREFIX}/_index.html`,
+      `${ourbigbook.RAW_PREFIX}/subdir/index.html`,
       `${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
     ],
     assert_not_exists: [
@@ -9953,45 +9960,54 @@ assert_cli(
     ],
     assert_xpath: {
       [`index.html`]: [
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir' and text()='View file']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/subdir2' and text()='View file']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}' and text()='link to root']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir' and text()='link to subdir']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/subdir2' and text()='link to subdir2']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir' and text()='View file']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2' and text()='View file']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}' and text()='link to root']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir' and text()='link to subdir']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2' and text()='link to subdir2']`,
+
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/index.html' and text()='index to index.html']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/_index.html' and text()='index to _index.html']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='index to subdir/index.html']`,
       ],
       [`subdir.html`]: [
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}' and text()='link to root']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir' and text()='link to subdir']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/subdir2' and text()='link to subdir2']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}' and text()='link to root']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir' and text()='link to subdir']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2' and text()='link to subdir2']`,
       ],
       [`subdir/subdir2.html`]: [
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}' and text()='link to root']`,
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/subdir' and text()='link to subdir']`,
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/subdir/subdir2' and text()='link to subdir2']`,
+        `//x:a[@href='../${ourbigbook.DIR_PREFIX}' and text()='link to root']`,
+        `//x:a[@href='../${ourbigbook.DIR_PREFIX}/subdir' and text()='link to subdir']`,
+        `//x:a[@href='../${ourbigbook.DIR_PREFIX}/subdir/subdir2' and text()='link to subdir2']`,
       ],
-      [`${ourbigbook.RAW_PREFIX}/index.html`]: [
-        "//x:a[@href='myfile.txt' and text()='myfile.txt']",
-        "//x:a[@href='README.bigb' and text()='README.bigb']",
-        "//x:a[@href='subdir/' and text()='subdir/']",
+      [`${ourbigbook.DIR_PREFIX}/index.html`]: [
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/myfile.txt' and text()='myfile.txt']`,
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/README.bigb' and text()='README.bigb']`,
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/index.html' and text()='index.html']`,
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/_index.html' and text()='_index.html']`,
+
+        `//x:a[@href='subdir' and text()='subdir/']`,
       ],
-      [`${ourbigbook.RAW_PREFIX}/subdir/index.html`]: [
-        "//x:a[@href='myfile-subdir.txt' and text()='myfile-subdir.txt']",
-        "//x:a[@href='subdir2/' and text()='subdir2/']",
-        "//x:a[@href='..' and text()='(root)']",
+      [`${ourbigbook.DIR_PREFIX}/subdir/index.html`]: [
+        `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt' and text()='myfile-subdir.txt']`,
+        `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='index.html']`,
+
+        `//x:a[@href='subdir2' and text()='subdir2/']`,
+        `//x:a[@href='..' and text()='(root)']`,
       ],
-      [`${ourbigbook.RAW_PREFIX}/subdir/subdir2/index.html`]: [
-        "//x:a[@href='../..' and text()='(root)']",
-        "//x:a[@href='..' and text()='subdir']",
+      [`${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html`]: [
+        `//x:a[@href='../..' and text()='(root)']`,
+        `//x:a[@href='..' and text()='subdir']`,
       ],
     },
     assert_not_xpath: {
-      [`${ourbigbook.RAW_PREFIX}/index.html`]: [
+      [`${ourbigbook.DIR_PREFIX}/index.html`]: [
         // ../ not added to root listing.
         "//x:a[text()='(root)']",
 
         // Ignored files don't show on listing.
-        "//x:a[@href='.git']",
-        "//x:a[@href='.git/']",
+        "//x:a[text()='.git']",
+        "//x:a[text()='.git/']",
       ],
     },
   }
@@ -10035,7 +10051,7 @@ assert_cli(
 `,
     },
     assert_exists: [
-      `out/html/${ourbigbook.RAW_PREFIX}/index.html`,
+      `out/html/${ourbigbook.DIR_PREFIX}/index.html`,
       `out/html/${ourbigbook.RAW_PREFIX}/not-ignored.txt`,
       `out/html/${ourbigbook.RAW_PREFIX}/subdir/not-ignored.txt`,
 
@@ -10047,14 +10063,14 @@ assert_cli(
       `out/html/${ourbigbook.RAW_PREFIX}/subdir-dont/subdir/a.ignore`,
 
       // Directory conversion does not blow up when all files in directory are ignored.
-      `out/html/${ourbigbook.RAW_PREFIX}/subdir-ignore-files/index.html`,
+      `out/html/${ourbigbook.DIR_PREFIX}/subdir-ignore-files/index.html`,
     ],
     assert_not_exists: [
       `out/html/${ourbigbook.RAW_PREFIX}/ignored-top.txt`,
       `out/html/${ourbigbook.RAW_PREFIX}/subdir/ignored.txt`,
 
       // If a directory is ignored, we don't recurse into it at all.
-      `out/html/${ourbigbook.RAW_PREFIX}/subdir-ignored/index.html`,
+      `out/html/${ourbigbook.DIR_PREFIX}/subdir-ignored/index.html`,
       `out/html/${ourbigbook.RAW_PREFIX}/subdir-ignored/default.txt`,
 
       // Ignore by extension.

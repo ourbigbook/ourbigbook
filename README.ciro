@@ -981,6 +981,7 @@ Sane equivalent:
 ``
 
 = ID-based header levels
+{c}
 {parent=headers}
 {title2=`{parent=<parent-id>}`}
 
@@ -1030,6 +1031,7 @@ When \x[scope][scopes] are involved, the rules are the same as those of internal
 See also: \x[header-explicit-levels-vs-nesting-design-choice]{full} for further rationale.
 
 = ID-based header levels and scope resolution
+{c}
 {parent=id-based-header-levels}
 
 When mixing both \x[id-based-header-levels] and \x[scope], things get a bit complicated, because when writing or parsing, we have to first determine the parent header before resolving scopes.

@@ -3414,7 +3414,7 @@ assert_lib_ast('x: cross reference magic insane to scope',
 assert_lib_ast('cross reference magic insane to header file argument',
   `= Notindex
 
-<file/path/to/my_file.jpg>
+<path/to/my_file.jpg>{file}
 
 == path/to/my_file.jpg
 {file}
@@ -3422,7 +3422,7 @@ assert_lib_ast('cross reference magic insane to header file argument',
   undefined,
   {
     assert_xpath_stdout: [
-      "//x:div[@class='p']//x:a[@href='#file/path/to/my_file.jpg' and text()='path/to/my_file.jpg']",
+      "//x:div[@class='p']//x:a[@href='#_file/path/to/my_file.jpg' and text()='path/to/my_file.jpg']",
     ],
     filesystem: {
       'path/to/my_file.jpg': '',
@@ -5115,7 +5115,10 @@ My youtube
   ],
   {
     filesystem: {
-      'path/to/my-file.txt': '',
+      'path/to/my-file.txt': `My Line 1
+
+My Line 2
+`,
       'path/to/my-file.png': '',
       'path/to/my-file.mp4': '',
     },
@@ -7843,7 +7846,7 @@ assert_lib('bigb output: to file',
     filesystem: {
       'notindex.bigb': `= Index
 
-<file/path/to/my file>
+<path/to/my file>{file}
 
 == path/to/my file
 {file}
@@ -7854,7 +7857,7 @@ assert_lib('bigb output: to file',
     assert_bigb: {
       'notindex.bigb': `= Index
 
-<file/path/to/my file>
+<path/to/my file>{file}
 
 == path/to/my file
 {file}

@@ -372,7 +372,7 @@ Aftter the initial header however, you must not skip a header level, e.g. the fo
 
 \h[3][The toplevel header]
 
-If the document has only a single header of the highest level, e.g. like the following has only a single \c[h2];
+If the document has only a single header of the highest level, e.g. like the following has only a single \c[h2]:
 
 \C[[
 \h[2][My 2]
@@ -1133,7 +1133,7 @@ git push --delete origin master
 
 git add README.ciro
 git commit --message 'some commit message'
-cirodown --publish .
+cirodown --publish
 ]]
 
 This will automatically \c[git push] both the \c[dev] branch for you, and create/update the \c[master] branch, which contains the desired HTML output.
@@ -1153,6 +1153,13 @@ cirodown --publish .
 ]]
 
 The publishing only happens if the build has no errors.
+
+When \c[--publish] is given, stdin input is not accepted, and so the current directory is built by default, i.e. the following two are equivalent:
+
+\C[[
+./cirodown --publish
+./cirodown --publish .
+]]
 
 \h[5][\c[--publish-commit <commit-message>]]
 {id=publish-commit}
@@ -1304,7 +1311,8 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \h[3][TODO]
 
-\l[expose a on over link to paragraphs, equations on right \c[(12)]. Consider exposing on code blocks like equations.]
+\l[expose a on over link to equations on right \c[(12)]. Consider exposing on code blocks like equations.]
+\l[empty equations that render nothing for math definitions]
 \l[expose git revision, especially to multipage template]
 \l[multipage template language that cannot run forever]
 \l[publish webpage on cirosantilli.com]

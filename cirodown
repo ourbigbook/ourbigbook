@@ -62,7 +62,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
     this.delete_includes_stmt.run(input_path_noext_renamed);
   }
 
-  get(id) {
+  get(id, context) {
     let get_ret = this.get_id_stmt.get(id);
     if (get_ret === undefined) {
       return undefined;
@@ -70,15 +70,18 @@ class SqliteIdProvider extends cirodown.IdProvider {
       const ast = cirodown.AstNode.fromJSON(get_ret.ast_json);
       ast.input_path = get_ret.path;
       ast.id = id;
+      if (context !== undefined) {
+        cirodown.validate_ast(ast, context);
+      }
       return ast;
     }
   }
 
-  get_includes(to_id) {
+  get_includes(to_id, context) {
     let all_rets = this.get_includes_stmt.all(to_id);
     let ret = [];
     for (const all_ret of all_rets) {
-      const from_ast = this.get(all_ret.from_id);
+      const from_ast = this.get(all_ret.from_id, context);
       if (from_ast === undefined) {
         throw 'parent ID of include not in database, not sure how this can happen so throwing';
       } else {
@@ -730,7 +733,9 @@ A link to another file: \\x[and-now-an-include]
           convert_input_options.out_css_path = path.join(publish_outdir, cirodown_nodejs.PACKAGE_OUT_CSS_BASENAME);
           convert_input_options.include_contains_external = true;
           // Remove all files from the gh-pages repository in case some were removed from the original source.
-          cmd_get_stdout('git', ['-C', publish_outdir, 'rm', '-r', '-f', '.'], cmd_options);
+          if (fs.existsSync(path.join(publish_out_dir, '.git'))) {
+            cmd_get_stdout('git', ['-C', publish_outdir, 'rm', '-r', '-f', '.'], cmd_options);
+          }
         } else {
           actual_input = inputPath;
           publish_outdir = outdir;

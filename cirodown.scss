@@ -96,7 +96,7 @@ div.p {
 
 // Figures.
 figure {
-  margin: 0 0 $p-margin-vert 0;
+  margin: $p-margin-vert 0;
   figcaption {
     margin-top: 5px;
   }

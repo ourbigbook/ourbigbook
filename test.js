@@ -537,6 +537,14 @@ assert_error('image with unknown provider',
   `\\Image[ab]{provider=reserved_undefined}`,
   1, 11
 );
+assert_error('image provider that does not match actual source',
+  `\\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]{provider=local}`,
+  1, 96
+);
+assert_no_error('image provider that does match actual source',
+  `\\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]{provider=wikimedia}`,
+  1, 96
+);
 // TODO inner property test
 //assert_convert_ast('image without id does not increment image count',
 //  `\\Image[ab]

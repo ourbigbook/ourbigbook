@@ -83,6 +83,7 @@ module.exports = (sequelize) => {
     ])
     return {
       slug: this.slug,
+      articleId: this.articleId,
       title: this.title,
       body: this.body,
       createdAt: this.createdAt.toISOString(),

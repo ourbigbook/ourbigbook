@@ -216,11 +216,11 @@ const Article = ({
                     comments,
                     commentsCount,
                     issueArticle: article,
-                    itemType: 'issue',
+                    itemType: 'discussion',
                     loggedInUser,
                     page: 0,
                     showAuthor: true,
-                    what: 'issues',
+                    what: 'discussion',
                   }}/>
                   <h3>Top threads</h3>
                   <ArticleList {...{
@@ -229,7 +229,7 @@ const Article = ({
                     comments,
                     commentsCount,
                     issueArticle: article,
-                    itemType: 'issue',
+                    itemType: 'discussion',
                     loggedInUser,
                     page: 0,
                     showAuthor: true,

@@ -50,7 +50,7 @@ const ArticleList = ({
   const { like, follow, tag, uid } = query;
   let isIssue
   switch (itemType) {
-    case 'issue':
+    case 'discussion':
       isIssue = true
       break
     case 'topic':

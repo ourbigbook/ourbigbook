@@ -6485,7 +6485,7 @@ because we have to shell out to the ugly migration CLI, and that only understand
 = OurBigBook Web step debug
 {parent=OurBigBook Web development}
 
-Put a `debugger` statment where you want to break and run:
+Put a `debugger` statement where you want to break and run:
 ``
 npm run devi
 ``
@@ -6629,7 +6629,7 @@ We also have a custom setup where, if the database is not initialized, we first:
 * manually fill in the `SequelizeMeta` migration tracking table with all available migrations to tell Sequelize that all migrations have been done up to this point
 This is something that should be merged into Sequelize itself, or at least asked on Stack Overflow, but lazy now.
 
-In order to test migrations locally interactivelly, you can:
+In order to test migrations locally interactively, you can:
 * commit them on Git
 * `git checkout HEAD~`
 * reset the database with <demo data>:

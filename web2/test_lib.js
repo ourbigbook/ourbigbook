@@ -64,7 +64,6 @@ async function generateDemoData(params) {
     const date = addDays(date0, i)
     const articleArg = {
       title: `My title ${i}`,
-      description: `My description ${i}`,
       authorId: users[userIdx].id,
       createdAt: date,
       updatedAt: date,
@@ -74,12 +73,19 @@ async function generateDemoData(params) {
 
 http://example.com[Link]
 
+Inline code: \`int main() { return 1; }\`
+
 Code block:
-``
+\`\`
 function myFunc() {
   return 1;
 }
-``
+\`\`
+
+Inline math: $\\sqrt{1 + 1}$
+
+Block math:
+$$\\frac{1}{\\sqrt{2}}$$
 
 Block quote:
 \\Q[
@@ -94,14 +100,21 @@ List:
 * item 3
 
 Table:
-|| Header 1
-|| Header 2
+|| String col
+|| Integer col
+|| Float col
 
-| 1 1
-| 1 2
+| ab
+| 2
+| 10.1
 
-| 2 1
-| 2 2
+| a
+| 10
+| 10.2
+
+| c
+| 2
+| 3.4
 `,
     }
     articleArgs.push(articleArg)

@@ -105,13 +105,25 @@ function getSequelize(toplevelDir, toplevelBasename) {
   return sequelize;
 }
 
-async function sync(sequelize) {
-  await sequelize.sync({force: true})
-  await sequelize.models.SequelizeMeta.bulkCreate(
-    fs.readdirSync(path.join(path.dirname(__dirname), 'migrations')).map(
-      basename => { return { name: basename } }
+async function sync(sequelize, opts={}) {
+  let dbExists = true;
+  try {
+    await sequelize.models.SequelizeMeta.findOne()
+    dbExists = false
+  } catch(e) {
+    if (e instanceof DatabaseError) {
+      dbExists = true
+    }
+  }
+  await sequelize.sync(opts)
+  if (dbExists) {
+    await sequelize.models.SequelizeMeta.bulkCreate(
+      fs.readdirSync(path.join(path.dirname(__dirname), 'migrations')).map(
+        basename => { return { name: basename } }
+      )
     )
-  )
+  }
+  return dbExists
 }
 
 module.exports = {

@@ -4669,6 +4669,7 @@ assert_executable(
 \\x[h2]
 
 == Notindex h2
+{tag=h2-2}
 
 === Notindex h3
 

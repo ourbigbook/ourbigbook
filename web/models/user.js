@@ -92,7 +92,7 @@ module.exports = (sequelize) => {
           // Create the index page for the user.
           const article = new sequelize.models.Article({
             title: cirodown.capitalize_first_letter(cirodown.INDEX_BASENAME_NOEXT),
-            body: 'Welcome to my home page!\n',
+            body: 'Welcome to my home page!',
             authorId: user.id,
           })
           return article.saveSideEffects({ transaction: options.transaction })

@@ -11,7 +11,7 @@
     "build-nodeps": "next build",
     "build-dev-nodeps": "NEXT_PUBLIC_NODE_ENV=development npm run build-nodeps",
     "deploy": "git push -f heroku master && git push && git push origin HEAD:deploy",
-    "dev": "NODE_OPTIONS='--unhandled-rejections=strict' nodemon -w . -w ../index.js ./app.js ../nodejs.js ../nodejs_webpack_safe.js",
+    "dev": "NODE_OPTIONS='--unhandled-rejections=strict' nodemon -w . -w ../index.js -w ./app.js -w ../nodejs.js -w ../nodejs_webpack_safe.js",
     "devi": "NODE_OPTIONS='--unhandled-rejections=strict' node inspect ./app.js",
     "dev-pg": "CIRODOWN_POSTGRES=true npm run dev",
     "devs": "DEBUG='sequelize:sql:*' npm run dev",

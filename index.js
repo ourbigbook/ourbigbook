@@ -4691,8 +4691,9 @@ async function parse(tokens, options, context, extra_returns={}) {
     return line_to_id_array[index][1];
   };
 
-  // Check for ID conflicts.
+  perf_print(context, 'db_queries')
   if (options.id_provider !== undefined) {
+    // Check for ID conflicts.
     const ids = Object.keys(include_options.indexed_ids)
     let id_conflict_asts_promise
     if (ids.length) {
@@ -4733,6 +4734,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       id_conflict_asts_promise,
     ])
 
+    // Check for ID conflicts.
     if (ids.length) {
       const id_conflict_asts = await
         options.id_provider.get_noscope_entries(

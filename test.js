@@ -1091,7 +1091,7 @@ dd
     ]),
   ]
 );
-assert_convert_ast('insane list at start of sane quote',
+assert_convert_ast('insane list at start of sane quote with newline',
   `\\Q[
 * bb
 * cc
@@ -1104,6 +1104,55 @@ assert_convert_ast('insane list at start of sane quote',
         a('L', [t('cc\n')]),
       ]),
     ]),
+  ]
+);
+assert_convert_ast('insane list at start of sane quote without newline',
+  `\\Q[* bb
+* cc
+]
+`,
+  [
+    a('Q', [
+      a('Ul', [
+        a('L', [t('bb')]),
+        a('L', [t('cc\n')]),
+      ]),
+    ]),
+  ]
+);
+assert_convert_ast('insane list at start of description with newline',
+  `\\Image[http://example.com]
+{description=
+* bb
+* cc
+}
+`,
+  [
+    a('Image', undefined, {
+      description: [
+        a('Ul', [
+          a('L', [t('bb')]),
+          a('L', [t('cc\n')]),
+        ]),
+      ],
+    }),
+  ]
+);
+assert_convert_ast('insane list at start of description without newline',
+  `\\Image[http://example.com]
+{description=* bb
+* cc
+}
+`,
+  [
+    a('Image', undefined, {
+      description: [
+        a('Ul', [
+          a('L', [t('bb')]),
+          a('L', [t('cc\n')]),
+        ]),
+      ],
+    }),
   ]
 );
 assert_convert_ast('nested list insane',

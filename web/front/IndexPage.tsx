@@ -47,7 +47,7 @@ function IndexPageHoc(isIssue = false) {
     const { setTitle } = React.useContext(AppContext)
     React.useEffect(
       () => { setTitle(
-        isIssue ? `Discussion about "${ issueArticle.file.titleSource }" by ${ issueArticle.author.displayName }` : ''
+        isIssue ? `Discussion: ${ issueArticle.file.titleSource } by ${ issueArticle.author.displayName }` : ''
       )},
       []
     )

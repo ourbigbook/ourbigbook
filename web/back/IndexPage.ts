@@ -12,18 +12,20 @@ export const getServerSidePropsIndexHoc = ({
 }={}): MyGetServerSideProps => {
   return async ({ query, req, res }) => {
     const loggedInUser = await getLoggedInUser(req, res)
+    let followedEff = followed
     if (!loggedInUser) {
-      followed = false;
+      followedEff = false;
     }
-    if (itemType === undefined) {
+    let itemTypeEff = itemType
+    if (itemTypeEff === undefined) {
       if (loggedInUser) {
-        itemType = 'article'
+        itemTypeEff = 'article'
       } else {
-        itemType = 'topic'
+        itemTypeEff = 'topic'
       }
     }
     const getOrderAndPageOpts: { defaultOrder?: string } = {}
-    if (itemType === 'topic') {
+    if (itemTypeEff === 'topic') {
       getOrderAndPageOpts.defaultOrder = 'articleCount'
     }
     const [order, pageNum, err] = getOrderAndPage(req, query.page, getOrderAndPageOpts)
@@ -33,9 +35,9 @@ export const getServerSidePropsIndexHoc = ({
     const offset = pageNum * articleLimit
     const limit = articleLimit
     const sequelize = req.sequelize
-    switch (itemType) {
+    switch (itemTypeEff) {
       case 'article':
-        if (followed) {
+        if (followedEff) {
           const articlesAndCounts = await loggedInUser.findAndCountArticlesByFollowedToJson(
             offset, limit, order)
           articles = articlesAndCounts.articles
@@ -64,13 +66,13 @@ export const getServerSidePropsIndexHoc = ({
           articlesCount = articlesAndCounts.count
         break
       default:
-        throw new Error(`unknown itemType: ${itemType}`)
+        throw new Error(`unknown itemType: ${itemTypeEff}`)
     }
     const props: IndexPageProps = {
       articles,
       articlesCount,
-      followed,
-      itemType,
+      followed: followedEff,
+      itemType: itemTypeEff,
       order,
       page: pageNum,
     }

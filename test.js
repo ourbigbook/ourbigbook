@@ -41,12 +41,18 @@ class MockFileProvider extends cirodown.FileProvider {
 
   update(input_path, extra_returns) {
     const context = extra_returns.context;
+    let toplevel_id
+    if (context.toplevel_ast !== undefined) {
+      toplevel_id = context.toplevel_ast.id
+    }
     const entry = {
       path: input_path,
-      toplevel_id: context.toplevel_ast.id,
+      toplevel_id,
     };
     this.path_index[input_path] = entry;
-    this.id_index[context.toplevel_ast.id] = entry;
+    if (toplevel_id !== undefined) {
+      this.id_index[toplevel_id] = entry;
+    }
   }
 }
 
@@ -182,6 +188,10 @@ function assert_convert_ast(
     }
     const extra_returns = {};
     const output = await cirodown.convert(input_string, new_convert_opts, extra_returns);
+    if (new_convert_opts.input_path !== undefined) {
+      await new_convert_opts.id_provider.update(extra_returns, sequelize)
+      await new_convert_opts.file_provider.update(new_convert_opts.input_path, extra_returns)
+    }
     const has_subset_extra_returns = {fail_reason: ''};
     let is_subset;
     let content;
@@ -4352,6 +4362,7 @@ assert_error('id conflict with previous id on the same file',
   },
 );
 assert_error('id conflict with previous id on another file',
+  // https://github.com/cirosantilli/cirodown/issues/201
   `= index
 
 == notindex h2
@@ -4369,7 +4380,6 @@ assert_error('id conflict with previous id on another file',
     input_path_noext: 'index'
   }
 );
-// https://github.com/cirosantilli/cirodown/issues/201
 //assert_executable('executable: id conflict with previous id on another file',
 //  {
 //    args: ['.'],

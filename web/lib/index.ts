@@ -1,5 +1,9 @@
 import cirodown from 'cirodown/dist/cirodown.js';
 
+export function slugFromArray(arr) {
+  return arr.join(cirodown.Macro.HEADER_SCOPE_SEPARATOR)
+}
+
 export function slugFromRouter(router) {
-  return router.query.slug.join(cirodown.Macro.HEADER_SCOPE_SEPARATOR)
+  return slugFromArray(router.query.slug)
 }

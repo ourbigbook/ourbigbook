@@ -107,11 +107,11 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
                     </>
                   }
                 </div>
-                <div>
+                <div className="article-info article-info-2">
                   <CustomLink
-                    href={routes.topicArticlesView(article.articleId)}
+                    href={routes.topicArticlesView(article.topicId)}
                   >
-                    <i className="ion-edit" /> Same topic by other authors
+                    <i className="ion-ios-people" /> Same topic by other authors
                   </CustomLink>
                 </div>
                 <div className="article-actions">

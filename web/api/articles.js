@@ -39,7 +39,7 @@ router.param('comment', function(req, res, next, id) {
 router.get('/', auth.optional, async function(req, res, next) {
   try {
     if (req.query.id === undefined) {
-      let query = {}
+      let where = {}
       let limit = 20
       let offset = 0
       if (typeof req.query.limit !== 'undefined') {
@@ -63,6 +63,9 @@ router.get('/', auth.optional, async function(req, res, next) {
           where: {username: req.query.favorited},
         })
       }
+      if (req.query.topicId) {
+        where.topicId = req.query.topicId
+      }
       if (req.query.tag) {
         include.push({
           model: req.app.get('sequelize').models.Tag,
@@ -72,7 +75,7 @@ router.get('/', auth.optional, async function(req, res, next) {
       }
       const [{count: articlesCount, rows: articles}, user] = await Promise.all([
         req.app.get('sequelize').models.Article.findAndCountAll({
-          where: query,
+          where: where,
           order: [['createdAt', 'DESC']],
           limit: Number(limit),
           offset: Number(offset),

@@ -7517,6 +7517,10 @@ const VIDEO_EXTENSIONS = new Set([
 
 const TOC_ARROW_HTML = '<div class="arrow"><div></div></div>';
 const TOC_HAS_CHILD_CLASS = 'has-child';
+const UL_OL_OPTS = {
+  newline_after_open: true,
+  wrap: true,
+}
 const INSANE_X_START = '<';
 const INSANE_X_END = '>';
 const INSANE_CODE_CHAR = '`'
@@ -9069,7 +9073,7 @@ const OUTPUT_FORMATS_LIST = [
             { 'class': 'ourbigbook-js-canvas-demo' }
           );
         },
-        'Ol': html_render_simple_elem('ol', { newline_after_open: true }),
+        'Ol': html_render_simple_elem('ol', UL_OL_OPTS),
         [Macro.PARAGRAPH_MACRO_NAME]: html_render_simple_elem(
           'div',
           {
@@ -9212,7 +9216,7 @@ const OUTPUT_FORMATS_LIST = [
                 }
                 const incoming_ul_ast = new AstNode(
                   AstType.MACRO,
-                  'Ul',
+                  'Ol',
                   ulArgs,
                 );
                 const new_context = clone_and_set(context, 'validate_ast', true);
@@ -9356,10 +9360,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
           }
           return res;
         },
-        'Ul': html_render_simple_elem('ul', {
-          newline_after_open: true,
-          wrap: true,
-        }),
+        'Ul': html_render_simple_elem('ul', UL_OL_OPTS),
         [Macro.X_MACRO_NAME]: function(ast, context) {
           let [href, content, target_ast] = x_get_href_content(ast, context);
           let incompatible_pair

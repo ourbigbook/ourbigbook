@@ -2,7 +2,7 @@
 
 import CustomLink from 'front/CustomLink'
 import CustomImage from 'front/CustomImage'
-import { UserType } from 'front/types/userType'
+import { UserType } from 'front/types/UserType'
 import routes from 'front/routes'
 import { DisplayAndUsername, DisplayAndUsernameProps } from 'front/user'
 

@@ -14,7 +14,6 @@ class MyDocument extends Document<IProps> {
   }
 
   render() {
-    const { ids }: any = this.props;
     return (
       <Html lang="en">
         <Head>

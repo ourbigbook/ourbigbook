@@ -1,4 +1,4 @@
-import { UserType } from './userType'
+import { UserType } from 'front/types/UserType'
 
 export interface ArticleList {
   articles: ArticleType[];
@@ -9,15 +9,16 @@ export interface Article {
 }
 
 export type ArticleType = {
-  tagList: string[];
-  createdAt: number;
-  author: UserType;
-  title: string;
   body: string;
-  slug: string;
-  topicId: string;
-  updatedAt: number;
-  score: number;
+  createdAt: number;
+  file: { author: UserType };
+  id: number;
   liked: boolean;
   render: string;
+  score: number;
+  slug: string;
+  tagList: string[];
+  title: string;
+  topicId: string;
+  updatedAt: number;
 };

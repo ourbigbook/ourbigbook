@@ -4,7 +4,7 @@ import { trigger } from 'swr'
 
 import Maybe from 'front/Maybe'
 import CommentAPI from 'front/api/comment'
-import { formatDate } from 'date'
+import { formatDate } from 'front/date'
 import useLoggedInUser from 'front/useLoggedInUser'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 

@@ -1,5 +1,7 @@
+import React from 'react'
+
 import { defaultUserScoreTitle } from 'front/config'
-import { UserType } from 'front/types/userType'
+import { UserType } from 'front/types/UserType'
 
 export function displayAndUsernameText(user) {
   let ret = ''
@@ -13,7 +15,7 @@ export function displayAndUsernameText(user) {
   return ret
 }
 
-type DisplayAndUsernameProps = {
+export type DisplayAndUsernameProps = {
   user: UserType,
   showUsername?: boolean,
   showUsernameMobile?: boolean,
@@ -28,7 +30,7 @@ export function DisplayAndUsername(
   : DisplayAndUsernameProps
 ) {
   let mobileMandatoryPart = ''
-  let mobileOptionalPart = ''
+  let mobileOptionalPart: React.ReactNode  = ''
   if (showUsername === undefined) {
     showUsername = true
   }
@@ -60,7 +62,7 @@ export function DisplayAndUsername(
       mobileOptionalPart += ' ('
     }
   }
-  let mobileOptionalPartPost = showParenthesis ? ')' : ''
+  let mobileOptionalPartPost: React.ReactNode = showParenthesis ? ')' : ''
   if (!showUsernameMobile) {
     mobileOptionalPart = <span className="mobile-hide">{mobileOptionalPart}</span>
     mobileOptionalPartPost = <span className="mobile-hide">{mobileOptionalPartPost}</span>

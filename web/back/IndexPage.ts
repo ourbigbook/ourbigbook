@@ -3,69 +3,76 @@ import { GetServerSideProps } from 'next'
 import { getLoggedInUser } from 'back'
 import { articleLimit, fallback } from 'front/config'
 import { IndexPageProps } from 'front/IndexPage'
+import { MyGetServerSideProps } from 'front/types'
 
-// TODO add type back, fails with:
-// Type error: Property 'params' does not exist on type 'IncomingMessage & { cookies: NextApiRequestCookies; }'.
-//
-//export const getServerSidePropsIndexHoc = (what): GetServerSideProps => {
-export const getServerSidePropsIndexHoc = (what) => {
-  return async ({ req, res }) => {
-    const loggedInUser = await getLoggedInUser(req, res)
-    const page = req?.params?.page ? parseInt(req.params.page as string, 10) - 1: 0
-    let order
-    let loggedInQuery
-    let whatEffective = what
-    if (!loggedInUser) {
-      if (what === 'latest-followed') {
-        whatEffective = 'latest'
-      } else if (what === 'top-followed') {
-        whatEffective = 'top'
+export const getServerSidePropsIndexHoc = (what): MyGetServerSideProps => {
+  return async ({ params = {}, req, res }) => {
+    const { page } = params
+    if (
+      ( typeof page === 'undefined' || typeof page === 'string' )
+    ) {
+      const loggedInUser = await getLoggedInUser(req, res)
+      let order
+      let loggedInQuery
+      let whatEffective = what
+      const pageNum = typeof page === 'undefined' ? 0 : parseInt(page, 10) - 1
+      if (!loggedInUser) {
+        if (what === 'latest-followed') {
+          whatEffective = 'latest'
+        } else if (what === 'top-followed') {
+          whatEffective = 'top'
+        }
       }
-    }
-    switch (whatEffective) {
-      case 'latest':
-        order = 'createdAt'
-        loggedInQuery = false
-      break;
-      case 'top':
-        order = 'score'
-        loggedInQuery = false
+      switch (whatEffective) {
+        case 'latest':
+          order = 'createdAt'
+          loggedInQuery = false
         break;
-      case 'latest-followed':
-        order = 'createdAt'
-        loggedInQuery = true
-        break;
-      case 'top-followed':
-        order = 'score'
-        loggedInQuery = true
-        break;
-      default:
-        throw new Error(`Unknown search: ${whatEffective}`)
-    }
-    let articles
-    let articlesCount
-    if (loggedInQuery) {
-      const articlesAndCounts = await loggedInUser.findAndCountArticlesByFollowedToJson(0, articleLimit, order)
-      articles = articlesAndCounts.articles
-      articlesCount = articlesAndCounts.articlesCount
+        case 'top':
+          order = 'score'
+          loggedInQuery = false
+          break;
+        case 'latest-followed':
+          order = 'createdAt'
+          loggedInQuery = true
+          break;
+        case 'top-followed':
+          order = 'score'
+          loggedInQuery = true
+          break;
+        default:
+          throw new Error(`Unknown search: ${whatEffective}`)
+      }
+      let articles
+      let articlesCount
+      const offset = pageNum * articleLimit
+      if (loggedInQuery) {
+        const articlesAndCounts = await loggedInUser.findAndCountArticlesByFollowedToJson(
+          offset, articleLimit, order)
+        articles = articlesAndCounts.articles
+        articlesCount = articlesAndCounts.articlesCount
+      } else {
+        const articlesAndCounts = await req.sequelize.models.Article.findAndCountAll({
+          offset,
+          order: [[order, 'DESC']],
+          limit: articleLimit,
+        })
+        articles = await Promise.all(articlesAndCounts.rows.map(
+          (article) => {return article.toJson(loggedInUser) }))
+        articlesCount = articlesAndCounts.count
+      }
+      const props: IndexPageProps = {
+        articles,
+        articlesCount,
+        page: pageNum,
+        what: whatEffective,
+      }
+      if (loggedInUser) {
+        props.loggedInUser = await loggedInUser.toJson()
+      }
+      return { props }
     } else {
-      const articlesAndCounts = await req.params.sequelize.models.Article.findAndCountAll({
-        order: [[order, 'DESC']],
-        limit: articleLimit,
-      })
-      articles = await Promise.all(articlesAndCounts.rows.map(
-        (article) => {return article.toJson(loggedInUser) }))
-      articlesCount = articlesAndCounts.count
+      throw new TypeError
     }
-    const props: IndexPageProps = {
-      articles,
-      articlesCount,
-      page,
-      what: whatEffective,
-    }
-    if (loggedInUser) {
-      props.loggedInUser = await loggedInUser.toJson()
-    }
-    return { props }
   }
 }

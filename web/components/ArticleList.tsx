@@ -47,12 +47,18 @@ const ArticleList = (props) => {
         return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&tag=${encodeURIComponent(props.tag)}&offset=${
           page * DEFAULT_LIMIT
         }`;
-      case 'feed':
+      case 'followed-latest':
         return `${SERVER_BASE_URL}/articles/feed?limit=${DEFAULT_LIMIT}&offset=${
           page * DEFAULT_LIMIT
         }`;
-      case 'global':
+      case 'followed-top':
+        return `${SERVER_BASE_URL}/articles/feed?limit=${DEFAULT_LIMIT}&offset=${
+          page * DEFAULT_LIMIT
+        }&sort=score`;
+      case 'global-latest':
         return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&offset=${page * DEFAULT_LIMIT}`;
+      case 'global-top':
+        return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&offset=${page * DEFAULT_LIMIT}&sort=score`;
       case 'topic-articles':
       case 'topic-users': // TODO top users for a topic.
         return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&offset=${page * DEFAULT_LIMIT}&topicId=${props.topicId}&sort=score`;
@@ -91,10 +97,10 @@ const ArticleList = (props) => {
     let message;
     switch (props.what) {
       case 'favorites':
-        message = "Favorite some articles to see them here"
+        message = "This user has not favorited any articles yet"
         break
       case 'my-posts':
-        message = "Your articles will appear here"
+        message = "This user does not have any articles yet"
         break
       case 'tag':
         message = `There are no articles with the tag: ${props.tag}`
@@ -103,7 +109,7 @@ const ArticleList = (props) => {
         message = 'Follow some users to see their articles here'
         break
       case 'global':
-        message = 'There are no articles on this website yet'
+        message = 'There are no articles on this website yet!!!'
         break
       default:
         message = 'There are no articles matching this search'

@@ -12,33 +12,42 @@ const TabList = ({tab, setTab, tag}) => {
     <div className="tab-list">
       <Maybe test={loggedInUser}>
         <CustomLink
-          className={`tab-item${tab === 'feed' ? ' active' : ''}`}
+          className={`tab-item${tab === 'followed-latest' ? ' active' : ''}`}
           href={routes.home()}
-          onClick={() => {setTab('feed')}}
+          onClick={() => {setTab('followed-latest')}}
           shallow
         >
-          Your Feed
+          Latest Followed
+        </CustomLink>
+        <CustomLink
+          className={`tab-item${tab === 'followed-top' ? ' active' : ''}`}
+          href={routes.home()}
+          onClick={() => {setTab('followed-top')}}
+          shallow
+        >
+          Top Followed
         </CustomLink>
       </Maybe>
       <CustomLink
-        className={`tab-item${tab === 'global' ? ' active' : ''}`}
+        className={`tab-item${tab === 'global-latest' ? ' active' : ''}`}
         href={routes.home()}
         shallow
         onClick={() => {
-          setTab('global')
+          setTab('global-latest')
         }}
       >
-        All Articles
+        Latest
       </CustomLink>
-      <Maybe test={tab == 'tag'}>
-        <CustomLink
-          href={routes.home()}
-          className="tab-item active"
-          shallow
-        >
-          <i className="ion-pound" /> {tag}
-        </CustomLink>
-      </Maybe>
+      <CustomLink
+        className={`tab-item${tab === 'global-top' ? ' active' : ''}`}
+        href={routes.home()}
+        shallow
+        onClick={() => {
+          setTab('global-top')
+        }}
+      >
+        Top
+      </CustomLink>
     </div>
   );
 };

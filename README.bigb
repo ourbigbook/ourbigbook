@@ -3648,9 +3648,24 @@ Now for a live example for quick and dirty interactive testing.
 = Inflection vs magic
 {parent=internal-cross-reference}
 
-Currently we don't know of any cases where you would want to use explicit `{c}` or `{p}` for <cross reference title inflection> rather than just using the <x magic argument> everywhere.
+The <x magic argument> was introduced later, and basically became a better alternative to <cross reference title inflection> in all but the following cases:
+* <H disambiguate argument>: disambiguate prevents the determination of plural inflection, e.g. in:
+  ``
+  = Python
+  {disambiguate=animal}
 
-The <x magic argument> was introduced later, and basically became a better alternative to them.
+  I like <python animal>.
+  ``
+  there is currently no way to make it output `Pythons` in the plural without resorting to either <x p argument> or an explicit content, because if you wrote:
+  ``
+  I like <pythons animal>.
+  ``
+  it would just lead to Id not found, as we would try the plural vs singular on `animal` only.
+
+  Maybe one day we can implement an even insaner system that understands that parenthesis should skipped for the inflection as in:
+  ``
+  I like <pythons (animal)>.
+  ``
 
 = `\x` within `title` restrictions
 {parent=internal-cross-reference}

@@ -3111,6 +3111,7 @@ Possibilities we could reuse:
   * source: https://github.com/markdown-it/markdown-it
   * WYSIWYG: no
   * preview scroll sync: yes
+  * editor hangs on large input: yes
 * Quill.md
   * website: https://quilljs.com
   * source: https://github.com/quilljs/quill/

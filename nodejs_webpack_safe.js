@@ -420,7 +420,7 @@ ORDER BY "RecRefs".level DESC
         const from_ids = types[type];
         for (const from_id in from_ids) {
           if (
-            // TODO happens on OurbigbookExample, likely also include,
+            // TODO happens on OurBigBookExample, likely also include,
             // need to fix and remove this if.
             from_id !== undefined
           ) {

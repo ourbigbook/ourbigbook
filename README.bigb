@@ -599,7 +599,7 @@ The general macro syntax is described at \x[ourbigbook-markup-syntax]{full}.
 {title2}
 
 <Insane> autolink (link text is the same as the link):
-\OurbigbookExample[[
+\OurBigBookExample[[
 The website http://example.com is cool. See also:
 
 \Q[http://example.com/2]
@@ -607,28 +607,28 @@ The website http://example.com is cool. See also:
 Exact parsing rules described at: \x[insane-link-parsing-rules]{full}.
 
 Equivalent sane version:
-\OurbigbookExample[[[
+\OurBigBookExample[[[
 The website \a[http://example.com] is cool.
 
 \Q[\a[http://example.com/2]]
 ]]]
 
 Insane link with custom text:
-\OurbigbookExample[[
+\OurBigBookExample[[
 The website http://example.com[example.com] is cool.
 ]]
 Equivalent sane version:
-\OurbigbookExample[[
+\OurBigBookExample[[
 The website \a[http://example.com][example.com] is cool.
 ]]
 If the custom text is empty, an autolink is generated. This is often useful if you want your link to be followed by punctuation:
-\OurbigbookExample[[
+\OurBigBookExample[[
 The website is really cool: http://example.com[].
 ]]
 This could also be achieved with the sane syntax of course, but this pattern saves a tiny bit of typing.
 
 Link with multiple paragraphs inside it:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \a[http://example.com][Multiple
 
 paragraphs]
@@ -693,7 +693,7 @@ Important behaviours associated with this property for local links:
 {parent=link}
 
 Analogous to the \x[x-ref-argument], e.g.:
-\OurbigbookExample[[
+\OurBigBookExample[[
 Trump said this and that.https://en.wikipedia.org/wiki/Donald_Trump_Access_Hollywood_tape#Trump's_responses{ref}https://web.archive.org/web/20161007210105/https://www.donaldjtrump.com/press-releases/statement-from-donald-j.-trump{ref} Then he said that and this.https://en.wikipedia.org/wiki/Donald_Trump_Access_Hollywood_tape#Trump's_responses{ref}https://web.archive.org/web/20161007210105/https://www.donaldjtrump.com/press-releases/statement-from-donald-j.-trump{ref}
 ]]
 
@@ -712,13 +712,13 @@ A relative link is a link that points to a resource that will be present a final
 For example, it is often the case in computer programming tutorials that we want to refer to source files in the current directory.
 
 So from our `README.bigb`, we could want to write something like:
-\OurbigbookExample[[
+\OurBigBookExample[[
 Have a look at this amazing source file: \a[index.js].
 ]]
 and here `\a[ourbigbook]` is a relative link.
 
 A non-relative link is something like:
-\OurbigbookExample[[
+\OurBigBookExample[[
 This is great website: https://cirosantilli.com
 ]]
 which points to an absolute URL.
@@ -812,21 +812,21 @@ Insane links end when either the end of the document or one of the following cha
 * open or close curly braces `{` or `}`
 
 As a consequence, to have an insane link followed immediately by a punctuation like a period you should use an empty argument as in:
-\OurbigbookExample[[
+\OurBigBookExample[[
 Check out this website: http://example.com[].
 ]]
 otherwise the punctuation will go in it. Another common use case is:
-\OurbigbookExample[[
+\OurBigBookExample[[
 As mentioned on the tutorial (http://example.com[see this link]).
 ]]
 
 If you want your link to include one of the terminating characters, e.g. `]`, all characters can be escaped with a backslash, e.g.:
-\OurbigbookExample[[
+\OurBigBookExample[[
 Hello http://example.com/\]a\}b\\c\ d world.
 ]]
 
 Note that the `http://example.com` inside `\a[http://example.com]` only works because we do some post-processing magic that prevents its expansion, otherwise the link would expand twice:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \P[http://example.com]
 
 \a[http://example.com]
@@ -840,7 +840,7 @@ This magic can be observed with \x[help-macros] by seeing that the `href` argume
 {parent=macro}
 {title2=`\b`}
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 Some \b[bold] text.
 ]]
 
@@ -849,7 +849,7 @@ Some \b[bold] text.
 {title2=`\br`}
 
 There is basically one application for this: poetry, which would be too ugly with \x[code-block] due to fixed width font:
-\OurbigbookExample[[
+\OurBigBookExample[[
 Paragraph 1 Line 1\br
 Paragraph 1 Line 2\br
 
@@ -862,11 +862,11 @@ Paragraph 2 Line 2\br
 {title2=\c[[``]], \c[[`]], `\C`, `\c`}
 
 Inline code (code that should appear in the middle of a paragraph rather than on its own line) is done with a single backtick (\c[[`]]) \x[insane-macro-shortcut]:
-\OurbigbookExample[[
+\OurBigBookExample[[
 My inline `x = 'hello\n'` is awesome.
 ]]
 and block code (code that should appear on their own line) is done with two or more backticks (\c[[``]]):
-\OurbigbookExample[[
+\OurBigBookExample[[
 ``
 f() {
   return 'hello\n';
@@ -875,11 +875,11 @@ f() {
 ]]
 
 The sane version of inline code is a lower case `c`:
-\OurbigbookExample[[[
+\OurBigBookExample[[[
 My inline \c[[x = 'hello\n']] is awesome.
 ]]]
 and the sane version of block math is with an upper case `C`:
-\OurbigbookExample[[[
+\OurBigBookExample[[[
 \C[[
 f() {
   return 'hello\n';
@@ -890,7 +890,7 @@ f() {
 The capital vs lower case theme is also used in other elements, see: \x[block-vs-inline-macros].
 
 If the content of the sane code block has many characters that you would need to \x[escape-characters][escape], you will often want to use \x[literal-arguments], which work just like the do for any other argument. For example:
-\OurbigbookExample[[[[
+\OurBigBookExample[[[[
 \C[[[
 A paragraph.
 
@@ -924,7 +924,7 @@ And nos a very long inline code: `Hello Hello Hello Hello Hello Hello Hello Hell
 \Comment[[[[
 TODO implement.
 We can have cross references to code blocks as for other elements such as \x[image]{p}:
-\OurbigbookExample[[[
+\OurBigBookExample[[[
 See this awesome code \x[my-code]:
 ``
 ab
@@ -935,7 +935,7 @@ cd
 ]]]]
 
 Block code can have a title, e.g. see this one: \x[code-my-nice-code]{full}:
-\OurbigbookExample[[
+\OurBigBookExample[[
 ``
 ab
 cd
@@ -944,12 +944,12 @@ cd
 {title=My nice code block.}
 ]]
 
-= `\OurbigbookExample`
+= `\OurBigBookExample`
 {parent=macro}
 
 Shows both the OurBigBook code and its rendered output, e.g.:
-\OurbigbookExample[[[
-\OurbigbookExample[[
+\OurBigBookExample[[[
+\OurBigBookExample[[
 Some `ineline` code.
 ]]
 ]]]
@@ -965,7 +965,7 @@ This macro is used extensively in the OurBigBook documentation.
 The `Comment` and `comment` macros are regular macros that does not produce any output. Capitalization is explained at: \x[block-vs-inline-macros]{full}.
 
 You will therefore mostly want to use it with a \x[literal-arguments][literal argument], which will, as for any other macro, ignore any macros inside of it.
-\OurbigbookExample[[[
+\OurBigBookExample[[[
 Before comment.
 
 \Comment[[
@@ -976,7 +976,7 @@ After comment.
 ]]]
 
 And an inline one:
-\OurbigbookExample[[[
+\OurBigBookExample[[[
 My inline \comment[[inside comment]] is awesome.
 
 \comment[[inside comment]] inline at the start.
@@ -1276,7 +1276,7 @@ from which we observe how `disambiguate`:
 * gets added to the default \x[h-wiki-argument] inside parenthesis, following Wikipedia convention, therefore increasing the likelihood that you will be able to go with the default Wikipedia value
 
 Besides disambiguating headers, the `disambiguate` argument has a second related application: disambiguating IDs of images. For example:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[image-the-title-of-my-disambiguate-image]{full=0}
 
 \x[image-the-title-of-my-disambiguate-image-2]{full=0}
@@ -2271,7 +2271,7 @@ so we see that this basically provides a type of breadcrumb navigation.
 {title2=`\Image` and `\image`}
 
 A block image with \x[block-vs-inline-macros][capital] 'i' `Image` showcasing most of the image properties \x[image-my-test-image].
-\OurbigbookExample[[
+\OurBigBookExample[[
 Have a look at this amazing image: \x[image-my-test-image].
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
@@ -2289,7 +2289,7 @@ This exemplifies the following parameters:
 For further discussion on the effects of ID see: \x[image-id]{full}.
 
 And this is how you make an inline image inline one with lower case `i`:
-\OurbigbookExample[[
+\OurBigBookExample[[
 My inline \image[Tank_man_standing_in_front_of_some_tanks.jpg][test image] is awesome.
 ]]
 Inline images can't have captions.
@@ -2310,7 +2310,7 @@ By default, we fix image heights to `height=315`, and let the `width` be calcula
 {parent=image}
 
 Here is an image without a \x[image-description-argument][description] but with an ID so we can link to it: \x[image-my-test-image-2].
-\OurbigbookExample[[
+\OurBigBookExample[[
 Have a look at this amazing image: \x[image-my-test-image-2].
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
@@ -2319,7 +2319,7 @@ Have a look at this amazing image: \x[image-my-test-image-2].
 This works because \x[x-full-argument][`full` is the default cross reference style for `Image`], otherwise the link text would be empty since there is no `title`, and OurBigBook would raise an error.
 
 OurBigBook can optionally deduce the title from the basename of the `src` argument if the `titleFromSrc` \x[boolean-argument] is given, or if `title-from-src` is set as the default \x[ourbigbook-json/media-providers][media provider] for the media type:
-\OurbigbookExample[[
+\OurBigBookExample[[
 Have a look at this amazing image: \x[image-tank-man-standing-in-front-of-some-tanks].
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
@@ -2330,7 +2330,7 @@ Have a look at this amazing image: \x[image-tank-man-standing-in-front-of-some-t
 {parent=image-id}
 
 If the image has neither \x[image-id][ID] nor title nor \x[image-description-argument][description] nor `source`, then it does not get a caption at all:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 ]]
 
@@ -2347,14 +2347,14 @@ Also, it is not possible to link to such images with an \x[internal-cross-refere
 Another issue to consider is that in paged output formats like PDF, the image could float away from the text that refers to the image, so you basically always want to refer to image by ID, and not just by saying "the following image".
 
 We can also see that such an image does not increment the Figure count:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]{id=image-my-test-image-count-before}
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]{id=image-my-test-image-count-after}
 ]]
 
 If the image has any visible metadata such as `source` or `description` however, then the caption does show and the Figure count gets incremented:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]{description=This is the description of my image.}
 ]]
@@ -2373,7 +2373,7 @@ With this setup, no further action is needed. For example, with a file structure
 ./Tank_man_standing_in_front_of_some_tanks.jpg
 ``
 just use the image from \C[README.bigb] as:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 ]]
 
@@ -2389,7 +2389,7 @@ In this approach, you create a separate GitHub repository in addition to the mai
 This approach is more suitable than \x[store-images-inside-the-repository-itself] if you are going to have a lot of images.
 
 When using this approach, you could of course just point directly to the final image URL, e.g. as in:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 ]]
 but OurBigBook allows you use configurations that allow you to enter just the image basename: `Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg` which we will cover next.
@@ -2400,7 +2400,7 @@ In order to get this to work, the recommended repository setup is:
 The directory and repository names are not mandatory, but if you place media in `data/media` and name its repository by adding the `*-media` suffix, then `ourbigbook` will handle everything for you without any further configuration in \x[ourbigbook-json/media-providers].
 
 This particular documentation repository does have a different setup as can be seen from its \a[ourbigbook.json]. Then, when everything is setup correctly, we can refer to images simply as:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Image[Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]{provider=github}
 ]]
 In this example, we also needed to set `{provider=github}` explicitly since it was not set as the default image provider in our `ourbigbook.json`. In most projects however, all of your images will be in the default repository, so this won't be needed.
@@ -2467,29 +2467,29 @@ Now, as mentioned at \x[ourbigbook-json/media-providers], everything will work b
 {parent=where-to-store-images}
 
 Wikimedia Commons is another great possibility to upload your images to:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
 {source=https://commons.wikimedia.org/wiki/File:Gel_electrophoresis_insert_comb.jpg}
 ]]
 
 OurBigBook likes Wikimedia Commons so much that we automatically parse the image URL and if it is from Wikimedia Commons, automatically deduce the `source` for you. So the above image renders the same without the `source` argument:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
 ]]
 
 And like for non-Wikimedia images, you can automatically generate a `title` from the `src` by setting the `titleFromSrc` \x[boolean-argument] or if `title-from-src` is set as the default \x[ourbigbook-json/media-providers][media provider] for the media type:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
 {titleFromSrc}
 ]]
 
 And a quick test for a more complex thumb resized URL:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
 ]]
 
 If you really absolutely want to turn off the `source`, you can explicitly set:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
 {source=}
 ]]
@@ -2548,7 +2548,7 @@ Analogous to the \x[a-check-argument] when checking if the \x[image-src-argument
 The `description` argument similar to the \x[image-title-argument] argument, but allows allowing longer explanations without them appearing in \x[internal-cross-reference][cross references] to the image.
 
 For example, consider:
-\OurbigbookExample[[
+\OurBigBookExample[[
 See this image: \x[image-description-argument-test-1].
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
@@ -2564,7 +2564,7 @@ and does not include the description, which only shows on the image.
 The description can be as large as you like. If it gets really large however, you might want to consider moving the image to its own header to keep things slightly saner. This will be especially true after we eventually do: https://github.com/cirosantilli/ourbigbook/issues/180[].
 
 If the description contains any element that would take its own separate line, like multiple paragraphs or a list, we automatically add a line grouping the description with the corresponding image to make that clearer, otherwise it can be hard to know which title corresponds to a far away image. Example with multiple paragraphs:
-\OurbigbookExample[[
+\OurBigBookExample[[
 Stuff before the image.
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
@@ -2723,7 +2723,7 @@ This shows what includes render as.
 {parent=macro}
 {title2=`\i`}
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 Some \i[italic] text.
 ]]
 
@@ -2737,7 +2737,7 @@ These demos:
 * stop automatically when they leave the viewport
 so you can stuff as many of them as you want on a page, and they won't cause the reader's CPU to fry an egg.
 
-\OurbigbookExample[[[
+\OurBigBookExample[[[
 \JsCanvasDemo[[
 new class extends OurbigbookCanvasDemo {
   init() {
@@ -2833,21 +2833,21 @@ void main() {
 {title2=`* `, `\L`, `\Ul`, `\Ol`}
 
 <Insane> with `* ` (asterisk space):
-\OurbigbookExample[[
+\OurBigBookExample[[
 * a
 * b
 * c
 ]]
 
 Equivalent saner with \x[auto-parent][implicit `ul` container]:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \L[a]
 \L[b]
 \L[c]
 ]]
 
 Equivalent fully sane with explicit container:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Ul[
 \L[a]
 \L[b]
@@ -2856,7 +2856,7 @@ Equivalent fully sane with explicit container:
 ]]
 
 The explicit container is required if you want to pass extra arguments properties to the `ul` list macro, e.g. a title and an ID: \x[list-my-id]{full}:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Ul
 {id=list-my-id}
 [
@@ -2868,7 +2868,7 @@ The explicit container is required if you want to pass extra arguments propertie
 This is the case because without the explicit container in an implicit `ul` list, the arguments would stick to the last list item instead of the list itself.
 
 It is also required if you want ordered lists:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Ol[
 \L[first]
 \L[second]
@@ -2877,7 +2877,7 @@ It is also required if you want ordered lists:
 ]]
 
 Insane nested list with two space indentation:
-\OurbigbookExample[[
+\OurBigBookExample[[
 * a
   * a1
   * a2
@@ -2888,7 +2888,7 @@ Insane nested list with two space indentation:
 The indentation must always be exactly equal to two spaces, anything else leads to errors or unintended output.
 
 Equivalent saner nested lists with implicit containers:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \L[
 a
 \L[a1]
@@ -2900,7 +2900,7 @@ a
 ]]
 
 Insane list item with a paragraph inside of it:
-\OurbigbookExample[[
+\OurBigBookExample[[
 * a
 * I have
 
@@ -2914,7 +2914,7 @@ Insane list item with a paragraph inside of it:
 ]]
 
 Equivalent sane version:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \L[a]
 \L[
 I have
@@ -2930,12 +2930,12 @@ Multiple paragraphs.
 ]]
 
 Insane lists may be escaped with a backslash as usual:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \* paragraph starting with an asterisk.
 ]]
 
 You can also start insane lists immediately at the start of a \x[positional-vs-named-arguments][positional or named argument], e.g.:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \P[* a
 * b
 * c
@@ -2955,11 +2955,11 @@ And now a list outside of \x[ourbigbookexample] to test how it looks directly un
 Via https://katex.org/[KaTeX] server side, oh yes!
 
 Inline math is done with the dollar sign (`$`) <insane macro shortcut>:
-\OurbigbookExample[[
+\OurBigBookExample[[
 My inline $\sqrt{1 + 1}$ is awesome.
 ]]
 and block math is done with two or more dollar signs (`$$`):
-\OurbigbookExample[[
+\OurBigBookExample[[
 $$
 \sqrt{1 + 1} \\
 \sqrt{1 + 1}
@@ -2967,11 +2967,11 @@ $$
 ]]
 
 The sane version of inline math is a lower case `m`:
-\OurbigbookExample[[[
+\OurBigBookExample[[[
 My inline \m[[\sqrt{1 + 1}]] is awesome.
 ]]]
 and the sane version of block math is with an upper case `M`:
-\OurbigbookExample[[[
+\OurBigBookExample[[[
 \M[[
 \sqrt{1 + 1} \\
 \sqrt{1 + 1}
@@ -2981,7 +2981,7 @@ and the sane version of block math is with an upper case `M`:
 The capital vs lower case theme is also used in other elements, see: \x[block-vs-inline-macros].
 
 In the sane syntax, \x[escape-characters][as with any other argument], you have to either escape any closing square brackets `]` with a backslash `\`:
-\OurbigbookExample[[
+\OurBigBookExample[[
 My inline \m[1 - \[1 + 1\] = -1] is awesome.
 ]]
 or with the equivalent double open and close:
@@ -2990,21 +2990,21 @@ My inline \m[[1 - [1 + 1] = -1]] is awesome.
 ``
 
 HTML escaping happens as you would expect, e.g. `<` shows fine in:
-\OurbigbookExample[[
+\OurBigBookExample[[
 $$
 1 < 2
 $$
 ]]
 
 Equation IDs and titles and linking to equations works identically to \x[image]{p}, see that section for full details. Here is one equation reference example that links to the following insane syntax equation: \x[equation-my-first-insane-equation]:
-\OurbigbookExample[[
+\OurBigBookExample[[
 $$
 \sqrt{1 + 1}
 $$
 {title=My first insane equation.}
 ]]
 and the sane equivalent \x[equation-my-first-sane-equation]:
-\OurbigbookExample[[[
+\OurBigBookExample[[[
 \M{title=My first sane equation.}[[
 \sqrt{1 + 1}
 ]]
@@ -3017,7 +3017,7 @@ $$\sqrt{1 + 1}$$
 {parent=mathematics}
 
 First here is an invisible block (with `{show=0}`) defining with a `\newcommand` definition after this paragraph:
-\OurbigbookExample[[
+\OurBigBookExample[[
 $$
 \newcommand{\foo}[0]{bar}
 $${show=0}
@@ -3025,27 +3025,27 @@ $${show=0}
 We make it invisible because this block only contains KaTeX definitions, and should not render to anything.
 
 Then the second math block uses those definitions:
-\OurbigbookExample[[
+\OurBigBookExample[[
 $$
 \foo
 $$
 ]]
 
 Analogously with `\def`, definition:
-\OurbigbookExample[[
+\OurBigBookExample[[
 $$
 \gdef\foogdef{bar}
 $${show=0}
 ]]
 and the second block using it:
-\OurbigbookExample[[
+\OurBigBookExample[[
 $$
 \foogdef
 $$
 ]]
 
 And just to test that `{show=1}` actually shows, although it is useless, and that `{show=0}` skips incrementing the equation count:
-\OurbigbookExample[[
+\OurBigBookExample[[
 $$1 + 1$${show=1}
 $$2 + 2$${show=0}
 $$3 + 3$${show=1}
@@ -3072,14 +3072,14 @@ $$
 {parent=macro}
 
 OK, this is too common, so we opted for some <insanity> here: double newline is a paragraph!
-\OurbigbookExample[[
+\OurBigBookExample[[
 Paragraph 1.
 
 Paragraph 2.
 ]]
 
 Equivalently however, you can use an explicit `\P` macros as well, which is required for example to add properties to a paragraph, e.g.:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \P{id=paragraph-1}[Paragraph 1]
 \P{id=paragraph-2}[Paragraph 2]
 ]]
@@ -3108,14 +3108,14 @@ Dumps its contents directly into the rendered output.
 This construct is not XSS safe, see: \x[unsafe-xss]{full}.
 
 Here for example we define a paragraph in raw HTML:
-\OurbigbookExample[[[
+\OurBigBookExample[[[
 \passthrough[[
 <p>Hello <b>raw</b> HTML!</p>
 ]]
 ]]]
 
 And for an inline passthrough:
-\OurbigbookExample[[[
+\OurBigBookExample[[[
 Hello \passthrough[[<b>raw</b>]] world!
 ]]]
 
@@ -3124,7 +3124,7 @@ Hello \passthrough[[<b>raw</b>]] world!
 {title2=`\Q`}
 
 With `q`:
-\OurbigbookExample[[
+\OurBigBookExample[[
 And so he said:
 
 \Q[
@@ -3145,7 +3145,7 @@ The <insane syntax> marks:
 * regular cells with `| ` (pipe, space) at the start of a line
 * separates rows with double newline
 For example:
-\OurbigbookExample[[
+\OurBigBookExample[[
 || Header 1
 || Header 2
 
@@ -3156,7 +3156,7 @@ For example:
 | 2 2
 ]]
 Empty cells are allowed without the trailing space however:
-\OurbigbookExample[[
+\OurBigBookExample[[
 | 1 1
 |
 | 1 3
@@ -3167,7 +3167,7 @@ Empty cells are allowed without the trailing space however:
 ]]
 
 Equivalent fully explicit version:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Table[
 \Tr[
   \Th[Header 1]
@@ -3186,7 +3186,7 @@ Equivalent fully explicit version:
 Any white space indentation inside an explicit `\Tr` can make the code more readable, and is automatically removed from final output due to \x[remove-whitespace-children] which is set for `\Table`.
 
 To pass further arguments to an implicit table such as `title` or `id`, you need to use an explicit `table` macro as in: \x[table-my-table].
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Table
 {title=My table title.}
 {id=table-my-table}
@@ -3204,7 +3204,7 @@ To pass further arguments to an implicit table such as `title` or `id`, you need
 We would like to remove that explicit toplevel requirement as per: https://github.com/cirosantilli/ourbigbook/issues/186[] The rules of when the caption shows up or not similar to those of \x[image]{p} as mentioned at \x[image-caption]{full}.
 
 Multiple source lines, including paragraphs, can be added to a single cell with insane syntax by indenting the cell with exactly two spaces just as for \x[list]{p}, e.g.:
-\OurbigbookExample[[
+\OurBigBookExample[[
 || h1
 || h2
 || h3
@@ -3222,7 +3222,7 @@ Multiple source lines, including paragraphs, can be added to a single cell with 
 | 23
 ]]
 Arbitrarily complex nested constructs may be used, e.g. a table inside a list inside table:
-\OurbigbookExample[[
+\OurBigBookExample[[
 | 00
 | 01
 
@@ -3272,7 +3272,7 @@ And a fully insane one:
 {parent=table}
 
 JavaScript interactive on-click table sorting is enabled by default, try it out by clicking on the header row:
-\OurbigbookExample[[
+\OurBigBookExample[[
 || String col
 || Integer col
 || Float col
@@ -3371,14 +3371,14 @@ In the case of videos, \x[where-to-store-images] becomes even more critical sinc
 * \x[store-images-inside-the-repository-itself]
 * \x[store-images-in-a-separate-media-repository]
 As a result, then https://commons.wikimedia.org[Wikimedia Commons] is one of the best options \x[store-images-in-wikimedia-commons][much like for images]:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Video[https://upload.wikimedia.org/wikipedia/commons/8/85/Vacuum_pump_filter_cut_and_place_in_eppendorf.webm]
 {id=sample-video-in-wikimedia-commons}
 {title=Nice sample video stored in Wikimedia Commons.}
 {start=5}
 ]]
 We also handle more complex transcoded video URLs just fine:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Video[https://upload.wikimedia.org/wikipedia/commons/transcoded/1/19/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv.480p.vp9.webm]
 {id=sample-video-in-wikimedia-commons-transcoded}
 {title=Nice sample video stored in Wikimedia Commons transcoded.}
@@ -3389,19 +3389,19 @@ Commons is better than YouTube if your content is on-topic there because:
 * it makes it easier for other users to find and re-use your videos
 
 If your video does not fit the above Wikimedia Commons requirements, YouTube could be a good bet. OurBigBook https://github.com/cirosantilli/ourbigbook/issues/50[automatically detects YouTube URLs] for you, so the following should just work:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
 {id=sample-video-from-youtube-implicit-youtube}
 {title=Nice sample video embedded from YouTube implicit from `youtube.com` URL.}
 ]]
 The `youtu.be` domain hack URLs also work;
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Video[https://youtu.be/YeFzeNAHEhU?t=38]
 {id=sample-video-from-youtube-implicit-youtu-be}
 {title=Nice sample video embedded from YouTube implicit from `youtu.be` URL.}
 ]]
 Alternatively, you can reach the same result in a more explicit and minimal way by setting `{provider=youtube}` and the \x[video-start-argument][`start`] arguments:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Video[YeFzeNAHEhU]{provider=youtube}
 {id=sample-video-from-youtube-explicit}
 {title=Nice sample video embedded from YouTube with explicit `youtube` argument.}
@@ -3419,7 +3419,7 @@ Remember that you can also enable the `youtube` provider by default on your \x[o
 ``
 
 But you can also use raw video files from any location that can serve them of course, e.g. here is one stored in this repository: \x[sample-video-in-repository].
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Video[Tank_man_side_hopping_in_front_of_some_tanks.mp4]
 {id=sample-video-in-repository}
 {title=Nice sample video stored in this repository.}
@@ -3428,7 +3428,7 @@ But you can also use raw video files from any location that can serve them of co
 ]]
 
 And as for images, setting `titleFromSrc` automatically calculates a title for you:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Video[Tank_man_side_hopping_in_front_of_some_tanks.mp4]
 {titleFromSrc}
 {source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
@@ -3464,19 +3464,19 @@ Every macro in OurBigBook can have an optional `id` and many also have a reserve
 When a macro in the document has a `title` argument but no `id` argument given, get an auto-generated ID from the title: \x[automatic-id-from-title].
 
 Usually, the most convenient way to write internal cross references is with the insane syntax with delimited angled braces:
-\OurbigbookExample[[
+\OurBigBookExample[[
 <Internal cross references> are awesome.
 ]]
 More details at: \x[insane-internal-cross-reference].
 
 The sane equivalent to this is:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[internal-cross-reference]{c}{p} are awesome section.
 ]]
 Note how that is more verbose, especially because here we use both the \x[x-c-argument] and  \x[x-p-argument] to capitalize and pluraize as desired.
 
 Another sane equivalent would be to add an explicit link body as in:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[internal-cross-reference][Internal cross references] are awesome.
 ]]
 
@@ -3486,7 +3486,7 @@ Another sane equivalent would be to add an explicit link body as in:
 {title2=`<>`}
 
 When you use an insane internal cross reference (`<>`) such as in:
-\OurbigbookExample[[
+\OurBigBookExample[[
 <Internal cross references> are awesome.
 ]]
 it gets expanded exactly to the sane equivalent:
@@ -3496,11 +3496,11 @@ it gets expanded exactly to the sane equivalent:
 so we see that the \x[x-magic-argument] gets added. It is that argument that for example adds the missing `-`, and removes the pluralization to find the correct ID `internal-cross-reference`.  For more details, see the documentation of the \x[x-magic-argument].
 
 Like other <insane> constructs, <insane internal cross references> are exactly equivalent to the sane version, so you can just add other arguments after the construct, e.g.:
-\OurbigbookExample[[
+\OurBigBookExample[[
 <Internal cross references>{full} are awesome.
 ]]
 which gets converted to exact the same as the sane:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[internal-cross-reference]{full} are awesome.
 ]]
 
@@ -3582,67 +3582,67 @@ Now for a live example for quick and dirty interactive testing.
 = Cross reference title inflection example
 {parent=cross-reference-title-inflection}
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[inflection-example-not-proper]
 ]]
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[inflection-example-not-proper]{c}
 ]]
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[inflection-example-not-proper]{full}
 ]]
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[inflection-example-proper]
 ]]
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[inflection-example-proper]{c}
 ]]
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[inflection-example-not-proper-lower]
 ]]
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[inflection-example-not-proper-lower]{c}
 ]]
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[inflection-example-proper-lower]
 ]]
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[not-readme]
 ]]
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[not-readme]{c}
 ]]
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[inflection-example-not-proper]{p}
 ]]
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[inflection-plural-examples]
 ]]
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[inflection-plural-examples]{p}
 ]]
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[inflection-plural-examples]{p=0}
 ]]
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[inflection-plural-examples]{p=1}
 ]]
 
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[not-the-readme-header-with-fixed-case]
 ]]
 
@@ -3781,12 +3781,12 @@ A closely related limitation is the simplistic approach to \x[x-id-output-format
 {parent=internal-cross-reference}
 
 Reference to the first header of another file:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[not-readme]
 ]]
 
 Reference to a non-first header of another file:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[h2-in-not-the-readme]
 ]]
 
@@ -3804,28 +3804,28 @@ while `\x[h2-in-not-the-readme]` is rendered with the fragment:
 ``
 
 Reference to the first header of another file that is a second inclusion:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[included-by-not-readme]
 ]]
 
 Reference to another header of another file, with \x[x-full-argument][`full`]:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[h2-in-not-the-readme]{full}.
 ]]
 Note that when `full` is used with references in another file in \x[embed-includes][multi page mode], the number is not rendered as explained at: \x[x-full-argument-in-internal-cross-file-references]{full}.
 
 Reference to an image in another file:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[image-not-readme-xi]{full}.
 ]]
 
 Reference to an image in another file:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[image-figure-in-not-the-readme-without-explicit-id]{full}.
 ]]
 
 Remember that the \x[the-toplevel-header][ID of the toplevel header] is automatically derived from its file name, that's why we have to use:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[not-readme]
 ]]
 instead of:
@@ -3834,7 +3834,7 @@ instead of:
 ``
 
 Reference to a subdirectory:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[subdir]
 
 \x[subdir/h2]
@@ -3923,7 +3923,7 @@ and not:
 ``
 
 Live example:
-\OurbigbookExample[[
+\OurBigBookExample[[
 This is a nice image: \x[image-aa-zxcv-lolol-bb].
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
@@ -4065,12 +4065,12 @@ The `parent` argument is exactly like the \x[x-child-argument], but it reverses 
 {parent=x-arguments}
 
 To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` \x[boolean-argument] to the cross reference, for example:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[x-full-argument]{full}.
 ]]
 
 `{full}` is not needed for cross references to most macros besides \x[header]{p}, which use `full` by default as seen by the `default_x_style_full` macro property in \x[help-macros]. This is for example the case for \x[image]{p}. You can force this to be disabled with `{full=0}`:
-\OurbigbookExample[[
+\OurBigBookExample[[
 Compare \x[image-my-test-image]{full=0} vs \x[image-my-test-image]{full=1}.
 ]]
 
@@ -4078,7 +4078,7 @@ Compare \x[image-my-test-image]{full=0} vs \x[image-my-test-image]{full=1}.
 {parent=x-full-argument}
 
 For example in the following \x[internal-cross-file-reference]:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[h2-in-not-the-readme]{full}.
 ]]
 we get just something like:
@@ -4202,7 +4202,7 @@ Insane in our context does not mean worse. It just mean "harder for the computer
 The insane code and math shortcuts work very analogously and are therefore described together in this section.
 
 The insane inline code syntax:
-\OurbigbookExample[[
+\OurBigBookExample[[
 a `b c` d
 ]]
 and is equivalent to the sane:
@@ -4211,7 +4211,7 @@ a \c[[b c]] d
 ``
 
 The insane block code:
-\OurbigbookExample[[
+\OurBigBookExample[[
 a
 
 ``
@@ -4244,7 +4244,7 @@ For example, an insane code block with an id can be written as:
 a `b c`{id=ef} g
 ``
 because that is the same as:
-\OurbigbookExample[[
+\OurBigBookExample[[
 a \c[b c]{id=ef} g
 ]]
 So we see that the `b c` argument is the very first argument of `\c`.
@@ -4260,7 +4260,7 @@ This restriction things easy to parse for humans and machines alike.
 {parent=macros-with-insane-shortcut}
 
 Literal backticks and dollar signs can be produced witha backslash escape as in:
-\OurbigbookExample[[
+\OurBigBookExample[[
 a \` \$ b
 ]]
 
@@ -4271,14 +4271,14 @@ The design reason for that is because multiple backticks produce block code.
 The upside is that then you don't have to escape anything else, e.g. backslashes (`\`) are rendered literally.
 
 The only way to do it is to use the sane syntax instead:
-\OurbigbookExample[[[
+\OurBigBookExample[[[
 a \c[[b ` c]] d
 
 a \m[[\sqrt{\$4}]] d
 ]]]
 
 Within block code and math, you can just add more separators:
-\OurbigbookExample[[
+\OurBigBookExample[[
 ```
 code with two backticks
 ``
@@ -4372,7 +4372,7 @@ Most positional arguments will default to an empty string if not given.
 However, some positional arguments can have special effects if not given.
 
 For example, an anchor with the first positional argument present (the URL), but not the second positional argument (the link text) as in:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \a[http://example.com]
 ]]
 has the special effect of generating automatic links as in:
@@ -4414,15 +4414,15 @@ Name arguments marked in \x[help-macros] as `boolean: true` must either:
 * not be given, in which case a custom per-macro default is used. That value is the `default` from \x[help-macros], or `0` if such default is not given
 
 For example, the \x[x-full-argument] of <internal cross references> is correctly written as:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[boolean-argument]{full}
 ]]
 without the `=` sign, or equivalently:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[boolean-argument]{full=1}
 ]]
 The `full=0` version is useful in the case of reference targets that unlike \x[header]{p} expand the title on the cross reference by default, e.g. \x[image]{p}:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \x[boolean-argument]{full=1}
 ]]
 
@@ -4453,7 +4453,7 @@ In literal arguments, OurBigBook is not parsed, and the entire argument is consi
 Therefore, you cannot have nested content, but it makes it extremely convenient to write \x[code-block]{p} or \x[mathematics].
 
 For example, a multiline code block with double open and double close square brackets inside can be enclosed in triple square brackets:
-\OurbigbookExample[[[
+\OurBigBookExample[[[
 A literal argument looks like this in OurBigBook:
 
 \C[[
@@ -4468,7 +4468,7 @@ And another paragraph.
 ]]]
 
 The same works for inline code:
-\OurbigbookExample[[[
+\OurBigBookExample[[[
 The program \c[[puts("]");]] is very complex.
 ]]]
 
@@ -4540,7 +4540,7 @@ b
 This is extremely convenient to improve the readability of code blocks and similar constructs.
 
 The newline is however considered if it would be part of some \x[insane-macro-shortcut]. For example, we can start an \x[list][insane list] inside a \x[quotation]{p} as in:
-\OurbigbookExample[[
+\OurBigBookExample[[
 \Q[
 * a
 * b

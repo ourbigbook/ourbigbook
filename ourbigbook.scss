@@ -248,6 +248,7 @@ iframe {
 .math {
   align-items: center;
   overflow-x: auto;
+  overflow-y: clip;
   margin-bottom: $p-margin-vert;
   margin-top: $p-margin-vert;
   .caption {

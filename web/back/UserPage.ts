@@ -1,10 +1,10 @@
 import cirodown from 'cirodown/dist/cirodown'
 import sequelize from 'db'
 import { articleLimit  } from 'front/config'
-import { makeGetServerSidePropsArticle } from 'back/ArticlePage'
+import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
 import { getLoggedInUser } from 'back'
 
-export const makeGetServerSidePropsUser = (what): GetServerSideProps => {
+export const getServerSidePropsUserHoc = (what): GetServerSideProps => {
   return async ({ params, req }) => {
     const loggedInUser = await getLoggedInUser(req)
     const user = await sequelize.models.User.findOne({
@@ -67,7 +67,7 @@ export const makeGetServerSidePropsUser = (what): GetServerSideProps => {
       props.loggedInUser = await loggedInUser.toJson()
     }
     if (what === 'home') {
-      const articleProps = (await makeGetServerSidePropsArticle(true, loggedInUser)({
+      const articleProps = (await getServerSidePropsArticleHoc(true, loggedInUser)({
         params: { slug: [ params.uid ] } }))
       Object.assign(props, articleProps.props)
     } else {

@@ -1,3 +1,3 @@
-import makeArticleEditorPage from 'front/ArticleEditorPage'
+import ArticleEditorPageHoc from 'front/ArticleEditorPage'
 
-export default makeArticleEditorPage(true);
+export default ArticleEditorPageHoc(true);

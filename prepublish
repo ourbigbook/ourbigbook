@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -eu
+publish_out_dir="$1"
+./build
+cp cirodown.js "$publish_out_dir"

@@ -95,8 +95,8 @@ Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally pu
   * single-source multi-format output based on \x[includes] and build options:
     * one HTML per source with includes rendered as links between pages
     * \x[embed-includes] single file output. Includes are parsed smartly, not just source copy pasted, e.g. included headers are shifted from `h1` to `h2` correctly
-    * \x[split-headers] option to output one spearate header per output flie
-    * supports both local serverless rendering to HTML files for local viewing, and server oriented rendering such as GItHub pages, e.g. \x[internal-cross-references] automatically get `.html` extension and or not
+    * \x[split-headers] option to output each header of an input file into a separate output file
+    * supports both local serverless rendering to HTML files for local viewing, and server oriented rendering such as GitHub pages, e.g. \x[internal-cross-references] automatically get `.html` extension and or not
   * cross file configuration files to factor out common page parts like headers and footers
 * advanced header/ID related features:
   * \x[scope]

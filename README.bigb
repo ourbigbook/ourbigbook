@@ -3140,7 +3140,7 @@ and it was great.
 {parent=macro}
 {title2=`|| `, `| `, `\Table`, `\Tr`, `\Th` and `\Td`}
 
-The \x[insane-code-and-math-shortcuts][insane] syntax marks:
+The <insane syntax> marks:
 * headers with `|| ` (pipe, pipe space) at the start of a line
 * regular cells with `| ` (pipe, space) at the start of a line
 * separates rows with double newline
@@ -4407,8 +4407,6 @@ See: \x[positional-vs-named-arguments]{full}.
 {child=x-c-argument}
 {child=x-p-argument}
 {child=x-ref-argument}
-
-To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` \x[boolean-argument] to the cross reference, for example:
 
 Name arguments marked in \x[help-macros] as `boolean: true` must either:
 * take no value and no `=` sign, in which case the value is implicitly set to `1`

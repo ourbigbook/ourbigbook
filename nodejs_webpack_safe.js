@@ -667,7 +667,7 @@ function read_include({exists, read, path_sep, ext}) {
     return parts.join(path_sep)
   }
   if (ext === undefined) {
-    ext = ourbigbook.OURBIGBOOK_EXT
+    ext = `.${ourbigbook.OURBIGBOOK_EXT}`
   }
   return async (id, input_dir) => {
     let found = undefined;

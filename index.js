@@ -1,5 +1,8 @@
 const katex = require('katex');
 
+// consts used by classes.
+const UNICODE_LINK = String.fromCodePoint(0x1F517);
+
 class AstNode {
   /**
    * @param {AstType} node_type -
@@ -332,7 +335,7 @@ class Macro {
 // headers are used by the 'toc'.
 Macro.HEADER_MACRO_NAME = 'h';
 Macro.ID_ARGUMENT_NAME = 'id';
-Macro.LINK_SELF = `(${String.fromCodePoint(0x1F517)} link)`;
+Macro.LINK_SELF = `(${UNICODE_LINK} link)`;
 Macro.PARAGRAPH_MACRO_NAME = 'p';
 Macro.TITLE_ARGUMENT_NAME = 'title';
 Macro.TOC_MACRO_NAME = 'toc';
@@ -1855,7 +1858,17 @@ const DEFAULT_MACRO_LIST = [
         let target_id = html_escape_attr(target_ast.id);
         let href = html_attr('href', '#' + target_id);
         let id_to_toc = html_attr('id', Macro.TOC_PREFIX + target_id);
-        ret += `<li><div${id_to_toc}><a${href}${attrs}>${content}</a></div>`;
+        ret += `<li><div${id_to_toc}><a${href}${attrs}>${content}</a><span>`;
+
+        let toc_href = html_attr('href', '#' + Macro.TOC_PREFIX + target_id);
+        ret += ` | <a${toc_href}>${UNICODE_LINK} link</a>`;
+
+        let parent_ast = target_ast.header_tree_node.parent_node.value;
+        let parent_href = html_attr('href', '#' + Macro.TOC_PREFIX + parent_ast.id);
+        let parent_body = convert_arg(parent_ast.args.title, context);
+        ret += ` | <a${parent_href}>\u2191 parent "${parent_body}"</a>`;
+
+        ret += `</span></div>`;
         if (tree_node.children.length > 0) {
           for (let i = tree_node.children.length - 1; i >= 0; i--) {
             todo_visit.push([tree_node.children[i], level + 1]);

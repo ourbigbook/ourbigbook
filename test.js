@@ -2566,19 +2566,17 @@ assert_convert_ast('code inline insane simple',
     ]),
   ]
 );
-if (false) {
-  // TODO https://github.com/cirosantilli/cirodown/issues/171
-  assert_convert_ast('code inline insane with only a backslash',
-    'a `\\` d\n',
-    [
-      a('P', [
-        t('a '),
-        a('c', [t('\\')]),
-        t(' d'),
-      ]),
-    ]
-  );
-}
+// https://github.com/cirosantilli/cirodown/issues/171
+assert_convert_ast('code inline insane with only a backslash',
+  'a `\\` d\n',
+  [
+    a('P', [
+      t('a '),
+      a('c', [t('\\')]),
+      t(' d'),
+    ]),
+  ]
+);
 assert_convert_ast('code inline insane escape backtick',
   'a \\`b c\n',
   [a('P', [t('a `b c')])]

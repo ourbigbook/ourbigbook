@@ -58,15 +58,15 @@ More precisely:
 
   E.g., in a link:
 
-  \c[[\a[http://example.com][Link text]]]
+  \C[[\a[http://example.com][Link text]]]
 
   the first macro argument:
 
-  \c[http://example.com]
+  \C[http://example.com]
 
   maps to the \c[href] of \c[<a], and the second macro argument:
 
-  \c[Link text]
+  \C[Link text]
 
   maps to the internal content of \c[<a>Link text<>]
 ]
@@ -77,7 +77,7 @@ The \x[saner][high sanity of Cirodown], also makes creating new macro extensions
 
 All built-in language features use the exact same API as new extensions, which ensures that the extension API is sane forever.
 
-Markdown is clearly missing many key features such as block attributes and \x[internal cross references], and has no standardized extension mechanism.
+Markdown is clearly missing many key features such as block attributes and \x[internal-cross-references], and has no standardized extension mechanism.
 
 The "more powerful than Asciidoctor" part is only partially true, since Asciidoctor is very featureful can do basically anything through extensions.
 
@@ -99,13 +99,13 @@ Equivalently however, you can use an explicit \c[[\p]] macros as well, which is 
 \p{id=paragraph-1}[Paragraph 1]
 \p{id=paragraph-2}[Paragraph 2]
 
-Paragraphs are created automatically inside \x[Macro argument syntax][macro argument] whenever a double newline appears.
+Paragraphs are created automatically inside \x[macro-argument-syntax][macro argument] whenever a double newline appears.
 
 The paragraphs start at the beginning of the parent element of the double newlines, and end at the end of it.
 
 For example:
 
-\c[[
+\C[[
 \somemacro[a b c d][c
 
 d
@@ -115,7 +115,7 @@ e]
 
 would parse as:
 
-\c[[
+\C[[
 \somemacro[a b c][
 \p[d]
 \p[e]
@@ -145,33 +145,15 @@ Those that have a \c[title] but no \c[id], get an auto-generated ID from the tit
 
 For macros that do have an ID, you can write a cross reference to it:
 
-\c[[
+\C[[
 \h[2][My title][my-id]
 
 Read this \x[my-id][amazing section].
 ]]
 
-Alternatively, if the ID is identical from the one that would be \c{Automatic ID from title}{auto-generated form the title}, you can use the title itself as the reference instead of the ID:
+If the second argument, the \c[content], is not present, it expand to the header title, e.g.:
 
-\c[[
-\h[2][My title]
-
-Read this \x[My title][amazing section].
-]]
-
-which is equivalent to the more explicit:
-
-\c[[
-\h[2][My title]{id=my-title}
-
-Read this \x[my-title][amazing section].
-]]
-
-Note that the second positional argument of the header macro is the ID,
-
-Empty internal cross reference titles expand to the header title, e.g.:
-
-\c[[
+\C[[
 \h[2][My title][my-id]
 
 Read this \x[my-id].
@@ -179,7 +161,7 @@ Read this \x[my-id].
 
 is the same as:
 
-\c[[
+\C[[
 \h[2][My title][my-id]
 
 Read this \x[my-id][My title].
@@ -187,7 +169,7 @@ Read this \x[my-id][My title].
 
 To also show the section auto-generated number as in"Section X.Y My title" we add the optional \c{\{style=full\}} param to the cross reference, for example:
 
-\c[[
+\C[[
 \h[2][My title][my-id]
 
 Read this \x[my-id]{style=full}.
@@ -280,7 +262,7 @@ References withing a single scope do not need the parent scope prefix.
 
 Arguably, the language would be even saner if we did:
 
-\c[[
+\C[[
 \h[My h1][
 
 Paragraph.
@@ -316,7 +298,7 @@ If an external header would be included multiple times in a single output page, 
 
 Therefore, in this case you are forced to specify which include will actually expand to the \c{canonical} attribute:
 
-\c[[
+\C[[
 \include[not-the-readme]{canonical=true}
 ]]
 
@@ -434,23 +416,66 @@ See this image \x[image-lotus-flower]:
   I'm not even kidding.
 }
 
-\h[2][Code \c[[\c]]]
+\h[2][Code \c[[\c]] and \c[[\C]]]
 [code]
 
-My inline \c[code block] is awesome.
+Inline code blocks (code blocks that should appear in the middle of a paragraph) are done with lower case \c[c]:
 
-Code block:
+\C[[
+My \c[inline] code.
+]]
 
-\c[
-Large
+renders to:
 
-block
-of
+\C[[
+<p>My <code>inline</code> code.</p>
+]]
 
-code
+Code blocks (code blocks that should appear outside of paragraphs in their own lines) are done with capital \c[C]:
+
+\C[[
+A paragraph.
+
+\C[
+A block
+of code
 ]
 
-\h[2][Math \c[[\m]]]
+Another paragraph.
+]]
+
+renders to:
+
+\C[[
+<p>A paragraph.</p>
+<pre><code>A block
+of code</code></pre>
+<p>Another paragraph.</p>
+]]
+
+If the content of the code block has many characters that you would need to \x[escape-characters][escape], you will often want to use \x[literal-arguments], which work just like the do for any other argument. For example:
+
+\C[[[
+A paragraph.
+
+\c[[
+And now, some long, long code, with lots
+of chars that you would need to escape:
+\ [  ] {  }
+]]
+
+A paragraph.
+]]]
+
+Note that the initial newline is skipped automatically in code blocks, just as for any other element, due to: \x[argument-leading-and-trailing-newline-removal], so you don't have to worry about it.
+
+The capital vs lower case theme is also used in other elements, for example \x[math].
+
+The distinction between inline \c[c] and block \c[C] code blocks is needed because in HTML, \a[https://stackoverflow.com/questions/5371787/can-i-have-a-pre-tag-inside-a-p-tag-in-tumblr/58603596#58603596][\c[pre] cannot go inside \c[p]].
+
+We could have chosen to do some magic to differentiate between them, e.g. checking if the block is the only element in a paragraph, but we decided not to do that to keep the language saner.
+
+\h[2][Math \c[[\m]] and \c[[\M]]]
 [math]
 
 Via KaTeX server side, oh yes!
@@ -463,9 +488,9 @@ Escape the closing bracket with backslash: \m[1 - \[1 + 1\] = -1].
 
 Escape the closing bracket with double open and close: \m[[1 - [1 + 1] = -1]] is awesome.
 
-Display math:
+Display math is done with upper case \c[M]:
 
-\m[[
+\M[[
 \sqrt[1 + 1]
 \sqrt[1 + 1]
 ]]
@@ -703,7 +728,7 @@ In addition to being a single input single output file conversion tool, our impl
 
 We believe that this is the only way to achieve a perfect unified development experience.
 
-Firstly, the same executable that does single file conversion, when pointed to a directory enter a multi-file mode that does the desired multi-file conversion, resolving for example \x[Cross file references].
+Firstly, the same executable that does single file conversion, when pointed to a directory enter a multi-file mode that does the desired multi-file conversion, resolving for example \x[cross-file-references].
 
 Furthermore, the exact same executable will have a server mode speed up interactive development with a off-the-shelf text editor (as opposed to a \x[editor-and-preview][the planned dedicated editor]).
 

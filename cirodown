@@ -18,7 +18,7 @@ const AstNode = class {
    *                        used primarily to present useful debug messages
    * @param {Number} column
    * @param {Object} attrs
-   *                 {boolean} is_block: is the macro surrounded directly by \n\n paragraphs
+   *                 {boolean} has_paragraph_siblings: is the macro surrounded directly by \n\n paragraphs
    */
   constructor(node_type, macro_name, args, line, column, attrs={}) {
     this.node_type = node_type;
@@ -26,17 +26,13 @@ const AstNode = class {
     this.args = args;
     this.line = line;
     this.column = column;
-    this.attrs = attrs;
-    if (!('is_block' in this.attrs)) {
-      this.attrs.is_block = false;
-    }
   }
 
   convert(options) {
     if (!('errors' in options.extra_returns)) {
       options.extra_returns.errors = [];
     }
-    return macros[this.macro_name].convert(this.args, options);
+    return macros[this.macro_name].convert(this, options);
   }
 
   toJSON() {
@@ -147,6 +143,8 @@ const Macro = class {
    *        {boolean} phrasing - is this phrasing content?
    *                  (HTML5 elements that can go in paragraphs). This matters to determine
    *                  where `\n\n` paragraphs will split.
+   *        {boolean} phrasing_if_not_alone - the element is phrasing if it is not the only child
+   *                                          of a double paragraph.
    */
   constructor(name, args, convert, properties={}) {
     this.name = name;
@@ -155,6 +153,9 @@ const Macro = class {
     this.properties = properties;
     if (!('phrasing') in this.properties) {
       this.properties['phrasing'] = false;
+    }
+    if (!('phrasing_if_has_paragraph_sibling') in this.properties) {
+      this.properties['phrasing_if_has_paragraph_sibling'] = false;
     }
     this.name_to_arg = {};
     this.index_to_arg = {};
@@ -206,17 +207,28 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(args, options) {
-      if ((!('content' in args))) {
-        content = args.href;
+    function(ast, options) {
+      if ((!('content' in ast.args))) {
+        content = ast.args.href;
       } else {
-        content = args.content;
+        content = ast.args.content;
       }
-      return `<a href="${convert_arg(args.href, options)}">${convert_arg(content, options)}</a>`;
+      return `<a href="${convert_arg(ast.args.href, options)}">${convert_arg(content, options)}</a>`;
     },
     {
       phrasing: true,
     }
+  ),
+  new Macro(
+    'C',
+    [
+      new Argument({
+        name: 'content',
+      }),
+    ],
+    function(ast, options) {
+      return `<pre><code>${convert_arg(ast.args.content, options)}</code></pre>\n`;
+    },
   ),
   new Macro(
     'c',
@@ -225,16 +237,8 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(args, options) {
-      let ret = '';
-      if (this.attrs.is_block) {
-        ret += '<pre>'
-      }
-      `<code>${convert_arg(args.content, options)}</code>`;
-      if (this.attrs.is_block) {
-        ret += '</pre>\n'
-      }
-      return ret;
+    function(ast, options) {
+      return `<code>${convert_arg(ast.args.content, options)}</code>`;
     },
     {
       phrasing: true,
@@ -253,17 +257,17 @@ let macro_list = [
         name: 'id',
       }),
     ],
-    function(args, options) {
-      let content = convert_arg(args.content, options);
+    function(ast, options) {
+      let content = convert_arg(ast.args.content, options);
       let id;
-      if ('id' in args) {
-        id = convert_arg(args.id, options);
+      if ('id' in ast.args) {
+        id = convert_arg(ast.args.id, options);
       } else {
         // TODO correct unicode aware algorithm.
         //let content_chars = content
         id = content.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
       }
-      let level = convert_arg(args.level, options);
+      let level = convert_arg(ast.args.level, options);
       return `<h${level} id="${id}">${content}</h${level}>\n`;
     }
   ),
@@ -274,8 +278,8 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(args, options) {
-      return `<p>${convert_arg(args.content, options)}</p>\n`;
+    function(ast, options) {
+      return `<p>${convert_arg(ast.args.content, options)}</p>\n`;
     }
   ),
   new Macro(
@@ -285,8 +289,8 @@ let macro_list = [
         name: 'content',
       }),
     ],
-    function(args, options) {
-      return args;
+    function(ast, options) {
+      return ast.args;
     },
     {
       phrasing: true,
@@ -302,10 +306,10 @@ let macro_list = [
         name: 'title',
       }),
     ],
-    function(args, options) {
+    function(ast, options) {
       let title;
-      if ('title' in args) {
-        title = args.title;
+      if ('title' in ast.args) {
+        title = ast.args.title;
       } else {
         if ('title' in options) {
           title = options['title'];
@@ -327,11 +331,14 @@ let macro_list = [
 <meta charset=utf-8>
 <title>${convert_arg(title, options)}</title>
 <style>
+code {
+  background-color: 111111;
+}
 </style>
 <body>
 `
       }
-      ret += convert_arg(args.content, options);
+      ret += convert_arg(ast.args.content, options);
       if (!options.body_only) {
         ret += `</body>
 </html>
@@ -340,7 +347,7 @@ let macro_list = [
       return ret;
     }
   ),
-]
+];
 
 // Macros indexed by their name.
 let macros = {};
@@ -588,7 +595,10 @@ const parse_add_paragraph = function(
   parse_log_debug(state, 'paragraph_end: ' + paragraph_end);
   parse_log_debug(state);
   let slice = arg.slice(paragraph_start, paragraph_end);
-  if (macros[arg[paragraph_start].macro_name].properties.phrasing) {
+  let macro = macros[arg[paragraph_start].macro_name];
+  if (macro.properties.phrasing) {
+    // If the first element after the double newline is phrasing content,
+    // create a paragraph and put all elements inside the paragraph.
     new_arg.push(
       new AstNode(
         AstType.MACRO,
@@ -601,10 +611,8 @@ const parse_add_paragraph = function(
       )
     );
   } else {
-    for (const ast of slice) {
-      ast.attrs.is_block = true;
-      new_arg.push(ast);
-    }
+    // Otherwise, don't create the paragraph, and keep all elements as they were.
+    new_arg.push(...slice);
   }
 }
 

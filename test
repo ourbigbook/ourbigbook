@@ -83,14 +83,14 @@ My paragraph 2.
 )});
 
 // Code..
-it('code', ()=>{assert_convert(
+it('code inline', ()=>{assert_convert(
   'a \\c[b c] d\n',
   'a <code>b c</code> d\n'
 )});
-it('code multiline', ()=>{assert_convert(
+it('code block', ()=>{assert_convert(
   `a
 
-\\c[
+\\C[
 b
 c
 ]
@@ -98,9 +98,10 @@ c
 d
 `,
   `<p>a</p>
-<p><code>b
+<pre><code>b
 c
-</code></p>
+</code></pre>
 <p>d</p>
 `
 )});
+//it('code not block', ()=>{assert_convert(

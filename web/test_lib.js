@@ -483,7 +483,7 @@ async function generateDemoData(params) {
         sequelize,
         count: false,
         author: user.username,
-        limit: nArticlesPerUser,
+        limit: nArticlesPerUser + 1,
       }))
       for (const article of articles) {
         const slugParse = path.parse(article.slug)

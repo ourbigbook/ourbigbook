@@ -15,7 +15,7 @@ export type ArticleType = {
   slug: string;
   topicId: string;
   updatedAt: number;
-  favoritesCount: number;
+  score: number;
   favorited: boolean;
   render: string;
 };

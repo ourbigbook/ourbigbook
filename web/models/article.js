@@ -37,6 +37,11 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING(2**20),
         allowNull: false,
       },
+      score: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+        defaultValue: 0,
+      },
     },
     {
       hooks: {
@@ -63,15 +68,10 @@ module.exports = (sequelize) => {
       },
       // TODO for sorting by latest.
       indexes: [
-        {
-          fields: ['createdAt'],
-        },
-        {
-          fields: ['topicId'],
-        },
-        {
-          fields: ['slug'],
-        },
+        { fields: ['createdAt'], },
+        { fields: ['topicId'], },
+        { fields: ['slug'], },
+        { fields: ['score'], },
       ],
     }
   )
@@ -83,10 +83,9 @@ module.exports = (sequelize) => {
     } else {
       authorPromise = new Promise(resolve => {resolve(this.author)})
     }
-    const [tags, favorited, favoritesCount, author] = await Promise.all([
+    const [tags, favorited, author] = await Promise.all([
       this.getTags(),
       user ? user.hasFavorite(this.id) : false,
-      this.countFavoritedBy(),
       authorPromise.then(author => author.toProfileJSONFor(user)),
     ])
     return {
@@ -98,7 +97,7 @@ module.exports = (sequelize) => {
       updatedAt: this.updatedAt.toISOString(),
       tagList: tags.map(tag => tag.name),
       favorited,
-      favoritesCount,
+      score: this.score,
       author,
       render: this.render,
     }

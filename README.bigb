@@ -7628,6 +7628,12 @@ Aditionally, also setup a separate localhost reCAPTCHA to test that it is workin
 echo RECAPTCHA_SECRET_KEY=secret_localhost_key >> web/.env
 echo NEXT_PUBLIC_RECAPTCHA_SITE_KEY=site_localhost_key >> web/.env
 ``
+and then to use the .env file run with:
+``
+cd web
+env $(cat .env | xargs) npm run dev
+``
+
 Although it is possible to use a single reCAPTCHA for both production and development, Google recommends having separate ones.
 
 If the `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` variable is not set, then reCAPTCHA is simply not used in the website.

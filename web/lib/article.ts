@@ -4,15 +4,7 @@ import sequelize from "lib/db";
 export const getStaticPathsArticle: GetStaticPaths = async () => {
   return {
     fallback: true,
-    paths: (await sequelize.models.Article.findAll()).map(
-      article => {
-        return {
-          params: {
-            pid: article.slug,
-          }
-        }
-      }
-    ),
+    paths: [],
   }
 }
 

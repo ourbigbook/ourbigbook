@@ -1453,6 +1453,13 @@ function parse(tokens, macros, options, extra_returns={}) {
               },
             ),
             new AstNode(
+              AstType.PARAGRAPH,
+              undefined,
+              undefined,
+              ast.line,
+              ast.column
+            ),
+            new AstNode(
               AstType.MACRO,
               Macro.PARAGRAPH_MACRO_NAME,
               {
@@ -1815,7 +1822,7 @@ function parse_add_paragraph(
   parse_log_debug(state);
   const slice = arg.slice(paragraph_start, paragraph_end);
   const macro = state.macros[arg[paragraph_start].macro_name];
-  if (macro.properties.phrasing) {
+  if (macro.properties.phrasing || slice.length > 1) {
     // If the first element after the double newline is phrasing content,
     // create a paragraph and put all elements until the next paragraph inside
     // that paragraph.

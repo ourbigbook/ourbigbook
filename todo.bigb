@@ -16,10 +16,9 @@ One possibility would be to add an underscore: `_raw/subdir/_index.html` for the
 
 Would be cool, easily allowing full website download for offline viewing! One day.
 
-=== Word count is always 0 on ToC hover
+=== Cross source file word count is always 0 on ToC hover
 {tag=Word count}
-
-For all items except ToC toplevel. Subheaders are fine however.
+{id=3}
 
 === Internal cross reference to non-existent ID is not checked before render the second time we try to convert
 {id=1}

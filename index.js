@@ -3070,6 +3070,12 @@ function convert_init_context(options={}, extra_returns={}) {
   }
   if (!('from_include' in options)) { options.from_include = false; }
   if (!('from_ourbigbook_example' in options)) { options.from_ourbigbook_example = false; }
+  if (!('auto_generated_source' in options)) {
+    // true if the input was auto-generated rather than coming
+    // from a hand written .bigb input file as usual. Initial application:
+    // don't show "source code of this page" on templates.
+    options.auto_generated_source = false;
+  }
   if (!('html_embed' in options)) { options.html_embed = false; }
   if (options.html_x_extension === undefined) {
     // Add HTML extension to x links. And therefore also:
@@ -9100,10 +9106,14 @@ const OUTPUT_FORMATS_LIST = [
             }
             const render_env = {
               body,
-              input_path: context.options.input_path,
               root_page,
               title: render_arg(title, context),
             };
+            if (context.options.auto_generated_source) {
+              render_env.input_path = ''
+            } else {
+              render_env.input_path = context.options.input_path
+            }
             Object.assign(render_env, context.options.template_vars);
 
             // Resolve relative styles and scripts.

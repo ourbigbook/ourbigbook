@@ -1500,6 +1500,12 @@ code {
 pre {
   background-color: #EEEEEE;
 }
+table {
+  border-collapse: collapse;
+}
+table, th, td {
+  border: 1px solid black;
+}
 </style>
 <body>
 `

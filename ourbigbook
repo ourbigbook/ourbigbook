@@ -1006,20 +1006,7 @@ if (commander.helpMacros) {
 
     // OURBIGBOOK_TEX_BASENAME
     let tex_path = path.join(ourbigbook_json_dir, OURBIGBOOK_TEX_BASENAME);
-    const katex_macros = {};
-    if (fs.existsSync(tex_path)) {
-      require('katex').renderToString(
-        fs.readFileSync(tex_path, ourbigbook_nodejs_webpack_safe.ENCODING),
-        {
-          globalGroup: true,
-          macros: katex_macros,
-          output: 'html',
-          strict: 'error',
-          throwOnError: true,
-        }
-      );
-    }
-    ourbigbook_options.katex_macros = katex_macros;
+    ourbigbook_options.katex_macros = ourbigbook_nodejs_webpack_safe.preload_katex(tex_path)
 
     // Setup the ID database.
     if (commander.db) {
@@ -1042,7 +1029,6 @@ if (commander.helpMacros) {
         validateStatus: () => true,
       })
       function handleWebApiErr(err) {
-        console.error(err.code);
         if (err.code === 'ECONNREFUSED') {
           cli_error('could not connect to server');
         }
@@ -1083,7 +1069,7 @@ if (commander.helpMacros) {
       let articles = []
       for (let i = 0; i < sources.length; i++) {
         const source = sources[i]
-        const inpath = ourbigbook_paths_converted[i]
+        let inpath = ourbigbook_paths_converted[i]
         const lines = source.split('\n')
         let title = lines[0].match(titleRegex)[1]
         const inpathParse = path.parse(inpath)
@@ -1095,14 +1081,20 @@ if (commander.helpMacros) {
             const dirPathParse = path.parse(inpathParse.dir)
             const titleId = ourbigbook.title_to_id(title)
             if (titleId !== dirPathParse.name) {
-              addId = dirPathParse.name
+              // This would be ideal, allowing us to store all information about the article in the body itself.
+              // But it was hard to implement, since now the input path is an important input of conversion.
+              // So to start with we will just always provide the input path as a separate parameter.
+              // {id= for toplevel was ignored as of writing, which is bad, should be either used or error.
+              //addId = dirPathParse.name
             }
             if (dirPathParse.dir) {
-              addSubdir = dirPathParse.dir
+              // Same as addId
+              //addSubdir = dirPathParse.dir
             }
           } else {
             title = 'Index'
           }
+          inpath = `index${ourbigbook.OURBIGBOOK_EXT}`
         } else {
           const titleId = ourbigbook.title_to_id(title)
           if (titleId !== inpathParse.name) {
@@ -1126,12 +1118,17 @@ if (commander.helpMacros) {
           body += `{subdir=${addSubdir}}\n`
         }
         body += lines.slice(bodyStart).join('\n')
-        articles.push({ title, body })
+        articles.push({ title, body, inpath })
       }
       for (const render of [false, true]) {
         for (const article of articles) {
+          console.error(article.title);
+          let data, status
           try {
-            ;({ data, status } = await webApi.articleCreateOrUpdate(article, { render }))
+            ;({ data, status } = await webApi.articleCreateOrUpdate(
+              { title: article.title, body: article.body },
+              { path: article.inpath, render }
+            ))
           } catch(err) {
             handleWebApiErr(err)
           }
@@ -1142,7 +1139,11 @@ if (commander.helpMacros) {
                 console.error(error);
               }
             } else {
-              console.error(errors);
+              if (errors === undefined) {
+                console.error(data);
+              } else {
+                console.error(errors);
+              }
             }
             cli_error('conversion error')
           }

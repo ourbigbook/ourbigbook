@@ -20,6 +20,7 @@ async function convert({
   author,
   body,
   forceNew,
+  path,
   render,
   sequelize,
   title,
@@ -31,10 +32,12 @@ async function convert({
   const id_provider = new SqliteIdProvider(sequelize)
   const file_provider = new SqliteFileProvider(sequelize, id_provider);
   const extra_returns = {};
-  const id = ourbigbook.title_to_id(title)
   body = body.replace(/\n+$/, '')
   const input = modifyEditorInput(title, body)
-  const input_path = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${id}${ourbigbook.OURBIGBOOK_EXT}`
+  if (!path) {
+    path = `${ourbigbook.title_to_id(title)}${ourbigbook.OURBIGBOOK_EXT}`
+  }
+  const input_path = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${path}`
   await ourbigbook.convert(
     input,
     Object.assign({

@@ -79,12 +79,17 @@ function validateParam(obj, prop, validator, defaultValue) {
   }
 }
 
+function validateParamMandatory(obj, prop, validator, defaultValue) {
+  return validate(obj[prop], validator, prop)
+}
+
 module.exports = {
   getArticle,
   getClientIp,
   ValidationError,
   validatePositiveInteger,
   validate,
+  validateParamMandatory,
   validateParam,
   validateTrueOrFalse,
 }

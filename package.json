@@ -7,6 +7,7 @@
     "chokidar": "3.3.0",
     "commander": "3.0.2",
     "git-url-parse": "11.1.2",
+    "is-installed-globally": "0.3.1",
     "katex": "0.11.1",
     "normalize.css": "8.0.1"
   },
@@ -42,5 +43,5 @@
     "sass": "./build-sass",
     "test": "mocha test --ignore-leaks"
   },
-  "version": "0.1.5"
+  "version": "0.1.6"
 }

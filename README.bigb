@@ -8,7 +8,11 @@ This repository (The OurBigBook Project) contains two main things:
 * <OurBigBook CLI>: a static Wiki generator that can be invoked from the command line with the <ourbigbook executable>. The OurBigBook CLI calls the <OurBigBook Library> to convert each input file.
 
   The markup language used is called <OurBigBook Markup> (file extension: `.bigb`), and it is compatible with https://ourbigbook.com[], TODO support import/export to/from https://ourbigbook.com[] to local filesystem.
-* <OurBigBook Web>: the source code of https://ourbigbook.com[], which is a regular database-backed dynamic website. This is basically separate package that depends on the OurBigBook Library:
+* <OurBigBook Web>: the source code of https://ourbigbook.com[], which is a regular database-backed dynamic website. Compared to OurBigBook CLI:
+  * users can write content from a browser editor, without installing anything or having to use a terminal
+  * has powerful multi-user features, such as upvotes and "find the best article for a given topic by any user"
+
+  Web is basically a separate Node.js package that depends on the OurBigBook Library:
   * information about OurBigBook Web is present at: <OurBigBook Web>{full}
   * the source code of the OurBigBook Web is present under `web/`
   Everything else in this repository outside of that section/directory is about the OurBigBook Library and the OurBigBook CLI, not the dynamic website.
@@ -21,7 +25,7 @@ Key links:
 * https://github.com/cirosantilli/ourbigbook[]: OurBigBook source code
 * https://github.com/cirosantilli/ourbigbook/blob/master/README.bigb[]: source for this document
 * https://docs.ourbigbook.com[]: rendered version of this document
-* https://docs.ourbigbook.com/editor[]: live in-browser demo
+* https://docs.ourbigbook.com/editor[]: live in-browser editor demo
 * https://cirosantilli.com/ourbigbook-template[]: good template to get started, see <quick start>{full}
 
 = Features

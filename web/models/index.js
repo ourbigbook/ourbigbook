@@ -101,8 +101,9 @@ function getSequelize(toplevelDir, toplevelBasename) {
   })
 
   // Article has Issues
-  Article.hasMany(Issue, { foreignKey: 'articleId' })
+  Article.hasMany(Issue, { foreignKey: 'articleId', as: 'issues' })
   Issue.belongsTo(Article, {
+    as: 'issues',
     foreignKey: {
       name: 'articleId',
       allowNull: false
@@ -110,8 +111,9 @@ function getSequelize(toplevelDir, toplevelBasename) {
   })
 
   // Issue has Comments
-  Issue.hasMany(Comment, { foreignKey: 'issueId' })
+  Issue.hasMany(Comment, { foreignKey: 'issueId', as: 'comments' })
   Comment.belongsTo(Issue, {
+    as: 'comments',
     foreignKey: {
       name: 'issueId',
       allowNull: false

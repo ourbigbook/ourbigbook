@@ -1,5 +1,8 @@
 const { DataTypes } = require('sequelize')
 
+const api_lib = require('../api/lib')
+const front = require('../front/js')
+
 module.exports = (sequelize) => {
   const Issue = sequelize.define(
     'Issue',
@@ -19,6 +22,32 @@ module.exports = (sequelize) => {
       indexes: [{ fields: ['articleId', 'number'] }],
     },
   )
+
+  Issue.getIssue = async function ({ includeComments, number, sequelize, slug }) {
+    const include = [{
+      model: sequelize.models.Article,
+      as: 'issues',
+      where: { slug },
+    }]
+    let order
+    if (includeComments) {
+      include.push({
+        model: sequelize.models.Comment,
+        as: 'comments',
+        order: [['number', 'DESC']],
+        include: [{ model: sequelize.models.User, as: 'author' }],
+        limit: front.DEFAULT_LIMIT,
+      })
+      order = [[
+        'comments', 'number', 'DESC'
+      ]]
+    }
+    return await sequelize.models.Issue.findOne({
+      where: { number },
+      include,
+      order,
+    })
+  }
 
   Issue.prototype.toJson = async function(loggedInUser) {
     return {

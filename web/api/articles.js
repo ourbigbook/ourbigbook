@@ -24,8 +24,8 @@ function getOrder(req) {
 // Get a single article if ?id= is given, otherwise a list of articles.
 router.get('/', auth.optional, async function(req, res, next) {
   try {
+    const sequelize = req.app.get('sequelize')
     if (req.query.id === undefined) {
-      const sequelize = req.app.get('sequelize')
       const [{count: articlesCount, rows: articles}, user] = await Promise.all([
         sequelize.models.Article.getArticles({
           sequelize,
@@ -45,8 +45,10 @@ router.get('/', auth.optional, async function(req, res, next) {
         articlesCount: articlesCount
       })
     } else {
-      const article = await lib.getArticle(req, res)
-      const user = req.payload ? await req.app.get('sequelize').models.User.findByPk(req.payload.id) : null
+      const [article, user] = await Promise.all([
+        lib.getArticle(req, res),
+        req.payload ? sequelize.models.User.findByPk(req.payload.id) : null,
+      ])
       return res.json({ article: await article.toJson(user) })
     }
   } catch(error) {

@@ -1,10 +1,10 @@
 import { UserType } from 'front/types/UserType'
 
-export interface Comments {
-  comments: CommentType[];
+export interface Issues {
+  issues: IssueType[];
 }
 
-export type CommentType = {
+export type IssueType = {
   createdAt: number;
   number: number;
   id: string;

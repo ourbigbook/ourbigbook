@@ -140,6 +140,9 @@ class AstNode {
     if (!('in_title_no_id' in context)) {
       context.in_title = false;
     }
+    if (!('in_x_content' in context)) {
+      context.in_x_content = false;
+    }
     if (!('katex_macros' in context)) {
       context.katex_macros = {};
     }
@@ -3189,7 +3192,7 @@ function x_get_href_content(ast, context) {
     if (ast.validation_output.full.given) {
       x_text_options.style_full = ast.validation_output.full.boolean;
     }
-    content = x_text(target_id_ast, context, x_text_options);
+    content = x_text(target_id_ast, clone_and_set(context, 'in_x_content', true), x_text_options);
     if (content === ``) {
       let message = `empty cross reference body: "${target_id}"`;
       render_error(context, message, ast.line, ast.column);
@@ -3620,8 +3623,12 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       const [href, content] = link_get_href_content(ast, context);
-      const attrs = html_convert_attrs_id(ast, context);
-      return `<a${html_attr('href',  href)}${attrs}>${content}</a>`;
+      if (context.in_x_content) {
+        return content;
+      } else {
+        const attrs = html_convert_attrs_id(ast, context);
+        return `<a${html_attr('href',  href)}${attrs}>${content}</a>`;
+      }
     },
     {
       phrasing: true,
@@ -4372,8 +4379,12 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       const [href, content] = x_get_href_content(ast, context);
-      const attrs = html_convert_attrs_id(ast, context);
-      return `<a${href}${attrs}>${content}</a>`;
+      if (context.in_x_content) {
+        return content;
+      } else {
+        const attrs = html_convert_attrs_id(ast, context);
+        return `<a${href}${attrs}>${content}</a>`;
+      }
     },
     {
       named_args: [

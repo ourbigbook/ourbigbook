@@ -14,6 +14,10 @@ cp .gitignore gitignore
 # This also does npm run build-assets
 npm run publish
 sed -i "s/  \"version\":.*/  \"version\": \"${version}\",/" package.json
+# To update the package-lock.json.
+# Not sure why needed twice, some mess with link madness.
+npm run link
+npm run link
 git add -u
 git commit -m "version $version"
 git tag -m "$version" "$version"

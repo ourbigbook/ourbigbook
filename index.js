@@ -1736,7 +1736,6 @@ function convert(
     if (!('head' in options.template_vars)) { options.template_vars.head = ''; }
     if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
     if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
-  // The toplevel ID of the output of this conversion.
   // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
   if (!('toplevel_id' in options)) { options.toplevel_id = undefined; }
   if (options.xss_unsafe === undefined) {
@@ -1848,9 +1847,9 @@ function convert(
         cur_arg_list.push(child_ast);
       }
       convert_header(cur_arg_list, context);
-      // Because the following conversion would redefine them.
       context.katex_macros = {};
     }
+    // Because the following conversion would redefine them.
     // Non-split header toplevel conversion.
     let outpath;
     if (options.outfile !== undefined) {
@@ -1924,13 +1923,20 @@ function convert_arg_noescape(arg, context={}) {
   return convert_arg(arg, clone_and_set(context, 'html_escape', false));
 }
 
+/* Convert one header (or content before the first header)
+ * in --split-headers mode. */
 function convert_header(cur_arg_list, context) {
-  if (cur_arg_list.length > 0) {
+  if (
+    // Can fail if:
+    // * the first thing in the document is a header
+    // * the document has no headers
+    cur_arg_list.length > 0
+  ) {
     context = Object.assign({}, context);
     const options = Object.assign({}, context.options);
     context.options = options;
-    const header_ast = cur_arg_list[0];
-    const header_graph_node = header_ast.header_graph_node;
+    const first_ast = cur_arg_list[0];
+    const header_graph_node = first_ast.header_graph_node;
     const header_graph_node_old_parent = header_graph_node.parent_node;
     // Add a new toplevel parent.
     header_graph_node.parent_node = new HeaderTreeNode();
@@ -1938,13 +1944,13 @@ function convert_header(cur_arg_list, context) {
       AstType.MACRO,
       Macro.TOPLEVEL_MACRO_NAME,
       {
-        'content': new AstArgument(cur_arg_list, header_ast.source_location)
+        'content': new AstArgument(cur_arg_list, first_ast.source_location)
       },
-      header_ast.source_location,
+      first_ast.source_location,
     );
-    options.toplevel_id = header_ast.id;
+    options.toplevel_id = first_ast.id;
     context.in_split_headers = true;
-    const output_path = output_path_from_ast(header_ast, context);
+    const output_path = output_path_from_ast(first_ast, context);
     context.toplevel_output_path = output_path;
     context.extra_returns.rendered_outputs[output_path] =
       ast_toplevel.convert(context);
@@ -2319,6 +2325,8 @@ function macro_list() {
 }
 exports.macro_list = macro_list;
 
+const CIRODOWN_EXT = '.ciro';
+exports.CIRODOWN_EXT = CIRODOWN_EXT;
 const MEDIA_PROVIDER_TYPES = new Set([
   'github',
   'local',
@@ -2455,20 +2463,31 @@ function output_path_parts(input_path, id, context) {
     // id='subdir/subdir-h2'     -> ['subdir', 'subdir-h2']
     // id='subdir/notindex'      -> ['subdir', 'notindex']
     // id='subdir/notindex-h2'   -> ['subdir', 'notindex-h2']
-    const [id_dirname, id_basename] = path_split(input_path, URL_SEP);
+    const [id_dirname, id_basename] = path_split(id, URL_SEP);
     const ast = context.id_provider.get(id, context);
+    // The input file does not start with a header.
+    const before_first_header = ast === undefined ||
+      ast.macro_name !== Macro.HEADER_MACRO_NAME;
     let dirname_ret;
     let basename_ret;
-    if (ast.is_first_header_in_input_file && renamed_basename === INDEX_BASENAME_NOEXT) {
-      basename_ret = INDEX_BASENAME_NOEXT;
-      if (id_dirname === '') {
-        // not a https://cirosantilli.com/cirodown#the-toplevel-index-file
-        dirname_ret = path_join(id_dirname, id_basename, context.options.path_sep);
+    if (
+      before_first_header ||
+      ast.is_first_header_in_input_file
+    ) {
+      if (renamed_basename === INDEX_BASENAME_NOEXT) {
+        basename_ret = INDEX_BASENAME_NOEXT;
+        if (id_dirname === '') {
+          // not a https://cirosantilli.com/cirodown#the-toplevel-index-file
+          dirname_ret = path_join(id_dirname, id_basename, context.options.path_sep);
+        }
+      } else {
+        [dirname_ret, basename_ret] = path_split(noext(input_path), URL_SEP);
       }
     } else {
+      dirname_ret = id_dirname;
       basename_ret = id_basename;
     }
-    if (ast.is_first_header_in_input_file) {
+    if (before_first_header || ast.is_first_header_in_input_file) {
       basename_ret += '-split';
     }
     return [dirname_ret, basename_ret];

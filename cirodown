@@ -17,7 +17,6 @@ const sass = require('sass');
 const cirodown = require('cirodown');
 const cirodown_nodejs = require('cirodown/nodejs');
 
-const CIRODOWN_EXT = '.ciro';
 const CIRODOWN_JSON = 'cirodown.json';
 const SASS_EXT = '.scss';
 const TMP_DIRNAME = 'out';
@@ -285,7 +284,7 @@ function convert_input(input, options, convert_input_options={}) {
  */
 function convert_path_to_file(base_path, input_path, options, convert_input_options={}) {
   let input_path_parse = path.parse(input_path);
-  if (input_path_parse.ext === CIRODOWN_EXT) {
+  if (input_path_parse.ext === cirodown.CIRODOWN_EXT) {
     let message_prefix;
     if (options.render) {
       message_prefix = 'convert';
@@ -585,11 +584,11 @@ if (commander.helpMacros) {
     path_sep: path.sep,
     read_include: function(id) {
       let found = undefined;
-      let test = id + CIRODOWN_EXT;
+      let test = id + cirodown.CIRODOWN_EXT;
       if (fs.existsSync(test)) {
         found = test;
       }
-      test = path.join(id, cirodown.INDEX_BASENAME_NOEXT + CIRODOWN_EXT);
+      test = path.join(id, cirodown.INDEX_BASENAME_NOEXT + cirodown.CIRODOWN_EXT);
       if (found === undefined) {
         if (fs.existsSync(test)) {
           found = test;
@@ -598,7 +597,7 @@ if (commander.helpMacros) {
           const id_parse = path.parse(id);
           if (id_parse.name === cirodown.INDEX_BASENAME_NOEXT) {
             for (let index_basename_noext of cirodown.INDEX_FILE_BASENAMES_NOEXT) {
-              test = path.join(id_parse.dir, index_basename_noext + CIRODOWN_EXT);
+              test = path.join(id_parse.dir, index_basename_noext + cirodown.CIRODOWN_EXT);
               if (fs.existsSync(test)) {
                 found = test;
                 break;

@@ -1,0 +1,5 @@
+= Included by not the index
+
+This file is included by `not-index.bigb`, which is in turn included by `index.bigb`. Will this two level inclusion blow everything up?
+
+== Included by not the index 2

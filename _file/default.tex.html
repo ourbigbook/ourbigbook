@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>default.tex - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="default.tex"><div class="notnav"><h1><a href="">default.tex</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../_dir/">(root)</a> / <a href="../_raw/default.tex">default.tex</a></b></div></nav></div><div class="p"><b>default.tex</b></div><div class="code"><div><pre><code>% https://docs.ourbigbook.com/built-in-math-macros
+
+% Scientific notation helper:
+% https://www.reddit.com/r/LaTeX/comments/3yjzz6/comment/cye8u5v/?utm_source=reddit&amp;utm_medium=web2x&amp;context=3
+\newcommand{\e}[1]{\times 10^{#1}}
+
+%% physics package
+%% http://mirrors.ibiblio.org/CTAN/macros/latex/contrib/physics/physics.pdf
+% Absolute value.
+\newcommand{\abs}[1]{\left|#1\right|}
+\newcommand{\curl}[1]{\nabla \times #1}
+\renewcommand{\div}[1]{\nabla \cdot #1}
+\newcommand{\grad}[1]{\nabla #1}
+\newcommand{\laplacian}[1]{\nabla^2 #1}
+% Partial derivative.
+% https://tex.stackexchange.com/questions/412439/is-there-a-short-hand-command-to-write-derivatives
+\newcommand{\pdv}[2]{\frac{\partial #1}{\partial #2}}
+% Non-partial derivative.
+\newcommand{\dv}[2]{\frac{d #1}{d #2}}
+% Vector Arrow.
+\newcommand{\va}[1]{\overrightarrow{#1}}
+
+%% Calculus
+
+% Derivative evaluated at point.
+% https://tex.stackexchange.com/questions/294499/evaluated-at-bar-for-derivatives-bigr-biggr-or-left-right
+\newcommand{\evalat}[2]{#1\biggr\rvert_{#2}}
+
+%% Complex numbers
+% Complex conjugate.
+\newcommand\conj[1]{\bar{#1}}
+
+%% Algebra
+
+\newcommand{\projectiveSpace}[0]{\mathbf{P}}
+
+%% Real and complex analysis
+\newcommand{\C}[0]{\mathbb{C}}
+% Field.
+\newcommand{\F}[0]{\mathbb{F}}
+% Quaternions.
+\renewcommand{\H}[0]{\mathbb{H}}
+\renewcommand{\R}[0]{\mathbb{R}}
+\newcommand{\Q}[0]{\mathbb{Q}}
+\renewcommand{\Z}[0]{\mathbb{Z}}
+
+%%% Lebesgue spaces.
+\newcommand{\LP}[0]{L^p}
+\newcommand{\LTwo}[0]{L^2}
+
+%% Electromagnetism
+% Magnetic field vector
+\newcommand{\B}[0]{\va{\mathbf{B}}}
+% Electric field vector
+\newcommand{\E}[0]{\va{\mathbf{E}}}
+% Electric current vector.
+\newcommand{\J}[0]{\va{\mathbf{J}}}
+\newcommand{\vacuumPermittivity}[0]{\varepsilon_0}
+\newcommand{\vacuumPermeability}[0]{\mu_0}
+
+%% esvect
+% https://tex.stackexchange.com/questions/261591/arrow-above-text-like-widehat
+\newcommand{\vv}[1]{\overrightarrow#1}
+
+%% number theory
+\newcommand{\gdc}[0]{\text{gdc}}
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

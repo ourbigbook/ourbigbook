@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>ArticleSourcePage.tsx - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ArticleSourcePage.tsx"><div class="notnav"><h1><a href="">web/front/ArticleSourcePage.tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir/">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/front">front</a> / <a href="../../../_raw/web/front/ArticleSourcePage.tsx">ArticleSourcePage.tsx</a></b></div></nav></div><div class="p"><b>web/front/ArticleSourcePage.tsx</b></div><div class="code"><div><pre><code>import React from 'react'
+
+import {
+  ArticleIcon,
+  MyHead,
+  SourceIcon,
+  useEEdit
+} from 'front'
+import { cant } from 'front/cant'
+import routes from 'front/routes'
+
+import { ArticleType  } from 'front/types/ArticleType'
+import { CommonPropsType } from 'front/types/CommonPropsType'
+import { IssueType } from 'front/types/IssueType'
+
+import { modifyEditorInput } from 'ourbigbook';
+
+export interface ArticleSourcePageProps extends CommonPropsType {
+  article: ArticleType &amp; IssueType;
+}
+
+const ArticleSourcePageHoc = (isIssue=false) =&gt; {
+  return function ArticleSourcePage ({
+    article,
+    loggedInUser,
+  }: ArticleSourcePageProps) {
+    const author = article.author
+    const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, article.author.username)
+    useEEdit(canEdit, article.slug)
+    return &lt;&gt;
+      &lt;MyHead title={`Source: /${article.slug}`} /&gt;
+      &lt;div className="article-source-page content-not-ourbigbook"&gt;
+        &lt;h1&gt;&lt;SourceIcon /&gt; Source: &lt;a href={routes.article(article.slug)}&gt;{article.slug}&lt;/a&gt;&lt;/h1&gt;
+        &lt;pre&gt;&lt;code&gt;{modifyEditorInput(article.file.titleSource, article.file.bodySource).new}&lt;/code&gt;&lt;/pre&gt;
+        &lt;p className="navlink"&gt;&lt;a href={routes.article(article.slug)}&gt;&lt;ArticleIcon /&gt; Back to article page&lt;/a&gt;&lt;/p&gt;
+      &lt;/div&gt;
+    &lt;/&gt;
+  }
+}
+
+export default ArticleSourcePageHoc;
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/front/";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>TopicPage.tsx - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="TopicPage.tsx"><div class="notnav"><h1><a href="">web/front/TopicPage.tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir/">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/front">front</a> / <a href="../../../_raw/web/front/TopicPage.tsx">TopicPage.tsx</a></b></div></nav></div><div class="p"><b>web/front/TopicPage.tsx</b></div><div class="code"><div><pre><code>import React from 'react'
+import { useRouter } from 'next/router'
+
+import {
+  ArticleIcon,
+  MyHead,
+  NewArticleIcon,
+  SeeIcon,
+  TopicIcon,
+  TopicsHelp,
+  slugFromArray
+} from 'front'
+import { idToTitle } from 'ourbigbook'
+import ArticleList from 'front/ArticleList'
+import CustomLink from 'front/CustomLink'
+import LoadingSpinner from 'front/LoadingSpinner'
+import routes from 'front/routes'
+
+import { ArticleType } from 'front/types/ArticleType'
+import { CommonPropsType } from 'front/types/CommonPropsType'
+import { IssueType } from 'front/types/IssueType'
+import { TopicType } from 'front/types/TopicType'
+
+export interface TopicPageProps extends CommonPropsType {
+  articleInTopicByLoggedInUser: ArticleType,
+  // TODO not ideal. Only Articles are really possible. This is to appease ArticleList.
+  articles: (ArticleType &amp; IssueType &amp; TopicType)[];
+  articlesCount: number;
+  hasUnlisted: boolean;
+  list: boolean;
+  order: string;
+  orderAscDesc: string;
+  topic: TopicType;
+  page: number;
+  what: string;
+}
+
+export const TopicPage = ({
+  articleInTopicByLoggedInUser,
+  articles,
+  articlesCount,
+  hasUnlisted,
+  list,
+  loggedInUser,
+  order,
+  page,
+  topic,
+  what
+}: TopicPageProps) =&gt; {
+  const router = useRouter();
+  const topicId = slugFromArray(router.query.id)
+  let titleText
+  if (topic) {
+    titleText = topic.titleSource
+  } else {
+    titleText = idToTitle(topicId)
+  }
+  if (router.isFallback) { return &lt;LoadingSpinner /&gt;; }
+  const topicIdDisplay = &lt;div className="h2-container"&gt;
+    &lt;h2 className="meta inline" title="Topic ID"&gt;ID: {topicId}&lt;/h2&gt;
+  &lt;/div&gt;
+  return &lt;&gt;
+    &lt;MyHead title={titleText} /&gt;
+    &lt;div className="topic-page"&gt;
+      {topic
+        ? &lt;&gt;
+            &lt;div className="content-not-ourbigbook"&gt;
+              &lt;div className="h1-container h1"&gt;
+                &lt;h1 className="inline"&gt;
+                  &lt;TopicIcon /&gt;
+                  {' '}
+                  &lt;span
+                    className="ourbigbook-title"
+                    dangerouslySetInnerHTML={{ __html: topic.titleRender }}
+                  /&gt;
+                &lt;/h1&gt;
+              &lt;/div&gt;
+              {topicIdDisplay}
+              &lt;div className="tab-list"&gt;
+                &lt;CustomLink
+                  className={`tab-item${order === 'score' ? ' active' : ''}`}
+                  href={routes.topic(topicId, { sort: 'score' })}
+                &gt;
+                  &lt;ArticleIcon /&gt; Top articles
+                &lt;/CustomLink&gt;
+                &lt;CustomLink
+                  className={`tab-item${order === 'createdAt' ? ' active' : ''}`}
+                  href={routes.topic(topicId, { sort: 'created' })}
+                &gt;
+                  &lt;ArticleIcon /&gt; Latest articles
+                &lt;/CustomLink&gt;
+                {articleInTopicByLoggedInUser
+                  ? &lt;CustomLink
+                      className="tab-item btn small"
+                      href={routes.article(articleInTopicByLoggedInUser.slug)}
+                    &gt;
+                      &lt;SeeIcon /&gt; View your article in topic
+                    &lt;/CustomLink&gt;
+                  : &lt;CustomLink
+                      className="tab-item btn small"
+                      href={routes.articleNew({ title: topic.titleSource })}
+                      updatePreviousPage={true}
+                    &gt;
+                      &lt;NewArticleIcon /&gt; New article in topic
+                    &lt;/CustomLink&gt;
+                }
+              &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;ArticleList {...{
+              articles,
+              articlesCount,
+              hasUnlisted,
+              list,
+              loggedInUser,
+              page,
+              showAuthor: true,
+              showBody: true,
+              showFullBody: true,
+              what,
+            }}/&gt;
+          &lt;/&gt;
+        : &lt;&gt;
+            &lt;div className="content-not-ourbigbook"&gt;
+              &lt;div className="h1-container h1"&gt;
+                &lt;TopicIcon /&gt; 
+                {' '}
+                &lt;h1 className="inline"&gt;{titleText}&lt;/h1&gt;
+              &lt;/div&gt;
+              {topicIdDisplay}
+              &lt;p&gt;There are no articles in this topic.&lt;/p&gt;
+              &lt;p&gt;
+                &lt;CustomLink
+                  className="btn new"
+                  href={routes.articleNew({ 'title': titleText })}
+                  updatePreviousPage={true}
+                &gt;
+                  &lt;NewArticleIcon title={null}/&gt;{' '}Create the first article for this topic
+                &lt;/CustomLink&gt;
+              &lt;/p&gt;
+            &lt;/div&gt;
+          &lt;/&gt;
+      }
+    &lt;/div&gt;
+    &lt;p className="content-not-ourbigbook"&gt;
+      &lt;TopicsHelp /&gt;
+    &lt;/p&gt;
+  &lt;/&gt;
+}
+
+export default TopicPage
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/front/";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

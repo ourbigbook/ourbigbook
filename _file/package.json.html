@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>package.json - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="package.json"><div class="notnav"><h1><a href="">package.json</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../_dir/">(root)</a> / <a href="../_raw/package.json">package.json</a></b></div></nav></div><div class="p"><b>package.json</b></div><div class="code"><div><pre><code>{
+  "name": "ourbigbook",
+  "version": "0.9.29",
+  "license": "AGPL-3.0",
+  "repository": "ourbigbook/ourbigbook",
+  "bin": {
+    "ourbigbook": "ourbigbook"
+  },
+  "cacheDirectories": [
+    "node_modules",
+    "web/node_modules"
+  ],
+  "dependencies": {
+    "axios": "1.7.7",
+    "china-dictatorship": "0.0.74",
+    "chokidar": "3.3.0",
+    "commander": "9.4.1",
+    "fs-extra": "10.0.0",
+    "git-url-parse": "11.1.2",
+    "is-installed-globally": "0.3.1",
+    "katex": "0.16.21",
+    "liquidjs": "9.11.7",
+    "lodash": "4.17.20",
+    "npm": "8.7.0",
+    "pluralize": "8.0.0",
+    "read": "1.0.7",
+    "sass": "1.34.0",
+    "sequelize": "6.14.0",
+    "sqlite3": "5.0.2"
+  },
+  "devDependencies": {
+    "@fortawesome/fontawesome-free": "6.0.0",
+    "copy-webpack-plugin": "^12.0.2",
+    "css-loader": "5.2.4",
+    "css-minimizer-webpack-plugin": "3.0.2",
+    "html-minimizer-webpack-plugin": "^5.0.0",
+    "js-beautify": "1.14.7",
+    "mini-css-extract-plugin": "2.1.0",
+    "mocha": "10.2.0",
+    "mocha-list-tests": "1.0.2",
+    "monaco-editor": "0.20.0",
+    "node-polyfill-webpack-plugin": "1.1.4",
+    "normalize.css": "8.0.1",
+    "parse5": "6.0.1",
+    "pg": "8.5.1",
+    "pg-hstore": "2.3.3",
+    "resolve-url-loader": "4.0.0",
+    "sass-loader": "11.0.1",
+    "style-loader": "2.0.0",
+    "tablesort": "5.2.1",
+    "webpack": "5.89.0",
+    "webpack-cli": "5.1.4",
+    "webpack-dev-server": "4.15.1",
+    "xmldom": "0.4.0",
+    "xmlserializer": "0.6.1",
+    "xpath": "0.0.32"
+  },
+  "engines": {
+    "node": "20.10.0",
+    "npm": "10.2.3"
+  },
+  "files": [
+    "default.tex",
+    "dist/*",
+    "gitignore",
+    "index.js",
+    "logo.svg",
+    "ourbigbook.liquid.html",
+    "main.scss",
+    "models/*",
+    "nodejs.js",
+    "nodejs_front.js",
+    "nodejs_webpack_safe.js",
+    "ourbigbook",
+    "ourbigbook.common.scss",
+    "runtime_common.js",
+    "web_api.js",
+    "template/*"
+  ],
+  "keywords": [
+    "asciidoctor",
+    "ciro",
+    "markdown",
+    "markup"
+  ],
+  "scripts": {
+    "build": "cd web &amp;&amp; npm run build",
+    "build-assets": "cp .gitignore gitignore &amp;&amp; mkdir -p _obb &amp;&amp; ln -sf _obb/dist ../dist &amp;&amp; npm run webpack",
+    "build-dev": "cd web &amp;&amp; npm run build-dev",
+    "deploy": "cd web &amp;&amp; npm run deploy",
+    "dev": "cd web &amp;&amp; npm run dev",
+    "dev-pg": "cd web &amp;&amp; npm run dev-pg",
+    "devs": "cd web &amp;&amp; npm run devs",
+    "heroku-prebuild": "./heroku-prebuild",
+    "link": "npm link &amp;&amp; npm link ourbigbook",
+    "publish": "ourbigbook --publish --unsafe-ace",
+    "start": "cd web &amp;&amp; npm start",
+    "start-dev": "cd web &amp;&amp; npm run start-dev",
+    "test": "NODE_OPTIONS='--unhandled-rejections=strict' mocha test --ignore-leaks --timeout 4000",
+    "testi": "NODE_OPTIONS='--unhandled-rejections=strict' node inspect ./node_modules/.bin/mocha test --ignore-leaks",
+    "test-pg": "OURBIGBOOK_POSTGRES=1 npm test --",
+    "test-release": "npm test  -- --timeout 10000 &amp;&amp; npm run test-pg -- --timeout 100000",
+    "webpack": "webpack --",
+    "webpack-dev": "webpack -- --mode development --watch",
+    "web-setup": "npm run link &amp;&amp; npm run build-assets &amp;&amp; cd web/ &amp;&amp; npm install"
+  }
+}
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

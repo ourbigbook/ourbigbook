@@ -1,0 +1,163 @@
+{
+  "name": "ourbigbook-vscode",
+  "displayName": "OurBigBook",
+  "publisher": "ourbigbook",
+  "description": "OurBigBook markup and publishing",
+  "icon": "logo.png",
+  "repository": "https://docs.ourbigbook.com/_dir/vscode",
+  "version": "0.0.56",
+  "engines": {
+    "vscode": "^1.91.0"
+  },
+  "capabilities": {
+    "workspaceSymbolProvider": "true"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:ourbigbook",
+    "workspaceContains:**/ourbigbook.json"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "ourbigbook.helloWorld",
+        "title": "OurBigBook: Hello World"
+      },
+      {
+        "command": "ourbigbook.build",
+        "title": "OurBigBook: Build all"
+      },
+      {
+        "command": "ourbigbook.buildAndView",
+        "title": "OurBigBook: Build all and view output for current file"
+      },
+      {
+        "command": "ourbigbook.publishStatic",
+        "title": "OurBigBook: Publish static website (--publish)"
+      },
+      {
+        "command": "ourbigbook.publishWeb",
+        "title": "OurBigBook: Publish to OurBigBook Web (--web)"
+      },
+      {
+        "command": "ourbigbook.publishWebAndStatic",
+        "title": "OurBigBook: Publish to OurBigBook Web and static website (--web and --publish)"
+      },
+      {
+        "command": "ourbigbook.viewOutput",
+        "title": "OurBigBook: View output for current file"
+      }
+    ],
+    "configuration": {
+      "title": "OurBigBook",
+      "properties": {
+        "ourbigbook.gitAutoCommitAfterBuild": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically git add and commit after a successful build. New .bigb files are automatically added, but you must manually git add new non-.bigb files to help prevent accidental data leaks."
+        }
+      }
+    },
+    "configurationDefaults": {
+      "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/node_modules/**": true,
+        "_out/**": true
+      },
+      "[ourbigbook]": {
+        "editor.autoClosingBrackets": "never",
+        "editor.quickSuggestions": {
+            "other": "on",
+            "comments": "off",
+            "strings": "off"
+        },
+        "editor.tabSize": 2,
+        "editor.wordWrap": "on",
+        "terminal.integrated.scrollback": 100000
+      }
+    },
+    "keybindings": [
+      {
+        "command": "ourbigbook.build",
+        "key": "ctrl+shift+b",
+        "when": "editorLangId == 'ourbigbook'"
+      },
+      {
+        "command": "ourbigbook.publishWeb",
+        "key": "ctrl+shift+alt+b",
+        "when": "editorLangId == 'ourbigbook'"
+      },
+      {
+        "command": "ourbigbook.publishWebAndStatic",
+        "key": "ctrl+alt+b",
+        "when": "editorLangId == 'ourbigbook'"
+      },
+      {
+        "command": "ourbigbook.buildAndView",
+        "key": "f5",
+        "when": "editorLangId == 'ourbigbook'"
+      }
+    ],
+    "grammars": [
+      {
+        "embeddedLanguages": {
+          "math.bigb": "latex"
+        },
+        "language": "ourbigbook",
+        "scopeName": "source.ourbigbook",
+        "path": "./syntaxes/ourbigbook.tmLanguage.json"
+      }
+    ],
+    "languages": [
+      {
+        "icon": {
+          "light": "logo.png",
+          "dark": "logo.png"
+        },
+        "id": "ourbigbook",
+        "aliases": [
+          "OurBigBook",
+          "ourbigbook"
+        ],
+        "extensions": [
+          ".bigb"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "ourbigbook",
+        "path": "./snippets.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test"
+  },
+  "dependencies": {
+    "open": "8.4.2",
+    "ourbigbook": "0.9.29"
+  },
+  "devDependencies": {
+    "@types/mocha": "10.0.7",
+    "@types/node": "20.x",
+    "@types/vscode": "1.91.0",
+    "@typescript-eslint/eslint-plugin": "7.14.1",
+    "@typescript-eslint/parser": "7.11.0",
+    "@vscode/test-cli": "0.0.9",
+    "@vscode/test-electron": "2.4.0",
+    "@vscode/vsce": "2.31.1",
+    "eslint": "8.57.0",
+    "ts-loader": "9.5.1",
+    "typescript": "5.4.5"
+  }
+}

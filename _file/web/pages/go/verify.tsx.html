@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>verify.tsx - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../../" class="brand"><img src="../../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="verify.tsx"><div class="notnav"><h1><a href="">web/pages/go/verify.tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../../_dir/">(root)</a> / <a href="../../../../_dir/web">web</a> / <a href="../../../../_dir/web/pages">pages</a> / <a href="../../../../_dir/web/pages/go">go</a> / <a href="../../../../_raw/web/pages/go/verify.tsx">verify.tsx</a></b></div></nav></div><div class="p"><b>web/pages/go/verify.tsx</b></div><div class="code"><div><pre><code>import React from 'react'
+import Router from 'next/router'
+import Link from 'next/link'
+
+import { MyHead, setupUserLocalStorage } from 'front'
+import routes from 'front/routes'
+import { CommonPropsType } from 'front/types/CommonPropsType'
+import { UserType } from 'front/types/UserType'
+
+export interface VerifyPageProps extends CommonPropsType {
+  code?: string;
+  email?: string;
+  user?: UserType;
+  verificationOk?: boolean;
+}
+
+export default function VerifyPage({
+  code,
+  email,
+  user,
+  verificationOk
+} : VerifyPageProps) {
+  React.useEffect(() =&gt; {
+    if (verificationOk) {
+      setupUserLocalStorage(user).then(() =&gt; Router.push(routes.home()))
+    }
+  })
+  const title = 'Verify your account'
+  return &lt;&gt;
+    &lt;MyHead title={title} /&gt;
+    &lt;div className="verify-page content-not-ourbigbook"&gt;
+      &lt;h1&gt;{title}&lt;/h1&gt;
+      {!code &amp;&amp;
+        &lt;&gt;
+          &lt;p&gt;Click the verification link we've sent to your email: &lt;b&gt;{email}&lt;/b&gt; to verify your account.&lt;/p&gt;
+          &lt;p&gt;Also check your spam box if you can't see the email.&lt;/p&gt;
+        &lt;/&gt;
+      }
+      {verificationOk &amp;&amp;
+        &lt;p&gt;Verification done, you are now being redirected.&lt;/p&gt;
+      }
+      {(code &amp;&amp; email &amp;&amp; !verificationOk) &amp;&amp;
+        &lt;p&gt;Verification code invalid. TODO give user something to do about it, e.g. resend.&lt;/p&gt;
+      }
+      {!verificationOk &amp;&amp;
+        &lt;p&gt;To re-send this email, simply &lt;Link href={routes.userNew()}&gt;register again with the same email&lt;/Link&gt;.&lt;/p&gt;
+      }
+    &lt;/div&gt;
+  &lt;/&gt;
+}
+
+import { getLoggedInUser } from 'back'
+
+export const getServerSideProps = async function getServerSidePropsVerifyPage({ params = {}, req, res }) {
+  const loggedInUser = await getLoggedInUser(req, res)
+  if (loggedInUser) {
+    return {
+      redirect: {
+        destination: routes.home(),
+        permanent: false,
+      }
+    }
+  }
+  const props: VerifyPageProps = {}
+  const email = req.query.email
+  if (email) {
+    props.email = email
+    const code = req.query.code
+    if (code) {
+      const user = await req.sequelize.models.User.findOne({ where: { email }})
+      let verificationOk
+      if (user.verificationCode === code) {
+        user.token = user.generateJWT()
+        user.verified = true
+        user.verificationCode = null
+        user.verificationCodeN = 0
+        await user.save()
+        verificationOk = true
+      } else {
+        verificationOk = false
+      }
+      props.code = code
+      props.verificationOk = verificationOk
+      props.user = await user.toJson(user)
+    }
+  }
+  return { props }
+}
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/pages/go/";
+</script>
+<script src="../../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

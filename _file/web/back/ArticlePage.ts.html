@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>ArticlePage.ts - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ArticlePage.ts"><div class="notnav"><h1><a href="">web/back/ArticlePage.ts</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir/">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/back">back</a> / <a href="../../../_raw/web/back/ArticlePage.ts">ArticlePage.ts</a></b></div></nav></div><div class="p"><b>web/back/ArticlePage.ts</b></div><div class="code"><div><pre><code>import { getLoggedInUser } from 'back'
+import { ArticlePageProps } from 'front/ArticlePage'
+import {
+  articleLimitSmall,
+  convertContext,
+  log,
+  maxArticlesFetch,
+  maxArticlesFetchToc,
+} from 'front/config'
+import { MyGetServerSideProps } from 'front/types'
+import { idToSlug } from 'front/js'
+import { IssueType } from 'front/types/IssueType'
+import { UserType } from 'front/types/UserType'
+import routes from 'front/routes'
+
+import ourbigbook from 'ourbigbook'
+
+async function getIncomingLinks(sequelize, article, { type, from, to }) {
+  return sequelize.models.Article.findAll({
+    attributes: ['slug', 'titleRender'],
+    order: [['slug', 'ASC']],
+    include: [{
+      model: sequelize.models.File,
+      as: 'file',
+      required: true,
+      attributes: [],
+      include: [{
+        model: sequelize.models.Id,
+        as: 'toplevelId',
+        required: true,
+        attributes: [],
+        include: [{
+          model: sequelize.models.Ref,
+          as: from,
+          required: true,
+          where: { type: sequelize.models.Ref.Types[type] },
+          attributes: [],
+          include: [{
+            model: sequelize.models.Id,
+            as: to,
+            required: true,
+            attributes: [],
+            include: [{
+              model: sequelize.models.File,
+              as: 'toplevelId',
+              required: true,
+              attributes: [],
+              include: [{
+                model: sequelize.models.Article,
+                as: 'articles',
+                required: true,
+                attributes: [],
+                where: { slug: article.slug },
+              }],
+            }],
+          }],
+        }],
+      }]
+    }]
+  })
+}
+
+export const getServerSidePropsArticleHoc = ({
+  includeIssues=false,
+  loggedInUserCache,
+}:
+  {
+    includeIssues?: boolean,
+    loggedInUserCache?: UserType,
+  }
+={}): MyGetServerSideProps =&gt; {
+  return async function getServerSidePropsArticle({ params: { slug }, req, res }) {
+    let t0
+    if (log.perf) {
+      t0 = performance.now()
+    }
+    if (slug instanceof Array) {
+      const slugString = slug.join('/')
+      const sequelize = req.sequelize
+      const { Article, File, Issue, Id, Ref } = sequelize.models
+      const limit = articleLimitSmall
+      const [article, articleTopIssues, loggedInUser] = await Promise.all([
+        Article.getArticle({
+          limit,
+          includeIssues,
+          sequelize,
+          slug: slugString,
+        }),
+        //// TODO benchmark the effect of this monstrous query on article pages.
+        //// If very slow, we could move it to after page load.
+        //// TODO don't run this on split pages? But it requires doing a separate query step, which
+        //// would possibly slow things down more than this actual query?
+        //Article.getArticlesInSamePage({
+        //  sequelize,
+        //  slug: slugString,
+        //  loggedInUser,
+        //}),
+        Article.getArticle({
+          includeIssues,
+          includeIssuesOrder: 'score',
+          limit,
+          sequelize,
+          slug: slugString,
+        }),
+        getLoggedInUser(req, res, loggedInUserCache),
+      ])
+      if (!article) {
+        const redirects = await Article.findRedirects([slugString], { limit: 1 })
+        const newSlug = redirects[slugString]
+        if (newSlug) {
+          return {
+            redirect: {
+              destination: routes.article(newSlug),
+              permanent: false,
+            },
+          }
+        } else {
+          return {
+            notFound: true
+          }
+        }
+      }
+      const isIndex = article.isIndex()
+      const [
+        ancestors,
+        articleJson,
+        [articlesInSamePage, articlesInSamePageCount],
+        [articlesInSamePageForToc, articlesInSamePageForTocCount],
+        articleInTopicByLoggedInUser,
+        h1ArticlesInSamePage,
+        incomingLinks,
+        issuesCount,
+        otherArticlesInTopic,
+        synonymIds,
+        latestIssues,
+        tagged,
+        topIssues
+      ] = await Promise.all([
+        // ancestors
+        article.treeFindAncestors({ attributes: ['slug', 'titleRender'] }),
+        article.toJson(loggedInUser),
+        // articlesInSamePage
+        Article.getArticlesInSamePage({
+          article,
+          getCount: true,
+          getTagged: true,
+          loggedInUser,
+          limit: maxArticlesFetch,
+          list: true,
+          sequelize,
+          toplevelId: true,
+        }),
+        // articlesInSamePageForToc
+        Article.getArticlesInSamePage({
+          article,
+          getCount: true,
+          loggedInUser,
+          // This 10x made this be the dominating query on /wikibot when we last benchmarked.
+          // (lots or empty articles) On /cirosantilli it didn't matter as much.
+          limit: maxArticlesFetchToc,
+          list: true,
+          // Fundamental optimization to alleviate the 10x.
+          toc: true,
+          sequelize,
+        }),
+        Article.getArticleJsonInTopicBy(loggedInUser, article.topicId),
+        // h1ArticlesInSamePage
+        Article.getArticlesInSamePage({
+          article,
+          loggedInUser,
+          list: undefined,
+          h1: true,
+          sequelize,
+        }),
+        getIncomingLinks(sequelize, article, { type: ourbigbook.REFS_TABLE_X, from: 'from', to: 'to' }),
+        includeIssues ? Issue.count({ where: { articleId: article.id } }) : null,
+        isIndex
+          ? { rows: [] }
+          : Article.getArticles({
+              excludeIds: [article.id],
+              limit,
+              offset: 0,
+              order: 'score',
+              sequelize,
+              topicId: article.topicId,
+            })
+        ,
+        Id.findAll({
+          include: [{
+            model: Ref,
+            as: 'from',
+            required: true,
+            where: { type: Ref.Types[ourbigbook.REFS_TABLE_SYNONYM] },
+            attributes: [],
+            include: [{
+              model: Id,
+              as: 'to',
+              required: true,
+              attributes: [],
+              include: [{
+                model: File,
+                as: 'toplevelId',
+                required: true,
+                attributes: [],
+                include: [{
+                  model: Article,
+                  as: 'articles',
+                  required: true,
+                  attributes: [],
+                  where: { slug: article.slug },
+                }],
+              }],
+            }]
+          }]
+        }),
+        includeIssues ? Promise.all(article.issues.map(issue =&gt; issue.toJson(loggedInUser))) as Promise&lt;IssueType[]&gt; : null,
+        // Tagged.
+        getIncomingLinks(sequelize, article, { type: ourbigbook.REFS_TABLE_X_CHILD, from: 'to', to: 'from' }),
+        includeIssues ? Promise.all(articleTopIssues.issues.map(issue =&gt; issue.toJson(loggedInUser))) as Promise&lt;IssueType[]&gt; : null,
+      ])
+      const h1ArticleInSamePage = h1ArticlesInSamePage[0]
+      if (
+        // False for Index pages, I think because they have no associated topic.
+        // Which is correct.
+        h1ArticleInSamePage
+      ) {
+        articleJson.topicCount = h1ArticleInSamePage.topicCount
+        articleJson.hasSameTopic = h1ArticleInSamePage.hasSameTopic
+      }
+      const props: ArticlePageProps = {
+        ancestors: ancestors.map((a, i) =&gt; {
+          return {
+            hasScope: i !== 0 &amp;&amp; ourbigbook.AstNode.fromJSON(a.file.toplevelId.ast_json, convertContext)
+              .validation_output.scope.given,
+            slug: a.slug,
+            titleRender: a.titleRender,
+            titleSource: a.file.titleSource,
+          }
+        }),
+        article: articleJson,
+        articleInTopicByLoggedInUser,
+        articlesInSamePage,
+        articlesInSamePageCount,
+        articlesInSamePageForToc,
+        articlesInSamePageForTocCount,
+        incomingLinks: incomingLinks.map(a =&gt; { return { slug: a.slug, titleRender: a.titleRender } }),
+        isIndex,
+        loggedInUser,
+        otherArticlesInTopic: await Promise.all(otherArticlesInTopic.rows.map(article =&gt; article.toJson(loggedInUser))),
+        synonymLinks: synonymIds.map(i =&gt; { return {
+          slug: idToSlug(i.idid),
+          titleRender: idToSlug(i.idid),
+          // TODO does not blow up, but returns empty.
+          // https://docs.ourbigbook.com/todo/list-synonyms-on-metadata-section
+          //titleRender: ourbigbook.renderAstFromOpts(i.ast_json, getConvertOpts({ render: true, sequelize })),
+        }}),
+        tagged: tagged.map(a =&gt; { return { slug: a.slug, titleRender: a.titleRender } }),
+      }
+      if (loggedInUser) {
+        props.loggedInUser = await loggedInUser.toJson(loggedInUser)
+      }
+      if (includeIssues) {
+        props.latestIssues = latestIssues
+        props.topIssues = topIssues
+        props.issuesCount = issuesCount
+      }
+      if (log.perf) {
+        console.error(`perf: getServerSidePropsArticle: ${performance.now() - t0} ms`)
+      }
+      return { props }
+    } else {
+      return { notFound: true }
+    }
+  }
+}
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/back/";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -10,7 +10,7 @@ export const FavoriteArticleButtonContext = React.createContext(undefined);
 
 const FavoriteArticleButton = (props) => {
   const loggedInUser = getLoggedInUser()
-  const {favorited, setFavorited, favoritesCount, setFavoritesCount} = React.useContext(FavoriteArticleButtonContext);
+  const {favorited, setFavorited, score, setScore} = React.useContext(FavoriteArticleButtonContext);
   let buttonText;
   if (props.showText) {
     if (favorited) {
@@ -28,7 +28,7 @@ const FavoriteArticleButton = (props) => {
       return;
     }
     setFavorited(!favorited)
-    setFavoritesCount(favoritesCount + (favorited ? - 1 : 1))
+    setScore(score + (favorited ? - 1 : 1))
     try {
       if (favorited) {
         await ArticleAPI.unfavorite(props.slug, loggedInUser?.token)
@@ -37,10 +37,10 @@ const FavoriteArticleButton = (props) => {
       }
     } catch (error) {
       setFavorited(!favorited)
-      setFavoritesCount(favoritesCount + (favorited ? 1 : -1))
+      setScore(score + (favorited ? 1 : -1))
     }
   };
-  let count = favoritesCount;
+  let count = score;
   if (props.showText) {
     count = (<span className="counter">({count})</span>)
   }

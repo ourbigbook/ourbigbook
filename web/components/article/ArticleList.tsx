@@ -51,7 +51,7 @@ const ArticleList = (props) => {
         return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&offset=${page * DEFAULT_LIMIT}`;
       case 'topic-articles':
       case 'topic-users': // TODO top users for a topic.
-        return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&offset=${page * DEFAULT_LIMIT}&topicId=${props.topicId}`;
+        return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&offset=${page * DEFAULT_LIMIT}&topicId=${props.topicId}&sort=score`;
       default:
         throw new Error(`Unknown search: ${props.what}`)
     }
@@ -68,16 +68,16 @@ const ArticleList = (props) => {
   // Favorite article button state.
   const favorited = []
   const setFavorited = []
-  const favoritesCount = []
-  const setFavoritesCount = []
+  const score = []
+  const setScore = []
   for (let i = 0; i < DEFAULT_LIMIT; i++) {
     [favorited[i], setFavorited[i]] = React.useState(false);
-    [favoritesCount[i], setFavoritesCount[i]] = React.useState(0);
+    [score[i], setScore[i]] = React.useState(0);
   }
   React.useEffect(() => {
     for (let i = 0; i < articles.length; i++) {
       setFavorited[i](articles[i].favorited);
-      setFavoritesCount[i](articles[i].favoritesCount);
+      setScore[i](articles[i].score);
     }
   }, [articles])
 
@@ -128,12 +128,12 @@ const ArticleList = (props) => {
                   <FavoriteArticleButtonContext.Provider key={article.slug} value={{
                     favorited: favorited[i],
                     setFavorited: setFavorited[i],
-                    favoritesCount: favoritesCount[i],
-                    setFavoritesCount: setFavoritesCount[i],
+                    score: score[i],
+                    setScore: setScore[i],
                   }}>
                     <FavoriteArticleButton
                       favorited={article.favorited}
-                      favoritesCount={article.favoritesCount}
+                      score={article.score}
                       slug={article.slug}
                     />
                   </FavoriteArticleButtonContext.Provider>

@@ -22,10 +22,6 @@
 
 Happens on some pages but not others, e.g. `barack-obama/ciro-santilli`.
 
-=== Self links broken on /ciro-santilli starting at Budget transparency
-
-There is some kind of fundamentally wrong HTML content being rendered, not Web specific: https://cirosantilli.com/sponsor#budget-transparency
-
 === h2 self links are empty on Web
 {tag=Web}
 
@@ -139,6 +135,12 @@ We should likely not show it on link hover however, only headers, as doing so wo
 It seems that the third party library we are using is just a hack and doesn't properly provide the thing offline... OMG could it be so crap? https://stackoverflow.com/questions/59773190/monaco-editor-with-nextjs/68611592#68611592
 
 == Closed issues
+
+=== Self links broken on /ciro-santilli starting at Budget transparency
+
+There is some kind of fundamentally wrong HTML content being rendered, not Web specific: https://cirosantilli.com/sponsor#budget-transparency
+
+Resolution: was due to missing a close tag. It was even valid HTML OMG, but wront semantic. What a stack.
 
 === Don't move to a separate page when clicking toc links in a page that has scope on web
 {tag=Web}

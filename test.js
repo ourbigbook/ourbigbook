@@ -6227,6 +6227,18 @@ $$
 );
 assert_lib_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 3);
 
+// Quote.
+// \Q
+assert_lib_stdin('quotation: generates valid HTML with title',
+  `\\Q[My quote]{title=My title}
+`,
+  {
+    assert_xpath_stdout: [
+      `//x:div[@id='quote-my-title']//x:blockquote[text()='My quote']`,
+    ],
+  }
+)
+
 // Include.
 const include_opts = {convert_opts: {
   embed_includes: true,

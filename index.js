@@ -3724,15 +3724,15 @@ function html_render_simple_elem(elem_name, options={}) {
         force_separator
       })
       const title_and_description = get_title_and_description({ title, description, inner })
-      res += `<div class="${multiline_caption ? multiline_caption.substring(1) : ''}"${attrs}>\n`;
-      res += `\n<div class="caption">${title_and_description}</div>\n`;
+      res += `<div${multiline_caption ?  ` class="${multiline_caption.substring(1)}"` : ''}${attrs}>`;
+      res += `<div class="caption">${title_and_description}</div>`;
       elem_attrs = ''
     } else {
       elem_attrs = `${extra_attrs_string}${attrs}`
     }
     res += `<${elem_name}${elem_attrs}${test_data_attr}>${newline_after_open_str}${content}</${elem_name}>${newline_after_close_str}`;
     if (show_caption) {
-      `</div>\n`;
+      res += `</div>`;
     }
     if (options.wrap) {
       res = html_elem('div', res);

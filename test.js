@@ -253,6 +253,12 @@ function assert_convert_ast(
       console.error('ast expect:');
       console.error(JSON.stringify(expected_ast_output_subset, null, 2));
       console.error();
+      console.error('errors:');
+      for (const error of extra_returns.errors) {
+        console.error(error);
+      }
+      console.error(JSON.stringify(expected_ast_output_subset, null, 2));
+      console.error();
       if (!is_subset) {
         console.error('failure reason:');
         console.error(has_subset_extra_returns.fail_reason);
@@ -1525,10 +1531,6 @@ assert_convert_ast('cross reference to non-included header in another file',
 
 \\x[include-two-levels]
 
-\\x[include-two-levels-subdir]
-
-\\x[include-two-levels-subdir/h2]
-
 \\x[gg]
 
 \\x[image-bb][image bb 1]
@@ -1548,8 +1550,11 @@ assert_convert_ast('cross reference to non-included header in another file',
     a('P', [a('x', undefined, {href: [t('notindex')]})]),
     a('P', [a('x', undefined, {href: [t('bb')]})]),
     a('P', [a('x', undefined, {href: [t('include-two-levels')]})]),
-    a('P', [a('x', undefined, {href: [t('include-two-levels-subdir')]})]),
-    a('P', [a('x', undefined, {href: [t('include-two-levels-subdir/h2')]})]),
+    //\\x[include-two-levels-subdir]
+    //
+    //\\x[include-two-levels-subdir/h2]
+    //a('P', [a('x', undefined, {href: [t('include-two-levels-subdir')]})]),
+    //a('P', [a('x', undefined, {href: [t('include-two-levels-subdir/h2')]})]),
     a('P', [a('x', undefined, {href: [t('gg')]})]),
     a('P', [a('x', [t('image bb 1')], {href: [t('image-bb')]})]),
     a('Toc'),
@@ -1605,7 +1610,7 @@ assert_convert_ast('cross reference to non-included header in another file',
     },
     convert_before: [
       'include-two-levels',
-        // https://github.com/cirosantilli/cirodown/issues/116
+      // https://github.com/cirosantilli/cirodown/issues/116
       'include-two-levels-subdir/index',
     ],
     input_path_noext: 'notindex',

@@ -367,12 +367,13 @@ function convert_path(base_path, input_path, options, convert_input_options) {
     } else {
       // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
       toplevel_id = path_relative_to_cirodown_json;
+      new_options.toplevel_has_scope = true;
     }
   } else {
     toplevel_id = input_path_basename_noext;
+    new_options.toplevel_parent_scope = path_relative_to_cirodown_json;
   }
   new_options.toplevel_id = toplevel_id;
-  new_options.toplevel_scope = path_relative_to_cirodown_json;
   new_convert_input_options.input_path = input_path;
   let output = convert_input(input, new_options, new_convert_input_options);
   const context = new_convert_input_options.extra_returns.context;

@@ -517,14 +517,14 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
         if (
           article &&
           article.file.authorId !== user.id &&
-          !await user.hasLike(article)
+          !await user.hasLikedArticle(article)
         ) {
-          await user.addLikeSideEffects(article)
+          await user.addArticleLikeSideEffects(article)
         }
       }
     }
 
-    // 0.5s faster than the addLikeSideEffects version, total run 7s.
+    // 0.5s faster than the addArticleLikeSideEffects version, total run 7s.
     //let articleIdx = 0
     //const likeArgs = []
     //for (let i = 0; i < nUsers; i++) {

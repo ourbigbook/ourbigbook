@@ -48,19 +48,33 @@ router.post('/login', async function(req, res, next) {
   }
 })
 
+router.get('/users', auth.optional, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const [limit, offset] = lib.getLimitAndOffset(req, res)
+    const [loggedInUser, {count: usersCount, rows: users}] = await Promise.all([
+      sequelize.models.User.findByPk(req.payload.id),
+      sequelize.models.User.getUsers({
+        sequelize,
+        limit,
+        offset,
+        order: lib.getOrder(req),
+      }),
+    ])
+    return res.json({
+      users: await Promise.all(users.map((user) => {
+        return user.toJson(loggedInUser)
+      })),
+      usersCount,
+    })
+  } catch(error) {
+    next(error);
+  }
+})
+
 router.get('/users/:username', auth.optional, async function(req, res, next) {
   try {
-    let loggedInUser;
-    if (req.payload) {
-      const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-      if (user) {
-        loggedInUser = user
-      } else {
-        loggedInUser = false
-      }
-    } else {
-      loggedInUser = false
-    }
+    const loggedInUser = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
     return res.json({ user: await req.user.toJson(loggedInUser) })
   } catch(error) {
     next(error);

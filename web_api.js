@@ -13,7 +13,7 @@ function encodeGetParams(p) {
   return ret
 }
 
-articleGetQuery = (opts) => {
+const encodeGetParamsWithPage = (opts) => {
   opts = Object.assign({}, opts)
   if (opts.page !== undefined && opts.limit !== undefined) {
     opts.offset = opts.page * opts.limit
@@ -37,7 +37,7 @@ class WebApi {
   }
 
   async articleAll(opts={}) {
-    return this.req('get', `articles${articleGetQuery(opts)}`)
+    return this.req('get', `articles${encodeGetParamsWithPage(opts)}`)
   }
 
   async articleCreate(article, opts={}) {
@@ -57,7 +57,7 @@ class WebApi {
   }
 
   async articleFeed(opts={}) {
-    return this.req('get', `articles/feed${articleGetQuery(opts)}`)
+    return this.req('get', `articles/feed${encodeGetParamsWithPage(opts)}`)
   }
 
   async articleGet(slug) {
@@ -80,9 +80,9 @@ class WebApi {
     return `/${WEB_API_PATH}/articles?id=${encodeURIComponent(slug)}`
   }
 
-  async issueGet(id, number=undefined) {
+  async issueAll(opts) {
     return this.req('get',
-      `/issues${encodeGetParams({ id, number })}`,
+      `/issues${encodeGetParamsWithPage(opts)}`,
     )
   }
 
@@ -95,6 +95,10 @@ class WebApi {
     )
   }
 
+  async issueDelete(slug, issueNumber) {
+    return this.req('delete', `/issues/${issueNumber}/comments/${commentNumber}?id=${encodeURIComponent(slug)}`)
+  }
+
   async issueEdit(slug, issueNumber, issue) {
     return this.req('put',
       `/issues/${issueNumber}?id=${encodeURIComponent(slug)}`,
@@ -104,8 +108,12 @@ class WebApi {
     )
   }
 
-  async issueDelete(slug, issueNumber) {
-    return this.req('delete', `/issues/${issueNumber}/comments/${commentNumber}?id=${encodeURIComponent(slug)}`)
+  async issueLike(slug, issueNumber) {
+    return this.req('post', `issues/${issueNumber}/like?id=${slug}`)
+  }
+
+  async issueUnlike(slug, issueNumber) {
+    return this.req('delete', `issues/${issueNumber}/like?id=${encodeURIComponent(slug)}`)
   }
 
   async commentGet(slug, issueNumber) {
@@ -136,6 +144,10 @@ class WebApi {
     return this.req('delete', `/issues/${issueNumber}/comments/${commentNumber}?id=${encodeURIComponent(slug)}`)
   }
 
+  async userAll(opts) {
+    return this.req('get', `users${encodeGetParamsWithPage(opts)}`)
+  }
+
   async userCreate(attrs) {
     return this.req('post',
       `users`,
@@ -153,7 +165,9 @@ class WebApi {
     );
   }
 
-  async userGet(username) { return this.req('get', `users/${username}`) }
+  async userGet(username) {
+    return this.req('get', `users/${username}`)
+  }
 
   async userLogin(attrs) {
     return this.req('post',

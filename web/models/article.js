@@ -73,7 +73,7 @@ module.exports = (sequelize) => {
   Article.prototype.toJson = async function(user) {
     const authorPromise = this.file && this.file.author ? this.file.author : this.getAuthor()
     const [liked, author] = await Promise.all([
-      user ? user.hasLike(this.id) : false,
+      user ? user.hasLikedArticle(this.id) : false,
       (await authorPromise).toJson(user),
     ])
     return {
@@ -127,6 +127,7 @@ module.exports = (sequelize) => {
 
   Article.getArticle = async function({
     includeIssues,
+    includeIssuesOrder,
     limit,
     sequelize,
     slug,
@@ -147,11 +148,10 @@ module.exports = (sequelize) => {
       include.push({
         model: sequelize.models.Issue,
         as: 'issues',
-        order: [['number', 'DESC']],
         include: [{ model: sequelize.models.User, as: 'author' }],
       })
       order = [[
-        'issues', 'number', 'DESC'
+        'issues', includeIssuesOrder === undefined ? 'createdAt' : includeIssuesOrder, 'DESC'
       ]]
     }
     return sequelize.models.Article.findOne({
@@ -191,7 +191,7 @@ module.exports = (sequelize) => {
     if (likedBy) {
       include.push({
         model: sequelize.models.User,
-        as: 'likedBy',
+        as: 'articleLikedBy',
         where: { username: likedBy },
       })
     }

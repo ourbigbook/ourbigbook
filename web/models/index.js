@@ -71,8 +71,12 @@ function getSequelize(toplevelDir, toplevelBasename) {
   User.hasMany(UserFollowUser, {foreignKey: 'followId'})
 
   // User like Article
-  Article.belongsToMany(User, { through: 'UserLikeArticle', as: 'likedBy', foreignKey: 'articleId', otherKey: 'userId'  });
-  User.belongsToMany(Article, { through: 'UserLikeArticle', as: 'likes',   foreignKey: 'userId', otherKey: 'articleId'  });
+  Article.belongsToMany(User, { through: 'UserLikeArticle', as: 'articleLikedBy', foreignKey: 'articleId', otherKey: 'userId'  });
+  User.belongsToMany(Article, { through: 'UserLikeArticle', as: 'likedArticles',   foreignKey: 'userId', otherKey: 'articleId'  });
+
+  // User like Issue
+  Issue.belongsToMany(User, { through: 'UserLikeIssue', as: 'issueLikedBy', foreignKey: 'articleId', otherKey: 'userId'  });
+  User.belongsToMany(Issue, { through: 'UserLikeIssue', as: 'likedIssues',   foreignKey: 'userId', otherKey: 'articleId'  });
 
   // Article author User
   File.belongsTo(User, {

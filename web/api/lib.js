@@ -1,10 +1,10 @@
+const config = require('../front/config')
 const front = require('../front/js')
 
 async function getArticle(req, res, options={}) {
-  const { includeIssues } = options
   const slug = validateParam(req.query, 'id')
   const sequelize = req.app.get('sequelize')
-  const article = await sequelize.models.Article.getArticle({ includeIssues, sequelize, slug })
+  const article = await sequelize.models.Article.getArticle(Object.assign({ sequelize, slug }, options))
   if (!article) {
     throw new ValidationError(
       [`Article slug not found: "${slug}"`],
@@ -18,6 +18,40 @@ async function getArticle(req, res, options={}) {
 // Works on Heroku 2021.
 function getClientIp(req) {
   return req.header('x-forwarded-for')
+}
+
+function getOrder(req) {
+  let sort = req.query.sort;
+  if (sort) {
+    if (sort === 'createdAt' || sort === 'score') {
+      return sort
+    } else {
+      throw new ValidationError(
+        [`Invalid sort value: '${sort}'`],
+        422,
+      )
+    }
+  } else {
+    return 'createdAt'
+  }
+}
+
+function getLimitAndOffset(req, res) {
+  return [
+    validateParam(req.query, 'limit', {
+      typecast: typecastInteger,
+      validators: [
+        isNonNegativeInteger,
+        isSmallerOrEqualTo(config.articleLimitMax),
+      ],
+      defaultValue: config.articleLimit
+    }),
+    validateParam(req.query, 'offset', {
+      typecast: typecastInteger,
+      validators: [isNonNegativeInteger],
+      defaultValue: 0
+    }),
+  ]
 }
 
 // When this class is thrown and would blows up on toplevel, we catch it instead
@@ -49,6 +83,10 @@ function isPositiveInteger(i) {
 
 function isBoolean(tf) {
   return typeof tf === 'boolean'
+}
+
+function isSmallerOrEqualTo(max) {
+  return (n) => n <= max
 }
 
 function isString(s) {
@@ -120,12 +158,15 @@ module.exports = {
   ValidationError,
   getArticle,
   getClientIp,
+  getLimitAndOffset,
+  getOrder,
   isBoolean,
   isString,
   isTruthy,
   validate,
   validateParam,
   isNonNegativeInteger,
+  isSmallerOrEqualTo,
   isPositiveInteger,
   typecastInteger,
 }

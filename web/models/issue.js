@@ -74,6 +74,38 @@ module.exports = (sequelize) => {
     })
   }
 
+  Issue.getIssues = async ({
+    author,
+    likedBy,
+    limit,
+    offset,
+    order,
+    sequelize,
+  }) => {
+    const authorInclude = {
+      model: sequelize.models.User,
+      as: 'author',
+      required: true,
+    }
+    if (author) {
+      authorInclude.where = { username: author }
+    }
+    const include = [authorInclude]
+    if (likedBy) {
+      include.push({
+        model: sequelize.models.User,
+        as: 'issueLikedBy',
+        where: { username: likedBy },
+      })
+    }
+    return sequelize.models.Article.findAndCountAll({
+      order: [[order, 'DESC']],
+      limit,
+      offset,
+      include,
+    })
+  }
+
   Issue.prototype.toJson = async function(loggedInUser) {
     const ret = {
       id: this.id,

@@ -518,6 +518,8 @@ async function destroy_sequelize(sequelize) {
 }
 
 async function update_database_after_convert({
+  authorId,
+  body,
   extra_returns,
   id_provider,
   sequelize,
@@ -554,9 +556,10 @@ async function update_database_after_convert({
   // Likely would not have been a bottleneck if we new more about databases/had more patience
   // and instead of doing INSERT one by one we would do a single insert with a bunch of data.
   // The move to Sequelize made that easier with bulkCreate. But keeping the transaction just in case
+  let idProviderUpdate, fileBulkCreate
   await sequelize.transaction({ transaction }, async (transaction) => {
     file_bulk_create_opts.transaction = transaction
-    await Promise.all([
+    ;[idProviderUpdate, fileBulkCreate] = await Promise.all([
       id_provider.update(
         extra_returns,
         sequelize,
@@ -565,6 +568,8 @@ async function update_database_after_convert({
       sequelize.models.File.bulkCreate(
         [
           {
+            authorId,
+            body,
             path,
             toplevel_id,
             last_parse: file_bulk_create_last_parse,
@@ -576,6 +581,7 @@ async function update_database_after_convert({
     ])
   });
   ourbigbook.perf_print(context, 'convert_path_post_sqlite_transaction')
+  return { file: fileBulkCreate[0] }
 }
 
 // Do various post conversion checks to verify database integrity:
@@ -587,12 +593,12 @@ async function update_database_after_convert({
 // so if you e.g. move an ID from one file to another, a common operation, then it would still see
 // the ID in the previous file depending on conversion order. So we are moving it here instead at the end.
 // Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
-async function check_db(sequelize, paths_converted) {
+async function check_db(sequelize, paths_converted, transaction) {
   const [duplicate_rows, invalid_title_title_rows] = await Promise.all([
     await sequelize.models.Id.findDuplicates(
-      paths_converted),
+      paths_converted, transaction),
     await sequelize.models.Id.findInvalidTitleTitle(
-      paths_converted),
+      paths_converted, transaction),
   ])
   const error_messages = []
   if (duplicate_rows.length > 0) {

@@ -281,7 +281,8 @@ async function convert_input(input, ourbigbook_options, non_ourbigbook_options={
   // Remove duplicate messages due to split header rendering. We could not collect
   // errors from that case at all maybe, but do we really want to run the risk of
   // missing errors?
-  for (const error_string of ourbigbook_nodejs_webpack_safe.remove_duplicates_sorted_array(new_options.extra_returns.errors.map(e => e.toString()))) {
+  for (const error_string of ourbigbook_nodejs_webpack_safe.remove_duplicates_sorted_array(
+      new_options.extra_returns.errors.map(e => e.toString()))) {
     console.error(error_string);
   }
   non_ourbigbook_options.extra_returns = new_options.extra_returns;

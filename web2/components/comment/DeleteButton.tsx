@@ -22,11 +22,13 @@ const DeleteButton = ({ commentId }) => {
     );
     trigger(`${SERVER_BASE_URL}/articles/${pid}/comments`);
   };
-
   return (
-    <span className="mod-options">
-      <i className="ion-trash-a" onClick={() => handleDelete(commentId)} />
-    </span>
+    <button
+      className="btn"
+      onClick={() => handleDelete(commentId)}
+    >
+      <i className="ion-trash-a" /> Delete Comment
+    </button>
   );
 };
 

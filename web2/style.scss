@@ -1,5 +1,6 @@
 @import '../cirodown.common.scss';
 
+$border-radius: 10px;
 $nav-background-color: #AA0;
 $toplevel-padding: 20px;
 
@@ -48,7 +49,26 @@ button, a.btn {
   }
 }
 
-nav.navbar, footer {
+footer {
+  margin-top: 10px;
+  a {
+    $background-color: #00C;
+    color: $background-color;
+    text-decoration: none;
+    &:visited {
+      color: $background-color;
+    }
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+  padding: 10px $toplevel-padding;
+  div + div {
+    margin-top: 5px;
+  }
+}
+
+footer, nav.navbar {
   background-color: $nav-background-color;
   color: $background-color;
   a {
@@ -102,23 +122,14 @@ nav.navbar {
   }
 }
 
-footer {
-  margin-top: 10px;
-  a {
-    $background-color: #00C;
-    color: $background-color;
-    text-decoration: none;
-    &:visited {
-      color: $background-color;
-    }
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-  padding: 10px $toplevel-padding;
-  div + div {
-    margin-top: 5px;
-  }
+textarea {
+  background-color: $background-color;
+  color: white;
+  border: none;
+  width: 100%;
+}
+textarea::placeholder {
+  color: white;
 }
 
 /* Cirodown has a complex per-element padding structure that we can't easily override.
@@ -126,6 +137,36 @@ footer {
  * to make them align nicely with rendered Cirodown. */
 .content-not-cirodown {
   padding-left: $toplevel-padding;
+}
+
+.comment {
+  border: 1px solid $color;
+  border-radius: $border-radius;
+  margin-bottom: 10px;
+  margin-right: $toplevel-padding;
+  .comment-body {
+    padding: 10px 10px;
+  }
+  .comment-header {
+    border-bottom: 1px solid $color;
+    border-radius: $border-radius $border-radius 0 0;
+    background-color: #003300;
+    padding: 10px 10px;
+  }
+}
+
+.comment-form {
+  border: 1px solid $color;
+  border-radius: $border-radius;
+  margin-bottom: 10px;
+  margin-right: $toplevel-padding;
+  .comment-form-textarea {
+    border-bottom: 1px solid $color;
+    padding: 10px;
+  }
+  .comment-form-submit {
+    padding: 10px;
+  }
 }
 
 .error-message {

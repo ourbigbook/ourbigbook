@@ -85,11 +85,6 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
             className="cirodown"
             ref={renderRefCallback}
           />
-          <ul className="tag-list">
-            {article.tagList?.map((tag) => (
-              <li className="tag-default tag-pill tag-outline" key={tag}>{tag}</li>
-            ))}
-          </ul>
           <div className="comments content-not-cirodown">
             <h1>Comments</h1>
             <div>

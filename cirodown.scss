@@ -179,8 +179,7 @@ pre {
     border-collapse: collapse;
     th, td {
       border: $table_border;
-      padding-left: 2px;
-      padding-right: 2px;
+      padding: 5px 5px;
     }
   }
   .table-caption-container {

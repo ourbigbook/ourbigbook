@@ -14,8 +14,9 @@ const Comment = ({ comment }) => {
     <div className="comment">
       <div className="comment-header">
         <UserLinkWithImage user={comment.author} />
-        {' '}commented on{' '}
-        {formatDate(comment.createdAt)}
+        {' '}
+        commented on {formatDate(comment.createdAt)}
+        {' '}
         <Maybe test={canModify}>
           <DeleteButton commentId={comment.id} />
         </Maybe>

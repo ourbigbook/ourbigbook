@@ -5,6 +5,7 @@ const ourbigbook = require('ourbigbook')
 
 function modifyEditorInput(title, body) {
   let ret = ourbigbook.INSANE_HEADER_CHAR + ' ' + title
+  let offsetOffset = 0
   // Append title to body. Add a newline if the body doesn's start
   // with a header argument like `{c}` in:
   //
@@ -14,9 +15,10 @@ function modifyEditorInput(title, body) {
     ret += '\n'
     if (body[0] !== ourbigbook.START_NAMED_ARGUMENT_CHAR) {
       ret += '\n'
+      offsetOffset = 1
     }
     ret += body
   }
-  return ret;
+  return { offset: 1 + offsetOffset, new: ret };
 }
 exports.modifyEditorInput = modifyEditorInput

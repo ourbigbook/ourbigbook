@@ -15,7 +15,7 @@ class OurbigbookEditor {
       options.production = true
     }
     if (!('modifyEditorInput' in options)) {
-      options.modifyEditorInput = (old) => old
+      options.modifyEditorInput = (old) => { return { offset: 0, new: old } }
     }
     this.modifyEditorInput = options.modifyEditorInput
     if (!('onDidChangeModelContentCallback' in options)) {
@@ -172,8 +172,9 @@ class OurbigbookEditor {
     let extra_returns = {};
     let ok = true
     try {
+      this.modifyEditorInputRet = this.modifyEditorInput(this.editor.getValue())
       this.output_elem.innerHTML = await this.ourbigbook.convert(
-        this.modifyEditorInput(this.editor.getValue()),
+        this.modifyEditorInputRet.new,
         this.options.convertOptions,
         extra_returns
       );
@@ -200,6 +201,7 @@ class OurbigbookEditor {
   getValue() { return this.editor.getValue() }
 
   scrollPreviewToSourceLine(line_number, block) {
+    line_number += this.modifyEditorInputRet.offset
     if (block === undefined) {
       block = 'center';
     }

@@ -33,7 +33,7 @@ async function convert({
   const file_provider = new SqliteFileProvider(sequelize, id_provider);
   const extra_returns = {};
   body = body.replace(/\n+$/, '')
-  const input = modifyEditorInput(title, body)
+  const input = modifyEditorInput(title, body).new
   if (!path) {
     path = `${ourbigbook.title_to_id(title)}${ourbigbook.OURBIGBOOK_EXT}`
   }

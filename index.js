@@ -24,6 +24,8 @@ class AstNode {
     // {String} or undefined.
     this.id = undefined;
     this.macro = macros[this.macro_name];
+    // Only for headers.
+    this.level = undefined;
 
     // Set all non-given arguments to empty plaintext nodes by default,
     // and store which args were given or not.
@@ -733,15 +735,15 @@ function convert(
   extra_returns.ast = ast;
   extra_returns.errors.push(...sub_extra_returns.errors);
   let errors = [];
-  let context = {
-    errors: errors,
-    extra_returns: extra_returns,
-    has_toc: sub_extra_returns.has_toc,
-    header_graph: sub_extra_returns.header_graph,
-    ids: sub_extra_returns.ids,
-    macros: macros,
-    options: options,
-  };
+  let context = Object.assign(
+    sub_extra_returns.context,
+    {
+      errors: errors,
+      extra_returns: extra_returns,
+      macros: macros,
+      options: options,
+    }
+  );
   output = ast.convert(context);
   extra_returns.errors.push(...errors);
   extra_returns.errors = extra_returns.errors.sort((a, b)=>{
@@ -963,6 +965,7 @@ function object_subset(source_object, keys) {
  * @return {AstNode}
  */
 function parse(tokens, macros, options, extra_returns={}) {
+  extra_returns.context = {};
   extra_returns.errors = [];
   let state = {
     extra_returns: extra_returns,
@@ -985,11 +988,11 @@ function parse(tokens, macros, options, extra_returns={}) {
   // * extract all IDs into an ID index
   let todo_visit = [ast_toplevel];
   let macro_counts = {};
-  extra_returns.ids = {};
+  extra_returns.context.ids = {};
   let header_graph_last_level = 0;
-  extra_returns.header_graph = new TreeNode();
-  let header_graph_stack = {0: extra_returns.header_graph};
-  extra_returns.has_toc = false;
+  extra_returns.context.header_graph = new TreeNode();
+  let header_graph_stack = {0: extra_returns.context.header_graph};
+  extra_returns.context.has_toc = false;
   while (todo_visit.length > 0) {
     const node = todo_visit.shift();
     const macro_name = node.macro_name;
@@ -1009,7 +1012,7 @@ function parse(tokens, macros, options, extra_returns={}) {
       node.id = id_text;
     }
     if (node.id !== undefined) {
-      extra_returns.ids[node.id] = node;
+      extra_returns.context.ids[node.id] = node;
     }
 
     // Linear count of each macro type for macros that have IDs.
@@ -1025,8 +1028,9 @@ function parse(tokens, macros, options, extra_returns={}) {
     // Header tree.
     if (macro_name === Macro.HEADER_MACRO_NAME) {
       let level = parseInt(convert_arg_noescape(node.args.level, id_context));
+      node.level = level;
       let new_tree_node = new TreeNode(node, header_graph_stack[level - 1]);
-      if ((level - header_graph_last_level) > 1) {
+      if (((level - header_graph_last_level) > 1) && (header_graph_last_level != 0)) {
         parse_error(
           state,
           `skipped a header level from ${header_graph_last_level} to ${level}`,
@@ -1043,7 +1047,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     }
 
     if (macro_name === Macro.TOC_MACRO_NAME) {
-      extra_returns.has_toc = true;
+      extra_returns.context.has_toc = true;
     }
 
     // Loop over the child arguments.
@@ -1125,6 +1129,14 @@ function parse(tokens, macros, options, extra_returns={}) {
         node.args[arg_name] = arg;
       }
     }
+  }
+
+  // Calculate header_graph_top_level.
+  let level0_header = extra_returns.context.header_graph;
+  if (level0_header.children.length === 1) {
+    extra_returns.context.header_graph_top_level = level0_header.children[0].value.level;
+  } else {
+    extra_returns.context.header_graph_top_level = 0;
   }
 
   return ast_toplevel;
@@ -1457,7 +1469,7 @@ const DEFAULT_MACRO_LIST = [
       let custom_args;
       let level_arg = ast.args.level;
       let level = convert_arg_noescape(level_arg, context);
-      let level_int = parseInt(level);
+      let level_int = ast.level;
       if (!Number.isInteger(level_int) || !(level_int > 0)) {
         let message = `level must be a positive non-zero integer: "${level}"`;
         this.error(context, message, level_arg[0].line, level_arg[0].column);
@@ -1476,12 +1488,12 @@ const DEFAULT_MACRO_LIST = [
       let x_text_options = {
         show_caption_prefix: false,
       };
-      if (level_int === 1) {
+      if (level_int === context.header_graph_top_level) {
         x_text_options.style = XStyle.short;
       }
       ret += this.x_text(ast, context, x_text_options);
       ret += `</a>`;
-      if (context.has_toc) {
+      if (context.has_toc && (level_int !== context.header_graph_top_level)) {
         ret += `<span> <a${toc_href}>(toc \u2191)</a></span>`;
       }
       ret += `</h${level}>\n`;
@@ -1705,9 +1717,13 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       let ret = `<div class="toc-container">\n`;
       let todo_visit = [];
-      let last_level = 0;
-      for (let i = context.header_graph.children.length - 1; i >= 0; i--) {
-        todo_visit.push([context.header_graph.children[i], 1]);
+      let last_level = context.header_graph_top_level - 1;
+      let root_node = context.header_graph;
+      if (context.header_graph_top_level > 0) {
+        root_node = root_node.children[0];
+      }
+      for (let i = root_node.children.length - 1; i >= 0; i--) {
+        todo_visit.push([root_node.children[i], 1]);
       }
       while (todo_visit.length > 0) {
         const [tree_node, level] = todo_visit.pop();

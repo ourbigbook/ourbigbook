@@ -42,6 +42,9 @@ class AstNode {
     if (!('from_include' in options)) {
       options.from_include = false;
     }
+    if (!('from_cirodown_example' in options)) {
+      options.from_cirodown_example = false;
+    }
     if (!('force_no_index' in options)) {
       options.force_no_index = false;
     }
@@ -121,6 +124,8 @@ class AstNode {
 
     // This was added to the tree from an include.
     this.from_include = options.from_include;
+    // This was added to the tree from a cirodown_example.
+    this.from_cirodown_example = options.from_cirodown_example;
 
     // Includes under this header.
     this.includes = [];
@@ -181,7 +186,11 @@ class AstNode {
     if (!('x_parents' in context)) {
       context.x_parents = new Set();
     }
-    if (this.from_include && context.in_split_headers) {
+    if (
+      this.from_include &&
+      context.in_split_headers &&
+      !this.from_cirodown_example
+    ) {
       return '';
     }
     const macro = context.macros[this.macro_name];
@@ -2143,6 +2152,7 @@ function convert_init_context(options={}, extra_returns={}) {
   if (!('embed_includes' in options)) { options.embed_includes = false; }
   if (!('file_provider' in options)) { options.file_provider = undefined; }
   if (!('from_include' in options)) { options.from_include = false; }
+  if (!('from_cirodown_example' in options)) { options.from_cirodown_example = false; }
   if (!('html_embed' in options)) { options.html_embed = false; }
   // Add HTML extension to x links. And therefore also output files
   // with the .html extension.
@@ -2876,6 +2886,7 @@ function parse(tokens, options, context, extra_returns={}) {
     const [parent_arg, ast] = todo_visit.pop();
     const macro_name = ast.macro_name;
     ast.from_include = options.from_include;
+    ast.from_cirodown_example = options.from_cirodown_example;;
     ast.source_location.path = options.input_path;
     if (macro_name === Macro.INCLUDE_MACRO_NAME) {
       let peek_ast = todo_visit[todo_visit.length - 1][1];
@@ -3076,7 +3087,7 @@ function parse(tokens, options, context, extra_returns={}) {
           {
             'content': convert_include(
               convert_arg_noescape(ast.args.content, context),
-              options,
+              clone_and_set(options, 'from_cirodown_example', true),
               0,
               options.input_path,
               undefined,

@@ -2957,6 +2957,10 @@ $$
 \\newcommand{\\mycmd}[0]{hello}
 $$
 
+\\CirodownExample[[
+\\Q[A Cirodown example!]
+]]
+
 \\Include[included-by-index]
 
 == h2
@@ -3033,6 +3037,7 @@ assert_executable(
         "//*[@id='toc']//x:a[@href='included-by-index.html' and text()='Included by index']",
 
         "//x:h2[@id='included-by-index']",
+        "//x:blockquote[text()='A Cirodown example!']",
         "//x:h2[@id='index-scope']//x:a[@href='index-scope.html' and text()='split']",
         "//x:h3[@id='index-scope/index-scope-2']//x:a[@href='index-scope/index-scope-2.html' and text()='split']",
       ],
@@ -3042,6 +3047,9 @@ assert_executable(
         // TODO This is more correct with the `1. `. Maybe wait for https://github.com/cirosantilli/cirodown/issues/126
         // to make sure we don't have to rewrite everything.
         //"//*[@id='toc']//x:a[@href='included-by-index-split.html' and text()='1. Included by index']",
+
+        // CirodownExample renders in split header.
+        "//x:blockquote[text()='A Cirodown example!']",
       ],
       'notindex.html': [
         "//x:h1[@id='notindex']",

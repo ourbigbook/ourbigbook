@@ -32,10 +32,10 @@ highlight link cirodownCode Identifier
 syntax region cirodownMath start=/\z(\$\+\)/ end=/\z1/ contains=@NoSpell
 highlight link cirodownMath Identifier
 
-syntax match cirodownMacro /\\[a-zA-Z0-9_]\+/
+syntax match cirodownMacro /\\[a-zA-Z0-9_]\+/ contains=@NoSpell
 " special a/x handling. treat ID like URL to prevent
 " syntax errors so frequent in that case due to lowercasing.
-syntax match cirodownMacroX '\\\(a\|x\|[Ii]mage\)\>' nextgroup=cirodownDelimiterX
+syntax match cirodownMacroX '\\\(a\|x\|[Ii]mage\)\>' nextgroup=cirodownDelimiterX contains=@NoSpell
 syntax match cirodownArgumentX /[^\]]\+/ contained contains=@NoSpell
 syntax match cirodownArgumentParent /[^}]\+/ contained contains=@NoSpell
 

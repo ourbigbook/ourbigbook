@@ -5,8 +5,8 @@ import { articleLimit  } from 'front/config'
 import { getLoggedInUser } from 'back'
 
 export const getServerSidePropsTopicHoc = (what): GetServerSideProps => {
-  return async ({ params, req }) => {
-    const loggedInUser = await getLoggedInUser(req)
+  return async ({ params, req, res }) => {
+    const loggedInUser = await getLoggedInUser(req, res)
     const page = params?.page ? parseInt(params.page as string, 10) - 1: 0
     let order
     switch (what) {

@@ -5,8 +5,8 @@ import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
 import { getLoggedInUser } from 'back'
 
 export const getServerSidePropsUserHoc = (what) => {
-  return async ({ params, req }) => {
-    const loggedInUser = await getLoggedInUser(req)
+  return async ({ params, req, res }) => {
+    const loggedInUser = await getLoggedInUser(req, res)
     const user = await sequelize.models.User.findOne({
       where: { username: params.uid },
     })

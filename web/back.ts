@@ -1,13 +1,13 @@
-import { getCookieFromReq } from 'front'
+import { getCookieFromReq, AUTH_COOKIE_NAME } from 'front'
 import sequelize from 'db'
 import { verify } from 'jsonwebtoken'
 import { secret } from 'front/config'
 
-export async function getLoggedInUser(req, loggedInUser?) {
+export async function getLoggedInUser(req, res, loggedInUser?) {
   if (loggedInUser !== undefined) {
     return loggedInUser
   } else {
-    const authCookie = getCookieFromReq(req, 'auth')
+    const authCookie = getCookieFromReq(req, AUTH_COOKIE_NAME)
     let verifiedUser
     if (authCookie) {
       try {
@@ -18,6 +18,10 @@ export async function getLoggedInUser(req, loggedInUser?) {
     } else {
       return null
     }
-    return await sequelize.models.User.findByPk(verifiedUser.id)
+    const user = await sequelize.models.User.findByPk(verifiedUser.id)
+    if (user === null) {
+      res.clearCookie(AUTH_COOKIE_NAME)
+    }
+    return user
   }
 }

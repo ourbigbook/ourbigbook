@@ -4,23 +4,19 @@ import Label from "components/Label";
 import CustomLink from "components/CustomLink";
 import LoginForm from "components/LoginForm";
 import routes from "routes";
+import { LOGIN_ACTION, REGISTER_ACTION } from "lib";
 
 const makeLoginPage = ({ register = false }) => {
+  const action = register ? REGISTER_ACTION : LOGIN_ACTION
   return () => (
     <>
       <Head>
-        <title>{register ? 'Register' : 'Login'}</title>
-        <title>Login</title>
+        <title>{action}</title>
       </Head>
       <div className="auth-page content-not-cirodown">
-        <h1 className="text-xs-center">
-          {register
-            ? <>Sign up</>
-            : <>Sign in</>
-          }
-        </h1>
+        <h1 className="text-xs-center">{action}</h1>
         <CustomLink href={register ? routes.userLogin() : routes.userNew()} >
-          {`${register ? 'Have' : 'Need' }`} an account?
+          {`${register ? `Already have an account? ${LOGIN_ACTION} here.` : `Don't have an account? ${REGISTER_ACTION} here.` }`}
         </CustomLink>
         <LoginForm register={register} />
       </div>

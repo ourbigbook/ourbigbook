@@ -3627,7 +3627,7 @@ assert_error('lint h-tag tag failure',
   2, 1, undefined,
   { extra_convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'tag', } } } }
 );
-assert_no_error('lint h-tag child pass',
+assert_no_error('lint h-tag tag pass',
   `= 1
 {tag=2}
 

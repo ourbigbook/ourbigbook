@@ -4,6 +4,35 @@
 
 == Issues
 
+=== Incoming links and tagged metadata does not show synoyms
+{tag=Metadata sectoin}
+{tag=Synonym}
+
+Both CLI and web. E.g.:
+
+README.bigb
+``
+= Index
+
+<notindex2>
+``
+
+notindex.bigb
+``
+= Notindex
+
+= Notindex2
+{synonym}
+``
+
+then:
+``
+ourbigbook .
+``
+the output notindex.html does not have an incoming links metadata section. With <notindex> it does have a metadata section. The outcome metadata section should be identical on both.
+
+Same for tags that use the synonym.
+
 === Make articles removed locally empty on web upload
 {tag=Web}
 {tag=Web upload}
@@ -81,6 +110,9 @@ When hydrating JSON asts from server we just need to do that extra join.
 {tag=Refactor}
 
 === List synonyms on metadata section
+{tag=Synonym}
+
+Edit: done for CLI. On web, showing just IDs to user to start with. Attempted to render on fly but failing for now. That's the only missing thing.
 
 Both web and CLI.
 
@@ -1609,6 +1641,8 @@ Database specific tasks, usually refactoring.
 
 This tag is about handling non-OurBigBook files, notably related to using the <`\H` `file` argument>.
 
+=== Metadata section
+
 === Elements
 
 ==== Image
@@ -1616,6 +1650,10 @@ This tag is about handling non-OurBigBook files, notably related to using the <`
 ==== Math
 
 ==== Table
+
+==== Header
+
+===== Synonym
 
 === UI
 

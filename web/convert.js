@@ -22,6 +22,28 @@ const { hasReachedMaxItemCount, idToSlug, slugToId, modifyEditorInput } = requir
 const routes = require('./front/routes');
 const e = require('cors');
 
+function getConvertOpts({ authorUsername, input_path, sequelize, parentId, render, splitHeaders, transaction, }) {
+  const db_provider = new SqlDbProvider(sequelize)
+  return {
+    db_provider,
+    convertOptions: lodash.merge({
+      db_provider,
+      input_path,
+      ourbigbook_json: {
+        h: {
+          splitDefault: false,
+          splitDefaultNotToplevel: true,
+        },
+      },
+      parent_id: parentId,
+      read_include: read_include_web(async (idid) => (await sequelize.models.Id.count({ where: { idid }, transaction })) > 0),
+      ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${authorUsername}`,
+      render,
+      split_headers: splitHeaders === undefined ? true : splitHeaders,
+    }, convertOptions)
+  }
+}
+
 // Subset of convertArticle for usage in issues and comments.
 // This is a much simpler procedure as it does not alter the File/Article database.
 async function convert({
@@ -43,7 +65,6 @@ async function convert({
     t0 = performance.now();
     console.error('perf: convert.start');
   }
-  const db_provider = new SqlDbProvider(sequelize)
   const extra_returns = {};
   const source = modifyEditorInput(titleSource, bodySource).new
   let input_path_given
@@ -84,23 +105,10 @@ async function convert({
     // Index page. Hardcode input path.
     input_path = scopeIdToPath(usernameDir, path)
   }
+  const { db_provider, convertOptions } = getConvertOpts({ authorUsername: author.username, input_path, sequelize, parentId, render, splitHeaders, transaction })
   await ourbigbook.convert(
     source,
-    lodash.merge({
-      db_provider,
-      input_path,
-      ourbigbook_json: {
-        h: {
-          splitDefault: false,
-          splitDefaultNotToplevel: true,
-        },
-      },
-      parent_id: parentId,
-      read_include: read_include_web(async (idid) => (await sequelize.models.Id.count({ where: { idid }, transaction })) > 0),
-      ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${author.username}`,
-      render,
-      split_headers: splitHeaders === undefined ? true : splitHeaders,
-    }, convertOptions, convertOptionsExtra),
+    lodash.merge(convertOptions, convertOptionsExtra),
     extra_returns,
   )
   if (perf) {
@@ -870,4 +878,5 @@ module.exports = {
   convertArticle,
   convertComment,
   convertIssue,
+  getConvertOpts,
 }

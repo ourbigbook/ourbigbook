@@ -2853,11 +2853,11 @@ function convert_init_context(options={}, extra_returns={}) {
   if (options.is_first_global_header === undefined) {
     options.is_first_global_header = true;
   }
-  if (options.add_refs_to_h === undefined) {
-    options.add_refs_to_h = [];
+  if (options.refs_to_h === undefined) {
+    options.refs_to_h = [];
   }
-  if (options.add_refs_to_x === undefined) {
-    options.add_refs_to_x = [];
+  if (options.refs_to_x === undefined) {
+    options.refs_to_x = [];
   }
   if (options.include_hrefs === undefined) {
     options.include_hrefs = {};
@@ -4543,13 +4543,13 @@ async function parse(tokens, options, context, extra_returns={}) {
         const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
         if (children !== undefined) {
           for (let child of children) {
-            options.add_refs_to_h.push({ ast, child: true, content: child.args.content, type: REFS_TABLE_X_CHILD })
+            options.refs_to_h.push({ ast, child: true, content: child.args.content, type: REFS_TABLE_X_CHILD })
           }
         }
         const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
         if (tags !== undefined) {
           for (let tag of tags) {
-            options.add_refs_to_h.push({ ast, child: false, content: tag.args.content, type: REFS_TABLE_X_CHILD })
+            options.refs_to_h.push({ ast, child: false, content: tag.args.content, type: REFS_TABLE_X_CHILD })
           }
         }
       } else if (macro_name === Macro.X_MACRO_NAME) {
@@ -4561,11 +4561,36 @@ async function parse(tokens, options, context, extra_returns={}) {
           );
           parse_error(state, message, ast.source_location);
         }
-        options.add_refs_to_x.push({
+        let target_id = convert_id_arg(ast.args.href, context)
+        validate_ast(ast, context);
+        if (ast.validation_output.magic.boolean) {
+          target_id = title_to_id(target_id)
+        }
+        options.refs_to_x.push({
           ast,
           title_ast_ancestors: Object.assign([], title_ast_ancestors),
-          target_id: convert_id_arg(ast.args.href, context),
+          target_id,
         })
+        if (ast.validation_output.magic.boolean) {
+          // In the case of magic, also fetch a singularized version from DB. We don't know
+          // which one is the correct one, so just fetch both and decide at render time.
+          const href_arg = ast.args.href
+          const last_ast = href_arg.get(href_arg.length() - 1);
+          if (last_ast.node_type === AstType.PLAINTEXT) {
+            const old_text = last_ast.text
+            const new_text = pluralize(old_text,  1)
+            if (new_text !== old_text) {
+              last_ast.text = new_text
+              const target_id = title_to_id(convert_id_arg(ast.args.href, context))
+              last_ast.text = old_text
+              options.refs_to_x.push({
+                ast,
+                title_ast_ancestors: Object.assign([], title_ast_ancestors),
+                target_id,
+              })
+            }
+          }
+        }
       }
 
       // Push this node into the parent argument list.
@@ -4689,9 +4714,11 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
         } else {
           if (
-            // This only happens in one known case: when you have include without embed,
-            // where we do a context.id_provider.get, and we set the attributes to it
-            // and the thing comes out of serialization validated.
+            // This only happens in the following cases
+            // * \x are validated before for magic stuff
+            // * when you have include without embed,
+            //   where we do a context.id_provider.get, and we set the attributes to it
+            //   and the thing comes out of serialization validated.
             !ast.validated
           ) {
             validate_ast(ast, context);
@@ -5000,7 +5027,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     perf_print(context, 'post_process_4')
 
     // Setup refs DB.
-    for (const ref of options.add_refs_to_h) {
+    for (const ref of options.refs_to_h) {
       ref.target_id = render_arg_noescape(ref.content, context)
       const target_id_effective = x_child_db_effective_id(
         ref.target_id,
@@ -5013,7 +5040,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         add_to_refs_to(ref.ast.id, context, target_id_effective, ref.type);
       }
     }
-    for (const ref of options.add_refs_to_x) {
+    for (const ref of options.refs_to_x) {
       const ast = ref.ast
       const target_id_effective = x_child_db_effective_id(
         ref.target_id,
@@ -5069,7 +5096,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       let id_conflict_asts = []
       if (options.id_provider !== undefined) {
         const prefetch_ids = new Set()
-        for (const ref of options.add_refs_to_h) {
+        for (const ref of options.refs_to_h) {
           const ast = ref.ast
           const id = ref.target_id
           const ids = push_scope_resolution(ast.scope, id, context)
@@ -5077,7 +5104,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             prefetch_ids.add(id)
           }
         }
-        for (const ref of options.add_refs_to_x) {
+        for (const ref of options.refs_to_x) {
           const ast = ref.ast
           const id = ref.target_id
 
@@ -5861,7 +5888,8 @@ function x_child_db_effective_id(target_id, context, ast) {
  * @return {[String, String]} [href, content] pair for the x node.
  */
 function x_get_href_content(ast, context) {
-  const target_id = convert_id_arg(ast.args.href, context);
+  const href_arg = ast.args.href
+  const target_id = convert_id_arg(href_arg, context);
   if (context.options.magic_leading_at && target_id[0] === AT_MENTION_CHAR) {
     return [html_attr('href', WEB_URL + target_id.substr(1)), target_id];
   }
@@ -5870,11 +5898,15 @@ function x_get_href_content(ast, context) {
   }
   let target_id_eff
   if (ast.validation_output.magic.boolean) {
-    target_id_eff = title_to_id(pluralize(target_id, 1))
+    target_id_eff = title_to_id(target_id)
   } else {
     target_id_eff = target_id
   }
-  const target_id_ast = context.id_provider.get(target_id_eff, context, ast.scope);
+  let target_id_ast = context.id_provider.get(target_id_eff, context, ast.scope);
+  if (ast.validation_output.magic.boolean && !target_id_ast) {
+    target_id_eff = title_to_id(pluralize(target_id, 1))
+    target_id_ast = context.id_provider.get(target_id_eff, context, ast.scope);
+  }
 
   // href
   let href;
@@ -5896,34 +5928,46 @@ function x_get_href_content(ast, context) {
   const content_arg = ast.args.content;
   let content;
   if (content_arg === undefined) {
-    if (ast.validation_output.magic.boolean && !ast.validation_output.full.boolean) {
-      content = target_id
-    } else {
-      // No explicit content given, deduce content from target ID title.
-      if (context.x_parents.has(ast)) {
-        // Prevent render infinite loops.
-        let message = `x with infinite recursion`;
-        render_error(context, message, ast.source_location);
-        return [href, error_message_in_output(message, context)];
+    // No explicit content given, deduce content from target ID title.
+    if (context.x_parents.has(ast)) {
+      // Prevent render infinite loops.
+      let message = `x with infinite recursion`;
+      render_error(context, message, ast.source_location);
+      return [href, error_message_in_output(message, context)];
+    }
+    let x_text_options = {
+      caption_prefix_span: false,
+      capitalize: ast.validation_output.c.boolean,
+      from_x: true,
+      quote: true,
+      pluralize: ast.validation_output.p.given ? ast.validation_output.p.boolean : undefined,
+    };
+    if (ast.validation_output.magic.boolean) {
+      const first_ast = href_arg.get(0);
+      if (first_ast.node_type === AstType.PLAINTEXT) {
+        const c = first_ast.text[0]
+        if (c !== c.toLowerCase()) {
+          x_text_options.capitalize = true
+        }
       }
-      let x_text_options = {
-        caption_prefix_span: false,
-        capitalize: ast.validation_output.c.boolean,
-        from_x: true,
-        quote: true,
-        pluralize: ast.validation_output.p.given ? ast.validation_output.p.boolean : undefined,
-      };
-      if (ast.validation_output.full.given) {
-        x_text_options.style_full = ast.validation_output.full.boolean;
+      const last_ast = href_arg.get(href_arg.length() - 1);
+      if (last_ast.node_type === AstType.PLAINTEXT) {
+        const text = first_ast.text
+        if (text !== pluralize(text, 1)) {
+          x_text_options.pluralize = true
+        }
       }
-      const x_parents_new = new Set(context.x_parents);
-      x_parents_new.add(ast);
-      content = x_text(target_id_ast, clone_and_set(context, 'x_parents', x_parents_new), x_text_options);
-      if (content === ``) {
-        let message = `empty cross reference body: "${target_id_eff}"`;
-        render_error(context, message, ast.source_location);
-        return error_message_in_output(message, context);
-      }
+    }
+    if (ast.validation_output.full.given) {
+      x_text_options.style_full = ast.validation_output.full.boolean;
+    }
+    const x_parents_new = new Set(context.x_parents);
+    x_parents_new.add(ast);
+    content = x_text(target_id_ast, clone_and_set(context, 'x_parents', x_parents_new), x_text_options);
+    if (content === ``) {
+      let message = `empty cross reference body: "${target_id_eff}"`;
+      render_error(context, message, ast.source_location);
+      return error_message_in_output(message, context);
     }
   } else {
     // Explicit content given, just use it then.
@@ -6277,7 +6321,7 @@ function x_text_base(ast, context, options={}) {
       if (
         options.pluralize !== undefined &&
         !style_full &&
-        first_ast.node_type === AstType.PLAINTEXT
+        last_ast.node_type === AstType.PLAINTEXT
       ) {
         title_arg = lodash.clone(title_arg)
         title_arg.asts = lodash.clone(title_arg.asts)

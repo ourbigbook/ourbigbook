@@ -3666,28 +3666,9 @@ Now for a live example for quick and dirty interactive testing.
 = Inflection vs magic
 {parent=internal-cross-reference}
 
-In most cases it is more convenient to type and read <internal cross references> that use the \x[x-magic-argument] rather than <cross reference title inflection>.
+Currently we don't know of any cases where you would want to use explicit `{c}` or `{p}` for <cross reference title inflection> rather than just using the <x magic argument> everywhere.
 
-Possible exceptions include:
-* the target has <macros> such as inline <code blocks> or \x[mathematics]. E.g. in:
-  ``
-  = The `inline` keyword
-
-  <The inline keyword>
-  ``
-  the output would be something like:
-  ``
-  <a>the inline keyword</a>
-  ``
-  without the code tag. Therefore, instead of using:
-  ``
-  <The `inline` keyword>
-  ``
-  and repeating formatting every time, it might be more convenient to just use:
-  ``
-  \x[the-inline-keyword]
-  ``
-  in such cases, especially if there is more extensive macro usage.
+The <x magic argument> was introduced later, and basically became a better alternative to them.
 
 = `\x` within `title` restrictions
 {parent=internal-cross-reference}
@@ -4118,15 +4099,34 @@ This argument makes writing many internal links more convenient, and it was nota
 
 If given e.g. as in:
 ``
+= Internal reference
+
 \x[Internal references]{magic}
 ``
 the link treated magically as follows:
-* the content equals the link, i.e. the content will be `Internal references`
+* content capitalization and pluralization are detected from the string, and implicitly set <h c argument> and <h p argument>. In the example:
+  * `{c}` capitalization is set because `Internal references` starts with an upper case character `I`
+  * `{p}` pluralization is set because `Internal references` ends in a plural word
+  In this simple example, the content therefore will be exactly `Internal references` as in the source. But note that this does not necessarily need to be the case, e.g. if we had done:
+  ``
+  \x[Internal Reference]{magic}
+  ``
+  then the content would be:
+  ``
+  Internal reference
+  ``
+  without capital `R`, i.e. everything except capitalization and pluralization is ignored. This forgiving way of doing things means that writers don't need to remember the exact ideal capitalization of everything, which is very hard to remember.
 
-  If the \x[x-full-argument] is also given however, then `full` takes priority instead.
+  It also means that any more complex elements will be automatically rendered as usual, e.g. if we had:
+  ``
+  = \i[Internal] reference
+
+  <internal reference>
+  ``
+  then the output would still contain the `<i>` italic tag.
 * the ID is calculated as follows:
+  * \x[automatic-id-from-title] conversion is performed, giving `internal-reference`
   * the last word is singularized as in the `x-p-argument` with `p=0`, giving `Internal reference`
-  * \x[automatic-id-from-title] conversion is performed, , giving `internal-reference`
 
 There are some cases where you might stilt want to use <cross reference title inflection> however, see: <inflection vs magic>{full}.
 

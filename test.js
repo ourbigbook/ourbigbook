@@ -349,6 +349,10 @@ function assert_error(description, input, line, column, path, options={}) {
   );
 }
 
+const testdir = path.join(__dirname, cirodown_nodejs.TMP_DIRNAME, 'test')
+fs.rmdirSync(testdir, { recursive: true});
+fs.mkdirSync(testdir);
+
 // Test the cirodown executable via a separate child process call.
 //
 // The test runs in a clean temporary directory. If the test fails,
@@ -399,10 +403,11 @@ function assert_executable(
       this.timeout(options.timeout);
     }
 
-    const testdir = path.join(__dirname, cirodown_nodejs.TMP_DIRNAME, 'test')
-    fs.rmdirSync(testdir, { recursive: true});
-    fs.mkdirSync(testdir);
-    const tmpdir = fs.mkdtempSync(testdir + path.sep);
+    const tmpdir = path.join(testdir, this.test.title.replace(/[^a-zA-Z0-9]+/g, '-'));
+    // These slighty modified titles should still be unique, but who knows.
+    // Not modifying them would require cd quoting.
+    assert(!fs.existsSync(tmpdir));
+    fs.mkdirSync(tmpdir);
     const cwd = path.relative(process.cwd(), path.join(tmpdir, options.cwd))
     if (!fs.existsSync(cwd)) {
       fs.mkdirSync(cwd);
@@ -3839,6 +3844,25 @@ assert_executable(
     expect_filesystem_xpath: {
       'included-by-index.html': [
         xpath_header_parent(1, 'included-by-index', 'index.html', 'Index'),
+      ],
+    }
+  }
+);
+assert_executable(
+  'executable: include should not generate an incoming links entry',
+  {
+    args: ['--split-headers', '.'],
+    filesystem: {
+      'README.ciro': `= Index
+
+\\Include[included-by-index]
+`,
+  'included-by-index.ciro': `= Included by index
+`,
+    },
+    expect_filesystem_jpath: {
+      'included-by-index.html': [
+        `//x:h2[id='incoming-links']`,
       ],
     }
   }

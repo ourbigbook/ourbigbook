@@ -1,6 +1,5 @@
 import Router, { useRouter } from 'next/router'
 import React from 'react'
-import { trigger } from 'swr'
 
 import CustomLink from 'front/CustomLink'
 import { webApi } from 'front/api'
@@ -21,7 +20,6 @@ const ArticleInfo = ({
     const result = window.confirm("Do you really want to delete this article?");
     if (!result) return;
     await webApi.articleDelete(article.slug);
-    trigger(webApi.articleUrl(article.slug));
     Router.push(`/`);
   };
   return <div className="article-info-3">

@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router'
 import React from 'react'
-import useSWR, { trigger } from 'swr'
+import useSWR from 'swr'
 
 import CustomLink from 'front/CustomLink'
 import LoadingSpinner from 'front/LoadingSpinner'

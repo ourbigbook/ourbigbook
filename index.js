@@ -1190,43 +1190,35 @@ class Tokenizer {
         let done = false;
 
         // Insane link.
-        if (
-          this.i === 0 ||
-          this.chars[this.i - 1] === '\n' ||
-          this.chars[this.i - 1] === ' ' ||
-          this.tokens[this.tokens.length - 1].type === TokenType.POSITIONAL_ARGUMENT_START ||
-          this.tokens[this.tokens.length - 1].type === TokenType.NAMED_ARGUMENT_NAME
-        ) {
-          let protocol_is_known = false;
-          for (const known_url_protocol of KNOWN_URL_PROTOCOLS) {
-            if (array_contains_array_at(this.chars, this.i, known_url_protocol)) {
-              protocol_is_known = true;
+        let protocol_is_known = false;
+        for (const known_url_protocol of KNOWN_URL_PROTOCOLS) {
+          if (array_contains_array_at(this.chars, this.i, known_url_protocol)) {
+            protocol_is_known = true;
+            break;
+          }
+        }
+        if (protocol_is_known) {
+          this.push_token(TokenType.MACRO_NAME, Macro.LINK_MACRO_NAME);
+          this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
+          let link_text = '';
+          while (this.consume_plaintext_char()) {
+            if (
+              this.cur_c == ' ' ||
+              this.cur_c == '\n' ||
+              this.cur_c == START_POSITIONAL_ARGUMENT_CHAR ||
+              this.cur_c == START_NAMED_ARGUMENT_CHAR ||
+              this.cur_c == END_POSITIONAL_ARGUMENT_CHAR ||
+              this.cur_c == END_NAMED_ARGUMENT_CHAR
+            ) {
               break;
             }
-          }
-          if (protocol_is_known) {
-            this.push_token(TokenType.MACRO_NAME, Macro.LINK_MACRO_NAME);
-            this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
-            let link_text = '';
-            while (this.consume_plaintext_char()) {
-              if (
-                this.cur_c == ' ' ||
-                this.cur_c == '\n' ||
-                this.cur_c == START_POSITIONAL_ARGUMENT_CHAR ||
-                this.cur_c == START_NAMED_ARGUMENT_CHAR ||
-                this.cur_c == END_POSITIONAL_ARGUMENT_CHAR ||
-                this.cur_c == END_NAMED_ARGUMENT_CHAR
-              ) {
-                break;
-              }
-              if (this.cur_c === ESCAPE_CHAR) {
-                this.consume();
-              }
+            if (this.cur_c === ESCAPE_CHAR) {
+              this.consume();
             }
-            this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
-            this.consume_optional_newline_after_argument();
-            done = true;
           }
+          this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
+          this.consume_optional_newline_after_argument();
+          done = true;
         }
 
         // Insane lists and tables.

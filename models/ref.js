@@ -22,7 +22,9 @@ module.exports = (sequelize) => {
       },
       defined_at: {
         type: DataTypes.TEXT,
-        allowNull: false,
+        // Possible e.g. on Web where the parent ref is not strictly defined in any source code,
+        // but rather via the UI.
+        //allowNull: false,
       },
       defined_at_line: {
         type: DataTypes.INTEGER,
@@ -37,6 +39,7 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       to_id_index: {
+        // Child index for parent references.
         type: DataTypes.INTEGER,
         allowNull: true,
       },

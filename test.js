@@ -12,7 +12,12 @@ const ourbigbook_nodejs_front = require('./nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe');
 const { read_include } = require('./web_api');
 const models = require('./models');
-const { assert_xpath } = require('./test_lib')
+const {
+  assert_xpath,
+  xpath_header,
+  xpath_header_split,
+  xpath_header_parent,
+} = require('./test_lib')
 
 const PATH_SEP = ourbigbook.Macro.HEADER_SCOPE_SEPARATOR
 
@@ -724,52 +729,6 @@ function update_filesystem(filesystem, tmpdir) {
       fs.writeFileSync(file_path, file_content);
     }
   }
-}
-
-// xpath to match the parent div of a given header.
-function xpath_header(n, id, insideH, opts={}) {
-  if (insideH) {
-    insideH = '//' + insideH
-  } else {
-    insideH = ''
-  }
-  const { hasToc } = opts
-  // The horror:
-  // https://stackoverflow.com/questions/1604471/how-can-i-find-an-element-by-css-class-with-xpath
-  let ret = `//x:div[(@class='h' or contains(@class, 'h '))`
-  if (id) {
-    ret += ` and @id='${id}'`
-  }
-  if (n <= 6) {
-    ret += ` and .//x:h${n}${insideH}`
-  } else {
-    ret += ` and .//x:h6[@data-level="${n}"]`
-  }
-  if (hasToc !== undefined) {
-    if (hasToc) {
-      ret += ` and @data-has-toc="1"`
-    } else {
-      ret += ` and not(@data-has-toc)`
-    }
-  }
-  ret += ']'
-  return ret
-}
-
-// xpath to match the split/nosplit link inside of a header.
-function xpath_header_split(n, id, href, marker) {
-  let href_xpath
-  if (href === undefined) {
-    href_xpath = ''
-  } else {
-    href_xpath = `@href='${href}' and `
-  }
-  return `${xpath_header(n, id)}//x:a[${href_xpath}text()=' ${marker}']`;
-}
-
-// xpath to match the parent link inside of a header.
-function xpath_header_parent(n, id, href, title) {
-  return `${xpath_header(n, id)}//x:a[@href='${href}' and text()=' \"${title}\"']`;
 }
 
 // Empty document.
@@ -5337,6 +5296,30 @@ assert_lib_ast('header: id of first header comes from header title if index',
     }
   },
 );
+assert_lib_error('header: empty include in header title fails gracefully',
+  // https://github.com/cirosantilli/ourbigbook/issues/195
+  `= tmp
+
+== \\Include
+`,
+  3, 4
+);
+assert_lib_error('empty x in header title fails gracefully',
+  `= tmp
+
+== \\x
+`,
+  3, 4
+);
+assert_lib_error('header inside header fails gracefully',
+  `= \\H[2]
+`,
+  1, 3, 'tmp.bigb',
+  {
+    input_path_noext: 'tmp',
+  }
+);
+
 
 // Code.
 assert_lib_ast('code inline sane',
@@ -6174,7 +6157,7 @@ const include_two_levels_ast_args = [
   a('H', undefined, {level: [t('3')], title: [t('gg')]}),
   a('P', [t('hh')]),
 ]
-assert_lib_ast('include simple with paragraph with embed',
+assert_lib_ast('include: simple with paragraph with embed',
   `= aa
 
 bb
@@ -6193,7 +6176,7 @@ bb
   ],
   include_opts
 );
-assert_lib_ast('include parent argument with embed',
+assert_lib_ast('include: parent argument with embed',
   `= h1
 
 == h2
@@ -6209,7 +6192,7 @@ assert_lib_ast('include parent argument with embed',
   ],
   include_opts
 );
-assert_lib_error('include parent argument to old ID fails gracefully',
+assert_lib_error('include: parent argument to old ID fails gracefully',
   `= h1
 
 == h2
@@ -6220,7 +6203,7 @@ assert_lib_error('include parent argument to old ID fails gracefully',
 `,
   7, 30, undefined, include_opts,
 );
-assert_lib_ast('include simple without parent in the include with embed',
+assert_lib_ast('include: simple without parent in the include with embed',
   `= aa
 
 bb
@@ -6237,7 +6220,7 @@ bb
   ],
   include_opts
 );
-assert_lib_ast('include simple with parent in the include with embed',
+assert_lib_ast('include: simple with parent in the include with embed',
   `= aa
 
 bb
@@ -6254,7 +6237,7 @@ bb
   ],
   include_opts
 );
-assert_lib_ast('include simple with paragraph with no embed',
+assert_lib_ast('include: simple with paragraph with no embed',
   `= Notindex
 
 bb
@@ -6288,7 +6271,7 @@ bb
   },
 );
 // https://github.com/cirosantilli/ourbigbook/issues/74
-assert_lib_ast('cross reference to embed include header',
+assert_lib_ast('include: cross reference to embed include header',
   `= aa
 
 \\x[include-two-levels]
@@ -6316,7 +6299,7 @@ assert_lib_ast('cross reference to embed include header',
     include_opts
   ),
 );
-assert_lib_ast('include multilevel with paragraph',
+assert_lib_ast('include: multilevel with paragraph',
   `= aa
 
 bb
@@ -6336,7 +6319,7 @@ bb
   include_opts
 );
 // https://github.com/cirosantilli/ourbigbook/issues/35
-assert_lib_ast('include simple no paragraph',
+assert_lib_ast('include: simple no paragraph',
   `= aa
 
 bb
@@ -6354,7 +6337,7 @@ bb
   ],
   include_opts
 );
-assert_lib_ast('include multilevel no paragraph',
+assert_lib_ast('include: multilevel no paragraph',
   `= aa
 
 bb
@@ -6373,7 +6356,7 @@ bb
   include_opts
 );
 // https://github.com/cirosantilli/ourbigbook/issues/23
-assert_lib_error('include with error reports error on the include source',
+assert_lib_error('include: with error reports error on the include source',
   `= aa
 
 bb
@@ -6387,7 +6370,7 @@ const circular_entry = `= notindex
 
 \\Include[include-circular]
 `;
-assert_lib_error('include circular dependency 1 <-> 2',
+assert_lib_error('include: circular dependency 1 <-> 2',
   circular_entry,
   // TODO works from CLI call......... fuck, why.
   // Similar problem as in test below.
@@ -6415,7 +6398,7 @@ assert_lib_error('include circular dependency 1 <-> 2',
 // ```
 // file not found on database: "${target_input_path}", needed for toplevel scope removal
 // on ToC conversion.
-assert_lib_error('include circular dependency 1 -> 2 <-> 3',
+assert_lib_error('include: circular dependency 1 -> 2 <-> 3',
   `= aa
 
 \\Include[include-circular-1]
@@ -6448,7 +6431,7 @@ assert_lib_ast('include without parent header with embed includes',
     }
   },
 );
-assert_lib_ast('include without parent header without embed includes',
+assert_lib_ast('include: without parent header without embed includes',
   // https://github.com/cirosantilli/ourbigbook/issues/73
   `aa
 
@@ -6486,31 +6469,7 @@ assert_lib_ast('include without parent header without embed includes',
     ],
   },
 );
-assert_lib_error('empty include in header title fails gracefully',
-  // https://github.com/cirosantilli/ourbigbook/issues/195
-  `= tmp
-
-== \\Include
-`,
-  3, 4
-);
-assert_lib_error('empty x in header title fails gracefully',
-  `= tmp
-
-== \\x
-`,
-  3, 4
-);
-assert_lib_error('header inside header fails gracefully',
-  `= \\H[2]
-`,
-  1, 3, 'tmp.bigb',
-  {
-    input_path_noext: 'tmp',
-  }
-);
-
-assert_lib_error('include to file that exists in header title fails gracefully',
+assert_lib_error('include: to file that exists in header title fails gracefully',
   // https://github.com/cirosantilli/ourbigbook/issues/195
   `= tmp
 
@@ -6526,14 +6485,14 @@ assert_lib_error('include to file that exists in header title fails gracefully',
     input_path_noext: 'tmp',
   }
 );
-assert_lib_error('include to file that does not exist fails gracefully',
+assert_lib_error('include: to file that does not exist fails gracefully',
   `= h1
 
 \\Include[asdf]
 `,
   3, 1
 );
-assert_lib_error('include to file that does exists without embed includes before extracting IDs fails gracefully',
+assert_lib_error('include: to file that does exists without embed includes before extracting IDs fails gracefully',
   `= h1
 
 \\Include[asdf]
@@ -6546,7 +6505,7 @@ assert_lib_error('include to file that does exists without embed includes before
     }
   }
 );
-assert_lib('relative include in subdirectory',
+assert_lib('include: relative include in subdirectory',
   {
     filesystem: {
       's1/index.bigb': `= Index
@@ -6576,7 +6535,7 @@ assert_lib('relative include in subdirectory',
     },
   }
 );
-assert_lib('include from parent to subdirectory',
+assert_lib('include: from parent to subdirectory',
   {
     filesystem: {
       'index.bigb': `= Index
@@ -6606,7 +6565,7 @@ assert_lib('include from parent to subdirectory',
     },
   }
 );
-assert_lib('subdir index.bigb outputs to subdir without trailing slash with html_x_extension=true',
+assert_lib('include: subdir index.bigb outputs to subdir without trailing slash with html_x_extension=true',
   {
     filesystem: {
       'subdir/index.bigb': `= Subdir
@@ -6630,7 +6589,7 @@ assert_lib('subdir index.bigb outputs to subdir without trailing slash with html
     },
   }
 );
-assert_lib('subdir index.bigb outputs to subdir without trailing slash with html_x_extension=false',
+assert_lib('include: subdir index.bigb outputs to subdir without trailing slash with html_x_extension=false',
   {
     filesystem: {
       'subdir/index.bigb': `= Subdir
@@ -6654,7 +6613,7 @@ assert_lib('subdir index.bigb outputs to subdir without trailing slash with html
     },
   }
 );
-assert_lib('subdir index.bigb removes leading @ from links with the x_remove_leading_at option',
+assert_lib('include: subdir index.bigb removes leading @ from links with the x_remove_leading_at option',
   {
     filesystem: {
       '@subdir/index.bigb': `= Subdir
@@ -6695,7 +6654,7 @@ assert_lib('subdir index.bigb removes leading @ from links with the x_remove_lea
     },
   }
 );
-assert_lib('subdir index.bigb outputs to subdir.html when there is a toplevel header',
+assert_lib('include: subdir index.bigb outputs to subdir.html when there is a toplevel header',
   {
     filesystem: {
       'subdir/index.bigb': `= Subdir
@@ -6711,7 +6670,7 @@ Hello world
     },
   }
 );
-assert_lib('subdir index.bigb outputs to subdir.html when there is no toplevel header',
+assert_lib('include: subdir index.bigb outputs to subdir.html when there is no toplevel header',
   // https://github.com/cirosantilli/ourbigbook/issues/247
   {
     filesystem: {
@@ -6726,7 +6685,7 @@ assert_lib('subdir index.bigb outputs to subdir.html when there is no toplevel h
     },
   }
 );
-assert_lib('include of a header with a tag or child in a third file does not blow up',
+assert_lib('include: include of a header with a tag or child in a third file does not blow up',
   {
     filesystem: {
       'index.bigb': `= Index
@@ -6743,7 +6702,7 @@ assert_lib('include of a header with a tag or child in a third file does not blo
     convert_dir: true,
   }
 );
-assert_lib('tags show on embed include',
+assert_lib('include: tags show on embed include',
   {
     filesystem: {
       'index.bigb': `= Index
@@ -6763,6 +6722,76 @@ assert_lib('tags show on embed include',
     assert_xpath: {
       'index.html': [
         "//*[contains(@class, 'h-nav')]//x:span[@class='test-tags']//x:a[@href='notindex2.html']",
+      ],
+    },
+  }
+);
+assert_lib(
+  // https://github.com/cirosantilli/ourbigbook/issues/123
+  'include: includers should show as a parents of the includee',
+  {
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': `= Index
+
+\\Include[included-by-index]
+`,
+      'not-readme.bigb': `= Not readme
+
+\\Include[included-by-index]
+`,
+  'included-by-index.bigb': `= Included by index
+`,
+    },
+    assert_xpath: {
+      'included-by-index.html': [
+        xpath_header_parent(1, 'included-by-index', 'index.html', 'Index'),
+        xpath_header_parent(1, 'included-by-index', 'not-readme.html', 'Not readme'),
+      ],
+    }
+  }
+);
+assert_lib(
+  'include: does not generate an incoming links entry',
+  {
+    convert_dir: true,
+    convert_opts: {
+      split_headers: true,
+    },
+    filesystem: {
+      'README.bigb': `= Index
+
+\\Include[included-by-index]
+`,
+  'included-by-index.bigb': `= Included by index
+`,
+    },
+    assert_not_xpath: {
+      'included-by-index.html': [
+        `//x:h2[@id='incoming-links']`,
+      ],
+    }
+  }
+);
+assert_lib('include: parent_id option',
+  {
+    filesystem: {
+      'notindex.bigb': `= Notindex
+`,
+      'notindex2.bigb': `= Notindex2
+`,
+    },
+    convert_before: [
+      'notindex2.bigb',
+    ],
+
+    // This setup is to not render notindex.bigb with that parent_id, otherwise we get an infinite loop.
+    convert_before_norender: [ 'notindex.bigb' ],
+    convert_opts: { parent_id: 'notindex' },
+
+    assert_xpath: {
+      'notindex2.html': [
+        xpath_header_parent(1, 'notindex2', 'notindex.html', 'Notindex'),
       ],
     },
   }
@@ -8158,50 +8187,6 @@ assert_cli(
         xpath_header(2, 'included-by-index'),
       ],
     },
-  }
-);
-assert_cli(
-  // https://github.com/cirosantilli/ourbigbook/issues/123
-  'includers should show as a parents of the includee',
-  {
-    args: ['.'],
-    filesystem: {
-      'README.bigb': `= Index
-
-\\Include[included-by-index]
-`,
-      'not-readme.bigb': `= Not readme
-
-\\Include[included-by-index]
-`,
-  'included-by-index.bigb': `= Included by index
-`,
-    },
-    assert_xpath: {
-      'included-by-index.html': [
-        xpath_header_parent(1, 'included-by-index', 'index.html', 'Index'),
-        xpath_header_parent(1, 'included-by-index', 'not-readme.html', 'Not readme'),
-      ],
-    }
-  }
-);
-assert_cli(
-  'include should not generate an incoming links entry',
-  {
-    args: ['--split-headers', '.'],
-    filesystem: {
-      'README.bigb': `= Index
-
-\\Include[included-by-index]
-`,
-  'included-by-index.bigb': `= Included by index
-`,
-    },
-    assert_not_xpath: {
-      'included-by-index.html': [
-        `//x:h2[@id='incoming-links']`,
-      ],
-    }
   }
 );
 assert_cli(

@@ -32,8 +32,10 @@ module.exports = {
   apiPath: '/' + ourbigbook.WEB_API_PATH,
   // Common convert options used by all frontend components: the backend and the editor.
   convertOptions: {
+    add_test_instrumentation: isTest,
     body_only: true,
     html_x_extension: false,
+    forbid_include: '\\Include is not allowed on OurBigBook Web, the article tree can be manipulated directly via the UI',
     path_sep: '/',
     ourbigbook_json: {
       h: {
@@ -59,6 +61,7 @@ module.exports = {
   defaultUserScoreTitle: 'Sum of likes of all articles authored by user',
   /** @type {boolean | 'blocking'} */
   fallback: 'blocking',
+  forbidMultiheaderMessage: 'headers are currently not allowed when in Articles on OurBigBook Web, create new articles with the "New" button instead',
   googleAnalyticsId: 'UA-47867706-4',
   // An ID separator that should be used or all IDs in the website to avoid conflicts with OurBigBook Markup output,
   // of which users can control IDs to some extent. Usage is like: prefix + sep + number.

@@ -43,6 +43,55 @@ function assert_xpath(xpath_expr, string, options={}) {
   }
 }
 
+// xpath to match the parent div of a given header.
+function xpath_header(n, id, insideH, opts={}) {
+  if (insideH) {
+    insideH = '//' + insideH
+  } else {
+    insideH = ''
+  }
+  const { hasToc } = opts
+  // The horror:
+  // https://stackoverflow.com/questions/1604471/how-can-i-find-an-element-by-css-class-with-xpath
+  let ret = `//x:div[(@class='h' or contains(@class, 'h '))`
+  if (id) {
+    ret += ` and @id='${id}'`
+  }
+  if (n <= 6) {
+    ret += ` and .//x:h${n}${insideH}`
+  } else {
+    ret += ` and .//x:h6[@data-level="${n}"]`
+  }
+  if (hasToc !== undefined) {
+    if (hasToc) {
+      ret += ` and @data-has-toc="1"`
+    } else {
+      ret += ` and not(@data-has-toc)`
+    }
+  }
+  ret += ']'
+  return ret
+}
+
+// xpath to match the split/nosplit link inside of a header.
+function xpath_header_split(n, id, href, marker) {
+  let href_xpath
+  if (href === undefined) {
+    href_xpath = ''
+  } else {
+    href_xpath = `@href='${href}' and `
+  }
+  return `${xpath_header(n, id)}//x:a[${href_xpath}text()=' ${marker}']`;
+}
+
+// xpath to match the parent link inside of a header.
+function xpath_header_parent(n, id, href, title) {
+  return `${xpath_header(n, id)}//x:a[@href='${href}' and text()=' \"${title}\"']`;
+}
+
 module.exports = {
   assert_xpath,
+  xpath_header,
+  xpath_header_split,
+  xpath_header_parent,
 }

@@ -16,14 +16,6 @@ export const getServerSidePropsIssueIndexHoc = (): MyGetServerSideProps => {
         limit: 5,
         sequelize,
         slug: (slug as string[]).join('/'),
-        include: [{
-          model: sequelize.models.File,
-          as: 'file',
-          include: [{
-            model: sequelize.models.User,
-            as: 'author',
-          }],
-        }],
       }),
       getLoggedInUser(req, res),
     ])

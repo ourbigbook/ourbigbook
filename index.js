@@ -1420,11 +1420,11 @@ const DEFAULT_MACRO_LIST = [
       let custom_args;
       let level_arg = ast.args.level;
       let level = convert_arg_noescape(level_arg, context);
-			let level_int = parseInt(level);
-			if (!Number.isInteger(level_int) || !(level_int > 0)) {
-					let message = `level must be a positive non-zero integer: "${level}"`;
-					this.error(context, message, level_arg[0].line, level_arg[0].column);
-					return error_message_in_output(message);
+      let level_int = parseInt(level);
+      if (!Number.isInteger(level_int) || !(level_int > 0)) {
+        let message = `level must be a positive non-zero integer: "${level}"`;
+        this.error(context, message, level_arg[0].line, level_arg[0].column);
+        return error_message_in_output(message);
       }
       if (level_int > 6) {
         custom_args = {'data-level': [new AstNode(AstType.PLAINTEXT,
@@ -1643,18 +1643,34 @@ const DEFAULT_MACRO_LIST = [
     [],
     function(ast, context) {
       let ret = ``;
-      for (const child of context.header_graph.children) {
-      	ret += this.x_text(child.value, context);
+      let todo_visit = [];
+      let last_level = 0;
+      for (let i = context.header_graph.children.length - 1; i >= 0; i--) {
+        todo_visit.push([context.header_graph.children[i], 1]);
       }
-      //let attrs = html_convert_attrs_id(ast, context);
-      //let content = convert_arg(ast.args.content, context);
-      //let ret = ``;
-      //ret += `<div class="table-container"${attrs}>\n`;
-      //if (ast.id !== undefined) {
-      //  ret += `<div class="table-caption">${this.x_text(ast, context)}</div>\n`;
-      //}
-      //ret += `<table>\n${content}</table>\n`;
-      //ret += `</div>\n`;
+      while (todo_visit.length > 0) {
+        const [tree_node, level] = todo_visit.pop();
+        if (level > last_level) {
+          ret += `<ul>\n`;
+        } else if (level < last_level) {
+          ret += `</li>\n</ul>\n`.repeat(last_level - level);
+        } else {
+          ret += `</li>\n`;
+        }
+        let target_ast = tree_node.value;
+        let attrs = html_convert_attrs_id(ast, context);
+        let content = this.x_text(target_ast, context, {show_caption_prefix: false});
+        let href = html_attr('href', '#' + html_escape_attr(target_ast.id));
+        ret += `<li><a${href}${attrs}>${content}</a>`;
+        if (tree_node.children.length > 0) {
+          for (let i = tree_node.children.length - 1; i >= 0; i--) {
+            todo_visit.push([tree_node.children[i], level + 1]);
+          }
+          ret += `\n`;
+        }
+        last_level = level;
+      }
+      ret += `</li>\n</ul>\n`.repeat(last_level);
       return ret;
     },
   ),
@@ -1785,12 +1801,12 @@ th, td {
             quote: true,
           };
           if (ast.arg_given('style')) {
-						let style_string = convert_arg_noescape(ast.args.style, context);
-						if (!(style_string in XStyle)) {
-							let message = `unkown x style: "${style_string}"`;
-							this.error(context, message, ast.args.style[0].line, ast.args.style[0].column);
-							return error_message_in_output(message);
-						}
+            let style_string = convert_arg_noescape(ast.args.style, context);
+            if (!(style_string in XStyle)) {
+              let message = `unkown x style: "${style_string}"`;
+              this.error(context, message, ast.args.style[0].line, ast.args.style[0].column);
+              return error_message_in_output(message);
+            }
             x_text_options.style = XStyle[style_string];
           }
           content = this.x_text(target_id_ast, context, x_text_options);

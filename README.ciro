@@ -281,9 +281,9 @@ We can add table of contents anywhere in the document, e.g. here is another one:
 
 \toc
 
-Table of contents only include the items which live in child headers relative to the current location.
-
 \h[4][id_scope]
+
+TODO implement.
 
 If this header attribute is \c[true], then the ID of all children are prefixed with the ID of this header + a slash \c[/].
 

@@ -478,6 +478,7 @@ class DbProviderBase extends ourbigbook.DbProvider {
           // so it could override one that did have the .to, and then other things could blow up.
           !(row_title_title.to && row_title_title.to.idid in this.id_cache)
         ) {
+          console.error('row_title_title.to.idid: ' + require('util').inspect(row_title_title.to.idid));
           const ret = this.add_row_to_id_cache(row_title_title.to, context)
           if (ret !== undefined) {
             asts.push(ret)

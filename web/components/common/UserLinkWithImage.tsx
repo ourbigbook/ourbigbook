@@ -17,8 +17,10 @@ const UserLinkWithImage = ({ user }: { user: User }) => {
         className="profile-thumb"
         alt="author profile image"
       />
-      &nbsp;
+      {' '}
       {user.username}
+      {' '}
+      ({user.articleScoreSum})
     </CustomLink>
   )
 }

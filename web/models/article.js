@@ -1432,7 +1432,7 @@ LIMIT ${limit}` : ''}
       i++
     }
 
-    // Calculated nestedSetNextSibling.
+    // Calculate nestedSetNextSibling.
     // Needs a second pass because it relies on the indices of nodes we
     // haven't visited yet on the first pass.
     todo = [idTreeNode]
@@ -1503,6 +1503,7 @@ LIMIT ${limit}` : ''}
       slug: s.id.slice(ourbigbook.AT_MENTION_CHAR.length),
       nestedSetIndex: s.nestedSetIndex,
       nestedSetNextSibling: s.nestedSetNextSibling,
+      depth: s.level,
     }})
     return sequelize.transaction({ transaction: opts.transaction }, async (transaction) => {
       for (const val of vals) {
@@ -1510,6 +1511,7 @@ LIMIT ${limit}` : ''}
           {
             nestedSetIndex: val.nestedSetIndex,
             nestedSetNextSibling: val.nestedSetNextSibling,
+            depth: val.depth,
           },
           {
             transaction,

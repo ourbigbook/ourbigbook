@@ -8,10 +8,10 @@ import ourbigbook from 'ourbigbook';
 import web_api from 'ourbigbook/web_api';
 import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js';
 import { OurbigbookEditor } from 'ourbigbook/editor.js';
-import { convertOptions, isProduction, read_include_web } from 'front/config';
+import { convertOptions, docsUrl, isProduction, read_include_web } from 'front/config';
 
 import { ArticlePageProps } from 'front/ArticlePage'
-import { ArticleBy, capitalize, slugFromArray } from 'front'
+import { ArticleBy, capitalize, HelpIcon, slugFromArray } from 'front'
 import CustomLink from 'front/CustomLink'
 import ListErrors from 'front/ListErrors'
 import { webApi } from 'front/api'
@@ -281,15 +281,16 @@ export default function ArticleEditorPageHoc({
                       Editing
                       {' '}
                       {isIssue
-                        ? <CustomLink href={isIssue ? routes.issue(issueArticle.slug, initialArticle.number) : routes.article(initialArticle.slug) }>
+                        ? <a href={isIssue ? routes.issue(issueArticle.slug, initialArticle.number) : routes.article(initialArticle.slug)} target="_blank">
                             {isIssue ? `discussion #${initialArticle.number}: ` : ''}"{initialFile?.titleSource}"
-                          </CustomLink>
-                        : <ArticleBy article={initialArticle} />
+                          </a>
+                        : <ArticleBy article={initialArticle} newTab={true}/>
                       }
                     </>
                 }
-                {isIssue && <> on <ArticleBy article={issueArticle} issue={initialArticle} /></>}
+                {isIssue && <> on <ArticleBy article={issueArticle} issue={initialArticle} newTab={true}/></>}
               </h1>
+              <p><a href={`${docsUrl}#ourbigbook-markup-quick-start`} target="_blank"><HelpIcon /> Learn how to write with our OurBigBook Markup format here!</a></p>
               <form className="editor-form">
                 <div className="title-and-actions">
                   <input

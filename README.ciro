@@ -702,3 +702,31 @@ Errors can be obtained as JSON from the API.
 Everything that you need to write Cirodown tooling, is present in the main API.
 
 All tooling will be merged into one singl repo.
+
+\h3[The \c[[\toplevel]] implicit macro]
+[topelevel]
+
+Every Cirodown document is implicitly put inside a \c[[\toplevel]] document and:
+
+\l[any optionally given arguments at the very beginning of the document will be treated as arguments of the \c[[\toplevel]] macro]
+\l[anything else will be put inside the \c[content] argument of the \c[[\toplevel]] macro]
+
+E.g., a Cirodown document that contains:
+
+\c[[
+{title=My favorite title}
+
+And now, some content!
+]]
+
+is morally equivalent to:
+
+\c[[
+\toplevel
+{title=My favorite title}
+{
+And now, some content!
+}
+]]
+
+In terms of HTML, the `\toplevel` element corresponds to the `<html>`, `<head>`, `<header>` and `<footer>` elements of a document.

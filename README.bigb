@@ -9732,7 +9732,7 @@ Unlike all languages which rely on ad-hoc tooling, we will support every single 
 = Conversion to/from other formats
 {parent=Tooling}
 
-The only thing we have for now is the quick and dirty \a[adoc-to-ciro].
+The only thing we have for now is the quick and dirty \a[adoc-to-bigb].
 
 The better approach would be to implement a converter in Haskell from anything to OurBigBook.
 

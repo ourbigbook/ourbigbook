@@ -508,26 +508,6 @@ class Macro {
     }
   }
 
-  katex_convert(ast, context) {
-    try {
-      return katex.renderToString(
-        convert_arg(ast.args.content, clone_and_set(context, 'html_escape', false)),
-        {
-          macros: context.katex_macros,
-          throwOnError: true,
-          globalGroup: true,
-        }
-      );
-    } catch(error) {
-      // TODO get working remove the crap KaTeX adds to the end of the string.
-      // It uses Unicode char hacks to add underlines... and there are two trailing
-      // chars after the final newline, so the error message is taking up two lines
-      let message = error.toString().replace(/\n\xcc\xb2$/, '');
-      render_error(context, message, ast.args.content.line, ast.args.content.column);
-      return error_message_in_output(message, context);
-    }
-  }
-
   toJSON() {
     const options = this.options;
     const ordered_options = {};
@@ -1624,6 +1604,26 @@ function html_is_whitespace(string) {
       return false;
   }
   return true;
+}
+
+function html_katex_convert(ast, context) {
+  try {
+    return katex.renderToString(
+      convert_arg(ast.args.content, clone_and_set(context, 'html_escape', false)),
+      {
+        macros: context.katex_macros,
+        throwOnError: true,
+        globalGroup: true,
+      }
+    );
+  } catch(error) {
+    // TODO get working remove the crap KaTeX adds to the end of the string.
+    // It uses Unicode char hacks to add underlines... and there are two trailing
+    // chars after the final newline, so the error message is taking up two lines
+    let message = error.toString().replace(/\n\xcc\xb2$/, '');
+    render_error(context, message, ast.args.content.line, ast.args.content.column);
+    return error_message_in_output(message, context);
+  }
 }
 
 function html_self_link(ast) {
@@ -2872,7 +2872,7 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       let attrs = html_convert_attrs_id(ast, context);
-      let katex_output = this.katex_convert(ast, context);
+      let katex_output = html_katex_convert(ast, context);
       let ret = ``;
       let do_show;
       let show_arg = ast.args.show;
@@ -2934,7 +2934,7 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       // KaTeX already adds a <span> for us.
-      return this.katex_convert(ast, context);
+      return html_katex_convert(ast, context);
     },
     {
       phrasing: true,

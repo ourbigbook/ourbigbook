@@ -8,6 +8,8 @@ The source for this document is at: https://github.com/cirosantilli/cirodown/blo
 
 == Quick start
 
+What madness you can achieve with it: https://www.cirosantilli.com source at https://github.com/cirosantilli/cirosantilli.github.io was the initial motivation and should be a good showcase.
+
 Live in-browser demo: https://cirosantilli.com/cirodown/editor
 
 Install the NPM package globally and use it from the command line for a quick conversion:

@@ -429,7 +429,15 @@ it('Article.rerender', async function() {
 
     // Create articles
 
-      article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+      article = createArticleArg({
+        i: 0,
+        titleSource: 'Mathematics',
+        // We had some predefined ourbigbook KaTeX macro issues in the past.
+        bodySource: `$$
+\\abs{x}
+$$
+`,
+      })
       ;({data, status} = await createArticleApi(test, article))
       assertStatus(status, data)
 
@@ -445,7 +453,15 @@ it('Article.rerender', async function() {
       ])
 
     // Rerender does not set previousSibligId to undefined (thus moving article as first child).
-    await sequelize.models.Article.rerender({ slugs: 'user0/physics' })
+    await sequelize.models.Article.rerender({ slugs: ['user0/physics'] })
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
+      { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
+      { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 1, to_id_index: 1, slug: 'user0/physics' },
+    ])
+
+    // Works with OurBigBook predefined macros.
+    await sequelize.models.Article.rerender({ slugs: ['user0/mathematics'] })
     await assertNestedSets(sequelize, [
       { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
       { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
@@ -453,7 +469,7 @@ it('Article.rerender', async function() {
     ])
 
     // Works for root article.
-    await sequelize.models.Article.rerender({ slugs: 'user0' })
+    await sequelize.models.Article.rerender({ slugs: ['user0'] })
     await assertNestedSets(sequelize, [
       { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
       { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
@@ -3969,5 +3985,24 @@ it('api: editor/fetch-files', async () => {
       { path: '@user0/calculus.bigb', toplevel_id: '@user0/calculus' },
       { path: '@user0/mathematics.bigb', toplevel_id: '@user0/mathematics' },
     ])
+  })
+})
+
+it('api: ourbigbook LaTeX macros are defined', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    article = createArticleArg({
+      i: 0,
+      titleSource: 'Mathematics',
+      bodySource: `$$
+\\abs{x}
+$$
+`,
+    })
+    ;({data, status} = await createArticleApi(test, article))
+    assertStatus(status, data)
   })
 })

@@ -106,6 +106,7 @@ module.exports = {
   // https://archive.ph/cH0Rk
   maxArticleSize: 50000,
   maxArticles: 10000,
+  maxArticlesInMemory: 1000,
   maxArticlesFetch: 100,
   maxIssuesPerMinute: 6,
   maxIssuesPerHour: 60,

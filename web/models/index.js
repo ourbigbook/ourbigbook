@@ -336,6 +336,7 @@ async function sync(sequelize, opts={}) {
 async function normalize({
   check,
   fix,
+  log,
   print,
   sequelize,
   usernames,
@@ -344,6 +345,9 @@ async function normalize({
 }={}) {
   if (whats.length === 0 || (!check && !fix && !print)) {
     throw new Error(`nothing to be done`)
+  }
+  if (log === undefined) {
+    log = false
   }
   if (usernames === undefined) {
     usernames = []
@@ -364,7 +368,8 @@ async function normalize({
     }
   }
   for (const what of whats) {
-    console.log(what);
+    if (log)
+      console.log(what);
     for (const username of usernames) {
       if (what === 'nested-set') {
         if (fix) {
@@ -518,7 +523,8 @@ async function normalize({
         }
         if (fix) {
           for (const count of counts) {
-            console.log(`${what} ${count.getSlug()} ${count.countInt}`);
+            if (log)
+              console.log(`${what} ${count.getSlug()} ${count.countInt}`);
             await Promise.all([
               parentModel.update(
                 { [checkField]: count.countInt },
@@ -551,7 +557,8 @@ async function normalize({
         if (fix) {
           const promises = []
           for (const article of articles) {
-            console.log(`${what} ${username} ${article.getSlug()}`);
+            if (log)
+              console.log(`${what} ${username} ${article.getSlug()}`);
             promises.push(user.addArticleFollowSideEffects(article, { transaction }))
           }
           await Promise.all(promises)
@@ -575,7 +582,8 @@ async function normalize({
         if (fix) {
           const promises = []
           for (const issue of issues) {
-            console.log(`${what} ${username} ${issue.getSlug()}`);
+            if (log)
+              console.log(`${what} ${username} ${issue.getSlug()}`);
             promises.push(user.addIssueFollowSideEffects(issue, { transaction }))
           }
           await Promise.all(promises)

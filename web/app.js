@@ -11,13 +11,11 @@ const morgan = require('morgan')
 const next = require('next')
 const passport = require('passport')
 const passport_local = require('passport-local');
-const path = require('path')
 const session = require('express-session')
-
-const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 
 const api = require('./api')
 const apilib = require('./api/lib')
+const back_js = require('./back/js')
 const models = require('./models')
 const config = require('./front/config')
 
@@ -96,9 +94,7 @@ async function start(port, startNext, cb) {
   // Handle API routes.
   {
     // This is not visible on frontend unfortunately, we just have to redo it there again.
-    config.convertOptions.katex_macros = ourbigbook_nodejs_webpack_safe.preload_katex_from_file(
-      path.join(path.dirname(require.resolve(path.join('ourbigbook', 'package.json'))), 'default.tex'))
-    // ourbigbook_nodejs_webpack_safe.default_tex_path
+    config.convertOptions.katex_macros = back_js.preloadKatex()
     const router = express.Router()
     router.use(config.apiPath, api)
     app.use(router)

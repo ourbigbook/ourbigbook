@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>TODO / At mention and topics locally - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="at-mention-and-topics-locally"><div class="notnav"><h1><a href="../todo">TODO</a><span class="meta"> / </span><a href="">At mention and topics locally</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="../todo"> TODO</a><a href="../todo#issues"> Issues</a></div><div class="nav"><span class="tags"> Tags: <a href="../todo#web">Web</a></span><a class="nosplit" href="../todo#at-mention-and-topics-locally"></a><span class="metrics"><span class="wcntr"> Words: 138</span></span></div></nav></div><div class="p" id="_150">The constructs from <a href="../todo#at-mention-and-topics-on-web">at mention and topics on web</a> should also just work locally, and redirect to ourbigbook.com by default.</div><div class="p" id="_151">Once they work, document them with something like:</div><div class="code" id="_152"><div><pre><code>= `\x` `href` argument
+{parent=`\x` sargument}
+
+If the `href` argument starts with certain prefixes, magic links are generated:
+* `@`: link to &lt;OurBigBook.com&gt; user profiles, e.g.:
+  \OurBigBookExample[[
+  I love \a[@cirosantilli], he is great!
+  ]]
+  links to: https://ourbigbook.com/cirosantilli
+
+  TODO make it work without the `\a`, just: `@cirosantilli`.
+* `#`: link to &lt;OurBigBook.com&gt; &lt;OurBigBook Web topics&gt;[topics]:
+  \OurBigBookExample[[
+  \a[#quantum-mechanics][Quantum mechanics] is very difficult to understand.
+  ]]
+  links to: https://ourbigbook.com/go/topic/quantum-mechanics</code></pre></div></div><div class="p" id="_153">It is not perfectly elegant to use <code>&lt;&gt;</code> for this, especially locally, since it means linking to IDs that don't exist (on Web, <code>@username</code> is an actually regular ID on the DB. But <code>#topic</code> isn't). But perhaps just having the <code>&lt;&gt;</code> links to non-files is just the way to go.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href="../todo#issues">Issues</a></li><li><a href="../todo">TODO</a></li><li><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/todo.bigb">todo.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "todo/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

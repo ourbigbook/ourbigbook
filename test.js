@@ -9482,3 +9482,35 @@ assert_cli(
     },
   }
 );
+
+assert_cli('bigb output: synonym with split_headers does not produce redirect files',
+  {
+    args: ['--split-headers', '--output-format', 'bigb', '.'],
+    convert_opts: { split_headers: true },
+    convert_dir: true,
+    filesystem: {
+      'notindex.bigb': `= Notindex
+
+== Notindex 2
+
+= Notindex 2 2
+{synonym}
+`,
+    },
+    // Just for sanity, not the actual test.
+    assert_bigb: {
+      'notindex-split.bigb': `= Notindex
+`,
+      'notindex-2.bigb': `= Notindex 2
+
+= Notindex 2 2
+{synonym}
+`,
+    },
+    expect_not_exists: [
+      'notindex-2-2.bigb',
+      // The actual test.
+      'notindex-2-2.html',
+    ],
+  }
+)

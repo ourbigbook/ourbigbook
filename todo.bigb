@@ -3,6 +3,34 @@
 
 == Issues
 
+=== Handle article renaming with synonym redirection on web somehow
+{tag=Web}
+
+Web upload breaks if you rename a header and synonym the old one.
+
+=== Synonym redirects on web
+{tag=Web}
+
+=== Enable web math defines on web editor
+{tag=Math}
+{tag=Web}
+{tag=Editor}
+
+=== Enable web math defines on web editor
+{tag=Math}
+{tag=Web}
+{tag=Editor}
+
+They're not enabled there, conversion just fails and user can't submit because button is grayed out. Via API already works however, supposing the user has defined them: <enable web math defines default on non-web>.
+
+=== Enable web math defines default on non-web
+{tag=Math}
+{tag=Web}
+
+This is the only way to have portable maths across local and server.
+
+The definitions are also useful by default to users, and should just be enabled out-of-box.
+
 === Subsections missing on web dynamic tree
 {tag=Bug}
 {tag=Dynamic tree fetch}
@@ -135,9 +163,6 @@ It requires negotiating with the server instead.
 This would be particularly powerful if we included the descendants on the SHA of each parent, much like Git. This way we could skip enter unmodified subtrees, likely like Git.
 
 Yes, we are somewhat re-implementing parts of Git with this. But at least it is simple, and works at a sub-blob level given our grater specialization to our specific use case.
-
-=== Synonym redirects on web
-{tag=Web}
 
 === Insane block quotes
 {tag=Web}
@@ -1120,6 +1145,8 @@ Can be fixed later at: <word count on web>.
 Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
 
 == Tag
+
+=== Math
 
 === UI
 

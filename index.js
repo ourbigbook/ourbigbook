@@ -3889,6 +3889,8 @@ function parse(tokens, options, context, extra_returns={}) {
         context.header_graph.children[0].value.toc_header = true;
       }
     }
+    // Not modified by split headers.
+    context.nosplit_toplevel_ast = context.toplevel_ast
 
     context.has_toc = false;
     let toplevel_parent_arg = new AstArgument([], new SourceLocation(1, 1));
@@ -4947,13 +4949,15 @@ function x_href_parts(target_id_ast, context) {
     // An empty href means the beginning of the page.
     fragment = '';
   } else {
+    // This is the AST that will show up on the top of the rendered page.
+    // that contains target_id_ast. We need to know it for toplevel scope culling.
     let toplevel_ast;
     if (to_split_headers) {
       // We know not a header target, as that would have been caught previously.
       toplevel_ast = target_id_ast.get_header_parent(context);
     } else if (
       // The header was included inline into the current file.
-      context.include_path_set.has(target_input_path) // ||
+      context.include_path_set.has(target_input_path) && !context.in_split_headers // ||
       // The header is in the current file.
       //target_input_path == context.options.input_path
     ) {
@@ -4961,9 +4965,9 @@ function x_href_parts(target_id_ast, context) {
     } else {
       const file_provider_ret = context.options.file_provider.get(target_input_path);
       if (file_provider_ret === undefined) {
-        let message = `file not found on database: "${target_input_path}", needed for toplevel scope removal`;
-        render_error(context, message, target_id_ast.source_location);
-        return error_message_in_output(message, context);
+        // The only way this can happen is if we are in the current file, and it hasn't
+        // been added to the file db yet.
+        toplevel_ast = context.nosplit_toplevel_ast
       } else {
         toplevel_ast = context.id_provider.get(file_provider_ret.toplevel_id, context);
       }

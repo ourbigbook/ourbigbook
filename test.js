@@ -2151,7 +2151,7 @@ assert_error('broken parent still generates a header ID',
 
 `, 6, 1
 );
-assert_convert_ast('cross reference to scoped split header',
+assert_convert_ast('cross reference to toplevel scoped split header',
   `= Notindex
 {scope}
 
@@ -2200,6 +2200,41 @@ assert_convert_ast('cross reference to scoped split header',
       ],
     },
     input_path_noext: 'notindex',
+  },
+);
+// https://github.com/cirosantilli/cirodown/issues/173
+assert_convert_ast('cross reference to non-toplevel scoped split header',
+  `= tmp
+
+== tmp 2
+{scope}
+
+=== tmp 3
+
+\\x[tmp][tmp 3 to tmp]
+
+\\x[tmp-2][tmp 3 to tmp 2]
+
+\\x[tmp-3][tmp 3 to tmp 3]
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('tmp')]}),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('tmp 2')]}),
+    a('H', undefined, {level: [t('3')], title: [t('tmp 3')]}),
+    a('P', [a('x', [t('tmp 3 to tmp')], {href: [t('tmp')]})]),
+    a('P', [a('x', [t('tmp 3 to tmp 2')], {href: [t('tmp-2')]})]),
+    a('P', [a('x', [t('tmp 3 to tmp 3')], {href: [t('tmp-3')]})]),
+  ],
+  {
+    assert_xpath_split_headers: {
+      'tmp-2/tmp-3.html': [
+        "//x:a[@href='../tmp.html' and text()='tmp 3 to tmp']",
+        "//x:a[@href='../tmp.html#tmp-2' and text()='tmp 3 to tmp 2']",
+        "//x:a[@href='../tmp.html#tmp-2/tmp-3' and text()='tmp 3 to tmp 3']",
+      ],
+    },
+    input_path_noext: 'tmp',
   },
 );
 // https://cirosantilli.com/cirodown#header-scope-argument-of-toplevel-headers
@@ -3269,7 +3304,10 @@ function assert_split_header_output_keys(description, options, keys_expect) {
 
 == h1 2 2
 `
-    const new_options = Object.assign({split_headers: true}, options);
+    const new_options = Object.assign({
+      split_headers: true,
+      file_provider: new MockFileProvider(),
+    }, options);
     const extra_returns = {};
     cirodown.convert(
       input_string,
@@ -4138,7 +4176,7 @@ assert_executable(
 );
 assert_executable(
   // at cross reference to non-included header in another file
-  // we havea commented out stub for this withotu executable:
+  // we have a commented out stub for this without executable:
   // but it would require generalizing the test system a bit,
   // and we are lazy right now.
   'executable: reference to subdir with --embed-includes',
@@ -4505,12 +4543,12 @@ assert_executable(
       ],
       'scope/scope-1.html': [
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html']`,
-        // TODO https://github.com/cirosantilli/cirodown/issues/173
-        //`//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html#scope/scope-2.html']`,
+        // https://github.com/cirosantilli/cirodown/issues/173
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html#scope/scope-2']`,
       ],
       'scope/scope-2.html': [
-        // TODO https://github.com/cirosantilli/cirodown/issues/173
-        //`//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='../index.html#scope/scope-3']`,
+        // https://github.com/cirosantilli/cirodown/issues/173
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='../index.html#scope/scope-3']`,
       ],
       'notindex.html': [
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,

@@ -58,11 +58,6 @@ const Navbar = () => {
             href={routes.user(loggedInUser?.username)}
             className="profile"
           >
-            <CustomImage
-              className="profile-thumb"
-              src={loggedInUser?.effectiveImage}
-              alt="your profile image"
-            />
             {loggedInUser?.username}
           </NavLink>
         </Maybe>

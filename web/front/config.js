@@ -1,4 +1,5 @@
 const ourbigbook = require('ourbigbook')
+const { read_include } = require('ourbigbook/web_api')
 const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front')
 
 let isProduction;
@@ -33,14 +34,14 @@ module.exports = {
   convertOptions: {
     body_only: true,
     html_x_extension: false,
-    x_leading_at_to_web: false,
     path_sep: '/',
-    x_remove_leading_at: true,
     ourbigbook_json: {
       h: {
         numbered: false,
       },
     },
+    x_leading_at_to_web: false,
+    x_remove_leading_at: true,
   },
   contactUrl: 'https://github.com/cirosantilli/ourbigbook/issues',
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
@@ -78,7 +79,24 @@ module.exports = {
   maxArticleTitleSize: 1024,
   maxArticleSize: 100000,
   maxArticles: 1000,
-  secret: isProduction ? process.env.SECRET : 'secret',
+  read_include_web: function(id_exists) {
+    return read_include({
+      exists: async (inpath) => {
+        const suf = ourbigbook.Macro.HEADER_SCOPE_SEPARATOR + ourbigbook.INDEX_BASENAME_NOEXT
+        let idid
+        if (inpath.endsWith(suf)) {
+          idid = inpath.slice(0, -suf.length)
+        } else {
+          idid = inpath
+        }
+        return id_exists(idid)
+      },
+      // Only needed for --embed-includes, which is not implemented on the dynamic website for now.
+      read: (inpath) => '',
+      path_sep: ourbigbook.Macro.HEADER_SCOPE_SEPARATOR,
+      ext: '',
+    })
+  },
   port: process.env.PORT || 3000,
   postgres: ourbigbook_nodejs_front.postgres,
   reservedUsernames: new Set([
@@ -86,6 +104,7 @@ module.exports = {
     escapeUsername,
   ]),
   revalidate: 10,
+  secret: isProduction ? process.env.SECRET : 'secret',
   useCaptcha: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY !== undefined && !isTest,
   usernameMinLength: 3,
   usernameMaxLength: 40,

@@ -10,6 +10,22 @@ const auth = require('../auth')
 const front = require('../front/js')
 const lib = require('./lib')
 
+router.post('/fetch-files', auth.optional, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const body = lib.validateParam(req, 'body')
+    const paths = lib.validateParam(body, 'paths', {
+      validators: [ front.isArrayOf(front.isString) ],
+      defaultValue: [],
+    })
+    const rows = await sequelize.models.File.findAll({
+      where: { path: paths },
+      include: sequelize.models.Id,
+    })
+    return res.json({ rows })
+  } catch(error) { next(error); }
+})
+
 // Has to be post to be able to send body data. We don't want to URL encode to not blow up URL size limits.
 // https://stackoverflow.com/questions/978061/http-get-with-request-body
 router.post('/get-noscopes-base-fetch', auth.optional, async function(req, res, next) {
@@ -29,19 +45,16 @@ router.post('/get-noscopes-base-fetch', auth.optional, async function(req, res, 
   } catch(error) { next(error); }
 })
 
-router.post('/fetch-files', auth.optional, async function(req, res, next) {
+router.post('/id-exists', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
     const body = lib.validateParam(req, 'body')
-    const paths = lib.validateParam(body, 'paths', {
-      validators: [ front.isArrayOf(front.isString) ],
-      defaultValue: [],
+    const idid = lib.validateParam(body, 'idid', {
+      validators: [front.isString],
+      defaultValue: undefined,
     })
-    const rows = await sequelize.models.File.findAll({
-      where: { path: paths },
-      include: sequelize.models.Id,
-    })
-    return res.json({ rows })
+    const exists = (await sequelize.models.Id.count({ where: { idid } })) > 0
+    return res.json({ exists })
   } catch(error) { next(error); }
 })
 

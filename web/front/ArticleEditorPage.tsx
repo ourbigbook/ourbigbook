@@ -8,7 +8,7 @@ import ourbigbook from 'ourbigbook';
 import web_api from 'ourbigbook/web_api';
 import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js';
 import { OurbigbookEditor } from 'ourbigbook/editor.js';
-import { convertOptions, isProduction } from 'front/config';
+import { convertOptions, isProduction, read_include_web } from 'front/config';
 
 import { ArticlePageProps } from 'front/ArticlePage'
 import { capitalize, slugFromArray } from 'front'
@@ -30,6 +30,9 @@ export interface EditorPageProps {
 }
 
 class RestDbProvider extends web_api.DbProviderBase {
+  fetched_ids: Set<string>;
+  fetched_files: Set<string>;
+
   constructor() {
     super()
     this.fetched_ids = new Set()
@@ -39,7 +42,13 @@ class RestDbProvider extends web_api.DbProviderBase {
   async get_noscopes_base_fetch(ids, ignore_paths_set, context) {
     const unfetched_ids = []
     for (const id of ids) {
-      if (!this.fetched_ids.has(id)) {
+      if (
+        // Small optimization, don't fetch IDs that don't start with @, that is the case for every web ID.
+        // And if there are two @, it means user is doing <@other-user/mytopic>, so we also don't need
+        // to try and fetch <@myself/@other-user/mytopic>
+        (id.match(new RegExp(ourbigbook.AT_MENTION_CHAR, 'g')) || []).length === 1 &&
+        !this.fetched_ids.has(id)
+      ) {
         this.fetched_ids.add(id)
         unfetched_ids.push(id)
       }
@@ -156,6 +165,7 @@ export default function ArticleEditorPageHoc({
               convertOptions: lodash.merge({
                 db_provider: new RestDbProvider(),
                 input_path: initialFile?.path || `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/asdf.${ourbigbook.OURBIGBOOK_EXT}`,
+                read_include: read_include_web((idid) => webApi.editorIdExists(idid)),
                 ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`,
                 x_external_prefix: '../'.repeat(window.location.pathname.match(/\//g).length - 1),
                 //input_path: `${.slice(1)}.${ourbigbook.OURBIGBOOK_EXT}`,

@@ -129,11 +129,12 @@ a {
       content: " split";
     }
     &::before {
+      color: $color;
+      content: "\f042";
       font-family: "fa-solid-900";
       font-weight: 900;
       font-size: $icon-font-size;
       // adjust https://fontawesome.com/v5/icons/adjust?f=classic&s=solid
-      content: "\f042";
     }
   }
   &.nosplit {
@@ -141,11 +142,12 @@ a {
       content: " nosplit";
     }
     &::before {
+      color: $color;
+      content: "\f111";
       font-family: "fa-solid-900";
       font-weight: 900;
       font-size: $icon-font-size;
       // circle https://fontawesome.com/v5/icons/circle?f=classic&s=solid
-      content: "\f111";
     }
   }
   &:visited {
@@ -323,9 +325,11 @@ nav.h-nav {
       // First ancestors.
       > :first-child::before {
         @include up-arrow-icon;
+        color: $color;
       }
       // Other ancestors.
       > :not(:first-child)::before {
+        color: $color;
         font-family: "fa-solid-900";
         font-weight: 900;
         font-size: $icon-font-size;

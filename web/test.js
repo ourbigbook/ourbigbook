@@ -1,7 +1,7 @@
 const assert = require('assert');
 
 const { WebApi } = require('ourbigbook/web_api')
-const { assert_xpath_main } = require('ourbigbook/test_lib')
+const { assert_xpath } = require('ourbigbook/test_lib')
 
 const app = require('./app')
 const config = require('./front/config')
@@ -866,7 +866,7 @@ it('api: create an article and see it on global feed', async () => {
       ;({data, status} = await test.webApi.articleCreate(article))
       assertStatus(status, data)
       // TODO title-1 would be better here. Lazy to investigate now though.
-      assert_xpath_main("//x:a[@href='../user0/title-1' and text()='Title 1']", data.articles[0].render)
+      assert_xpath("//x:a[@href='../user0/title-1' and text()='Title 1']", data.articles[0].render)
 
     // Create issues
 
@@ -1119,7 +1119,7 @@ it('api: create an article and see it on global feed', async () => {
       ))
       assertStatus(status, data)
       // Has to account for go/issues/<number>/<username>, so four levels.
-      assert_xpath_main("//x:a[@href='../../../../user0/title-1' and text()='Title 1']", data.issue.render)
+      assert_xpath("//x:a[@href='../../../../user0/title-1' and text()='Title 1']", data.issue.render)
 
     // Create comments
 
@@ -1189,7 +1189,7 @@ it('api: create an article and see it on global feed', async () => {
       // but adds the title to the render.
       //;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, '<Title 1>'))
       //assertStatus(status, data)
-      //assert_xpath_main("//x:a[@href='../../../../user0/title-1' and text()='Title 1']", data.comment.render)
+      //assert_xpath("//x:a[@href='../../../../user0/title-1' and text()='Title 1']", data.comment.render)
 
     if (testNext) {
       // Tests with the same result for logged in or off.

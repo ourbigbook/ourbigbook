@@ -2902,8 +2902,22 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       let attrs = html_convert_attrs_id(ast, context);
       let content = convert_arg(ast.args.content, context);
-      return `<pre${attrs}><code>${content}</code></pre>`;
+      let ret = `<div class="code-caption-container"${attrs}>\n`;
+      if (ast.validation_output[Macro.TITLE_ARGUMENT_NAME].given) {
+        ret += `\n<div class="caption">${x_text(ast, context, {href_prefix: html_self_link(ast)})}</div>\n`;
+      }
+      ret += `<pre><code>${content}</code></pre>`;
+      ret += `</div>`;
+      return ret;
     },
+    {
+      caption_prefix: 'Code',
+      named_args: [
+        new MacroArgument({
+          name: Macro.TITLE_ARGUMENT_NAME,
+        }),
+      ],
+    }
   ),
   new Macro(
     // Inline code.

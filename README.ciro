@@ -2091,20 +2091,21 @@ Every Cirodown document is implicitly put inside a `\toplevel` document and:
 
 E.g., a Cirodown document that contains:
 ``
-[title=My favorite title]
+{title=My favorite title}
 
 And now, some content!
 ``
 
 is morally equivalent to:
 ``
-\toplevel
-[title=My favorite title]
+\toplevel{title=My favorite title}
 [
 And now, some content!
 ]
 ``
 In terms of HTML, the `\toplevel` element corresponds to the `<html>`, `<head>`, `<header>` and `<footer>` elements of a document.
+
+Trying to use the `\toplevel` macro explicitly in a document leads to an error.
 
 \h[4][HTML document title]
 

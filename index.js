@@ -21,7 +21,6 @@ const pluralize = require('pluralize');
 // consts used by classes.
 const HEADER_MENU_ITEM_SEP = ' | ';
 const UNICODE_LINK = String.fromCodePoint(0x1F517);
-//const NOSPLIT_MARKER = '\u{1F5D6} nosplit';
 const NOSPLIT_MARKER = 'nosplit';
 exports.NOSPLIT_MARKER = NOSPLIT_MARKER;
 const SPLIT_MARKER = 'split';
@@ -69,6 +68,9 @@ class AstNode {
       // Either the first header on a regular toplevel input,
       // or the first header inside an included include.
       options.is_first_header_in_input_file = false;
+    }
+    if (!('numbered' in options)) {
+      options.numbered = true;
     }
     if (!('parent_node' in options)) {
       // AstNode. This is different from header_graph_node because
@@ -126,6 +128,7 @@ class AstNode {
     // it is possible to force non-indexed IDs to count as well with
     // caption_number_visible.
     this.macro_count_visible = undefined;
+    this.numbered = options.numbered;
     // {AstNode} that contains this as an argument.
     this.parent_node = options.parent_node;
     // AstArgument
@@ -904,6 +907,7 @@ Macro.COMMON_ARGNAMES = new Set([
   Macro.ID_ARGUMENT_NAME,
 ]);
 Macro.HEADER_MACRO_NAME = 'H';
+Macro.X_MACRO_NAME = 'x';
 Macro.HEADER_SCOPE_SEPARATOR = '/';
 Macro.INCLUDE_MACRO_NAME = 'Include';
 Macro.LINK_MACRO_NAME = 'a';
@@ -1664,6 +1668,7 @@ class HeaderTreeNode {
       // Possible in skipped header levels.
       cur_node !== undefined &&
       cur_node.value !== undefined &&
+      cur_node.value.numbered &&
       cur_node.get_level() !== header_graph_top_level
     ) {
       indexes.push(cur_node.index + 1);
@@ -2381,6 +2386,7 @@ function convert_init_context(options={}, extra_returns={}) {
           }
         }
       }
+      if (!('numbered' in cirodown_json)) { cirodown_json.numbered = true; }
       {
         if (!('lint' in cirodown_json)) { cirodown_json.lint = {}; }
         const lint = cirodown_json.lint
@@ -3492,7 +3498,7 @@ function parse(tokens, options, context, extra_returns={}) {
                     [
                       new AstNode(
                         AstType.MACRO,
-                        'x',
+                        Macro.X_MACRO_NAME,
                         {
                           'href': new AstArgument(
                             [
@@ -3596,12 +3602,14 @@ function parse(tokens, options, context, extra_returns={}) {
         const header_level = parseInt(
           convert_arg_noescape(ast.args.level, context)
         )
+
         // splitDefault propagation to children.
         if (ast.validation_output.splitDefault.given) {
           ast.split_default = ast.validation_output.splitDefault.boolean;
         } else if (include_options.cur_header !== undefined) {
           ast.split_default = include_options.cur_header.split_default;
         }
+
         if (is_synonym) {
           if (include_options.cur_header === undefined) {
             const message = `the first header of an input file cannot be a synonym`;
@@ -3760,6 +3768,20 @@ function parse(tokens, options, context, extra_returns={}) {
             }
           }
           header_graph_last_level = cur_header_level;
+
+          // numbered propagation to children.
+          // Note that the property only affects descendants, but not the node itself.
+          if (parent_tree_node === undefined || parent_tree_node.value === undefined) {
+            ast.numbered = context.options.cirodown_json.numbered
+          } else {
+            const parent_ast = parent_tree_node.value
+            if (parent_ast.validation_output.numbered.given) {
+              ast.numbered = parent_ast.validation_output.numbered.boolean
+            } else {
+              ast.numbered = parent_ast.numbered
+            }
+          }
+
         }
         ast.header_graph_node = cur_header_graph_node;
 
@@ -4985,6 +5007,7 @@ function x_text(ast, context, options={}) {
     }
     if (
       options.show_number &&
+      ast.numbered &&
       (
         // When in split headers, numbers are only added to headers that
         // are descendants of the toplevel header, thus matching the current ToC.
@@ -5678,7 +5701,7 @@ const DEFAULT_MACRO_LIST = [
       for (const target_id of Array.from(tag_ids).sort()) {
         const x_ast = new AstNode(
           AstType.MACRO,
-          'x',
+          Macro.X_MACRO_NAME,
           {
             'href': new AstArgument(
               [
@@ -5727,6 +5750,10 @@ const DEFAULT_MACRO_LIST = [
       named_args: [
         new MacroArgument({
           name: 'c',
+          boolean: true,
+        }),
+        new MacroArgument({
+          name: 'numbered',
           boolean: true,
         }),
         new MacroArgument({
@@ -6303,7 +6330,7 @@ const DEFAULT_MACRO_LIST = [
                       [
                         new AstNode(
                           AstType.MACRO,
-                          'x',
+                          Macro.X_MACRO_NAME,
                           {
                             'href': new AstArgument(
                               [
@@ -6369,7 +6396,7 @@ const DEFAULT_MACRO_LIST = [
                       [
                         new AstNode(
                           AstType.MACRO,
-                          'x',
+                          Macro.X_MACRO_NAME,
                           {
                             'href': new AstArgument(
                               [
@@ -6541,7 +6568,7 @@ const DEFAULT_MACRO_LIST = [
     }),
   ),
   new Macro(
-    'x',
+    Macro.X_MACRO_NAME,
     [
       new MacroArgument({
         name: 'href',
@@ -6748,7 +6775,7 @@ const MACRO_CONVERT_FUNCIONS = {
     [Macro.TH_MACRO_NAME]: id_convert_simple_elem(),
     [Macro.TR_MACRO_NAME]: id_convert_simple_elem(),
     'Ul': id_convert_simple_elem(),
-    'x': function(ast, context) {
+    [Macro.X_MACRO_NAME]: function(ast, context) {
       const [href, content, target_ast] = x_get_href_content(ast, context);
       return content;
     },
@@ -6786,7 +6813,7 @@ const MACRO_CONVERT_FUNCIONS = {
     [Macro.TH_MACRO_NAME]: id_convert_simple_elem(),
     [Macro.TR_MACRO_NAME]: id_convert_simple_elem(),
     'Ul': id_convert_simple_elem(),
-    'x': function(ast, context) {
+    [Macro.X_MACRO_NAME]: function(ast, context) {
       const [href, content, target_ast] = x_get_href_content(ast, context);
       return content;
     },

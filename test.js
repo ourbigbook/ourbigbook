@@ -4986,27 +4986,37 @@ bb
   include_opts
 );
 assert_convert_ast('include simple with paragraph with no embed',
-  `= aa
+  `= Notindex
 
 bb
 
-\\Include[include-two-levels]
+\\Include[notindex2]
 `,
   [
-    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('H', undefined, {level: [t('1')], title: [t('Notindex')]}),
     a('P', [t('bb')]),
     a('Toc'),
-    a('H', undefined, {level: [t('2')], title: [t('ee')]}),
+    a('H', undefined, {level: [t('2')], title: [t('Notindex2')]}),
     a('P', [
       a(
         'x',
         [t('This section is present in another page, follow this link to view it.')],
-        {'href': [t('include-two-levels')]}
+        {'href': [t('notindex2')]}
       ),
     ]),
   ],
   {
-    convert_before: ['include-two-levels.bigb'],
+    convert_before: ['notindex2.bigb'],
+    extra_convert_opts: { split_headers: true },
+    filesystem: {
+      'notindex2.bigb': `= Notindex2
+`,
+    },
+    assert_xpath_main: [
+      xpath_header(1, 'notindex', "x:a[@href='notindex-split.html' and text()='Notindex']"),
+      xpath_header(2, 'notindex2', "x:a[@href='notindex2.html' and text()='1. Notindex2']"),
+    ],
+    input_path_noext: 'notindex',
   },
 );
 // https://github.com/cirosantilli/ourbigbook/issues/74

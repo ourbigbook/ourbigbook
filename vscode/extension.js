@@ -9,8 +9,8 @@ const vscode = require('vscode');
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
-	console.log('bigb.activate');
-	let disposable = vscode.commands.registerCommand('bigb.helloWorld', function () {
+	console.log('ourbigbook.activate');
+	let disposable = vscode.commands.registerCommand('ourbigbook.helloWorld', function () {
 		vscode.window.showInformationMessage('Hello World from asdf!');
 		console.log('hello world command');
 	});

@@ -61,6 +61,7 @@ async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
             type: { [sequelize.Sequelize.Op.or]: [
               sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
               sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_TITLE_TITLE],
+              sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_SYNONYM],
             ]}
           },
           required: false,
@@ -78,8 +79,15 @@ async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
                 // This is the default ON condition. Don't know how to add a new condition to the default,
                 // so just duplicating it here.
                 '$from.to_id$': {[sequelize.Sequelize.Op.col]: 'from->to.idid' },
-                // This gets only the TITLE TITLE.
-                '$from.type$': sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_TITLE_TITLE],
+                // This gets only the TITLE TITLE and SYNONYM.
+                '$from.type$': [
+                  sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_TITLE_TITLE],
+                  // For every \x to a synonym, we need to know the synonym target.
+                  // This was originally added to decide if the synonym target is the
+                  // toplevel ID or not, because if it is, we don't add a fragment.
+                  // https://docs.ourbigbook.com/todo/links-to-synonym-header-have-fragment
+                  sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_SYNONYM],
+                ],
               }
             }
           ],

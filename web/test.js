@@ -2716,33 +2716,42 @@ it('api: synonym rename', async () => {
     ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
     assertStatus(status, data)
 
-    // Check that the synonym exists as a redirect.
+      // Check that the synonym exists as a redirect.
 
-    ;({data, status} = await test.webApi.articleRedirects({ id: 'user0/calculus-2' }))
-    assertStatus(status, data)
-    assert.strictEqual(data.redirects['user0/calculus-2'], 'user0/calculus')
+      ;({data, status} = await test.webApi.articleRedirects({ id: 'user0/calculus-2' }))
+      assertStatus(status, data)
+      assert.strictEqual(data.redirects['user0/calculus-2'], 'user0/calculus')
 
-    // synonym does not break parentId and previousSibling
+      // synonym does not break parentId and previousSibling
 
-    ;({data, status} = await test.webApi.article('user0/derivative', { 'include-parent': true }))
-    assertStatus(status, data)
-    assert.strictEqual(data.titleRender, 'Derivative')
-    assert.strictEqual(data.parentId, '@user0/calculus')
+      ;({data, status} = await test.webApi.article('user0/derivative', { 'include-parent': true }))
+      assertStatus(status, data)
+      assert.strictEqual(data.titleRender, 'Derivative')
+      assert.strictEqual(data.parentId, '@user0/calculus')
 
-    ;({data, status} = await test.webApi.article('user0/algebra', { 'include-parent': true }))
-    assertStatus(status, data)
-    assert.strictEqual(data.titleRender, 'Algebra')
-    assert.strictEqual(data.previousSiblingId, '@user0/calculus')
+      ;({data, status} = await test.webApi.article('user0/algebra', { 'include-parent': true }))
+      assertStatus(status, data)
+      assert.strictEqual(data.titleRender, 'Algebra')
+      assert.strictEqual(data.previousSiblingId, '@user0/calculus')
 
-    // webApi.article( uses Article.getArticles, just double check
-    // with the Article.getARticle (singular) version.
-    const algebra = await test.sequelize.models.Article.getArticle({
-      includeParentAndPreviousSibling: true,
-      sequelize,
-      slug: 'user0/algebra',
-    })
-    assert.strictEqual(algebra.parentId.idid, '@user0/mathematics')
-    assert.strictEqual(algebra.previousSiblingId.idid, '@user0/calculus')
+      // webApi.article( uses Article.getArticles, just double check
+      // with the Article.getARticle (singular) version.
+      const algebra = await test.sequelize.models.Article.getArticle({
+        includeParentAndPreviousSibling: true,
+        sequelize,
+        slug: 'user0/algebra',
+      })
+      assert.strictEqual(algebra.parentId.idid, '@user0/mathematics')
+      assert.strictEqual(algebra.previousSiblingId.idid, '@user0/calculus')
+
+      // Add a link to the new synonym.
+      article = createArticleArg({ i: 0, titleSource: 'Derivative', bodySource: '<Calculus>\n\n<Calculus 2>\n' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
+      assertStatus(status, data)
+      // TODO Links to synonym header from have fragment
+      // https://docs.ourbigbook.com/todo/links-to-synonym-header-have-fragment
+      assert_xpath("//x:a[@href='/user0/calculus' and text()='Calculus']", data.articles[0].render)
+      assert_xpath("//x:a[@href='/user0/calculus' and text()='Calculus 2']", data.articles[0].render)
 
     // Rename Calculus to Calculus 3
 

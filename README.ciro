@@ -1309,6 +1309,52 @@ Some quick interactive cross file link tests:
 * \x[not-readme-with-scope/h2]
 * \x[not-readme-with-scope/image-my-image]
 
+= Header `splitSuffix` argument
+{parent=headers}
+
+If given, adds a custom suffix to the output filename of the header when using \x[split-headers].
+
+If the given suffix is empty, it defaults to `-split`.
+
+For example, given:
+``
+= my h1
+
+== my h2
+``
+a `--split-headers` conversion would normally place `my h2` into a file called:
+``
+my-h2.html
+``
+However, if we instead wrote:
+``
+== my h2
+{splitSuffix}
+``
+it would not be placed under:
+``
+my-h2-split.html
+``
+and if we set a custom one as:
+``
+== my h2
+{splitSuffix=asdf}
+``
+it would go instead to:
+``
+my-h2-asdf.html
+``
+
+This option is useful if the root of your website is written in Cirodown, and you want to both:
+* have a section that talks about some other project
+* host the documentation of that project inside the project source tree
+
+For example, https://cirosantilli.com with source at https://github.com/cirosantilli/cirosantilli.github.io has a quick section about Cirodown: https://cirosantilli.com#cirodown[].
+
+Therefore, without a custom suffix, the split header version of that header would go to https://cirosantilli.com/cirodown[], which would collide with this documentation, that is present in a separate repository: https://github.com/cirosantilli/cirodown[].
+
+Therefore a `splitHeader` property is used, making the split header version fall under `/cirodown-split`, and leaving the nicer `/cirodown` for the more important project toplevel.
+
 === Header `wiki` argument
 
 If given, show a link to the Wikipedia article that corresponds to the header.

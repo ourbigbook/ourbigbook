@@ -1372,6 +1372,8 @@ function convert(
   if (!('show_tokens' in options)) { options.show_tokens = false; }
   if (!('template' in options)) { options.template = undefined; }
   if (!('template_vars' in options)) { options.template_vars = {}; }
+    if (!('head' in options.template_vars)) { options.template_vars.head = ''; }
+    if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
     if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
   // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
   if (!('toplevel_id' in options)) { options.toplevel_id = undefined; }
@@ -3570,7 +3572,7 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    html_convert_simple_elem('li'),
+    html_convert_simple_elem('li', {newline_after_close: true}),
     {
       auto_parent: 'ul',
       auto_parent_skip: new Set(['ol']),
@@ -3940,8 +3942,10 @@ const DEFAULT_MACRO_LIST = [
 <meta charset=utf-8>
 <title>{{ title }}</title>
 <style>{{ style }}</style>
+{{ head }}
 <body class="cirodown">
 {{ body }}
+{{ post_body }}
 </body>
 </html>
 `;

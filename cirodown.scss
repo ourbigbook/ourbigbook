@@ -123,7 +123,7 @@ div.h {
   &:hover .hover-meta {
     @include visible;
   }
-  // Clicked navigation expand button.
+  // Also show header metadata when the header is selected as the current #fragment.
   &:target .hover-meta {
     @include visible;
   }

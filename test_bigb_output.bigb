@@ -285,6 +285,14 @@ Table with paragraph and list:
 | row 2 1
 | row 2 2
 
+Table with empty cell:
+
+| row 1 1
+|
+
+| row 2 1
+| row 2 2
+
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {id=image-my-test-image}
 {title=The title of my image.}

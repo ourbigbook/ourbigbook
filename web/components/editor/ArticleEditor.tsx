@@ -11,6 +11,7 @@ import ArticleAPI from "lib/api/article";
 import { SERVER_BASE_URL } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 import { modifyEditorInput } from "lib/shared";
+import routes from "routes";
 
 function editorReducer(state, action) {
   switch (action.type) {
@@ -110,7 +111,7 @@ export default function makeArticleEditor(isnew: boolean = false) {
       // This is a hack for the useEffect cleanup callback issue.
       cirodownEditorElem.current.cirodownEditor.dispose()
 
-      Router.push(`/article/${data.article.slug}`, null, {scroll: true});
+      Router.push(routes.articleView(data.article.slug), null, {scroll: true});
     };
     const handleCancel = async (e) => {
       if (isnew) {
@@ -119,7 +120,7 @@ export default function makeArticleEditor(isnew: boolean = false) {
         // This is a hack for the useEffect cleanup callback issue.
         cirodownEditorElem.current.cirodownEditor.dispose()
 
-        Router.push(`/article/${initialArticle.slug}`);
+        Router.push(routes.articleView(initialArticle.slug));
       }
     }
     return (

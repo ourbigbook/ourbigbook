@@ -9,11 +9,13 @@ const { ValidationError } = require('../api/lib')
 const {
   update_database_after_convert,
   remove_duplicates_sorted_array,
+  SqliteFileProvider,
   SqliteIdProvider,
 } = require('cirodown/nodejs_webpack_safe')
 
 module.exports = (sequelize) => {
   const id_provider = new SqliteIdProvider(sequelize)
+  const file_provider = new SqliteFileProvider(sequelize, id_provider);
   const Article = sequelize.define(
     'Article',
     {
@@ -65,6 +67,7 @@ module.exports = (sequelize) => {
               body_only: true,
               html_x_extension: false,
               id_provider,
+              file_provider,
               input_path: `${cirodown.AT_MENTION_CHAR}${author.username}/${id}${cirodown.CIRODOWN_EXT}`,
               path_sep: path.sep,
               read_include: cirodown_nodejs_webpack_safe.read_include({

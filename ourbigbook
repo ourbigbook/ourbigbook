@@ -1396,10 +1396,16 @@ if (commander.helpMacros) {
           if (!git_is_in_repo(inputPath)) {
             cli_error('--publish must point to a path inside a git repository');
           }
-          remote_url = cmd_get_stdout('git', ['-C', inputPath, 'config', '--get', 'remote.origin.url'], cmd_options).slice(0, -1);
+          if (ourbigbook_json.publishRemoteUrl) {
+            remote_url = ourbigbook_json.publishRemoteUrl
+          } else {
+            remote_url = cmd_get_stdout('git', ['-C', inputPath, 'config', '--get', 'remote.origin.url'], cmd_options).slice(0, -1);
+          }
+          if (!remote_url) {
+            remote_url = 'git@github.com:cirosantilli/ourbigbook.git';
+          }
           src_branch = cmd_get_stdout('git', ['-C', inputPath, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options).slice(0, -1);
           if (commander.dryRun) {
-            remote_url = 'git@github.com:cirosantilli/ourbigbook.git';
             src_branch = 'master';
           }
           const parsed_remote_url = require("git-url-parse")(remote_url);

@@ -38,12 +38,39 @@ Both `{scope}` for subdirs and `{id}` for custom id basename !== from title shou
 
 `{scope}` is however not really usable in general on the same source tree of cirosantilli.github.io due to https://github.com/cirosantilli/ourbigbook/issues/284[].
 
+This would forbit some constructs that are currently possible locally, e.g. scopes that are not children such as:
+
+parent.bigb
+``
+= Parent
+
+== Child
+{scope}
+
+=== Child 2
+{scope}
+``
+
+parent2.bigb
+``
+= Parent
+
+\Include[child/subdir]
+``
+
+child/subdir.bigb
+``
+= Subdir
+``
+
+but that is fine, it is saner if we enforce scopes to match the tree article tree hierarchy.
+
 === Prevent full page reload on links using our existing link capture
 {tag=Web}
 
 Would be a possibly good solution now to: https://github.com/cirosantilli/ourbigbook/issues/274 now that we already have link click capturing necessarily.
 
-=== Inject React header meatadata on each header separately
+=== Inject React header metadata on each header separately
 {tag=Web}
 
 No more need for:

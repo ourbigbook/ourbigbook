@@ -3,6 +3,7 @@ import CommentContainer from './CommentContainer';
 import React from 'react';
 import agent from '../../agent';
 import { connect } from 'react-redux';
+import cirodown from 'cirodown';
 import marked from 'marked';
 import { ARTICLE_PAGE_LOADED, ARTICLE_PAGE_UNLOADED } from '../../constants/actionTypes';
 

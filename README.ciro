@@ -933,6 +933,16 @@ Therefore, images could easily fill up the maximum repository size you are allow
 
 https://git-lfs.github.com/[Git LFS] is one approach to deal with this, but we feel that it adds too much development overhead.
 
+=== Image lazy loading
+
+We automatically mark all images with `lazy="loading"` which means that they only load when the viewport goes over those images on supporting browsers: \a[https://stackoverflow.com/questions/2321907/how-do-you-make-images-load-lazily-only-when-they-are-in-the-viewport/57389607#57389607].
+
+We do this by default because Cirodown is meant to allow producing huge single page documents like Ciro likes it, and in this way:
+* images that the user is looking at will load first
+* we save a lot of bandwidth for the user who only wants to browse one section
+
+TODO: maybe create a mechanism to disable this for the entire build with \x[cirodown-json].
+
 === Image generators
 
 TODO implement: mechanism where you enter a textual description of the image inside the code body, and it then converts to an image, adds to the `-media` repo and pushes all automatically. Start with dot.
@@ -977,6 +987,18 @@ Commons is better than YouTube if your content is on-topic there (educational) a
 === Video `start` argument
 
 The time to start playing the video at in seconds. Works for both `youtube` and non-Youtube videos.
+
+=== Video lazy loading
+
+Unlike \x[image-lazy-loading], we don't support video lazy loading yet because:
+* non-`youtube` videos use the `video` tag which has no `loading` property yet
+* `youtube` videos are embedded with `iframe` and `iframe` has no `loading` property yet
+
+Both of this cases could be worked around with JavaScript:
+* non-`youtube`: set `src` from JavaScript as shown for images: \a[https://stackoverflow.com/questions/2321907/how-do-you-make-images-load-lazily-only-when-they-are-in-the-viewport/57389607#57389607].
+
+  But this breaks page semantics however, we don't know how to work around that
+* `youtube` videos: same as above for the `iframe`, but this should be less problematic since YouTube videos are not viewable without JavaScript anyways, and who cares about `iframe` semantics?
 
 == Code (\c[[`]], \c[[``]], `\c` and `\C`)
 {id=code}

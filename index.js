@@ -3273,7 +3273,7 @@ function get_link_html({
 function get_parent_argument_ast(ast, context, prev_header, include_options) {
   let parent_id;
   let parent_ast;
-  parent_id = render_arg_noescape(ast.args.parent, context);
+  parent_id = magic_title_to_id(render_arg_noescape(ast.args.parent, context));
   if (
     // Happens for the first header
     prev_header !== undefined
@@ -4682,7 +4682,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           const tags_or_children = ast.args[argname]
           if (tags_or_children !== undefined) {
             for (const tag_or_child of tags_or_children) {
-              const target_id = render_arg_noescape(tag_or_child.args.content, context)
+              const target_id = magic_title_to_id(render_arg_noescape(tag_or_child.args.content, context))
               for (const target_id_with_scope of get_all_possible_scope_resolutions(ast.scope, target_id, context)) {
                 options.refs_to_h.push({
                   ast,

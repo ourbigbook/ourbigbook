@@ -313,7 +313,7 @@ Key links:
     ``
     ourbigbook --watch input-file.bigb
     ``
-* automatic code formatting: <--format-code>
+* automatic code formatting: <--format-source>
 
 = Quick start
 {parent=ourbigbook}
@@ -1524,6 +1524,21 @@ because the second header has level `2` instead of the required `= My h2`.
 
 When \x[scope]{p} are involved, the rules are the same as those of internal reference resolution, including the leading `/` to break out of the scope in case of conflicts.
 
+Like the <H child argument>, `parent` also performs <ID target from title> on the argument, allowing you to use the original spaces and capitalization in the target as in:
+``
+= Flying animal
+
+= Bat
+{parent=Flying animal}
+``
+which is equivalent to:
+``
+= Flying animal
+
+= Bat
+{parent=flying-animal}
+``
+
 See also: \x[header-explicit-levels-vs-nesting-design-choice]{full} for further rationale.
 
 = ID-based header levels and scope resolution
@@ -1992,6 +2007,15 @@ So for example, the following automatic IDs would be generated: \x[table-example
 ]
 
 For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the OurBigBook file without extension instead of from the `title` argument.
+
+= ID target from title
+{c}
+{parent=h-synonym-argument}
+
+This conversion type is similar to <Automatic ID from title>, but it is used in certain cases where we are targeting IDs rather than setting them, notably:
+* <H parent argument>
+* <H child argument>
+* <H tag argument>
 
 = `\H` `title2` argument of a synonym header
 {parent=h-synonym-argument}
@@ -4046,6 +4070,27 @@ rather than via the usual \x[header] hierarchy.
 Secondary children show up for example on the \x[tagged] metadata section, but not on the \x[table-of-contents], which is what the header hierarchy already shows.
 
 Secondary children are normally basically used as "tags": a header such as `Bat` can be a direct child of `Mammal`, and a secondary child of `Flying animal`, or vice versa. Both `Mammal` and `Flying animal` are then basically ancestors. But we have to chose one main ancestor as "the parent", and other secondary ancestors will be seen as tags.
+
+This option first does <ID target from title> conversion on the argument, so you can e.g. keep any spaces or use capitalization in the title as in:
+``
+= Animal
+
+== Flying animal
+{child=Big bat}
+
+== Big bat
+``
+TODO the fact that this transformation is done currently makes it impossible to use "non-standard IDs" that contain spaces or uppercase letters. If someone ever wants that, we could maybe add a separate argument that does not do the expansion e.g.:
+``
+= Animal
+
+== Flying animal
+{childId=Big bat}
+
+== Big bat
+{id=Big bat}
+``
+but definitely the most important use case is having easier to type and read source with the standard IDs.
 
 = `\x` `child` argument demo
 {parent=x-child-argument}

@@ -962,7 +962,7 @@ function resolve_absolute_xref(id, context) {
   }
 }
 
-/** 
+/**
  * Interface to retrieving the nodes of IDs defined in external files.
  *
  * We need the abstraction because IDs will come from widely different locations
@@ -3473,10 +3473,9 @@ function get_descendant_count_html_sep(context, tree_node, options) {
 }
 
 function check_and_update_local_link({
-  check,
   context,
   href,
-  relative,
+  external,
   media_provider_type,
   source_location,
 }) {
@@ -3492,15 +3491,17 @@ function check_and_update_local_link({
     input_path_directory = '.'
   }
 
+  const is_absolute = href[0] === URL_SEP
+  const is_external = (external !== undefined && external) || (
+    external === undefined && was_protocol_given
+  )
+
   // Check existence.
   let error = ''
-  if (
-    (check !== undefined && check) ||
-    (check === undefined && !was_protocol_given)
-  ) {
+  if (!is_external) {
     if (href.length !== 0) {
       let check_path;
-      if (href[0] === URL_SEP) {
+      if (is_absolute) {
         check_path = href.slice(1)
       } else {
         check_path = path.join(input_path_directory, href)
@@ -3518,25 +3519,15 @@ function check_and_update_local_link({
     error = error_message_in_output(error, context)
   }
 
-  // Modify relative paths to account for scope + --split-headers
-  if (
-    (relative !== undefined && relative) ||
-    (
-      relative === undefined
-      && (
-        !was_protocol_given &&
-        (
-          href.length === 0 ||
-          href[0] !== URL_SEP
-        )
-      )
-    )
-  ) {
+  // Modify external paths to account for scope + --split-headers
+  if (!is_external) {
     let pref = context.root_relpath_shift
     if (media_provider_type === 'local') {
       pref = path.join(pref, RAW_PREFIX)
     }
-    pref = path.join(pref, context.input_dir)
+    if (!is_absolute) {
+      pref = path.join(pref, context.input_dir)
+    }
     href = path.join(pref, href)
   }
   return { href, error }
@@ -3573,11 +3564,10 @@ function get_description(description_arg, context) {
 
 function get_link_html({
   attrs,
-  check,
   content,
   context,
+  external,
   href,
-  relative,
   source_location,
 }) {
   if (context.x_parents.size === 0) {
@@ -3586,10 +3576,9 @@ function get_link_html({
     }
     let error
     ;({ href, error } = check_and_update_local_link({
-      check,
       context,
+      external,
       href,
-      relative,
       // The only one available for now. One day we could add: \a[some/path]{provider=github}
       media_provider_type: 'local',
       source_location,
@@ -3888,6 +3877,7 @@ function html_img({
   alt,
   ast,
   context,
+  external,
   media_provider_type,
   rendered_attrs,
   relpath_prefix,
@@ -3898,8 +3888,8 @@ function html_img({
     href: src,
     error
   } = check_and_update_local_link({
-    check: ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined,
     context,
+    external,
     href: src,
     media_provider_type,
     source_location: ast.args.src.source_location,
@@ -7468,9 +7458,8 @@ const IMAGE_INLINE_BLOCK_COMMON_NAMED_ARGUMENTS = [
     boolean: true,
   }),
   new MacroArgument({
-    name: 'check',
+    name: 'external',
     boolean: true,
-    default: '1',
   }),
   new MacroArgument({
     name: 'height',
@@ -7670,12 +7659,7 @@ const DEFAULT_MACRO_LIST = [
     {
       named_args: [
         new MacroArgument({
-          name: 'check',
-          boolean: true,
-          default: '1',
-        }),
-        new MacroArgument({
-          name: 'relative',
+          name: 'external',
           boolean: true,
         }),
         new MacroArgument({
@@ -7977,6 +7961,7 @@ const DEFAULT_MACRO_LIST = [
             alt,
             ast,
             context,
+            external: ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined,
             media_provider_type,
             rendered_attrs,
             src,
@@ -8330,11 +8315,10 @@ const DEFAULT_MACRO_LIST = [
             return `<iframe width="${width}" height="${height}" loading="lazy" src="https://www.youtube.com/embed/${html_escape_attr(video_id)}${start}" ` +
                   `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
           } else {
-            const check = ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined
             let error
             ;({ href: src, error } = check_and_update_local_link({
-              check,
               context,
+              external: ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined,
               href: src,
               media_provider_type,
               source_location: ast.args.src.source_location,
@@ -8482,19 +8466,17 @@ const OUTPUT_FORMATS_LIST = [
           if (ast.validation_output.ref.boolean) {
             content = '<sup class="ref">[ref]</sup>';
           }
-          const check = ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined
-          const relative = ast.validation_output.relative.given ? ast.validation_output.relative.boolean : undefined
+          const external = ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined
           let attrs = html_render_attrs_id(ast, context);
           if (context.options.ourbigbook_json.openLinksOnNewTabs) {
             attrs += ' target="_blank"'
           }
           return get_link_html({
             attrs,
-            check,
             content,
             context,
+            external,
             href,
-            relative,
             source_location: ast.args.href.source_location,
           })
         },
@@ -8706,7 +8688,7 @@ const OUTPUT_FORMATS_LIST = [
               content: 'View file',
               context,
               href: ast.file,
-              relative: undefined,
+              external: undefined,
               source_location: ast.source_location,
             })
           }
@@ -8872,7 +8854,8 @@ const OUTPUT_FORMATS_LIST = [
           let alt = html_attr('alt', html_escape_attr(render_arg(alt_arg, context)));
           let rendered_attrs = html_render_attrs_id(ast, context, ['height', 'width']);
           let { error_message, media_provider_type, src } = macro_image_video_resolve_params(ast, context);
-          let { html: ret } = html_img({ alt, ast, context, media_provider_type, rendered_attrs, src })
+          const external = ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined
+          let { html: ret } = html_img({ alt, ast, context, external, media_provider_type, rendered_attrs, src })
           if (error_message) {
             ret += error_message_in_output(error_message, context)
           }

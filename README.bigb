@@ -8088,7 +8088,7 @@ For frontend, changes are automatically recompiled by the webpack development se
 {title2=wikibot}
 
 * <OurBigBook.com> user: https://ourbigbook.com/wikibot
-* <Static website> render: https://docs.ourbigbook.com/wikibot
+* <Static website> render: https://wikibot.ourbigbook.com
 * <Static website> source code: https://github.com/ourbigbook/wikibot
 
 This bot imports the Wikipedia article category tree into OurBigBook. Only titles are currently imported, not the actual article content.

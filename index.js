@@ -3899,10 +3899,20 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
   const renamed_basename_noext = rename_basename(noext(basename));
   const ast = context.db_provider.get(id, context);
 
+  function index_path_from_dirname(dirname_ret, basename_ret, sep) {
+    const [dir_dir, dir_base] = path_split(dirname_ret, sep);
+    if (basename_ret === INDEX_BASENAME_NOEXT && dirname_ret) {
+      dirname_ret = dir_dir
+      basename_ret = dir_base
+    }
+    return [dirname_ret, basename_ret]
+  }
+
   // We are the first header, or something that comes before it.
   let first_header_or_before = false;
   if (ast === undefined) {
-    return [dirname, renamed_basename_noext];
+    const [dirname_ret, basename_ret] = index_path_from_dirname(dirname, renamed_basename_noext, context.options.path_sep)
+    return [dirname_ret, basename_ret];
   } else {
     if (ast.macro_name === Macro.HEADER_MACRO_NAME) {
       id = ast.id;
@@ -3956,12 +3966,7 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     }
   }
 
-  const [dir_dir, dir_base] = path_split(dirname_ret, context.options.path_sep);
-  if (basename_ret === INDEX_BASENAME_NOEXT && dirname) {
-    const [dir_dir, dir_base] = path_split(dirname, context.options.path_sep);
-    dirname_ret = dir_dir
-    basename_ret = dir_base
-  }
+  ;[dirname_ret, basename_ret] = index_path_from_dirname(dirname_ret, basename_ret, context.options.path_sep)
 
   // Add -split, -nosplit or custom suffixes to basename_ret.
   let suffix_to_add;

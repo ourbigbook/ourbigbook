@@ -4,8 +4,9 @@ const ourbigbook = require('ourbigbook')
 
 const auth = require('../auth')
 const front = require('../front/js')
-const convert = require('../convert')
+const { convert } = require('../convert')
 const { getArticle, validateParam, validatePositiveInteger } = require('./lib')
+const { modifyEditorInput } = require('../front/js')
 
 router.param('comment', function(req, res, next, id) {
   req.app.get('sequelize').models.Comment.findOne({
@@ -49,7 +50,7 @@ router.get('/', auth.optional, async function(req, res, next) {
 
 function getIssueParams(req, res) {
   return {
-    number: validateParam(req.query, 'number', validatePositiveInteger),
+    number: validateParam(req.params, 'number', validatePositiveInteger),
     slug: validateParam(req.query, 'id'),
   }
 }
@@ -57,7 +58,7 @@ function getIssueParams(req, res) {
 async function getIssue(req, res) {
   const sequelize = req.app.get('sequelize')
   const { slug, number } = getIssueParams(req, res)
-  const article = await sequelize.models.Issues.findOne({
+  const issue = await sequelize.models.Issue.findOne({
     where: {
       number: number,
     },
@@ -72,7 +73,7 @@ async function getIssue(req, res) {
       404,
     )
   }
-  return article
+  return issue
 }
 
 // Create a new issue.
@@ -95,20 +96,20 @@ router.post('/', auth.required, async function(req, res, next) {
     const bodySource = validateParam(req.body.issue, 'bodySource')
     const { extra_returns } = await convert({
       author: user,
-      body: source,
-      path: `${user.username}.${ourbigbook.OURBIGBOOK_EXT}`,
+      body: bodySource,
+      path: `${ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`,
       render: true,
       sequelize,
-      title: undefined,
+      title: titleSource,
     })
-    const outpath = `${user.username}.${ourbigbook.HTML_EXT}`;
+    const outpath = `${ourbigbook.AT_MENTION_CHAR}${user.username}.${ourbigbook.HTML_EXT}`;
     const issue = await sequelize.models.Issue.create({
       articleId: article.id,
       authorId: user.id,
       titleSource,
       bodySource,
       titleRender: extra_returns.rendered_outputs[outpath].title,
-      bodyRender: extra_returns.rendered_outputs[outpath].full,
+      render: extra_returns.rendered_outputs[outpath].full,
       number: lastIssue ? lastIssue.number + 1 : 1,
     })
     issue.author = user
@@ -156,6 +157,7 @@ router.post('/:number/comments', auth.required, async function(req, res, next) {
           model: sequelize.models.Issue,
           where: { number },
           include: [{
+            model: sequelize.models.Article,
             where: { slug },
           }],
         }]
@@ -166,17 +168,18 @@ router.post('/:number/comments', auth.required, async function(req, res, next) {
     const { extra_returns } = await convert({
       author: user,
       body: source,
-      path: `${user.username}.${ourbigbook.OURBIGBOOK_EXT}`,
+      path: `${ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`,
       render: true,
       sequelize,
       title: undefined,
     })
+    const outpath = `${ourbigbook.AT_MENTION_CHAR}${user.username}.${ourbigbook.HTML_EXT}`;
     const comment = await sequelize.models.Comment.create({
       issueId: issue.id,
       number: lastComment ? lastComment.number + 1 : 1,
       authorId: user.id,
       source,
-      render: extra_returns.rendered_outputs[`${user.username}.${ourbigbook.HTML_EXT}`].full,
+      render: extra_returns.rendered_outputs[outpath].full,
     })
     comment.author = user
     res.json({ comment: await comment.toJson(user) })

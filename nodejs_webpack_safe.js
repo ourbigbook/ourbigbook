@@ -562,13 +562,17 @@ async function update_database_after_convert({
   extra_returns,
   db_provider,
   is_render_after_extract,
-  sequelize,
+  non_ourbigbook_options,
   path,
   render,
+  sequelize,
   transaction,
   title,
 }) {
   const context = extra_returns.context;
+  if (non_ourbigbook_options === undefined) {
+    non_ourbigbook_options = {}
+  }
   ourbigbook.perf_print(context, 'convert_path_pre_sqlite_transaction')
   let toplevel_id;
   if (context.toplevel_ast !== undefined) {
@@ -590,7 +594,12 @@ async function update_database_after_convert({
       'toplevel_id',
     ]
     file_bulk_create_last_parse = Date.now()
-    if (render) {
+    if (
+      render &&
+      // Some day we might have one timestamp per output format.
+      // But lazy now, just never use timestamp for --format-source.
+      !non_ourbigbook_options.commander.formatSource
+    ) {
       file_bulk_create_opts.updateOnDuplicate.push('last_render')
       file_bulk_create_last_render = file_bulk_create_last_parse
     } else {

@@ -4043,7 +4043,10 @@ assert_error('header tag argument to id that does not exist gives an error',
   3, 1
 );
 assert_lib('header tag and child argument does title to ID conversion',
-  `= 1
+  {
+    convert_dir: true,
+    filesystem: {
+      'notindex.bigb': `= 1
 
 == a b%c
 {child=d e%f}
@@ -4053,6 +4056,8 @@ assert_lib('header tag and child argument does title to ID conversion',
 
 == d e%f
 `,
+    },
+  }
 );
 // This almost worked, but "Other children" links were not showing.
 // Either we support it fully, or it blows up clearly, this immediately

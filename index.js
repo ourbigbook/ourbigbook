@@ -3323,7 +3323,7 @@ function get_root_relpath(output_path, context) {
 function header_check_child_tag_exists(ast, context, childrenOrTags, type) {
   let ret = ''
   for (let child of childrenOrTags) {
-    const target_id = render_arg_noescape(child.args.content, context)
+    const target_id = magic_title_to_id(render_arg_noescape(child.args.content, context))
     const target_ast = context.db_provider.get(target_id, context, ast.header_tree_node.ast.scope)
     if (target_ast === undefined) {
       let message = `unknown ${type} id: "${target_id}"`

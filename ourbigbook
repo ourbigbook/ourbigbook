@@ -678,7 +678,7 @@ commander.option('-o, --outfile <outfile>', 'https://cirosantilli.com/ourbigbook
 commander.option('-O, --output-format <output-format>', 'https://cirosantilli.com/ourbigbook#output-format', 'html');
 commander.option('-p --publish', 'https://cirosantilli.com/ourbigbook#publish', false);
 commander.option('-P, --publish-commit <commit-message>', 'https://cirosantilli.com/ourbigbook#publish-commit');
-commander.option('--format-source', 'https://cirosantilli.com/ourbigbook#publish-commit');
+commander.option('--format-source', 'https://cirosantilli.com/ourbigbook#format-source');
 commander.option('-S, --split-headers', 'https://cirosantilli.com/ourbigbook#split-headers', false);
 commander.option('--stdout', 'also print output to stdout in addition to saving to a file https://cirosantilli.com/ourbigbook#stdout', false);
 commander.option('--template <template>', 'https://cirosantilli.com/ourbigbook#template');

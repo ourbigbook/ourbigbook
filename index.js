@@ -5999,7 +5999,7 @@ ${ast.toString()}`)
       if (macro_arg.boolean) {
         let arg_string;
         if (arg.length() > 0) {
-          arg_string = render_arg_noescape(arg, context);
+          arg_string = render_arg_noescape(arg, clone_and_set(context, 'id_conversion', true));
         } else {
           arg_string = '1';
         }
@@ -6724,7 +6724,7 @@ function macro_image_video_resolve_params(ast, context) {
 
   // Provider explicitly given by user on macro.
   if (ast.validation_output.provider.given) {
-    const provider_name = render_arg_noescape(ast.args.provider, context);
+    const provider_name = render_arg_noescape(ast.args.provider, clone_and_set(context, 'id_conversion', true));
     if (MEDIA_PROVIDER_TYPES.has(provider_name)) {
       media_provider_type = provider_name;
     } else {
@@ -6808,7 +6808,7 @@ const MACRO_IMAGE_VIDEO_OPTIONS = {
       )
     ) {
       let basename_str;
-      let src = render_arg(ast.args.src, context);
+      let src = render_arg(ast.args.src, clone_and_set(context, 'id_conversion', true));
       if (media_provider_type === 'local') {
         basename_str = url_basename(src);
       } else if (media_provider_type === 'wikimedia') {

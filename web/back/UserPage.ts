@@ -60,9 +60,11 @@ export const makeGetServerSidePropsUser = (what): GetServerSideProps => {
       user: userJson,
       authoredArticleCount,
       likedArticleCount,
-      loggedInUser: await loggedInUser.toJson(),
       page,
       what,
+    }
+    if (loggedInUser) {
+      props.loggedInUser = await loggedInUser.toJson()
     }
     if (what === 'home') {
       const articleProps = (await makeGetServerSidePropsArticle(true, loggedInUser)({

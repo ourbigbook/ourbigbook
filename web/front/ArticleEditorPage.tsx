@@ -12,7 +12,7 @@ import { slugFromRouter } from 'front'
 import ArticleAPI from 'front/api/article'
 import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'routes'
-import { AppContext } from 'front'
+import { AppContext, useCtrlEnterSubmit } from 'front'
 import { modifyEditorInput } from 'shared';
 
 export default function makeArticleEditorPage(isnew: boolean = false) {
@@ -47,7 +47,8 @@ export default function makeArticleEditorPage(isnew: boolean = false) {
             {
               modifyEditorInput: (oldInput) => modifyEditorInput(article.title, oldInput),
               production: isProduction,
-            }
+              handleSubmit,
+            },
           )
           cirodownEditorElem.current.cirodownEditor = editor
         })
@@ -77,7 +78,9 @@ export default function makeArticleEditorPage(isnew: boolean = false) {
         oldInput => modifyEditorInput(e.target.value, oldInput))
     }
     const handleSubmit = async (e) => {
-      e.preventDefault();
+      if (e) {
+        e.preventDefault();
+      }
       setLoading(true);
       let data, status;
       article.body = cirodownEditorElem.current.cirodownEditor.getValue()
@@ -103,6 +106,7 @@ export default function makeArticleEditorPage(isnew: boolean = false) {
 
       Router.push(routes.articleView(data.article.slug), null, {scroll: true});
     };
+    useCtrlEnterSubmit(handleSubmit)
     const handleCancel = async (e) => {
       if (isnew) {
         Router.push(`/`);

@@ -5,7 +5,7 @@ import { mutate } from 'swr'
 import Label from 'front/Label'
 import ListErrors from 'front/ListErrors'
 import LogoutButton from 'front/LogoutButton'
-import { AppContext } from 'front'
+import { AppContext, useCtrlEnterSubmit  } from 'front'
 import UserAPI from 'front/api/user'
 import checkLogin from 'checkLogin'
 import useLoggedInUser from 'front/useLoggedInUser'
@@ -40,7 +40,7 @@ const Settings = () => {
     const newState = { ...state, [field]: e.target.value };
     setUserInfo(newState);
   };
-  const submitForm = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     const user = { ...userInfo };
@@ -59,6 +59,7 @@ const Settings = () => {
       Router.push(routes.userView(user.username));
     }
   };
+  useCtrlEnterSubmit(handleSubmit)
   const title = 'Account settings'
   const { setTitle } = React.useContext(AppContext)
   React.useEffect(() => { setTitle(title) }, [])
@@ -68,7 +69,7 @@ const Settings = () => {
       <LogoutButton />
       <>
         <ListErrors errors={errors} />
-        <form onSubmit={submitForm}>
+        <form onSubmit={handleSubmit}>
           <Label label="Display name">
             <input
               type="text"

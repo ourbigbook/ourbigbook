@@ -4,7 +4,7 @@ import { mutate } from 'swr'
 
 import ListErrors from 'front/ListErrors'
 import Label from 'front/Label'
-import { LOGIN_ACTION, REGISTER_ACTION, setCookie  } from 'front'
+import { LOGIN_ACTION, REGISTER_ACTION, useCtrlEnterSubmit, setCookie  } from 'front'
 import UserAPI from 'front/api/user'
 
 const LoginForm = ({ register = false }) => {
@@ -71,6 +71,7 @@ const LoginForm = ({ register = false }) => {
       setLoading(false);
     }
   };
+  useCtrlEnterSubmit(handleSubmit)
   return (
     <>
       <ListErrors errors={errors} />

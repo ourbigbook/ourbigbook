@@ -3,7 +3,7 @@ const auth = require('./auth')
 const Op = require('sequelize').Op
 
 //import { getArticleJson } from '../lib/article'
-const { getArticle, getArticleWithAuthor, getArticleJson } = require('../lib/articlejs')
+const { getArticle, getArticleWithAuthor, getArticleJson } = require('../lib/article')
 
 router.param('comment', function(req, res, next, id) {
   req.app.get('sequelize').models.Comment.findByPk(id)

@@ -756,7 +756,7 @@ A link to another file: \\x[and-now-an-include]
       inputPath !== undefined &&
       input_path_is_file
     ) {
-      outfile = cirodown.output_path(inputPath, undefined, {}, options.output_format);
+      outfile = cirodown.output_path(inputPath, undefined);
     }
   } else {
     outfile = commander.outfile;

@@ -11,8 +11,9 @@ if (typeof performance === 'undefined') {
 } else {
   globals.performance = performance;
 }
-const pluralize = require('pluralize');
 const lodash = require('lodash');
+const path = require('path');
+const pluralize = require('pluralize');
 
 // consts used by classes.
 const UNICODE_LINK = String.fromCodePoint(0x1F517);
@@ -65,6 +66,7 @@ class AstNode {
 
     this.args = args;
     this.first_toplevel_child = options.first_toplevel_child;
+    this.is_first_header_in_input_file = false;
     // This is the Nth macro of this type that appears in the document.
     this.macro_count = undefined;
     // This is the Nth macro of this type that is visible,
@@ -205,6 +207,7 @@ class AstNode {
       {
         text: json.text,
         first_toplevel_child: json.first_toplevel_child,
+        is_first_header_in_input_file: json.is_first_header_in_input_file,
       }
     );
     let nodes = [toplevel_ast];
@@ -222,6 +225,7 @@ class AstNode {
             {
               text: ast.text,
               first_toplevel_child: ast.first_toplevel_child,
+              is_first_header_in_input_file: ast.is_first_header_in_input_file,
             }
           );
           new_arg.push(new_ast);
@@ -2365,33 +2369,49 @@ function object_subset(source_object, keys) {
  *   !html_split_header -> subdir/index.html
  * subdir/subdir-h2
  */
-function output_path(input_path, id, context={}, outext=HTML) {
-  let ret = '';
-  if (context.in_html_split_header) {
-    ret += id;
-    if (id === context.options.toplevel_id) {
-      ret += '-split';
-    }
-  } else {
-    const [dirname, basename] = path_split(input_path, context.options.path_sep);
-    ret += dirname;
-    const renamed_basename = rename_basename(noext(basename));
-    if (dirname !== '' && renamed_basename !== INDEX_BASENAME_NOEXT) {
-      ret += context.options.path_sep + renamed_basename;
-    }
-    if (dirname !== '' && renamed_basename !== INDEX_BASENAME_NOEXT) {
-      ret += context.options.path_sep + renamed_basename;
-    }
-  }
-  if (context.options.html_x_extension) {
-    ret += '.' + outext;
-  }
-  return ret;
+function output_path(input_path, id, context={}) {
+  const [dirname, basename] = output_path_parts(input_path, id, context={});
+  return path_join(dirname, basename + '.' + HTML, context.options.path_sep);
 }
 
 /** Helper for when we have an actual AstNode. */
 function output_path_from_ast(ast, context) {
   return output_path(ast.source_location.path, ast.id, context);
+}
+
+function output_path_parts(input_path, id, context) {
+  let ret = '';
+  const [dirname, basename] = path_split(input_path, context.options.path_sep);
+  const renamed_basename = rename_basename(noext(basename));
+  if (context.in_html_split_header) {
+    // id='cirodown'             -> ['',       'index-split']
+    // id='getting-started'      -> ['',       'getting-started']
+    // id='not-readme'           -> ['',       'not-readme-split']
+    // id='h2-in-not-the-readme' -> ['',       'h2-in-not-the-readme']
+    // id='subdir'               -> ['subdir', 'index-split']
+    // id='subdir/subdir-h2'     -> ['subdir', 'subdir-h2']
+    // id='subdir/notindex'      -> ['subdir', 'notindex']
+    // id='subdir/notindex-h2'   -> ['subdir', 'notindex-h2']
+    const [id_dirname, id_basename] = path_split(input_path, URL_SEP);
+    const ast = context.id_provider.get(id, context);
+    let dirname_ret;
+    let basename_ret;
+    if (ast.is_first_header_in_input_file && renamed_basename === INDEX_BASENAME_NOEXT) {
+      basename_ret = INDEX_BASENAME_NOEXT;
+      if (id_dirname === '') {
+        // not a https://cirosantilli.com/cirodown#the-toplevel-index-file
+        dirname_ret = path_join(id_dirname, id_basename, context.options.path_sep);
+      }
+    } else {
+      basename_ret = id_basename;
+    }
+    if (ast.is_first_header_in_input_file) {
+      basename_ret += '-split';
+    }
+    return [dirname_ret, basename_ret];
+  } else {
+    return [dirname, renamed_basename];
+  }
 }
 
 /** Parse tokens into the AST tree.
@@ -2783,6 +2803,7 @@ function parse(tokens, options, context, extra_returns={}) {
         // Create the header tree.
         if (is_first_header) {
           ast.id = options.toplevel_id;
+          ast.is_first_header_in_input_file = true;
           is_first_header = false;
         }
         if (include_options.is_first_global_header) {
@@ -3461,9 +3482,21 @@ function parse_error(state, message, source_location) {
     message, new_source_location));
 }
 
+function path_join(dirname, basename, sep) {
+  ret = dirname;
+  if (ret !== '') {
+    ret += sep;
+  }
+  return ret + basename;
+}
+
 function path_split(str, sep) {
   const dir_sep_index = str.lastIndexOf(sep)
-  return [str.substring(0, dir_sep_index), str.substr(dir_sep_index + 1)];
+  if (dir_sep_index == -1) {
+    return ['', str];
+  } else {
+    return [str.substring(0, dir_sep_index), str.substr(dir_sep_index + 1)];
+  }
 }
 
 function protocol_is_known(src) {
@@ -3716,37 +3749,46 @@ exports.x_href = x_href;
 
 function x_href_parts(target_id_ast, context) {
   const target_input_path = target_id_ast.source_location.path;
-  const target_output_path = output_path_from_ast(target_id_ast, context);
-
-  let href_path;
-  if (context.toplevel_output_path === target_output_path) {
-    href_path = '';
-  } else {
-    href_path = target_output_path;
+  let [target_output_path_dirname, target_output_path_basename] = output_path_from_ast(target_id_ast, context);
+  if (context.options.html_x_extension) {
+    target_output_path_basename += '.' + HTML;
+  } else if (target_output_path_basename === INDEX_BASENAME_NOEXT) {
+    target_output_path_basename = '';
   }
+  // TODO differentiate between local path sep and URL sep depending on output target.
+  const target_output_path = path_join(
+    target_output_path_dirname,
+    target_output_path_basename,
+    context.options.path_sep
+  );
+  const href_path = path.relative(context.toplevel_output_path, target_output_path);
 
   let fragment;
-  if (
-    // The header was included inline into the current file.
-    context.include_path_set.has(target_input_path) ||
-    // The header is in the current file.
-    (target_input_path == context.options.input_path)
-  ) {
-    fragment = remove_toplevel_scope(target_id_ast, context);
+  if (context.in_html_split_header) {
+    fragment = '';
   } else {
-    const file_provider_ret = context.options.file_provider.get(target_input_path);
-    if (file_provider_ret === undefined) {
-      let message = `file not found on database: "${target_input_path}", needed for toplevel scope removal`;
-      render_error(context, message, target_id_ast.source_location);
-      return error_message_in_output(message, context);
+    if (
+      // The header was included inline into the current file.
+      context.include_path_set.has(target_input_path) ||
+      // The header is in the current file.
+      (target_input_path == context.options.input_path)
+    ) {
+      fragment = remove_toplevel_scope(target_id_ast, context);
     } else {
-      if (target_id_ast.first_toplevel_child) {
-        fragment = '';
+      const file_provider_ret = context.options.file_provider.get(target_input_path);
+      if (file_provider_ret === undefined) {
+        let message = `file not found on database: "${target_input_path}", needed for toplevel scope removal`;
+        render_error(context, message, target_id_ast.source_location);
+        return error_message_in_output(message, context);
       } else {
-        if (file_provider_ret.toplevel_id === target_id_ast.id) {
-          fragment = target_id_ast.id;
+        if (target_id_ast.first_toplevel_child) {
+          fragment = '';
         } else {
-          fragment = target_id_ast.id.substr(file_provider_ret.toplevel_scope_cut_length);
+          if (file_provider_ret.toplevel_id === target_id_ast.id) {
+            fragment = target_id_ast.id;
+          } else {
+            fragment = target_id_ast.id.substr(file_provider_ret.toplevel_scope_cut_length);
+          }
         }
       }
     }

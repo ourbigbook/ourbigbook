@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -eu
-npm run readme
 ./build
+npm run readme

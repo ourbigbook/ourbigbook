@@ -13,6 +13,7 @@ cirodown.embed.min.css
 cirodown.js
 cirodown.local.min.css
 cirodown.min.css
+gitignore
 tmp
 tmp.*
 *.tmp

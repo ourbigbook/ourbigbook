@@ -1715,7 +1715,7 @@ const MEDIA_PROVIDER_TYPES = new Set([
   'youtube',
 ]);
 const media_provider_type_wikimedia_re = new RegExp('^https?://upload.wikimedia.org/wikipedia/commons/');
-const media_provider_type_youtube_re = new RegExp('^https?://(youtube.com|youtu.be)/');
+const media_provider_type_youtube_re = new RegExp('^https?://(www\.)?(youtube.com|youtu.be)/');
 const macro_image_video_block_convert_function_wikimedia_source_url = 'https://commons.wikimedia.org/wiki/File:';
 const macro_image_video_block_convert_function_wikimedia_source_image_re = new RegExp('^\\d+px-');
 const macro_image_video_block_convert_function_wikimedia_source_video_re = new RegExp('^([^.]+\.[^.]+).*');
@@ -3874,7 +3874,7 @@ const DEFAULT_MACRO_LIST = [
               if (url_params.has('t')) {
                 url_start_time = url_params.get('t');
               }
-              if (url.hostname === 'youtube.com') {
+              if (url.hostname === 'youtube.com' || url.hostname === 'www.youtube.com') {
                 if (url_params.has('v')) {
                   video_id = url_params.get('v')
                 } else {

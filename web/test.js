@@ -98,12 +98,12 @@ async function createArticle(sequelize, author, opts) {
 function createArticleArg(opts, author) {
   const i = opts.i
   const ret = {}
-  if (opts.titleSource !== undefined) {
+  if (opts.hasOwnProperty('titleSource')) {
     ret.titleSource = opts.titleSource
   } else {
     ret.titleSource = `title ${i}`
   }
-  if (opts.bodySource !== undefined) {
+  if (opts.hasOwnProperty('bodySource')) {
     ret.bodySource = opts.bodySource
   }  else {
     ret.bodySource = `Body ${i}\.`
@@ -542,7 +542,7 @@ it('api: create an article and see it on global feed', async () => {
       ;({data, status} = await test.webApi.userUpdate('user0', { email: 'user0hacked@mail.com' }))
       assert.strictEqual(status, 422)
 
-    // Create article
+    // Create article in one go
 
       article = createArticleArg({ i: 0 })
       ;({data, status} = await createArticleApi(test, article))
@@ -580,12 +580,17 @@ it('api: create an article and see it on global feed', async () => {
       ))
       assert.strictEqual(status, 422)
 
-      // Missing title
+      // Missing title and no path existing article to take it from
       ;({data, status} = await createArticleApi(test, { bodySource: 'Body 1' }))
       assert.strictEqual(status, 422)
 
-      // Missing all data.
+      // Missing all data and no path to existing article to take it from
       ;({data, status} = await createArticleApi(test, {}))
+      assert.strictEqual(status, 422)
+
+      // Missing data, has path to existing article, but is not render.
+      // Doesn't make sense as no changes can come from this.
+      ;({data, status} = await createArticleApi(test, {}, { path: 'title-0' }))
       assert.strictEqual(status, 422)
 
       // Markup errors.
@@ -636,11 +641,37 @@ it('api: create an article and see it on global feed', async () => {
       assert.strictEqual(data.titleRender, 'title 0')
       assert.match(data.render, /Body 0 hacked\./)
 
-      // Undo it for sanity.
-      article = createArticleArg({ i: 0, bodySource: 'Body 0.' })
+      // Undo it for test sanity.
+      article = createArticleArg({ i: 0 })
       ;({data, status} = await createOrUpdateArticleApi(test, article))
       assertStatus(status, data)
       assertRows(data.articles, [{ render: /Body 0\./ }])
+
+      // Edit article with render: false followed by render: true without parameters.
+      // Take bodySource parameter from the database state of the previous render: false.
+
+        article = createArticleArg({ i: 0, bodySource: 'Body 0 hacked.' })
+        ;({data, status} = await createOrUpdateArticleApi(test,
+          article,
+          { path: 'title-0', render: false }
+        ))
+        assertStatus(status, data)
+        // Maybe we could return the pre-existing aticle here.
+        assertRows(data.articles, [])
+
+        article = createArticleArg({ i: 0, bodySource: undefined })
+        ;({data, status} = await createOrUpdateArticleApi(test,
+          article,
+          { path: 'title-0', render: true }
+        ))
+        assertStatus(status, data)
+        assertRows(data.articles, [{ render: /Body 0 hacked\./ }])
+
+        // Undo it for test sanity.
+        article = createArticleArg({ i: 0 })
+        ;({data, status} = await createOrUpdateArticleApi(test, article))
+        assertStatus(status, data)
+        assertRows(data.articles, [{ render: /Body 0\./ }])
 
     // Edit index article.
 

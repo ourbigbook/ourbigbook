@@ -8,7 +8,7 @@ import { MyGetServerSideProps } from 'front/types'
 
 export const getServerSidePropsIndexHoc = ({
   followed=false,
-  itemType,
+  itemType=undefined,
 }={}): MyGetServerSideProps => {
   return async ({ query, req, res }) => {
     const loggedInUser = await getLoggedInUser(req, res)
@@ -22,7 +22,7 @@ export const getServerSidePropsIndexHoc = ({
         itemType = 'topic'
       }
     }
-    const getOrderAndPageOpts = {}
+    const getOrderAndPageOpts: { defaultOrder?: string } = {}
     if (itemType === 'topics') {
       getOrderAndPageOpts.defaultOrder = 'score'
     }

@@ -89,7 +89,7 @@ class AstNode {
     if (!('errors' in context)) {
       context.errors = [];
     }
-    return macros[this.macro_name].convert(this, context);
+    return context.macros[this.macro_name].convert(this, context);
   }
 
   toJSON() {
@@ -604,6 +604,10 @@ function convert(
   if (!('show_parse'    in options)) { options.show_parse    = false; }
   if (!('show_tokenize' in options)) { options.show_tokenize = false; }
   if (!('show_tokens'   in options)) { options.show_tokens   = false; }
+  const macros = {};
+  for (const macro of DEFAULT_MACRO_LIST) {
+    macros[macro.name] = macro;
+  }
   extra_returns.errors = [];
   let sub_extra_returns;
   sub_extra_returns = {};
@@ -618,7 +622,7 @@ function convert(
   extra_returns.tokens = tokens;
   extra_returns.errors.push(...sub_extra_returns.errors);
   sub_extra_returns = {};
-  let ast = parse(tokens, options, sub_extra_returns);
+  let ast = parse(tokens, macros, options, sub_extra_returns);
   if (options.show_ast) {
     console.error('ast:');
     console.error(JSON.stringify(ast, null, 2));
@@ -626,12 +630,15 @@ function convert(
   }
   extra_returns.ast = ast;
   extra_returns.errors.push(...sub_extra_returns.errors);
+  let errors = [];
   let context = {
+    errors: errors,
     extra_returns: extra_returns,
+    macros: macros,
     options: options
   };
   output = ast.convert(context);
-  extra_returns.errors.push(...extra_returns.errors);
+  extra_returns.errors.push(...errors);
   if (output[output.length - 1] !== '\n') {
     output += '\n';
   }
@@ -731,7 +738,7 @@ function html_convert_attrs_id(
   } else if (ast.arg_given(Macro.title_argument_name)) {
     // TODO correct unicode aware algorithm.
     let id_text = '';
-    let id_prefix = macros[ast.macro_name].id_prefix;
+    let id_prefix = context.macros[ast.macro_name].id_prefix;
     if (id_prefix !== '') {
       id_text += id_prefix + ID_SEPARATOR
     }
@@ -829,11 +836,12 @@ function object_subset(source_object, keys) {
 }
 
 // Parse tokens into the AST tree.
-function parse(tokens, options, extra_returns={}) {
+function parse(tokens, macros, options, extra_returns={}) {
   extra_returns.errors = [];
   let state = {
     extra_returns: extra_returns,
     i: 0,
+    macros: macros,
     options: options,
     token: tokens[0],
     tokens: tokens,
@@ -862,7 +870,7 @@ function parse(tokens, options, extra_returns={}) {
           let new_child_node;
           if (child_node.node_type === AstType.MACRO) {
             let child_name = child_node.macro_name;
-            let child_macro = macros[child_name];
+            let child_macro = state.macros[child_name];
             if (child_macro.auto_parent !== undefined) {
               let auto_parent_name = child_macro.auto_parent;
               if (
@@ -875,7 +883,7 @@ function parse(tokens, options, extra_returns={}) {
                 while (
                   i < arg.length &&
                   arg[i].node_type === AstType.MACRO &&
-                  macros[arg[i].macro_name].auto_parent === auto_parent_name
+                  state.macros[arg[i].macro_name].auto_parent === auto_parent_name
                 ) {
                   i++;
                 }
@@ -942,8 +950,8 @@ function parse_add_paragraph(
   parse_log_debug(state, 'paragraph_start: ' + paragraph_start);
   parse_log_debug(state, 'paragraph_end: ' + paragraph_end);
   parse_log_debug(state);
-  let slice = arg.slice(paragraph_start, paragraph_end);
-  let macro = macros[arg[paragraph_start].macro_name];
+  const slice = arg.slice(paragraph_start, paragraph_end);
+  const macro = state.macros[arg[paragraph_start].macro_name];
   if (macro.properties.phrasing) {
     // If the first element after the double newline is phrasing content,
     // create a paragraph and put all elements inside the paragraph.
@@ -989,16 +997,16 @@ function parse_macro(state) {
   parse_log_debug(state, 'state = ' + JSON.stringify(state.token));
   parse_log_debug(state);
   if (state.token.type === TokenType.MACRO_NAME) {
-    let macro_name = state.token.value;
-    let macro_line = state.token.line;
-    let macro_column = state.token.column;
+    const macro_name = state.token.value;
+    const macro_line = state.token.line;
+    const macro_column = state.token.column;
     let positional_arg_count = 0;
-    let args = {};
+    const args = {};
     let macro;
     let macro_type;
     const unknown_macro_message = `unknown macro name: "${macro_name}"`;
-    if (macro_name in macros) {
-      macro = macros[macro_name];
+    if (macro_name in state.macros) {
+      macro = state.macros[macro_name];
       macro_type = AstType.MACRO;
     } else {
       macro_type = AstType.ERROR;
@@ -1155,7 +1163,7 @@ const TokenType = make_enum([
   'NAMED_ARGUMENT_END',
   'NAMED_ARGUMENT_NAME',
 ]);
-const default_macro_list = [
+const DEFAULT_MACRO_LIST = [
   new Macro(
     'a',
     [
@@ -1520,7 +1528,7 @@ pre {
 ];
 // Macros indexed by their name.
 let macros = {};
-for (const macro of default_macro_list) {
+for (const macro of DEFAULT_MACRO_LIST) {
   macros[macro.name] = macro;
 }
 

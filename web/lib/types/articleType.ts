@@ -13,7 +13,7 @@ export type ArticleType = {
   title: string;
   body: string;
   slug: string;
-  articleId: string;
+  topicId: string;
   updatedAt: number;
   favoritesCount: number;
   favorited: boolean;

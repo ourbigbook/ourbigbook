@@ -1,4 +1,4 @@
-import { useRouter } from 'next/router'
+import Router, { useRouter } from 'next/router'
 import Head from "next/head";
 import React from "react";
 import useSWR, { trigger } from "swr";
@@ -8,7 +8,6 @@ import useSWR, { trigger } from "swr";
 //import { cirodown_runtime } from 'cirodown/cirodown_runtime.js';
 import { cirodown_runtime } from 'cirodown/dist/cirodown_runtime.js';
 
-import ArticleActions from "components/article/ArticleActions";
 import Comment from "components/comment/Comment";
 import CommentInput from "components/comment/CommentInput";
 import CustomLink from "components/common/CustomLink";
@@ -75,8 +74,8 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
     if (!loggedInUser) return;
     const result = window.confirm("Do you really want to delete this article?");
     if (!result) return;
-    await ArticleAPI.delete(slug, loggedInUser?.token);
-    trigger(ArticleAPI.url(slug));
+    await ArticleAPI.delete(article.slug, loggedInUser?.token);
+    trigger(ArticleAPI.url(article.slug));
     Router.push(`/`);
   };
 

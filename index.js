@@ -1,4 +1,4 @@
-const katex = require('katex')
+const katex = require('katex');
 
 class AstNode {
   /**
@@ -751,6 +751,7 @@ function convert(
     options = {};
   }
   if (!('body_only'     in options)) { options.body_only     = false; }
+  if (!('css'           in options)) { options.css           = '';    }
   if (!('show_ast'      in options)) { options.show_ast      = false; }
   if (!('show_parse'    in options)) { options.show_parse    = false; }
   if (!('show_tokenize' in options)) { options.show_tokenize = false; }
@@ -1400,6 +1401,7 @@ function parse_error(state, message, line, column) {
     message, line, column));
 }
 
+const ENCODING = 'utf8';
 const END_NAMED_ARGUMENT_CHAR = '}';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';
 const ESCAPE_CHAR = '\\';
@@ -1871,7 +1873,6 @@ const DEFAULT_MACRO_LIST = [
       }
       let ret = '';
       if (!context.options.body_only) {
-        let paragraph_margin_bottom = '10px';
         ret += `<!doctype html>
 <html lang=en>
 <head>
@@ -1883,98 +1884,9 @@ const DEFAULT_MACRO_LIST = [
   crossorigin="anonymous"
 >
 <link href="https://netdna.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet"/>
-<style>
-/* Hide by default, show if last child of hovered element. */
-.hide-hover:last-child { display: none; }
-:hover > .hide-hover:last-child { display: inline; }
-:target {
-  background-color: #FFFFCC;
-}
-body {
-  padding-left: 15px;
-  padding-right: 15px;
-}
-.caption-prefix {
-  font-weight: bold;
-}
-/* Headers are links to self, but we want them always black. */
-h1 a:link, h2 a:link, h3 a:link, h4 a:link, h5 a:link, h6 a:link,
-h1 a:visited, h2 a:visited, h3 a:visited, h4 a:visited, h5 a:visited, h6 a:visited {
-  color: black;
-}
-h1, h2, h3, h4, h5, h6 {
-  font-size: 24px;
-  margin-top: 20px;
-}
-h1 a + span, h2 a + span, h3 a + span, h4 a + span, h5 a + span, h6 a  + span {
-  display: none;
-}
-h1:hover a + span, h2:hover a + span, h3:hover a + span, h4:hover a + span, h5:hover a + span, h6:hover a  + span {
-  display: inline;
-}
-h1:hover span a:link, h2:hover span a:link, h3:hover span a:link, h4:hover span a:link, h5:hover span a:link, h6:hover span a:link,
-h1:hover span a:visited, h2:hover span a:visited, h3:hover span a:visited, h4:hover span a:visited, h5:hover span a:visited, h6:hover span a:visited {
-  color: blue;
-}
-figure {
-  margin-bottom: ${paragraph_margin_bottom};
-}
-/* Math. */
-.katex { font-size: 1.5em; }
-.math-caption-container > :last-child {
-  display: none;
-}
-.math-caption-container:hover > :last-child {
-  display: inline;
-}
-.math-container {
-  align-items: center;
-  margin-bottom: ${paragraph_margin_bottom};
-}
-.math-equation {
-  align-items: center;
-  display: flex;
-}
-.math-equation > :nth-child(1) {
-  flex-grow: 9;
-}
-.math-equation > :nth-child(2) {
-  flex-grow: 1;
-  text-align: right;
-}
-/* Tables */
-/* Add borders! */
-table {
-  border-collapse: collapse;
-}
-table, th, td {
-  border: 1px solid black;
-}
-th, td {
-  padding-left: 2px;
-  padding-right: 2px;
-}
-.table-caption-container > :last-child {
-  display: none;
-}
-.table-caption-container:hover > :last-child {
-  display: inline;
-}
-.table-container {
-  margin-bottom: ${paragraph_margin_bottom};
-}
-/* Table of contents. */
-.toc-container ul {
-  border-left: 1px solid black;
-  list-style-type: none;
-}
-.toc-container > ul {
-  border-left: 0px solid black;
-  padding-left: 0px;
-}
-</style>
+<style>${context.options.css}</style>
 <body>
-`
+`;
       }
       ret += convert_arg(ast.args.content, context);
       if (!context.options.body_only) {

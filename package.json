@@ -8,7 +8,7 @@
     "commander": "3.0.2",
     "git-url-parse": "11.1.2",
     "is-installed-globally": "0.3.1",
-    "katex": "0.11.1",
+    "katex": "cirosantilli/KaTeX#branch-b4477ffc58391153f8e54231cab4746b9edc349d",
     "liquidjs": "9.11.7",
     "normalize.css": "8.0.1",
     "sass": "1.23.7"

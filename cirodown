@@ -1123,6 +1123,7 @@ if (commander.helpMacros) {
         let actual_input_dir;
         let publish_branch;
         let publish_out_publish_dir;
+        let publish_out_publish_dist_dir;
         let remote_url;
         let src_branch;
 
@@ -1168,8 +1169,9 @@ if (commander.helpMacros) {
           actual_input_dir = path.join(publish_dir, subdir_relpath);
           non_cirodown_options.cirodown_json_dir = actual_input_dir;
           publish_out_publish_dir = path.join(publish_tmpdir, 'publish');
-          non_cirodown_options.out_css_path = path.join(publish_out_publish_dir, cirodown_nodejs.DIST_CSS_BASENAME);
-          non_cirodown_options.out_js_path = path.join(publish_out_publish_dir, cirodown_nodejs.DIST_JS_BASENAME);
+          publish_out_publish_dist_dir = path.join(publish_out_publish_dir, cirodown_nodejs.DIST_BASENAME)
+          non_cirodown_options.out_css_path = path.join(publish_out_publish_dist_dir, cirodown_nodejs.DIST_CSS_BASENAME);
+          non_cirodown_options.out_js_path = path.join(publish_out_publish_dist_dir, cirodown_nodejs.DIST_JS_BASENAME);
           non_cirodown_options.external_css_and_js = true;
           // Remove all files from the gh-pages repository in case some were removed from the original source.
           if (
@@ -1231,7 +1233,7 @@ if (commander.helpMacros) {
 
           // Commit and push.
           if ('prepublish' in cirodown_json) {
-            if (!commander.dryRun && !commander.unsafeAce) {
+            if (!commander.dryRun && !commander.dryRunPush && !commander.unsafeAce) {
               cli_error('prepublish in cirodown.json requires running with --unsafe-ace');
             }
             const prepublish_path = cirodown_json.prepublish
@@ -1251,7 +1253,7 @@ if (commander.helpMacros) {
           while ((dirent = dir.readSync()) !== null) {
             require('fs-extra').copySync(
               path.join(cirodown_nodejs.DIST_PATH, dirent.name),
-              path.join(publish_out_publish_dir, dirent.name)
+              path.join(publish_out_publish_dist_dir, dirent.name)
             )
           }
           dir.closeSync()

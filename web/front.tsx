@@ -27,43 +27,60 @@ export function DiscussionAbout(
   { article, issue }:
   { article?: ArticleType; issue?: IssueType }
 ) {
-  return <h1><IssueIcon /> Discussion{issue ? ` #${issue.number}` : ''}: <CustomLink href={routes.article(article.slug)}
-    >"<span className="comment-body ourbigbook-title" dangerouslySetInnerHTML={{ __html: article.titleRender }}
-    />" by { article.author.displayName }</CustomLink></h1>
+  const inner = <>
+      <IssueIcon />{' '}
+      Discussion{issue ? ` #${issue.number}` : ''}:{' '}
+      <CustomLink href={routes.article(article.slug)}>
+        "<span
+          className="comment-body ourbigbook-title"
+          dangerouslySetInnerHTML={{ __html: article.titleRender }}
+        />" by { article.author.displayName }
+      </CustomLink>
+    </>
+  if (issue) {
+    return <div className="h1">{ inner }</div>
+  } else {
+    return <h1>{ inner }</h1>
+  }
 }
 
 // Icons.
 
-export function ArticleIcon() {
-  return <i className="ion-ios-book" title="Article" />
+export function Icon(cls, title, opts) {
+  const showTitle = opts.title === undefined ? true : opts.title
+  return <i className={cls} title={showTitle ? title : undefined } />
 }
 
-export function IssueIcon() {
-  return <i className="ion-ios-chatbubble" title="Discussion" />
+export function ArticleIcon(opts) {
+  return Icon("ion-ios-book", "Article", opts)
 }
 
-export function EditArticleIcon() {
-  return <i className="ion-edit" title="Edit" />
+export function IssueIcon(opts) {
+  return Icon("ion-ios-chatbubble", "Discussion", opts)
 }
 
-export function NewArticleIcon() {
-  return <i className="ion-compose" title="New" />
+export function EditArticleIcon(opts) {
+  return Icon("ion-edit", "Edit", opts)
 }
 
-export function SeeIcon() {
-  return <i className="ion-eye" />
+export function NewArticleIcon(opts) {
+  return Icon("ion-compose", "New", opts)
 }
 
-export function TimeIcon() {
-  return <i className="ion-android-time" />
+export function SeeIcon(opts) {
+  return Icon("ion-eye", "View", opts)
 }
 
-export function TopicIcon() {
-  return <i className="ion-ios-people" title="Topic" />
+export function TimeIcon(opts) {
+  return Icon("ion-android-time", undefined, opts)
 }
 
-export function UserIcon() {
-  return <i className="ion-ios-person" title="User" />
+export function TopicIcon(opts) {
+  return Icon("ion-ios-people", "Topic", opts)
+}
+
+export function UserIcon(opts) {
+  return Icon("ion-ios-person", "User", opts)
 }
 
 export function SignupOrLogin(

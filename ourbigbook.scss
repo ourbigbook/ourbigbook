@@ -159,26 +159,14 @@ figure {
 }
 
 div.h {
+  &:not(.top) {
+    // Top one has metadata which should be close below without margin.
+    margin-bottom: $p-margin-vert;
+  }
   div.notnav {
-    display: inline-block;
-    font-size: $header-font-size;
-    font-weight: bold;
-    width: 100%;
-    box-sizing: border-box;
-    h1, h2, h3, h4, h5, h6 {
-      > a:first-child {
-        color: $color;
-        &:visited {
-          color: $color;
-        }
-      }
-      display: inline;
-      margin: 0;
-      // To make `word-wrap: break-word;` work, otherwise it does not take effect.
-      overflow-wrap: break-word;
-    }
+    @include h-common;
     h1 {
-      font-size: $header-font-size * 1.5;
+      @include h1-only;
     }
     h2, h3, h4, h5, h6 {
       font-size: $header-font-size;
@@ -200,23 +188,6 @@ div.h {
   // Also show header metadata when the header is selected as the current #fragment.
   &:target .hover-meta {
     @include visible;
-  }
-  .web {
-    display: inline;
-    &.top {
-      font-size: 18px;
-    }
-    &:not(.top) {
-      a,btn, button {
-        vertical-align: text-bottom;
-      }
-    }
-    .issues {
-      color: $a-color;
-      &:visited {
-        color: $a-color;
-      }
-    }
   }
 }
 nav.h-nav {
@@ -315,6 +286,7 @@ ol, ul {
 
 // Table of contents.
 .toc-container {
+  margin-bottom: $p-margin-vert;
   overflow-x: auto;
 
   // On mobile, this would make:
@@ -398,6 +370,8 @@ ol, ul {
   }
   > ul {
     padding-left: 0px;
+    margin-top: 0;
+    margin-bottom: 0;
     > li > ul {
       padding-left: 0px;
       * {

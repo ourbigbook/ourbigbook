@@ -9,7 +9,7 @@ import routes from 'front/routes'
 const LikeArticleButton = ({
   article,
   isIssue,
-  issueArticle,
+  issueArticle=undefined,
   loggedInUser,
   showText,
 }) => {

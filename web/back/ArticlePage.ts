@@ -18,8 +18,8 @@ export const getServerSidePropsArticleHoc = ({
     if (slug instanceof Array) {
       const slugString = slug.join('/')
       const sequelize = req.sequelize
-
-      const [article, articlesInSamePage, articleTopIssues, loggedInUser] = await Promise.all([
+      const loggedInUser = await getLoggedInUser(req, res, loggedInUserCache)
+      const [article, articlesInSamePage, articleTopIssues] = await Promise.all([
         sequelize.models.Article.getArticle({
           includeIssues,
           limit: 5,
@@ -33,6 +33,7 @@ export const getServerSidePropsArticleHoc = ({
         sequelize.models.Article.getArticlesInSamePage({
           sequelize,
           slug: slugString,
+          loggedInUser,
         }),
         sequelize.models.Article.getArticle({
           includeIssues,
@@ -41,16 +42,14 @@ export const getServerSidePropsArticleHoc = ({
           sequelize,
           slug: slugString,
         }),
-        getLoggedInUser(req, res, loggedInUserCache),
       ])
       if (!article) {
         return {
           notFound: true
         }
       }
-      const [articleJson, articlesInSamePageJson, issuesCount, topicArticleCount] = await Promise.all([
+      const [articleJson, issuesCount, topicArticleCount] = await Promise.all([
         article.toJson(loggedInUser),
-        Promise.all(articlesInSamePage.map(article => article.toJson(loggedInUser))),
         includeIssues ? sequelize.models.Issue.count({ where: { articleId: article.id } }) : null,
         sequelize.models.Article.count({
           where: { topicId: article.topicId },
@@ -58,19 +57,11 @@ export const getServerSidePropsArticleHoc = ({
       ])
       const props: ArticlePageProps = {
         article: articleJson,
-        articlesInSamePage: articlesInSamePageJson,
+        articlesInSamePage,
         topicArticleCount,
       }
       if (loggedInUser) {
-        const slug = `${loggedInUser.username}/${article.topicId}`
-        let loggedInUserVersionArticle
-        ;[props.loggedInUser, loggedInUserVersionArticle] = await Promise.all([
-          loggedInUser.toJson(loggedInUser),
-          sequelize.models.Article.findOne({ where: { slug } })
-        ])
-        if (loggedInUserVersionArticle) {
-          props.sameArticleByLoggedInUser = slug
-        }
+        props.loggedInUser = await loggedInUser.toJson(loggedInUser)
       }
       if (includeIssues) {
         props.latestIssues = await Promise.all(article.issues.map(issue => issue.toJson(loggedInUser)))

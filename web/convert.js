@@ -131,11 +131,14 @@ async function convertArticle({
     const file = await sequelize.models.File.findOne({ where: { path: filePath }, transaction })
     const articleArgs = []
     for (const outpath in extra_returns.rendered_outputs) {
+      const rendered_output = extra_returns.rendered_outputs[outpath]
       articleArgs.push({
         fileId: file.id,
-        render: extra_returns.rendered_outputs[outpath].full,
+        render: rendered_output.full,
         slug: outpath.slice(ourbigbook.AT_MENTION_CHAR.length, -ourbigbook.HTML_EXT.length - 1),
-        titleRender: extra_returns.rendered_outputs[outpath].title,
+        titleRender: rendered_output.title,
+        titleSource: rendered_output.titleSource,
+        titleSourceLine: rendered_output.titleSourceLocation.line,
         topicId: outpath.slice(
           ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1,
           -ourbigbook.HTML_EXT.length - 1
@@ -145,7 +148,7 @@ async function convertArticle({
     await sequelize.models.Article.bulkCreate(
       articleArgs,
       {
-        updateOnDuplicate: ['titleRender', 'render', 'topicId', 'updatedAt'],
+        updateOnDuplicate: ['titleRender', 'titleSource', 'titleSourceLine', 'render', 'topicId', 'updatedAt'],
         transaction
       }
     )

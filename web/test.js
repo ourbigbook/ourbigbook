@@ -18,7 +18,12 @@ function assertRows(rows, rowsExpect) {
     let row = rows[i]
     let rowExpect = rowsExpect[i]
     for (let key in rowExpect) {
-      const val = row[key]
+      let val
+      if (typeof row.get === 'function') {
+        val = row.get(key)
+      } else {
+        val = row[key]
+      }
       if (val === undefined) {
         assert(false, `key "${key}" not found in available keys: ${Object.keys(row).join(', ')}`)
       }
@@ -27,12 +32,22 @@ function assertRows(rows, rowsExpect) {
         if (!val.match(expect)) { console.error({ i, key }); }
         assert.match(val, expect)
       } else {
-        if (val !== expect) { console.error({ i, key }); }
-        assert.strictEqual(val, expect)
+        if (typeof expect === 'function') {
+          if (!expect(val)) {
+            console.error({ i, key });
+            assert(false)
+          }
+        } else {
+          if (val !== expect) { console.error({ i, key }); }
+          assert.strictEqual(val, expect)
+        }
       }
     }
   }
 }
+
+// assertRows helpers.
+const ne = (expect) => (v) => v !== expect
 
 // 200 status assertion helper that also prints the data to help
 // quickly see what the error is about.
@@ -171,7 +186,7 @@ afterEach(async function () {
   return this.currentTest.sequelize.close()
 })
 
-it('feed shows articles by followers', async function() {
+it('User.findAndCountArticlesByFollowed', async function() {
   const sequelize = this.test.sequelize
   const user0 = await createUser(sequelize, 0)
   const user1 = await createUser(sequelize, 1)
@@ -201,6 +216,88 @@ it('feed shows articles by followers', async function() {
   assert.strictEqual(rows.length, 3)
   // 6 manually from all follows + 2 for the automatically created indexes.
   assert.strictEqual(count, 8)
+})
+
+it('Article.getArticlesInSamePage', async function() {
+  const sequelize = this.test.sequelize
+  const user0 = await createUser(sequelize, 0)
+  const user1 = await createUser(sequelize, 1)
+
+  // Create one article by each user.
+  const articles0_0 = await createArticles(sequelize, user0, { i: 0, bodySource: `== Title 0 0
+
+=== Title 0 0 0
+
+== Title 0 1
+`
+})
+  const articles1_0 = await createArticle(sequelize, user1, { i: 0, bodySource: `== Title 0 0
+
+== Title 0 1
+
+== Title 0 1 0
+`
+})
+
+  // User1 likes user0/title-0
+  await user1.addArticleLikeSideEffects(articles0_0[0])
+
+  // Add an issue to Title 0 0.
+  await convert.convertIssue({
+    article: articles0_0[1],
+    bodySource: '',
+    number: 1,
+    sequelize,
+    titleSource: '',
+    user: user0
+  })
+
+  // Check the data each user gets for each article.
+  let rows
+  rows = await sequelize.models.Article.getArticlesInSamePage({
+    sequelize,
+    slug: 'user0/title-0',
+    loggedInUser: user0,
+  })
+  assertRows(rows, [
+    { slug: 'user0/title-0',     topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
+    { slug: 'user0/title-0-0',   topicCount: 2, issueCount: 1, hasSameTopic: true, liked: false },
+    { slug: 'user0/title-0-0-0', topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
+    { slug: 'user0/title-0-1',   topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
+  ])
+  rows = await sequelize.models.Article.getArticlesInSamePage({
+    sequelize,
+    slug: 'user0/title-0',
+    loggedInUser: user1,
+  })
+  assertRows(rows, [
+    { slug: 'user0/title-0',     topicCount: 2, issueCount: 0, hasSameTopic: true,  liked: true  },
+    { slug: 'user0/title-0-0',   topicCount: 2, issueCount: 1, hasSameTopic: true,  liked: false },
+    { slug: 'user0/title-0-0-0', topicCount: 1, issueCount: 0, hasSameTopic: false, liked: false },
+    { slug: 'user0/title-0-1',   topicCount: 2, issueCount: 0, hasSameTopic: true,  liked: false },
+  ])
+  rows = await sequelize.models.Article.getArticlesInSamePage({
+    sequelize,
+    slug: 'user1/title-0',
+    loggedInUser: user0,
+  })
+  assertRows(rows, [
+    { slug: 'user1/title-0',     topicCount: 2, issueCount: 0, hasSameTopic: true,  liked: false },
+    { slug: 'user1/title-0-0',   topicCount: 2, issueCount: 0, hasSameTopic: true,  liked: false },
+    { slug: 'user1/title-0-1',   topicCount: 2, issueCount: 0, hasSameTopic: true,  liked: false },
+    { slug: 'user1/title-0-1-0', topicCount: 1, issueCount: 0, hasSameTopic: false, liked: false },
+  ])
+  rows = await sequelize.models.Article.getArticlesInSamePage({
+    sequelize,
+    slug: 'user1/title-0',
+    loggedInUser: user1,
+  })
+  assertRows(rows, [
+    { slug: 'user1/title-0',     topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
+    { slug: 'user1/title-0-0',   topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
+    { slug: 'user1/title-0-1',   topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
+    { slug: 'user1/title-0-1-0', topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
+  ])
 })
 
 it('Article.updateTopicsNewArticles', async function() {

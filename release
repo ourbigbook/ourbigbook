@@ -9,7 +9,7 @@ fi
 # Although this is also run by `npm run publish`, it is also
 # required for some tests to pass so we have to run it here too.
 npm run build-assets
-#npm run test-release
+npm run test-release
 # This also does npm run build-assets
 npm run publish
 sed -i "s/  \"version\":.*/  \"version\": \"${version}\",/" package.json

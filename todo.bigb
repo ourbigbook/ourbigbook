@@ -3,6 +3,28 @@
 
 == Issues
 
+=== Follow topic
+{tag=Web}
+{tag=Topic}
+
+This is one of those things that require a smart algorithm otherwise it will be quickly useless.
+
+=== At mention and topics on web
+{tag=Web}
+
+Currently:
+* `<@user-name>` produces a working link, but with bad title "index"
+* `<#some-topic>` fails
+
+What we want to work is either of:
+* `@user-name`
+* `#some-topic`
+* `<#some topic>`
+
+Perfect topic rendering can be a bit trick because it might require fetching actual topic from DB to see its preferred title.
+
+At mentions ideally bring the side-effect of notifications, but then we have to think about spam a bit too.
+
 === View article and issue follower count on lists
 {tag=Web}
 {tag=Issue}

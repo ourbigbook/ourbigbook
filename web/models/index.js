@@ -505,6 +505,10 @@ async function normalize({
           }
           await Promise.all(promises)
         }
+      } else if (
+        what === 'topic-count'
+      ) {
+        throw new Error(`unimplemented: ${what}`)
       } else {
         throw new Error(`unknown what: ${what}`)
       }

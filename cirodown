@@ -72,6 +72,8 @@ class SqliteIdProvider extends cirodown.IdProvider {
       `SELECT path,ast_json FROM ${convert_input_options.ids_table_name} WHERE id = ?`);
     this.get_includes_stmt = convert_input_options.db.prepare(
       `SELECT from_id FROM ${convert_input_options.includes_table_name} WHERE to_id = ? AND type = ?`);
+    this.get_includes_stmt_from = convert_input_options.db.prepare(
+      `SELECT from_id FROM ${convert_input_options.includes_table_name} WHERE from_id = ? AND type = ?`);
   }
 
   clear(input_path) {
@@ -99,9 +101,10 @@ class SqliteIdProvider extends cirodown.IdProvider {
     return this.get_includes_stmt.all(to_id, INCLUDES_TABLE_NAMES_TYPES['INCLUDE']);
   }
 
-  get_from_header_ids_of_xrefs_to(type, to_id) {
+  get_from_header_ids_of_xrefs_to(type, to_id, reversed=false) {
     const ret = new Set();
-    for (const entry of this.get_includes_stmt.all(to_id, INCLUDES_TABLE_NAMES_TYPES[type])) {
+    let stmt = reversed ? this.get_includes_stmt_from : this.get_includes_stmt;
+    for (const entry of stmt.all(to_id, INCLUDES_TABLE_NAMES_TYPES[type])) {
       ret.add(entry.from_id);
     }
     return ret;
@@ -403,7 +406,7 @@ function convert_path(input_path, options, convert_input_options) {
           );
         }
       }
-      for (const to_id in context.xref_from_to_dict) {
+      for (const to_id in context.xref_from_to_dict[false]) {
         const types = context.xref_from_to_dict[to_id];
         for (const type in types) {
           const from_ids = types[type];
@@ -419,7 +422,7 @@ function convert_path(input_path, options, convert_input_options) {
                 // leading to ID not being present.
                 from_header !== undefined
               ) {
-                if (context.id_provider.get(from_id)===undefined){
+                if (context.id_provider.get(from_id) === undefined){
                   console.error(from_id);
                   throw new Error(from_id);
                 }

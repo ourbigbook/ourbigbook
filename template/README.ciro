@@ -114,9 +114,9 @@ Make it show the section number as well with `{full}`: \x[paragraphs-code-math]{
 
 The following header is set to be uppercase by default due to the `{c}` (upperCase): \x[ciro-is-awesome]
 
-This one isn't however: \x[dog]. But we can change:
-* it to uppercase with `{c}`: \x[dog]{c}
-* to plural with `{p}`: \x[dog]{p}
+This one isn't however: \x[banana]. But we can change:
+* it to uppercase with `{c}`: \x[banana]{c}
+* to plural with `{p}`: \x[banana]{p}
 
 Reference to the following image: \x[image-my-xi-chrysanthemum].
 
@@ -128,7 +128,7 @@ Reference to the following image: \x[image-my-xi-chrysanthemum].
 === Ciro is awesome
 {c}
 
-=== Dog
+=== Banana
 
 === Unlimited header levels?!
 
@@ -166,3 +166,34 @@ This means that you don't need to worry about counting equal signs anymore!
 And it is much easier to move large chunks of headers around! You only need to change the `{parent=}` of the toplevel one.
 
 This is why when creating large documents, you should use `parent` exclusively.
+
+== Tags
+{title2=child and parent arguments}
+
+You can use the `{child}` or `{parent}` arguments of a link to tags headers with the current header.
+
+These will show up on the metadata of a given header.
+
+Note that metadata is only visible when the header is the toplevel header of a page, otherwise it would clutter your headers too much, so it is not very easy to see in this single page example.
+
+But all headers get their own toplevel pages when using split headers: https://cirosantilli.com/cirodown/split-headers
+
+=== Animal
+
+==== Ant
+
+==== Cow
+
+Oh, and cows are also \x[mammal]{parent}{p}.
+
+==== Flying animal
+
+\x[bat]{child}{c}{p} can fly.
+
+But \x[cat]{p} can't.
+
+==== Mammal
+
+===== Cat
+
+===== Bat

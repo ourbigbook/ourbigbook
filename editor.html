@@ -90,6 +90,12 @@ Here  are three backticks:
 ```
 Nice!
 ````
+or you can also use the equivalent sane literals:
+\Code[[
+Here  are three backticks:
+```
+Nice!
+]]
 
 == Lists, tables, quotation
 
@@ -118,6 +124,11 @@ And now for tables, see this one \x[table-my-table].
 
 | 2 1
 | 2 2
+
+| 3 1
+
+  A paragraph!
+| 3 2
 ]
 
 And a quotation:
@@ -159,6 +170,9 @@ Reference to the following image: \x[image-my-xi-chrysanthemum].
 \H[12][My h12]
 
 \H[13][My h13]
+
+= Parent determined by ID!!!
+{parent=my-h9}
 </div>
 </div>
 <script src="cirodown.js"></script>
@@ -175,87 +189,121 @@ const output_elem = document.getElementById('output');
 require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs' }});
 window.MonacoEnvironment = { getWorkerUrl: () => proxy };
 const proxy = URL.createObjectURL(new Blob([`
-    self.MonacoEnvironment = {
-        baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min'
-    };
-    importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/base/worker/workerMain.min.js');
+  self.MonacoEnvironment = {
+    baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min'
+  };
+  importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/base/worker/workerMain.min.js');
 `], { type: 'text/javascript' }));
 require(["vs/editor/editor.main"], function () {
-    monaco.languages.register({
-        id: 'cirodown'
-    });
+  monaco.languages.register({
+    id: 'cirodown'
+  });
   // TODO replace with our own tokenizer output:
   // https://github.com/cirosantilli/cirodown/issues/106
   monaco.languages.setMonarchTokensProvider('cirodown', {
-     macroName: /[a-zA-Z0-9_]+/,
-     tokenizer: {
-       root: [
-         [/\\@macroName/, 'macro'],
-         [/\\./, 'escape'],
+    macroName: /[a-zA-Z0-9_]+/,
+    tokenizer: {
+      root: [
+        [/\\@macroName/, 'macro'],
+        [/\\./, 'escape'],
 
-         [/[[\]}]/, 'argumentDelim'],
+        [/\[\[\[/, 'literalStart', 'argumentDelimLiteral2'],
+        [/\[\[/, 'literalStart', 'argumentDelimLiteral'],
+        [/[[\]}]/, 'argumentDelim'],
 
-         [/{/, 'argumentDelim', 'argumentName'],
+        // TODO named literal: [/{{/,
+        [/{/, 'argumentDelim', 'argumentName'],
 
-         [/\$\$/, 'literalStart', 'insaneMath'],
-         [/\$.*?\$/, 'literalStart'],
+        [/\$\$\$/, 'literalStart', 'insaneMath3'],
+        [/\$\$/, 'literalStart', 'insaneMath2'],
+        [/\$/, 'literalStart', 'insaneMath'],
 
-         [/``/, 'literalStart', 'insaneCode'],
-         [/`.*?`/, 'literalStart'],
+        [/````/, 'literalStart', 'insaneCode4'],
+        [/```/, 'literalStart', 'insaneCode3'],
+        [/``/, 'literalStart', 'insaneCode2'],
+        [/`/, 'literalStart', 'insaneCode'],
 
-         [/^=+ .*/, 'insaneHeader'],
+        [/^=+ .*/, 'insaneHeader'],
 
-         [/^.*\*/, 'insaneList'],
-       ],
-
-       insaneMath: [
-         [/\$\$/, 'literalStart', '@pop'],
-         [/./, 'literalInside'],
-       ],
-
-       insaneCode: [
-           [/``/, 'literalStart', '@pop'],
-           [/./, 'literalInside'],
-       ],
-
-       argumentName: [
-           [/@macroName/, 'argumentName'],
-           [/=/, 'argumentDelim', '@pop'],
-       ],
+        // Insane list.
+        [/^(  )*\*( |$)/, 'argumentDelim'],
+        // Insane table.
+        [/^(  )*\|\|( |$)/, 'argumentDelim'],
+        [/^(  )*\|( |$)/, 'argumentDelim'],
+      ],
+      argumentDelimLiteral: [
+        [/\]\]/, 'literalStart', '@pop'],
+        [/./, 'literalInside'],
+      ],
+      argumentDelimLiteral2: [
+        [/\]\]\]/, 'literalStart', '@pop'],
+        [/./, 'literalInside'],
+      ],
+      argumentName: [
+        [/@macroName/, 'argumentName'],
+        [/=/, 'argumentDelim', '@pop'],
+      ],
+      insaneCode: [
+        [/`/, 'literalStart', '@pop'],
+        [/./, 'literalInside'],
+      ],
+      insaneCode2: [
+        [/``/, 'literalStart', '@pop'],
+        [/./, 'literalInside'],
+      ],
+      insaneCode3: [
+        [/```/, 'literalStart', '@pop'],
+        [/./, 'literalInside'],
+      ],
+      insaneCode4: [
+        [/````/, 'literalStart', '@pop'],
+        [/./, 'literalInside'],
+      ],
+      insaneMath: [
+        [/\$/, 'literalStart', '@pop'],
+        [/./, 'literalInside'],
+      ],
+      insaneMath2: [
+        [/\$\$/, 'literalStart', '@pop'],
+        [/./, 'literalInside'],
+      ],
+      insaneMath3: [
+        [/\$\$\$/, 'literalStart', '@pop'],
+        [/./, 'literalInside'],
+      ],
      }
-    });
-    monaco.editor.defineTheme('vs-dark-cirodown', {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [
-        { token: 'argumentDelim', foreground: 'FFFFFF', fontStyle: 'bold' },
-        { token: 'argumentName', foreground: 'FFAAFF', fontStyle: 'bold'},
-        { token: 'insaneHeader', foreground: 'FFFF00', fontStyle: 'bold' },
-        { token: 'insaneList', foreground: 'FFFFFF', fontStyle: 'bold' },
-        { token: 'literalStart', foreground: 'FFFF00', fontStyle: 'bold' },
-        { token: 'literalInside', foreground: 'FFFF88' },
-        { token: 'macro', foreground: 'FF8800', fontStyle: 'bold' },
-      ]
-    });
-    const editor = monaco.editor.create(
-      input_elem,
-      {
-        folding: false,
-        language: 'cirodown',
-        minimap: {enabled: false},
-        theme: 'vs-dark-cirodown',
-        wordWrap: 'on',
-        value: example_elem.textContent,
-      }
-    );
-    editor.onKeyUp(function (e) {
-        convert_input()
-    });
-    function convert_input() {
-        output_elem.innerHTML = my_cirodown.convert(
-            editor.getValue(), {'body_only': true});
+  });
+  monaco.editor.defineTheme('vs-dark-cirodown', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: 'argumentDelim', foreground: 'FFFFFF', fontStyle: 'bold' },
+      { token: 'argumentName', foreground: 'FFAAFF', fontStyle: 'bold'},
+      { token: 'insaneHeader', foreground: 'FFFF00', fontStyle: 'bold' },
+      { token: 'literalStart', foreground: 'FFFF00', fontStyle: 'bold' },
+      { token: 'literalInside', foreground: 'FFFF88' },
+      { token: 'macro', foreground: 'FF8800', fontStyle: 'bold' },
+    ]
+  });
+  const editor = monaco.editor.create(
+    input_elem,
+    {
+      folding: false,
+      language: 'cirodown',
+      minimap: {enabled: false},
+      theme: 'vs-dark-cirodown',
+      wordWrap: 'on',
+      value: example_elem.textContent,
     }
-    convert_input();
+  );
+  editor.onKeyUp(function (e) {
+      convert_input()
+  });
+  function convert_input() {
+      output_elem.innerHTML = my_cirodown.convert(
+          editor.getValue(), {'body_only': true});
+  }
+  convert_input();
 });
 </script>
 <!-- TODO this duplicates with code in ./cirodown but I'm lazy to solve it better right now -->

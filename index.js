@@ -1454,6 +1454,9 @@ function parse(tokens, macros, options, extra_returns={}) {
         header_graph_stack[cur_header_level] = cur_header_tree_node;
         header_graph_last_level = cur_header_level;
       } else if (macro_name === Macro.TOC_MACRO_NAME) {
+        if (ast.from_include) {
+          continue;
+        }
         extra_returns.context.has_toc = true;
       }
 

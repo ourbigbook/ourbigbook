@@ -34,7 +34,6 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
             : null,
         ])),
       ])
-      console.error({articleCountByLoggedInUser});
       if (!loggedInUser) {
         return {
           redirect: {

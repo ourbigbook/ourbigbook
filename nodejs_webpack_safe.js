@@ -11,8 +11,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const cirodown = require('cirodown');
-const models = require('cirodown/models')
+const cirodown = require('./index');
+const models = require('./models')
 
 // DB options that have to be given to both cirodown CLI and dynamic website.
 // These must be used for both for consistency, e.g. freezeTableName would lead

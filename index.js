@@ -320,8 +320,23 @@ class ErrorMessage {
 }
 
 class FileProvider {
-  /* Get entry by path. */
-  get(path) { throw new Error('unimplemented'); }
+  /* Get entry by path.
+   * @return Object
+   *        - path {String}
+   *        - toplevel_scope_cut_length {number},
+   *        - toplevel_id {String}
+   */
+  get(path) {
+    let get_ret = this.get_path_entry(path);
+    if (get_ret === undefined) {
+      return undefined;
+    } else {
+      return get_ret;
+    }
+  }
+
+  get_path_entry(path) { throw new Error('unimplemented'); }
+
   /* Get entry by ID. */
   get_id(id) { throw new Error('unimplemented'); }
 }
@@ -379,14 +394,43 @@ class IdProvider {
   }
 
   /** Like get, but do not resolve scope. */
-  get_noscope(id, context) { throw new Error('unimplemented'); }
+  get_noscope(id, context) {
+    let get_ret = this.get_noscope_entry(id);
+    if (get_ret === undefined) {
+      return undefined;
+    } else {
+      const ast = AstNode.fromJSON(get_ret.ast_json);
+      ast.input_path = get_ret.path;
+      ast.id = id;
+      if (context !== undefined) {
+        validate_ast(ast, context);
+      }
+      return ast;
+    }
+  }
+
+  get_noscope_entry(id) { throw new Error('unimplemented'); }
 
   /**
    * @param {String} id
    * @return {Array[AstNode]}: all header nodes that have the given ID
    *                           as a parent includer.
    */
-  get_includes(id, context) { throw new Error('unimplemented'); }
+  get_includes(to_id, context) {
+    let all_rets = this.get_includes_entries(to_id);
+    let ret = [];
+    for (const all_ret of all_rets) {
+      const from_ast = this.get(all_ret.from_id, context);
+      if (from_ast === undefined) {
+        throw 'parent ID of include not in database, not sure how this can happen so throwing';
+      } else {
+        ret.push(from_ast);
+      }
+    }
+    return ret;
+  }
+
+  get_includes_entries(to_id) { throw new Error('unimplemented'); }
 }
 exports.IdProvider = IdProvider;
 
@@ -1914,7 +1958,14 @@ function convert_header(cur_arg_list, context) {
  *        - {Number} start_line
  *        - {Array} errors
  * @return {AstArgument}*/
-function convert_include(input_string, convert_options, cur_header_level, input_path, href, options={}) {
+function convert_include(
+  input_string,
+  convert_options,
+  cur_header_level,
+  input_path,
+  href,
+  options={}
+) {
   convert_options = Object.assign({}, convert_options);
   convert_options.from_include = true;
   convert_options.h_level_offset = cur_header_level;

@@ -2034,6 +2034,34 @@ assert_convert_ast('cross reference to non-included header in another file',
     input_path_noext: 'notindex',
   },
 );
+assert_convert_ast('cross reference to included header in another file',
+  // I kid you not. Everything breaks everything.
+  `= Notindex
+
+\\x[another-file]
+
+\\x[another-file-h2]
+
+\\Include[another-file]
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//x:a[@href='another-file.html' and text()='another file']",
+      "//x:a[@href='another-file.html#another-file-h2' and text()='another file h2']",
+    ],
+    convert_before: [
+      'another-file.ciro',
+    ],
+    filesystem: {
+      'another-file.ciro': `= Another file
+
+== Another file h2
+`
+    },
+    input_path_noext: 'notindex',
+  },
+);
 assert_convert_ast('cross reference to non-included ids in another file',
   `= Notindex
 
@@ -4552,7 +4580,7 @@ assert_executable(
       'subdir/index.ciro': `= Subdir index
 
 == Index h2
-    `,
+`,
     },
     expect_filesystem_xpath: {
       'index.html': [

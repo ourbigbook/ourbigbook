@@ -8,37 +8,29 @@ const convert = require('../convert')
 const lib = require('./lib')
 const config = require('../front/config')
 
-// Get a single article if ?id= is given, otherwise a list of articles.
 router.get('/', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
-    if (req.query.id === undefined) {
-      const [limit, offset] = lib.getLimitAndOffset(req, res)
-      const [{count: articlesCount, rows: articles}, loggedInUser] = await Promise.all([
-        sequelize.models.Article.getArticles({
-          sequelize,
-          limit,
-          offset,
-          author: req.query.author,
-          likedBy: req.query.likedBy,
-          topicId: req.query.topicId,
-          order: lib.getOrder(req),
-        }),
-        req.payload ? sequelize.models.User.findByPk(req.payload.id) : null
-      ])
-      return res.json({
-        articles: await Promise.all(articles.map(function(article) {
-          return article.toJson(loggedInUser)
-        })),
-        articlesCount,
-      })
-    } else {
-      const [article, loggedInUser] = await Promise.all([
-        lib.getArticle(req, res),
-        req.payload ? sequelize.models.User.findByPk(req.payload.id) : null,
-      ])
-      return res.json({ article: await article.toJson(loggedInUser) })
-    }
+    const [limit, offset] = lib.getLimitAndOffset(req, res)
+    const [{count: articlesCount, rows: articles}, loggedInUser] = await Promise.all([
+      sequelize.models.Article.getArticles({
+        sequelize,
+        limit,
+        offset,
+        author: req.query.author,
+        likedBy: req.query.likedBy,
+        topicId: req.query.topicId,
+        order: lib.getOrder(req),
+        slug: req.query.id,
+      }),
+      req.payload ? sequelize.models.User.findByPk(req.payload.id) : null
+    ])
+    return res.json({
+      articles: await Promise.all(articles.map(function(article) {
+        return article.toJson(loggedInUser)
+      })),
+      articlesCount,
+    })
   } catch(error) {
     next(error);
   }

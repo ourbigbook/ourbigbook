@@ -2,6 +2,7 @@ const url = require('url');
 
 const { sendJsonHttp } = require('ourbigbook/web_api')
 
+const { cant } = require('../front/cant')
 const router = require('express').Router()
 const passport = require('passport')
 const auth = require('../auth')
@@ -67,10 +68,14 @@ router.get('/users', auth.optional, async function(req, res, next) {
     const [loggedInUser, {count: usersCount, rows: users}] = await Promise.all([
       req.payload ? sequelize.models.User.findByPk(req.payload.id) : null,
       sequelize.models.User.getUsers({
-        sequelize,
+        // TODO
+        //followedBy: req.query.followedBy,
+        //following: req.query.following,
         limit,
         offset,
         order: lib.getOrder(req),
+        sequelize,
+        username: req.query.username,
       }),
     ])
     return res.json({
@@ -79,15 +84,6 @@ router.get('/users', auth.optional, async function(req, res, next) {
       })),
       usersCount,
     })
-  } catch(error) {
-    next(error);
-  }
-})
-
-router.get('/users/:username', auth.optional, async function(req, res, next) {
-  try {
-    const loggedInUser = req.payloas ? await req.app.get('sequelize').models.User.findByPk(req.payload.id) : null
-    return res.json({ user: await req.user.toJson(loggedInUser) })
   } catch(error) {
     next(error);
   }
@@ -181,7 +177,12 @@ router.post('/users', async function(req, res, next) {
 router.put('/users/:username', auth.required, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
-    const user = await sequelize.models.User.findByPk(req.payload.id)
+    const user = req.user
+    const loggedInUser = await sequelize.models.User.findByPk(req.payload.id)
+    const msg = cant.editUser(loggedInUser, user)
+    if (msg) {
+      throw new lib.ValidationError( [msg], 403)
+    }
     if (req.body.user) {
       // only update fields that were actually passed...
       if (typeof req.body.user.username !== 'undefined') {

@@ -212,6 +212,25 @@ it('api: create an article and see it on global feed', async () => {
     // Create user and login.
     const user = await test.createUserApi(0)
     const user1 = await test.createUserApi(1)
+    const user2 = await test.createUserApi(2)
+    test.enableToken(user.token)
+
+    // User GET
+    ;({data, status} = await test.webApi.user('user0'))
+    assertStatus(status, data)
+    assertRows([data], [{ username: 'user0', displayName: 'User 0' }])
+
+    // User edit.
+    ;({data, status} = await test.webApi.userUpdate('user0', { displayName: 'User 0 hacked' }))
+    assertStatus(status, data)
+    ;({data, status} = await test.webApi.user('user0'))
+    assertStatus(status, data)
+    assertRows([data], [{ username: 'user0', displayName: 'User 0 hacked' }])
+
+    // Non-admin users cannot edit other users.
+    test.enableToken(user1.token)
+    ;({data, status} = await test.webApi.userUpdate('user0', { displayName: 'User 0 hacked 2' }))
+    assert.strictEqual(status, 403)
     test.enableToken(user.token)
 
     // Create article with POST.
@@ -261,28 +280,26 @@ it('api: create an article and see it on global feed', async () => {
         { titleSource: 'Error', bodySource: 'The \\notdefined' }))
       assert.strictEqual(status, 422)
 
-    // articleGet
+    // Article
 
       // Access the article directly
-      ;({data, status} = await test.webApi.articleGet('user0/title-0'))
+      ;({data, status} = await test.webApi.article('user0/title-0'))
       assertStatus(status, data)
-      assert.strictEqual(data.article.titleRender, 'title 0')
-      assert.match(data.article.render, /Body 0/)
-
-      ;({data, status} = await test.webApi.articleGet('user0/dontexist'))
-      assert.strictEqual(status, 404)
+      assert.strictEqual(data.titleRender, 'title 0')
+      assert.match(data.render, /Body 0/)
 
     // See articles on global feed.
-    ;({data, status} = await test.webApi.articleAll())
+    ;({data, status} = await test.webApi.articles())
     assertStatus(status, data)
     assertRows(data.articles, [
       { titleRender: 'title 0', slug: 'user0/title-0', render: /Body 0/ },
+      { titleRender: 'Index', slug: 'user2' },
       { titleRender: 'Index', slug: 'user1' },
       { titleRender: 'Index', slug: 'user0' },
     ])
 
     // See latest articles by a user.
-    ;({data, status} = await test.webApi.articleAll({ author: 'user0' }))
+    ;({data, status} = await test.webApi.articles({ author: 'user0' }))
     assertStatus(status, data)
     assertRows(data.articles, [
       { titleRender: 'title 0', slug: 'user0/title-0', render: /Body 0/ },
@@ -297,10 +314,47 @@ it('api: create an article and see it on global feed', async () => {
       assertStatus(status, data)
       test.enableToken(user.token)
 
+    // Like effects.
+
       // Score goes up.
-      ;({data, status} = await test.webApi.articleGet('user0'))
+      ;({data, status} = await test.webApi.article('user0'))
       assertStatus(status, data)
-      assert.strictEqual(data.article.score, 1)
+      assert.strictEqual(data.score, 1)
+
+      // Shows on likedBy list of user1.
+      ;({data, status} = await test.webApi.articles({ likedBy: 'user1' }))
+      assertStatus(status, data)
+      assertRows(data.articles, [
+        { titleRender: 'Index', slug: 'user0' },
+      ])
+
+      // Does not show up on likedBy list of user0.
+      ;({data, status} = await test.webApi.articles({ likedBy: 'user0' }))
+      assertStatus(status, data)
+      assertRows(data.articles, [])
+
+      // Top articles by a user.
+      ;({data, status} = await test.webApi.articles({ author: 'user0', sort: 'score' }))
+      assertStatus(status, data)
+      assertRows(data.articles, [
+        { titleRender: 'Index', slug: 'user0', score: 1 },
+        { titleRender: 'title 0', slug: 'user0/title-0', render: /Body 0/, score: 0 },
+      ])
+
+      // Invalid sort.
+      ;({data, status} = await test.webApi.articles({ author: 'user0', sort: 'dontexist' }))
+      assert.strictEqual(status, 422)
+
+      // User score.
+      ;({data, status} = await test.webApi.users({ sort: 'score' }))
+      assertStatus(status, data)
+      assertRows(data.users, [
+        { username: 'user0', score: 1 },
+        { username: 'user2', score: 0 },
+        { username: 'user1', score: 0 },
+      ])
+
+    // Article like failures.
 
       // Users cannot like articles twice.
       test.enableToken(user1.token)
@@ -320,28 +374,6 @@ it('api: create an article and see it on global feed', async () => {
       assert.strictEqual(status, 404)
       test.enableToken(user.token)
 
-    // Like effects.
-
-      // Top articles by a user.
-      ;({data, status} = await test.webApi.articleAll({ author: 'user0', sort: 'score' }))
-      assertStatus(status, data)
-      assertRows(data.articles, [
-        { titleRender: 'Index', slug: 'user0', score: 1 },
-        { titleRender: 'title 0', slug: 'user0/title-0', render: /Body 0/, score: 0 },
-      ])
-
-      // Invalid sort.
-      ;({data, status} = await test.webApi.articleAll({ author: 'user0', sort: 'dontexist' }))
-      assert.strictEqual(status, 422)
-
-      // User score.
-      ;({data, status} = await test.webApi.userAll({ sort: 'score' }))
-      assertStatus(status, data)
-      assertRows(data.users, [
-        { username: 'user0', score: 1 },
-        { username: 'user1', score: 0 },
-      ])
-
     // Make user1 unlike one of the articles.
 
       test.enableToken(user1.token)
@@ -349,10 +381,23 @@ it('api: create an article and see it on global feed', async () => {
       assertStatus(status, data)
       test.enableToken(user.token)
 
+    // Unlike effects
+
       // Score goes back down.
-      ;({data, status} = await test.webApi.articleGet('user0'))
+      ;({data, status} = await test.webApi.article('user0'))
       assertStatus(status, data)
-      assert.strictEqual(data.article.score, 0)
+      assert.strictEqual(data.score, 0)
+
+      // User score.
+      ;({data, status} = await test.webApi.users())
+      assertStatus(status, data)
+      assertRows(data.users, [
+        { username: 'user2', score: 0 },
+        { username: 'user1', score: 0 },
+        { username: 'user0', score: 0 },
+      ])
+
+    // Unlike failures.
 
       // Cannot unlike article twice.
       test.enableToken(user1.token)
@@ -366,30 +411,27 @@ it('api: create an article and see it on global feed', async () => {
       assert.strictEqual(status, 404)
       test.enableToken(user.token)
 
-    // Unlike effects
-
-      // User score.
-      ;({data, status} = await test.webApi.userAll())
-      assertStatus(status, data)
-      assertRows(data.users, [
-        { username: 'user1', score: 0 },
-        { username: 'user0', score: 0 },
-      ])
-
     // Test global feed paging.
-    ;({data, status} = await test.webApi.articleAll({ limit: 2, page: 1 }))
+    ;({data, status} = await test.webApi.articles({ limit: 2, page: 0 }))
     assertStatus(status, data)
     assertRows(data.articles, [
-      { titleRender: 'Index', slug: 'user0' },
+      { slug: 'user0/title-0' },
+      { slug: 'user2' },
+    ])
+    ;({data, status} = await test.webApi.articles({ limit: 2, page: 1 }))
+    assertStatus(status, data)
+    assertRows(data.articles, [
+      { slug: 'user1' },
+      { slug: 'user0' },
     ])
 
     // Invalid limit or page.
-    ;({data, status} = await test.webApi.articleAll({ limit: 'dontexist', page: 1 }))
+    ;({data, status} = await test.webApi.articles({ limit: 'dontexist', page: 1 }))
     assert.strictEqual(status, 422)
-    ;({data, status} = await test.webApi.articleAll({ limit: 2, page: 'dontexist' }))
+    ;({data, status} = await test.webApi.articles({ limit: 2, page: 'dontexist' }))
     assert.strictEqual(status, 422)
     // Limit too large
-    ;({data, status} = await test.webApi.articleAll({ limit: config.articleLimitMax + 1, page: 1 }))
+    ;({data, status} = await test.webApi.articles({ limit: config.articleLimitMax + 1, page: 1 }))
     assert.strictEqual(status, 422)
 
     // Create article with PUT.
@@ -401,10 +443,10 @@ it('api: create an article and see it on global feed', async () => {
     assert.strictEqual(articles.length, 1)
 
     // Access the article directly
-    ;({data, status} = await test.webApi.articleGet('user0/title-1'))
+    ;({data, status} = await test.webApi.article('user0/title-1'))
     assertStatus(status, data)
-    assert.strictEqual(data.article.titleRender, 'title 1')
-    assert.match(data.article.render, /Body 1/)
+    assert.strictEqual(data.titleRender, 'title 1')
+    assert.match(data.render, /Body 1/)
 
     // Update article with PUT.
     article = createArticleArg({ i: 1, bodySource: 'Body 2' })
@@ -412,10 +454,83 @@ it('api: create an article and see it on global feed', async () => {
     assertStatus(status, data)
 
     // Access the article directly
-    ;({data, status} = await test.webApi.articleGet('user0/title-1'))
+    ;({data, status} = await test.webApi.article('user0/title-1'))
     assertStatus(status, data)
-    assert.strictEqual(data.article.titleRender, 'title 1')
-    assert.match(data.article.render, /Body 2/)
+    assert.strictEqual(data.titleRender, 'title 1')
+    assert.match(data.render, /Body 2/)
+
+    // User following.
+
+      // user2 follows user0 and user2
+      test.enableToken(user2.token)
+      ;({data, status} = await test.webApi.userFollow('user0'))
+      assertStatus(status, data)
+      ;({data, status} = await test.webApi.userFollow('user2'))
+      assertStatus(status, data)
+      test.enableToken(user.token)
+
+      // user0 follows user1
+      ;({data, status} = await test.webApi.userFollow('user1'))
+
+      // Users cannot follow another user twice.
+      ;({data, status} = await test.webApi.userFollow('user1'))
+      assert.strictEqual(status, 403)
+
+      // Trying to follow an user that does not exist fails gracefully.
+      ;({data, status} = await test.webApi.userFollow('dontexist'))
+      assert.strictEqual(status, 404)
+
+      // TODO https://github.com/cirosantilli/ourbigbook/issues/260
+      //// users followedBy
+      //;({data, status} = await test.webApi.users({ followedBy: 'user0' }))
+      //assertStatus(status, data)
+      //assertRows(data.users, [
+      //  { username: 'user1' },
+      //])
+      //;({data, status} = await test.webApi.users({ followedBy: 'user1' }))
+      //assertStatus(status, data)
+      //assertRows(data.users, [])
+      //;({data, status} = await test.webApi.users({ followedBy: 'user2' }))
+      //assertStatus(status, data)
+      //assertRows(data.users, [
+      //  { username: 'user2' },
+      //  { username: 'user0' },
+      //])
+
+      // TODO https://github.com/cirosantilli/ourbigbook/issues/260
+      //// users following
+      //;({data, status} = await test.webApi.users({ following: 'user0' }))
+      //assertStatus(status, data)
+      //assertRows(data.users, [
+      //  { username: 'user2' },
+      //])
+      //;({data, status} = await test.webApi.users({ following: 'user1' }))
+      //assertStatus(status, data)
+      //assertRows(data.users, [])
+      //;({data, status} = await test.webApi.users({ following: 'user2' }))
+      //assertStatus(status, data)
+      //assertRows(data.users, [
+      //  { username: 'user2' },
+      //])
+
+    // User unfollowing.
+
+      // Unfollow everyone.
+      test.enableToken(user2.token)
+      ;({data, status} = await test.webApi.userUnfollow('user0'))
+      assertStatus(status, data)
+      ;({data, status} = await test.webApi.userUnfollow('user2'))
+      assertStatus(status, data)
+      test.enableToken(user.token)
+      ;({data, status} = await test.webApi.userUnfollow('user1'))
+
+      // Users cannot unfollow another user twice.
+      ;({data, status} = await test.webApi.userUnfollow('user1'))
+      assert.strictEqual(status, 403)
+
+      // Trying to follow an user that does not exist fails gracefully.
+      ;({data, status} = await test.webApi.userUnfollow('dontexist'))
+      assert.strictEqual(status, 404)
 
     // Create some issues.
 
@@ -478,7 +593,7 @@ it('api: create an article and see it on global feed', async () => {
 
     // Get some issues.
 
-    ;({data, status} = await test.webApi.issueAll({ id: 'user0/title-0' }))
+    ;({data, status} = await test.webApi.issues({ id: 'user0/title-0' }))
     assertStatus(status, data)
     assertRows(data.issues, [
       { number: 4, titleRender: /The <i>title<\/i> 0 0 3\./ },
@@ -487,20 +602,20 @@ it('api: create an article and see it on global feed', async () => {
       { number: 1, titleRender: /The <i>title<\/i> 0 0 0\./ },
     ])
 
-    ;({data, status} = await test.webApi.issueAll({ id: 'user0/title-1' }))
+    ;({data, status} = await test.webApi.issues({ id: 'user0/title-1' }))
     assertStatus(status, data)
     assertRows(data.issues, [
       { number: 2, titleRender: /The <i>title<\/i> 0 1 1\./ },
       { number: 1, titleRender: /The <i>title<\/i> 0 1 0\./ },
     ])
 
-    ;({data, status} = await test.webApi.issueAll({ id: 'user0' }))
+    ;({data, status} = await test.webApi.issues({ id: 'user0' }))
     assertStatus(status, data)
     assertRows(data.issues, [
       { number: 1, titleRender: /The <i>title<\/i> 0 index 0\./ },
     ])
 
-    ;({data, status} = await test.webApi.issueAll({ id: 'user1' }))
+    ;({data, status} = await test.webApi.issues({ id: 'user1' }))
     assertStatus(status, data)
     assertRows(data.issues, [
       { number: 1, titleRender: /The <i>title<\/i> 1 index 0\./ },
@@ -515,7 +630,7 @@ it('api: create an article and see it on global feed', async () => {
     assert.match(data.issue.render, /The <i>body<\/i> 1 index 0 hacked\./)
     assert.strictEqual(data.issue.number, 1)
 
-    ;({data, status} = await test.webApi.issueAll({ id: 'user1' }))
+    ;({data, status} = await test.webApi.issues({ id: 'user1' }))
     assertRows(data.issues, [
       {
         number: 1,
@@ -531,7 +646,7 @@ it('api: create an article and see it on global feed', async () => {
     assert.match(data.issue.render, /The <i>body<\/i> 1 index 0 hacked\./)
     assert.strictEqual(data.issue.number, 1)
 
-    ;({data, status} = await test.webApi.issueAll({ id: 'user1' }))
+    ;({data, status} = await test.webApi.issues({ id: 'user1' }))
     assertRows(data.issues, [
       {
         number: 1,
@@ -542,23 +657,21 @@ it('api: create an article and see it on global feed', async () => {
 
     // Trying to edit someone else's issue fails.
 
-    test.enableToken(user1.token)
+      test.enableToken(user1.token)
+      ;({data, status} = await test.webApi.issueEdit('user1', 1,
+        { bodySource: 'The \\i[body] 1 index 0 hacked by user1.' }))
+      assert.strictEqual(status, 403)
+      test.enableToken(user.token)
 
-    ;({data, status} = await test.webApi.issueEdit('user1', 1,
-      { bodySource: 'The \\i[body] 1 index 0 hacked by user1.' }))
-    assert.strictEqual(status, 403)
-
-    test.enableToken(user.token)
-
-    // The issue didn't change.
-    ;({data, status} = await test.webApi.issueAll({ id: 'user1' }))
-    assertRows(data.issues, [
-      {
-        number: 1,
-        titleRender: /The <i>title<\/i> 1 index 0 hacked\./,
-        render: /The <i>body<\/i> 1 index 0 hacked\./,
-      },
-    ])
+      // The issue didn't change.
+      ;({data, status} = await test.webApi.issues({ id: 'user1' }))
+      assertRows(data.issues, [
+        {
+          number: 1,
+          titleRender: /The <i>title<\/i> 1 index 0 hacked\./,
+          render: /The <i>body<\/i> 1 index 0 hacked\./,
+        },
+      ])
 
     // Issue likes.
 
@@ -569,7 +682,7 @@ it('api: create an article and see it on global feed', async () => {
       test.enableToken(user.token)
 
       // Score goes up.
-      ;({data, status} = await test.webApi.issueAll({ id: 'user0/title-1', sort: 'score' } ))
+      ;({data, status} = await test.webApi.issues({ id: 'user0/title-1', sort: 'score' } ))
       assertStatus(status, data)
       assertRows(data.issues, [
         { number: 1, titleRender: /The <i>title<\/i> 0 1 0\./, score: 1 },
@@ -604,7 +717,7 @@ it('api: create an article and see it on global feed', async () => {
       test.enableToken(user.token)
 
       // Score goes up.
-      ;({data, status} = await test.webApi.issueAll({ id: 'user0/title-1' }))
+      ;({data, status} = await test.webApi.issues({ id: 'user0/title-1' }))
       assertStatus(status, data)
       assertRows(data.issues, [
         { number: 2, titleRender: /The <i>title<\/i> 0 1 1\./, score: 0 },
@@ -672,23 +785,23 @@ it('api: create an article and see it on global feed', async () => {
 
     // Get some comments.
 
-    ;({data, status} = await test.webApi.commentGet('user0/title-0', 1))
+    ;({data, status} = await test.webApi.comments('user0/title-0', 1))
     assertRows(data.comments, [
       { number: 1, render: /The <i>body<\/i> 0 0 0\./ },
       { number: 2, render: /The <i>body<\/i> 0 0 1\./ },
     ])
 
-    ;({data, status} = await test.webApi.commentGet('user0/title-0', 2))
+    ;({data, status} = await test.webApi.comments('user0/title-0', 2))
     assertRows(data.comments, [
       { number: 1, render: /The <i>body<\/i> 0 1 0\./ },
     ])
 
     // Getting issues and comments from articles or issues that don't exist fails gracefully.
-    ;({data, status} = await test.webApi.issueAll({ id: 'user0/dontexist' }))
+    ;({data, status} = await test.webApi.issues({ id: 'user0/dontexist' }))
     assert.strictEqual(status, 404)
-    ;({data, status} = await test.webApi.commentGet('user0/title-1', 999))
+    ;({data, status} = await test.webApi.comments('user0/title-1', 999))
     assert.strictEqual(status, 404)
-    ;({data, status} = await test.webApi.commentGet('user0/dontexist', 1))
+    ;({data, status} = await test.webApi.comments('user0/dontexist', 1))
     assert.strictEqual(status, 404)
 
     if (testNext) {
@@ -817,7 +930,7 @@ Body 0 1.
     assert.match(data.articles[2].render, /Body 0 1\./)
 
     // See them on global feed.
-    ;({data, status} = await test.webApi.articleAll())
+    ;({data, status} = await test.webApi.articles())
     assertStatus(status, data)
     sortByKey(data.articles, 'slug')
     assertRows(data.articles, [
@@ -828,11 +941,11 @@ Body 0 1.
     ])
 
     // Access one of the articles directly.
-    ;({data, status} = await test.webApi.articleGet('user0/title-0-0'))
+    ;({data, status} = await test.webApi.article('user0/title-0-0'))
     assertStatus(status, data)
-    assert.strictEqual(data.article.titleRender, 'title 0 0')
-    assert.match(data.article.render, /Body 0 0\./)
-    assert.doesNotMatch(data.article.render, /Body 0 1\./)
+    assert.strictEqual(data.titleRender, 'title 0 0')
+    assert.match(data.render, /Body 0 0\./)
+    assert.doesNotMatch(data.render, /Body 0 1\./)
 
     // Modify the file.
     article = createArticleArg({ i: 0, bodySource: `Body 0.
@@ -859,7 +972,7 @@ Body 0 1.
     assert.match(data.articles[2].render, /Body 0 1\./)
 
     // See them on global feed.
-    ;({data, status} = await test.webApi.articleAll())
+    ;({data, status} = await test.webApi.articles())
     assertStatus(status, data)
     sortByKey(data.articles, 'slug')
     assertRows(data.articles, [
@@ -871,7 +984,7 @@ Body 0 1.
     ])
 
     // Topic shows only one subarticle.
-    ;({data, status} = await test.webApi.articleAll({ topicId: 'title-0-0' }))
+    ;({data, status} = await test.webApi.articles({ topicId: 'title-0-0' }))
     assertStatus(status, data)
     sortByKey(data.articles, 'slug')
     assertRows(data.articles, [

@@ -1,3 +1,5 @@
+// This is just a toy migration, to do it correctly we would have had to
+// actually create new File/Id/Ref objects for existing articles.
 module.exports = {
   up: async (queryInterface, Sequelize) => queryInterface.sequelize.transaction(async transaction => {
     const DataTypes = Sequelize.DataTypes

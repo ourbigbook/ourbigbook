@@ -51,10 +51,8 @@ async function generateDemoData(params) {
   const nUsers = params.nUsers === undefined ? 20 : params.nUsers
   const nArticlesPerUser = params.nArticlesPerUser === undefined ? 50 : params.nArticlesPerUser
   const nMaxCommentsPerArticle = params.nMaxCommentsPerArticle === undefined ? 3 : params.nMaxCommentsPerArticle
-  const nMaxTagsPerArticle = params.nMaxTagsPerArticle === undefined ? 3 : params.nMaxTagsPerArticle
   const nFollowsPerUser = params.nFollowsPerUser === undefined ? 2 : params.nFollowsPerUser
   const nLikesPerUser = params.nLikesPerUser === undefined ? 20 : params.nLikesPerUser
-  const nTags = params.nTags === undefined ? 10 : params.nTags
   const directory = params.directory
   const basename = params.basename
 
@@ -248,30 +246,6 @@ Table:
   //  }
   //}
   //await sequelize.models.UserLikeArticle.bulkCreate(likeArgs)
-  printTime()
-
-  console.error('Tag');
-  const tagArgs = []
-  for (let i = 0; i < nTags; i++) {
-    tagArgs.push({name: `tag${i}`})
-  }
-  const tags = await sequelize.models.Tag.bulkCreate(tagArgs)
-  printTime()
-
-  console.error('ArticleTag');
-  let tagIdx = 0
-  const articleTagArgs = []
-  for (let i = 0; i < nArticles; i++) {
-    const articleId = articles[i].id
-    for (var j = 0; j < (i % (nMaxTagsPerArticle + 1)); j++) {
-      articleTagArgs.push({
-        articleId: articles[i].id,
-        tagId: tags[tagIdx % nTags].id,
-      })
-      tagIdx += 1
-    }
-  }
-  await sequelize.models.ArticleTag.bulkCreate(articleTagArgs)
   printTime()
 
   console.error('Comment');

@@ -6,22 +6,6 @@ const cirodown = require('cirodown')
 const auth = require('../auth')
 const lib = require('./lib')
 
-async function setArticleTags(req, article, tagList) {
-  return req.app.get('sequelize').models.Tag.bulkCreate(
-    tagList.map((tag) => {return {name: tag}}),
-    {ignoreDuplicates: true}
-  ).then(tags => {
-    // IDs may be missing from the above, so we have to do a find.
-    // https://stackoverflow.com/questions/13244393/sqlite-insert-or-ignore-and-return-original-rowid
-    // https://github.com/sequelize/sequelize/issues/11223#issuecomment-864185973
-    req.app.get('sequelize').models.Tag.findAll({
-      where: {name: tagList}
-    }).then(tags => {
-      return article.setTags(tags)
-    })
-  })
-}
-
 function getOrder(req) {
   let sort = req.query.sort;
   if (sort) {
@@ -124,13 +108,7 @@ router.post('/', auth.required, async function(req, res, next) {
     }
     let article = new (req.app.get('sequelize').models.Article)(req.body.article)
     article.authorId = user.id
-    const tagList = req.body.article.tagList
-    await Promise.all([
-      (typeof tagList === 'undefined')
-        ? null
-        : setArticleTags(req, article, tagList),
-      article.save()
-    ])
+    await article.save()
     article.author = user
     return res.json({ article: await article.toJson(user) })
   } catch(error) {
@@ -154,13 +132,7 @@ router.put('/', auth.required, async function(req, res, next) {
         if (typeof req.body.article.body !== 'undefined') {
           article.body = req.body.article.body
         }
-        const tagList = req.body.article.tagList
-        await Promise.all([
-          (typeof tagList === 'undefined')
-            ? null
-            : setArticleTags(req, article, tagList),
-          article.save()
-        ])
+        await article.save()
       }
       return res.json({ article: await article.toJson(user) })
     } else {

@@ -18,8 +18,6 @@ commander.option('-a, --n-articles-per-user <n>', 'n articles per user', myParse
 commander.option('-c, --n-max-comments-per-article <n>', 'maximum number of comments per article', myParseInt);
 commander.option('-f, --n-follows-per-user <n>', 'n follows per user', myParseInt);
 commander.option('-l, --n-likes-per-user <n>', 'n likes per user', myParseInt);
-commander.option('-t, --n-tags <n>', 'n likes per user', myParseInt);
-commander.option('-T, --n-max-tags-per-article <n>', 'maximum number of tags per article', myParseInt);
 commander.option('--force-production', 'allow running in production, DELETES ALL DATA', false);
 commander.option('-u, --n-users <n>', 'n users', myParseInt);
 commander.parse(process.argv);
@@ -33,10 +31,8 @@ const sequelize = await test_lib.generateDemoData({
   directory: path.dirname(__dirname),
   nArticlesPerUser: commander.nArticlesPerUser,
   nMaxCommentsPerArticle: commander.nMaxCommentsPerArticle,
-  nMaxTagsPerArticle: commander.nMaxTagsPerArticle,
   nLikesPerUser: commander.nLikesPerUser,
   nFollowsPerUser: commander.nFollowsPerUser,
-  nRags: commander.nTags,
   nUsers: commander.nUsers,
 })
 await sequelize.close()

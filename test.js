@@ -1796,6 +1796,56 @@ assert_lib('link to image in other files that has title with x to header in anot
     },
   }
 );
+assert_lib('link to image in other files that has title with x to synonym header in another file',
+  {
+    convert_dir: true,
+    filesystem: {
+      'index.bigb': `= Index
+
+\\x[image-my-notindex-h1-2]
+`,
+     'image.bigb': `= image h1
+
+\\Image[aa]{title=My \\x[notindex-h1-2]}{external}
+`,
+     'notindex.bigb': `= notindex h1
+
+= notindex h1 2
+{synonym}
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        "//x:a[@href='image.html#image-my-notindex' and text()='Figure \"My notindex h1 2\"']",
+      ],
+    },
+  }
+);
+assert_cli('link to image in other files that has title with x to synonym header in another file',
+  {
+    args: ['.'],
+    filesystem: {
+      'index.bigb': `= Index
+
+\\x[image-my-notindex-h1-2]
+`,
+     'image.bigb': `= image h1
+
+\\Image[aa]{title=My \\x[notindex-h1-2]}{external}
+`,
+     'notindex.bigb': `= notindex h1
+
+= notindex h1 2
+{synonym}
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        "//x:a[@href='image.html#image-my-notindex-h1-2' and text()='Figure \"My notindex h1 2\"']",
+      ],
+    },
+  }
+);
 assert_lib('link to image in other files that has title with two x to other headers',
   // check_db extra ID removal was removing the first ID because the link line/columns were the same for both,
   // fixed at title= argument position, and not at the \x position.

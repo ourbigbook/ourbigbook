@@ -26,7 +26,7 @@ if (process.env.NODE_ENV === 'test') {
 }
 let databaseName = process.env.OURBIGBOOK_DB_NAME
 if (!databaseName) {
-  databaseName = 'ourbigbook'
+  databaseName = isTest ? 'ourbigbook_test' : 'ourbigbook'
 }
 
 const appDomain = 'ourbigbook.com'

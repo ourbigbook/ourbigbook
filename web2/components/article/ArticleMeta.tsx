@@ -1,33 +1,27 @@
 import React from "react";
 
 import ArticleActions from "components/article/ArticleActions";
-import CustomImage from "components/common/CustomImage";
 import CustomLink from "components/common/CustomLink";
+import UserLinkWithImage from "components/common/UserLinkWithImage";
+import FollowUserButton from "components/profile/FollowUserButton";
 import { formatDate } from "lib/utils/date";
 
 const ArticleMeta = ({ article }) => {
   if (!article) return;
+  console.error(article.createdAt);
+  console.error(article.updatedAt);
   return (
     <div className="article-meta">
-      <CustomLink
-        href="/profile/[pid]"
-        as={`/profile/${encodeURIComponent(article.author?.username)}`}
-      >
-        <CustomImage
-          src={article.author?.image}
-          className="profile-thumb"
-          alt="author profile image"
-        />
-      </CustomLink>
+      <UserLinkWithImage user={article.author} />
+      <FollowUserButton profile={article.author} />
       <div className="info">
-        <CustomLink
-          href="/profile/[pid]"
-          as={`/profile/${encodeURIComponent(article.author?.username)}`}
-          className="author"
-        >
-          {article.author?.username}
-        </CustomLink>
-        <span className="date">{formatDate(article.createdAt)}</span>
+        Created: <span className="date">{formatDate(article.createdAt)}</span>
+        {article.createdAt !== article.updatedAt &&
+          <>
+            {' '}
+            Updated: <span className="date">{formatDate(article.updatedAt)}</span>
+          </>
+        }
       </div>
       <ArticleActions article={article} />
     </div>

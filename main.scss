@@ -1,8 +1,11 @@
+@import 'cirodown.common.scss';
+
 $color: black;
 $header-background-color: #AA0;
 $toplevel-padding: 20px;
 body {
 background-color: $color;
+font-family: $font-family;
 
 /* Scrollbar behaviour.
  * We would like to get rid of the X scrollbar and keep only the Y one.

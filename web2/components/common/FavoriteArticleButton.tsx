@@ -2,11 +2,8 @@ import axios from "axios";
 import React from "react";
 import Router from "next/router";
 
-import { SERVER_BASE_URL } from "lib/utils/constant";
+import { BUTTON_ACTIVE_CLASS, SERVER_BASE_URL } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
-
-const FAVORITED_CLASS = "btn btn-sm btn-primary";
-const NOT_FAVORITED_CLASS = "btn btn-sm btn-outline-primary";
 
 export const FavoriteArticleButtonContext = React.createContext(undefined);
 
@@ -60,9 +57,7 @@ const FavoriteArticleButton = (props) => {
   }
   return (
     <button
-      className={
-        favorited ? FAVORITED_CLASS : NOT_FAVORITED_CLASS
-      }
+      className={favorited ? BUTTON_ACTIVE_CLASS : ''}
       onClick={() => handleClickFavorite()}
     >
       <i className="ion-heart" />{props.showText ? ' ' : ''}{buttonText}

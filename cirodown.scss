@@ -8,23 +8,7 @@ $caption-margin-bottom: 5px;
 $header-font-size: 24px;
 $p-margin-vert: 14px;
 
-// Light
-$a-color: #0000EE;
-$a-color-visited: rgb(85, 26, 139);
-$background-color: white;
-$code-background-color: #eeeeee;
-$color: black;
-$target-background-color: #FFFFCC;
-
-// TODO move to cirodown.common.scss
-// Dark
-$a-color: #88CCFF;
-$a-color-visited: #FFAAFF;
-$background-color: black;
-$code-background-color: #333333;
-$color: #00FF00;
-$color-discreet: #00BB00;
-$target-background-color: #442222;
+@import 'cirodown.common.scss';
 
 @mixin hidden {
   display: none;
@@ -46,20 +30,7 @@ $target-background-color: #442222;
 }
 
 .cirodown {
-
-// TODO move to cirodown.common.scss
-background-color: $background-color;
-color: $color;
-a {
-  color: $a-color;
-  text-decoration: none;
-  &:hover {
-    text-decoration: underline;
-  }
-  &:visited {
-    color: $a-color-visited;
-  }
-}
+@include body;
 
 a {
   &:visited {
@@ -201,9 +172,7 @@ pre {
 
 // Tables
 .table-container {
-  .table-caption-container {
-    margin-bottom: $caption-margin-bottom;
-  }
+  margin: $p-margin-vert 0;
   table {
     $table_border: 1px solid $color;
     border: $table_border;
@@ -214,7 +183,9 @@ pre {
       padding-right: 2px;
     }
   }
-  margin: $p-margin-vert 0;
+  .table-caption-container {
+    margin-bottom: $caption-margin-bottom;
+  }
 }
 
 ol, ul {

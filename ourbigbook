@@ -1687,8 +1687,21 @@ if (cli.helpMacros) {
       await check_db(nonOurbigbookOptions)
     } else if (web) {
       let token
-      const web_url = cli.webUrl ? cli.webUrl : cli.webTest ? 'http://localhost:3000' : ourbigbook.WEB_URL
-      const url = new URL(web_url)
+      let webUrl
+      if (cli.webUrl) {
+        webUrl = cli.webUrl
+      } else if (cli.webTest) {
+        webUrl = 'http://localhost:3000'
+      } else {
+        let host
+        if (ourbigbook_json.web && ourbigbook_json.web.host) {
+          host = ourbigbook_json.web.host
+        } else {
+          host = OURBIGBOOK_JSON_DEFAULT.web.host
+        }
+        webUrl = `https://${host}`
+      }
+      const url = new URL(webUrl)
       const host = url.host
       await create_db(ourbigbook_options, nonOurbigbookOptions);
 

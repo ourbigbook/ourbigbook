@@ -236,7 +236,10 @@ module.exports = (sequelize) => {
       await Promise.all([
         this.addLikedArticle(article.id, { transaction }),
         article.getAuthor({ transaction }).then(author => author.increment('score', { transaction })),
-        article.increment('score', { transaction }),
+        article.increment('score', { transaction }).then(
+          // Needs to come after score has been updated.
+          () => sequelize.models.Topic.updateTopics([ article ], { transaction })
+        ),
       ])
     })
   }
@@ -246,7 +249,10 @@ module.exports = (sequelize) => {
       await Promise.all([
         this.removeLikedArticle(article.id, { transaction }),
         article.getAuthor().then(author => author.decrement('score', { transaction })),
-        article.decrement('score', { transaction }),
+        article.decrement('score', { transaction }).then(
+          // Needs to come after score has been updated.
+          () => sequelize.models.Topic.updateTopics([ article ], { transaction })
+        ),
       ])
     })
   }

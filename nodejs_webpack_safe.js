@@ -316,7 +316,8 @@ class SqliteDbProvider extends ourbigbook.DbProvider {
       // We could use one of the other constructs proposed besides WITH RECURSIVE,
       // but it would likely be less efficient and harder to implement. So just going
       // with this for now.
-      ;const [rows, meta] = await this.sequelize.query(`SELECT * FROM "${this.sequelize.models.Id.tableName}"
+      ;const [rows, meta] = await this.sequelize.query(`
+SELECT * FROM "${this.sequelize.models.Id.tableName}"
 INNER JOIN (
 WITH RECURSIVE
   tree_search (to_id, level, from_id, to_id_index) AS (
@@ -344,10 +345,12 @@ ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
    AND "${this.sequelize.models.Id.tableName}".macro_name = '${ourbigbook.Macro.HEADER_MACRO_NAME}'
 ORDER BY "RecRefs".level, "RecRefs".from_id, "RecRefs".to_id_index
 `,
-        { replacements: {
-          starting_ids,
-          type: this.sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-        } }
+        {
+          replacements: {
+            starting_ids,
+            type: this.sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+          }
+        }
       )
       return rows
     } else {
@@ -358,7 +361,8 @@ ORDER BY "RecRefs".level, "RecRefs".from_id, "RecRefs".to_id_index
   // Recursively fetch all ancestors of a given ID from the database.
   async fetch_ancestors(toplevel_id) {
     if (toplevel_id) {
-      ;const [rows, meta] = await this.sequelize.query(`SELECT * FROM "${this.sequelize.models.Id.tableName}"
+      ;const [rows, meta] = await this.sequelize.query(`
+SELECT * FROM "${this.sequelize.models.Id.tableName}"
 INNER JOIN (
 WITH RECURSIVE
   tree_search (to_id, level, from_id) AS (

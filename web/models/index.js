@@ -39,6 +39,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
   const Issue = require('./issue')(sequelize)
   const SequelizeMeta = require('./sequelize_meta')(sequelize)
   const User = require('./user')(sequelize)
+  const Topic = require('./topic')(sequelize)
   ourbigbook_models.addModels(sequelize, { web: true })
   const File = sequelize.models.File
 
@@ -145,6 +146,8 @@ function getSequelize(toplevelDir, toplevelBasename) {
     },
   });
   User.hasMany(Comment, {foreignKey: 'authorId'});
+
+  Topic.belongsTo(Article, { as: 'article' })
 
   return sequelize;
 }

@@ -3,6 +3,55 @@
 
 == Issues
 
+=== Header followed by paragraph without blank line does not split correctly
+{tag=Bug}
+
+README.bigb
+
+``
+= Asdf
+
+== Qwer
+zxcv
+``
+
+then:
+
+``
+ourbigbook --split-headers README.bigb
+``
+
+leads to `out/html/split.html` that contains the `Qwer` header, and no `qwer.html` output.
+
+This construct should just be forbidden by linting instead forcing the preferred:
+
+``
+= Asdf
+
+== Qwer
+
+zxcv
+``
+
+Similar problem with preceeding paragraph:
+
+README.bigb
+
+``
+= Asdf
+
+zxcv
+== Qwer
+``
+
+The root failure case in both cases is that the header goes inside the paragraph.
+
+Hmm, perhaps that is not a bad behaviour... OK so going back a bit further, the problem is the outcome of:
+``
+ourbigbook --web .
+``
+on such cases, which leads to errors.
+
 === Topics video demo
 {tag=Publicity}
 
@@ -423,6 +472,25 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== Split out/bigb and out/web
+{tag=Bug}
+
+Currently:
+``
+ourbigbook --web
+``
+stores the split renders under:
+``
+out/bigb
+``
+since it is a bigb output.
+
+However, that bigb output is different from the one gnerated with:
+``
+ourbigbook -O bigb .
+``
+since the latter contains `\Include` which need to be removed from the `web/` output.
 
 === Skip re-render from API if article was unchanged
 {tag=Web}

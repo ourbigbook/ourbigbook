@@ -41,9 +41,9 @@ The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> i
 {parent=OurBigBook}
 
 You can donate to the <OurBigBook Project> to sponsor its development in the following ways:
-* https://cirosantilli.com/sponsor[]: give money direclty to Ciro Santilli, who is currently the only maintainer and developer of the project. If things ever grow in scope we will set up a foundation and register a charity for it. One may dream.
-* by project merchanidise, see: <merchandise>{full}
-We are happy to discuss paid contracts to implement sepcific features, to get in touch see: <contact>.
+* https://cirosantilli.com/sponsor[]: give money directly to Ciro Santilli, who is currently the only maintainer and developer of the project. If things ever grow in scope we will set up a foundation and register a charity for it. One may dream.
+* by project merchandise, see: <merchandise>{full}
+We are happy to discuss paid contracts to implement specific features, to get in touch see: <contact>.
 
 = Quick start
 {parent=OurBigBook}
@@ -6067,8 +6067,8 @@ The source code is uploaded, and conversion to HTML happens on the server, no co
 This option is not amazing right now. It was introduced mostly to allow uploading the reference demo content from https://cirosantilli.com to https://ourbigbook.com/cirosantilli[], and it is not expected that it will be a major use case for end users for a long time, as most users are likely to just edit on <OurBigBook Web> directly.
 
 Some important known limitations:
+* every local file has to be uploaded every time to check if it needs rebuilding or not by comparing old vs new file contents. At <todo/Store SHA of each article + descendants and skip API re-renders for entire subtrees> we describe a better Git-like Merkle tree method where entire unchanged subtress can be skipped, that will be Nirvana.
 * file renaming does not work, it will think that you are creating a new file and blows up duplicates
-* everything file is rebuilt every time, even if it was not modified. To avoid this, we would need to use or reimplement parts of Git, this is the kind of stuff that Git does very well.
 * if there's an error in a later file, the database is still modified by the previous files, i.e. there is no atomicity. A way to improve that would be to upload all files to the server in one go, and let the server convert everything in one transaction. However, this would lead to a very long server action, which would block any other incoming request (I tested, everything is single threaded)
 
 However, all of those are fixable, and in an ideal world, will be fixed. Patches welcome.
@@ -6083,6 +6083,27 @@ That ID must belong to a file being converted for everything to work well. e.g.:
 ourbigbook --web --web-id quantum-mechanics physics.bigb
 ``
 
+= `--web-password`
+{parent=OurBigBook CLI options}
+
+Set password from CLI. Really bad idea for non-test users with fixed dummy passwords due e.g. to Bash history.
+
+= `--web-test`
+{parent=OurBigBook CLI options}
+
+Set defaults for `--web-*` options that are useful for testing locally:
+``
+ourbigbook --web-test
+``
+is equivalent to:
+``
+ourbigbook --web --web-url http://localhost:3000 --web-user barack-obama --web-password asdf
+``
+You can also override those defaults by just specifying them normally, e.g. to do a different user:
+``
+ourbigbook --web-test --web-user donald-trump
+``
+
 = `--web-url`
 {parent=OurBigBook CLI options}
 
@@ -6090,6 +6111,8 @@ Set a custom URL for <web> from the command line. If not given, the canonical ht
 ``
 ourbigbook --web --web-url http://localhost:3000
 ``
+
+Also consider <web-url> for local testing.
 
 = `--web-user`
 {parent=OurBigBook CLI options}
@@ -7014,21 +7037,21 @@ OURBIGBOOK_POSTGRES=true ./bin/generate-demo-data.js
 = Demo data local file output
 {parent=Demo data}
 
-By default, when you run \a[bin/generate-demo-data], besides inserting the data into the database directly, the command also generates a in-file-system tree that contains equivalent content under:
+By default, when you run \a[web/bin/generate-demo-data.js], besides inserting the data into the database directly, the command also generates a in-file-system tree that contains equivalent content under:
 ``
 web/tmp/<username>/<id>.bigb
 ``
 
 Sample paths to some files could be:
 ``
-web/tmp/barack-obama/ourbigbook.json
-web/tmp/barack-obama/test-child-1.bigb
-web/tmp/barack-obama/test-scope/test-scope-1.bigb
+web/tmp/demo/barack-obama/ourbigbook.json
+web/tmp/demo/barack-obama/test-child-1.bigb
+web/tmp/demo/barack-obama/test-scope/test-scope-1.bigb
 ``
 
 Because each user has its own `ourbigbook.json` file added to the directory, you can for example build each user directory in isolation with:
 ``
-cd web/tmp/barack-obama
+cd web/tmp/demo/barack-obama
 ourbigbook .
 ``
 
@@ -7331,26 +7354,28 @@ In order to test migrations locally interactively, you can:
   ``
   ./bin/sync-db.js
   ``
-This is usually done in a single command:
+This is usually done in a single command \a[web/bin/test-migration]
 ``
-cd web &&
-git add migrations &&
-git commit -an &&
-git checkout HEAD~ &&
-./bin/generate-demo-data.js --clear &&
-git checkout - &&
-./bin/sync-db.js
+cd web
+bin/test-migration -u1 -n5
 ``
+The arguments are fowarded to \a[web/bin/generate-demo-data.js] from <demo data>, `-u1 -n5` would produce a small ammount of data, suitable for quick iterations.
 
-For PostgreSQL:
+Towards the end of that script, we can see lines of type:
 ``
-cd web &&
-git add migrations &&
-git commit -an &&
-git checkout HEAD~ &&
-OURBIGBOOK_POSTGRES=true ./bin/generate-demo-data.js --clear &&
-git checkout - &&
-NODE_ENV=production OURBIGBOOK_POSTGRES=true ./bin/sync-db.js
++ diff -u tmp.old.sqlite3.schema.sort tmp.new-clean.sqlite3.schema.sort
++ diff -u tmp.new-clean.sqlite3.schema.sort; tmp.new-migration.sqlite3.schema.sort
+``
+Those are important diffs you might want to look at every time:
+* `tmp.old.sqlite3.schema.sort`: old schema before migration, but with lines sorted alphabetically
+* `tmp.new-clean.sqlite3.schema.sort`: new schema achieved by dropping the database and re creating at once
+* `tmp.new-migration.sqlite3.schema.sort`: new schema achieved migrating from the old state
+Therefore, you really want the `diff tmp.old.sqlite3.schema tmp.new-clean.sqlite3.schema` to be empty. We actually check that and give an error if it is not.
+
+For PostgreSQL: TODO port to make this work:
+``
+cd web
+OURBIGBOOK_POSTGRES=true bin/test-migration -u1 -n5
 ``
 
 = OurBigBook Web nuke DB instead of migrating

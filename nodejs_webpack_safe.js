@@ -78,7 +78,7 @@ async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
                 '$from.type$': sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_TITLE_TITLE],
               }
             }
-          ]
+          ],
         },
       ],
     })
@@ -506,6 +506,7 @@ async function update_database_after_convert({
   db_provider,
   is_render_after_extract,
   non_ourbigbook_options,
+  renderType,
   path,
   render,
   sequelize,
@@ -518,6 +519,9 @@ async function update_database_after_convert({
   }
   if (non_ourbigbook_options.commander === undefined) {
     non_ourbigbook_options.commander = {}
+  }
+  if (renderType === undefined) {
+    renderType = ourbigbook.OUTPUT_FORMAT_HTML
   }
   ourbigbook.perf_print(context, 'convert_path_pre_sqlite_transaction')
   let toplevel_id;
@@ -546,7 +550,6 @@ async function update_database_after_convert({
       // But lazy now, just never use timestamp for --format-source.
       !non_ourbigbook_options.commander.formatSource
     ) {
-      file_bulk_create_opts.updateOnDuplicate.push('last_render')
       file_bulk_create_last_render = file_bulk_create_last_parse
     } else {
       file_bulk_create_last_render = null
@@ -568,14 +571,13 @@ async function update_database_after_convert({
             authorId,
             bodySource,
             last_parse: file_bulk_create_last_parse,
-            last_render: file_bulk_create_last_render,
             path,
             titleSource,
             toplevel_id,
           },
         ],
         file_bulk_create_opts,
-      )
+      ),
     ]
     if (
       // This is not just an optimization, but actually required, because otherwise the second database
@@ -589,6 +591,20 @@ async function update_database_after_convert({
       ))
     }
     ;[fileBulkCreate, idProviderUpdate] = await Promise.all(promises)
+    if (file_bulk_create_last_render) {
+      // Re-find here until SQLite RETURNING gets used.
+      const file = await sequelize.models.File.findOne({ where: { path }, transaction })
+      await sequelize.models.LastRender.upsert(
+        {
+          date: file_bulk_create_last_render,
+          type: sequelize.models.LastRender.Types[renderType],
+          fileId: file.id,
+        },
+        {
+          transaction,
+        }
+      )
+    }
   });
   ourbigbook.perf_print(context, 'convert_path_post_sqlite_transaction')
   return { file: fileBulkCreate[0] }

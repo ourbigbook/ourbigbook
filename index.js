@@ -6127,7 +6127,10 @@ const DEFAULT_MACRO_LIST = [
         if (Macro.TITLE_ARGUMENT_NAME in context.options) {
           text_title = context.options[Macro.TITLE_ARGUMENT_NAME];
         } else if (context.header_graph.children.length > 0) {
-          text_title = convert_arg(context.header_graph.children[0].value.args[Macro.TITLE_ARGUMENT_NAME], context);
+          text_title = convert_arg(
+            context.header_graph.children[0].value.args[Macro.TITLE_ARGUMENT_NAME],
+            clone_and_set(context, 'id_conversion', true)
+          );
         } else {
           text_title = 'dummy title because title is mandatory in HTML';
         }

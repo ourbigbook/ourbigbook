@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Quick regexp hacks to do easy heuristic conversions from Asciidoctor to Cirodown.
+set -eu
+in="$1"
+out="${in%.*}.ciro"
+cp "$in" "$out"
+perl -pi -e 's/xref2?:([^[]*)\[\]/\\x[\1]/g' "$out"
+perl -pi -e 's/xref2?:([^[]*)\[xrefstyle=full\]/\\x[\1]{full}/g' "$out"
+perl -pi -e 's/video2?::([^[]*)\[\]/\\Video[\1]/g' "$out"
+perl -pi -e 's/image2?::([^[]*)\[\]/\\Image[\1]/g' "$out"
+perl -pi -e 's/\(https?:\/\/web.archive.org\/([^[]*)\[archive\]\)/(\\a[https:\/\/web.archive.org\/\1][archive])/g' "$out"
+perl -pi -e 's/^----$/``/' "$out"
+perl -pi -e 's/^\.\.\.\.$/``/' "$out"
+perl -pi -e 's/^\*\* /  * /' "$out"
+perl -pi -e 's/^\*\*\* /    * /' "$out"
+perl -pi -e 's/^\*\*\*\* /      * /' "$out"
+perl -pi -e 's/toc::\[\]/\\toc/' "$out"
+# TODO italic and bold.

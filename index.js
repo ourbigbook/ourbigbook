@@ -6,7 +6,6 @@ const UNICODE_LINK = String.fromCodePoint(0x1F517);
 class AstNode {
   /**
    * @param {AstType} node_type -
-   * @param {Object} macros - dict of all String macro_name to Macro
    * @param {String} macro_name - if node_type === AstType.PLAINTEXT: fixed to AstType.PLAINTEXT_MACRO_NAME
    *                              elif node_type === AstType.PARAGRAPH: fixed to undefined
    *                              else: arbitrary regular macro
@@ -17,7 +16,7 @@ class AstNode {
    * @param {Number} column
    * @param {String} text - the text content of an AstType.PLAINTEXT, undefined for other types
    */
-  constructor(node_type, macros, macro_name, args, line, column, text) {
+  constructor(node_type, macro_name, args, line, column, text) {
     this.node_type = node_type;
     this.macro_name = macro_name;
     this.args = args;
@@ -25,7 +24,6 @@ class AstNode {
     this.column = column;
     // {String} or undefined.
     this.id = undefined;
-    this.macro = macros[this.macro_name];
     this.macro_count = undefined;
     this.text = text
 
@@ -59,7 +57,6 @@ class AstNode {
    *        - {Object} ids - map of document IDs to their description:
    *                 - 'prefix': prefix to add if style=full, e.g. `Figure 1`, `Section 2`, etc.
    *                 - {List[AstNode]} 'title': the title of the element linked to
-   *        - {Object[String,Macro]} macros - map of macro name to Macro. Mandatory argument.
    */
   convert(context) {
     if (context === undefined) {
@@ -362,9 +359,9 @@ class Macro {
         if (options.caption_prefix_span) {
           ret += `<span class="caption-prefix">`;
         }
-        ret += `${ast.macro.options.caption_prefix} `;
+        ret += `${context.macros[ast.macro_name].options.caption_prefix} `;
       }
-      ret += ast.macro.options.get_number(ast, context);
+      ret += context.macros[ast.macro_name].options.get_number(ast, context);
       if (options.show_caption_prefix && options.caption_prefix_span) {
         ret += `</span>`;
       }
@@ -397,8 +394,8 @@ Macro.TOPLEVEL_MACRO_NAME = 'toplevel';
 
 /** Helper to create plaintext nodes, since so many of the fields are fixed in that case. */
 class PlaintextAstNode extends AstNode {
-  constructor(macros, line, column, text) {
-    super(AstType.PLAINTEXT, macros, Macro.PLAINTEXT_MACRO_NAME,
+  constructor(line, column, text) {
+    super(AstType.PLAINTEXT, Macro.PLAINTEXT_MACRO_NAME,
       {}, line, column, text);
   }
 }
@@ -999,7 +996,7 @@ function html_convert_attrs_id(
 ) {
   if (ast.id !== undefined) {
     custom_args[Macro.ID_ARGUMENT_NAME] = [
-        new PlaintextAstNode(context.macros, ast.line, ast.column, ast.id)];
+        new PlaintextAstNode(ast.line, ast.column, ast.id)];
   }
   return html_convert_attrs(ast, context, arg_names, custom_args);
 }
@@ -1069,7 +1066,7 @@ function html_convert_simple_elem(elem_name, options={}) {
     let attrs = html_convert_attrs_id(ast, context);
     let content_ast = ast.args.content;
     if (content_ast === undefined) {
-      content_ast = [new PlaintextAstNode(macros, ast.line, ast.column, '')];
+      content_ast = [new PlaintextAstNode(ast.line, ast.column, '')];
     }
     let content = convert_arg(content_ast, context);
     return `<${elem_name}${attrs}>${newline_after_open_str}${content}${link_to_self}</${elem_name}>${newline_after_close_str}`;
@@ -1159,9 +1156,10 @@ function parse(tokens, macros, options, extra_returns={}) {
     const ast = todo_visit.shift();
     const id_context = {'macros': macros};
     const macro_name = ast.macro_name;
+    const macro = macros[macro_name]
 
     // Linear count of each macro type for macros that have IDs.
-    if (!ast.macro.options.macro_counts_ignore(ast, id_context)) {
+    if (!macro.options.macro_counts_ignore(ast, id_context)) {
       if (!(macro_name in macro_counts)) {
         macro_counts[macro_name] = 0;
       }
@@ -1186,7 +1184,7 @@ function parse(tokens, macros, options, extra_returns={}) {
         // TODO correct unicode aware algorithm.
         id_text += title_to_id(convert_arg_noescape(ast.args[Macro.TITLE_ARGUMENT_NAME], id_context));
         ast.id = id_text;
-      } else if (!ast.macro.properties.phrasing) {
+      } else if (!macro.properties.phrasing) {
         // ID from element count.
         if (ast.macro_count !== undefined) {
           id_text += ast.macro_count;
@@ -1293,7 +1291,6 @@ function parse(tokens, macros, options, extra_returns={}) {
                 }
                 new_child_node = new AstNode(
                   AstType.MACRO,
-                  state.macros,
                   auto_parent_name,
                   {
                     'content': arg.slice(start_auto_child_index, i),
@@ -1372,7 +1369,6 @@ function parse_add_paragraph(
     new_arg.push(
       new AstNode(
         AstType.MACRO,
-        state.macros,
         Macro.PARAGRAPH_MACRO_NAME,
         {
           'content': slice
@@ -1489,19 +1485,17 @@ function parse_macro(state) {
     if (macro_type === AstType.ERROR) {
       return new AstNode(
         macro_type,
-        state.macros,
         Macro.PLAINTEXT_MACRO_NAME,
         error_message_in_output(unknown_macro_message),
         state.token.line,
         state.token.column
       );
     } else {
-      return new AstNode(macro_type, macros, macro_name, args, macro_line, macro_column);
+      return new AstNode(macro_type, macro_name, args, macro_line, macro_column);
     }
   } else if (state.token.type === TokenType.PLAINTEXT) {
     // Non-recursive case.
     let node = new PlaintextAstNode(
-      state.macros,
       state.token.line,
       state.token.column,
       state.token.value,
@@ -1512,7 +1506,6 @@ function parse_macro(state) {
   } else if (state.token.type === TokenType.PARAGRAPH) {
     let node = new AstNode(
       AstType.PARAGRAPH,
-      state.macros,
       undefined,
       undefined,
       state.token.line,
@@ -1527,7 +1520,6 @@ function parse_macro(state) {
       `unexpected token ${state.token.type.toString()}`
     );
     let node = new PlaintextAstNode(
-      state.macros,
       state.token.line,
       state.token.column,
       error_message_in_output('unexpected token'),
@@ -1687,7 +1679,7 @@ const DEFAULT_MACRO_LIST = [
       }
       if (level_int > 6) {
         custom_args = {'data-level': [new PlaintextAstNode(
-          context.macros, ast.line, ast.column, level)]};
+          ast.line, ast.column, level)]};
         level = '6';
       } else {
         custom_args = {};
@@ -1783,7 +1775,7 @@ const DEFAULT_MACRO_LIST = [
         }
         ret += `<div class="math-equation">\n`
         ret += `<div>${katex_output}</div>\n`;
-        ret += `<div><a${href}>(${ast.macro.options.get_number(ast, context)})</a></div>`;
+        ret += `<div><a${href}>(${context.macros[ast.macro_name].options.get_number(ast, context)})</a></div>`;
         ret += `</div>\n`
         ret += `</div>\n`;
       }
@@ -2040,8 +2032,7 @@ const DEFAULT_MACRO_LIST = [
         } else {
           text_title = 'dummy title because title is mandatory in HTML';
         }
-        title = [new PlaintextAstNode(context.macros,
-          ast.line, ast.column, text_title)];
+        title = [new PlaintextAstNode(ast.line, ast.column, text_title)];
       }
       let ret = '';
       if (!context.options.body_only) {
@@ -2113,7 +2104,7 @@ const DEFAULT_MACRO_LIST = [
         if (content_arg === undefined) {
           let x_text_options = {
             caption_prefix_span: false,
-            style: target_id_ast.macro.options.x_style,
+            style: context.macros[target_id_ast.macro_name].options.x_style,
             quote: true,
           };
           let style = ast.args.style;

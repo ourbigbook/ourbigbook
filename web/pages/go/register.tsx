@@ -1,3 +1,3 @@
-import makeLoginPage from 'front/LoginPage'
+import LoginPageHoc from 'front/LoginPage'
 
-export default makeLoginPage({ register: true });
+export default LoginPageHoc({ register: true });

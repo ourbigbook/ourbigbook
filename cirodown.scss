@@ -291,7 +291,10 @@ ol, ul {
     > li > ul {
       padding-left: 0px;
       * {
-        background-color: $background-color;
+        // Ignore special background on code blocks.
+        // TODO this was enabled at one point not sure why, seems to be at
+        // f8fc9eacfa794b95c1d9982a04b62603e6d0bb83
+        //background-color: $background-color;
       }
     }
   }

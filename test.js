@@ -4171,3 +4171,69 @@ assert_executable(
     }
   }
 );
+
+assert_executable(
+  'executable: root_relpath and root_path in main.liquid.html work',
+  {
+    args: ['-S', '.'],
+    filesystem: {
+      'README.ciro': `= Index
+
+== h2
+`,
+      'notindex.ciro': `= Notindex
+
+== Notindex h2
+{scope}
+
+=== h3
+`,
+      'cirodown.json': `{
+  "template": "main.liquid.html"
+}
+`,
+      'main.liquid.html': `<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<body>
+<header>
+<a id="root-relpath" href="{{ root_relpath }}">Root relpath</a>
+<a id="root-page" href="{{ root_page }}">Root page</a>
+{{ post_body }}
+</body>
+</html>
+`
+    },
+    expect_filesystem_xpath: {
+      'index.html': [
+        "//x:a[@id='root-relpath' and @href='']",
+        "//x:a[@id='root-page' and @href='']",
+      ],
+      'split.html': [
+        "//x:a[@id='root-relpath' and @href='']",
+        "//x:a[@id='root-page' and @href='index.html']",
+      ],
+      'h2.html': [
+        "//x:a[@id='root-relpath' and @href='']",
+        "//x:a[@id='root-page' and @href='index.html']",
+      ],
+      'notindex.html': [
+        "//x:a[@id='root-relpath' and @href='']",
+        "//x:a[@id='root-page' and @href='index.html']",
+      ],
+      'notindex-split.html': [
+        "//x:a[@id='root-relpath' and @href='']",
+        "//x:a[@id='root-page' and @href='index.html']",
+      ],
+      'notindex-h2.html': [
+        "//x:a[@id='root-relpath' and @href='']",
+        "//x:a[@id='root-page' and @href='index.html']",
+      ],
+      'notindex-h2/h3.html': [
+        "//x:a[@id='root-relpath' and @href='../']",
+        "//x:a[@id='root-page' and @href='../index.html']",
+      ],
+    }
+  }
+);

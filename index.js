@@ -774,10 +774,15 @@ class Tokenizer {
   }
 
   plaintext_append_or_create(s) {
-    let last_token = this.tokens[this.tokens.length - 1];
-    if (last_token.type === TokenType.PLAINTEXT) {
-      last_token.value += s;
-    } else {
+    let new_plaintext = true;
+    if (this.tokens.length > 0) {
+      let last_token = this.tokens[this.tokens.length - 1];
+      if (last_token.type === TokenType.PLAINTEXT) {
+        last_token.value += s;
+        new_plaintext = false;
+      }
+    }
+    if (new_plaintext) {
       this.push_token(TokenType.PLAINTEXT, s);
     }
     return this.consume();
@@ -806,10 +811,6 @@ class Tokenizer {
     if (this.chars[this.chars.length - 1] === '\n') {
       this.chars.pop();
     }
-    // Add the magic implicit toplevel element. TODO remove.
-    this.push_token(TokenType.MACRO_NAME, Macro.TOPLEVEL_MACRO_NAME);
-    this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
-    this.push_token(TokenType.PARAGRAPH);
     let unterminated_literal = false;
     let start_line;
     let start_column;
@@ -837,13 +838,16 @@ class Tokenizer {
           );
         }
       } else if (this.cur_c === START_NAMED_ARGUMENT_CHAR) {
-        this.push_token(TokenType.NAMED_ARGUMENT_START);
+        let line = this.line;
+        let column = this.column;
         // Tokenize past the last open char.
         let open_length = this.tokenize_func(
           (c)=>{return c === START_NAMED_ARGUMENT_CHAR}
         ).length;
-        let line = this.line;
-        let column = this.column;
+        this.push_token(TokenType.NAMED_ARGUMENT_START,
+          START_NAMED_ARGUMENT_CHAR.repeat(open_length), line, column);
+        line = this.line;
+        column = this.column;
         let arg_name = this.tokenize_func(char_is_identifier);
         this.push_token(TokenType.NAMED_ARGUMENT_NAME, arg_name, line, column);
         if (this.cur_c === NAMED_ARGUMENT_EQUAL_CHAR) {
@@ -863,19 +867,22 @@ class Tokenizer {
           if (!this.tokenize_literal(START_NAMED_ARGUMENT_CHAR, close_string)) {
             unterminated_literal = true;
           }
-          this.push_token(TokenType.NAMED_ARGUMENT_END);
+          this.push_token(TokenType.NAMED_ARGUMENT_END, close_string);
           this.consume_optional_newline_after_argument()
         }
       } else if (this.cur_c === END_NAMED_ARGUMENT_CHAR) {
-        this.push_token(TokenType.NAMED_ARGUMENT_END);
+        this.push_token(TokenType.NAMED_ARGUMENT_END, END_NAMED_ARGUMENT_CHAR);
         this.consume();
         this.consume_optional_newline_after_argument()
       } else if (this.cur_c === START_POSITIONAL_ARGUMENT_CHAR) {
-        this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
+        let line = this.line;
+        let column = this.column;
         // Tokenize past the last open char.
         let open_length = this.tokenize_func(
           (c)=>{return c === START_POSITIONAL_ARGUMENT_CHAR}
         ).length;
+        this.push_token(TokenType.POSITIONAL_ARGUMENT_START,
+          START_POSITIONAL_ARGUMENT_CHAR.repeat(open_length), line, column);
         if (open_length === 1) {
           this.consume_optional_newline(true);
         } else {
@@ -967,8 +974,6 @@ class Tokenizer {
       this.error(`unterminated literal argument`, start_line, start_column);
     }
     this.push_token(TokenType.PARAGRAPH);
-    // TODO remove.
-    this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
     this.push_token(TokenType.INPUT_END);
     return this.tokens;
   }
@@ -1637,22 +1642,31 @@ function parse(tokens, macros, options, extra_returns={}) {
     token: tokens[0],
     tokens: tokens,
   };
-  const ast_toplevel = parse_macro(state);
-  //const ast_toplevel_args = parse_argument_list(state);
-  //if ('content' in ast_toplevel_args) {
-  //  parse_error(state, `the toplevel arguments cannot contain an explicit content argument`, 1, 1);
-  //}
-  //const ast_toplevel_content_arg = parse_argument(state);
-  //const ast_toplevel = new AstNode(
-  //  AstType.MACRO,
-  //  Macro.TOPLEVEL_MACRO_NAME,
-  //  Object.assign(ast_toplevel_args, {'content': ast_toplevel_content_arg}),
-  //  1,
-  //  1,
-  //);
-  //if (state.token.type !== TokenType.INPUT_END) {
-  //  parse_error(state, `unexpected tokens at the end of input`);
-  //}
+  // Get toplevel arguments such as {title=}, see https://cirosantilli.com/cirodown#toplevel
+  const ast_toplevel_args = parse_argument_list(state, Macro.TOPLEVEL_MACRO_NAME, AstType.MACRO);
+  if ('content' in ast_toplevel_args) {
+    parse_error(state, `the toplevel arguments cannot contain an explicit content argument`, 1, 1);
+  }
+
+  // Inject a maybe paragraph token after those arguments.
+  const paragraph_token = new Token(TokenType.PARAGRAPH, undefined, state.token.line, state.token.column);
+  tokens.splice(state.i, 0, paragraph_token);
+  state.token = paragraph_token;
+
+  // Parse the main part of the document as the content argument toplevel argument.
+  const ast_toplevel_content_arg = parse_argument(state, state.token.line, state.token.column);
+
+  // Create the toplevel argument itself.
+  const ast_toplevel = new AstNode(
+    AstType.MACRO,
+    Macro.TOPLEVEL_MACRO_NAME,
+    Object.assign(ast_toplevel_args, {'content': ast_toplevel_content_arg}),
+    1,
+    1,
+  );
+  if (state.token.type !== TokenType.INPUT_END) {
+    parse_error(state, `unexpected tokens at the end of input`);
+  }
 
   // Post process the AST breadth first minimally to support includes.
   //
@@ -2266,6 +2280,9 @@ function parse_log_debug(state, msg='') {
 // Input: e.g. in `\Image[img.jpg]{height=123}` this parses the `[img.jpg]{height=123}`.
 // Return value: dict with arguments.
 function parse_argument_list(state, macro_name, macro_type) {
+  parse_log_debug(state, 'function: parse_argument_list');
+  parse_log_debug(state, 'state = ' + JSON.stringify(state.token));
+  parse_log_debug(state);
   const args = {};
   const macro = state.macros[macro_name];
   let positional_arg_count = 0;
@@ -2278,20 +2295,18 @@ function parse_argument_list(state, macro_name, macro_type) {
     )
   ) {
     let arg_name;
-    let open_type = state.token.type;
-    let open_argument_line = state.token.line;
-    let open_argument_column = state.token.column;
+    let open_token = state.token;
     // Consume the *_ARGUMENT_START token out.
     parse_consume(state);
-    if (open_type === TokenType.POSITIONAL_ARGUMENT_START) {
+    if (open_token.type === TokenType.POSITIONAL_ARGUMENT_START) {
       if (macro_type === AstType.ERROR) {
         arg_name = positional_arg_count.toString();
       } else {
         if (positional_arg_count >= macro.positional_args.length) {
           parse_error(state,
             `unknown named macro argument "${arg_name}" of macro "${macro_name}"`,
-            open_argument_line,
-            open_argument_column
+            open_token.line,
+            open_token.column,
           );
           arg_name = positional_arg_count.toString();
         } else {
@@ -2314,15 +2329,9 @@ function parse_argument_list(state, macro_name, macro_type) {
       // Parse the argument name out.
       parse_consume(state);
     }
-    const arg_children = parse_argument(state, open_argument_line, open_argument_column);
-    if (state.token.type !== closing_token(open_type)) {
-      let expect_description;
-      if (state.token.type === TokenType.INPUT_END) {
-        expect_description = 'the end of the document';
-      } else {
-        expect_description = `'${state.token.type.toString()}'`;
-      }
-      parse_error(state, `expected a closing '${END_POSITIONAL_ARGUMENT_CHAR}' found ${expect_description}`);
+    const arg_children = parse_argument(state, open_token.line, open_token.column);
+    if (state.token.type !== closing_token(open_token.type)) {
+      parse_error(state, `unclosed argument "${open_token.value}"`, open_token.line, open_token.column);
     }
     args[arg_name] = arg_children;
     if (state.token.type !== TokenType.INPUT_END) {
@@ -2334,6 +2343,7 @@ function parse_argument_list(state, macro_name, macro_type) {
 }
 
 /**
+ * Input: e.g. in `\Image[img.jpg]{height=123}` this parses the `img.jpg` and the `123`.
  * @return AstArgument
  */
 function parse_argument(state, open_argument_line, open_argument_column) {
@@ -2350,6 +2360,7 @@ return arg_children;
 }
 
 // Parse one macro. This is the centerpiece of the parsing!
+// Input: e.g. in `\Image[img.jpg]{height=123}` this parses the entire string.
 function parse_macro(state) {
   parse_log_debug(state, 'function: parse_macro');
   parse_log_debug(state, 'state = ' + JSON.stringify(state.token));
@@ -2403,14 +2414,21 @@ function parse_macro(state) {
     parse_consume(state);
     return node;
   } else {
-    parse_error(
-      state,
-      `unexpected token ${state.token.type.toString()}`
-    );
+    let error_message
+    if (
+      state.token.type === TokenType.POSITIONAL_ARGUMENT_START ||
+      state.token.type === TokenType.NAMED_ARGUMENT_START
+    ) {
+      error_message = `stray open argument character: '${state.token.value}', maybe you want to escape it with '\\'`;
+    } else {
+      // Generic error message.
+      error_message = `unexpected token ${state.token.type.toString()}`;
+    }
+    parse_error(state, error_message);
     let node = new PlaintextAstNode(
       state.token.line,
       state.token.column,
-      error_message_in_output('unexpected token'),
+      error_message_in_output(error_message),
     );
     // Consume past whatever happened to avoid an infinite loop.
     parse_consume(state);
@@ -3023,9 +3041,6 @@ const DEFAULT_MACRO_LIST = [
       new MacroArgument({
         name: 'content',
       }),
-      new MacroArgument({
-        name: Macro.TITLE_ARGUMENT_NAME,
-      }),
     ],
     function(ast, context) {
       let title = ast.args[Macro.TITLE_ARGUMENT_NAME];
@@ -3077,6 +3092,13 @@ const DEFAULT_MACRO_LIST = [
         );
       }
       return ret;
+    },
+    {
+      named_args: [
+        new MacroArgument({
+          name: Macro.TITLE_ARGUMENT_NAME,
+        }),
+      ],
     }
   ),
   new Macro(

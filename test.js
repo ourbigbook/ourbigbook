@@ -11,27 +11,43 @@ const convert_opts = {
   //show_tokenize: true,
 };
 
-function assert_convert_ast_func(input_string, expected_ast_output_subset, extra_convert_opts={}) {
+function assert_convert_ast_func(input_string, expected_ast_output_subset, options={}) {
+  if (!('extra_convert_opts' in options)) {
+    options.extra_convert_opts = {};
+  }
+  if (!('toplevel' in options)) {
+    options.toplevel = false;
+  }
   const extra_returns = {};
   const new_convert_opts = Object.assign({}, convert_opts);
-  Object.assign(new_convert_opts, extra_convert_opts);
-  cirodown.convert(input_string, extra_convert_opts, extra_returns);
-  const toplevel_content = extra_returns.ast.args.content;
-  const ast_arg_has_subset_extra_returns = {fail_reason: ''};
-  const is_subset = ast_arg_has_subset(toplevel_content, expected_ast_output_subset, ast_arg_has_subset_extra_returns);
+  Object.assign(new_convert_opts, options.extra_convert_opts);
+  if (options.toplevel) {
+    new_convert_opts.body_only = false;
+  }
+  cirodown.convert(input_string, new_convert_opts, extra_returns);
+  const has_subset_extra_returns = {fail_reason: ''};
+  let is_subset;
+  let content;
+  if (options.toplevel) {
+    content = extra_returns.ast;
+    is_subset = ast_has_subset(content, expected_ast_output_subset, has_subset_extra_returns);
+  } else {
+    content = extra_returns.ast.args.content;
+    is_subset = ast_arg_has_subset(content, expected_ast_output_subset, has_subset_extra_returns);
+  }
   if (!is_subset || extra_returns.errors.length !== 0) {
     console.error('tokens:');
     console.error(JSON.stringify(extra_returns.tokens, null, 2));
     console.error();
     console.error('ast output:');
-    console.error(JSON.stringify(toplevel_content, null, 2));
+    console.error(JSON.stringify(content, null, 2));
     console.error();
     console.error('ast expect:');
     console.error(JSON.stringify(expected_ast_output_subset, null, 2));
     console.error();
     if (!is_subset) {
       console.error('failure reason:');
-      console.error(ast_arg_has_subset_extra_returns.fail_reason);
+      console.error(has_subset_extra_returns.fail_reason);
       console.error();
     }
     for (const error of extra_returns.errors) {
@@ -866,7 +882,7 @@ assert_no_error('math block insane',
 assert_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 3);
 
 // Include.
-const include_opts = {
+const include_opts = {extra_convert_opts: {
   html_single_page: true,
   read_include: function(input_path) {
     if (input_path === 'include-one-level-1') {
@@ -892,7 +908,7 @@ hh
       throw new Error(`unknown lnclude path: ${input_path}`);
     }
   },
-};
+}};
 assert_convert_ast('include simple with paragraph',
   `\\h[1][aa]
 
@@ -990,6 +1006,19 @@ assert_convert_ast('id autogeneration nested',
   ],
 );
 
+// Toplevel.
+assert_convert_ast('toplevel arguments',
+  `{title=aaa}
+
+bbb
+`,
+  a('toplevel', [a('p', [t('bbb')])], {'title': [t('aaa')]}),
+  {toplevel: true}
+);
+assert_error('toplevel explicit content',
+  `[]`, 1, 1,
+);
+
 // Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception, or worse, not blowing up at all!
 assert_error('backslash without macro', '\\ a', 1, 1);
@@ -999,11 +1028,12 @@ assert_error('unknown named macro argument', '\\c{reserved_undefined=abc}[]', 1,
 assert_error('named argument without =', '\\p{id ab}[cd]', 1, 6);
 assert_error('missing mandatory positional argument href of a', '\\a', 1, 1);
 assert_error('missing mandatory positional argument level of h', '\\h', 1, 1);
-assert_error('argument without close empty', '\\c[\n', 1, 4);
-assert_error('argument without close nonempty', '\\c[ab\n', 1, 6);
-// TODO failing
-//assert_error('stray closing ]', ']', 1, 1);
-//assert_error('stray closing }', 'a}b', 1, 2);
+assert_error('stray open positional argument start', 'a[b\n', 1, 2);
+assert_error('stray open named argument start', 'a{b\n', 1, 2);
+assert_error('argument without close empty', '\\c[\n', 1, 3);
+assert_error('argument without close nonempty', '\\c[ab\n', 1, 3);
+assert_error('stray positional argument end', 'a]b', 1, 2);
+assert_error('stray named argument end}', 'a}b', 1, 2);
 assert_error('unterminated literal positional argument', '\\c[[\n', 1, 3);
 assert_error('unterminated literal named argument', '\\c{{id=\n', 1, 3);
 assert_error('unterminated insane inline code', '`\n', 1, 1);

@@ -3338,7 +3338,7 @@ assert_executable(
       'out/publish/out/publish/index.html': [
         "//x:div[@class='p']//x:a[@href='notindex' and text()='link to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex#notindex-h2' and text()='link to notindex h2']",
-        "//x:style[contains(text(),'@import \"cirodown.min.css\"')]",
+        "//x:style[contains(text(),'@import \"cirodown.css\"')]",
       ],
       'out/publish/out/publish/notindex.html': [
         xpath_header(1, 'notindex'),
@@ -3346,10 +3346,10 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='.#h2' and text()='link to h2']",
       ],
       'out/publish/out/publish/toplevel-scope/toplevel-scope-h2.html': [
-        "//x:style[contains(text(),'@import \"../cirodown.min.css\"')]",
+        "//x:style[contains(text(),'@import \"../cirodown.css\"')]",
       ],
       'out/publish/out/publish/subdir/index.html': [
-        "//x:style[contains(text(),'@import \"../cirodown.min.css\"')]",
+        "//x:style[contains(text(),'@import \"../cirodown.css\"')]",
       ],
     },
   }

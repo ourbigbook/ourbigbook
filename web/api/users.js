@@ -84,6 +84,9 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
     if (typeof req.body.user.username !== 'undefined') {
       user.username = req.body.user.username
     }
+    if (typeof req.body.user.displayName !== 'undefined') {
+      user.displayName = req.body.user.displayName
+    }
     if (typeof req.body.user.email !== 'undefined') {
       user.email = req.body.user.email
     }

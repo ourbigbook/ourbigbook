@@ -136,10 +136,10 @@ const ArticleList = (props) => {
         <table className="article-list">
           <thead>
             <tr>
-              <th className="shrink">Score</th>
               {showAuthor &&
                 <th className="shrink">Author</th>
               }
+              <th className="shrink">Score</th>
               <th className="expand">Title</th>
               <th className="shrink">Created</th>
               <th className="shrink">Updated</th>
@@ -148,6 +148,11 @@ const ArticleList = (props) => {
           <tbody>
             {articles?.map((article, i) => (
               <tr key={article.slug}>
+                {showAuthor &&
+                  <td className="shrink">
+                    <UserLinkWithImage user={article.author} />
+                  </td>
+                }
                 <td className="shrink">
                   <LikeArticleButtonContext.Provider key={article.slug} value={{
                     liked: liked[i],
@@ -161,11 +166,6 @@ const ArticleList = (props) => {
                     />
                   </LikeArticleButtonContext.Provider>
                 </td>
-                {showAuthor &&
-                  <td className="shrink">
-                    <UserLinkWithImage user={article.author} />
-                  </td>
-                }
                 <td className="expand title">
                   <CustomLink
                     href={routes.articleView(article.slug)}

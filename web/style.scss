@@ -123,8 +123,10 @@ div.article-page {
       margin-bottom: 10px;
       .username {
         font-size: 1.4em;
-        .profile-thumb {
-          height: 1.6em;
+        img.profile-thumb {
+          $size: 3.0em;
+          height: $size;
+          width: $size;
         }
       }
     }
@@ -298,8 +300,10 @@ i.ion-heart {
   }
 }
 
-.profile-thumb {
-  height: 26px;
+img.profile-thumb {
+  $size: 26px;
+  height: $size;
+  width: $size;
   vertical-align: middle;
 }
 

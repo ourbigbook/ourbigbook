@@ -48,6 +48,10 @@ const DEFAULT_IGNORE_BASENAMES = [
   ourbigbook.RAW_PREFIX,
 ];
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
+const PUBLISH_TARGETS = {
+  'github-pages': 'github-pages',
+  local: 'local',
+}
 const SQLITE_MAGIC_MEMORY_NAME = ':memory:'
 exports.SQLITE_MAGIC_MEMORY_NAME = SQLITE_MAGIC_MEMORY_NAME
 
@@ -778,6 +782,8 @@ cli_parser.option('--dry-run', "don't run most external commands https://github.
 cli_parser.option('--dry-run-push', "don't run git push commands https://github.com/ourbigbook/ourbigbook#dry-run-push", false);
 cli_parser.option('--embed-includes', 'https://docs.ourbigbook.com#embed-include', false);
 cli_parser.option('--embed-resources', 'https://docs.ourbigbook.com#embed-resources', false);
+// Originally added for testing, this allows the test filesystems to be put under the repository iteslf,
+// otherwise they would pickup our toplevel ourbigbook.json.
 cli_parser.option('--fakeroot <fakeroot>', 'Stop searching for ourbigbook.json at this directory rather than at the filesystem root');
 cli_parser.option('--generate <name>', 'https://docs.ourbigbook.com#generate', false);
 cli_parser.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://docs.ourbigbook.com#help-macros', false);
@@ -791,13 +797,12 @@ cli_parser.option('-o, --outfile <outfile>', 'https://docs.ourbigbook.com#outfil
 cli_parser.option('-O, --output-format <output-format>', 'https://docs.ourbigbook.com#output-format', 'html');
 cli_parser.option('-p --publish', 'https://docs.ourbigbook.com#publish', false);
 cli_parser.option('-P, --publish-commit <commit-message>', 'https://docs.ourbigbook.com#publish-commit');
+cli_parser.option('--publish-target <target>', 'https://docs.ourbigbook.com#publish-target', PUBLISH_TARGETS['github-pages']);
 cli_parser.option('--format-source', 'https://docs.ourbigbook.com#format-source');
 cli_parser.option('-S, --split-headers', 'https://docs.ourbigbook.com#split-headers', false);
 cli_parser.option('--stdout', 'also print output to stdout in addition to saving to a file https://docs.ourbigbook.com#stdout', false);
 cli_parser.option('--template <template>', 'https://docs.ourbigbook.com#template');
 cli_parser.option('-w, --watch', 'https://docs.ourbigbook.com#watch', false);
-// Originally added for testing, this allows the test filesystems to be put under the repository iteslf,
-// otherwise they would pickup our toplevel ourbigbook.json.
 cli_parser.option('-W, --web', 'sync to ourbigbook web https://docs.ourbigbook.com#web', false);
 cli_parser.option('--web-force-render', "same as --force-render but for --web upload: https://docs.ourbigbook.com#web-force-render", false);
 cli_parser.option('--web-max-renders <n>', 'stop after <n> articles are rendered: https://docs.ourbigbook.com#web-max-renders', ourbigbook_nodejs.cliInt, false);
@@ -916,11 +921,32 @@ if (cli.helpMacros) {
     ourbigbook_json.h.splitDefault = true
   }
 
-  let split_headers;
+  let split_headers, publish_uses_git;
+  const publish_create_files = {}
+  const publish_target = cli.publishTarget
   if (publish) {
-    // GitHub pages target is the only one for now.
-    html_x_extension = false;
-    split_headers = true;
+    switch (publish_target) {
+      case PUBLISH_TARGETS['github-pages']:
+        html_x_extension = false;
+        split_headers = true;
+        publish_uses_git = true;
+
+        // Otherwise _* paths are not added to the website, notably _raw/* and _file/*.
+        publish_create_files['.nojekyll'] = ''
+
+        const cname_path = path.join(ourbigbook_json_dir, 'CNAME')
+        if (fs.existsSync(cname_path)) {
+          publish_create_files['CNAME'] = fs.readFileSync(cname_path, ourbigbook_nodejs_webpack_safe.ENCODING)
+        }
+        break;
+      case PUBLISH_TARGETS.local:
+        html_x_extension = true;
+        split_headers = false;
+        publish_uses_git = false;
+        break;
+      default:
+        cli_error(`unknown publish target: ${publish_target}`)
+    }
   } else {
     html_x_extension = cli.htmlXExtension === false ? false : undefined;
     split_headers = cli.splitHeaders;
@@ -1629,10 +1655,10 @@ if (cli.helpMacros) {
           if (!publish_remote_url) {
             publish_remote_url = 'git@github.com:ourbigbook/ourbigbook.git';
           }
-          src_branch = cmd_get_stdout('git', ['-C', inputPath, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options).slice(0, -1);
-          if (cli.dryRun) {
-            src_branch = 'master';
-          }
+          cmd_options_no_dry = Object.assign({}, cmd_options)
+          cmd_options_no_dry.dry_run = false
+          src_branch = cmd_get_stdout('git', ['-C', inputPath, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options_no_dry).slice(0, -1);
+          source_commit = git_sha(inputPath, src_branch);
           const parsed_remote_url = require("git-url-parse")(publish_remote_url);
           if (parsed_remote_url.source !== 'github.com') {
             cli_error('only know how  to publish to origin == github.com currently, please send a patch');
@@ -1655,32 +1681,44 @@ if (cli.helpMacros) {
             cmd_get_stdout( 'git', [ '-C', inputPath, 'commit', '-m', cli.publishCommit ], cmd_options);
           }
           if (fs.existsSync(publish_git_dir)) {
-            cmd_get_stdout('git', ['-C', publish_dir, 'checkout', '--', '.'], cmd_options);
-            cmd_get_stdout('git', ['-C', publish_dir, 'pull'], cmd_options);
-            cmd_get_stdout('git', ['-C', publish_dir, 'submodule', 'update', '--init'], cmd_options);
+            cmd_get_stdout('git', ['-C', publish_dir, 'checkout', '--', '.'], cmd_options_no_dry);
+            cmd_get_stdout('git', ['-C', publish_dir, 'fetch'], cmd_options_no_dry);
+            cmd_get_stdout('git', ['-C', publish_dir, 'checkout', source_commit], cmd_options_no_dry);
+            cmd_get_stdout('git', ['-C', publish_dir, 'submodule', 'update', '--init'], cmd_options_no_dry);
+            cmd_get_stdout('git', ['-C', publish_dir, 'clean', '-xdf'], cmd_options_no_dry);
           } else {
-            cmd_get_stdout('git', ['clone', '--recursive', input_git_toplevel, publish_dir],
+            cmd_get_stdout('git', ['clone', '--recursive', '--depth', '1', input_git_toplevel, publish_dir],
               ourbigbook.clone_and_set(cmd_options, 'dry_run', false));
           }
 
           // Set some variables especially for publishing.
           actual_input_dir = path.join(publish_dir, subdir_relpath);
           non_ourbigbook_options.ourbigbook_json_dir = actual_input_dir;
-          publish_out_publish_dir = path.join(publish_tmpdir, 'publish');
+          publish_out_publish_dir = path.join(publish_tmpdir, publish_target);
           publish_out_publish_dist_dir = path.join(publish_out_publish_dir, ourbigbook_nodejs.DIST_BASENAME)
           non_ourbigbook_options.out_css_path = path.join(publish_out_publish_dist_dir, ourbigbook_nodejs.DIST_CSS_BASENAME);
           non_ourbigbook_options.out_js_path = path.join(publish_out_publish_dist_dir, ourbigbook_nodejs.DIST_JS_BASENAME);
           non_ourbigbook_options.external_css_and_js = true;
-          // Remove all files from the gh-pages repository in case some were removed from the original source.
-          if (
-            fs.existsSync(path.join(publish_out_publish_dir, '.git'))
-          ) {
-            if (git_ls_files(publish_out_publish_dir).length > 0) {
-              cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'rm', '-r', '-f', '.'], cmd_options);
+
+          // Remove all files from the publish diretory in case some were removed from the original source.
+          if (publish_uses_git) {
+            if (fs.existsSync(path.join(publish_out_publish_dir, '.git'))) {
+              if (git_ls_files(publish_out_publish_dir).length > 0) {
+                cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'rm', '-r', '-f', '.'], cmd_options);
+              }
             }
           } else {
-            fs.mkdirSync(publish_out_publish_dir, {recursive: true});
+            fs.rmSync(publish_out_publish_dir, { recursive: true, force: true })
           }
+
+          // Clean database to ensure a clean conversion. TODO: this is dangerous, if some day we
+          // start adding more conversion state outside of db.sqlite3. Better would be to remove the
+          // entire out/publish/out. Te slight downside of that is that:
+          // - it deletes other publish targets
+          // - it forces re-fetch of git history on the gh-pages branch
+          fs.rmSync(path.join(publish_tmpdir, 'db.sqlite3'), { force: true })
+
+          fs.mkdirSync(publish_out_publish_dir, { recursive: true })
         } else {
           actual_input_dir = inputPath;
           publish_out_publish_dir = outdir;
@@ -1711,33 +1749,39 @@ if (cli.helpMacros) {
 
         // Publish the converted output if build succeeded.
         if (publish && !non_ourbigbook_options.had_error) {
+
           // Push the original source.
           if (!cli.dryRunPush) {
             cmd_get_stdout('git', ['-C', inputPath, 'push'], cmd_options);
           }
-          cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'init'], cmd_options);
-          // https://stackoverflow.com/questions/42871542/how-to-create-a-git-repository-with-the-default-branch-name-other-than-master
-          cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'checkout', '-B', publish_branch], cmd_options);
-          try {
-            // Fails if remote already exists.
-            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'remote', 'add', 'origin', publish_remote_url], cmd_options);
-          } catch(error) {
-            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'remote', 'set-url', 'origin', publish_remote_url], cmd_options);
+
+          if (publish_uses_git) {
+            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'init'], cmd_options);
+            // https://stackoverflow.com/questions/42871542/how-to-create-a-git-repository-with-the-default-branch-name-other-than-master
+            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'checkout', '-B', publish_branch], cmd_options);
+            try {
+              // Fails if remote already exists.
+              cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'remote', 'add', 'origin', publish_remote_url], cmd_options);
+            } catch(error) {
+              cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'remote', 'set-url', 'origin', publish_remote_url], cmd_options);
+            }
+            // Ensure that we are up-to-date with the upstream gh-pages if one exists.
+            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'fetch', 'origin'], cmd_options);
+            cmd_get_stdout(
+              'git',
+              ['-C', publish_out_publish_dir, 'reset', `origin/${publish_branch}`],
+              // Fails on the first commit in an empty repository.
+              ourbigbook.clone_and_set(cmd_options, 'throw_on_error', false)
+            );
           }
-          // Ensure that we are up-to-date with the upstream gh-pages if one exists.
-          cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'fetch', 'origin'], cmd_options);
-          cmd_get_stdout(
-            'git',
-            ['-C', publish_out_publish_dir, 'reset', `origin/${publish_branch}`],
-            // Fails on the first commit in an empty repository.
-            ourbigbook.clone_and_set(cmd_options, 'throw_on_error', false)
-          );
 
-          // Generate special files needed for GitHub pages.
-          gemfile_content = "gem 'github-pages', group: :jekyll_plugins\n";
-          fs.writeFileSync(path.join(publish_out_publish_dir, 'Gemfile'), gemfile_content);
+          // Generate special files needed for a given publish target.
+          for (const p in publish_create_files) {
+            const outpath = path.join(publish_out_publish_dir, p)
+            fs.mkdirSync(path.dirname(outpath));
+            fs.writeFileSync(outpath, publish_create_files[p])
+          }
 
-          // Commit and push.
           if ('prepublish' in ourbigbook_json) {
             if (!cli.dryRun && !cli.dryRunPush && !cli.unsafeAce) {
               cli_error('prepublish in ourbigbook.json requires running with --unsafe-ace');
@@ -1763,25 +1807,28 @@ if (cli.helpMacros) {
             )
           }
           dir.closeSync()
-          cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'add', '.'], cmd_options);
-          source_commit = git_sha(inputPath, src_branch);
-          const args = ['-C', publish_out_publish_dir, 'commit', '-m', source_commit]
-          if (git_has_commit(publish_out_publish_dir)) {
-            args.push('--amend')
-          }
-          let commit_cmd_options = cmd_options
-          if (ourbigbook_json.publishCommitDate) {
-            args.push(...['--date', ourbigbook_json.publishCommitDate])
-            commit_cmd_options = Object.assign({}, cmd_options)
-            commit_cmd_options.env_extra = { GIT_COMMITTER_DATE: ourbigbook_json.publishCommitDate }
-          }
-          cmd_get_stdout('git', args, commit_cmd_options);
-          if (!cli.dryRunPush) {
-            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'push', '-f', 'origin', `${publish_branch}:${publish_branch}`], cmd_options);
-            // Mark the commit with the `published` branch to make it easier to find what was last published.
-            cmd_get_stdout('git', ['-C', inputPath, 'checkout', '-B', 'published'], cmd_options);
-            cmd_get_stdout('git', ['-C', inputPath, 'push', '-f', '--follow-tags'], cmd_options);
-            cmd_get_stdout('git', ['-C', inputPath, 'checkout', '-'], cmd_options);
+
+          if (publish_uses_git) {
+            // Commit and push.
+            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'add', '.'], cmd_options);
+            const args = ['-C', publish_out_publish_dir, 'commit', '-m', source_commit]
+            if (git_has_commit(publish_out_publish_dir)) {
+              args.push('--amend')
+            }
+            let commit_cmd_options = cmd_options
+            if (ourbigbook_json.publishCommitDate) {
+              args.push(...['--date', ourbigbook_json.publishCommitDate])
+              commit_cmd_options = Object.assign({}, cmd_options)
+              commit_cmd_options.env_extra = { GIT_COMMITTER_DATE: ourbigbook_json.publishCommitDate }
+            }
+            cmd_get_stdout('git', args, commit_cmd_options);
+            if (!cli.dryRunPush) {
+              cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'push', '-f', 'origin', `${publish_branch}:${publish_branch}`], cmd_options);
+              // Mark the commit with the `published` branch to make it easier to find what was last published.
+              cmd_get_stdout('git', ['-C', inputPath, 'checkout', '-B', 'published'], cmd_options);
+              cmd_get_stdout('git', ['-C', inputPath, 'push', '-f', '--follow-tags'], cmd_options);
+              cmd_get_stdout('git', ['-C', inputPath, 'checkout', '-'], cmd_options);
+            }
           }
         }
       }

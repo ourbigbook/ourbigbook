@@ -3,6 +3,16 @@
 
 == Issues
 
+=== Option to add zip of local conversion to converted GitHub pages website
+{tag=Publish}
+
+Would be cool, easily allowing full website download for offline viewing! One day.
+
+=== Word count is always 0 on ToC hover
+{tag=Word count}
+
+For all items except ToC toplevel. Subheaders are fine however.
+
 === Internal cross reference to non-existent ID is not checked before render the second time we try to convert
 {id=1}
 {tag=Bug}
@@ -690,6 +700,7 @@ Starting from the commit of this line, we are also going to limit the ToC, so a 
 
 === Word count on web
 {tag=Web}
+{tag=Word count}
 
 Likely also at same time do a source character count.
 
@@ -1380,6 +1391,7 @@ OK, was not the arguments in general, was `{wiki}` alone with which I was testin
 === Remove word count on web
 {tag=Dynamic tree fetch}
 {tag=Web}
+{tag=Word count}
 
 It is broken, and lazy to fix now.
 
@@ -1432,6 +1444,8 @@ This tag is about `ourbigbook --web` uploading from the local filesystem to OurB
 
 === CLI
 
+=== Word count
+
 === Lib
 
 ==== Tag
@@ -1443,6 +1457,8 @@ This tag is about `ourbigbook --web` uploading from the local filesystem to OurB
 === Performance
 
 === Publicity
+
+=== Publish
 
 === Refactor
 

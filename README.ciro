@@ -1269,15 +1269,29 @@ has the special effect of generating automatic links as in:
 \a[http://example.com][http://example.com]
 ``
 
+This can be contrasted with named aguments, for which there is always a default value, notably for \x[boolean-named-arguments].
+
 See also: \x[links].
 
-\h[6][`mandatory` positional argument]
+\h[6][mandatory positional arguments]
 
 Some positional arguments are required, and if not given cirodown reports an error and does not render the node.
 
 This is for example the `level` of a \x[headers][header].
 
 These arguments marked with the `mandatory: true` \x[help-macros] argument property.
+
+\h[5][boolean named arguments]
+
+Name arguments marked in \x[help-macros] as `boolean: true` don't take any value. For example, the `full` argument of \x[internal-cross-references] is correctly written as:
+\cirodown_example[[
+\x[boolean-named-arguments]{full}
+]]
+without the `=` sign. Adding the `=` sign to a boolean argument is an error.
+
+If given, such arguments denote `true`, and if missing, `false`.
+
+The name "boolean argument" is given by analogy to the \a[https://stackoverflow.com/questions/16109358/what-is-the-correct-readonly-attribute-syntax-for-input-text-elements/24588427#24588427]["boolean attribute" concept in HTML5].
 
 \h[4][JavaScript interface for arguments]
 

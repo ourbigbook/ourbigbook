@@ -1,0 +1,356 @@
+= News
+{scope}
+
+This is a list of project announcements such as new features sorted in chronological order, from the newest to oldest.
+
+Significant entries will have a corresponding announcement on the following <official accounts>:
+* <twitter.com OurBigBook>
+* <mastodon.social @OurBigBook>
+
+= ourbigbook.com/cirosantilli loads 2x as fast after database optimizations
+{parent=News}
+{tag=Web}
+{tag=OurBigBook Web performance benchmarking}
+
+At https://github.com/ourbigbook/ourbigbook/commit/075872a0a5ca7faf171d45834bc2b47995a15634 and nearby previous commits we've optimized the database queries made on article pages, mostly by adding some key missing indices and cache columns.
+
+As a result, https://ourbigbook.com/cirosantilli now starts downloading the first byte 2x as fast as before, going down from about 1200 ms to around 600 ms, at a time region which makes a huge difference for user experience.
+
+We will also start keeping better performance logs at: <OurBigBook Web performance log>{full} to make sure we don't regress as easily.
+
+Announcements:
+* https://mastodon.social/@ourbigbook/113068626468247721
+* https://x.com/OurBigBook/status/1830626456235299211
+* https://www.linkedin.com/feed/update/urn:li:share:7236392360090243075
+* https://www.facebook.com/OurBigBook/posts/pfbid029F6xK7QrV725cAfFoVbb2RhGtKXvfzqBDcy2kvY1AALNSHDbnbuvZJkYFhzmejUcl
+
+= Visual Studio Code extension overhaul
+{parent=News}
+{tag=Visual Studio Code}
+
+We've greatly improved the <Visual Studio Code extension> adding support for the most important VS Code language features: Ctrl + T header search, Ctrl + click jump to header, header outline and link autocomplete
+
+Thanks to https://x.com/subspace_audio[Juhani Junkala] for the awesome CC0 chiptune game soundtrack! https://opengameart.org/content/5-chiptunes-action
+
+\Video[https://www.youtube.com/watch?v=0W8U2YtQ8fg]
+{title=OurBigBook <Visual Studio Code extension>}
+{height=600}
+
+Announcements:
+* https://mastodon.social/@ourbigbook/112926933386595349
+* https://x.com/OurBigBook/status/1821559960687305015
+* https://www.youtube.com/watch?v=0W8U2YtQ8fg
+* https://www.linkedin.com/feed/update/urn:li:ugcPost:7227327143402184704/
+* https://www.facebook.com/reel/1023654756429291
+
+= Body preview on all article lists
+{parent=News}
+{tag=OurBigBook Web}
+
+The article body now shows by default on all article lists. So do comment lists.
+
+The major application of this is to quickly browser through a users's top or latest posts, e.g. https://ourbigbook.com/go/user/cirosantilli/articles?sort=score
+
+Previously, the body would only show on:
+* <topic> listings
+* discussion comment lists 
+
+Now it shows everywhere else as well, except that in other views, only a fixed height preview is shown to allow quickly going through large articles without too much scrolling.
+
+A "view more" button can uncover the hidden content if the user wishes to usee it.
+
+A "Show body" control was also added to toggle body vs the previously existing table mode.
+
+\Video[https://www.youtube.com/watch?v=4Pxphm7N6_0]
+{title=View more and show body demo}
+{height=600}
+
+\Image[feature/view-more/demo.png]
+{title=View more and show body demo}
+{provider=github}
+{border}
+{height=2000}
+
+Announcements:
+* https://mastodon.social/@ourbigbook/112791709657088236
+* https://x.com/OurBigBook/status/1812905677817340219
+
+= Unlisted articles on web
+{parent=News}
+{tag=OurBigBook Web}
+
+It is now possible to mark articles as unlisted on <OurBigBook Web>: </OurBigBook Web unlisted articles>{full}.
+
+The most important effect of this is that unlisted articles don't show on the table of contents of its ancestors. They also don't show on many article listing by default, e.g. on the list of user's latest articles.
+
+The main use case we have for this feature right now is to stop polluting the table of contents with articles a user does not wish to show, and especially when doing <local to Web upload>, where Web articles are marked as unlisted by default if they are deleted locally.
+
+We offer unlisted as an alternative to deletion for now because of the general philosophy what "permalinks should never break". This is currently not true as we don't have article history and therefore no permalinks. However, once history is implemented, we want to make it so links to specific versions will never ever break by forbidding article and history deletion entirely. Marking articles as unlisted will then allows to prevent deletion, while still keeping table of contents tidy.
+
+\Image[feature/unlisted-articles/article-page.png]
+{provider=github}
+{border}
+{height=612}
+{description=The unlisted status is shown as a pill on the article metadata.}
+
+\Image[feature/unlisted-articles/topic.png]
+{provider=github}
+{border}
+{height=276}
+{description=Unlisted articles don't show by default on the topics page, but it is possible to show them by clicking the link at the bottom of the page.}
+
+\Image[feature/unlisted-articles/topic-show.png]
+{provider=github}
+{border}
+{height=621}
+{description=After that, unlisted articles are also shown.}
+
+\Image[feature/unlisted-articles/editor.png]
+{provider=github}
+{border}
+{height=425}
+{description=A new metadata tab was added to the <web editor>.}
+
+\Image[feature/unlisted-articles/editor-metadata.png]
+{provider=github}
+{border}
+{height=398}
+{description=The unlisted status can be seen and edited from the newly added metadata tab of the web editor.}
+
+= A few articles in same topic are shown at the bottom of every article page
+{parent=News}
+{tag=Topic}
+{tag=OurBigBook Web}
+
+In order to give more immediate <topic> value to readers, and to better highlight the <topics> feature, we now show a few articles on the same topic at the bottom of every article page, essentially acting as a preview of the corresponding topic page.
+
+For example, if you visit the "Calculus" article by user Barack Obama: https://ourbigbook.com/barack-obama/calculus[] then at the bottom of the page you can see a section "Articles by others on the same topic (3)" which displays up to the 5 most highly upvoted articles in the same topic written by other users, much like the topic page for the "Calculus" topic: https://ourbigbook.com/go/topic/calculus[].
+
+By comparison, the topic page shows more articles by default (20), supports pagination, and allows for other forms of sorting such as viewing the latest articles in a topic. We are initially not adding those options to the article page itself as there is already enough stuff going on there.
+
+\Image[feature/topics-on-every-article-page.png]
+{provider=github}
+{border}
+{height=1532}
+
+Announcements:
+* https://mastodon.social/@ourbigbook/112557950474730532
+* https://x.com/OurBigBook/status/1797943367420326011
+
+= Short URL fragments on OurBigBook Web
+{parent=News}
+{tag=Implemented by sidstuff}
+{tag=Dynamic article tree}
+{tag=OurBigBook Web}
+
+Previously, when clicking a link to an element that is present in the current page, the URL fragment would contain the full ID that element.
+
+Now, only the ID relative to URL path shows.
+
+A very common use case for this is when clicking table of content items.
+
+For exmple, from https://ourbigbook.com/barack-obama/mathematics[], clicking the ToC item for "Calculus" would previously lead to https://ourbigbook.com/barack-obama/mathematics#barack-obama/calculus
+
+After this change it leads just to: https://ourbigbook.com/barack-obama/mathematics#calculus[], without repeating the "`#barack-obama` part as it already appears in the URL path `/barack-obama/mathematics`.
+
+\Image[feature/short-fragment.png]
+{provider=github}
+{border}
+{height=800}
+
+Short URLs were already used on <Static website> publishes, and weren't implemented on <OurBigBook Web> yet simply because this is hard. The reason this was much harder to implement on Web is that due to <Dynamic article trees> we can't know at render-time what the correct fragment will be, as it depends on what shows on the page or not.
+
+And furthermore, articles by different users can appear on the same page due to <topics>.
+
+The simple but not ideal solution that we were using up to now was to just have full IDs on every HTML element, make every a point to an absolute ID like `/barack-obama/mathematics`, and then use JS effect to hack that to `#barack-obama/mathematics` if the element is in the page.
+
+What we did now is to take the Js hacks one step further, and actually replace the "long URLs" with short ones. This was not easy, partly because the browser interfaces are not amazing in that area, partly due to fighting with React. But we manage to get it working mostly well.
+
+Announcements:
+* https://mastodon.social/@ourbigbook/112553597134131989
+* https://x.com/OurBigBook/status/1797665231273177182
+
+= `\Hr` horizontal rule macro created
+{parent=News}
+{tag=Implemented by sidstuff}
+{tag=Horizontal rule}
+
+Docs: <Horizontal rule>{full}
+
+Behold:
+\OurBigBookExample[[
+Before the rule.
+
+More before the rule.
+
+\Hr
+
+After the rule.
+
+More after the rule.
+]]
+
+= Gray on gray color replaces green on black and many other CSS improvements
+{parent=News}
+{tag=Implemented by sidstuff}
+
+We're experimenting with a more traditional and boring "dark" theme than the green on black classic previously used.
+
+Readability is probably slightly better, though it is hard to measure these things. It is quite possible that the change matter much more for some people than others who have different eye sight phenotypes.
+
+Perhaps the most important outcome of this is that it will greatly reduce the endless complaining from the community. Though perhaps that was a feature rather than a bug?
+
+Beyond the theme change, many other changes were made. Many of those improvements feel like undisputable upgrades, e.g.:
+* headers are not colored differently from regular text
+* table borders are less visible
+* navbar and footer are more discrete and readable
+
+The CSS code was also refactored and it is not much easier to make broad color changes such as these in the future, as color constants are not more closely grouped, and fewer constants are now used.
+
+Large parts of this change were pushed forward by <sidstuff> who contributed a several code snippets and ideas to it.
+
+\Image[feature/gray-on-gray/article-list-gray.png]
+{provider=github}
+{border}
+{height=450}
+
+\Image[feature/gray-on-gray/article-list-green.png]
+{provider=github}
+{border}
+{height=450}
+
+\Image[feature/gray-on-gray/footer-gray.png]
+{provider=github}
+{border}
+{height=450}
+
+\Image[feature/gray-on-gray/footer-green.png]
+{provider=github}
+{border}
+{height=450}
+
+\Image[feature/gray-on-gray/donald-trump-algebra-gray.png]
+{provider=github}
+{border}
+{height=850}
+
+\Image[feature/gray-on-gray/donald-trump-algebra-green.png]
+{provider=github}
+{border}
+{height=850}
+
+= Intro to OurBigBook video
+{parent=News}
+{tag=Publicity}
+
+\Video[https://www.youtube.com/watch?v=BR2dXeR5jt8]
+{title=Intro to the <OurBigBook Project>}
+{height=600}
+
+= Pinned article
+{parent=News}
+{tag=OurBigBook Web}
+
+It is now possible for admins pin an article to the homepage. The initial use case is to help with new user onboarding. Documentation: <pinned article>.
+
+\Image[feature/pinned-article/pinned-article-on-topics-page-arrow.png]
+{provider=github}
+{height=1200}
+{border}
+
+= Automatically create `_file` pages for every file
+{parent=News}
+{tag=Static website}
+
+Previously we would only create an entry in the <`_file` output directory> for <headers> marked wiht the <`\H` `file` argument>.
+
+For example the file \a[file_demo/hello_world.js] in this repository has an associated header with the `file` argument in our \a[README.bigb] :
+``
+= file_demo/hello_world.js
+{file}
+
+An explanation of what this text file is about.
+
+Another line.
+``
+
+As a result, when doing a <split header> conversion, it would get both:
+* a <`_file` output directory> page at path `_file/file_demo/hello_world.js` <file_demo/hello_world.js>{file}
+* a <`_raw` directory> page at path `_raw/file_demo/hello_world.js` \a[file_demo/hello_world.js]
+
+On the other hand, the test file \a[file_demo/nofile.js] has no such associated header in the source code.
+
+Before this change, \a[file_demo/nofile.js] would only get an <`_raw` directory> entry under `_raw/file_demo/nofile.js` and not `_file` entry. But now it also gets both.
+
+The advantages of a `_file` entries over `_raw` entries are as follows:
+* `_file` entries can have metadata such as:
+  * OurBigBook content associated to them when they have an associated `_file` header. For example at <file_demo/hello_world.js>{file} we can see the rendered text:
+    \Q[
+    An explanation of what this text file is about.
+
+    Another line.
+    ]
+    Of course, in that case, they would also get the `_file` entry even before this update. However, this update does allow for a smooth update path where you can first link to the `_file` entry from external websites, and then add comments as needed later on without changing URLs.
+  * Google Analytics and other features via <ourbigbook.liquid.html>
+* `_file` always shows on static website hosts like GitHub Pages, since they are just HTML pages. This is unlike `raw` files which may just get downloaded for unknown extensions like `.bigb` rather than displayed on the browser: <`_raw` files are downloaded rather than displayed in browser for certain file extensions on GitHub Pages>
+
+This change is especially powerful following <Always show large text files on `_file` split headers>.
+
+Because we now have `_file` entries for every single file, we have also modified <`_dir` directory> directory listing pages to link to `_file` entries as those are generally more useful than `_raw` which is what they previously linked to. And you can always reach `_reaw_` from the corresponding `_file` is needed. Example: https://docs.ourbigbook.com/_dir
+
+= Always show large text files on `_file` split headers
+{parent=News}
+{tag=Static website}
+
+Previously, large files with an <`\H` `file` argument> associated to them would show a message
+``
+index.js was not rendered because it is too large (> 2000 bytes)
+``
+rather than the file contents both on their split and non-split versions, e.g.:
+* https://docs.ourbigbook.com/#_file/index.js
+* https://docs.ourbigbook.com/_file/index.js
+
+Now, the split version https://docs.ourbigbook.com/_file/index.js alwayws shows the full text file.
+
+When not in split mode, limiting preview sizes is important otherwise multi-header pages might become far too big. Ideally we would have found a way to reliably use `iframe` + `loading="lazy"` to refer to the file without actually embedding it into the page as we do for images, but we haven't managed to do that so far.
+
+This allows us to now see files that were previously not visible anywhere on the rendered HTML without download due to <`_raw` files are downloaded rather than displayed in browser for certain file extensions on GitHub Pages>.
+
+\Image[feature/always-show-large-files-on-split-headers.png]
+{provider=github}
+{height=700}
+{border}
+
+= Optimize generated HTML size by adding on-the-fly elements
+{parent=News}
+
+The main focus was the <Table of contents> rendering, which had a lot of redundant stuff. Headers were the next largest gain.
+
+The main techniques used to reduce size were:
+* auto-generate a few elements on-the-fly with JavaScript for on-hover effects, but only if it doesn't affect SEO and readability when JS is turned off
+* use a lot more CSS `::after` and `::before` to avoid embedding repetitive icons multiple times on the HTML
+
+After this changes, the rendered size of cirosantilli.com fell from 216 MiB to 156.5 MiB, which is kind of cool!
+
+= Suggest article creation for topics that don't exist
+{parent=News}
+{tag=OurBigBook Web}
+
+In previous updates we added <insane topic links> which allow you to write `#mathematics` to link to <OurBigBook Web topics> such as: https://ourbigbook.com/go/topic/mathematics
+
+The outcome of that however is that it is also easy and correct to create links to topics that don't yet exist on the <OurBigBook Web> instance.
+
+To make this nicer, we've unconsciously copied Wikipedia once again, and added a "Create an article for this topic" link
+
+For example, currently <ourbigbook.com> the topic "Endoplasmatic Reticulum" does not have any articles on it. So if you created a link `<#endoplasmatic reticulum>`, it would redirect you to: https://ourbigbook.com/go/topic/endoplasmic-reticulum
+
+Previously, this would show "Topic does not exist". But now it shows a button that opens the new article editor with pre-filled title "Endoplasmatic reticulum". The title choice is only a heuristic as it can't know the correct capitalization, but it covers most cases corectly by default and can be modified manually as needed.
+
+\Image[feature/suggest-new-article-for-empty-topic/topic-page-arrow.png]
+{provider=github}
+{border}
+
+\Image[feature/suggest-new-article-for-empty-topic/new-article-page.png]
+{provider=github}
+{height=700}
+{border}

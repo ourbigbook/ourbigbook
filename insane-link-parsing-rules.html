@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Insane link parsing rules - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i></a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="insane-link-parsing-rules"><div class="notnav"><h1><a href="">Insane link parsing rules</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#link"> Link</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#insane-link-parsing-rules"></a><span class="metrics"><span class="wcntr"> words: 258</span><span class="dcnt"> articles: 1</span></span></div></nav></div><div class="p" id="_599">Insane start at any of the recognized protocols are the ones shown at: <a href=".#known-url-protocols">Section "Known URL protocols"</a>.<div><ul id="_600"><li id="_601"><code>http://</code></li><li id="_602"><code>https://</code></li></ul></div>absolutely anywhere if not escaped, e.g.:
+<div class="code" id="_603"><div><pre><code>ahttp://example.com</code></pre></div></div>
+renders something like:
+<div class="code" id="_604"><div><pre><code>a &lt;a href="http://example.com"&gt;</code></pre></div></div>
+To prevent expansion, you have to escape the protocol with a backslash <code>\\</code>, e.g.:
+<div class="code" id="_605"><div><pre><code>\http://example.com</code></pre></div></div>
+Empty domains like:
+<div class="code" id="_606"><div><pre><code>http://</code></pre></div></div>
+don't becomes links however. But this one does:
+<div class="code" id="_607"><div><pre><code>http://a</code></pre></div></div></div><div class="p" id="_608">Insane links end when any <a href=".#insane-link-termination-character">insane link termination character</a> is found.</div><div class="p" id="_609">As a consequence, to have an insane link followed immediately by a punctuation like a period you should use an empty argument as in:
+<div class="code" id="_610"><div><pre><code>Check out this website: http://example.com[].</code></pre></div></div><div class="p" id="_611">which renders as:</div><div><blockquote id="_612"><div class="p" id="_613">Check out this website: <a href="http://example.com">example.com</a>.</div></blockquote></div>
+otherwise the punctuation will go in it. Another common use case is:
+<div class="code" id="_614"><div><pre><code>As mentioned on the tutorial (http://example.com[see this link]).</code></pre></div></div><div class="p" id="_615">which renders as:</div><div><blockquote id="_616"><div class="p" id="_617">As mentioned on the tutorial (<a href="http://example.com">see this link</a>).</div></blockquote></div></div><div class="p" id="_618">If you want your link to include one of the terminating characters, e.g. <code>]</code>, all characters can be escaped with a backslash, e.g.:
+<div class="code" id="_619"><div><pre><code>Hello http://example.com/\]a\}b\\c\ d world.</code></pre></div></div><div class="p" id="_620">which renders as:</div><div><blockquote id="_621"><div class="p" id="_622">Hello <a href="http://example.com/%5Da%7Db%5Cc%20d">example.com/]a}b\c d</a> world.</div></blockquote></div></div><div class="p" id="_623">Note that the <code>http://example.com</code> inside <code>\a[http://example.com]</code> only works because we do some post-processing magic that prevents its expansion, otherwise the link would expand twice:
+<div class="code" id="_624"><div><pre><code>\P[http://example.com]
+
+\a[http://example.com]</code></pre></div></div><div class="p" id="_625">which renders as:</div><div><blockquote id="_626"><div class="p" id="_627"><a href="http://example.com">example.com</a></div><div class="p" id="_628"><a href="http://example.com">example.com</a></div></blockquote></div>
+This magic can be observed with <a href=".#help-macros"><code>--help-macros</code></a> by seeing that the <code>href</code> argument of the <code>a</code> macro has the property:
+<div class="code" id="_629"><div><pre><code>"elide_link_only": true,</code></pre></div></div></div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 258</span><span class="dcnt"> 1</span></span></span></span></div><ul><li><div id="_toc/insane-link-termination-character"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#insane-link-termination-character"><i class="n">1. </i>Insane link termination character</a><span class="hover-metadata"><a class="nosplit" href=".#insane-link-termination-character"></a><a href="#_toc" class="u"> Insane link parsing rules</a><span class="metrics"><span class="wcntr"> 40</span></span></span></span></div></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div><ol><li><a href=".#link">Link</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href=".">OurBigBook Project</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(4)</span></a></h2><div><ul><li><a href=".#insane-link-termination-character">Insane link termination character</a></li><li><a href=".#insane-topic-link-with-a-single-word">Insane topic link with a single word</a></li><li><a href=".#known-url-protocols">Known URL protocols</a></li><li><a href=".#link">Link</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/README.bigb">README.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

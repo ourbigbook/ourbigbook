@@ -5,6 +5,7 @@ import Router from "next/router";
 import UserAPI from "lib/api/user";
 import { BUTTON_ACTIVE_CLASS } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
+import routes from "routes";
 
 export const FollowUserButtonContext = React.createContext(undefined);
 
@@ -18,7 +19,7 @@ const FollowUserButton = ({
   const handleClick = (e) => {
     e.preventDefault();
     if (!loggedInUser) {
-      Router.push(`/user/login`);
+      Router.push(routes.userLogin());
       return;
     }
     if (following) {

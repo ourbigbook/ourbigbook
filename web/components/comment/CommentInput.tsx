@@ -4,6 +4,7 @@ import { trigger } from "swr";
 
 import CustomImage from "components/common/CustomImage";
 import CustomLink from "components/common/CustomLink";
+import { slugFromRouter } from "lib"
 import CommentAPI from "lib/api/comment"
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 import routes from "routes";
@@ -11,23 +12,20 @@ import routes from "routes";
 const CommentInput = () => {
   const loggedInUser = getLoggedInUser()
   const router = useRouter();
-  const {
-    query: { pid },
-  } = router;
+  const slug = slugFromRouter(router)
   const [body, setBody] = React.useState("");
   const [isLoading, setLoading] = React.useState(false);
-  const handleChange = React.useCallback((e) => {
+  const handleChange = e => {
     setBody(e.target.value);
-  }, []);
-  const handleSubmit = async (e) => {
+  };
+  const handleSubmit = async e => {
     e.preventDefault();
     setLoading(true);
-    await CommentAPI.create({ body }, loggedInUser?.token)
+    await CommentAPI.create(slug, body, loggedInUser?.token)
     setLoading(false);
     setBody("");
-    trigger(CommentAPI.forArticle(pid));
+    trigger(CommentAPI.url(slug));
   };
-
   if (!loggedInUser) {
     return (
       <>

@@ -7,6 +7,7 @@ import Label from "components/common/Label";
 import ListErrors from "components/common/ListErrors";
 import { SERVER_BASE_URL } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
+import routes from "routes";
 
 const SettingsForm = () => {
   const [isLoading, setLoading] = React.useState(false);
@@ -55,7 +56,7 @@ const SettingsForm = () => {
       }
       window.localStorage.setItem("user", JSON.stringify(data.user));
       mutate("user", data.user);
-      Router.push(`/profile/${user.username}`);
+      Router.push(routes.userView(user.username));
     }
   };
   return (

@@ -2,12 +2,11 @@ import axios from "axios";
 
 import { SERVER_BASE_URL } from "lib/utils/constant";
 import { getQuery } from "lib/utils/getQuery";
+import { addAuthHeader } from "./lib"
 
 const ArticleAPI = {
   all: (page, limit = 10) =>
     axios.get(`${SERVER_BASE_URL}/articles?${getQuery(limit, page)}`),
-
-  articleUrl: (slug) => `${SERVER_BASE_URL}/articles?id=${encodeURIComponent(slug)}`,
 
   byAuthor: (author, page = 0, limit = 5) =>
     axios.get(
@@ -24,17 +23,14 @@ const ArticleAPI = {
       )}`
     ),
 
-  commentsUrl: (slug) => `${SERVER_BASE_URL}/articles/comments?id=${encodeURIComponent(slug)}`,
-
   create: async (article, token) => {
     const { data, status } = await axios.post(
       `${SERVER_BASE_URL}/articles`,
       JSON.stringify({ article }),
       {
-        headers: {
+        headers: addAuthHeader(token, {
           "Content-Type": "application/json",
-          Authorization: `Token ${encodeURIComponent(token)}`,
-        },
+        }),
       }
     );
     return {
@@ -45,21 +41,18 @@ const ArticleAPI = {
 
   delete: (slug, token) =>
     axios.delete(`${SERVER_BASE_URL}/articles?id=${slug}`, {
-      headers: {
-        Authorization: `Token ${token}`,
-      },
+      headers: addAuthHeader(token),
     }),
 
-  favorite: (slug, token) =>
+  favorite: (slug, token) => {
     axios.post(
       `${SERVER_BASE_URL}/articles/favorite?id=${slug}`,
       {},
       {
-        headers: {
-          Authorization: `Token ${token}`,
-        },
+        headers: addAuthHeader(token),
       }
-    ),
+    )
+  },
 
   favoritedBy: (author, page) =>
     axios.get(
@@ -77,9 +70,7 @@ const ArticleAPI = {
     axios.delete(
       `${SERVER_BASE_URL}/articles/favorite?id=${encodeURIComponent(slug)}`,
       {
-        headers: {
-          Authorization: `Token ${token}`,
-        },
+        headers: addAuthHeader(token),
       }
     ),
 
@@ -88,10 +79,9 @@ const ArticleAPI = {
       `${SERVER_BASE_URL}/articles?id=${encodeURIComponent(slug)}`,
       JSON.stringify({ article }),
       {
-        headers: {
+        headers: addAuthHeader(token, {
           "Content-Type": "application/json",
-          Authorization: `Token ${encodeURIComponent(token)}`,
-        },
+        }),
       }
     );
     return {
@@ -99,6 +89,8 @@ const ArticleAPI = {
       status,
     };
   },
+
+  url: (slug) => `${SERVER_BASE_URL}/articles?id=${encodeURIComponent(slug)}`,
 };
 
 export default ArticleAPI;

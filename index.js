@@ -1,6 +1,16 @@
 "use strict";
 
+const globals = {};
+
 const katex = require('katex');
+if (typeof performance === 'undefined') {
+  // Fuck, I can't find how to make this browser/node portable more nicely.
+  // https://github.com/nodejs/node/issues/28635
+  // https://github.com/browserify/perf-hooks-browserify
+  globals.performance = require('perf_hooks').performance;
+} else {
+  globals.performance = performance;
+}
 const pluralize = require('pluralize');
 
 // consts used by classes.
@@ -1324,6 +1334,8 @@ function convert(
   options,
   extra_returns={},
 ) {
+  extra_returns.debug_perf = {};
+  extra_returns.debug_perf.start = globals.performance.now();
   if (options === undefined) {
     options = {};
   }
@@ -1392,8 +1404,10 @@ function convert(
   extra_returns.errors = [];
   let sub_extra_returns;
   sub_extra_returns = {};
+  extra_returns.debug_perf.tokenize_pre = globals.performance.now();
   let tokens = (new Tokenizer(input_string, sub_extra_returns,
     options.show_tokenize, options.start_line)).tokenize();
+  extra_returns.debug_perf.tokenize_post = globals.performance.now();
   if (options.show_tokens) {
     console.error('tokens:');
     for (let i = 0; i < tokens.length; i++) {
@@ -1461,11 +1475,15 @@ function convert(
   extra_returns.ast = ast;
   extra_returns.context = context;
   extra_returns.ids = sub_extra_returns.ids;
+  Object.assign(extra_returns.debug_perf, sub_extra_returns.debug_perf);
   extra_returns.errors.push(...sub_extra_returns.errors);
   let output;
   if (options.render) {
     context.extra_returns = extra_returns;
+    // Convert the toplevel.
+    extra_returns.debug_perf.render_pre = globals.performance.now();
     output = ast.convert(context);
+    extra_returns.debug_perf.render_post = globals.performance.now();
     extra_returns.errors.push(...context.errors);
   }
   extra_returns.errors = extra_returns.errors.sort((a, b)=>{
@@ -1484,6 +1502,7 @@ function convert(
       output += '\n';
     }
   }
+  extra_returns.debug_perf.end = globals.performance.now();
   return output;
 }
 exports.convert = convert;
@@ -1889,6 +1908,8 @@ function object_subset(source_object, keys) {
  * @return {AstNode}
  */
 function parse(tokens, options, context, extra_returns={}) {
+  extra_returns.debug_perf = {};
+  extra_returns.debug_perf.parse_start = globals.performance.now();
   extra_returns.errors = [];
   let state = {
     extra_returns: extra_returns,
@@ -1933,6 +1954,7 @@ function parse(tokens, options, context, extra_returns={}) {
   //
   // Another possibility would be to do it in the middle of the initial parse,
   // but let's not complicate that further either, shall we?
+  extra_returns.debug_perf.post_process_start = globals.performance.now();
   let cur_header;
   let cur_header_level;
   let toplevel_parent_arg = new AstArgument([], 1, 1);
@@ -2640,6 +2662,7 @@ function parse(tokens, options, context, extra_returns={}) {
     }
   }
 
+  extra_returns.debug_perf.post_process_end = globals.performance.now();
   return ast_toplevel;
 }
 

@@ -3025,6 +3025,104 @@ The following scripts generate parametrized Cirodown examples that can be used f
 
   Originally designed to be able to interactively play with a huge \x[table-of-contents] to streamline JavaScript open close interaction.
 
+===== generate-paragraphs
+
+``
+./generate-paragraphs 10 > main.ciro
+``
+
+Output:
+``
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+``
+
+=== Performance
+
+==== `--debug-perf`
+{id=debug-perf}
+
+print performance statistics to stderr, for example
+``
+./cirodown --debug-perf README.ciro
+``
+could output:
+``
+perf start: 181.33060800284147
+perf tokenize_pre: 181.4424349963665
+perf tokenize_post: 318.333980999887
+perf parse_start: 319.1866770014167
+perf post_process_start: 353.5477180033922
+perf post_process_end: 514.1527540013194
+perf render_pre: 514.1708239987493
+perf render_post: 562.834307000041
+perf end: 564.0349840000272
+perf convert_input_end 566.1234430000186
+perf convert_path_pre_sqlite 566.1564619988203
+perf convert_path_pre_sqlite_transaction 566.2528780028224
+perf convert_path_post_sqlite_transaction 582.256645001471
+perf convert_path_end 582.3469280004501
+``
+
+==== Speed comparison to other markup language implementations
+
+One quick and dirty option is to use `generate-paragraphs` which generates output compatible for most markup languages:
+``
+./generate-paragraphs 100000 > tmp.ciro
+``
+
+On Ubuntu 20.04 \a[https://cirosantilli.com/linux-kernel-module-cheat/#p51][Lenovo ThinkPad P51] for example:
+* Cirodown 54ba49736323264a5c66aa5d419f8232b4ecf8d0 + 1, Node.js v12.18.1
+  ``
+  time ./cirodown tmp.ciro
+  ``
+  outputs:
+  ``
+  real    0m5.104s
+  user    0m6.323s
+  sys     0m0.674s
+  ``
+* Asciidoctor 2.0.10, Ruby 2.6.0p0:
+  ``
+  cp tmp.ciro tmp.adoc
+  time asciidoctor tmp.adoc
+  ``
+  outputs:
+  ``
+  real    0m1.911s
+  user    0m1.850s
+  sys     0m0.060s
+  ``
+* https://github.com/commonmark/cmark[cmark] 0.29.0:
+  ``
+  cp tmp.ciro tmp.md
+  time cmark tmp.md > tmp.md.html
+  ``
+  outputs:
+  ``
+  real    0m0.091s
+  user    0m0.070s
+  sys     0m0.021s
+  ``
+  Holy cow, it is 200x faster than Asciidoctor!
+
 === Internals API
 
 Tokenized token stream and AST can be obtained as JSON from the API.

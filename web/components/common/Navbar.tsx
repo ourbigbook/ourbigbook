@@ -24,10 +24,6 @@ const Navbar = () => {
             <i className="ion-compose" />
             &nbsp;New
           </NavLink>
-          <NavLink href="/settings" as="/settings">
-            <i className="ion-gear-a" />
-            &nbsp;Settings
-          </NavLink>
           <NavLink
             href={`/profile/${loggedInUser?.username}`}
             as={`/profile/${loggedInUser?.username}`}

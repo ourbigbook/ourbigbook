@@ -14,6 +14,7 @@ const passport_local = require('passport-local');
 const path = require('path')
 const session = require('express-session')
 
+const api = require('./api')
 const models = require('./models')
 const config = require('./config')
 
@@ -42,6 +43,7 @@ function doStart(app) {
 
   // Normal express config defaults
   if (config.verbose) {
+    // https://stackoverflow.com/questions/42099925/logging-all-requests-in-node-js-express/64668730#64668730
     app.use(morgan('combined'))
   }
   app.use(bodyParser.urlencoded({ extended: false }))
@@ -53,8 +55,13 @@ function doStart(app) {
     return nextHandle(req, res);
   });
   app.use(session({ secret: 'conduit', cookie: { maxAge: 60000 }, resave: false, saveUninitialized: false }))
-  // https://stackoverflow.com/questions/42099925/logging-all-requests-in-node-js-express/64668730#64668730
-  app.use(require('./routes'))
+
+  // Handle API routes.
+  {
+    const router = express.Router()
+    router.use(config.apiPath, api)
+    app.use(router)
+  }
 
   // 404 handler.
   app.use(function (req, res, next) {

@@ -21,7 +21,7 @@ const UserLinkWithImage = ({ user }: { user: User }) => {
       {' '}
       {user.username}
       {' '}
-      (<span title={DEFAULT_USER_SCORE_TITLE}>{user.articleScoreSum}</span>)
+      (<span title={DEFAULT_USER_SCORE_TITLE}>{user.articleScoreSum}<i className="ion-heart"></i></span>)
     </CustomLink>
   )
 }

@@ -8626,24 +8626,24 @@ const OUTPUT_FORMATS_LIST = [
           if (wiki_link !== undefined) {
             header_meta.push(wiki_link);
           }
-          if (!first_header && parent_links !== undefined) {
+          if (parent_links !== undefined) {
             header_meta.push(parent_links);
           }
-          if (toc_link_html) {
-            header_meta.push(toc_link_html);
+          if (first_header) {
+            if (has_toc(context)) {
+              header_meta.push(`<a${html_attr('href', `#${context.options.tocIdPrefix}${Macro.TOC_ID}`)} class="toc">${TOC_MARKER}</a>`);
+            }
+          } else {
+            if (toc_link_html) {
+              header_meta.push(toc_link_html);
+            }
           }
           if (tag_ids_html_array.length) {
             header_meta.push(tag_ids_html);
           }
           if (first_header) {
-            if (parent_links !== '') {
-              header_meta.push(parent_links);
-            }
             if (link_to_split !== undefined) {
               header_meta.push(link_to_split);
-            }
-            if (has_toc(context)) {
-              header_meta.push(`<a${html_attr('href', `#${context.options.tocIdPrefix}${Macro.TOC_ID}`)} class="toc">${TOC_MARKER}</a>`);
             }
             let descendant_count_html = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
             if (descendant_count_html !== undefined) {

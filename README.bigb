@@ -4,13 +4,13 @@
 https://ourbigbook.com source code + a compatible local CLI static wiki generator and markup language to write complex structured wikis/books/blogs with reference implementation in JavaScript.
 
 This repository (The OurBigBook Project) contains two main things:
-* OurBigBook CLI: a static Wiki generator that can be invoked from the command line with the \x[ourbigbook-executable]. The OurBigBook CLI calls the OurBigBook JavaScript Library to convert each input file.
+* \x[ourbigbook-cli]: a static Wiki generator that can be invoked from the command line with the \x[ourbigbook-executable]. The OurBigBook CLI calls the OurBigBook Library to convert each input file.
 
   The markup language used is called OurBigBook Markup (file extension: `.bigb`), and it is compatible with https://ourbigbook.com[], TODO support import/export to/from https://ourbigbook.com[] to local filesystem.
-* the source code of https://ourbigbook.com[], which is a regular database-backed dynamic website. This is basically separate package that depends on the OurBigBook JavaScript Library:
-  * information about the dynamic website is present at: \x[dynamic-website]{full}
-  * the source code of the dynamic website is present under `web/`
-  Everything else in this repository outside of that section/directory is about the OurBigBook JavaScript Library and the OurBigBook CLI, not the dynamic website.
+* \x[ourbigbook-web]: the source code of https://ourbigbook.com[], which is a regular database-backed dynamic website. This is basically separate package that depends on the OurBigBook Library:
+  * information about OurBigBook Web is present at: \x[ourbigbook-web]{full}
+  * the source code of the OurBigBook Web is present under `web/`
+  Everything else in this repository outside of that section/directory is about the OurBigBook Library and the OurBigBook CLI, not the dynamic website.
 
 Key links:
 * https://cirosantilli.com[]: showcase demo document with interesting content. Primary inspiration for OurBigBook development.
@@ -4638,8 +4638,12 @@ or from the \x[ourbigbook-json] file with an entry of form:
 
 Unlike all languages which rely on ad-hoc tooling, we will support every single tool that is required and feasible to be in this repository in this repository, in a centralized manner.
 
-= `ourbigbook` executable
+= OurBigBook CLI
 {parent=tooling}
+
+= `ourbigbook` executable
+{title2}
+{synonym}
 
 Convert a `.bigb` file to HTML and output the HTML to a file with the same basename without extension, e.g.:
 ``
@@ -5068,7 +5072,7 @@ render file2.bigb skipped by timestamp
 ``
 and because we skipped `file2.bigb` render, it will still have the outdated "File 1 1" instead of "File 1 1 hacked".
 
-We could in principle solve this problem by figuring out exactly which files need to be changed when a given ID changes, and we already \x[conversion-process-overview][have to solve a similar problem due to query bundling]. Also, this will need to be done sonner or later for the \x[dynamic-website]. But lazy now: https://github.com/cirosantilli/ourbigbook/issues/207[], this is hard stuff.
+We could in principle solve this problem by figuring out exactly which files need to be changed when a given ID changes, and we already \x[conversion-process-overview][have to solve a similar problem due to query bundling]. Also, this will need to be done sonner or later for the \x[ourbigbook-web]. But lazy now: https://github.com/cirosantilli/ourbigbook/issues/207[], this is hard stuff.
 
 = `--outdir <outdir>`
 {id=outdir}
@@ -5647,6 +5651,31 @@ The script arguments are:
 
 If the `prepublish` script returns with a non-zero exit value, the publish is aborted.
 
+= `redirects`
+{parent=ourbigbook-json}
+
+Generate custom redirects.
+
+When dealing with regular \x[header]{p}, you generally don't want to use this option, because the \x[h-synonym-argument] does that for you.
+
+This option can be useful however for dealing with things that are outside of your OurBigBook project.
+
+For example, at one point, this project renamed the repository https://github.com/cirosantilli/cirodown[] to https://github.com/cirosantilli/ourbigbook[].
+
+Unfortunatly, GitHub Pages does not generate redirects like github.com itself.
+
+So in this case, we've added to the \x[ourbigbook-json] of the toplevel user repository https://github.com/cirosantilli/cirosantilli.github.io the lines:
+``
+"redirects": [
+  ["cirodown", "ourbigbook"]
+],
+``
+which produces a file in the output called `cirodown.html` that redirects to `ourbigbook.html`.
+
+In this case, `cirodown` and `ourbigbook` don't have to be any regular IDs present in the database, those strings are just used directly.
+
+TODO ideally we should check for conflicts with regular output from split headers IDs or their synonyms. But lazy.
+
 = JavaScript API
 {parent=tooling}
 
@@ -5658,7 +5687,7 @@ Note that while doing a simple conversion is easy, things get harder if you want
 
 This is because these features require interacting with the \x[id-database], and we don't do that from the default `ourbigbook.convert` API because different deployments will have very different implementations, notably:
 * local Node.js run uses sqlite, an implementation can be seen in the \a[ourbigbook] file class `SqliteIdProvider` and `SqliteFileProvider`
-* the in-browser version that runs in the browser editor of the \x[dynamic-website] makes API calls to the server
+* the in-browser version that runs in the browser editor of the \x[ourbigbook-web] makes API calls to the server
 
 = Conversion to/from other formats
 {parent=tooling}
@@ -5669,8 +5698,12 @@ The better approach would be to implement a converter in Haskell from anything t
 
 And from OurBigBook to anything, create new output formats inside OurBigBook to those other formats.
 
-= Dynamic website
+= OurBigBook Web
 {parent=tooling}
+
+= Dynamic website
+{title2}
+{synonym}
 
 An implementation of: https://cirosantilli.com/ourbigbook-com
 
@@ -5679,7 +5712,7 @@ The source of the dynamic website is located under \a[web/].
 It was originally forked from the following starter boilerplate: https://github.com/cirosantilli/node-express-sequelize-realworld-example-app
 
 = Local development server
-{parent=dynamic-website}
+{parent=ourbigbook-web}
 
 It is highly recommended that you use the exact same Node.js and NPM versions as given under \a[package.json] `engines.js` entry. The best way to do that is likely to use NVM as explained at: https://stackoverflow.com/questions/16898001/how-to-install-a-specific-version-of-node-on-ubuntu/47376491#47376491
 
@@ -5719,7 +5752,7 @@ Whenever you save any changes to the backend server, we listen to this and autom
 For frontend, changes are automatically recompiled by the webpack development server, so you can basically just refresh pages and they will be updated straightaway.
 
 = Log database queries done
-{parent=dynamic-website}
+{parent=ourbigbook-web}
 
 ``
 DEBUG='sequelize:sql:*' npm run dev
@@ -5730,7 +5763,7 @@ npm run devs
 ``
 
 = Local optimized frontend
-{parent=dynamic-website}
+{parent=ourbigbook-web}
 
 First run the first time setup from \x[local-development-server].
 
@@ -5758,7 +5791,7 @@ npm run build-dev-nodeps
 instead, which builds only the stuf under `web/`.
 
 = Local run as identical to deployment as possible
-{parent=dynamic-website}
+{parent=ourbigbook-web}
 
 Here we use PostgreSQL instead of SQLite with the prebuilt static frontend.
 
@@ -5811,7 +5844,7 @@ npm run dev-pg
 
 = Heroku deployment
 {c}
-{parent=dynamic-website}
+{parent=ourbigbook-web}
 
 Got it running perfectly at as of April 2021 https://ourbigbook.com with the following steps.
 
@@ -5837,7 +5870,7 @@ npm run deploy-prod
 
 Nuke the database and generate a demo database:
 ``
-# heroku run web/bin/generate-demo-data.js --force-production
+# heroku run -a ourbigbook-staging web/bin/generate-demo-data.js --force-production
 ``
 
 The domain `ourbigbook.com` was leased from: https://porkbun.com/[]. Unfortunatly, HTTPS on Heroku with a custom domain requires using a paying tier, so we upgraded from the free tier to the cheapest paid tier, "Hobby Project", to start with: https://stackoverflow.com/questions/52185560/heroku-set-ssl-certificates-on-free-plan
@@ -5885,7 +5918,7 @@ heroku run -a ourbigbook-staging bash
 
 On the toplevel we have:
 * `.`: OurBigBook package
-* `web/`: \x[dynamic-website] package that depends on the local OurBigBook package through relative path `..`
+* `web/`: \x[ourbigbook-web] package that depends on the local OurBigBook package through relative path `..`
 
   Every require outside of `web/` must be relative, except for executables such as \a[ourbigbook] or demos such as \a[api_hello.js], or else the deployment will break.
 
@@ -5909,7 +5942,7 @@ Since we were unable to find any way to make things more flexible on the `packag
 Further discussion at: https://github.com/cirosantilli/ourbigbook/issues/156
 
 = Dynamic website tech stack
-{parent=dynamic-website}
+{parent=ourbigbook-web}
 
 * Frontend
   * Next.js
@@ -5923,7 +5956,7 @@ Further discussion at: https://github.com/cirosantilli/ourbigbook/issues/156
   * SQLite for local development, PostgreSQL for deployment
 
 = Dynamic website database migration setup
-{parent=dynamic-website}
+{parent=ourbigbook-web}
 
 Any pending migrations are done automatically during deployment as part of `npm run build`, more precisely they are run from \a[web/bin/sync-db.js].
 
@@ -5933,7 +5966,7 @@ We also have a custom setup where, if the database is not initialized, we first:
 This is something that should be merged into Sequelize itself, or at least asked on Stack Overflow, but lazy now.
 
 = Dynamic website directory structure
-{parent=dynamic-website}
+{parent=ourbigbook-web}
 
 * \a[web/app.js]: server executable entry point, can also be used programmatically from Node.js
 * \a[web/models]: Sequelize database models. Most changes in this folder require the creation of a corresponding \a[web/migrations]
@@ -5944,7 +5977,7 @@ This is something that should be merged into Sequelize itself, or at least asked
 
 = web/bin/rerender-articles.js
 {file}
-{parent=dynamic-website-directory-structure}
+{parent=ourbigbook-web-directory-structure}
 
 Rerender all articles.
 
@@ -5957,17 +5990,17 @@ As the website grows, we will likely need to do a lazy version of this that mark
 The functionality of this script should be called from a migration whenever such HTML changes are required. TODO link to an example. We had one at `web/migrations/20220321000000-output-update-ancestor.js` that seemed to work, but lost it. It was simple though. Just you have to instantiate your  own 
 
 = Dynamic website help
-{parent=dynamic-website}
+{parent=ourbigbook-web}
 
 This section will eventually be moved into the website itself. We'll just likely paste it into the database under an account that is always created or something like that.
 
 = Dynamic website keyboard shortcuts
-{parent=dynamic-website-help}
+{parent=ourbigbook-web-help}
 
 * Ctrl + Enter: submit the current form, e.g. save/create artiles or comments, login, register
 
 = Step debug the dynamic website
-{parent=dynamic-website}
+{parent=ourbigbook-web}
 
 Put a `debugger` statment where you want to break and run:
 ``
@@ -5978,7 +6011,7 @@ where `i` stands for `inspect` as in `node inspect`.
 This pauses at the start of execution. So just run `c` and normal execution resumes until the `debugger;` statement is reached.
 
 = Dynamic website unit tests
-{parent=dynamic-website}
+{parent=ourbigbook-web}
 
 All our tests are all located inside \a[test.js].
 
@@ -6087,7 +6120,7 @@ There are two versions of this editor:
   ``
 
   It also appears at https://cirosantilli.com/ourbigbook/editor[] hosted simply under GitHub pages.
-* a similar looking editor will also appear on the \x[dynamic-website], but this time linked to the database.
+* a similar looking editor will also appear on the \x[ourbigbook-web], but this time linked to the database.
 
   That more advanced editor will actually save results back to the database, and show allow preview of features such as linking to headers of other pages.
 
@@ -6269,7 +6302,7 @@ Run all tests:
 npm test
 ``
 
-To run all tests on PostgreSQL as in the \x[dynamic-website], first setup the PostgreSQL database similarly to \x[local-run-as-identical-to-deployment-as-possible]:
+To run all tests on PostgreSQL as in the \x[ourbigbook-web], first setup the PostgreSQL database similarly to \x[local-run-as-identical-to-deployment-as-possible]:
 ``
 createdb ourbigbook_cli
 psql -c "CREATE ROLE ourbigbook_user with login password 'a'"
@@ -6433,7 +6466,7 @@ Conversion follows the following steps:
 
   TODO this must come after all post processing. Parse + post processing must never depend on the database. Tracked at: https://github.com/cirosantilli/ourbigbook/issues/208
 
-  Keeping all queries together is fundamental for performance reasons, especially of \x[browser-editor-with-preview] in the \x[dynamic-website]: imagine doing 100 scattered server queries:
+  Keeping all queries together is fundamental for performance reasons, especially of \x[browser-editor-with-preview] in the \x[ourbigbook-web]: imagine doing 100 scattered server queries:
   ``
   SELECT * from Ids WHERE id = '0'
   SELECT * from Ids WHERE id = '1'

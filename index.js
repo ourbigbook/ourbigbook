@@ -2187,9 +2187,12 @@ function convert_init_context(options={}, extra_returns={}) {
   if (!('from_include' in options)) { options.from_include = false; }
   if (!('from_cirodown_example' in options)) { options.from_cirodown_example = false; }
   if (!('html_embed' in options)) { options.html_embed = false; }
-  // Add HTML extension to x links. And therefore also output files
-  // with the .html extension.
-  if (!('html_x_extension' in options)) { options.html_x_extension = true; }
+  if (!('html_x_extension' in options)) {
+    // Add HTML extension to x links. And therefore also:
+    // * output files with the `.html` extension
+    // * output `/index.html` vs just `/`
+    options.html_x_extension = true;
+  }
   if (!('h_parse_level_offset' in options)) {
     // When parsing, start the first header at this offset instead of h1.
     // This is used when doing includes, since the included header is at.
@@ -2220,7 +2223,11 @@ function convert_init_context(options={}, extra_returns={}) {
     // to `options.template_vars.style`.
     options.template_styles_relative = [];
   }
-  if (!('template_vars' in options)) { options.template_vars = {}; }
+  if ('template_vars' in options) {
+    options.template_vars = Object.assign({}, options.template_vars);
+  } else {
+    options.template_vars = {};
+  }
     if (!('head' in options.template_vars)) { options.template_vars.head = ''; }
     if (!('root_relpath' in options.template_vars)) { options.template_vars.root_relpath = ''; }
     if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
@@ -4888,6 +4895,8 @@ const DEFAULT_MACRO_LIST = [
         toc_href = html_attr('href', '#' + toc_id(ast, context));
         ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href} class="cirodown-h-to-toc"${html_attr('title', 'ToC entry for this header')}>\u21d1 toc</a>`;
       }
+
+      // Parent links.
       let parent_asts = [];
       let parent_tree_node = ast.header_graph_node.parent_node;
       if (
@@ -4909,6 +4918,7 @@ const DEFAULT_MACRO_LIST = [
       if (parent_links) {
         ret += `${HEADER_MENU_ITEM_SEP}${parent_links}`;
       }
+
       ret += `</span>`;
       ret += `</h${level_int_capped}>\n`;
       let wiki_link;
@@ -5440,7 +5450,7 @@ const DEFAULT_MACRO_LIST = [
         title = new AstArgument([new PlaintextAstNode(ast.source_location, text_title)], ast.source_location, text_title);
       }
       let ret;
-      const body = convert_arg(ast.args.content, context);
+      let body = convert_arg(ast.args.content, context);
       if (context.options.body_only) {
         ret = body;
       } else {
@@ -5457,6 +5467,9 @@ const DEFAULT_MACRO_LIST = [
 {{ head }}
 </head>
 <body class="cirodown">
+<header>
+<a href="{{ root_page }}">{{ title }}</a>
+</header>
 {{ body }}
 {{ post_body }}
 </body>
@@ -5464,8 +5477,66 @@ const DEFAULT_MACRO_LIST = [
 `;
         }
         const { Liquid } = require('liquidjs');
+
+        // Incoming links.
+        // TODO factor this out more with real headers.
+        //body += `<div>${html_hide_hover_link('#incomding-links')}<h2 id="#incoming-links"><a href="incoming-links">Incoming links</a></h2></div>\n`;
+        //const incoming_ul_ast = new AstNode(
+        //  AstType.MACRO,
+        //  'Ul',
+        //  {
+        //    'content': new AstArgument(
+        //      [
+        //        new AstNode(
+        //          AstType.MACRO,
+        //          Macro.LIST_MACRO_NAME,
+        //          {
+        //            'content': new AstArgument(
+        //              [
+        //                new PlaintextAstNode(
+        //                  ast.source_location,
+        //                  'asdf'
+        //                ),
+        //              ],
+        //            ),
+        //          },
+        //        ),
+        //        new AstNode(
+        //          AstType.MACRO,
+        //          Macro.LIST_MACRO_NAME,
+        //          {
+        //            'content': new AstArgument(
+        //              [
+        //                new PlaintextAstNode(
+        //                  ast.source_location,
+        //                  'qwer'
+        //                ),
+        //              ],
+        //            ),
+        //          },
+        //        ),
+        //      ],
+        //    ),
+        //  },
+        //);
+        //body += incoming_ul_ast.convert(context);
+
+        let root_page;
+        if (context.options.html_x_extension) {
+          root_page = context.options.template_vars.root_relpath + INDEX_BASENAME_NOEXT + '.' + HTML_EXT;
+        } else {
+          if (context.options.template_vars.root_relpath === '') {
+            root_page = '.'
+          } else {
+            root_page = context.options.template_vars.root_relpath;
+          }
+        }
+        if (root_page === context.toplevel_output_path) {
+          root_page = '';
+        }
         const render_env = {
           body: body,
+          root_page: root_page,
           title: convert_arg(title, context),
         };
         Object.assign(render_env, context.options.template_vars);

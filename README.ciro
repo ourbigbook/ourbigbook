@@ -435,6 +435,7 @@ For capitalization, both headers and cross reference macros have the `c` \x[bool
 * for cross reference macros, `c` means that the first letter of the title should be capitalized.
 
   Using this option is required when you are starting a sentence with a non-proper noun.
+Capitalization is handled by a \x[javascript-case-conversion].
 
 For pluralization, cross reference macros have the `p` \x[boolean-named-arguments][boolean named argument] which stands for "pluralize":
 * if given and true, this automatically pluralizes the last word of the target title by using the https://github.com/blakeembrey/pluralize library
@@ -592,78 +593,106 @@ Parenthesis are added automatically around all rendered `title2`.
 
 === `\x` within `title` restrictions
 
-If you use `\x` within a `title`, which most commonly happens for \x[images][image titles], that can generate complex dependencies, which would either be harder to implement, or lead to infinite recursion: https://github.com/cirosantilli/cirodown/issues/34
+If you use `\x` within a `title`, which most commonly happens for \x[images][image titles], that can generate complex dependencies, which would either be harder to implement, or lead to infinite recursion.
 
-To prevent such problems, Cirodown emits an error if:
-* you use an `\x` without explicit `content` argument inside a `\title` that has no ID
-* an infinite `x` recursion is detected
+To prevent such problems, Cirodown emits an error if you use an `\x` without content in the `title` of one of the following elements without an explicit ID:
+* \x[headers][header]. For example, the following gives an error:
+  ``
+  = h1
+  {id=myh1}
 
-For example, consider the code:
+  == \x[myh1]
+  ``
+
+  This could be solved by either adding a content to the reference:
+  ``
+  = h1
+  {id=myh1}
+
+  == \x[myh1][mycontent]
+  ``
+  or by adding an explicit ID to the header:
+  ``
+  = h1
+  {id=myh1}
+
+  == \x[myh1]
+  {id=myh2}
+  ``
+* non-header (e.g. an \x[images][image]) that links to the title of another non-header
+
+  For non-headers, things are a bit more relaxed, and we can link to headers, e.g.:
+  ``
+  = h1
+
+  \Image[myimg.jpg]
+  {title=my \x[h1].}
+  ``
+  This is allowed because Cirodown calculates IDs in two stages: first for all headers, and only later non non-headers.
+
+  What you cannot do is link to another image e.g.:
+  ``
+  \Image[myimg.jpg]
+  {id=myimage1}
+  {title=My image 1.}
+
+  \Image[myimg.jpg]
+  {title=my \x[h1].}
+  ``
+  and there the workaround are much the same as for headers: either explicitly set the cross reference content:
+  ``
+  \Image[myimg.jpg]
+  {id=myimage1}
+  {title=My image 1.}
+
+  \Image[myimg.jpg]
+  {title=my \x[h1][My image 1].}
+  ``
+  or explicitly set an ID:
+  ``
+  \Image[myimg.jpg]
+  {id=myimage1}
+  {title=My image 1.}
+
+  \Image[myimg.jpg]
+  {id=myimage2}
+  {title=my \x[h1].}
+  ``
+
+While it is technically possible implement the above limitations, it would require a bit of extra work which we don't want to put in right now: https://github.com/cirosantilli/cirodown/issues/95[].
+
+Furthermore, the above rules do not exclude infinite rendering loops, but Cirodown detects such loops and gives a nice error message, this has been fixed at: https://github.com/cirosantilli/cirodown/issues/34 
+
+For example this would contain an infinite loop:
 ``
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=That \x[this-my-id3].}
+\Image[myimg.jpg]
+{id=myimage1}
+{title=\x[myimage2].}
 
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=My id3.}
-
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=This \x[my-id3].}
+\Image[myimg.jpg]
+{id=myimage2}
+{title=\x[myimage1].}
 ``
 
-Wee see therefore a complex ID dependency emerge:
-* `\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=My id3.}` has `my-id3`
-* `\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=This \x[my-id3].}` renders the title as `This My Id3`, and so would have ID `this-my-id3`
-* `\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=That \x[this-my-id3].}` can finally render the title as `That This My Id3` and get ID `that-this-my-id3`
-
-While it is technically possible to implement this, it would require a bit of extra work which we don't want to put in right now, and it would be very confusing for end users reading the source anyways.
-
-As a result, the above example currently gives errors, and you could make an equivalent explicit version that has no errors either by giving explicit titles to each image that has an `x` in it (this is normally the saner approach):
+This infinite recursion is fundamentally not technically solved: the user has to manually break the loop by providing an `x` content explicitly, e.g. in either:
 ``
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{id=that-this-my-id3}
-{title=That \x[this-my-id3].}
+\Image[myimg.jpg]
+{id=myimage1}
+{title=\x[myimage2][my content 2].}
 
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=My id3.}
-
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{id=this-my-id3}
-{title=This \x[my-id3].}
-``
-or by setting explicit content to every `x` inside a `title` for which an ID wasn't given as in:
-``
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title=That \x[this-my-id3][This My id3].}
-
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=My id3.}
-
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{id=this-my-id3}
-{title=This \x[my-id3][My id3].}
-``
-
-And for an example of infinite recursion, consider:
-``
-= \x[cd]
-{id=ab}
-
-== \x[ab]
-{id=cd}
-``
-
-In this example, we note that the `\x` in the first header expands
-
-This circular dependency case if fundamentally unsolvable automatically, the only alternative is for the user to provide an explicit `x` content to at least one of the `x` to break the circular dependency as in either:
-``
-= \x[cd][cd]
-{id=ab}
-
-== \x[ab]
-{id=cd}
+\Image[myimg.jpg]
+{id=myimage2}
+{title=\x[myimage1].}
 ``
 or:
 ``
-= \x[cd]
-{id=ab}
+\Image[myimg.jpg]
+{id=myimage1}
+{title=\x[myimage2].}
 
-== \x[ab][ab]
-{id=cd}
+\Image[myimg.jpg]
+{id=myimage2}
+{title=\x[myimage1][my content 1].}
 ``
 
 === Internal cross file references
@@ -737,7 +766,7 @@ You can force `cirodown` to not use the ID database with `--no-db`:
 
 If a \x[the-toplevel-header][non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:
 * do a \x[id-output-format] conversion on the title to remove for example any HTML tags that would be present in the conversion output
-* convert all of `A-Z` characters to lowercase
+* convert all characters to lowercase. This uses \x[javascript-case-conversion].
 * convert consecutive sequences of all non `a-z0-9` ASCII characters and hyphens `-` to a single hyphen `-`. Note that this leaves non-ASCII character untouched.
 * strip leading or trailing hyphens
 Note how those rules leave non ASCII Unicode characters untouched, as capitalization and determining if something "is a letter or not" in those cases can be tricky.
@@ -758,18 +787,18 @@ So for example, the following automatic IDs would be generated: \x[table-example
 | ciro-s-markdown-is-awesome
 |
 
-| The École Polytechnique
-| the-École-polytechnique
-| We leave the uppercase https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, untouched because it is not an ASCII character.
+| É你
+| é你
+| The Latin https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, is converted to its lower case form `é` as per the \x[javascript-case-conversion]. The Chines `你` is left untouched as Chinese characters have no case.
 ]
 
 For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the Cirodown file without extension instead of from the `title` argument.
 
 === Internal cross reference title link removal
 
-If the target `title` argument contains a link from either another \x[internal-cross-references] or a regular \x[links][external hyperlink], Cirodown automatically prevents that link from rendering as a link when no explicit bod yis given.
+If the target `title` argument contains a link from either another \x[internal-cross-references] or a regular \x[links][external hyperlink], Cirodown automatically prevents that link from rendering as a link when no explicit body is given.
 
-This is done because https://stackoverflow.com/questions/9882916/are-you-allowed-to-nest-a-link-inside-of-a-link[nested links are illegain in HTML], and the result would be confusing.
+This is done because https://stackoverflow.com/questions/9882916/are-you-allowed-to-nest-a-link-inside-of-a-link[nested links are illegal in HTML], and the result would be confusing.
 
 This use case is most common when dealing with media such as \x[images]. For example in:
 ``
@@ -2320,6 +2349,7 @@ The `full=0` version is useful in the case of reference targets that unlike \x[h
 The name "boolean argument" is given by analogy to the https://stackoverflow.com/questions/16109358/what-is-the-correct-readonly-attribute-syntax-for-input-text-elements/24588427#24588427["boolean attribute" concept in HTML5].
 
 ==== JavaScript interface for arguments
+{c}
 
 The JavaScript interface sees arguments as follows:
 ``
@@ -2551,6 +2581,19 @@ The currently known protocols are:
 Effects of known protocols include:
 * \x[insane-link-parsing-rules]: mark the start of insane links
 * \x[store-images-in-a-separate-media-repository]: mark an image `src` to ignore `provider`
+
+=== JavaScript case conversion
+{c}
+
+Some parts of Cirodown use "JavaScript case conversion".
+
+This means that the conversion is done as if by the `toLowerCase`/`toUpperCase` functions.
+
+The most important fact about those functions is that they do convert non-ASCII Unicode capitalization, e.g. between `É` and `é`:
+* https://stackoverflow.com/questions/3590833/does-javascript-string-tolowercase-follow-unicode-standards-in-case-conversion
+* https://stackoverflow.com/questions/929079/unicode-lowercase-characters
+
+These conversions are also specified in the Unicode standard.
 
 === Security
 

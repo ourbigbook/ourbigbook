@@ -188,10 +188,13 @@ function a(macro_name, content, extra_args={}, extra_props={}) {
   if (content !== undefined) {
     args.content = content;
   }
-  return Object.assign({
-    'macro_name': macro_name,
-    'args': args,
-  }, extra_props);
+  return Object.assign(
+    {
+      'macro_name': macro_name,
+      'args': args,
+    },
+    extra_props
+  );
 }
 
 /** Shortcut to create plaintext nodes for ast_arg_has_subset, we have too many of those. */
@@ -1026,18 +1029,18 @@ assert_convert_ast('link with multiple paragraphs',
 
 // Cross references \x
 assert_no_error('cross reference simple',
-  `\\H[1][My header]
+  `= My header
 
 \\x[my-header][link body]
 `
 );
 assert_no_error('cross reference auto default',
-  `\\H[1][My header]
+  `= My header
 
 \\x[my-header]
 `);
 assert_no_error('cross reference full boolean style without value',
-  `\\H[1][My header]
+  `= My header
 
 \\x[my-header]{full}
 `,
@@ -1055,7 +1058,7 @@ assert_no_error('cross reference full boolean style without value',
   ]
 );
 assert_convert_ast('cross reference full boolean style with value 0',
-  `\\H[1][abc]
+  `= abc
 
 \\x[abc]{full=0}
 `,
@@ -1073,7 +1076,7 @@ assert_convert_ast('cross reference full boolean style with value 0',
   ]
 );
 assert_convert_ast('cross reference full boolean style with value 1',
-  `\\H[1][abc]
+  `= abc
 
 \\x[abc]{full=1}
 `,
@@ -1091,12 +1094,12 @@ assert_convert_ast('cross reference full boolean style with value 1',
   ]
 );
 assert_error('cross reference full boolean style with invalid value 2',
-  `\\H[1][abc]
+  `= abc
 
 \\x[abc]{full=2}
 `, 3, 8);
 assert_error('cross reference full boolean style with invalid value true',
-  `\\H[1][abc]
+  `= abc
 
 \\x[abc]{full=true}
 `, 3, 8);
@@ -1111,31 +1114,39 @@ assert_no_error('cross reference without content nor target title style full',
 \\x[cd]
 `);
 assert_error('cross reference undefined', '\\x[ab]', 1, 3);
-//// TODO failing https://github.com/cirosantilli/cirodown/issues/34
-//assert_error('cross reference circular loop infinite recursion implicit body',
-//  `\\H[1][\\x[h2]]{id=h1}
-//
-//\\H[2][\\x[h1]]{id=h2}
-//`, 1, 1);
-// This is fine because the content is explicitly given.
-assert_convert_ast('cross reference circular loop infinite recursion explicit body',
-  `\\H[1][\\x[h2][myh2]]{id=h1}
 
-\\H[2][\\x[h1][myh1]]{id=h2}
-`,
-  // TODO
-  [
-    a('H', undefined, {
-      level: [t('1')],
-      title: [a('x', [t('myh2')], {'href': [t('h2')]})],
-    }),
-    a('H', undefined, {
-      level: [t('2')],
-      title: [a('x', [t('myh1')], {'href': [t('h1')]})],
-    }),
-  ]
-);
-assert_convert_ast('cross reference from image title before with x content without image id works',
+// Infinite recursion.
+// failing https://github.com/cirosantilli/cirodown/issues/34
+assert_error('cross reference from header title without ID to following header is not allowed',
+  `= \\x[myh2]
+
+== h2
+{id=myh2}
+`, 1, 5);
+assert_error('cross reference from header title without ID to previous header is not allowed',
+  `= h1
+{id=myh1}
+
+== \\x[myh1]
+`, 4, 4);
+assert_error('cross reference from image title without ID to previous non-header is not allowed',
+  `\\Image[ab]{title=cd}
+
+\\Image[ef]{title=gh \\x[image-cd]}
+`, 3, 21);
+assert_error('cross reference from image title without ID to following non-header is not allowed',
+  `\\Image[ab]{title=cd \\x[image-gh]}
+
+\\Image[ef]{title=gh}
+`, 1, 23);
+assert_error('cross reference infinite recursion with explicit IDs fails gracefully',
+  `= \\x[h2]
+{id=h1}
+
+== \\x[h1]
+{id=h2}
+`, 1, 3);
+assert_convert_ast('cross reference from image to previous header with x content without image ID works',
   `= ab
 
 \\Image[cd]{title=\\x[ab][cd]}
@@ -1145,13 +1156,17 @@ assert_convert_ast('cross reference from image title before with x content witho
       level: [t('1')],
       title: [t('ab')],
     }),
-    a('Image', undefined, {
-      src: [t('cd')],
-      title: [a('x', [t('cd')], {'href': [t('ab')]})],
-    }),
+    a(
+      'Image',
+      undefined,
+      {
+        src: [t('cd')],
+        title: [a('x', [t('cd')], {'href': [t('ab')]})],
+      },
+    ),
   ]
 );
-assert_convert_ast('cross reference from image title before without x content with image id works',
+assert_convert_ast('cross reference from image to previous header without x content with image ID works',
   `= ab
 
 \\Image[cd]{title=\\x[ab]}{id=cd}
@@ -1168,69 +1183,66 @@ assert_convert_ast('cross reference from image title before without x content wi
     }),
   ]
 );
-// https://cirosantilli.com/cirodown#x-within-title-restrictions
-assert_error('cross reference from image title before without x content without image is an error',
+assert_convert_ast('cross reference from image to previous header without x content without image ID works',
   `= ab
 
-\\Image[cd]{title=\\x[ab]}
-`,
-  3, 18
-);
-assert_convert_ast('cross reference from image title after with x content without image works',
-  `= ab
-
-\\Image[cd]{title=\\x[ef][gh]}
-
-== ef
+\\Image[cd]{title=\\x[ab] cd}
 `,
   [
     a('H', undefined, {
       level: [t('1')],
       title: [t('ab')],
     }),
-    a('Image', undefined, {
-      src: [t('cd')],
-      title: [a('x', [t('gh')], {'href': [t('ef')]})],
-    }),
-    a('H', undefined, {
-      level: [t('2')],
-      title: [t('ef')],
-    }),
+    a(
+      'Image',
+      undefined,
+      {
+        src: [t('cd')],
+        title: [
+          a('x', undefined, {'href': [t('ab')]}),
+          t(' cd')
+        ],
+      },
+      {
+        id: 'image-ab-cd',
+      }
+    ),
   ]
 );
-assert_convert_ast('cross reference from image title after without x content with image works',
+assert_convert_ast('cross reference from image to following header without x content without image id works',
   `= ab
 
-\\Image[cd]{title=\\x[ef]}{id=gh}
+\\Image[cd]{title=ef \\x[gh]}
 
-== ef
+== gh
 `,
   [
     a('H', undefined, {
       level: [t('1')],
       title: [t('ab')],
     }),
-    a('Image', undefined, {
-      id: [t('gh')],
-      src: [t('cd')],
-      title: [a('x', undefined, {'href': [t('ef')]})],
-    }),
+    a(
+      'Image',
+      undefined,
+      {
+        src: [t('cd')],
+        title: [
+          t('ef '),
+          a('x', undefined, {'href': [t('gh')]})
+        ],
+      },
+      {
+        id: 'image-ef-gh'
+      }
+    ),
     a('H', undefined, {
       level: [t('2')],
-      title: [t('ef')],
+      title: [t('gh')],
     }),
   ]
 );
-// https://cirosantilli.com/cirodown#x-within-title-restrictions
-assert_error('cross reference from image title after without x content without image is an error',
-  `= ab
 
-\\Image[cd]{title=\\x[ef]}
-
-== ef
-`,
-  3, 18
-);
+// Scope.
 assert_no_error("internal cross references work with header scope and don't throw",
 `= h1
 
@@ -1262,27 +1274,6 @@ assert_no_error("internal cross references work with header scope and don't thro
 == h2 2
 `
 );
-//// https://github.com/cirosantilli/cirodown/issues/45
-//assert_convert_ast('cross reference to plaintext id calculated from title',
-//  `\\H[1][aa \`bb\` cc]
-//
-//\\x[aa-bb-cc]
-//`,
-//  // TODO
-//  [
-//    a('H', undefined, {
-//      level: [t('1')],
-//      title: [
-//        t('aa '),
-//        a('c', [t('bb')]),
-//        t(' cc'),
-//      ],
-//    }),
-//    a('P', [
-//      a('x', undefined, { href: [t('aa-bb-cc')]}),
-//    ]),
-//  ]
-//);
 
 //// Headers.
 // TODO inner ID property test
@@ -1403,7 +1394,6 @@ assert_convert_ast('header id new line insane no trailing elment',
   '= aa\n{id=bb}',
   header_id_new_line_expect,
 );
-// TODO id goes to code.
 assert_convert_ast('header id new line insane trailing element',
   '= aa \\c[bb]\n{id=cc}',
   [a('H', undefined, {
@@ -1643,16 +1633,46 @@ assert_convert_ast('id autogeneration nested',
   ],
 );
 assert_convert_ast('id autogeneration unicode',
-  `= 0A.你好z
+  `= 0A.你Éz
 
-\\x[0a-你好z]
+\\x[0a-你éz]
 `,
   [
-    a('H', undefined, {title: [t('0A.你好z')]}, {id: '0a-你好z'}),
+    a('H', undefined, {title: [t('0A.你Éz')]}, {id: '0a-你éz'}),
     a('P', [
-      a('x', undefined, {href: [t('0a-你好z')]})
+      a('x', undefined, {href: [t('0a-你éz')]})
     ])
   ],
+);
+assert_error('id autogeneration with undefined reference in title fails gracefully',
+  `= \\x[reserved_undefined]
+`, 1, 5);
+// https://github.com/cirosantilli/cirodown/issues/45
+assert_convert_ast('id autogeneration with nested elements does an id conversion and works',
+  `= ab \`cd\` ef
+
+\\x[ab-cd-ef]
+`,
+  [
+    a(
+      'H',
+      undefined,
+      {
+        level: [t('1')],
+        title: [
+          t('ab '),
+          a('c', [t('cd')]),
+          t(' ef'),
+        ],
+      },
+      {
+        id: 'ab-cd-ef',
+      }
+    ),
+    a('P', [
+      a('x', undefined, { href: [t('ab-cd-ef')]}),
+    ]),
+  ]
 );
 
 // title_to_id

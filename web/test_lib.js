@@ -36,8 +36,8 @@ async function generateDemoData(params) {
   const basename = params.basename
 
   const nArticles = nUsers * nArticlesPerUser
-  const sequelize = models(directory, basename);
-  await sequelize.sync({force: true})
+  const sequelize = models.getSequelize(directory, basename);
+  await models.sync(sequelize)
 
   printTimeNow = now()
   console.error(`User`);

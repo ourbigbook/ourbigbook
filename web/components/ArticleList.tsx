@@ -113,8 +113,9 @@ const ArticleList = (props) => {
       case 'feed':
         message = 'Follow some users to see their articles here'
         break
-      case 'global':
-        message = 'There are no articles on this website yet!!!'
+      case 'global-top':
+      case 'global-latest':
+        message = 'There are no articles on this website yet'
         break
       default:
         message = 'There are no articles matching this search'

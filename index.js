@@ -720,7 +720,7 @@ Macro.TOC_ID = 'toc';
 Macro.RESERVED_IDS = new Set([
   Macro.TOC_ID,
 ]);
-Macro.TOC_PREFIX = 'toc-'
+Macro.TOC_PREFIX = Macro.TOC_ID + '-'
 Macro.TOPLEVEL_MACRO_NAME = 'Toplevel';
 
 /** Helper to create plaintext nodes, since so many of the fields are fixed in that case. */
@@ -1401,30 +1401,17 @@ class HeaderTreeNode {
    *
    * @return {String}
    */
-  get_nested_number(header_graph_top_level, toplevel_node) {
+  get_nested_number(header_graph_top_level) {
     let indexes = [];
     let cur_node = this;
     while (
-      cur_node !== undefined &&
-      (
-        toplevel_node === undefined ||
-        toplevel_node !== cur_node
-      )
+      cur_node.value !== undefined &&
+      cur_node.get_level() !== header_graph_top_level
     ) {
       indexes.push(cur_node.index + 1);
       cur_node = cur_node.parent_node;
     }
-    let offset;
-    if (toplevel_node !== undefined) {
-      offset = 0;
-    } else if (
-      header_graph_top_level === 0
-    ) {
-      offset = 1;
-    } else {
-      offset = 2;
-    }
-    return indexes.reverse().slice(offset).join('.');
+    return indexes.reverse().join('.');
   }
 
   toString() {
@@ -2011,7 +1998,7 @@ function convert_header(cur_arg_list, context, has_toc) {
     if (options.log['split-headers']) {
       console.error('split-headers: ' + first_ast.id);
     }
-    if (!has_toc) {
+    if (!has_toc && first_ast.macro_name === Macro.HEADER_MACRO_NAME) {
       cur_arg_list.push(new AstNode(
         AstType.MACRO,
         Macro.TOC_MACRO_NAME,
@@ -2030,8 +2017,14 @@ function convert_header(cur_arg_list, context, has_toc) {
     );
     options.toplevel_id = first_ast.id;
     context.in_split_headers = true;
-    context.header_graph = first_ast.header_graph_node;
-    context.header_graph_top_level = 1;
+    // When not in simple header mode, we always have a value-less node, with
+    // children with values. Now things are a bit more complicated, because we
+    // want to keep the header tree intact, but at the same time also uniquely point
+    // to one of the headers. So let's fake a tree node that has only one child we care
+    // about. And the child does not have this fake parent to be able to see actual parents.
+    context.header_graph = new HeaderTreeNode();
+    context.header_graph.add_child(first_ast.header_graph_node);
+    context.header_graph_top_level = first_ast.header_graph_node.get_level();
     const output_path = output_path_from_ast(first_ast, context);
     context.toplevel_output_path = output_path;
     context.toplevel_scope_cut_length = calculate_scope_length(first_ast);
@@ -3123,6 +3116,11 @@ function parse(tokens, options, context, extra_returns={}) {
   // Normally only the toplevel includer will enter this code section.
   if (!options.from_include) {
     // Calculate header_graph_top_level.
+    //
+    // - if aa header of this level is present in the document,
+    //   there is only one of it. This implies for example that
+    //   it does not get numerical prefixes like "1.2.3 My Header".
+    //   when rendering, and it does not show up in the ToC.
     if (context.header_graph.children.length === 1) {
       context.header_graph_top_level = first_header_level;
       const toplevel_header_node = context.header_graph.children[0];
@@ -3802,8 +3800,7 @@ exports.title_to_id = title_to_id;
  * For after everything broke down due to toplevel scope.
  */
 function toc_id(target_id_ast, context) {
-  const [href_path, fragment] = x_href_parts(target_id_ast, context);
-  return Macro.TOC_PREFIX + fragment;
+  return Macro.TOC_PREFIX + target_id_ast.id;
 }
 
 function unconvertible() {
@@ -4597,24 +4594,20 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      let level_int;
-      if (context.in_split_headers) {
-        level_int = 1
-      } else {
-        level_int = ast.header_graph_node.get_level();
-      }
+      let level_int = ast.header_graph_node.get_level();
       if (typeof level_int !== 'number') {
         throw new Error('header level is not an integer after validation');
       }
       let custom_args;
+      const level_int_output = level_int - context.header_graph_top_level + 1;
       let level_int_capped;
-      if (level_int > 6) {
+      if (level_int_output > 6) {
         custom_args = {'data-level': new AstArgument([new PlaintextAstNode(
-          ast.source_location, level_int.toString())], ast.source_location)};
+          ast.source_location, level_int_output.toString())], ast.source_location)};
         level_int_capped = 6;
       } else {
         custom_args = {};
-        level_int_capped = level_int;
+        level_int_capped = level_int_output;
       }
       let attrs = html_convert_attrs_id(ast, context, [], custom_args);
       let ret = `<h${level_int_capped}${attrs}><a${html_self_link(ast, context)} title="link to this element">`;
@@ -4681,12 +4674,7 @@ const DEFAULT_MACRO_LIST = [
         if (header_graph_node === undefined) {
           return undefined;
         } else {
-          let toplevel_node;
-          if (context.in_toc && context.in_split_headers) {
-            toplevel_node = context.header_graph;
-          }
-          return header_graph_node.get_nested_number(
-            context.header_graph_top_level, toplevel_node);
+          return header_graph_node.get_nested_number(context.header_graph_top_level);
         }
       },
       show_disambiguate: true,
@@ -5066,14 +5054,13 @@ const DEFAULT_MACRO_LIST = [
     Macro.TOC_MACRO_NAME,
     [],
     function(ast, context) {
-      context = clone_and_set(context, 'in_toc', true);
       let attrs = html_convert_attrs_id(ast, context);
       let todo_visit = [];
       let top_level = context.header_graph_top_level - 1;
       let root_node = context.header_graph;
       let ret = `<div class="toc-container"${attrs}>\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
       ret += `${TOC_ARROW_HTML}<a class="title"${x_href_attr(ast, context)}>Table of contents</a> ${get_descendant_count(root_node)}</div>\n`;
-      if (context.header_graph_top_level > 0 && !context.in_split_headers) {
+      if (root_node.value !== undefined) {
         root_node = root_node.children[0];
       }
       for (let i = root_node.children.length - 1; i >= 0; i--) {

@@ -1992,12 +1992,43 @@ assert_convert_ast('cross reference to non-included file with toplevel scope',
   }
 );
 
-//// Headers.
-// TODO inner ID property test
-//assert_convert_ast('header simple',
-//  '\\H[1][My header]\n',
-//  `<h1 id="my-header"><a href="#my-header">1. My header</a></h1>\n`
-//);
+// Headers.
+assert_convert_ast('header simple',
+  `\\H[1][My header]
+
+\\H[2][My header 2]
+
+\\H[3][My header 3]
+
+\\H[4][My header 4]
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('My header')]}),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('My header 2')]}),
+    a('H', undefined, {level: [t('3')], title: [t('My header 3')]}),
+    a('H', undefined, {level: [t('4')], title: [t('My header 4')]}),
+  ],
+  {
+    assert_xpath_matches: [
+      // The toplevel header does not have any numerical prefix, e.g. "1. My header",
+      // it is just "My header".
+      "//x:h1[@id='notindex']//x:a[@href='' and text()='My header']",
+      "//x:h2[@id='my-header-2']//x:a[@href='#my-header-2' and text()='1. My header 2']",
+    ],
+    assert_xpath_split_headers: {
+      'my-header-2.html': [
+        // The toplevel split header does not get a numerical prefix.
+        "//x:h1[@id='my-header-2']//x:a[@href='' and text()='My header 2']",
+      ],
+      'my-header-3.html': [
+        // The toplevel split header does not get a numerical prefix.
+        "//x:h1[@id='my-header-3']//x:a[@href='' and text()='My header 3']",
+      ],
+    },
+    input_path_noext: 'notindex',
+  },
+);
 assert_convert_ast('header and implicit paragraphs',
   `\\H[1][My header 1]
 
@@ -2311,7 +2342,7 @@ assert_convert_ast('split headers have correct table of contents',
 
         // ToC links in split headers have parent toc entry links.
         "//*[@id='toc']//*[@id='toc-h1-2-1']//x:a[@href='#toc' and text()='\u2191 parent \"h1 2\"']",
-        //"//*[@id='toc']//*[@id='toc-h1-2-1-1']//x:a[@href='#toc-h1-2-1' and text()='\u2191 parent \"h1 2 1\"']",
+        "//*[@id='toc']//*[@id='toc-h1-2-1-1']//x:a[@href='#toc-h1-2-1' and text()='\u2191 parent \"h1 2 1\"']",
       ],
     },
     assert_not_xpath_split_headers: {

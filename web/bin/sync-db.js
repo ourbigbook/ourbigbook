@@ -6,13 +6,12 @@
 // Originally added for next build since we don't know how to run hooks.
 // before next build, and the database wouldn't exist otherwise.
 
-(async () => {
 const path = require('path')
 const child_process = require('child_process');
 const { DatabaseError } = require('sequelize')
 const models = require('../models')
-
 const sequelize = models.getSequelize(path.dirname(__dirname));
+(async () => {
 let dbEmpty = true;
 try {
   await sequelize.models.SequelizeMeta.findOne()
@@ -28,4 +27,4 @@ if (!dbEmpty) {
   console.error(out.stderr.toString());
   process.exit(out.status)
 }
-})()
+})().finally(() => { return sequelize.close() });

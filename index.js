@@ -6642,12 +6642,12 @@ function renderTocFromEntryList({ add_test_instrumentation, entry_list, descenda
   if (tocIdPrefix === undefined) {
     tocIdPrefix = ''
   }
-  let ret = `<div id="${tocIdPrefix}${Macro.TOC_ID}"class="toc-container">\n<ul>\n<li${htmlClassAttr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`
+  let ret = `<div id="${tocIdPrefix}${Macro.TOC_ID}"class="toc-container"><ul><li${htmlClassAttr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`
   ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc" href="#${tocIdPrefix}${Macro.TOC_ID}">${TOC_MARKER_SYMBOL} Table of contents</a>`
   if (descendant_count_html) {
     ret += `<span class="hover-metadata">${descendant_count_html}</span>`
   }
-  ret += `</span></div>\n`
+  ret += `</span></div>`
   for (let i = 0; i < entry_list.length; i++) {
     const entry = entry_list[i]
     let {
@@ -6665,11 +6665,11 @@ function renderTocFromEntryList({ add_test_instrumentation, entry_list, descenda
       id_prefix = ''
     }
     if (level > top_level) {
-      ret += `<ul>\n`;
+      ret += `<ul>`;
     } else if (level < top_level) {
-      ret += `</li>\n</ul>\n`.repeat(top_level - level);
+      ret += `</li></ul>`.repeat(top_level - level);
     } else {
-      ret += `</li>\n`;
+      ret += `</li>`;
     }
     ret += '<li';
     if (has_child) {
@@ -6686,26 +6686,27 @@ function renderTocFromEntryList({ add_test_instrumentation, entry_list, descenda
     }
     ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
     let toc_href = htmlAttr('href', '#' + htmlEscapeAttr(my_toc_id));
-    ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${htmlAttr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
+    //ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${htmlAttr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
+    // c for current
+    ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${htmlAttr('class', 'c')}>${UNICODE_LINK} link</a>`;
     if (link_to_split) {
       ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
     }
     if (parent_href) {
-      ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${htmlAttr('title', 'parent ToC entry')}>${PARENT_MARKER} ${parent_content}</a>`;
+      // p for parent
+      //ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${htmlAttr('title', 'parent ToC entry')}>${PARENT_MARKER} ${parent_content}</a>`;
+      ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${htmlAttr('class', 'p')}>${PARENT_MARKER} ${parent_content}</a>`;
     }
     if (entry.descendant_count_html) {
       ret += `${entry.descendant_count_html}`
     }
     ret += `</span></span></div>`
-    if (has_child) {
-      ret += `\n`;
-    }
     top_level = level;
   }
-  ret += `</li>\n</ul>\n`.repeat(top_level);
+  ret += `</li></ul>`.repeat(top_level);
   // Close the table of contents list.
-  ret += `</li>\n</ul>\n`;
-  ret += `</div>\n`
+  ret += `</li></ul>`;
+  ret += `</div>`
   return ret
 }
 exports.renderTocFromEntryList = renderTocFromEntryList

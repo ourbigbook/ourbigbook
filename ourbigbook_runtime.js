@@ -44,6 +44,14 @@ export function ourbigbook_runtime(toplevel) {
   // ToC interaction.
   const CLOSE_CLASS = 'close';
   const TOC_CONTAINER_CLASS = 'toc-container';
+  function setTitles(selector, title) {
+    const elems = toplevel.querySelectorAll(`.${TOC_CONTAINER_CLASS} ${selector}`);
+    for (const elem of elems) {
+      elem.title = title
+    }
+  }
+  setTitles('.c', 'link to this ToC entry')
+  setTitles('.p', 'parent ToC entry')
   const toc_arrows = toplevel.querySelectorAll(`.${TOC_CONTAINER_CLASS} div.arrow`);
   for (const toc_arrow of toc_arrows) {
     toc_arrow.addEventListener('click', () => {

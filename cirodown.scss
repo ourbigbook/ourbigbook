@@ -130,8 +130,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 div.h-nav {
   margin-bottom: $p-margin-vert;
-  span.nav {
+  div.nav {
     font-weight: bold;
+		margin-bottom: $p-margin-vert/2;
     &:before {
       content: "\21b3";
     }

@@ -310,50 +310,53 @@ An explicit link body can be given just as for regular HTTP \x[links] as:
 See this \x[internal-cross-references][awesome section].
 ]]
 
-=== x `child` argument
+= x `child` argument
+{parent=internal-cross-references}
 
-TODO implement.
-
-Setting `child=1` on a cross reference to a header as in:
+Setting the `child` \x[boolean-named-argument] on a cross reference to a header as in:
 ``
-\xref[my-header]{child=1}
+\x[my-header]{child}
 ``
-has the following effects:
-* add the current header to the list of extra parents of the child
+makes that header show up on the list of extra parents of the child.
 
 This allows a section to have multiple parents, e.g. to include it into multiple categories. For example:
 ``
-= Animals
+= Animal
 
-== Mammals
+== Mammal
 
 === Dog
 
 === Cat
 
-== Cute animals
+== Cute animal
 
-Cute animals:
-* \xref[dog]{child=1}
-* \xref[cat]
+These animals are cute:
+* \x[dog]{child} because they play with you
+
+These animals aren't cute however:
+* \x[cat]
 ``
 would render something like:
 ``
-h1 Animals
+h1 Animal
 
-h2 Mammals
+h2 Mammal
 
-h3 Dog (parent section: Mammals)
-(other parent sections: Cute animals)
+h3 Dog (parent section: Mammal)
+(other parent sections: Cute animal)
 
-h3 Cat (parent section: Mammals)
+h3 Cat (parent section: Mammal)
 
-== Cute animals
+== Cute animal
 
-* \xref[dog]
-* \xref[cat]
+These animals are cute:
+* \x[dog]
+
+These animals aren't cute however:
+* \x[cat]
 ``
-so note how "Dog" has a list of extra parents including "Cute animals", but Cat does not, due to the `child=1`.
+so note how "Dog" has a list of extra parents including "Cute animal", but Cat does not, due to the `child`.
 
 This property does not affect how the \x[table-of-contents][`\Toc`] is rendered. We could insert elements sections there multiple times, but it has the downside that browser Ctrl + F searches would hit the same thing multiple times on the table of contents, which might make finding things harder.
 ``
@@ -375,9 +378,39 @@ is the same as:
 Read this \x[my-id][My title].
 ``
 
+A live demo can be seen at: \x[x-child-argument-demo].
+
+= x `child` argument demo
+{parent=x-child-argument}
+{scope}
+
+= Animal
+{parent=x-child-argument-demo}
+
+= Mammal
+{parent=animal}
+
+= Dog
+{parent=mammal}
+
+= Cat
+{parent=mammal}
+
+= Cute animal
+{parent=animal}
+
+Cute animal:
+* \x[dog]{child}
+* \x[cat]
+
+= x `parent` argument
+{parent=x-child-argument}
+
+The `parent` argument is exactly like the \x[x-child-argument], but it reverses the direction of the parent/child relation.
+
 === Cross reference `full` argument
 
-To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` \x[boolean-named-arguments][boolean named argument] to the cross reference, for example:
+To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` \x[boolean-named-argument] to the cross reference, for example:
 \CirodownExample[[
 \x[cross-reference-full-argument]{full}.
 ]]
@@ -432,7 +465,7 @@ For example, in the previous example, without any further intelligent behaviour 
 
 Cirodown can take care of some inflection cases for you.
 
-For capitalization, both headers and cross reference macros have the `c` \x[boolean-named-arguments][boolean named argument] which stands for "capitalized":
+For capitalization, both headers and cross reference macros have the `c` \x[boolean-named-argument] which stands for "capitalized":
 * for headers, `c` means that the header title has fixed capitalization as given in the title, i.e.
   * if the title has a capital first character, it will always show as a capital, as is the case for most https://en.wikipedia.org/wiki/Proper_noun[proper noun]
   * if it is lower case, it will also always remain lower case, as is the case for some rare proper nouns, notably https://en.wikipedia.org/wiki/Arm_Holdings[the name of certain companies]
@@ -443,7 +476,7 @@ For capitalization, both headers and cross reference macros have the `c` \x[bool
   Using this option is required when you are starting a sentence with a non-proper noun.
 Capitalization is handled by a \x[javascript-case-conversion].
 
-For pluralization, cross reference macros have the `p` \x[boolean-named-arguments][boolean named argument] which stands for "pluralize":
+For pluralization, cross reference macros have the `p` \x[boolean-named-argument] which stands for "pluralize":
 * if given and true, this automatically pluralizes the last word of the target title by using the https://github.com/blakeembrey/pluralize library
 * if given and false, automatically singularize
 * if not given, don't change the number of elements
@@ -1220,7 +1253,7 @@ For a more general introduction to all experiments, see: \x[introduction].
 
 but this would be very tedious.
 
-To keep those IDs shorter, Cirodown provides the `scope` \x[boolean-named-arguments][boolean named argument] property of \x[headers], which works analogously to C++ namespaces with the header IDs.
+To keep those IDs shorter, Cirodown provides the `scope` \x[boolean-named-argument] property of \x[headers], which works analogously to C++ namespaces with the header IDs.
 
 Using `scope`, the previous example could be written more succinctly as:
 ``
@@ -1749,7 +1782,7 @@ Have a look at this amazing image: \x[image-my-test-image-2].
 ]]
 This works because \x[cross-reference-full-argument][`full` is the default cross reference style for `Image`], otherwise the link text would be empty since there is no `title`, and cirodown would raise an error.
 
-Cirodown can optionally deduce the title from the basename of the `src` argument if the `titleFromSrc` \x[boolean-named-arguments][boolean named argument] is given, or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
+Cirodown can optionally deduce the title from the basename of the `src` argument if the `titleFromSrc` \x[boolean-named-argument] is given, or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
 \CirodownExample[[
 Have a look at this amazing image: \x[image-tank-man-standing-in-front-of-some-tanks].
 
@@ -1855,7 +1888,7 @@ Cirodown likes Wikimedia Commons so much that we automatically parse the image U
 \Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
 ]]
 
-And like for non-Wikimedia images, you can automatically generate a `title` from the `src` by setting the `titleFromSrc` \x[boolean-named-arguments][boolean named argument] or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
+And like for non-Wikimedia images, you can automatically generate a `title` from the `src` by setting the `titleFromSrc` \x[boolean-named-argument] or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
 \CirodownExample[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
 {titleFromSrc}
@@ -2716,7 +2749,7 @@ has the special effect of generating automatic links as in:
 \a[http://example.com][http://example.com]
 ``
 
-This can be contrasted with named aguments, for which there is always a default value, notably for \x[boolean-named-arguments].
+This can be contrasted with named aguments, for which there is always a default value, notably for \x[boolean-named-argument]{p}.
 
 See also: \x[links].
 
@@ -2728,7 +2761,7 @@ This is for example the `level` of a \x[headers]{p=0}.
 
 These arguments marked with the `mandatory: true` \x[help-macros] argument property.
 
-===== Boolean named arguments
+===== Boolean named argument
 
 Name arguments marked in \x[help-macros] as `boolean: true` must either:
 * take no value and no `=` sign, in which case the value is implicitly set to `1`
@@ -2737,15 +2770,15 @@ Name arguments marked in \x[help-macros] as `boolean: true` must either:
 
 For example, \x[cross-reference-full-argument][the `full` argument] of \x[internal-cross-references] is correctly written as:
 \CirodownExample[[
-\x[boolean-named-arguments]{full}
+\x[boolean-named-argument]{full}
 ]]
 without the `=` sign, or equivalently:
 \CirodownExample[[
-\x[boolean-named-arguments]{full=1}
+\x[boolean-named-argument]{full=1}
 ]]
 The `full=0` version is useful in the case of reference targets that unlike \x[headers] expand the title on the cross reference by default, e.g. \x[images]:
 \CirodownExample[[
-\x[boolean-named-arguments]{full=1}
+\x[boolean-named-argument]{full=1}
 ]]
 
 The name "boolean argument" is given by analogy to the https://stackoverflow.com/questions/16109358/what-is-the-correct-readonly-attribute-syntax-for-input-text-elements/24588427#24588427["boolean attribute" concept in HTML5].

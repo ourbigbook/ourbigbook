@@ -48,7 +48,7 @@ const Article = ({
     <div className="comments content-not-ourbigbook">
       {isIssue
         ? <>
-            <h2>Comments ({ commentsCount })</h2>
+            <h2><i className="ion-ios-chatbubble" /> Comments ({ commentsCount })</h2>
             <div className="comment-form-holder">
               <CommentInput {...{ comments, setComments, issueNumber: article.number, loggedInUser }}/>
             </div>
@@ -64,7 +64,7 @@ const Article = ({
             )}
           </>
         : <>
-            <h2>Discussion ({ issuesCount })</h2>
+            <h2><i className="ion-ios-chatbubble" /> Discussion ({ issuesCount })</h2>
             { seeAllCreateNew }
             { issues.length > 0 ?
                 <>
@@ -83,7 +83,7 @@ const Article = ({
                   }}/>
                   { seeAllCreateNew }
                 </>
-              : <p>There are no discussion threads in this article yet.</p>
+              : <p>There are no discussion threads about this article yet.</p>
             }
           </>
       }

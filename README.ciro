@@ -491,8 +491,6 @@ We could have chosen to do some magic to differentiate between them, e.g. checki
 
 Via KaTeX server side, oh yes!
 
-Just like code, but LaTeX math goes in.
-
 My inline \m[[\sqrt{1 + 1}]] is awesome.
 
 Escape the closing bracket with backslash: \m[1 - \[1 + 1\] = -1].

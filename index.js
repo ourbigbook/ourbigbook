@@ -90,7 +90,9 @@ class AstNode {
     if (!('errors' in context)) {
       context.errors = [];
     }
-    context.katex_macros = {};
+    if (!('katex_macros' in context)) {
+      context.katex_macros = {};
+    }
     return context.macros[this.macro_name].convert(this, context);
   }
 

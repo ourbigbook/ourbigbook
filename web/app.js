@@ -54,7 +54,7 @@ function doStart(app) {
   app.get(new RegExp('^(?!' + config.apiPath + '(/|$))'), function (req, res) {
     return nextHandle(req, res);
   });
-  app.use(session({ secret: 'conduit', cookie: { maxAge: 60000 }, resave: false, saveUninitialized: false }))
+  app.use(session({ secret: config.secret, cookie: { maxAge: 60000 }, resave: false, saveUninitialized: false }))
 
   // Handle API routes.
   {

@@ -1860,13 +1860,13 @@ which looks like:
 You can only link to subsections of wiki pages with explicit links as in:
 
 ``
-= History or Tiananmen Square
+= History of Tiananmen Square
 {wiki=Tiananmen_Square#History}
 ``
 
 which looks like:
 
-= History or Tiananmen Square
+= History of Tiananmen Square
 {id=wiki-explicit-subsection}
 {parent=h-wiki-argument}
 {wiki=Tiananmen_Square#History}

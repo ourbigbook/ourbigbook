@@ -3335,7 +3335,7 @@ const DEFAULT_MACRO_LIST = [
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
     macro_image_video_block_convert_function(
       function (ast, context, validation_output, src, rendered_attrs, alt) {
-        if ('youtube' in ast.args) {
+        if (validation_output.youtube.boolean) {
           let start;
           if ('start' in ast.args) {
             start = `?start=${validation_output['start']['positive_nonzero_integer']}`;

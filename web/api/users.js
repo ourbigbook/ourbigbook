@@ -193,11 +193,16 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
           )
         }
       }
+      if (typeof req.body.user.email !== 'undefined') {
+        //user.email = req.body.user.email
+        if (user.email !== req.body.user.email) {
+          throw new lib.ValidationError(
+            [`email cannot be modified currently, would change from ${user.email} to ${req.body.user.email}`],
+          )
+        }
+      }
       if (typeof req.body.user.displayName !== 'undefined') {
         user.displayName = req.body.user.displayName
-      }
-      if (typeof req.body.user.email !== 'undefined') {
-        user.email = req.body.user.email
       }
       if (typeof req.body.user.image !== 'undefined') {
         user.image = req.body.user.image

@@ -690,30 +690,28 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
       }
     }
   }
-  if (isbigb || convertNonBigb) {
-    if (!nonOurbigbookOptions.had_error) {
-      if (showFinish) {
-        // Print conversion finished successfully info.
-        let t1 = now();
-        let output_path_str
-        if (
-          ourbigbook_options.render &&
-          // Happens if:
-          // - conversion to .tex
-          first_output_path !== undefined
-        ) {
-          output_path_str = ` -> ${path.relative(process.cwd(), first_output_path)}`
-        } else {
-          output_path_str = ''
-        }
-        let done_str
-        if (skip) {
-          done_str = MESSAGE_SKIP_STR
-        } else {
-          done_str = finished_in_ms(t1 - msg_ret.t0)
-        }
-        console.log(`${message_prefix}: ${path.relative(process.cwd(), input_path)}${output_path_str} ${done_str}`);
+  if (!nonOurbigbookOptions.had_error && (isbigb || convertNonBigb)) {
+    if (showFinish) {
+      // Print conversion finished successfully info.
+      let t1 = now();
+      let output_path_str
+      if (
+        ourbigbook_options.render &&
+        // Happens if:
+        // - conversion to .tex
+        first_output_path !== undefined
+      ) {
+        output_path_str = ` -> ${path.relative(process.cwd(), first_output_path)}`
+      } else {
+        output_path_str = ''
       }
+      let done_str
+      if (skip) {
+        done_str = MESSAGE_SKIP_STR
+      } else {
+        done_str = finished_in_ms(t1 - msg_ret.t0)
+      }
+      console.log(`${message_prefix}: ${path.relative(process.cwd(), input_path)}${output_path_str} ${done_str}`);
     }
 
     if (convertNonBigb) {

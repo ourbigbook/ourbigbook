@@ -4287,12 +4287,28 @@ git push heroku master
 
 You can install the support with https://github.com/VundleVim/Vundle.vim[Vundle] with:
 ``
-Bundle 'cirosantilli/cirodown', {'rtp': 'vim'}
+set nocompatible
+filetype off
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+Plugin 'gmarik/vundle'
+let g:snipMate = {}
+let g:snipMate.snippet_version = 1
+Plugin 'MarcWeber/vim-addon-mw-utils'
+Plugin 'tomtom/tlib_vim'
+Plugin 'garbas/vim-snipmate'
+Plugin 'cirosantilli/cirodown', {'rtp': 'vim'}
 ``
 or by directly dropping the files named below under your `~/.vim/`, e.g. `vim/syntax/cirodown.vim`
 
 The following support is provided:
-* \a[vim/syntax/cirodown.vim]: syntax highlighting
+* \a[vim/syntax/cirodown.vim]: syntax highlighting.
+
+  As for other programming languages, this cannot be perfect without actually parsing, which would be slow for larger files.
+
+  But even the imperfect approximation already covers a lot of the most cases.
+
+  Notably it turns off spelling from parts of the document like URLs and code which would otherwise contain many false positive spelling errors.
 * \a[vim/snippets/cirodown.vim]: snippets for https://github.com/honza/vim-snippets[], which you also have to install first for them to work.
 
   For example, with those snippets installed, you can easily create links to headers. Suppose you have:
@@ -4306,9 +4322,9 @@ The following support is provided:
   ``
   \x[my-long-header]
   ``
-  This provides a resonable alternative for ID calculation, until a ctags-like setup gets implemented (never/\x[browser-editor-with-preview]-only? ;-))
+  This provides a reasonable alternative for ID calculation, until a ctags-like setup gets implemented (never/\x[browser-editor-with-preview]-only? ;-))
 
-  Simiplarly for \x[h-parent-argument] you can do:
+  Similarly for \x[h-parent-argument] you can do:
   ``
   {p
   ``

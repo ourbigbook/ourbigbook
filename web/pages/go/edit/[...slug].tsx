@@ -1,5 +1,5 @@
-import makeArticleEditorPage from 'front/ArticleEditorPage'
-import { makeGetServerSidePropsArticle } from 'back/ArticlePage'
+import ArticleEditorPageHoc from 'front/ArticleEditorPage'
+import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
 import sequelize from 'db'
-export const getServerSideProps = makeGetServerSidePropsArticle();
-export default makeArticleEditorPage();
+export const getServerSideProps = getServerSidePropsArticleHoc();
+export default ArticleEditorPageHoc();

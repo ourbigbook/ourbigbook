@@ -74,5 +74,5 @@ export default ArticlePage;
 
 // Server only.
 
-import { makeGetServerSidePropsArticle } from 'back/ArticlePage'
-export const getServerSideProps = makeGetServerSidePropsArticle();
+import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
+export const getServerSideProps = getServerSidePropsArticleHoc();

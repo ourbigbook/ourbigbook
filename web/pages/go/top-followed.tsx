@@ -1,4 +1,4 @@
 import Home from 'front/IndexPage'
 export default Home;
-import { makeGetServerSidePropsIndex } from 'back/IndexPage'
-export const getServerSideProps = makeGetServerSidePropsIndex('top-followed')
+import { getServerSidePropsIndexHoc } from 'back/IndexPage'
+export const getServerSideProps = getServerSidePropsIndexHoc('top-followed')

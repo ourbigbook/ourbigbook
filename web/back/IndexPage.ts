@@ -7,8 +7,8 @@ import { articleLimit, fallback } from 'front/config'
 // TODO add type back, fails with:
 // Type error: Property 'params' does not exist on type 'IncomingMessage & { cookies: NextApiRequestCookies; }'.
 //
-//export const makeGetServerSidePropsIndex = (what): GetServerSideProps => {
-export const makeGetServerSidePropsIndex = (what) => {
+//export const getServerSidePropsIndexHoc = (what): GetServerSideProps => {
+export const getServerSidePropsIndexHoc = (what) => {
   return async ({ req }) => {
     const loggedInUser = await getLoggedInUser(req)
     const page = req?.params?.page ? parseInt(req.params.page as string, 10) - 1: 0

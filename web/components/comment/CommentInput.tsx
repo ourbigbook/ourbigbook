@@ -68,6 +68,7 @@ const CommentInput = () => {
             value={content}
             onChange={handleChange}
             disabled={isLoading}
+            className="not-monaco"
           />
         </div>
         <div className="comment-form-submit">

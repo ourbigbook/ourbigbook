@@ -4040,7 +4040,7 @@ function htmlRenderSimpleElem(elem_name, options={}) {
     if (show_caption) {
       const { description, force_separator, multiline_caption } = getDescription(ast.args.description, context)
       const { full: title, inner } = xTextBase(ast, context, {
-        add_title_div: true,
+        addTitleDiv: true,
         href_prefix: htmlSelfLink(ast, context),
         force_separator
       })
@@ -4202,7 +4202,7 @@ function htmlTitleAndDescription(ast, context, opts={}) {
   }
   if (ast.index_id || ast.validation_output.description.given) {
     const { full: title, inner } = xTextBase(ast, context, {
-      add_title_div: opts.add_title_div,
+      addTitleDiv: opts.addTitleDiv,
       force_separator,
       href_prefix: href,
     })
@@ -4397,7 +4397,7 @@ function macroImageVideoBlockConvertFunction(ast, context) {
     src,
   });
   if (has_caption) {
-    const { full: title, inner } = xTextBase(ast, context, { add_title_div: true, href_prefix, force_separator })
+    const { full: title, inner } = xTextBase(ast, context, { addTitleDiv: true, href_prefix, force_separator })
     const title_and_description = getTitleAndDescription({ title, description, source, inner })
     ret += `<figcaption>${title_and_description}</figcaption>`;
   }
@@ -6665,7 +6665,13 @@ function renderToc(context) {
       //  cur_context = context;
       //}
 
-      entry.content = xText(target_ast, context, {style_full: true, show_caption_prefix: false});
+      entry.content = xText(target_ast, context, {
+        addNumberDiv: true,
+        addNumberElem: 'i',
+        addNumberClass: 'n',
+        show_caption_prefix: false,
+        style_full: true,
+      });
       entry.href = xHrefAttr(target_ast, context);
       entry.target_id = target_ast.id
       if (context.options.split_headers) {
@@ -7386,6 +7392,12 @@ function xHrefAttr(target_ast, context) {
  */
 function xTextBase(ast, context, options={}) {
   context = cloneAndSet(context, 'in_x_text', true)
+  if  (!('addNumberDiv' in options)) {
+    options.addNumberDiv = false;
+  }
+  if  (!('addTitleDiv' in options)) {
+    options.addTitleDiv = false;
+  }
   if (!('caption_prefix_span' in options)) {
     options.caption_prefix_span = true;
   }
@@ -7403,9 +7415,6 @@ function xTextBase(ast, context, options={}) {
   }
   if (!('from_x' in options)) {
     options.from_x = false;
-  }
-  if  (!('add_title_div' in options)) {
-    options.add_title_div = false;
   }
   if (!('pluralize' in options)) {
     // true: make plural
@@ -7425,7 +7434,7 @@ function xTextBase(ast, context, options={}) {
     style_full = macro.options.default_x_style_full;
   }
   let ret = ``;
-  let number;
+  let title_arg = macro.options.get_title_arg(ast, context);
   if (style_full) {
     if (options.href_prefix !== undefined) {
       ret += `<a${options.href_prefix}>`
@@ -7450,8 +7459,22 @@ function xTextBase(ast, context, options={}) {
         )
       )
     ) {
-      number = macro.options.get_number(ast, context);
+      let number = macro.options.get_number(ast, context);
       if (number !== undefined) {
+        if (
+          (
+            (title_arg !== undefined && style_full) ||
+            options.force_separator
+          )
+        ) {
+          number += '.'
+        }
+        if (options.addNumberDiv) {
+          const addNumberElem = options.addNumberElem ? options.addNumberElem : 'div'
+          const addNumberClass = options.addNumberClass ? options.addNumberClass : 'number'
+          number = `<${addNumberElem} class="${addNumberClass}">${number}</${addNumberElem}>`
+        }
+        number += ' '
         ret += number;
       }
     }
@@ -7461,16 +7484,6 @@ function xTextBase(ast, context, options={}) {
     if (options.href_prefix !== undefined) {
       ret += `</a>`
     }
-  }
-  let title_arg = macro.options.get_title_arg(ast, context);
-  if (
-    (
-      (title_arg !== undefined && style_full) ||
-      options.force_separator
-    ) &&
-    number !== undefined
-  ) {
-    ret += htmlEscapeContext(context, `. `);
   }
   if (
     title_arg !== undefined
@@ -7525,7 +7538,7 @@ function xTextBase(ast, context, options={}) {
     } else {
       inner = renderArg(title_arg, context);
     }
-    if (options.add_title_div) {
+    if (options.addTitleDiv) {
       inner = `<div class="title">${inner}</div>`
     }
     ret += inner
@@ -8828,7 +8841,7 @@ const OUTPUT_FORMATS_LIST = [
         'b': htmlRenderSimpleElem('b'),
         'br': function(ast, context) { return '<br>' },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: function(ast, context) {
-          const { title_and_description, multiline_caption } = htmlTitleAndDescription(ast, context, { add_title_div: true })
+          const { title_and_description, multiline_caption } = htmlTitleAndDescription(ast, context, { addTitleDiv: true })
           let ret = `<div class="code${multiline_caption}"${htmlRenderAttrsId(ast, context)}>`
           ret += htmlCode(renderArg(ast.args.content, context))
           ret += title_and_description
@@ -8927,6 +8940,7 @@ const OUTPUT_FORMATS_LIST = [
           ret += `<div class="notnav"><h${level_int_capped}${attrs}><a${xHrefAttr(self_link_ast, self_link_context)}>`;
 
           let x_text_options = {
+            addNumberDiv: true,
             show_caption_prefix: false,
             style_full: true,
           };
@@ -9347,7 +9361,7 @@ const OUTPUT_FORMATS_LIST = [
           let katex_output = htmlKatexConvert(ast, context)
           let ret = ``
           if (ast.validation_output.show.boolean) {
-            const { href, multiline_caption, title_and_description } = htmlTitleAndDescription(ast, context, { add_title_div: true })
+            const { href, multiline_caption, title_and_description } = htmlTitleAndDescription(ast, context, { addTitleDiv: true })
             ret += `<div class="math${multiline_caption}"${htmlRenderAttrsId(ast, context)}>`
             ret += `<div class="equation">`
             ret += `<div>${katex_output}</div>`
@@ -9423,7 +9437,7 @@ const OUTPUT_FORMATS_LIST = [
           let href = htmlAttr('href', '#' + htmlEscapeAttr(ast.id));
           if (ast.index_id || ast.validation_output.description.given) {
             const { full: title, inner } = xTextBase(ast, context, {
-              add_title_div: true,
+              addTitleDiv: true,
               href_prefix: href,
               force_separator,
             })

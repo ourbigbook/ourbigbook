@@ -1,5 +1,6 @@
+const zeroPad = (num, places) => String(num).padStart(places, '0')
+
 export function formatDate(dateString) {
   const date = new Date(dateString)
-  const month = date.toLocaleString('default', { month: 'long' })
-  return `${month} ${date.getDate()}, ${date.getFullYear()}`
+  return `${date.getFullYear()}-${zeroPad(date.getMonth(), 2)}-${zeroPad(date.getDate(), 2)}`
 }

@@ -1,15 +1,14 @@
-$color: black;
+@import '../cirodown.common.scss';
+
 $nav-background-color: #AA0;
 $toplevel-padding: 20px;
 
 body {
+@include body;
 margin: 0;
-background-color: $color;
-color: green;
+background-color: $background-color;
 
-a {
-  color: blue;
-}
+// TODO duplicated from /cirodown.scss. I don't have the patience to factor them out right now.
 
 /* Scrollbar behaviour.
  * We would like to get rid of the X scrollbar and keep only the Y one.
@@ -27,19 +26,25 @@ scrollbar-width: none;
 }
 */
 
+button {
+  cursor: pointer;
+}
+
 nav.navbar, footer {
   background-color: $nav-background-color;
-  color: $color;
+  color: $background-color;
   a {
-    color: $color;
+    color: $background-color;
   }
 }
+
 nav.navbar {
   $font-size: 24px;
   /* https://stackoverflow.com/questions/5078239/how-do-i-remove-the-space-between-inline-block-elements */
   font-size: 0;
   display: flex;
   height: $font-size * 1.2;
+  margin-bottom: 10px;
   .navbar-list {
     display: flex;
     margin-left: auto;
@@ -50,7 +55,7 @@ nav.navbar {
     align-items: center;
     align-self: stretch;
 
-    color: $color;
+    color: $background-color;
     display: flex;
     font-size: 24px;
     font-weight: bold;
@@ -60,11 +65,11 @@ nav.navbar {
     padding-right: 10px;
     text-decoration: none;
     &:visited {
-      color: $color;
+      color: $background-color;
     }
     &:hover, &.active {
       color: $nav-background-color;
-      background-color: $color;
+      background-color: $background-color;
     }
     &.profile {
       padding-left: 0px;
@@ -78,13 +83,15 @@ nav.navbar {
     padding-left: $toplevel-padding;
   }
 }
+
 footer {
+  margin-top: 10px;
   a {
-    $color: #00C;
-    color: $color;
+    $background-color: #00C;
+    color: $background-color;
     text-decoration: none;
     &:visited {
-      color: $color;
+      color: $background-color;
     }
     &:hover {
       text-decoration: underline;
@@ -93,6 +100,27 @@ footer {
   padding: 10px $toplevel-padding;
   div + div {
     margin-top: 5px;
+  }
+}
+
+/* Cirodown has a complex per-element padding structure that we can't easily override.
+ * So for now we are taking the approach of adding this class to every content (non-hav/footer)
+ * to make them align nicely with rendered Cirodown. */
+.content-not-cirodown {
+  padding-left: $toplevel-padding;
+}
+
+.error-message {
+  display: flex;
+  justify-content: center;
+  .error-message-presenter {
+    display: inline-block;
+    margin: 20px auto;
+    padding: 8px 15px;
+    border-radius: 4px;
+    color: #f02d2d;
+    font-weight: 600;
+    background: rgba(240, 45, 45, 0.1);
   }
 }
 
@@ -119,18 +147,12 @@ footer {
   }
   */
 }
-
-.error-message {
-  display: flex;
-  justify-content: center;
-  .error-message-presenter {
-    display: inline-block;
-    margin: 20px auto;
-    padding: 8px 15px;
-    border-radius: 4px;
-    color: #f02d2d;
-    font-weight: 600;
-    background: rgba(240, 45, 45, 0.1);
+table.article-list {
+  margin-bottom: 20px;
+  tr {
+    td > * {
+      vertical-align: middle;
+    }
   }
 }
 

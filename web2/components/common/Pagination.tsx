@@ -25,9 +25,9 @@ function PaginationItem(props) {
     className = ''
   }
   return (
-    <li className={`page-item${className}`} {...newProps}>
+    <span className={`page-item${className}`} {...newProps}>
       <a className="page-link">{props.children}</a>
-    </li>
+    </span>
   )
 }
 
@@ -96,15 +96,15 @@ const Pagination = ({
   );
 
   return (
-    <nav>
-      <ul className="pagination">
-        <PaginationItem onClick={handleFirstClick}>{`<<`}</PaginationItem>
-        <Maybe test={hasPreviousPage}>
-          <PaginationItem onClick={handlePrevClick}>{`<`}</PaginationItem>
-        </Maybe>
-        {pages.map((page) => {
-          const isCurrent = !currentPage ? page === 0 : page === currentPage;
-          return (
+    <nav class="pagination">
+      <PaginationItem onClick={handleFirstClick}>{`<<`}</PaginationItem>
+      <Maybe test={hasPreviousPage}>
+        <PaginationItem onClick={handlePrevClick}>{`<`}</PaginationItem>
+      </Maybe>
+      {pages.map((page) => {
+        const isCurrent = !currentPage ? page === 0 : page === currentPage;
+        return (
+          <>
             <PaginationItem
               key={page.toString()}
               className={isCurrent && "active"}
@@ -112,13 +112,14 @@ const Pagination = ({
             >
               {page + 1}
             </PaginationItem>
-          );
-        })}
-        <Maybe test={hasNextPage}>
-          <PaginationItem onClick={handleNextClick}>{`>`}</PaginationItem>
-        </Maybe>
-        <PaginationItem onClick={handleLastClick}>{`>>`}</PaginationItem>
-      </ul>
+            {' '}
+          </>
+        );
+      })}
+      <Maybe test={hasNextPage}>
+        <PaginationItem onClick={handleNextClick}>{`>`}</PaginationItem>
+      </Maybe>
+      <PaginationItem onClick={handleLastClick}>{`>>`}</PaginationItem>
     </nav>
   );
 };

@@ -4527,7 +4527,7 @@ and close examples:
 = Argument leading newline removal
 {parent=macro-argument-syntax}
 
-If the very first character of an argument is a newline, then that character is ignored if it would be part of a regular plaintext node.
+If the very first or very last character of an argument is a newline, then that character is ignored if it would be part of a regular plaintext node.
 
 For example:
 ``
@@ -4541,8 +4541,7 @@ generates something like:
 ``
 <pre><code>a
 
-b
-</code></pre>
+b</code></pre>
 ``
 instead of:
 ``

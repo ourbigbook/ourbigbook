@@ -1409,6 +1409,22 @@ class Tokenizer {
     }
   }
 
+  consume_optional_newline_before_close() {
+    if (this.tokens.length > 0) {
+      const last_token = this.tokens[this.tokens.length - 1]
+      if (last_token.type === TokenType.PLAINTEXT) {
+        const txt = last_token.value
+        if (txt[txt.length - 1] === '\n') {
+          if (last_token.value.length === 1) {
+            this.tokens.pop()
+          } else {
+            last_token.value = txt.substring(0, txt.length - 1);
+          }
+        }
+      }
+    }
+  }
+
   error(message, source_location) {
     let new_source_location;
     if (source_location === undefined) {
@@ -1556,6 +1572,7 @@ class Tokenizer {
           this.consume_optional_newline_after_argument()
         }
       } else if (this.cur_c === END_NAMED_ARGUMENT_CHAR) {
+        this.consume_optional_newline_before_close();
         this.push_token(TokenType.NAMED_ARGUMENT_END, END_NAMED_ARGUMENT_CHAR);
         this.consume();
         this.consume_optional_newline_after_argument()
@@ -1580,6 +1597,7 @@ class Tokenizer {
           this.consume_optional_newline_after_argument()
         }
       } else if (this.cur_c === END_POSITIONAL_ARGUMENT_CHAR) {
+        this.consume_optional_newline_before_close();
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
         this.consume();
         this.consume_optional_newline_after_argument();
@@ -8421,27 +8439,24 @@ function ourbigbook_convert_args(ast, context, options={}) {
       const { delim_repeat, rendered_arg } = ourbigbook_prefer_literal(
         ast, context, ast.args[argname], arg, START_POSITIONAL_ARGUMENT_CHAR, END_POSITIONAL_ARGUMENT_CHAR)
       ret_arg.push(START_POSITIONAL_ARGUMENT_CHAR.repeat(delim_repeat))
+      const has_newline = rendered_arg.indexOf('\n') !== -1
       if (arg.remove_whitespace_children) {
         ret_arg.push('\n')
       } else {
-        if (rendered_arg.indexOf('\n') !== -1) {
+        if (has_newline) {
           if (rendered_arg[0] !== '\n') {
-            ret_arg.push('\n')
-          }
-          // TODO this alters rendered output, adds newline, e.g.:
-          // \Q[My line
-          // ]
-          // ends in \n in the output. Leading \n however removed already:
-          // see <Argument leading newline removal>.
-          if (rendered_arg[rendered_arg.length - 1] !== '\n') {
             ret_arg.push('\n')
           }
         }
       }
-      ret_arg.push(
-        rendered_arg +
-        END_POSITIONAL_ARGUMENT_CHAR.repeat(delim_repeat)
-      )
+      ret_arg.push(rendered_arg)
+      if (
+        has_newline &&
+        rendered_arg[rendered_arg.length - 1] !== '\n'
+      ) {
+        ret_arg.push('\n')
+      }
+      ret_arg.push(END_POSITIONAL_ARGUMENT_CHAR.repeat(delim_repeat))
     }
     if (ret_arg.length) {
       ret_args.push(ret_arg)
@@ -8461,6 +8476,7 @@ function ourbigbook_convert_args(ast, context, options={}) {
       const macro_arg = macro.name_to_arg[argname]
       const { delim_repeat, rendered_arg } = ourbigbook_prefer_literal(
         ast, context, ast_arg, arg, START_NAMED_ARGUMENT_CHAR, END_NAMED_ARGUMENT_CHAR)
+      const has_newline = rendered_arg.indexOf('\n') !== -1
       let skip_val = false
       if (macro_arg.boolean) {
         const argstr_default = macro_arg.default === undefined ? '0' : '1'
@@ -8477,7 +8493,17 @@ function ourbigbook_convert_args(ast, context, options={}) {
         argname
       )
       if (!skip_val) {
-        ret_arg.push(NAMED_ARGUMENT_EQUAL_CHAR + rendered_arg)
+        ret_arg.push(NAMED_ARGUMENT_EQUAL_CHAR)
+        if (has_newline && rendered_arg[0] !== '\n') {
+          ret_arg.push('\n')
+        }
+        ret_arg.push(rendered_arg)
+        if (
+          has_newline &&
+          rendered_arg[rendered_arg.length - 1] !== '\n'
+        ) {
+          ret_arg.push('\n')
+        }
       }
       ret_arg.push(END_NAMED_ARGUMENT_CHAR.repeat(delim_repeat))
       if (ret_arg.length) {

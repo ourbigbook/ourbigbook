@@ -27,6 +27,55 @@ After the rule.
 More after the rule.
 ]]
 
+= Gray on gray color replaces green on black and many other CSS improvements
+{parent=News}
+{tag=Implemented by sidstuff}
+
+We're experimenting with a more traditional and boring "dark" theme than the green on black classic previously used.
+
+Readability is probably slightly better, though it is hard to measure these things. It is quite possible that the change matter much more for some people than others who have different eye sight phenotypes.
+
+Perhaps the most important outcome of this is that it will greatly reduce the endless complaning from the community. Though perhaps that was a feature rather than a bug?
+
+Beyond the theme change, many other changes were made. Many of those improvements feel like undisputable upgrades, e.g.:
+* headers are not colored differently from regular text
+* table borders are less visible
+* navbar and footer are more discrete and readable
+
+The CSS code was also refactored and it is not much easier to make broad color changes such as hese in the future, as color constants are not more closely grouped, and fewer constants are now used.
+
+Large parts of this change were pushed forward by <sidstuff> who contributed a several code snippets and ideas to it.
+
+\Image[feature/gray-on-gray/article-list-gray.png]
+{provider=github}
+{border}
+{height=450}
+
+\Image[feature/gray-on-gray/article-list-green.png]
+{provider=github}
+{border}
+{height=450}
+
+\Image[feature/gray-on-gray/footer-gray.png]
+{provider=github}
+{border}
+{height=450}
+
+\Image[feature/gray-on-gray/footer-green.png]
+{provider=github}
+{border}
+{height=450}
+
+\Image[feature/gray-on-gray/donald-trump-algebra-gray.png]
+{provider=github}
+{border}
+{height=850}
+
+\Image[feature/gray-on-gray/donald-trump-algebra-green.png]
+{provider=github}
+{border}
+{height=850}
+
 = Intro to OurBigBook video
 {parent=News}
 {tag=Publicity}

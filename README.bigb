@@ -10715,7 +10715,7 @@ git clone https://github.com/ourbigbook/template
 cd template
 npm install
 npx ourbigbook .
-firefox index.html
+firefox out/html/index.html
 ``
 
 = Visual Studio Code extension release procedure

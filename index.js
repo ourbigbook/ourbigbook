@@ -1335,10 +1335,10 @@ function html_convert_simple_elem(elem_name, options={}) {
     options.newline_after_close = false;
   }
   if (!('wrap' in options)) {
-  // To get the left padding toplevel margin right, elements that have
-  // backtround color like code blocks or left hanging stuff like lists
-  // need a wrapper div. But some don't, like paragraphs, so we allow them
-  // to remove this wrapper as an optimization to get smaller HTML.
+    // To get the left padding toplevel margin right, elements that have
+    // background color like code blocks or left hanging stuff like lists
+    // need a wrapper div. But some don't, like paragraphs, so we allow them
+    // to remove this wrapper as an optimization to get smaller HTML.
     options.wrap = true;
   }
   let newline_after_open_str;
@@ -2579,6 +2579,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'src',
+        elide_link_only: true,
       }),
     ],
     function(ast, context) {
@@ -2621,6 +2622,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'src',
+        elide_link_only: true,
       }),
       new MacroArgument({
         name: 'alt',

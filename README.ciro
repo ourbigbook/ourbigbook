@@ -29,7 +29,7 @@ npm install -g cirodown
 printf 'ab\ncd\n' | npx cirodown --body-only
 ``
 
-To start a new project with a minimal and convenient template \x[generate][use `--generate`] and then \x[publish-to-github-pages][publish it to GitHub with `--publish`]:
+To start a new project with a minimal sane template \x[generate][use `--generate`] and then \x[publish-to-github-pages][publish it to GitHub with `--publish`]:
 ``
 mkdir -p cirodown-test
 cd cirodown-test
@@ -37,6 +37,10 @@ git init
 git remote add origin git@github.com:USERNAME/cirodown-test.git
 cirodown --generate
 cirodown --publish
+``
+Or to start with a more complex template suitable for multifile projects use \x[generate-multifile][use `--generate-multifile`] instead:
+``
+cirodown --generate-multifile
 ``
 
 Render all `.ciro` files form the master of this project to separate files:
@@ -1465,6 +1469,11 @@ This includes common files that almost all projects will want to have, e.g.:
 \l[`.gitignore` to prevent output from being committed accidentally]
 
 The output provides a hello world setup that is immediately ready to be published e.g. \x[publish-to-github-pages][to GitHub pages].
+
+\h[5][`--generate-multifile`]
+{id=generate-multifile}
+
+Like \x[generate][`--generate`], but generate a more complex template that serves as a good starting point for a multifile website.
 
 \h[5][`--help-macros`]
 {id=help-macros}

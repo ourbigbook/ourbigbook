@@ -25,6 +25,8 @@
     "cirodown.embed.min.css",
     "cirodown.local.min.css",
     "cirodown.min.css",
+    "main.liquid.html",
+    "main.scss",
     "nodejs.js"
   ],
   "keywords": [

@@ -5746,7 +5746,7 @@ assert_convert_ast('bigb output format is unchanged for the preferred format',
     bigb: bigb_input,
   },
 );
-assert_convert_ast('bigb output converts plaintext arguments with escapes to literal arguments when possible',
+assert_convert_ast('bigb output: converts plaintext arguments with escapes to literal arguments when possible',
   `\\Q[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$]
 
 \\Q[\\* *]
@@ -5791,7 +5791,7 @@ assert_convert_ast('bigb output converts plaintext arguments with escapes to lit
 `
   },
 );
-assert_convert_ast('bigb output converts sane refs to insane ones',
+assert_convert_ast('bigb output: converts sane refs to insane ones',
   `= Animal
 
 \\x[black-cat]

@@ -737,6 +737,10 @@ class MacroArgument {
       // https://cirosantilli.com/cirodown#mandatory-positional-arguments
       options.mandatory = false;
     }
+    if (!('multiple' in options)) {
+      // https://cirosantilli.com/cirodown#multiple-argument
+      options.multiple = false;
+    }
     if (!('positive_nonzero_integer' in options)) {
       options.positive_nonzero_integer = false;
     }
@@ -745,6 +749,7 @@ class MacroArgument {
       options.remove_whitespace_children = false;
     }
     this.boolean = options.boolean;
+    this.multiple = options.multiple;
     this.default = options.default;
     this.elide_link_only = options.elide_link_only;
     this.mandatory = options.mandatory;
@@ -4174,6 +4179,19 @@ function parse(tokens, options, context, extra_returns={}) {
           // TODO start with the toplevel.
           cur_header_graph_node = ast.header_graph_node;
           children_in_header = true;
+
+          // https://cirosantilli.com/cirodown#h-child-argment
+          const children = ast.args.child
+          if (children !== undefined) {
+            for (let child of children) {
+              const target_id_effective = x_child_db_effective_id(
+                convert_arg_noescape(child.args.content, context),
+                context,
+                ast
+              )
+              add_from_id(target_id_effective, context, ast.id, INCLUDES_TABLE_NAME_X_CHILD);
+            }
+          }
         } else {
           ast.header_graph_node = new HeaderTreeNode(ast, cur_header_graph_node);
           if (ast.in_header) {
@@ -4193,17 +4211,11 @@ function parse(tokens, options, context, extra_returns={}) {
             macro_counts_visible, state, false, line_to_id_array);
 
           if (macro_name === Macro.X_MACRO_NAME) {
-            const target_id = convert_arg_noescape(ast.args.href, context);
-            const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);
-            let target_id_effective;
-            if (
-              // Can happen if it is in another files that was extracted yet.
-              target_id_ast === undefined
-            ) {
-              target_id_effective = target_id
-            } else {
-              target_id_effective = target_id_ast.id
-            }
+            const target_id_effective = x_child_db_effective_id(
+              convert_arg_noescape(ast.args.href, context),
+              context,
+              ast
+            )
             const parent_id = ast.get_header_parent_id();
             if (
               // Happens on some special elements e.g. the ToC.
@@ -4333,6 +4345,13 @@ function parse_argument_list(state, macro_name, macro_type) {
   parse_log_debug(state);
   const args = {};
   const macro = state.macros[macro_name];
+  let name_to_arg;
+  if (
+    // Happens in some error cases.
+    macro !== undefined
+  ) {
+    name_to_arg = macro.name_to_arg
+  }
   let positional_arg_count = 0;
   while (
     // End of stream.
@@ -4377,14 +4396,30 @@ function parse_argument_list(state, macro_name, macro_type) {
     if (state.token.type !== closing_token(open_token.type)) {
       parse_error(state, `unclosed argument "${open_token.value}"`, open_token.source_location);
     }
+    const macro_arg = name_to_arg[arg_name];
+    const multiple = macro_arg !== undefined && macro_arg.multiple
     if (arg_name in args) {
-      // https://github.com/cirosantilli/cirodown/issues/101
-      parse_error(state,
-        `named argument "${arg_name}" given multiple times`,
-        open_token.source_location,
-      );
+      if (!multiple) {
+        // https://github.com/cirosantilli/cirodown/issues/101
+        parse_error(state,
+          `named argument "${arg_name}" given multiple times`,
+          open_token.source_location,
+        )
+      }
     } else {
-      args[arg_name] = arg_children;
+      if (multiple) {
+        args[arg_name] = new AstArgument([], open_token.source_location)
+      } else {
+        args[arg_name] = arg_children;
+      }
+    }
+    if (multiple) {
+      args[arg_name].push(new AstNode(
+        AstType.MACRO,
+        'Comment',
+        { 'content': arg_children },
+        open_token.source_location,
+      ))
     }
     if (state.token.type !== TokenType.INPUT_END) {
       // Consume the *_ARGUMENT_END token out.
@@ -4641,7 +4676,7 @@ function validate_ast(ast, context) {
   const macro_name = ast.macro_name;
   const macro = context.macros[macro_name];
   const name_to_arg = macro.name_to_arg;
-  // First pass sets defaults on missing arguments.
+  // First pass sets defaults or missing arguments.
   for (const argname in name_to_arg) {
     ast.validation_output[argname] = {};
     const macro_arg = name_to_arg[argname];
@@ -4710,6 +4745,20 @@ function validate_ast(ast, context) {
   }
 }
 exports.validate_ast = validate_ast;
+
+function x_child_db_effective_id(target_id, context, ast) {
+  const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);
+  if (
+    // Can happen if it is in another files that was not extracted yet.
+    target_id_ast === undefined
+  ) {
+    // Then in that case, we can't do scope resolution. But since we are in another file,
+    // we must be using the full scope regardless, so it will be correct.
+    return target_id
+  } else {
+    return target_id_ast.id
+  }
+}
 
 /**
  * @return {[String, String]} [href, content] pair for the x node.
@@ -5785,6 +5834,10 @@ const DEFAULT_MACRO_LIST = [
         new MacroArgument({
           name: 'c',
           boolean: true,
+        }),
+        new MacroArgument({
+          name: 'child',
+          multiple: true,
         }),
         new MacroArgument({
           name: 'numbered',

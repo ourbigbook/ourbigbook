@@ -19,7 +19,7 @@ export function getServerSidePropsArticleHoc(addComments?, loggedInUserCache?) {
         where: { topicId: article.topicId },
       }),
     ])
-    const props = {
+    const props:any = {
       article: articleJson,
       topicArticleCount,
     }

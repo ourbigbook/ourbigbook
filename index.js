@@ -2807,7 +2807,8 @@ function convert_init_context(options={}, extra_returns={}) {
       }
       options.isindex = true
     } else {
-      options.toplevel_id = basename_noext;
+      const [input_path_noext, ext] = path_splitext(options.input_path)
+      options.toplevel_id = input_path_noext;
       options.isindex = false
     }
     if (input_dir === '') {
@@ -4120,10 +4121,6 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
           if (options.toplevel_parent_scope !== undefined) {
             ast.scope = options.toplevel_parent_scope;
-            if (!options.isindex) {
-              // We skip calculation of scoped IDs, so gotta do it here.
-              ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id;
-            }
           }
           ast.is_first_header_in_input_file = true;
         }

@@ -1,6 +1,6 @@
 import React from 'react'
 
-const ListErrors = ({ errors }) => (
+const MapErrors = ({ errors }) => (
   <ul className="error-messages">
     {Object.keys(errors).map((key) => {
       return (
@@ -15,4 +15,4 @@ const ListErrors = ({ errors }) => (
   </ul>
 );
 
-export default ListErrors;
+export default MapErrors;

@@ -4,7 +4,7 @@ import Script from 'next/script'
 
 import { LOGIN_ACTION, REGISTER_ACTION, useCtrlEnterSubmit, setCookie, setupUserLocalStorage } from 'front'
 import config from 'front/config'
-import ListErrors from 'front/ListErrors'
+import MapErrors from 'front/MapErrors'
 import Label from 'front/Label'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
@@ -89,7 +89,7 @@ const LoginForm = ({ register = false }) => {
   useCtrlEnterSubmit(handleSubmit)
   return (
     <>
-      <ListErrors errors={errors} />
+      <MapErrors errors={errors} />
       <form onSubmit={handleSubmit}>
         {register &&
           <Label label="Display name">

@@ -24,6 +24,9 @@ class OurbigbookEditor {
     if (!('onDidChangeModelContentCallback' in options)) {
       options.onDidChangeModelContentCallback = (editor, event) => {}
     }
+    if (!('postBuildCallback' in options)) {
+      options.postBuildCallback = (extra_returns) => {}
+    }
     if (!('scrollPreviewToSourceLineCallback' in options)) {
       options.scrollPreviewToSourceLineCallback = (opts) => {}
     }
@@ -185,16 +188,16 @@ class OurbigbookEditor {
     this.convertInput();
     this.ourbigbook_runtime(this.output_elem)
 
-    window.addEventListener('beforeunload', this.beforeunload.bind(this))
+    this.beforeunload = (e) => {
+      if (this.modified) {
+        e.preventDefault()
+        return e.returnValue = this.modified;
+      }
+    }
+    window.addEventListener('beforeunload', this.beforeunload)
   }
 
   // https://stackoverflow.com/questions/7317273/warn-user-before-leaving-web-page-with-unsaved-changes
-  beforeunload(e) {
-    if (this.modified) {
-      e.preventDefault()
-      return e.returnValue = this.modified;
-    }
-  }
 
   async convertInput() {
     let extra_returns = {};
@@ -252,6 +255,8 @@ class OurbigbookEditor {
           }
         })
       );
+
+      this.options.postBuildCallback(extra_returns)
     }
   }
 

@@ -4338,6 +4338,13 @@ assert_error('empty include in header title fails gracefully',
 `,
   3, 4
 );
+assert_error('empty x in header title fails gracefully',
+  `= tmp
+
+== \\x
+`,
+  3, 4
+);
 assert_error('header inside header fails gracefully',
   `= \\H[2]
 `,

@@ -1170,6 +1170,10 @@ function array_equals(arr1, arr2) {
   return true;
 }
 
+function basename(str) {
+    return str.substr(str.lastIndexOf('/') + 1);
+}
+
 function capitalize_first_letter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
@@ -1614,6 +1618,9 @@ const macro_image_video_block_convert_function_source_types = make_enum([
 ]);
 const macro_image_video_block_convert_function_source_types_wikimedia_re = new RegExp('^https?://upload.wikimedia.org/wikipedia/commons/');
 const macro_image_video_block_convert_function_source_types_youtube_re = new RegExp('^https?://(youtube.com|youtu.be)/');
+const macro_image_video_block_convert_function_wikimedia_source_url = 'https://commons.wikimedia.org/wiki/File:';
+const macro_image_video_block_convert_function_wikimedia_source_image_re = new RegExp('^\s+px-');
+const macro_image_video_block_convert_function_wikimedia_source_video_re = new RegExp('^([^.]+\.[^.]+).*');
 
 function macro_image_video_block_convert_function(content_func, source_func) {
   if (source_func === undefined) {
@@ -1635,6 +1642,7 @@ function macro_image_video_block_convert_function(content_func, source_func) {
     if (description !== '') {
       description = '. ' + description;
     }
+
     let src = convert_arg_noescape(ast.args.src, context);
     let source_type;
     if (src.match(macro_image_video_block_convert_function_source_types_wikimedia_re)) {
@@ -2726,6 +2734,7 @@ const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [
 ];
 const MACRO_IMAGE_VIDEO_OPTIONS = {
   caption_number_visible: function (ast) {
+    // TODO source derived from youtube/wikimedia.
     return 'source' in ast.args || 'description' in ast.args;
   }
 }
@@ -3004,9 +3013,22 @@ const DEFAULT_MACRO_LIST = [
   new Macro(
     'Image',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
-    macro_image_video_block_convert_function(function (ast, context, src, rendered_attrs, alt, source_type) {
-      return `<a${html_attr('href', src)}><img${html_attr('src', src)}${html_attr('loading', 'lazy')}${rendered_attrs}${alt}></a>\n`;
-    }),
+    macro_image_video_block_convert_function(
+      function (ast, context, src, rendered_attrs, alt, source_type) {
+        return `<a${html_attr('href', src)}><img${html_attr('src',
+          html_escape_attr(src))}${html_attr('loading', 'lazy')}${rendered_attrs}${alt}></a>\n`;
+      },
+      function (ast, context, src, source_type) {
+        if ('source' in ast.args) {
+          return convert_arg(ast.args.source, context);
+        } else if (source_type == macro_image_video_block_convert_function_source_types.WIKIMEDIA) {
+          return macro_image_video_block_convert_function_wikimedia_source_url +
+            basename(html_escape_attr(src)).replace(macro_image_video_block_convert_function_wikimedia_source_image_re, '');
+        } else {
+          return '';
+        }
+      }
+    ),
     Object.assign(
       {
         caption_prefix: 'Figure',
@@ -3410,7 +3432,7 @@ const DEFAULT_MACRO_LIST = [
           if ('start' in ast.args) {
             start_time = ast.validation_output.start.positive_nonzero_integer;
           } else if (url_start_time !== undefined) {
-            start_time = url_start_time;
+            start_time = html_escape_attr(url_start_time);
           }
           let start;
           if (start_time !== undefined) {
@@ -3435,14 +3457,15 @@ const DEFAULT_MACRO_LIST = [
         if ('source' in ast.args) {
           return convert_arg(ast.args.source, context);
         } else if (ast.validation_output.youtube.boolean) {
-          return `https://youtube.com/watch?v=${src}`;
-        } else if (source_type == macro_image_video_block_convert_function.WIKIMEDIA) {
-          // TODO
+          return `https://youtube.com/watch?v=${html_escape_attr(src)}`;
+        } else if (source_type === macro_image_video_block_convert_function_source_types.WIKIMEDIA) {
+          return macro_image_video_block_convert_function_wikimedia_source_url +
+            basename(html_escape_attr(src)).replace(macro_image_video_block_convert_function_wikimedia_source_video_re, '$1');
         } else if (
           source_type == macro_image_video_block_convert_function_source_types.YOUTUBE &&
           !ast.validation_output.youtube.given
         ) {
-          return src;
+          return html_escape_attr(src);
         } else {
           return '';
         }

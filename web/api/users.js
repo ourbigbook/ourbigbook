@@ -121,7 +121,7 @@ router.post('/users', async function(req, res, next) {
     const username = lib.validateParam(userPost, 'username')
     const email = lib.validateParam(userPost, 'email')
     const password = lib.validateParam(userPost, 'password')
-    if (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
+    if (config.useCaptcha) {
       ;({data, status} = await sendJsonHttp(
         'POST',
         '/recaptcha/api/siteverify',

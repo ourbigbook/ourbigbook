@@ -3513,7 +3513,7 @@ Cirodown HTML output is designed to be XSS safe by default, any non-XSS safe con
 
 Of course, we are walking on eggs, and this is hard to assert, so the best thing to do later on will be to parse the output e.g. with https://developer.mozilla.org/en-US/docs/Web/API/DOMParser[`DOMParser`] to ensure that it is valid and does not contain any `script` tags, but it is not as simple as that: https://stackoverflow.com/questions/37435077/execute-javascript-for-xss-without-script-tags/61588322#61588322
 
-About server safety, we have to think about it. E.g. stuff like \x[cirodown-json/prepublish] already allows ACE.
+About server safety, we have to think about it. E.g. stuff like \x[cirodown-json/prepublish] already allows ACE. We should add a `--ace-unsafe` CLI option, and block that functionality by default, and then publish with `npm run publish` that sets it.
 
 ==== xss-unsafe
 {title2=`--xss-unsafe`}

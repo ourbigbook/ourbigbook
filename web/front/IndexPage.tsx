@@ -5,19 +5,13 @@ import ArticleList from 'front/ArticleList'
 import CustomLink from 'front/CustomLink'
 import ErrorMessage from 'front/ErrorMessage'
 import Maybe from 'front/Maybe'
-import getLoggedInUser from 'getLoggedInUser'
+import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'routes'
 import useMin from 'front/api/useMin'
-import { appName, aboutHref, defaultLimit, apiPath } from 'front/config'
+import { appName, aboutHref, articleLimit, apiPath } from 'front/config'
 import fetcher from 'fetcher'
 
-const IndexPage = ({ articles, articlesCount, page, what }) => {
-  const loggedInUser = getLoggedInUser()
-  useMin(
-    { articleIds: articles.map(article => article.id) },
-    { articles }
-  )
-  let loginRequired = false
+const IndexPage = ({ articles, articlesCount, loggedInUser, page, what }) => {
   let paginationUrlFunc
   switch (what) {
     case 'top':
@@ -25,99 +19,36 @@ const IndexPage = ({ articles, articlesCount, page, what }) => {
       break
     case 'top-followed':
       paginationUrlFunc = routes.articlesTopFollowed
-      loginRequired = true
       break
     case 'latest':
       paginationUrlFunc = routes.articlesLatest
       break
     case 'latest-followed':
       paginationUrlFunc = routes.articlesLatestFollowed
-      loginRequired = true
       break
-  }
-  const fetchUrl = (() => {
-    switch (what) {
-      case 'latest-followed':
-        return `${apiPath}/articles/feed?limit=${defaultLimit}&offset=${
-          page * defaultLimit
-        }`;
-      case 'top-followed':
-        return `${apiPath}/articles/feed?limit=${defaultLimit}&offset=${
-          page * defaultLimit
-        }&sort=score`;
-      default:
-        if (loginRequired) {
-          throw new Error(`Unknown search: ${what}`)
-        }
-    }
-  })()
-  const { data, error } = useSWR(
-    () => {
-      if (!loggedInUser) {
-        throw new Error()
-      }
-      return fetchUrl
-    },
-    fetcher(loginRequired),
-  );
-  if (loginRequired) {
-    ;({ articles, articlesCount } = data || {
-      articles: [],
-      articlesCount: 0,
-    })
-  }
-  let articleList
-  if (!loginRequired || loggedInUser) {
-    articleList = <ArticleList {...{
-      articles,
-      articlesCount,
-      paginationUrlFunc,
-      showAuthor: true,
-      what,
-    }}/>
-    if (loginRequired) {
-      if (error) {
-        articleList = <ErrorMessage message="Cannot load recent articles..." />;
-      } else if (!data) {
-        articleList = <div className="article-preview">Loading articles...</div>;
-      }
-    }
-  } else {
-    articleList = (
-      <div>
-        <p>Welcome to {appName}!</p>
-        <p>The goals of this website are described at: <a href={aboutHref}>{aboutHref}</a></p>
-        <p>This page would show content taylored to logged-in users, so you could either:</p>
-        <ul>
-          <li><a href={routes.userNew()}>create an account</a>, then come back here, or <a href={routes.articleNew()}>try and create your own test article</a></li>
-          <li>browse the:
-            <ul>
-              <li><a href={routes.articlesTop()}>top articles of all time</a></li>
-              <li><a href={routes.articlesLatest()}>newest articles</a></li>
-            </ul>
-          </li>
-        </ul>
-      </div>
-    )
   }
   return (
     <div className="home-page content-not-cirodown">
       <div className="tab-list">
-        <CustomLink
-          className={`tab-item${what === 'latest-followed' ? ' active' : ''}`}
-          href={routes.articlesLatestFollowed()}
-        >
-          Latest Followed
-        </CustomLink>
-        <CustomLink
-          className={`tab-item${what === 'top-followed' ? ' active' : ''}`}
-          href={routes.articlesTopFollowed()}
-        >
-          Top Followed
-        </CustomLink>
+        {loggedInUser &&
+          <>
+            <CustomLink
+              className={`tab-item${what === 'latest-followed' ? ' active' : ''}`}
+              href={routes.articlesLatestFollowed()}
+            >
+              Latest Followed
+            </CustomLink>
+            <CustomLink
+              className={`tab-item${what === 'top-followed' ? ' active' : ''}`}
+              href={routes.articlesTopFollowed()}
+            >
+              Top Followed
+            </CustomLink>
+          </>
+        }
         <CustomLink
           className={`tab-item${what === 'latest' ? ' active' : ''}`}
-          href={routes.articlesLatest()}
+          href={loggedInUser ? routes.articlesLatest() : routes.articlesLatestFollowed()}
         >
           Latest
         </CustomLink>
@@ -128,7 +59,13 @@ const IndexPage = ({ articles, articlesCount, page, what }) => {
           Top
         </CustomLink>
       </div>
-      {articleList}
+      <ArticleList {...{
+        articles,
+        articlesCount,
+        paginationUrlFunc,
+        showAuthor: true,
+        what,
+      }}/>
     </div>
   )
 }

@@ -10,7 +10,7 @@ import { isProduction } from 'front/config';
 import ListErrors from 'front/ListErrors'
 import { slugFromRouter } from 'front'
 import ArticleAPI from 'front/api/article'
-import getLoggedInUser from 'getLoggedInUser'
+import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'routes'
 import { AppContext } from 'front'
 import { modifyEditorInput } from 'shared';
@@ -66,7 +66,7 @@ export default function makeArticleEditor(isnew: boolean = false) {
         };
       }
     }, [])
-    const loggedInUser = getLoggedInUser()
+    const loggedInUser = useLoggedInUser()
     const router = useRouter();
     const handleTitle = async (e) => {
       setArticle(article => { return {

@@ -6,11 +6,11 @@ import CustomImage from 'front/CustomImage'
 import CustomLink from 'front/CustomLink'
 import { slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, decapitalize } from 'front'
 import CommentAPI from 'front/api/comment'
-import getLoggedInUser from 'getLoggedInUser'
+import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'routes'
 
 const CommentInput = () => {
-  const loggedInUser = getLoggedInUser()
+  const loggedInUser = useLoggedInUser()
   const router = useRouter();
   const slug = slugFromRouter(router)
   const [body, setBody] = React.useState("");

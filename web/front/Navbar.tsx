@@ -6,7 +6,7 @@ import CustomLink from 'front/CustomLink'
 import Maybe from 'front/Maybe'
 import { LOGIN_ACTION, REGISTER_ACTION } from 'front'
 import { appName, aboutHref } from 'front/config'
-import getLoggedInUser from 'getLoggedInUser'
+import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'routes'
 
 interface NavLinkProps {
@@ -38,7 +38,7 @@ const NavLink = ({ href, onClick, children, className }: NavLinkProps) => {
 };
 
 const Navbar = () => {
-  const loggedInUser = getLoggedInUser()
+  const loggedInUser = useLoggedInUser()
   const router = useRouter();
   return (
     <nav className="navbar">

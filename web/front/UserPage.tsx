@@ -13,7 +13,7 @@ import FollowUserButton, { FollowUserButtonContext } from 'front/FollowUserButto
 import UserAPI from 'front/api/user'
 import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import { defaultUserScoreTitle } from 'front/config'
-import getLoggedInUser from 'getLoggedInUser'
+import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'routes'
 import { AppContext } from 'front'
 import useMin from 'front/api/useMin'
@@ -43,7 +43,7 @@ export default function UserPage({
   }
   useMin(useMin0, useMin1)
   const username = user?.username
-  const loggedInUser = getLoggedInUser()
+  const loggedInUser = useLoggedInUser()
   const isCurrentUser = loggedInUser && username === loggedInUser?.username
   let paginationUrlFunc
   switch (what) {

@@ -2143,6 +2143,26 @@ assert_error('cross reference full and ref are incompatible',
 
 \\x[abc]{full}{ref}
 `, 3, 1);
+assert_error('cross reference content and full are incompatible',
+  `= abc
+
+\\x[abc][def]{full}
+`, 3, 1);
+assert_error('cross reference content and ref are incompatible',
+  `= abc
+
+\\x[abc][def]{ref}
+`, 3, 1);
+assert_error('cross reference full and c are incompatible',
+  `= abc
+
+\\x[abc]{c}{full}
+`, 3, 1);
+assert_error('cross reference full and p are incompatible',
+  `= abc
+
+\\x[abc]{p}{full}
+`, 3, 1);
 assert_convert_ast('cross reference to non-included header in another file',
   `\\x[another-file]
 `,
@@ -2560,6 +2580,20 @@ assert_convert_ast('cross reference magic insane escape',
   {
     assert_xpath_main: [
       "//x:div[@class='p' and text()='a<>b']",
+    ],
+  }
+);
+assert_convert_ast('cross reference magic with full uses full content',
+  `= Notindex
+
+== My header
+
+\\x[My headers]{magic}{full}
+`,
+  undefined,
+  {
+    assert_xpath_main: [
+      "//x:div[@class='p']//x:a[@href='#my-header' and text()='Section 1. \"My header\"']",
     ],
   }
 );

@@ -33,6 +33,9 @@ class AstNode {
     if (!('input_path' in options)) {
       options.input_path = undefined;
     }
+    if (!('parent_node' in options)) {
+      options.parent_node = undefined;
+    }
     if (!('text' in options)) {
       options.text = undefined;
     }
@@ -45,6 +48,7 @@ class AstNode {
     this.input_path = options.input_path;
     this.column = column;
     this.macro_count = undefined;
+    this.parent_node = options.parent_node;
 
     // For elements that are of AstType.PLAINTEXT.
     this.text = options.text
@@ -64,6 +68,12 @@ class AstNode {
     this.header_tree_node = undefined;
     // Includes under this header.
     this.includes = [];
+
+    for (const argname in args) {
+      for (const arg of args[argname]) {
+        arg.parent_node = this;
+      }
+    }
   }
 
   /**
@@ -82,6 +92,7 @@ class AstNode {
    *        - {Object} ids - map of document IDs to their description:
    *                 - 'prefix': prefix to add if style=full, e.g. `Figure 1`, `Section 2`, etc.
    *                 - {List[AstNode]} 'title': the title of the element linked to
+   * @param {Object} context
    */
   convert(context) {
     if (context === undefined) {
@@ -105,7 +116,18 @@ class AstNode {
     if (!('macros' in context)) {
       throw new Error('contenxt does not have a mandatory .macros property');
     }
-    return context.macros[this.macro_name].convert(this, context);
+    const macro = context.macros[this.macro_name];
+    let out = macro.convert(this, context);
+    const parent_node = this.parent_node;
+    if (
+      parent_node !== undefined &&
+      parent_node.macro_name === Macro.TOPLEVEL_MACRO_NAME &&
+      this.id !== undefined &&
+      macro.toplevel_link
+    ) {
+      out = `<div>${html_hide_hover_link(this.id)}${out}</div>`;
+    }
+    return out;
   }
 
   /** Manual implementation. There must be a better way, but I can't find it... */
@@ -324,6 +346,9 @@ class Macro {
     if (!('properties' in options)) {
       options.properties = {};
     }
+    if (!('toplevel_link' in options)) {
+      options.toplevel_link = true;
+    }
     if (!('x_style' in options)) {
       options.x_style = XStyle.full;
     }
@@ -343,6 +368,7 @@ class Macro {
     this.options = options;
     this.id_prefix = options.id_prefix;
     this.properties = options.properties;
+    this.toplevel_link = options.toplevel_link;
     if (!('phrasing' in this.properties)) {
       this.properties['phrasing'] = false;
     }
@@ -1284,12 +1310,7 @@ function html_convert_simple_elem(elem_name, options={}) {
     newline_after_close_str = '';
   }
   return function(ast, context) {
-    let link_to_self;
-    if (!options.link_to_self || (ast.id === undefined)) {
-      link_to_self = '';
-    } else {
-      link_to_self = html_hide_hover_link(ast.id);
-    }
+    let link_to_self = '';
     let attrs = html_convert_attrs_id(ast, context);
     let extra_attrs_string = '';
     for (const key in options.attrs) {
@@ -1887,16 +1908,16 @@ function parse(tokens, macros, options, extra_returns={}) {
         if (paragraph_indexes.length > 0) {
           new_arg = [];
           if (paragraph_indexes[0] > 0) {
-            parse_add_paragraph(state, new_arg, arg, 0, paragraph_indexes[0]);
+            parse_add_paragraph(state, ast, new_arg, arg, 0, paragraph_indexes[0]);
           }
           let paragraph_start = paragraph_indexes[0] + 1;
           for (let i = 1; i < paragraph_indexes.length; i++) {
             const paragraph_index = paragraph_indexes[i];
-            parse_add_paragraph(state, new_arg, arg, paragraph_start, paragraph_index);
+            parse_add_paragraph(state, ast, new_arg, arg, paragraph_start, paragraph_index);
             paragraph_start = paragraph_index + 1;
           }
           if (paragraph_start < arg.length) {
-            parse_add_paragraph(state, new_arg, arg, paragraph_start, arg.length);
+            parse_add_paragraph(state, ast, new_arg, arg, paragraph_start, arg.length);
           }
           arg = new_arg;
         }
@@ -1927,7 +1948,7 @@ function parse(tokens, macros, options, extra_returns={}) {
 
 // Maybe add a paragraph after a \n\n.
 function parse_add_paragraph(
-  state, new_arg, arg, paragraph_start, paragraph_end
+  state, ast, new_arg, arg, paragraph_start, paragraph_end
 ) {
   parse_log_debug(state, 'function: parse_add_paragraph');
   parse_log_debug(state, 'paragraph_start: ' + paragraph_start);
@@ -1949,6 +1970,9 @@ function parse_add_paragraph(
           },
           arg[paragraph_start].line,
           arg[paragraph_start].column,
+          {
+            parent_node: ast,
+          }
         )
       );
     } else {
@@ -2222,7 +2246,7 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       let attrs = html_convert_attrs_id(ast, context);
       let content = convert_arg(ast.args.content, context);
-      return `<div>${html_hide_hover_link(ast.id)}<pre${attrs}><code>${content}</code></pre></div>\n`;
+      return `<pre${attrs}><code>${content}</code></pre>\n`;
     },
   ),
   new Macro(
@@ -2415,7 +2439,7 @@ const DEFAULT_MACRO_LIST = [
       }
       if (do_show) {
         let href = html_attr('href', '#' + html_escape_attr(ast.id));
-        ret += `<div class="math-container"${attrs}>${html_hide_hover_link(ast.id)}`;
+        ret += `<div class="math-container"${attrs}>`;
         if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
           ret += `<div class="math-caption-container">\n`;
           ret += `<span class="math-caption">${Macro.x_text(ast, context)}</span>`;
@@ -2425,7 +2449,7 @@ const DEFAULT_MACRO_LIST = [
         ret += `<div class="math-equation">\n`
         ret += `<div>${katex_output}</div>\n`;
         ret += `<div><a${href}>(${context.macros[ast.macro_name].options.get_number(ast, context)})</a></div>`;
-        ret += `</div>\n`
+        ret += `</div>\n`;
         ret += `</div>\n`;
       }
       return ret;
@@ -2591,7 +2615,7 @@ const DEFAULT_MACRO_LIST = [
       let attrs = html_convert_attrs_id(ast, context);
       let content = convert_arg(ast.args.content, context);
       let ret = ``;
-      ret += `<div class="table-container"${attrs}>${html_hide_hover_link(ast.id)}\n`;
+      ret += `<div class="table-container"${attrs}>\n`;
       if (ast.id !== undefined) {
         // TODO not using caption because I don't know how to allow the caption to be wider than the table.
         // I don't want the caption to wrap to a small table size.
@@ -2683,6 +2707,9 @@ const DEFAULT_MACRO_LIST = [
       ret += `</div>\n`
       return ret;
     },
+    {
+      toplevel_link: false,
+    }
   ),
   new Macro(
     Macro.TOPLEVEL_MACRO_NAME,

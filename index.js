@@ -4389,11 +4389,40 @@ async function parse(tokens, options, context, extra_returns={}) {
       }
       const prefetch_file_ids = new Set()
       for (const ref of options.add_refs_to_x) {
-        const id = render_arg_noescape(ref.ast.args.href, context)
-        // We need the target IDs of any x to render it.
-        prefetch_ids.add(id)
-        prefetch_file_ids.add(id)
+        const ast = ref.ast
+        const id = render_arg_noescape(ast.args.href, context)
+        // We store this prior to scope resolution.
         ref.target_id = id
+
+        // We are going to walk up the scope tree and try to fetch
+        // everything as we just can't know which level is the correct
+        // level. Previously, we would do a query, go up, query, go up,
+        // interactively until found, but that is not possible anymore that
+        // we have grouped all queries at one point.
+        //
+        // This very slightly duplicates the resolution code in IdProvider.get,
+        // but it was not trivial to factor them out, so just going for this now.
+        let ids = []
+        if (id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
+          ids.push(id.substr(1))
+        } else {
+          let current_scope = ast.scope
+          if (current_scope !== undefined) {
+            current_scope += Macro.HEADER_SCOPE_SEPARATOR
+            for (let i = current_scope.length - 1; i > 0; i--) {
+              if (current_scope[i] === Macro.HEADER_SCOPE_SEPARATOR) {
+                ids.push(current_scope.substring(0, i + 1) + id)
+              }
+            }
+          }
+          ids.push(id)
+        }
+
+        // We need the target IDs of any x to render it.
+        for (const id of ids) {
+          prefetch_ids.add(id)
+          prefetch_file_ids.add(id)
+        }
       }
       for (const id in options.include_hrefs) {
         // We need the target it to be able to render the dummy include title
@@ -4955,37 +4984,43 @@ async function parse(tokens, options, context, extra_returns={}) {
     }
     for (const ref of options.add_refs_to_x) {
       const ast = ref.ast
-      const target_id_effective = x_child_db_effective_id(
-        ref.target_id,
-        context,
-        ast
-      )
-      const parent_id = ast.get_local_header_parent_id();
+      const target_ast = context.id_provider.get(ref.target_id, context, ast.scope)
       if (
-        // Happens on some special elements e.g. the ToC.
-        parent_id !== undefined
+        // Possible in error cases
+        target_ast !== undefined
       ) {
-        // TODO add test and enable this possible fix.
+        const target_id_effective = x_child_db_effective_id(
+          target_ast.id,
+          context,
+          ast
+        )
+        const parent_id = ast.get_local_header_parent_id();
         if (
-          // We don't want the "This section is present in another page" to count as a link.
-          !ast.from_include
+          // Happens on some special elements e.g. the ToC.
+          parent_id !== undefined
         ) {
-          // Update xref database for incoming links.
-          const from_ids = add_to_refs_to(target_id_effective, context, parent_id, REFS_TABLE_X);
-        }
-
-        // Update xref database for child/parent relationships.
-        {
-          let toid, fromid;
-          if (ast.validation_output.child.boolean) {
-            fromid = parent_id;
-            toid = target_id_effective;
-          } else if (ast.validation_output.parent.boolean) {
-            toid = parent_id;
-            fromid = target_id_effective;
+          // TODO add test and enable this possible fix.
+          if (
+            // We don't want the "This section is present in another page" to count as a link.
+            !ast.from_include
+          ) {
+            // Update xref database for incoming links.
+            const from_ids = add_to_refs_to(target_id_effective, context, parent_id, REFS_TABLE_X);
           }
-          if (toid !== undefined) {
-            add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD);
+
+          // Update xref database for child/parent relationships.
+          {
+            let toid, fromid;
+            if (ast.validation_output.child.boolean) {
+              fromid = parent_id;
+              toid = target_id_effective;
+            } else if (ast.validation_output.parent.boolean) {
+              toid = parent_id;
+              fromid = target_id_effective;
+            }
+            if (toid !== undefined) {
+              add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD);
+            }
           }
         }
       }

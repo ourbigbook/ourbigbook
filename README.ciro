@@ -3373,7 +3373,7 @@ Defined variables:
 * `git_sha`: SHA of the latest git commit of the source code if in a git repository
 * `root_replath`: relative path from the rendered output to the toplevel directory.
 
-  This allows for toplevel resources like CSS to be found semelessly form inside subdirectories, specially when rendering locally.
+  This allows for toplevel resources like CSS to be found seamlessly form inside subdirectories, specially when rendering locally.
 
   For example, for the toplevel \x[css] `main.css` which is generated from \a[main.scss], we can use:
   ``

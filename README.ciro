@@ -304,32 +304,6 @@ An explicit link body can be given just as for regular HTTP \x[links] as:
 See this \x[internal-cross-references][awesome section].
 ]]
 
-If the target `title` argument contains a link from either another \x[internal-cross-references] or a regular \x[links][external hyperlink], Cirodown automatically prevents that link from rendering as a link when no explicit bod yis given.
-
-This is done because https://stackoverflow.com/questions/9882916/are-you-allowed-to-nest-a-link-inside-of-a-link[nested links are illegain in HTML], and the result would be confusing.
-
-This use case is most common when dealing with media such as \x[images]. For example in:
-``
-= afds
-
-\x[image-aa-zxcv-lolol-bb]
-
-== qwer
-
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title=aa \x[zxcv][zxcv] \a[http://example.com][lolol] bb}
-
-== zxcv
-``
-the `\x[image-aa-zxcv-lolol-bb]` renders something like:
-``
-<a href="#image-aa-zxcv-lolol-bb">aa zxcv lolol bb</a>
-``
-and not:
-``
-<a href="#image-aa-zxcv-lolol-bb">aa <a href="zxcv">zxcv</a> <a href="http://example.com">lolol</a> bb</a>
-``
-
 === x `child` argument
 
 TODO implement.
@@ -790,6 +764,42 @@ So for example, the following automatic IDs would be generated: \x[table-example
 ]
 
 For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the Cirodown file without extension instead of from the `title` argument.
+
+=== Internal cross reference title link removal
+
+If the target `title` argument contains a link from either another \x[internal-cross-references] or a regular \x[links][external hyperlink], Cirodown automatically prevents that link from rendering as a link when no explicit bod yis given.
+
+This is done because https://stackoverflow.com/questions/9882916/are-you-allowed-to-nest-a-link-inside-of-a-link[nested links are illegain in HTML], and the result would be confusing.
+
+This use case is most common when dealing with media such as \x[images]. For example in:
+``
+= afds
+
+\x[image-aa-zxcv-lolol-bb]
+
+== qwer
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=aa \x[zxcv][zxcv] \a[http://example.com][lolol] bb}
+
+== zxcv
+``
+the `\x[image-aa-zxcv-lolol-bb]` renders something like:
+``
+<a href="#image-aa-zxcv-lolol-bb">aa zxcv lolol bb</a>
+``
+and not:
+``
+<a href="#image-aa-zxcv-lolol-bb">aa <a href="zxcv">zxcv</a> <a href="http://example.com">lolol</a> bb</a>
+``
+
+Live example:
+\CirodownExample[[
+This is a nice image: \x[image-aa-zxcv-lolol-bb].
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=aa \x[internal-cross-reference-title-link-removal][zxcv] \a[http://example.com][lolol] bb}
+]]
 
 == Headers
 {title2=`\H`}

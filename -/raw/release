@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# https://docs.ourbigbook.com#do-the-release
+set -eux
+test=true
+while [ $# -gt 0 ]; do
+  case $1 in
+    -T)
+      test=false
+      shift
+      ;;
+    -*|--*)
+      echo "Unknown option $1"
+      exit 1
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+if [ $# -lt 1 ]; then
+  version="$(./inc-version)"
+else
+  version="$1"
+fi
+# Although this is also run by `npm run publish`, it is also
+# required for some tests to pass so we have to run it here too.
+npm run build-assets
+if $test; then
+  npm run test-release
+fi
+# This also does npm run build-assets
+npm run publish
+sed -i "s/  \"version\":[^,]*/  \"version\": \"${version}\"/" package.json
+# To update the package-lock.json.
+# Not sure why needed twice, some mess with link madness.
+npm run link
+npm run link
+
+git add -u
+git commit -m "version $version"
+git tag -m "$version" "$version"
+git push --follow-tags
+npm publish
+./release-vscode
+./update-templates

@@ -1,0 +1,2505 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>web/models/article.js - Ciro Santilli</title>
+<meta property="og:title" content="web/models/article.js - Ciro Santilli">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://docs.ourbigbook.com/-/raw/logo.svg">
+<meta property="og:url" content="https://docs.ourbigbook.com/-/file/web/models/article.js">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../-/raw/main.css">
+<link rel="icon" href="../../../../-/raw/logo-circle.svg" type="image/svg+xml">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../../" class="brand"><img src="../../../../-/raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../-/raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/web/models/article.js"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">web/models/article.js</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../../-/dir">(root)</a> / <a href="../../../../-/dir/web">web</a> / <a href="../../../../-/dir/web/models">models</a> / <a href="../../../../-/raw/web/models/article.js">article.js</a></b></div></nav></div><div class="p"><b>web/models/article.js</b></div><div class="code"><div><pre><code>const path = require('path')
+
+const { DataTypes, Op } = require('sequelize')
+
+const ourbigbook = require('ourbigbook')
+const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
+const { sequelizePostgresqlUserQueryToTsqueryPrefixLiteral } = ourbigbook_nodejs_webpack_safe
+const { sequelizeWhereStartsWith } = require('ourbigbook/models')
+
+const config = require('../front/config')
+const front_js = require('../front/js')
+const { orderAscDescNullsLast, querySearchToTopicId } = front_js
+const convert = require('../convert')
+const e = require('cors')
+
+module.exports = (sequelize) =&gt; {
+  function slugTransform(v) {
+    return v
+  }
+
+  // Each Article contains rendered HTML output, analogous to a .html output file in OurBigBook CLI.
+  // The input source is stored in the File model. A single file can then generate
+  // multiple Article if it has multiple headers.
+  const Article = sequelize.define(
+    'Article',
+    {
+      // E.g. `johnsmith/mathematics`.
+      slug: {
+        type: DataTypes.TEXT,
+        unique: {
+          message: 'The article ID must be unique.'
+        },
+        set(v) {
+          this.setDataValue('slug', slugTransform(v))
+        },
+        allowNull: false,
+      },
+      // E.g. for `johnsmith/mathematics` this is just the `mathematics`.
+      // Can't be called just `id`, sequelize complains that it is not a primary key with that name.
+      // TODO point to topic ID directly https://docs.ourbigbook.com/todo#ref-file-normalization
+      topicId: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      // Rendered title. Only contains the inner contents of the toplevel h1's title argument,
+      // not the full HTML header itself. Includes only parts of the metadata that are required to
+      // calculate ID: currently this is disambiguate. Used extensively e.g. in article indexes.
+      titleRender: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      titleRenderWithScope: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      titleRenderPlaintext: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      // This was stored here as well as in addition to in File because we previously allowed
+      // multiple articles per file, just like is done locally. This was later forbidden on Web.
+      // With multiple articles per file, we may have multiple title sources. And then these can
+      // get used elsewhere, notably they can appears in places where the rendered output cannot
+      // be displayed, e.g. &lt;title&gt; tags.
+      titleSource: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        validate: {
+          len: {
+            args: [1, config.maxArticleTitleSize],
+            msg: `Titles can have at most ${config.maxArticleTitleSize} characters`
+          },
+        }
+      },
+      titleSourceLine: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      // Full rendered body article excluding toplevel h1 render.
+      render: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      // Rendered toplevel h1.
+      h1Render: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      // Rendered toplevel h1 as it would look like if it were an h2.
+      h2Render: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      depth: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      score: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      // To fetch the tree recursively on the fly.
+      //
+      // This together with nestedSetNextSibling are an index for Ref parent relations.
+      // to speed up linear queries, i.e. they duplicate Ref parent date.
+      //
+      // Also note that this "index" is not always necessarily up to date with the canonical
+      // Ref representations because updating it is very slow, and it is much faster to only
+      // do it once after you update all articles rather than after updating each article.
+      // as done with updateNestedSetIndex=false.
+      //
+      // https://stackoverflow.com/questions/192220/what-is-the-most-efficient-elegant-way-to-parse-a-flat-table-into-a-tree/42781302#42781302
+      //
+      // A cleaner approach would be to have this outside of web as a separate table that points to Id,
+      // as there's no reason why it shouldn't exist outside of web. That would also allow us to
+      // add articles of other users on any users's trees. One day.
+      nestedSetIndex: {
+        type: DataTypes.INTEGER,
+        // Can be NULL when we create an article without updating
+        // the nested set index at the same time, e.g. with updateNestedSetIndex=false
+        allowNull: true,
+      },
+      // Points to the nestedSetIndex of the next sibling, or where the
+      // address at which the next sibling would be if it existed.
+      nestedSetNextSibling: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      followerCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      issueCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      // If false, the article is "unlisted", i.e. it doesn't show on article lists and on the index of a parent article by default.
+      list: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
+      // Duplicated from File for Indices.
+      authorId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      announcedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      image: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+    },
+    {
+      timestamps: false,
+      indexes: [
+        // For ORDER BY createdAt without list specified
+        { fields: ['createdAt'], },
+        // For ORDER BY updatedAt without list specified
+        { fields: ['updatedAt', 'createdAt'], },
+        // For WHERE list = 1 ORDER BY creatdAt
+        { fields: ['list', 'createdAt'], },
+        // Deep HTML sort=created pages. Match NULL placement and the stable
+        // pagination tie-breaker used by getArticles.
+        {
+          name: 'article_list_created_at_id',
+          fields: [
+            'list',
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
+        // For WHERE list = 1 ORDER BY updatedAt
+        { fields: ['list', 'updatedAt', 'createdAt'], },
+        { fields: ['list', 'announcedAt'], },
+        { fields: ['list', 'issueCount', 'createdAt'], },
+        { fields: ['list', 'followerCount', 'createdAt'], },
+        // - Top articles in a given topic.
+        // - Find articles whose topic start with a given prefix
+        //   text_pattern_ops is to speed up this 'LIKE%' query when searching by topicId prefix.
+        //   https://dba.stackexchange.com/questions/53811/why-would-you-index-text-pattern-ops-on-a-text-column/343887#343887
+        { fields: ['list', { name: 'topicId', operator: 'text_pattern_ops' }, 'score', 'createdAt'], },
+        // Newest articles in a given topic.
+        { fields: ['list', { name: 'topicId', operator: 'text_pattern_ops' }, 'createdAt'], },
+        // Global sort=id: ordinary text ordering, then newest first, with
+        // undated articles last and a stable tie-breaker for pagination.
+        // Keep the pattern_ops indexes above for prefix searches.
+        {
+          name: 'article_list_topic_id_created_at_id',
+          fields: [
+            'list',
+            { name: 'topicId', order: 'ASC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
+        // Global sort=id-desc. PostgreSQL cannot obtain this order by scanning
+        // the preceding mixed-direction index backwards, because that would
+        // also reverse createdAt, id, and the NULL placement.
+        {
+          name: 'article_list_topic_id_desc_created_at_id',
+          fields: [
+            'list',
+            { name: 'topicId', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
+        // Global API sort=id. API queries may include unlisted articles, so
+        // the list-prefixed indexes above cannot provide this ordering.
+        {
+          name: 'article_topic_id_created_at_id',
+          fields: [
+            { name: 'topicId', order: 'DESC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
+        // Top articles in the entire site.
+        { fields: ['list', 'score', 'createdAt'], },
+        // Deep HTML sort=score pages. Match NULL placement and the stable
+        // pagination tie-breaker used by getArticles.
+        {
+          name: 'article_list_score_created_at_id',
+          fields: [
+            'list',
+            { name: 'score', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
+
+        // Find a topic by slug.
+        { fields: ['slug'], },
+
+        // Per author searches.
+        { fields: ['authorId', 'list', 'nestedSetIndex'], },
+        {
+          name: 'article_author_list_depth_nested_set_index',
+          fields: ['authorId', 'list', 'depth', 'nestedSetIndex'],
+        },
+        // Maybe this will be useful without list for article updates?
+        { fields: ['authorId', 'nestedSetIndex'], },
+        // For parent searches. TODO do these need list?
+        { fields: ['authorId', 'nestedSetIndex', 'nestedSetNextSibling'], },
+        { fields: ['authorId', 'list', 'createdAt'], },
+        { fields: ['authorId', 'list', 'updatedAt', 'createdAt'], },
+        { fields: ['authorId', 'list', 'announcedAt'], },
+        { fields: ['authorId', 'list', 'score', 'createdAt'], },
+        { fields: ['authorId', 'list', 'followerCount', 'createdAt'], },
+        { fields: ['authorId', 'list', 'issueCount', 'createdAt'], },
+        // Alphabetic list of articles by user.
+        // Find article by user that has a given topicId prefix.
+        { fields: ['authorId', 'list', { name: 'topicId', operator: 'text_pattern_ops' }], },
+        // API author sort=id. This query does not constrain list, and needs
+        // ordinary text ordering rather than the prefix-search operator class.
+        {
+          name: 'article_author_id_topic_id_created_at_id',
+          fields: [
+            'authorId',
+            { name: 'topicId', order: 'DESC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
+        // API author sort=score. Unlike the author-page indexes above, this
+        // query does not constrain list.
+        {
+          name: 'article_author_id_score_created_at_id',
+          fields: [
+            'authorId',
+            { name: 'score', order: 'DESC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
+        // API author sort=created, also without a list constraint.
+        {
+          name: 'article_author_id_created_at_id',
+          fields: [
+            'authorId',
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
+        // Does the logged in user have their own version of this topic?
+        { fields: ['authorId', 'topicId'], },
+
+        // Foreign key indexes https://docs.ourbigbook.com/database-guidelines
+        { fields: ['fileId'], },
+      ],
+    }
+  )
+
+  /**
+   * Move a contiguous range of siblings and all their descendants to a new location in the tree.
+   *
+   * Updates both nested set and Ref representations.
+   *
+   * @param {number} nArticlesToplevel - Total toplevel sibling articles to be moved, excluding their descendants.
+   * @param {number} nArticles - Total articles to be moved, including toplevel siblings and their descendants.
+   * @param {number} newNestedSetIndex - position where to move the first article of the range to.
+   *
+   *        This position, together with newNestedSetIndexParent, is relative to the old tree nested set state.
+   *
+   *        The final new index might therefore be different because we might need to close down space from which 
+   *        the article was moved out after moving it out.
+   */
+  Article.treeMoveRangeTo = async function({
+    depthDelta,
+    logging,
+    nArticlesToplevel,
+    nArticles,
+    newNestedSetIndex,
+    newNestedSetIndexParent,
+    newParentId,
+    new_to_id_index,
+    oldNestedSetIndex,
+    oldNestedSetIndexParent,
+    oldParentId,
+    old_to_id_index,
+    perf,
+    transaction,
+    updateNestedSetIndex,
+    username,
+  }) {
+    if (updateNestedSetIndex === undefined) {
+      updateNestedSetIndex = true
+    }
+    if (logging === undefined) {
+      // Log previous nested set state, and the queries done on it.
+      logging = false
+    }
+    const { Article, Ref } = sequelize.models
+    if (logging) {
+      console.log('Article.treeMoveRangeTo');
+      console.log({
+        depthDelta,
+        nArticlesToplevel,
+        nArticles,
+        newNestedSetIndex,
+        newNestedSetIndexParent,
+        newParentId,
+        new_to_id_index,
+        oldNestedSetIndex,
+        oldNestedSetIndexParent,
+        oldParentId,
+        old_to_id_index,
+        updateNestedSetIndex,
+        username,
+      })
+    }
+    return sequelize.transaction({ transaction }, async (transaction) =&gt; {
+        // As an optimization, skip move it position didn't change.
+      const updateRef = oldParentId !== newParentId ||
+        old_to_id_index !== new_to_id_index
+      const doUpdateNestedSetIndex = updateNestedSetIndex &amp;&amp;
+        (
+          oldNestedSetIndex !== newNestedSetIndex ||
+          oldNestedSetIndexParent !== newNestedSetIndexParent
+        )
+
+      // Open up destination space.
+      await Article.treeOpenSpace({
+        logging,
+        parentNestedSetIndex: newNestedSetIndexParent,
+        nestedSetIndex: newNestedSetIndex,
+        parentId: newParentId,
+        perf,
+        shiftNestedSetBy: nArticles,
+        shiftRefBy: nArticlesToplevel,
+        to_id_index: new_to_id_index,
+        transaction,
+        updateRef,
+        updateNestedSetIndex: doUpdateNestedSetIndex,
+        username,
+      })
+
+      // Update indices to account for space opened up before insertion.
+      let nestedSetDelta = newNestedSetIndex - oldNestedSetIndex
+      if (newNestedSetIndex &lt;= oldNestedSetIndex) {
+        oldNestedSetIndex += nArticles
+        nestedSetDelta -= nArticles
+        if (oldParentId === newParentId) {
+          old_to_id_index += nArticlesToplevel
+        }
+      }
+      if (newNestedSetIndex &lt;= oldNestedSetIndexParent) {
+        oldNestedSetIndexParent += nArticles
+      }
+
+      // Move articles to new location
+      if (logging) {
+        console.log('Article.treeMoveRangeTo move');
+        console.log(await Article.treeToString({ transaction }))
+      }
+      await Promise.all([
+        doUpdateNestedSetIndex &amp;&amp; sequelize.query(`
+UPDATE "Article" SET
+"nestedSetIndex" = "nestedSetIndex" + :nestedSetDelta,
+"nestedSetNextSibling" = "nestedSetNextSibling" + :nestedSetDelta,
+"depth" = "depth" + :depthDelta
+WHERE
+"nestedSetIndex" &gt;= :oldNestedSetIndex AND
+"nestedSetIndex" &lt; :oldNestedSetNextSibling AND
+"id" IN (
+  SELECT "Article"."id" from "Article"
+  INNER JOIN "File"
+    ON "Article"."fileId" = "File"."id"
+  INNER JOIN "User"
+    ON "File"."authorId" = "User"."id"
+  WHERE "User"."username" = :username
+)
+`,
+          {
+            logging: logging ? console.log : false,
+            transaction,
+            replacements: {
+              depthDelta,
+              oldNestedSetIndex,
+              oldNestedSetNextSibling: oldNestedSetIndex + nArticles,
+              nestedSetDelta,
+              newNestedSetIndex,
+              username,
+            },
+          },
+        ),
+        updateRef &amp;&amp; Ref.update(
+          {
+            from_id: newParentId,
+            to_id_index: sequelize.fn(`${new_to_id_index - old_to_id_index} + `, sequelize.col('to_id_index')),
+          },
+          {
+            logging: logging ? console.log : false,
+            where: {
+              from_id: oldParentId,
+              type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+              to_id_index: {
+                [Op.gte]: old_to_id_index,
+                [Op.lt]: old_to_id_index + nArticlesToplevel,
+              },
+            },
+            transaction,
+          }
+        )
+      ])
+
+      // Close up space where articles were removed from.
+      await Article.treeOpenSpace({
+        logging,
+        nestedSetIndex: oldNestedSetIndex,
+        parentNestedSetIndex: oldNestedSetIndexParent,
+        perf,
+        parentId: oldParentId,
+        shiftNestedSetBy: -nArticles,
+        shiftRefBy: -nArticlesToplevel,
+        to_id_index: old_to_id_index,
+        transaction,
+        updateNestedSetIndex: doUpdateNestedSetIndex,
+        updateRef,
+        username,
+      })
+    })
+  }
+
+  /** Sample output:
+   *
+   * nestedSetIndex, nestedSetNextSibling, depth, to_id_index, slug, parentId
+   * 0, 4, 0, null, user0, null
+   * 1, 3, 1, 0, user0/physics, @user0
+   * 3, 4, 1, 1, user0/mathematics, @user0
+   */
+  Article.treeToString = async function(opts={}) {
+    return 'nestedSetIndex, nestedSetNextSibling, depth, to_id_index, slug, parentId\n' + (
+      await sequelize.models.Article.treeFindInOrder({ refs: true, transaction: opts.transaction })
+    ).map(a =&gt; {
+      let to_id_index, parentId
+      const ref = a.file.toplevelId
+      if (ref === null) {
+        to_id_index = null
+        parentId = null
+      } else {
+        to_id_index = ref.to[0].to_id_index
+        parentId = ref.to[0].from_id
+      }
+      return `${a.nestedSetIndex}, ${a.nestedSetNextSibling}, ${a.depth}, ${to_id_index}, ${a.slug}, ${parentId}`
+    }).join('\n')
+  }
+
+  Article.treeRemove = async function({
+    idid,
+    logging,
+    nestedSetIndex,
+    nestedSetNextSibling,
+    parentNestedSetIndex,
+    parentId,
+    to_id_index,
+    updateNestedSetIndex,
+    username,
+    transaction,
+  }) {
+    if (updateNestedSetIndex === undefined) {
+      updateNestedSetIndex = true
+    }
+    if (logging === undefined) {
+      logging = false
+    }
+    return sequelize.transaction({ transaction }, async (transaction) =&gt; {
+      if (logging) {
+        console.log('Article.treeRemove')
+        console.log({
+          idid,
+          nestedSetIndex,
+          nestedSetNextSibling,
+          parentNestedSetIndex,
+          parentId,
+          to_id_index,
+          username,
+        })
+        console.log(await Article.treeToString({ transaction }))
+      }
+
+      // Decrement the depth of all descendants of the article
+      // as they are going to be moved up the tree.
+      await Promise.all([
+        updateNestedSetIndex &amp;&amp; sequelize.models.Article.decrement('depth', {
+          logging: logging ? console.log : false,
+          where: {
+            nestedSetIndex: {
+              [Op.gt]: nestedSetIndex,
+              [Op.lt]: nestedSetNextSibling,
+            },
+          },
+          transaction,
+        }),
+        Article.treeOpenSpace({
+          logging,
+          nestedSetIndex,
+          parentId,
+          parentNestedSetIndex,
+          shiftNestedSetBy: -1,
+          // Number of descendants - 1. -1 Because we are removing the article.
+          shiftRefBy: nestedSetNextSibling - (nestedSetIndex + 2),
+          to_id_index,
+          transaction,
+          updateNestedSetIndex,
+          username,
+        }),
+      ])
+      // Change parent and increment to_id_index of all child pages
+      // to fit into their new location.
+      await sequelize.models.Ref.update(
+        {
+          from_id: parentId,
+          to_id_index: sequelize.fn(`${to_id_index} + `, sequelize.col('to_id_index')),
+        },
+        {
+          logging: logging ? console.log : false,
+          where: {
+            from_id: idid,
+            type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+          },
+          transaction,
+        }
+      )
+    })
+  }
+
+  // Remove this article from the nested set altogether.
+  // Used when deleting the article. All children are reassigned to its parent.
+  Article.prototype.treeRemove = async function({
+    logging,
+    transaction,
+    updateNestedSetIndex,
+  }) {
+    if (logging === undefined) {
+      logging = false
+    }
+    if (updateNestedSetIndex === undefined) {
+      updateNestedSetIndex = true
+    }
+    const parentRef = await this.findParentRef({ transaction })
+    const parentArticleToplevelId = parentRef.from
+    const parentArticle = parentArticleToplevelId.toplevelId.articles[0]
+    return Article.treeRemove({
+      idid: parentRef.to_id,
+      logging,
+      nestedSetIndex: this.nestedSetIndex,
+      nestedSetNextSibling: this.nestedSetNextSibling,
+      parentId: parentArticleToplevelId.idid,
+      parentNestedSetIndex: parentArticle.nestedSetIndex,
+      to_id_index: parentRef.to_id_index,
+      transaction,
+      updateNestedSetIndex,
+      username: (await this.getAuthor({ transaction })).username,
+    })
+  }
+
+  Article.prototype.findParentRef = async function(opts={}) {
+    if (this.parentRef) {
+      // Cached, usually fetched via previous joins.
+      return this.parentRef
+    }
+    return sequelize.models.Ref.findOne({
+      where: {
+        type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+      },
+      subQuery: false,
+      required: true,
+      include: [
+        {
+          model: sequelize.models.Id,
+          as: 'to',
+          subQuery: false,
+          required: true,
+          include: [
+            {
+              model: sequelize.models.File,
+              as: 'toplevelId',
+              subQuery: false,
+              required: true,
+              include: [
+                {
+                  model: sequelize.models.Article,
+                  as: 'articles',
+                  subQuery: false,
+                  required: true,
+                  where: { slug: this.slug }
+                }
+              ],
+            }
+          ]
+        },
+        {
+          model: sequelize.models.Id,
+          as: 'from',
+          subQuery: false,
+          required: true,
+          include: [
+            {
+              model: sequelize.models.File,
+              as: 'toplevelId',
+              subQuery: false,
+              required: true,
+              include: [
+                {
+                  model: sequelize.models.Article,
+                  as: 'articles',
+                  subQuery: false,
+                  required: true,
+                }
+              ],
+            }
+          ]
+        },
+      ],
+      transaction: opts.transaction,
+    })
+  }
+
+  /**
+   * Shift all articles after a given article by a certain ammount.
+   *
+   * This is the most fundamental nested set modification primitive, as it is done to:
+   * * if if the shift ammount is positive: open space for new/move incoming items
+   * * if the shift ammount is negative: close up space from a deleted item or from which outgoing move items left
+   *
+   * This primitive can be used to prepare to move multiple items at once, but 
+   *
+   * If negative, this removes existing space, for e.g. when removing items.
+   *
+   * This function also maintains Ref.to_id_index state to help keep it in sync.
+   *
+   * @param {boolean=} logging - enable logging of current state and queries
+   * @param {number} nestedSetIndex - at which nested set index to insert or remove space from
+   * @param {string} parentId - idid of the parent article. Used for Ref managment, not nested set.
+   *                            TODO https://docs.ourbigbook.com/todo#ref-file-normalization
+   * @param {number} parentNestedSetIndex - the parent nested set index of the nodes that will 
+   *        be inserted/removed from the location. The way nested sets work, we must know this
+   *        information, we can't just say how much space to open at a given location, because
+   *        when inserting after nodes without children, we can either be a child or sibling
+   *        or sibling of an ancestor.
+   * @param {number} shiftNestedSetBy - how much to shift nested sets by
+   * @param {number=} shiftRefBy - how much to shift ref to_id_index by
+   * @param {number} to_id_index - the new to_id_index of the article within its parent. Used for Ref managemnt, not nested set.
+   * @param {Transaction=} transaction
+   * @param {string} username - username to take effect on
+   */
+  Article.treeOpenSpace = async function({
+    logging,
+    nestedSetIndex,
+    parentId,
+    parentNestedSetIndex,
+    perf,
+    shiftNestedSetBy,
+    shiftRefBy,
+    to_id_index,
+    transaction,
+    updateNestedSetIndex,
+    updateRef,
+    username,
+  }) {
+    if (logging === undefined) {
+      // Log previous nested set state, and the queries done on it.
+      logging = false
+    }
+    if (updateRef === undefined) {
+      updateRef = true
+    }
+    if (updateNestedSetIndex === undefined) {
+      updateNestedSetIndex = true
+    }
+    let t0
+    if (perf) {
+      t0 = performance.now();
+      console.error('perf: treeOpenSpace.start');
+    }
+    if (logging) {
+      console.log('Article.treeOpenSpace')
+      console.log({
+        nestedSetIndex,
+        parentId,
+        parentNestedSetIndex,
+        shiftNestedSetBy,
+        shiftRefBy,
+        to_id_index,
+        updateNestedSetIndex,
+        username,
+      })
+      console.log(await Article.treeToString({ transaction }))
+    }
+    await sequelize.transaction({ transaction }, async (transaction) =&gt; {
+      return Promise.all([
+        // Ref is the canonical tree representation and must remain ordered even
+        // when nested-set data is unavailable. In particular, render=false bulk
+        // uploads have no Article row for newly created parents yet, so
+        // parentNestedSetIndex is undefined.
+        parentId !== undefined &amp;&amp;
+          updateRef &amp;&amp;
+          sequelize.models.Ref.increment('to_id_index', {
+            logging: logging ? console.log : false,
+            by: shiftRefBy,
+            where: {
+              from_id: parentId,
+              to_id_index: { [Op.gte]: to_id_index },
+              type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+            },
+            transaction,
+          }),
+        // Happens for the root node, or when the parent has not been rendered
+        // yet. There is no nested-set state to update in those cases.
+        parentNestedSetIndex !== undefined &amp;&amp;
+          updateNestedSetIndex &amp;&amp; sequelize.query(`
+UPDATE "Article" SET
+  "nestedSetIndex" = "nestedSetIndex" + :shiftNestedSetBy,
+  "nestedSetNextSibling" = "nestedSetNextSibling" + :shiftNestedSetBy
+WHERE
+  "nestedSetIndex" &gt;= :nestedSetIndex AND
+  "id" IN (
+    SELECT "Article"."id" from "Article"
+    INNER JOIN "File"
+      ON "Article"."fileId" = "File"."id"
+    INNER JOIN "User"
+      ON "File"."authorId" = "User"."id"
+    WHERE "User"."username" = :username
+  )
+`,
+          {
+            logging: logging ? console.log : false,
+            transaction,
+            replacements: {
+              username,
+              nestedSetIndex,
+              shiftNestedSetBy,
+            },
+          },
+        ),
+        parentNestedSetIndex !== undefined &amp;&amp;
+          updateNestedSetIndex &amp;&amp; sequelize.query(`
+UPDATE "Article" SET
+  "nestedSetNextSibling" = "nestedSetNextSibling" + :shiftNestedSetBy
+WHERE
+  "nestedSetIndex" &lt;= :parentNestedSetIndex AND
+  "nestedSetNextSibling" &gt;= :nestedSetIndex AND
+  "id" IN (
+    SELECT "Article"."id" from "Article"
+    INNER JOIN "File"
+      ON "Article"."fileId" = "File"."id"
+    INNER JOIN "User"
+      ON "File"."authorId" = "User"."id"
+    WHERE "User"."username" = :username
+  )
+`,
+          {
+            logging: logging ? console.log : false,
+            transaction,
+            replacements: {
+              username,
+              nestedSetIndex,
+              parentNestedSetIndex,
+              shiftNestedSetBy,
+            },
+          },
+        ),
+      ])
+    })
+    if (perf) {
+      console.error(`perf: treeOpenSpace.finish ${performance.now() - t0} ms`);
+    }
+  }
+
+  // TODO https://docs.ourbigbook.com/todo/delete-articles
+  Article.prototype.destroySideEffects = async function(opts={}) {
+    return sequelize.transaction({ transaction: opts.transaction }, async (transaction) =&gt; {
+      await sequelize.models.User.findByPk(this.authorId, { transaction, lock: transaction.LOCK.UPDATE })
+      // The instance may have been loaded before waiting for a rebuild.
+      await this.reload({ transaction })
+      const [articles, topic, _] = await Promise.all([
+        sequelize.models.Article.findAll({
+          where: { topicId: this.topicId },
+          limit: 2,
+          order: [['id', 'ASC']],
+          transaction,
+        }),
+        sequelize.models.Topic.findOne({
+          include: [{
+            model: sequelize.models.Article,
+            as: 'article',
+            where: { topicId: this.topicId },
+          }],
+          transaction,
+        }),
+        this.treeRemove({
+          logging: opts.logging,
+          transaction
+        }),
+      ])
+      let otherArticleSameTopic
+      if (articles.length &gt; 1) {
+        if (articles[0].id === this.id) {
+          otherArticleSameTopic = articles[1]
+        } else {
+          otherArticleSameTopic = articles[0]
+        }
+      }
+      await this.destroy({ transaction })
+      return Promise.all([
+        this.parentRef ? this.parentRef.destroy({ transaction }) : null,
+        // Has to come after File.destroy finished because the file is needed in order for the
+        // DELETE ARTICLE trigger to be able to link the article to the author.
+        //
+        // Cannot be easily done on CASCADE currently because we had a setup where each File
+        // could have many Articles, which is basically gone.
+        this.file.destroy({ transaction }),
+        otherArticleSameTopic
+          ? // Set it to another article provisorily just in case it points to the current article,
+            // because we are going to destroy the current article.
+            topic.update({ articleId: otherArticleSameTopic.id }, { transaction }).then(
+              // Then update to whatever is actually correct.
+              () =&gt; sequelize.models.Topic.updateTopics([ otherArticleSameTopic ], { deleteArticle: true, transaction })
+            )
+            : topic.destroy({ transaction })
+      ])
+      // TODO move child articles to parent
+      // destroy issues, and then comments. Not doig this now because our "deletion" is for migration to another article only initially
+      //   This can be done on delete cascade as there are no side effects of issues/comments that are not taken care of by triggers
+      //   Sequelize does not set on delete cascade by default however on belongsTo, it uses on delete set null, which would need changing
+    })
+  }
+
+  Article.prototype.getAuthor = async function() {
+    return (await this.getFileCached()).author
+  }
+
+  Article.prototype.getFileCached = async function() {
+    let file
+    if (!this.file || this.file.author === undefined) {
+      file = await this.getFile({ include: [ { model: sequelize.models.User, as: 'author' } ]})
+    } else {
+      file = this.file
+    }
+    return file
+  }
+
+  // Get a version of the source code of this article that would be
+  // written to a local file if we were to export it.
+  Article.prototype.getSourceExport = async function() {
+    const file = await this.getFileCached()
+    let ret = ourbigbook.modifyEditorInput(file.titleSource, file.bodySource).new
+    const children = await this.getChildren()
+    let include_source = ''
+    const isToplevelIndex = this.isToplevelIndex()
+    for (const child of children) {
+      let inc_orig = this.slug
+      if (!isToplevelIndex) {
+        inc_orig = ourbigbook.idToScope(inc_orig)
+      }
+      include_source += `\\Include[${path.relative(inc_orig, child.slug)}]\n`
+    }
+    if (include_source) {
+      if (ret[ret.length - 1] !== '\n') {
+        ret += '\n'
+      }
+      ret += '\n' + include_source
+    }
+    return ret
+  }
+
+  Article.prototype.getChildren = async function() {
+    return sequelize.models.Article.findAll({
+      where: {
+        nestedSetIndex: {
+          [Op.gt]: this.nestedSetIndex,
+          [Op.lt]: this.nestedSetNextSibling,
+        },
+        depth: this.depth + 1,
+      },
+      order: [['nestedSetIndex', 'ASC']],
+      include: [{
+        model: sequelize.models.File,
+        as: 'file',
+        required: true,
+        include: [{
+          model: sequelize.models.User,
+          as: 'author',
+          where: { username: this.file.author.username },
+          required: true,
+        }]
+      }]
+    })
+  }
+
+  /** Direct children used to expand one level of the Web ToC. */
+  Article.prototype.getTocChildren = async function({ limit }={}) {
+    const where = {
+      authorId: this.authorId,
+      depth: this.depth + 1,
+      list: true,
+      nestedSetIndex: {
+        [Op.gt]: this.nestedSetIndex,
+        [Op.lt]: this.nestedSetNextSibling,
+      },
+    }
+    return sequelize.models.Article.findAll({
+      attributes: [
+        'depth',
+        'nestedSetIndex',
+        'slug',
+        'titleRender',
+        [
+          sequelize.literal(
+            `CASE WHEN EXISTS (
+              SELECT 1 FROM "${sequelize.models.Article.tableName}" AS "tocChild"
+              WHERE "tocChild"."authorId" = "Article"."authorId"
+                AND "tocChild"."list"
+                AND "tocChild"."depth" = "Article"."depth" + 1
+                AND "tocChild"."nestedSetIndex" &gt; "Article"."nestedSetIndex"
+                AND "tocChild"."nestedSetIndex" &lt; "Article"."nestedSetNextSibling"
+            ) THEN 1 ELSE 0 END`
+          ),
+          'hasChild',
+        ],
+      ],
+      limit,
+      raw: true,
+      where,
+      order: [['nestedSetIndex', 'ASC']],
+    })
+  }
+
+  Article.prototype.isIndex = function() {
+    return this.topicId === ''
+  }
+
+  Article.prototype.toJson = async function(loggedInUser) {
+    const authorPromise = this.file &amp;&amp; this.file.author ? this.file.author : this.getAuthor()
+    // TODO do liked and followed with JOINs on caller, check if it is there and skip this if so.
+    const [liked, followed, author, likedBy] = await Promise.all([
+      loggedInUser ? loggedInUser.hasLikedArticle(this.id) : false,
+      loggedInUser ? loggedInUser.hasFollowedArticle(this.id) : false,
+      (await authorPromise).toJson(loggedInUser),
+      this.likedBy ? this.likedBy.toJson(loggedInUser) : undefined,
+    ])
+    function addToDictWithoutUndefined(target, source, keys) {
+      for (const prop of keys) {
+        const val = source[prop]
+        if (val !== undefined) {
+          target[prop] = val
+        }
+      }
+      return target
+    }
+    const file = {}
+    if (this.file) {
+      addToDictWithoutUndefined(file, this.file, ['titleSource', 'bodySource', 'path', 'hash'])
+    }
+    const ret = {
+      followed,
+      liked,
+      // Putting it here rather than in the more consistent file.author
+      // to improve post serialization polymorphism with issues.
+      author,
+      file,
+    }
+    this.topicCount = this.get('topicCount')
+    addToDictWithoutUndefined(ret, this, [
+      'depth',
+      'followerCount',
+      'h1Render',
+      'h2Render',
+      'id',
+      'issueCount',
+      'list',
+      'slug',
+      'hash',
+      'image',
+      'topicId',
+      'titleRender',
+      'titleRenderPlaintext',
+      'titleRenderWithScope',
+      'titleSource',
+      'titleSourceLine',
+      'score',
+      'render',
+      'issueCount',
+      'topicCount'
+    ])
+    if (this.announcedAt) {
+      ret.announcedAt = this.announcedAt.toISOString()
+    }
+    if (this.createdAt) {
+      ret.createdAt = this.createdAt.toISOString()
+    }
+    if (this.updatedAt) {
+      ret.updatedAt = this.updatedAt.toISOString()
+    }
+    if (likedBy) {
+      ret.likedBy = likedBy
+    }
+    if (this.likedByDate) {
+      ret.likedByDate = this.likedByDate.toISOString()
+    }
+    if (this.parentId) {
+      ret.parentId = this.parentId.idid
+    }
+    if (this.previousSiblingId) {
+      ret.previousSiblingId = this.previousSiblingId.idid
+    }
+    return ret
+  }
+
+  Article.prototype.rerender = async function({ convertOptionsExtra, extractIds=false, ignoreErrors, transaction }={}) {
+    let file = await this.getFileCached()
+    if (ignoreErrors === undefined)
+      ignoreErrors = false
+    return sequelize.transaction({ transaction }, async (transaction) =&gt; {
+      if (extractIds) {
+        // Reload after the same lock used by edits/uploads, so a maintenance
+        // backfill cannot replace the IDs of a concurrent edit with stale ones.
+        await sequelize.models.User.findByPk(file.authorId, { transaction, lock: transaction.LOCK.UPDATE })
+        file = await sequelize.models.File.findByPk(file.id, {
+          include: [{ model: sequelize.models.User, as: 'author' }], transaction,
+        })
+      }
+      const toplevelId = this.file.toplevelId
+      const parentId = !extractIds &amp;&amp; toplevelId ? toplevelId.to[0].from.idid : undefined
+      try {
+        await convert.convertArticle({
+          author: file.author,
+          bodySource: file.bodySource,
+          convertOptionsExtra,
+          forceNew: false,
+          path: ourbigbook.pathSplitext(file.path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR).slice(1).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR))[0],
+          parentId,
+          referencesOnly: extractIds,
+          render: !extractIds,
+          sequelize,
+          titleSource: file.titleSource,
+          transaction,
+          // This way we don't have to calculate the previousSiblingId to leave the hash unchanged.
+          updateHash: false,
+          updateTree: false,
+          updateUpdatedAt: false,
+        })
+        return true
+      } catch(e) {
+        if (ignoreErrors) {
+          console.log(e)
+          return false
+        } else {
+          throw e
+        }
+      }
+    })
+  }
+
+  Article.prototype.isToplevelIndex = function() {
+    return !this.slug.includes(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
+  }
+
+  /**
+   * Return Articles ordered by username and nested sets.
+   * @return {Article[]}
+   */
+  Article.treeFindInOrder = async function(opts={}) {
+    const userWhere = {}
+    const username = opts.username
+    if (username) {
+      userWhere.username = username
+    }
+    const fileIncludes = [{
+      model: sequelize.models.User,
+      as: 'author',
+      where: userWhere,
+      required: true,
+    }]
+    if (opts.refs) {
+      fileIncludes.push({
+        model: sequelize.models.Id,
+        as: 'toplevelId',
+        include: [{
+          model: sequelize.models.Ref,
+          as: 'to',
+          where: {
+            type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+          },
+        }]
+      })
+    }
+    const where = {}
+    if (
+      // These happen on "updateNestedSetIndex=false updates"
+      !opts.includeNulls
+    ) {
+      where.nestedSetIndex = {[Op.ne]: null}
+    }
+    const include = [
+      {
+        model: sequelize.models.File,
+        as: 'file',
+        required: true,
+        include: fileIncludes,
+      }
+    ]
+    return sequelize.models.Article.findAll({
+      include,
+      where,
+      order: [
+        [
+          { model: sequelize.models.File, as: 'file' },
+          { model: sequelize.models.User, as: 'author' },
+          'username',
+          'ASC'
+        ],
+        ['nestedSetIndex', 'ASC NULLS FIRST'],
+        // To disambiguate the order of NULLs.
+        ['slug', 'ASC'],
+      ],
+      transaction: opts.transaction,
+    })
+  }
+
+  Article.prototype.treeFindAncestors = async function(opts={}) {
+    return Article.findAll({
+      attributes: opts.attributes,
+      where: {
+        nestedSetIndex: { [Op.lt]: this.nestedSetIndex },
+        nestedSetNextSibling: { [Op.gt]: this.nestedSetIndex },
+      },
+      include: [{
+        model: sequelize.models.File,
+        as: 'file',
+        required: true,
+        attributes: opts.metadataOnly ? ['id'] : undefined,
+        where: { authorId: this.file.authorId },
+        include: [{
+          model: sequelize.models.Id,
+          as: 'toplevelId',
+          attributes: opts.metadataOnly ? ['id', 'ast_json'] : undefined,
+        }]
+      }],
+      order: [['nestedSetIndex', 'ASC']],
+    })
+  }
+
+  Article.getArticleIncludeParentAndPreviousSiblingFileInclude = function(
+    sequelize,
+  ) {
+    // Behold.
+    // TODO reimplement with the nested index information instead of this megajoin.
+    return {
+      model: sequelize.models.Id,
+      as: 'toplevelId',
+      subQuery: false,
+      include: [{
+        model: sequelize.models.Ref,
+        as: 'to',
+        where: {
+          type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+        },
+        subQuery: false,
+        include: [{
+          // Parent ID.
+          model: sequelize.models.Id,
+          as: 'from',
+          subQuery: false,
+          include: [
+            {
+              model: sequelize.models.File,
+              as: 'toplevelId',
+              include: [
+                {
+                  model: sequelize.models.Article,
+                  as: 'articles',
+                },
+              ]
+            },
+            {
+              model: sequelize.models.Ref,
+              as: 'from',
+              subQuery: false,
+              on: {
+                '$file-&gt;toplevelId-&gt;to-&gt;from-&gt;from.from_id$': {[Op.eq]: sequelize.col('file-&gt;toplevelId-&gt;to-&gt;from.idid')},
+                '$file-&gt;toplevelId-&gt;to-&gt;from-&gt;from.to_id_index$': {[Op.eq]: sequelize.where(sequelize.col('file-&gt;toplevelId-&gt;to.to_id_index'), '-', 1)},
+              },
+              include: [{
+                // Previous sibling ID.
+                model: sequelize.models.Id,
+                as: 'to',
+                include: [
+                  {
+                    model: sequelize.models.File,
+                    as: 'toplevelId',
+                  },
+                ],
+              }],
+            }
+          ],
+        }],
+      }],
+    }
+  }
+
+  Article.getArticleIncludeParentAndPreviousSiblingAddShortcuts = function(
+    article,
+  ) {
+    // Some access helpers, otherwise too convoluted!.
+    const articleId = article.file.toplevelId
+    if (articleId) {
+      const parentRef = articleId.to[0]
+      const parentId = parentRef.from
+      article.parentRef = parentRef
+      article.parentId = parentId
+      article.idid = articleId.idid
+      // The parent File and Id can exist before its Article is rendered during
+      // a web upload. The editor can still use parentId in that state.
+      const parentArticle = parentId.toplevelId.articles[0]
+      if (parentArticle) {
+        article.parentArticle = parentArticle
+        parentArticle.file = parentId.toplevelId
+      }
+      const previousSiblingRef = parentId.from[0]
+      if (previousSiblingRef) {
+        article.previousSiblingRef = previousSiblingRef
+        article.previousSiblingId = previousSiblingRef.to
+      }
+    }
+  }
+
+  Article.getArticle = async function getArticle({
+    includeIssues,
+    includeIssueNumber,
+    includeIssuesOrder,
+    includeParentAndPreviousSibling,
+    // limits the number of fetched issues or comments.
+    // It makes no sense to have separate limitIssues or limitComments
+    // because there can be just one limit for the join.
+    limit,
+    logging,
+    sequelize,
+    slug,
+  }) {
+    const { Article, File, Issue, Render, User } = sequelize.models
+    const fileInclude = [
+      {
+        model: User,
+        as: 'author',
+      },
+      {
+        model: Render,
+        where: {
+          type: Render.Types[ourbigbook.OUTPUT_FORMAT_HTML],
+        },
+        required: false,
+      },
+    ]
+    if (includeParentAndPreviousSibling) {
+      fileInclude.push(Article.getArticleIncludeParentAndPreviousSiblingFileInclude(sequelize))
+    }
+    const include = [
+      {
+        model: File,
+        as: 'file',
+        include: fileInclude,
+      },
+      {
+        model: User,
+        as: 'author',
+      }
+    ]
+    let order
+    if (includeIssues) {
+      const includeIssue = {
+        model: Issue,
+        as: 'issues',
+        required: false,
+        include: [{ model: User, as: 'author' }],
+      }
+      if (includeIssueNumber) {
+        includeIssue.where = { number: includeIssueNumber }
+      }
+      include.push(includeIssue)
+      order = [[
+        'issues', includeIssuesOrder === undefined ? 'createdAt' : includeIssuesOrder, 'DESC'
+      ]]
+    }
+    const findArgs = {
+      include,
+      limit,
+      order,
+      subQuery: false,
+      where: { slug },
+    }
+    if (logging !== undefined) {
+      findArgs.logging = logging
+    }
+    const article = await Article.findOne(findArgs)
+    if (includeParentAndPreviousSibling &amp;&amp; article !== null) {
+      Article.getArticleIncludeParentAndPreviousSiblingAddShortcuts(article)
+    }
+    return article
+  }
+
+  // Helper for common queries.
+  Article.getArticles = async function getArticles({
+    // Author username string.
+    author,
+    count,
+    excludeIds,
+    followedBy,
+    // HTML list cards need the body preview, but not editor source or headers.
+    // Opt in only on SSR callers; the API's default representation is unchanged.
+    forList=false,
+    // TODO this is quite broken on true:
+    // https://docs.ourbigbook.com/todo/fix-parentid-and-previoussiblingid-on-articles-api
+    includeParentAndPreviousSibling,
+    likedBy,
+    limit,
+    list,
+    logging,
+    offset,
+    order,
+    orderAscDesc,
+    parentId,
+    parentFromTo='to',
+    parentType,
+    rows=true,
+    // This does two types of search:
+    // - prefix matching from topic ID start. The input string is first converted to an ID,
+    //   e.g. 'fundamental theo' matches 'fundamental-theorem-of-calculus', but 'theo' does not
+    //   These results are prioritized and returned first.
+    // - prefix matching from any word of the topic for the last word of the query. Previous query words
+    //   are mandatory but can appear anywhere. For example:
+    //   - 'calculus theo' matches 'fundamental-theorem-of-calculus' because:
+    //     - calculus is not the last word of the query, but it appears as a whole word
+    //     - theo is the last word of the query, and appears as a prefix to the word "calc"
+    //   - 'theo calculus' does not 'fundamental-theorem-of-calculus' because:
+    //     - calculus appears as a whole word so that's fine
+    //     - theo is not the last word of the query, so it only matches whole words,
+    //       but there is no full word "theo" in the search
+    // limit applies to both of these taken together.
+    topicIdSearch,
+    sequelize,
+    slug,
+    topicId,
+    transaction,
+  }) {
+    const { Article, File, Id, Ref, User } = sequelize.models
+    if (orderAscDesc === undefined) {
+      orderAscDesc = 'DESC'
+    }
+    if (count === undefined) {
+      count = true
+    }
+    if (excludeIds === undefined) {
+      excludeIds = []
+    }
+    if (parentType === undefined) {
+      parentType = Ref.Types[ourbigbook.REFS_TABLE_PARENT]
+    }
+
+    // Setup where
+    let where = {}
+    let whereFts
+    if (excludeIds.length) {
+      where.id = { [Op.notIn]: excludeIds }
+    }
+    if (list !== undefined) {
+      where.list = list
+    }
+    if (order === 'announcedAt') {
+      where.announcedAt = { [Op.ne]: null }
+    }
+    if (slug) {
+      where.slug = slug
+    }
+    if (topicId) {
+      where.topicId = topicId
+    }
+    if (topicIdSearch !== undefined) {
+      const topicIdSearchArgs = querySearchToTopicId(topicIdSearch)
+      if (sequelize.options.dialect === 'postgres') {
+        whereFts = {
+          ...where,
+          [Op.not]: { topicId: sequelizeWhereStartsWith(sequelize, topicIdSearchArgs, '"Article"."topicId"') },
+          topicId_tsvector: { [Op.match]: sequelizePostgresqlUserQueryToTsqueryPrefixLiteral(sequelize, topicIdSearch) },
+        }
+      }
+      where.topicId = sequelizeWhereStartsWith(
+        sequelize, topicIdSearchArgs, '"Article"."topicId"'
+      )
+    }
+    if (author) {
+      // Article.authorId is deliberately denormalized from File.authorId. Use
+      // it for filtering so pagination can use the Article indexes instead of
+      // reaching Article through every File owned by the requested user.
+      const authorRow = await User.findOne({
+        attributes: ['id'],
+        transaction,
+        where: { username: author },
+      })
+      if (!authorRow) {
+        if (count) return rows ? { count: 0, rows: [] } : { count: 0 }
+        return []
+      }
+      where.authorId = authorRow.id
+      if (whereFts) whereFts.authorId = authorRow.id
+    }
+    if (Object.keys(where).length === 0) {
+      where = undefined;
+    }
+
+    const authorInclude = {
+      model: User,
+      as: 'author',
+      required: true,
+      subQuery: false,
+    }
+    const fileInclude = []
+    fileInclude.push(authorInclude)
+    if (includeParentAndPreviousSibling) {
+      fileInclude.push(Article.getArticleIncludeParentAndPreviousSiblingFileInclude(sequelize))
+    }
+    if (parentId) {
+      const parentFromToOther = parentFromTo === 'to' ? 'from' : 'to'
+      fileInclude.push({
+        model: Id,
+        as: 'toplevelId',
+        attributes: forList ? [] : undefined,
+        required: true,
+        subQuery: false,
+        include: [{
+          model: Ref,
+          as: parentFromTo,
+          attributes: forList ? [] : undefined,
+          required: true,
+          subQuery: false,
+          where: {
+            [`${parentFromToOther}_id`]: parentId,
+            type: parentType,
+          },
+          include: [{
+            model: Id,
+            as: parentFromToOther,
+            attributes: forList ? [] : undefined,
+            required: true,
+            subQuery: false,
+          }]
+        }]
+      })
+    }
+    const include = [{
+      model: File,
+      as: 'file',
+      attributes: forList ? ['id'] : undefined,
+      include: fileInclude,
+      required: true,
+      subQuery: false,
+    }]
+    const narrowIncludes = includes =&gt; includes.map(include =&gt; ({
+      ...include,
+      attributes: [],
+      ...(include.include ? { include: narrowIncludes(include.include) } : {}),
+      ...(include.through ? { through: { ...include.through, attributes: [] } } : {}),
+    }))
+    const filterInclude = []
+    // Keep joins needed only for filtering in the ID and count queries. The
+    // complete include tree is applied after LIMIT/OFFSET, to at most one page.
+    if (parentId) {
+      filterInclude.push(...narrowIncludes([{
+        model: File,
+        as: 'file',
+        required: true,
+        subQuery: false,
+        include: fileInclude.slice(-1),
+      }]))
+    }
+    if (followedBy) {
+      const followedInclude = {
+        model: User,
+        as: 'followers',
+        where: { username: followedBy },
+      }
+      include.push(followedInclude)
+      filterInclude.push(...narrowIncludes([{ ...followedInclude, through: {} }]))
+    }
+    if (likedBy) {
+      const likedInclude = {
+        model: User,
+        as: 'articleLikedBy',
+        where: { username: likedBy },
+      }
+      include.push(likedInclude)
+      filterInclude.push(...narrowIncludes([{ ...likedInclude, through: {} }]))
+    }
+    const orderList = []
+    if (topicIdSearch === undefined) {
+      if (order !== undefined) {
+        const orderDirection = order === 'createdAt' || order === 'updatedAt'
+          ? orderAscDescNullsLast(orderAscDesc)
+          : orderAscDesc
+        orderList.push([order, orderDirection])
+      }
+      if (order !== 'createdAt' &amp;&amp; order !== 'nestedSetIndex') {
+        orderList.push(['createdAt', 'DESC NULLS LAST'])
+      }
+      if (order !== 'nestedSetIndex') {
+        // Dates can tie, especially for automatic index articles with null dates.
+        orderList.push(['id', 'DESC'])
+      }
+    } else {
+      // Override all other orderings, as we currently don't have
+      // an efficient way of also sorting by them. The root problem
+      // is that a prefix search is basically a range search, and 
+      // then doing an unrelated sort on top essentially means doing
+      // two range searches, which requires spatial indices: 
+      // https://stackoverflow.com/questions/2256364/what-is-a-spatial-index-and-when-should-i-use-it/76685445#76685445
+      orderList.push(['topicId', 'ASC'])
+    }
+    const findArgs = {
+      attributes: forList ? { exclude: ['h1Render', 'h2Render'] } : undefined,
+      include,
+      limit,
+      offset,
+      order: orderList,
+      subQuery: false,
+      transaction,
+      where,
+    }
+    if (logging !== undefined) {
+      findArgs.logging = logging
+    }
+    const findArgss = [findArgs]
+    if (whereFts) {
+      findArgss.push({
+        ...findArgs,
+        where: whereFts,
+      })
+    }
+
+    async function findPage(findArgs) {
+      // Avoid materializing and sorting the wide Article/File/User rows before
+      // OFFSET. The public pagination parameters and result order stay intact.
+      if (findArgs.limit === undefined) return Article.findAll(findArgs)
+      const idRows = await Article.findAll({
+        ...findArgs,
+        attributes: ['id'],
+        include: narrowIncludes(filterInclude),
+        raw: true,
+      })
+      if (!idRows.length) return []
+      const idWhere = { id: { [Op.in]: idRows.map(row =&gt; row.id) } }
+      return Article.findAll({
+        ...findArgs,
+        limit: undefined,
+        offset: undefined,
+        where: findArgs.where ? { [Op.and]: [findArgs.where, idWhere] } : idWhere,
+      })
+    }
+
+    // Do the searches.
+    const rets = await Promise.all(findArgss.map(async (findArgs) =&gt; {
+      if (count) {
+        if (rows) {
+          const [retCount, retRows] = await Promise.all([
+            Article.count({
+              ...findArgs,
+              attributes: undefined,
+              include: narrowIncludes(filterInclude),
+              limit: undefined,
+              offset: undefined,
+              order: undefined,
+            }),
+            findPage(findArgs),
+          ])
+          return { count: retCount, rows: retRows }
+        } else {
+          return { count: await Article.count({
+            ...findArgs,
+            attributes: undefined,
+            include: narrowIncludes(filterInclude),
+            limit: undefined,
+            offset: undefined,
+            order: undefined,
+          }) }
+        }
+      } else {
+        return { rows: await findPage(findArgs) }
+      }
+    }))
+
+    // Consolidate prefix and fts searches if search is being done.
+    let articles = []
+    let retCount = 0
+    for (const ret of rets) {
+      const { rows, count } = ret
+      if (rows !== undefined) {
+        articles.push(...rows)
+      }
+      if (count !== undefined) {
+        retCount += count
+      }
+    }
+    if (limit) {
+      articles = articles.slice(0, limit)
+    }
+
+    if (includeParentAndPreviousSibling) {
+      for (const article of articles) {
+        Article.getArticleIncludeParentAndPreviousSiblingAddShortcuts(article)
+      }
+    }
+    let ret
+    if (count) {
+      if (rows) {
+        ret = { rows: articles, count: retCount }
+      } else {
+        ret = { count: retCount }
+      }
+    } else {
+      ret = articles
+    }
+    return ret
+  }
+
+  Article.getArticleJsonInTopicBy = async (user, topicId) =&gt; {
+    return user
+      ? sequelize.models.Article.findOne({
+          where: {
+            topicId,
+          },
+          include: [
+            {
+              model: sequelize.models.File,
+              as: 'file',
+              where: {
+                authorId: user.id,
+              }
+            }
+          ]
+        }).then(article =&gt; {
+          if (article) {
+            return article?.toJson(user)
+          } else {
+            return null
+          }
+        })
+      : null
+  }
+
+  // Existing ARefs cover media embeds and ordinary file links alike.
+  // File previews do not need an authored Article/Id of their own.
+  Article.getFileUsage = async function(fileId) {
+    const { ARef, File, Id } = sequelize.models
+    const filePath = fileId.replace(/^(@[^/]+)\/-\/file\//, '$1/')
+    return Article.findAll({
+      attributes: ['slug', 'titleRenderWithScope'],
+      // An authored {file} header records its own file; don't link to itself.
+      where: { slug: { [Op.ne]: fileId.slice(1) } },
+      order: [['slug', 'ASC']],
+      include: [{
+        model: File, as: 'file', required: true, attributes: [],
+        include: [{
+          model: Id, as: 'toplevelId', required: true, attributes: [],
+          include: [{
+            model: ARef, as: 'fromId', required: true, attributes: [],
+            where: { to: filePath },
+          }],
+        }],
+      }],
+    })
+  }
+
+  // Maybe try to merge into getArticle one day?
+  Article.getArticlesInSamePage = async ({
+    article,
+    getCount,
+    getHasChild,
+    getTagged,
+    logging,
+    loggedInUser,
+    // Get just the article itself. This is just as a way to get the number of
+    // articles on same topic + discussion count which we already get the for the h2,
+    // which are the main use case of this function.
+    //
+    // We don't want to pull both of them together because then we'd be pulling
+    // both h1 and h2 renders which we don't need. Talk about premature optimization!
+    h1,
+    // SSR already has the main article body; its second lookup only needs
+    // topic counts and whether the reader has their own version.
+    metadataOnly=false,
+    limit,
+    list,
+    offset,
+    // Create a highly optimized version of the query just for the ToC.
+    // This is essential for performance as the toc has 10x more entries, and can be
+    // the performance bottleneck according to our testing.
+    toc,
+    toplevelId,
+    sequelize,
+  }) =&gt; {
+    if (getTagged) {
+      toplevelId = true
+    }
+    if (logging === undefined) {
+      logging = false
+    }
+    if (toc === undefined) {
+      toc = false
+    }
+//    // OLD VERSION 1: as much as possible from calls, same article by file.
+//    const articlesInSamePageAttrs = [
+//      'id',
+//      'score',
+//      'slug',
+//      'topicId',
+//    ]
+//    const include = [
+//      {
+//        model: sequelize.models.File,
+//        as: 'file',
+//        required: true,
+//        attributes: ['id'],
+//        include: [
+//          {
+//            model: sequelize.models.User,
+//            as: 'author',
+//          },
+//          {
+//            model: sequelize.models.Article,
+//            as: 'file',
+//            required: true,
+//            attributes: ['id'],
+//            where: { slug },
+//          }
+//        ]
+//      },
+//      {
+//        model: sequelize.models.Issue,
+//        as: 'issues',
+//      },
+//      {
+//        model: sequelize.models.Article,
+//        as: 'sameTopic',
+//        attributes: [],
+//        required: true,
+//        include: [{
+//          model: sequelize.models.Topic,
+//          as: 'article',
+//          required: true,
+//        }]
+//      },
+//    ]
+//    // This is the part I don't know how to do here. Analogous for current user liked check.
+//    // It works, but breaks "do I have my version check".
+//    // https://github.com/cirosantilli/cirosantilli.github.io/blob/1be5cb8ef7c03d03e54069c6a5329f54e044de9c/nodejs/sequelize/raw/many_to_many.js#L351
+//    //if (loggedInUser) {
+//    //  include.push({
+//    //    model: sequelize.models.Article,
+//    //    as: 'sameTopic2',
+//    //    //attributes: [],
+//    //    required: true,
+//    //    include: [{
+//    //      model: sequelize.models.File,
+//    //      as: 'file',
+//    //      //attributes: [],
+//    //      required: true,
+//    //      include: [{
+//    //        model: sequelize.models.User,
+//    //        as: 'author',
+//    //        attributes: ['id'],
+//    //        required: false,
+//    //        where: { id: loggedInUser.id },
+//    //      }]
+//    //    }],
+//    //  })
+//    //}
+//    return sequelize.models.Article.findAll({
+//      attributes: articlesInSamePageAttrs.concat([
+//        [sequelize.fn('COUNT', sequelize.col('issues.id')), 'issueCount'],
+//        [sequelize.col('sameTopic.article.articleCount'), 'topicCount'],
+//        // This works for "do I have my version check".
+//        //[sequelize.fn('max', sequelize.col('sameTopic2.file.author.id')), 'hasSameTopic'],
+//      ]),
+//      group: articlesInSamePageAttrs.map(a =&gt; `Article.${a}`),
+//      subQuery: false,
+//      order: [['topicId', 'ASC']],
+//      include,
+//    })
+//
+//    // OLD VERSION 2: same article by file, one megaquery.
+//    // For a minimal prototype of the difficult SameTopicByLoggedIn part:
+//    // https://github.com/cirosantilli/cirosantilli.github.io/blob/1be5cb8ef7c03d03e54069c6a5329f54e044de9c/nodejs/sequelize/raw/many_to_many.js#L351
+//    ;const [rows, meta] = await sequelize.query(`
+//SELECT
+//  "Article"."id" AS "id",
+//  "Article"."score" AS "score",
+//  "Article"."slug" AS "slug",
+//  "Article"."topicId" AS "topicId",
+//  "Article"."titleSource" AS "titleSource",
+//  "File.Author"."id" AS "file.author.id",
+//  "File.Author"."username" AS "file.author.username",
+//  "SameTopic"."articleCount" AS "topicCount",
+//  "ArticleSameTopicByLoggedIn"."id" AS "hasSameTopic",
+//  "UserLikeArticle"."userId" AS "liked",
+//  COUNT("issues"."id") AS "issueCount"
+//FROM
+//  "Article"
+//  INNER JOIN "File" ON "Article"."fileId" = "File"."id"
+//  LEFT OUTER JOIN "User" AS "File.Author" ON "File"."authorId" = "File.Author"."id"
+//  INNER JOIN "Article" AS "ArticleSameFile"
+//    ON "File"."id" = "ArticleSameFile"."fileId"
+//    AND "ArticleSameFile"."slug" = :slug
+//  INNER JOIN "Article" AS "ArticleSameTopic" ON "Article"."topicId" = "ArticleSameTopic"."topicId"
+//  INNER JOIN "Topic" AS "SameTopic" ON "ArticleSameTopic"."id" = "SameTopic"."articleId"
+//  LEFT OUTER JOIN (
+//    SELECT "Article"."id", "Article"."topicId"
+//    FROM "Article"
+//    INNER JOIN "File"
+//      ON "Article"."fileId" = "File"."id"
+//      AND "File"."authorId" = :loggedInUserId
+//  ) AS "ArticleSameTopicByLoggedIn"
+//    ON "Article"."topicId" = "ArticleSameTopicByLoggedIn"."topicId"
+//  LEFT OUTER JOIN "UserLikeArticle"
+//    ON "UserLikeArticle"."articleId" = "Article"."id" AND
+//       "UserLikeArticle"."userId" = :loggedInUserId
+//  LEFT OUTER JOIN "Issue" AS "issues" ON "Article"."id" = "issues"."articleId"
+//GROUP BY
+//  "Article"."id",
+//  "Article"."score",
+//  "Article"."slug",
+//  "Article"."topicId",
+//  "Article"."titleSource",
+//  "File.Author"."id",
+//  "File.Author"."username",
+//  "SameTopic"."articleCount",
+//  "ArticleSameTopicByLoggedIn"."id",
+//  "UserLikeArticle"."userId"
+//ORDER BY "slug" ASC
+//`,
+//      {
+//        replacements: {
+//          loggedInUserId: loggedInUser ? loggedInUser.id : null,
+//          slug,
+//        }
+//      }
+//    )
+
+    const { File, Id, Ref } = sequelize.models
+    function getQuery(countOnly) {
+      const articleTableName = sequelize.models.Article.tableName
+      return `SELECT
+  ${countOnly
+    ? 'COUNT(*) AS "count"'
+    : metadataOnly ? `"Topic"."articleCount" AS "topicCount"${loggedInUser ? ',\n  "ArticleSameTopicByLoggedIn"."id" AS "hasSameTopic"' : ''}`
+    : `"Article"."depth" AS "depth",
+  "Article"."slug" AS "slug",
+  "Article"."titleRender" AS "titleRender"${getHasChild ? `,
+  "Article"."nestedSetIndex" AS "nestedSetIndex",
+  CASE WHEN EXISTS (
+    SELECT 1 FROM "${articleTableName}" AS "TocChild"
+    WHERE "TocChild"."authorId" = "Article"."authorId"
+      AND "TocChild"."list"
+      AND "TocChild"."depth" = "Article"."depth" + 1
+      AND "TocChild"."nestedSetIndex" &gt; "Article"."nestedSetIndex"
+      AND "TocChild"."nestedSetIndex" &lt; "Article"."nestedSetNextSibling"
+  ) THEN 1 ELSE 0 END AS "hasChild"` : ''}${!toc ? `,
+  "Article"."id" AS "id",
+  "Article"."list" AS "list",
+  "Article"."score" AS "score",
+  "Article"."topicId" AS "topicId",
+  "Article"."issueCount" AS "issueCount",
+  "Article"."titleSource" AS "titleSource",
+  "Article"."render" AS "render",
+  ${h1 ? '"Article"."h1Render" AS "h1Render"' : '"Article"."h2Render" AS "h2Render"'},
+  "Article"."topicId" AS "topicId",
+  "Article.Author"."id" AS "author.id",
+  "Article.Author"."username" AS "author.username",
+  "Topic"."articleCount" AS "topicCount"${toplevelId ? `,
+  "${File.tableName}"."toplevel_id" AS "toplevel_id"
+` : ''}${loggedInUser ? `,
+  "ArticleSameTopicByLoggedIn"."id" AS "hasSameTopic",
+  "UserLikeArticle"."userId" AS "liked"` : ''
+}` : ''}`}
+FROM
+  "Article"${!toc ? `
+INNER JOIN "User" AS "Article.Author" ON "Article"."authorId" = "Article.Author"."id"
+INNER JOIN "Topic" ON "Article"."topicId" = "Topic"."topicId"${toplevelId ? `
+INNER JOIN "${File.tableName}" ON "Article"."fileId" = "${File.tableName}"."id"` : ''}${loggedInUser ? `
+LEFT OUTER JOIN "Article" as "ArticleSameTopicByLoggedIn"
+  ON "ArticleSameTopicByLoggedIn"."authorId" = :loggedInUserId AND
+     "ArticleSameTopicByLoggedIn"."topicId" = "Article"."topicId"
+LEFT OUTER JOIN "UserLikeArticle"
+  ON "UserLikeArticle"."articleId" = "Article"."id" AND
+     "UserLikeArticle"."userId" = :loggedInUserId` : ''}` : ''}
+WHERE "Article"."authorId" = ( SELECT id FROM "User" WHERE username = :authorUsername ) AND${list === undefined ? '' : `
+  "Article"."list" = :list AND`}
+${h1
+  ? `  "Article"."nestedSetIndex" = :nestedSetIndex`
+  : `  "Article"."nestedSetIndex" &gt; :nestedSetIndex AND
+  "Article"."nestedSetIndex" &lt; :nestedSetNextSibling`
+}${countOnly ? '' : `
+ORDER BY "Article"."nestedSetIndex" ASC${limit !== undefined ? `
+LIMIT ${limit}${offset !== undefined ? `
+OFFSET ${offset}` : ''}` : ''}`}
+`
+    }
+    const queryOpts = {
+      logging,
+      replacements: {
+        authorUsername: article.author.username,
+        loggedInUserId: loggedInUser ? loggedInUser.id : null,
+        list,
+        nestedSetIndex: article.nestedSetIndex,
+        nestedSetNextSibling: article.nestedSetNextSibling,
+      }
+    }
+    const promises = [sequelize.query(getQuery(false), queryOpts)]
+    if (getCount) {
+      promises.push(sequelize.query(getQuery(true), queryOpts))
+    }
+    ;const [
+      [rows, meta],
+      countRet
+    ] = await Promise.all(promises)
+    let count
+    if (countRet) {
+      count = countRet[0][0].count
+    }
+
+    //sequelize.query(`
+    //FROM "Article"
+    //WHERE "nestedSetIndex" &gt; :nestedSetIndex AND "nestedSetIndex" &lt; :nestedSetNextSibling
+    //ORDER BY "nestedSetIndex" ASC
+    //     {
+    //       replacements: {
+    //         nestedSetIndex: article.nestedSetIndex,
+    //         nestedSetNextSibling: article.nestedSetNextSibling,
+    //       }
+    //     }
+    //   ),
+    //`)
+    if (!toc) {
+      for (const row of rows) {
+        row.hasSameTopic = row.hasSameTopic ? true : false
+        if (metadataOnly) continue
+        row.liked = row.liked ? true : false
+        row.author = {
+          id: row['author.id'],
+          username: row['author.username'],
+        }
+        delete row['author.id']
+        delete row['author.username']
+      }
+    }
+    if (getTagged) {
+      // TODO move this in with the rest of the query a single query under getArticlesInSamePage
+      // I'm a bit concerned it will store the same column multiple times in memory.
+      // but perhaps that was just a bad early optimization, who knows.
+      const idToArticleMap = {}
+      for (const article of rows) {
+        idToArticleMap[article.toplevel_id] = article
+      }
+      // TODO limit to n tags. This can be done with ROW_NUMBER() in a raw query.
+      const refs = await Ref.findAll({
+        attributes: ['id', 'from_id'],
+        where: {
+          from_id: rows.map(a =&gt; a.toplevel_id),
+          type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_CHILD],
+        },
+        include: [{
+          model: Id,
+          as: 'to',
+          required: true,
+          attributes: ['id'],
+          include: [{
+            model: File,
+            as: 'toplevelId',
+            required: true,
+            // Retain primary keys for nested association hydration. Empty
+            // attributes hit https://github.com/sequelize/sequelize/issues/16436.
+            attributes: ['id'],
+            include: [{
+              model: Article,
+              as: 'articles',
+              required: true,
+              attributes: ['slug', 'titleRenderWithScope'],
+            }],
+          }],
+        }],
+        order: [['to_id', 'ASC']],
+      })
+      for (const ref of refs) {
+        const article = idToArticleMap[ref.from_id]
+        let taggedArticles = article.taggedArticles
+        if (taggedArticles === undefined) {
+          taggedArticles = []
+          article.taggedArticles = taggedArticles
+        }
+        const toArticle = ref.to.toplevelId.articles[0]
+        taggedArticles.push({
+          slug: toArticle.slug,
+          titleRenderWithScope: toArticle.titleRenderWithScope,
+        })
+      }
+    }
+    if (getCount) {
+      return [rows, count]
+    } else {
+      return rows
+    }
+  }
+
+  /**
+   * Initial Web ToC payload. Small trees are returned in full. Large trees
+   * contain the first rendered-article batch plus the first level, capped
+   * independently so header links and tree navigation are both useful.
+   */
+  Article.getArticlesInSamePageForToc = async ({
+    article,
+    loggedInUser,
+    maxEntries,
+    preloadEntries,
+    sequelize,
+  }) =&gt; {
+    const [preload, count] = await Article.getArticlesInSamePage({
+      article,
+      getCount: true,
+      getHasChild: true,
+      limit: preloadEntries,
+      list: true,
+      loggedInUser,
+      sequelize,
+      toc: true,
+    })
+    if (count &lt;= maxEntries) {
+      if (count &lt;= preload.length) {
+        return [preload, count, false]
+      }
+      return [await Article.getArticlesInSamePage({
+        article,
+        getHasChild: true,
+        limit: maxEntries,
+        list: true,
+        loggedInUser,
+        sequelize,
+        toc: true,
+      }), count, false]
+    }
+    const directChildrenWithExtra = await article.getTocChildren({
+      limit: maxEntries + 1,
+    })
+    const hasMoreDirectChildren = directChildrenWithExtra.length &gt; maxEntries
+    const directChildren = directChildrenWithExtra.slice(0, maxEntries)
+    const bySlug = new Map()
+    for (const row of preload.concat(directChildren)) {
+      bySlug.set(row.slug, row)
+    }
+    return [
+      Array.from(bySlug.values()).sort((a, b) =&gt; a.nestedSetIndex - b.nestedSetIndex),
+      count,
+      hasMoreDirectChildren,
+    ]
+  }
+
+  /**
+   * Calculate nested sets from Ref information and return this data.
+   * As of creating this function, this was supposed to be incrementally
+   * done by the convertArticle() internal function. But we are considering
+   * doing it in bulk to speed things up. And also creating this to quickfix
+   * a wrong index observed in production for unknown reasons:
+   * https://docs.ourbigbook.com/subsections-missing-on-web-dynamic-tree
+   *
+   * @param {string} username
+   */
+  Article.getNestedSetsFromRefs = async function(username, { transaction }={}) {
+    const toplevelId = `${ourbigbook.AT_MENTION_CHAR}${username}`
+    const idRows = await ourbigbook_nodejs_webpack_safe.fetch_header_tree_ids(
+      sequelize,
+      [toplevelId],
+      {
+        // Saves memory 3x. Still doesn't scale indefinitely, but helps as a workaround.
+        idAttrs: '"level","from_id","idid"',
+        transaction,
+      },
+    )
+    let idTreeNode = {
+      id: toplevelId,
+      children: [],
+      nextSibling: undefined,
+      parent: undefined,
+      depth: 0,
+      nestedSetIndex: undefined,
+      nestedSetNextSibling: undefined,
+    }
+    const idToIdTreeNode = {
+      [toplevelId]: idTreeNode,
+    }
+    for (const row of idRows) {
+      const depth = row.level + 1
+      const parent = idToIdTreeNode[row.from_id]
+      const childIdx = parent.children.length
+      const idTreeNode = {
+        id: row.idid,
+        children: [],
+        childIdx,
+        depth,
+        parent,
+        nestedSetIndex: undefined,
+        nestedSetNextSibling: undefined,
+      }
+      if (childIdx &gt; 0) {
+        parent.children[childIdx - 1].nextSibling = idTreeNode
+      }
+      idToIdTreeNode[row.idid] = idTreeNode
+      parent.children.push(idTreeNode)
+    }
+    const nestedSet = []
+
+    // Calculated nestedSetIndex, a simple pre-order traversal.
+    let i = 0
+    let todo = [idTreeNode]
+    while (todo.length) {
+      const node = todo.pop()
+      node.nestedSetIndex = i
+      nestedSet.push(node)
+      todo.push(...node.children.slice().reverse())
+      i++
+    }
+
+    // Calculate nestedSetNextSibling.
+    // Needs a second pass because it relies on the indices of nodes we
+    // haven't visited yet on the first pass.
+    todo = [idTreeNode]
+    while (todo.length) {
+      const node = todo.pop()
+      if (node.nextSibling) {
+        node.nestedSetNextSibling = node.nextSibling.nestedSetIndex
+      } else if (node.children.length === 0) {
+        const nextSibling = node.nestedSetIndex + 1
+        node.nestedSetNextSibling = nextSibling
+        let ancestor = node.parent
+        while(
+          ancestor !== undefined &amp;&amp;
+          ancestor.nextSibling === undefined
+        ) {
+          ancestor.nestedSetNextSibling = nextSibling
+          ancestor = ancestor.parent
+        }
+      }
+      todo.push(...node.children.slice().reverse())
+    }
+    return nestedSet
+  }
+
+  Article.findRedirects = async (fromSlugs, { limit, offset } = {}) =&gt; {
+    const refs = await sequelize.models.Ref.findAll({
+      where: {
+        type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_SYNONYM],
+        from_id: fromSlugs.map(s =&gt; `${ourbigbook.AT_MENTION_CHAR}${s}`),
+      },
+      limit,
+      offset,
+    })
+    const ret = {}
+    for (const ref of refs) {
+      ret[ref.from_id.slice(ourbigbook.AT_MENTION_CHAR.length)] = ref.to_id.slice(ourbigbook.AT_MENTION_CHAR.length)
+    }
+    return ret
+  }
+
+  /**
+   * Re-render multiple articles.
+   *
+   * @param {string[]} authors - only rerender articles of the given authors
+   * @param {string[]} skipAuthors - skip rerendering articles of the given authors. Ignored if authors is given.
+   */
+  Article.rerender = async ({
+    authors,
+    batchSize=config.maxArticlesInMemory,
+    convertOptionsExtra,
+    descendants,
+    dryRun=false,
+    extractIds=false,
+    ignoreErrors,
+    log,
+    media=false,
+    skipAuthors,
+    slugs=[],
+    sourcePattern,
+    startFrom,
+  }={}) =&gt; {
+    if (!Number.isSafeInteger(batchSize) || batchSize &lt; 1) throw new Error('batchSize must be a positive integer')
+    const sourceRegex = sourcePattern === undefined ? undefined : new RegExp(sourcePattern)
+    const mediaRegex = /\\(?:Image|image|Video)\b/
+    const summary = { scanned: 0, matched: 0, converted: 0 }
+    if (authors === undefined) {
+      authors = []
+    }
+    if (skipAuthors === undefined) {
+      skipAuthors = []
+    }
+    if (log === undefined) {
+      log = false
+    }
+    const { Article, File, Id, Ref, Site, User } = sequelize.models
+
+    // Calculate where
+    const where = {}
+    if (slugs.length) {
+      if (descendants) {
+        const articles = await Article.findAll({
+          where: { slug: slugs },
+          attributes: ['authorId', 'nestedSetIndex', 'nestedSetNextSibling'],
+        })
+        const nestedSetIndexes = []
+        where[Op.or] = nestedSetIndexes
+        for (const article of articles) {
+          nestedSetIndexes.push({
+            authorId: article.authorId,
+            nestedSetIndex: {
+              [Op.gte]: article.nestedSetIndex,
+              [Op.lt]: article.nestedSetNextSibling,
+            }
+          })
+        }
+      } else {
+        where.slug = slugs
+      }
+    } else {
+      if (startFrom) {
+        where.slug = { [Op.gte]: startFrom }
+      }
+    }
+
+    const authorWhere = {}
+    if (authors.length) {
+      authorWhere.username = authors
+    } else if (skipAuthors.length) {
+      authorWhere.username = { [Op.notIn]: skipAuthors }
+    }
+    let afterSlug
+    const site = await Site.findOne()
+    convertOptionsExtra = {...convertOptionsExtra}
+    if (convertOptionsExtra.automaticTopicLinksMaxWords === undefined) {
+      convertOptionsExtra.automaticTopicLinksMaxWords = site.automaticTopicLinksMaxWords
+    }
+    while (true) {
+      const articles = await Article.findAll({
+        where: afterSlug === undefined ? where : { [Op.and]: [where, { slug: { [Op.gt]: afterSlug } }] },
+        // Extraction never needs the rendered HTML, which can dwarf sources.
+        ...(extractIds ? { attributes: ['id', 'slug', 'fileId'] } : {}),
+        subQuery: false,
+        include: [
+          {
+            model: File,
+            as: 'file',
+            subQuery: false,
+            required: true,
+            ...(extractIds ? { attributes: ['id', 'authorId', 'path', 'titleSource', 'bodySource'] } : {}),
+            include: [
+              {
+                model: User,
+                as: 'author',
+                subQuery: false,
+                required: true,
+                where: authorWhere,
+              },
+              // Also get the parent ID in one go which is used in rendering.
+              ...(extractIds ? [] : [{
+                model: Id,
+                as: 'toplevelId',
+                subQuery: false,
+                // false otherwise we skip over the index article which has no parent.
+                required: false,
+                include: [{
+                  model: Ref,
+                  as: 'to',
+                  subQuery: false,
+                  where: { type: Ref.Types[ourbigbook.REFS_TABLE_PARENT] },
+                  include: [{
+                    model: Id,
+                    as: 'from',
+                    subQuery: false,
+                    required: true,
+                  }],
+                }],
+              }])
+            ],
+          },
+        ],
+        order: [['slug', 'ASC']],
+        limit: batchSize,
+      })
+      if (articles.length === 0)
+        break
+      for (const article of articles) {
+        summary.scanned++
+        const source = ourbigbook.modifyEditorInput(article.file.titleSource, article.file.bodySource).new
+        if ((media &amp;&amp; !mediaRegex.test(source)) || (sourceRegex &amp;&amp; !sourceRegex.test(source))) continue
+        summary.matched++
+        if (dryRun) {
+          if (log) console.log(`Would ${extractIds ? 'extract IDs' : 'render'}: ${article.slug}`)
+          continue
+        }
+        if (log) {
+          console.log(article.slug)
+        }
+        let t0 = performance.now()
+        const converted = await article.rerender({ convertOptionsExtra, extractIds, ignoreErrors })
+        if (converted) summary.converted++
+        if (log) {
+          console.log(`${article.slug} ${converted ? 'finished' : 'failed'} in ${performance.now() - t0} ms`)
+        }
+      }
+      afterSlug = articles[articles.length - 1].slug
+      if (log) console.log(`Scanned ${summary.scanned}, matched ${summary.matched}, processed ${summary.converted}; last slug: ${afterSlug}`)
+    }
+    return summary
+  }
+
+  Article.prototype.getSlug = function() {
+    return this.slug
+  }
+
+  /**
+   * Calculate nested sets from Ref information update database with those values.
+   *
+   * @param {string} username
+   */
+  Article.updateNestedSets = async function(username, { transaction }={}) {
+    return sequelize.transaction({ transaction }, async (transaction) =&gt; {
+      await sequelize.models.User.findOne({ where: { username }, transaction, lock: transaction.LOCK.UPDATE })
+      const nestedSet = await Article.getNestedSetsFromRefs(username, { transaction })
+      const vals = nestedSet.map(s =&gt; { return {
+        slug: s.id.slice(ourbigbook.AT_MENTION_CHAR.length),
+        nestedSetIndex: s.nestedSetIndex,
+        nestedSetNextSibling: s.nestedSetNextSibling,
+        depth: s.depth,
+      }})
+      // Batch existing-row updates to avoid a round trip per article. Derived
+      // tree positions must not change article timestamps or require INSERTs.
+      const columns = ['nestedSetIndex', 'nestedSetNextSibling', 'depth']
+      const table = sequelize.getQueryInterface().queryGenerator.quoteTable(Article.tableName)
+      for (let offset = 0; offset &lt; vals.length; offset += 500) {
+        const batch = vals.slice(offset, offset + 500)
+        const replacements = {}
+        for (let i = 0; i &lt; batch.length; i++) {
+          replacements[`slug${i}`] = batch[i].slug
+          for (const column of columns) replacements[`${column}${i}`] = batch[i][column]
+        }
+        let sql
+        if (sequelize.getDialect() === 'postgres') {
+          const values = batch.map((_, i) =&gt;
+            `(:slug${i}, ${columns.map(column =&gt; `:${column}${i}`).join(', ')})`
+          ).join(', ')
+          sql = `UPDATE ${table} AS a SET
+            ${columns.map(column =&gt; `"${column}" = v."${column}"`).join(', ')}
+            FROM (VALUES ${values}) AS v("slug", ${columns.map(column =&gt; `"${column}"`).join(', ')})
+            WHERE a."slug" = v."slug" AND (
+              ${columns.map(column =&gt; `a."${column}" IS DISTINCT FROM v."${column}"`).join(' OR ')}
+            )`
+        } else {
+          // Compatible with SQLite versions predating UPDATE FROM.
+          sql = `UPDATE ${table} SET ${columns.map(column =&gt;
+            `"${column}" = CASE "slug" ${batch.map((_, i) =&gt;
+              `WHEN :slug${i} THEN :${column}${i}`
+            ).join(' ')} END`
+          ).join(', ')} WHERE "slug" IN (${batch.map((_, i) =&gt; `:slug${i}`).join(', ')})`
+        }
+        await sequelize.query(sql, { replacements, transaction })
+      }
+    })
+  }
+
+  Article.slugTransform = slugTransform
+
+  Article.ALLOWED_SORTS_EXTRA = {
+    'announced': 'announcedAt',
+    'follower-count': 'followerCount',
+    'id': 'topicId',
+    'issues': 'issueCount',
+    'score': undefined,
+  }
+
+  return Article
+}
+</code></pre></div></div></main>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../../-/dir">Website source code</a></div>
+
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

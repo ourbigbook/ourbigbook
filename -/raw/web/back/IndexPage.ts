@@ -1,0 +1,209 @@
+import { getLoggedInUser } from 'back'
+import { articleLimit } from 'front/config'
+import { getList, getOrderAndPage, getTopicHasArticles } from 'front/js'
+import { IndexPageProps } from 'front/IndexPage'
+import { MyGetServerSideProps } from 'front/types'
+import { Op } from 'sequelize'
+
+export const getServerSidePropsIndexHoc = ({
+  followed=false,
+  itemType=undefined,
+}={}): MyGetServerSideProps => {
+  return async ({ query, req, res }) => {
+    const loggedInUser = await getLoggedInUser(req, res)
+    let followedEff = followed
+    if (!loggedInUser) {
+      followedEff = false;
+    }
+    let itemTypeEff = itemType
+    if (itemTypeEff === undefined) {
+      if (loggedInUser) {
+        itemTypeEff = 'article'
+      } else {
+        itemTypeEff = 'topic'
+      }
+    }
+    const list = itemTypeEff === 'topic'
+      ? getTopicHasArticles(req, res)
+      : getList(req, res)
+    const getOrderAndPageOpts: {
+      defaultOrder?: string;
+      allowedSortsExtra?: any;
+    } = {}
+    const sequelize = req.sequelize
+    const { Article, Comment, Issue, Site, Topic, Upload, User } = sequelize.models
+    switch (itemTypeEff) {
+      case 'article':
+        getOrderAndPageOpts.allowedSortsExtra = Article.ALLOWED_SORTS_EXTRA
+        break
+      case 'comment':
+        break
+      case 'file':
+        getOrderAndPageOpts.allowedSortsExtra = { size: 'size', path: 'path' }
+        break
+      case 'discussion':
+        getOrderAndPageOpts.allowedSortsExtra = Issue.ALLOWED_SORTS_EXTRA
+        break
+      case 'topic':
+        getOrderAndPageOpts.defaultOrder = Topic.DEFAULT_SORT
+        getOrderAndPageOpts.allowedSortsExtra = Topic.ALLOWED_SORTS_EXTRA
+        break
+    }
+    const { ascDesc, err, order, page } = getOrderAndPage(req, query.page, getOrderAndPageOpts)
+    if (err) { res.statusCode = 422 }
+    const offset = page * articleLimit
+    const limit = articleLimit
+    const [
+      [articles, articlesCount],
+      commentsAndCount,
+      pinnedArticle,
+      totalArticles,
+      totalComments,
+      totalDiscussions,
+      totalTopics,
+      totalUsers,
+      totalFiles,
+      fileIndex,
+      hiddenCount,
+    ] = await Promise.all([
+      (async () => {
+        let articles
+        let articlesCount
+        let articlesAndCounts
+        switch (itemTypeEff) {
+          case 'file':
+            return [null, null]
+          case 'article':
+            if (followedEff) {
+              articlesAndCounts = await loggedInUser.findAndCountArticlesByFollowedToJson(
+                offset, limit, order, ascDesc)
+              articles = articlesAndCounts.articles
+              articlesCount = articlesAndCounts.articlesCount
+            } else {
+              articlesAndCounts = await Article.getArticles({
+                forList: true,
+                limit,
+                list: true,
+                offset,
+                order,
+                orderAscDesc: ascDesc,
+                topicIdSearch: query.search,
+                sequelize,
+              })
+              articles = await Promise.all(articlesAndCounts.rows.map(
+                (article) => {return article.toJson(loggedInUser) }))
+              articlesCount = articlesAndCounts.count
+            }
+            break
+          case 'comment':
+            articles = null
+            articlesCount = null
+            break
+          case 'discussion':
+            articlesAndCounts = await Issue.getIssues({
+              sequelize,
+              includeArticle: true,
+              offset,
+              order,
+              orderAscDesc: ascDesc,
+              limit,
+              list,
+            })
+            articles = await Promise.all(articlesAndCounts.rows.map(
+              (article) => {
+                return article.toJson(loggedInUser)
+              }))
+            articlesCount = articlesAndCounts.count
+            break
+          case 'topic':
+            articlesAndCounts = await Topic.getTopics({
+              hasArticles: list,
+              limit,
+              offset,
+              order,
+              orderAscDesc: ascDesc,
+              topicIdSearch: query.search,
+              sequelize,
+            })
+            articles = await Promise.all(articlesAndCounts.rows.map(
+              (article) => { return article.toJson(loggedInUser) }))
+            articlesCount = articlesAndCounts.count
+            break
+          default:
+            throw new Error(`unknown itemType: ${itemTypeEff}`)
+        }
+        return [articles, articlesCount]
+      })(),
+      // commentsAndCount
+      itemType === 'comment'
+        ? Comment.getComments({ limit, list, offset })
+        : {}
+      ,
+      // pinnedArticle
+      Site.findOne({ include:
+        [{
+          model: Article,
+          as: 'pinnedArticle',
+        }]
+      }).then(site => {
+        const pinnedArticle = site.pinnedArticle
+        if (pinnedArticle) {
+          return pinnedArticle.toJson(loggedInUser)
+        } else {
+          return null
+        }
+      }),
+      // totalArticles
+      Article.count({ where: { list: true } }),
+      // totalComments
+      Comment.count({ where: { list: true } }),
+      // totalDiscussions
+      Issue.count({ where: { list: true } }),
+      // totalTopics
+      Topic.count({ where: { articleCount: { [Op.gt]: 0 } } }),
+      // totalUsers
+      User.count({ where: { locked: false, verified: true } }),
+      Upload.count({ where: { ...Upload.fileIndexWhere(), list: true } }),
+      itemTypeEff === 'file' ? Upload.getFileIndex({ list, limit, offset, order, orderAscDesc: ascDesc }) : null,
+      itemTypeEff === 'topic' ? Topic.count({ where: { articleCount: 0 } })
+        : itemTypeEff === 'file' ? Upload.count({ where: { ...Upload.fileIndexWhere(), list: false } }) : itemTypeEff === 'discussion'
+        ? Issue.count({ where: { list: false } })
+        : itemTypeEff === 'comment'
+          ? Comment.count({ where: { list: false } })
+          : 0,
+    ])
+    const props: IndexPageProps = {
+      followed: followedEff,
+      hasEmptyTopics: itemTypeEff === 'topic' && !!hiddenCount,
+      hasUnlisted: itemTypeEff !== 'topic' && !!hiddenCount,
+      itemType: itemTypeEff,
+      list: list === undefined ? null : list,
+      order,
+      orderAscDesc: ascDesc,
+      page,
+      pinnedArticle,
+      totalArticles,
+      totalDiscussions,
+      totalComments,
+      totalTopics,
+      totalUsers,
+      totalFiles,
+    }
+    if (itemTypeEff === 'file') {
+      props.files = fileIndex.files
+      props.filesCount = fileIndex.count
+    } else if (itemType === 'comment') {
+      props.comments = await Promise.all(commentsAndCount.rows.map(comment => comment.toJson(loggedInUser)))
+      props.commentsCount = commentsAndCount.count
+    } else {
+      if (articles) {
+        props.articles = articles
+        props.articlesCount = articlesCount
+      }
+    }
+    if (loggedInUser) {
+      props.loggedInUser = await loggedInUser.toJson()
+    }
+    return { props }
+  }
+}

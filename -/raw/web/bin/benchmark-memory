@@ -1,0 +1,508 @@
+#!/usr/bin/env node
+
+// Profile production servers without touching the development database or build.
+// All databases, checkouts, logs and results live in a new directory under tmp/.
+const assert = require('assert')
+const { spawn, execFileSync } = require('child_process')
+const crypto = require('crypto')
+const fs = require('fs')
+const http = require('http')
+const net = require('net')
+const os = require('os')
+const path = require('path')
+const { performance } = require('perf_hooks')
+const { pipeline } = require('stream/promises')
+const { Transform } = require('stream')
+const { StringDecoder } = require('string_decoder')
+const { parseArgs } = require('util')
+
+const root = path.resolve(__dirname, '../..')
+const defaults = {
+  ref: 'master', dump: path.join(root, 'latest.dump'),
+  seconds: '120', rates: '25,50,100', connections: '128', 'max-rss-mb': '1024',
+}
+
+function trafficPaths(log) {
+  const result = []
+  for (const line of log.split('\n')) {
+    if (!line.includes('heroku[router]:') || !line.includes('method=GET ')) continue
+    const match = line.match(/\bpath="([^"\r\n]*)"/)
+    if (!match) continue
+    const value = match[1]
+    // Never follow redirects or replay writes/API requests. Preserve frequency.
+    if (!value.startsWith('/') || value.startsWith('//') || /[\\\r\n#]/.test(value)) continue
+    const url = new URL(value, 'http://127.0.0.1')
+    if (url.origin !== 'http://127.0.0.1' || /^\/(api|_next)(\/|$)/.test(url.pathname)) continue
+    if (/\/-\/raw(?:\/|$)/.test(url.pathname)) continue
+    result.push(value)
+  }
+  if (!result.length) throw new Error('No usable HTML GET paths in the router log')
+  return result
+}
+
+function latestRouterLog() {
+  const directory = path.join(root, 'tmp')
+  const candidates = fs.readdirSync(directory).filter(name => name.startsWith('heroku-diagnostics-'))
+    .sort().reverse().map(name => path.join(directory, name, 'logs-recent.log'))
+  const filename = candidates.find(filename => fs.existsSync(filename))
+  if (!filename) throw new Error('No diagnosis router log found; pass --log PATH')
+  return filename
+}
+
+function cleanEnv(extra={}) {
+  // Do not inherit Heroku, mail, cloud-storage or other service credentials.
+  const env = {}
+  for (const key of ['PATH', 'HOME', 'LANG', 'LC_ALL', 'TMPDIR']) {
+    if (process.env[key] !== undefined) env[key] = process.env[key]
+  }
+  return {
+    ...env, NODE_ENV: 'production', NEXT_PUBLIC_NODE_ENV: 'production',
+    OURBIGBOOK_POSTGRES: '1', SECRET: 'local-memory-benchmark-only',
+    NEXT_TELEMETRY_DISABLED: '1', CIRCLE_NODE_TOTAL: '3',
+    NODE_OPTIONS: '--unhandled-rejections=strict', ...extra,
+  }
+}
+
+function positiveInteger(value, name) {
+  if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value)) || Number(value) < 1) {
+    throw new Error(`${name} must be a positive integer`)
+  }
+  return Number(value)
+}
+
+function run(command, args, { cwd=root, env=cleanEnv(), log, input }={}) {
+  return new Promise((resolve, reject) => {
+    const fd = log ? fs.openSync(log, 'a') : undefined
+    const child = spawn(command, args, {
+      cwd, env, stdio: [input === undefined ? 'ignore' : 'pipe', fd ?? 'inherit', fd ?? 'inherit'],
+    })
+    if (fd !== undefined) fs.closeSync(fd)
+    if (input !== undefined) child.stdin.end(input)
+    child.on('error', reject)
+    child.on('exit', (code, signal) => code === 0 ? resolve() : reject(
+      new Error(`${command} failed (${signal || code})${log ? `; see ${log}` : ''}`)
+    ))
+  })
+}
+
+function git(args) {
+  return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
+}
+
+function save(filename, value) {
+  fs.writeFileSync(filename, JSON.stringify(value, null, 2) + '\n')
+}
+
+async function fileHash(filename) {
+  const hash = crypto.createHash('sha256')
+  for await (const chunk of fs.createReadStream(filename)) hash.update(chunk)
+  return hash.digest('hex')
+}
+
+async function freePort() {
+  const server = net.createServer()
+  await new Promise((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', resolve)
+  })
+  const port = server.address().port
+  await new Promise(resolve => server.close(resolve))
+  return port
+}
+
+function postgresBinaryDir(required, specified) {
+  if (specified) {
+    if (!required.every(name => fs.existsSync(path.join(specified, name)))) {
+      throw new Error(`Missing PostgreSQL binaries in ${specified}`)
+    }
+    return path.resolve(specified)
+  }
+  return fs.readdirSync('/usr/lib/postgresql').sort((a, b) => Number(b) - Number(a))
+    .map(version => `/usr/lib/postgresql/${version}/bin`)
+    .find(dir => required.every(name => fs.existsSync(path.join(dir, name))))
+}
+
+function compatibleSql(serverVersion) {
+  const decoder = new StringDecoder('utf8')
+  let pending = ''
+  function filter(value) {
+    // pg_dump 17 emits this setting even for its default value. PostgreSQL 15/16
+    // do not have it. Do not suppress any other restoration errors.
+    return serverVersion < 17 ? value.replace(/^SET transaction_timeout = 0;\r?\n/gm, '') : value
+  }
+  return new Transform({
+    transform(chunk, encoding, callback) {
+      pending += decoder.write(chunk)
+      const end = pending.lastIndexOf('\n')
+      if (end >= 0) {
+        this.push(filter(pending.slice(0, end + 1)))
+        pending = pending.slice(end + 1)
+      }
+      callback()
+    },
+    flush(callback) { this.push(filter(pending + decoder.end())); callback() },
+  })
+}
+
+function exitOf(child) {
+  return new Promise((resolve, reject) => {
+    child.once('error', reject)
+    child.once('exit', (code, signal) => code === 0 ? resolve() : reject(new Error(`Process failed (${signal || code})`)))
+  })
+}
+
+async function stop(child) {
+  if (!child || child.exitCode !== null || child.signalCode !== null) return
+  const exited = new Promise(resolve => child.once('exit', resolve))
+  child.kill('SIGTERM')
+  const timer = setTimeout(() => child.kill('SIGKILL'), 5000)
+  await exited
+  clearTimeout(timer)
+}
+
+function rssMb(pid) {
+  try {
+    return Number(fs.readFileSync(`/proc/${pid}/status`, 'utf8').match(/^VmRSS:\s+(\d+) kB$/m)[1]) / 1024
+  } catch (error) {
+    return null
+  }
+}
+
+function get(port, requestPath, agent, timeout=30000) {
+  return new Promise(resolve => {
+    const start = performance.now()
+    const request = http.get({ hostname: '127.0.0.1', port, path: requestPath, agent }, response => {
+      let bytes = 0
+      response.on('data', chunk => { bytes += chunk.length })
+      response.on('end', () => resolve({ status: response.statusCode, bytes, ms: performance.now() - start }))
+      response.on('error', error => resolve({ error: error.code || error.message }))
+    })
+    request.setTimeout(timeout, () => request.destroy(new Error('Request timeout')))
+    request.on('error', error => resolve({ error: error.code || error.message }))
+  })
+}
+
+async function ready(child, port) {
+  const deadline = performance.now() + 120000
+  while (performance.now() < deadline) {
+    if (child.exitCode !== null || child.signalCode !== null) throw new Error('Server exited before becoming ready')
+    const result = await get(port, '/api/', false, 1000)
+    if (result.status === 200) return
+    await new Promise(resolve => setTimeout(resolve, 250))
+  }
+  throw new Error('Server did not become ready in 120 seconds')
+}
+
+async function replay({ port, paths, rate, seconds, connections, alive }) {
+  const agent = new http.Agent({ keepAlive: true, maxSockets: connections })
+  const result = { rate, seconds, connections, sent: 0, completed: 0, skipped: 0, statuses: {}, errors: {}, bytes: 0, slowest: [], largest: [] }
+  const latencies = []
+  const pending = new Set()
+  const start = performance.now()
+  let slot = 0
+  // Fixed-rate scheduling with a hard connection cap. No unbounded client queue.
+  while (slot < rate * seconds && alive()) {
+    const due = start + slot * 1000 / rate
+    if (performance.now() < due) await new Promise(resolve => setTimeout(resolve, due - performance.now()))
+    const requestPath = paths[slot % paths.length]
+    slot++
+    if (pending.size >= connections) { result.skipped++; continue }
+    result.sent++
+    const promise = get(port, requestPath, agent).then(response => {
+      result.completed++
+      if (response.error) result.errors[response.error] = (result.errors[response.error] || 0) + 1
+      else {
+        result.statuses[response.status] = (result.statuses[response.status] || 0) + 1
+        result.bytes += response.bytes
+        latencies.push(response.ms)
+        const detail = { path: requestPath, ...response }
+        for (const [key, field] of [['slowest', 'ms'], ['largest', 'bytes']]) {
+          result[key].push(detail)
+          result[key].sort((a, b) => b[field] - a[field])
+          result[key].length = Math.min(result[key].length, 20)
+        }
+      }
+    }).finally(() => pending.delete(promise))
+    pending.add(promise)
+  }
+  result.sendDurationSeconds = (performance.now() - start) / 1000
+  await Promise.all(pending)
+  agent.destroy()
+  latencies.sort((a, b) => a - b)
+  const percentile = fraction => latencies.length ? latencies[Math.min(latencies.length - 1, Math.floor(latencies.length * fraction))] : null
+  result.latencyMs = { p50: percentile(0.50), p95: percentile(0.95), p99: percentile(0.99) }
+  return result
+}
+
+async function main() {
+  const { values: options } = parseArgs({ options: {
+    ...Object.fromEntries(Object.entries(defaults).map(([key, value]) => [key, { type: 'string', default: value }])),
+    log: { type: 'string' }, directory: { type: 'string' }, compare: { type: 'string' }, 'postgres-bin': { type: 'string' },
+    'restore-bin': { type: 'string' }, 'heap-mb': { type: 'string' }, profile: { type: 'boolean' }, 'prepare-only': { type: 'boolean' }, help: { type: 'boolean' },
+  } })
+  if (options.help) {
+    console.log(`Usage: web/bin/benchmark-memory [options]
+
+Creates isolated production checkouts and PostgreSQL databases, replays only
+localhost HTML GETs from a Heroku router log, and saves RSS samples and results.
+Needs local PostgreSQL server/client binaries, openssl, and installed dependencies.
+No sudo, Heroku access, or changes to existing databases are needed.
+Pending migrations run only against the isolated database copy.
+
+  --ref REF              Commit to profile (default: master)
+  --compare REF          Optionally compare another commit
+  --dump PATH            Database dump (default: latest.dump)
+  --log PATH             Router log (default: newest diagnosis's logs-recent.log)
+  --rates 25,50,100       Target requests/second; requests are skipped at the cap
+  --seconds 120          Duration per version/rate, plus idle recovery sampling
+  --connections 128      Maximum simultaneous requests
+  --max-rss-mb 1024      Stop the test server at this RSS, not the machine
+  --heap-mb N            Test an explicit Node old-space limit in MiB
+  --directory PATH       Reuse an experiment directory under this repo's tmp/
+  --postgres-bin PATH    Server binaries (otherwise newest installed server)
+  --restore-bin PATH     Client binaries (otherwise newest installed pg_restore)
+  --prepare-only         Build and restore, without running load tests
+  --profile              Also save Node CPU/allocation profiles (adds overhead)
+
+Results and local database copies are private: do not publish raw dumps/logs.
+The server is unrestricted until the RSS cutoff, not a Heroku-equivalent cgroup.
+Run again with --directory PATH to reuse builds and restored databases.`)
+    return
+  }
+  const seconds = positiveInteger(options.seconds, 'seconds')
+  const connections = positiveInteger(options.connections, 'connections')
+  const maxRss = positiveInteger(options['max-rss-mb'], 'max-rss-mb')
+  const heapMb = options['heap-mb'] === undefined ? null : positiveInteger(options['heap-mb'], 'heap-mb')
+  const rates = options.rates.split(',').map(value => positiveInteger(value, 'rate'))
+  const parent = path.join(root, 'tmp')
+  fs.mkdirSync(parent, { recursive: true })
+  const directory = options.directory ? path.resolve(options.directory) : fs.mkdtempSync(path.join(parent, 'memory-benchmark-'))
+  if (path.dirname(directory) !== parent || !path.basename(directory).startsWith('memory-benchmark-')) {
+    throw new Error('Experiment directory must be tmp/memory-benchmark-NAME within this repository')
+  }
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 })
+  const routerLog = options.log || latestRouterLog()
+  const paths = trafficPaths(fs.readFileSync(routerLog, 'utf8'))
+  const revisions = { current: git(['rev-parse', '--verify', `${options.ref}^{commit}`]) }
+  if (options.compare) revisions.comparison = git(['rev-parse', '--verify', `${options.compare}^{commit}`])
+  const labels = Object.keys(revisions)
+  const serverBin = postgresBinaryDir(['initdb', 'pg_ctl', 'postgres'], options['postgres-bin'])
+  const restoreBin = postgresBinaryDir(['pg_restore'], options['restore-bin'])
+  if (!serverBin || !restoreBin) throw new Error('PostgreSQL binaries are missing; install them and retry')
+  const serverVersion = Number(execFileSync(path.join(serverBin, 'postgres'), ['--version'], { encoding: 'utf8' }).match(/(\d+)\./)[1])
+  const setupLog = path.join(directory, 'setup.log')
+  const cluster = path.join(directory, 'postgres')
+  const postgresPort = await freePort()
+  const databaseUrls = Object.fromEntries(labels.map(label => [label, `postgres://ourbigbook_user:local-only@127.0.0.1:${postgresPort}/memory_benchmark_${label}`]))
+  const metadata = {
+    revisions, dump: fs.realpathSync(options.dump), dumpBytes: fs.statSync(options.dump).size,
+    dumpSha256: await fileHash(options.dump),
+    routerLog: path.resolve(routerLog), pathCount: paths.length, uniquePaths: new Set(paths).size,
+    postgresVersion: serverVersion, node: process.version, cpuCount: os.cpus().length,
+    totalMemoryMb: os.totalmem() / 1024 / 1024, rates, seconds, connections, maxRss, heapMb, profile: !!options.profile,
+  }
+  save(path.join(directory, 'metadata.json'), metadata)
+  console.log(`Experiment: ${directory}`)
+  console.log(`PostgreSQL ${serverVersion}; ${paths.length} weighted paths (${metadata.uniquePaths} unique). Nothing will be sent to production.`)
+  let postgresStarted = false
+  let server
+  let interrupted = false
+  const interrupt = () => { interrupted = true; if (server) server.kill('SIGTERM') }
+  process.once('SIGINT', interrupt)
+  process.once('SIGTERM', interrupt)
+  try {
+    for (const label of labels) {
+      if (interrupted) throw new Error('Interrupted')
+      const worktree = path.join(directory, label)
+      if (!fs.existsSync(path.join(worktree, '.memory-benchmark-revision'))) {
+        fs.mkdirSync(worktree, { recursive: true })
+        // git archive also works in environments that protect .git/ from writes.
+        const archive = path.join(directory, `${label}.tar`)
+        await run('git', ['archive', '--output', archive, revisions[label]], { log: setupLog })
+        await run('tar', ['-xf', archive, '-C', worktree], { log: setupLog })
+        fs.writeFileSync(path.join(worktree, '.memory-benchmark-revision'), revisions[label] + '\n')
+      }
+      assert.strictEqual(fs.readFileSync(path.join(worktree, '.memory-benchmark-revision'), 'utf8').trim(), revisions[label], 'Checkout revision changed')
+      if (!fs.existsSync(path.join(worktree, '.memory-benchmark-built'))) {
+        console.log(`${label}: preparing dependencies and production bundles (${revisions[label].slice(0, 8)})`)
+        for (const relative of ['', 'web']) {
+          const target = path.join(worktree, relative)
+          if (!fs.existsSync(path.join(target, 'node_modules'))) {
+            const source = path.join(root, relative)
+            if (fs.existsSync(path.join(source, 'node_modules')) &&
+                fs.readFileSync(path.join(source, 'package-lock.json')).equals(fs.readFileSync(path.join(target, 'package-lock.json')))) {
+              await run('cp', ['-a', '--reflink=auto', path.join(source, 'node_modules'), path.join(target, 'node_modules')], { log: setupLog })
+            } else {
+              await run('npm', ['ci', '--include=dev'], { cwd: target, log: setupLog })
+            }
+          }
+          const selfLink = path.join(target, 'node_modules/ourbigbook')
+          if (fs.existsSync(selfLink) && !fs.lstatSync(selfLink).isSymbolicLink()) throw new Error(`Expected a self-reference symlink: ${selfLink}`)
+          if (fs.existsSync(selfLink)) fs.unlinkSync(selfLink)
+          fs.symlinkSync(relative ? '../..' : '..', selfLink)
+        }
+        await run('npm', ['run', 'webpack'], { cwd: worktree, log: setupLog })
+        await run('npm', ['run', 'build-nodeps'], { cwd: path.join(worktree, 'web'), env: cleanEnv({ DATABASE_URL: databaseUrls[label] }), log: setupLog })
+        fs.writeFileSync(path.join(worktree, '.memory-benchmark-built'), revisions[label] + '\n')
+      }
+    }
+    if (!fs.existsSync(path.join(cluster, 'PG_VERSION'))) {
+      console.log('Initializing private PostgreSQL cluster')
+      await run(path.join(serverBin, 'initdb'), ['-D', cluster, '-U', 'ourbigbook_user', '--auth=trust', '--encoding=UTF8', '--locale=C.UTF-8'], { log: setupLog })
+      await run('openssl', ['req', '-new', '-x509', '-nodes', '-days', '7', '-subj', '/CN=localhost', '-keyout', path.join(cluster, 'server.key'), '-out', path.join(cluster, 'server.crt')], { log: setupLog })
+      fs.chmodSync(path.join(cluster, 'server.key'), 0o600)
+    }
+    assert.strictEqual(Number(fs.readFileSync(path.join(cluster, 'PG_VERSION'), 'utf8')), serverVersion, 'Use a new experiment directory when changing PostgreSQL versions')
+    await run(path.join(serverBin, 'pg_ctl'), ['-D', cluster, '-l', path.join(directory, 'postgres.log'), '-o', `-h 127.0.0.1 -p ${postgresPort} -k '' -c ssl=on -c max_connections=30`, '-w', 'start'], { log: setupLog })
+    postgresStarted = true
+    const sqlEnv = cleanEnv({ PGHOST: '127.0.0.1', PGPORT: String(postgresPort), PGUSER: 'ourbigbook_user' })
+    for (const label of labels) {
+      if (interrupted) throw new Error('Interrupted')
+      const marker = path.join(directory, `${label}-restored`)
+      if (!fs.existsSync(marker)) {
+        console.log(`${label}: restoring isolated database copy`)
+        await run('createdb', [`memory_benchmark_${label}`], { env: sqlEnv, log: setupLog })
+        const fd = fs.openSync(setupLog, 'a')
+        const restore = spawn(path.join(restoreBin, 'pg_restore'), ['--no-owner', '--no-acl', '--file=-', metadata.dump], { env: sqlEnv, stdio: ['ignore', 'pipe', fd] })
+        const psql = spawn('psql', ['-X', '-v', 'ON_ERROR_STOP=1', '-d', `memory_benchmark_${label}`], { env: sqlEnv, stdio: ['pipe', fd, fd] })
+        fs.closeSync(fd)
+        try {
+          await Promise.all([exitOf(restore), exitOf(psql), pipeline(restore.stdout, compatibleSql(serverVersion), psql.stdin)])
+        } catch (error) { restore.kill(); psql.kill(); throw new Error(`Restore failed: ${error.message}; see ${setupLog}`) }
+        await run(process.execPath, ['bin/sync-db.js'], {
+          cwd: path.join(directory, label, 'web'), env: cleanEnv({ DATABASE_URL: databaseUrls[label] }), log: setupLog,
+        })
+        // Only the freshly restored and migrated private copy: never resume production jobs.
+        await run('psql', ['-X', '-v', 'ON_ERROR_STOP=1', '-d', `memory_benchmark_${label}`], { env: sqlEnv, log: setupLog, input: 'TRUNCATE "BuildQueue", "ArticleJob", "ArticleBuild", "TreeRebuildJob";\nANALYZE;\n' })
+        save(marker, { dump: metadata.dump, sha256: metadata.dumpSha256 })
+      } else {
+        const recorded = fs.readFileSync(marker, 'utf8').trim()
+        // Accept checkpoints from the initial version of this local experiment.
+        if (recorded === metadata.dump) save(marker, { dump: metadata.dump, sha256: metadata.dumpSha256 })
+        const restored = JSON.parse(fs.readFileSync(marker, 'utf8'))
+        assert.strictEqual(restored.sha256, metadata.dumpSha256, 'Database copy comes from a different dump')
+      }
+    }
+    if (options['prepare-only']) { console.log('Preparation complete; rerun with --directory to execute tests'); return }
+    const results = []
+    const runId = new Date().toISOString().replace(/[:.]/g, '-')
+    save(path.join(directory, `${runId}-metadata.json`), metadata)
+    for (let i = 0; i < rates.length; i++) {
+      // Alternate order to reduce the influence of filesystem/database caching.
+      for (const label of i % 2 ? [...labels].reverse() : labels) {
+        if (interrupted) throw new Error('Interrupted')
+        const rate = rates[i]
+        const prefix = path.join(directory, `${runId}-${label}-${rate}`)
+        const port = await freePort()
+        const fd = fs.openSync(`${prefix}-server.log`, 'a')
+        const nodeArgs = ['--unhandled-rejections=strict', '--expose-gc', '--require', __filename]
+        if (heapMb !== null) nodeArgs.push(`--max-old-space-size=${heapMb}`)
+        if (options.profile) nodeArgs.push(
+          '--cpu-prof', `--cpu-prof-dir=${directory}`, `--cpu-prof-name=${path.basename(prefix)}.cpuprofile`,
+          '--heap-prof', `--heap-prof-dir=${directory}`, `--heap-prof-name=${path.basename(prefix)}.heapprofile`,
+        )
+        server = spawn(process.execPath, [...nodeArgs, 'app.js'], {
+          cwd: path.join(directory, label, 'web'),
+          env: cleanEnv({ PORT: String(port), DATABASE_URL: databaseUrls[label], OURBIGBOOK_BENCHMARK_MEMORY_REPORT: '1', OURBIGBOOK_BENCHMARK_PROFILE: options.profile ? '1' : '0' }),
+          stdio: ['ignore', fd, fd, 'ipc'],
+        })
+        fs.closeSync(fd)
+        let spawnError
+        server.on('error', error => { spawnError = error })
+        let stoppedAtRssLimit = false
+        const samples = []
+        const runtimeSamples = []
+        const started = performance.now()
+        let phase = 'startup'
+        server.on('message', message => {
+          if (message.type === 'memory-benchmark-sample') {
+            runtimeSamples.push({ seconds: (performance.now() - started) / 1000, phase, ...message.sample })
+          }
+        })
+        const sample = () => {
+          const rss = rssMb(server.pid)
+          if (rss === null) return
+          samples.push({ seconds: (performance.now() - started) / 1000, phase, rssMb: rss })
+          if (rss >= maxRss && !stoppedAtRssLimit) {
+            stoppedAtRssLimit = true
+            console.log(`${label} @ ${rate}/s: RSS cutoff reached (${rss.toFixed(0)} MiB); stopping test server`)
+            server.kill('SIGTERM')
+          }
+        }
+        const sampler = setInterval(sample, 1000)
+        const alive = () => !interrupted && !stoppedAtRssLimit && !spawnError && server.exitCode === null && server.signalCode === null
+        let result
+        try {
+          await ready(server, port)
+          // Same small warmup on each fresh process, before measuring traffic.
+          for (const requestPath of ['/', '/cirosantilli', '/-/articles']) await get(port, requestPath, false)
+          sample()
+          console.log(`${label} @ ${rate}/s: replaying for ${seconds}s (PID ${server.pid})`)
+          phase = 'load'
+          result = await replay({ port, paths, rate, seconds, connections, alive })
+          phase = 'recovery'
+          console.log(`${label} @ ${rate}/s: load finished; observing 20s idle recovery`)
+          for (let second = 0; second < 20 && alive(); second++) await new Promise(resolve => setTimeout(resolve, 1000))
+          const beforeGc = runtimeSamples.at(-1)?.memory ?? null
+          if (alive()) {
+            phase = 'gc'
+            server.send({ type: 'memory-benchmark-gc' })
+            await new Promise(resolve => setTimeout(resolve, 2000))
+            sample()
+          }
+          const valid = samples.filter(sample => sample.phase !== 'startup')
+          const maximum = samples.length ? Math.max(...samples.map(sample => sample.rssMb)) : null
+          Object.assign(result, {
+            label, revision: revisions[label], heapMb, profile: !!options.profile, stoppedAtRssLimit,
+            crashed: !stoppedAtRssLimit && !interrupted && !alive(),
+            rssMb: { start: valid[0]?.rssMb ?? null, peak: maximum, end: valid.at(-1)?.rssMb ?? null },
+            memoryBeforeGc: beforeGc, memoryAfterGc: runtimeSamples.findLast(sample => sample.afterGc)?.memory ?? null,
+            serverLog: `${prefix}-server.log`, samples: `${prefix}-memory.json`,
+          })
+          save(`${prefix}-result.json`, result)
+          results.push(result)
+          save(path.join(directory, `${runId}-results.json`), results)
+          console.log(`${label} @ ${rate}/s: peak ${maximum?.toFixed(0)} MiB; HTTP ${JSON.stringify(result.statuses)}; errors ${JSON.stringify(result.errors)}; skipped ${result.skipped}`)
+        } finally {
+          clearInterval(sampler)
+          save(`${prefix}-memory.json`, samples)
+          save(`${prefix}-runtime.json`, runtimeSamples)
+          await stop(server)
+          server = undefined
+        }
+      }
+    }
+    console.log(`Finished. Results: ${path.join(directory, `${runId}-results.json`)}`)
+  } finally {
+    await stop(server)
+    if (postgresStarted) await run(path.join(serverBin, 'pg_ctl'), ['-D', cluster, '-m', 'fast', '-w', 'stop'], { log: setupLog })
+    process.removeListener('SIGINT', interrupt)
+    process.removeListener('SIGTERM', interrupt)
+  }
+}
+
+module.exports = { trafficPaths, cleanEnv, compatibleSql, positiveInteger, replay }
+// Optional preload in the isolated test process, never enabled on the real server.
+if (process.env.OURBIGBOOK_BENCHMARK_MEMORY_REPORT === '1' && process.send) {
+  const { monitorEventLoopDelay } = require('perf_hooks')
+  const eventLoop = monitorEventLoopDelay({ resolution: 20 })
+  eventLoop.enable()
+  const sample = (afterGc=false) => {
+    const resources = {}
+    for (const resource of process.getActiveResourcesInfo()) resources[resource] = (resources[resource] || 0) + 1
+    if (process.connected) process.send({ type: 'memory-benchmark-sample', sample: {
+      memory: process.memoryUsage(), cpu: process.cpuUsage(), resources, afterGc,
+      eventLoopDelayP99Ms: eventLoop.percentile(99) / 1000000,
+    } })
+    eventLoop.reset()
+  }
+  setInterval(sample, 1000).unref()
+  process.on('message', message => {
+    if (message.type === 'memory-benchmark-gc') { global.gc(); sample(true) }
+  })
+  if (process.env.OURBIGBOOK_BENCHMARK_PROFILE === '1') {
+    // Normal exit flushes Node's profiles; default SIGTERM termination does not.
+    process.on('SIGTERM', () => process.exit(0))
+  }
+}
+if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1 })

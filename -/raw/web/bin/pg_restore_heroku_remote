@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+app="${1:-ourbigbook}"
+
+echo "Scaling ${app} web dynos down before database restore"
+heroku maintenance:on -a "$app"
+
+restart_web() {
+  echo "Scaling ${app} web dynos back up"
+  heroku maintenance:off -a "$app"
+}
+trap restart_web EXIT
+
+# The restore is intentionally the only database operation here. Run the
+# normal migration command separately after deploying matching application
+# code, when a migration is actually required.
+heroku pg:backups:restore -a "$app" "$@"

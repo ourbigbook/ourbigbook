@@ -1,7 +1,15 @@
 import { useRouter } from 'next/router'
 import React from 'react'
 
-import { AppContext, ArticleIcon, useEEdit, HomeIcon, IssueIcon, LikeIcon, UserIcon } from 'front'
+import {
+  AppContext,
+  ArticleIcon,
+  useEEdit,
+  HomeIcon,
+  IssueIcon,
+  LikeIcon,
+  UserIcon,
+} from 'front'
 import ArticleList from 'front/ArticleList'
 import { cant  } from 'front/cant'
 import config from 'front/config'
@@ -122,7 +130,7 @@ export default function UserPage({
     <div className="profile-page">
       <div className="user-info content-not-ourbigbook">
         <h1>
-          <DisplayAndUsername user={user}></DisplayAndUsername>
+          <UserIcon /> <DisplayAndUsername user={user}></DisplayAndUsername>
         </h1>
         <div className="user-actions">
           <FollowUserButton {...{ loggedInUser, user, showUsername: false }}/>

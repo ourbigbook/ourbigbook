@@ -157,15 +157,15 @@ function ast_has_subset(ast, ast_subset, extra_returns) {
  * @param {Array} the argument named content, which is very common across macros.
  *                If undefined, don't add a content argument at all.
  */
-function a(macro_name, content, extra_args={}) {
+function a(macro_name, content, extra_args={}, extra_props={}) {
   let args = extra_args;
   if (content !== undefined) {
     args.content = content;
   }
-  return {
+  return Object.assign({
     'macro_name': macro_name,
     'args': args,
-  };
+  }, extra_props);
 }
 
 /** Shortcut to create plaintext nodes for ast_arg_has_subset, we have too many of those. */
@@ -972,6 +972,23 @@ bb
 //  ],
 //  include_opts
 //);
+
+// ID auto-gneration and macro counts.
+assert_convert_ast('id autogeneration simple',
+  '\\p[aa]\n',
+  [a('p', [t('aa')], {}, {id: 'p-1'})],
+);
+// https://github.com/cirosantilli/cirodown/issues/4
+assert_convert_ast('id autogeneration nested',
+  '\\q[\\p[aa]]\n\n\\p[bb]\n',
+  [
+    a('q',[
+      a('p', [t('aa')], {}, {id: 'p-1'})
+      ], {}, {id: 'q-1'}
+    ),
+    a('p', [t('bb')], {}, {id: 'p-2'}),
+  ],
+);
 
 // Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception, or worse, not blowing up at all!

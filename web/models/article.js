@@ -75,6 +75,7 @@ module.exports = (sequelize) => {
         author,
         title: this.file.title,
         body: this.file.body,
+        path: this.file.path,
       },
       render: this.render,
     }

@@ -17,7 +17,7 @@ import { modifyEditorInput } from 'front/js';
 
 export default function ArticleEditorPageHoc(options = { isnew: false}) {
   const { isnew } = options
-  const editor = ({ article: initialArticle }) => {
+  const editor = ({ article: initialArticle, loggedInUser }: ArticlePageProps) => {
     const router = useRouter();
     const {
       query: { slug },
@@ -50,13 +50,12 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
     const [errors, setErrors] = React.useState([]);
     const [file, setFile] = React.useState(initialFileState);
     const ourbigbookEditorElem = useRef(null);
-    const loggedInUser = useLoggedInUser()
     useEffect(() => {
       if (ourbigbookEditorElem && loggedInUser) {
         let editor;
         loader.init().then(monaco => {
-          const id = ourbigbook.title_to_id(file.title)
-          const input_path = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/${id}${ourbigbook.OURBIGBOOK_EXT}`
+          //const id = ourbigbook.title_to_id(file.title)
+          //const input_path = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/${id}${ourbigbook.OURBIGBOOK_EXT}`
           editor = new OurbigbookEditor(
             ourbigbookEditorElem.current,
             body,
@@ -65,10 +64,11 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
             ourbigbook_runtime,
             {
               convertOptions: Object.assign({
+                input_path: initialFile.path,
+                ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`,
                 ourbigbook_json: convertOptionsJson,
               }, convertOptions),
               handleSubmit,
-              input_path,
               modifyEditorInput: (oldInput) => modifyEditorInput(file.title, oldInput),
               production: isProduction,
             },

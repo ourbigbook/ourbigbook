@@ -214,10 +214,15 @@ class OurbigbookEditor {
         // but it loses editor focus  on new paragraphs (e.g. double newline,
         // making it unusable.
         // window.location.hash = id;
-        document.getElementById(id).scrollIntoView({
-          behavior: 'smooth',
-          block: block,
-        });
+        const elem = document.getElementById(id)
+        if (elem) {
+          elem.scrollIntoView({
+            behavior: 'smooth',
+            block: block,
+          });
+        } else {
+          console.error(`could not find ID for line ${line_number}: ${id}`);
+        }
       };
     }
   }

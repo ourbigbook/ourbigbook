@@ -240,40 +240,51 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
     if (ourbigbook_options.split_headers) {
       // Auto-generate a {file} page for each file in the project that does not have one already.
       // Auto-generate source, and convert it on the fly, a bit like for _dir conversion.
-      // TODO move dir conversion here: https://docs.ourbigbook.com/todo/show-directory-listings-on-file-headers
       const ourbigbook_paths_converted = nonOurbigbookOptions.ourbigbook_paths_converted
       await convert_directory_callback(input_dir, ourbigbook_options, nonOurbigbookOptions, async (onePath, ourbigbook_options, nonOurbigbookOptions) => {
         const messagePrefix = 'file'
-        if (!fs.lstatSync(onePath).isDirectory()) {
+        if (
+          // TODO move dir conversion here, remove this check:
+          // https://docs.ourbigbook.com/todo/show-directory-listings-on-file-headers
+          !fs.lstatSync(onePath).isDirectory()
+        ) {
           const inputPathRelativeToOurbigbookJson = path.relative(nonOurbigbookOptions.ourbigbook_json_dir, onePath);
-          const sequelize = nonOurbigbookOptions.sequelize
+          const outpath = path.join(nonOurbigbookOptions.outdir, ourbigbook.FILE_PREFIX, inputPathRelativeToOurbigbookJson + '.' + ourbigbook.HTML_EXT)
           const msgRet = convert_path_to_file_print_starting(ourbigbook_options, onePath, messagePrefix)
           let skip
-          const outpath = path.join(nonOurbigbookOptions.outdir, ourbigbook.FILE_PREFIX, inputPathRelativeToOurbigbookJson + '.' + ourbigbook.HTML_EXT)
-          if (!sequelize || (await ourbigbook_nodejs_webpack_safe.get_noscopes_base_fetch_rows(sequelize, [ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson])).length === 0) {
-            const pathSplit = inputPathRelativeToOurbigbookJson.split(ourbigbook.URL_SEP)
-            const src = `${ourbigbook.INSANE_HEADER_CHAR} ${ourbigbook.escapeNotStart(pathSplit[pathSplit.length - 1])}
+          if (
+            fs.existsSync(outpath) &&
+            fs.statSync(onePath).mtime <= fs.statSync(outpath).mtime &&
+            !nonOurbigbookOptions.cli.forceRender
+          ) {
+            skip = true
+          } else {
+            const sequelize = nonOurbigbookOptions.sequelize
+            if (!sequelize || (await ourbigbook_nodejs_webpack_safe.get_noscopes_base_fetch_rows(sequelize, [ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson])).length === 0) {
+              const pathSplit = inputPathRelativeToOurbigbookJson.split(ourbigbook.URL_SEP)
+              const src = `${ourbigbook.INSANE_HEADER_CHAR} ${ourbigbook.escapeNotStart(pathSplit[pathSplit.length - 1])}
 {file}
 `
-            const inputPath = ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson + '.' + ourbigbook.OURBIGBOOK_EXT
-            const newOptions = {
-              ...ourbigbook_options,
-              auto_generated_source: true,
-              split_headers: false,
-              hFileShowLarge: true,
+              const inputPath = ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson + '.' + ourbigbook.OURBIGBOOK_EXT
+              const newOptions = {
+                ...ourbigbook_options,
+                auto_generated_source: true,
+                split_headers: false,
+                hFileShowLarge: true,
+              }
+              const newNonOurbigbookOptions = { ...nonOurbigbookOptions }
+              newNonOurbigbookOptions.input_path = inputPath
+              const output = await convert_input(src, newOptions, newNonOurbigbookOptions);
+              if (newNonOurbigbookOptions.had_error) {
+                throw new Error(`src: ${src}`)
+              }
+              if (newOptions.render) {
+                fs.mkdirSync(path.dirname(outpath), { recursive: true });
+                fs.writeFileSync(outpath, output)
+              }
+            } else {
+              skip = 'skipped ID already exists'
             }
-            const newNonOurbigbookOptions = { ...nonOurbigbookOptions }
-            newNonOurbigbookOptions.input_path = inputPath
-            const output = await convert_input(src, newOptions, newNonOurbigbookOptions);
-            if (newNonOurbigbookOptions.had_error) {
-              throw new Error(`src: ${src}`)
-            }
-            if (newOptions.render) {
-              fs.mkdirSync(path.dirname(outpath), { recursive: true });
-              fs.writeFileSync(outpath, output)
-            }
-          } else {
-            skip = 'skipped ID already exists'
           }
           convert_path_to_file_print_finish(ourbigbook_options, onePath, outpath, { skip, message_prefix: messagePrefix, t0: msgRet.t0 })
         }

@@ -1611,6 +1611,11 @@ assert_error('cross reference undefined errors show after other errors',
 \`\`
 == b
 `, 5, 1);
+assert_error('cross reference full and ref are incompatible',
+  `= abc
+
+\\x[abc]{full}{ref}
+`, 3, 1);
 assert_convert_ast('cross reference to non-included header in another file',
   `= Notindex
 
@@ -3570,7 +3575,7 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='index.html#image-my-image-toplevel' and text()='h2 to my image toplevel']",
         "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
 
-        // Spilt/nosplit.
+        // Spilt/nosplit. TODO
         //`//x:h1[@id='h2']//x:a[@href='nosplit.html#h2' and text()='${cirodown.NOSPLIT_MARKER}']`,
       ],
       'notindex.html': [

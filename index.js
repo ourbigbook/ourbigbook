@@ -5162,7 +5162,10 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      const [href, content] = link_get_href_content(ast, context);
+      let [href, content] = link_get_href_content(ast, context);
+      if (ast.validation_output.ref.boolean) {
+        content = '*';
+      }
       if (context.x_parents.size == 0) {
         const attrs = html_convert_attrs_id(ast, context);
         return `<a${html_attr('href',  href)}${attrs}>${content}</a>`;
@@ -5171,6 +5174,12 @@ const DEFAULT_MACRO_LIST = [
       }
     },
     {
+      named_args: [
+        new MacroArgument({
+          name: 'ref',
+          boolean: true,
+        }),
+      ],
       phrasing: true,
     }
   ),
@@ -6156,7 +6165,17 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      const [href, content, target_ast] = x_get_href_content(ast, context);
+      let [href, content, target_ast] = x_get_href_content(ast, context);
+      if (
+        ast.validation_output.full.given &&
+        ast.validation_output.ref.given
+      ) {
+        const message = `"full" and "ref" are incompatible`;
+        render_error(context, message, ast.source_location);
+        content = error_message_in_output(message, context);
+      } else if (ast.validation_output.ref.boolean) {
+        content = '*';
+      }
       if (context.x_parents.size === 0) {
         // Counts.
         let counts_str;
@@ -6202,6 +6221,10 @@ const DEFAULT_MACRO_LIST = [
         new MacroArgument({
           // https://github.com/cirosantilli/cirodown/issues/92
           name: 'parent',
+          boolean: true,
+        }),
+        new MacroArgument({
+          name: 'ref',
           boolean: true,
         }),
       ],

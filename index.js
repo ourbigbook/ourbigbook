@@ -1936,7 +1936,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     let toplevel_parent_arg = new AstArgument([], 1, 1);
     const todo_visit = [[toplevel_parent_arg, ast_toplevel]];
     while (todo_visit.length > 0) {
-      const [parent_arg, ast] = todo_visit.pop();
+      let [parent_arg, ast] = todo_visit.pop();
       const macro_name = ast.macro_name;
       const macro = macros[macro_name];
 
@@ -1987,6 +1987,13 @@ function parse(tokens, macros, options, extra_returns={}) {
           continue;
         }
         extra_returns.context.has_toc = true;
+      } else if (macro_name === Macro.TOPLEVEL_MACRO_NAME && ast.parent_node !== undefined) {
+        // Prevent this from happening. When this was committed originally,
+        // it actually worked and output an `html` inside another `html`.
+        // Maybe we could do something with iframe, but who cares about that?
+        const message = `the "${Macro.TOPLEVEL_MACRO_NAME}" cannot be used explicitly`;
+        ast = new PlaintextAstNode(ast.line, ast.column, error_message_in_output(message));
+        parse_error(state, message, ast.line, ast.column);
       }
 
       // Push this node into the parent argument list.

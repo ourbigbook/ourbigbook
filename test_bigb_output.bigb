@@ -75,6 +75,20 @@ asdf\br
 qwer
 ]
 
+Empty argument followed by paragraph:
+
+\Q[]
+
+and something after.
+
+Argument ending in list:
+
+\Q[
+* asdf
+]
+
+and something after.
+
 Non-br macro without arguments\i
 followed by a newline
 

@@ -8770,16 +8770,7 @@ function ourbigbook_add_newlines_after_block(ast, context) {
       )
     )
   ) {
-    let n = 2
-    if (context.last_render) {
-      if (context.last_render[context.last_render.length - 1] === '\n') {
-        n--
-        if (context.last_render[context.last_render.length - 2] === '\n') {
-          n--
-        }
-      }
-    }
-    return n
+    return 2
   } else {
     return 0
   }
@@ -8873,7 +8864,10 @@ function ourbigbook_convert_args(ast, context, options={}) {
       ret_arg.push(rendered_arg)
       if (
         has_newline &&
-        rendered_arg[rendered_arg.length - 1] !== '\n'
+        (
+          rendered_arg.length === 0 ||
+          rendered_arg[rendered_arg.length - 1] !== '\n'
+        )
       ) {
         ret_arg.push('\n')
       }
@@ -8923,7 +8917,10 @@ function ourbigbook_convert_args(ast, context, options={}) {
         ret_arg.push(rendered_arg)
         if (
           has_newline &&
-          rendered_arg[rendered_arg.length - 1] !== '\n'
+          (
+            rendered_arg.length === 0 ||
+            rendered_arg[rendered_arg.length - 1] !== '\n'
+          )
         ) {
           ret_arg.push('\n')
         }

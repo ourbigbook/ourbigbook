@@ -14,7 +14,8 @@ function myParseInt(value, dummyPrevious) {
   return parsedValue;
 }
 
-const { program } = require('commander');
+const commander = require('commander');
+const program = commander.program
 program.option('-a, --articles-per-user <n>', 'n articles per user', myParseInt);
 program.option('-i, --max-issues-per-article <n>', 'maximum number of issues per article', myParseInt);
 program.option('-c, --max-comments-per-article <n>', 'maximum number of comments per issues', myParseInt);
@@ -26,7 +27,6 @@ program.option('--empty', 'ignore everything else and make an empty database ins
 program.option('-u, --users <n>', 'n users', myParseInt);
 program.parse(process.argv);
 const opts = program.opts()
-console.error(opts);
 
 if (!opts.forceProduction) {
   assert(!config.isProduction)

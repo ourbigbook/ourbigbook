@@ -2,20 +2,6 @@ const ourbigbook = require('ourbigbook')
 const { read_include } = require('ourbigbook/web_api')
 const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front')
 
-let isProduction;
-let isTest;
-
-if (process.env.NEXT_PUBLIC_NODE_ENV === undefined) {
-  isProduction = process.env.NODE_ENV === 'production'
-} else {
-  isProduction = process.env.NEXT_PUBLIC_NODE_ENV === 'production'
-}
-if (isProduction) {
-  isTest = false
-} else {
-  isTest = process.env.NEXT_PUBLIC_NODE_ENV === 'test'
-}
-
 const escapeUsername = 'go'
 
 let databaseUrl
@@ -26,12 +12,32 @@ if (process.env.NODE_ENV === 'test') {
 }
 let databaseName = process.env.OURBIGBOOK_DB_NAME
 if (!databaseName) {
-  databaseName = isTest ? 'ourbigbook_test' : 'ourbigbook'
+  databaseName = ourbigbook_nodejs_front.isTest ? 'ourbigbook_test' : 'ourbigbook'
 }
 
 const appDomain = 'ourbigbook.com'
 const appNameShort  = 'OurBigBook'
 const docsUrl = `https://docs.${appDomain}`
+
+let dbSettings
+if (ourbigbook_nodejs_front.postgres) {
+  dbSettings = Object.assign(
+    {
+      url:
+        databaseUrl ||
+        `postgres://ourbigbook_user:a@localhost:5432/${databaseName}`,
+      logging: true,
+    },
+    ourbigbook_nodejs_front.sequelize_postgres_opts
+  )
+} else {
+  dbSettings = {
+    dialect: 'sqlite',
+    logging: true,
+    storage: 'db.sqlite3',
+  }
+}
+console.error('dbSettings: ' + require('util').inspect(dbSettings));
 
 module.exports = {
   apiPath: '/' + ourbigbook.WEB_API_PATH,
@@ -40,7 +46,7 @@ module.exports = {
   // Common convert options used by all frontend components: the backend and the editor,
   // for both issues and articles.
   convertOptions: {
-    add_test_instrumentation: isTest,
+    add_test_instrumentation: ourbigbook_nodejs_front.isTest,
     body_only: true,
     forbid_include: '\\Include is not allowed on OurBigBook Web, the article tree can be manipulated directly via the UI',
     htmlXExtension: false,
@@ -85,17 +91,17 @@ module.exports = {
   hideArticleDatesDate: '1970-01-01T00:00:00.000Z',
   // An ID separator that should be used or all IDs in the website to avoid conflicts with OurBigBook Markup output,
   // of which users can control IDs to some extent. Usage is like: prefix + sep + number.
-  isTest,
+  isTest: ourbigbook_nodejs_front.isTest,
   // Default isProduction check. Affetcs all aspects of the application unless
   // they are individually overridden, including:
   // * is Next.js server dev or prod?
   // * use SQLite or PostgreSQL?
   // * in browser effects, e.g. show Google Analytics or not?
   // * print emails to stdout or actually try to send them
-  isProduction,
+  isProduction: ourbigbook_nodejs_front.isProduction,
   // Overrides isProduction for the "is Next.js server dev or prod?" only.
   isProductionNext: process.env.NODE_ENV_NEXT_SERVER_ONLY === undefined
-    ? (isProduction)
+    ? (ourbigbook_nodejs_front.isProduction)
     : (process.env.NODE_ENV_NEXT_SERVER_ONLY === 'production')
   ,
   log: {
@@ -138,23 +144,14 @@ module.exports = {
     escapeUsername,
   ]),
   revalidate: 10,
-  secret: isProduction ? process.env.SECRET : 'secret',
+  secret: ourbigbook_nodejs_front.isProduction ? process.env.SECRET : 'secret',
   sureLeaveMessage: 'Your change may be unsaved, are you sure you want to leave this page?',
-  useCaptcha: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY !== undefined && !isTest,
+  useCaptcha: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY !== undefined && !ourbigbook_nodejs_front.isTest,
   usernameMinLength: 3,
   usernameMaxLength: 40,
   topicConsiderNArticles: 10,
 
   // Used by sequelize-cli as well as our source code.
-  development: {
-    dialect: 'sqlite',
-    logging: true,
-    storage: 'db.sqlite3',
-  },
-  production: Object.assign({
-    url:
-      databaseUrl ||
-      `postgres://ourbigbook_user:a@localhost:5432/${databaseName}`,
-    logging: true,
-  }, ourbigbook_nodejs_front.sequelize_postgres_opts)
+  development: dbSettings,
+  production: dbSettings,
 }

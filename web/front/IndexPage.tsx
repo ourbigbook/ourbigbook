@@ -85,8 +85,8 @@ function IndexPageHoc({
       []
     )
     return (
-      <>
-        <div className="home-page content-not-ourbigbook">
+      <div className="home-page">
+        <div className="content-not-ourbigbook">
           {(isIssue && !isHomepage) && <DiscussionAbout article={issueArticle}/>}
           <div className="tab-list">
             {isHomepage &&
@@ -194,7 +194,7 @@ function IndexPageHoc({
         </div>
         {pinnedArticle &&
           <>
-            <div className="home-page content-not-ourbigbook pinned-article">
+            <div className="content-not-ourbigbook pinned-article">
               Pinned article: <CustomLink href={routes.article(pinnedArticle.slug)}>{pinnedArticle.slug}</CustomLink>
             </div>
             <div
@@ -203,12 +203,12 @@ function IndexPageHoc({
             />
           </>
         }
-        <div className="home-page content-not-ourbigbook">
+        <div className="content-not-ourbigbook site-settings">
           <CustomLink href={routes.siteSettings()}>
             <SettingsIcon /> Site Settings
           </CustomLink>
         </div>
-      </>
+      </div>
     )
   }
 }

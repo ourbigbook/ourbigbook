@@ -145,6 +145,7 @@ gh
 `,
   `<p>ab</p>
 <table>
+<caption>Table 1)</caption>
 <tr>
 <th>cd</th>
 <th>ef</th>
@@ -181,6 +182,7 @@ gh
 `,
   `<p>ab</p>
 <table>
+<caption>Table 1)</caption>
 <tr>
 <th>cd</th>
 <th>ef</th>
@@ -202,6 +204,7 @@ assert_convert('auto_parent consecutive implicit tr and l',
 \\l[cd]
 `,
   `<table>
+<caption>Table 1)</caption>
 <tr>
 <td>ab</td>
 </tr>
@@ -223,6 +226,7 @@ gh
   `<p>ab</p>
 <figure>
 <img src="cd">
+<figcaption>Image 1)</figcaption>
 </figure>
 <p>gh</p>
 `
@@ -230,8 +234,8 @@ gh
 assert_convert('image title',
   `\\Image[ab]{title=c d}`,
   `<figure id="image-c-d">
-<img src="ab">
-<figcaption>c d</figcaption>
+<a href="#image-c-d"><img src="ab"></a>
+<figcaption>Image 1) c d</figcaption>
 </figure>
 `
 )
@@ -378,8 +382,8 @@ assert_convert('cross reference to image',
 \\x[cd]
 `,
   `<figure id="cd">
-<img src="ab">
-<figcaption>ef</figcaption>
+<a href="#cd"><img src="ab"></a>
+<figcaption>Image 1) ef</figcaption>
 </figure>
 <p><a href="#cd">ef</a></p>
 `

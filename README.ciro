@@ -382,7 +382,7 @@ Explicit container to add further properties: \x[table-my-table].
 \h[2][Images \c[[\image]]]
 {id=images}
 
-A block image with capital 'i' \c[Image] can be seen at \x[image-my-xi-chrysanthemum]:
+A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' \c[Image] can be seen at \x[image-my-xi-chrysanthemum]:
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg]
 {title=Xi Chrysanthemum}
@@ -393,6 +393,11 @@ A block image with capital 'i' \c[Image] can be seen at \x[image-my-xi-chrysanth
 
   I'm not even kidding.
 }
+
+Here is one without a description but with an ID so we can link to it: \x[image-my-xi-chrysanthemum-2].
+
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg]
+{id=image-my-xi-chrysanthemum-2}
 
 And here is an \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg][Xi Chrysanthemum] inline one with lower case 'i'.
 

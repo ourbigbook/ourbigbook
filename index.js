@@ -1035,9 +1035,31 @@ class Tokenizer {
       end_i = this.i;
       append = '';
     }
+
+    // Remove insane list indents.
+    let plaintext = '';
+    {
+      let i = start_i;
+      while (true) {
+        if (this.chars[i - 1] === '\n') {
+          if (!array_contains_array_at(this.chars, i, INSANE_LIST_INDENT.repeat(this.list_level))) {
+            this.error(`literal argument with indent smaller than current insane list`, start_line, start_column);
+          }
+          i += INSANE_LIST_INDENT.length * this.list_level;
+        }
+        if (i < end_i) {
+          plaintext += this.chars[i];
+        } else {
+          break;
+        }
+        i++;
+      }
+    }
+
+    // Create the token.
     this.push_token(
       TokenType.PLAINTEXT,
-      this.chars.slice(start_i, end_i).join('') + append,
+      plaintext + append,
       start_line,
       start_column
     );

@@ -749,7 +749,7 @@ Insane nested list with two space indentation:
 * b
 * c
 ]]
-The indentation must always be exactly equal to two spaces.
+The indentation must always be exactly equal to two spaces, anything else leads to errors or unintended output.
 
 Equivalent saner nested lists with implicit containers:
 \cirodown_example[[

@@ -764,7 +764,7 @@ WHERE
       return target
     }
     const file = {}
-    addToDictWithoutUndefined(file, this.file, ['titleSource', 'bodySource', 'path', 'sha256'])
+    addToDictWithoutUndefined(file, this.file, ['titleSource', 'bodySource', 'path', 'hash'])
     const ret = {
       followed,
       liked,
@@ -782,7 +782,7 @@ WHERE
       'id',
       'issueCount',
       'slug',
-      'sha256',
+      'hash',
       'topicId',
       'titleRender',
       'titleSource',

@@ -112,7 +112,7 @@ router.get('/hash', auth.optional, async function(req, res, next) {
       ],
       attributes: [
         'path',
-        'sha256',
+        'hash',
         [
           // NULL: never converted
           sequelize.literal('"Render"."outdated" IS NULL OR "Render"."outdated"'),
@@ -130,7 +130,7 @@ router.get('/hash', auth.optional, async function(req, res, next) {
     })
     const articlesJson = []
     for (const file of files) {
-      articlesJson.push({ path: file.path, hash: file.sha256, renderOutdated: !!file.get('renderOutdated') })
+      articlesJson.push({ path: file.path, hash: file.hash, renderOutdated: !!file.get('renderOutdated') })
     }
     return res.json({ articles: articlesJson, articlesCount: filesCount })
   } catch(error) {

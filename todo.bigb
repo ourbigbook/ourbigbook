@@ -766,7 +766,7 @@ We have recently implemented SHA-256 skips when article content hasn't changed.
 
 But we also need to check if the parent or previous sibling has changed, and if it has then update that.
 
-We could just return parent and previous sibling on the /sha256 endpoint.
+We could just return parent and previous sibling on the `/hash` endpoint.
 
 Or we need to add that information to the SHA.
 

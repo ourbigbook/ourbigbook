@@ -288,13 +288,13 @@ async function convert_path(input_path, cirodown_options, non_cirodown_options) 
   const output = await convert_input(input, new_options, new_non_cirodown_options);
   const extra_returns = new_non_cirodown_options.extra_returns
   let first_output_path
-  for (const id in extra_returns.rendered_outputs) {
-    const output_path = path.join(non_cirodown_options.outdir, id);
+  for (const outpath in extra_returns.rendered_outputs) {
+    const output_path = path.join(non_cirodown_options.outdir, outpath);
     if (first_output_path === undefined) {
       first_output_path = output_path
     }
     fs.mkdirSync(path.dirname(output_path), {recursive: true});
-    fs.writeFileSync(output_path, extra_returns.rendered_outputs[id]);
+    fs.writeFileSync(output_path, extra_returns.rendered_outputs[outpath]);
   }
   if (new_options.split_headers) {
     for (const header_ast of extra_returns.context.synonym_headers) {
@@ -430,7 +430,6 @@ async function convert_path_to_file(input_path, cirodown_options, non_cirodown_o
     if (
       cirodown_options.render &&
       // Happens if:
-      // - input file is toplevel README and has no headers. Previously unknown bug, that does not get converted at all!
       // - conversion to .tex
       first_output_path !== undefined
     ) {

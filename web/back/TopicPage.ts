@@ -8,7 +8,7 @@ import { getOrderAndPage } from 'front/js'
 
 export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
   return async ({ params: { id }, query, req, res }) => {
-    const [order, pageNum, err] = getOrderAndPage(req, query.page)
+    const [order, pageNum, err] = getOrderAndPage(req, query.page, { defaultOrder: 'score' })
     if (err) { res.statusCode = 422 }
     const loggedInUser = await getLoggedInUser(req, res)
     const sequelize = req.sequelize

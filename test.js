@@ -1716,6 +1716,11 @@ assert_no_error('cross reference without content nor target title style full',
 \\x[cd]
 `);
 assert_error('cross reference undefined fails gracefully', '\\x[ab]', 1, 3);
+assert_error('cross reference with child to undefined id fails gracefully',
+  `= h1
+
+\\x[ab]{child}
+`, 3, 3, undefined, {toplevel: true});
 // https://cirosantilli.com/cirodown#order-of-reported-errors
 assert_error('cross reference undefined errors show after other errors',
   `= a
@@ -4007,7 +4012,7 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='#image-my-image-toplevel' and text()='toplevel to my image toplevel']",
         "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='toplevel to my image h2']",
 
-        // Spilt/nosplit.
+        // Split/nosplit.
         xpath_header_split(1, 'toplevel', 'nosplit.html', cirodown.NOSPLIT_MARKER),
       ],
       'nosplit.html': [
@@ -4049,7 +4054,7 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='index.html#image-my-image-toplevel' and text()='h2 to my image toplevel']",
         "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
 
-        // Spilt/nosplit. TODO
+        // Spilt/nosplit.
         xpath_header_split(1, 'h2', 'nosplit.html#h2', cirodown.NOSPLIT_MARKER),
       ],
       'split-suffix-split.html': [

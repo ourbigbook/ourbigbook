@@ -26,6 +26,8 @@ class AstNode {
     this.args = args;
     this.line = line;
     this.column = column;
+    // {String} or undefined.
+    this.id = undefined;
     const macro = macros[this.macro_name];
 
     // Set all non-given arguments to empty plaintext nodes by default,
@@ -70,11 +72,15 @@ class AstNode {
    *                 otherwise e.g. `1 < 2` would escape the `<` to `&lt;` and KaTeX would receive bad input.
    *        - {Object} ids - map of document IDs to their description:
    *                 - 'prefix': prefix to add if style=full, e.g. `Figure 1`, `Section 2`, etc.
-   *                 - 'title': the title of the element linked to
+   *                 - {List[AstNode]} 'title': the title of the element linked to
+   *        - {Object[String,Macro]} macros - map of macro name to Macro. Mandatory argument.
    */
   convert(context) {
     if (context === undefined) {
       context = {};
+    }
+    if (!('macros' in context)) {
+      throw new Error('missing mandatory argument macros');
     }
     if (!('html_is_attr' in context)) {
       context.html_is_attr = false;
@@ -100,11 +106,12 @@ class AstNode {
       args = this.args;
     }
     return {
-      node_type:  this.node_type.toString(),
-      macro_name: this.macro_name,
       args:       args,
+      column:     this.column,
       line:       this.line,
-      column:     this.column
+      macro_name: this.macro_name,
+      node_type:  this.node_type.toString(),
+      id:         this.id,
     }
   }
 }
@@ -377,7 +384,7 @@ class Tokenizer {
   }
 
   /**
-   * @returns {Array[Token]}
+   * @return {Array[Token]}
    */
   tokenize() {
     // Ignore the last newline of the file.
@@ -655,8 +662,9 @@ function convert(
   let context = {
     errors: errors,
     extra_returns: extra_returns,
+    ids: sub_extra_returns.ids,
     macros: macros,
-    options: options
+    options: options,
   };
   output = ast.convert(context);
   extra_returns.errors.push(...errors);
@@ -672,15 +680,27 @@ exports.convert = convert;
  * An argument contains a list of nodes, loop over that list of nodes,
  * converting them to strings and concatenate all strings.
  *
- * @param {Array[AstNode]}
+ * @param {Array[AstNode]} arg
  * @return {String}
  */
 function convert_arg(arg, context) {
   let converted_arg = '';
-  for (const ast_node of arg) {
-    converted_arg += ast_node.convert(context);
+  for (const ast of arg) {
+    converted_arg += ast.convert(context);
   }
   return converted_arg;
+}
+
+/* Similar to convert_arg, but used for IDs.
+ *
+ * Because IDs are used programmatically in cirodown, we don't escape
+ * HTML characters at this point.
+ *
+ * @param {Array[AstNode]} arg
+ * @return {String}
+ */
+function convert_id_arg(arg, context={}) {
+  return convert_arg(arg, clone_and_set(context, 'html_escape', false));
 }
 
 /** Error message to be rendered inside the generated output itself. */
@@ -759,18 +779,9 @@ function title_to_id(title) {
 function html_convert_attrs_id(
   ast, context, arg_names=[], custom_args={}
 ) {
-  if (ast.arg_given(Macro.ID_ARGUMENT_NAME)) {
-    arg_names.push(Macro.ID_ARGUMENT_NAME);
-  } else if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
-    // TODO correct unicode aware algorithm.
-    let id_text = '';
-    let id_prefix = context.macros[ast.macro_name].id_prefix;
-    if (id_prefix !== '') {
-      id_text += id_prefix + ID_SEPARATOR
-    }
-    id_text += title_to_id(convert_arg(ast.args.title, clone_and_set(context, 'html_is_attr', true)));
-    custom_args.id = [new AstNode(AstType.PLAINTEXT, context.macros,
-      'plaintext', id_text, ast.line, ast.column)];
+  if (ast.id !== undefined) {
+    custom_args[Macro.ID_ARGUMENT_NAME] = [new AstNode(AstType.PLAINTEXT, context.macros,
+        'plaintext', ast.id, ast.line, ast.column)];
   }
   return html_convert_attrs(ast, context, arg_names, custom_args);
 }
@@ -844,7 +855,14 @@ function object_subset(source_object, keys) {
   return new_object;
 }
 
-// Parse tokens into the AST tree.
+/** Parse tokens into the AST tree.
+ *
+ * @param {Array[Token]} tokens
+ * @return {Object} extra_returns
+ *         - {Array[ErrorMessage]} errors
+ *         - {Object} ids
+ * @return {AstNode}
+ */
 function parse(tokens, macros, options, extra_returns={}) {
   extra_returns.errors = [];
   let state = {
@@ -857,7 +875,7 @@ function parse(tokens, macros, options, extra_returns={}) {
   };
   // Call parse_macro on the toplevel macro. The entire document is
   // under that macro, so this will recursively parse everything.
-  let ast = parse_macro(state);
+  let ast_toplevel = parse_macro(state);
   if (state.i < tokens.length) {
     parse_error(state, `unexpected tokens at the end of input`);
   }
@@ -865,9 +883,31 @@ function parse(tokens, macros, options, extra_returns={}) {
   // Post process the AST breadth first to support:
   // * the insane but necessary paragraphs double newline syntax
   // * automatic ul parent to li and table to tr
-  let todo_visit = [ast];
+  // * extract all IDs into an ID index
+  let todo_visit = [ast_toplevel];
+  extra_returns.ids = {};
   while (todo_visit.length > 0) {
     const node = todo_visit.shift();
+
+    // Calculate node ID and add it to the ID index.
+    let id_context = {'macros': macros};
+    if (node.arg_given(Macro.ID_ARGUMENT_NAME)) {
+      node.id = convert_id_arg(node.args[Macro.ID_ARGUMENT_NAME], id_context);
+    } else if (node.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
+      // TODO correct unicode aware algorithm.
+      let id_text = '';
+      let id_prefix = macros[node.macro_name].id_prefix;
+      if (id_prefix !== '') {
+        id_text += id_prefix + ID_SEPARATOR
+      }
+      id_text += title_to_id(convert_id_arg(node.args.title, id_context));
+      node.id = id_text;
+    }
+    if (node.id !== undefined) {
+      extra_returns.ids[node.id] = node;
+    }
+
+    // Loop over the child arguments.
     if (node.node_type === AstType.MACRO) {
       for (const arg_name in node.args) {
         let arg = node.args[arg_name];
@@ -948,7 +988,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     }
   }
 
-  return ast;
+  return ast_toplevel;
 }
 
 // Maybe add a paragraph after a \n\n.
@@ -1515,15 +1555,18 @@ pre {
     ],
     function(ast, context) {
       let content_arg;
-      // Convert href to text without escaping HTML.
-      let target_id = convert_arg(ast.args.href, clone_and_set(context, 'html_escape', false));
+      let target_id = convert_id_arg(ast.args.href, context);
       if (target_id in context.ids) {
-        target_id_attrs = context.ids[target_id];
+        target_id_ast = context.ids[target_id];
         let content;
         if (ast.arg_given('content')) {
           content = convert_arg(ast.args.content, context);
+        } else if (target_id_ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
+          content = convert_arg(target_id_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
         } else {
-          content = convert_arg(target_id_attrs.input, context);
+          let message = `cross reference without content to target without title: "${target_id}"`;
+          this.error(context, message, ast.line, ast.column);
+          return error_message_in_output(message);
         }
         let attrs = html_convert_attrs_id(ast, context);
         let href = html_attr('href', '#' + html_attr_value(ast.args.href, context));

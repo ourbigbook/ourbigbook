@@ -11,9 +11,9 @@ Cirodown is designed entirely to allow writing complex professional HTML and PDF
 
 Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation), supporting out of the box feature such as:
 
-\l[\x[internal-cross-references][references] to \c[headers], \x[images][images], etc.]
-\l[titles on figures, equations, math, etc.]
-\l[KaTeX server side \x[math]]
+\l[\x[internal-cross-references][references] to \x[headers][headers], \x[images][images], etc.]
+\l[KaTeX server side \x[math][Mathematics]]
+\l[titles on \x[images][images], \x[math][math], etc.]
 \l[references across input files]
 \l[\x[table-of-contents][table of contents] that crosses input files]
 
@@ -638,10 +638,9 @@ For non-literal macro arguments, the rule is simple, you must escape all of:
 \l[\c[\[] and \c[\]]]
 \l[\c[\{] and \c[\}]]
 
-This is good for short arguments of regular text, but for longer blocks of \x[code] or \x[math], you may want to use \x[literal]
+This is good for short arguments of regular text, but for longer blocks of \x[code] or \x[math], you may want to use \x[literal-arguments]
 
 \h[4][Literal arguments]
-{id=literal}
 
 Arguments that are opened with more than one square brackets \c[\[] or curly braces \c[\{] are literal arguments.
 
@@ -826,7 +825,7 @@ In addition to being a single input single output file conversion tool, our impl
 
 We believe that this is the only way to achieve a perfect unified development experience.
 
-Firstly, the same executable that does single file conversion, when pointed to a directory enter a multi-file mode that does the desired multi-file conversion, resolving for example \x[cross-file-references].
+Firstly, the same executable that does single file conversion, when pointed to a directory enter a multi-file mode that does the desired multi-file conversion, resolving for example \x[internal-cross-file-references].
 
 Furthermore, the exact same executable will have a server mode speed up interactive development with a off-the-shelf text editor (as opposed to a \x[editor-and-preview][the planned dedicated editor]).
 
@@ -893,7 +892,7 @@ Everything that you need to write Cirodown tooling, is present in the main API.
 All tooling will be merged into one singl repo.
 
 \h[3][The \c[[\toplevel]] implicit macro]
-{id=topelevel}
+{id=toplevel}
 
 Every Cirodown document is implicitly put inside a \c[[\toplevel]] document and:
 

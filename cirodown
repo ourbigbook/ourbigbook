@@ -318,8 +318,11 @@ function convert_input(input, options, convert_input_options={}) {
     console.error(`perf render_post ${new_options.extra_returns.debug_perf.render_post}`);
     console.error(`perf end ${new_options.extra_returns.debug_perf.end}`);
   }
-  for (const error of new_options.extra_returns.errors) {
-    console.error(error.toString());
+  // Remove duplicate messages due to split header rendering. We could not collect
+  // errors from that case at all maybe, but do we really want to run the risk of
+  // missing errors?
+  for (const error_string of remove_duplicates_sorted_array(new_options.extra_returns.errors.map(e => e.toString()))) {
+    console.error(error_string);
   }
   convert_input_options.extra_returns = new_options.extra_returns;
   if (new_options.extra_returns.errors.length > 0) {
@@ -637,6 +640,11 @@ function git_sha(input_path, src_branch) {
     args.push(src_branch);
   }
   return cmd_get_stdout('git', args, {show_cmd: false, throw_on_error: true}).slice(0, -1);
+}
+
+// https://stackoverflow.com/questions/9355403/deleting-duplicates-on-sorted-array/61974900#61974900
+function remove_duplicates_sorted_array(arr) {
+  return arr.filter((e, i, a) => e !== a[i - 1]);
 }
 
 /** https://stackoverflow.com/questions/5827612/node-js-fs-readdir-recursive-directory-search

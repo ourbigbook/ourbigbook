@@ -6,9 +6,10 @@ const UNICODE_LINK = String.fromCodePoint(0x1F517);
 class AstNode {
   /**
    * @param {AstType} node_type -
-   * @param {String} macro_name - if node_type === AstType.PLAINTEXT: fixed to AstType.PLAINTEXT_MACRO_NAME
-   *                              elif node_type === AstType.PARAGRAPH: fixed to undefined
-   *                              else: arbitrary regular macro
+   * @param {String} macro_name - - if node_type === AstType.PLAINTEXT or AstType.ERROR: fixed to
+   *                                AstType.PLAINTEXT_MACRO_NAME
+   *                              - elif node_type === AstType.PARAGRAPH: fixed to undefined
+   *                              - else: arbitrary regular macro
    * @param {Object[String, Array[AstNode]]} args - dict of arg names to arguments.
    *        where arguments are arrays of AstNode
    * @param {Number} line - the best representation of where the macro is starts in the document
@@ -22,23 +23,18 @@ class AstNode {
     this.args = args;
     this.line = line;
     this.column = column;
+    this.text = text
+    this.macro_count = undefined;
+
+    // For elements that have an id.
     // {String} or undefined.
     this.id = undefined;
-    this.macro_count = undefined;
-    this.text = text
 
-    // Only for headers.
+    // Header only fields.
+    // {Number}
     this.level = undefined;
     // {TreeNode}
     this.header_tree_node = undefined;
-
-    // Set the parents of all children.
-    this.parent_node = undefined;
-    if (this.node_type === AstType.MACRO) {
-      for (const arg_name in this.args) {
-        this.args[arg_name].parent_node = this;
-      }
-    }
   }
 
   /**
@@ -83,22 +79,41 @@ class AstNode {
     return context.macros[this.macro_name].convert(this, context);
   }
 
+  /** Manual implementation. There must be a better way, but I can find it... */
   static fromJSON(json_string) {
-    let cur_node = JSON.parse(json_string);
-    node_type, macros, macro_name, args, line, column
+    let json = JSON.parse(json_string);
+    let toplevel_ast = new AstNode(AstType[json.node_type], json.macro_name,
+      json.args, json.line, json.column, json.text);
+    let nodes = [toplevel_ast];
+    while (nodes.length !== 0) {
+      let cur_ast = nodes.pop();
+      for (let arg_name in cur_ast.args) {
+        let arg = cur_ast.args[arg_name];
+        let new_arg = [];
+        for (let macro of arg) {
+          let new_ast = new AstNode(AstType[json.node_type], json.macro_name,
+            json.args, json.line, json.column, json.text);
+          new_arg.push(new_ast);
+          nodes.push(new_ast);
+        }
+        arg.splice(0, new_arg.length, ...new_arg);
+      }
+    }
+    return toplevel_ast;
   }
 
   toJSON() {
     return {
+      text:       this.text,
       args:       this.args,
       column:     this.column,
       line:       this.line,
       macro_name: this.macro_name,
       node_type:  this.node_type.toString(),
-      id:         this.id,
     }
   }
 }
+exports.AstNode = AstNode;
 
 class ErrorMessage {
   constructor(message, line, column) {
@@ -774,7 +789,7 @@ function char_is_identifier (c) {
   return char_is_alphanumeric(c) || c === '_';
 };
 
-/* Clone an object, and set a given value on the cloned one. */
+/** Shallow clone an object, and set a given value on the cloned one. */
 function clone_and_set(obj, key, value) {
   let new_obj = {...obj};
   new_obj[key] = value;
@@ -1261,82 +1276,80 @@ function parse(tokens, macros, options, extra_returns={}) {
     }
 
     // Loop over the child arguments.
-    if (ast.node_type === AstType.MACRO) {
-      for (const arg_name in ast.args) {
-        let arg = ast.args[arg_name];
+    for (const arg_name in ast.args) {
+      let arg = ast.args[arg_name];
 
-        // Add ul and table implicit parents.
-        let new_arg = [];
-        for (let i = 0; i < arg.length; i++) {
-          let child_node = arg[i];
-          let new_child_node;
-          if (child_node.node_type === AstType.MACRO) {
-            let child_name = child_node.macro_name;
-            let child_macro = state.macros[child_name];
-            if (child_macro.auto_parent !== undefined) {
-              let auto_parent_name = child_macro.auto_parent;
-              if (
-                ast.macro_name !== auto_parent_name &&
-                !child_macro.auto_parent_skip.has(ast.macro_name)
+      // Add ul and table implicit parents.
+      let new_arg = [];
+      for (let i = 0; i < arg.length; i++) {
+        let child_node = arg[i];
+        let new_child_node;
+        if (child_node.node_type === AstType.MACRO) {
+          let child_name = child_node.macro_name;
+          let child_macro = state.macros[child_name];
+          if (child_macro.auto_parent !== undefined) {
+            let auto_parent_name = child_macro.auto_parent;
+            if (
+              ast.macro_name !== auto_parent_name &&
+              !child_macro.auto_parent_skip.has(ast.macro_name)
+            ) {
+              let start_auto_child_index = i;
+              let start_auto_child_node = child_node;
+              i++;
+              while (
+                i < arg.length &&
+                arg[i].node_type === AstType.MACRO &&
+                state.macros[arg[i].macro_name].auto_parent === auto_parent_name
               ) {
-                let start_auto_child_index = i;
-                let start_auto_child_node = child_node;
                 i++;
-                while (
-                  i < arg.length &&
-                  arg[i].node_type === AstType.MACRO &&
-                  state.macros[arg[i].macro_name].auto_parent === auto_parent_name
-                ) {
-                  i++;
-                }
-                new_child_node = new AstNode(
-                  AstType.MACRO,
-                  auto_parent_name,
-                  {
-                    'content': arg.slice(start_auto_child_index, i),
-                  },
-                  start_auto_child_node.line,
-                  start_auto_child_node.column,
-                )
-                // Because the for loop will advance past it.
-                i--;
               }
+              new_child_node = new AstNode(
+                AstType.MACRO,
+                auto_parent_name,
+                {
+                  'content': arg.slice(start_auto_child_index, i),
+                },
+                start_auto_child_node.line,
+                start_auto_child_node.column,
+              )
+              // Because the for loop will advance past it.
+              i--;
             }
           }
-          if (new_child_node === undefined) {
-            new_child_node = child_node;
-          }
-          new_arg.push(new_child_node);
         }
-        arg = new_arg;
-
-        // Add paragraphs.
-        let paragraph_indexes = [];
-        for (let i = 0; i < arg.length; i++) {
-          const child_node = arg[i];
-          if (child_node.node_type === AstType.PARAGRAPH) {
-            paragraph_indexes.push(i);
-          }
+        if (new_child_node === undefined) {
+          new_child_node = child_node;
         }
-        if (paragraph_indexes.length > 0) {
-          new_arg = [];
-          let paragraph_start = 0;
-          for (const paragraph_index of paragraph_indexes) {
-            parse_add_paragraph(state, new_arg, arg, paragraph_start, paragraph_index);
-            paragraph_start = paragraph_index + 1;
-          }
-          parse_add_paragraph(state, new_arg, arg, paragraph_start, arg.length);
-          arg = new_arg;
-        }
-
-        // Push children to continue the search.
-        for (const child_node of arg) {
-          todo_visit.push(child_node);
-        }
-
-        // Update the argument.
-        ast.args[arg_name] = arg;
+        new_arg.push(new_child_node);
       }
+      arg = new_arg;
+
+      // Add paragraphs.
+      let paragraph_indexes = [];
+      for (let i = 0; i < arg.length; i++) {
+        const child_node = arg[i];
+        if (child_node.node_type === AstType.PARAGRAPH) {
+          paragraph_indexes.push(i);
+        }
+      }
+      if (paragraph_indexes.length > 0) {
+        new_arg = [];
+        let paragraph_start = 0;
+        for (const paragraph_index of paragraph_indexes) {
+          parse_add_paragraph(state, new_arg, arg, paragraph_start, paragraph_index);
+          paragraph_start = paragraph_index + 1;
+        }
+        parse_add_paragraph(state, new_arg, arg, paragraph_start, arg.length);
+        arg = new_arg;
+      }
+
+      // Push children to continue the search.
+      for (const child_node of arg) {
+        todo_visit.push(child_node);
+      }
+
+      // Update the argument.
+      ast.args[arg_name] = arg;
     }
   }
   extra_returns.ids = indexed_ids;
@@ -1486,9 +1499,10 @@ function parse_macro(state) {
       return new AstNode(
         macro_type,
         Macro.PLAINTEXT_MACRO_NAME,
-        error_message_in_output(unknown_macro_message),
+        {},
         state.token.line,
-        state.token.column
+        state.token.column,
+        error_message_in_output(unknown_macro_message)
       );
     } else {
       return new AstNode(macro_type, macro_name, args, macro_line, macro_column);
@@ -1555,9 +1569,15 @@ const ESCAPABLE_CHARS = new Set([
   END_NAMED_ARGUMENT_CHAR,
 ]);
 const AstType = make_enum([
+  // An in-output error message.
   'ERROR',
+  // The most regular and non-magic nodes.
+  // Most nodes are of this type.
   'MACRO',
+  // A node that contains only text, and no subnodes.
   'PLAINTEXT',
+  // Paragraphs are basically MACRO, but with some special
+  // magic because of the double newline madness treatment.
   'PARAGRAPH',
 ]);
 const XStyle = make_enum([
@@ -1700,10 +1720,14 @@ const DEFAULT_MACRO_LIST = [
           let toc_href = html_attr('href', '#' + Macro.TOC_PREFIX + ast.id);
           ret += ` | <a${toc_href}>\u21d1 toc</a>`;
         }
-        let parent_ast = ast.header_tree_node.parent_node.value;
-        let parent_href = html_attr('href', '#' + parent_ast.id);
-        let parent_body = convert_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-        ret += ` | <a${parent_href}>\u2191 parent "${parent_body}"</a>`;
+        let parent_tree_node = ast.header_tree_node.parent_node;
+        // May fail if there was a header skip error previously.
+        if (parent_tree_node !== undefined) {
+          let parent_ast = ast.header_tree_node.parent_node.value;
+          let parent_href = html_attr('href', '#' + parent_ast.id);
+          let parent_body = convert_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+          ret += ` | <a${parent_href}>\u2191 parent "${parent_body}"</a>`;
+        }
         ret += `</span>`;
       }
       ret += `</h${level}>\n`;

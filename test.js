@@ -3449,11 +3449,11 @@ assert_executable(
 
 \\x[h2][toplevel to h2]
 
+\\x[image-my-image-h2][toplevel to my image h2]
+
 \\x[notindex][toplevel to notindex]
 
 \\x[notindex-h2][toplevel to notindex h2]
-
-\\x[image-my-image-h2][toplevel to my image h2]
 
 == h2
 
@@ -3461,11 +3461,11 @@ assert_executable(
 
 \\x[h2][h2 to h2]
 
+\\x[image-my-image-h2][h2 to my image h2]
+
 \\x[notindex][h2 to notindex]
 
 \\x[notindex-h2][h2 to notindex h2]
-
-\\x[image-my-image-h2][h2 to my image h2]
 
 \\Image[img.jpg]{title=My image h2}
 `,
@@ -3475,11 +3475,11 @@ assert_executable(
 
 \\x[h2][notindex to h2]
 
+\\x[image-my-image-h2][notindex to my image h2]
+
 \\x[notindex][notindex to notindex]
 
 \\x[notindex-h2][notindex to notindex h2]
-
-\\x[image-my-image-h2][notindex to my image h2]
 
 == Notindex h2
 
@@ -3487,81 +3487,84 @@ assert_executable(
 
 \\x[h2][notindex h2 to h2]
 
+\\x[image-my-image-h2][notindex h2 to my image h2]
+
 \\x[notindex][notindex h2 to notindex]
 
 \\x[notindex-h2][notindex h2 to notindex h2]
-
-\\x[image-my-image-h2][notindex to my image h2]
 `,
     },
     expect_filesystem_xpath: {
       // This is he split one.
       'index.html': [
-      //  "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
-      //  "//x:div[@class='p']//x:a[@href='h2.html' and text()='toplevel to h2']",
-      //  // That one is nosplit by default.
-      //  "//x:div[@class='p']//x:a[@href='notindex.html' and text()='toplevel to notindex']",
-      //  // A child of a nosplit also becomes nosplit by default.
-      //  "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='toplevel to notindex h2']",
-      //  "//x:div[@class='p']//x:a[@href='h2#image-my-image-h2' and text()='toplevel to my image h2']",
+        "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
+        "//x:div[@class='p']//x:a[@href='h2.html' and text()='toplevel to h2']",
+        "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='toplevel to my image h2']",
+        // That one is nosplit by default.
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='toplevel to notindex']",
+        // A child of a nosplit also becomes nosplit by default.
+        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='toplevel to notindex h2']",
       ],
       'nosplit.html': [
-      //  "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
-      //  // Although h2 is split by defualt, it is already rendered in the curent page,
-      //  // so just link to the current page render instead.
-      //  "//x:div[@class='p']//x:a[@href='#h2' and text()='toplevel to h2']",
-      //  "//x:div[@class='p']//x:a[@href='notindex.html' and text()='toplevel to notindex']",
-      //  "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='toplevel to notindex h2']",
+        "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
+        // Although h2 is split by defualt, it is already rendered in the curent page,
+        // so just link to the current page render instead.
+        "//x:div[@class='p']//x:a[@href='#h2' and text()='toplevel to h2']",
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='toplevel to notindex']",
+        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='toplevel to notindex h2']",
 
-      //  "//x:div[@class='p']//x:a[@href='' and text()='h2 to toplevel']",
-      //  "//x:div[@class='p']//x:a[@href='#h2' and text()='h2 to h2']",
-      //  "//x:div[@class='p']//x:a[@href='notindex.html' and text()='h2 to notindex']",
-      //  "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
+        "//x:div[@class='p']//x:a[@href='' and text()='h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='#h2' and text()='h2 to h2']",
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='h2 to notindex']",
+        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
 
-      //  // Images.
-      //  "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='toplevel to my image h2']",
-      //  "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
+        // Images.
+        "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='toplevel to my image h2']",
+        "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
       ],
       'h2.html': [
-      //  "//x:div[@class='p']//x:a[@href='index.html' and text()='h2 to toplevel']",
-      //  "//x:div[@class='p']//x:a[@href='' and text()='h2 to h2']",
-      //  "//x:div[@class='p']//x:a[@href='notindex.html' and text()='h2 to notindex']",
-      //  "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
-      //  "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='' and text()='h2 to h2']",
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='h2 to notindex']",
+        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
+        "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
       ],
-      //'notindex.html': [
-      //  // Link so the split one of index because that's the default of that page.
-      //  "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to toplevel']",
-      //  "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex to h2']",
-      //  "//x:div[@class='p']//x:a[@href='' and text()='notindex to notindex']",
-      //  "//x:div[@class='p']//x:a[@href='#notindex-h2' and text()='notindex to notindex h2']",
+      'notindex.html': [
+        // Link so the split one of index because that's the default of that page.
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to toplevel']",
+        "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex to h2']",
+        "//x:div[@class='p']//x:a[@href='' and text()='notindex to notindex']",
+        "//x:div[@class='p']//x:a[@href='#notindex-h2' and text()='notindex to notindex h2']",
 
-      //  // This is he nosplit one, so notindex h2 is also here.
-      //  "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to toplevel']",
-      //  "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex h2 to h2']",
-      //  "//x:div[@class='p']//x:a[@href='' and text()='notindex h2 to notindex']",
-      //  "//x:div[@class='p']//x:a[@href='#notindex-h2' and text()='notindex h2 to notindex h2']",
+        // This is he nosplit one, so notindex h2 is also here.
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex h2 to h2']",
+        "//x:div[@class='p']//x:a[@href='' and text()='notindex h2 to notindex']",
+        "//x:div[@class='p']//x:a[@href='#notindex-h2' and text()='notindex h2 to notindex h2']",
 
-      //  // Images.
-      //  "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='notindex to my image h2']",
-      //  "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='notindex h2 to my image h2']",
-      //],
-      //'notindex-split.html': [
-      //  "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to toplevel']",
-      //  "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex to h2']",
-      //  "//x:div[@class='p']//x:a[@href='' and text()='notindex to notindex']",
-      //  // TODO. Although external links to this header would to to its default which is nosplit,
-      //  // mabe when we are inside it in split mode (a rarer use case) then we should just remain
-      //  // inside of split mode.
-      //  //"//x:div[@class='p']//x:a[@href='notindex-h2.html' and text()='notindex to notindex h2']",
-      //],
-      //'notindex-h2.html': [
-      //  "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to toplevel']",
-      //  "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex h2 to h2']",
-      //  // TODO same question as above.
-      //  //"//x:div[@class='p']//x:a[@href='notindex-split.html' and text()='notindex h2 to notindex']",
-      //  "//x:div[@class='p']//x:a[@href='' and text()='notindex h2 to notindex h2']",
-      //],
+        // Images.
+        "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='notindex to my image h2']",
+        "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='notindex h2 to my image h2']",
+      ],
+      'notindex-split.html': [
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to toplevel']",
+        "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex to h2']",
+        "//x:div[@class='p']//x:a[@href='' and text()='notindex to notindex']",
+
+        // TODO. Although external links to this header would to to its default which is nosplit,
+        // mabe when we are inside it in split mode (a rarer use case) then we should just remain
+        // inside of split mode.
+        //"//x:div[@class='p']//x:a[@href='notindex-h2.html' and text()='notindex to notindex h2']",
+        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='notindex to notindex h2']",
+      ],
+      'notindex-h2.html': [
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex h2 to h2']",
+        "//x:div[@class='p']//x:a[@href='' and text()='notindex h2 to notindex h2']",
+
+        // TODO same question as above.
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='notindex h2 to notindex']",
+      ],
     }
   }
 );

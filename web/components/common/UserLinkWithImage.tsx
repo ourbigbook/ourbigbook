@@ -8,8 +8,7 @@ const UserLinkWithImage = ({ user }: { user: Author }) => {
   if (!user) return null;
   return (
     <CustomLink
-      href="/profile/[pid]"
-      as={`/profile/${encodeURIComponent(user.username)}`}
+      href={`/profile/${encodeURIComponent(user.username)}`}
       className="author username"
     >
       <CustomImage

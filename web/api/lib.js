@@ -15,6 +15,8 @@ async function getArticle(req, res) {
 }
 exports.getArticle = getArticle
 
+// When this class is thrown and would blows up on toplevel, we catch it instead
+// and gracefully return the specified error to the client instead of doing a 500.
 class ValidationError extends Error {
   constructor(errors, status) {
     super();

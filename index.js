@@ -8698,8 +8698,8 @@ const OUTPUT_FORMATS_LIST = [
         [Macro.CODE_MACRO_NAME.toUpperCase()]: function(ast, context) {
           const { title_and_description, multiline_caption } = html_title_and_description(ast, context)
           let ret = `<div class="code${multiline_caption}"${html_render_attrs_id(ast, context)}>`
-          ret += title_and_description
           ret += html_code(render_arg(ast.args.content, context))
+          ret += title_and_description
           ret += `</div>`
           return ret
         },
@@ -9078,11 +9078,11 @@ const OUTPUT_FORMATS_LIST = [
           if (ast.validation_output.show.boolean) {
             const { href, multiline_caption, title_and_description } = html_title_and_description(ast, context)
             ret += `<div class="math${multiline_caption}"${html_render_attrs_id(ast, context)}>`
-            ret += title_and_description
             ret += `<div class="equation">`
             ret += `<div>${katex_output}</div>`
             ret += `<div><a${href}>(${context.macros[ast.macro_name].options.get_number(ast, context)})</a></div>`
             ret += `</div>`
+            ret += title_and_description
             ret += `</div>`
           }
           return ret

@@ -5,6 +5,12 @@ class CirodownEditor {
     if (options === undefined) {
       options = {}
     }
+    if (!('convertOptions' in options)) {
+      options.convertOptions = {}
+    }
+    if (!('body_only' in options)) {
+      options.convertOptions.body_only = true
+    }
     if (!('production' in options)) {
       options.production = true
     }
@@ -168,7 +174,7 @@ class CirodownEditor {
     try {
       this.output_elem.innerHTML = await this.cirodown.convert(
         this.modifyEditorInput(this.editor.getValue()),
-        { body_only: true },
+        this.options.convertOptions,
         extra_returns
       );
     } catch(e) {

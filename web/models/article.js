@@ -4,6 +4,7 @@ const cirodown = require('cirodown')
 const cirodown_nodejs_webpack_safe = require('cirodown/nodejs_webpack_safe')
 const { DataTypes, Op } = require('sequelize')
 
+const { convertOptions } = require('../front/config')
 const { modifyEditorInput } = require('../shared')
 const { ValidationError } = require('../api/lib')
 const {
@@ -25,7 +26,7 @@ module.exports = (sequelize) => {
         unique: {
           message: 'The article ID must be unique.'
         },
-        set(v) {
+      set(v) {
           this.setDataValue('slug', v.toLowerCase())
         },
         allowNull: false,
@@ -61,6 +62,7 @@ module.exports = (sequelize) => {
           options.fields.push('render')
           options.fields.push('topicId')
           options.fields.push('slug')
+          options.fields.push('body')
         },
       },
       // TODO updatedAt lazy to create migration now.
@@ -78,17 +80,14 @@ module.exports = (sequelize) => {
     const extra_returns = {};
     const author = await article.getAuthor({ transaction })
     const id = cirodown.title_to_id(article.title)
+    article.body = article.body.replace(/\n+$/, '')
     const input = modifyEditorInput(article.title, article.body)
     article.render = await cirodown.convert(
       input,
-      {
-        body_only: true,
-        html_x_extension: false,
+      Object.assign({
         id_provider,
         file_provider,
-        magic_leading_at: false,
         input_path: `${cirodown.AT_MENTION_CHAR}${author.username}/${id}${cirodown.CIRODOWN_EXT}`,
-        path_sep: path.sep,
         read_include: cirodown_nodejs_webpack_safe.read_include({
           exists: async (inpath) => {
             const suf = cirodown.Macro.HEADER_SCOPE_SEPARATOR + cirodown.INDEX_BASENAME_NOEXT
@@ -106,7 +105,7 @@ module.exports = (sequelize) => {
           ext: '',
         }),
         remove_leading_at: true,
-      },
+      }, convertOptions),
       extra_returns,
     )
     if (extra_returns.errors.length > 0) {

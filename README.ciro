@@ -5341,6 +5341,26 @@ Possible values:
 * `child`: forbids \x[header]{p} from using the \x[h-tag-argument]. They should instead use the \x[h-child-argument].
 * `tag`: forbids \x[header]{p} from using the \x[h-child-argument]. They should instead use the \x[h-tag-argument].
 
+= `h`
+{parent=cirodown-json}
+{scope}
+
+This dictionnary stores options related to headers.
+
+= `numbered`
+{parent=h}
+
+Sets the default \x[h-numbered-argument] argument of the toplevel headers of each source file.
+
+Note that since the option is inherited by descendants, this can also affect the rendering of ancestors.
+
+https://github.com/cirosantilli/cirodown/issues/188 contains a proposal to instead inherit this property across \x[include]{p}.
+
+= `splitDefault`
+{parent=h}
+
+This options is exactly analogous to the \x[numbered] option, but it affects the \x[h-splitdefault-argument] instead of the \x[h-numbered-argument].
+
 = `media-providers`
 {parent=cirodown-json}
 
@@ -5389,15 +5409,6 @@ Direct children of media-providers and subproperties that are valid only for the
 * `youtube`: YouTube \x[video]{p}
 
 See also: https://github.com/cirosantilli/cirodown/issues/40
-
-= `numbered`
-{parent=cirodown-json}
-
-Sets the default \x[h-numbered-argument] argument of the toplevel headers of each source file.
-
-Note that since the option is inherited by descendants, this can also affect the rendering of ancestors.
-
-https://github.com/cirosantilli/cirodown/issues/188 contains a proposal to instead inherit this property across \x[include]{p}.
 
 = `outputOutOfTree`
 {parent=cirodown-json}

@@ -806,9 +806,9 @@ WHERE
     return ret
   }
 
-  Article.prototype.rerender = async function(options = {}) {
+  Article.prototype.rerender = async function(opts = {}) {
     const file = await this.getFileCached()
-    const transaction = options.transaction
+    const transaction = opts.transaction
     await sequelize.transaction({ transaction }, async (transaction) => {
       await convert.convertArticle({
         author: file.author,
@@ -876,6 +876,17 @@ WHERE
         ['nestedSetIndex', 'ASC'],
       ],
       transaction: opts.transaction,
+    })
+  }
+
+  Article.prototype.treeFindAncestors = async function(opts={}) {
+    return Article.findAll({
+      attributes: opts.attributes,
+      where: {
+        nestedSetIndex: { [sequelize.Sequelize.Op.lt]: this.nestedSetIndex },
+        nestedSetNextSibling: { [sequelize.Sequelize.Op.gt]: this.nestedSetIndex },
+      },
+      order: [['nestedSetIndex', 'ASC']],
     })
   }
 
@@ -1477,8 +1488,13 @@ LIMIT ${limit}` : ''}
     if (opts.log === undefined) {
       opts.log = false
     }
+    const where = {}
+    if (opts.slugs.length) {
+      where.slug = opts.slugs
+    }
     const articles = await sequelize.models.Article.findAll({
-      include: [ { model: sequelize.models.File, as: 'file' } ],
+      where,
+      include: [{ model: sequelize.models.File, as: 'file' }],
     })
     for (const article of articles) {
       if (opts.log) {

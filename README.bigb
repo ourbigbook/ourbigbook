@@ -8452,7 +8452,7 @@ First download a dump of the database as per https://devcenter.heroku.com/articl
 ``
 web/bin/pg_dump_heroku
 ``
-This produces a file `latest.dump`. If that already exists, it produces `latest.dump.1` and so on.
+This produces a file `latest.dump` with the database dump. If that already exists, it gets overwritten.
 
 Then restore it to a local database like in <Save and restore local PostgreSQL development database>{full}. First we nuke the database completely with `web/bin/pg-setup` to increase accuracy:
 ``
@@ -8648,9 +8648,12 @@ Types:
 * \a[web/back] and \a[web/back.ts]: files that can be imported only from backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
 * \a[web_api.js]: helpers to access the OurBigBook HTTP REST API. These have to be outside of `web/` because <OurBigBook CLI> uses them e.g. for syncing local files to the server, and OurBigBook CLI cannot depend on OurBigBook Web components, only the other way around, otherwise we could create circular dependencies. That exact same JavaScript code is also used from the front-end! The infinite joys of homomorphic JS.
 
+= Web CLI utils
+{parent=OurBigBook Web directory structure}
+
 = web/bin/normalize
 {file}
-{parent=OurBigBook Web directory structure}
+{parent=Web CLI utils}
 
 Check the counts of issues per article for user `barack-obama` only with `-c`, but don't fix anything:
 ``
@@ -8669,11 +8672,19 @@ web/bin/normalize -f -u issue-follower-count
 
 = web/bin/rerender-articles.js
 {file}
-{parent=OurBigBook Web directory structure}
+{parent=Web CLI utils}
 
-Rerender all articles.
+Rerender all articles by all users:
+``
+web/bin/rerender-articles.js
+``
 
-This has to be done to see updates on OurBigBook changes that change the render output.
+Rerender only the articles with specified slugs:
+``
+web/bin/rerender-articles.js johnsmith/mathematics maryjane/physics
+``
+
+Rerendering has to be done to see updates on OurBigBook changes that change the render output.
 
 Notably, this would be mandatory in case of CSS changes that require corresponding HTML changes.
 

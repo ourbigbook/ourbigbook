@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
+rm -f latest.dump
 heroku pg:backups:capture -a ourbigbook
 heroku pg:backups:download -a ourbigbook

@@ -28,6 +28,8 @@ const ArticleInfo = ({
     <LikeArticleButton {...{
       article: article,
       loggedInUser,
+      isIssue,
+      issueArticle,
       showText: true,
     }} />
     {' '}

@@ -99,6 +99,7 @@ const ArticleList = ({
                   <LikeArticleButton {...{
                     article,
                     isIssue,
+                    issueArticle,
                     loggedInUser,
                     showText: false,
                   }} />

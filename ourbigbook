@@ -40,6 +40,9 @@ const DEFAULT_IGNORE_BASENAMES = [
   ourbigbook.DIR_PREFIX,
 ];
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
+const MESSAGE_PREFIX_EXTRACT_IDS = 'extract_ids'
+const MESSAGE_PREFIX_RENDER = 'render'
+const MESSAGE_SKIP_STR = `(skipped by timestamp)`
 const PUBLISH_TARGETS = {
   'github-pages': 'github-pages',
   local: 'local',
@@ -49,7 +52,7 @@ exports.SQLITE_MAGIC_MEMORY_NAME = SQLITE_MAGIC_MEMORY_NAME
 const WEB_MAX_RETRIES = 5
 
 class DbProviderDbAdapter {
-  constructor(non_ourbigbook_options) {
+  constructor(nonOurbigbookOptions) {
   }
 }
 
@@ -107,17 +110,17 @@ async function readStdin(opts) {
 
 // Reconcile the database with information that depends only on existence of Ourbigbook files, notably:
 // - remove any IDs from deleted files https://github.com/ourbigbook/ourbigbook/issues/125
-async function reconcile_db_and_filesystem(input_path, ourbigbook_options, non_ourbigbook_options) {
-  const sequelize = non_ourbigbook_options.sequelize
+async function reconcile_db_and_filesystem(input_path, ourbigbook_options, nonOurbigbookOptions) {
+  const sequelize = nonOurbigbookOptions.sequelize
   if (sequelize) {
-    const new_non_ourbigbook_options = ourbigbook.clone_and_set(
-      non_ourbigbook_options, 'ourbigbook_paths_converted_only', true)
+    const newNonOurbigbookOptions = ourbigbook.clone_and_set(
+      nonOurbigbookOptions, 'ourbigbook_paths_converted_only', true)
     await convert_directory(
       input_path,
       ourbigbook_options,
-      new_non_ourbigbook_options,
+      newNonOurbigbookOptions,
     );
-    const ourbigbook_paths_converted = new_non_ourbigbook_options.ourbigbook_paths_converted
+    const ourbigbook_paths_converted = newNonOurbigbookOptions.ourbigbook_paths_converted
     const [,,file_rows] = await Promise.all([
       // https://cirosantilli.com/delete-with-join-sql
       sequelize.models.Id.findAll({
@@ -147,7 +150,7 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, non_o
         include: [{
           model: sequelize.models.Render,
           where: {
-            type: sequelize.models.Render.Types[non_ourbigbook_options.renderType],
+            type: sequelize.models.Render.Types[nonOurbigbookOptions.renderType],
           },
           // We still want to get last_parsed from non-rendered files.
           required: false,
@@ -158,7 +161,7 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, non_o
     for (const file_row of file_rows) {
       file_rows_dict[file_row.path] = file_row
     }
-    non_ourbigbook_options.file_rows_dict[non_ourbigbook_options.renderType] = file_rows_dict
+    nonOurbigbookOptions.file_rows_dict[nonOurbigbookOptions.renderType] = file_rows_dict
   }
 }
 
@@ -171,19 +174,19 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, non_o
 // so if you e.g. move an ID from one file to another, a common operation, then it would still see
 // the ID in the previous file depending on conversion order. So we are moving it here instead at the end.
 // Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
-async function check_db(non_ourbigbook_options) {
-  if (!non_ourbigbook_options.cli.skipCheckDb) {
+async function check_db(nonOurbigbookOptions) {
+  if (!nonOurbigbookOptions.cli.skipCheckDb) {
     const t1 = performance.now();
     console.log(`check_db`);
-    const sequelize = non_ourbigbook_options.sequelize
-    if (sequelize && non_ourbigbook_options.cli.render) {
+    const sequelize = nonOurbigbookOptions.sequelize
+    if (sequelize && nonOurbigbookOptions.cli.render) {
       const error_messages = await ourbigbook_nodejs_webpack_safe.check_db(
-        sequelize, non_ourbigbook_options.ourbigbook_paths_converted, { perf: false })
+        sequelize, nonOurbigbookOptions.ourbigbook_paths_converted, { perf: false })
       if (error_messages.length > 0) {
         cli_error('\n' + error_messages.join('\n'))
       }
     }
-    console.log(`check_db: finished in ${performance.now() - t1} ms`);
+    console.log(`check_db: ${finished_in_ms(performance.now() - t1)}`);
   }
 }
 
@@ -195,7 +198,7 @@ function cli_error(message) {
   process.exit(1);
 }
 
-function cmd_get_stdout(cmd, args=[], options={}) {
+function cmdGetStdout(cmd, args=[], options={}) {
   if (!('dry_run' in options)) {
     options.dry_run = false;
   }
@@ -205,12 +208,12 @@ function cmd_get_stdout(cmd, args=[], options={}) {
   if (!('extra_returns' in options)) {
     options.extra_returns = {};
   }
-  if (!('show_cmd' in options)) {
-    options.show_cmd = true;
+  if (!('showCmd' in options)) {
+    options.showCmd = true;
   }
   let out;
   const cmd_str = ([cmd].concat(args)).join(' ');
-  if (options.show_cmd) {
+  if (options.showCmd) {
     console.log(cmd_str);
   }
   if (!options.dry_run) {
@@ -223,7 +226,7 @@ function cmd_get_stdout(cmd, args=[], options={}) {
   if (options.dry_run) {
     ret = '';
   } else {
-    if (out.status != 0 && options.throw_on_error) {
+    if (out.status != 0 && options.throwOnError) {
       let msg = `Command failed with status: ${out.status}\ncmd: ${cmd_str}\n`;
       if (out.stdout !== null) {
         msg += `stdout: \n${out.stdout.toString(ourbigbook_nodejs_webpack_safe.ENCODING)}\n`;
@@ -242,53 +245,53 @@ function cmd_get_stdout(cmd, args=[], options={}) {
 /**
  * @param {String} input_path - path to a directory to convert files in
  */
-async function convert_directory(input_path, ourbigbook_options, non_ourbigbook_options) {
-  non_ourbigbook_options.ourbigbook_paths_converted = []
+async function convert_directory(input_path, ourbigbook_options, nonOurbigbookOptions) {
+  nonOurbigbookOptions.ourbigbook_paths_converted = []
   for (const one_path of walk_directory_recursively(
     input_path,
     DEFAULT_IGNORE_BASENAMES_SET,
-    non_ourbigbook_options.ignore_paths,
-    non_ourbigbook_options.ignore_path_regexps,
-    non_ourbigbook_options.dont_ignore_path_regexps,
-    non_ourbigbook_options.ourbigbook_json_dir,
+    nonOurbigbookOptions.ignore_paths,
+    nonOurbigbookOptions.ignore_path_regexps,
+    nonOurbigbookOptions.dont_ignore_path_regexps,
+    nonOurbigbookOptions.ourbigbook_json_dir,
   )) {
     await convert_path_to_file(
       one_path,
       ourbigbook_options,
-      non_ourbigbook_options,
+      nonOurbigbookOptions,
     );
-    if (non_ourbigbook_options.had_error) {
+    if (nonOurbigbookOptions.had_error) {
       break;
     }
   }
 }
 
 /** Extract IDs from all input files into the ID database, without fully converting. */
-async function convert_directory_extract_ids(input_path, ourbigbook_options, non_ourbigbook_options) {
+async function convert_directory_extract_ids(input_path, ourbigbook_options, nonOurbigbookOptions) {
   await convert_directory(
     input_path,
     ourbigbook.clone_and_set(ourbigbook_options, 'render', false),
-    non_ourbigbook_options
+    nonOurbigbookOptions
   );
 }
 
-async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_options, non_ourbigbook_options) {
-  await reconcile_db_and_filesystem(input_dir, ourbigbook_options, non_ourbigbook_options);
-  await convert_directory_extract_ids(input_dir, ourbigbook_options, non_ourbigbook_options);
-  if (!non_ourbigbook_options.had_error) {
-    await check_db(non_ourbigbook_options)
+async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_options, nonOurbigbookOptions) {
+  await reconcile_db_and_filesystem(input_dir, ourbigbook_options, nonOurbigbookOptions);
+  await convert_directory_extract_ids(input_dir, ourbigbook_options, nonOurbigbookOptions);
+  if (!nonOurbigbookOptions.had_error) {
+    await check_db(nonOurbigbookOptions)
   }
   if (
-    non_ourbigbook_options.cli.render &&
-    !non_ourbigbook_options.had_error
+    nonOurbigbookOptions.cli.render &&
+    !nonOurbigbookOptions.had_error
   ) {
-    const new_non_ourbigbook_options = ourbigbook.clone_and_set(non_ourbigbook_options, 'is_render_after_extract', true)
+    const newNonOurbigbookOptions = ourbigbook.clone_and_set(nonOurbigbookOptions, 'is_render_after_extract', true)
     await convert_directory(
       input_dir,
       ourbigbook_options,
-      new_non_ourbigbook_options,
+      newNonOurbigbookOptions,
     );
-    non_ourbigbook_options.had_error = new_non_ourbigbook_options.had_error
+    nonOurbigbookOptions.had_error = newNonOurbigbookOptions.had_error
   }
 }
 
@@ -298,25 +301,25 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
  *
  * @param {String} input
  * @param {Object} options - options to be passed to ourbigbook.convert
- * @param {Object} non_ourbigbook_options - control options for this function,
+ * @param {Object} nonOurbigbookOptions - control options for this function,
  *                 not passed to ourbigbook.convert. Also contains some returns:
  *                 - {bool} had_error
  *                 - {Object} extra_returns
  * @return {String}
  */
-async function convert_input(input, ourbigbook_options, non_ourbigbook_options={}) {
+async function convert_input(input, ourbigbook_options, nonOurbigbookOptions={}) {
   const new_options = Object.assign({}, ourbigbook_options);
-  if ('input_path' in non_ourbigbook_options) {
-    new_options.input_path = non_ourbigbook_options.input_path;
+  if ('input_path' in nonOurbigbookOptions) {
+    new_options.input_path = nonOurbigbookOptions.input_path;
   }
-  if ('title' in non_ourbigbook_options) {
-    new_options.title = non_ourbigbook_options.title;
+  if ('title' in nonOurbigbookOptions) {
+    new_options.title = nonOurbigbookOptions.title;
   }
   new_options.extra_returns = {};
   // If we don't where the output will go (the case for stdout) or
   // the user did not explicitly request full embedding, inline all CSS.
   // Otherwise, include and external CSS to make each page lighter.
-  if (non_ourbigbook_options.cli.embedResources) {
+  if (nonOurbigbookOptions.cli.embedResources) {
     new_options.template_vars.style = fs.readFileSync(
       ourbigbook_nodejs.DIST_CSS_PATH,
       ourbigbook_nodejs_webpack_safe.ENCODING
@@ -333,22 +336,22 @@ async function convert_input(input, ourbigbook_options, non_ourbigbook_options={
     let scripts_local = [];
     let template_includes_relative = [];
     let template_scripts_relative = [];
-    if (non_ourbigbook_options.publish) {
+    if (nonOurbigbookOptions.publish) {
       template_includes_relative.push(
         path.relative(
-          non_ourbigbook_options.outdir,
-          non_ourbigbook_options.out_css_path
+          nonOurbigbookOptions.outdir,
+          nonOurbigbookOptions.out_css_path
         )
       );
       template_scripts_relative.push(
         path.relative(
-          non_ourbigbook_options.outdir,
-          non_ourbigbook_options.out_js_path
+          nonOurbigbookOptions.outdir,
+          nonOurbigbookOptions.out_js_path
         )
       );
     } else {
-      includes_local.push(non_ourbigbook_options.out_css_path);
-      scripts_local.push(non_ourbigbook_options.out_js_path);
+      includes_local.push(nonOurbigbookOptions.out_css_path);
+      scripts_local.push(nonOurbigbookOptions.out_js_path);
     }
     if (
       ourbigbook_options.outfile !== undefined &&
@@ -378,20 +381,20 @@ async function convert_input(input, ourbigbook_options, non_ourbigbook_options={
   }
   // Finally, do the conversion!
   const output = await ourbigbook.convert(input, new_options, new_options.extra_returns);
-  if (non_ourbigbook_options.post_convert_callback) {
-    await non_ourbigbook_options.post_convert_callback(non_ourbigbook_options.input_path, new_options.extra_returns)
+  if (nonOurbigbookOptions.post_convert_callback) {
+    await nonOurbigbookOptions.post_convert_callback(nonOurbigbookOptions.input_path, new_options.extra_returns)
   }
-  if (non_ourbigbook_options.log.tokens) {
+  if (nonOurbigbookOptions.log.tokens) {
     console.error('tokens:');
     console.error(JSON.stringify(new_options.extra_returns.tokens, null, 2));
     console.error();
   }
-  if (non_ourbigbook_options.log.ast) {
+  if (nonOurbigbookOptions.log.ast) {
     console.error('ast:');
     console.error(JSON.stringify(new_options.extra_returns.ast, null, 2));
     console.error();
   }
-  if (non_ourbigbook_options.log['ast-simple']) {
+  if (nonOurbigbookOptions.log['ast-simple']) {
     console.error('ast-simple:');
     console.error(new_options.extra_returns.ast.toString());
     console.error();
@@ -403,9 +406,9 @@ async function convert_input(input, ourbigbook_options, non_ourbigbook_options={
       new_options.extra_returns.errors.map(e => e.toString()))) {
     console.error(error_string);
   }
-  non_ourbigbook_options.extra_returns = new_options.extra_returns;
+  nonOurbigbookOptions.extra_returns = new_options.extra_returns;
   if (new_options.extra_returns.errors.length > 0) {
-    non_ourbigbook_options.had_error = true;
+    nonOurbigbookOptions.had_error = true;
   }
   ourbigbook.perf_print(new_options.extra_returns.context, 'convert_input_end')
   return output;
@@ -421,7 +424,7 @@ async function convert_input(input, ourbigbook_options, non_ourbigbook_options={
  *
  * The output file name is derived from the input file name with the output extension.
  */
-async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbook_options={}) {
+async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigbookOptions={}) {
   let msg_ret
   let output, first_output_path;
   let skip = false
@@ -430,20 +433,20 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
   let full_path = path.resolve(input_path);
   let input_path_parse = path.parse(input_path);
   let input_path_relative_to_ourbigbook_json;
-  if (non_ourbigbook_options.ourbigbook_json_dir !== undefined) {
-    input_path_relative_to_ourbigbook_json = path.relative(non_ourbigbook_options.ourbigbook_json_dir, input_path);
+  if (nonOurbigbookOptions.ourbigbook_json_dir !== undefined) {
+    input_path_relative_to_ourbigbook_json = path.relative(nonOurbigbookOptions.ourbigbook_json_dir, input_path);
   }
-  const sequelize = non_ourbigbook_options.sequelize
+  const sequelize = nonOurbigbookOptions.sequelize
   let new_options
   const isbigb = input_path_parse.ext === `.${ourbigbook.OURBIGBOOK_EXT}` && !is_directory
   if (is_directory || isbigb) {
-    non_ourbigbook_options.ourbigbook_paths_converted.push(input_path_relative_to_ourbigbook_json)
-    if (non_ourbigbook_options.ourbigbook_paths_converted_only) {
+    nonOurbigbookOptions.ourbigbook_paths_converted.push(input_path_relative_to_ourbigbook_json)
+    if (nonOurbigbookOptions.ourbigbook_paths_converted_only) {
       return
     }
     new_options = Object.assign({}, ourbigbook_options);
     if (sequelize) {
-      new_options.db_provider = non_ourbigbook_options.db_provider;
+      new_options.db_provider = nonOurbigbookOptions.db_provider;
     }
   }
   let showFinish = false
@@ -453,11 +456,11 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
     is_bigb = true
     msg_ret = convert_path_to_file_print_starting(ourbigbook_options, input_path)
     message_prefix = msg_ret.message_prefix
-    let new_non_ourbigbook_options = Object.assign({}, non_ourbigbook_options);
-    let input = fs.readFileSync(full_path, new_non_ourbigbook_options.encoding);
+    let newNonOurbigbookOptions = Object.assign({}, nonOurbigbookOptions);
+    let input = fs.readFileSync(full_path, newNonOurbigbookOptions.encoding);
     let input_path_basename_noext = input_path_parse.name;
     if (input_path_relative_to_ourbigbook_json) {
-      const file_row_type = non_ourbigbook_options.file_rows_dict[non_ourbigbook_options.renderType]
+      const file_row_type = nonOurbigbookOptions.file_rows_dict[nonOurbigbookOptions.renderType]
       if (
         // Can not be present on sigle file (non directory) conversion. In that case we always convert.
         file_row_type
@@ -472,12 +475,12 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
             ourbigbook_options.render
           ) {
             if (file_row_render) {
-              skip = !non_ourbigbook_options.cli.forceRender &&
+              skip = !nonOurbigbookOptions.cli.forceRender &&
                 !file_row_render.outdated &&
                 // TODO add a Render magic format for this use case. Or maybe
                 // start tracking output paths as well in Render to also cover -o.
                 // But lazy now, just never use timestamp for --format-source.
-                !non_ourbigbook_options.cli.formatSource
+                !nonOurbigbookOptions.cli.formatSource
             }
           } else {
             skip = file_row.last_parse !== null && file_row.last_parse > fs.statSync(input_path).mtime
@@ -491,26 +494,26 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
       }
     }
     if (!skip) {
-      new_non_ourbigbook_options.input_path = input_path_relative_to_ourbigbook_json;
+      newNonOurbigbookOptions.input_path = input_path_relative_to_ourbigbook_json;
 
       // Convert.
-      output = await convert_input(input, new_options, new_non_ourbigbook_options);
-      if (new_non_ourbigbook_options.had_error) {
-        non_ourbigbook_options.had_error = true;
+      output = await convert_input(input, new_options, newNonOurbigbookOptions);
+      if (newNonOurbigbookOptions.had_error) {
+        nonOurbigbookOptions.had_error = true;
       }
-      const extra_returns = new_non_ourbigbook_options.extra_returns
+      const extra_returns = newNonOurbigbookOptions.extra_returns
       if (
-        non_ourbigbook_options.cli.formatSource &&
+        nonOurbigbookOptions.cli.formatSource &&
         ourbigbook_options.render
       ) {
-        if (!new_non_ourbigbook_options.had_error) {
+        if (!newNonOurbigbookOptions.had_error) {
           fs.writeFileSync(full_path, output);
         }
         first_output_path = full_path
       } else {
         // Write out the output the output files.
         for (const outpath in extra_returns.rendered_outputs) {
-          const output_path = path.join(non_ourbigbook_options.outdir, outpath);
+          const output_path = path.join(nonOurbigbookOptions.outdir, outpath);
           if (output_path === full_path) {
             cli_error(`output path equals input path: "${outpath}"`);
           }
@@ -528,34 +531,34 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
         for (const header_ast of extra_returns.context.synonym_headers) {
           const new_options_redir = Object.assign({}, new_options);
           new_options_redir.db_provider = extra_returns.context.db_provider;
-          await generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, non_ourbigbook_options.outdir);
+          await generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, nonOurbigbookOptions.outdir);
         }
       }
 
       const context = extra_returns.context;
-      if (non_ourbigbook_options.log.headers) {
+      if (nonOurbigbookOptions.log.headers) {
         console.error(context.header_tree.toString());
       }
 
       // Update the Sqlite databse with results from the conversion.
       ourbigbook.perf_print(context, 'convert_path_pre_sqlite')
-      if ('sequelize' in non_ourbigbook_options) {
+      if ('sequelize' in nonOurbigbookOptions) {
         await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
           extra_returns,
-          db_provider: non_ourbigbook_options.db_provider,
-          had_error: non_ourbigbook_options.had_error,
-          is_render_after_extract: non_ourbigbook_options.is_render_after_extract,
-          non_ourbigbook_options,
-          renderType: non_ourbigbook_options.renderType,
+          db_provider: nonOurbigbookOptions.db_provider,
+          had_error: nonOurbigbookOptions.had_error,
+          is_render_after_extract: nonOurbigbookOptions.is_render_after_extract,
+          nonOurbigbookOptions,
+          renderType: nonOurbigbookOptions.renderType,
           path: input_path_relative_to_ourbigbook_json,
           render: ourbigbook_options.render,
-          sequelize: non_ourbigbook_options.sequelize,
+          sequelize: nonOurbigbookOptions.sequelize,
         })
       }
     }
   }
   if (
-    non_ourbigbook_options.cli.formatSource
+    nonOurbigbookOptions.cli.formatSource
   ) {
     // I should use callbacks instead of doing this. But lazy.
     return
@@ -564,7 +567,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
   let output_path_noext = path.join(
     is_directory ? ourbigbook.DIR_PREFIX : ourbigbook.RAW_PREFIX,
     path.relative(
-      non_ourbigbook_options.ourbigbook_json_dir,
+      nonOurbigbookOptions.ourbigbook_json_dir,
       path.join(
         input_path_parse.dir,
         input_path_parse.name
@@ -575,11 +578,11 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
     output_path_noext = path.join(output_path_noext, 'index')
   }
   if (ourbigbook_options.outfile === undefined) {
-    output_path_noext = path.join(non_ourbigbook_options.outdir, output_path_noext);
+    output_path_noext = path.join(nonOurbigbookOptions.outdir, output_path_noext);
   } else {
     output_path_noext = ourbigbook_options.outfile;
   }
-  const forceRender = non_ourbigbook_options.input_path_is_file || non_ourbigbook_options.cli.forceRender
+  const forceRender = nonOurbigbookOptions.input_path_is_file || nonOurbigbookOptions.cli.forceRender
 
   const convertNonBigb = ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML
   if (convertNonBigb) {
@@ -631,9 +634,9 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
             const name = dirent.name
             if (!ignore_path(
               DEFAULT_IGNORE_BASENAMES_SET,
-              non_ourbigbook_options.ignore_paths,
-              non_ourbigbook_options.ignore_path_regexps,
-              non_ourbigbook_options.dont_ignore_path_regexps,
+              nonOurbigbookOptions.ignore_paths,
+              nonOurbigbookOptions.ignore_path_regexps,
+              nonOurbigbookOptions.dont_ignore_path_regexps,
               path.join(input_path, name)
             )) {
               if (dirent.isDirectory()) {
@@ -658,12 +661,12 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
           } else {
             new_options_dir.title = input_path_relative_to_ourbigbook_json
           }
-          const new_non_ourbigbook_options = Object.assign({}, non_ourbigbook_options);
+          const newNonOurbigbookOptions = Object.assign({}, nonOurbigbookOptions);
           // Needed the path to be able to find the relatively placed CSS under _raw.
           // notindex.bigb instead of index.bigb because this will be placed at subdir/index.html, unlike the .bigb
           // convention that places subdir/index.bigb at subdir.html rather than subdir/index.html so a different
           // number of up levels is needed.
-          new_non_ourbigbook_options.input_path = path.join(ourbigbook.RAW_PREFIX, input_path_relative_to_ourbigbook_json, 'notindex.bigb');
+          newNonOurbigbookOptions.input_path = path.join(ourbigbook.RAW_PREFIX, input_path_relative_to_ourbigbook_json, 'notindex.bigb');
           const htmlXExtension = ourbigbook.resolveOption(new_options_dir, 'htmlXExtension')
           const indexHtml = htmlXExtension ? 'index.html' : ''
           while (true) {
@@ -709,15 +712,15 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
             push_li(name, false)
           }
 
-          output = await convert_input(dirArr.join(''), new_options_dir, new_non_ourbigbook_options);
+          output = await convert_input(dirArr.join(''), new_options_dir, newNonOurbigbookOptions);
           fs.writeFileSync(first_output_path, output)
-          !non_ourbigbook_options.had_error
+          !nonOurbigbookOptions.had_error
         } else {
           if (isSass) {
             fs.writeFileSync(
               first_output_path,
               require('sass').renderSync({
-                data: fs.readFileSync(input_path, non_ourbigbook_options.encoding),
+                data: fs.readFileSync(input_path, nonOurbigbookOptions.encoding),
                 outputStyle: 'compressed',
                 includePaths: [
                   path.dirname(ourbigbook_nodejs.PACKAGE_PATH),
@@ -730,8 +733,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
     }
   }
   if (is_bigb || convertNonBigb) {
-    const SKIP_STR = `skipped by timestamp`
-    if (!non_ourbigbook_options.had_error) {
+    if (!nonOurbigbookOptions.had_error) {
       if (showFinish) {
         // Print conversion finished successfully info.
         let t1 = performance.now();
@@ -748,11 +750,11 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
         }
         let done_str
         if (skip) {
-          done_str = SKIP_STR
+          done_str = MESSAGE_SKIP_STR
         } else {
-          done_str = `finished in ${t1 - msg_ret.t0} ms`
+          done_str = finished_in_ms(t1 - msg_ret.t0)
         }
-        console.log(`${message_prefix}: ${input_path}${output_path_str} ${done_str}`);
+        console.log(`${message_prefix}: ${path.relative(process.cwd(), input_path)}${output_path_str} ${done_str}`);
       }
     }
 
@@ -769,11 +771,11 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
             fs.statSync(input_path).mtime <= fs.statSync(output_path).mtime &&
             !forceRender
           ) {
-            skip_str = ` ${SKIP_STR}`
+            skip_str = ` ${MESSAGE_SKIP_STR}`
           } else {
             skip_str = ''
           }
-          console.log(`copy: ${input_path} -> ${path.relative(process.cwd(), output_path)}${skip_str}`)
+          console.log(`copy: ${path.relative(process.cwd(), input_path)} -> ${path.relative(process.cwd(), output_path)}${skip_str}`)
           if (!skip_str) {
             fs.copyFileSync(input_path, output_path)
           }
@@ -788,9 +790,6 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
   return output;
 }
 
-const MESSAGE_PREFIX_EXTRACT_IDS = 'extract_ids'
-const MESSAGE_PREFIX_RENDER = 'render'
-
 function convert_path_to_file_print_starting(ourbigbook_options, input_path, message_prefix) {
   if (message_prefix === undefined) {
     if (ourbigbook_options.render) {
@@ -799,26 +798,30 @@ function convert_path_to_file_print_starting(ourbigbook_options, input_path, mes
       message_prefix = MESSAGE_PREFIX_EXTRACT_IDS;
     }
   }
-  const message = `${message_prefix}: ${input_path}`;
+  const message = `${message_prefix}: ${path.relative(process.cwd(), input_path)}`;
   const t0 = performance.now()
   console.log(message);
   return { message_prefix, t0 };
 }
 
-async function create_db(ourbigbook_options, non_ourbigbook_options) {
+async function create_db(ourbigbook_options, nonOurbigbookOptions) {
   perf_print('create_db_begin', ourbigbook_options)
-  const db_dir = path.dirname(non_ourbigbook_options.db_options.storage);
+  const db_dir = path.dirname(nonOurbigbookOptions.db_options.storage);
   if (!fs.existsSync(db_dir)) {
     fs.mkdirSync(db_dir, { recursive: true });
   }
   const sequelize = await ourbigbook_nodejs_webpack_safe.create_sequelize(
-    non_ourbigbook_options.db_options,
+    nonOurbigbookOptions.db_options,
     Sequelize,
     { force: cli.clearDb },
   )
-  non_ourbigbook_options.sequelize = sequelize;
-  non_ourbigbook_options.db_provider = new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize);
+  nonOurbigbookOptions.sequelize = sequelize;
+  nonOurbigbookOptions.db_provider = new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize);
   perf_print('create_db_end', ourbigbook_options)
+}
+
+function finished_in_ms(ms) {
+  return `(finished in ${Math.floor(ms)} ms)`
 }
 
 async function generate_redirect(ourbigbook_options, redirect_src_id, redirect_target_id, outdir) {
@@ -857,14 +860,14 @@ function generate_redirect_base(outpath, redirect_href) {
 
 /** Return Set of branches in the repository. Hax. */
 function git_branches(input_path) {
-  const str = cmd_get_stdout('git', ['branch', '-a']).replace(/\n$/, '')
+  const str = cmdGetStdout('git', ['branch', '-a']).replace(/\n$/, '')
   const arr = (str === '') ? [] : str.split('\n');
   return new Set(arr.map(s => s.substring(2)));
 }
 
 function git_has_commit(input_path) {
   try {
-    cmd_get_stdout('git', ['-C', input_path, 'log'], {throw_on_error: true})
+    cmdGetStdout('git', ['-C', input_path, 'log'], { showCmd: false, throwOnError: true })
     return true
   } catch(err) {
     return false
@@ -877,8 +880,8 @@ function git_has_commit(input_path) {
  */
 function git_is_in_repo(ourbigbook_json_dir) {
   const extra_returns = {}
-  cmd_get_stdout('git', ['-C', ourbigbook_json_dir, 'check-ignore', ourbigbook_json_dir], {
-    throw_on_error: false, show_cmd: false, extra_returns })
+  cmdGetStdout('git', ['-C', ourbigbook_json_dir, 'check-ignore', ourbigbook_json_dir], {
+    throwOnError: false, showCmd: false, extra_returns })
   // Exit statuses:
   // - 0: is ignored
   // - 1: is not ignored
@@ -890,12 +893,12 @@ function git_is_in_repo(ourbigbook_json_dir) {
  * @return Array[String] list of all non gitignored files and directories
  */
 function git_ls_files(input_path) {
-  const ret = cmd_get_stdout(
+  const ret = cmdGetStdout(
     'git',
     ['-C', input_path, 'ls-files'],
     {
-      show_cmd: false,
-      throw_on_error: true
+      showCmd: false,
+      throwOnError: true
     }
   )
   ret.replace(/\n$/, '')
@@ -909,18 +912,18 @@ function git_ls_files(input_path) {
 /**
  * @return {String} full Git SHA of the source.
  */
-function git_sha(input_path, src_branch) {
+function git_sha(input_path, srcBranch) {
   const args = ['-C', input_path, 'log', '-n1', '--pretty=%H'];
-  if (src_branch !== undefined) {
-    args.push(src_branch);
+  if (srcBranch !== undefined) {
+    args.push(srcBranch);
   }
-  return cmd_get_stdout('git', args, {show_cmd: false, throw_on_error: true}).slice(0, -1);
+  return cmdGetStdout('git', args, {showCmd: false, throwOnError: true}).slice(0, -1);
 }
 
 function git_toplevel(input_path) {
-  return cmd_get_stdout('git', ['rev-parse', '--show-toplevel'], {
-    show_cmd: false,
-    throw_on_error: true
+  return cmdGetStdout('git', ['rev-parse', '--show-toplevel'], {
+    showCmd: false,
+    throwOnError: true
   }).slice(0, -1);
 }
 
@@ -942,6 +945,13 @@ function perf_print(name, ourbigbook_options) {
   if (ourbigbook_options === undefined || ourbigbook_options.log.perf) {
     console.error(`perf ${name} t=${performance.now()}`);
   }
+}
+
+function relpathCwd(p) {
+  let ret = path.relative(process.cwd(), p)
+  if (ret === '')
+    ret = '.'
+  return ret
 }
 
 /** Render a template file from under template/ */
@@ -1108,6 +1118,7 @@ if (cli.helpMacros) {
       cli_error('canot give an input path with --generate');
     }
   }
+  inputPathCwd = relpathCwd(inputPath)
 
   // Determine the ourbigbook.json file by walking up the directory tree.
   let input_path_is_file;
@@ -1271,13 +1282,13 @@ if (cli.helpMacros) {
   };
 
   ourbigbook_options.log = {};
-  const non_ourbigbook_options_log = {};
+  const nonOurbigbookOptions_log = {};
   if (cli.log !== undefined) {
     for (const log of cli.log) {
       if (ourbigbook.LOG_OPTIONS.has(log)) {
         ourbigbook_options.log[log] = true;
       } else if (LOG_OPTIONS.has(log)) {
-        non_ourbigbook_options_log[log] = true;
+        nonOurbigbookOptions_log[log] = true;
       } else {
         cli_error('unknown --log option: ' + log);
       }
@@ -1402,7 +1413,7 @@ if (cli.helpMacros) {
   }
   // Options that are not directly passed to ourbigbook.convert
   // but rather used only by this ourbigbook executable.
-  const non_ourbigbook_options = {
+  const nonOurbigbookOptions = {
     ourbigbook_json_dir,
     ourbigbook_paths_converted: [],
     ourbigbook_paths_converted_only: false,
@@ -1417,7 +1428,7 @@ if (cli.helpMacros) {
     ignore_path_regexps: ourbigbook_json.ignore.map(p => RegExp(`^${p}($|${path.sep})`)),
     ignore_paths: new Set(),
     input_path_is_file,
-    log: non_ourbigbook_options_log,
+    log: nonOurbigbookOptions_log,
     out_css_path: ourbigbook_nodejs.DIST_CSS_PATH,
     out_js_path: ourbigbook_nodejs.DIST_JS_PATH,
     outdir,
@@ -1432,33 +1443,33 @@ if (cli.helpMacros) {
   }
 
   // CLI options
-  const cmd_options = {
+  const cmdOptions = {
     dry_run: cli.dryRun,
-    throw_on_error: true,
+    throwOnError: true,
   }
-  const cmd_options_no_dry = Object.assign({}, cmd_options)
+  const cmd_options_no_dry = Object.assign({}, cmdOptions)
   cmd_options_no_dry.dry_run = false
   // Commands that retrieve information and don't change state.
   const cmd_options_info = Object.assign({}, cmd_options_no_dry)
-  cmd_options_info.show_cmd = false
+  cmd_options_info.showCmd = false
   const cmd_options_info_nothrow = Object.assign({}, cmd_options_info)
-  cmd_options_info_nothrow.throw_on_error = false
+  cmd_options_info_nothrow.throwOnError = false
 
   const isInGitRepo = git_is_in_repo(ourbigbook_json_dir)
   if (isInGitRepo && inputPath !== undefined) {
     const inputRelpath  = path.relative(ourbigbook_json_dir, input_dir)
-    non_ourbigbook_options.ignore_paths = new Set([
-      ...non_ourbigbook_options.ignore_paths,
-      ...cmd_get_stdout(
+    nonOurbigbookOptions.ignore_paths = new Set([
+      ...nonOurbigbookOptions.ignore_paths,
+      ...cmdGetStdout(
         'git', ['-C', input_dir, 'ls-files', '--ignored', '--others', '--exclude-standard', '--directory'], cmd_options_info
         ).split('\n').slice(0, -1).map(s => s.replace(/\/$/, '')).map(s => path.join(inputRelpath, s))
     ])
   }
   ourbigbook_options.outdir = path.relative(outdir, ourbigbook_json_dir)
-  if (!non_ourbigbook_options_log.db) {
+  if (!nonOurbigbookOptions_log.db) {
     // They do not like true, has to be false or function.
     // And setting undefined is also considered true.
-    non_ourbigbook_options.db_options.logging = false;
+    nonOurbigbookOptions.db_options.logging = false;
   }
   let input_git_toplevel;
   let subdir_relpath;
@@ -1473,12 +1484,13 @@ if (cli.helpMacros) {
     // Input from stdin.
     title = 'stdin';
     input = await readStdin();
-    output = await convert_input(input, ourbigbook_options, non_ourbigbook_options);
+    output = await convert_input(input, ourbigbook_options, nonOurbigbookOptions);
   } else {
     if (!fs.existsSync(inputPath)) {
       cli_error(`input_path does not exist: "${inputPath}"`);
     }
-    let publish_dir;
+    let publishDir
+    let publishDirCwd
     if (!input_path_is_file) {
       if (cli.outfile !== undefined) {
         cli_error(`--outfile given but multiple output files must be generated, maybe you want --outdir?`);
@@ -1486,13 +1498,14 @@ if (cli.helpMacros) {
       if (publish) {
         input_git_toplevel = git_toplevel(inputPath);
         subdir_relpath = path.relative(input_git_toplevel, inputPath);
-        publish_dir = path.join(tmpdir, 'publish');
-        publish_git_dir = path.join(publish_dir, '.git');
+        publishDir = path.join(tmpdir, 'publish');
+        publishDirCwd = relpathCwd(publishDir)
+        publish_git_dir = path.join(publishDir, '.git');
         if (fs.existsSync(publish_git_dir)) {
           // This cleanup has to be done before the database initialization.
-          cmd_get_stdout('git', ['-C', publish_dir, 'clean', '-x', '-d', '-f'], cmd_options);
+          cmdGetStdout('git', ['-C', publishDirCwd, 'clean', '-x', '-d', '-f'], cmdOptions);
         }
-        publish_tmpdir = path.join(publish_dir, subdir_relpath, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME);
+        publish_tmpdir = path.join(publishDir, subdir_relpath, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME);
       }
     }
     if (publish_tmpdir === undefined) {
@@ -1507,16 +1520,16 @@ if (cli.helpMacros) {
 
     // Setup the ID database.
     if (cli.db) {
-      non_ourbigbook_options.db_options.storage = path.join(publish_tmpdir, 'db.sqlite3');
+      nonOurbigbookOptions.db_options.storage = path.join(publish_tmpdir, 'db.sqlite3');
     } else {
-      non_ourbigbook_options.db_options.storage = SQLITE_MAGIC_MEMORY_NAME
+      nonOurbigbookOptions.db_options.storage = SQLITE_MAGIC_MEMORY_NAME
     }
     if (web) {
       let token
       const web_url = cli.webUrl ? cli.webUrl : cli.webTest ? 'http://localhost:3000' : ourbigbook.WEB_URL
       const url = new URL(web_url)
       const host = url.host
-      await create_db(ourbigbook_options, non_ourbigbook_options);
+      await create_db(ourbigbook_options, nonOurbigbookOptions);
 
       // Get username, password and attempt login before anything else.
       let username, webApi
@@ -1533,7 +1546,7 @@ if (cli.helpMacros) {
       } else {
         cliWhere.defaultUsernameForHost = true
       }
-      const host_row = await non_ourbigbook_options.sequelize.models.Cli.findOne({ where: cliWhere })
+      const host_row = await nonOurbigbookOptions.sequelize.models.Cli.findOne({ where: cliWhere })
       if (username === undefined) {
         if (host_row === null) {
           ;[err, username] = await read({ prompt: 'Username: ' })
@@ -1580,8 +1593,8 @@ if (cli.helpMacros) {
           token = data.user.token
         }
 
-        await non_ourbigbook_options.sequelize.transaction(async (transaction) => {
-          await non_ourbigbook_options.sequelize.models.Cli.update(
+        await nonOurbigbookOptions.sequelize.transaction(async (transaction) => {
+          await nonOurbigbookOptions.sequelize.models.Cli.update(
             {
               defaultUsernameForHost: false
             },
@@ -1592,7 +1605,7 @@ if (cli.helpMacros) {
               transaction,
             }
           )
-          await non_ourbigbook_options.sequelize.models.Cli.upsert(
+          await nonOurbigbookOptions.sequelize.models.Cli.upsert(
             {
               host,
               username,
@@ -1618,7 +1631,7 @@ if (cli.helpMacros) {
       // straight to upload.
       const sequelizeWeb = new Sequelize({
         dialect: 'sqlite',
-        storage: path.join(non_ourbigbook_options.outdir, 'web.sqlite3'),
+        storage: path.join(nonOurbigbookOptions.outdir, 'web.sqlite3'),
         logging: false,
       })
       const sequelizeWebArticle = sequelizeWeb.define('Article', {
@@ -1636,7 +1649,7 @@ if (cli.helpMacros) {
         uniqueHack: { type: DataTypes.INTEGER, unique: true },
       })
       await sequelizeWeb.sync()
-      non_ourbigbook_options.post_convert_callback = async (inpath, extra_returns) => {
+      nonOurbigbookOptions.post_convert_callback = async (inpath, extra_returns) => {
         if (extra_returns.errors.length === 0) {
           const rendered_outputs = extra_returns.rendered_outputs
           for (let inpath in rendered_outputs) {
@@ -1768,8 +1781,8 @@ if (cli.helpMacros) {
       }
       let treeToplevelId, treeToplevelFileId
       if (input_path_is_file) {
-        await convert_path_to_file(inputPath, ourbigbook_options, non_ourbigbook_options)
-        treeToplevelFile = await non_ourbigbook_options.sequelize.models.File.findOne({
+        await convert_path_to_file(inputPath, ourbigbook_options, nonOurbigbookOptions)
+        treeToplevelFile = await nonOurbigbookOptions.sequelize.models.File.findOne({
           where: { path: inputPath } })
         treeToplevelFileId = treeToplevelFile.id
         treeToplevelId = treeToplevelFile.toplevel_id
@@ -1778,7 +1791,7 @@ if (cli.helpMacros) {
         await convert_directory_extract_ids_and_render(
           inputPath,
           ourbigbook_options,
-          non_ourbigbook_options,
+          nonOurbigbookOptions,
         )
         const index = (await sequelizeWebIndexId.findAll())[0]
         if (index === undefined) {
@@ -1786,7 +1799,7 @@ if (cli.helpMacros) {
         }
         treeToplevelId = index.idid
       }
-      if (non_ourbigbook_options.had_error) {
+      if (nonOurbigbookOptions.had_error) {
         process.exit(1)
       }
 
@@ -1805,7 +1818,7 @@ if (cli.helpMacros) {
         header_tree.push({ to_id: '' })
       }
       if (!cli.webId) {
-        header_tree = header_tree.concat(await non_ourbigbook_options.db_provider.fetch_header_tree_ids(
+        header_tree = header_tree.concat(await nonOurbigbookOptions.db_provider.fetch_header_tree_ids(
           [treeToplevelId],
           {
             to_id_index_order: 'ASC',
@@ -1828,7 +1841,7 @@ if (cli.helpMacros) {
         }
         msg = `web_${pref}: ${i}: ${article.title} (${article.inpath})`
         if (t0 !== undefined) {
-          msg += ` finished in ${t1 - t0} ms`
+          msg += ` ${finished_in_ms(t1 - t0)}`
         }
         console.error(msg)
       }
@@ -1959,9 +1972,9 @@ if (cli.helpMacros) {
                 }
                 assertApiStatus(status, data)
                 //if (render && i % 100 == 0) {
-                //  cmd_get_stdout('bin/pg', ['bin/normalize', '-c', '-u', 'cirosantilli', 'nested-set'], {
+                //  cmdGetStdout('bin/pg', ['bin/normalize', '-c', '-u', 'cirosantilli', 'nested-set'], {
                 //    cwd: path.join(__dirname, 'web'),
-                //    throw_on_error: true,
+                //    throwOnError: true,
                 //  })
                 //}
               }
@@ -1986,16 +1999,16 @@ if (cli.helpMacros) {
       if (publish) {
         cli_error('--publish and --watch are incompatible');
       }
-      await create_db(ourbigbook_options, non_ourbigbook_options);
+      await create_db(ourbigbook_options, nonOurbigbookOptions);
       if (!input_path_is_file) {
-        await reconcile_db_and_filesystem(inputPath, ourbigbook_options, non_ourbigbook_options);
-        await convert_directory_extract_ids(inputPath, ourbigbook_options, non_ourbigbook_options);
+        await reconcile_db_and_filesystem(inputPath, ourbigbook_options, nonOurbigbookOptions);
+        await convert_directory_extract_ids(inputPath, ourbigbook_options, nonOurbigbookOptions);
       }
       const watcher = require('chokidar').watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES})
       const convert = async (subpath) => {
-        await convert_path_to_file(subpath, ourbigbook_options, non_ourbigbook_options);
-        await check_db(non_ourbigbook_options)
-        non_ourbigbook_options.ourbigbook_paths_converted = []
+        await convert_path_to_file(subpath, ourbigbook_options, nonOurbigbookOptions);
+        await check_db(nonOurbigbookOptions)
+        nonOurbigbookOptions.ourbigbook_paths_converted = []
       }
       watcher.on('change', convert).on('add', convert)
     } else {
@@ -2005,27 +2018,28 @@ if (cli.helpMacros) {
         }
         if (ignore_path(
           DEFAULT_IGNORE_BASENAMES_SET,
-          non_ourbigbook_options.ignore_paths,
-          non_ourbigbook_options.ignore_path_regexps,
-          non_ourbigbook_options.dont_ignore_path_regexps,
+          nonOurbigbookOptions.ignore_paths,
+          nonOurbigbookOptions.ignore_path_regexps,
+          nonOurbigbookOptions.dont_ignore_path_regexps,
           inputPath
         )) {
           console.error(`skipping conversion of "${inputPath}" because it is ignored: ;`);
         } else {
-          await create_db(ourbigbook_options, non_ourbigbook_options);
-          output = await convert_path_to_file(inputPath, ourbigbook_options, non_ourbigbook_options);
-          await check_db(non_ourbigbook_options)
+          await create_db(ourbigbook_options, nonOurbigbookOptions);
+          output = await convert_path_to_file(inputPath, ourbigbook_options, nonOurbigbookOptions);
+          await check_db(nonOurbigbookOptions)
         }
       } else {
         if (cli.stdout) {
           cli_error('--publish cannot be used in directory conversion');
         }
-        let actual_input_dir;
-        let publish_branch;
-        let publish_out_publish_dir;
-        let publish_out_publish_dist_dir;
-        let publish_remote_url;
-        let src_branch;
+        let actualInputDir;
+        let publishBranch;
+        let publishOutPublishDir;
+        let publishOutPublishDirCwd;
+        let publishOutPublishDistDir;
+        let publishRemoteUrl;
+        let srcBranch;
 
         if (publish) {
           // Clone the source to ensure that only git tracked changes get built and published.
@@ -2037,72 +2051,73 @@ if (cli.helpMacros) {
             // to be a super easy way for now, so we just hardcode origin to start with.
             // https://stackoverflow.com/questions/171550/find-out-which-remote-branch-a-local-branch-is-tracking
             const opts = {}
-            const origin_url = cmd_get_stdout('git', ['-C', inputPath, 'config', '--get', 'remote.origin.url'], cmd_options_info_nothrow).slice(0, -1);
+            const originUrl = cmdGetStdout('git', ['-C', inputPathCwd, 'config', '--get', 'remote.origin.url'], cmd_options_info_nothrow).slice(0, -1);
             if (cmd_options_info_nothrow.extra_returns.out.status != 0) {
               cli_error('a "origin" git remote repository is required to publish, configure it with something like "git remote add origin git@github.com:username/reponame.git"')
             }
             if (ourbigbook_json.publishRemoteUrl) {
-              publish_remote_url = ourbigbook_json.publishRemoteUrl
+              publishRemoteUrl = ourbigbook_json.publishRemoteUrl
             } else {
-              publish_remote_url = origin_url
+              publishRemoteUrl = originUrl
             }
-            if (!publish_remote_url) {
-              publish_remote_url = 'git@github.com:ourbigbook/ourbigbook.git';
+            if (!publishRemoteUrl) {
+              publishRemoteUrl = 'git@github.com:ourbigbook/ourbigbook.git';
             }
-            src_branch = cmd_get_stdout('git', ['-C', inputPath, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options_info).slice(0, -1);
-            const parsed_remote_url = require("git-url-parse")(publish_remote_url);
+            srcBranch = cmdGetStdout('git', ['-C', inputPathCwd, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options_info).slice(0, -1);
+            const parsed_remote_url = require("git-url-parse")(publishRemoteUrl);
             if (parsed_remote_url.source !== 'github.com') {
               cli_error('only know how  to publish to origin == github.com currently, please send a patch');
             }
             let remote_url_path_components = parsed_remote_url.pathname.split(path.sep);
             if (remote_url_path_components[2].startsWith(remote_url_path_components[1] + '.github.io')) {
-              publish_branch = 'master';
+              publishBranch = 'master';
             } else {
-              publish_branch = 'gh-pages';
+              publishBranch = 'gh-pages';
             }
             if (
-              publish_remote_url === origin_url &&
-              src_branch === publish_branch
+              publishRemoteUrl === originUrl &&
+              srcBranch === publishBranch
             ) {
-              cli_error(`source and publish branches are the same: ${publish_branch}`);
+              cli_error(`source and publish branches are the same: ${publishBranch}`);
             }
           }
-          fs.mkdirSync(publish_dir, {recursive: true});
+          fs.mkdirSync(publishDir, { recursive: true });
           if (cli.publishCommit !== undefined) {
-            cmd_get_stdout('git', ['-C', inputPath, 'add', '-u'], cmd_options);
-            cmd_get_stdout( 'git', [ '-C', inputPath, 'commit', '-m', cli.publishCommit ], cmd_options);
+            cmdGetStdout('git', ['-C', inputPathCwd, 'add', '-u'], cmdOptions);
+            cmdGetStdout( 'git', [ '-C', inputPathCwd, 'commit', '-m', cli.publishCommit ], cmdOptions);
           }
-          source_commit = git_sha(inputPath, src_branch);
+          source_commit = git_sha(inputPath, srcBranch);
           if (fs.existsSync(publish_git_dir)) {
-            cmd_get_stdout('git', ['-C', publish_dir, 'checkout', '--', '.'], cmd_options_no_dry);
-            cmd_get_stdout('git', ['-C', publish_dir, 'fetch'], cmd_options_no_dry);
-            cmd_get_stdout('git', ['-C', publish_dir, 'checkout', source_commit], cmd_options_no_dry);
-            cmd_get_stdout('git', ['-C', publish_dir, 'submodule', 'update', '--init'], cmd_options_no_dry);
-            cmd_get_stdout('git', ['-C', publish_dir, 'clean', '-xdf'], cmd_options_no_dry);
+            cmdGetStdout('git', ['-C', publishDirCwd, 'checkout', '--', '.'], cmd_options_no_dry);
+            cmdGetStdout('git', ['-C', publishDirCwd, 'fetch'], cmd_options_no_dry);
+            cmdGetStdout('git', ['-C', publishDirCwd, 'checkout', source_commit], cmd_options_no_dry);
+            cmdGetStdout('git', ['-C', publishDirCwd, 'submodule', 'update', '--init'], cmd_options_no_dry);
+            cmdGetStdout('git', ['-C', publishDirCwd, 'clean', '-xdf'], cmd_options_no_dry);
           } else {
-            cmd_get_stdout('git', ['clone', '--recursive', '--depth', '1', input_git_toplevel, publish_dir],
-              ourbigbook.clone_and_set(cmd_options, 'dry_run', false));
+            cmdGetStdout('git', ['clone', '--recursive', '--depth', '1', input_git_toplevel, publishDirCwd],
+              ourbigbook.clone_and_set(cmdOptions, 'dry_run', false));
           }
 
           // Set some variables especially for publishing.
-          actual_input_dir = path.join(publish_dir, subdir_relpath);
-          non_ourbigbook_options.ourbigbook_json_dir = actual_input_dir;
-          publish_out_publish_dir = path.join(publish_tmpdir, publish_target);
-          publish_out_publish_obb_dir = path.join(publish_out_publish_dir, ourbigbook_nodejs.PUBLISH_OBB_PREFIX)
-          publish_out_publish_dist_dir = path.join(publish_out_publish_dir, ourbigbook_nodejs.PUBLISH_ASSET_DIST_PREFIX)
-          non_ourbigbook_options.out_css_path = path.join(publish_out_publish_dist_dir, ourbigbook_nodejs.DIST_CSS_BASENAME);
-          non_ourbigbook_options.out_js_path = path.join(publish_out_publish_dist_dir, ourbigbook_nodejs.DIST_JS_BASENAME);
-          non_ourbigbook_options.external_css_and_js = true;
+          actualInputDir = path.join(publishDir, subdir_relpath);
+          nonOurbigbookOptions.ourbigbook_json_dir = actualInputDir;
+          publishOutPublishDir = path.join(publish_tmpdir, publish_target);
+          publishOutPublishDirCwd = relpathCwd(publishOutPublishDir)
+          publish_out_publish_obb_dir = path.join(publishOutPublishDir, ourbigbook_nodejs.PUBLISH_OBB_PREFIX)
+          publishOutPublishDistDir = path.join(publishOutPublishDir, ourbigbook_nodejs.PUBLISH_ASSET_DIST_PREFIX)
+          nonOurbigbookOptions.out_css_path = path.join(publishOutPublishDistDir, ourbigbook_nodejs.DIST_CSS_BASENAME);
+          nonOurbigbookOptions.out_js_path = path.join(publishOutPublishDistDir, ourbigbook_nodejs.DIST_JS_BASENAME);
+          nonOurbigbookOptions.external_css_and_js = true;
 
           // Remove all files from the publish diretory in case some were removed from the original source.
           if (publish_uses_git) {
-            if (fs.existsSync(path.join(publish_out_publish_dir, '.git'))) {
-              if (git_ls_files(publish_out_publish_dir).length > 0) {
-                cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'rm', '-r', '-f', '.'], cmd_options);
+            if (fs.existsSync(path.join(publishOutPublishDir, '.git'))) {
+              if (git_ls_files(publishOutPublishDir).length > 0) {
+                cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'rm', '-r', '-f', '.'], cmdOptions);
               }
             }
           } else {
-            fs.rmSync(publish_out_publish_dir, { recursive: true, force: true })
+            fs.rmSync(publishOutPublishDir, { recursive: true, force: true })
           }
 
           // Clean database to ensure a clean conversion. TODO: this is dangerous, if some day we
@@ -2112,17 +2127,18 @@ if (cli.helpMacros) {
           // - it forces re-fetch of git history on the gh-pages branch
           fs.rmSync(path.join(publish_tmpdir, 'db.sqlite3'), { force: true })
 
-          fs.mkdirSync(publish_out_publish_dir, { recursive: true })
+          fs.mkdirSync(publishOutPublishDir, { recursive: true })
         } else {
-          actual_input_dir = inputPath;
-          publish_out_publish_dir = outdir;
+          actualInputDir = inputPath;
+          publishOutPublishDir = outdir;
+          publishOutPublishDirCwd = relpathCwd(publishOutPublishDir)
         }
-        non_ourbigbook_options.outdir = publish_out_publish_dir;
-        await create_db(ourbigbook_options, non_ourbigbook_options);
+        nonOurbigbookOptions.outdir = publishOutPublishDir;
+        await create_db(ourbigbook_options, nonOurbigbookOptions);
 
         // Do the actual conversion.
-        await convert_directory_extract_ids_and_render(actual_input_dir, ourbigbook_options, non_ourbigbook_options)
-        if (non_ourbigbook_options.had_error) {
+        await convert_directory_extract_ids_and_render(actualInputDir, ourbigbook_options, nonOurbigbookOptions)
+        if (nonOurbigbookOptions.had_error) {
           process.exit(1);
         }
 
@@ -2136,42 +2152,42 @@ if (cli.helpMacros) {
             to +=  '.' + ourbigbook.HTML_EXT
           }
           generate_redirect_base(
-            path.join(non_ourbigbook_options.outdir, from + '.' + ourbigbook.HTML_EXT),
+            path.join(nonOurbigbookOptions.outdir, from + '.' + ourbigbook.HTML_EXT),
             to
           )
         }
 
         // Publish the converted output if build succeeded.
-        if (publish && !non_ourbigbook_options.had_error) {
+        if (publish && !nonOurbigbookOptions.had_error) {
 
           // Push the original source.
           if (!cli.dryRunPush) {
-            cmd_get_stdout('git', ['-C', inputPath, 'push'], cmd_options);
+            cmdGetStdout('git', ['-C', inputPathCwd, 'push'], cmdOptions);
           }
 
           if (publish_uses_git) {
-            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'init'], cmd_options);
+            cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'init'], cmdOptions);
             // https://stackoverflow.com/questions/42871542/how-to-create-a-git-repository-with-the-default-branch-name-other-than-master
-            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'checkout', '-B', publish_branch], cmd_options);
+            cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'checkout', '-B', publishBranch], cmdOptions);
             try {
               // Fails if remote already exists.
-              cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'remote', 'add', 'origin', publish_remote_url], cmd_options);
+              cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'remote', 'add', 'origin', publishRemoteUrl], cmdOptions);
             } catch(error) {
-              cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'remote', 'set-url', 'origin', publish_remote_url], cmd_options);
+              cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'remote', 'set-url', 'origin', publishRemoteUrl], cmdOptions);
             }
             // Ensure that we are up-to-date with the upstream gh-pages if one exists.
-            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'fetch', 'origin'], cmd_options);
-            cmd_get_stdout(
+            cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'fetch', 'origin'], cmdOptions);
+            cmdGetStdout(
               'git',
-              ['-C', publish_out_publish_dir, 'reset', `origin/${publish_branch}`],
+              ['-C', publishOutPublishDirCwd, 'reset', `origin/${publishBranch}`],
               // Fails on the first commit in an empty repository.
-              ourbigbook.clone_and_set(cmd_options, 'throw_on_error', false)
+              ourbigbook.clone_and_set(cmdOptions, 'throwOnError', false)
             );
           }
 
           // Generate special files needed for a given publish target.
           for (const p in publish_create_files) {
-            const outpath = path.join(publish_out_publish_dir, p)
+            const outpath = path.join(publishOutPublishDir, p)
             fs.mkdirSync(path.dirname(outpath), { recursive: true });
             fs.writeFileSync(outpath, publish_create_files[p])
           }
@@ -2185,7 +2201,7 @@ if (cli.helpMacros) {
               cli_error(`${ourbigbook.OURBIGBOOK_JSON_BASENAME} prepublish file not found: ${prepublish_path}`);
             }
             try {
-              cmd_get_stdout(path.resolve(prepublish_path), [publish_out_publish_dir]);
+              cmdGetStdout('./' + path.relative(process.cwd(), path.resolve(prepublish_path)), [relpathCwd(publishOutPublishDir)]);
             } catch(error) {
               cli_error(`${ourbigbook.OURBIGBOOK_JSON_BASENAME} prepublish command exited non-zero, aborting`);
             }
@@ -2197,38 +2213,38 @@ if (cli.helpMacros) {
           while ((dirent = dir.readSync()) !== null) {
             require('fs-extra').copySync(
               path.join(ourbigbook_nodejs.DIST_PATH, dirent.name),
-              path.join(publish_out_publish_dist_dir, dirent.name)
+              path.join(publishOutPublishDistDir, dirent.name)
             )
           }
           fs.mkdirSync(publish_out_publish_obb_dir, { recursive: true })
           if (ourbigbook_json.web && ourbigbook_json.web.linkFromHeaderMeta) {
             fs.copyFileSync(
               ourbigbook_nodejs.LOGO_PATH,
-              path.join(publish_out_publish_dir, ourbigbook_nodejs.LOGO_ROOT_RELPATH)
+              path.join(publishOutPublishDir, ourbigbook_nodejs.LOGO_ROOT_RELPATH)
             )
           }
           dir.closeSync()
 
           if (publish_uses_git) {
             // Commit and push.
-            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'add', '.'], cmd_options);
-            const args = ['-C', publish_out_publish_dir, 'commit', '-m', source_commit]
-            if (git_has_commit(publish_out_publish_dir)) {
+            cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'add', '.'], cmdOptions);
+            const args = ['-C', publishOutPublishDirCwd, 'commit', '-m', source_commit]
+            if (git_has_commit(publishOutPublishDir)) {
               args.push('--amend')
             }
-            let commit_cmd_options = cmd_options
+            let commit_cmd_options = cmdOptions
             if (ourbigbook_json.publishCommitDate) {
               args.push(...['--date', ourbigbook_json.publishCommitDate])
-              commit_cmd_options = Object.assign({}, cmd_options)
+              commit_cmd_options = Object.assign({}, cmdOptions)
               commit_cmd_options.env_extra = { GIT_COMMITTER_DATE: ourbigbook_json.publishCommitDate }
             }
-            cmd_get_stdout('git', args, commit_cmd_options);
+            cmdGetStdout('git', args, commit_cmd_options);
             if (!cli.dryRunPush) {
-              cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'push', '-f', 'origin', `${publish_branch}:${publish_branch}`], cmd_options);
+              cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'push', '-f', 'origin', `${publishBranch}:${publishBranch}`], cmdOptions);
               // Mark the commit with the `published` branch to make it easier to find what was last published.
-              cmd_get_stdout('git', ['-C', inputPath, 'checkout', '-B', 'published'], cmd_options);
-              cmd_get_stdout('git', ['-C', inputPath, 'push', '-f', '--follow-tags'], cmd_options);
-              cmd_get_stdout('git', ['-C', inputPath, 'checkout', '-'], cmd_options);
+              cmdGetStdout('git', ['-C', inputPathCwd, 'checkout', '-B', 'published'], cmdOptions);
+              cmdGetStdout('git', ['-C', inputPathCwd, 'push', '-f', '--follow-tags'], cmdOptions);
+              cmdGetStdout('git', ['-C', inputPathCwd, 'checkout', '-'], cmdOptions);
             }
           }
         }
@@ -2247,7 +2263,7 @@ if (cli.helpMacros) {
   }
   perf_print('exit', ourbigbook_options)
   if (!cli.watch) {
-    process.exit(non_ourbigbook_options.had_error);
+    process.exit(nonOurbigbookOptions.had_error);
   }
 }
 })().catch((e) => {

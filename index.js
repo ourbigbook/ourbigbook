@@ -1209,6 +1209,7 @@ Macro.HEADER_CHILD_ARGNAME = 'child';
 Macro.HEADER_TAG_ARGNAME = 'tag';
 Macro.X_MACRO_NAME = 'x';
 Macro.HEADER_SCOPE_SEPARATOR = '/';
+Macro.FILE_ID_PREFIX = 'file' + Macro.HEADER_SCOPE_SEPARATOR
 Macro.INCLUDE_MACRO_NAME = 'Include';
 Macro.LINK_MACRO_NAME = 'a';
 Macro.LIST_ITEM_MACRO_NAME = 'L';
@@ -2179,7 +2180,7 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
               id_text_append = title_text
             }
             ast.file = id_text_append
-            id_text = 'file' + Macro.HEADER_SCOPE_SEPARATOR + id_text + id_text_append
+            id_text = Macro.FILE_ID_PREFIX + id_text + id_text_append
           } else {
             id_text += title_to_id(title_text, new_context.options.ourbigbook_json['id']);
           }
@@ -3689,6 +3690,8 @@ function macro_image_video_block_convert_function(ast, context) {
 }
 
 function magic_title_to_id(target_id) {
+  if (target_id.startsWith(Macro.FILE_ID_PREFIX))
+    return target_id
   return title_to_id(target_id, { keep_scope_sep: true })
 }
 

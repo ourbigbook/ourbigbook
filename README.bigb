@@ -4125,6 +4125,7 @@ the link treated magically as follows:
   If we had a scope as in `\x[my scope/Internal references]`, then each scope part is checked separately. E.g. in this case we would have upper case `Internal references`, even though `my scope` is lowercase, and so `{c}` would be set.
 
 * the ID is calculated as follows:
+  * if the ID starts with `file/`, use it as is, to work better with the <h file argument>
   * \x[automatic-id-from-title] conversion is performed, with you exception: forwards slashs `/` are kept, in order to make <scopes> work.
 
     In our case, there aren't any slashes `/`, so it just gives `internal-reference`. But if instead we had e.g.: `\x[my scope/internal reference]{magic}`, then we would reach `my-scope/internal-reference` and not `my-scope-internal-reference`.

@@ -33,6 +33,7 @@ const CIRODOWN_JSON_BASENAME = 'cirodown.json';
 const CIRODOWN_TEX_BASENAME = 'cirodown.tex';
 const LOG_OPTIONS = new Set([
   'ast',
+  'db',
   'headers',
   'tokens',
 ]);
@@ -79,7 +80,13 @@ class SqliteIdProvider extends cirodown.IdProvider {
   }
 
   clear_prefix(prefix) {
-    const prefix_literal = prefix + '/%';
+    let prefix_literal;
+    if (prefix) {
+      prefix_literal = prefix + cirodown.Macro.HEADER_SCOPE_SEPARATOR + '%'
+    } else {
+      // Toplevel dir, delete all IDs.
+      prefix_literal = '%'
+    }
     this.delete_prefix_ids_stmt.run(prefix_literal);
     this.delete_prefix_includes_stmt.run(prefix_literal);
   }
@@ -526,7 +533,7 @@ function create_db(convert_input_options) {
   if (!fs.existsSync(db_dir)) {
     fs.mkdirSync(db_dir, {recursive: true});
   }
-  const db = new better_sqlite3(convert_input_options.db_path);
+  const db = new better_sqlite3(convert_input_options.db_path, convert_input_options.db_options);
   if (
     db.prepare(`SELECT name
     FROM sqlite_master
@@ -1005,6 +1012,7 @@ if (commander.helpMacros) {
   let convert_input_options = {
     cirodown_json_dir: cirodown_json_dir,
     commander: commander,
+    db_options: {},
     encoding: cirodown_nodejs.ENCODING,
     external_css_and_js: false,
     had_error: false,
@@ -1014,6 +1022,9 @@ if (commander.helpMacros) {
     outdir: outdir,
     publish: publish,
   };
+  if (convert_input_options_log.db) {
+    convert_input_options.db_options.verbose = console.log;
+  }
   let input_git_toplevel;
   let subdir_relpath;
   let publish_tmpdir;

@@ -31,6 +31,20 @@ async function start(port, startNext, cb) {
   }
 
   const sequelize = models.getSequelize(__dirname)
+  // https://stackoverflow.com/questions/57467589/req-protocol-is-always-http-and-not-https
+  // req.protocol was fixed to HTTP instead of HTTPS, leading to emails sent from HTTPS having HTTP links.
+  app.enable('trust proxy')
+
+  // Enforce HTTPS.
+  // https://github.com/cirosantilli/ourbigbook/issues/258
+  app.use(function (req, res, next) {
+    if (config.isProduction && req.headers['x-forwarded-proto'] === 'http') {
+      res.redirect(301, `https://${req.hostname}${req.url}`);
+      return;
+    }
+    next()
+  })
+
   app.set('sequelize', sequelize)
   passport.use(
     new passport_local.Strategy(

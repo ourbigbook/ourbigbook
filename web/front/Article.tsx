@@ -110,14 +110,19 @@ const Article = ({
     </>
   }
   let linkPref: string
-  const articlesInSamePageMap = {}
-  if (!isIssue) {
-    linkPref = '../'.repeat(article.slug.split('/').length - 1)
-    for (const article of articlesInSamePage) {
-      articlesInSamePageMap[article.slug] = article
+  const articlesInSamePageMap = React.useRef(null)
+  if (articlesInSamePageMap.current === null) {
+    const articlesInSamePageMapVal = {}
+    if (!isIssue) {
+      linkPref = '../'.repeat(article.slug.split('/').length - 1)
+      for (const article of articlesInSamePage) {
+        articlesInSamePageMapVal[article.slug] = article
+      }
+      articlesInSamePageMapVal[article.slug] = article
     }
+    articlesInSamePageMap.current = articlesInSamePageMapVal
   }
-  articlesInSamePageMap[article.slug] = article
+  const webElemToRootMap = React.useRef(new Map())
   const canEdit = isIssue ? !cant.editIssue(loggedInUser, article) : !cant.editArticle(loggedInUser, article)
   const canDelete = isIssue ? !cant.deleteIssue(loggedInUser, article) : !cant.deleteArticle(loggedInUser, article)
   const renderRefCallback = React.useCallback(
@@ -126,7 +131,6 @@ const Article = ({
         for (const h of elem.querySelectorAll('.h')) {
           const id = h.id
           const webElem = h.querySelector('.web')
-          const ancestorsElem = h.querySelector('.ancestors')
           const toplevel = webElem.classList.contains('top')
           // TODO rename to article later on.
           let curArticle, isIndex
@@ -141,7 +145,7 @@ const Article = ({
             curArticle = article
             isIndex = true
           } else {
-            curArticle = articlesInSamePageMap[id]
+            curArticle = articlesInSamePageMap.current[id]
             if (!curArticle) {
               // Possible for Include headers. Maybe one day we will cover them.
               continue
@@ -151,24 +155,37 @@ const Article = ({
           if (loggedInUser) {
             mySlug = `${loggedInUser.username}/${curArticle.topicId}`
           }
-          if (ancestorsElem) {
-            if (ancestors.length) {
-              ancestorsElem.innerHTML = htmlAncestorLinks(
-                ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 0)).map(a => { return {
-                  href: ` href="${linkPref}${a.slug}"`,
-                  content: a.titleRender,
-                }}),
-                ancestors.length,
-              )
-            } else {
-              createRoot(ancestorsElem).render(
-                <span dangerouslySetInnerHTML={{
-                  __html: `<span> ${ReactDomServer.renderToString(<HelpIcon />)} Ancestors will show here when the tree index is updated</span>`
-                }} ></span>,
-              )
+
+          // Ancestors.
+          {
+            const ancestorsElem = h.querySelector('.ancestors')
+            if (ancestorsElem) {
+              if (ancestors.length) {
+                ancestorsElem.innerHTML = htmlAncestorLinks(
+                  ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 0)).map(a => { return {
+                    href: ` href="${linkPref}${a.slug}"`,
+                    content: a.titleRender,
+                  }}),
+                  ancestors.length,
+                )
+              } else {
+                createRoot(ancestorsElem).render(
+                  <span dangerouslySetInnerHTML={{
+                    __html: `<span> ${ReactDomServer.renderToString(<HelpIcon />)} Ancestors will show here when the tree index is updated</span>`
+                  }} ></span>,
+                )
+              }
             }
           }
-          createRoot(webElem).render(
+
+          // We use this map to prevent calling createRoot twice on the same element, which gives a warning.
+          // TODO how/when to correctly clear this map? Tried on 
+          let root = webElemToRootMap.current.get(webElem)
+          if (!root) {
+            root = createRoot(webElem)
+            webElemToRootMap.current.set(webElem, root)
+          }
+          root.render(
             <>
               <LikeArticleButton {...{
                 article: curArticle,
@@ -385,7 +402,7 @@ const Article = ({
         }
       }
     },
-    [ancestors, articlesInSamePageMap]
+    [ancestors, articlesInSamePageMap, webElemToRootMap]
   )
   let html = ''
   if (!isIssue) {

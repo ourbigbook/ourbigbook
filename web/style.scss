@@ -451,8 +451,13 @@ span.shortcut {
   display: none !important;
 }
 
-.home-page.pinned-article {
-  font-weight: bold;
+.home-page {
+  .pinned-article {
+    font-weight: bold;
+  }
+  .site-settings {
+    margin-top: 10px;
+  }
 }
 
 .loading-spinner {

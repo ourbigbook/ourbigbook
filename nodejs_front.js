@@ -20,11 +20,26 @@ function preload_katex(tex, katex_macros) {
   return katex_macros
 }
 
+let isProduction;
+let isTest;
+if (process.env.NEXT_PUBLIC_NODE_ENV === undefined) {
+  isProduction = process.env.NODE_ENV === 'production'
+} else {
+  isProduction = process.env.NEXT_PUBLIC_NODE_ENV === 'production'
+}
+if (isProduction) {
+  isTest = false
+} else {
+  isTest = process.env.NEXT_PUBLIC_NODE_ENV === 'test'
+}
+
 module.exports = {
   env_true,
+  isProduction,
+  isTest,
   preload_katex,
   // TODO convert to OURBIGBOOK_DBMS=pg rather than boolean.
-  postgres: process.env.OURBIGBOOK_POSTGRES === env_true,
+  postgres: process.env.OURBIGBOOK_POSTGRES === env_true || (process.env.OURBIGBOOK_POSTGRES === undefined && isProduction),
   sequelize_postgres_opts: {
     dialect: 'postgres',
     dialectOptions: {

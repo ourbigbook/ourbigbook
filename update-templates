@@ -18,7 +18,7 @@ update-template() (
   git init
   git add .
   git commit -m 'Create template'
-  git remote add origin "git@github.com:cirosantilli/${dirname}.git"
+  git remote add origin "git@github.com:ourbigbook/${dirname}.git"
   git push -f
   if [ -n "$subdir" ]; then cd "$subdir"; fi
   npx ourbigbook --publish
@@ -26,6 +26,6 @@ update-template() (
 )
 
 # TODO https://github.com/ourbigbook/ourbigbook/issues/160
-update-template subdir ourbigbook-template-subdir docs
-update-template min ourbigbook-template-min
-update-template default ourbigbook-template
+update-template subdir template-subdir docs
+update-template min template-min
+update-template default template

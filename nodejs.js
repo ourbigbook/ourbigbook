@@ -232,7 +232,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
       const parent_id = row.from_id
       const parent_ast = this.id_cache[parent_id]
       const parent_ast_header_dag_node = parent_ast.header_dag_node
-      ast.header_dag_node = new cirodown.HeaderTreeNode(ast, parent_ast_header_dag_node);
+      ast.header_dag_node = new cirodown.HeaderDagNode(ast, parent_ast_header_dag_node);
       // I love it when you get potential features like this for free.
       // Only noticed when Figures showed up on ToC.
       if (ast.macro_name === cirodown.Macro.HEADER_MACRO_NAME) {

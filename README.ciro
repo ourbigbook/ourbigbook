@@ -5366,6 +5366,23 @@ npm unlink
 rm node_modules/cirodown
 ``
 
+= Run an isolated Cirodown master
+{parent=run-cirodown-master}
+
+\x[run-cirodown-master] mentions how to install and then run Cirodown master globally. To install locally in the current directory only instead, which can be useful for bisection:
+``
+npm install
+ln -s .. node_modules/cirodown
+npm run build-assets
+./cirodown .
+``
+TODO: this fails the Sass conversion with:
+``
+Error: Can't find stylesheet to import.
+  ╷
+1 │ @import 'cirodown/cirodown.common.scss';
+``
+
 = Test system
 {parent=developing-cirodown}
 

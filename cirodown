@@ -86,7 +86,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
   }
 
   async get_noscope_entry(id) {
-    return this.sequelize.models.Id.findByPk(id)
+    return this.sequelize.models.Id.findOne({ where: { idid: id } })
   }
 
   async get_includes_entries(to_id) {
@@ -372,7 +372,7 @@ async function convert_path(input_path, options, convert_input_options) {
     for (const id in ids) {
       const ast = ids[id];
       create_ids.push({
-        id,
+        idid: id,
         path: ast.source_location.path,
         ast_json: JSON.stringify(ast),
       })
@@ -386,63 +386,64 @@ async function convert_path(input_path, options, convert_input_options) {
       toplevel_id = context.toplevel_ast.id;
     }
 
-    // Calculate includes.
-    const includes = []
-    for (const header_ast of context.headers_with_include) {
-      for (const include of header_ast.includes) {
-        includes.push({
-          from_id: header_ast.id,
-          from_path: header_ast.source_location.path,
-          to_id: include,
-          type: INCLUDES_TABLE_NAMES_TYPES['INCLUDE']
-        })
-      }
-    }
-    for (const to_id in context.xref_from_to_dict[false]) {
-      const types = context.xref_from_to_dict[false][to_id];
-      for (const type in types) {
-        const from_ids = types[type];
-        for (const from_id of from_ids) {
-          if (
-            // TODO happens on CirodownExample, likely also include,
-            // need to fix and remove this if.
-            from_id !== undefined
-          ) {
-            const from_header = context.id_provider.get(from_id);
-            if (
-              // Can happen when the database is not yet populated,
-              // leading to ID not being present.
-              from_header !== undefined
-            ) {
-              if (context.id_provider.get(from_id) === undefined){
-                console.error(from_id);
-                throw new Error(from_id);
-              }
-              includes.push({
-                from_id,
-                from_path: from_header.source_location.path,
-                to_id,
-                type: INCLUDES_TABLE_NAMES_TYPES[type]
-              })
-            }
-          }
-        }
-      }
-    }
-
     // This was the 80% bottleneck at Cirodown f8fc9eacfa794b95c1d9982a04b62603e6d0bb83
     // before being converted to a single transaction!
     // Likely would not have been a bottleneck if we new more about databases/had more patience
     // and instead of doing INSERT one by one we would do a single insert with a bunch of data.
     // The move to Sequelize made that easier with bulkCreate. But keeping the transaction just in case
     await convert_input_options.sequelize.transaction(async (transaction) => {
+      // Calculate includes.
+      const includes = []
+      for (const header_ast of context.headers_with_include) {
+        for (const include of header_ast.includes) {
+          includes.push({
+            from_id: header_ast.id,
+            from_path: header_ast.source_location.path,
+            to_id: include,
+            type: INCLUDES_TABLE_NAMES_TYPES['INCLUDE']
+          })
+        }
+      }
+      for (const to_id in context.xref_from_to_dict[false]) {
+        const types = context.xref_from_to_dict[false][to_id];
+        for (const type in types) {
+          const from_ids = types[type];
+          for (const from_id of from_ids) {
+            if (
+              // TODO happens on CirodownExample, likely also include,
+              // need to fix and remove this if.
+              from_id !== undefined
+            ) {
+              const from_header = await context.id_provider.get(from_id);
+              if (
+                // Can happen when the database is not yet populated,
+                // leading to ID not being present.
+                from_header !== undefined
+              ) {
+                includes.push({
+                  from_id,
+                  from_path: from_header.source_location.path,
+                  to_id,
+                  type: INCLUDES_TABLE_NAMES_TYPES[type]
+                })
+              }
+            }
+          }
+        }
+      }
       await Promise.all([
-        convert_input_options.sequelize.Id.bulkCreate(create_ids),
-        convert_input_options.sequelize.Include.bulkCreate(includes),
-        convert_input_options.sequelize.File.create({
-          path: input_path_relative_to_cirodown_json,
-          toplevel_id,
-        })
+        convert_input_options.sequelize.models.Id.bulkCreate(create_ids, { transaction }),
+        convert_input_options.sequelize.models.Include.bulkCreate(includes, { transaction }),
+        convert_input_options.sequelize.models.File.create(
+          {
+            path: input_path_relative_to_cirodown_json,
+            toplevel_id,
+          },
+          {
+            ignoreDuplicates: true,
+            transaction
+          },
+        )
       ])
     });
     if (convert_input_options.commander.debugPerf) {
@@ -997,7 +998,8 @@ if (commander.helpMacros) {
     commander,
     db_options: {
       dialect: 'sqlite',
-      logging: convert_input_options_log.sequelize,
+      logging: convert_input_options_log.db,
+      define: { timestamps: false },
     },
     encoding: cirodown_nodejs.ENCODING,
     external_css_and_js: false,

@@ -4574,6 +4574,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           if (
             // We have to patch the level of the target ID (1) do our new dummy one in the current tree.
             argname !== 'level' &&
+            argname !== 'wiki' &&
             target_id_ast.validation_output[argname].given
           ) {
             header_ast.args[argname] = target_id_ast.args[argname]

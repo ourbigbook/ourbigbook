@@ -12,11 +12,12 @@ import Maybe from "components/Maybe";
 import EditProfileButton from "components/EditProfileButton";
 import FollowUserButton, { FollowUserButtonContext } from "components/FollowUserButton";
 import UserAPI from "lib/api/user";
-import { DisplayAndUserName } from "front/user"
+import { DisplayAndUsername, displayAndUsernameText } from "front/user"
 import { DEFAULT_USER_SCORE_TITLE } from "lib/utils/constant"
 import fetcher from "lib/utils/fetcher";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 import routes from "routes";
+import { AppContext } from 'lib'
 
 const ProfileHoc = (tab) => {
   return ({ profile, authoredArticleCount, likedArticleCount }) => {
@@ -37,15 +38,16 @@ const ProfileHoc = (tab) => {
       profile?.following,
       profile?.followerCount,
     ])
+    const { setTitle } = React.useContext(AppContext)
+    React.useEffect(() => {
+      setTitle(displayAndUsernameText(profile))
+    }, [profile?.displayName, profile?.username])
     if (router.isFallback) { return <LoadingSpinner />; }
     return (
       <>
-        <Head>
-          <title></title>
-        </Head>
         <div className="profile-page content-not-cirodown">
           <div className="user-info">
-            <h1><DisplayAndUserName user={profile}></DisplayAndUserName></h1>
+            <h1><DisplayAndUsername user={profile}></DisplayAndUsername></h1>
             <p>
               <FollowUserButtonContext.Provider value={{following, setFollowing, followerCount, setFollowerCount}}>
                 <FollowUserButton profile={profile} showUsername={false}/>

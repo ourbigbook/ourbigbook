@@ -4,7 +4,7 @@ import CustomLink from "components/CustomLink";
 import CustomImage from "components/CustomImage";
 import { User } from "lib/types/userType";
 import routes from "routes";
-import { DisplayAndUserName } from "front/user"
+import { DisplayAndUsername } from "front/user"
 
 const UserLinkWithImage = ({ user }: { user: User }) => {
   if (!user) return null;
@@ -19,7 +19,7 @@ const UserLinkWithImage = ({ user }: { user: User }) => {
         alt="author profile image"
       />
       {' '}
-      <DisplayAndUserName user={user}></DisplayAndUserName>
+      <DisplayAndUsername user={user}></DisplayAndUsername>
     </CustomLink>
   )
 }

@@ -5,6 +5,7 @@ import { mutate } from "swr";
 import Label from "components/Label";
 import ListErrors from "components/ListErrors";
 import LogoutButton from "components/LogoutButton";
+import { AppContext } from 'lib'
 import UserAPI from "lib/api/user";
 import checkLogin from "lib/utils/checkLogin";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
@@ -59,9 +60,12 @@ const Settings = () => {
       Router.push(routes.userView(user.username));
     }
   };
+  const title = 'Account settings'
+  const { setTitle } = React.useContext(AppContext)
+  React.useEffect(() => { setTitle(title) }, [])
   return (
     <div className="settings-page content-not-cirodown">
-      <h1>Your Settings</h1>
+      <h1>{title}</h1>
       <LogoutButton />
       <>
         <ListErrors errors={errors} />

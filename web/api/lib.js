@@ -11,6 +11,15 @@ async function getArticle(req, res) {
 }
 exports.getArticle = getArticle
 
+class ValidationError extends Error {
+  constructor(errors, status) {
+    super();
+    this.errors = errors
+    this.status = status
+  }
+}
+exports.ValidationError = ValidationError
+
 function validatePositiveInteger(s) {
   const i = Number(s)
   let ok = s !== '' && Number.isInteger(i) && i >= 0
@@ -27,10 +36,10 @@ function validateParam(obj, prop, validator, defaultValue) {
     if (ok) {
       return val
     } else {
-      throw {
-        errors: [`validator ${validator.name} failed on ${prop} = "${param}"`],
-        status: 422,
-      }
+      throw new ValidationError(
+        [`validator ${validator.name} failed on ${prop} = "${param}"`],
+        422,
+      )
     }
   }
 }

@@ -2025,14 +2025,13 @@ Keep in mind that certain things can never be embedded, e.g.:
 
 If given:
 * the \x[includes][`include`] macro parses the target file to be included and includes it in-place
-\l[\x[internal-cross-file-references] are disabled, and the cross file ID database does not get updated.
+* \x[internal-cross-file-references] are disabled, and the cross file ID database does not get updated.
 
-It should be possible to work around this, but we are starting with the simplest implementation that forbids it.
+  It should be possible to work around this, but we are starting with the simplest implementation that forbids it.
 
-The problem those cause is that the IDs of included headers show as duplicate IDs of those in the ID database.
+  The problem those cause is that the IDs of included headers show as duplicate IDs of those in the ID database.
 
-This should be OK to start with because the more common use case with `--html-sinle-page` is that of including all headers in a single document.
-]
+  This should be OK to start with because the more common use case with `--html-sinle-page` is that of including all headers in a single document.
 
 Otherwise, `include` only adds the headers of the other file to the table of contents of the current one, but not the body of the other file. The ToC entries then point to the headers of the included external files.
 
@@ -2227,11 +2226,9 @@ TODO implement set the base URL where media will be served from.
 
 TODO correct:
 * `local`: tracked in the current Git repository, no further magic is done
-\l[
-  `path`: tracked in a separate media repository, defaults to `data/<project-name>-media/`
+* `path`: tracked in a separate media repository, defaults to `data/<project-name>-media/`
 
   When \x[publish][publishing], Cirodown searches for files that were used in the build but not added to the media directory, and automatically does a `git add`, `commit` and `push` for you!
-]
 
 Further rationale at: \x[where-to-store-images].
 
@@ -2243,13 +2240,13 @@ See also: https://github.com/cirosantilli/cirodown/issues/40
 Path of a script that gets executed before running \x[publish][`cirodown --publish`].
 
 The script arguments are:
-\l[the publish output directory.
+* the publish output directory.
 
-That directory is guaranteed to exist when `prepublish` is called.
+  That directory is guaranteed to exist when `prepublish` is called.
 
-For `git`-based publish targets, all files are almost ready in there, just waiting for a `git add .` that follows `prepublish`.
+  For `git`-based publish targets, all files are almost ready in there, just waiting for a `git add .` that follows `prepublish`.
 
-This means that you can use this script to place or remove files from the final publish output.]
+  This means that you can use this script to place or remove files from the final publish output.
 
 If the `prepublish` script returns with a non-zero exit value, the publish is aborted.
 
@@ -2284,42 +2281,31 @@ Then, if the project picks up steam, we can start considering a full WYSISYG.
 It would be amazing to have a WebKit interface that works both on browser for the and locally.
 
 Possibilities we could reuse:
-\l[
-Editor.js
+* Editor.js
 
-Returns JSON AST!
-* website: https://editorjs.io/ json output
-* source: https://github.com/codex-team/editor.js
-* WYSIWYG: no
-* preview scroll sync: yes
-]
-\l[
-  StackEdit
-
+  Returns JSON AST!
+  * website: https://editorjs.io/ json output
+  * source: https://github.com/codex-team/editor.js
+  * WYSIWYG: no
+  * preview scroll sync: yes
+* StackEdit
   * website: https://stackedit.io
   * source: https://github.com/benweet/stackedit
   * demo: https://stackedit.io/app
   * WYSIWYG: no
   * preview scroll sync: yes
-]
-\l[
-  Editor.md
-
+* Editor.md
   * website: https://github.com/pandao/editor.md
   * source: https://github.com/pandao/editor.md
   * demo: https://pandao.github.io/editor.md
   * WYSIWYG: no
   * preview scroll sync: yes but buggy when tested 2019-12-12 on live website
-]
-\l[
-  Quill.md
-
+* Quill.md
   * website: https://quilljs.com
   * source: https://github.com/pandao/editor.md
   * demo: https://pandao.github.io/editor.md
   * WYSIWYG: yes
   * markdown output: no https://github.com/quilljs/quill/issues/74
-]
 * https://ui.toast.com/tui-editor/
 * https://www.froala.com/wysiwyg-editor
 

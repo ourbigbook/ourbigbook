@@ -113,16 +113,12 @@ const Article = ({
   if (!isIssue) {
     linkPref = '../'.repeat(article.slug.split('/').length - 1)
   }
-  const articlesInSamePageMap = React.useRef(null)
-  if (articlesInSamePageMap.current === null) {
-    const articlesInSamePageMapVal = {}
-    if (!isIssue) {
-      for (const article of articlesInSamePage) {
-        articlesInSamePageMapVal[article.slug] = article
-      }
-      articlesInSamePageMapVal[article.slug] = article
+  const articlesInSamePageMap = {}
+  if (!isIssue) {
+    for (const article of articlesInSamePage) {
+      articlesInSamePageMap[article.slug] = article
     }
-    articlesInSamePageMap.current = articlesInSamePageMapVal
+    articlesInSamePageMap[article.slug] = article
   }
   const webElemToRootMap = React.useRef(new Map())
   const canEdit = isIssue ? !cant.editIssue(loggedInUser, article) : !cant.editArticle(loggedInUser, article)
@@ -147,7 +143,7 @@ const Article = ({
             curArticle = article
             isIndex = true
           } else {
-            curArticle = articlesInSamePageMap.current[id]
+            curArticle = articlesInSamePageMap[id]
             if (!curArticle) {
               // Possible for Include headers. Maybe one day we will cover them.
               continue

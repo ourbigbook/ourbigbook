@@ -56,7 +56,7 @@ function IndexPageHoc({
           paginationUrlFunc = (page) => routes.articles({ page, sort: order })
         }
         break
-      case 'issue':
+      case 'discussion':
         paginationUrlFunc = (page) => routes.issues(issueArticle.slug, { page, sort: order })
         isIssue = true
         break

@@ -14,10 +14,7 @@ const convert_opts = {
   split_headers: false,
 
   // Can help when debugging failures.
-  //show_ast: true,
-  //show_parse: true,
-  //show_tokens: true,
-  //show_tokenize: true,
+  //log: {ast: false, parse: false, tokens: false, tokenize: false}
 };
 
 class MockIdProvider extends cirodown.IdProvider {
@@ -125,8 +122,13 @@ function assert_convert_ast(
     options = Object.assign({}, options);
     if (!('assert_xpath_matches' in options)) {
       // Not ideal, but sometimes there's no other easy way
-      // to test rendered stuff.
-      options.assert_xpath_matches = undefined;
+      // to test rendered stuff. All in list must match.
+      options.assert_xpath_matches = [];
+    }
+    if (!('assert_xpath_split_headers' in options)) {
+      // Map of output paths for split headers mode. Each output
+      // path must match all xpath expresssions in its list.
+      options.assert_xpath_split_headers = {};
     }
     if (!('convert_before' in options)) {
       // List of strings. Convert files at these paths from default_file_reader
@@ -198,7 +200,16 @@ function assert_convert_ast(
       assert.strictEqual(extra_returns.errors.length, 0);
       assert.ok(is_subset);
     }
-    assert_xpath_matches(options.assert_xpath_matches, output);
+    for (const xpath_expr of options.assert_xpath_matches) {
+      assert_xpath_matches(xpath_expr, output);
+    }
+    for (const key in options.assert_xpath_split_headers) {
+      const output = extra_returns.rendered_outputs[key];
+      assert.notStrictEqual(output, undefined);
+      for (const xpath_expr of options.assert_xpath_split_headers[key]) {
+        assert_xpath_matches(xpath_expr, output);
+      }
+    }
   });
 }
 
@@ -286,14 +297,12 @@ function assert_no_error(description, input) {
 }
 
 function assert_xpath_matches(xpath_expr, string) {
-  if (xpath_expr !== undefined) {
-    const xpath_matches = xpath.fromPageSource(string).findElements(xpath_expr);
-    if (xpath_matches.length !== 1) {
-      console.error('xpath: ' + xpath_expr);
-      console.error('string:');
-      console.error(string);
-      assert.strictEqual(xpath_matches.length, 1);
-    }
+  const xpath_matches = xpath.fromPageSource(string).findElements(xpath_expr);
+  if (xpath_matches.length !== 1) {
+    console.error('xpath: ' + xpath_expr);
+    console.error('string:');
+    console.error(string);
+    assert.strictEqual(xpath_matches.length, 1);
   }
 }
 
@@ -1407,11 +1416,22 @@ assert_convert_ast('cross reference to non-included header in another file',
     ]),
   ],
   {
+    assert_xpath_matches: [
+      "//a[@href='include-two-levels.html' and text()='ee']",
+      "//a[@href='include-two-levels.html#gg' and text()='gg']"
+    ],
+    assert_xpath_split_headers: {
+      'notindex-split.html': [
+        "//a[@href='include-two-levels-split.html' and text()='ee']",
+        "//a[@href='gg.html' and text()='gg']"
+      ],
+    },
     convert_before: ['include-two-levels'],
     extra_convert_opts: {
-      assert_xpath_matches: "//a[@href='#include-two-levels' and text()='ee']",
       file_provider: new cirodown_nodejs.ZeroFileProvider(),
+      split_headers: true,
     },
+    input_path_noext: 'notindex',
   },
 );
 
@@ -2038,7 +2058,7 @@ assert_convert_ast('cross reference to embed include header',
     a('Toc'),
   ].concat(include_two_levels_ast_args),
   Object.assign({
-    assert_xpath_matches: "//a[@href='#include-two-levels' and text()='ee']"},
+    assert_xpath_matches: ["//a[@href='#include-two-levels' and text()='ee']"]},
     include_opts
   ),
 );
@@ -2234,6 +2254,84 @@ assert_convert_ast('one paragraph implicit split headers',
     input_path_noext: 'notindex',
   }
 );
+function assert_split_header_output_keys(description, options, keys_expect) {
+  it(description, ()=>{
+    const input_string = `= h1
+
+== h1 1
+
+== h1 1 1
+
+== h1 1 2
+
+== h1 2
+
+== h1 2 1
+
+== h1 2 2
+`
+    const new_options = Object.assign({split_headers: true}, options);
+    const extra_returns = {};
+    cirodown.convert(
+      input_string,
+      new_options,
+      extra_returns
+    );
+    assert.deepEqual(
+      Object.keys(extra_returns.rendered_outputs),
+      keys_expect
+    )
+  });
+}
+assert_split_header_output_keys(
+  'split headers returns the expected header to output keys with input_path and no toplevel_id on notindex',
+  {
+    input_path: 'notindex' + cirodown.CIRODOWN_EXT
+  },
+  [
+    'notindex-split.html',
+    'h1-1.html',
+    'h1-1-1.html',
+    'h1-1-2.html',
+    'h1-2.html',
+    'h1-2-1.html',
+    'h1-2-2.html',
+    'notindex.html'
+  ]
+)
+assert_split_header_output_keys(
+  'split headers returns the expected header to output keys with input_path and toplevel_id on notindex',
+  {
+    input_path: 'notindex' + cirodown.CIRODOWN_EXT,
+    toplevel_id: 'notindex'
+  },
+  [
+    'notindex-split.html',
+    'h1-1.html',
+    'h1-1-1.html',
+    'h1-1-2.html',
+    'h1-2.html',
+    'h1-2-1.html',
+    'h1-2-2.html',
+    'notindex.html'
+  ]
+)
+assert_split_header_output_keys(
+  'split headers returns the expected header to output keys with input_path and no toplevel_id on index',
+  {
+    input_path: cirodown.INDEX_BASENAME_NOEXT + cirodown.CIRODOWN_EXT
+  },
+  [
+    cirodown.INDEX_BASENAME_NOEXT + '-split.html',
+    'h1-1.html',
+    'h1-1-1.html',
+    'h1-1-2.html',
+    'h1-2.html',
+    'h1-2-1.html',
+    'h1-2-2.html',
+    cirodown.INDEX_BASENAME_NOEXT + '.html'
+  ]
+)
 
 // Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception, or worse, not blowing up at all!
@@ -2253,7 +2351,7 @@ assert_error('unterminated literal positional argument', '\\c[[\n', 1, 3);
 assert_error('unterminated literal named argument', '\\c{{id=\n', 1, 3);
 assert_error('unterminated insane inline code', '`\n', 1, 1);
 
-// Executable tests.
+// cirodown executable tests.
 assert_executable(
   'input from stdin produces output on stdout',
   {

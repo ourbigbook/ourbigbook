@@ -3958,6 +3958,38 @@ assert_convert_ast('table of contents include placeholder header has no number w
     input_path_noext: 'notindex',
   },
 );
+assert_convert_ast('table of contents does not show synonyms of included headers',
+  `= Notindex
+
+\\Include[notindex2]
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//*[@id='toc']//x:a[@href='notindex2.html' and text()='1. Notindex2']",
+      "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='1.1. Notindex2 h2']",
+      "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2-2' and text()='1.2. Notindex2 h2 2']",
+    ],
+    assert_not_xpath_matches: [
+      "//*[@id='toc']//x:a[contains(text(),'synonym')]",
+    ],
+    convert_before: [
+      'notindex2.ciro',
+    ],
+    filesystem: {
+      'notindex2.ciro': `= Notindex2
+
+== Notindex2 h2
+
+= Notindex2 h2 synonym
+{synonym}
+
+== Notindex2 h2 2
+`,
+    },
+    input_path_noext: 'notindex',
+  },
+);
 assert_convert_ast('header numbered=0 in cirodown.json works across source files and on table of contents',
   `= Index
 

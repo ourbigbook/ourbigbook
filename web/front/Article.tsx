@@ -385,7 +385,7 @@ const Article = ({
         : <>
             <div className="ourbigbook-title">
               {linkList(tagged, TAGGED_ID_UNRESERVED, TAGS_MARKER, 'Tagged', linkPref)}
-              {ancestors.length && <>
+              {(ancestors.length !== 0) && <>
                 <h2 id={ANCESTORS_ID}><a
                   href={`#${ANCESTORS_ID}`} dangerouslySetInnerHTML={{ __html: PARENT_MARKER + ' Ancestors' }}
                   className="ourbigbook-title">

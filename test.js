@@ -19,6 +19,12 @@ const {
   xpath_header_parent,
 } = require('./test_lib')
 
+const MAKE_GIT_REPO_PRE_EXEC = [
+  ['git', ['init']],
+  ['git', ['add', '.']],
+  ['git', ['commit', '-m', '0']],
+  ['git', ['remote', 'add', 'origin', 'git@github.com:ourbigbook/ourbigbook-generate.git']],
+]
 const PATH_SEP = ourbigbook.Macro.HEADER_SCOPE_SEPARATOR
 
 // Common default convert options for the tests.
@@ -8792,6 +8798,15 @@ assert_cli(
   }
 );
 assert_cli(
+  '--generate min followed by publish does not blow up',
+  {
+    args: ['--publish', '--dry-run'],
+    pre_exec: [
+      ['ourbigbook', ['--generate', 'subdir']],
+    ].concat(MAKE_GIT_REPO_PRE_EXEC),
+  }
+);
+assert_cli(
   '--generate min in subdir does not alter toplevel',
   {
     args: ['.'],
@@ -8822,12 +8837,15 @@ assert_cli(
     ],
   }
 );
-const MAKE_GIT_REPO_PRE_EXEC = [
-  ['git', ['init']],
-  ['git', ['add', '.']],
-  ['git', ['commit', '-m', '0']],
-  ['git', ['remote', 'add', 'origin', 'git@github.com:ourbigbook/ourbigbook-generate.git']],
-]
+assert_cli(
+  '--generate subdir followed by conversion does not blow up',
+  {
+    args: ['docs'],
+    pre_exec: [
+      ['ourbigbook', ['--generate', 'subdir']],
+    ],
+  }
+);
 assert_cli(
   '--generate min followed by publish conversion does not blow up',
   {
@@ -8843,6 +8861,16 @@ assert_cli(
     args: ['--dry-run', '--publish'],
     pre_exec: [
       ['ourbigbook', ['--generate', 'default']],
+    ].concat(MAKE_GIT_REPO_PRE_EXEC),
+  }
+);
+assert_cli(
+  '--generate subdir followed by publish conversion does not blow up',
+  {
+    args: ['--dry-run', '--publish'],
+    cwd: 'docs',
+    pre_exec: [
+      ['ourbigbook', ['--generate', 'subdir']],
     ].concat(MAKE_GIT_REPO_PRE_EXEC),
   }
 );

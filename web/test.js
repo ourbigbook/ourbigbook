@@ -1430,6 +1430,25 @@ it('api: create an article and see it on global feed', async () => {
   }, { canTestNext: true })
 })
 
+// TODO https://docs.ourbigbook.com/todo/delete-articles
+//it('api: delete article', async () => {
+//  await testApp(async (test) => {
+//    let data, status, article
+//
+//    // Create users
+//    const user = await test.createUserApi(0)
+//    const admin = await test.createUserApi(1)
+//    await test.sequelize.models.User.update({ admin: true }, { where: { username: 'user1' } })
+//
+//    // Create article
+//    article = createArticleArg({ i: 0 })
+//    ;({data, status} = await createArticleApi(test, article))
+//    assertStatus(status, data)
+//    assertRows(data.articles, [{ titleRender: 'Title 0' }])
+//
+//  })
+//})
+
 // This used to work at one point working. But then we
 // when we started exposing the parentId via API, and decided it would be
 // less confusing if we instead forbade multiheader articles to start with.

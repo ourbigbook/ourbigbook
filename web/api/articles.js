@@ -261,39 +261,23 @@ async function createOrUpdateArticle(req, res, opts) {
   })
 }
 
-//// Create File and corrsponding Articles. The File must not already exist.
-//router.post('/', auth.required, async function(req, res, next) {
-//  try {
-//    return createOrUpdateArticle(req, res, { forceNew: true })
-//  } catch(error) {
-//    next(error);
-//  }
-//})
-//
-//// Create or Update File and corrsponding Articles. The File must not already exist.
-//router.put('/', auth.required, async function(req, res, next) {
-//  try {
-//    return createOrUpdateArticle(req, res, { forceNew: false })
-//  } catch(error) {
-//    next(error);
-//  }
-//})
-
 //// delete article
+//// TODO https://docs.ourbigbook.com/todo/delete-articles
 //router.delete('/', auth.required, async function(req, res, next) {
 //  try {
-//    const article = await lib.getArticle(req, res)
-//    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
+//    const sequelize = req.app.get('sequelize')
+//    const [article, user] = await Promise.all([
+//      lib.getArticle(req, res),
+//      sequelize.models.User.findByPk(req.payload.id),
+//    ])
+//    const msg = cant.deleteArticle(user, article)
+//    if (msg) {
+//      throw new lib.ValidationError([msg], 403)
+//    }
 //    if (article.isToplevelIndex()) {
 //      throw new lib.ValidationError('Cannot delete the toplevel index')
 //    }
-//    if (article.file.authorId.toString() === req.payload.id.toString()) {
-//      return article.destroy().then(function() {
-//        return res.sendStatus(204)
-//      })
-//    } else {
-//      return res.sendStatus(403)
-//    }
+//    await article.destroySideEffects()
 //  } catch(error) {
 //    next(error);
 //  }

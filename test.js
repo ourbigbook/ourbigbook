@@ -469,7 +469,7 @@ function ast_arg_has_subset(arg, subset, extra_returns) {
   if (arg.length !== subset.length) {
     extra_returns.fail_reason = `arg.length !== subset.length ${arg.length} ${subset.length}
 arg: ${arg}
-subset: ${subset}
+subset: ${JSON.stringify(subset, null, 2)}
 `;
     return false;
   }
@@ -3457,6 +3457,28 @@ assert_error('toc is a reserved id',
 == toc
 `,
   3, 1);
+assert_convert_ast('table of contents contains included headers numbered without embed includes',
+  `= Notindex
+
+\\Include[notindex2]
+
+== Notindex h2
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//*[@id='toc']//x:a[@href='notindex2.html' and text()='1. Notindex2']",
+    ],
+    convert_before: ['notindex2.ciro'],
+    filesystem: {
+      'notindex2.ciro': `= Notindex2
+
+== Notindex2 h2
+`
+    },
+    input_path_noext: 'notindex',
+  },
+);
 
 // Math. Minimal testing since this is mostly factored out with code tests.
 assert_convert_ast('math inline sane',
@@ -4248,7 +4270,7 @@ assert_executable(
         // ToC entries of includes point directly to the separate file, not to the plceholder header.
         // e.g. `included-by-index.html` instead of `#included-by-index`.
         "//x:a[@href='included-by-index.html' and text()='link to included by index']",
-        "//*[@id='toc']//x:a[@href='included-by-index.html' and text()='Included by index']",
+        "//*[@id='toc']//x:a[@href='included-by-index.html' and text()='1. Included by index']",
 
         xpath_header(2, 'included-by-index'),
         "//x:blockquote[text()='A Cirodown example!']",
@@ -4279,7 +4301,7 @@ assert_executable(
         // ToC entries point to the split version of articles.
         "//*[@id='toc']//x:a[@href='h2.html' and text()='2. h2']",
         // ToC entries of includes always point directly to the separate file.
-        "//*[@id='toc']//x:a[@href='included-by-index.html' and text()='Included by index']",
+        "//*[@id='toc']//x:a[@href='included-by-index.html' and text()='1. Included by index']",
         // TODO This is more correct with the `1. `. Maybe wait for https://github.com/cirosantilli/cirodown/issues/126
         // to make sure we don't have to rewrite everything.
         //"//*[@id='toc']//x:a[@href='included-by-index-split.html' and text()='1. Included by index']",

@@ -280,42 +280,36 @@ gh
   a('p', [t('gh')]),
 ]
 );
-const list_with_paragraph_expect = [
-  a('ul', [
-    a('l', [
-      a('p', [t('aa')]),
-      a('p', [t('bb\n')]),
-    ]),
-  ]),
-];
-assert_convert_ast('nested list sane',
+assert_convert_ast('list with paragraph sane',
   `\\l[
 aa
 
 bb
 ]
 `,
-  list_with_paragraph_expect
+  [
+    a('ul', [
+      a('l', [
+        a('p', [t('aa')]),
+        a('p', [t('bb\n')]),
+      ]),
+    ]),
+  ]
 )
-assert_convert_ast('nested list insane',
+assert_convert_ast('list with paragraph insane',
   `* aa
 
   bb
 `,
-  list_with_paragraph_expect
-)
-const nested_list_sane_expect = [
-  a('ul', [
-    a('l', [
-      t('aa\n'),
-      a('ul', [
-        a('l', [
-          t('bb\n')
-        ]),
+  [
+    a('ul', [
+      a('l', [
+        a('p', [t('aa')]),
+        a('p', [t('bb')]),
       ]),
     ]),
-  ]),
-];
+  ]
+)
 assert_convert_ast('nested list sane',
   `\\l[
 aa
@@ -324,13 +318,39 @@ bb
 ]
 ]
 `,
-  nested_list_sane_expect
+  [
+    a('ul', [
+      a('l', [
+        t('aa\n'),
+        a('ul', [
+          a('l', [
+            t('bb\n')
+          ]),
+        ]),
+      ]),
+    ]),
+  ]
 )
 assert_convert_ast('nested list insane',
   `* aa
   * bb
 `,
-  nested_list_sane_expect
+  [
+    a('ul', [
+      a('l', [
+        t('aa'),
+        a('ul', [
+          a('l', [
+            t('bb')
+          ]),
+        ]),
+      ]),
+    ]),
+  ]
+)
+assert_convert_ast('escape insane list',
+  '\\* a',
+  [a('p', [t('* a')])],
 )
 
 // Table.

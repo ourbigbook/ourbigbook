@@ -15,13 +15,15 @@
 //$target-background-color: #FFFFCC;
 
 // Dark.
-$a-color: #88CCFF;
+$a-color: #AADDFF;
 $background-color: #181818;
+// color-discreet was too dim, and $color was too bright and distracting. Let's try this then.
+$brandname-color: #CCCCCC;
 $code-background-color: #333333;
 $color: #EEEEEE;
 $color-discreet: #BBBBBB;
 $h-color: #0F0;
-$navbar-background-color: #222222;
+$navbar-background-color: #000;
 // To make non-brand items a bit less visible than the brand.
 $table-border-color: #444444;
 $table-even-background-color: #222222;
@@ -41,10 +43,9 @@ $toplevel-horizontal-padding-right: 15px;
 // Derived parameters.
 // #FFAAFF was a reasonable value. But modern websites don't do this anymore.
 $a-color-visited: $a-color;
-$brandname-color: $color;
 $h1-font-size: $header-font-size * 1.5;
 $navbar-color-discrete: $color-discreet;
-$navbar-non-brandname-color: $color-discreet;
+$navbar-non-brandname-color: $a-color;
 $footer-color: $color;
 
 @mixin body {

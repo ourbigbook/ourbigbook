@@ -110,10 +110,9 @@ Sane list with explicit `Ul`:
 \L[second item]
 ]
 
-And now for tables, see this one \x[table-my-table]. Try clicking next to the headers sort the columns!
+And now for tables, see this one: \x[table-my-table]. Try clicking next to the headers sort the columns!
 \Table
 {title=My table title}
-{id=table-my-table}
 [
 || String col
 || Integer col
@@ -153,7 +152,7 @@ The following header is set to be uppercase by default due to the `{c}` (upperCa
 
 This one isn't however: \x[dog]. But we can change:
 * it to uppercase with `{c}`: \x[dog]{c}
-* to plural with `{p}`: \x[dog]{c}
+* to plural with `{p}`: \x[dog]{p}
 
 Reference to the following image: \x[image-my-xi-chrysanthemum].
 
@@ -200,9 +199,9 @@ rather than by the number of `=` signs of this header.
 
 This means that you don't need to worry about counting header anymore!
 
-And it is much easier to move large chunks of headers around! You only need to change the `{parent=} of the toplevel one.
+And it is much easier to move large chunks of headers around! You only need to change the `{parent=}` of the toplevel one.
 
-This is why you should use `parent` exclusively in larger documents.
+This is why when creating large documents, you should use `parent` exclusively.
 
 == Mostly testing now I confess
 

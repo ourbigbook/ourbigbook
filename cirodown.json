@@ -3,6 +3,7 @@
     "cirodown.common.scss",
     "cirodown.scss",
     "cirodown_runtime.js",
+    "template",
     "web"
   ],
   "media-providers": {

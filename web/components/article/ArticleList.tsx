@@ -3,22 +3,27 @@ import React from "react";
 import useSWR from "swr";
 
 import ArticlePreview from "components/article/ArticlePreview";
+import CustomLink from "components/common/CustomLink";
 import ErrorMessage from "components/common/ErrorMessage";
-import { FavoriteArticleButtonContext } from "components/common/FavoriteArticleButton";
+import FavoriteArticleButton, { FavoriteArticleButtonContext } from "components/common/FavoriteArticleButton";
 import LoadingSpinner from "components/common/LoadingSpinner";
 import Maybe from "components/common/Maybe";
 import Pagination from "components/common/Pagination";
-import { usePageState } from "lib/context/PageContext";
+import UserLinkWithImage from "components/common/UserLinkWithImage";
+import { usePageDispatch, usePageState } from "lib/context/PageContext";
 import {
   usePageCountState,
   usePageCountDispatch,
 } from "lib/context/PageCountContext";
 import { SERVER_BASE_URL, DEFAULT_LIMIT } from "lib/utils/constant";
+import { formatDate } from "lib/utils/date";
 import fetcher from "lib/utils/fetcher";
+import routes from "routes";
 
 const ArticleList = (props) => {
   const page = usePageState();
   const pageCount = usePageCountState();
+  const setPage = usePageDispatch();
   const setPageCount = usePageCountDispatch();
   const lastIndex =
     pageCount > 480 ? Math.ceil(pageCount / DEFAULT_LIMIT) : Math.ceil(pageCount / DEFAULT_LIMIT) - 1;
@@ -107,8 +112,8 @@ const ArticleList = (props) => {
         <table className="article-list">
           <thead>
             <tr>
-              <th className="shrink">Author</th>
               <th className="shrink">Score</th>
+              <th className="shrink">Author</th>
               <th className="expand">Title</th>
               <th className="shrink">Created</th>
               <th className="shrink">Updated</th>
@@ -116,14 +121,35 @@ const ArticleList = (props) => {
           </thead>
           <tbody>
             {articles?.map((article, i) => (
-              <FavoriteArticleButtonContext.Provider key={article.slug} value={{
-                favorited: favorited[i],
-                setFavorited: setFavorited[i],
-                favoritesCount: favoritesCount[i],
-                setFavoritesCount: setFavoritesCount[i],
-              }}>
-                <ArticlePreview key={article.slug} article={article} />
-              </FavoriteArticleButtonContext.Provider>
+              <tr>
+                <td className="shrink">
+                  <FavoriteArticleButtonContext.Provider key={article.slug} value={{
+                    favorited: favorited[i],
+                    setFavorited: setFavorited[i],
+                    favoritesCount: favoritesCount[i],
+                    setFavoritesCount: setFavoritesCount[i],
+                  }}>
+                    <FavoriteArticleButton
+                      favorited={article.favorited}
+                      favoritesCount={article.favoritesCount}
+                      slug={article.slug}
+                    />
+                  </FavoriteArticleButtonContext.Provider>
+                </td>
+                <td className="shrink">
+                  <UserLinkWithImage user={article.author} />
+                </td>
+                <td className="expand title">
+                  <CustomLink
+                    href={routes.articleView(article.slug)}
+                    className="preview-link"
+                  >
+                    {article.title}
+                  </CustomLink>
+                </td>
+                <td className="shrink">{formatDate(article.createdAt)}</td>
+                <td className="shrink">{formatDate(article.updatedAt)}</td>
+              </tr>
             ))}
           </tbody>
         </table>

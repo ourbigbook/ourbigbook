@@ -511,6 +511,7 @@ span.shortcut {
   .pinned-article {
     color: $h-color;
     font-weight: bold;
+    margin-top: 1em;
   }
   .site-settings {
     font-weight: bold;
@@ -641,7 +642,7 @@ nav.navbar {
     height: $font-size * 1.2;
   }
   flex: 0 0 auto;
-  margin-bottom: 1.4em;
+  margin-bottom: 0.6em;
   @media only screen and (max-width: $max-mobile-width) {
     margin-bottom: 1em;
   }

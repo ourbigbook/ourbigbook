@@ -6,18 +6,35 @@
 {c}
 {synonym}
 
-The OurBigBook Project creates writing tools to help anyone publish textbooks, with a strong focus on the natural sciences.
+The OurBigBook Project aims to create the ultimate tool to publish textbooks/https://ourbigbook.com/go/topic/personal-knowledge-base[personal knowledge bases]/https://ourbigbook.com/go/topic/zettelkasten[Zettelkasten]/https://ourbigbook.com/go/topic/digital-garden[digital gardens] in the https://ourbigbook.com/go/topic/learn-in-public[learn in public] philosophy.
 
-Mission: to live in a world where you can learn university-level mathematics, physics, chemistry, biology and engineering from perfect free open source books that anyone can write to get famous.
+\Image[logo.svg]
+{height=150}
+{title=<project logo>[Logo of] the OurBigBook Project}
+
+Mission: to live in a world where you can learn university-level https://ourbigbook.com/go/topic/mathematics[mathematics], https://ourbigbook.com/go/topic/physics[physics], https://ourbigbook.com/go/topic/chemistry[chemistry], https://ourbigbook.com/go/topic/biology[biology] and https://ourbigbook.com/go/topic/engineering[engineering] from perfect free open source books that anyone can write to get famous.
 
 How to get there: <OurBigBook Web>[create a website] that incentivizes learners (notably university students taking courses) to write freely licensed university-level natural science books in their own words for free. Their motivation for doing that are:
 * getting their knowledge globally recognized and thus better jobs
 * improving the world
 * learning by teaching
 
-\Image[logo.svg]
-{height=150}
-{title=<project logo>[Logo of] the OurBigBook Project}
+Notable features include:
+* focus on https://ourbigbook.com/go/topic/mindmeld[mind melding]/https://ourbigbook.com/go/topic/collective-intelligence[collective intelligence] via the <topics>[topics feature], which makes your articles easier for others to find with a sort-by upvote https://ourbigbook.com/go/topic/stack-overflow[Stack Overflow]-like view of multiple users articles on the same topic
+
+  \Video[https://www.youtube.com/watch?v=54nxjC9BWTg]
+  {title=<OurBigBook Web topics> demo}
+  {disambiguate=intro}
+  {height=700}
+  {width=700}
+* you can store all your data locally in a <OurBigBook Markup>[plaintext markup format] that can be edited locally and published in various ways, including as a <static website>
+
+  \Video[https://www.youtube.com/watch?v=Ghvlztiu6rI]
+  {title=Edit locally and publish demo}
+  {disambiguate=intro}
+  {description=This shows editing <OurBigBook Markup> and <publishing> it using the <VS Code> extension.}
+  {height=720}
+  {width=720}
 
 The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> is another complementary tool.
 
@@ -6949,11 +6966,12 @@ Useful for quick and dirty <OurBigBook Web performance benchmarking>, especially
 
 Update the <nested set> index of <OurBigBook Web>, don't do anything else. Implies <--web>.
 
+This option was originally introduced to hep testing bulk nested set updates.
+
 = `--web-nested-set-bulk`
 {parent=OurBigBook CLI options}
-{disambiguate=option}
 
-Only update the nested set index after all articles have been uploaded.
+Only update the <nested set> index after all articles have been uploaded.
 
 There is a complex time tradeoff between using this option or not, which depends on:
 * how many articles the user has
@@ -8732,7 +8750,21 @@ To keep things slightly saner, the <web/bin/normalize>{file} script can be used 
 = Nested set
 {parent=OurBigBook Web database}
 
-A cache that allows quickly fetching pages for <OurBigBook Web dynamic article tree> in pre-order depth first, see also: https://stackoverflow.com/questions/4048151/what-are-the-options-for-storing-hierarchical-data-in-a-relational-database
+The "nested set index" is an index explicitly maintained by our codebase that allows quickly fetching pages for <OurBigBook Web dynamic article tree> in https://ourbigbook.com/go/topic/pre-order-depth-first-search[pre-order depth first], i.e. the conventional order in which  the table of contents and articlees appear in a book. See also: https://stackoverflow.com/questions/4048151/what-are-the-options-for-storing-hierarchical-data-in-a-relational-database
+
+This technique is also called "closure table" by some authors.
+
+This index is, as the name indicates, an index, i.e. it duplicates information otherwise present in the <OurBigBook Web `Ref` database table>, which contains an adjacency list format instead, in the hope that it would be faster to pre-order depth first traverse.
+
+This feature adds considerable complexity to the codebase. Also, updates can be considerably slow, as updating this index for a single article requires updating the index value for most or all other articles as well. We should bechmark it better vs recursive queries.
+
+This index was partly introduced as a helper rather than as a pure speed up, as it is a bit hard to do pre order tree traversal in SQLite due to the lack of arrays. In PostgreSQL we can do it well: https://stackoverflow.com/questions/65247873/preorder-tree-traversal-using-recursive-ctes-in-sql/77276675#77276675
+
+= OurBigBook Web database table
+{parent=OurBigBook Web database}
+
+= OurBigBook Web `Ref` database table
+{parent=OurBigBook Web database table}
 
 = OurBigBook Web database migration setup
 {c}

@@ -14,14 +14,15 @@ export const getServerSidePropsIndexHoc = (what) => {
     const page = req?.params?.page ? parseInt(req.params.page as string, 10) - 1: 0
     let order
     let loggedInQuery
+    let whatEffective = what
     if (!loggedInUser) {
       if (what === 'latest-followed') {
-        what = 'latest'
+        whatEffective = 'latest'
       } else if (what === 'top-followed') {
-        what = 'top'
+        whatEffective = 'top'
       }
     }
-    switch (what) {
+    switch (whatEffective) {
       case 'latest':
         order = 'createdAt'
         loggedInQuery = false
@@ -39,7 +40,7 @@ export const getServerSidePropsIndexHoc = (what) => {
         loggedInQuery = true
         break;
       default:
-        throw new Error(`Unknown search: ${what}`)
+        throw new Error(`Unknown search: ${whatEffective}`)
     }
     let articles
     let articlesCount
@@ -60,7 +61,7 @@ export const getServerSidePropsIndexHoc = (what) => {
       articles,
       articlesCount,
       page,
-      what,
+      what: whatEffective,
     }
     if (loggedInUser) {
       props.loggedInUser = await loggedInUser.toJson()

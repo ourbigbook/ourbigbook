@@ -243,7 +243,7 @@ const Article = ({
         id_prefix: AT_MENTION_CHAR + authorUsername + '/',
         parent_href,
         parent_content,
-        target_id: a.topicId,
+        target_id: a.slug,
       })
     }
     if (entry_list.length) {

@@ -533,17 +533,6 @@ async function generate_redirect(cirodown_options, redirect_src_id, redirect_tar
 `);
 }
 
-async function generate_redirects(
-  cirodown_options,
-  cirodown_json,
-  outdir
-) {
-  for (let redirect_src_id in cirodown_json.redirects) {
-    const redirect_target_id = cirodown_json.redirects[redirect_src_id];
-    await generate_redirect(cirodown_options, redirect_src_id, redirect_target_id, outdir);
-  }
-}
-
 /** Return Set of branches in the repository. Hax. */
 function git_branches(input_path) {
   const str = cmd_get_stdout('git', ['branch', '-a']).replace(/\n$/, '')
@@ -672,7 +661,6 @@ commander.option('--embed-includes', 'http://cirosantilli.com/cirodown#embed-inc
 commander.option('--embed-resources', 'http://cirosantilli.com/cirodown#embed-resources', false);
 commander.option('--fakeroot <fakeroot>', 'Stop searching for cirodown.json at this directory rather than at the filesystem root');
 commander.option('--generate <name>', 'http://cirosantilli.com/cirodown#generate', false);
-commander.option('--generate-redirects', 'http://cirosantilli.com/cirodown#redirects', false);
 commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown#help-macros', false);
 commander.option('-l, --log <log...>', 'http://cirosantilli.com/cirodown#log');
 commander.option('--no-html-x-extension', 'http://cirosantilli.com/cirodown#no-html-x-extension');
@@ -1035,10 +1023,6 @@ if (commander.helpMacros) {
     } else {
       non_cirodown_options.db_options.storage = SQLITE_MAGIC_MEMORY_NAME
     }
-    if (commander.generateRedirects) {
-      await generate_redirects(non_cirodown_options, cirodown_json, outdir);
-      process.exit(0);
-    }
     if (commander.watch) {
       if (publish) {
         cli_error('--publish and --watch are incompatible');
@@ -1047,7 +1031,6 @@ if (commander.helpMacros) {
       if (!input_path_is_file) {
         await reconcile_db_and_filesystem(inputPath, cirodown_options, non_cirodown_options);
         await convert_directory_extract_ids(inputPath, cirodown_options, non_cirodown_options);
-        await generate_redirects(non_cirodown_options, cirodown_json, outdir);
       }
       const watcher = require('chokidar').watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES})
       const convert = async (subpath) => {
@@ -1142,9 +1125,6 @@ if (commander.helpMacros) {
         if (commander.render) {
           if (!non_cirodown_options.had_error) {
             await convert_directory(actual_input_dir, cirodown_options, non_cirodown_options);
-          }
-          if (!non_cirodown_options.had_error) {
-            await generate_redirects(non_cirodown_options, cirodown_json, publish_out_publish_dir);
           }
         }
 

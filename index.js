@@ -1042,7 +1042,6 @@ class Macro {
   constructor(name, positional_args, html_render_func, options={}) {
     if (!('auto_parent' in options)) {
       // https://cirosantilli.com/ourbigbook#auto_parent
-      options.auto_parent = undefined;
     }
     if (!('auto_parent_skip' in options)) {
       options.auto_parent_skip = new Set();
@@ -1097,7 +1096,6 @@ class Macro {
       options.xss_safe = true;
     }
     if (!('xss_safe_alt' in options)) {
-      options.xss_safe_alt = undefined;
     }
     this.name = name;
     this.positional_args = positional_args;
@@ -1137,7 +1135,6 @@ class Macro {
       })
       this.name_to_arg[argname] = this.named_args[argname];
     }
-    delete this.options.named_args;
   }
 
   add_convert_function(output_format, my_function) {
@@ -2573,13 +2570,13 @@ exports.convert = convert;
  * @return {String} empty string if arg is undefined
  */
 function render_arg(arg, context) {
-  let converted_arg = '';
+  let converted_arg = [];
   if (arg !== undefined) {
     for (const ast of arg) {
-      converted_arg += ast.render(context);
+      converted_arg.push(ast.render(context));
     }
   }
-  return converted_arg;
+  return converted_arg.join('');
 }
 
 /* Similar to render_arg, but used for IDs.
@@ -4250,9 +4247,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         validate_ast(ast, context);
 
         const is_synonym = ast.validation_output.synonym.boolean;
-        const header_level = parseInt(
-          render_arg_noescape(ast.args.level, context)
-        )
+        const header_level = ast.validation_output.level.positive_nonzero_integer
 
         // splitDefault propagation to children.
         if (ast.validation_output.splitDefault.given) {
@@ -6433,7 +6428,8 @@ const VIDEO_EXTENSIONS = new Set([
   'ogv',
   'webm',
 ])
-const OUTPUT_FORMAT_OURBIGBOOK = 'ourbigbook';
+const OUTPUT_FORMAT_OURBIGBOOK = 'bigb';
+exports.OUTPUT_FORMAT_OURBIGBOOK = OUTPUT_FORMAT_OURBIGBOOK
 const OUTPUT_FORMAT_HTML = 'html';
 const OUTPUT_FORMAT_ID = 'id';
 const TOC_ARROW_HTML = '<div class="arrow"><div></div></div>';
@@ -8196,48 +8192,83 @@ function create_link_list(context, ast, id, title, target_ids, body) {
 }
 
 function ourbigbook_convert_simple_elem(ast, context) {
-  return ESCAPE_CHAR +
-    ast.macro_name +
-    START_POSITIONAL_ARGUMENT_CHAR +
-    render_arg(ast.args.content, context) +
-    END_POSITIONAL_ARGUMENT_CHAR;
+  const ret = []
+  ret.push(ESCAPE_CHAR + ast.macro_name)
+  const macro = context.macros[ast.macro_name]
+  ourbigbook_convert_args(ast, context, ret)
+  if (!macro.options.phrasing) {
+    ret.push('\n')
+  }
+  return ret.join('')
+}
+
+function ourbigbook_convert_args(ast, context, ret) {
+  const macro = context.macros[ast.macro_name]
+  for (const arg of macro.positional_args) {
+    const argname = arg.name
+    if (ast.validation_output[argname].given) {
+      ret.push(START_POSITIONAL_ARGUMENT_CHAR)
+      if (arg.remove_whitespace_children) {
+        ret.push('\n')
+      }
+      ret.push(
+        render_arg(ast.args[argname], context) +
+        END_POSITIONAL_ARGUMENT_CHAR
+      )
+    }
+  }
+  for (const arg of macro.options.named_args) {
+    const argname = arg.name
+    if (ast.validation_output[argname].given) {
+      ret.push(
+        '\n' +
+        START_NAMED_ARGUMENT_CHAR +
+        argname +
+        NAMED_ARGUMENT_EQUAL_CHAR +
+        render_arg(ast.args[argname], context) +
+        END_NAMED_ARGUMENT_CHAR
+      )
+    }
+  }
 }
 
 const MACRO_CONVERT_FUNCIONS = {
   [OUTPUT_FORMAT_OURBIGBOOK]: {
-    [Macro.LINK_MACRO_NAME]: function(ast, context) {
-      const [href, content] = link_get_href_content(ast, context);
-      return content;
-    },
+    [Macro.LINK_MACRO_NAME]: ourbigbook_convert_simple_elem,
     'b': ourbigbook_convert_simple_elem,
-    [Macro.CODE_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
-    [Macro.CODE_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: unconvertible,
+    'br': ourbigbook_convert_simple_elem,
+    [Macro.CODE_MACRO_NAME.toUpperCase()]: ourbigbook_convert_simple_elem,
+    [Macro.CODE_MACRO_NAME]: ourbigbook_convert_simple_elem,
+    [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: ourbigbook_convert_simple_elem,
     'Comment': ourbigbook_convert_simple_elem,
     'comment': ourbigbook_convert_simple_elem,
-    [Macro.HEADER_MACRO_NAME]: id_convert_simple_elem(),
+    [Macro.HEADER_MACRO_NAME]: function(ast, context) {
+      //ast.header_tree_node.get_level()
+      //return ourbigbook_convert_simple_elem(ast, context, ret)
+      return ''
+    },
     [Macro.INCLUDE_MACRO_NAME]: ourbigbook_convert_simple_elem,
-    [Macro.LIST_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.MATH_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
-    [Macro.MATH_MACRO_NAME]: id_convert_simple_elem(),
+    [Macro.LIST_MACRO_NAME]: ourbigbook_convert_simple_elem,
+    [Macro.MATH_MACRO_NAME.toUpperCase()]: ourbigbook_convert_simple_elem,
+    [Macro.MATH_MACRO_NAME]: ourbigbook_convert_simple_elem,
     'i': ourbigbook_convert_simple_elem,
-    'Image': function(ast, context) { return ''; },
-    'image': function(ast, context) { return ''; },
-    'JsCanvasDemo': id_convert_simple_elem(),
+    'Image': ourbigbook_convert_simple_elem,
+    'image': ourbigbook_convert_simple_elem,
+    'JsCanvasDemo': ourbigbook_convert_simple_elem,
     'Ol': ourbigbook_convert_simple_elem,
-    [Macro.PARAGRAPH_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) {return ast.text},
-    'passthrough': id_convert_simple_elem(),
+    [Macro.PARAGRAPH_MACRO_NAME]: ourbigbook_convert_simple_elem,
+    [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) { return ast.text },
+    'passthrough': ourbigbook_convert_simple_elem,
     'Q': ourbigbook_convert_simple_elem,
-    [Macro.TABLE_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.TD_MACRO_NAME]: id_convert_simple_elem(),
+    [Macro.TABLE_MACRO_NAME]: ourbigbook_convert_simple_elem,
+    [Macro.TD_MACRO_NAME]: ourbigbook_convert_simple_elem,
     [Macro.TOC_MACRO_NAME]: function(ast, context) { return '' },
     [Macro.TOPLEVEL_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.TH_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.TR_MACRO_NAME]: id_convert_simple_elem(),
-    'Ul': id_convert_simple_elem(),
-    [Macro.X_MACRO_NAME]: id_convert_simple_elem('href'),
-    'Video': macro_image_video_block_convert_function,
+    [Macro.TH_MACRO_NAME]: ourbigbook_convert_simple_elem,
+    [Macro.TR_MACRO_NAME]: ourbigbook_convert_simple_elem,
+    'Ul': ourbigbook_convert_simple_elem,
+    [Macro.X_MACRO_NAME]: ourbigbook_convert_simple_elem,
+    'Video': ourbigbook_convert_simple_elem,
   },
   [OUTPUT_FORMAT_ID]: {
     [Macro.LINK_MACRO_NAME]: function(ast, context) {
@@ -8279,7 +8310,7 @@ const MACRO_CONVERT_FUNCIONS = {
         return id_convert_simple_elem('href')(ast, context)
       }
     },
-    'Video': macro_image_video_block_convert_function,
+    'Video': function(ast, context) { return ''; },
   },
 };
 const TOPLEVEL_CHILD_MODIFIER = {

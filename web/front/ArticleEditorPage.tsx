@@ -199,6 +199,7 @@ export default function ArticleEditorPageHoc({
       ) {
         let editor
         loader.init().then(monaco => {
+          const idExistsCache = new Set()
           editor = new OurbigbookEditor(
             ourbigbookEditorElem.current,
             bodySource,
@@ -212,7 +213,17 @@ export default function ArticleEditorPageHoc({
                 ourbigbook_json: {
                   openLinksOnNewTabs: true,
                 },
-                read_include: read_include_web((idid) => webApi.editorIdExists(idid)),
+                read_include: read_include_web((idid) => {
+                  if (idExistsCache.has(idid)) {
+                    return true
+                  } else {
+                    if (webApi.editorIdExists(idid)) {
+                      idExistsCache.add(idid)
+                      return true
+                    }
+                    return false
+                  }
+                }),
                 ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`,
                 x_external_prefix: '../'.repeat(window.location.pathname.match(/\//g).length - 1),
               }, convertOptions),

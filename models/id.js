@@ -60,6 +60,50 @@ module.exports = (sequelize) => {
   )
 
   Id.findDuplicates = async (paths, transaction) => {
+    // Raw query version is way way faster (20s -> 3s on ourbigbook.com database 8k rows, Postgres 15 )
+    // because not SELECTING JOIN tabee fields leads it to be much faster for some reason
+    // likely DB query planning related:
+    // maybe https://dba.stackexchange.com/questions/190533/slow-query-in-postgresql-selecting-a-single-row-from-between-a-range-defined-in
+    // And can't not select less in sequelize because it is buggy AF, maybe:
+    // https://github.com/sequelize/sequelize/issues/11096
+    let paths_str
+    if (paths.length) {
+      paths_str = `(
+    "idDefinedAt"."path" IN (:paths)
+    OR "duplicate->idDefinedAt"."path" IN (:paths)
+)
+AND `
+    } else {
+      paths_str = ''
+    }
+    return (await sequelize.query(`
+SELECT
+  "Id"."id",
+  "Id"."idid",
+  "Id"."toplevel_id",
+  "Id"."ast_json",
+  "Id"."macro_name",
+  "Id"."createdAt",
+  "Id"."updatedAt",
+  "Id"."defined_at"
+FROM
+  "Id" AS "Id"
+  INNER JOIN "Id" AS "duplicate" ON "Id"."idid" = "duplicate"."idid"
+  INNER JOIN "File" AS "duplicate->idDefinedAt" ON "duplicate"."defined_at" = "duplicate->idDefinedAt"."id"
+  INNER JOIN "File" AS "idDefinedAt" ON ${paths_str}"Id"."idid" = "duplicate"."idid"
+  AND "Id"."id" != "duplicate"."id"
+ORDER BY
+  "Id"."idid" ASC,
+  "idDefinedAt"."path" ASC;
+`,
+      {
+        replacements: {
+          paths,
+        },
+        transaction,
+      }
+    ))[0]
+
     const on = {
       '$Id.idid$': { [Op.col]: 'duplicate.idid' },
       '$Id.id$': { [Op.ne]: { [Op.col]: 'duplicate.id' } },
@@ -70,8 +114,6 @@ module.exports = (sequelize) => {
         { '$duplicate->idDefinedAt.path$': paths },
       ]
     }
-    console.error('here')
-    console.log(`paths: ${require('util').inspect(paths, { depth: null })}`)
     return sequelize.models.Id.findAll({
       logging: console.log,
       include: [

@@ -3,6 +3,7 @@
     "ecmaVersion": 6
   },
   "plugins": ["prettier"],
+  "ignorePatterns": ["frontend"],
   "rules": {
     "prettier/prettier": "error"
   }

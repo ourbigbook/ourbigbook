@@ -1,0 +1,199 @@
+@import 'katex/dist/katex.css';
+@import 'cirodown/cirodown.scss';
+@import 'cirodown/main.scss';
+
+$enable-flex:               true;
+$enable-grid-classes:       true;
+
+// CONDUIT STYLES //
+$font-family-logo:       'Titillium Web', sans-serif;
+.logo-font {
+  font-family: $font-family-logo;
+}
+
+// Bootstrap overrides
+$headings-font-family:   'Merriweather Sans', sans-serif;
+$font-family-sans-serif: 'Source Sans Pro', sans-serif;
+$brand-primary: #5CB85C;
+$brand-danger:  #B85C5C;
+
+
+// this allows us to have the flush footer that extends with viewport
+html {
+body {
+
+padding: 0;
+margin: 0;
+position: relative;
+min-height: 100vh;
+padding-bottom: 100px;
+background-color: $background-color;
+color: $color;
+
+// Set the navbar's logo to the conduit logo font & large size
+.navbar-brand {
+  font-family: $font-family-logo;
+  font-size:1.5rem !important;
+  padding-top:0rem !important;
+  margin-right:2rem !important;
+  color: $brand-primary !important;
+  // margin-bottom:40px;
+}
+// set a smooth transition for nav-link hover effects
+.nav-link:hover {
+  transition: 0.1s all;
+}
+$navbar-padding-x: 0rem !important;
+
+// create style for nav-link pills that do an outline instead of block
+.nav-pills.outline-active {
+  .nav-link {
+    border-radius:0px;
+    border:none;
+    border-bottom:2px solid transparent;
+    color:#aaa;
+    &:hover {
+      color:#555;
+    }
+
+    &.active {
+      background: #fff !important;
+      border-bottom:2px solid $brand-primary !important;
+      color: $brand-primary !important;
+    }
+  }
+}
+
+a {
+  text-decoration: none;
+}
+
+footer {
+  margin-top:3rem;
+  padding:1rem 0;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+
+
+  .attribution {
+    vertical-align: top;
+    margin-left:10px;
+    font-size: 0.8rem;
+    color:#bbb;
+    font-weight:300;
+  }
+}
+
+// general error handling style
+.error-messages {
+  color: $brand-danger !important;
+  font-weight:bold;
+}
+
+// This is used on homepage & post page
+// Basically a pretty wrapper for H1 at top
+.banner {
+  color:#fff;
+  background: #333;
+  padding:2rem;
+  margin-bottom:2rem;
+
+  h1 {
+    text-shadow: 0px 1px 3px rgba(0,0,0,0.3);
+    margin-bottom:0px;
+  }
+}
+
+// Auto offset from top for pages
+.container.page {
+  margin-top:1.5rem;
+}
+
+
+// Link that doesn't modify color/style of text
+.preview-link {
+  color: inherit !important;
+
+  &:hover {
+    text-decoration: inherit !important;
+  }
+}
+
+
+// Generic author information/date container
+.post-meta {
+  display:block;
+  position:relative;
+  font-weight: 300;
+
+  img {
+    display:inline-block;
+    vertical-align: middle;
+    height:32px;
+    width:32px;
+    border-radius:30px;
+  }
+
+  .info {
+    margin:0 1.5rem 0 0.3rem;
+    display:inline-block;
+    vertical-align: middle;
+    line-height: 1rem;
+
+    .author {
+      display:block;
+      font-weight: 500 !important;
+    }
+    .date {
+      color:#bbb;
+      font-size:0.8rem;
+      display:block;
+    }
+
+  }
+}
+
+
+// Preview links inside post previews
+.post-preview {
+  border-top:1px solid rgba(0,0,0,.1);
+  padding:1.5rem 0;
+
+  .post-meta {
+    margin:0 0 1rem 0;
+  }
+  .preview-link {
+    h1 {
+      font-weight:700 !important;
+      font-size:2rem !important;
+    }
+    p {
+      font-family: 'Source Serif Pro', serif;
+      margin-bottom:0;
+    }
+    // "Read more" span
+    span {
+      font-size:0.8rem;
+      font-weight:300;
+      color:#bbb;
+    }
+  }
+}
+
+
+// Counter for buttons
+.btn .counter {
+  font-size:0.8rem !important;
+}
+}
+}
+
+
+// Import all of our SCSS files
+@import 'home.scss';
+@import 'post.scss';
+@import 'profile.scss';
+@import 'editor.scss';
+@import 'auth.scss';
+@import 'settings.scss';

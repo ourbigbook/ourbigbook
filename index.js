@@ -2557,6 +2557,8 @@ function convert_init_context(options={}, extra_returns={}) {
     root_relpath_scope_shift: '',
     synonym_headers: new Set(),
     toplevel_id: options.toplevel_id,
+    // Output path for the current rendering.
+    // Gets modified by split headers to point to the split header output path of each split header.
     toplevel_output_path: options.outfile,
   };
 
@@ -3145,14 +3147,14 @@ function output_path_from_ast(ast, context) {
 }
 
 /* This is the centerpiece of path calculation. It determines where a given header
- * will land considering notably:.
+ * will land considering:
  *
  * * README.ciro -> index.ciro renaming
  * * split header stuff
  *
  * Note that the links need to do additional processing to determine this.
  *
- * Notably, this function does not determine if something is in the current file
+ * This function does not determine if something is in the current file
  * or not: it always assumes it is not.
  *
  * Return an array [dirname, basename without extension] of the
@@ -3181,7 +3183,6 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     id = header_ast.id;
   }
 
-
   // Calculate the base basename_ret and dirname_ret.
   let dirname_ret;
   let basename_ret;
@@ -3207,7 +3208,7 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
       }
 
       // dirname_ret
-      if (id_dirname === '') {
+      if (dirname === '') {
         dirname_ret = dirname;
       } else {
         // Not a https://cirosantilli.com/cirodown#the-toplevel-index-file

@@ -18,7 +18,7 @@ module.exports = (sequelize) => {
           this.setDataValue('username', v.toLowerCase())
         },
         unique: {
-          msg: 'This username is taken'
+          msg: 'This username is taken.'
         },
         validate: {
           len: [config.usernameMinLength, config.usernameMaxLength],
@@ -55,12 +55,15 @@ module.exports = (sequelize) => {
           this.setDataValue('email', v.toLowerCase())
         },
         unique: {
-          msg: 'This email is taken'
+          msg: 'This email is taken.'
         },
         validate: {
-          isEmail: true,
+          isEmail: {
+            msg: 'This email does not seem valid.'
+          },
           max: {
             args: 254,
+            msg: 'This email is too long, the maximum size is 254 characters.'
           }
         }
       },

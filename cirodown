@@ -378,7 +378,7 @@ commander.option('--no-html-x-extension', 'http://cirosantilli.com/cirodown#no-h
 commander.option('--outdir <outdir>', 'if the output would be saved to a file e.g. when building a directory, use this directory as the root');
 commander.option('-o, --outfile <outfile>', 'http://cirosantilli.com/cirodown#outfile');
 commander.option('--output-format <output-format>', 'output format');
-commander.option('--publish', 'http://cirosantilli.com/cirodown#publish', false);
+commander.option('-p --publish', 'http://cirosantilli.com/cirodown#publish', false);
 commander.option('-P, --publish-commit <commit-message>', 'http://cirosantilli.com/cirodown#publish-commit');
 commander.option('--show-ast', 'print the AST to stderr', false);
 commander.option(

@@ -9,7 +9,15 @@
 
 === CLI
 
+=== Bug
+
 == Issues
+
+=== h1 arguments broken on web
+{tag=Bug}
+{tag=Web}
+
+Both preview and render.
 
 === Add sibling/add child buttons next to self headers and toc
 {tag=Web}

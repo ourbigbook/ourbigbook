@@ -7380,15 +7380,8 @@ If this option is set, then nosplit/split header metadata links are removed, sin
 
 This dict contains options related to interaction between <OurBigBook CLI> and <OurBigBook Web> deployments.
 
-= `username`
-{parent=ourbigbook.json}
-
-Type: string.
-
-Sets your <OurBigBook.com> username. This is used e.g. by <linkFromHeaderMeta>.
-
 = `linkFromHeaderMeta`
-{parent=ourbigbook.json}
+{parent=`web`}
 
 Type: boolean. Default: `false`.
 
@@ -7419,6 +7412,13 @@ those headers would have a metadata entry pointing respectively to:
 * `https://ourbigbook.com/myusername/my-h2/my-h2-2`
 
 In order for such links not to be broken, you should always first do a <Web upload> to ensure that the articles are present on <OurBigBook.com>.
+
+= `username`
+{parent=`web`}
+
+Type: string.
+
+Sets your <OurBigBook.com> username. This is used e.g. by <linkFromHeaderMeta>.
 
 = `xPrefix`
 {parent=ourbigbook.json}
@@ -7452,7 +7452,7 @@ Originally that would render as:
 But then if you set in `ourbigbook.json`:
 ``
 {
-  "publishXPrefix": "https://mynewsite.com/"
+  "xPrefix": "https://mynewsite.com/"
 }
 ``
 it will instead render as:

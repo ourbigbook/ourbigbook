@@ -1,4 +1,4 @@
-const { ESCAPE_USERNAME } = require("./front/config");
+const { escapeUsername } = require("./front/config");
 
 function getPage(page) {
   return page === undefined || page === 1 ? '' : `/${page}`
@@ -6,33 +6,33 @@ function getPage(page) {
 
 module.exports = {
   home: () => `/`,
-  articlesLatestFollowed: (page) => page === undefined || page === 1 ? `/` : `/${ESCAPE_USERNAME}/latest-followed/${page}`,
-  articlesTopFollowed: (page) => `/${ESCAPE_USERNAME}/top-followed${getPage(page)}`,
-  articlesLatest: (page) => `/${ESCAPE_USERNAME}/latest${getPage(page)}`,
-  articlesTop: (page) => `/${ESCAPE_USERNAME}/top${getPage(page)}`,
-  articleEdit: slug => `/${ESCAPE_USERNAME}/edit/${slug}`,
-  articleNew: () => `/${ESCAPE_USERNAME}/new`,
+  articlesLatestFollowed: (page) => page === undefined || page === 1 ? `/` : `/${escapeUsername}/latest-followed/${page}`,
+  articlesTopFollowed: (page) => `/${escapeUsername}/top-followed${getPage(page)}`,
+  articlesLatest: (page) => `/${escapeUsername}/latest${getPage(page)}`,
+  articlesTop: (page) => `/${escapeUsername}/top${getPage(page)}`,
+  articleEdit: slug => `/${escapeUsername}/edit/${slug}`,
+  articleNew: () => `/${escapeUsername}/new`,
   articleView: slug => `/${slug}`,
-  userEdit: () => `/${ESCAPE_USERNAME}/settings`,
-  userLogin: () => `/${ESCAPE_USERNAME}/login`,
-  userNew: () => `/${ESCAPE_USERNAME}/register`,
+  userEdit: () => `/${escapeUsername}/settings`,
+  userLogin: () => `/${escapeUsername}/login`,
+  userNew: () => `/${escapeUsername}/register`,
   userView: (uid, page) => `/${uid}`,
-  userViewTop: (uid, page) => `/${ESCAPE_USERNAME}/user/${uid}/top${getPage(page)}`,
-  userViewLikes: (uid, page) => `/${ESCAPE_USERNAME}/user/${uid}/likes${getPage(page)}`,
-  userViewLatest: (uid, page) => `/${ESCAPE_USERNAME}/user/${uid}/latest${getPage(page)}`,
+  userViewTop: (uid, page) => `/${escapeUsername}/user/${uid}/top${getPage(page)}`,
+  userViewLikes: (uid, page) => `/${escapeUsername}/user/${uid}/likes${getPage(page)}`,
+  userViewLatest: (uid, page) => `/${escapeUsername}/user/${uid}/latest${getPage(page)}`,
   topicArticlesTop: (id, page) => {
     if (page === undefined || page === 1) {
-      return `/${ESCAPE_USERNAME}/topic/${id}`
+      return `/${escapeUsername}/topic/${id}`
     } else {
-      return `/${ESCAPE_USERNAME}/topic-page/${page}/${id}`
+      return `/${escapeUsername}/topic-page/${page}/${id}`
     }
   },
   topicArticlesLatest: (id, page) => {
     if (page === undefined || page === 1) {
-      return `/${ESCAPE_USERNAME}/topic-latest/${id}`
+      return `/${escapeUsername}/topic-latest/${id}`
     } else {
-      return `/${ESCAPE_USERNAME}/topic-latest-page/${page}/${id}`
+      return `/${escapeUsername}/topic-latest-page/${page}/${id}`
     }
   },
-  topicUsersView: id => `/${ESCAPE_USERNAME}/topic-users/${id}`,
+  topicUsersView: id => `/${escapeUsername}/topic-users/${id}`,
 }

@@ -4,7 +4,7 @@ import { GetStaticProps, GetStaticPaths } from 'next'
 
 import { fallback, revalidate } from 'front/config'
 import sequelize from 'db'
-import { DEFAULT_LIMIT  } from 'constant'
+import { defaultLimit  } from 'front/config'
 
 export const getStaticPathsTopic: GetStaticPaths = async () => {
   return {
@@ -21,12 +21,12 @@ export const makeGetStaticPropsTopic = (what): GetStaticProps => {
     switch (what) {
       // TODO
       //case 'followed-latest':
-      //  return `${SERVER_BASE_URL}/articles/feed?limit=${DEFAULT_LIMIT}&offset=${
-      //    page * DEFAULT_LIMIT
+      //  return `${apiPath}/articles/feed?limit=${defaultLimit}&offset=${
+      //    page * defaultLimit
       //  }`;
       //case 'followed-top':
-      //  return `${SERVER_BASE_URL}/articles/feed?limit=${DEFAULT_LIMIT}&offset=${
-      //    page * DEFAULT_LIMIT
+      //  return `${apiPath}/articles/feed?limit=${defaultLimit}&offset=${
+      //    page * defaultLimit
       //  }&sort=score`;
       case 'latest':
       case 'latest-followed':
@@ -38,14 +38,14 @@ export const makeGetStaticPropsTopic = (what): GetStaticProps => {
         break;
       //case 'topic-articles':
       //case 'topic-users': // TODO top users for a topic.
-      //  return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&offset=${page * DEFAULT_LIMIT}&topicId=${props.topicId}&sort=score`;
+      //  return `${apiPath}/articles?limit=${defaultLimit}&offset=${page * defaultLimit}&topicId=${props.topicId}&sort=score`;
       default:
         throw new Error(`Unknown search: ${what}`)
     }
     const articles = await sequelize.models.Article.getArticles({
       sequelize,
-      limit: DEFAULT_LIMIT,
-      offset: page * DEFAULT_LIMIT,
+      limit: defaultLimit,
+      offset: page * defaultLimit,
       order,
       topicId: context.params.id,
     })

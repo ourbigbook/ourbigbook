@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-import { SERVER_BASE_URL } from 'constant'
+import { apiPath } from 'front/config'
 import { addAuthHeader } from './lib'
 
 const UserAPI = {
@@ -22,7 +22,7 @@ const UserAPI = {
     const token = user?.token;
     try {
       const response = await axios.post(
-        `${SERVER_BASE_URL}/users/${username}/follow`,
+        `${apiPath}/users/${username}/follow`,
         {},
         {
           headers: addAuthHeader(token),
@@ -39,7 +39,7 @@ const UserAPI = {
   login: async (email, password) => {
     try {
       const response = await axios.post(
-        `${SERVER_BASE_URL}/login`,
+        `${apiPath}/login`,
         JSON.stringify({ user: { email, password } }),
         {
           headers: {
@@ -56,7 +56,7 @@ const UserAPI = {
   register: async (displayName, username, email, password) => {
     try {
       const response = await axios.post(
-        `${SERVER_BASE_URL}/users`,
+        `${apiPath}/users`,
         JSON.stringify({ user: { displayName, username, email, password } }),
         {
           headers: {
@@ -73,7 +73,7 @@ const UserAPI = {
   save: async (user) => {
     try {
       const response = await axios.put(
-        `${SERVER_BASE_URL}/users`,
+        `${apiPath}/users`,
         JSON.stringify({ user }),
         {
           headers: {
@@ -102,7 +102,7 @@ const UserAPI = {
     const token = user?.token;
     try {
       const response = await axios.delete(
-        `${SERVER_BASE_URL}/users/${username}/follow`,
+        `${apiPath}/users/${username}/follow`,
         {
           headers: addAuthHeader(token),
         }
@@ -113,7 +113,7 @@ const UserAPI = {
     }
   },
 
-  url: username => `${SERVER_BASE_URL}/users/${username}`,
+  url: username => `${apiPath}/users/${username}`,
 };
 
 export default UserAPI;

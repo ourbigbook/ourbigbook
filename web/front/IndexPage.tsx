@@ -8,7 +8,7 @@ import Maybe from 'front/Maybe'
 import getLoggedInUser from 'getLoggedInUser'
 import routes from 'routes'
 import useMin from 'front/api/useMin'
-import { APP_NAME, ABOUT_HREF, DEFAULT_LIMIT, SERVER_BASE_URL } from 'constant'
+import { appName, aboutHref, defaultLimit, apiPath } from 'front/config'
 import fetcher from 'fetcher'
 
 const Home = ({ articles, articlesCount, page, what }) => {
@@ -38,12 +38,12 @@ const Home = ({ articles, articlesCount, page, what }) => {
   const fetchUrl = (() => {
     switch (what) {
       case 'latest-followed':
-        return `${SERVER_BASE_URL}/articles/feed?limit=${DEFAULT_LIMIT}&offset=${
-          page * DEFAULT_LIMIT
+        return `${apiPath}/articles/feed?limit=${defaultLimit}&offset=${
+          page * defaultLimit
         }`;
       case 'top-followed':
-        return `${SERVER_BASE_URL}/articles/feed?limit=${DEFAULT_LIMIT}&offset=${
-          page * DEFAULT_LIMIT
+        return `${apiPath}/articles/feed?limit=${defaultLimit}&offset=${
+          page * defaultLimit
         }&sort=score`;
       default:
         if (loginRequired) {
@@ -85,8 +85,8 @@ const Home = ({ articles, articlesCount, page, what }) => {
   } else {
     articleList = (
       <div>
-        <p>Welcome to {APP_NAME}!</p>
-        <p>The goals of this website are described at: <a href={ABOUT_HREF}>{ABOUT_HREF}</a></p>
+        <p>Welcome to {appName}!</p>
+        <p>The goals of this website are described at: <a href={aboutHref}>{aboutHref}</a></p>
         <p>This page would show content taylored to logged-in users, so you could either:</p>
         <ul>
           <li><a href={routes.userNew()}>create an account</a>, then come back here, or <a href={routes.articleNew()}>try and create your own test article</a></li>

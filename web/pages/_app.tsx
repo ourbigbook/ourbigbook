@@ -6,7 +6,7 @@ import { googleAnalyticsId, isProduction } from 'front/config';
 import CustomLink from 'front/CustomLink'
 import Navbar from 'front/Navbar'
 import { AppContext, AppContextProvider } from 'front'
-import { APP_NAME } from 'constant'
+import { appName } from 'front/config'
 
 // Css
 // migrating the local cirodown to webpack: https://github.com/cirosantilli/cirodown/issues/157
@@ -24,7 +24,7 @@ function MyHead() {
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1"
       />
-      <title>{realTitle + APP_NAME}</title>
+      <title>{realTitle + appName}</title>
     </Head>
   )
 }

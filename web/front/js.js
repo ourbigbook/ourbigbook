@@ -3,8 +3,13 @@
 
 const ourbigbook = require('ourbigbook')
 
+const DEFAULT_LIMIT = 20
+
 function modifyEditorInput(title, body) {
-  let ret = ourbigbook.INSANE_HEADER_CHAR + ' ' + title
+  let ret = ''
+  if (title !== undefined) {
+    ret += ourbigbook.INSANE_HEADER_CHAR + ' ' + title
+  }
   let offsetOffset = 0
   // Append title to body. Add a newline if the body doesn's start
   // with a header argument like `{c}` in:

@@ -12,24 +12,17 @@ const { ValidationError } = require('./api/lib')
 const { convertOptions } = require('./front/config')
 const { modifyEditorInput } = require('./front/js')
 
-// This does the type of stuff that OurBigBook CLI does for CLI
-// around the conversion itself, i.e. setting up the database, saving output files
-// but on the Web.
-//
-// This is how Articles should always be created and updated.
+// Subset of convertArticle for usage in issues and comments.
+// This is a much simpler procedure as it does not alter the File/Article database.
 async function convert({
   author,
   body,
-  forceNew,
   path,
   render,
   sequelize,
   title,
   transaction,
 }) {
-  if (render === undefined) {
-    render = true
-  }
   const db_provider = new SqliteDbProvider(sequelize)
   const extra_returns = {};
   body = body.replace(/\n+$/, '')
@@ -76,6 +69,37 @@ async function convert({
       extra_returns.errors.map(e => e.toString()))
     throw new ValidationError(errsNoDupes)
   }
+  return { db_provider, extra_returns, input_path }
+}
+
+// This does the type of stuff that OurBigBook CLI does for CLI
+// around the conversion itself, i.e. setting up the database, saving output files
+// but on the Web.
+//
+// This is how Articles should always be created and updated.
+async function convertArticle({
+  author,
+  body,
+  forceNew,
+  path,
+  render,
+  sequelize,
+  title,
+  transaction,
+}) {
+  if (render === undefined) {
+    render = true
+  }
+  const { db_provider, extra_returns, input_path } = await convert({
+    author,
+    body,
+    forceNew,
+    path,
+    render,
+    sequelize,
+    title,
+    transaction,
+  })
   const idid = extra_returns.context.header_tree.children[0].ast.id
   const filePath = `${idid}.${ourbigbook.OURBIGBOOK_EXT}`
   if (forceNew && await sequelize.models.File.findOne({ where: { path: filePath }, transaction })) {
@@ -140,4 +164,5 @@ async function convert({
 
 module.exports = {
   convert,
+  convertArticle,
 }

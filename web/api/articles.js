@@ -104,7 +104,7 @@ async function createOrUpdateArticle(req, res, opts) {
   const articleData = lib.validateParamMandatory(req.body, 'article')
   const title = lib.validateParamMandatory(articleData, 'title')
   const render = lib.validateParam(req.body, 'render', lib.validateTrueOrFalse, true)
-  const articles = await convert.convert({
+  const articles = await convert.convertArticle({
     author: user,
     body: articleData.body,
     forceNew: opts.forceNew,

@@ -65,6 +65,7 @@ class AstNode {
    *                 content that is passed for an external tool for processing, for example
    *                 Math equations to KaTeX, In that case, the arguments need to be passed as is,
    *                 otherwise e.g. `1 < 2` would escape the `<` to `&lt;` and KaTeX would receive bad input.
+   *        - {TreeNode} header_graph - TreeNode graph containing AstNode headers
    *        - {Object} ids - map of document IDs to their description:
    *                 - 'prefix': prefix to add if style=full, e.g. `Figure 1`, `Section 2`, etc.
    *                 - {List[AstNode]} 'title': the title of the element linked to
@@ -139,7 +140,6 @@ class ErrorMessage {
 class MacroArgument {
   /**
    * @param {String} name
-   * @param {function} validate
    */
   constructor(options) {
     this.name = options.name;
@@ -183,7 +183,7 @@ class Macro {
       options.caption_prefix = capitalize_first_letter(name);
     }
     if (!('x_style' in options)) {
-      options.x_style = 'full';
+      options.x_style = XStyle.full;
     }
     this.name = name;
     this.positional_args = positional_args;
@@ -274,23 +274,23 @@ class Macro {
       options.show_caption_prefix = true;
     }
     if (!('style' in options)) {
-      options.style = 'full';
+      options.style = XStyle.full;
     }
     let ret = ``;
-    if (options.style === 'full') {
+    if (options.style === XStyle.full) {
       if (options.show_caption_prefix) {
         ret += `${ast.macro.options.caption_prefix} `;
       }
       ret += ast.macro_count;
     }
     if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
-      if (options.style === 'full') {
+      if (options.style === XStyle.full) {
         ret += html_escape_context(context, `. `);
         if (options.quote)
           ret += html_escape_context(context, `"`);
       }
       ret += convert_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-      if (options.style === 'full' && options.quote) {
+      if (options.style === XStyle.full && options.quote) {
         ret += html_escape_context(context, `"`);
       }
     }
@@ -716,6 +716,7 @@ function convert(
   let context = {
     errors: errors,
     extra_returns: extra_returns,
+    header_graph: sub_extra_returns.header_graph,
     ids: sub_extra_returns.ids,
     macros: macros,
     options: options,
@@ -953,9 +954,9 @@ function parse(tokens, macros, options, extra_returns={}) {
   let todo_visit = [ast_toplevel];
   let macro_counts = {};
   extra_returns.ids = {};
-  let header_tree_last_level = 0;
-  extra_returns.header_tree = new TreeNode();
-  let header_tree_stack = {0: extra_returns.header_tree};
+  let header_graph_last_level = 0;
+  extra_returns.header_graph = new TreeNode();
+  let header_graph_stack = {0: extra_returns.header_graph};
   while (todo_visit.length > 0) {
     const node = todo_visit.shift();
     const macro_name = node.macro_name;
@@ -991,21 +992,21 @@ function parse(tokens, macros, options, extra_returns={}) {
     // Linear count of each macro type for macros that have IDs.
     if (macro_name === Macro.HEADER_MACRO_NAME) {
       let level = parseInt(convert_arg_noescape(node.args.level, id_context));
-      let new_tree_node = new TreeNode(node, header_tree_stack[level - 1]);
-      if ((level - header_tree_last_level) > 1) {
+      let new_tree_node = new TreeNode(node, header_graph_stack[level - 1]);
+      if ((level - header_graph_last_level) > 1) {
         parse_error(
           state,
-          `skipped a header level from ${header_tree_last_level} to ${level}`,
+          `skipped a header level from ${header_graph_last_level} to ${level}`,
           node.args.level[0].line,
           node.args.level[0].column
         );
       }
-      let parent_tree_node = header_tree_stack[level - 1];
+      let parent_tree_node = header_graph_stack[level - 1];
       if (parent_tree_node !== undefined) {
         parent_tree_node.add_child(new_tree_node);
       }
-      header_tree_stack[level] = new_tree_node;
-      header_tree_last_level = level;
+      header_graph_stack[level] = new_tree_node;
+      header_graph_last_level = level;
     }
 
     // Loop over the child arguments.
@@ -1309,6 +1310,10 @@ const AstType = make_enum([
   'PLAINTEXT',
   'PARAGRAPH',
 ]);
+const XStyle = make_enum([
+  'full',
+  'short',
+]);
 const TokenType = make_enum([
   'PLAINTEXT',
   'MACRO_NAME',
@@ -1434,7 +1439,7 @@ const DEFAULT_MACRO_LIST = [
     {
       caption_prefix: 'Section',
       id_prefix: '',
-      x_style: 'short',
+      x_style: XStyle.short,
     }
   ),
   new Macro(
@@ -1637,7 +1642,10 @@ const DEFAULT_MACRO_LIST = [
     'toc',
     [],
     function(ast, context) {
-      let ret = `<div>The TOC!</div>`;
+      let ret = ``;
+      for (const child of context.header_graph.children) {
+      	ret += this.x_text(child.value, context);
+      }
       //let attrs = html_convert_attrs_id(ast, context);
       //let content = convert_arg(ast.args.content, context);
       //let ret = ``;
@@ -1777,7 +1785,13 @@ th, td {
             quote: true,
           };
           if (ast.arg_given('style')) {
-            x_text_options.style = convert_arg_noescape(ast.args.style, context);
+						let style_string = convert_arg_noescape(ast.args.style, context);
+						if (!(style_string in XStyle)) {
+							let message = `unkown x style: "${style_string}"`;
+							this.error(context, message, ast.args.style[0].line, ast.args.style[0].column);
+							return error_message_in_output(message);
+						}
+            x_text_options.style = XStyle[style_string];
           }
           content = this.x_text(target_id_ast, context, x_text_options);
           if (content === ``) {

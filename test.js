@@ -389,7 +389,7 @@ assert_convert('link with multiple paragraphs',
   '<a href="http://example.com"><p>Multiple</p>\n<p>paragraphs</p>\n</a>\n'
 );
 
-// Cross references.
+// Cross references \x
 assert_convert('cross reference simple',
   `\\h[1][My header]
 
@@ -408,7 +408,7 @@ assert_convert('cross reference auto default',
 <p><a href="#my-header">My header</a></p>
 `
 );
-assert_convert('cross reference auto full',
+assert_convert('cross reference auto style full',
   `\\h[1][My header]
 
 \\x[my-header]{style=full}
@@ -416,6 +416,13 @@ assert_convert('cross reference auto full',
   `<h1 id="my-header"><a href="#my-header">1. My header</a></h1>
 <p><a href="#my-header">Section 1. "My header"</a></p>
 `
+);
+assert_error('cross reference with unknown style',
+  `\\h[1][My header]
+
+\\x[my-header]{style=reserved_undefined}
+`,
+  3, 21
 );
 assert_convert('cross reference to image',
   `\\Image[ab]{id=cd}{title=ef}

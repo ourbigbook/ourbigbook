@@ -150,35 +150,48 @@ const Macro = class {
    *        {boolean} phrasing_if_not_alone - the element is phrasing if it is not the only child
    *                                          of a double paragraph.
    */
-  constructor(name, args, convert, properties={}) {
+  constructor(name, positional_args, convert, options={}) {
+    if (!('named_args' in options)) {
+      options.named_args = {};
+    }
+    if (!('properties' in options)) {
+      options.properties = {};
+    }
     this.name = name;
-    this.args = args;
+    this.positional_args = positional_args;
+    this.named_args = options.named_args;
     this.convert = convert;
-    this.properties = properties;
-    if (!('phrasing') in this.properties) {
+    this.properties = options.properties;
+    if (!('phrasing' in this.properties)) {
       this.properties['phrasing'] = false;
     }
-    if (!('phrasing_if_has_paragraph_sibling') in this.properties) {
+    if (!('phrasing_if_has_paragraph_sibling' in this.properties)) {
       this.properties['phrasing_if_has_paragraph_sibling'] = false;
     }
     this.name_to_arg = {};
-    this.index_to_arg = {};
-    let i = 0;
-    for (const arg of args) {
+    for (const arg of this.positional_args) {
       let name = arg.name;
-      if (name == Macro.id_macro_name) {
-        throw new Error(`name "${Macro.id_macro_name}" is reserved and automatically added`);
-      }
-      if (name in this.name_to_arg) {
-        throw new Error('name already taken: ' + name);
-      }
+      this.check_name(name);
       this.name_to_arg[name] = arg;
-      this.index_to_arg[i] = arg;
-      i += 1;
     }
-    this.name_to_arg[Macro.id_macro_name] = new Argument({
+    for (const name in this.named_args) {
+      this.check_name(name);
+      this.name_to_arg[name] = arg;
+    }
+    // Add the ID argument.
+    this.named_args[Macro.id_macro_name] = new Argument({
       name: Macro.id_macro_name,
     })
+    this.name_to_arg[Macro.id_macro_name] = this.named_args[Macro.id_macro_name];
+  }
+
+  check_name(name) {
+    if (name == Macro.id_macro_name) {
+      throw new Error(`name "${Macro.id_macro_name}" is reserved and automatically added`);
+    }
+    if (name in this.name_to_arg) {
+      throw new Error('name already taken: ' + name);
+    }
   }
 }
 Macro.id_macro_name = 'id'
@@ -260,7 +273,9 @@ let macro_list = [
       return `<a href="${convert_arg(ast.args.href, options, true)}">${convert_arg(content, options, is_attr)}</a>`;
     },
     {
-      phrasing: true,
+      properties: {
+        phrasing: true,
+      }
     }
   ),
   new Macro(
@@ -285,7 +300,9 @@ let macro_list = [
       return `<code>${convert_arg(ast.args.content, options, is_attr)}</code>`;
     },
     {
-      phrasing: true,
+      properties: {
+        phrasing: true,
+      }
     }
   ),
   new Macro(
@@ -338,7 +355,9 @@ let macro_list = [
       }
     },
     {
-      phrasing: true,
+      properties: {
+        phrasing: true,
+      }
     }
   ),
   new Macro(
@@ -484,9 +503,9 @@ const Tokenizer = class {
       this.log_debug('this.cur_c: ' + this.cur_c);
       this.log_debug();
       if (this.cur_c === '\\') {
+        this.consume();
         let start_line = this.line;
         let start_column = this.column;
-        this.consume();
         if (this.is_end()) {
           // Maybe this should be an error.
         } else if (ESCAPABLE_CHARS.has(this.cur_c)) {
@@ -507,12 +526,14 @@ const Tokenizer = class {
         let open_length = this.tokenize_func(
           (c)=>{return c === START_NAMED_ARGUMENT_CHAR}
         ).length;
+        let line = this.line;
+        let column = this.column;
         let arg_name = this.tokenize_func(char_is_identifier);
-        this.push_token(TokenType.NAMED_ARGUMENT_NAME, arg_name);
-        this.consume();
+        this.push_token(TokenType.NAMED_ARGUMENT_NAME, arg_name, line, column);
         if (this.cur_c !== NAMED_ARGUMENT_EQUAL_CHAR) {
-          this.error(`was expecting the character: ${NAMED_ARGUMENT_EQUAL_CHAR}`);
+          this.error(`expected character: '${NAMED_ARGUMENT_EQUAL_CHAR}' got '${this.cur_c}'`);
         }
+        this.consume();
         this.consume_optional_newline();
         if (open_length > 1) {
           // Literal argument.
@@ -779,24 +800,32 @@ const parse_macro = function(state) {
     ) {
       let arg_name;
       let open_type = state.token.type;
+      // Consume the *_ARGUMENT_START token out.
+      parse_consume(state);
       if (open_type === TokenType.POSITIONAL_ARGUMENT_START) {
         if (macro_type === AstType.ERROR) {
           arg_name = positional_arg_count.toString();
         } else {
           // TODO check if argument exists, and handle error otherwise.
-          arg_name = macro.index_to_arg[positional_arg_count].name;
+          arg_name = macro.positional_args[positional_arg_count].name;
           positional_arg_count += 1;
         }
       } else {
         // Named argument.
+        let name_line = state.token.line;
+        let name_column = state.token.column;
+        arg_name = state.token.value;
+        if (macro_type !== AstType.ERROR && !(arg_name in macro.named_args)) {
+          parse_report_error(state,
+            `unknown named macro argument "${arg_name}" of macro "${macro_name}"\n`,
+            name_line,
+            name_column
+          );
+        }
         // Parse the argument name out.
         parse_consume(state);
-        arg_name = state.token.value;
-        // TODO check if argument exists, and handle error otherwise.
       }
       let arg_children = [];
-      // Consume the *_ARGUMENT_START token out.
-      parse_consume(state);
       while (
         state.token.type !== TokenType.POSITIONAL_ARGUMENT_END &&
         state.token.type !== TokenType.NAMED_ARGUMENT_END
@@ -806,7 +835,7 @@ const parse_macro = function(state) {
       }
       if (state.token.type !== closing_token(open_type)) {
         parse_report_error(state,
-          `expected a closing ${END_POSITIONAL_ARGUMENT_CHAR} found ${state.token.type.toString()}`);
+          `expected a closing '${END_POSITIONAL_ARGUMENT_CHAR}' found '${state.token.type.toString()}'`);
       }
       args[arg_name] = arg_children;
       // Consume the *_ARGUMENT_END token out.
@@ -865,9 +894,13 @@ const parse_macro = function(state) {
   state.i += 1;
 }
 
-const parse_report_error = function(state, message) {
+const parse_report_error = function(state, message, line, column) {
+  if (line === undefined)
+    line = state.token.line;
+  if (column === undefined)
+    column = state.token.column;
   state.extra_returns.errors.push(new ErrorMessage(
-    message, state.token.line, state.token.column));
+    message, line, column));
 }
 
 /**

@@ -501,34 +501,47 @@ Display math is done with upper case \c[M]:
 
 \h[4][Positional vs named arguments]
 
-TODO
+Every argument in Cirodown is either positional or named.
 
+For example, in a \x[headers][header] definition with an ID:
+
+\c[[
+\h[1][My asdf]{id=asdf qwer}{id_scope=myscope}
+]]
+
+we have:
+
+\l[two positional argument: \c[[[1]]] and \c[[[My asdf]]]. Those are surrounded by \c[[[]]] and have no name]
 \l[
-  positional
+  two named arguments: \c[[{id=asdf qwer}]] and \c[[{id_scope=myscope}]].
 
-  Gets prefixed by a key `name=`.
-
-  Must come before the mandatory ones, but the order between the optional ones is arbitrary.
+  The first one has name \c[id] and the mandatory separator \c[=], followed by the value \c[asdf qwer].
 ]
-\l[
-  named
 
-  Not prefixed by keys.
+Generally, positional arguments are few (otherwise it would be hard to know which is which is which), and are almost always used for a given element so tha they save us from typing the name too many times.
 
-  Must always be present, and must come after the optional ones.
+The order of positional arguments must of course be fixed, but named arguments can go anywhere. We can even mix positional and named arguments however we want, although this is not advised for clarity.
 
-  Mandatory arguments can however be empty which is indicated by an empty pair of square brackets:
+The following are therefore all equivalent:
 
-  \c[\{\]]
+\c[[
+\h[1][My asdf]{id=asdf qwer}{id_scope=myscope}
+\h[1][My asdf]{id_scope=myscope}{id=asdf qwer}
+\h{id=asdf qwer}{id_scope=myscope}[1][My asdf]
+\h{id_scope=myscope}[1]{id=asdf qwer}[My asdf]
+]]
 
-  Macros can process this empty value magically or not as documented on their API.
+Positional arguments are not mandatory: you can skip the last ones, and this could lead to special sensible defaults.
 
-  For example, \x[links] have two mandatory arguments: the URL and text, and the link API treats an empty text as a copy of the URL, which is a common use case:
+For example, an anchor with the first positional argument present (the URL), but not the second positional argument (the link text) as in:
 
-  \c[[
-  \a[http://example.com]
-  ]]
-]
+\c[[\a[http://example.com]]]
+
+has the special generates automatic links as in:
+
+\c[[\a[http://example.com][http://example.com]]]
+
+See also: \x[links].
 
 \h[4][JavaScript interface for arguments]
 
@@ -816,11 +829,9 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \h[3][TODO]
 
-\l[HTML escapes]
-\l[named arguments]
+\l[output argument description with some CLI help flag]
 \l[math]
 \l[LaTeX output]
-\l[output argument description with some CLI help flag]
 \l[pass CLIs to test command to enable token and ast logging]
 
 \h[3][Related projects]

@@ -2906,7 +2906,7 @@ assert_executable(
 assert_executable(
   'executable: input from directory with cirodown.json produces several output files',
   {
-    args: ['.'],
+    args: ['--split-headers', '.'],
     filesystem: {
       'README.ciro': `= Index
 
@@ -2961,9 +2961,27 @@ assert_executable(
         "//x:a[@href='../index.html' and text()='link to toplevel']",
         "//x:a[@href='../index.html#h2' and text()='link to toplevel subheader']",
       ],
+      'subdir/index-split.html': [
+        "//x:h1[@id='index']",
+      ],
       'subdir/notindex.html': [
         "//x:h1[@id='notindex']",
         "//x:h2[@id='notindex-h2']",
+      ],
+      'subdir/index-split.html': [
+        "//x:h1[@id='subdir']",
+      ],
+      'subdir/index-h2.html': [
+        "//x:h1[@id='index-h2']",
+      ],
+      'subdir/notindex-h2.html': [
+        "//x:h1[@id='notindex-h2']",
+      ],
+      'subdir/notindex-split.html': [
+        "//x:h1[@id='notindex']",
+      ],
+      'subdir/notindex-h2.html': [
+        "//x:h1[@id='notindex-h2']",
       ]
     }
   }

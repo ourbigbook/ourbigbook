@@ -855,7 +855,6 @@ function convert(
   if (!('html_x_extension' in options)) { options.html_x_extension = true; }
   if (!('h_level_offset' in options)) { options.h_level_offset = 0; }
   if (!('input_path' in options)) { options.input_path = undefined; }
-  if (!('macro_counts' in options)) { options.macro_counts = {}; }
   if (!('render' in options)) { options.render = true; }
   if (!('show_ast' in options)) { options.show_ast = false; }
   if (!('show_parse' in options)) { options.show_parse = false; }
@@ -1166,44 +1165,21 @@ function parse(tokens, macros, options, extra_returns={}) {
     parse_error(state, `unexpected tokens at the end of input`);
   }
 
-  // Post process the AST breadth first to support:
-  // * the insane but necessary paragraphs double newline syntax
-  // * automatic ul parent to li and table to tr
-  // * extract all IDs into an ID index
-  const toplevel_parent_arg = []
+  // Post process the AST breadth first minimally to support includes.
+  //
+  // This could in theory be done in a single pass with the next one,
+  // but that is much more hard to implement and maintain, because we
+  // have to stich togetegher internal structors to maintain the header
+  // tree across the includer and included documents.
+  //
+  // Another possibility would be to do it in the middle of the initial parse,
+  // but let's not complicate that further either, shall we?
+  let toplevel_parent_arg = []
   const todo_visit = [[toplevel_parent_arg, ast_toplevel]];
-  let header_graph_last_level;
-  const header_graph_stack = new Map();
-  let is_first_header = true;
-  let first_header_level;
-  let first_header;
-  let indexed_ids = {};
-  // Non-indexed-ids: auto-generated numeric ID's like p-1, p-2, etc.
-  // It is not possible to link to them from inside the document, since links
-  // break across versions.
-  let non_indexed_ids = {};
-  // IDs that are indexed: you can link to those.
-  let id_provider;
-  let local_id_provider = new DictIdProvider(options.input_path, indexed_ids);
-  let cur_header_level;
-  let cur_header_tree_node;
-  if (options.id_provider !== undefined) {
-    id_provider = new ChainedIdProvider(
-      local_id_provider,
-      options.id_provider
-    );
-  } else {
-    id_provider = local_id_provider;
-  }
-  extra_returns.context.id_provider = id_provider;
-  extra_returns.context.header_graph = new TreeNode();
-  extra_returns.context.has_toc = false;
+  const id_context = {'macros': macros};
   while (todo_visit.length > 0) {
     const [parent_arg, ast] = todo_visit.shift();
-    const id_context = {'macros': macros};
     const macro_name = ast.macro_name;
-    const macro = macros[macro_name]
-
     if (macro_name === Macro.HEADER_MACRO_NAME) {
       // Create the header tree.
       if (ast.level === undefined) {
@@ -1213,47 +1189,12 @@ function parse(tokens, macros, options, extra_returns={}) {
         // Possible for included headers.
         cur_header_level = ast.level;
       }
-      if (is_first_header) {
-        first_header = ast;
-        ast.is_first_header = true;
-        is_first_header = false;
-        first_header_level = cur_header_level;
-        header_graph_last_level = cur_header_level - 1;
-        header_graph_stack[header_graph_last_level] = extra_returns.context.header_graph;
-      }
-      cur_header_tree_node = new TreeNode(ast, header_graph_stack[cur_header_level - 1]);
-      ast.header_tree_node = cur_header_tree_node;
-      if (cur_header_level - header_graph_last_level > 1) {
-        parse_error(
-          state,
-          `skipped a header level from ${header_graph_last_level} to ${level}`,
-          ast.args.level[0].line,
-          ast.args.level[0].column
-        );
-      }
-      if (cur_header_level < first_header_level) {
-        parse_error(
-          state,
-          `header level ${cur_header_level} is smaller than the level of the first header of the document ${first_header_level}`,
-          ast.args.level[0].line,
-          ast.args.level[0].column
-        );
-      }
-      let parent_tree_node = header_graph_stack[cur_header_level - 1];
-      if (parent_tree_node !== undefined) {
-        parent_tree_node.add_child(cur_header_tree_node);
-      }
-      header_graph_stack[cur_header_level] = cur_header_tree_node;
-      header_graph_last_level = cur_header_level;
-    } else if (macro_name === Macro.TOC_MACRO_NAME) {
-      extra_returns.context.has_toc = true;
     } else if (macro_name === Macro.INCLUDE_MACRO_NAME) {
       const href = convert_arg_noescape(ast.args.href, id_context);
       if (options.html_single_page) {
         const include_options = Object.assign({}, options);
         include_options.render = false;
         include_options.h_level_offset = cur_header_level;
-        include_options.macro_counts = options.macro_counts;
         include_options.toplevel_id = href;
         const include_extra_returns = {};
         convert(
@@ -1317,7 +1258,7 @@ function parse(tokens, macros, options, extra_returns={}) {
                 new PlaintextAstNode(
                   ast.line,
                   ast.column,
-                  'This section is present in another file, follow this link to view it.'
+                  'This section is present in another page, follow this link to view it.'
                 )
               ],
             },
@@ -1344,14 +1285,102 @@ function parse(tokens, macros, options, extra_returns={}) {
     // Push this node into the parent argument list.
     // This allows us to skip nodes, or push multiple nodes if needed.
     parent_arg.push(ast);
+  }
+
+  // Post process the AST breadth first after includsions are resolved to support:
+  // * the insane but necessary paragraphs double newline syntax
+  // * automatic ul parent to li and table to tr
+  // * extract all IDs into an ID index
+  const macro_counts = {};
+  let header_graph_last_level;
+  const header_graph_stack = new Map();
+  let is_first_header = true;
+  let first_header_level;
+  let first_header;
+  let indexed_ids = {};
+  // Non-indexed-ids: auto-generated numeric ID's like p-1, p-2, etc.
+  // It is not possible to link to them from inside the document, since links
+  // break across versions.
+  let non_indexed_ids = {};
+  // IDs that are indexed: you can link to those.
+  let id_provider;
+  let local_id_provider = new DictIdProvider(options.input_path, indexed_ids);
+  let cur_header_level;
+  let cur_header_tree_node;
+  if (options.id_provider !== undefined) {
+    id_provider = new ChainedIdProvider(
+      local_id_provider,
+      options.id_provider
+    );
+  } else {
+    id_provider = local_id_provider;
+  }
+  extra_returns.context.id_provider = id_provider;
+  extra_returns.context.header_graph = new TreeNode();
+  extra_returns.context.has_toc = false;
+  toplevel_parent_arg = []
+  todo_visit = [[toplevel_parent_arg, ast_toplevel]];
+  while (todo_visit.length > 0) {
+    const [parent_arg, ast] = todo_visit.shift();
+    const macro_name = ast.macro_name;
+    const macro = macros[macro_name]
+
+    if (macro_name === Macro.HEADER_MACRO_NAME) {
+      // Create the header tree.
+      if (ast.level === undefined) {
+        cur_header_level = parseInt(convert_arg_noescape(ast.args.level, id_context)) + options.h_level_offset;
+        ast.level = cur_header_level;
+      } else {
+        // Possible for included headers.
+        cur_header_level = ast.level;
+      }
+      if (is_first_header) {
+        first_header = ast;
+        ast.is_first_header = true;
+        is_first_header = false;
+        first_header_level = cur_header_level;
+        header_graph_last_level = cur_header_level - 1;
+        header_graph_stack[header_graph_last_level] = extra_returns.context.header_graph;
+      }
+      cur_header_tree_node = new TreeNode(ast, header_graph_stack[cur_header_level - 1]);
+      ast.header_tree_node = cur_header_tree_node;
+      if (cur_header_level - header_graph_last_level > 1) {
+        parse_error(
+          state,
+          `skipped a header level from ${header_graph_last_level} to ${level}`,
+          ast.args.level[0].line,
+          ast.args.level[0].column
+        );
+      }
+      if (cur_header_level < first_header_level) {
+        parse_error(
+          state,
+          `header level ${cur_header_level} is smaller than the level of the first header of the document ${first_header_level}`,
+          ast.args.level[0].line,
+          ast.args.level[0].column
+        );
+      }
+      let parent_tree_node = header_graph_stack[cur_header_level - 1];
+      if (parent_tree_node !== undefined) {
+        parent_tree_node.add_child(cur_header_tree_node);
+      }
+      header_graph_stack[cur_header_level] = cur_header_tree_node;
+      header_graph_last_level = cur_header_level;
+    } else if (macro_name === Macro.TOC_MACRO_NAME) {
+      extra_returns.context.has_toc = true;
+    }
+
+    // Push this node into the parent argument list.
+    // This allows us to skip nodes, or push multiple nodes if needed.
+    parent_arg.push(ast);
 
     // Linear count of each macro type for macros that have IDs.
     if (!macro.options.macro_counts_ignore(ast, id_context)) {
-      if (!(macro_name in options.macro_counts)) {
-        options.macro_counts[macro_name] = 0;
+      if (!(macro_name in macro_counts)) {
+        macro_counts[macro_name] = 0;
       }
-      macro_count = options.macro_counts[macro_name] + 1;
-      options.macro_counts[macro_name] = macro_count;
+      macro_count = macro_counts[macro_name] + 1;
+      macro_counts[macro_name] = macro_count;
       ast.macro_count = macro_count;
     }
 

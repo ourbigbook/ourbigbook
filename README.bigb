@@ -5285,13 +5285,14 @@ For example in:
 \x[image-i-like-dog]
 
 \Image[dog.jpg]
-{title=I like \x[dog]{p}}
+{title=I like \x[dog]}
 
 == Dog hacked
+{id=dog}
 ``
 note that the ID of the image is `image-i-like-dog`, i.e. `\x[dog]` is not expanded to `Dog hacked`, the `href` is used directly.
 
-If you wanted `image-i-like-dog-hacked` instaead, you would need to explicitly give it as in:
+If you wanted `image-i-like-dog-hacked` instead, you would need to explicitly give it as in:
 ``
 = Animal
 
@@ -5301,6 +5302,35 @@ If you wanted `image-i-like-dog-hacked` instaead, you would need to explicitly g
 {title=I like \x[dog][dog hacked]}
 
 == Dog hacked
+{id=dog}
+``
+
+For similar reasons as the above, `{p}` inflection with the <x p argument> is not considered either, e.g. you would have:
+``
+= Animal
+
+\x[image-i-like-dog]
+
+\Image[dog.jpg]
+{title=I like \x[dog]{p}}
+
+== Dog
+``
+and not:
+``
+\x[image-i-like-dogs]
+``
+
+This can however be worked around with the <x magic argument> as in;
+``
+= Animal
+
+\x[image-i-like-dogs]
+
+\Image[dog.jpg]
+{title=I like <dogs>}
+
+== Dog
 ``
 
 = Unimplemented output formats

@@ -875,6 +875,10 @@ And here is an external video from \a[https://commons.wikimedia.org][Wikimedia C
 ]]
 Commons is better than YouTube if your content is on-topic there (educational) and has a CC licence, since they have no ads and allow download of the video.
 
+\h[3][Video `start` argument]
+
+The time to start playing the video at in seconds. Works for both `youtube` and non-Youtube videos.
+
 \h[2][Code (\c[[`]], \c[[``]], `\c` and `\C`)]
 {id=code}
 

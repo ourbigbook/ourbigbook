@@ -1108,8 +1108,13 @@ if (commander.helpMacros) {
 
         // Do the actual conversion.
         await convert_directory_extract_ids(actual_input_dir, cirodown_options, non_cirodown_options);
-        await convert_directory(actual_input_dir, cirodown_options, non_cirodown_options);
-        await generate_redirects(non_cirodown_options, cirodown_json, publish_out_publish_dir);
+        await convert_directory_extract_ids(actual_input_dir, cirodown_options, non_cirodown_options);
+        if (!non_cirodown_options.had_error) {
+          await convert_directory(actual_input_dir, cirodown_options, non_cirodown_options);
+        }
+        if (!non_cirodown_options.had_error) {
+          await generate_redirects(non_cirodown_options, cirodown_json, publish_out_publish_dir);
+        }
 
         // Publish the converted output if build succeeded.
         if (publish && !non_cirodown_options.had_error) {

@@ -144,7 +144,10 @@ export async function setupUserLocalStorage(data, setErrors) {
     setErrors(userData.errors)
   }
   data.user.effectiveImage = userData.user.effectiveImage
-  window.localStorage.setItem(AUTH_LOCAL_STORAGE_NAME, JSON.stringify(data.user));
+  window.localStorage.setItem(
+    AUTH_LOCAL_STORAGE_NAME,
+    JSON.stringify(data.user)
+  );
   setCookie(AUTH_COOKIE_NAME, data.user.token)
   mutate(AUTH_LOCAL_STORAGE_NAME, data.user);
 }

@@ -360,6 +360,9 @@ function assert_executable(
     if (!('expect_not_exists' in options)) {
       options.expect_not_exists = [];
     }
+    if (!('pre_exec' in options)) {
+      options.pre_exec = [];
+    }
     const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'cirodown'));
     for (const relpath in options.filesystem) {
       const dirpath = path.join(tmpdir, path.parse(relpath).dir);
@@ -369,15 +372,15 @@ function assert_executable(
       fs.writeFileSync(path.join(tmpdir, relpath), options.filesystem[relpath]);
     }
     process.env.PATH = process.cwd() + ':' + process.env.PATH
+    for (const [cmd, args] of options.pre_exec) {
+      const out = child_process.spawnSync(cmd, args, {cwd: tmpdir});
+      assert.strictEqual(out.status, 0, exec_assert_message(out));
+    }
     const out = child_process.spawnSync('cirodown', options.args, {
       cwd: tmpdir,
       input: options.stdin,
     });
-    const assert_msg = `stdout:
-${out.stdout.toString(cirodown_nodejs.ENCODING)}
-
-stderr:
-${out.stderr.toString(cirodown_nodejs.ENCODING)}`;
+    const assert_msg = exec_assert_message(out);
     assert.strictEqual(out.status, 0, assert_msg);
     for (const xpath_expr of options.expect_stdout_xpath) {
       assert_xpath_matches(
@@ -541,6 +544,14 @@ hh
   } else {
     throw new Error(`unknown lnclude path: ${input_path}`);
   }
+}
+
+function exec_assert_message(out) {
+  return `stdout:
+${out.stdout.toString(cirodown_nodejs.ENCODING)}
+
+stderr:
+${out.stderr.toString(cirodown_nodejs.ENCODING)}`;
 }
 
 /** Shortcut to create plaintext nodes for ast_arg_has_subset, we have too many of those. */
@@ -2888,6 +2899,7 @@ assert_executable(
   'executable: input from stdin produces output on stdout',
   {
     stdin: 'aabb',
+    expect_not_exists: ['out'],
     expect_stdout_xpath: ["//x:div[@class='p' and text()='aabb']"],
   }
 );
@@ -2903,12 +2915,8 @@ assert_executable(
     }
   }
 );
-assert_executable(
-  'executable: input from directory with cirodown.json produces several output files',
-  {
-    args: ['--split-headers', '.'],
-    filesystem: {
-      'README.ciro': `= Index
+const complex_filesystem = {
+  'README.ciro': `= Index
 
 \\x[toplevel-scope]
 
@@ -2932,13 +2940,13 @@ $$
 \\mycmd
 $$
 `,
-      'notindex.ciro': `= Notindex`,
-      'toplevel-scope.ciro': `= Toplevel scope
+  'notindex.ciro': `= Notindex`,
+  'toplevel-scope.ciro': `= Toplevel scope
 {scope}
 
 == Toplevel scope h2
 `,
-      'subdir/index.ciro': `= Subdir index
+  'subdir/index.ciro': `= Subdir index
 
 \\x[index][link to toplevel]
 
@@ -2946,12 +2954,17 @@ $$
 
 == Index h2
 `,
-      'subdir/notindex.ciro': `= Subdir notindex
+  'subdir/notindex.ciro': `= Subdir notindex
 
 == Notindex h2
 `,
-      'cirodown.json': `{}\n`,
-    },
+  'cirodown.json': `{}\n`,
+};
+assert_executable(
+  'executable: input from directory with cirodown.json produces several output files',
+  {
+    args: ['--split-headers', '.'],
+    filesystem: complex_filesystem,
     expect_filesystem_xpath: {
       'index.html': [
         "//x:h1[@id='index']",
@@ -2992,6 +3005,18 @@ $$
         "//x:h1[@id='notindex-h2']",
       ]
     }
+  }
+);
+assert_executable(
+  'executable: publish dry run does not blow up',
+  {
+    args: ['--dry-run', '--publish', '.'],
+    filesystem: complex_filesystem,
+    pre_exec: [
+      ['git', ['init']],
+      ['git', ['add', '.']],
+      ['git', ['commit', '-m', '0']],
+    ],
   }
 );
 assert_executable(

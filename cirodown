@@ -429,7 +429,7 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
         fs.writeFileSync(
           output_path_noext + '.css',
           sass.renderSync({
-            data: fs.readFileSync(input_path, convert_input_options.encoding),
+            data: fs.readFileSync(path.join(base_path, input_path), convert_input_options.encoding),
             outputStyle: 'compressed',
           }).css
         );
@@ -446,6 +446,58 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
   if (convert_input_options.commander.debugPerf) {
     console.error(`perf convert_path_to_file_end ${performance.now()}`);
   }
+}
+
+function create_db(convert_input_options) {
+  const db_dir = path.dirname(convert_input_options.db_path);
+  if (!fs.existsSync(db_dir)) {
+    fs.mkdirSync(db_dir, {recursive: true});
+  }
+  const db = new better_sqlite3(convert_input_options.db_path);
+  if (
+    db.prepare(`SELECT name
+    FROM sqlite_master
+    WHERE type='table' AND name='${convert_input_options.ids_table_name}'
+    `).get() === undefined
+  ) {
+    db.prepare(`
+      CREATE TABLE '${convert_input_options.ids_table_name}' (
+        id TEXT PRIMARY KEY,
+        path TEXT,
+        ast_json TEXT
+      )`
+    ).run();
+  }
+  if (
+    db.prepare(`SELECT name
+    FROM sqlite_master
+    WHERE type='table' AND name='${convert_input_options.includes_table_name}'
+    `).get() === undefined
+  ) {
+    db.prepare(`
+      CREATE TABLE '${convert_input_options.includes_table_name}' (
+        from_id TEXT,
+        from_path TEXT,
+        to_id TEXT
+      )`
+    ).run();
+  }
+  if (
+    db.prepare(`SELECT name
+    FROM sqlite_master
+    WHERE type='table' AND name='${convert_input_options.files_table_name}'
+    `).get() === undefined
+  ) {
+    db.prepare(`
+      CREATE TABLE '${convert_input_options.files_table_name}' (
+        path TEXT PRIMARY KEY,
+        toplevel_id TEXT UNIQUE
+      )`
+    ).run();
+  }
+  convert_input_options.db = db;
+  convert_input_options.file_provider = new SqliteFileProvider(convert_input_options);
+  convert_input_options.id_provider = new SqliteIdProvider(convert_input_options);
 }
 
 function generate_redirects(
@@ -517,7 +569,7 @@ function* walk_files_recursively(file_or_dir, skip_basenames) {
 // CLI options.
 commander.option('--body-only', 'output only the content inside the HTLM body element', false);
 commander.option('--debug-perf', 'https://cirosantilli.com/linux-kernel-module-cheat#debug-perf', false);
-commander.option('--dry-run', "don't run most external commands, see: https://github.com/cirosantilli/linux-kernel-module-cheat/tree/6d0a900f4c3c15e65d850f9d29d63315a6f976bf#dry-run-to-get-commands-for-your-project", false);
+commander.option('--dry-run', "don't run most external commands https://github.com/cirosantilli/cirodown#dry-run", false);
 commander.option('--embed-includes', 'http://cirosantilli.com/cirodown#embed-include', false);
 commander.option('--embed-resources', 'http://cirosantilli.com/cirodown#embed-resources', false);
 commander.option('--generate', 'http://cirosantilli.com/cirodown#generate', false);
@@ -655,12 +707,16 @@ if (commander.helpMacros) {
       }
     }
   }
+  let template_path;
   if (commander.template !== undefined) {
-    options.template = fs.readFileSync(commander.template).toString();
+    template_path = commander.template;
   } else if ('template' in cirodown_json) {
-    options.template = fs.readFileSync(cirodown_json.template).toString();
-  } else {
+    template_path = path.join(cirodown_json_dir, cirodown_json.template);
+  }
+  if (template_path === undefined) {
     options.template = undefined;
+  } else {
+    options.template = fs.readFileSync(template_path).toString();
   }
   let input_path_is_file;
   if (inputPath === undefined) {
@@ -798,60 +854,11 @@ A link to another file: \\x[and-now-an-include]
     }
 
     // Setup the ID database.
-    fs.mkdirSync(tmpdir, {recursive: true});
     if (commander.db) {
-      const db_path = path.join(tmpdir, 'db.sqlite3');
-      const ids_table_name = 'ids';
-      const includes_table_name = 'includes';
-      const files_table_name = 'files';
-      const db = new better_sqlite3(db_path);
-      if (
-        db.prepare(`SELECT name
-        FROM sqlite_master
-        WHERE type='table' AND name='${ids_table_name}'
-        `).get() === undefined
-      ) {
-        db.prepare(`
-          CREATE TABLE '${ids_table_name}' (
-            id TEXT PRIMARY KEY,
-            path TEXT,
-            ast_json TEXT
-          )`
-        ).run();
-      }
-      if (
-        db.prepare(`SELECT name
-        FROM sqlite_master
-        WHERE type='table' AND name='${includes_table_name}'
-        `).get() === undefined
-      ) {
-        db.prepare(`
-          CREATE TABLE '${includes_table_name}' (
-            from_id TEXT,
-            from_path TEXT,
-            to_id TEXT
-          )`
-        ).run();
-      }
-      if (
-        db.prepare(`SELECT name
-        FROM sqlite_master
-        WHERE type='table' AND name='${files_table_name}'
-        `).get() === undefined
-      ) {
-        db.prepare(`
-          CREATE TABLE '${files_table_name}' (
-            path TEXT PRIMARY KEY,
-            toplevel_id TEXT UNIQUE
-          )`
-        ).run();
-      }
-      convert_input_options.db = db;
-      convert_input_options.ids_table_name = ids_table_name;
-      convert_input_options.includes_table_name = includes_table_name;
-      convert_input_options.files_table_name = files_table_name;
-      convert_input_options.file_provider = new SqliteFileProvider(convert_input_options);
-      convert_input_options.id_provider = new SqliteIdProvider(convert_input_options);
+      convert_input_options.db_path = path.join(tmpdir, 'db.sqlite3');
+      convert_input_options.ids_table_name = 'ids';
+      convert_input_options.includes_table_name = 'includes';
+      convert_input_options.files_table_name = 'files';
     }
     if (commander.generateRedirects) {
       generate_redirects(convert_input_options, cirodown_json, outdir);
@@ -861,6 +868,7 @@ A link to another file: \\x[and-now-an-include]
       if (publish) {
         cli_error('--publish and --watch are incompatible');
       }
+      create_db(convert_input_options);
       if (!input_path_is_file) {
         convert_files_in_directory_extract_ids(inputPath, options, convert_input_options);
         generate_redirects(convert_input_options, cirodown_json, outdir);
@@ -876,9 +884,10 @@ A link to another file: \\x[and-now-an-include]
         if (publish) {
           cli_error('--publish must take a directory as input, not a file');
         }
+        create_db(convert_input_options);
         output = convert_path(inputPath, options, convert_input_options);
       } else {
-        let actual_input;
+        let actual_input_dir;
         let publish_branch;
         let publish_outdir;
         let remote_url;
@@ -918,11 +927,13 @@ A link to another file: \\x[and-now-an-include]
             cmd_get_stdout('git', ['-C', publish_dir, 'pull'], cmd_options);
             cmd_get_stdout('git', ['-C', publish_dir, 'submodule', 'update', '--init'], cmd_options);
           } else {
-            cmd_get_stdout('git', ['clone', '--recursive', inputPath, publish_dir], cmd_options);
+            cmd_get_stdout('git', ['clone', '--recursive', inputPath, publish_dir],
+              cirodown.clone_and_set(cmd_options, 'dry_run', false));
           }
 
           // Set some variables especially for publishing.
-          actual_input = publish_dir;
+          actual_input_dir = publish_dir;
+          options.cirodown_json_dir = actual_input_dir;
           publish_outdir = path.join(publish_out_dir, 'publish');
           convert_input_options.out_css_path = path.join(publish_outdir, cirodown_nodejs.PACKAGE_OUT_CSS_BASENAME);
           convert_input_options.out_js_path = path.join(publish_outdir, cirodown_nodejs.PACKAGE_OUT_JS_BASENAME);
@@ -932,14 +943,15 @@ A link to another file: \\x[and-now-an-include]
             cmd_get_stdout('git', ['-C', publish_outdir, 'rm', '-r', '-f', '.'], cmd_options);
           }
         } else {
-          actual_input = inputPath;
+          actual_input_dir = inputPath;
           publish_outdir = outdir;
         }
         convert_input_options.outdir = publish_outdir;
 
         // Do the actual conversion.
-        convert_files_in_directory_extract_ids(actual_input, options, convert_input_options);
-        convert_files_in_directory(actual_input, options, convert_input_options);
+        create_db(convert_input_options);
+        convert_files_in_directory_extract_ids(actual_input_dir, options, convert_input_options);
+        convert_files_in_directory(actual_input_dir, options, convert_input_options);
         generate_redirects(convert_input_options, cirodown_json, publish_outdir);
 
         // Publish the converted output if build succeeded.

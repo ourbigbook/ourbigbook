@@ -750,6 +750,7 @@ class Tokenizer {
           unterminated_literal = true;
         }
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
+        this.consume_optional_newline_after_argument()
       } else if (this.cur_c === '\n') {
         if (this.peek() === '\n') {
           this.push_token(TokenType.PARAGRAPH);

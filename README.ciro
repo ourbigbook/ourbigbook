@@ -3132,6 +3132,27 @@ which is what is needed for servers such as GitHub Pages, which automatically re
 
 This option is automatically implied when publishing to targets that remove the `.html` extension such as GitHub pages.
 
+= `--outdir <outdir>`
+{id=outdir}
+{parent=cirodown-executable-options}
+
+Set a custom output directory for the conversion
+
+Suppose we have an input file `./test.ciro`. Then:
+``
+cirodown --outdir my_outdir test.ciro
+``
+places its output at:
+``
+my_outdir/test.html
+``
+
+The same would happen if we instead did a full directory conversion as in:
+``
+cirodown --outdir my_outdir .
+``
+The output would also be placed in `my_outdir/test.html`.
+
 = `--outfile <outfie>`
 {id=outfile}
 {parent=cirodown-executable-options}
@@ -3441,6 +3462,7 @@ Then, in that case:
 * otherwise, if `./cirodown.json` file is found:
   * the first header of subdir/notindex.ciro will have ID `subdir/notindex`. Cirodown understands that `subdir` is relative to the toplevel at `.`
   * \x[the-out-directory] is located at `./out`
+If given, the \x[outdir] option forces \x[the-out-directory] to be placed in `--outdir` however.
 
 = `media-providers`
 {parent=cirodown-json}
@@ -3832,7 +3854,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 Cirodown stores some metadata and outputs it generates/needs inside the `./out/` directory that it creates.
 
-This directory is created on the project toplevel, more details about its location are given at: \x[cirodown-json].
+This directory is created on the output toplevel, more details about its location are given at: \x[cirodown-json].
 
 === Release procedure
 

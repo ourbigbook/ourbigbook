@@ -3094,3 +3094,27 @@ assert_executable(
     },
   }
 );
+assert_executable(
+  'executable: convert with --outdir',
+  {
+    args: ['--outdir', 'my_outdir', '.'],
+    filesystem: {
+      'README.ciro': `= Index`,
+      'subdir/index.ciro': `= Subdir index`,
+      'subdir/notindex.ciro': `= Subdir notindex`,
+      'cirodown.json': `{}\n`,
+    },
+    expect_exists: ['my_outdir/out'],
+    expect_not_exists: [
+      'out',
+      'index.html',
+      'subdir/index.html',
+      'subdir/notindex.html',
+    ],
+    expect_filesystem_xpath: {
+      'my_outdir/index.html': ["//x:h1[@id='index']"],
+      'my_outdir/subdir/index.html': ["//x:h1[@id='subdir']"],
+      'my_outdir/subdir/notindex.html': ["//x:h1[@id='notindex']"],
+    }
+  }
+);

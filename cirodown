@@ -1,23 +1,19 @@
 #!/usr/bin/env node
 
-const child_process = require('child_process');
+const { performance } = require('perf_hooks');
+
 const china_dictatorship = require('china-dictatorship');
 if (!china_dictatorship.get_data().includes("Tiannmen Square protests")) throw 0;
 
+const child_process = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { PerformanceObserver, performance } = require('perf_hooks');
 
-const chokidar = require('chokidar');
 // This library is terrible, too much magic, hard to understand interface,
 // does not do some obvious basics.
 const commander = require('commander');
-const fs_extra = require('fs-extra');
-const git_url_parse = require("git-url-parse");
 const is_installed_globally = require('is-installed-globally');
-const katex = require('katex');
 const { Liquid } = require('liquidjs');
-const sass = require('sass');
 
 const cirodown = require('cirodown');
 const cirodown_nodejs = require('cirodown/nodejs');
@@ -44,6 +40,8 @@ const DEFAULT_IGNORE_BASENAMES = [
   cirodown_nodejs.PACKAGE_SASS_BASENAME,
 ];
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
+const SQLITE_MAGIC_MEMORY_NAME = ':memory:'
+exports.SQLITE_MAGIC_MEMORY_NAME = SQLITE_MAGIC_MEMORY_NAME
 
 class IdProviderDbAdapter {
   constructor(non_cirodown_options) {
@@ -405,7 +403,7 @@ async function convert_path_to_file(input_path, cirodown_options, non_cirodown_o
         msg_ret = convert_path_to_file_print_starting(cirodown_options)
         fs.writeFileSync(
           first_output_path,
-          sass.renderSync({
+          require('sass').renderSync({
             data: fs.readFileSync(path.join(input_path), non_cirodown_options.encoding),
             outputStyle: 'compressed',
             includePaths: [
@@ -445,7 +443,8 @@ async function convert_path_to_file(input_path, cirodown_options, non_cirodown_o
   return output;
 }
 
-async function create_db(non_cirodown_options) {
+async function create_db(cirodown_options, non_cirodown_options) {
+  perf_print('create_db_begin', cirodown_options)
   const db_dir = path.dirname(non_cirodown_options.db_options.storage);
   if (!fs.existsSync(db_dir)) {
     fs.mkdirSync(db_dir, {recursive: true});
@@ -454,6 +453,7 @@ async function create_db(non_cirodown_options) {
   non_cirodown_options.sequelize = sequelize;
   non_cirodown_options.file_provider = new SqliteFileProvider(sequelize);
   non_cirodown_options.id_provider = new cirodown_nodejs.SqliteIdProvider(sequelize);
+  perf_print('create_db_end', cirodown_options)
 }
 
 async function generate_redirect(cirodown_options, redirect_src_id, redirect_target_id, outdir) {
@@ -568,6 +568,12 @@ function is_subpath(parent, child) {
 // https://stackoverflow.com/questions/9355403/deleting-duplicates-on-sorted-array/61974900#61974900
 function remove_duplicates_sorted_array(arr) {
   return arr.filter((e, i, a) => e !== a[i - 1]);
+}
+
+function perf_print(name, cirodown_options) {
+  if (cirodown_options === undefined || cirodown_options.log.perf) {
+    console.error(`perf ${name} t=${performance.now()}`);
+  }
 }
 
 /** Render a template file from under template/ */
@@ -963,13 +969,10 @@ if (commander.helpMacros) {
       dry_run: commander.dryRun,
       throw_on_error: true,
     }
-    if (input_path_is_file) {
-      input_path_is_file = true;
-    } else {
+    if (!input_path_is_file) {
       if (commander.outfile !== undefined) {
         cli_error(`--outfile given but multiple output files must be generated, maybe you want --outdir?`);
       }
-      input_path_is_file = false;
       if (publish) {
         input_git_toplevel = git_toplevel(inputPath);
         subdir_relpath = path.relative(input_git_toplevel, inputPath);
@@ -990,7 +993,7 @@ if (commander.helpMacros) {
     let tex_path = path.join(cirodown_json_dir, CIRODOWN_TEX_BASENAME);
     const katex_macros = {};
     if (fs.existsSync(tex_path)) {
-      katex.renderToString(
+      require('katex').renderToString(
         fs.readFileSync(tex_path, cirodown_nodejs.ENCODING),
         {
           globalGroup: true,
@@ -1007,7 +1010,7 @@ if (commander.helpMacros) {
     if (commander.db) {
       non_cirodown_options.db_options.storage = path.join(publish_tmpdir, 'db.sqlite3');
     } else {
-      non_cirodown_options.db_options.storage = ':memory:'
+      non_cirodown_options.db_options.storage = SQLITE_MAGIC_MEMORY_NAME
     }
     if (commander.generateRedirects) {
       await generate_redirects(non_cirodown_options, cirodown_json, outdir);
@@ -1017,12 +1020,12 @@ if (commander.helpMacros) {
       if (publish) {
         cli_error('--publish and --watch are incompatible');
       }
-      await create_db(non_cirodown_options);
+      await create_db(cirodown_options, non_cirodown_options);
       if (!input_path_is_file) {
         await convert_directory_extract_ids(inputPath, cirodown_options, non_cirodown_options);
         await generate_redirects(non_cirodown_options, cirodown_json, outdir);
       }
-      const watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES})
+      const watcher = require('chokidar').watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES})
       const convert = async (subpath) => convert_path_to_file(path.join(input_dir, subpath), cirodown_options, non_cirodown_options)
       watcher.on('change', convert).on('add', convert)
     } else {
@@ -1030,7 +1033,7 @@ if (commander.helpMacros) {
         if (publish) {
           cli_error('--publish must take a directory as input, not a file');
         }
-        await create_db(non_cirodown_options);
+        await create_db(cirodown_options, non_cirodown_options);
         output = await convert_path_to_file(inputPath, cirodown_options, non_cirodown_options);
       } else {
         let actual_input_dir;
@@ -1050,7 +1053,7 @@ if (commander.helpMacros) {
             remote_url = 'git@github.com:cirosantilli/cirodown.git';
             src_branch = 'master';
           }
-          const parsed_remote_url = git_url_parse(remote_url);
+          const parsed_remote_url = require("git-url-parse")(remote_url);
           if (parsed_remote_url.source !== 'github.com') {
             cli_error('only know how  to publish to origin == github.com currently, please send a patch');
           }
@@ -1099,7 +1102,7 @@ if (commander.helpMacros) {
           publish_out_publish_dir = outdir;
         }
         non_cirodown_options.outdir = publish_out_publish_dir;
-        await create_db(non_cirodown_options);
+        await create_db(cirodown_options, non_cirodown_options);
 
         // Remove IDs and other metadata from files that might have been removed from disk.
         // https://github.com/cirosantilli/cirodown/issues/125
@@ -1163,7 +1166,7 @@ if (commander.helpMacros) {
           const dir = fs.opendirSync(cirodown_nodejs.DIST_PATH)
           let dirent
           while ((dirent = dir.readSync()) !== null) {
-            fs_extra.copySync(
+            require('fs-extra').copySync(
               path.join(cirodown_nodejs.DIST_PATH, dirent.name),
               path.join(publish_out_publish_dir, dirent.name)
             )
@@ -1194,6 +1197,7 @@ if (commander.helpMacros) {
   ) {
     process.stdout.write(output);
   }
+  perf_print('exit', cirodown_options)
   if (!commander.watch) {
     process.exit(non_cirodown_options.had_error);
   }

@@ -1231,6 +1231,25 @@ class TreeNode {
     }
     return indexes.reverse().slice(1 + offset).join('.');
   }
+
+
+  toString() {
+    const ret = [];
+    let todo_visit;
+      // False for toplevel of the tree.
+    if (this.value === undefined) {
+      todo_visit = this.children.slice();
+    } else {
+      todo_visit = [this];
+    }
+    while (todo_visit.length > 0) {
+      const cur_node = todo_visit.pop();
+      const value = cur_node.value;
+      ret.push(`${INSANE_HEADER_CHAR.repeat(value.level)} h${value.level} ${cur_node.get_nested_number(1)} ${value.id}`);
+      todo_visit.push(...cur_node.children.reverse());
+    }
+    return ret.join('\n');
+  }
 }
 
 /**

@@ -3,7 +3,7 @@
 <head>
 <meta charset=utf-8>
 <title>Cirodown editor demo</title>
-<link rel="stylesheet" href="cirodown.min.css">
+<link rel="stylesheet" href="cirodown.embed.min.css">
 <style>
 html, body {
   height: 100%;
@@ -199,7 +199,8 @@ my nice code
 {{title=Nice code}}
 </div>
 </div>
-<script src="cirodown.js"></script>
+<script src="dist/cirodown.js"></script>
+<script src="dist/cirodown_runtime.js"></script>
 <script>
 // Otherwise the monaco-editor loader messes up with browserify and cirodown is not visible...
 const my_cirodown = cirodown;
@@ -350,8 +351,8 @@ require(["vs/editor/editor.main"], function () {
       {'body_only': true},
       extra_returns
     );
-    // Rebind.
-    cirodown_runtime(output_elem);
+    // Rebind to newly generated elements.
+    cirodown_runtime.cirodown_runtime(output_elem);
     line_to_id = extra_returns.context.line_to_id;
   }
   function scroll_preview_to_source_line(line_number, block) {
@@ -375,15 +376,7 @@ require(["vs/editor/editor.main"], function () {
   }
   convert_input();
 });
+cirodown_runtime.cirodown_runtime(output_elem)
 </script>
-<!-- TODO this duplicates with code in ./cirodown but I'm lazy to solve it better right now -->
-<script src="node_modules/tablesort/src/tablesort.js"></script>
-<script src="node_modules/tablesort/src/sorts/tablesort.date.js"></script>
-<script src="node_modules/tablesort/src/sorts/tablesort.dotsep.js"></script>
-<script src="node_modules/tablesort/src/sorts/tablesort.filesize.js"></script>
-<script src="node_modules/tablesort/src/sorts/tablesort.monthname.js"></script>
-<script src="node_modules/tablesort/src/sorts/tablesort.number.js"></script>
-<script src="cirodown.runtime.js"></script>
-<script>cirodown_runtime(output_elem)</script>
 </body>
 </html>

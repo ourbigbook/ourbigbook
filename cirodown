@@ -228,31 +228,12 @@ function convert_input(input, options, convert_input_options={}) {
   } else {
     let includes_str = ``;
     let scripts_str = ``;
-
     let includes = [];
     let scripts = [];
-
-    if (convert_input_options.external_css_and_js) {
-      scripts.push(
-        'https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/tablesort.min.js',
-        'https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/sorts/tablesort.date.min.js',
-        'https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/sorts/tablesort.dotsep.min.js',
-        'https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/sorts/tablesort.filesize.min.js',
-        'https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/sorts/tablesort.monthname.min.js',
-        'https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/sorts/tablesort.number.min.js',
-      );
-    }
-
     let includes_local = [];
     let scripts_local = [];
     let template_includes_relative = [];
     let template_scripts_relative = [];
-
-    if (!convert_input_options.external_css_and_js) {
-      includes_local.push(...cirodown_nodejs.CSS_LOCAL_INCLUDES);
-      scripts_local.push(...cirodown_nodejs.JS_LOCAL_INCLUDES);
-    }
-
     if (convert_input_options.publish) {
       template_includes_relative.push(
         path.relative(
@@ -270,7 +251,6 @@ function convert_input(input, options, convert_input_options={}) {
       includes_local.push(convert_input_options.out_css_path);
       scripts_local.push(convert_input_options.out_js_path);
     }
-
     if (
       options.outfile !== undefined &&
       !is_installed_globally

@@ -284,6 +284,7 @@ nav.navbar {
   /* https://stackoverflow.com/questions/5078239/how-do-i-remove-the-space-between-inline-block-elements */
   display: flex;
   flex: 0 1 auto;
+  height: $font-size * 1.2;
   margin-bottom: 10px;
   .navbar-list {
     display: flex;

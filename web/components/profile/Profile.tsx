@@ -7,6 +7,7 @@ import ArticleList from "components/article/ArticleList";
 import CustomLink from "components/common/CustomLink";
 import CustomImage from "components/common/CustomImage";
 import LoadingSpinner from "components/common/LoadingSpinner";
+import LogoutButton from "components/common/LogoutButton";
 import Maybe from "components/common/Maybe";
 import EditProfileButton from "components/profile/EditProfileButton";
 import FollowUserButton, { FollowUserButtonContext } from "components/profile/FollowUserButton";
@@ -45,6 +46,9 @@ const ProfileHoc = (tab) => {
               className="user-img"
             />
             <p>{bio}</p>
+            {loggedInUser &&
+              <LogoutButton />
+            }
             <EditProfileButton isCurrentUser={isCurrentUser} />
             <FollowUserButtonContext.Provider value={{following, setFollowing}}>
               <FollowUserButton profile={profile} />

@@ -4277,6 +4277,14 @@ assert_error('header tag and synonym arguments are incompatible',
 `,
   5, 1
 );
+assert_error('h: synonym without preceeding header fails gracefully',
+  `asdf
+
+= qwer
+{synonym}
+`,
+  4, 1
+);
 //// This would be the ideal behaviour, but I'm lazy now.
 //// https://github.com/cirosantilli/ourbigbook/issues/200
 //assert_convert_ast('full link to synonym renders the same as full link to the main header',

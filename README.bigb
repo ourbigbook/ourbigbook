@@ -3326,11 +3326,32 @@ $$
 
 See: <`description` argument>{full}.
 
+\OurBigBookExample[[
+See the: <equation Pytogoras theorem>.
+
+$$
+c = \sqrt{a^2 + b^2}
+$$
+{title=Pytogoras theorem}
+{description=This important equation allows us to find the distance between two points.}
+]]
+
 = `\M` `title` argument
 {parent=`\M` argument}
 {tag=`title` argument}
 
 See: <`title` argument>{full}.
+
+Example:
+
+\OurBigBookExample[[
+See the: <equation Riemann zeta function>.
+
+$$
+\zeta(s) = \sum_{n=1}^\infty \frac{1}{n^s}
+$$
+{title=Riemann zeta function}
+]]
 
 = LaTeX macros
 {c}

@@ -2618,7 +2618,7 @@ function get_descendant_count_html(tree_node, long_style) {
 function get_descendant_count_html_sep(tree_node, long_style) {
   let ret = get_descendant_count_html(tree_node, long_style);
   if (ret !== '') {
-    ret = HEADER_MENU_ITEM_SEP + ret;
+    ret = `<span class="metrics-sep">${HEADER_MENU_ITEM_SEP + ret}</span>`;
   }
   return ret;
 }

@@ -10,6 +10,8 @@
 $caption-margin-bottom: 5px;
 $header-font-size: 24px;
 $p-margin-vert: 14px;
+$max-mobile-width: 450px;
+$toplevel-horizontal-padding-mobile: 5px;
 
 @mixin hidden {
   display: none;
@@ -25,6 +27,14 @@ $p-margin-vert: 14px;
   // https://github.com/cirosantilli/cirodown/issues/98
   //visibility: hidden;
 }
+
+@mixin responsive-img {
+  @media only screen and (max-width: $max-mobile-width) {
+    height: auto;
+    width: 100%;
+  }
+}
+
 @mixin visible {
   display: inline;
   //visibility: visible;
@@ -33,6 +43,9 @@ $p-margin-vert: 14px;
 .cirodown {
 @include body;
 
+// Helps prevent the horizontal scrollbar on mobile.
+word-wrap: break-word;
+
 a {
   &:visited {
     color: $a-color-visited;
@@ -40,7 +53,12 @@ a {
 }
 
 padding-left: 0;
-padding-right: 15px;
+@media only screen and (max-width: $max-mobile-width) {
+  padding-right: $toplevel-horizontal-padding-mobile;
+}
+@media only screen and (min-width: $max-mobile-width + 1) {
+  padding-right: 15px;
+}
 .caption-prefix {
   font-weight: bold;
 }
@@ -48,7 +66,12 @@ padding-right: 15px;
 // Produces the margin on all toplevel elements.
 // The on-hover links will show up in that margin.
 > * {
-  padding-left: 20px;
+  @media only screen and (max-width: $max-mobile-width) {
+    padding-left: $toplevel-horizontal-padding-mobile;
+  }
+  @media only screen and (min-width: $max-mobile-width + 1) {
+    padding-left: 20px;
+  }
   // Makes the absolute on hover link be absolute relative to this element.
   // This makes it show up inside the padding-left of this element.
   // https://stackoverflow.com/questions/10487292/position-absolute-but-relative-to-parent
@@ -59,8 +82,13 @@ padding-right: 15px;
 .hide-hover:first-child {
   @include hidden;
 }
-> :hover > .hide-hover:first-child {
-  @include visible;
+// We remove margins on narrow screens, so there's no space for the link.
+@media only screen and (min-width: $max-mobile-width + 1) {
+  @media(hover: hover) and (pointer: fine) {
+    > :hover > .hide-hover:first-child {
+      @include visible;
+    }
+  }
 }
 .hide-hover {
   position: absolute;
@@ -87,12 +115,12 @@ code {
 div.p {
   margin-bottom: $p-margin-vert;
   margin-top: $p-margin-vert;
-  // For the links.
 }
 
 // Figures.
 figure {
   margin: $p-margin-vert 0;
+  overflow-x: auto;
   figcaption {
     margin-top: 5px;
   }
@@ -102,6 +130,7 @@ div.h {
   font-size: $header-font-size;
   font-weight: bold;
   margin: 20px 0 8px;
+  width: 100%;
   h1, h2, h3, h4, h5, h6 {
     > a:first-child {
       color: $color;
@@ -109,8 +138,10 @@ div.h {
         color: $color;
       }
     }
-    display: inline-block;
+    display: inline;
     margin: 0;
+    // To make `word-wrap: break-word;` work, otherwise it does not take effect.
+    overflow-wrap: break-word;
   }
   h1 {
     font-size: $header-font-size * 2;
@@ -121,8 +152,10 @@ div.h {
   .hover-meta {
     @include hidden;
   }
-  &:hover .hover-meta {
-    @include visible;
+  @media only screen and (min-width: $max-mobile-width + 1) {
+    &:hover .hover-meta {
+      @include visible;
+    }
   }
   // Also show header metadata when the header is selected as the current #fragment.
   &:target .hover-meta {
@@ -143,6 +176,11 @@ div.h-nav {
 // https://cirosantilli.com/cirodown#background-color-of-transparent-images
 img {
   background-color: white;
+  @include responsive-img;
+}
+
+iframe {
+  @include responsive-img;
 }
 
 // Math.
@@ -181,6 +219,7 @@ pre {
 // Tables
 .table-container {
   margin: $p-margin-vert 0;
+  overflow-x: auto;
   table {
     $table_border: 1px solid $color;
     border: $table_border;
@@ -211,14 +250,37 @@ ol, ul {
 
 // Table of contents.
 .toc-container {
+  overflow-x: auto;
+
+  // On mobile, this would make:
+  // - prevent squishing of very to the right elements which:
+  //   - makes them more readable
+  //   - prevents large useless vertical displacement
+  // But it also makes the very first elements of small tocs
+  // require horizontal scroll so it doesn't feel like it's worth it :-(
+  // What we want is to check is: is the element's absolute position more than 80%
+  // to the right of the screen? Then we should just nowrap.
+  //white-space: nowrap;
+
+  // Don't wrap lines after level 5 on mobile.
+  // Very deep toc items just take up vertical space and are completely unreadable.
+  // Work around that on mobile by not wrapping lines after a certain level.
+  // Users can still read by horizontal scrolling if they really want to.
+  @media only screen and (max-width: $max-mobile-width) {
+    li { li { li { li { li { li { li {
+      white-space: nowrap;
+    } } } } } } }
+  }
   ul {
     list-style-type: none;
     li {
       // https://github.com/cirosantilli/cirodown/issues/68
       margin-bottom: 4px;
       margin-top: 4px;
-      div:hover span.hover-metadata {
-        @include visible;
+      @media only screen and (min-width: $max-mobile-width + 1) {
+        div:hover span.hover-metadata {
+          @include visible;
+        }
       }
       div:target span.hover-metadata {
         @include visible;
@@ -238,11 +300,13 @@ ol, ul {
         }
       }
       @mixin hover-highlight-arrow {
-        &:hover {
-          background-color: $target-background-color;
-        }
-        &:hover > * {
-          background-color: $target-background-color;
+        @media only screen and (min-width: $max-mobile-width + 1) {
+          &:hover {
+            background-color: $target-background-color;
+          }
+          &:hover > * {
+            background-color: $target-background-color;
+          }
         }
       }
       div {
@@ -302,6 +366,11 @@ ol, ul {
     font-size: $header-font-size;
     font-weight: bold;
   }
+  @media only screen and (max-width: $max-mobile-width) {
+    .metrics-sep {
+      display: none;
+    }
+  }
 
   // Override the default URL fragment behaviour, only color the toc title when the ToC
   // is targeted, otherwise it is too annoying. Especially because the first thing
@@ -325,5 +394,9 @@ ol, ul {
 // https://raw.githubusercontent.com/tristen/tablesort/5.2.1/tablesort.css
 th[role=columnheader]:not(.no-sort):after {
   border-color: $color transparent;
+}
+
+video {
+  @include responsive-img;
 }
 }

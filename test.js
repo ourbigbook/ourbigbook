@@ -5541,8 +5541,8 @@ assert_lib('header: file argument ignores text files on nosplit if they are too 
         `//x:pre//x:code[text()='aaaa']`,
       ],
       [`${ourbigbook.FILE_PREFIX}/big.txt.html`]: [
-        // TODO we want this to show. https://docs.ourbigbook.com/todo/render-large-files-on-split-headers
-        //`//x:pre//x:code[starts-with(text(), 'bbbb')]`,
+        // Always show on split headers however.
+        `//x:pre//x:code[starts-with(text(), 'bbbb')]`,
       ],
     },
     assert_not_xpath: {

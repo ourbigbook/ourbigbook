@@ -9263,7 +9263,8 @@ const OUTPUT_FORMATS_LIST = [
                   if (/[\x00]/.test(content)) {
                     no_preview_msg = ` it is a binary file (contains \\x00) of unsupported type (e.g. not an image).`
                   } else if (
-                    content.length > FILE_PREVIEW_MAX_SIZE
+                    content.length > FILE_PREVIEW_MAX_SIZE &&
+                    !context.in_split_headers
                   ) {
                     no_preview_msg = `it is too large (> ${FILE_PREVIEW_MAX_SIZE} bytes)`
                   }

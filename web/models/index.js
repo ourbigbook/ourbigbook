@@ -23,7 +23,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
   } else {
     sequelizeParams.dialect = config.development.dialect;
     let storage;
-    if (process.env.NODE_ENV === 'test' || toplevelDir === undefined) {
+    if (process.env.NEXT_PUBLIC_NODE_ENV === 'test' || toplevelDir === undefined) {
       storage = ':memory:';
     } else {
       if (toplevelBasename === undefined) {

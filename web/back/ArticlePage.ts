@@ -1,9 +1,9 @@
-import sequelize from 'db'
 import { getLoggedInUser } from 'back'
 import { ArticlePageProps } from 'front/ArticlePage'
 
 export function getServerSidePropsArticleHoc(addComments?, loggedInUserCache?) {
   return async ({ params: { slug }, req, res }) => {
+    const sequelize = req.params.sequelize
     const loggedInUser = await getLoggedInUser(req, res, loggedInUserCache)
     const article = await sequelize.models.Article.findOne({
       where: { slug: slug.join('/') },

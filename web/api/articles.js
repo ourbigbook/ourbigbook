@@ -130,6 +130,7 @@ async function createOrUpdateArticle(req, res, opts) {
     bodySource,
     forceNew: opts.forceNew,
     sequelize,
+    // TODO https://docs.ourbigbook.com/todo/remove-the-path-parameter-from-the-article-creation-api
     path: lib.validateParam(body, 'path', { validators: [
       front.isString, front.isTruthy ], defaultValue: undefined }),
     parentId,

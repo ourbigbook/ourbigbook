@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken')
 
 const ourbigbook = require('ourbigbook')
 
+const convert = require('../convert')
 const config = require('../front/config')
 
 const { DataTypes, Op } = Sequelize
@@ -90,12 +91,13 @@ module.exports = (sequelize) => {
       hooks: {
         afterCreate: async (user, options) => {
           // Create the index page for the user.
-          const article = new sequelize.models.Article({
-            title: ourbigbook.capitalize_first_letter(ourbigbook.INDEX_BASENAME_NOEXT),
+          return convert.convert({
+            author: user,
             body: User.defaultIndexBody,
-            authorId: user.id,
+            sequelize,
+            title: ourbigbook.capitalize_first_letter(ourbigbook.INDEX_BASENAME_NOEXT),
+            transaction: options.transaction
           })
-          return article.saveSideEffects({ transaction: options.transaction })
         }
       },
       indexes: [{ fields: ['username'] }, { fields: ['email'] }]
@@ -258,6 +260,7 @@ module.exports = (sequelize) => {
     })
   }
 
+  User.defaultIndexTitle = 'Index'
   User.defaultIndexBody = 'Welcome to my home page!'
 
   User.validPassword = function(user, password) {

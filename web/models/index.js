@@ -38,6 +38,8 @@ function getSequelize(toplevelDir, toplevelBasename) {
   const Comment = require('./comment')(sequelize)
   const SequelizeMeta = require('./sequelize_meta')(sequelize)
   const User = require('./user')(sequelize)
+  ourbigbook_models.addModels(sequelize)
+  const File = sequelize.models.File
 
   // Associations.
 
@@ -72,14 +74,30 @@ function getSequelize(toplevelDir, toplevelBasename) {
   User.belongsToMany(Article, { through: 'UserLikeArticle', as: 'likes',   foreignKey: 'userId', otherKey: 'articleId'  });
 
   // Article author User
-  Article.belongsTo(User, {
+  File.belongsTo(User, {
     as: 'author',
     foreignKey: {
       name: 'authorId',
       allowNull: false
     }
   })
-  User.hasMany(Article, {as: 'authoredArticles', foreignKey: 'authorId'})
+  User.hasMany(File, {
+    as: 'authoredArticles',
+    foreignKey: 'authorId'
+  })
+
+  // Article belongs to a source File
+  Article.belongsTo(File, {
+    as: 'file',
+    foreignKey: {
+      name: 'fileId',
+      allowNull: false
+    }
+  })
+  File.hasMany(Article, {
+    as: 'file',
+    foreignKey: 'fileId'
+  })
 
   // Article has Comment
   Article.hasMany(Comment, { foreignKey: 'articleId' })
@@ -99,8 +117,6 @@ function getSequelize(toplevelDir, toplevelBasename) {
     },
   });
   User.hasMany(Comment, {foreignKey: 'authorId'});
-
-  ourbigbook_models.addModels(sequelize)
 
   return sequelize;
 }

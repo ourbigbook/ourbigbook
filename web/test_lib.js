@@ -9,6 +9,7 @@ const perf_hooks = require('perf_hooks')
 const lodash = require('lodash')
 
 const ourbigbook = require('ourbigbook')
+const convert = require('./convert')
 const models = require('./models')
 
 const now = perf_hooks.performance.now
@@ -239,6 +240,7 @@ async function generateDemoData(params) {
       userArgs.push(userArg)
     }
     const users = []
+    const userIdToUser = {}
     for (const userArg of userArgs) {
       let user = await sequelize.models.User.findOne({ where: { username: userArg.username } })
       if (user) {
@@ -247,6 +249,7 @@ async function generateDemoData(params) {
       } else {
         user = await sequelize.models.User.create(userArg)
       }
+      userIdToUser[user.id] = user
       users.push(user)
     }
     // TODO started livelocking after we started creating index articles on hooks.
@@ -410,17 +413,12 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     let articleId = 0
     for (const articleArg of articleArgs) {
       if (verbose) console.error(`${articleId} authorId=${articleArg.authorId} title=${articleArg.title}`);
-      let article = await sequelize.models.Article.findOne({ where: {
-        authorId: articleArg.authorId,
+      articles.push(...(await convert.convert({
+        author: userIdToUser[articleArg.authorId],
+        body: articleArg.body,
+        sequelize,
         title: articleArg.title,
-      } })
-      if (article) {
-        Object.assign(article, articleArg)
-        await article.save()
-      } else {
-        article = await sequelize.models.Article.create(articleArg)
-      }
-      articles.push(article)
+      })))
       articleId++
     }
     // TODO This was livelocking (taking a very long time, live querries)
@@ -438,15 +436,19 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     if (verbose) console.error('Index update');
     for (let userIdx = 0; userIdx < nUsers; userIdx++) {
       const user = users[userIdx]
+      console.error(`${userIdx} ${user.username}`);
       const articleDataProvider = articleDataProviders[user.id]
       const ids = []
       for (const title of articleDataProvider.toplevelSet) {
         ids.push(ourbigbook.title_to_id(title))
       }
       const includesString = '\n\n' + ids.map(id => `\\Include[${id}]`).join('\n')
-      const article = await sequelize.models.Article.findOne({ where: { slug: user.username } })
-      article.body = sequelize.models.User.defaultIndexBody + includesString
-      await article.save()
+      await convert.convert({
+        author: user,
+        body: sequelize.models.User.defaultIndexBody + includesString,
+        sequelize,
+        title: sequelize.models.User.defaultIndexTitle,
+      })
 
       // TODO get working. Looks like all values that are not updated are
       // not present in the hook (unlike during initial create()), which breaks it.

@@ -8,6 +8,13 @@ module.exports = (sequelize) => {
         allowNull: false,
         unique: true,
       },
+      // Source code body (without title).
+      // Not used on OurBigBook CLI where we have the filesystem, only used in
+      // OurBigBook Web where it acts as the filesystem.
+      body: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
       toplevel_id: {
         type: DataTypes.TEXT,
         allowNull: true,

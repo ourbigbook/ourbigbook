@@ -56,7 +56,7 @@ const LikeArticleButton = ({
     }
     const { data, status } = ret
     if (status !== 200) {
-      alert(`error: ${status} ${data}`)
+      alert(`error: ${status} ${JSON.stringify(data)}`)
       setLiked((liked) => !liked)
       setScore((score) => score + (liked ? 1 : -1))
     }

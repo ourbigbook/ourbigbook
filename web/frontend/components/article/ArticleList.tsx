@@ -1,4 +1,4 @@
-/** @jsx jsx */
+/** @jsxImportSource @emotion/react */
 import { css, jsx } from '@emotion/react'
 import { useRouter } from "next/router";
 import React, { useMemo, useEffect } from "react";

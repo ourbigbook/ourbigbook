@@ -14,6 +14,7 @@ export async function getStaticProps({ params: { pid } }) {
 
 export async function getStaticPaths() {
   const ret = { fallback: true };
+  debugger;
   ret.paths = (await Article.findAll()).map(
     article => {
       return {

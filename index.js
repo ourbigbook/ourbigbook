@@ -3601,18 +3601,31 @@ function getDescendantCountHtml(context, tree_node, options) {
   const [descendant_count, word_count, descendant_word_count] = getDescendantCount(tree_node);
   let ret;
   let word_count_html = ''
-  const words_str = options.long_style ? `words: ` : ''
+  function addEntry(cls, long_style, longName, add_test_instrumentation, clsInstr, count) {
+    // Ideally this would go in a before/after content, but we can't because:
+    // - we already have one before for the icon
+    // - can't have multiple befores with different styles: https://stackoverflow.com/questions/11998593/can-i-have-multiple-before-pseudo-elements-for-the-same-element
+    // - can't be an after because the count comes after
+    const longStr = long_style ? `${longName}: ` : ''
+    // Word Count Recursive.
+    word_count_html += `<span class="${cls}"> ${longStr}`
+    if (add_test_instrumentation) {
+      word_count_html += `<span class="${clsInstr}">`
+    }
+    word_count_html += `${formatNumberApprox(count)}`
+    if (add_test_instrumentation) {
+      word_count_html += '</span>'
+    }
+    word_count_html += '</span>'
+  }
   if (descendant_word_count > 0 && (context.options.add_test_instrumentation || options.show_descendant_count)) {
-    // Word Count Recursive
-    word_count_html += `<span class="wcntr"> ${words_str}<span class="word-count-descendant">${formatNumberApprox(descendant_word_count)}</span></span>`
+    addEntry('wcntr', options.long_style, 'words', context.options.add_test_instrumentation, 'word-count-descendant', descendant_word_count)
   }
   if (tree_node.word_count > 0 && context.options.add_test_instrumentation || !options.show_descendant_count) {
-    // Word Count
-    word_count_html += `<span class="wcnt">${wordIcon} ${words_str}<span class="word-count">${formatNumberApprox(word_count)}</span></span>`;
+    addEntry('wcnt', options.long_style, 'words', context.options.add_test_instrumentation, 'word-count', word_count)
   }
   if (descendant_count > 0 && (context.options.add_test_instrumentation || options.show_descendant_count)) {
-    // descendant count
-    word_count_html += `<span class="dcnt"> ${options.long_style ? 'articles: ' : ''}<span class="descendant-count">${formatNumberApprox(descendant_count)}</span></span>`
+    addEntry('dcnt', options.long_style, 'articles', context.options.add_test_instrumentation, 'descendant-count', descendant_count)
   }
   if (word_count_html !== '') {
     ret = `<span class="metrics">${word_count_html}</span>`;

@@ -261,9 +261,6 @@ span.shortcut {
   border: 1px solid $color;
   border-radius: $border-radius;
   margin-bottom: 10px;
-  .comment-body {
-    padding: 10px 10px;
-  }
   &:target .comment-header {
     background-color: $target-background-color;
   }

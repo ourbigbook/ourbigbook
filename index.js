@@ -5702,7 +5702,7 @@ const VIDEO_EXTENSIONS = new Set([
 const OUTPUT_FORMAT_CIRODOWN = 'cirodown';
 const OUTPUT_FORMAT_HTML = 'html';
 const OUTPUT_FORMAT_ID = 'id';
-const TOC_ARROW_HTML = '<div class="arrow" title="close children -> close all -> open all"><div></div></div>';
+const TOC_ARROW_HTML = '<div class="arrow"><div></div></div>';
 const TOC_HAS_CHILD_CLASS = 'has-child';
 const MAGIC_CHAR_ARGS = {
   '$': Macro.MATH_MACRO_NAME,

@@ -5385,6 +5385,31 @@ assert_executable(
     },
   }
 );
+assert_executable(
+  "executable: multiple incoming child and parent links don't blow up",
+  {
+    args: ['--add-test-instrumentation', '.'],
+    filesystem: {
+      'README.ciro': `= Index
+
+\\x[notindex]{child}
+
+\\x[notindex]{child}
+`,
+      'notindex.ciro': `= Notindex
+
+\\x[index]{parent}
+
+\\x[index]{parent}
+`,
+    },
+    expect_filesystem_xpath: {
+      'index.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html']`,
+      ],
+    },
+  }
+);
 
 assert_executable(
   'executable: cirodown.json: outputOutOfTree',

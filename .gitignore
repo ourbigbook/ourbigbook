@@ -37,3 +37,4 @@ logo-circle.png
 
 # PostgreSQL dumps.
 *.dump
+latest.dump.*

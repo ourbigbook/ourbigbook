@@ -1,7 +1,8 @@
 // Contains exports that should only be visible from Node.js but not browser.
 
-const fs = require('fs');
 const path = require('path');
+
+const commander = require('commander');
 
 const PACKAGE_NAME = 'ourbigbook';
 exports.PACKAGE_NAME = PACKAGE_NAME;
@@ -40,3 +41,12 @@ exports.GITIGNORE_PATH = GITIGNORE_PATH;
 
 const PACKAGE_SASS_BASENAME = PACKAGE_NAME + '.scss';
 exports.PACKAGE_SASS_BASENAME = PACKAGE_SASS_BASENAME;
+
+function cliInt(value, dummyPrevious) {
+  const parsedValue = parseInt(value);
+  if (isNaN(parsedValue)) {
+    throw new commander.InvalidArgumentError('Not a number.');
+  }
+  return parsedValue;
+}
+exports.cliInt = cliInt

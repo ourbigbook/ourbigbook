@@ -14,6 +14,7 @@
       "remote": "cirosantilli/media"
     }
   },
+  "outputOutOfTree": true,
   "prepublish": "prepublish",
   "redirects": {
     "not-readme-redirect-test": "not-readme",

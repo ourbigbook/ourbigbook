@@ -2206,6 +2206,12 @@ So for example, the following automatic IDs would be generated: <table Examples 
 |
 |
 | `love` is extracted from the italic tags `<i>love</i>` with <id output format> conversion.
+
+| β Centauri
+| beta-centauri
+|
+|
+| Our Latin normalization is amazing and knows Greek!
 ]
 {title=Examples of automatically generated IDs}
 
@@ -6757,6 +6763,44 @@ Defined variables:
 
 We pick Liquid because it is server-side safe: if we ever some day offer a compilation service, Liquid is designed to prevent arbitrary code execution and infinite loops in templates.
 
+= `--title-to-id`
+{parent=OurBigBook CLI options}
+
+Read tiles from stdin line by line on a while loop and output IDs to stdout only, performing <automatic ID from title> conversion on each input line.
+
+Sample usage:
+``
+( echo 'Hello world'; sleep 1; echo 'C++ is great'; sleep 1; echo 'β Centauri' ) | ourbigbook --title-to-id
+``
+outputs:
+``
+hello-world
+c-plus-plus-is-great
+beta-centauri
+``
+each with one second intervals between each line.
+
+The original application of this option was to allow external non Node.js processes to be able to accurately calculate IDs from human readable titles since the non-ASCII handling of the algorithm is complex, and hard to reimplement accurately.
+
+From Python for example one may run something like:
+
+``
+from subprocess import Popen, PIPE, STDOUT
+import time
+
+p = Popen(['ourbigbook', '--title-to-id'], stdout=PIPE, stdin=PIPE)
+
+p.stdin.write('Hello world\n'.encode())
+p.stdin.flush()
+print(p.stdout.readline().decode()[:-1])
+
+time.sleep(1)
+
+p.stdin.write('bonne journeé\n'.encode())
+p.stdin.flush()
+print(p.stdout.readline().decode()[:-1])
+``
+
 = `--unsafe-ace`
 {parent=OurBigBook CLI options}
 {tag=Security}
@@ -8101,7 +8145,18 @@ Depth 6 on Mathematics only:
 ``
 ./sqlite_preorder.py -D3 -d6 -Obigb -m -N enwiki.sqlite Mathematics
 ``
-leads to 150k articles.
+leads to 150k articles. Some useless hogs and how they were reached:
+* Actuarial science via Applied Mathematis: 4k
+* Molecular biology via Applied geometry: 4k
+* Ship identification numbers via Numbers: 5k
+* Galaxies via Dynamical systems: 7k
+* Video game gameplay via Game design via Game theory: 17k
+
+Depth 6 on Mathematics + Physics:
+``
+./sqlite_preorder.py -D3 -d5 -Obigb -m -N enwiki.sqlite Mathematics Physics
+``
+leads to 104k articles.
 
 Allowing for unlimited depth on Mathematics:
 ``

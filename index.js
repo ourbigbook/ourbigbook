@@ -8204,9 +8204,9 @@ const OUTPUT_FORMATS_LIST = [
             const ourbigbook_redirect_prefix_raw = toplevel_scope ? `${toplevel_scope}${URL_SEP}` : ''
             const ourbigbook_redirect_prefix = JSON.stringify(ourbigbook_redirect_prefix_raw).replace(/</g, '\\u003c')
             const data_script = `<script>
-ourbigbook_split_headers = ${context.options.split_headers};
-ourbigbook_html_x_extension = ${context.options.html_x_extension};
-ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
+window.ourbigbook_split_headers = ${context.options.split_headers};
+window.ourbigbook_html_x_extension = ${context.options.html_x_extension};
+window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
 </script>
 `
             render_env.post_body = data_script + relative_scripts.join('') + render_env.post_body + "<script>ourbigbook_runtime.ourbigbook_runtime()</script>\n";

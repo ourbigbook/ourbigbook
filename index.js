@@ -28,7 +28,6 @@ const NOSPLIT_MARKER_TEXT = 'nosplit'
 exports.NOSPLIT_MARKER_TEXT = NOSPLIT_MARKER_TEXT;
 const SPLIT_MARKER_TEXT = 'split'
 exports.SPLIT_MARKER_TEXT = SPLIT_MARKER_TEXT;
-const NEXT_ANCESTOR_MARKER = '<span class="fa-solid-900">\u{f061}</span>';
 const TOC_MARKER_SYMBOL = '<span class="fa-solid-900">\u{f03a}</span>'
 const TOC_MARKER = `${TOC_MARKER_SYMBOL} toc`
 
@@ -3861,8 +3860,7 @@ function htmlAncestorLinks(entries, nAncestors) {
     i++
   }
   for (const entry of entries) {
-    const marker = i == 0 ? HTML_PARENT_MARKER : NEXT_ANCESTOR_MARKER
-    ret.push(`<a${entry.href}>${marker} ${entry.content}</a>`)
+    ret.push(`<a${entry.href}> ${entry.content}</a>`)
     i++
   }
   return ret.join('')
@@ -9219,10 +9217,12 @@ const OUTPUT_FORMATS_LIST = [
           if (context.options.h_web_ancestors && first_header && !context.options.isindex) {
             ret += `<div class="nav ancestors"></div>`
           }
+          let i = 0
           for (const meta of [web_meta, header_meta_ancestors, header_meta, header_meta2]) {
             if (meta.length > 0) {
-              ret += `<div class="nav"> ${meta.join('')}</div>`;
+              ret += `<div class="nav${i == 1 ? ' ancestors' : ''}"> ${meta.join('')}</div>`;
             }
+            i++
           }
           if (header_has_meta) {
             ret += `</nav>`;

@@ -3,29 +3,31 @@
 
 == Issues
 
+=== Hide unconfirmed users
+{tag=Web}
+
+=== Design a project banner
+{tag=Web}
+
+E.g. for Twitter and LinkedIn.
+
+Maybe a screenshot of the website?
+
+If we could represent topics somehow that would be ideal...
+
+=== Start a basic notification system
+{tag=Web}
+
+OK, now afetr the big redirect from cirosantilli.com to ourbigbook.com, this is becoming more pressing.
+
+We could start simple without any in-browser things, email only. Though having both would be ideal...
+
 === Fragment redirects not working on web
 {tag=Web}
 
 E.g. https://ourbigbook.com/cirosantilli/mathematics#cirosantilli/physics should redirect to https://ourbigbook.com/cirosantilli/physics
 
 Is working on static website: https://cirosantilli.com/mathematics#physics does redirect to https://cirosantilli.com/physics
-
-=== Missing fragment redirect not working on web
-{tag=Editor}
-{tag=Web}
-
-E.g. https://ourbigbook.com/barack-obama/mathematics#barack-obama/physics should redirect to https://ourbigbook.com/barack-obama/physics but it did not. Is working on the static website.
-
-=== WYSIWYG
-{tag=Editor}
-{tag=Web}
-
-=== Live error checking as ou type on editor if chosen previous sibling is not a child of the selected parent article
-{tag=Editor}
-{tag=Error checking}
-{tag=Web}
-
-Current failure behaviour if use submits anyways is: shows API error `previousSiblingId "@cirosantilli/physics" does not exist, is not a header or is not a child of parentId "@cirosantilli/test-article"` under title, and it only goes away if you edit title, which is confusing as it is not title related. Also, while title error is visible, the submit button is inactive so the user is left a bit stuck.
 
 === Article create and update slow on web
 {tag=Performance}
@@ -46,13 +48,16 @@ This was after dynamic article tree, one suspicion is that it might be linked to
 
 All dynamic.
 
-=== `(beta)` on navbar gets pushed down half way at a specific page width just above mobile shift
+=== WYSIWYG
+{tag=Editor}
 {tag=Web}
-{tag=CSS}
 
-Just keep making viewport smaller an smaller, until it happen. Sample width that reproduces: 680px.
+=== Live error checking as ou type on editor if chosen previous sibling is not a child of the selected parent article
+{tag=Editor}
+{tag=Error checking}
+{tag=Web}
 
-Removing `white-space: pre-wrap` solves it. But then the space between `(beta)` and `OurBigBook.com` gets removed.
+Current failure behaviour if use submits anyways is: shows API error `previousSiblingId "@cirosantilli/physics" does not exist, is not a header or is not a child of parentId "@cirosantilli/test-article"` under title, and it only goes away if you edit title, which is confusing as it is not title related. Also, while title error is visible, the submit button is inactive so the user is left a bit stuck.
 
 === Reach the same performance as static website with dynamic tree
 {tag=Performance}
@@ -323,6 +328,19 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== Donate button on web
+{tag=Web}
+
+=== `(beta)` on navbar gets pushed down half way at a specific page width just above mobile shift
+{tag=Web}
+{tag=CSS}
+
+Just keep making viewport smaller an smaller, until it happen. Sample width that reproduces: 680px.
+
+Removing `white-space: pre-wrap` solves it. But then the space between `(beta)` and `OurBigBook.com` gets removed.
+
+OK: found out I had already previously solved the same issue with `&nbsp;`, redoing the "hack". Every header space has to be `&nbsp;`.
 
 === Empty Latest Followed shows as There are no articles on this website yet
 {tag=Web}

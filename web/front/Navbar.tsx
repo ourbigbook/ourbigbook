@@ -4,8 +4,8 @@ import { useRouter } from 'next/router'
 import CustomImage from 'front/CustomImage'
 import CustomLink from 'front/CustomLink'
 import Maybe from 'front/Maybe'
-import { LOGIN_ACTION, REGISTER_ACTION, NewArticleIcon } from 'front'
-import { appName, aboutUrl } from 'front/config'
+import { LOGIN_ACTION, REGISTER_ACTION, HelpIcon, HomeIcon, NewArticleIcon } from 'front'
+import { appName, aboutUrl, donateUrl } from 'front/config'
 import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
 
@@ -48,14 +48,13 @@ const Navbar = ({ isEditor }) => {
       <CustomLink href={routes.home()} className="navbar-brand" newTab={isEditor}>
         <CustomImage src="/logo.svg" className="logo"/>
         {appName}
+        &nbsp;
         <span className="beta mobile-hide">
-          {/* TODO this space is not showing up and I can't understand why.
-              Hacking with a margin style instead. Seems to be related to flex. */}
-          {' '}
           (beta)
         </span>
       </CustomLink>
-      <a href={aboutUrl} className="about" target={ isEditor ? '_blank' : '_self' }>About us</a>
+      <a href={aboutUrl} className="about" target={ isEditor ? '_blank' : '_self' }><HelpIcon />&nbsp;About us</a>
+      <a href={donateUrl} className="donate" target={ isEditor ? '_blank' : '_self' }>$ Donate</a>
       <div className="navbar-list">
         <Maybe test={loggedInUser}>
           <NavLink href={routes.articleNew()} newTab={isEditor}>
@@ -67,11 +66,11 @@ const Navbar = ({ isEditor }) => {
             className="profile"
             newTab={isEditor}
           >
+            <HomeIcon />&nbsp;Home
             <CustomImage
               className="profile-thumb"
               src={loggedInUser?.effectiveImage}
             />
-            {loggedInUser?.username}
           </NavLink>
         </Maybe>
         <Maybe test={!loggedInUser}>

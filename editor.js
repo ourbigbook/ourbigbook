@@ -180,7 +180,7 @@ class CirodownEditor {
     const id = this.line_to_id(line_number);
     if (
       // Possible on empty document.
-      id !== undefined
+      id !== ''
     ) {
       // TODO this would be awesome to make the element being targeted red,
       // but it loses editor focus  on new paragraphs (e.g. double newline,

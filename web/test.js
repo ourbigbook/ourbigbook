@@ -480,6 +480,12 @@ it('api: create an article and see it on global feed', async () => {
       ;({data, status} = await test.webApi.articleCreate({ titleSource: 1, bodySource: 'Body 1' }))
       assert.strictEqual(status, 422)
 
+      // Empty path.
+      ;({data, status} = await test.webApi.articleCreateOrUpdate({
+        titleSource: 'Empty path attempt', bodySource: 'Body 1' }, { path: '' }
+      ))
+      assert.strictEqual(status, 422)
+
       // Missing title
       ;({data, status} = await test.webApi.articleCreate({ bodySource: 'Body 1' }))
       assert.strictEqual(status, 422)
@@ -541,6 +547,20 @@ it('api: create an article and see it on global feed', async () => {
       ;({data, status} = await test.webApi.articleCreateOrUpdate(article))
       assertStatus(status, data)
       assertRows(data.articles, [{ render: /Body 0\./ }])
+
+    // Edit index article.
+
+      ;({data, status} = await test.webApi.articleCreateOrUpdate({
+        titleSource: 'Index',
+        bodySource: 'Welcome to my home page hacked!'
+      }))
+      assertStatus(status, data)
+      assertRows(data.articles, [{ render: /Welcome to my home page hacked!/ }])
+
+      ;({data, status} = await test.webApi.article('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.titleRender, 'Index')
+      assert.match(data.render, /Welcome to my home page hacked!/)
 
     // Article like.
 
@@ -1216,7 +1236,7 @@ Body 0 0 hacked.
 
 Body 0 1.
 `})
-    ;({data, status} = await test.webApi.articleCreateOrUpdate(article, { path: 'title-0' }))
+    ;({data, status} = await test.webApi.articleCreateOrUpdate(article))
     assertStatus(status, data)
     assertRows(data.articles, [
       { titleRender: 'title 0', slug: 'user0/title-0' },

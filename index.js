@@ -68,8 +68,8 @@ class AstNode {
     if (!('header_parent_ids' in options)) {
       options.header_parent_ids = [];
     }
-    if (!('header_graph_node_word_count' in options)) {
-      options.header_graph_node_word_count = 0;
+    if (!('header_dag_node_word_count' in options)) {
+      options.header_dag_node_word_count = 0;
     }
     if (!('is_first_header_in_input_file' in options)) {
       // Either the first header on a regular toplevel input,
@@ -80,11 +80,11 @@ class AstNode {
       options.numbered = true;
     }
     if (!('parent_node' in options)) {
-      // AstNode. This is different from header_graph_node because
+      // AstNode. This is different from header_dag_node because
       // it points to the parent ast node, i.e. the ast_node that
       // contains this inside one of its arguments.
       //
-      // header_graph_node on the other hand points to the header tree.
+      // header_dag_node on the other hand points to the header tree.
       // The header tree is currently not even connected via arguments.
       options.parent_node = undefined;
     }
@@ -152,13 +152,13 @@ class AstNode {
     // the only difference is that non-headers are not connected as
     // children of their parent. But they still know who the parent is.
     // This was originally required for header scope resolution.
-    this.header_graph_node = options.header_graph_node;
-    // For DB serialization since we don't current serialize header_graph_node.
-    this.header_graph_node_word_count = options.header_graph_node_word_count
+    this.header_dag_node = options.header_dag_node;
+    // For DB serialization since we don't current serialize header_dag_node.
+    this.header_dag_node_word_count = options.header_dag_node_word_count
 
     // When fetching Nodes from the database, we only get their ID,
-    // so we can't construct a full proper header_graph_node from that alone.
-    // So we just store the IDs here and not on header_graph_node as that
+    // so we can't construct a full proper header_dag_node from that alone.
+    // So we just store the IDs here and not on header_dag_node as that
     // alone is already useful.
     this.header_parent_ids = options.header_parent_ids;
 
@@ -345,19 +345,19 @@ class AstNode {
     return out;
   }
 
-  /* Get parent ID, but only consider IDs that come through header_graph_node. */
+  /* Get parent ID, but only consider IDs that come through header_dag_node. */
   get_local_header_parent_id() {
     if (
-      this.header_graph_node !== undefined &&
-      this.header_graph_node.parent_node !== undefined &&
-      this.header_graph_node.parent_node.value !== undefined
+      this.header_dag_node !== undefined &&
+      this.header_dag_node.parent_node !== undefined &&
+      this.header_dag_node.parent_node.value !== undefined
     ) {
-      return this.header_graph_node.parent_node.value.id
+      return this.header_dag_node.parent_node.value.id
     }
     return undefined
   }
 
-  /** Works with both actual this.header_graph_node and
+  /** Works with both actual this.header_dag_node and
    * this.header_parent_ids when coming from a database. */
   get_header_parent_ids(context) {
     const ret = new Set()
@@ -444,7 +444,7 @@ class AstNode {
       {
         text: json.text,
         first_toplevel_child: json.first_toplevel_child,
-        header_graph_node_word_count: json.header_graph_node_word_count,
+        header_dag_node_word_count: json.header_dag_node_word_count,
         is_first_header_in_input_file: json.is_first_header_in_input_file,
         scope: json.scope,
         split_default: json.split_default,
@@ -609,8 +609,8 @@ class AstNode {
       }
     }
     ret.args = args_given
-    if (this.header_graph_node !== undefined) {
-      ret.header_graph_node_word_count = this.header_graph_node.word_count
+    if (this.header_dag_node !== undefined) {
+      ret.header_dag_node_word_count = this.header_dag_node.word_count
     }
     return ret;
   }
@@ -771,21 +771,21 @@ class IdProvider {
 
   /**
    * @param {String} id
-   * @param {HeaderTreeNode} header_graph_node
+   * @param {HeaderTreeNode} header_dag_node
    * @return {Union[AstNode,undefined]}.
    *         undefined: ID not found
    *         Otherwise, the ast node for the given ID
    */
-  get(id, context, header_graph_node) {
+  get(id, context, header_dag_node) {
     if (id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
       return this.get_noscope(id.substr(1), context);
     } else {
       if (
-        header_graph_node !== undefined &&
-        header_graph_node.parent_node !== undefined &&
-        header_graph_node.parent_node.value !== undefined
+        header_dag_node !== undefined &&
+        header_dag_node.parent_node !== undefined &&
+        header_dag_node.parent_node.value !== undefined
       ) {
-        let parent_scope_id = calculate_scope(header_graph_node.parent_node.value, context);
+        let parent_scope_id = calculate_scope(header_dag_node.parent_node.value, context);
         if (parent_scope_id !== undefined) {
           let resolved_scope_id = this.get_noscope(
             parent_scope_id + Macro.HEADER_SCOPE_SEPARATOR + id, context);
@@ -1863,7 +1863,7 @@ class HeaderTreeNode {
       if (!value.in_header) {
         let cur_node = this.parent_node;
         if (cur_node !== undefined && cur_node.parent_node !== undefined) {
-          cur_node.update_ancestor_counts(this.word_count + value.header_graph_node_word_count)
+          cur_node.update_ancestor_counts(this.word_count + value.header_dag_node_word_count)
         }
       }
     } else {
@@ -2138,9 +2138,9 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
       }
       if (
         ast.id !== undefined &&
-        ast.header_graph_node &&
-        ast.header_graph_node.parent_node !== undefined &&
-        ast.header_graph_node.parent_node.value !== undefined &&
+        ast.header_dag_node &&
+        ast.header_dag_node.parent_node !== undefined &&
+        ast.header_dag_node.parent_node.value !== undefined &&
         ast.scope !== undefined
       ) {
         ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id
@@ -2160,7 +2160,7 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
               context,
               local_id,
               REFS_TABLE_PARENT,
-              ast.header_graph_node.index,
+              ast.header_dag_node.index,
             );
           }
         }
@@ -2578,9 +2578,9 @@ function convert_header(cur_arg_list, context, has_toc) {
     context.header_graph = new HeaderTreeNode();
     // Clone this, because we are going to modify it, and it would affect
     // non-split headers and final outputs afterwards.
-    first_ast.header_graph_node = clone_object(first_ast.header_graph_node);
-    context.header_graph.add_child(first_ast.header_graph_node);
-    context.header_graph_top_level = first_ast.header_graph_node.get_level();
+    first_ast.header_dag_node = clone_object(first_ast.header_dag_node);
+    context.header_graph.add_child(first_ast.header_dag_node);
+    context.header_graph_top_level = first_ast.header_dag_node.get_level();
     const output_path = (output_path_from_ast(
       first_ast,
       clone_and_set(context, 'to_split_headers', true)
@@ -3125,7 +3125,7 @@ function header_check_child_tag_exists(ast, context, childrenOrTags, type) {
   let ret = ''
   for (let child of childrenOrTags) {
     const target_id = render_arg_noescape(child.args.content, context)
-    const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node)
+    const target_id_ast = context.id_provider.get(target_id, context, ast.header_dag_node)
     if (target_id_ast === undefined) {
       let message = `unknown ${type} id: "${target_id}"`
       render_error(context, message, child.source_location)
@@ -3810,7 +3810,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   let macro_count_global = 0
   const macro_counts = {};
   const macro_counts_visible = {};
-  let cur_header_graph_node;
+  let cur_header_dag_node;
   let is_first_header = true;
   extra_returns.ids = options.indexed_ids;
 
@@ -3870,15 +3870,15 @@ async function parse(tokens, options, context, extra_returns={}) {
       if (parent_ast === undefined) {
         parent_ast = options.cur_header;
       }
-      const parent_ast_header_graph_node = parent_ast.header_graph_node;
-      const parent_ast_header_level = parent_ast_header_graph_node.get_level();
+      const parent_ast_header_dag_node = parent_ast.header_dag_node;
+      const parent_ast_header_level = parent_ast_header_dag_node.get_level();
 
       add_to_refs_to(
         href,
         context,
         parent_ast.id,
         REFS_TABLE_PARENT,
-        parent_ast_header_graph_node.children.length
+        parent_ast_header_dag_node.children.length
       );
       parent_ast.includes.push(href);
       const read_include_ret = options.read_include(href);
@@ -3944,8 +3944,8 @@ async function parse(tokens, options, context, extra_returns={}) {
               },
             );
             options.include_hrefs[href] = header_ast
-            header_ast.header_graph_node = new HeaderTreeNode(header_ast, parent_ast_header_graph_node);
-            parent_ast_header_graph_node.add_child(header_ast.header_graph_node);
+            header_ast.header_dag_node = new HeaderTreeNode(header_ast, parent_ast_header_dag_node);
+            parent_ast_header_dag_node.add_child(header_ast.header_dag_node);
             new_child_nodes = [
               header_ast,
               new AstNode(
@@ -4201,7 +4201,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         if (is_synonym) {
           ast.scope = options.cur_header.scope;
         } else {
-          cur_header_graph_node = new HeaderTreeNode(ast, options.header_graph_stack.get(cur_header_level - 1));
+          cur_header_dag_node = new HeaderTreeNode(ast, options.header_graph_stack.get(cur_header_level - 1));
           if (cur_header_level - header_graph_last_level > 1) {
             header_level_skip_error = header_graph_last_level;
           }
@@ -4214,7 +4214,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
           const parent_tree_node = options.header_graph_stack.get(cur_header_level - 1);
           if (parent_tree_node !== undefined) {
-            parent_tree_node.add_child(cur_header_graph_node);
+            parent_tree_node.add_child(cur_header_dag_node);
             const parent_ast = parent_tree_node.value;
             if (parent_ast !== undefined) {
               let scope = calculate_scope(parent_ast, context);
@@ -4232,7 +4232,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             }
           }
           const old_graph_node = options.header_graph_stack.get(cur_header_level);
-          options.header_graph_stack.set(cur_header_level, cur_header_graph_node);
+          options.header_graph_stack.set(cur_header_level, cur_header_dag_node);
           if (
             // Possible on the first insert of a level.
             old_graph_node !== undefined &&
@@ -4244,7 +4244,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           header_graph_last_level = cur_header_level;
 
         }
-        ast.header_graph_node = cur_header_graph_node
+        ast.header_dag_node = cur_header_dag_node
 
         // Must come after the header tree step is mostly done, because scopes influence ID,
         // and they also depend on the parent node.
@@ -4269,7 +4269,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location));
             parse_error(state, message, ast.args.level.source_location);
           }
-          options.header_graph_id_stack.set(cur_header_graph_node.value.id, cur_header_graph_node);
+          options.header_graph_id_stack.set(cur_header_dag_node.value.id, cur_header_dag_node);
         }
 
         // Handle the H file argument previews.
@@ -4514,7 +4514,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
       } else {
         header_ast.set_source_location(target_id_ast.source_location)
-        header_ast.header_graph_node.update_ancestor_counts(target_id_ast.header_graph_node_word_count)
+        header_ast.header_dag_node.update_ancestor_counts(target_id_ast.header_dag_node_word_count)
         for (const argname in target_id_ast.args) {
           if (
             // We have to patch the level of the target ID (1) do our new dummy one in the current tree.
@@ -4532,12 +4532,12 @@ async function parse(tokens, options, context, extra_returns={}) {
       validate_ast(header_ast, context);
 
       if (target_id_ast !== undefined) {
-        // We modify the cache here to ensure that the header ID has the full header_graph_node, which
+        // We modify the cache here to ensure that the header ID has the full header_dag_node, which
         // then gets feched from \x{full} (notably ToC) in order to show the link number there.
         //
         // Yes, this erase IDs that come from other Includes, but we don´t have a use case for that
         // right now, e.g. the placholder include header does not show parents.
-        target_id_ast.header_graph_node = header_ast.header_graph_node
+        target_id_ast.header_dag_node = header_ast.header_dag_node
         target_id_ast.header_parent_ids = []
       }
     }
@@ -4900,20 +4900,20 @@ async function parse(tokens, options, context, extra_returns={}) {
         let children_in_header;
         if (macro_name === Macro.HEADER_MACRO_NAME) {
           // TODO start with the toplevel.
-          cur_header_graph_node = ast.header_graph_node;
+          cur_header_dag_node = ast.header_dag_node;
           children_in_header = true;
         } else {
-          ast.header_graph_node = new HeaderTreeNode(ast, cur_header_graph_node);
+          ast.header_dag_node = new HeaderTreeNode(ast, cur_header_dag_node);
           if (ast.in_header) {
             children_in_header = true;
           } else {
-            if (cur_header_graph_node !== undefined) {
-              cur_header_graph_node.word_count += ast.word_count;
+            if (cur_header_dag_node !== undefined) {
+              cur_header_dag_node.word_count += ast.word_count;
             }
             children_in_header = false;
           }
-          if (cur_header_graph_node !== undefined) {
-            ast.scope = calculate_scope(cur_header_graph_node.value, context);
+          if (cur_header_dag_node !== undefined) {
+            ast.scope = calculate_scope(cur_header_dag_node.value, context);
           }
 
           // Header IDs already previously calculated for parent= so we don't redo it in that case.
@@ -5390,7 +5390,7 @@ exports.perf_print = perf_print
 function propagate_numbered(ast, context) {
   // numbered propagation to children.
   // Note that the property only affects descendants, but not the node itself.
-  const parent_tree_node = ast.header_graph_node.parent_node
+  const parent_tree_node = ast.header_dag_node.parent_node
   if (parent_tree_node === undefined || parent_tree_node.value === undefined) {
     // Try getting parents from \Include.
     // https://github.com/cirosantilli/cirodown/issues/188
@@ -5547,7 +5547,7 @@ ${ast.toString()}`)
 exports.validate_ast = validate_ast
 
 function x_child_db_effective_id(target_id, context, ast) {
-  const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);
+  const target_id_ast = context.id_provider.get(target_id, context, ast.header_dag_node);
   if (
     // Can happen if it is in another files that was not extracted yet.
     target_id_ast === undefined
@@ -5571,7 +5571,7 @@ function x_get_href_content(ast, context) {
   if (target_id[0] === HASHTAG_CHAR) {
     return [html_attr('href', WEBSITE_URL + 'go/topic/' + target_id.substr(1)), target_id];
   }
-  const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);
+  const target_id_ast = context.id_provider.get(target_id, context, ast.header_dag_node);
 
   // href
   let href;
@@ -6490,7 +6490,7 @@ const DEFAULT_MACRO_LIST = [
         }
         return '';
       }
-      let level_int = ast.header_graph_node.get_level();
+      let level_int = ast.header_dag_node.get_level();
       if (typeof level_int !== 'number') {
         throw new Error('header level is not an integer after validation');
       }
@@ -6547,7 +6547,7 @@ const DEFAULT_MACRO_LIST = [
         if (parent_links) {
           ret += `${HEADER_MENU_ITEM_SEP}${parent_links}`;
         }
-        let descendant_count = get_descendant_count_html(ast.header_graph_node, true);
+        let descendant_count = get_descendant_count_html(ast.header_dag_node, true);
         if (descendant_count !== '') {
           ret += `${HEADER_MENU_ITEM_SEP}${descendant_count}`;
         }
@@ -6636,7 +6636,7 @@ const DEFAULT_MACRO_LIST = [
         if (context.has_toc) {
           header_meta2.push(`<a${html_attr('href', '#' + Macro.TOC_ID)}>\u{21d3} toc</a>`);
         }
-        let descendant_count_html = get_descendant_count_html(ast.header_graph_node, true);
+        let descendant_count_html = get_descendant_count_html(ast.header_dag_node, true);
         if (descendant_count_html !== '') {
           header_meta2.push(descendant_count_html);
         }
@@ -6666,11 +6666,11 @@ const DEFAULT_MACRO_LIST = [
       caption_prefix: 'Section',
       default_x_style_full: false,
       get_number: function(ast, context) {
-        let header_graph_node = ast.header_graph_node;
-        if (header_graph_node === undefined) {
+        let header_dag_node = ast.header_dag_node;
+        if (header_dag_node === undefined) {
           return undefined;
         } else {
-          return header_graph_node.get_nested_number(context.header_graph_top_level);
+          return header_dag_node.get_nested_number(context.header_graph_top_level);
         }
       },
       show_disambiguate: true,
@@ -7165,8 +7165,8 @@ const DEFAULT_MACRO_LIST = [
           ) {
             let parent_href_target;
             if (
-              parent_ast.header_graph_node !== undefined &&
-              parent_ast.header_graph_node.get_level() === cur_context.header_graph_top_level
+              parent_ast.header_dag_node !== undefined &&
+              parent_ast.header_dag_node.get_level() === cur_context.header_graph_top_level
             ) {
               parent_href_target = Macro.TOC_ID;
             } else {
@@ -7270,8 +7270,8 @@ const DEFAULT_MACRO_LIST = [
               const ancestor_id_asts = [];
               for (const ancestor of ancestors) {
                 //let counts_str;
-                //if (ancestor.header_graph_node !== undefined) {
-                //  counts_str = get_descendant_count_html_sep(ancestor.header_graph_node, false);
+                //if (ancestor.header_dag_node !== undefined) {
+                //  counts_str = get_descendant_count_html_sep(ancestor.header_dag_node, false);
                 //} else {
                 //  counts_str = '';
                 //}
@@ -7498,7 +7498,7 @@ const DEFAULT_MACRO_LIST = [
         ) {
           counts_str = '';
         } else {
-          const counts = get_descendant_count(target_ast.header_graph_node);
+          const counts = get_descendant_count(target_ast.header_dag_node);
           for (let i = 0; i < counts.length; i++) {
             counts[i] = format_number_approx(counts[i]);
           }
@@ -7653,8 +7653,8 @@ function create_link_list(context, ast, id, title, target_ids, body) {
         target_ast !== undefined
       ) {
         //let counts_str;
-        //if (target_ast.header_graph_node !== undefined) {
-        //  counts_str = get_descendant_count_html_sep(target_ast.header_graph_node, false);
+        //if (target_ast.header_dag_node !== undefined) {
+        //  counts_str = get_descendant_count_html_sep(target_ast.header_dag_node, false);
         //} else {
         //  counts_str = '';
         //}

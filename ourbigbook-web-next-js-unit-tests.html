@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>OurBigBook Web Next.js unit tests - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg" />
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" />OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" /><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i></a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ourbigbook-web-next-js-unit-tests"><div class="notnav"><h1><a href="">OurBigBook Web Next.js unit tests</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."> OurBigBook Project</a><a href=".#ourbigbook-web"> OurBigBook Web</a><a href=".#ourbigbook-web-development"> OurBigBook Web development</a><a href=".#ourbigbook-web-unit-tests"> OurBigBook Web unit tests</a></div><div class="nav"><a class="nosplit" href=".#ourbigbook-web-next-js-unit-tests"></a><span class="metrics"><span class="wcntr"> words: 373</span></span></div></nav></div><div class="p" id="_4047">By default, we don't make any requests to Next.js, because starting up Next.js is extremelly slow for regular test usage and would drive us crazy.</div><div class="p" id="_4048">In regular OurBigBook Web usage through a browser, Next.js handles all GET requests for us, and the API only handles the other modifying methods like POST.</div><div class="p" id="_4049">However, we are trying to keep the API working equally well for GET, and as factored out with Next.js as possible, so just testing the API GET already gives reasonable coverage.</div><div class="p" id="_4050">But testing Next.js requests before deployment is a must, and is already done by default by <code>npm run deploy-prod</code> from <a href=".#heroku-deployment">Heroku deployment</a>, and can be done manually with:
+<div class="code" id="_4051"><div><pre><code>npm run test-next</code></pre></div></div>
+or e.g. to run just a single test:
+<div class="code" id="_4052"><div><pre><code>npm run test-next -- -g 'api: create an article and see it on global feed'</code></pre></div></div>
+for for Postgres:
+<div class="code" id="_4053"><div><pre><code>npm run test-pg-next</code></pre></div></div>
+These tests are currently very basic, and only check page status. In the future, we can<div><ul id="_4054"><li id="_4055">add some HTML parsing to check for page contents as a reponse to GET, just as we already do in the <a href=".#test-system">test system</a> of the <a href=".#ourbigbook-library">OurBigBook Library</a></li><li id="_4056">go all in an use a JavaScript enabled test system like Selenium to also test login and data modification from the browser</li></ul></div></div><div class="p" id="_4057">If you are not making any changes to the website itself, e.g. only to the test system, then you can skip the slow rebuild with:
+<div class="code" id="_4058"><div><pre><code>test-next-nobuild
+test-pg-next-nobuild</code></pre></div></div>
+Note that annoyingly, Next.js reuses the same forlder for dev and build runs, so you have to quit your dev server for this to work, otherwise the dev server just keeps writing into the folder and messing up the production build test.</div><div class="p" id="_4059">Note that Next.js tests are just present inside other tests, e.g. <code>api: create an article and see it on global feed</code> also tests some stuff when not testing Next.js. Running <code>npm run test-next</code> simply enables the Next.js tests on top of the non Next.js ones that get run by default.</div><div class="p" id="_4060">These tests can only be run in production mode, and so our scripts automatically rebuild every time before running the tests, which makes things quite slow. This required because in development mode, Next.js is extremelly soft, and e.g. does not raise 500 instead returning a 200 page with error messages. Bad default.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors</a></h2><div><ol><li><a href=".#ourbigbook-web-unit-tests">OurBigBook Web unit tests</a></li><li><a href=".#ourbigbook-web-development">OurBigBook Web development</a></li><li><a href=".#ourbigbook-web">OurBigBook Web</a></li><li><a href=".">OurBigBook Project</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/README.bigb">README.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Table - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg" />
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" />OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" /><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i></a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="table"><div class="notnav"><h1><a href="">Table (<code>|| </code>, <code>| </code>, <code>\Table</code>, <code>\Tr</code>, <code>\Th</code> and <code>\Td</code>)</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."> OurBigBook Project</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a></div><div class="nav"><a href="#_toc" class="toc"></a><span class="tags"> tags: <a href=".#macro-with-insane-shortcut">Macro with insane shortcut</a></span><a class="nosplit" href=".#table"></a><span class="metrics"><span class="wcntr"> words: 578</span><span class="dcnt"> articles: 4</span></span></div></nav></div><div class="p" id="_1721">The <a href=".#insane-macro-shortcut">insane syntax</a> marks:<div><ul id="_1722"><li id="_1723">headers with <code>|| </code> (pipe, pipe space) at the start of a line</li><li id="_1724">regular cells with <code>| </code> (pipe, space) at the start of a line</li><li id="_1725">separates rows with double newline
+</li></ul></div>For example:
+<div class="code" id="_1726"><div><pre><code>|| Header 1
+|| Header 2
+
+| 1 1
+| 1 2
+
+| 2 1
+| 2 2</code></pre></div></div><div class="p" id="_1727">which renders as:</div><blockquote id="_1728"><div class="table" id="_1729"><div><table><thead><tr id="_1730"><th id="_1731">Header 1</th><th id="_1732">Header 2</th></tr></thead><tbody><tr id="_1733"><td id="_1734">1 1</td><td id="_1735">1 2</td></tr><tr id="_1736"><td id="_1737">2 1</td><td id="_1738">2 2</td></tr></tbody></table></div></div></blockquote>
+Empty cells are allowed without the trailing space however:
+<div class="code" id="_1739"><div><pre><code>| 1 1
+|
+| 1 3
+
+| 2 1
+|
+| 2 3</code></pre></div></div><div class="p" id="_1740">which renders as:</div><blockquote id="_1741"><div class="table" id="_1742"><div><table><tbody><tr id="_1743"><td id="_1744">1 1</td><td id="_1745"></td><td id="_1746">1 3</td></tr><tr id="_1747"><td id="_1748">2 1</td><td id="_1749"></td><td id="_1750">2 3</td></tr></tbody></table></div></div></blockquote></div><div class="p" id="_1751">Equivalent fully explicit version:
+<div class="code" id="_1752"><div><pre><code>\Table[
+\Tr[
+  \Th[Header 1]
+  \Th[Header 2]
+]
+\Tr[
+  \Td[1 1]
+  \Td[1 2]
+]
+\Tr[
+  \Td[2 1]
+  \Td[2 2]
+]
+]</code></pre></div></div><div class="p" id="_1753">which renders as:</div><blockquote id="_1754"><div class="table" id="_1755"><div><table><thead><tr id="_1756"><th id="_1757">Header 1</th><th id="_1758">Header 2</th></tr></thead><tbody><tr id="_1759"><td id="_1760">1 1</td><td id="_1761">1 2</td></tr><tr id="_1762"><td id="_1763">2 1</td><td id="_1764">2 2</td></tr></tbody></table></div></div></blockquote>
+Any white space indentation inside an explicit <code>\Tr</code> can make the code more readable, and is automatically removed from final output due to <a href=".#remove-whitespace-children"><code>remove_whitespace_children</code></a> which is set for <code>\Table</code>.</div><div class="p" id="_1765">To pass further arguments to an implicit table such as <code>title</code> or <code>id</code>, you need to use an explicit <code>table</code> macro as in: <a href="#table-my-table">Table 3. "My table title"</a>.
+<div class="code" id="_1766"><div><pre><code>\Table
+{title=My table title}
+{id=table-my-table}
+[
+|| Header 1
+|| Header 2
+
+| 1 1
+| 1 2
+
+| 2 1
+| 2 2
+]</code></pre></div></div><div class="p" id="_1767">which renders as:</div><blockquote id="_1768"><div class="table" id="table-my-table"><div><div class="caption"><a href="#table-my-table"><span class="caption-prefix">Table 3. </span></a><div class="title">My table title</div>. </div><table><thead><tr id="_1769"><th id="_1770">Header 1</th><th id="_1771">Header 2</th></tr></thead><tbody><tr id="_1772"><td id="_1773">1 1</td><td id="_1774">1 2</td></tr><tr id="_1775"><td id="_1776">2 1</td><td id="_1777">2 2
+</td></tr></tbody></table></div></div></blockquote>
+We would like to remove that explicit toplevel requirement as per: <a href="https://github.com/ourbigbook/ourbigbook/issues/186">github.com/ourbigbook/ourbigbook/issues/186</a> The rules of when the caption shows up or not similar to those of <a href=".#image">images</a> as mentioned at <a href=".#image-caption">Section "Image caption"</a>.</div><div class="p" id="_1778">Multiple source lines, including paragraphs, can be added to a single cell with insane syntax by indenting the cell with exactly two spaces just as for <a href=".#list">lists</a>, e.g.:
+<div class="code" id="_1779"><div><pre><code>|| h1
+|| h2
+|| h3
+
+  h3 2
+
+| 11
+| 12
+
+  12 2
+| 13
+
+| 21
+| 22
+| 23</code></pre></div></div><div class="p" id="_1780">which renders as:</div><blockquote id="_1781"><div class="table" id="_1782"><div><table><thead><tr id="_1783"><th id="_1784">h1</th><th id="_1785">h2</th><th id="_1786"><div class="p" id="_1787">h3</div><div class="p" id="_1788">h3 2</div></th></tr></thead><tbody><tr id="_1789"><td id="_1790">11</td><td id="_1791"><div class="p" id="_1792">12</div><div class="p" id="_1793">12 2</div></td><td id="_1794">13</td></tr><tr id="_1795"><td id="_1796">21</td><td id="_1797">22</td><td id="_1798">23</td></tr></tbody></table></div></div></blockquote>
+Arbitrarily complex nested constructs may be used, e.g. a table inside a list inside table:
+<div class="code" id="_1799"><div><pre><code>| 00
+| 01
+
+  * l1
+  * l2
+
+    | 20
+    | 21
+
+    | 30
+    | 31
+
+| 10
+| 11</code></pre></div></div><div class="p" id="_1800">which renders as:</div><blockquote id="_1801"><div class="table" id="_1802"><div><table><tbody><tr id="_1803"><td id="_1804">00</td><td id="_1805"><div class="p" id="_1806">01</div><div><ul id="_1807"><li id="_1808">l1</li><li id="_1809"><div class="p" id="_1810">l2</div><div class="table" id="_1811"><div><table><tbody><tr id="_1812"><td id="_1813">20</td><td id="_1814">21</td></tr><tr id="_1815"><td id="_1816">30</td><td id="_1817">31</td></tr></tbody></table></div></div></li></ul></div></td></tr><tr id="_1818"><td id="_1819">10</td><td id="_1820">11</td></tr></tbody></table></div></div></blockquote></div><div class="p" id="_1821">And now a table outside of <a href=".#ourbigbookexample"><code>\OurBigBookExample</code></a> to test how it looks directly under <a href=".#toplevel">the <code>\Toplevel</code> implicit macro</a>:</div><div class="table" id="table-my-table-title"><div><div class="caption"><a href="#table-my-table-title"><span class="caption-prefix">Table 4. </span></a><div class="title">My table title</div>. </div><table><thead><tr id="_1822"><th id="_1823">Header 1</th><th id="_1824">Header 2</th></tr></thead><tbody><tr id="_1825"><td id="_1826">1 1</td><td id="_1827">1 2</td></tr><tr id="_1828"><td id="_1829">2 1</td><td id="_1830">2 2
+</td></tr></tbody></table></div></div><div class="p" id="_1831">And a fully insane one:</div><div class="table" id="_1832"><div><table><thead><tr id="_1833"><th id="_1834">Header 1</th><th id="_1835">Header 2</th></tr></thead><tbody><tr id="_1836"><td id="_1837">1 1</td><td id="_1838">1 2</td></tr><tr id="_1839"><td id="_1840">2 1</td><td id="_1841">2 2</td></tr></tbody></table></div></div><div class="p" id="_1842">And now a larger one to see how the style is looking:</div><div class="table" id="_1843"><div><table><thead><tr id="_1844"><th id="_1845">Header 1</th><th id="_1846">Header 2</th><th id="_1847">Header 3</th><th id="_1848">Header 4</th></tr></thead><tbody><tr id="_1849"><td id="_1850">1 1</td><td id="_1851">1 2</td><td id="_1852">1 3</td><td id="_1853">1 4</td></tr><tr id="_1854"><td id="_1855">2 1</td><td id="_1856">2 2</td><td id="_1857">2 3</td><td id="_1858">2 4</td></tr><tr id="_1859"><td id="_1860">3 1</td><td id="_1861">3 2</td><td id="_1862">3 3</td><td id="_1863">3 4</td></tr><tr id="_1864"><td id="_1865">4 1</td><td id="_1866">4 2</td><td id="_1867">4 3</td><td id="_1868">4 4</td></tr><tr id="_1869"><td id="_1870">5 1</td><td id="_1871">5 2</td><td id="_1872">5 3</td><td id="_1873">5 4</td></tr><tr id="_1874"><td id="_1875">6 1</td><td id="_1876">6 2</td><td id="_1877">6 3</td><td id="_1878">6 4</td></tr><tr id="_1879"><td id="_1880">7 1</td><td id="_1881">7 2</td><td id="_1882">7 3</td><td id="_1883">7 4</td></tr><tr id="_1884"><td id="_1885">8 1</td><td id="_1886">8 2</td><td id="_1887">8 3</td><td id="_1888">8 4</td></tr></tbody></table></div></div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 578</span><span class="dcnt"> 4</span></span></span></span></div><ul><li><div id="_toc/table-sorting"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#table-sorting"><i class="n">1. </i>Table sorting</a><span class="hover-metadata"><a class="nosplit" href=".#table-sorting"></a><a href="#_toc" class="u"> Table</a><span class="metrics"><span class="wcntr"> 65</span></span></span></span></div></li><li class="has-child"><div id="_toc/table-argument"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#table-argument"><i class="n">2. </i><code>\Table</code> argument</a><span class="hover-metadata"><a class="nosplit" href=".#table-argument"></a><a href="#_toc" class="u"> Table</a><span class="metrics"><span class="wcntr"> 4</span><span class="dcnt"> 2</span></span></span></span></div><ul><li><div id="_toc/table-description-argument"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#table-description-argument"><i class="n">2.1. </i><code>\Table</code> <code>description</code> argument</a><span class="hover-metadata"><a class="nosplit" href=".#table-description-argument"></a><a href="#_toc/table-argument" class="u"> <code>\Table</code> argument</a><span class="metrics"><span class="wcntr"> 2</span></span></span></span></div></li><li><div id="_toc/table-title-argument"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#table-title-argument"><i class="n">2.2. </i><code>\Table</code> <code>title</code> argument</a><span class="hover-metadata"><a class="nosplit" href=".#table-title-argument"></a><a href="#_toc/table-argument" class="u"> <code>\Table</code> argument</a><span class="metrics"><span class="wcntr"> 2</span></span></span></span></div></li></ul></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors</a></h2><div><ol><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href=".">OurBigBook Project</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links</a></h2><div><ul><li><a href=".#auto-parent"><code>auto_parent</code> macro property</a></li><li><a href=".#escape-characters">Escape characters</a></li><li><a href=".#macro-with-insane-shortcut">Macro with insane shortcut</a></li><li><a href=".#ourbigbook-markup-quick-start">OurBigBook Markup quick start</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/README.bigb">README.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

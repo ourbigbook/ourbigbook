@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Link - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg" />
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" />OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" /><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i></a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="link"><div class="notnav"><h1><a href="">Link (<code>\a</code>)</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."> OurBigBook Project</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a></div><div class="nav"><a href="#_toc" class="toc"></a><span class="tags"> tags: <a href=".#macro-with-insane-shortcut">Macro with insane shortcut</a></span><a class="nosplit" href=".#link"></a><span class="metrics"><span class="wcntr"> words: 1k</span><span class="dcnt"> articles: 12</span></span></div></nav></div><div class="p" id="_410"><a href=".#insane-macro-shortcut">Insane</a> autolink, i.e. the link text is the same as the link address:
+<div class="code" id="_411"><div><pre><code>The website http://example.com is cool. See also:
+
+\Q[http://example.com/2]</code></pre></div></div><div class="p" id="_412">which renders as:</div><blockquote id="_413"><div class="p" id="_414">The website <a href="http://example.com">example.com</a> is cool. See also:</div><blockquote id="_415"><a href="http://example.com/2">example.com/2</a></blockquote></blockquote>
+Exact parsing rules described at: <a href=".#insane-link-parsing-rules">Section 4. "Insane link parsing rules"</a>.</div><div class="p" id="_416">Note that the prefixes <code>http://</code> and <code>https://</code> are automatically removed from the displayed link, since they are so common that they woudly simply add noise.</div><div class="p" id="_417">Equivalent sane version:
+<div class="code" id="_418"><div><pre><code>The website \a[http://example.com] is cool.
+
+\Q[\a[http://example.com/2]]</code></pre></div></div><div class="p" id="_419">which renders as:</div><blockquote id="_420"><div class="p" id="_421">The website <a href="http://example.com">example.com</a> is cool.</div><blockquote id="_422"><a href="http://example.com/2">example.com/2</a></blockquote></blockquote></div><div class="p" id="_423">Insane link with custom text:
+<div class="code" id="_424"><div><pre><code>The website http://example.com[example.com] is cool.</code></pre></div></div><div class="p" id="_425">which renders as:</div><blockquote id="_426"><div class="p" id="_427">The website <a href="http://example.com">example.com</a> is cool.</div></blockquote>
+Equivalent sane version:
+<div class="code" id="_428"><div><pre><code>The website \a[http://example.com][example.com] is cool.</code></pre></div></div><div class="p" id="_429">which renders as:</div><blockquote id="_430"><div class="p" id="_431">The website <a href="http://example.com">example.com</a> is cool.</div></blockquote>
+If the custom text is empty, an autolink is generated. This is often useful if you want your link to be followed by punctuation:
+<div class="code" id="_432"><div><pre><code>The website is really cool: http://example.com[].</code></pre></div></div><div class="p" id="_433">which renders as:</div><blockquote id="_434"><div class="p" id="_435">The website is really cool: <a href="http://example.com">example.com</a>.</div></blockquote>
+This could also be achieved with the sane syntax of course, but this pattern saves a tiny bit of typing.</div><div class="p" id="_436">Link with multiple paragraphs inside it:
+<div class="code" id="_437"><div><pre><code>\a[http://example.com][Multiple
+
+paragraphs]</code></pre></div></div><div class="p" id="_438">which renders as:</div><blockquote id="_439"><div class="p" id="_440"><a href="http://example.com"><div class="p" id="_441">Multiple</div><div class="p" id="_442">paragraphs</div></a></div></blockquote></div><div class="p" id="_443">Link to a file in the current repository:
+<div class="code" id="_444"><div><pre><code>The file \a[index.js] is cool.</code></pre></div></div><div class="p" id="_445">which renders as:</div><blockquote id="_446"><div class="p" id="_447">The file <a href="_raw/index.js">index.js</a> is cool.</div></blockquote>
+This links to a raw view of that file.</div><div class="p" id="_448">Link to a directory in the current repository:
+<div class="code" id="_449"><div><pre><code>The directory \a[file_demo] is cooler.</code></pre></div></div><div class="p" id="_450">which renders as:</div><blockquote id="_451"><div class="p" id="_452">The directory <a href="_dir/file_demo">file_demo</a> is cooler.</div></blockquote>
+This links to an output file that contains a generated directory listing of that directory.</div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 1k</span><span class="dcnt"> 12</span></span></span></span></div><ul><li><div id="_toc/a-href-argument"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#a-href-argument"><i class="n">1. </i><code>\a</code> <code>href</code> argument</a><span class="hover-metadata"><a class="nosplit" href=".#a-href-argument"></a><a href="#_toc" class="u"> Link</a><span class="metrics"><span class="wcntr"> 39</span></span></span></span></div></li><li><div id="_toc/a-ref-argument"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#a-ref-argument"><i class="n">2. </i><code>\a</code> <code>ref</code> argument</a><span class="hover-metadata"><a class="nosplit" href=".#a-ref-argument"></a><a href="#_toc" class="u"> Link</a><span class="metrics"><span class="wcntr"> 30</span></span></span></span></div></li><li class="has-child"><div id="_toc/a-external-argument"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#a-external-argument"><i class="n">3. </i><code>\a</code> <code>external</code> argument</a><span class="hover-metadata"><a class="nosplit" href=".#a-external-argument"></a><a href="#_toc" class="u"> Link</a><span class="metrics"><span class="wcntr"> 815</span><span class="dcnt"> 7</span></span></span></span></div><ul><li><div id="_toc/internal-links-are-smart"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#internal-links-are-smart"><i class="n">3.1. </i>Internal links are smart (Link to the domain root path)</a><span class="hover-metadata"><a class="nosplit" href=".#internal-links-are-smart"></a><a href="#_toc/a-external-argument" class="u"> <code>\a</code> <code>external</code> argument</a><span class="metrics"><span class="wcntr"> 34</span></span></span></span></div></li><li><div id="_toc/subdirectory-deployment"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#subdirectory-deployment"><i class="n">3.2. </i>Subdirectory deployment</a><span class="hover-metadata"><a class="nosplit" href=".#subdirectory-deployment"></a><a href="#_toc/a-external-argument" class="u"> <code>\a</code> <code>external</code> argument</a><span class="metrics"><span class="wcntr"> 52</span></span></span></span></div></li><li><div id="_toc/external-link"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#external-link"><i class="n">3.3. </i>External link</a><span class="hover-metadata"><a class="nosplit" href=".#external-link"></a><a href="#_toc/a-external-argument" class="u"> <code>\a</code> <code>external</code> argument</a><span class="metrics"><span class="wcntr"> 294</span></span></span></span></div></li><li><div id="_toc/dir-directory"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#dir-directory"><i class="n">3.4. </i><code>_dir</code> directory</a><span class="hover-metadata"><a class="nosplit" href=".#dir-directory"></a><a href="#_toc/a-external-argument" class="u"> <code>\a</code> <code>external</code> argument</a><span class="metrics"><span class="wcntr"> 39</span></span></span></span></div></li><li><div id="_toc/file-output-directory"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#file-output-directory"><i class="n">3.5. </i><code>_file</code> output directory</a><span class="hover-metadata"><a class="nosplit" href=".#file-output-directory"></a><a href="#_toc/a-external-argument" class="u"> <code>\a</code> <code>external</code> argument</a><span class="metrics"><span class="wcntr"> 8</span></span></span></span></div></li><li><div id="_toc/raw-directory"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#raw-directory"><i class="n">3.6. </i><code>_raw</code> directory</a><span class="hover-metadata"><a class="nosplit" href=".#raw-directory"></a><a href="#_toc/a-external-argument" class="u"> <code>\a</code> <code>external</code> argument</a><span class="metrics"><span class="wcntr"> 226</span></span></span></span></div></li><li><div id="_toc/url-with-protocol"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#url-with-protocol"><i class="n">3.7. </i>URL with protocol</a><span class="hover-metadata"><a class="nosplit" href=".#url-with-protocol"></a><a href="#_toc/a-external-argument" class="u"> <code>\a</code> <code>external</code> argument</a><span class="metrics"><span class="wcntr"> 92</span></span></span></span></div></li></ul><li class="has-child"><div id="_toc/insane-link-parsing-rules"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#insane-link-parsing-rules"><i class="n">4. </i>Insane link parsing rules</a><span class="hover-metadata"><a class="nosplit" href=".#insane-link-parsing-rules"></a><a href="#_toc" class="u"> Link</a><span class="metrics"><span class="wcntr"> 258</span><span class="dcnt"> 1</span></span></span></span></div><ul><li><div id="_toc/insane-link-termination-character"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#insane-link-termination-character"><i class="n">4.1. </i>Insane link termination character</a><span class="hover-metadata"><a class="nosplit" href=".#insane-link-termination-character"></a><a href="#_toc/insane-link-parsing-rules" class="u"> Insane link parsing rules</a><span class="metrics"><span class="wcntr"> 40</span></span></span></span></div></li></ul></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors</a></h2><div><ol><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href=".">OurBigBook Project</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links</a></h2><div><ul><li><a href=".#block-vs-inline-macros">Block vs inline macros</a></li><li><a href=".#cross-reference-title-link-removal">Cross reference title link removal</a></li><li><a href=".#macro-with-insane-shortcut">Macro with insane shortcut</a></li><li><a href=".#positional-argument-default-values">Positional argument default values</a></li><li><a href=".#wiki-explicit-subsection">History of Tiananmen Square</a></li></ul></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms</a></h2><div><ul><li><a href=".#link"><code>\a</code></a></li><li><a href=".#link"><code>\a</code> macro</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/README.bigb">README.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

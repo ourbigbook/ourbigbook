@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>ourbigbook.common.scss - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg" />
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" />OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" /><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i></a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ourbigbook.common.scss"><div class="notnav"><h1><a href="">ourbigbook.common.scss</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../_dir/">(root)</a> / <a href="../_raw/ourbigbook.common.scss">ourbigbook.common.scss</a></b></div></nav></div><div class="p"><b>ourbigbook.common.scss</b></div><div class="code"><div><pre><code>// Shared across local ourbigbook and web.
+//
+// Also distributed with the NPM package so that users can harmonize
+// their design with Ourbigbook defaults.
+//
+// This file is intended to be used with @import. This means that
+// it contains only variables and mixins, and no actual style definitions.
+
+// Light
+//$a-color: #0000EE;
+//$a-color-visited: rgb(85, 26, 139);
+//$background-color: white;
+//$code-background-color: #eeeeee;
+//$color: black;
+//$target-background-color: #FFFFCC;
+
+// Dark.
+$a-color: #99CCFF;
+$background-color: #181818;
+// color-discreet was too dim, and $color was too bright and distracting. Let's try this then.
+$brandname-color: #CCCCCC;
+$code-background-color: #333333;
+$color: #EEEEEE;
+$color-discreet: #BBBBBB;
+$h-color: #DDDD00;
+$navbar-background-color: #000;
+// To make non-brand items a bit less visible than the brand.
+$table-border-color: #444444;
+$table-even-background-color: #222222;
+$target-background-color: #442222;
+$ourbigbook-error-color: #F55;
+$ourbigbook-ok-color: #5F5;
+
+$font-family: Arial, Helvetica, sans-serif;
+// Optimal font size:
+// https://ux.stackexchange.com/questions/211/is-there-an-optimal-font-size
+$font-size: 16px;
+$header-font-size: 24px;
+$max-mobile-width: 635px;
+$table-padding-sides: 10px;
+$table-padding-top: 10px;
+$toplevel-horizontal-padding-mobile: 5px;
+$toplevel-horizontal-padding-left: 20px;
+$toplevel-horizontal-padding-right: 15px;
+
+// Derived parameters.
+// #FFAAFF was a reasonable value. But modern websites don't do this anymore.
+$a-color-visited: $a-color;
+$h1-font-size: $header-font-size * 1.5;
+$navbar-color-discrete: $color-discreet;
+$navbar-non-brandname-color: $a-color;
+$footer-color: $color;
+
+@mixin body {
+  background-color: $background-color;
+  color: $color;
+  font-family: $font-family;
+  font-size: $font-size;
+  a {
+    color: $a-color;
+    text-decoration: none;
+    &amp;:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+@mixin h-common {
+  display: inline-block;
+  font-size: $header-font-size;
+  font-weight: bold;
+  width: 100%;
+  box-sizing: border-box;
+  h1, h2, h3, h4, h5, h6 {
+    &gt; a:first-child {
+      color: $h-color;
+      &amp;:visited {
+        color: $h-color;
+      }
+    }
+    display: inline;
+    margin: 0;
+    // To make `word-wrap: break-word;` work, otherwise it does not take effect.
+    overflow-wrap: break-word;
+  }
+}
+
+@mixin h1-only {
+  font-size: $h1-font-size;
+}
+
+@mixin pre {
+  background-color: $code-background-color;
+  margin: 8px 0;
+  padding: 8px 8px;
+  overflow-x: auto;
+}
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Argument leading and trailing newline removal - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg" />
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" />OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" /><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i></a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="argument-leading-and-trailing-newline-removal"><div class="notnav"><h1><a href="">Argument leading and trailing newline removal</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."> OurBigBook Project</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#ourbigbook-markup-syntax"> OurBigBook Markup syntax</a><a href=".#macro-argument"> Macro argument</a></div><div class="nav"><a class="nosplit" href=".#argument-leading-and-trailing-newline-removal"></a><span class="metrics"><span class="wcntr"> words: 121</span></span></div></nav></div><div class="p" id="_2637">If the very first or very last character of an argument is a newline, then that character is ignored if it would be part of a regular plaintext node.</div><div class="p" id="_2638">For example:
+<div class="code" id="_2639"><div><pre><code>\C[[
+a
+
+b
+]]</code></pre></div></div>
+generates something like:
+<div class="code" id="_2640"><div><pre><code>&lt;pre&gt;&lt;code&gt;a
+
+b&lt;/code&gt;&lt;/pre&gt;</code></pre></div></div>
+instead of:
+<div class="code" id="_2641"><div><pre><code>&lt;pre&gt;&lt;code&gt;
+a
+
+b
+&lt;/code&gt;&lt;/pre&gt;</code></pre></div></div>
+This is extremely convenient to improve the readability of code blocks and similar constructs.</div><div class="p" id="_2642">The newline is however considered if it would be part of some <a href=".#insane-macro-shortcut">insane macro shortcut</a>. For example, we can start an <a href=".#list">insane list</a> inside a <a href=".#quotation">quotations</a> as in:
+<div class="code" id="_2643"><div><pre><code>\Q[
+* a
+* b
+]</code></pre></div></div><div class="p" id="_2644">which renders as:</div><blockquote id="_2645"><blockquote id="_2646"><div><ul id="_2647"><li id="_2648">a</li><li id="_2649">b
+</li></ul></div></blockquote></blockquote>
+where the insane list requires a leading newline <code>\n* </code> to work. That newline is not ignored, even though it comes immediately after the <code>\Q[</code> opening.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors</a></h2><div><ol><li><a href=".#macro-argument">Macro argument</a></li><li><a href=".#ourbigbook-markup-syntax">OurBigBook Markup syntax</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href=".">OurBigBook Project</a></li></ol></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms</a></h2><div><ul><li><a href=".#argument-leading-and-trailing-newline-removal">Argument leading newline removal</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/README.bigb">README.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

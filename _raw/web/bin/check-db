@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+const path = require('path')
+const models = require('../models')
+const sequelize = models.getSequelize(path.dirname(__dirname))
+const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
+(async () => {
+const error_messages = await ourbigbook_nodejs_webpack_safe.check_db(sequelize, process.argv.slice(2))
+if (error_messages.length) {
+  for (const error_message of error_messages) {
+    console.error(error_message)
+  }
+  process.exit(1)
+}
+})().finally(() => { return sequelize.close() });

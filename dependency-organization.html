@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Dependency organization - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg" />
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" />OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" /><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i></a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="dependency-organization"><div class="notnav"><h1><a href="">Dependency organization</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."> OurBigBook Project</a><a href=".#ourbigbook-web"> OurBigBook Web</a><a href=".#ourbigbook-web-development"> OurBigBook Web development</a><a href=".#ourbigbook-web-deployment"> OurBigBook Web deployment</a><a href=".#heroku-deployment"> Heroku deployment</a></div><div class="nav"><a class="nosplit" href=".#dependency-organization"></a><span class="metrics"><span class="wcntr"> words: 227</span></span></div></nav></div><div class="p" id="_4216">On the toplevel we have:<div><ul id="_4217"><li id="_4218"><code>.</code>: OurBigBook package</li><li id="_4219"><div class="p" id="_4220"><code>web/</code>: <a href=".#ourbigbook-web">OurBigBook Web</a> package that depends on the local OurBigBook package through relative path <code>..</code></div><div class="p" id="_4221">Every require outside of <code>web/</code> must be relative, except for executables such as <a href="_raw/ourbigbook">ourbigbook</a> or demos such as <a href="_raw/lib_hello.js">lib_hello.js</a>, or else the deployment will break.</div><div class="p" id="_4222">This is because we don't know of a super clean way of adding the toplevel <code>ourbigbook</code> package to the search path as <code>npm run link</code> does not work well on Heroku.</div><div class="p" id="_4223">A known workaround to allow <code>npm run build-assets</code> is done at: <a href="_raw/web/build.sh">web/build.sh</a>.</div></li></ul></div></div><div class="p" id="_4224">Currently, Heroku deployment does the following:<div><ul id="_4225"><li id="_4226">install both <code>dependencies</code> and <code>devDependencies</code></li><li id="_4227"><code>npm run build</code></li><li id="_4228"><div class="p" id="_4229">remove <code>devDependencies</code> from the final output to save space and speed some things up</div><div class="p" id="_4230">The <code>devDependencies</code> should therefore only contain things which are needed for the build, typically asset compressors like Webpack, but not components that are required at runtime.</div></li></ul></div></div><div class="p" id="_4231">This setup creates some conflict between what we want for OurBigBook command line users, and Heroku deployment.</div><div class="p" id="_4232">Notably, OurBigBook command line users will want SQLite, and Heroku never, and SQLite installation is quite slow.</div><div class="p" id="_4233">Since we were unable to find any way to make things more flexible on the <code>package.json</code> with some kind of optional depenency, for now we are just hacking out any dependencies that we don't want Heroku to install at all from <a href="_raw/package.json">package.json</a> and <a href="_raw/web/package.json">web/package.json</a> with <code>sed</code> rom <a href="_raw/heroku-prebuild">heroku-prebuild</a>.</div><div class="p" id="_4234">Further discussion at: <a href="https://github.com/ourbigbook/ourbigbook/issues/156">github.com/ourbigbook/ourbigbook/issues/156</a></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors</a></h2><div><ol><li><a href=".#heroku-deployment">Heroku deployment</a></li><li><a href=".#ourbigbook-web-deployment">OurBigBook Web deployment</a></li><li><a href=".#ourbigbook-web-development">OurBigBook Web development</a></li><li><a href=".#ourbigbook-web">OurBigBook Web</a></li><li><a href=".">OurBigBook Project</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/README.bigb">README.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

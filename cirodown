@@ -23,9 +23,13 @@ const Token = class {
   /**
    * @param {String} type
    * @param {String} value - Default: undefined
+   * @param {number} start_line
+   * @param {number} start_column
    */
-  constructor(type, value) {
+  constructor(type, start_line, start_column, value) {
     this.type = type;
+    this.start_line = start_line;
+    this.start_column = start_column;
     this.value = value;
   }
 }
@@ -83,157 +87,6 @@ const Macro = class {
   }
 }
 
-const char_is_alphanumeric = function(c) {
-  let code = c.codePointAt(0);
-  return (
-    // 0-9
-    (code > 47 && code < 58) ||
-    // A-Z
-    (code > 64 && code < 91) ||
-    // a-z
-    (code > 96 && code < 123)
-  )
-}
-
-// Valid macro name characters.
-const char_is_macro = function (c) {
-  return char_is_alphanumeric(c) || c == '_';
-};
-char_is_macro.chars = new Set(['-', '_']);
-
-/**
- * @param {String} input_string
- * @returns {Array[Token]}
- */
-const tokenize = function(input_string, extra_returns={}) {
-  // https://stackoverflow.com/questions/21397316/split-javascript-string-into-array-of-codepoints-taking-into-account-surrogat/42596897#42596897
-  let chars = Array.from(input_string);
-  let tokens = [
-    new Token(TokenType.MACRO_NAME, 'p'),
-    new Token(TokenType.ARGUMENT_START),
-  ];
-  let i = -1;
-  let line = 0;
-  let column = 0;
-  let cur_c;
-  // Holds a FIFO with the currenty ongoing arguments.
-  // We must maintain this to know which argument is literal or not.
-  let macro_argument_stack = [];
-  // We are just after a previous argument, or just after the macro name.
-  // Therefore the next char could be the start of a new argument.
-  let last_possible_new_argument_index;
-  let failed = false;
-
-  const report_error = function(message) {
-    console.error(`error at line ${line} column ${column}: ${message}`);
-    failed = true;
-  }
-
-  const assert_could_be_argument = function() {
-    if (i !== last_possible_new_argument_index) {
-      report_error('cannot start a macro argument here. It has to come after a macro name or another macro argument.');
-    }
-  }
-
-  // Advance the current character and set cur_c to the next one.
-  //
-  // Maintain the newline count up to date for debug messages.
-  //
-  // The current index must only be incremented through this function
-  // and never directly.
-  const consume = function() {
-    if (chars[i] == '\n') {
-      line += 1;
-      column = 0;
-    } else {
-      column += 1;
-    }
-    i += 1;
-    if (i >= chars.length) {
-      return false;
-    }
-    cur_c = chars[i];
-    return true;
-  }
-
-  const consume_optional_newline = function() {
-    if (cur_c == '\n') {
-      consume();
-    }
-  }
-
-  while (consume()) {
-    if (cur_c === '\\') {
-      next_c = chars[i + 1];
-      if (tokenize.escapable_chars.has(next_c)) {
-        tokenize.tokenize_plaintext(tokens, next_c);
-        consume();
-      } else {
-        let macro_name = '';
-        consume();
-        while (char_is_macro(cur_c)) {
-          macro_name += cur_c;
-          consume();
-        }
-        consume_optional_newline();
-        last_possible_new_argument_index = i;
-        tokens.push(new Token(TokenType.MACRO_NAME, macro_name));
-        macro_argument_stack.push([macros[macro_name], 0]);
-      }
-    } else if (cur_c === '[') {
-      assert_could_be_argument();
-      consume_optional_newline();
-    } else if (cur_c === ']') {
-      consume_optional_newline();
-      last_possible_new_argument_index = i;
-    } else if (cur_c === '{') {
-      consume_optional_newline();
-      tokens.push(new Token(TokenType.ARGUMENT_START, ''));
-    } else if (cur_c === '}') {
-      consume_optional_newline();
-      last_possible_new_argument_index = i;
-      tokens.push(new Token(TokenType.ARGUMENT_END));
-    } else if (cur_c === '\n') {
-      if (((i + 1) === chars.length)) {
-        // Do nothing.
-      } else if (chars[i + 1] === '\n') {
-        // Double newline.
-        tokens.push(new Token(TokenType.ARGUMENT_END));
-        tokens.push(new Token(TokenType.MACRO_NAME, 'p'));
-        tokens.push(new Token(TokenType.ARGUMENT_START));
-        consume();
-        done = true;
-      } else {
-        tokenize.tokenize_plaintext(tokens, cur_c);
-      }
-    } else {
-      tokenize.tokenize_plaintext(tokens, cur_c);
-    }
-  }
-  tokens.push(new Token(TokenType.ARGUMENT_END));
-  extra_returns.failed = true;
-  return tokens;
-}
-
-tokenize.escapable_chars = new Set(['\\', '{', '}', '[', ']']);
-
-tokenize.tokenize_plaintext = function(tokens, c) {
-  let last_token = tokens[tokens.length - 1];
-  if (last_token.type === TokenType.PLAINTEXT) {
-    last_token.value += c;
-  } else {
-    tokens.push(new Token(TokenType.PLAINTEXT, c));
-  }
-}
-
-const parse = function(tokens) {
-  return {};
-}
-
-const ast_to_output = function(ast) {
-  return 'asdf';
-}
-
 let macros = {
   p: new Macro(
     [
@@ -264,6 +117,217 @@ let macros = {
       return `<a href="${args.href.convert()}">${args.content.convert()}</p>`
     }
   ),
+  toplevel: new Macro(
+    [
+      new Argument({
+        name: 'title',
+        required: false,
+        literal: false,
+      }),
+      new Argument({
+        name: 'content',
+        required: true,
+        literal: false,
+      }),
+    ],
+    function(args) {
+      return `<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>${args.title.convert()}</title>
+</head>
+<body>
+${args.content.convert()}
+</body>
+</html>
+`
+    }
+  )
+}
+
+const char_is_alphanumeric = function(c) {
+  let code = c.codePointAt(0);
+  return (
+    // 0-9
+    (code > 47 && code < 58) ||
+    // A-Z
+    (code > 64 && code < 91) ||
+    // a-z
+    (code > 96 && code < 123)
+  )
+}
+
+// Valid macro name characters.
+const char_is_macro = function (c) {
+  return char_is_alphanumeric(c) || c === '_';
+};
+char_is_macro.chars = new Set(['-', '_']);
+
+/**
+ * @param {String} input_string
+ * @returns {Array[Token]}
+ */
+const tokenize = function(input_string, extra_returns={}) {
+  // https://stackoverflow.com/questions/21397316/split-javascript-string-into-array-of-codepoints-taking-into-account-surrogat/42596897#42596897
+  let chars = Array.from(input_string);
+  let tokens = [];
+  let i = -1;
+  let line = 1;
+  let column = 0;
+  let cur_c;
+  // Holds a FIFO with the currenty ongoing arguments.
+  // We must maintain this to know which argument is literal or not.
+  let macro_argument_stack = [];
+  // We are just after a previous argument, or just after the macro name.
+  // Therefore the next char could be the start of a new argument.
+  let last_possible_new_argument_index;
+  let failed = false;
+
+  const report_error = function(message) {
+    console.error(`error at line ${line} column ${column}: ${message}`);
+    failed = true;
+  }
+
+  const assert_could_be_argument = function() {
+    if (i !== last_possible_new_argument_index) {
+      report_error('cannot start a macro argument here. It has to come after a macro name or another macro argument.');
+    }
+  }
+
+  // Advance the current character and set cur_c to the next one.
+  //
+  // Maintain the newline count up to date for debug messages.
+  //
+  // The current index must only be incremented through this function
+  // and never directly.
+  const consume = function() {
+    if (chars[i] === '\n') {
+      line += 1;
+      column = 1;
+    } else {
+      column += 1;
+    }
+    i += 1;
+    if (i >= chars.length) {
+      return false;
+    }
+    cur_c = chars[i];
+    return true;
+  }
+
+  const consume_optional_newline = function() {
+    if (cur_c === '\n') {
+      consume();
+    }
+  }
+
+  const push_token = function(token, value) {
+    tokens.push(new Token(token, line, column, value));
+  }
+
+  const tokenize_plaintext = function(tokens, c) {
+    let last_token = tokens[tokens.length - 1];
+    if (last_token.type === TokenType.PLAINTEXT) {
+      last_token.value += c;
+    } else {
+      push_token(TokenType.PLAINTEXT, c);
+    }
+  }
+
+  push_token(TokenType.MACRO_NAME, 'toplevel');
+  push_token(TokenType.ARGUMENT_START);
+  push_token(TokenType.MACRO_NAME, 'p');
+  push_token(TokenType.ARGUMENT_START);
+  while (consume()) {
+    if (cur_c === '\\') {
+      next_c = chars[i + 1];
+      if (tokenize.escapable_chars.has(next_c)) {
+        tokenize_plaintext(tokens, next_c);
+        consume();
+      } else {
+        let macro_name = '';
+        consume();
+        while (char_is_macro(cur_c)) {
+          macro_name += cur_c;
+          consume();
+        }
+        consume_optional_newline();
+        last_possible_new_argument_index = i;
+        push_token(TokenType.MACRO_NAME, macro_name);
+        macro_argument_stack.push([macros[macro_name], 0]);
+      }
+    } else if (cur_c === '[') {
+      assert_could_be_argument();
+      consume_optional_newline();
+    } else if (cur_c === ']') {
+      consume_optional_newline();
+      last_possible_new_argument_index = i;
+    } else if (cur_c === '{') {
+      consume_optional_newline();
+      push_token(TokenType.ARGUMENT_START, '');
+    } else if (cur_c === '}') {
+      consume_optional_newline();
+      last_possible_new_argument_index = i;
+      push_token(TokenType.ARGUMENT_END);
+    } else if (cur_c === '\n') {
+      if (((i + 1) === chars.length)) {
+        // Do nothing.
+      } else if (chars[i + 1] === '\n') {
+        // Double newline.
+        push_token(TokenType.ARGUMENT_END);
+        push_token(TokenType.MACRO_NAME, 'p');
+        push_token(TokenType.ARGUMENT_START);
+        consume();
+        done = true;
+      } else {
+        tokenize_plaintext(tokens, cur_c);
+      }
+    } else {
+      tokenize_plaintext(tokens, cur_c);
+    }
+  }
+  push_token(TokenType.ARGUMENT_END);
+  push_token(TokenType.ARGUMENT_END);
+  extra_returns.failed = true;
+  return tokens;
+}
+
+tokenize.escapable_chars = new Set(['\\', '{', '}', '[', ']']);
+
+const parse = function(tokens) {
+  let state = {
+    i: 0,
+  }
+  return parse_sub(tokens, state)
+}
+
+const parse_sub = function(tokens, state) {
+  let children = [];
+  while (state.i < tokens.length) {
+    let token = tokens[state.i];
+    let type = token.type;
+    if (type === TokenType.MACRO_NAME) {
+      let children = [];
+      state.i += 1;
+      while (tokens[state.i].type === TokenType.ARGUMENT_START) {
+        children.puch(parse_sub(tokens, state));
+        state.i += 1;
+      }
+      macro_node = {
+        type: token.value,
+        children: children
+      }
+    } else if (type === TokenType.PLAINTEXT) {
+
+    }
+    state.i += 1;
+  }
+  return ast;
+}
+
+const ast_to_output = function(ast) {
+  return 'asdf';
 }
 
 /**

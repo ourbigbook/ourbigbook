@@ -4607,17 +4607,17 @@ assert_executable(
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='#h2']`,
         // https://github.com/cirosantilli/cirodown/issues/155
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='#h2-2']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='#h2-2']`,
       ],
       'h2.html': [
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
         // https://github.com/cirosantilli/cirodown/issues/155
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='index.html#h2-2']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='index.html#h2-3']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='index.html#h2-4']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='index.html#scope/scope-2']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='notindex.html#notindex-h2-2']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-2']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-3']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-4']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#scope/scope-2']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#notindex-h2-2']`,
       ],
       'h2-2.html': [
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
@@ -4630,7 +4630,7 @@ assert_executable(
       ],
       'scope/scope-2.html': [
         // https://github.com/cirosantilli/cirodown/issues/173
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='../index.html#scope/scope-3']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='../index.html#scope/scope-3']`,
       ],
       'notindex.html': [
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,

@@ -12,7 +12,15 @@ import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js';
 import { OurbigbookEditor } from 'ourbigbook/editor.js';
 import { convertOptions, docsUrl, forbidMultiheaderMessage, sureLeaveMessage, isProduction, read_include_web } from 'front/config';
 
-import { ArticleBy, capitalize, disableButton, enableButton, CancelIcon, HelpIcon, slugFromArray } from 'front'
+import {
+  ArticleBy,
+  capitalize,
+  disableButton,
+  enableButton,
+  CancelIcon,
+  HelpIcon,
+  slugFromArray
+} from 'front'
 import ErrorList from 'front/ErrorList'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
@@ -267,9 +275,9 @@ export default function EditorPageHoc({
         saveButtonElem.current
       ) {
         if (hasConvertError || titleErrors.length || parentErrors.length) {
-          disableButton(saveButtonElem.current, 'Cannot submit due to errors')
+          disableButton(saveButtonElem.current)
         } else {
-          enableButton(saveButtonElem.current, true)
+          enableButton(saveButtonElem.current)
         }
       }
     }, [

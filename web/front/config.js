@@ -67,6 +67,7 @@ module.exports = {
   appNameShort,
   appName: `${appNameShort}.com`,
   docsUrl,
+  docsAdminUrl: `${docsUrl}/ourbigbook-web-admin`,
   donateUrl: `${docsUrl}#donate`,
   aboutUrl: `${docsUrl}#ourbigbook-web-user-manual`,
   buttonActiveClass: 'active',

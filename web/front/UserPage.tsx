@@ -143,7 +143,7 @@ export default function UserPage({
             </>
           }
         </div>
-        {user.admin && <h2><i className="ion-star" /> <a href={`${config.docsUrl}/ourbigbook-web-admin`}>{config.appName} admin</a> <i className="ion-star" /> </h2>}
+        {user.admin && <h2><i className="ion-star" /> <a href={`${config.docsAdminUrl}`}>{config.appName} admin</a> <i className="ion-star" /> </h2>}
         <CustomImage
           src={user.effectiveImage}
           alt="User's profile image"
@@ -202,13 +202,13 @@ export default function UserPage({
             href={routes.userIssues(user.username, { sort: 'created' })}
             className={`tab-item${itemType === 'discussion' && order === 'createdAt' ? ' active' : ''}`}
           >
-            <IssueIcon /> Latest discussions
+            <IssueIcon /> Latest<span className="mobile-hide"> Discussions</span>
           </CustomLink>
           <CustomLink
             href={routes.userIssues(user.username, { sort: 'score' })}
             className={`tab-item${itemType === 'discussion' && order === 'score' ? ' active' : ''}`}
           >
-            <IssueIcon /> Top discussions
+            <IssueIcon /> Top<span className="mobile-hide"> Discussions</span>
           </CustomLink>
         </div>
       </div>

@@ -8,6 +8,14 @@
 
 All dynamic.
 
+=== `(beta)` on navbar gets pushed down half way at a specific page width just above mobile shift
+{tag=Web}
+{tag=CSS}
+
+Just keep making viewport smaller an smaller, until it happen.
+
+Removing `white-space: pre-wrap` solves it. But then the space between `(beta)` and `OurBigBook.com` gets removed.
+
 === Reach the same performance as static website with dynamic tree
 {tag=Web}
 
@@ -481,6 +489,8 @@ Can be fixed later at: <word count on web>.
 Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
 
 == Tag
+
+=== CSS
 
 === Web
 

@@ -6408,6 +6408,7 @@ heroku psql -a ourbigbook -c "UPDATE \"User\" SET admin = true WHERE username='c
 ``
 
 = OurBigBook Web database migration setup
+{c}
 {parent=OurBigBook Web deployment}
 
 Any pending migrations are done automatically during deployment as part of `npm run build`, more precisely they are run from \a[web/bin/sync-db.js].
@@ -6416,6 +6417,19 @@ We also have a custom setup where, if the database is not initialized, we first:
 * just creates the database from the latest model descriptions
 * manually fill in the `SequelizeMeta` migration tracking table with all available migrations to tell Sequelize that all migrations have been done up to this point
 This is something that should be merged into Sequelize itself, or at least asked on Stack Overflow, but lazy now.
+
+= OurBigBook Web nuke DB instead of migrating
+{c}
+{parent=OurBigBook Web database migration setup}
+
+When quickly developing before we had any users, a reasonable way is to nuke the database everytime instead of spending time writing migrations. To do this, you can without creating a migration:
+``
+npm run deploy-prod
+``
+This breaks the website, because the DB is out of sync. So then you go and manually fix it up:
+``
+heroku run -a ourbigbook web/bin/generate-demo-data.js --force-production
+``
 
 = OurBigBook Web email sending
 {parent=OurBigBook Web deployment}

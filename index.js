@@ -271,6 +271,12 @@ class AstNode {
     if (context.validate_ast) {
       validate_ast(this, context);
     }
+    if (this.node_type === AstType.PARAGRAPH) {
+      // Possible for AstType === PARAGRAPH which can happen for
+      // insane paragraph inside header or ID during post processing.
+      // Not the nicest solution, but prevents the crash, so so be it.
+      return ' '
+    }
     const macro = context.macros[this.macro_name];
     let out;
     if (this.validation_error === undefined) {

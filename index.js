@@ -423,6 +423,10 @@ class AstNode {
   /** Manual implementation. There must be a better way, but I can't find it... */
   static fromJSON(json_string) {
     let json = JSON.parse(json_string);
+    for (const argname in json.args) {
+      const arg = json.args[argname]
+      json.args[argname] = new AstArgument(arg.nodes, arg.source_location)
+    }
     let toplevel_ast = new AstNode(
       AstType[json.node_type],
       json.macro_name,
@@ -446,6 +450,10 @@ class AstNode {
         let arg = cur_ast.args[arg_name];
         let new_arg = [];
         for (let ast of arg) {
+          for (const argname in ast.args) {
+            const arg = ast.args[argname]
+            ast.args[argname] = new AstArgument(arg.nodes, arg.source_location)
+          }
           let new_ast = new AstNode(
             AstType[ast.node_type],
             ast.macro_name,
@@ -591,47 +599,89 @@ class AstNode {
 }
 exports.AstNode = AstNode;
 
-class AstArgument extends Array {
+class AstArgument {
   /** @param {List[AstNode]} nodes
    *  @ param {SourceLocation} source_location
    */
   constructor(nodes, source_location) {
     if (nodes === undefined) {
-      nodes = []
+      this.nodes = []
+    } else {
+      this.nodes = nodes
     }
-    super(...nodes)
     this.source_location = source_location;
     // AstNode
     this.parent_node = undefined;
     // String
     this.argument_name = undefined;
     let i = 0;
-    // TODO understand why there are empty elements in the array.
-    // for of leads to undefineds due to that.
-    nodes.forEach(node => {
+    for (const node of this.nodes) {
       node.parent_argument = this;
       node.parent_argument_index = i;
       i++;
-    });
+    };
   }
 
-  // https://stackoverflow.com/questions/3261587/subclassing-javascript-arrays-typeerror-array-prototype-tostring-is-not-generi/61269027#61269027
-  static get [Symbol.species]() {
-    return Object.assign(function (...items) {
-      return new AstArgument(new Array(...items))
-    }, AstArgument);
+  concat(...other) {
+    return this.nodes.concat(...other)
+  }
+
+  get(i) {
+    return this.nodes[i]
+  }
+
+  length() {
+    return this.nodes.length
+  }
+
+  map(fn) {
+    return this.nodes.map(fn)
+  }
+
+  set(i, val) {
+    this.nodes[i] = val
+  }
+
+  slice(start, end) {
+    return new AstArgument(this.nodes.slice(start, end), this.source_location)
+  }
+
+  splice(start, deleteCount, ...items) {
+    return this.nodes.splice(start, deleteCount, ...items)
+  }
+
+  reverse() {
+    this.nodes.reverse()
+    return this
   }
 
   push(...new_nodes) {
-    const old_length = this.length;
-    const ret = super.push(...new_nodes);
+    const old_length = this.nodes.length;
+    const ret = this.nodes.push(...new_nodes);
     let i = 0;
-    new_nodes.forEach(node => {
+    for (const node of new_nodes) {
       node.parent_argument = this;
       node.parent_argument_index = old_length + i;
       i++;
-    });
+    }
     return ret;
+  }
+
+  reset() {
+    this.nodes = []
+  }
+
+  *[Symbol.iterator] () {
+    for (const v of this.nodes) {
+      yield(v)
+    }
+  }
+
+  toJSON() {
+    return {
+      nodes: this.nodes,
+      source_location: this.source_location,
+    }
   }
 }
 
@@ -4335,12 +4385,12 @@ async function parse(tokens, options, context, extra_returns={}) {
       // Recurse.
       for (const arg_name in ast.args) {
         const arg = ast.args[arg_name];
-        for (let i = arg.length - 1; i >= 0; i--) {
-          todo_visit.push([arg, arg[i]]);
+        for (let i = arg.length() - 1; i >= 0; i--) {
+          todo_visit.push([arg, arg.get(i)]);
         }
         // We make the new argument be empty so that children can
         // decide if they want to push themselves or not.
-        arg.length = 0
+        arg.reset()
       }
     }
   }
@@ -4558,10 +4608,10 @@ async function parse(tokens, options, context, extra_returns={}) {
             // Possible for error nodes.
             macro_arg !== undefined &&
             macro_arg.elide_link_only &&
-            arg.length === 1 &&
-            arg[0].macro_name === Macro.LINK_MACRO_NAME
+            arg.length() === 1 &&
+            arg.get(0).macro_name === Macro.LINK_MACRO_NAME
           ) {
-            const href_arg = arg[0].args.href;
+            const href_arg = arg.get(0).args.href;
             href_arg.parent_node = ast;
             arg = href_arg;
           }
@@ -4572,8 +4622,8 @@ async function parse(tokens, options, context, extra_returns={}) {
           // a trailing paragraph if followed by another.
           {
             const new_arg = new AstArgument([], arg.source_location);
-            for (let i = 0; i < arg.length; i++) {
-              let child_node = arg[i];
+            for (let i = 0; i < arg.length(); i++) {
+              let child_node = arg.get(i);
               let new_child_nodes = [];
               let new_child_nodes_set = false;
               if (child_node.node_type === AstType.MACRO) {
@@ -4589,8 +4639,8 @@ async function parse(tokens, options, context, extra_returns={}) {
                   ) {
                     const start_auto_child_node = child_node;
                     const new_arg_auto_parent = new AstArgument([], child_node.source_location);
-                    while (i < arg.length) {
-                      const arg_i = arg[i];
+                    while (i < arg.length()) {
+                      const arg_i = arg.get(i);
                       if (arg_i.node_type === AstType.MACRO) {
                         if (
                           arg_i.macro_name == Macro.TD_MACRO_NAME ||
@@ -4601,8 +4651,8 @@ async function parse(tokens, options, context, extra_returns={}) {
                           break;
                         }
                       } else if (arg_i.node_type === AstType.PARAGRAPH) {
-                        if (i + 1 < arg.length) {
-                          const arg_i_next_macro_name = arg[i + 1].macro_name;
+                        if (i + 1 < arg.length()) {
+                          const arg_i_next_macro_name = arg.get(i + 1).macro_name;
                           if (
                             arg_i_next_macro_name == Macro.TD_MACRO_NAME ||
                             arg_i_next_macro_name == Macro.TH_MACRO_NAME
@@ -4650,8 +4700,8 @@ async function parse(tokens, options, context, extra_returns={}) {
           // Child loop that adds ul and table implicit parents.
           {
             const new_arg = new AstArgument([], arg.source_location);
-            for (let i = 0; i < arg.length; i++) {
-              let child_node = arg[i];
+            for (let i = 0; i < arg.length(); i++) {
+              let child_node = arg.get(i);
               let new_child_nodes = [];
               let new_child_nodes_set = false;
               if (
@@ -4673,8 +4723,8 @@ async function parse(tokens, options, context, extra_returns={}) {
                   ) {
                     const start_auto_child_node = child_node;
                     const new_arg_auto_parent = new AstArgument([], child_node.source_location);
-                    while (i < arg.length) {
-                      const arg_i = arg[i];
+                    while (i < arg.length()) {
+                      const arg_i = arg.get(i);
                       if (arg_i.node_type === AstType.MACRO) {
                         if (state.macros[arg_i.macro_name].auto_parent === auto_parent_name) {
                           new_arg_auto_parent.push(arg_i);
@@ -4719,8 +4769,8 @@ async function parse(tokens, options, context, extra_returns={}) {
           // Child loop that adds paragraphs.
           {
             let paragraph_indexes = [];
-            for (let i = 0; i < arg.length; i++) {
-              const child_node = arg[i];
+            for (let i = 0; i < arg.length(); i++) {
+              const child_node = arg.get(i);
               if (child_node.node_type === AstType.PARAGRAPH) {
                 paragraph_indexes.push(i);
               }
@@ -4736,8 +4786,8 @@ async function parse(tokens, options, context, extra_returns={}) {
                 parse_add_paragraph(state, ast, new_arg, arg, paragraph_start, paragraph_index, options);
                 paragraph_start = paragraph_index + 1;
               }
-              if (paragraph_start < arg.length) {
-                parse_add_paragraph(state, ast, new_arg, arg, paragraph_start, arg.length, options);
+              if (paragraph_start < arg.length()) {
+                parse_add_paragraph(state, ast, new_arg, arg, paragraph_start, arg.length(), options);
               }
               arg = new_arg;
             }
@@ -4748,8 +4798,8 @@ async function parse(tokens, options, context, extra_returns={}) {
           {
             const new_arg = new AstArgument([], arg.source_location);
             const macro_arg_count_words = macro_arg !== undefined && macro_arg.count_words
-            for (let i = arg.length - 1; i >= 0; i--) {
-              const child_ast = arg[i]
+            for (let i = arg.length() - 1; i >= 0; i--) {
+              const child_ast = arg.get(i)
 
               // Propagate count_words.
               if (!child_ast.count_words || !macro_arg_count_words) {
@@ -4810,8 +4860,8 @@ async function parse(tokens, options, context, extra_returns={}) {
         // so that children can decide if they want to push themselves or not.
         for (const arg_name in ast.args) {
           const arg = ast.args[arg_name];
-          for (let i = arg.length - 1; i >= 0; i--) {
-            const ast = arg[i];
+          for (let i = arg.length() - 1; i >= 0; i--) {
+            const ast = arg.get(i);
             ast.in_header = children_in_header;
             todo_visit.push(ast);
           }
@@ -4849,7 +4899,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         header_ast.set_source_location(target_id_ast.source_location)
         header_ast.header_graph_node.update_ancestor_counts(target_id_ast.header_graph_node_word_count)
       }
-      header_ast.args[Macro.TITLE_ARGUMENT_NAME][0].text = header_node_title
+      header_ast.args[Macro.TITLE_ARGUMENT_NAME].get(0).text = header_node_title
       // This is a bit nasty and duplicates the header processing code,
       // but it is a bit hard to factor them out since this is a magic include header,
       // and all includes and headers must be parsed concurrently since includes get
@@ -4932,7 +4982,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       }
     }
 
-    const first_toplevel_child = ast_toplevel.args.content[0];
+    const first_toplevel_child = ast_toplevel.args.content.get(0);
     if (first_toplevel_child !== undefined) {
       first_toplevel_child.first_toplevel_child = true;
     }
@@ -4957,9 +5007,9 @@ function parse_add_paragraph(
   parse_log_debug(state, 'paragraph_end: ' + paragraph_end);
   parse_log_debug(state);
   if (paragraph_start < paragraph_end) {
-    const macro = state.macros[arg[paragraph_start].macro_name];
+    const macro = state.macros[arg.get(paragraph_start).macro_name];
     const slice = arg.slice(paragraph_start, paragraph_end);
-    if (macro.options.phrasing || slice.length > 1) {
+    if (macro.options.phrasing || slice.length() > 1) {
       // If the first element after the double newline is phrasing content,
       // create a paragraph and put all elements until the next paragraph inside
       // that paragraph.
@@ -4970,7 +5020,7 @@ function parse_add_paragraph(
           {
             'content': slice
           },
-          arg[paragraph_start].source_location,
+          arg.get(paragraph_start).source_location,
           {
             parent_node: ast,
           }
@@ -5401,7 +5451,7 @@ function validate_ast(ast, context) {
       const arg = ast.args[argname];
       if (macro_arg.boolean) {
         let arg_string;
-        if (arg.length > 0) {
+        if (arg.length() > 0) {
           arg_string = render_arg_noescape(arg, context);
         } else {
           arg_string = '1';
@@ -5829,7 +5879,7 @@ function x_text(ast, context, options={}) {
     if (options.from_x) {
 
       // {c}
-      let first_ast = title_arg[0];
+      let first_ast = title_arg.get(0);
       if (
         ast.macro_name === Macro.HEADER_MACRO_NAME &&
         !ast.validation_output.c.boolean &&
@@ -5837,28 +5887,30 @@ function x_text(ast, context, options={}) {
         first_ast.node_type === AstType.PLAINTEXT
       ) {
         // https://stackoverflow.com/questions/41474986/how-to-clone-a-javascript-es6-class-instance
-        title_arg = new AstArgument(title_arg, title_arg.source_location);
-        title_arg[0] = new PlaintextAstNode(first_ast.text, first_ast.source_location);
-        let txt = title_arg[0].text;
+        title_arg = lodash.clone(title_arg)
+        title_arg.nodes = lodash.clone(title_arg.nodes)
+        title_arg.set(0, new PlaintextAstNode(first_ast.text, first_ast.source_location))
+        let txt = title_arg.get(0).text;
         let first_c = txt[0];
         if (options.capitalize) {
           first_c = first_c.toUpperCase();
         } else {
           first_c = first_c.toLowerCase();
         }
-        title_arg[0].text = first_c + txt.substring(1);
+        title_arg.get(0).text = first_c + txt.substring(1);
       }
 
       // {p}
-      let last_ast = title_arg[title_arg.length - 1];
+      let last_ast = title_arg.get(title_arg.length() - 1);
       if (
         options.pluralize !== undefined &&
         !style_full &&
         first_ast.node_type === AstType.PLAINTEXT
       ) {
-        title_arg = new AstArgument(title_arg, title_arg.source_location);
-        title_arg[title_arg.length - 1] = new PlaintextAstNode(last_ast.text, last_ast.source_location);
-        title_arg[title_arg.length - 1].text = pluralize(last_ast.text, options.pluralize ? 2 : 1);
+        title_arg = lodash.clone(title_arg)
+        title_arg.nodes = lodash.clone(title_arg.nodes)
+        title_arg.set(title_arg.length() - 1, new PlaintextAstNode(last_ast.text, last_ast.source_location));
+        title_arg.get(title_arg.length() - 1).text = pluralize(last_ast.text, options.pluralize ? 2 : 1);
       }
     }
     ret += render_arg(title_arg, context);
@@ -7303,35 +7355,35 @@ const DEFAULT_MACRO_LIST = [
       let content_ast = ast.args.content;
       let content = render_arg(content_ast, context);
       let res = '';
-      if (ast.args.content[0].macro_name === Macro.TH_MACRO_NAME) {
+      if (ast.args.content.get(0).macro_name === Macro.TH_MACRO_NAME) {
         if (
           ast.parent_argument_index === 0 ||
-          ast.parent_argument[ast.parent_argument_index - 1].args.content[0].macro_name !== Macro.TH_MACRO_NAME
+          ast.parent_argument.get(ast.parent_argument_index - 1).args.content.get(0).macro_name !== Macro.TH_MACRO_NAME
         ) {
           res += `<thead>\n`;
         }
       }
-      if (ast.args.content[0].macro_name === Macro.TD_MACRO_NAME) {
+      if (ast.args.content.get(0).macro_name === Macro.TD_MACRO_NAME) {
         if (
           ast.parent_argument_index === 0 ||
-          ast.parent_argument[ast.parent_argument_index - 1].args.content[0].macro_name !== Macro.TD_MACRO_NAME
+          ast.parent_argument.get(ast.parent_argument_index - 1).args.content.get(0).macro_name !== Macro.TD_MACRO_NAME
         ) {
           res += `<tbody>\n`;
         }
       }
       res += `<tr${html_render_attrs_id(ast, context)}>\n${content}</tr>\n`;
-      if (ast.args.content[0].macro_name === Macro.TH_MACRO_NAME) {
+      if (ast.args.content.get(0).macro_name === Macro.TH_MACRO_NAME) {
         if (
-          ast.parent_argument_index === ast.parent_argument.length - 1 ||
-          ast.parent_argument[ast.parent_argument_index + 1].args.content[0].macro_name !== Macro.TH_MACRO_NAME
+          ast.parent_argument_index === ast.parent_argument.length() - 1 ||
+          ast.parent_argument.get(ast.parent_argument_index + 1).args.content.get(0).macro_name !== Macro.TH_MACRO_NAME
         ) {
           res += `</thead>\n`;
         }
       }
-      if (ast.args.content[0].macro_name === Macro.TD_MACRO_NAME) {
+      if (ast.args.content.get(0).macro_name === Macro.TD_MACRO_NAME) {
         if (
-          ast.parent_argument_index === ast.parent_argument.length - 1 ||
-          ast.parent_argument[ast.parent_argument_index + 1].args.content[0].macro_name !== Macro.TD_MACRO_NAME
+          ast.parent_argument_index === ast.parent_argument.length() - 1 ||
+          ast.parent_argument.get(ast.parent_argument_index + 1).args.content.get(0).macro_name !== Macro.TD_MACRO_NAME
         ) {
           res += `</tbody>\n`;
         }

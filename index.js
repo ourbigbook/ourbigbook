@@ -3404,6 +3404,15 @@ function error_message_in_output(msg, context) {
   return `[OURBIGBOOK_ERROR: ${escaped_msg}]`
 }
 
+const ESCAPE_INDEX_RAW_REGEXP = new RegExp('_*index.html')
+function escapeIndexRaw(output_path) {
+  if (ESCAPE_INDEX_RAW_REGEXP.test(output_path)) {
+    output_path = '_' + output_path
+  }
+  return output_path
+}
+exports.escapeIndexRaw = escapeIndexRaw
+
 // https://stackoverflow.com/questions/9461621/format-a-number-as-2-5k-if-a-thousand-or-more-otherwise-900
 const FORMAT_NUMBER_APPROX_MAP = [
   { value: 1, symbol: "" },
@@ -3541,8 +3550,15 @@ function check_and_update_local_link({
         render_error(context, error, source_location);
       } else {
         const { type } = context.options.read_file(check_path, context)
-        if (type === 'directory' && context.options.htmlXExtension) {
-          href = path.join(href, 'index.html')
+        if (type === 'directory') {
+          if (context.options.htmlXExtension) {
+            href = path.join(href, 'index.html')
+          }
+        } else {
+          if (media_provider_type === 'local') {
+            let [dir, bname] = path_split(href, URL_SEP)
+            href = path.join(dir, escapeIndexRaw(bname))
+          }
         }
       }
     }

@@ -44,8 +44,14 @@ padding-right: 15px;
   font-weight: bold;
 }
 
+// Produces the margin on all toplevel elements.
+// The on-hover links will show up in that margin.
 > * {
   padding-left: 20px;
+  // Makes the absolute on hover link be absolute relative to this element.
+  // This makes it show up inside the padding-left of this element.
+  // https://stackoverflow.com/questions/10487292/position-absolute-but-relative-to-parent
+  position: relative;
 }
 
 // Hide by default, show if first child of hovered element.

@@ -48,7 +48,6 @@ package-lock.json
 *.bak
 
 # next.js
-/.next/
 /out/
 /.now/
 .now

@@ -5,34 +5,16 @@ module.exports = (sequelize) => {
     'Comment',
     {
       body: DataTypes.STRING
-    },
-    {
-      underscored: true,
-      tableName: 'comments'
     }
   )
 
-  Comment.associate = function() {
-    Comment.belongsTo(sequelize.models.User, {
-      as: 'Author',
-      foreignKey: {
-        allowNull: false
-      },
-    });
-    Comment.belongsTo(sequelize.models.Article, {
-      foreignKey: {
-        allowNull: false
-      },
-    });
-  }
-
-  Comment.prototype.toJSONFor = function(author, user) {
+  Comment.prototype.toJSONFor = async function(user) {
     return {
       id: this.id,
       body: this.body,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
-      author: author.toProfileJSONFor(author, user)
+      createdAt: this.createdAt.toISOString(),
+      updatedAt: this.updatedAt.toISOString(),
+      author: (await this.author.toProfileJSONFor(user))
     }
   }
   return Comment

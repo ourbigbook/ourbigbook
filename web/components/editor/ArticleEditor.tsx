@@ -1,12 +1,11 @@
 import Router, { useRouter } from "next/router";
 import React from "react";
-import useSWR from "swr";
 
-import ListErrors from "../../components/common/ListErrors";
-import TagInput from "../../components/editor/TagInput";
-import ArticleAPI from "../../lib/api/article";
-import { SERVER_BASE_URL } from "../../lib/utils/constant";
-import storage from "../../lib/utils/storage";
+import ListErrors from "components/common/ListErrors";
+import TagInput from "components/editor/TagInput";
+import ArticleAPI from "lib/api/article";
+import { SERVER_BASE_URL } from "lib/utils/constant";
+import getLoggedInUser from "lib/utils/getLoggedInUser";
 
 function editorReducer(state, action) {
   switch (action.type) {
@@ -37,15 +36,24 @@ function editorReducer(state, action) {
 
 export default function makeArticleEditor(isnew: boolean = false) {
   return ({ article: initialArticle }) => {
-    const initialState = {
-      title: initialArticle.title,
-      body: initialArticle.body,
-      tagList: initialArticle.tagList,
-    };
+    let initialState
+    if (initialArticle) {
+      initialState = {
+        title: initialArticle.title,
+        body: initialArticle.body,
+        tagList: initialArticle.tagList,
+      }
+    } else {
+      initialState = {
+        title: "",
+        body: "",
+        tagList: [],
+      }
+    }
     const [isLoading, setLoading] = React.useState(false);
     const [errors, setErrors] = React.useState([]);
     const [posting, dispatch] = React.useReducer(editorReducer, initialState);
-    const { data: currentUser } = useSWR("user", storage);
+    const loggedInUser = getLoggedInUser()
     const router = useRouter();
     const {
       query: { pid },
@@ -63,13 +71,13 @@ export default function makeArticleEditor(isnew: boolean = false) {
       if (isnew) {
         ({ data, status } = await ArticleAPI.create(
           posting,
-          currentUser?.token
+          loggedInUser?.token
         ));
       } else {
         ({ data, status } = await ArticleAPI.update(
           posting,
           router.query.pid,
-          currentUser?.token
+          loggedInUser?.token
         ));
       }
       setLoading(false);
@@ -99,16 +107,11 @@ export default function makeArticleEditor(isnew: boolean = false) {
                     <textarea
                       className="form-control"
                       rows={8}
-                      placeholder="Write your article (in Cirodown)"
+                      placeholder="Write your article in Cirodown"
                       value={posting.body}
                       onChange={handleBody}
                     />
                   </fieldset>
-                  <TagInput
-                    tagList={posting.tagList}
-                    addTag={addTag}
-                    removeTag={removeTag}
-                  />
                   <button
                     className="btn btn-lg pull-xs-right btn-primary"
                     type="button"

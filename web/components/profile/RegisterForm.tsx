@@ -2,8 +2,8 @@ import Router from "next/router";
 import React from "react";
 import { mutate } from "swr";
 
-import ListErrors from "../common/ListErrors";
-import UserAPI from "../../lib/api/user";
+import ListErrors from "components/common/ListErrors";
+import UserAPI from "lib/api/user";
 
 const RegisterForm = () => {
   const [isLoading, setLoading] = React.useState(false);

@@ -2,8 +2,8 @@
   "parserOptions": {
     "ecmaVersion": 6
   },
+  "ignorePatterns": ["react-redux-realworld-example-app"],
   "plugins": ["prettier"],
-  "ignorePatterns": [],
   "rules": {
     "prettier/prettier": "error"
   }

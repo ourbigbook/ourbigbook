@@ -7,15 +7,19 @@ interface CustomImageProps {
   className?: string;
 }
 
-const CustomImage = ({ src, alt, className }: CustomImageProps) => (
-  <img
-    data-sizes="auto"
-    data-src={src}
-    src={DEFAULT_IMAGE_SOURCE}
-    alt={alt}
-    className={className ? `${className} lazyload` : `lazyload`}
-    onError={handleBrokenImage}
-  />
-);
+const CustomImage = ({ src, alt, className }: CustomImageProps) => {
+  const props: any = {}
+  if (className) {
+    props.className = className
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onError={handleBrokenImage}
+      {...props}
+    />
+  )
+}
 
 export default CustomImage;

@@ -1,11 +1,10 @@
-/** @jsxImportSource @emotion/react */
-import { css, jsx } from '@emotion/react'
 import { useRouter } from "next/router";
-import React, { useMemo, useEffect } from "react";
+import React from "react";
 import useSWR from "swr";
 
 import ArticlePreview from "components/article/ArticlePreview";
 import ErrorMessage from "components/common/ErrorMessage";
+import { FavoriteArticleButtonContext } from "components/common/FavoriteArticleButton";
 import LoadingSpinner from "components/common/LoadingSpinner";
 import Maybe from "components/common/Maybe";
 import Pagination from "components/common/Pagination";
@@ -17,104 +16,106 @@ import {
 import { SERVER_BASE_URL, DEFAULT_LIMIT } from "lib/utils/constant";
 import fetcher from "lib/utils/fetcher";
 
-const ArticleList = () => {
+const ArticleList = (props) => {
   const page = usePageState();
   const pageCount = usePageCountState();
   const setPageCount = usePageCountDispatch();
   const lastIndex =
-    pageCount > 480 ? Math.ceil(pageCount / 20) : Math.ceil(pageCount / 20) - 1;
-
+    pageCount > 480 ? Math.ceil(pageCount / DEFAULT_LIMIT) : Math.ceil(pageCount / DEFAULT_LIMIT) - 1;
   const router = useRouter();
   const { asPath, pathname, query } = router;
   const { favorite, follow, tag, pid } = query;
-  const isProfilePage = pathname.startsWith(`/profile`);
-
-  const getFetchURL = () => {
-    switch (true) {
-      case !!tag:
-        return `${SERVER_BASE_URL}/articles${asPath}&offset=${
-          page * DEFAULT_LIMIT
-        }`;
-      case isProfilePage && !!favorite:
-        return `${SERVER_BASE_URL}/articles?favorited=${encodeURIComponent(
+  let fetchURL = (() => {
+    switch (props.what) {
+      case 'favorites':
+        return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&favorited=${encodeURIComponent(
+          String(pid)
+        )}&offset=${page * DEFAULT_LIMIT}`
+      case 'my-posts':
+        return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&author=${encodeURIComponent(
           String(pid)
         )}&offset=${page * DEFAULT_LIMIT}`;
-      case isProfilePage && !favorite:
-        return `${SERVER_BASE_URL}/articles?author=${encodeURIComponent(
-          String(pid)
-        )}&offset=${page * DEFAULT_LIMIT}`;
-      case !isProfilePage && !!follow:
-        return `${SERVER_BASE_URL}/articles/feed?offset=${
+      case 'tag':
+        return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&tag=${encodeURIComponent(props.tag)}&offset=${
           page * DEFAULT_LIMIT
         }`;
+      case 'feed':
+        return `${SERVER_BASE_URL}/articles/feed?limit=${DEFAULT_LIMIT}&offset=${
+          page * DEFAULT_LIMIT
+        }`;
+      case 'global':
+        return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&offset=${page * DEFAULT_LIMIT}`;
       default:
-        return `${SERVER_BASE_URL}/articles?offset=${page * DEFAULT_LIMIT}`;
+        throw new Error(`Unknown search: ${props.what}`)
     }
-  };
-
-  let fetchURL = useMemo(() => getFetchURL(), [
-    favorite,
-    page,
-    tag,
-    isProfilePage,
-  ]);
-
+  })()
   const { data, error } = useSWR(fetchURL, fetcher);
   const { articles, articlesCount } = data || {
     articles: [],
     articlesCount: 0,
   };
-
-  useEffect(() => {
+  React.useEffect(() => {
     setPageCount(articlesCount);
   }, [articlesCount]);
 
-  if (error) return <ErrorMessage message="Cannot load recent articles..." />;
-  if (!data) return <LoadingSpinner />;
-
-  if (articles?.length === 0) {
-    return <div
-        css={css`
-          border-top: 1px solid rgba(0, 0, 0, 0.1);
-          padding: 1.5rem 0;
-        `}
-      >No articles are here... yet</div>;
+  // Favorite article button state.
+  const favorited = []
+  const setFavorited = []
+  const favoritesCount = []
+  const setFavoritesCount = []
+  for (let i = 0; i < DEFAULT_LIMIT; i++) {
+    [favorited[i], setFavorited[i]] = React.useState(false);
+    [favoritesCount[i], setFavoritesCount[i]] = React.useState(0);
   }
+  React.useEffect(() => {
+    for (let i = 0; i < articles.length; i++) {
+      setFavorited[i](articles[i].favorited);
+      setFavoritesCount[i](articles[i].favoritesCount);
+    }
+  }, [articles])
 
+  if (error) return <ErrorMessage message="Cannot load recent articles..." />;
+  if (!data) return <div className="article-preview">Loading articles...</div>;
+  if (articles?.length === 0) {
+    return (<div className="article-preview">No articles are here... yet.</div>);
+  }
   return (
     <>
-      <table
-        css={css`
-          td > * {
-            vertical-align: middle;
-          }
-        `}
-      >
-        <thead>
-          <tr>
-            <th>Score</th>
-            <th>Author</th>
-            <th>Title</th>
-            <th>Created</th>
-            <th>Updated</th>
-          </tr>
-        </thead>
-        <tbody>
-          {articles?.map((article) => (
-            <ArticlePreview key={article.slug} article={article} />
-          ))}
-        </tbody>
-      </table>
-      <Maybe test={articlesCount && articlesCount > 20}>
-        <Pagination
-          total={pageCount}
-          limit={20}
-          pageCount={10}
-          currentPage={page}
-          lastIndex={lastIndex}
-          fetchURL={fetchURL}
-        />
-      </Maybe>
+      <div className="article-list-container">
+        <table className="article-list">
+          <thead>
+            <tr>
+              <th className="shrink">Author</th>
+              <th className="shrink">Score</th>
+              <th className="expand">Title</th>
+              <th className="shrink">Created</th>
+              <th className="shrink">Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            {articles?.map((article, i) => (
+              <FavoriteArticleButtonContext.Provider key={article.slug} value={{
+                favorited: favorited[i],
+                setFavorited: setFavorited[i],
+                favoritesCount: favoritesCount[i],
+                setFavoritesCount: setFavoritesCount[i],
+              }}>
+                <ArticlePreview key={article.slug} article={article} />
+              </FavoriteArticleButtonContext.Provider>
+            ))}
+          </tbody>
+        </table>
+        <Maybe test={articlesCount && articlesCount > 20}>
+          <Pagination
+            total={pageCount}
+            limit={DEFAULT_LIMIT}
+            pageCount={10}
+            currentPage={page}
+            lastIndex={lastIndex}
+            fetchURL={fetchURL}
+          />
+        </Maybe>
+      </div>
     </>
   );
 };

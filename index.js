@@ -962,6 +962,20 @@ function resolve_absolute_xref(id, context) {
   }
 }
 
+function resolveOption(options, opt) {
+  let ret = options[opt]
+  if (ret !== undefined) {
+    return options[opt]
+  }
+  const ourbigbook_json = options.ourbigbook_json
+  ret = ourbigbook_json[opt]
+  if (ret !== undefined) {
+    return ourbigbook_json[opt]
+  }
+  return OURBIGBOOK_JSON_DEFAULT[opt]
+}
+exports.resolveOption = resolveOption
+
 /**
  * Interface to retrieving the nodes of IDs defined in external files.
  *
@@ -3077,14 +3091,15 @@ function convert_init_context(options={}, extra_returns={}) {
     options.auto_generated_source = false;
   }
   if (!('html_embed' in options)) { options.html_embed = false; }
-  if (options.html_x_extension === undefined) {
+  options.htmlXExtension = resolveOption(options, 'htmlXExtension')
+  if (options.htmlXExtension === undefined) {
     // Add HTML extension to x links. And therefore also:
     // * output files with the `.html` extension
     // * output `/index.html` vs just `/`
     if (ourbigbook_json.htmlXExtension === undefined) {
-      options.html_x_extension = true;
+      options.htmlXExtension = true;
     } else {
-      options.html_x_extension = ourbigbook_json.htmlXExtension;
+      options.htmlXExtension = ourbigbook_json.htmlXExtension;
     }
   }
   if (!('h_parse_level_offset' in options)) {
@@ -3523,7 +3538,7 @@ function check_and_update_local_link({
         render_error(context, error, source_location);
       } else {
         const { type } = context.options.read_file(check_path, context)
-        if (type === 'directory' && context.options.html_x_extension) {
+        if (type === 'directory' && context.options.htmlXExtension) {
           href = path.join(href, 'index.html')
         }
       }
@@ -7042,7 +7057,7 @@ function x_href_parts(target_ast, context) {
       ) {
         target_output_path_basename = '';
       } else {
-        if (context.options.html_x_extension) {
+        if (context.options.htmlXExtension) {
           target_output_path_basename += '.' + HTML_EXT;
         } else if (target_output_path_basename === INDEX_BASENAME_NOEXT) {
           if (href_path_dirname_rel === '') {
@@ -7383,6 +7398,9 @@ const IMAGE_EXTENSIONS = new Set([
 ])
 const OURBIGBOOK_JSON_BASENAME = 'ourbigbook.json';
 exports.OURBIGBOOK_JSON_BASENAME = OURBIGBOOK_JSON_BASENAME
+const OURBIGBOOK_JSON_DEFAULT = {
+  htmlXExtension: true,
+}
 const OUTPUT_FORMAT_OURBIGBOOK = 'bigb';
 exports.OUTPUT_FORMAT_OURBIGBOOK = OUTPUT_FORMAT_OURBIGBOOK
 const RENDER_TYPE_WEB = 'web'
@@ -9088,7 +9106,7 @@ const OUTPUT_FORMATS_LIST = [
             }
 
             let root_page;
-            if (context.options.html_x_extension) {
+            if (context.options.htmlXExtension) {
               context.options.template_vars.html_ext = '.html';
               context.options.template_vars.html_index = '/index.html';
               root_page = context.options.template_vars.root_relpath + INDEX_BASENAME_NOEXT + '.' + HTML_EXT;
@@ -9126,7 +9144,7 @@ const OUTPUT_FORMATS_LIST = [
             const ourbigbook_redirect_prefix = JSON.stringify(ourbigbook_redirect_prefix_raw).replace(/</g, '\\u003c')
             const data_script = `<script>
 window.ourbigbook_split_headers = ${context.options.split_headers};
-window.ourbigbook_html_x_extension = ${context.options.html_x_extension};
+window.ourbigbook_html_x_extension = ${context.options.htmlXExtension};
 window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
 </script>
 `

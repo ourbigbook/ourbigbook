@@ -42,7 +42,7 @@ syntax match cirodownArgumentParent /[^}]\+/ contained contains=@NoSpell
 highlight link cirodownMacro  Label
 highlight link cirodownMacroX Label
 
-syntax match cirodownUrl 'https\?://[^[\] \n]\+' contains=@NoSpell
+syntax match cirodownUrl 'https\?://[^[{\] \n]\+' contains=@NoSpell
 highlight link cirodownUrl            Special
 highlight link cirodownArgumentX      Special
 highlight link cirodownArgumentParent Special

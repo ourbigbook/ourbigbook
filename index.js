@@ -4352,11 +4352,8 @@ async function parse(tokens, options, context, extra_returns={}) {
     }
     // Not modified by split headers.
     context.nosplit_toplevel_ast = context.toplevel_ast
-
     context.has_toc = false;
     let toplevel_parent_arg = new AstArgument([], new SourceLocation(1, 1));
-
-    // First do a pass that makes any changes to the tree.
     {
       const todo_visit = [[toplevel_parent_arg, ast_toplevel]];
       while (todo_visit.length > 0) {

@@ -1434,26 +1434,42 @@ assert_convert_ast('image with source has caption',
     ]
   }
 );
-assert_convert_ast('image without id, title, description nor source still gets a caption and increments the image count',
+assert_convert_ast('image without id, title, description nor source does not have caption',
   `\\Image[aa]{check=0}
-
-\\Image[aa]{check=0}
 `,
   [
     a('Image', undefined, {
       src: [t('aa')],
     }, {}, { id: '_1' }),
-    a('Image', undefined, {
-      src: [t('aa')],
-    }, {}, { id: '_3' }),
   ],
   {
-    assert_xpath_matches: [
+    assert_not_xpath_matches: [
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
-      "//x:span[@class='caption-prefix' and text()='Figure 2']",
     ]
   }
-);
+)
+assert_convert_ast('image without id, title, description nor source does not increment the image count',
+  `\\Image[aa]{id=aa}{check=0}
+
+\\Image[bb]{check=0}
+
+\\Image[cc]{id=cc}{check=0}
+`,
+  [
+    a('Image', undefined, { src: [t('aa')], }, {}, { id: 'aa' }),
+    a('Image', undefined, { src: [t('bb')], }, {}, { id: '_2' }),
+    a('Image', undefined, { src: [t('cc')], }, {}, { id: 'cc' }),
+  ],
+  {
+    assert_not_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Figure 1']",
+      "//x:span[@class='caption-prefix' and text()='Figure 2']",
+    ],
+    assert_not_xpath_matches: [
+      "//x:span[@class='caption-prefix' and text()='Figure 3']",
+    ],
+  },
+)
 
 // Escapes.
 assert_convert_ast('escape backslash',            'a\\\\b\n', [a('P', [t('a\\b')])]);
@@ -3094,7 +3110,7 @@ aa
     ]
   }
 )
-assert_convert_ast('code without id, title, nor description does not increment the table count',
+assert_convert_ast('code without id, title, nor description does not increment the code count',
   `\`\`
 aa
 \`\`

@@ -110,7 +110,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
     return asts
   }
 
-  async get_noscopes_base(ids, ignore_paths_set) {
+  get_noscopes_base(ids, ignore_paths_set) {
     const cached_asts = []
     for (const id of ids) {
       if (id in this.id_cache) {
@@ -172,7 +172,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
     }
   }
 
-  async get_refs_to(type, to_id, reversed=false) {
+  get_refs_to(type, to_id, reversed=false) {
     let to_id_key, other_key;
     if (reversed) {
       to_id_key = 'from_id'

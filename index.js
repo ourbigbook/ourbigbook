@@ -2265,6 +2265,10 @@ function parse(tokens, options, context, extra_returns={}) {
     ast.from_include = options.from_include;
     ast.input_path = options.input_path;
     if (macro_name === Macro.INCLUDE_MACRO_NAME) {
+      let peek_ast = todo_visit[todo_visit.length - 1][1];
+      if (peek_ast.node_type === AstType.PLAINTEXT && peek_ast.text == '\n') {
+        todo_visit.pop();
+      }
       const href = convert_arg_noescape(ast.args.href, context);
       include_options.cur_header.includes.push(href);
       if (context.include_path_set.has(href)) {
@@ -2392,6 +2396,13 @@ function parse(tokens, options, context, extra_returns={}) {
                 from_include: true,
                 input_path: ast.input_path,
               },
+            ),
+            new AstNode(
+              AstType.PARAGRAPH,
+              undefined,
+              undefined,
+              ast.line,
+              ast.column
             ),
           ];
         }
@@ -4375,7 +4386,7 @@ const DEFAULT_MACRO_LIST = [
       let top_level = context.header_graph_top_level - 1;
       let root_node = context.header_graph;
       let ret = `<div class="toc-container"${attrs}>\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
-      ret += `${TOC_ARROW_HTML}<a${x_href_attr(ast, context)}class="title">Table of contents</a> ${get_descendant_count(root_node)}</div>\n`;
+      ret += `${TOC_ARROW_HTML}<a class="title"${x_href_attr(ast, context)}>Table of contents</a> ${get_descendant_count(root_node)}</div>\n`;
       if (context.header_graph_top_level > 0) {
         root_node = root_node.children[0];
       }

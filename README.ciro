@@ -22,7 +22,7 @@ npm install cirodown
 ./api_hello.js
 ]]
 
-For a minimal but convenient project template, consdier:
+For a minimal but convenient project template with a \c[.gitignore] and \c[package.json], consider:
 
 \C[[
 git clone https://github.com/cirosantilli/cirodown-template
@@ -293,13 +293,9 @@ HTML is randomly limited to \c[h6], so Cirodown just renders higher levels as an
 \h[3][Table of contents \c[[\toc]]]
 {id=table-of-contents}
 
-TODO implement: ToC only shows headers contained under the header it is put.
+Only one ToC shows per document. Any ToC besides the first one is ignored.
 
-For example, if we have a document with a single \c[[\h[1\]]] and put the ToC just below it after a short introduction, which is the recommended document structure, then that ToC will now show the initial \c[[\h[1\]]] as expected.
-
-Here is another ToC, which contains very few elements since it is here is a subtree in the middle of the document:
-
-\toc
+The ToC ignores \c[[\h[1\]]] by default, as we encourage that header level to appear only once and represent the main title under which the entire document goes.
 
 \h[4][id_scope]
 
@@ -1225,6 +1221,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \h[3][TODO]
 
+\l[actually, do number every equation, figure etc. and add dummy IDs to them, why not have references? Use side equation numbers like in real books]
 \l[publish webpage on cirosantilli.com]
 \l[custom header, footer and HEAD based on files like header.html, footer.html]
 \l[make h1 special: don't take up number count, don't show on toc, don't show number, use as default title]

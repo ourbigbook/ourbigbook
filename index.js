@@ -434,7 +434,7 @@ class AstNode {
     let json = JSON.parse(json_string);
     for (const argname in json.args) {
       const arg = json.args[argname]
-      json.args[argname] = new AstArgument(arg.nodes, arg.source_location)
+      json.args[argname] = new AstArgument(arg.asts, arg.source_location)
     }
     let toplevel_ast = new AstNode(
       AstType[json.node_type],
@@ -452,16 +452,16 @@ class AstNode {
         word_count: json.word_count,
       }
     );
-    let nodes = [toplevel_ast];
-    while (nodes.length !== 0) {
-      let cur_ast = nodes.pop();
+    let asts = [toplevel_ast];
+    while (asts.length !== 0) {
+      let cur_ast = asts.pop();
       for (let arg_name in cur_ast.args) {
         let arg = cur_ast.args[arg_name];
         let new_arg = [];
         for (let ast of arg) {
           for (const argname in ast.args) {
             const arg = ast.args[argname]
-            ast.args[argname] = new AstArgument(arg.nodes, arg.source_location)
+            ast.args[argname] = new AstArgument(arg.asts, arg.source_location)
           }
           let new_ast = new AstNode(
             AstType[ast.node_type],
@@ -475,7 +475,7 @@ class AstNode {
             }
           );
           new_arg.push(new_ast);
-          nodes.push(new_ast);
+          asts.push(new_ast);
         }
         arg.splice(0, new_arg.length, ...new_arg);
       }
@@ -621,11 +621,11 @@ class AstArgument {
   /** @param {List[AstNode]} nodes
    *  @ param {SourceLocation} source_location
    */
-  constructor(nodes, source_location) {
-    if (nodes === undefined) {
-      this.nodes = []
+  constructor(asts, source_location) {
+    if (asts === undefined) {
+      this.asts = []
     } else {
-      this.nodes = nodes
+      this.asts = asts
     }
     this.source_location = source_location;
     // AstNode
@@ -633,7 +633,7 @@ class AstArgument {
     // String
     this.argument_name = undefined;
     let i = 0;
-    for (const node of this.nodes) {
+    for (const node of this.asts) {
       node.parent_argument = this;
       node.parent_argument_index = i;
       i++;
@@ -641,43 +641,43 @@ class AstArgument {
   }
 
   concat(...other) {
-    return this.nodes.concat(...other)
+    return this.asts.concat(...other)
   }
 
   get(i) {
-    return this.nodes[i]
+    return this.asts[i]
   }
 
   length() {
-    return this.nodes.length
+    return this.asts.length
   }
 
   map(fn) {
-    return this.nodes.map(fn)
+    return this.asts.map(fn)
   }
 
   set(i, val) {
-    this.nodes[i] = val
+    this.asts[i] = val
   }
 
   slice(start, end) {
-    return new AstArgument(this.nodes.slice(start, end), this.source_location)
+    return new AstArgument(this.asts.slice(start, end), this.source_location)
   }
 
   splice(start, deleteCount, ...items) {
-    return this.nodes.splice(start, deleteCount, ...items)
+    return this.asts.splice(start, deleteCount, ...items)
   }
 
   reverse() {
-    this.nodes.reverse()
+    this.asts.reverse()
     return this
   }
 
-  push(...new_nodes) {
-    const old_length = this.nodes.length;
-    const ret = this.nodes.push(...new_nodes);
+  push(...new_asts) {
+    const old_length = this.asts.length;
+    const ret = this.asts.push(...new_asts);
     let i = 0;
-    for (const node of new_nodes) {
+    for (const node of new_asts) {
       node.parent_argument = this;
       node.parent_argument_index = old_length + i;
       i++;
@@ -686,18 +686,18 @@ class AstArgument {
   }
 
   reset() {
-    this.nodes = []
+    this.asts = []
   }
 
   *[Symbol.iterator] () {
-    for (const v of this.nodes) {
+    for (const v of this.asts) {
       yield(v)
     }
   }
 
   toJSON() {
     return {
-      nodes: this.nodes,
+      asts: this.asts,
       source_location: this.source_location,
     }
   }
@@ -5943,7 +5943,7 @@ function x_text(ast, context, options={}) {
       ) {
         // https://stackoverflow.com/questions/41474986/how-to-clone-a-javascript-es6-class-instance
         title_arg = lodash.clone(title_arg)
-        title_arg.nodes = lodash.clone(title_arg.nodes)
+        title_arg.asts = lodash.clone(title_arg.asts)
         title_arg.set(0, new PlaintextAstNode(first_ast.text, first_ast.source_location))
         let txt = title_arg.get(0).text;
         let first_c = txt[0];
@@ -5963,7 +5963,7 @@ function x_text(ast, context, options={}) {
         first_ast.node_type === AstType.PLAINTEXT
       ) {
         title_arg = lodash.clone(title_arg)
-        title_arg.nodes = lodash.clone(title_arg.nodes)
+        title_arg.asts = lodash.clone(title_arg.asts)
         title_arg.set(title_arg.length() - 1, new PlaintextAstNode(last_ast.text, last_ast.source_location));
         title_arg.get(title_arg.length() - 1).text = pluralize(last_ast.text, options.pluralize ? 2 : 1);
       }

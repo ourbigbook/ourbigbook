@@ -15,6 +15,7 @@ const cirodown_nodejs = require('cirodown/nodejs');
 const OUT_DIRNAME = 'out';
 const DEFAULT_IGNORE_BASENAMES = [
   '.git',
+  '.sass-cache',
   'node_modules',
   OUT_DIRNAME,
 ];
@@ -25,13 +26,20 @@ const IO_RENAME_MAP = {
 }
 
 class SqliteIdProvider extends cirodown.IdProvider {
-  constructor(db) {
+  constructor(db, ids_table_name) {
     super();
-    this.db = db;
+    this.stmt = db.prepare(`SELECT path,ast_json FROM ${ids_table_name} WHERE id = ?`);
   }
   get(id) {
-    return undefined;
-    return [path, dict[id]];
+    let get_ret = this.stmt.get(id);
+    if (get_ret === undefined) {
+      return undefined;
+    } else {
+      //console.error(get_ret);
+      return undefined;
+      const ast = cirodown.AstNode.fromJSON(get_ret.ast_json);
+      return [get_ret.path, ast];
+    }
   }
 }
 
@@ -79,11 +87,17 @@ function cmd_get_stdout(cmd, args=[], options={}) {
  */
 function convert_input(input, options, convert_input_options={}) {
   const new_options = Object.assign({}, options);
-  if ('title' in convert_input_options) {
-    new_options.title = convert_input_options.title;
-  }
   if ('input_path' in convert_input_options) {
     new_options.input_path = convert_input_options.input_path;
+  }
+  if ('db' in convert_input_options) {
+    new_options.id_provider = new SqliteIdProvider(
+      convert_input_options.db,
+      convert_input_options.ids_table_name
+    );
+  }
+  if ('title' in convert_input_options) {
+    new_options.title = convert_input_options.title;
   }
   new_options.extra_returns = {};
   let output = cirodown.convert(input, new_options, new_options.extra_returns);
@@ -144,16 +158,21 @@ function convert_path(input_path, options, convert_input_options) {
   let input = fs.readFileSync(input_path, new_convert_input_options.encoding);
   let output = convert_input(input, options, new_convert_input_options);
   if ('db' in convert_input_options) {
-    const ids = new_convert_input_options.extra_returns.context.ids;
-    const stmt = convert_input_options.db.prepare(
+    const ids = new_convert_input_options.extra_returns.ids;
+    input_path_parse = path.parse(input_path);
+    input_path_noext = path.join(input_path_parse.dir, input_path_parse.name);
+    // Remove all IDs from the path, so that they will be removed from the database
+    // if they were removed from the file.
+    const delete_stmt = convert_input_options.db.prepare(
+      `DELETE FROM '${convert_input_options.ids_table_name}' WHERE path = ?`
+    ).run(input_path_noext);
+    const insert_stmt = convert_input_options.db.prepare(
       `INSERT INTO '${convert_input_options.ids_table_name}'
       (id, path, ast_json) VALUES (?, ?, ?);`
     );
-    input_path_parse = path.parse(input_path);
-    input_path_noext = path.join(input_path_parse.dir, input_path_parse.name);
     for (const id in ids) {
       const ast = ids[id];
-      stmt.run(id, input_path_noext, JSON.stringify(ast));
+      insert_stmt.run(id, input_path_noext, JSON.stringify(ast));
     }
   }
   if (new_convert_input_options.had_error) {
@@ -285,10 +304,11 @@ if (commander.helpMacros) {
     ) {
       db.prepare(`
         CREATE TABLE '${ids_table_name}' (
-        id TEXT,
-        path TEXT,
-        ast_json TEXT
-      )`).run();
+          id TEXT PRIMARY KEY,
+          path TEXT,
+          ast_json TEXT
+        )`
+      ).run();
     }
     convert_input_options.db = db;
     convert_input_options.ids_table_name = ids_table_name;

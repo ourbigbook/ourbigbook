@@ -11,6 +11,7 @@ window.onload = function() {
       // https://cirosantilli.com/cirodown#table-of-contents-javascript-open-close-interaction
       const parent_li = toc_arrow.parentElement.parentElement;
       let all_children_closed = true;
+      let all_children_open = true;
       let was_open;
       if (parent_li.classList.contains(CLOSE_CLASS)) {
         was_open = false;
@@ -23,7 +24,9 @@ window.onload = function() {
           if (toc_arrow_child.tagName === 'UL') {
             for (const toc_arrow_child_2 of toc_arrow_child.childNodes) {
               if (toc_arrow_child_2.tagName === 'LI') {
-                if (!toc_arrow_child_2.classList.contains(CLOSE_CLASS)) {
+                if (toc_arrow_child_2.classList.contains(CLOSE_CLASS)) {
+                  all_children_open = false;
+                } else {
                   all_children_closed = false;
                 }
               }
@@ -32,14 +35,18 @@ window.onload = function() {
         }
       }
       // Open or close all children.
-      for (const toc_arrow_child of parent_li.childNodes) {
-        if (toc_arrow_child.tagName === 'UL') {
-          for (const toc_arrow_child_2 of toc_arrow_child.childNodes) {
-            if (toc_arrow_child_2.tagName === 'LI') {
-              if (was_open && all_children_closed) {
-                toc_arrow_child_2.classList.remove(CLOSE_CLASS);
-              } else {
-                toc_arrow_child_2.classList.add(CLOSE_CLASS);
+      if (all_children_open && was_open && !parent_li.classList.contains('toplevel')) {
+        parent_li.classList.add(CLOSE_CLASS);
+      } else {
+        for (const toc_arrow_child of parent_li.childNodes) {
+          if (toc_arrow_child.tagName === 'UL') {
+            for (const toc_arrow_child_2 of toc_arrow_child.childNodes) {
+              if (toc_arrow_child_2.tagName === 'LI') {
+                if (was_open && all_children_closed) {
+                  toc_arrow_child_2.classList.remove(CLOSE_CLASS);
+                } else {
+                  toc_arrow_child_2.classList.add(CLOSE_CLASS);
+                }
               }
             }
           }

@@ -118,7 +118,10 @@ function assert_no_error(description, input) {
   it(description, ()=>{
     let extra_returns = {};
     cirodown.convert(input, convert_opts, extra_returns);
-    assert.strictEqual(extra_returns.errors.length, 0);
+    if (extra_returns.errors.length !== 0) {
+      console.error(input);
+      assert.strictEqual(extra_returns.errors.length, 0);
+    }
   });
 }
 
@@ -1343,6 +1346,49 @@ assert_convert_ast('header 7 insane',
 `,
   header_7_expect
 );
+assert_convert_ast('header 7 parent',
+  `= 1
+
+= 2
+{parent=1}
+
+= 3
+{parent=2}
+
+= 4
+{parent=3}
+
+= 5
+{parent=4}
+
+= 6
+{parent=5}
+
+= 7
+{parent=6}
+`,
+  header_7_expect
+);
+assert_error('header parent with level not 1 is an error',
+  `= 1
+
+== 2
+{parent=1}
+`,
+  3, 1
+);
+assert_error('header parent cannot be an older id of a level',
+  `= 1
+
+== 2
+
+== 2 2
+
+= 3
+{parent=2}
+`,
+  8, 1
+);
 const header_id_new_line_expect =
   [a('H', undefined, {level: [t('1')], title: [t('aa')], id: [t('bb')]})];
 assert_convert_ast('header id new line sane',
@@ -1365,7 +1411,7 @@ assert_convert_ast('header id new line insane trailing element',
       id: [t('cc')],
   })],
 );
-assert_error('header must be an integer letters', '\\H[a][b]\n', 1, 3);
+assert_error('header level must be an integer', '\\H[a][b]\n', 1, 3);
 assert_error('non integer h2 header level in a document with a toc does not throw',
   `\\H[1][h1]
 

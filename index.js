@@ -5096,9 +5096,9 @@ async function parse(tokens, options, context, extra_returns={}) {
             add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD);
           }
         }
-        for (const title_ast of ref.title_ast_ancestors) {
-          add_to_refs_to(target_id_effective, context, title_ast.id, REFS_TABLE_X_TITLE_TITLE);
-        }
+      }
+      for (const title_ast of ref.title_ast_ancestors) {
+        add_to_refs_to(target_id_effective, context, title_ast.id, REFS_TABLE_X_TITLE_TITLE);
       }
     }
 

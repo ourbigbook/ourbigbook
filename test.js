@@ -2335,37 +2335,20 @@ assert_convert_ast('x to image in another file that has x title in another file'
 
 // Infinite recursion.
 // failing https://github.com/cirosantilli/cirodown/issues/34
-assert_error('cross reference from header title without ID to following header is not allowed',
+assert_error('cross reference from header title to following header is not allowed',
   `= \\x[h2] aa
 
 == h2
 `, 1, 3);
-assert_error('cross reference from header title without ID to previous header is not allowed',
+assert_error('cross reference from header title to previous header is not allowed',
   `= h1
 
 == \\x[h1] aa
 `, 3, 4);
-assert_convert_ast('cross reference from image title without ID to previous non-header is not allowed',
-  `= tmp
-
-\\Image[ab]{title=cd}{check=0}
+assert_convert_ast('cross reference from image title to previous non-header is not allowed',
+  `\\Image[ab]{title=cd}{check=0}
 
 \\Image[ef]{title=gh \\x[image-cd]}{check=0}
-`,
-  undefined,
-  {
-    input_path_noext: 'tmp',
-    invalid_title_titles: [
-      ['image-gh-image-cd', 'tmp.ciro', 5, 1],
-    ],
-  }
-);
-assert_convert_ast('cross reference from image title without ID to following non-header is not allowed',
-  `= tmp
-
-\\Image[ef]{title=gh \\x[image-cd]}{check=0}
-
-\\Image[ab]{title=cd}{check=0}
 `,
   undefined,
   {
@@ -2375,14 +2358,25 @@ assert_convert_ast('cross reference from image title without ID to following non
     ],
   }
 );
+assert_convert_ast('cross reference from image title to following non-header is not allowed',
+  `\\Image[ef]{title=gh \\x[image-cd]}{check=0}
+
+\\Image[ab]{title=cd}{check=0}
+`,
+  undefined,
+  {
+    input_path_noext: 'tmp',
+    invalid_title_titles: [
+      ['image-gh-image-cd', 'tmp.ciro', 1, 1],
+    ],
+  }
+);
 assert_executable('executable: cross reference from image title to previous non-header is not allowed',
   {
     args: ['.'],
     expect_exit_status: 1,
     filesystem: {
-      'README.ciro': `= Index
-
-\\Image[ab]{title=cd}{check=0}
+      'README.ciro': `\\Image[ab]{title=cd}{check=0}
 
 \\Image[ef]{title=gh \\x[image-cd]}{check=0}
 `,

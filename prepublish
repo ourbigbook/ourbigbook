@@ -13,6 +13,6 @@ publish_out_dir="$1"
 #
 # So hack it is. That's how we do things around here.
 editor="${publish_out_dir}/editor.html"
-sed -i 's/href="dist\/cirodown.css"/href="cirodown.css"/' "$editor"
-sed -i 's/href="dist\/cirodown.js"/href="cirodown.js"/' "$editor"
-sed -i 's/href="dist\/cirodown_runtime.js"/href="cirodown_runtime.js"/' "$editor"
+sed -i 's/href="dist\/cirodown.css"/href="..\/cirodown.css"/' "$editor"
+sed -i 's/href="dist\/cirodown.js"/href="..\/cirodown.js"/' "$editor"
+sed -i 's/href="dist\/cirodown_runtime.js"/href="..\/cirodown_runtime.js"/' "$editor"

@@ -5,7 +5,7 @@ import Router, { useRouter } from 'next/router'
 import cirodown from 'cirodown/dist/cirodown.js';
 import { cirodown_runtime } from 'cirodown/dist/cirodown_runtime.js';
 import { CirodownEditor } from 'cirodown/editor.js';
-import { isProduction } from 'front/config';
+import { convertOptions, isProduction } from 'front/config';
 
 import ListErrors from 'front/ListErrors'
 import { slugFromRouter } from 'front'
@@ -15,13 +15,20 @@ import routes from 'front/routes'
 import { AppContext, useCtrlEnterSubmit } from 'front'
 import { modifyEditorInput } from 'shared';
 
-export default function ArticleEditorPageHoc(options={ }) {
+export default function ArticleEditorPageHoc(options={}) {
   const isnew = options.isnew === undefined ? false : options.isnew
   const editor = ({ article: initialArticle }) => {
+    const router = useRouter();
+    const {
+      query: { slug },
+    } = router;
     let body;
     let initialArticleState;
     if (initialArticle) {
       body = initialArticle.body
+      if (slug && isnew) {
+        body += `${cirodown.PARAGRAPH_SEP}Adapted from: \\x[${cirodown.AT_MENTION_CHAR}${slug.join('/')}].`
+      }
       initialArticleState = {
         title: initialArticle.title,
       }
@@ -46,9 +53,10 @@ export default function ArticleEditorPageHoc(options={ }) {
             cirodown,
             cirodown_runtime,
             {
+              convertOptions,
+              handleSubmit,
               modifyEditorInput: (oldInput) => modifyEditorInput(article.title, oldInput),
               production: isProduction,
-              handleSubmit,
             },
           )
           cirodownEditorElem.current.cirodownEditor = editor
@@ -69,7 +77,6 @@ export default function ArticleEditorPageHoc(options={ }) {
       }
     }, [])
     const loggedInUser = useLoggedInUser()
-    const router = useRouter();
     const handleTitle = async (e) => {
       setArticle(article => { return {
         ...article,

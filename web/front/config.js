@@ -11,6 +11,12 @@ const escapeUsername = 'go'
 
 module.exports = {
   apiPath: '/' + API_PATH_COMPONENT,
+  convertOptions: {
+    body_only: true,
+    html_x_extension: false,
+    magic_leading_at: false,
+    path_sep: '/',
+  },
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   escapeUsername,
   aboutHref: "https://cirosantilli.com/ourbigbook-com",

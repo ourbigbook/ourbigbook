@@ -371,7 +371,7 @@ An YouTube video: \\x[video-sample-youtube-video].
 
 \\Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
 {title=Sample YouTube video.}${includesString}
-  `,
+`,
         }
         articleArgs.push(articleArg)
       }

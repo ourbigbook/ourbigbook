@@ -19,7 +19,7 @@ const models = require('./models')
 const config = require('./config')
 
 function doStart(app) {
-  const sequelize = models(__dirname);
+  const sequelize = models.getSequelize(__dirname);
   passport.use(
     new passport_local.Strategy(
       {
@@ -82,7 +82,6 @@ function doStart(app) {
     (async () => {
       try {
         await sequelize.authenticate();
-        await sequelize.sync();
         app.set('sequelize', sequelize)
         start();
       } catch (e) {

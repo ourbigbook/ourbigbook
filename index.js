@@ -326,6 +326,7 @@ class Macro {
 Macro.HEADER_MACRO_NAME = 'h';
 Macro.ID_ARGUMENT_NAME = 'id';
 Macro.LINK_SELF = `(link ${String.fromCodePoint(0x1F517)})`;
+Macro.PARAGRAPH_MACRO_NAME = 'p';
 Macro.TITLE_ARGUMENT_NAME = 'title';
 Macro.TOC_MACRO_NAME = 'toc';
 Macro.TOC_PREFIX = 'toc-'
@@ -943,6 +944,9 @@ function html_escape_context(context, str) {
  * main element child.
  */
 function html_convert_simple_elem(elem_name, options={}) {
+  if (!('link_to_self' in options)) {
+    options.link_to_self = false;
+  }
   if (!('newline_after_open' in options)) {
     options.newline_after_open = false;
   }
@@ -962,9 +966,16 @@ function html_convert_simple_elem(elem_name, options={}) {
     newline_after_close_str = '';
   }
   return function(ast, context) {
+    let link_to_self;
+    if (!options.link_to_self || (ast.id === undefined)) {
+      link_to_self = '';
+    } else {
+      let href = html_attr('href', '#' + html_escape_attr(ast.id));
+      link_to_self = `<span class="hide-hover"> <a${href}>${Macro.LINK_SELF}</a></span>\n`;
+    }
     let attrs = html_convert_attrs_id(ast, context);
     let content = convert_arg(ast.args.content, context);
-    return `<${elem_name}${attrs}>${newline_after_open_str}${content}</${elem_name}>${newline_after_close_str}`;
+    return `<${elem_name}${attrs}>${newline_after_open_str}${content}${link_to_self}</${elem_name}>${newline_after_close_str}`;
   };
 }
 
@@ -1201,7 +1212,7 @@ function parse_add_paragraph(
       new AstNode(
         AstType.MACRO,
         state.macros,
-        'p',
+        Macro.PARAGRAPH_MACRO_NAME,
         {
           'content': slice
         },
@@ -1576,7 +1587,7 @@ const DEFAULT_MACRO_LIST = [
       if (ast.id !== undefined) {
         let target_id = html_escape_attr(ast.id);
         let href = html_attr('href', '#' + target_id);
-        ret += `<div class="math-caption-container">\n`;
+        ret += `<div class="hide-hover">\n`;
         ret += `<span class="math-caption">${this.x_text(ast, context)}</span>`;
         ret += `<span> <a${href}>${Macro.LINK_SELF}</a></span>\n`;
         ret += `</div>\n`;
@@ -1681,13 +1692,13 @@ const DEFAULT_MACRO_LIST = [
     html_convert_simple_elem('ol', {newline_after_open: true}),
   ),
   new Macro(
-    'p',
+    Macro.PARAGRAPH_MACRO_NAME,
     [
       new MacroArgument({
         name: 'content',
       }),
     ],
-    html_convert_simple_elem('p'),
+    html_convert_simple_elem('p', {link_to_self: true}),
   ),
   new Macro(
     'plaintext',
@@ -1729,8 +1740,7 @@ const DEFAULT_MACRO_LIST = [
         // }
         //
         //Caption on top as per: https://tex.stackexchange.com/questions/3243/why-should-a-table-caption-be-placed-above-the-table */
-        let target_id = html_escape_attr(ast.id);
-        let href = html_attr('href', '#' + target_id);
+        let href = html_attr('href', '#' + html_escape_attr(ast.id));
         ret += `<div class="table-caption-container">\n`;
         ret += `<span class="table-caption">${this.x_text(ast, context)}</span>`;
         ret += `<span> <a${href}>${Macro.LINK_SELF}</a></span>\n`;
@@ -1841,6 +1851,9 @@ const DEFAULT_MACRO_LIST = [
 >
 <link href="https://netdna.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet"/>
 <style>
+/* Hide by default, show if last child of hovered element. */
+.hide-hover:last-child { display: none; }
+:hover > .hide-hover:last-child { display: inline; }
 :target {
   background-color: #FFFFCC;
 }

@@ -1305,6 +1305,8 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \h[3][TODO]
 
 \l[expose a on over link to paragraphs, equations on right \c[(12)]. Consider exposing on code blocks like equations.]
+\l[expose git revision, especially to multipage template]
+\l[multipage template language that cannot run forever]
 \l[publish webpage on cirosantilli.com]
 \l[custom header, footer and HEAD based on files like header.html, footer.html]
 \l[\x[id-scope]]

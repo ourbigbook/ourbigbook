@@ -32,3 +32,6 @@ tmp2.bigb
 /web/out/
 /web/.now/
 /web/.now
+
+# PostgreSQL dumps.
+*.dump

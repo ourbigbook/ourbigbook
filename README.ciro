@@ -5467,7 +5467,13 @@ npm test -- -g '^(?!executable:)'
 This works because `-g` takes JavaScript regular expressions, so we can use negative lookahead, see also: https://stackoverflow.com/questions/26908288/with-mocha-how-do-i-run-all-tests-that-dont-have-slow-in-the-name
 
 There are two types of test in our test suite:
-* tests that call the `cirodown.convert` \x[javascript-api] directly. These tests don't create file in the filesystem, and just mock the filesystem instead with a dictionary. Database access is not mocked however, we just use Sqlite's fantastic in-memory mode.
+* tests that call the `cirodown.convert` \x[javascript-api] directly.
+
+  These tests don't actually create files in the filesystem, and just mock the filesystem instead with a dictionary.
+
+  Database access is not mocked however, we just use Sqlite's fantastic in-memory mode.
+
+  Whenever possible, these tests check their results just from the \x[abstract-syntax-tree] tree returned by the API, which is cleaner than parsing the HTML. But sometimes HTML parsing is inevitable.
 * tests that call the \x[cirodown-executable] itself:
   * their titles are prefixed with `executable: `
   * they tend to be slower than the API test
@@ -5476,6 +5482,7 @@ There are two types of test in our test suite:
   * work by creating an actual physical filesystem under `out/test/<test-title>` with the Cirodown files and other files like `cirodown.json`, and then running the executable on that directory.
 
     `npm test` first deletes the `out/test` directory before running the tests. After running, the generated files are kept so you can inspect them to help debug any issues.
+  * all these tests check their results by parsing the HTML and searching for elements, since here we don't have access to the \x[abstract-syntax-tree]. It wouldn't be impossible to obtain it however, as it is likely already JSON serializable.
 
 Step debug during a test run. Add the statement:
 ``

@@ -5475,3 +5475,19 @@ assert_executable(
     ],
   }
 );
+
+assert_executable(
+  "executable: toplevel index file without a header produces output to index.html",
+  {
+    args: ['README.ciro'],
+    filesystem: {
+      'README.ciro': `asdf
+`,
+    },
+    expect_filesystem_xpath: {
+      'index.html': [
+        "//x:div[@class='p' and text()='asdf']",
+      ],
+    },
+  }
+);

@@ -558,7 +558,7 @@ async function destroy_sequelize(sequelize) {
 // Update the database after converting each separate file.
 async function update_database_after_convert({
   authorId,
-  body,
+  bodySource,
   extra_returns,
   db_provider,
   is_render_after_extract,
@@ -567,7 +567,7 @@ async function update_database_after_convert({
   render,
   sequelize,
   transaction,
-  title,
+  titleSource,
 }) {
   const context = extra_returns.context;
   if (non_ourbigbook_options === undefined) {
@@ -590,8 +590,8 @@ async function update_database_after_convert({
     file_bulk_create_opts.ignoreDuplicates = true
   } else {
     file_bulk_create_opts.updateOnDuplicate = [
-      'title',
-      'body',
+      'titleSource',
+      'bodySource',
       'last_parse',
       // https://github.com/cirosantilli/ourbigbook/issues/241
       'toplevel_id',
@@ -623,11 +623,11 @@ async function update_database_after_convert({
         [
           {
             authorId,
-            body,
+            bodySource,
             last_parse: file_bulk_create_last_parse,
             last_render: file_bulk_create_last_render,
             path,
-            title,
+            titleSource,
             toplevel_id,
           },
         ],

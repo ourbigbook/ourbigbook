@@ -76,7 +76,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       }
       if (what === 'home') {
         const articleContext = Object.assign({}, context, { params: { slug: [ uid ] } })
-        const articleProps = await (getServerSidePropsArticleHoc(true, loggedInUser)(articleContext))
+        const articleProps = await (getServerSidePropsArticleHoc({ includeIssues: true, loggedInUserCache: loggedInUser })(articleContext))
         if ('props' in articleProps) {
           Object.assign(props, articleProps.props)
         }

@@ -3,19 +3,20 @@ const router = require('express').Router()
 const auth = require('../auth')
 const front = require('../front/js')
 const { convertIssue, convertComment } = require('../convert')
-const { getArticle, ValidationError, validateParam, validatePositiveInteger } = require('./lib')
+const lib = require('./lib')
+const { getArticle, ValidationError, validateParam, isPositiveInteger } = lib
 const { modifyEditorInput } = require('../front/js')
 
 // Get issues for an article.
 router.get('/', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
-    const [article, user] = await Promise.all([
+    const [article, loggedInUser] = await Promise.all([
       getArticle(req, res, { includeIssues: true }),
       req.payload ? sequelize.models.User.findByPk(req.payload.id) : null,
     ])
     return res.json({
-      issues: await Promise.all(article.issues.map(issue => issue.toJson(user)))
+      issues: await Promise.all(article.issues.map(issue => issue.toJson(loggedInUser)))
     })
   } catch(error) {
     next(error);
@@ -24,7 +25,10 @@ router.get('/', auth.optional, async function(req, res, next) {
 
 function getIssueParams(req, res) {
   return {
-    number: validateParam(req.params, 'number', validatePositiveInteger),
+    number: lib.validateParam(req.params, 'number', {
+      typecast: lib.typecaseInteger,
+      validators: [lib.isPositiveInteger],
+    }),
     slug: validateParam(req.query, 'id'),
   }
 }
@@ -48,10 +52,10 @@ router.post('/', auth.required, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
     const slug = validateParam(req.query, 'id')
-    const [article, lastIssue, user] = await Promise.all([
+    const [article, lastIssue, loggedInUser] = await Promise.all([
       getArticle(req, res),
       sequelize.models.Issue.findOne({
-        orderBy: [['number', 'DESC']],
+        order: [['number', 'DESC']],
         include: [{
           model: sequelize.models.Article,
           as: 'issues',
@@ -60,18 +64,57 @@ router.post('/', auth.required, async function(req, res, next) {
       }),
       sequelize.models.User.findByPk(req.payload.id),
     ])
-    const titleSource = validateParam(req.body.issue, 'titleSource')
-    const bodySource = validateParam(req.body.issue, 'bodySource')
+    const body = lib.validateParam(req, 'body')
+    const issueData = lib.validateParam(body, 'issue')
+    const bodySource = lib.validateParam(issueData, 'bodySource', {
+      validators: [ lib.isString ],
+      defaultValue: ''
+    })
+    const titleSource = lib.validateParam(issueData, 'titleSource', {
+      validators: [lib.isString, lib.isTruthy]
+    })
     const issue = await convertIssue({
       article,
       bodySource,
       number: lastIssue ? lastIssue.number + 1 : 1,
       sequelize,
       titleSource,
-      user
+      user: loggedInUser
     })
-    issue.author = user
-    res.json({ issue: await issue.toJson(user) })
+    issue.author = loggedInUser
+    res.json({ issue: await issue.toJson(loggedInUser) })
+  } catch(error) {
+    next(error);
+  }
+})
+
+// Update article.
+router.put('/:number', auth.required, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const [issue, loggedInUser] = await Promise.all([
+      getIssue(req, res),
+      sequelize.models.User.findByPk(req.payload.id),
+    ])
+    const body = lib.validateParam(req, 'body')
+    const issueData = lib.validateParam(body, 'issue')
+    const bodySource = lib.validateParam(issueData, 'bodySource', {
+      validators: [lib.isString],
+      defaultValue: undefined,
+    })
+    const titleSource = lib.validateParam(issueData, 'titleSource', {
+      validators: [lib.isString, lib.isTruthy],
+      defaultValue: undefined,
+    })
+    const newIssue = await convertIssue({
+      bodySource,
+      issue,
+      sequelize,
+      titleSource,
+      user: loggedInUser,
+    })
+    newIssue.author = loggedInUser
+    res.json({ issue: await newIssue.toJson(loggedInUser) })
   } catch(error) {
     next(error);
   }
@@ -80,12 +123,12 @@ router.post('/', auth.required, async function(req, res, next) {
 // Get issues's comments.
 router.get('/:number/comments', auth.optional, async function(req, res, next) {
   try {
-    const [issue, user] = await Promise.all([
+    const [issue, loggedInUser] = await Promise.all([
       getIssue(req, res, { includeComments: true }),
       req.payload ? req.app.get('sequelize').models.User.findByPk(req.payload.id) : null,
     ])
     return res.json({
-      comments: await Promise.all(issue.comments.map(comment => comment.toJson(user)))
+      comments: await Promise.all(issue.comments.map(comment => comment.toJson(loggedInUser)))
     })
   } catch(error) {
     next(error);
@@ -97,10 +140,10 @@ router.post('/:number/comments', auth.required, async function(req, res, next) {
   try {
     const { slug, number } = getIssueParams(req, res)
     const sequelize = req.app.get('sequelize')
-    const [issue, lastComment, user] = await Promise.all([
+    const [issue, lastComment, loggedInUser] = await Promise.all([
       getIssue(req, res),
       sequelize.models.Comment.findOne({
-        orderBy: [['number', 'DESC']],
+        order: [['number', 'DESC']],
         include: [{
           model: sequelize.models.Issue,
           as: 'comments',
@@ -114,16 +157,20 @@ router.post('/:number/comments', auth.required, async function(req, res, next) {
       }),
       sequelize.models.User.findByPk(req.payload.id),
     ])
-    const source = validateParam(req.body.comment, 'source')
+    const body = lib.validateParam(req, 'body')
+    const commentData = lib.validateParam(body, 'comment')
+    const source = lib.validateParam(commentData, 'source', {
+      validators: [ lib.isString ],
+    })
     const comment = await convertComment({
       issue,
       number: lastComment ? lastComment.number + 1 : 1,
       sequelize,
       source,
-      user,
+      user: loggedInUser,
     })
-    comment.author = user
-    res.json({ comment: await comment.toJson(user) })
+    comment.author = loggedInUser
+    res.json({ comment: await comment.toJson(loggedInUser) })
   } catch(error) {
     next(error);
   }
@@ -133,16 +180,24 @@ router.post('/:number/comments', auth.required, async function(req, res, next) {
 router.delete('/:number/comments/:commentNumber', auth.required, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
+    const commentNumber = lib.validateParam(req.params, 'commentNumber', {
+      typecast: lib.typecaseInteger,
+      validators: [lib.isPositiveInteger],
+    })
+    const issueNumber = lib.validateParam(req.params, 'issue', {
+      typecast: lib.typecaseInteger,
+      validators: [lib.isPositiveInteger],
+    })
     const [comment, loggedInUser] = await Promise.all([
       sequelize.models.Comment.findOne({
         where: {
-          number: validateParam(req.params, 'commentNumber', validatePositiveInteger),
+          number: commentNumber,
         },
         include: [
           {
             model: sequelize.models.Issue,
             as: 'comments',
-            where: { number: validateParam(req.params, 'number', validatePositiveInteger) },
+            where: { number: issueNumber },
             required: true,
             include: [
               {

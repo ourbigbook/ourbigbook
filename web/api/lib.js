@@ -33,56 +33,99 @@ class ValidationError extends Error {
   }
 }
 
-function validatePositiveInteger(s) {
+function typecastInteger(s) {
   const i = Number(s)
-  let ok = s !== '' && Number.isInteger(i) && i >= 0
-  return [i, ok]
+  let ok = s !== '' && Number.isInteger(i)
+  return [ok, i]
 }
 
-function validateTrueOrFalse(tf) {
-  const ok = (tf === true || tf === false)
-  return [tf, ok]
+function isNonNegativeInteger(i) {
+  return i >= 0
 }
 
-function validateTruthy(s) {
-  return [s, !!s]
+function isPositiveInteger(i) {
+  return i > 0
 }
 
-function validate(inputString, validator, prop) {
-  if (validator == undefined) {
-    validator = validateTruthy
+function isBoolean(tf) {
+  return typeof tf === 'boolean'
+}
+
+function isString(s) {
+  return typeof s === 'string'
+}
+
+function isTruthy(s) {
+  return !!s
+}
+
+function validate(inputString, validators, prop) {
+  if (validators === undefined) {
+    validators = [isTruthy]
   }
-  let [val, ok] = validator(inputString)
-  if (ok) {
-    return val
-  } else {
-    throw new ValidationError(
-      { [prop]: [`validator ${validator.name} failed on ${prop} = "${inputString}"`] },
-      422,
-    )
+  for (const validator of validators) {
+    if (!validator(inputString)) {
+      throw new ValidationError(
+        { [prop]: [`validator ${validator.name} failed on ${prop} = "${inputString}"`] },
+        422,
+      )
+    }
   }
 }
 
-function validateParam(obj, prop, validator, defaultValue) {
+/* Validate some input parameter, e.g. either URL GET param or parsed JSON body.
+ *
+ * Every such param should be validated like this before getting used, otherwise
+ * 500s are likely
+ *
+ * - typecast: converts strings to other types e.g. integer. This ensures that the type is correct afterwards.
+ *             so you don't need to add a type validator to validators.
+ *
+ *             Body JSON is preparsed by Express for us as a JavaScript object, and types are already converted,
+ *             so typecast is not necessary. But then you have to check that types are correct instead.
+ * - validators: if any of them returs false, return an error code.
+ *               They are not run if the value was not given, the defaultValue is used directly
+ *               if it was given in that case.
+ * - defaultValue: if not given, will blow up if the param is missing. Can be undefined however
+ *                 to allow a default value of undefined.
+ **/
+function validateParam(obj, prop, opts={}) {
+  const { typecast, validators, defaultValue } = opts
   let param = obj[prop]
   if (typeof param === 'undefined') {
+    if (!('defaultValue' in opts)) {
+      throw new ValidationError(
+        { [prop]: [`missing mandatory argument`] },
+        422,
+      )
+    }
     return defaultValue
   } else {
-    return validate(param, validator, prop)
+    if (typecast !== undefined) {
+      let ok
+      ;[ok, param] = typecast(param)
+      if (!ok) {
+        throw new ValidationError(
+          { [prop]: [`typecast ${typecast.name} failed on ${prop} = "${param}"`] },
+          422,
+        )
+      }
+    }
+    validate(param, validators, prop)
+    return param
   }
-}
-
-function validateParamMandatory(obj, prop, validator, defaultValue) {
-  return validate(obj[prop], validator, prop)
 }
 
 module.exports = {
+  ValidationError,
   getArticle,
   getClientIp,
-  ValidationError,
-  validatePositiveInteger,
+  isBoolean,
+  isString,
+  isTruthy,
   validate,
-  validateParamMandatory,
   validateParam,
-  validateTrueOrFalse,
+  isNonNegativeInteger,
+  isPositiveInteger,
+  typecastInteger,
 }

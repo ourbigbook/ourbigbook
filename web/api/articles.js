@@ -27,11 +27,19 @@ router.get('/', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
     if (req.query.id === undefined) {
-      const [{count: articlesCount, rows: articles}, user] = await Promise.all([
+      const [{count: articlesCount, rows: articles}, loggedInUser] = await Promise.all([
         sequelize.models.Article.getArticles({
           sequelize,
-          limit: lib.validateParam(req.query, 'limit', lib.validatePositiveInteger, config.articleLimit),
-          offset: lib.validateParam(req.query, 'offset', lib.validatePositiveInteger, 0),
+          limit: lib.validateParam(req.query, 'limit', {
+            typecast: lib.typecaseInteger,
+            validators: [lib.isNonNegativeInteger],
+            defaultValue: config.articleLimit
+          }),
+          offset: lib.validateParam(req.query, 'offset', {
+            typecast: lib.typecaseInteger,
+            validators: [lib.isNonNegativeInteger],
+            defaultValue: 0
+          }),
           author: req.query.author,
           likedBy: req.query.likedBy,
           topicId: req.query.topicId,
@@ -41,16 +49,16 @@ router.get('/', auth.optional, async function(req, res, next) {
       ])
       return res.json({
         articles: await Promise.all(articles.map(function(article) {
-          return article.toJson(user)
+          return article.toJson(loggedInUser)
         })),
         articlesCount: articlesCount
       })
     } else {
-      const [article, user] = await Promise.all([
+      const [article, loggedInUser] = await Promise.all([
         lib.getArticle(req, res),
         req.payload ? sequelize.models.User.findByPk(req.payload.id) : null,
       ])
-      return res.json({ article: await article.toJson(user) })
+      return res.json({ article: await article.toJson(loggedInUser) })
     }
   } catch(error) {
     next(error);
@@ -67,11 +75,11 @@ router.get('/feed', auth.required, async function(req, res, next) {
     if (typeof req.query.offset !== 'undefined') {
       offset = Number(req.query.offset)
     }
-    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
+    const loggedInUser = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
     const order = getOrder(req)
-    const {count: articlesCount, rows: articles} = await user.findAndCountArticlesByFollowed(offset, limit, order)
+    const {count: articlesCount, rows: articles} = await loggedInUser.findAndCountArticlesByFollowed(offset, limit, order)
     const articlesJson = await Promise.all(articles.map((article) => {
-      return article.toJson(user)
+      return article.toJson(loggedInUser)
     }))
     return res.json({
       articles: articlesJson,
@@ -102,21 +110,29 @@ router.put('/', auth.required, async function(req, res, next) {
 
 async function createOrUpdateArticle(req, res, opts) {
   const sequelize = req.app.get('sequelize')
-  const user = await sequelize.models.User.findByPk(req.payload.id);
-  lib.validateParamMandatory(req, 'body')
-  const articleData = lib.validateParamMandatory(req.body, 'article')
-  const title = lib.validateParamMandatory(articleData, 'title')
-  const render = lib.validateParam(req.body, 'render', lib.validateTrueOrFalse, true)
+  const loggedInUser = await sequelize.models.User.findByPk(req.payload.id);
+  const body = lib.validateParam(req, 'body')
+  const articleData = lib.validateParam(body, 'article')
+  const bodySource = lib.validateParam(articleData, 'bodySource', {
+    validators: [ lib.isString ],
+    defaultValue: ''
+  })
+  const titleSource = lib.validateParam(articleData, 'titleSource', {
+    validators: [lib.isString, lib.isTruthy]
+  })
+  const render = lib.validateParam(body, 'render', {
+    validators: [lib.isBoolean], defaultValue: true
+  })
   const articles = await convert.convertArticle({
-    author: user,
-    body: articleData.body,
+    author: loggedInUser,
+    bodySource,
     forceNew: opts.forceNew,
     sequelize,
-    path: req.body.path,
+    path: lib.validateParam(body, 'path', { validators: [ lib.isString ], defaultValue: undefined }),
     render,
-    title,
+    titleSource,
   })
-  return res.json({ articles: await Promise.all(articles.map(article => article.toJson(user))) })
+  return res.json({ articles: await Promise.all(articles.map(article => article.toJson(loggedInUser))) })
 }
 
 //// Create File and corrsponding Articles. The File must not already exist.
@@ -184,11 +200,11 @@ async function validateLike(req, res, user, article, isLike) {
 router.post('/like', auth.required, async function(req, res, next) {
   try {
     const article = await lib.getArticle(req, res)
-    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-    await validateLike(req, res, user, article, true)
-    await user.addLikeSideEffects(article)
+    const loggedInUser = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
+    await validateLike(req, res, loggedInUser, article, true)
+    await loggedInUser.addLikeSideEffects(article)
     const newArticle = await lib.getArticle(req, res)
-    return res.json({ article: await newArticle.toJson(user) })
+    return res.json({ article: await newArticle.toJson(loggedInUser) })
   } catch(error) {
     next(error);
   }
@@ -198,11 +214,11 @@ router.post('/like', auth.required, async function(req, res, next) {
 router.delete('/like', auth.required, async function(req, res, next) {
   try {
     const article = await lib.getArticle(req, res)
-    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
-    await validateLike(req, res, user, article, false)
-    await user.removeLikeSideEffects(article)
+    const loggedInUser = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
+    await validateLike(req, res, loggedInUser, article, false)
+    await loggedInUser.removeLikeSideEffects(article)
     const newArticle = await lib.getArticle(req, res)
-    return res.json({ article: await newArticle.toJson(user) })
+    return res.json({ article: await newArticle.toJson(loggedInUser) })
   } catch(error) {
     next(error);
   }

@@ -4020,6 +4020,8 @@ Secondary children are normally basically used as "tags": a header such as `Bat`
 = Cow
 {parent=animal}
 
+Oh, and cows are also \x[mammal]{parent}{p}.
+
 = Mammal
 {parent=animal}
 

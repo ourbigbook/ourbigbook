@@ -4,9 +4,8 @@ A Markup language to write HTML / PDF books that is saner and more powerful than
 
 \toc
 
-\h2
+\h2{Design goals}
 [id-scope=true]
-[Design goals]
 
 Cirodown is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
 
@@ -18,34 +17,36 @@ The tradeoff for those features is that the language is slightly heavier to read
 
 It is intended that this will be an acceptable downside as Cirodown will be used primarily large complex content such as books rather than forum posts, and will therefore primarily written either:
 
-\l[in text editors locally, where users have more features than in random browser textareas]
-\l[in a dedicated website that will revolutionize education, and therefore have a good JavaScript editing interface: \a[https://github.com/cirosantilli/write-free-science-books-to-get-famous-website][]]
+\l{in text editors locally, where users have more features than in random browser textareas}
+\l{in a dedicated website that will revolutionize education, and therefore have a good JavaScript editing interface: \a{https://github.com/cirosantilli/write-free-science-books-to-get-famous-website}{}}
 
-\h3[Saner]
+\h3{Saner}
 
-To be saner than both Markdown and Asciidoctor, Cirodown has exactly three magic characters:
+To be saner than both Markdown and Asciidoctor, Cirodown has exactly five magic characters, with similar functions as in LaTeX:
 
-\l[\c[\\] backslash to start a macro, like LaTeX]
-\l[\c[\[] left square bracket to start an argument of a macro]
-\l[\c[\]] right square bracket]
+\l{\c{\\} backslash to start a macro, like LaTeX}
+\l{\c{\[} and \c{\]}: left and right square brackets to delimit optional macro arguments}
+\l{\c{\{} and \c{\}}: left and right curly braces bracket to start an optional arguments}
 
 And double blank newlines for \x[paragraphs][paragraphs] if you are pedantic.
 
+We would like to have only square brackets for both optional and mandatory to have even less magic characters, but that would make the language difficult to parse for computer and humans. LaTeX was right for once!
+
 This produces a very regular syntax that is easy to learn, including doing:
 
-\l[arbitrary nesting of elements]
-\l[adding arbitrary properties to elements]
+\l{arbitrary nesting of elements}
+\l{adding arbitrary properties to elements}
 
 This sanity also makes the end tail learning curve of the endless edge cases found in Markdown and Asciidoctor disappear.
 
 The language is designed to be philosophically isomorphic to HTML to:
 
-\l[further reduce the learning curve]
-\l[ensure that most of HTML constructs can be reached, including arbitrary nesting]
+\l{further reduce the learning curve}
+\l{ensure that most of HTML constructs can be reached, including arbitrary nesting}
 
 More precisely:
 
-\l[macro names map to tag names, e.g.: \c[\a] to \c[<a]]
+\l{macro names map to tag names, e.g.: \c{\a} to \c{<a}}
 \l[
   one of the arguments of macros, maps to the content of the HTML element, and the others map to attributes.
 

@@ -3612,12 +3612,18 @@ function output_path(input_path, id, context={}, split_suffix=undefined) {
 }
 
 /** Helper for when we have an actual AstNode. */
-function output_path_from_ast(ast, context) {
+function output_path_from_ast(ast, context, options={}) {
+  let effective_id
+  if ('effective_id' in options) {
+    effective_id = options.effective_id
+  } else {
+    effective_id = ast.id
+  }
   let split_suffix;
   if (ast.args.splitSuffix !== undefined) {
     split_suffix = render_arg(ast.args.splitSuffix, context);
   }
-  return output_path(ast.source_location.path, ast.id, context, split_suffix);
+  return output_path(ast.source_location.path, effective_id, context, split_suffix);
 }
 
 /* This is the centerpiece of path calculation. It determines where a given header
@@ -5882,6 +5888,9 @@ function x_href_parts(target_id_ast, context) {
     ] = output_path_from_ast(
       target_id_ast,
       context,
+      {
+        effective_id: target_id_ast_effective_id,
+      }
     );
     if (context.options.remove_leading_at) {
       if (target_output_path_dirname) {

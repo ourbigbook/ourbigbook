@@ -293,6 +293,7 @@ class Macro {
    */
   constructor(name, positional_args, convert, options={}) {
     if (!('auto_parent' in options)) {
+      // https://cirosantilli.com/cirodown#auto_parent
       options.auto_parent = undefined;
     }
     if (!('auto_parent_skip' in options)) {
@@ -320,6 +321,7 @@ class Macro {
     }
     if (!('remove_whitespace_children' in options)) {
       // TODO this should be a property of specific arguments, not the entire macro.
+      // https://cirosantilli.com/cirodown#remove_whitespace_children
       options.remove_whitespace_children = false;
     }
     if (!('x_style' in options)) {

@@ -4626,7 +4626,11 @@ The following basenames are considered "index files":
 * `index.ciro`
 
 Those basenames have the following magic properties:
-* the default output file name for an index file in HTML output is always `index.html`, including that of `README.ciro`. This way it will appear on both the root of the HTML output and on the GitHub home page once GitHub adds Cirodown support.
+* the default output file name for an index file in HTML output is either:
+  * `index.html` when in the \x[project-toplevel-directory]. E.g. `README.ciro` renders to `index.html`. Note that GitHub and many other static website hosts then automatically hide the `index.html` part from the URL, so that your `README.ciro` hosted at `http://example.com` will be accessible simply under `http://example.com` and not `http://example.com/index.html`
+  * the name of the subdirectory in which it is located when not in the \x[project-toplevel-directory]. E.g. `mysubdir/index.ciro` outputs to `mysubdir.html`
+
+    Previously, we had placed the output in `mysubdir/index.html`, but this is not as nice as it makes GitHub pages produce URLs with a trailing slash as `mysubdir/`, which is ugly, see also: https://stackoverflow.com/questions/5948659/when-should-i-use-a-trailing-slash-in-my-url
 * the default \x[the-toplevel-header][toplevel header] ID of an index files is derived from the parent directory basename rather than from the source file basename
 
 = Project toplevel directory

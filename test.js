@@ -4555,9 +4555,9 @@ assert_convert_ast('relative include in subdirectory',
 `,
     },
     assert_xpath_main: [
-      "//*[@id='toc']//x:a[@href='notindex.html' and @data-test='0' and text()='1. Notindex']",
-      "//*[@id='toc']//x:a[@href='notindex2.html' and @data-test='1' and text()='1.1. Notindex2']",
-      "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and @data-test='2' and text()='1.2. Notindex h2']",
+      "//*[@id='toc']//x:a[@href='s1/notindex.html' and @data-test='0' and text()='1. Notindex']",
+      "//*[@id='toc']//x:a[@href='s1/notindex2.html' and @data-test='1' and text()='1.1. Notindex2']",
+      "//*[@id='toc']//x:a[@href='s1/notindex.html#notindex-h2' and @data-test='2' and text()='1.2. Notindex h2']",
       // https://github.com/cirosantilli/cirodown/issues/214
       //"//*[@id='toc']//x:a[@href='../top.html' and @data-test='2' and text()='2. Top']",
     ],
@@ -4566,6 +4566,10 @@ assert_convert_ast('relative include in subdirectory',
 );
 assert_convert_ast('include from parent to subdirectory',
   `= Index
+
+\\x[subdir][index to subdir]
+
+\\x[subdir/h2][index to subdir h2]
 
 \\Include[subdir]
 \\Include[subdir/notindex]
@@ -4584,44 +4588,64 @@ assert_convert_ast('include from parent to subdirectory',
 `,
     },
     input_path_noext: 'index',
+    assert_xpath: {
+      'index.html': [
+        "//x:a[@href='subdir.html' and text()='index to subdir']",
+        "//x:a[@href='subdir.html#h2' and text()='index to subdir h2']",
+      ],
+    },
   }
 );
 assert_convert_ast('subdir/index.ciro outputs to subdir without trailing slash with html_x_extension=true',
   `= Subdir
 
 \\x[subdir/notindex][link to subdir notindex]
+
+\\x[subdir/notindex-h2][link to subdir notindex h2]
 `,
   undefined,
   {
-    convert_before: ['subdir/notindex.ciro', 'subdir/index.ciro'],
+    convert_before: ['subdir/notindex.ciro'],
     filesystem: {
       'subdir/notindex.ciro': `= Notindex
+
+== Notindex h2
 `,
     },
     input_path_noext: 'subdir/index',
     extra_convert_opts: { html_x_extension: true },
-    assert_xpath_main: [
-      "//x:a[@href='subdir/notindex.html' and text()='link to subdir notindex']",
-    ]
+    assert_xpath: {
+      'subdir.html': [
+        "//x:a[@href='subdir/notindex.html' and text()='link to subdir notindex']",
+        "//x:a[@href='subdir/notindex.html#notindex-h2' and text()='link to subdir notindex h2']" ,
+      ],
+    },
   }
 );
 assert_convert_ast('subdir/index.ciro outputs to subdir without trailing slash with html_x_extension=false',
   `= Subdir
 
 \\x[subdir/notindex][link to subdir notindex]
+
+\\x[subdir/notindex-h2][link to subdir notindex h2]
 `,
   undefined,
   {
     convert_before: ['subdir/notindex.ciro', 'subdir/index.ciro'],
     filesystem: {
       'subdir/notindex.ciro': `= Notindex
+
+== Notindex h2
 `,
     },
     input_path_noext: 'subdir/index',
     extra_convert_opts: { html_x_extension: false },
-    assert_xpath_main: [
-      "//x:a[@href='subdir/notindex' and text()='link to subdir notindex']",
-    ]
+    assert_xpath: {
+      'subdir.html': [
+        "//x:a[@href='subdir/notindex' and text()='link to subdir notindex']",
+        "//x:a[@href='subdir/notindex#notindex-h2' and text()='link to subdir notindex h2']",
+      ],
+    },
   }
 );
 
@@ -5110,8 +5134,8 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='link to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='link to notindex h2']",
         "//x:div[@class='p']//x:a[@href='#has-split-suffix' and text()='link to has split suffix']",
-        "//x:a[@href='subdir/index.html' and text()='link to subdir']",
-        "//x:a[@href='subdir/index.html#index-h2' and text()='link to subdir index h2']",
+        "//x:a[@href='subdir.html' and text()='link to subdir']",
+        "//x:a[@href='subdir.html#index-h2' and text()='link to subdir index h2']",
         "//x:a[@href='subdir/notindex.html' and text()='link to subdir notindex']",
         "//x:a[@href='subdir/notindex.html#notindex-h2' and text()='link to subdir notindex h2']",
 
@@ -5156,32 +5180,31 @@ assert_executable(
         // to make sure we don't have to rewrite everything.
         //"//*[@id='toc']//x:a[@href='included-by-index-split.html' and text()='1. Included by index']",
       ],
-      // TODO modify to subdir.html
-      'subdir/index.html': [
+      'subdir.html': [
         xpath_header(1),
-        xpath_header_split(1, '', 'split.html', cirodown.SPLIT_MARKER_TEXT),
+        xpath_header_split(1, '', 'subdir/split.html', cirodown.SPLIT_MARKER_TEXT),
         xpath_header(2, 'index-h2'),
-        xpath_header_split(2, 'index-h2', 'index-h2.html', cirodown.SPLIT_MARKER_TEXT),
+        xpath_header_split(2, 'index-h2', 'subdir/index-h2.html', cirodown.SPLIT_MARKER_TEXT),
         xpath_header(2, 'scope'),
-        xpath_header_split(2, 'scope', 'scope.html', cirodown.SPLIT_MARKER_TEXT),
+        xpath_header_split(2, 'scope', 'subdir/scope.html', cirodown.SPLIT_MARKER_TEXT),
         xpath_header(3, 'scope/h3'),
-        xpath_header_split(3, 'scope/h3', 'scope/h3.html', cirodown.SPLIT_MARKER_TEXT),
-        "//x:a[@href='../index.html' and text()='link to toplevel']",
-        "//x:a[@href='../index.html#h2' and text()='link to toplevel subheader']",
-        "//x:a[@href='notindex.html' and text()='link to subdir notindex']",
+        xpath_header_split(3, 'scope/h3', 'subdir/scope/h3.html', cirodown.SPLIT_MARKER_TEXT),
+        "//x:a[@href='index.html' and text()='link to toplevel']",
+        "//x:a[@href='index.html#h2' and text()='link to toplevel subheader']",
+        "//x:a[@href='subdir/notindex.html' and text()='link to subdir notindex']",
       ],
       'subdir/split.html': [
         xpath_header(1, ''),
-        xpath_header_split(1, '', 'index.html', cirodown.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, '', '../subdir.html', cirodown.NOSPLIT_MARKER_TEXT),
         // Check that split suffix works. Should be has-split-suffix-split.html,
         // not has-split-suffix.html.
         "//x:div[@class='p']//x:a[@href='../index.html#has-split-suffix' and text()='link to has split suffix']",
       ],
       'subdir/scope/h3.html': [
         xpath_header(1, 'h3'),
-        xpath_header_split(1, 'h3', '../index.html#scope/h3', cirodown.NOSPLIT_MARKER_TEXT),
-        "//x:div[@class='p']//x:a[@href='../index.html#scope' and text()='scope/h3 to scope']",
-        "//x:div[@class='p']//x:a[@href='../index.html#scope/h3' and text()='scope/h3 to scope/h3']",
+        xpath_header_split(1, 'h3', '../../subdir.html#scope/h3', cirodown.NOSPLIT_MARKER_TEXT),
+        "//x:div[@class='p']//x:a[@href='../../subdir.html#scope' and text()='scope/h3 to scope']",
+        "//x:div[@class='p']//x:a[@href='../../subdir.html#scope/h3' and text()='scope/h3 to scope/h3']",
       ],
       'subdir/notindex.html': [
         xpath_header(1, 'notindex'),
@@ -5264,7 +5287,7 @@ assert_executable(
     assert_xpath: {
       'index.html': [
         xpath_header(1, 'index'),
-        "//x:a[@href='subdir/index.html#index-h2' and text()='link to subdir index h2']",
+        "//x:a[@href='subdir.html#index-h2' and text()='link to subdir index h2']",
       ]
     },
   }
@@ -5340,8 +5363,8 @@ assert_executable(
       'out/publish/out/publish/toplevel-scope/toplevel-scope-h2.html': [
         "//x:style[contains(text(),'@import \"../dist/cirodown.css\"')]",
       ],
-      'out/publish/out/publish/subdir/index.html': [
-        "//x:style[contains(text(),'@import \"../dist/cirodown.css\"')]",
+      'out/publish/out/publish/subdir.html': [
+        "//x:style[contains(text(),'@import \"dist/cirodown.css\"')]",
       ],
       // Non-converted files are copied over.
       'out/publish/out/publish/scss.css': [],
@@ -5377,7 +5400,7 @@ assert_executable(
       'index.html',
     ],
     assert_xpath: {
-      'subdir/index.html': [xpath_header(1)],
+      'subdir.html': [xpath_header(1)],
       'subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
@@ -5406,7 +5429,7 @@ assert_executable(
       'xml.xml',
     ],
     assert_xpath: {
-      'subdir/index.html': [xpath_header(1, '')],
+      'subdir.html': [xpath_header(1, '')],
       'subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
@@ -5423,7 +5446,7 @@ assert_executable(
     },
     // Place out next to cirodown.json which should be the toplevel.
     expect_exists: ['out'],
-    expect_not_exists: ['subdir/out', 'index.html', 'subdir/index.html'],
+    expect_not_exists: ['subdir/out', 'index.html', 'subdir.html'],
     assert_xpath: {
       'subdir/notindex.html': [xpath_header(1, 'notindex')],
     },
@@ -5440,7 +5463,7 @@ assert_executable(
     },
     // Don't know a better place to place out, so just put it int subdir.
     expect_exists: ['out'],
-    expect_not_exists: ['subdir/out', 'index.html', 'subdir/index.html'],
+    expect_not_exists: ['subdir/out', 'index.html', 'subdir.html'],
     assert_xpath: {
       'subdir/notindex.html': [xpath_header(1, 'notindex')],
     },
@@ -5463,12 +5486,12 @@ assert_executable(
     expect_not_exists: [
       'out',
       'index.html',
-      'subdir/index.html',
+      'subdir.html',
       'subdir/notindex.html',
     ],
     assert_xpath: {
       'my_outdir/index.html': [xpath_header(1, '')],
-      'my_outdir/subdir/index.html': [xpath_header(1, '')],
+      'my_outdir/subdir.html': [xpath_header(1, '')],
       'my_outdir/subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
@@ -5927,7 +5950,7 @@ assert_executable(
   }
 );
 assert_executable(
-  "executable: link: relative links and images are corrected for different output paths with scope and split-headers",
+  'executable: link: relative links and images are corrected for different output paths with scope and split-headers',
   {
     args: ['--split-headers', '.'],
     filesystem: {
@@ -5990,10 +6013,10 @@ assert_executable(
         "//x:video[@src='../i-exist' and @alt='h3 i-exist video']",
         "//x:a[@href='https://cirosantilli.com' and text()='h3 abs']",
       ],
-      'subdir/index.html': [
-        "//x:a[@href='../i-exist' and text()='subdir i-exist']",
+      'subdir.html': [
+        "//x:a[@href='i-exist' and text()='subdir i-exist']",
         "//x:a[@href='/i-exist' and text()='subdir /i-exist']",
-        "//x:a[@href='i-exist-subdir' and text()='subdir i-exist-subdir']",
+        "//x:a[@href='subdir/i-exist-subdir' and text()='subdir i-exist-subdir']",
       ],
       'subdir/subdir-h2/subdir-h3.html': [
         "//x:a[@href='../../i-exist' and text()='subdir h3 i-exist']",
@@ -6045,7 +6068,7 @@ assert_executable(
       'myproject/index.html': [
           xpath_header(1, ''),
       ],
-      'myproject/subdir/index.html': [
+      'myproject/subdir.html': [
           xpath_header(1, ''),
       ]
     }
@@ -6085,7 +6108,7 @@ assert_executable(
       'myproject/index.html': [
           xpath_header(1, ''),
       ],
-      'myproject/subdir/index.html': [
+      'myproject/subdir.html': [
           xpath_header(1, ''),
       ]
     }

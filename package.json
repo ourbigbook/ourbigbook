@@ -75,7 +75,7 @@
     "publish": "cirodown --publish --unsafe-ace",
     "start": "cd web && npm start",
     "start-dev": "cd web && npm run start-dev",
-    "test": "mocha test --ignore-leaks",
+    "test": "NODE_OPTIONS='--unhandled-rejections=strict' mocha test --ignore-leaks",
     "webpack": "webpack",
     "webpack-dev": "webpack serve"
   }

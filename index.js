@@ -9080,7 +9080,7 @@ const OUTPUT_FORMATS_LIST = [
             ret += `<div class="math${multiline_caption}"${html_render_attrs_id(ast, context)}>`
             ret += `<div class="equation">`
             ret += `<div>${katex_output}</div>`
-            ret += `<div><a${href}>(${context.macros[ast.macro_name].options.get_number(ast, context)})</a></div>`
+            ret += `<div class="number"><a${href}>(${context.macros[ast.macro_name].options.get_number(ast, context)})</a></div>`
             ret += `</div>`
             ret += title_and_description
             ret += `</div>`

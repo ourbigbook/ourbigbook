@@ -6175,8 +6175,14 @@ or e.g. to run just a single test:
 ``
 npm run test-next -- -g 'api: create an article and see it on global feed'
 ``
+for for Postgres:
+``
+npm run test-pg-next
+``
 
 Note that Next.js tests are just present inside other tests, e.g. `api: create an article and see it on global feed` also tests some stuff when not testing Next.js. Running `npm run test-next` simply enables the Next.js tests on top of the non Next.js ones that get run by default.
+
+These tests can only be run in production mode, and so our scripts automatically rebuild every time before running the tests, which makes things quite slow. This required because in development mode, Next.js is extremelly soft, and e.g. does not raise 500 instead returning a 200 page with error messages. Bad default.
 
 = OurBigBook Web TypeScript type checking
 {parent=ourbigbook-web}

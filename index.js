@@ -1074,7 +1074,9 @@ function error_message_in_output(msg, context) {
   return `[CIRODOWN_ERROR: ${escaped_msg}]`
 }
 
-/** Convert a key value fully HTML escaped strings to an HTML attribute.
+/** Convert a key value already fully HTML escaped strings
+ * to an HTML attribute. The callers MUST escape any untrested chars.
+  e.g. with html_attr_value.
  *
  * @param {String} key
  * @param {Array[AstNode]} arg
@@ -1185,6 +1187,9 @@ function html_escape_context(context, str) {
  * main element child.
  */
 function html_convert_simple_elem(elem_name, options={}) {
+  if (!('attrs' in options)) {
+    options.attrs = {};
+  }
   if (!('link_to_self' in options)) {
     options.link_to_self = false;
   }
@@ -1215,6 +1220,10 @@ function html_convert_simple_elem(elem_name, options={}) {
       link_to_self = `<span class="hide-hover"> <a${href}>${Macro.LINK_SELF}</a></span>\n`;
     }
     let attrs = html_convert_attrs_id(ast, context);
+    let extra_attrs = '';
+    for (const key in options.attrs) {
+      extra_attrs += html_attr(key, options.attrs[key]);
+    }
     let content_ast = ast.args.content;
     if (content_ast === undefined) {
       content_ast = [new PlaintextAstNode(ast.line, ast.column, '')];
@@ -2305,7 +2314,13 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    html_convert_simple_elem('p', {link_to_self: true}),
+    html_convert_simple_elem(
+      'div',
+      {
+        attrs: {'class': 'p'},
+        link_to_self: true,
+      }
+    ),
   ),
   new Macro(
     Macro.PLAINTEXT_MACRO_NAME,

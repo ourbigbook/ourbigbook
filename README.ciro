@@ -52,7 +52,7 @@ The language is designed to be philosophically isomorphic to HTML to:
 
 More precisely:
 
-\l[macro names map to tag names, e.g.: \c[[\a]] to \c[<a]]
+\l[macro names map to tag names, e.g.: \c[\\a]] to \c[<a]]
 \l[
   one of the arguments of macros, maps to the content of the HTML element, and the others map to attributes.
 
@@ -436,7 +436,7 @@ If the content of the code block has many characters that you would need to \x[e
 \C[[[
 A paragraph.
 
-\c[[
+\C[[
 And now, some long, long code, with lots
 of chars that you would need to escape:
 \ [  ] {  }
@@ -483,7 +483,7 @@ Every argument in Cirodown is either positional or named.
 
 For example, in a \x[headers][header] definition with an ID:
 
-\c[[
+\C[[
 \h[1][My asdf]{id=asdf qwer}{id_scope=myscope}
 ]]
 
@@ -498,7 +498,7 @@ we have:
 
 You can determine if a macro is positional or named by using \x[help-macros]. Its output contains something like:
 
-\c[[
+\C[[
   "h": {
     "name": "h",
     "positional_args": [
@@ -527,7 +527,7 @@ The order of positional arguments must of course be fixed, but named arguments c
 
 The following are therefore all equivalent:
 
-\c[[
+\C[[
 \h[1][My asdf]{id=asdf qwer}{id_scope=myscope}
 \h[1][My asdf]{id_scope=myscope}{id=asdf qwer}
 \h{id=asdf qwer}{id_scope=myscope}[1][My asdf]
@@ -542,11 +542,11 @@ However, some positional arguments can have special effects if not given.
 
 For example, an anchor with the first positional argument present (the URL), but not the second positional argument (the link text) as in:
 
-\c[[\a[http://example.com]]]
+\C[[\a[http://example.com]]]
 
 has the special generates automatic links as in:
 
-\c[[\a[http://example.com][http://example.com]]]
+\C[[\a[http://example.com][http://example.com]]]
 
 See also: \x[links].
 
@@ -554,7 +554,7 @@ See also: \x[links].
 
 The JavaScript interface sees arguments as follows:
 
-\c[
+\C[
 function macro_name(args)
 ]
 
@@ -571,7 +571,7 @@ where args is a dict such that:
 
 The macro name and the first argument, and two consecutive arguments, can be optionally separated by exactly one newline character, e.g.:
 
-\c[[
+\C[[
 \h[2]
 {id-scope=true}
 [Design goals]
@@ -579,68 +579,98 @@ The macro name and the first argument, and two consecutive arguments, can be opt
 
 is equivalent to:
 
-\c[[
+\C[[
 \h[2]{id-scope=true}[Design goals]
 ]]
 
 and this non-recommended mixed style:
 
-\c[[
+\C[[
 \h[2]{id-scope=true}
 [Design goals]
 ]]
 
 This allows to greatly improve the readability of long argument lists by having them one per line.
 
-\h[4][Literal arguments]
-{id=literal}
-
-TODO
-
-\h[5][Escape characters]
+\h[4][Escape characters]
 
 For non-literal macro arguments, the rule is simple, you must escape all of:
 
 \l[\c[\\]]
-\l[\c[\{]]
-\l[\c[\]]]
+\l[\c[\[] and \c[\]]]
+\l[\c[\{] and \c[\}]]
 
-For literal macro arguments there are two choices.
+This is good for short arguments of regular text, but for longer blocks of \x[code] or \x[math], you may want to use \x[literal]
 
-For longer arguments, especially multiline, the best approach is usually to use the following heredoc-like syntax.
+\h[4][Literal arguments]
+{id=literal}
 
-By opening a macro argument with multiple square brackets \c[\{], only the same number of square brackets will be used for closing that opening.
+Arguments that are opened with more than one square brackets \c[\[] or curly braces \c[\{] are literal arguments.
 
-For example, a multiline code block with double open and double close square brackets can be enclosed in triple square brackets:
+In literal arguments, Cirodown is not parsed, and the entire argument is considered as text until a corresponding close with the same number of characters.
 
-\c[[[
-A line.
-[[
-Another one.
+Therefore, you cannot have nested content, but it makes it extremely convenient to write \x[code] or \x[math].
+
+For example, a multiline code block with double open and double close square brackets inside can be enclosed in triple square brackets:
+
+\C[[[
+A literal argument looks like this in Cirodown:
+
+\C[[
+\C[
+A multiline
+
+cod block.
+]
 ]]
-And another one.
+
+And another paragraph.
 ]]]
 
-The same works for inline code: \c[[Cirodown links look like this: \c[http://example.com][Example.]]].
+The same works for inline code:
 
-Within literal blocks, you only need to escape constructs that would lead to ambiguity on where the block ends, namely:
+\C[[[
+The program \c[[puts("]");]] is very complex.
+]]]
 
-\l[
-  if a literal starts with open square brackets \c[\[]], then that must be escaped, otherwise it will get interpreted as a heredoc, e.g.:
+Within literal blocks, only one thing can be escaped with backslashes: leading \c[\[] or trailing \c[\]].
 
-  \c[[
-  \c[\[ This code block starts with a literal open square bracket]
-  ]]
+The rule is that:
 
-  Note that this only ever happens for arguments that don't start with a newline considering \x[argument-leading-trailing-newline-removal].
-]
-\l[
-  if a literal block ends
+\l[if the first character of a literal argument is a sequence of \c[\\], and it is followed by another argument open character (e.g. \c[\[]), remove the first \c[\\] and treat the other characters as regular text]
+\l[if the last character of a literal argument is a \c[\\], ignore it and treat the following closing character (e.g. \c[\]]) as regular text]
 
-  \c[\c[\]]
-]
+See the following open examples:
 
-\c[\[ first char was an open brace]
+\C[[[
+\c[[\ b]]
+<code>\ b</code>
+
+\c[[\a b]]
+<code>\a b</code>
+
+\c[[\[ b]]
+<code>[ b</code>
+
+\c[[\\[ b]]
+<code>\[ b</code>
+
+\c[[\\\[ b]]
+<code>\\[ b</code>
+]]]
+
+and close examples:
+
+\C[[[
+\c[[a \]]
+<code>a \</code>
+
+\c[[a \]]]
+<code>a ]</code>
+
+\c[[a \\]]]
+<code>a \]</code>
+]]]
 
 \h[4][Argument leading newline removal]
 
@@ -697,12 +727,12 @@ This allows seamlessly indenting complex nested content to make it more readable
 
 For example, a list with complex content could be written without indentation as:
 
-\c[[
+\C[[
 \l[a]
 \l[
 b
 
-\c[[
+\C[[
 And now some code
 ]]
 
@@ -713,7 +743,7 @@ And a paragraph.
 
 but it would be more readable as the equivalent:
 
-\c[[
+\C[[
 \l[a]
 \l[
   b
@@ -729,7 +759,7 @@ but it would be more readable as the equivalent:
 
 If a something tries to reduce the current indentation level, then that leads to an error:
 
-\c[[
+\C[[
 \l[a]
 \l[
   b
@@ -748,7 +778,7 @@ I'm bad because I have negative indentation.
 
 You can get an overview of all macros in JSON format with:
 
-\c[[
+\C[[
 ./cirodown --help-macros
 ]]
 
@@ -782,13 +812,13 @@ The compiler executable will have a \c[--dump-macros] option that will dump all 
 
 Run all tests:
 
-\c[[
+\C[[
 npm test
 ]]
 
 List all tests:
 
-\c[[
+\C[[
 node node_modules/mocha-list-tests/mocha-list-tests.js main.js
 ]]
 
@@ -796,7 +826,7 @@ As per: \a[https://stackoverflow.com/questions/41380137/list-all-mocha-tests-wit
 
 Run just one test by name:
 
-\c[[
+\C[[
 npm test -- 'one paragraph'
 ]]
 
@@ -822,7 +852,7 @@ Every Cirodown document is implicitly put inside a \c[[\toplevel]] document and:
 
 E.g., a Cirodown document that contains:
 
-\c[[
+\C[[
 [title=My favorite title]
 
 And now, some content!
@@ -830,7 +860,7 @@ And now, some content!
 
 is morally equivalent to:
 
-\c[[
+\C[[
 \toplevel
 [title=My favorite title]
 [

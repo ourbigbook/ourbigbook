@@ -4399,7 +4399,6 @@ bb
 == cc
 
 \\Toc
-
 `,
   [
     a('H', undefined, {level: [t('1')], title: [t('aa')]}),
@@ -4879,6 +4878,13 @@ assert_no_error('math block sane',
 assert_no_error('math block insane',
   '$$\\sqrt{1 + 1}$$',
   [a('M', [t('\\sqrt{1 + 1}')])],
+);
+assert_no_error('math block with comment on last line',
+  // KaTeX parse error: LaTeX-incompatible input and strict mode is set to 'error': % comment has no terminating newline; LaTeX would fail because of commenting the end of math mode (e.g. $) [commentAtEnd]
+  `$$
+% my comment
+$$
+`,
 );
 assert_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 3);
 

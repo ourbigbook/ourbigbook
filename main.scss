@@ -27,7 +27,7 @@ header {
     margin-right: 0;
     padding-left: 10px;
     &:first-child {
-      padding-left: $toplevel-horizontal-padding-left;
+      padding-left: 0;
     }
     padding-right: 10px;
     text-decoration: none;
@@ -69,14 +69,23 @@ header {
       }
     }
   }
+  .brand-group {
+    display: flex;
+    @media only screen and (max-width: $max-mobile-width) {
+      padding-left: $toplevel-horizontal-padding-mobile;
+    }
+    @media only screen and (min-width: $max-mobile-width + 1) {
+      padding-left: $toplevel-horizontal-padding-left;
+    }
+  }
 }
 footer {
-  word-wrap: break-word;
-  font-size: 1.2em;
   color: $footer-color;
+  font-size: 1.2em;
+  word-wrap: break-word;
   a {
     color: $a-color;
-    //text-decoration: none;
+    text-decoration: none;
     &:visited {
       color: $a-color;
     }

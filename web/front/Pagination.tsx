@@ -85,7 +85,7 @@ const Pagination = ({
               <PaginationItem href={urlFunc(0)}>{`<<`}</PaginationItem>
             </Maybe>
             <Maybe test={currentPage > 0}>
-              <PaginationItem href={urlFunc(currentPage + 1)}>{`<`}</PaginationItem>
+              <PaginationItem href={urlFunc(currentPage)}>{`<`}</PaginationItem>
             </Maybe>
             {pages.map(page => {
               const isCurrent = page === currentPage;

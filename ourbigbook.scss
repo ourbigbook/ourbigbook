@@ -12,7 +12,6 @@
 
 $caption-margin-bottom: 7px;
 $p-margin-vert: 14px;
-$toplevel-horizontal-padding-mobile: 5px;
 // Without this, hover on ToC makes ToC move around. Maybe we should scope to ToC only?
 // TODO find proper way to do it without this random value.
 $icon-font-size: .95em;
@@ -277,7 +276,7 @@ div.h {
     h1, h2, h3, h4, h5, h6 {
       div.number {
         color: $color;
-        display: inline-block;
+        display: inline;
       }
     }
     &:not(:last-child) {
@@ -512,7 +511,7 @@ ol, ul {
       i.n {
         color: $color;
         font-style: normal;
-        display: inline-block;
+        display: inline;
       }
       @media only screen and (min-width: $max-mobile-width + 1) {
         div:hover span.not-arrow span.hover-metadata {

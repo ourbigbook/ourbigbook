@@ -5374,7 +5374,7 @@ AstNode: Toplevel
     AstNode: P
       AstArgument: content
         AstNode: plaintext
-            "A link to"
+            "A link to "
         AstNode: x
           AstArgument: href
             AstNode: plaintext
@@ -5385,6 +5385,8 @@ AstNode: Toplevel
           AstArgument: p
             AstNode: plaintext
               "1"
+        AstNode: plaintext
+            " and more text."
 ``
 
 You can observe the generated AST by using the \x[log] option with:

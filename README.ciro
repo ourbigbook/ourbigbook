@@ -5479,7 +5479,7 @@ There are two types of test in our test suite:
   * they tend to be slower than the API test
   * can test functionality that is done outside of the `cirodown.convert` JavaScript API, so they are more end to end
   * don't do any mocking, and could therefore be more representative
-  * work by creating an actual physical filesystem under `out/test/<test-title>` with the Cirodown files and other files like `cirodown.json`, and then running the executable on that directory.
+  * work by creating an actual physical filesystem under `out/test/<normalized-test-title>` with the Cirodown files and other files like `cirodown.json`, and then running the executable on that directory.
 
     `npm test` first deletes the `out/test` directory before running the tests. After running, the generated files are kept so you can inspect them to help debug any issues.
   * all these tests check their results by parsing the HTML and searching for elements, since here we don't have access to the \x[abstract-syntax-tree]. It wouldn't be impossible to obtain it however, as it is likely already JSON serializable.
@@ -5506,7 +5506,7 @@ cmd: cd out/test/executable-cirodown-json-outputOutOfTree && cirodown --split-he
 ``
 so you can just re-run it manually with `node inspect` as in:
 ``
-cd out/test/executable-cirodown-json-outputOutOfTree && node inspect "../../../cirodown" --split-headers .
+cd out/test/executable-cirodown-json-outputoutoftree && node inspect "../../../cirodown" --split-headers .
 ``
 This works since the `tmp` directory is not deleted in case of failure.
 

@@ -341,7 +341,7 @@ function assert_executable(
       this.timeout(options.timeout);
     }
 
-    const tmpdir = path.join(testdir, this.test.title.replace(/[^a-zA-Z0-9]+/g, '-'));
+    const tmpdir = path.join(testdir, this.test.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
     // These slighty modified titles should still be unique, but who knows.
     // Not modifying them would require cd quoting.
     assert(!fs.existsSync(tmpdir));
@@ -350,20 +350,23 @@ function assert_executable(
     if (!fs.existsSync(cwd)) {
       fs.mkdirSync(cwd);
     }
-    for (const relpath in options.filesystem) {
-      const dirpath = path.join(tmpdir, path.parse(relpath).dir);
-      if (!fs.existsSync(dirpath)) {
-        fs.mkdirSync(dirpath);
-      }
-      fs.writeFileSync(path.join(tmpdir, relpath), options.filesystem[relpath]);
-    }
+    update_filesystem(options.filesystem, tmpdir)
     process.env.PATH = process.cwd() + ':' + process.env.PATH
-    for (const [cmd, args] of options.pre_exec) {
-      const out = child_process.spawnSync(cmd, args, {cwd: cwd});
-      assert.strictEqual(out.status, 0, exec_assert_message(out, cmd, args, cwd));
+    const fakeroot_arg = ['--fakeroot', tmpdir]
+    for (const entry of options.pre_exec) {
+      if (Array.isArray(entry)) {
+        let [cmd, args] = entry
+        if (cmd === 'cirodown') {
+          args = fakeroot_arg.concat(args)
+        }
+        const out = child_process.spawnSync(cmd, args, {cwd: cwd});
+        assert.strictEqual(out.status, 0, exec_assert_message(out, cmd, args, cwd));
+      } else {
+        update_filesystem(entry.filesystem_update, tmpdir)
+      }
     }
     const cmd = 'cirodown'
-    const args = ['--fakeroot', testdir].concat(options.args)
+    const args = fakeroot_arg.concat(options.args)
     const out = child_process.spawnSync(cmd, args, {
       cwd: cwd,
       input: options.stdin,
@@ -585,6 +588,16 @@ function xpath_html(html, xpathStr) {
   const doc = new xmldom().parseFromString(xhtml);
   const select = xpath.useNamespaces({"x": "http://www.w3.org/1999/xhtml"});
   return select(xpathStr, doc);
+}
+
+function update_filesystem(filesystem, tmpdir) {
+  for (const relpath in filesystem) {
+    const dirpath = path.join(tmpdir, path.parse(relpath).dir);
+    if (!fs.existsSync(dirpath)) {
+      fs.mkdirSync(dirpath);
+    }
+    fs.writeFileSync(path.join(tmpdir, relpath), filesystem[relpath]);
+  }
 }
 
 // xpath to match the parent div of a given header.
@@ -4748,5 +4761,58 @@ assert_executable(
       'notindex-h2.html',
       'out/html/out',
     ]
+  }
+);
+assert_executable(
+  'executable: IDs are removed from the database after you removed them from the source file and convert the file',
+  {
+    args: ['notindex.ciro'],
+    filesystem: {
+      'README.ciro': `= Index
+
+== h2
+`,
+      'notindex.ciro': `= Notindex
+
+== h2
+`,
+    },
+    pre_exec: [
+      ['cirodown', ['README.ciro']],
+      // Remove h2 from README.ciro
+      {
+        filesystem_update: {
+          'README.ciro': `= Index
+`,
+        }
+      },
+      ['cirodown', ['README.ciro']],
+    ],
+  }
+);
+assert_executable(
+  'executable: IDs are removed from the database after you removed them from the source file and convert the directory',
+  {
+    args: ['.'],
+    filesystem: {
+      'README.ciro': `= Index
+
+== h2
+`,
+      'notindex.ciro': `= Notindex
+
+== h2
+`,
+    },
+    pre_exec: [
+      ['cirodown', ['README.ciro']],
+      // Remove h2 from README.ciro
+      {
+        filesystem_update: {
+          'README.ciro': `= Index
+`,
+        }
+      },
+    ],
   }
 );

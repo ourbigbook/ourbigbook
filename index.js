@@ -2896,6 +2896,15 @@ function title_to_id(title) {
   ;
 }
 
+/** Factored out calculations of the ID that is given to each TOC entry.
+ *
+ * For after everything broke down due to toplevel scope.
+ */
+function toc_id(target_id_ast, context) {
+  const [href_path, fragment] = x_href_parts(target_id_ast, context);
+  return Macro.TOC_PREFIX + fragment;
+}
+
 // Do some error checking. If no errors are found, convert normally. Save output on out.
 function validate_ast(ast, context) {
   const macro_name = ast.macro_name;
@@ -2973,6 +2982,12 @@ exports.validate_ast = validate_ast;
   * @return {String} the href="..." that an \x cross reference to the given target_id_ast
   */
 function x_href(target_id_ast, context) {
+  const [href_path, fragment] = x_href_parts(target_id_ast, context);
+  return href_path + '#' + fragment;
+}
+exports.x_href = x_href;
+
+function x_href_parts(target_id_ast, context) {
   let href_path;
   const target_input_path = target_id_ast.input_path;
   let fragment;
@@ -3002,9 +3017,8 @@ function x_href(target_id_ast, context) {
       }
     }
   }
-  return html_escape_attr(href_path) + '#' + html_escape_attr(fragment);
+  return [html_escape_attr(href_path), html_escape_attr(fragment)];
 }
-exports.x_href = x_href;
 
 function x_href_attr(target_id_ast, context) {
   return html_attr('href', x_href(target_id_ast, context));
@@ -3524,7 +3538,7 @@ const DEFAULT_MACRO_LIST = [
       ret += `<span> `;
       if (level_int !== context.header_graph_top_level) {
         if (context.has_toc) {
-          let toc_href = html_attr('href', '#' + Macro.TOC_PREFIX + ast.id);
+          let toc_href = html_attr('href', '#' + toc_id(ast, context));
           ret += ` | <a${toc_href}>\u21d1 toc</a>`;
         }
       }
@@ -3929,20 +3943,28 @@ const DEFAULT_MACRO_LIST = [
         } else {
           ret += `</li>\n`;
         }
-        let target_ast = tree_node.value;
-        let content = x_text(target_ast, context, {style_full: true, show_caption_prefix: false});
-        let target_id = html_escape_attr(target_ast.id);
-        let href = html_attr('href', '#' + target_id);
-        let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, Macro.TOC_PREFIX + target_id);
+        let target_id_ast = tree_node.value;
+        let content = x_text(target_id_ast, context, {style_full: true, show_caption_prefix: false});
+        let href = x_href_attr(target_id_ast, context);
+        const my_toc_id = toc_id(target_id_ast, context);
+        let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, my_toc_id);
         ret += `<li><div${id_to_toc}><a${href}>${content}</a><span>`;
 
-        let toc_href = html_attr('href', '#' + Macro.TOC_PREFIX + target_id);
+        let toc_href = html_attr('href', '#' + my_toc_id);
         ret += ` | <a${toc_href}>${UNICODE_LINK} link</a>`;
 
-        let parent_ast = target_ast.header_tree_node.parent_node.value;
-        // Possible on broken h1 level.
-        if (parent_ast !== undefined) {
-          let parent_href = html_attr('href', '#' + Macro.TOC_PREFIX + parent_ast.id);
+        let parent_ast = target_id_ast.header_tree_node.parent_node.value;
+        if (
+          // Possible on broken h1 level.
+          parent_ast !== undefined
+        ) {
+          let parent_href_target;
+          if (parent_ast.level === context.header_graph_top_level) {
+            parent_href_target = x_href(parent_ast, context);
+          } else {
+            parent_href_target = '#' + toc_id(parent_ast, context);
+          }
+          let parent_href = html_attr('href', parent_href_target);
           let parent_body = convert_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
           ret += ` | <a${parent_href}>\u2191 parent "${parent_body}"</a>`;
         }

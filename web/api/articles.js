@@ -8,6 +8,7 @@ const { cant } = require('../front/cant')
 const front = require('../front/js')
 const convert = require('../convert')
 const lib = require('./lib')
+const { checkMaxNewPerTimePeriod } = lib
 const config = require('../front/config')
 
 router.get('/', auth.optional, async function(req, res, next) {
@@ -343,14 +344,15 @@ async function validateFollow(req, res, user, article, create) {
 // Like an article
 router.post('/like', auth.required, async function(req, res, next) {
   try {
-    const [article, loggedInUser] = await Promise.all([
-      lib.getArticle(req, res),
-      req.app.get('sequelize').models.User.findByPk(req.payload.id),
-    ])
-    await validateLike(req, res, loggedInUser, article, true)
-    await loggedInUser.addArticleLikeSideEffects(article)
-    const newArticle = await lib.getArticle(req, res)
-    return res.json({ article: await newArticle.toJson(loggedInUser) })
+    const sequelize = req.app.get('sequelize')
+    await lib.likeObject({
+      getObject: lib.getArticle,
+      joinModel: sequelize.models.UserLikeArticle,
+      objectName: 'article',
+      req,
+      res,
+      validateLike,
+    })
   } catch(error) {
     next(error);
   }

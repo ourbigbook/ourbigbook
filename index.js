@@ -4378,6 +4378,10 @@ async function parse(tokens, options, context, extra_returns={}) {
             ignore_paths_set: context.options.include_path_set,
           }
         ),
+
+        options.id_provider.fetch_header_tree_ids(
+          options.include_hrefs,
+        ),
       ])
 
       const prefetch_files = new Set()

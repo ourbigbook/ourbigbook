@@ -213,7 +213,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
       other_key = 'from_id'
     }
     // We don't even query the DB here to ensure that the warm is getting everything,
-    // as part of our effort to centralize all querries at a single poin.
+    // as part of our effort to centralize all queries at a single point.
     const ref_cache_to_id = this.ref_cache[to_id_key][to_id]
     if (ref_cache_to_id === undefined) {
       return []
@@ -224,6 +224,62 @@ class SqliteIdProvider extends cirodown.IdProvider {
     }
     return ret
   }
+
+  async fetch_header_tree_ids(starting_points) {
+    // Fetch all data recursively.
+    //
+    // Going for WITH RECURSIVE:
+    // https://stackoverflow.com/questions/192220/what-is-the-most-efficient-elegant-way-to-parse-a-flat-table-into-a-tree/192462#192462
+    //
+    // Sequelize doesn't support this of course.
+    // - https://stackoverflow.com/questions/34135555/recursive-include-sequelize
+    // - https://stackoverflow.com/questions/55091052/recursive-postgresql-query
+    // - https://github.com/sequelize/sequelize/issues/4890
+    // We could use one of the other constructs proposed besides WITH RECURSIVE,
+    // but it would likely be less efficient and harder to implement. So just going
+    // with this for now.
+    ;const [rows, meta] = await this.sequelize.query(`SELECT * FROM "Ids"
+INNER JOIN (
+WITH RECURSIVE
+  tree_search (to_id, level, from_id, to_id_index) AS (
+    SELECT
+      to_id,
+      0,
+      from_id,
+      to_id_index
+    FROM "Refs"
+    WHERE from_id IN (:starting_ids)
+
+    UNION ALL
+
+    SELECT
+      t.to_id,
+      ts.level + 1,
+      ts.to_id,
+      t.to_id_index
+    FROM "Refs" t, tree_search ts
+    WHERE t.from_id = ts.to_id
+  )
+  SELECT * FROM tree_search
+  ORDER BY level, from_id, to_id_index
+) AS "RecRefs"
+ON "Ids".idid = "RecRefs"."to_id"
+
+`,
+    { replacements: { starting_ids: Object.keys(starting_points) } }
+  )
+    const asts = []
+    for (const row of rows) {
+      asts.push(this.add_row_to_id_cache(row))
+    }
+    //console.error({rows});
+
+    // Patch up the HeaderTreeNode of the entry points and their descendants
+    // to math the data we've just fetched.
+    //for (const starting_point_id of starting_points) {
+    //}
+  }
+
 
   // Update the databases based on the output of the Cirodown conversion.
   async update(cirodown_extra_returns, sequelize, transaction) {

@@ -2,7 +2,7 @@
 
 import { GetStaticProps, GetStaticPaths } from 'next'
 
-import { fallback, revalidate } from 'config'
+import { fallback, revalidate } from 'front/config'
 import sequelize from 'db'
 import { DEFAULT_LIMIT  } from 'constant'
 

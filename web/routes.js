@@ -1,4 +1,4 @@
-const { ESCAPE_USERNAME } = require("./config");
+const { ESCAPE_USERNAME } = require("./front/config");
 
 function getPage(page) {
   return page === undefined || page === 1 ? '' : `/${page}`

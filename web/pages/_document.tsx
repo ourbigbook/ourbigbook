@@ -1,6 +1,6 @@
 import Document, { Html, Head, Main, NextScript } from 'next/document'
 import React from 'react'
-import { googleAnalyticsId, isProduction } from 'config'
+import { googleAnalyticsId, isProduction } from 'front/config'
 
 interface IProps {
   css: any;

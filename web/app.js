@@ -16,7 +16,7 @@ const session = require('express-session')
 const api = require('./api')
 const apilib = require('./api/lib')
 const models = require('./models')
-const config = require('./config')
+const config = require('./front/config')
 
 function doStart(app) {
   const sequelize = models.getSequelize(__dirname);

@@ -2,7 +2,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useEffect } from 'react';
 
-import { googleAnalyticsId, isProduction } from 'config';
+import { googleAnalyticsId, isProduction } from 'front/config';
 import CustomLink from 'front/CustomLink'
 import Navbar from 'front/Navbar'
 import { AppContext, AppContextProvider } from 'front'

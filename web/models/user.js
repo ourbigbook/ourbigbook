@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken')
 
 const cirodown = require('cirodown')
 
-const config = require('../config')
+const config = require('../front/config')
 
 const { DataTypes, Op } = Sequelize
 

@@ -4,6 +4,7 @@ const child_process = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+const better_sqlite3 = require('better-sqlite3');
 const chokidar = require('chokidar');
 const commander = require('commander');
 const git_url_parse = require("git-url-parse");
@@ -58,6 +59,11 @@ function cmd_get_stdout(cmd, args=[], options={}) {
  * Wraps cirodown.convert with CLI usage convenience.
  *
  * @param {String} input
+ * @param {Object} options - options to be passed to cirodown.convert
+ * @param {Object} convert_input_options - control options for this function,
+ *                 not passed to cirodown.convert. Also contains some returns:
+ *                 - {bool} had_error
+ *                 - {Object} extra_returns
  * @return {String}
  */
 function convert_input(input, options, convert_input_options={}) {
@@ -83,6 +89,7 @@ function convert_input(input, options, convert_input_options={}) {
   if (convert_input_options.cli_options.watch) {
     console.log();
   }
+  convert_input_options.extra_returns = new_options.extra_returns;
   if (new_options.extra_returns.errors.length > 0) {
     convert_input_options.had_error = true;
   }
@@ -110,7 +117,7 @@ function convert_path_to_file(input_path, options, convert_input_options={}) {
   }
 }
 
-/** Convert input from a path to output and return the output as a string.
+/** Convert input from a path to string output and return the output as a string.
  *
  * @return {String}
  */
@@ -124,6 +131,19 @@ function convert_path(input_path, options, convert_input_options) {
   }
   let input = fs.readFileSync(input_path, new_convert_input_options.encoding);
   let output = convert_input(input, options, new_convert_input_options);
+  if ('db' in convert_input_options) {
+    const ids = new_convert_input_options.extra_returns.context.ids;
+    const stmt = convert_input_options.db.prepare(
+      `INSERT INTO '${convert_input_options.ids_table_name}'
+      (id, path, ast_json) VALUES (?, ?, ?);`
+    );
+    input_path_parse = path.parse(input_path);
+    input_path_noext = path.join(input_path_parse.dir, input_path_parse.name);
+    for (const id in ids) {
+      const ast = ids[id];
+      stmt.run(id, input_path_noext, JSON.stringify(ast));
+    }
+  }
   if (new_convert_input_options.had_error) {
     convert_input_options.had_error = true;
   }
@@ -243,17 +263,23 @@ if (commander.helpMacros) {
     // Setup the ID database.
     fs.mkdirSync(outdir, {recursive: true});
     const db_path = path.join(outdir, 'db.sqlite3');
-    if (!fs.existsSync(db_path)) {
-      var sqlite3 = require('sqlite3').verbose();
-      var db = new sqlite3.Database(db_path);
-      db.run(`CREATE TABLE ids (
-        path TEXT,
+    const ids_table_name = 'ids';
+    const db = new better_sqlite3(db_path);
+    if (
+      db.prepare(`SELECT name
+      FROM sqlite_master
+      WHERE type='table' AND name='${ids_table_name}'
+      `).get() === undefined
+    ) {
+      db.prepare(`
+        CREATE TABLE '${ids_table_name}' (
         id TEXT,
-        title TEXT,
-        macro TEXT,
-      `);
-      db.close();
+        path TEXT,
+        ast_json TEXT
+      )`).run();
     }
+    convert_input_options.db = db;
+    convert_input_options.ids_table_name = ids_table_name;
 
     if (commander.watch) {
       if (publish) {
@@ -262,7 +288,7 @@ if (commander.helpMacros) {
       let watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES});
       watcher.on('change', function(path) {
         convert_path_to_file(path, options, convert_input_options);
-      }).on('add',  function(path) {
+      }).on('add', function(path) {
         convert_path_to_file(path, options, convert_input_options);
       });
     } else {

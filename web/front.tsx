@@ -58,7 +58,7 @@ export function useCtrlEnterSubmit(handleSubmit) {
 }
 
 // https://stackoverflow.com/questions/4825683/how-do-i-create-and-read-a-value-from-cookie/38699214#38699214
-export function setCookie(name, value, days, path = '/') {
+export function setCookie(name, value, days?: number, path = '/') {
   let delta
   if (days === undefined) {
     delta = Number.MAX_SAFE_INTEGER

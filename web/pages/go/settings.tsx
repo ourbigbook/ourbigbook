@@ -8,7 +8,7 @@ import LogoutButton from 'front/LogoutButton'
 import { AppContext } from 'front'
 import UserAPI from 'front/api/user'
 import checkLogin from 'checkLogin'
-import getLoggedInUser from 'getLoggedInUser'
+import useLoggedInUser from 'front/useLoggedInUser'
 import storage from 'storage'
 import routes from 'routes'
 
@@ -22,7 +22,7 @@ const Settings = () => {
     email: "",
     password: "",
   });
-  const loggedInUser = getLoggedInUser()
+  const loggedInUser = useLoggedInUser()
   React.useEffect(() => {
     if (!loggedInUser) return;
     setUserInfo({ ...userInfo, ...loggedInUser });

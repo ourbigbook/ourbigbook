@@ -4,7 +4,7 @@ import useSWR, { trigger } from 'swr'
 
 import CustomLink from 'front/CustomLink'
 import ArticleAPI from 'front/api/article'
-import getLoggedInUser from 'getLoggedInUser'
+import useLoggedInUser from 'front/useLoggedInUser'
 import { formatDate } from 'date'
 import LikeArticleButton, { LikeArticleButtonContext } from 'front/LikeArticleButton'
 import routes from 'routes'
@@ -12,7 +12,7 @@ import routes from 'routes'
 const ArticleInfo = ({
   article,
 }) => {
-  const loggedInUser = getLoggedInUser()
+  const loggedInUser = useLoggedInUser()
   const canModify =
     loggedInUser && loggedInUser?.username === article?.author?.username;
   const [liked, setLiked] = React.useState(false);

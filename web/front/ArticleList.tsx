@@ -7,15 +7,14 @@ import LoadingSpinner from 'front/LoadingSpinner'
 import Pagination from 'front/Pagination'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 import { AppContext } from 'front'
-import { defaultLimit } from 'front/config'
+import { articleLimit } from 'front/config'
 import { formatDate } from 'date'
-import getLoggedInUser from 'getLoggedInUser'
+import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'routes'
 
 type Options = {
   articles: undefined;
   articlesCount: undefined;
-  paginationUrlFunc?: undefined;
   showAuthor: undefined;
   what: undefined;
 }
@@ -27,7 +26,7 @@ const ArticleList = ({
   showAuthor,
   what
 }) => {
-  const loggedInUser = getLoggedInUser()
+  const loggedInUser = useLoggedInUser()
   const router = useRouter();
   const {
     query: { page },
@@ -46,7 +45,7 @@ const ArticleList = ({
   const setLiked = []
   const score = []
   const setScore = []
-  for (let i = 0; i < defaultLimit; i++) {
+  for (let i = 0; i < articleLimit; i++) {
     [liked[i], setLiked[i]] = React.useState(articles[i]?.liked);
     [score[i], setScore[i]] = React.useState(articles[i]?.score);
   }
@@ -55,7 +54,7 @@ const ArticleList = ({
       setLiked[i](articles[i].liked);
       setScore[i](articles[i].score);
     }
-  }, Object.assign(articles.map(a => a.liked).concat(articles.map(a => a.score)), {length: defaultLimit}))
+  })
   if (articles.length === 0) {
     let message;
     let voice;
@@ -141,7 +140,7 @@ const ArticleList = ({
       </table>
       <Pagination {...{
         articlesCount,
-        articlesPerPage: defaultLimit,
+        articlesPerPage: articleLimit,
         showPagesMax: 10,
         currentPage,
         urlFunc: paginationUrlFunc,

@@ -216,7 +216,8 @@ async function generateDemoData(params) {
   const userArgs = [];
   for (let i = 0; i < nUsers; i++) {
     let [displayName, image] = userData[i % userData.length]
-    let username = cirodown.title_to_id(displayName)
+    let username = cirodown.title_to_id(displayName, { normalize: { latin: true }})
+    console.error({username});
     if (i >= userData.length) {
       username = `user${i}`
       displayName = `User${i}`

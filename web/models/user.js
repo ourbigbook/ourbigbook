@@ -173,6 +173,24 @@ module.exports = (sequelize) => {
     })
   }
 
+  User.prototype.findAndCountArticlesByFollowedToJson = async function (
+    offset,
+    limit,
+    order
+  ) {
+    const { count: articlesCount, rows: articles } =
+      await this.findAndCountArticlesByFollowed(offset, limit, order)
+    const articlesJson = await Promise.all(
+      articles.map((article) => {
+        return article.toJson(this)
+      })
+    )
+    return {
+      articles: articlesJson,
+      articlesCount,
+    }
+  }
+
   User.prototype.getArticleCountByFollowed = async function() {
     return (await User.findByPk(this.id, {
       subQuery: false,

@@ -6,13 +6,13 @@ import useSWR from 'swr'
 import fetcher from 'fetcher'
 import { apiPath } from 'front/config'
 import { minPath } from 'shared'
-import getLoggedInUser from 'getLoggedInUser'
+import useLoggedInUser from 'front/useLoggedInUser'
 
 export default function useMin(query, assign) {
   const router = useRouter();
   const { data, error } = useSWR(
     `${apiPath}/${minPath}?query=${JSON.stringify(query)}`,
-    fetcher(!router.isFallback && getLoggedInUser() !== undefined)
+    fetcher(!router.isFallback && useLoggedInUser() !== undefined)
   );
   if (error) alert('Could not fetch your personalized data')
   if (data) {

@@ -1597,6 +1597,10 @@ function html_attr_value(arg, context) {
   return convert_arg(arg, clone_and_set(context, 'html_is_attr', true));
 }
 
+function html_code(content, attrs) {
+  return html_elem('pre', html_elem('code', content), attrs);
+}
+
 /** Helper to convert multiple parameters directly to HTML attributes.
  *
  * The ID is automatically included.
@@ -1695,8 +1699,12 @@ function html_convert_simple_elem(elem_name, options={}) {
   };
 }
 
-function html_elem(tag, content) {
-  return `<${tag}>${content}</${tag}>`;
+function html_elem(tag, content, attrs) {
+  let ret = '<' + tag;
+  for (const attr_id in attrs) {
+    ret += ' ' + attr_id + '="' + html_escape_attr(attrs[attr_id]) + '"'
+  }
+  return ret + '>' + content + '</' + tag + '>';
 }
 
 function html_escape_attr(str) {
@@ -3412,7 +3420,7 @@ const DEFAULT_MACRO_LIST = [
       if (ast.validation_output[Macro.TITLE_ARGUMENT_NAME].given) {
         ret += `\n<div class="caption">${x_text(ast, context, {href_prefix: html_self_link(ast, context)})}</div>\n`;
       }
-      ret += `<pre><code>${content}</code></pre>`;
+      ret += html_code(content);
       ret += `</div>`;
       return ret;
     },
@@ -3753,6 +3761,24 @@ const DEFAULT_MACRO_LIST = [
         }),
       ],
       phrasing: true,
+    }
+  ),
+  new Macro(
+    'JsCanvasDemo',
+    [
+      new MacroArgument({
+        name: 'content',
+        mandatory: true,
+      }),
+    ],
+    function(ast, context) {
+      return html_code(
+        convert_arg(ast.args.content, context),
+        {'class': 'cirodown-js-canvas-demo'}
+      );
+    },
+    {
+      xss_safe: false,
     }
   ),
   new Macro(

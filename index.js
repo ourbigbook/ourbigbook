@@ -5828,6 +5828,18 @@ function render_error(context, message, source_location, severity=1) {
   }
 }
 
+function render_error_x_undefined(ast, context, target_id) {
+  let message = `cross reference to unknown id: "${target_id}" at render time`;
+  let source_location
+  if (ast.args.href) {
+    source_location = ast.args.href.source_location
+  } else {
+    source_location = ast.source_location
+  }
+  render_error(context, message, source_location, 2);
+  return error_message_in_output(message, context)
+}
+
 function perf_print(context, name) {
   // Includes and CirodowExample also call convert to parse.
   // For now we are ignoring those recursions. A more correct approach
@@ -6086,15 +6098,8 @@ function x_get_href_content(ast, context) {
   if (target_ast) {
     href = x_href_attr(target_ast, context);
   } else {
-    let message = `cross reference to unknown id: "${target_id}" at render time`;
-    let source_location
-    if (ast.args.href) {
-      source_location = ast.args.href.source_location
-    } else {
-      source_location = ast.source_location
-    }
-    render_error(context, message, source_location, 2);
-    return [href, error_message_in_output(message, context)];
+    const message = render_error_x_undefined(ast, context, target_id)
+    return [href, message];
   }
 
   // content
@@ -8790,6 +8795,9 @@ OUTPUT_FORMATS_LIST.push(
             if (target_ast_plural) {
               target_ast = target_ast_plural
             }
+          }
+          if (!target_ast) {
+            return `${ourbigbook_convert_simple_elem(ast, context)} ${render_error_x_undefined(ast, context, target_id)}`
           }
           let was_magic_plural, was_magic_uppercase
           const href_singular = pluralize(href, 1)

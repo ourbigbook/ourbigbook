@@ -2967,7 +2967,7 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     // We are the first header, or something that comes before it.
     let first_header_or_before = false;
     if (ast === undefined) {
-      first_header_or_before = true;
+      return [dirname, renamed_basename_noext];
     } else {
       if (ast.macro_name === Macro.HEADER_MACRO_NAME) {
         if (ast.is_first_header_in_input_file) {
@@ -2980,7 +2980,10 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     let dirname_ret;
     let basename_ret;
     const [id_dirname, id_basename] = path_split(id, URL_SEP);
-    if (first_header_or_before) {
+    const to_split_headers = is_to_split_headers(ast, context);
+    if (
+      first_header_or_before
+    ) {
       // For toplevel elements in split header mode, we have
       // to take care of index and -split suffix.
       if (renamed_basename_noext === INDEX_BASENAME_NOEXT) {
@@ -5865,7 +5868,7 @@ const DEFAULT_MACRO_LIST = [
 </head>
 <body class="cirodown">
 <header>
-<a href="{{ root_page }}">{{ title }}</a>
+<a href="{{ root_page }}">Homepage</a>
 </header>
 {{ body }}
 {{ post_body }}

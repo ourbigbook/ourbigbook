@@ -10,6 +10,8 @@ Link to internal "cirodown" section: \x[cirodown]
 
 Link to toplevel "cirodown" section: \x[/cirodown]
 
+\Include[included-by-index]
+
 == h2
 
 TODO

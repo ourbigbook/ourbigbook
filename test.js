@@ -7674,7 +7674,7 @@ assert_lib_ast('id conflict with id on another file where conflict header has a 
     },
     input_path_noext: 'tmp'
   }
-);
+)
 assert_lib_error('id conflict on file with the same toplevel_id as another',
   undefined,
   1, 1, 'index.bigb',
@@ -8643,12 +8643,29 @@ assert_cli(
   }
 )
 assert_cli(
-  '--check-db exits with error status on failure',
+  'db is checked for duplicates by default',
+  {
+    args: ['--no-render', '.'],
+    filesystem: {
+      'notindex.bigb': `= Notindex
+
+== Duplicated
+`,
+      'notindex2.bigb': `= Notindex2
+
+== Duplicated
+`,
+    },
+    assert_exit_status: 1,
+  }
+)
+assert_cli(
+  '--check-db-only exits with error status on failure',
   {
     pre_exec: [
       { cmd: ['ourbigbook', ['--no-check-db', '--no-render', '.']], },
     ],
-    args: ['--check-db'],
+    args: ['--check-db-only'],
     filesystem: {
       'notindex.bigb': `= Notindex
 

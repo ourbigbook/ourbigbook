@@ -1449,12 +1449,16 @@ LIMIT ${limit}` : ''}
    *
    * @param {string} username
    */
-  Article.getNestedSetsFromRefs = async function(username, opts={}) {
+  Article.getNestedSetsFromRefs = async function(username, { transaction }={}) {
     const toplevelId = `${ourbigbook.AT_MENTION_CHAR}${username}`
     const idRows = await ourbigbook_nodejs_webpack_safe.fetch_header_tree_ids(
       sequelize,
       [toplevelId],
-      { transaction: opts.transaction },
+      {
+        // Saves memory 3x. Still doesn't scale indefinitely, but helps as a workaround.
+        idAttrs: '"level","from_id","idid"',
+        transaction,
+      },
     )
     let idTreeNode = {
       id: toplevelId,
@@ -1623,15 +1627,15 @@ LIMIT ${limit}` : ''}
    *
    * @param {string} username
    */
-  Article.updateNestedSets = async function(username, opts={}) {
-    const nestedSet = await Article.getNestedSetsFromRefs(username)
+  Article.updateNestedSets = async function(username, { transaction }={}) {
+    const nestedSet = await Article.getNestedSetsFromRefs(username, { transaction })
     const vals = nestedSet.map(s => { return {
       slug: s.id.slice(ourbigbook.AT_MENTION_CHAR.length),
       nestedSetIndex: s.nestedSetIndex,
       nestedSetNextSibling: s.nestedSetNextSibling,
       depth: s.depth,
     }})
-    return sequelize.transaction({ transaction: opts.transaction }, async (transaction) => {
+    return sequelize.transaction({ transaction }, async (transaction) => {
       for (const val of vals) {
         await sequelize.models.Article.update(
           {

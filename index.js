@@ -6948,7 +6948,7 @@ const DEFAULT_MACRO_LIST = [
         }
       }
 
-      // Calculate header_meta and header_meta2
+      // Calculate header_meta and header_meta
       let header_meta = [];
       let header_meta2 = [];
       let first_header = (
@@ -6957,31 +6957,31 @@ const DEFAULT_MACRO_LIST = [
         ast.id === context.toplevel_ast.id
       )
       if (file_link_html !== undefined) {
-        header_meta.push(file_link_html);
+        header_meta2.push(file_link_html);
       }
       if (wiki_link !== undefined) {
-        header_meta.push(wiki_link);
+        header_meta2.push(wiki_link);
       }
       if (tag_ids_html_array.length) {
-        header_meta.push(tag_ids_html);
+        header_meta2.push(tag_ids_html);
       }
       if (first_header) {
         if (parent_links !== '') {
-          header_meta2.push(parent_links);
+          header_meta.push(parent_links);
         }
         if (link_to_split !== undefined) {
-          header_meta2.push(link_to_split);
+          header_meta.push(link_to_split);
         }
         if (context.has_toc) {
-          header_meta2.push(`<a${html_attr('href', '#' + Macro.TOC_ID)}>${TOC_MARKER}</a>`);
+          header_meta.push(`<a${html_attr('href', '#' + Macro.TOC_ID)}>${TOC_MARKER}</a>`);
         }
         let descendant_count_html = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
         if (descendant_count_html !== undefined) {
-          header_meta2.push(descendant_count_html);
+          header_meta.push(descendant_count_html);
         }
       }
 
-      const header_has_meta = header_meta.length > 0 || header_meta2.length > 0
+      const header_has_meta = header_meta2.length > 0 || header_meta.length > 0
       if (header_has_meta) {
         ret += `<nav class="h-nav h-nav-toplevel">`;
       }

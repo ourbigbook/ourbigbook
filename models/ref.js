@@ -49,6 +49,8 @@ module.exports = (sequelize) => {
     [cirodown.REFS_TABLE_X]: 1,
     // https://cirosantilli.com/cirodown/secondary-children
     [cirodown.REFS_TABLE_X_CHILD]: 2,
+    // https://github.com/cirosantilli/cirodown/issues/198
+    [cirodown.REFS_TABLE_X_TITLE_TITLE]: 3,
   };
   return Ref;
 }

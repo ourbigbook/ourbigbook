@@ -2546,6 +2546,7 @@ if (cli.helpMacros) {
             }
             runCmd('git', args, commitCmdOptions);
             if (!cli.dryRunPush) {
+              runCmd('git', ['-C', publishOutPublishDirCwd, 'config', 'core.sshCommand', runCmd('git', ['-C', inputPath, 'config', '--get', 'core.sshCommand'], cmdOptsInfo)], cmdOpts)
               runCmd('git', ['-C', publishOutPublishDirCwd, 'push', '-f', 'origin', `${publishBranch}:${publishBranch}`], cmdOpts);
               // Mark the commit with the `published` branch to make it easier to find what was last published.
               runCmd('git', ['-C', inputPathCwd, 'checkout', '-B', 'published'], cmdOpts);

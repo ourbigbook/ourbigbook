@@ -123,8 +123,26 @@ class AstNode {
       throw new Error('contenxt does not have a mandatory .macros property');
     }
     const macro = context.macros[this.macro_name];
-    let out = macro.convert(this, context);
+    const name_to_arg = macro.name_to_arg;
+    let error_message = undefined;
+    for (const argname in name_to_arg) {
+      const macro_arg = name_to_arg[argname];
+      if (macro_arg.mandatory && !(argname in this.args)) {
+        error_message = `missing mandatory argument ${argname} of ${this.macro_name}`;
+        macro.error(context, error_message, this.line, this.column);
+        break;
+      }
+    }
+    let out;
+    if (error_message === undefined) {
+      out = macro.convert(this, context);
+    } else {
+      out = error_message_in_output(error_message, context);
+    }
     const parent_node = this.parent_node;
+
+    // Add a div to all direct children of toplevel to implement
+    // the on hover links to self and left margin.
     if (
       parent_node !== undefined &&
       parent_node.macro_name === Macro.TOPLEVEL_MACRO_NAME &&
@@ -133,6 +151,7 @@ class AstNode {
     ) {
       out = `<div>${html_hide_hover_link(this.id)}${out}</div>`;
     }
+
     return out;
   }
 
@@ -300,12 +319,16 @@ class MacroArgument {
       // https://cirosantilli.com/cirodown#insane-link-parsing-rules
       options.elide_link_only = false;
     }
+    if (!('mandatory' in options)) {
+      options.mandatory = false;
+    }
     if (!('remove_whitespace_children' in options)) {
       // https://cirosantilli.com/cirodown#remove_whitespace_children
       options.remove_whitespace_children = false;
     }
     this.elide_link_only = options.elide_link_only;
-    this.name = options.name
+    this.mandatory = options.mandatory;
+    this.name = options.name;
     this.remove_whitespace_children = options.remove_whitespace_children;
   }
 }
@@ -1182,8 +1205,10 @@ exports.convert = convert;
  */
 function convert_arg(arg, context) {
   let converted_arg = '';
-  for (const ast of arg) {
-    converted_arg += ast.convert(context);
+  if (arg !== undefined) {
+    for (const ast of arg) {
+      converted_arg += ast.convert(context);
+    }
   }
   return converted_arg;
 }
@@ -1353,9 +1378,6 @@ function html_convert_simple_elem(elem_name, options={}) {
       extra_attrs_string += html_attr(key, options.attrs[key]);
     }
     let content_ast = ast.args.content;
-    if (content_ast === undefined) {
-      content_ast = [new PlaintextAstNode(ast.line, ast.column, '')];
-    }
     let content = convert_arg(content_ast, context);
     let res = `<${elem_name}${extra_attrs_string}${attrs}>${newline_after_open_str}${content}</${elem_name}>${newline_after_close_str}`;
     return res;
@@ -1725,7 +1747,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     while (todo_visit.length > 0) {
       const [parent_arg, ast] = todo_visit.shift();
       const macro_name = ast.macro_name;
-      const macro = macros[macro_name]
+      const macro = macros[macro_name];
 
       if (macro_name === Macro.HEADER_MACRO_NAME) {
         // Create the header tree.
@@ -2277,6 +2299,7 @@ const DEFAULT_MACRO_LIST = [
       new MacroArgument({
         name: 'href',
         elide_link_only: true,
+        mandatory: true,
       }),
       new MacroArgument({
         name: 'content',
@@ -2375,6 +2398,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'level',
+        mandatory: true,
       }),
       new MacroArgument({
         name: Macro.TITLE_ARGUMENT_NAME,
@@ -2452,6 +2476,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'href',
+        mandatory: true,
       }),
     ],
     function(ast, context) {
@@ -2560,6 +2585,10 @@ const DEFAULT_MACRO_LIST = [
       new MacroArgument({
         name: 'src',
         elide_link_only: true,
+        mandatory: true,
+      }),
+      new MacroArgument({
+        name: 'alt',
       }),
     ],
     function(ast, context) {
@@ -2572,11 +2601,9 @@ const DEFAULT_MACRO_LIST = [
       } else {
         href_prefix = undefined;
       }
-      let description;
-      if (ast.args.description === undefined) {
-        description = '';
-      } else {
-        description = '. ' + convert_arg(ast.args.description, context);
+      let description = convert_arg(ast.args.description, context);
+      if (description !== '') {
+        description = '. ' + description;
       }
       let source
       if (ast.args.source === undefined) {
@@ -2638,6 +2665,7 @@ const DEFAULT_MACRO_LIST = [
       new MacroArgument({
         name: 'src',
         elide_link_only: true,
+        mandatory: true,
       }),
       new MacroArgument({
         name: 'alt',
@@ -2921,6 +2949,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'href',
+        mandatory: true,
       }),
       new MacroArgument({
         name: 'content',

@@ -150,7 +150,11 @@ Markdown is clearly missing many key features such as block attributes and \x[in
 
 The "more powerful than Asciidoctor" part is only partially true, since Asciidoctor is very featureful can do basically anything through extensions.
 
-The difference is mostly that Cirodown is completely and entirely focused on making amazing scientific books, and so will have key features for that application out-of-the box.
+The difference is mostly that Cirodown is completely and entirely focused on making amazing scientific books, and so will have key features for that application out-of-the box, notably:
+
+\l[amazing header/ToC/ID features including proper error reports: never have a internal broken link or duplicate ID again]
+\l[\x[math]]
+\l[\x[publish]: we take care of website publishing for you out-of-the-bos, no need for extra stuff like Jekyll mess]
 
 Another advantage over Asciidoctor is that the reference implementation of Cirodown is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with \a[https://github.com/opal/opal][Opal], but who wants to deal with that layer of complexity?
 
@@ -1534,6 +1538,8 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[paragraphs rendered as divs, can show anything inside e.g. lists, code blocks]
 \l[create mechanism to link to the GitHub blob view of in-tree source files that are not added to GitHub pages, e.g. \c[\\file]]
 \l[avoid infinite recursion with xref]
+\l[update tests to test the AST output rather than HTML. HTML too complex and variable]
+\l[parse_error: add in document error message, currently only to stderr]
 \l[LaTeX output]
 
 \h[2][Related projects]

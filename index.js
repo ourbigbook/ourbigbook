@@ -1070,7 +1070,10 @@ function parse(tokens, macros, options, extra_returns={}) {
   const header_graph_stack = new Map();
   let first_header = true;
   let first_header_level;
+  // IDs that are indexed: you can link to those.
   extra_returns.context.ids = {};
+  // All IDs, including the non-indexed ones.
+  let all_ids = {};
   extra_returns.context.header_graph = new TreeNode();
   extra_returns.context.has_toc = false;
   while (todo_visit.length > 0) {
@@ -1107,8 +1110,19 @@ function parse(tokens, macros, options, extra_returns={}) {
       }
       ast.id = id_text;
     }
-    if (index_id) {
-      extra_returns.context.ids[ast.id] = ast;
+    if (ast.id in all_ids) {
+      const previous_ast = all_ids[ast.id];
+      parse_error(
+        state,
+        `duplicate ID "${ast.id}", previous one defined at line ${previous_ast.line} colum ${previous_ast.column}`,
+        ast.args.level[0].line,
+        ast.args.level[0].column
+      );
+    } else {
+      all_ids[ast.id] = ast;
+      if (index_id) {
+        extra_returns.context.ids[ast.id] = ast;
+      }
     }
 
     // Header tree.

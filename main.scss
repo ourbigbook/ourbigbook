@@ -47,7 +47,12 @@ header {
 }
 footer {
   a {
+    $color: #00C;
+    color: $color;
     text-decoration: none;
+    &:visited {
+      color: $color;
+    }
     &:hover {
       text-decoration: underline;
     }

@@ -3,6 +3,7 @@ import React from 'react'
 import { useRouter } from 'next/router'
 
 import { AppContext, ArticleIcon, NewArticleIcon, TopicIcon, TopicsHelp, slugFromArray} from 'front'
+import { idToTitle } from 'ourbigbook'
 import ArticleList from 'front/ArticleList'
 import CustomLink from 'front/CustomLink'
 import LoadingSpinner from 'front/LoadingSpinner'
@@ -83,9 +84,14 @@ export const TopicPage = ({
         : <>
             <div className="content-not-ourbigbook">
               <h1><TopicIcon /> Topic does not exist: {topicId}</h1>
-              {false &&
-                <div>TODO: add a link for user to create an article with that topic.</div>
-              }
+              <div>
+                <CustomLink
+                  className="btn new"
+                  href={routes.articleNew({ 'title': idToTitle(topicId) })}
+                >
+                  <NewArticleIcon title={false}/>{' '}Create an article for this topic
+                </CustomLink>
+              </div>
             </div>
           </>
       }

@@ -6221,6 +6221,9 @@ const DEFAULT_MACRO_LIST = [
     html_convert_simple_elem(
       'blockquote',
     ),
+    {
+      caption_prefix: 'Quotation',
+    }
   ),
   new Macro(
     'sub',

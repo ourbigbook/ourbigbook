@@ -5548,7 +5548,7 @@ My Line 2
     },
   },
 )
-assert_lib_ast('header file argument that is the last header adds the preview',
+assert_lib_ast('header: file argument that is the last header adds the preview',
   `= h1
 
 == path/to/my-file.png
@@ -5566,6 +5566,43 @@ assert_lib_ast('header file argument that is the last header adds the preview',
       'path/to/my-file.png': '',
       'path/to/my-file.mp4': '',
     },
+  },
+)
+assert_lib('header: file argument ignores text files on nosplit if they are too large',
+  {
+    convert_dir: true,
+    convert_opts: {
+      split_headers: true,
+    },
+    filesystem: {
+      'README.bigb': `= Index
+
+== small.txt
+{file}
+
+== big.txt
+{file}
+`,
+      'small.txt': 'aaaa',
+      'big.txt': 'b'.repeat(ourbigbook.FILE_PREVIEW_MAX_SIZE + 1),
+    },
+    assert_xpath: {
+      'index.html': [
+        `//x:pre//x:code[text()='aaaa']`,
+      ],
+      '_file/small.txt.html': [
+        `//x:pre//x:code[text()='aaaa']`,
+      ],
+      '_file/big.txt.html': [
+        // TODO we want this to show. https://docs.ourbigbook.com/todo/render-large-files-on-split-headers
+        //`//x:pre//x:code[starts-with(text(), 'bbbb')]`,
+      ],
+    },
+    assert_not_xpath: {
+      'index.html': [
+        `//x:pre//x:code[starts-with(text(), 'bbbb')]`,
+      ],
+    }
   },
 )
 assert_lib_error('header: file argument to a file that does not exist gives an error',

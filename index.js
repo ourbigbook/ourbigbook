@@ -4372,30 +4372,35 @@ function parse_argument_list(state, macro_name, macro_type) {
     if (state.token.type !== closing_token(open_token.type)) {
       parse_error(state, `unclosed argument "${open_token.value}"`, open_token.source_location);
     }
-    const macro_arg = name_to_arg[arg_name];
-    const multiple = macro_arg !== undefined && macro_arg.multiple
-    if (arg_name in args) {
-      if (!multiple) {
-        // https://github.com/cirosantilli/cirodown/issues/101
-        parse_error(state,
-          `named argument "${arg_name}" given multiple times`,
-          open_token.source_location,
-        )
-      }
-    } else {
-      if (multiple) {
-        args[arg_name] = new AstArgument([], open_token.source_location)
+    if (
+      // Happens in some error cases, e.g. \\undefinedMacro[aa]
+      macro !== undefined
+    ) {
+      const macro_arg = name_to_arg[arg_name];
+      const multiple = macro_arg !== undefined && macro_arg.multiple
+      if (arg_name in args) {
+        if (!multiple) {
+          // https://github.com/cirosantilli/cirodown/issues/101
+          parse_error(state,
+            `named argument "${arg_name}" given multiple times`,
+            open_token.source_location,
+          )
+        }
       } else {
-        args[arg_name] = arg_children;
+        if (multiple) {
+          args[arg_name] = new AstArgument([], open_token.source_location)
+        } else {
+          args[arg_name] = arg_children;
+        }
       }
-    }
-    if (multiple) {
-      args[arg_name].push(new AstNode(
-        AstType.MACRO,
-        'Comment',
-        { 'content': arg_children },
-        open_token.source_location,
-      ))
+      if (multiple) {
+        args[arg_name].push(new AstNode(
+          AstType.MACRO,
+          'Comment',
+          { 'content': arg_children },
+          open_token.source_location,
+        ))
+      }
     }
     if (state.token.type !== TokenType.INPUT_END) {
       // Consume the *_ARGUMENT_END token out.

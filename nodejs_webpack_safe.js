@@ -555,6 +555,44 @@ async function update_database_after_convert({
   cirodown.perf_print(context, 'convert_path_post_sqlite_transaction')
 }
 
+// Do various post conversion checks to verify database integrity:
+//
+// - duplicate IDs
+// - https://cirosantilli.com/cirodown/x-within-title-restrictions
+//
+// Previously these were done inside cirodown.convert. But then we started skipping render by timestamp,
+// so if you e.g. move an ID from one file to another, a common operation, then it would still see
+// the ID in the previous file depending on conversion order. So we are moving it here instead at the end.
+// Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
+async function check_db(sequelize, paths_converted) {
+  const [duplicate_rows, invalid_title_title_rows] = await Promise.all([
+    await sequelize.models.Id.findDuplicates(
+      paths_converted),
+    await sequelize.models.Id.findInvalidTitleTitle(
+      paths_converted),
+  ])
+  const error_messages = []
+  if (duplicate_rows.length > 0) {
+    for (const duplicate_row of duplicate_rows) {
+      const ast = cirodown.AstNode.fromJSON(duplicate_row.ast_json)
+      const source_location = ast.source_location
+      error_messages.push(
+        `${source_location.path}:${source_location.line}:${source_location.column}: ID duplicate: "${duplicate_row.idid}"`
+      )
+    }
+  }
+  if (invalid_title_title_rows.length > 0) {
+    for (const invalid_title_title_row of invalid_title_title_rows) {
+      const ast = cirodown.AstNode.fromJSON(invalid_title_title_row.ast_json)
+      const source_location = ast.source_location
+      error_messages.push(
+        `${source_location.path}:${source_location.line}:${source_location.column}: cannot \\x link from a title to a non-header element: https://cirosantilli.com/cirodown/x-within-title-restrictions`
+      )
+    }
+  }
+  return error_messages
+}
+
 function read_include({exists, read, path_sep, ext}) {
   function join(...parts) {
     return parts.join(path_sep)
@@ -622,6 +660,7 @@ function remove_duplicates_sorted_array(arr) {
 module.exports = {
   SqliteFileProvider,
   SqliteIdProvider,
+  check_db,
   create_sequelize,
   db_options,
   read_include,

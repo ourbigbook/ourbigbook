@@ -82,12 +82,13 @@ module.exports = (sequelize) => {
     const id = cirodown.title_to_id(article.title)
     article.body = article.body.replace(/\n+$/, '')
     const input = modifyEditorInput(article.title, article.body)
+    const input_path = `${cirodown.AT_MENTION_CHAR}${author.username}/${id}${cirodown.CIRODOWN_EXT}`
     article.render = await cirodown.convert(
       input,
       Object.assign({
         id_provider,
         file_provider,
-        input_path: `${cirodown.AT_MENTION_CHAR}${author.username}/${id}${cirodown.CIRODOWN_EXT}`,
+        input_path,
         read_include: cirodown_nodejs_webpack_safe.read_include({
           exists: async (inpath) => {
             const suf = cirodown.Macro.HEADER_SCOPE_SEPARATOR + cirodown.INDEX_BASENAME_NOEXT
@@ -122,6 +123,13 @@ module.exports = (sequelize) => {
       render: true,
       transaction,
     })
+    const check_db_errors = await cirodown_nodejs_webpack_safe.check_db(
+      sequelize,
+      [input_path],
+    )
+    if (check_db_errors.length > 0) {
+      throw new ValidationError(check_db_errors, 422)
+    }
     // https://github.com/sequelize/sequelize/issues/8586#issuecomment-422877555
     article.topicId = idid.slice(cirodown.AT_MENTION_CHAR.length + author.username.length + 1)
     if (!article.slug) {

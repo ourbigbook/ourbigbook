@@ -299,6 +299,7 @@ async function generateDemoData(params) {
           includesString = ''
           refsString = ''
         }
+        const id_noscope = cirodown.title_to_id(title)
         const articleArg = {
           title,
           authorId,
@@ -324,8 +325,8 @@ function myFunc() {
 
 Inline math: $\\sqrt{1 + 1}$
 
-Block math:
-$$\\frac{1}{\\sqrt{2}}$$
+Block math and a reference to it: \\x[eq-in-${id_noscope}]:
+$$\\frac{1}{\\sqrt{2}}$$\{id=eq-in-${id_noscope}}
 
 Block quote:
 \\Q[
@@ -360,17 +361,17 @@ Table:
 | 3
 | 3.3
 
-Reference to the following image: \\x[image-my-xi-chrysanthemum].
+Reference to the following image: \\x[image-my-xi-chrysanthemum-${id_noscope}].
 
 \\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-{title=Xi Chrysanthemum is a very nice image}
-{id=image-my-xi-chrysanthemum}
+{title=Xi Chrysanthemum is a very nice image.}
+{id=image-my-xi-chrysanthemum-${id_noscope}}
 {source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
 
-An YouTube video: \\x[video-sample-youtube-video].
+An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
 
 \\Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
-{title=Sample YouTube video.}${includesString}
+{title=Sample YouTube video in ${title}.}${includesString}
 `,
         }
         articleArgs.push(articleArg)

@@ -3138,58 +3138,6 @@ assert_convert_ast('header numbered cirodown.json',
     extra_convert_opts: { cirodown_json: { numbered: false } }
   },
 );
-assert_convert_ast('header numbered=0 in cirodown.json works across source files and on table of contents',
-  `= Index
-
-\\Include[notindex]
-
-== H2
-`,
-  undefined,
-  {
-    assert_xpath_matches: [
-      "//*[@id='toc']//x:a[@href='notindex.html' and text()='Notindex']",
-      "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
-      "//*[@id='toc']//x:a[@href='#h2' and text()='H2']",
-    ],
-    assert_xpath_split_headers: {
-      'notindex.html': [
-        "//*[@id='toc']//x:a[@href='#notindex-h2' and text()='Notindex h2']",
-      ],
-    },
-
-    convert_before: ['notindex.ciro'],
-    extra_convert_opts: { cirodown_json: { numbered: false } },
-    filesystem: {
-      'notindex.ciro': `= Notindex
-
-== Notindex h2
-`,
-    },
-  },
-);
-assert_convert_ast('split header with an include and no headers has a single table of contents',
-  // At 074bacbdd3dc9d3fa8dafec74200043f42779bec was getting two.
-  `= Index
-
-\\Include[notindex]
-`,
-  undefined,
-  {
-    assert_xpath_split_headers: {
-      'split.html': [
-        "//*[@id='toc']",
-      ],
-    },
-    convert_before: ['notindex.ciro'],
-    extra_convert_opts: { cirodown_json: { numbered: false } },
-    filesystem: {
-      'notindex.ciro': `= Notindex
-`,
-    },
-    input_path_noext: 'index',
-  },
-);
 assert_convert_ast('header file argument works',
   `= h1
 
@@ -3801,8 +3749,9 @@ assert_convert_ast('table of contents contains included headers numbered without
     ],
     assert_xpath_split_headers: {
       'notindex-split.html': [
+        // Links to external source files keep the default split just like regular links.
         "//*[@id='toc']//x:a[@href='notindex2.html' and text()='1. Notindex2']",
-        // Links to external source files keep the default just like regular likes.
+        "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='1.1. Notindex2 h2']",
         "//*[@id='toc']//x:a[@href='notindex-h2.html' and text()='2. Notindex h2']",
       ],
     },
@@ -3884,6 +3833,115 @@ assert_convert_ast('table of contents include placeholder header has no number w
 `,
     },
     input_path_noext: 'notindex',
+  },
+);
+assert_convert_ast('header numbered=0 in cirodown.json works across source files and on table of contents',
+  `= Index
+
+\\Include[notindex]
+
+== H2
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//*[@id='toc']//x:a[@href='notindex.html' and text()='Notindex']",
+      "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
+      "//*[@id='toc']//x:a[@href='#h2' and text()='H2']",
+    ],
+    assert_xpath_split_headers: {
+      'notindex.html': [
+        "//*[@id='toc']//x:a[@href='#notindex-h2' and text()='Notindex h2']",
+      ],
+    },
+
+    convert_before: ['notindex.ciro'],
+    extra_convert_opts: { cirodown_json: { numbered: false } },
+    filesystem: {
+      'notindex.ciro': `= Notindex
+
+== Notindex h2
+`,
+    },
+  },
+);
+assert_convert_ast('split header with an include and no headers has a single table of contents',
+  // At 074bacbdd3dc9d3fa8dafec74200043f42779bec was getting two.
+  `= Index
+
+\\Include[notindex]
+`,
+  undefined,
+  {
+    assert_xpath_split_headers: {
+      'split.html': [
+        "//*[@id='toc']",
+      ],
+    },
+    convert_before: ['notindex.ciro'],
+    extra_convert_opts: { cirodown_json: { numbered: false } },
+    filesystem: {
+      'notindex.ciro': `= Notindex
+`,
+    },
+    input_path_noext: 'index',
+  },
+);
+assert_convert_ast('toplevel scope gets removed on table of contents of included headers',
+  `= Index
+
+\\Q[\\x[notindex/notindex-h2]{full}]
+
+\\Include[notindex]
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//x:blockquote//x:a[@href='notindex.html#notindex-h2' and text()='Section 1.1. \"Notindex h2\"']",
+      "//*[@id='toc']//x:a[@href='notindex.html' and text()='1. Notindex']",
+      "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='1.1. Notindex h2']",
+    ],
+    assert_xpath_split_headers: {
+      'split.html': [
+        "//*[@id='toc']//x:a[@href='notindex.html' and text()='1. Notindex']",
+        "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='1.1. Notindex h2']",
+      ],
+    },
+    convert_before: ['notindex.ciro'],
+    filesystem: {
+      'notindex.ciro': `= Notindex
+{scope}
+
+== Notindex h2
+`,
+    },
+  },
+);
+
+assert_executable('executable: toplevel scope gets removed on table of contents of included headers',
+  {
+    args: ['--split-headers', '.'],
+    filesystem: {
+      'index.ciro': `= Index
+
+\\Include[notindex]
+`,
+      'notindex.ciro': `= Notindex
+{scope}
+
+== Notindex h2
+`,
+    },
+    expect_filesystem_xpath: {
+      'index.html': [
+        "//*[@id='toc']//x:a[@href='notindex.html' and text()='1. Notindex']",
+        "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='1.1. Notindex h2']",
+      ],
+      'split.html': [
+        "//*[@id='toc']//x:a[@href='notindex.html' and text()='1. Notindex']",
+        "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='1.1. Notindex h2']",
+      ],
+    },
   },
 );
 assert_convert_ast('the toc is added before the first h1 when there are multiple toplevel h1',

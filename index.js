@@ -3537,7 +3537,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   // but let's not complicate that further either, shall we?
   context.headers_with_include = [];
   context.header_graph = new HeaderTreeNode();
-  perf_print(context, 'post_process_start')
+  perf_print(context, 'post_process_1')
   let prev_header;
   let cur_header_level;
   let first_header_level;
@@ -4198,6 +4198,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   // - extract all IDs into an ID index
   //
   // Normally only the toplevel includer will enter this code section.
+  perf_print(context, 'post_process_2')
   if (!options.from_include) {
     // Calculate header_graph_top_level.
     //

@@ -6352,12 +6352,12 @@ Named multiline second
   },
 );
 assert_convert_ast('bigb output: nested sane list followed by paragraph',
-  // TODO this was leading to an AST change because the input has inner list as
-  // `ccc\n` but the output only `ccc`. But lazy to fix now, maybe what we want is the
-  // input to parse as `ccc` without the `\n`.
+  // This was leading to an AST change because the input has inner list as
+  // `ccc\n` but the output only `ccc`. But lazy to fix now, what we want is the
+  // input to parse as `ccc` without the `\n`: https://github.com/cirosantilli/ourbigbook/issues/245
   `aaa
 
-* bb
+* bbb
   \\Ul[
   * ccc
   ]
@@ -6368,7 +6368,7 @@ ddd
   {
     assert_bigb_main: `aaa
 
-* bb
+* bbb
   * ccc
 
 ddd

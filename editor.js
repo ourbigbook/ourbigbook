@@ -140,6 +140,9 @@ class CirodownEditor {
       }
     );
     this.editor = editor
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function() {
+      options.handleSubmit();
+    })
     editor.onDidChangeModelContent(async (e) => {
       options.onDidChangeModelContentCallback(editor)
       await this.convertInput();

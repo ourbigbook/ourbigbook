@@ -6873,6 +6873,7 @@ exports.idToTitle = idToTitle
 function tocId(id) {
   return Macro.TOC_PREFIX + id;
 }
+exports.tocId = tocId
 
 function unconvertible(ast, context) {
   const msg = `macro "${ast.macro_name}" must never render`

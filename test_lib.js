@@ -1,3 +1,5 @@
+const js_beautify = require('js-beautify')
+
 // https://stackoverflow.com/questions/25753368/performant-parsing-of-html-pages-with-node-js-and-xpath/25971812#25971812
 // Not using because too broken.
 // https://github.com/hieuvp/xpath-html/issues/10
@@ -17,8 +19,8 @@ function xpath_html(html, xpathStr) {
   return select(xpathStr, doc);
 }
 
-function assert_xpath(xpath_expr, string, options={}) {
-  const xpath_matches = xpath_html(string, xpath_expr);
+function assert_xpath(xpath_expr, html, options={}) {
+  const xpath_matches = xpath_html(html, xpath_expr);
   if (!('count' in options)) {
     options.count = 1;
   }
@@ -37,8 +39,8 @@ function assert_xpath(xpath_expr, string, options={}) {
     }
     console.error(`assert_xpath${options.stdout ? '_stdout' : ''}${count_str}: ` + options.message);
     console.error('xpath: ' + xpath_expr);
-    console.error('string:');
-    console.error(string);
+    console.error('html:');
+    console.error(js_beautify.html(html));
     assert.strictEqual(xpath_matches.length, options.count);
   }
 }

@@ -3682,13 +3682,11 @@ assert_lib('x leading slash to escape scopes works across files',
 //  }
 //);
 assert_lib('scopes hierarchy resolution works across files with directories',
+  // https://github.com/cirosantilli/ourbigbook/issues/229
   {
     convert_dir: true,
     extra_convert_opts: {
-      // TODO get rid of this and fix:
-      // https://github.com/cirosantilli/ourbigbook/issues/229
       split_headers: true,
-      ref_prefix: 'subdir',
     },
     filesystem: {
       'subdir/notindex.bigb': `= Notindex
@@ -3714,6 +3712,36 @@ assert_lib('scopes hierarchy resolution works across files with directories',
       'subdir/notindex2.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#notindex-h2']`,
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
+      ],
+    },
+  }
+);
+assert_lib('x: ref_prefix gets appeneded to absolute targets',
+  {
+    convert_dir: true,
+    extra_convert_opts: {
+      split_headers: true,
+      ref_prefix: 'subdir',
+    },
+    filesystem: {
+      'subdir/notindex.bigb': `= Notindex
+
+== Scope
+{scope}
+
+=== Notindex2
+
+\\x[/notindex2][scope/notindex2 to notindex2]
+`,
+     'subdir/notindex2.bigb': `= Notindex2
+`,
+    },
+    assert_xpath: {
+      'subdir/notindex.html': [
+        "//x:div[@class='p']//x:a[@href='notindex2.html' and text()='scope/notindex2 to notindex2']",
+      ],
+      'subdir/notindex2.html': [
+        //`//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
       ],
     },
   }
@@ -5572,7 +5600,6 @@ assert_lib('subdir index.bigb outputs to subdir without trailing slash with html
 );
 assert_lib('subdir index.bigb removes leading @ from links with the remove_leading_at option',
   {
-
     filesystem: {
       '@subdir/index.bigb': `= Subdir
 

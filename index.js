@@ -2871,7 +2871,12 @@ function convert_init_context(options={}, extra_returns={}) {
     // \x[@username/top-id] in Web.
     options.ref_prefix = '';
   }
-  if (!('remove_leading_at' in options)) { options.remove_leading_at = false; }
+  if (!('remove_leading_at' in options)) {
+    // If true, make \x[@username/someid] link to username/someid without the leading @.
+    // This is used in Web, where our URLs don't really have the @ sign on them,
+    // but the username IDs do have the @ sign implicitly added to them.
+    options.remove_leading_at = false;
+  }
   if (!('render' in options)) { options.render = true; }
   if (!('start_line' in options)) { options.start_line = 1; }
   if (!('split_headers' in options)) {
@@ -5985,17 +5990,14 @@ function x_child_db_effective_id(target_id, context, ast) {
   if (
     target_id_ast === undefined
   ) {
-    // Can happen if it is in another files that was not extracted yet.
-    // Then in that case, we can't do scope resolution. But since we are in another file,
-    // we must be using the full scope regardless, so it will be correct.
-    // Edit: not true considering subdirectories: https://github.com/cirosantilli/ourbigbook/issues/229
-    // which we are now hackily working around options.ref_prefix.
-    // This usage should be removed once we implement that correctly.
-    if (
-      context.options.ref_prefix &&
-      !(is_absolute_xref(target_id, context))
-    ) {
-      target_id = context.options.ref_prefix + Macro.HEADER_SCOPE_SEPARATOR + target_id
+    // Return as is. This can happen during ID extraction when the
+    // target ID needs to be resolved across directory based scopes.
+    // In those cases, the target ID could be on another file, so we would need to
+    // read the database to decide. But reading from database during ID extraction
+    // is forbidden, so we do that on a separate pass.
+    // Related: https://github.com/cirosantilli/ourbigbook/issues/229
+    if (is_absolute_xref(target_id, context)) {
+      target_id = resolve_absolute_xref(target_id, context)
     }
     return target_id
   } else {

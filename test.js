@@ -4526,7 +4526,6 @@ assert_convert_ast('relative include in subdirectory',
 `,
   undefined,
   {
-    // No error with this.
     convert_before: ['s1/notindex2.ciro', 's1/notindex.ciro'],
     filesystem: {
       's1/notindex.ciro': `= Notindex
@@ -4548,6 +4547,27 @@ assert_convert_ast('relative include in subdirectory',
       //"//*[@id='toc']//x:a[@href='../top.html' and @data-test='2' and text()='2. Top']",
     ],
     input_path_noext: 's1/index',
+  }
+);
+assert_convert_ast('include from parent to subdirectory',
+  `= Index
+
+\\Include[subdir]
+\\Include[subdir/notindex]
+`,
+  undefined,
+  {
+    convert_before: ['subdir/index.ciro', 'subdir/notindex.ciro'],
+    filesystem: {
+      'subdir/index.ciro': `= Index
+
+== h2`,
+      'subdir/notindex.ciro': `= Notindex
+
+== Notindex h2
+`,
+    },
+    input_path_noext: 'index',
   }
 );
 
@@ -4969,7 +4989,7 @@ $$
 
 \\x[has-split-suffix][link to has split suffix]
 
-\\Include[subdir/included-by-subdir-index]
+\\Include[included-by-subdir-index]
 
 == Scope
 {scope}

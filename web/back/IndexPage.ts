@@ -1,10 +1,8 @@
-import { GetStaticProps } from 'next'
+import { GetServerSideProps } from 'next'
 import { verify } from 'jsonwebtoken'
 
 import sequelize from 'db'
-import { fallback, revalidate } from 'front/config'
-import { defaultLimit  } from 'front/config'
-import { secret } from 'front/config'
+import { defaultLimit, fallback, secret } from 'front/config'
 import { getCookieFromReq } from 'front'
 
 export const getStaticPathsHome = () => {
@@ -14,9 +12,19 @@ export const getStaticPathsHome = () => {
   }
 }
 
-export const makeGetStaticPropsHome = (what): GetStaticProps => {
-  return async (context) => {
-    const page = context?.params?.page ? parseInt(context.params.page as string, 10) - 1: 0
+function getLoggedInUser(req) {
+  const authCookie = getCookieFromReq(req, 'auth')
+  if (authCookie) {
+    return verify(authCookie, secret)
+  } else {
+    return null
+  }
+}
+
+export const makeGetServerSidePropsIndex = (what): GetServerSideProps => {
+  return async ({ req }) => {
+    const loggedInUser = getLoggedInUser(req)
+    const page = req?.params?.page ? parseInt(req.params.page as string, 10) - 1: 0
     let order
     let empty = false
     switch (what) {
@@ -52,10 +60,10 @@ export const makeGetStaticPropsHome = (what): GetStaticProps => {
       props: {
         articles,
         articlesCount,
+        loggedInUser,
         page,
         what,
       },
-      revalidate,
     }
   }
 }

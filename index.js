@@ -1686,7 +1686,7 @@ function convert(
   if (!('show_parse' in options)) { options.show_parse = false; }
   if (!('show_tokenize' in options)) { options.show_tokenize = false; }
   if (!('show_tokens' in options)) { options.show_tokens = false; }
-  if (!('split_header' in options)) { options.split_header = false; }
+  if (!('split_headers' in options)) { options.split_headers = false; }
   if (!('template' in options)) { options.template = undefined; }
   if (!('template_vars' in options)) { options.template_vars = {}; }
     if (!('head' in options.template_vars)) { options.template_vars.head = ''; }
@@ -1790,11 +1790,12 @@ function convert(
     context.extra_returns.rendered_outputs = {};
     extra_returns.debug_perf.render_pre = globals.performance.now();
     // Split header conversion.
-    if (options.split_header) {
+    if (options.split_headers) {
       function convert_header(cur_arg_list, context) {
         if (cur_arg_list.length > 0) {
-          const context = Object.assign({}, context);
-          const options = Object.assign({}, options);
+          context = Object.assign({}, context);
+          const options = Object.assign({}, context.options);
+          context.options = options;
           const header_ast = cur_arg_list[0];
           const header_graph_node = header_ast.header_graph_node;
           const header_graph_node_old_parent = header_graph_node.parent_node;
@@ -1808,13 +1809,13 @@ function convert(
             },
             header_ast.source_location,
           );
-          const output_path = output_path_from_ast(header_ast, context);
           options.toplevel_id = header_ast.id;
-          context.options = options;
-          context.in_split_header = true;
+          context.in_split_headers = true;
+          const output_path = output_path_from_ast(header_ast, context);
+          console.error(output_path);
           context.toplevel_output_path = output_path;
           context.extra_returns.rendered_outputs[output_path] =
-            ast_toplevel.convert(context_copy);
+            ast_toplevel.convert(context);
           // Restore the original header_graph_node state.
           header_graph_node.parent_node = header_graph_node_old_parent;
         }
@@ -2356,27 +2357,27 @@ function object_subset(source_object, keys) {
  * or of something faked to look like one.
  *
  * cirodown ->
- *    split_header -> index.html
- *   !split_header -> index.html
- * getting-started ->
- *    split_header -> getting-started.html
- *   !split_header -> index.html
+ *    split_headers -> index.html
+ *   !split_headers -> index.html
+ * quick-start ->
+ *    split_headers -> quick-start.html
+ *   !split_headers -> index.html
  * not-readme -> not-readme.html
- *    split_header -> not-readme.html
- *   !split_header -> not-readme.html
+ *    split_headers -> not-readme.html
+ *   !split_headers -> not-readme.html
  * h2 in not the README -> not-readme.html
- *    split_header -> h2-in-not-the-readme.html
- *   !split_header -> not-readme.html
+ *    split_headers -> h2-in-not-the-readme.html
+ *   !split_headers -> not-readme.html
  * not-readme-with-scope ->
- *    split_header -> not-readme-with-scope.html
- *   !split_header ->  not-readme-with-scope.html
+ *    split_headers -> not-readme-with-scope.html
+ *   !split_headers ->  not-readme-with-scope.html
  * not-readme-with-scope/h2 ->
- *    split_header -> not-readme-with-scope/h2.html
- *   !split_header ->  not-readme-with-scope.html
+ *    split_headers -> not-readme-with-scope/h2.html
+ *   !split_headers ->  not-readme-with-scope.html
  * subdir ->
- *    split_header -> subdir/index.html
+ *    split_headers -> subdir/index.html
  *   !html_x_extension -> subdir
- *   !split_header -> subdir/index.html
+ *   !split_headers -> subdir/index.html
  * subdir/subdir-h2
  */
 function output_path(input_path, id, context={}) {
@@ -2394,9 +2395,9 @@ function output_path_parts(input_path, id, context) {
   let ret = '';
   const [dirname, basename] = path_split(input_path, context.options.path_sep);
   const renamed_basename = rename_basename(noext(basename));
-  if (context.in_split_header) {
+  if (context.in_split_headers) {
     // id='cirodown'             -> ['',       'index-split']
-    // id='getting-started'      -> ['',       'getting-started']
+    // id='quick-start'          -> ['',       'quick-start']
     // id='not-readme'           -> ['',       'not-readme-split']
     // id='h2-in-not-the-readme' -> ['',       'h2-in-not-the-readme']
     // id='subdir'               -> ['subdir', 'index-split']
@@ -3794,7 +3795,7 @@ function x_href_parts(target_id_ast, context) {
 
   // fragment
   let fragment;
-  if (context.in_split_header) {
+  if (context.in_split_headers) {
     fragment = '';
   } else {
     if (

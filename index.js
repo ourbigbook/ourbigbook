@@ -2033,11 +2033,12 @@ async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
           indexed_ids[ast.id] = ast;
         }
       } else {
-        let message = `duplicate ID "${ast.id}", previous one defined at `;
-        if (input_path !== undefined) {
-          message += `file ${input_path} `;
-        }
-        message += `line ${previous_ast.source_location.line} column ${previous_ast.source_location.column}`;
+        const message = duplicate_id_error_message(
+          ast.id,
+          input_path,
+          previous_ast.source_location.line,
+          previous_ast.source_location.column
+        )
         parse_error(state, message, ast.source_location);
       }
       if (await caption_number_visible(ast, context)) {
@@ -2719,6 +2720,16 @@ exports.convert_x_href = convert_x_href;
 function dirname(str, sep) {
   return path_split(str, sep)[0];
 }
+
+function duplicate_id_error_message(id, path, line, column) {
+  let message = `duplicate ID "${id}", previous one defined at `;
+  if (path !== undefined) {
+    message += `file "${path}" `;
+  }
+  message += `line ${line} column ${column}`;
+  return message
+}
+exports.duplicate_id_error_message = duplicate_id_error_message
 
 /** Error message to be rendered inside the generated output itself.
  *

@@ -15,7 +15,7 @@ import routes from 'front/routes'
 import { AppContext, useCtrlEnterSubmit } from 'front'
 import { modifyEditorInput } from 'shared';
 
-export default function ArticleEditorPageHoc(options={}) {
+export default function ArticleEditorPageHoc(options:any={}) {
   const isnew = options.isnew === undefined ? false : options.isnew
   const editor = ({ article: initialArticle }) => {
     const router = useRouter();
@@ -23,11 +23,17 @@ export default function ArticleEditorPageHoc(options={}) {
       query: { slug },
     } = router;
     let body;
+    let slugString
+    if (Array.isArray(slug)) {
+      slugString = slug.join('/')
+    } else {
+      slugString = slug
+    }
     let initialArticleState;
     if (initialArticle) {
       body = initialArticle.body
-      if (slug && isnew) {
-        body += `${cirodown.PARAGRAPH_SEP}Adapted from: \\x[${cirodown.AT_MENTION_CHAR}${slug.join('/')}].`
+      if (slugString && isnew) {
+        body += `${cirodown.PARAGRAPH_SEP}Adapted from: \\x[${cirodown.AT_MENTION_CHAR}${slugString}].`
       }
       initialArticleState = {
         title: initialArticle.title,

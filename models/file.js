@@ -9,7 +9,8 @@ module.exports = (sequelize, web=false) => {
     toplevel_id: {
       type: DataTypes.TEXT,
       allowNull: true,
-      unique: true,
+      // Not unique for the same reason that Id idid is not unique.
+      //unique: true,
     },
     last_parse: {
       type: DataTypes.DATE,

@@ -407,7 +407,7 @@ function assert_equal(description, output, expected_output) {
  * only has to be 100% correct on the first error pointed out, to allow
  * the user to deterministically solve that problem first, and then move
  * on to the next. */
-function assert_error(description, input, line, column, path, options={}) {
+function assert_lib_error(description, input, line, column, path, options={}) {
   const new_convert_opts = Object.assign({}, options);
   new_convert_opts.error_line = line;
   new_convert_opts.error_column = column;
@@ -808,7 +808,7 @@ assert_lib_ast('sane quote without inner paragraph',
   '\\Q[aa]\n',
   [a('Q', [t('aa')])],
 );
-assert_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
+assert_lib_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
 assert_lib_ast('both quotes and paragraphs get the on-hover link',
   `= tmp
 
@@ -859,10 +859,10 @@ assert_lib_ast('a header first element has an empty on-hover link',
     ],
   }
 );
-assert_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
+assert_lib_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
 assert_lib_ast('one newline at the end of document is ignored', 'p1\n', [a('P', [t('p1')])]);
-assert_error('two newlines at the end of document are an error', 'p1\n\n', 1, 3);
-assert_error('three newline at the end of document an error', 'p1\n\n\n', 2, 1);
+assert_lib_error('two newlines at the end of document are an error', 'p1\n\n', 1, 3);
+assert_lib_error('three newline at the end of document an error', 'p1\n\n\n', 2, 1);
 
 // List.
 const l_with_explicit_ul_expect = [
@@ -1010,7 +1010,7 @@ assert_lib_ast('insane list with literal no error',
     ]),
   ]
 );
-assert_error('insane list with literal with error',
+assert_lib_error('insane list with literal with error',
   `* aa
 
   \`\`
@@ -1613,11 +1613,11 @@ assert_lib_ast('image title',
 ],
   { filesystem: { ab: '' } },
 );
-assert_error('image with unknown provider',
+assert_lib_error('image with unknown provider',
   `\\Image[ab]{provider=reserved_undefined}`,
   1, 11
 );
-assert_error('image provider that does not match actual source',
+assert_lib_error('image provider that does not match actual source',
   `\\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]{provider=local}`,
   1, 96
 );
@@ -1922,9 +1922,9 @@ assert_lib_ast('p with id before', '\\P{id=ab}[cd]\n',
 assert_lib_ast('p with id after', '\\P[cd]{id=ab}\n',
   [a('P', [t('cd')], {id: [t('ab')]})]);
 // https://github.com/cirosantilli/ourbigbook/issues/101
-assert_error('named argument given multiple times',
+assert_lib_error('named argument given multiple times',
   '\\P[ab]{id=cd}{id=ef}', 1, 14);
-assert_error(
+assert_lib_error(
   'non-empty named argument without = is an error',
   '\\P{id ab}[cd]',
   1, 6, 'notindex.bigb',
@@ -2124,7 +2124,7 @@ assert_lib_ast('link: simple to local file that exists',
   ],
   { filesystem: { 'local-path.txt': '' } }
 );
-assert_error('link: simple to local file that does not exist give an error without check=0',
+assert_lib_error('link: simple to local file that does not exist give an error without check=0',
   'a \\a[local-path.txt] b\n',
   1, 5,
 );
@@ -2306,7 +2306,7 @@ assert_lib_ast('xss: a content and href',
     ]
   }
 );
-assert_error(
+assert_lib_error(
   // {check} local file existence of \a and \Image and local link automodifications.
   'link: relative reference to nonexistent file leads to failure in link',
   `\\a[i-dont-exist]
@@ -2315,7 +2315,7 @@ assert_error(
     input_path_noext: 'README',
   }
 );
-assert_error(
+assert_lib_error(
   'link: relative reference to nonexistent file leads to failure in image',
   `\\Image[i-dont-exist]
 `, 1, 7, 'README.bigb',
@@ -2543,12 +2543,12 @@ assert_lib_ast('x: cross reference full boolean style with value 1',
     ]),
   ]
 );
-assert_error('x: cross reference full boolean style with invalid value 2',
+assert_lib_error('x: cross reference full boolean style with invalid value 2',
   `= abc
 
 \\x[abc]{full=2}
 `, 3, 8);
-assert_error('x: cross reference full boolean style with invalid value true',
+assert_lib_error('x: cross reference full boolean style with invalid value true',
   `= abc
 
 \\x[abc]{full=true}
@@ -2563,14 +2563,14 @@ assert_lib_stdin('x: cross reference without content nor target title style full
 
 \\x[cd]
 `, { filesystem: { ab: '' } });
-assert_error('x: cross reference undefined fails gracefully', '\\x[ab]', 1, 3);
-assert_error('x: cross reference with child to undefined id fails gracefully',
+assert_lib_error('x: cross reference undefined fails gracefully', '\\x[ab]', 1, 3);
+assert_lib_error('x: cross reference with child to undefined id fails gracefully',
   `= h1
 
 \\x[ab]{child}
 `, 3, 3, undefined, {toplevel: true});
 // https://docs.ourbigbook.com#order-of-reported-errors
-assert_error('x: cross reference undefined errors show after other errors',
+assert_lib_error('x: cross reference undefined errors show after other errors',
   `= a
 
 \\x[b]
@@ -2578,27 +2578,27 @@ assert_error('x: cross reference undefined errors show after other errors',
 \`\`
 == b
 `, 5, 1);
-assert_error('x: cross reference full and ref are incompatible',
+assert_lib_error('x: cross reference full and ref are incompatible',
   `= abc
 
 \\x[abc]{full}{ref}
 `, 3, 1);
-assert_error('x: cross reference content and full are incompatible',
+assert_lib_error('x: cross reference content and full are incompatible',
   `= abc
 
 \\x[abc][def]{full}
 `, 3, 1);
-assert_error('x: cross reference content and ref are incompatible',
+assert_lib_error('x: cross reference content and ref are incompatible',
   `= abc
 
 \\x[abc][def]{ref}
 `, 3, 1);
-assert_error('x: cross reference full and c are incompatible',
+assert_lib_error('x: cross reference full and c are incompatible',
   `= abc
 
 \\x[abc]{c}{full}
 `, 3, 1);
-assert_error('x: cross reference full and p are incompatible',
+assert_lib_error('x: cross reference full and p are incompatible',
   `= abc
 
 \\x[abc]{p}{full}
@@ -3641,12 +3641,12 @@ assert_lib(
 
 // Infinite recursion.
 // failing https://github.com/cirosantilli/ourbigbook/issues/34
-assert_error('cross reference from header title to following header is not allowed',
+assert_lib_error('cross reference from header title to following header is not allowed',
   `= \\x[h2] aa
 
 == h2
 `, 1, 3);
-assert_error('cross reference from header title to previous header is not allowed',
+assert_lib_error('cross reference from header title to previous header is not allowed',
   `= h1
 
 == \\x[h1] aa
@@ -3677,14 +3677,14 @@ assert_lib_ast('cross reference from image title to following non-header is not 
     ],
   }
 );
-assert_error('cross reference infinite recursion with explicit IDs fails gracefully',
+assert_lib_error('cross reference infinite recursion with explicit IDs fails gracefully',
   `= \\x[h2]
 {id=h1}
 
 == \\x[h1]
 {id=h2}
 `, 1, 3);
-assert_error('cross reference infinite recursion to self IDs fails gracefully',
+assert_lib_error('cross reference infinite recursion to self IDs fails gracefully',
   `= \\x[tmp]
 `, 1, 3, 'tmp.bigb',
   {
@@ -3790,7 +3790,7 @@ assert_lib_ast('cross reference from image to following header without x content
   ],
   { filesystem: { cd: '' } },
 );
-assert_error('cross reference with parent to undefined ID does not throw',
+assert_lib_error('cross reference with parent to undefined ID does not throw',
   `= aa
 
 \\x[bb]{parent}
@@ -3939,7 +3939,7 @@ assert_lib_ast('nested scope internal cross references resolves progressively',
 ]
 );
 // https://github.com/cirosantilli/ourbigbook/issues/100
-assert_error('broken parent still generates a header ID',
+assert_lib_error('broken parent still generates a header ID',
   `= h1
 
 \\x[h2]
@@ -4646,7 +4646,7 @@ assert_lib_ast('header: parent does title to ID conversion',
     a('H', undefined, {level: [t('3')], title: [t('3')]}),
   ],
 );
-assert_error('header: with parent argument must have level equal 1',
+assert_lib_error('header: with parent argument must have level equal 1',
   `= 1
 
 == 2
@@ -4654,7 +4654,7 @@ assert_error('header: with parent argument must have level equal 1',
 `,
   3, 1
 );
-assert_error('header: parent cannot be an older id of a level',
+assert_lib_error('header: parent cannot be an older id of a level',
   `= 1
 
 == 2
@@ -4666,7 +4666,7 @@ assert_error('header: parent cannot be an older id of a level',
 `,
   8, 1
 );
-assert_error('header: child argument to id that does not exist gives an error',
+assert_lib_error('header: child argument to id that does not exist gives an error',
   `= 1
 {child=2}
 {child=3}
@@ -4675,7 +4675,7 @@ assert_error('header: child argument to id that does not exist gives an error',
 `,
   3, 1
 );
-assert_error('header: tag argument to id that does not exist gives an error',
+assert_lib_error('header: tag argument to id that does not exist gives an error',
   `= 1
 {tag=2}
 {tag=3}
@@ -4701,7 +4701,7 @@ assert_lib('header: tag and child argument does title to ID conversion',
     },
   }
 );
-assert_error('header: child and synonym arguments are incompatible',
+assert_lib_error('header: child and synonym arguments are incompatible',
   // This almost worked, but "Other children" links were not showing.
   // Either we support it fully, or it blows up clearly, this immediately
   // confused me a bit on cirosantilli.com.
@@ -4715,7 +4715,7 @@ assert_error('header: child and synonym arguments are incompatible',
 `,
   5, 1
 );
-assert_error('header: tag and synonym arguments are incompatible',
+assert_lib_error('header: tag and synonym arguments are incompatible',
   `= 1
 
 = 1 2
@@ -4726,7 +4726,7 @@ assert_error('header: tag and synonym arguments are incompatible',
 `,
   5, 1
 );
-assert_error('header: synonym without preceeding header fails gracefully',
+assert_lib_error('header: synonym without preceeding header fails gracefully',
   `asdf
 
 = qwer
@@ -4879,8 +4879,8 @@ assert_lib_ast('header id new line insane trailing element',
       id: [t('cc')],
   })],
 );
-assert_error('header: level must be an integer', '\\H[a][b]\n', 1, 3);
-assert_error('header: non integer h2 header level does not throw',
+assert_lib_error('header: level must be an integer', '\\H[a][b]\n', 1, 3);
+assert_lib_error('header: non integer h2 header level does not throw',
   `\\H[1][h1]
 
 \\H[][h2 1]
@@ -4889,12 +4889,12 @@ assert_error('header: non integer h2 header level does not throw',
 
 \\H[][h2 3]
 `, 3, 3);
-assert_error('header: non integer h1 header level does not throw',
+assert_lib_error('header: non integer h1 header level does not throw',
   `\\H[][h1]
 `, 1, 3);
-assert_error('header: must be an integer empty', '\\H[][b]\n', 1, 3);
-assert_error('header: must not be zero', '\\H[0][b]\n', 1, 3);
-assert_error('header: skip level is an error', '\\H[1][a]\n\n\\H[3][b]\n', 3, 3);
+assert_lib_error('header: must be an integer empty', '\\H[][b]\n', 1, 3);
+assert_lib_error('header: must not be zero', '\\H[0][b]\n', 1, 3);
+assert_lib_error('header: skip level is an error', '\\H[1][a]\n\n\\H[3][b]\n', 3, 3);
 const header_numbered_input = `= tmp
 
 \\Q[
@@ -5096,7 +5096,7 @@ assert_lib_ast('header file argument that is the last header adds the preview',
     },
   },
 );
-assert_error('header: file argument to a file that does not exist give an error',
+assert_lib_error('header: file argument to a file that does not exist give an error',
   `= h1
 
 == dont-exist
@@ -5505,7 +5505,7 @@ assert_lib_stdin('header parent works with ourbigbook.json lint h-parent equal p
 `,
   { convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'parent', } } } }
 );
-assert_error('header number fails with ourbigbook.json lint h-parent = parent',
+assert_lib_error('header number fails with ourbigbook.json lint h-parent = parent',
   `= 1
 
 == 2
@@ -5520,7 +5520,7 @@ assert_lib_stdin('header number works with ourbigbook.json lint h-parent = numbe
 `,
   { convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'number', } } } }
 );
-assert_error('header parent fails with ourbigbook.json lint h-parent = number',
+assert_lib_error('header parent fails with ourbigbook.json lint h-parent = number',
   `= 1
 
 = 2
@@ -5544,7 +5544,7 @@ assert_lib_stdin('header parent works with ourbigbook.json lint h-parent equal p
     }
   }
 );
-assert_error('header parent fails with ourbigbook.json lint h-parent equal parent and includes with number',
+assert_lib_error('header parent fails with ourbigbook.json lint h-parent equal parent and includes with number',
   `= 1
 
 = 2
@@ -5561,7 +5561,7 @@ assert_error('header parent fails with ourbigbook.json lint h-parent equal paren
   }
 );
 // lint h-tag
-assert_error('lint h-tag child failure',
+assert_lib_error('lint h-tag child failure',
   `= 1
 {tag=2}
 
@@ -5578,7 +5578,7 @@ assert_lib_stdin('lint h-tag child pass',
 `,
   { convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'child', } } } }
 );
-assert_error('lint h-tag tag failure',
+assert_lib_error('lint h-tag tag failure',
   `= 1
 {child=2}
 
@@ -5782,7 +5782,7 @@ assert_lib_ast('toc: split headers have correct table of contents',
     input_path_noext: 'notindex',
   },
 );
-assert_error('toc: toc is a reserved id',
+assert_lib_error('toc: toc is a reserved id',
   `= h1
 
 == toc
@@ -6162,7 +6162,7 @@ assert_lib_stdin('math block with comment on last line',
 $$
 `,
 );
-assert_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 3);
+assert_lib_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 3);
 
 // Include.
 const include_opts = {convert_opts: {
@@ -6209,7 +6209,7 @@ assert_lib_ast('include parent argument with embed',
   ],
   include_opts
 );
-assert_error('include parent argument to old ID fails gracefully',
+assert_lib_error('include parent argument to old ID fails gracefully',
   `= h1
 
 == h2
@@ -6373,7 +6373,7 @@ bb
   include_opts
 );
 // https://github.com/cirosantilli/ourbigbook/issues/23
-assert_error('include with error reports error on the include source',
+assert_lib_error('include with error reports error on the include source',
   `= aa
 
 bb
@@ -6387,7 +6387,7 @@ const circular_entry = `= notindex
 
 \\Include[include-circular]
 `;
-assert_error('include circular dependency 1 <-> 2',
+assert_lib_error('include circular dependency 1 <-> 2',
   circular_entry,
   // TODO works from CLI call......... fuck, why.
   // Similar problem as in test below.
@@ -6415,7 +6415,7 @@ assert_error('include circular dependency 1 <-> 2',
 // ```
 // file not found on database: "${target_input_path}", needed for toplevel scope removal
 // on ToC conversion.
-assert_error('include circular dependency 1 -> 2 <-> 3',
+assert_lib_error('include circular dependency 1 -> 2 <-> 3',
   `= aa
 
 \\Include[include-circular-1]
@@ -6486,7 +6486,7 @@ assert_lib_ast('include without parent header without embed includes',
     ],
   },
 );
-assert_error('empty include in header title fails gracefully',
+assert_lib_error('empty include in header title fails gracefully',
   // https://github.com/cirosantilli/ourbigbook/issues/195
   `= tmp
 
@@ -6494,14 +6494,14 @@ assert_error('empty include in header title fails gracefully',
 `,
   3, 4
 );
-assert_error('empty x in header title fails gracefully',
+assert_lib_error('empty x in header title fails gracefully',
   `= tmp
 
 == \\x
 `,
   3, 4
 );
-assert_error('header inside header fails gracefully',
+assert_lib_error('header inside header fails gracefully',
   `= \\H[2]
 `,
   1, 3, 'tmp.bigb',
@@ -6510,7 +6510,7 @@ assert_error('header inside header fails gracefully',
   }
 );
 
-assert_error('include to file that exists in header title fails gracefully',
+assert_lib_error('include to file that exists in header title fails gracefully',
   // https://github.com/cirosantilli/ourbigbook/issues/195
   `= tmp
 
@@ -6526,14 +6526,14 @@ assert_error('include to file that exists in header title fails gracefully',
     input_path_noext: 'tmp',
   }
 );
-assert_error('include to file that does not exist fails gracefully',
+assert_lib_error('include to file that does not exist fails gracefully',
   `= h1
 
 \\Include[asdf]
 `,
   3, 1
 );
-assert_error('include to file that does exists without embed includes before extracting IDs fails gracefully',
+assert_lib_error('include to file that does exists without embed includes before extracting IDs fails gracefully',
   `= h1
 
 \\Include[asdf]
@@ -6810,13 +6810,13 @@ assert_lib_ast('id autogeneration without title',
   '\\P[aa]\n',
   [a('P', [t('aa')], {}, {id: '_1'})],
 );
-assert_error('id conflict with previous autogenerated id',
+assert_lib_error('id conflict with previous autogenerated id',
   `\\P[aa]
 
 \\P[bb]{id=_1}`,
   3, 1
 );
-assert_error('id conflict with later autogenerated id',
+assert_lib_error('id conflict with later autogenerated id',
   `\\P[aa]{id=_1}
 
 \\P[bb]`,
@@ -6873,7 +6873,7 @@ assert_lib_ast('id autogeneration with disambiguate',
     ])
   ],
 );
-assert_error('id autogeneration with undefined reference in title fails gracefully',
+assert_lib_error('id autogeneration with undefined reference in title fails gracefully',
   `= \\x[reserved_undefined]
 `, 1, 3);
 // https://github.com/cirosantilli/ourbigbook/issues/45
@@ -6905,7 +6905,7 @@ assert_lib_ast('id autogeneration with nested elements does an id conversion and
 );
 
 // ID conflicts.
-assert_error('id conflict with previous id on the same file',
+assert_lib_error('id conflict with previous id on the same file',
   `= tmp
 {id=tmp}
 
@@ -6963,6 +6963,20 @@ assert_lib_ast('id conflict with id on another file where conflict header has a 
     input_path_noext: 'tmp'
   }
 );
+assert_lib_error('id conflict on file with the same toplevel_id as another',
+  undefined,
+  1, 1, 'index.bigb',
+  {
+    convert_before_norender: ['notindex.bigb'],
+    convert_before: ['index.bigb'],
+    filesystem: {
+      'index.bigb': `= Notindex
+`,
+      'notindex.bigb': `= Notindex
+`,
+    },
+  }
+);
 
 // title_to_id
 assert_equal('title_to_id with hyphen', ourbigbook.title_to_id('.0A. - z.a Z..'), '0a-z-a-z');
@@ -6977,11 +6991,11 @@ bbb
   a('Toplevel', [a('P', [t('bbb')])], {'title': [t('aaa')]}),
   {toplevel: true}
 );
-assert_error('toplevel explicit content',
+assert_lib_error('toplevel explicit content',
   `[]`, 1, 1,
 );
 // https://github.com/cirosantilli/ourbigbook/issues/10
-assert_error('explicit toplevel macro',
+assert_lib_error('explicit toplevel macro',
   `\\toplevel`, 1, 1,
 );
 
@@ -6999,24 +7013,24 @@ assert_lib_ast('one paragraph implicit split headers',
 // Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception, or worse, not blowing up at all!
 assert_lib_ast('backslash without macro', '\\ a', [a('P', [t(' a')])],);
-assert_error('unknown macro without args', '\\reserved_undefined', 1, 1);
-assert_error('unknown macro with positional arg', '\\reserved_undefined[aa]', 1, 1);
-assert_error('unknown macro with named arg', '\\reserved_undefined{aa=bb}', 1, 1);
-assert_error('too many positional arguments', '\\P[ab][cd]', 1, 7);
-assert_error('unknown named macro argument', '\\c{reserved_undefined=abc}[]', 1, 4);
-assert_error('missing mandatory positional argument href of a', '\\a', 1, 1);
-assert_error('missing mandatory positional argument level of h', '\\H', 1, 1);
-assert_error('stray open positional argument start', 'a[b\n', 1, 2);
-assert_error('stray open named argument start', 'a{b\n', 1, 2);
-assert_error('argument without close empty', '\\c[\n', 1, 3);
-assert_error('argument without close nonempty', '\\c[ab\n', 1, 3);
-assert_error('stray positional argument end', 'a]b', 1, 2);
-assert_error('stray named argument end}', 'a}b', 1, 2);
-assert_error('unterminated literal positional argument', '\\c[[\n', 1, 3);
-assert_error('unterminated literal named argument', '\\c{{id=\n', 1, 3);
-assert_error('unterminated insane inline code', '`\n', 1, 1);
-assert_error('unterminated insane link', '<ab', 1, 1);
-assert_error('unescaped trailing backslash', '\\', 1, 1);
+assert_lib_error('unknown macro without args', '\\reserved_undefined', 1, 1);
+assert_lib_error('unknown macro with positional arg', '\\reserved_undefined[aa]', 1, 1);
+assert_lib_error('unknown macro with named arg', '\\reserved_undefined{aa=bb}', 1, 1);
+assert_lib_error('too many positional arguments', '\\P[ab][cd]', 1, 7);
+assert_lib_error('unknown named macro argument', '\\c{reserved_undefined=abc}[]', 1, 4);
+assert_lib_error('missing mandatory positional argument href of a', '\\a', 1, 1);
+assert_lib_error('missing mandatory positional argument level of h', '\\H', 1, 1);
+assert_lib_error('stray open positional argument start', 'a[b\n', 1, 2);
+assert_lib_error('stray open named argument start', 'a{b\n', 1, 2);
+assert_lib_error('argument without close empty', '\\c[\n', 1, 3);
+assert_lib_error('argument without close nonempty', '\\c[ab\n', 1, 3);
+assert_lib_error('stray positional argument end', 'a]b', 1, 2);
+assert_lib_error('stray named argument end}', 'a}b', 1, 2);
+assert_lib_error('unterminated literal positional argument', '\\c[[\n', 1, 3);
+assert_lib_error('unterminated literal named argument', '\\c{{id=\n', 1, 3);
+assert_lib_error('unterminated insane inline code', '`\n', 1, 1);
+assert_lib_error('unterminated insane link', '<ab', 1, 1);
+assert_lib_error('unescaped trailing backslash', '\\', 1, 1);
 
 // API minimal tests.
 it(`api: x does not blow up without ID provider`, async function () {
@@ -7723,14 +7737,14 @@ assert_lib('bigb output: x do not change capitalization if the first ast is not 
     }
   }
 )
-assert_error('bigb output: x to undefined does not blow up',
+assert_lib_error('bigb output: x to undefined does not blow up',
   `<asdf>`,
   1, 2, undefined,
   {
     convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
   }
 )
-assert_error('bigb output: undefined tag does not blow up',
+assert_lib_error('bigb output: undefined tag does not blow up',
   `= My header
 {tag=Asdf}`,
   2, 1, undefined,

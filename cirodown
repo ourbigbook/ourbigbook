@@ -132,11 +132,19 @@ const Macro = class {
    * @param {String} name
    * @param {Array[Argument]} args
    * @param {Function} convert
+   * @param {Object}
+   *        {boolean} phrasing - is this phrasing content?
+   *                  (HTML5 elements that can go in paragraphs). This matters to determine
+   *                  where `\n\n` paragraphs will split.
    */
-  constructor(name, args, convert) {
+  constructor(name, args, convert, properties={}) {
     this.name = name;
     this.args = args;
     this.convert = convert;
+    this.properties = properties;
+    if (!('phrasing') in this.properties) {
+      this.properties['phrasing'] = false;
+    }
     this.name_to_arg = {};
     this.index_to_arg = {};
     let i = 0;
@@ -194,6 +202,9 @@ let macro_list = [
         content = args.content;
       }
       return `<a href="${convert_arg(args.href)}">${convert_arg(content)}</a>`
+    },
+    {
+      phrasing: true,
     }
   ),
   new Macro(
@@ -241,6 +252,7 @@ let macro_list = [
         name: 'content',
       }),
     ],
+    // Paragraph due to double newline.
     function(args, options) {
       //if (args.content[])
       return `<p>${convert_arg(args.content)}</p>\n`
@@ -255,6 +267,9 @@ let macro_list = [
     ],
     function(args, options) {
       return args;
+    },
+    {
+      phrasing: true,
     }
   ),
   new Macro(
@@ -537,24 +552,31 @@ const parse = function(tokens, options, extra_returns={}) {
   return ast;
 }
 
+// Maybe add a paragraph after a \n\n.
 const parse_add_paragraph = function(
   state, new_arg, arg, paragraph_start, paragraph_end
 ) {
   parse_log_debug(state, 'function: parse_add_paragraph');
+  parse_log_debug(state, 'arg: ' + JSON.stringify(arg, null, 2));
   parse_log_debug(state, 'paragraph_start: ' + paragraph_start);
   parse_log_debug(state, 'paragraph_end: ' + paragraph_end);
   parse_log_debug(state);
-  new_arg.push(
-    new AstNode(
-      AstType.MACRO,
-      'p',
-      {
-        'content': arg.slice(paragraph_start, paragraph_end)
-      },
-      arg[paragraph_start].line,
-      arg[paragraph_start].column,
-    )
-  );
+  let slice = arg.slice(paragraph_start, paragraph_end);
+  if (macros[arg[paragraph_start].macro_name].properties.phrasing) {
+    new_arg.push(
+      new AstNode(
+        AstType.MACRO,
+        'p',
+        {
+          'content': slice
+        },
+        arg[paragraph_start].line,
+        arg[paragraph_start].column,
+      )
+    );
+  } else {
+    new_arg.push(...slice);
+  }
 }
 
 // Consume one token.

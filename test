@@ -11,8 +11,8 @@ const assert_convert = function(input_string, expected_output) {
     input_string,
     {
       body_only: true,
-      show_ast: true,
-      show_tokens: true,
+      //show_ast: true,
+      //show_tokens: true,
       //show_parse: true,
     },
     extra_returns
@@ -76,8 +76,8 @@ My paragraph 1.
 My paragraph 2.
 `,
   `<h1 id="my-header-1">My header 1</h1>
-<p>My paragraph 1</p>
+<p>My paragraph 1.</p>
 <h2 id="my-header-2">My header 2</h2>
-<p>My paragraph 2</p>
+<p>My paragraph 2.</p>
 `
 )});

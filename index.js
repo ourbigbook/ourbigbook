@@ -144,7 +144,7 @@ class AstNode {
           if (arg.length > 0) {
             error_message = [
               `boolean arguments like "${argname}" of "${this.macro_name}" cannot have values, use just "{${argname}}" instead`,
-              arg[0].line, arg[0].column];
+              arg.line, arg.column];
             break;
           }
         }
@@ -157,7 +157,7 @@ class AstNode {
             error_message = [
               `argument "${argname}" of macro "${this.macro_name}" must be a positive non-zero integer, got: "${arg_string}"`,
               // TODO https://github.com/cirosantilli/cirodown/issues/30
-              this.line, this.column];
+              arg.line, arg.column];
             break;
           }
         }
@@ -222,6 +222,14 @@ class AstNode {
   }
 }
 exports.AstNode = AstNode;
+
+class AstArgument extends Array {
+  constructor(nodes, line, column) {
+    super(...nodes)
+    this.line = line;
+    this.column = column;
+  }
+}
 
 class ErrorMessage {
   constructor(message, line, column) {
@@ -1623,7 +1631,7 @@ function parse(tokens, macros, options, extra_returns={}) {
   let cur_header_level;
   let toplevel_parent_arg = []
   let todo_visit = [[toplevel_parent_arg, ast_toplevel]];
-  context.id_context = {'macros': macros};
+  const id_context = {'macros': macros};
   // IDs that are indexed: you can link to those.
   let indexed_ids = {};
   // Non-indexed-ids: auto-generated numeric ID's like p-1, p-2, etc.
@@ -1652,7 +1660,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     ast.from_include = options.from_include;
     ast.input_path = options.input_path;
     if (macro_name === Macro.INCLUDE_MACRO_NAME) {
-      const href = convert_arg_noescape(ast.args.href, context.id_context);
+      const href = convert_arg_noescape(ast.args.href, id_context);
       cur_header.includes.push(href);
       if (options.include_path_set.has(href)) {
         let message = `circular include detected to: "${href}"`;
@@ -1693,7 +1701,7 @@ function parse(tokens, macros, options, extra_returns={}) {
               show_caption_prefix: false,
               style_full: false,
             };
-            header_node_title = Macro.x_text(target_id_ast, context.id_context, x_text_options);
+            header_node_title = Macro.x_text(target_id_ast, id_context, x_text_options);
           }
           // Don't merge into a single file, render as a dummy header and an xref link instead.
           new_child_nodes = [
@@ -1801,7 +1809,7 @@ function parse(tokens, macros, options, extra_returns={}) {
           AstType.MACRO,
           'q',
           {'content': convert_include(
-              convert_arg_noescape(ast.args.content, context.id_context),
+              convert_arg_noescape(ast.args.content, id_context),
               options,
               0,
               options.input_path,
@@ -1820,7 +1828,7 @@ function parse(tokens, macros, options, extra_returns={}) {
         }
         cur_header = ast;
         cur_header_level = parseInt(
-          convert_arg_noescape(ast.args.level, context.id_context)
+          convert_arg_noescape(ast.args.level, id_context)
         ) + options.h_level_offset;
         ast.level = cur_header_level;
       }
@@ -1873,7 +1881,7 @@ function parse(tokens, macros, options, extra_returns={}) {
       if (macro_name === Macro.HEADER_MACRO_NAME) {
         // Create the header tree.
         if (ast.level === undefined) {
-          cur_header_level = parseInt(convert_arg_noescape(ast.args.level, context.id_context)) + options.h_level_offset;
+          cur_header_level = parseInt(convert_arg_noescape(ast.args.level, id_context)) + options.h_level_offset;
           ast.level = cur_header_level;
         } else {
           // Possible for included headers.
@@ -1924,7 +1932,7 @@ function parse(tokens, macros, options, extra_returns={}) {
       parent_arg.push(ast);
 
       // Linear count of each macro type for macros that have IDs.
-      if (!macro.options.macro_counts_ignore(ast, context.id_context)) {
+      if (!macro.options.macro_counts_ignore(ast, id_context)) {
         if (!(macro_name in macro_counts)) {
           macro_counts[macro_name] = 0;
         }
@@ -1951,7 +1959,7 @@ function parse(tokens, macros, options, extra_returns={}) {
           if (title_arg !== undefined) {
             // ID from title.
             // TODO correct unicode aware algorithm.
-            id_text += title_to_id(convert_arg_noescape(title_arg, context.id_context));
+            id_text += title_to_id(convert_arg_noescape(title_arg, id_context));
             ast.id = id_text;
           } else if (!macro.options.phrasing) {
             // ID from element count.
@@ -1962,7 +1970,7 @@ function parse(tokens, macros, options, extra_returns={}) {
             }
           }
         } else {
-          ast.id = convert_arg_noescape(macro_id_arg, context.id_context);
+          ast.id = convert_arg_noescape(macro_id_arg, id_context);
         }
       }
       ast.index_id = index_id;
@@ -2205,7 +2213,7 @@ function parse_log_debug(state, msg='') {
   }
 }
 
-// Parse one macro.
+// Parse one macro. This is the centerpiece of the parsing!
 function parse_macro(state) {
   parse_log_debug(state, 'function: parse_macro');
   parse_log_debug(state, 'state = ' + JSON.stringify(state.token));
@@ -2269,7 +2277,10 @@ function parse_macro(state) {
         // Parse the argument name out.
         parse_consume(state);
       }
-      let arg_children = [];
+      console.error(open_argument_line);
+      console.error(open_argument_column);
+      console.error();
+      let arg_children = new AstArgument([], open_argument_line, open_argument_column);
       while (
         state.token.type !== TokenType.POSITIONAL_ARGUMENT_END &&
         state.token.type !== TokenType.NAMED_ARGUMENT_END

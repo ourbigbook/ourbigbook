@@ -44,9 +44,9 @@ const ArticleAPI = {
       headers: addAuthHeader(token),
     }),
 
-  favorite: (slug, token) => {
+  like: (slug, token) => {
     axios.post(
-      `${SERVER_BASE_URL}/articles/favorite?id=${slug}`,
+      `${SERVER_BASE_URL}/articles/like?id=${slug}`,
       {},
       {
         headers: addAuthHeader(token),
@@ -54,9 +54,9 @@ const ArticleAPI = {
     )
   },
 
-  favoritedBy: (author, page) =>
+  likedBy: (author, page) =>
     axios.get(
-      `${SERVER_BASE_URL}/articles?favorited=${encodeURIComponent(
+      `${SERVER_BASE_URL}/articles?liked=${encodeURIComponent(
         author
       )}&${getQuery(10, page)}`
     ),
@@ -66,9 +66,9 @@ const ArticleAPI = {
 
   get: (slug) => axios.get(ArticleAPI.url(slug)),
 
-  unfavorite: (slug, token) =>
+  unlike: (slug, token) =>
     axios.delete(
-      `${SERVER_BASE_URL}/articles/favorite?id=${encodeURIComponent(slug)}`,
+      `${SERVER_BASE_URL}/articles/like?id=${encodeURIComponent(slug)}`,
       {
         headers: addAuthHeader(token),
       }

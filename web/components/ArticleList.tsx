@@ -4,7 +4,7 @@ import useSWR from "swr";
 
 import CustomLink from "components/CustomLink";
 import ErrorMessage from "components/ErrorMessage";
-import FavoriteArticleButton, { FavoriteArticleButtonContext } from "components/FavoriteArticleButton";
+import LikeArticleButton, { LikeArticleButtonContext } from "components/LikeArticleButton";
 import LoadingSpinner from "components/LoadingSpinner";
 import Maybe from "components/Maybe";
 import Pagination from "components/Pagination";
@@ -28,11 +28,11 @@ const ArticleList = (props) => {
     pageCount > 480 ? Math.ceil(pageCount / DEFAULT_LIMIT) : Math.ceil(pageCount / DEFAULT_LIMIT) - 1;
   const router = useRouter();
   const { asPath, pathname, query } = router;
-  const { favorite, follow, tag, uid } = query;
+  const { like, follow, tag, uid } = query;
   let fetchURL = (() => {
     switch (props.what) {
-      case 'favorites':
-        return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&favorited=${encodeURIComponent(
+      case 'likes':
+        return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&liked=${encodeURIComponent(
           String(uid)
         )}&offset=${page * DEFAULT_LIMIT}`
       case 'user-articles-top':
@@ -75,18 +75,18 @@ const ArticleList = (props) => {
     setPageCount(articlesCount);
   }, [articlesCount]);
 
-  // Favorite article button state.
-  const favorited = []
-  const setFavorited = []
+  // Like article button state.
+  const liked = []
+  const setLiked = []
   const score = []
   const setScore = []
   for (let i = 0; i < DEFAULT_LIMIT; i++) {
-    [favorited[i], setFavorited[i]] = React.useState(false);
+    [liked[i], setLiked[i]] = React.useState(false);
     [score[i], setScore[i]] = React.useState(0);
   }
   React.useEffect(() => {
     for (let i = 0; i < articles.length; i++) {
-      setFavorited[i](articles[i].favorited);
+      setLiked[i](articles[i].liked);
       setScore[i](articles[i].score);
     }
   }, [articles])
@@ -96,8 +96,8 @@ const ArticleList = (props) => {
   if (articles?.length === 0) {
     let message;
     switch (props.what) {
-      case 'favorites':
-        message = "This user has not favorited any articles yet"
+      case 'likes':
+        message = "This user has not liked any articles yet"
         break
       case 'user-articles-top':
       case 'user-articles-latest':
@@ -148,17 +148,17 @@ const ArticleList = (props) => {
             {articles?.map((article, i) => (
               <tr key={article.slug}>
                 <td className="shrink">
-                  <FavoriteArticleButtonContext.Provider key={article.slug} value={{
-                    favorited: favorited[i],
-                    setFavorited: setFavorited[i],
+                  <LikeArticleButtonContext.Provider key={article.slug} value={{
+                    liked: liked[i],
+                    setLiked: setLiked[i],
                     score: score[i],
                     setScore: setScore[i],
                   }}>
-                    <FavoriteArticleButton
+                    <LikeArticleButton
                       article={article}
                       showText={false}
                     />
-                  </FavoriteArticleButtonContext.Provider>
+                  </LikeArticleButtonContext.Provider>
                 </td>
                 {showAuthor &&
                   <td className="shrink">

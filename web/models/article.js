@@ -83,9 +83,9 @@ module.exports = (sequelize) => {
     } else {
       authorPromise = new Promise(resolve => {resolve(this.author)})
     }
-    const [tags, favorited, author] = await Promise.all([
+    const [tags, liked, author] = await Promise.all([
       this.getTags(),
-      user ? user.hasFavorite(this.id) : false,
+      user ? user.hasLike(this.id) : false,
       authorPromise.then(author => author.toJson(user)),
     ])
     return {
@@ -96,7 +96,7 @@ module.exports = (sequelize) => {
       createdAt: this.createdAt.toISOString(),
       updatedAt: this.updatedAt.toISOString(),
       tagList: tags.map(tag => tag.name),
-      favorited,
+      liked,
       score: this.score,
       author,
       render: this.render,

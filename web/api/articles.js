@@ -56,11 +56,11 @@ router.get('/', auth.optional, async function(req, res, next) {
         authorInclude.where = {username: req.query.author}
       }
       const include = [authorInclude]
-      if (req.query.favorited) {
+      if (req.query.liked) {
         include.push({
           model: req.app.get('sequelize').models.User,
-          as: 'favoritedBy',
-          where: {username: req.query.favorited},
+          as: 'likedBy',
+          where: {username: req.query.liked},
         })
       }
       if (req.query.topicId) {
@@ -225,14 +225,14 @@ function likeValidation(req, res, user, article, likeUnlike) {
   if (article.author.id === user.id) { return res.status(401).send(`A user cannot ${likeUnlike} their own article`) }
 }
 
-// Favorite an article
-router.post('/favorite', auth.required, async function(req, res, next) {
+// Like an article
+router.post('/like', auth.required, async function(req, res, next) {
   try {
     const article = await getArticle(req, res)
     if (article) {
       const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
       if (likeValidation(req, res, user, article, 'like')) return
-      await user.addFavoriteSideEffects(article)
+      await user.addLikeSideEffects(article)
       const newArticle = await getArticle(req, res)
       return res.json({ article: await newArticle.toJson(user) })
     }
@@ -241,14 +241,14 @@ router.post('/favorite', auth.required, async function(req, res, next) {
   }
 })
 
-// Unfavorite an article
-router.delete('/favorite', auth.required, async function(req, res, next) {
+// Unlike an article
+router.delete('/like', auth.required, async function(req, res, next) {
   try {
     const article = await getArticle(req, res)
     if (article) {
       const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
       if (likeValidation(req, res, user, article, 'like')) return
-      await user.removeFavoriteSideEffects(article)
+      await user.removeLikeSideEffects(article)
       const newArticle = await getArticle(req, res)
       return res.json({ article: await newArticle.toJson(user) })
     }

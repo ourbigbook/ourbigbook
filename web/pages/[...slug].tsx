@@ -11,7 +11,7 @@ import { cirodown_runtime } from 'cirodown/dist/cirodown_runtime.js';
 import Comment from "components/Comment";
 import CommentInput from "components/CommentInput";
 import CustomLink from "components/CustomLink";
-import FavoriteArticleButton, { FavoriteArticleButtonContext } from "components/FavoriteArticleButton";
+import LikeArticleButton, { LikeArticleButtonContext } from "components/LikeArticleButton";
 import LoadingSpinner from "components/LoadingSpinner";
 import Maybe from "components/Maybe";
 import UserLinkWithImage from "components/UserLinkWithImage";
@@ -48,7 +48,7 @@ const ArticlePage = ({
   const router = useRouter();
 
   // Fetch user-specific data.
-  // Article determines if the curent user favorited the article or not
+  // Article determines if the curent user liked the article or not
   const { data: articleApi, error } = useSWR(ArticleAPI.url(article?.slug), fetcher(router.isFallback));
   if (articleApi !== undefined) {
     article = articleApi.article
@@ -60,21 +60,21 @@ const ArticlePage = ({
     comments = commentApi.comments
   }
 
-  // TODO it is not ideal to have to setup state on every parent of FavoriteUserButton/FollowUserButton,
+  // TODO it is not ideal to have to setup state on every parent of LikeUserButton/FollowUserButton,
   // but I just don't know how to avoid it nicely, especially considering that the
   // button shows up on both profile and article pages, and thus comes from different
   // API data, so useSWR is not a clean.
   const [following, setFollowing] = React.useState(false)
   const [followerCount, setFollowerCount] = React.useState(article?.author.followerCount)
-  const [favorited, setFavorited] = React.useState(false);
+  const [liked, setLiked] = React.useState(false);
   const [score, setScore] = React.useState(article?.score);
   React.useEffect(() => {
-    setFavorited(article?.favorited)
+    setLiked(article?.liked)
     setScore(article?.score)
     setFollowing(article?.author.following)
     setFollowerCount(article?.author.followerCount)
   }, [
-    article?.favorited,
+    article?.liked,
     article?.score,
     article?.author.following,
     article?.author.followerCount,
@@ -134,14 +134,14 @@ const ArticlePage = ({
               }
             </div>
             <div className="article-actions">
-              <FavoriteArticleButtonContext.Provider value={{
-                favorited, setFavorited, score, setScore
+              <LikeArticleButtonContext.Provider value={{
+                liked, setLiked, score, setScore
               }}>
-                <FavoriteArticleButton
+                <LikeArticleButton
                   article={article}
                   showText={false}
                 />
-              </FavoriteArticleButtonContext.Provider>
+              </LikeArticleButtonContext.Provider>
               {' Created: '}
               <span className="article-dates">
                 {formatDate(article.createdAt)}

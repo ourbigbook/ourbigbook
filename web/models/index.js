@@ -13,25 +13,17 @@ module.exports = (toplevelDir, toplevelBasename) => {
   };
   let sequelize;
   if (config.isProduction || config.postgres) {
-    sequelizeParams.dialect = 'postgres';
-    sequelizeParams.dialectOptions = {
-      // https://stackoverflow.com/questions/27687546/cant-connect-to-heroku-postgresql-database-from-local-node-app-with-sequelize
-      // https://devcenter.heroku.com/articles/heroku-postgresql#connecting-in-node-js
-      // https://stackoverflow.com/questions/58965011/sequelizeconnectionerror-self-signed-certificate
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
-      }
-    };
-    sequelize = new Sequelize(config.databaseUrl, sequelizeParams);
+    sequelizeParams.dialect = config.production.dialect;
+    sequelizeParams.dialectOptions = config.production.dialect;
+    sequelize = new Sequelize(config.production.url, sequelizeParams);
   } else {
-    sequelizeParams.dialect = 'sqlite';
+    sequelizeParams.dialect = config.development.dialect;
     let storage;
     if (process.env.NODE_ENV === 'test' || toplevelDir === undefined) {
       storage = ':memory:';
     } else {
       if (toplevelBasename === undefined) {
-        toplevelBasename = 'db.sqlite3';
+        toplevelBasename = config.development.storage;
       }
       storage = path.join(toplevelDir, toplevelBasename);
     }
@@ -71,9 +63,9 @@ module.exports = (toplevelDir, toplevelBasename) => {
   UserFollowUser.belongsTo(User, {foreignKey: 'userId'})
   User.hasMany(UserFollowUser, {foreignKey: 'followId'})
 
-  // User favorite Article
-  Article.belongsToMany(User, { through: 'UserFavoriteArticle', as: 'favoritedBy', foreignKey: 'articleId', otherKey: 'userId'  });
-  User.belongsToMany(Article, { through: 'UserFavoriteArticle', as: 'favorites',   foreignKey: 'userId', otherKey: 'articleId'  });
+  // User like Article
+  Article.belongsToMany(User, { through: 'UserLikeArticle', as: 'likedBy', foreignKey: 'articleId', otherKey: 'userId'  });
+  User.belongsToMany(Article, { through: 'UserLikeArticle', as: 'likes',   foreignKey: 'userId', otherKey: 'articleId'  });
 
   // Article author User
   Article.belongsTo(User, {

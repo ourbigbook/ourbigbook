@@ -18,7 +18,7 @@ import getLoggedInUser from "lib/utils/getLoggedInUser";
 import routes from "routes";
 
 const ProfileHoc = (tab) => {
-  return ({ profile, authoredArticleCount, favoritedArticleCount }) => {
+  return ({ profile, authoredArticleCount, likedArticleCount }) => {
     const router = useRouter();
     const { data: profileApi, error } = useSWR(UserAPI.url(profile?.username), fetcher(router.isFallback));
     if (profileApi !== undefined) {
@@ -77,10 +77,10 @@ const ProfileHoc = (tab) => {
               Latest
             </CustomLink>
             <CustomLink
-              href={routes.userViewFavorites(username)}
-              className={`tab-item${tab === 'favorites' ? ' active' : ''}`}
+              href={routes.userViewLikes(username)}
+              className={`tab-item${tab === 'likes' ? ' active' : ''}`}
             >
-              Favorited ({favoritedArticleCount})
+              Liked ({likedArticleCount})
             </CustomLink>
           </div>
           <ArticleList what={tab} />

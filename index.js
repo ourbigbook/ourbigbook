@@ -8753,7 +8753,8 @@ function ourbigbook_li(marker) {
   }
 }
 
-function ourbigbook_add_newlines_after_block(ast, context) {
+function ourbigbook_add_newlines_after_block(ast, context, options={}) {
+  const { auto_parent } = options
   if (
     !context.macros[ast.macro_name].options.phrasing &&
     !ast.is_last_in_argument() &&
@@ -8770,25 +8771,25 @@ function ourbigbook_add_newlines_after_block(ast, context) {
           ast.parent_ast.parent_ast.macro_name === Macro.TOPLEVEL_MACRO_NAME
         ) &&
         ast.parent_ast.macro_name !== Macro.TOPLEVEL_MACRO_NAME &&
-          (
-            ( ast.parent_argument.has_paragraph ) ||
-            ( !ast.parent_argument.has_paragraph && !ast.parent_argument.not_all_block )
-          )
+        (
+          ( ast.parent_argument.has_paragraph ) ||
+          ( !ast.parent_argument.has_paragraph && !ast.parent_argument.not_all_block )
+        )
       )
     )
   ) {
-    return 2
-    // TODO
-    //let n = 2
-    //if (context.last_render) {
-    //  if (context.last_render[context.last_render.length - 1] === '\n') {
-    //    n--
-    //    if (context.last_render[context.last_render.length - 2] === '\n') {
-    //      n--
-    //    }
-    //  }
-    //}
-    //return n
+    let n = 2
+    if (auto_parent) {
+      if (context.last_render) {
+        if (context.last_render[context.last_render.length - 1] === '\n') {
+          n--
+          if (context.last_render[context.last_render.length - 2] === '\n') {
+            n--
+          }
+        }
+      }
+    }
+    return n
   } else {
     return 0
   }
@@ -8799,7 +8800,7 @@ function ourbigbook_ul(ast, context) {
     return ourbigbook_convert_simple_elem(ast, context)
   } else {
     const argstr = render_arg(ast.args.content, context)
-    const newline = '\n'.repeat(ourbigbook_add_newlines_after_block(ast, context))
+    const newline = '\n'.repeat(ourbigbook_add_newlines_after_block(ast, context, { auto_parent: true }))
     return `${argstr}${newline}`
   }
 }

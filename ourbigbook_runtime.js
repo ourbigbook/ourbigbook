@@ -18,9 +18,14 @@ if (typeof window !== 'undefined') {
   require('tablesort/src/sorts/tablesort.number.js')
 }
 
+// toplevel: if given, is an Element (not document) under which OurBigBook Marktup runtime will take effect.
 export function ourbigbook_runtime(toplevel) {
+  let myDocument
   if (toplevel === undefined) {
     toplevel = document;
+    myDocument = document
+  } else {
+    myDocument = toplevel.ownerDocument
   }
 
   if (
@@ -29,9 +34,8 @@ export function ourbigbook_runtime(toplevel) {
     !window.location.hash.startsWith(':~:text=')
   ) {
     const hash = window.location.hash.substring(1)
-    if(!toplevel.getElementById(hash)) {
+    if(!myDocument.getElementById(hash)) {
       const dest = window.ourbigbook_redirect_prefix + hash + (window.ourbigbook_html_x_extension ? '.html' : '')
-      console.error(`redirecting to: ${dest}`);
       window.location.replace(dest)
     }
   }
@@ -88,7 +92,7 @@ export function ourbigbook_runtime(toplevel) {
   const h_to_tocs = toplevel.getElementsByClassName('ourbigbook-h-to-toc');
   for (const h_to_toc of h_to_tocs) {
     h_to_toc.addEventListener('click', () => {
-      let cur_elem = toplevel.getElementById(h_to_toc.getAttribute('href').slice(1)).parentElement;
+      let cur_elem = myDocument.getElementById(h_to_toc.getAttribute('href').slice(1)).parentElement;
       while (!cur_elem.classList.contains(TOC_CONTAINER_CLASS)) {
         cur_elem.classList.remove(CLOSE_CLASS);
         cur_elem = cur_elem.parentElement;

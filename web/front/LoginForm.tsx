@@ -51,7 +51,15 @@ const LoginForm = ({ register = false }) => {
         setErrors(data.errors);
       }
       if (data?.user) {
-        data.user.effectiveImage = data.user.image
+        // We fetch from /profiles/:username again because the return from /users/login above
+        // does not contain the image placeholder.
+        const { data: userData, status: userStatus } = await UserAPI.get(
+          data.user.username
+        )
+        if (userStatus !== 200) {
+          setErrors(userData.errors)
+        }
+        data.user.effectiveImage = userData.user.effectiveImage
         window.localStorage.setItem("user", JSON.stringify(data.user));
         setCookie('auth', data.user.token)
         mutate("user", data.user);

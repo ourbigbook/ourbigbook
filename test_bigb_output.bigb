@@ -175,6 +175,20 @@ Nested and tight:
   * ccc
   ddd
 
+* tight code in list without paragraph
+  ``
+  aaa
+  bbb
+  ``
+* after
+
+* tight quote in list without paragraph
+  \Q[first]
+  and
+  \Q[second]
+  done.
+* after
+
 Table:
 
 || header 1

@@ -2419,6 +2419,9 @@ function calculate_id(
   if (ast.id && ast.subdir &&  !skip_scope) {
     ast.id = ast.subdir + Macro.HEADER_SCOPE_SEPARATOR + ast.id
   }
+  if (id === '') {
+    parse_error(state, 'ID cannot be empty', ast.source_location);
+  }
   ast.index_id = index_id;
   if (ast.id !== undefined && !ast.force_no_index) {
     let non_indexed_ast = non_indexed_ids[ast.id];

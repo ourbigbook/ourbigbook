@@ -3495,6 +3495,7 @@ This will get out of sync sooner or later with the code, but this should still s
 Defined variables:
 * `body`: the rendered body
 * `git_sha`: SHA of the latest git commit of the source code if in a git repository
+* `root_page`: relative path to the toplevel page, e.g. either `index.html`, `../index.html` locally or `./`, `../` on server oriented rendereing
 * `root_replath`: relative path from the rendered output to the toplevel directory.
 
   This allows for toplevel resources like CSS to be found seamlessly form inside subdirectories, specially when rendering locally.
@@ -3911,12 +3912,14 @@ In terms of HTML, the `\Toplevel` element corresponds to the `<html>`, `<head>`,
 Trying to use the `\Toplevel` macro explicitly in a document leads to an error.
 
 ==== HTML document title
+{c}
 
 * if the `title` argument of `toplevel` is given, use that
 * otherwise, if the document has a `\H[1]`, use the title of the first such header
 * otherwise use a dummy value
 
 === CSS
+{c}
 
 Our CSS is located at \a[main.scss] and gets processed through https://sass-lang.com[Sass].
 

@@ -963,6 +963,22 @@ assert_convert_ast('cross reference circular loop infinite recursion explicit bo
     }),
   ]
 );
+assert_convert_ast('cross reference from image title works',
+  `= ab
+
+\\Image[cd]{title=\\x[ab]}
+`,
+  [
+    a('h', undefined, {
+      level: [t('1')],
+      title: [t('ab')],
+    }),
+    a('Image', undefined, {
+      src: [t('cd')],
+      title: [a('x', undefined, {'href': [t('ab')]})],
+    }),
+  ]
+);
 //// https://github.com/cirosantilli/cirodown/issues/45
 //assert_convert_ast('cross reference to plaintext id calculated from title',
 //  `\\h[1][aa \`bb\` cc]

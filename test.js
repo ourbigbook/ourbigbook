@@ -2243,7 +2243,7 @@ assert_convert_ast('cross reference full boolean style with value 1',
     ]),
   ]
 );
-// https://cirosantilli.com/ourbigbook#the-id-of-the-first-header-is-derived-from-the-filename
+// https://docs.ourbigbook.com#the-id-of-the-first-header-is-derived-from-the-filename
 assert_convert_ast('id of first header comes from the file name if not index',
   `= abc
 
@@ -2324,7 +2324,7 @@ assert_error('cross reference with child to undefined id fails gracefully',
 
 \\x[ab]{child}
 `, 3, 3, undefined, {toplevel: true});
-// https://cirosantilli.com/ourbigbook#order-of-reported-errors
+// https://docs.ourbigbook.com#order-of-reported-errors
 assert_error('cross reference undefined errors show after other errors',
   `= a
 
@@ -3310,7 +3310,7 @@ assert_convert_ast('cross reference to toplevel scoped split header',
   {
     assert_xpath_main: [
       // Not `#notindex/image-bb`.
-      // https://cirosantilli.com/ourbigbook#header-scope-argument-of-toplevel-headers
+      // https://docs.ourbigbook.com#header-scope-argument-of-toplevel-headers
       "//x:a[@href='#image-bb' and text()='bb to image bb']",
     ],
     assert_xpath: {
@@ -3363,7 +3363,7 @@ assert_convert_ast('cross reference to non-toplevel scoped split header',
     input_path_noext: 'tmp',
   },
 );
-// https://cirosantilli.com/ourbigbook#header-scope-argument-of-toplevel-headers
+// https://docs.ourbigbook.com#header-scope-argument-of-toplevel-headers
 assert_convert_ast('cross reference to non-included file with toplevel scope',
   `\\x[toplevel-scope]
 
@@ -5520,7 +5520,7 @@ assert_convert_ast('OurBigBookExample that links to id in another file',
 );
 
 // ID auto-generation.
-// https://cirosantilli.com/ourbigbook/automatic-id-from-title
+// https://docs.ourbigbook.com/automatic-id-from-title
 assert_convert_ast('id autogeneration without title',
   '\\P[aa]\n',
   [a('P', [t('aa')], {}, {id: '_1'})],

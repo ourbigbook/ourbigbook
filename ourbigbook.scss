@@ -1,4 +1,4 @@
-// https://cirosantilli.com/ourbigbook#insane-link-parsing-rules#overview-of-files-in-this-repository
+// https://docs.ourbigbook.com#insane-link-parsing-rules#overview-of-files-in-this-repository
 
 @use 'sass:math';
 
@@ -200,7 +200,7 @@ nav.h-nav {
   }
 }
 
-// https://cirosantilli.com/ourbigbook#background-color-of-transparent-images
+// https://docs.ourbigbook.com#background-color-of-transparent-images
 img {
   background-color: white;
   @include responsive-img;

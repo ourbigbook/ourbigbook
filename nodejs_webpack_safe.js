@@ -596,7 +596,7 @@ async function update_database_after_convert({
 // Do various post conversion checks to verify database integrity:
 //
 // - duplicate IDs
-// - https://cirosantilli.com/ourbigbook/x-within-title-restrictions
+// - https://docs.ourbigbook.com/x-within-title-restrictions
 //
 // Previously these were done inside ourbigbook.convert. But then we started skipping render by timestamp,
 // so if you e.g. move an ID from one file to another, a common operation, then it would still see
@@ -638,7 +638,7 @@ async function check_db(sequelize, paths_converted, transaction) {
       const ast = ourbigbook.AstNode.fromJSON(invalid_title_title_row.ast_json)
       const source_location = ast.source_location
       error_messages.push(
-        `${source_location.path}:${source_location.line}:${source_location.column}: cannot \\x link from a title to a non-header element: https://cirosantilli.com/ourbigbook/x-within-title-restrictions`
+        `${source_location.path}:${source_location.line}:${source_location.column}: cannot \\x link from a title to a non-header element: https://docs.ourbigbook.com/x-within-title-restrictions`
       )
     }
   }

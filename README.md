@@ -4,4 +4,4 @@ https://ourbigbook.com source code + a compatible local CLI static wiki generato
 
 The real README is of course [README.bigb](README.bigb)
 
-A rendered version can be seen at: <https://cirosantilli.com/ourbigbook>
+A rendered version can be seen at: <https://docs.ourbigbook.com>

@@ -5,11 +5,6 @@ const editorReducer = (state, action) => {
         ...state,
         title: action.text
       };
-    case "SET_DESCRIPTION":
-      return {
-        ...state,
-        description: action.text
-      };
     case "SET_BODY":
       return {
         ...state,

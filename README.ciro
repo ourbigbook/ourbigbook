@@ -5467,7 +5467,7 @@ npm test -- -g '^(?!executable:)'
 This works because `-g` takes JavaScript regular expressions, so we can use negative lookahead, see also: https://stackoverflow.com/questions/26908288/with-mocha-how-do-i-run-all-tests-that-dont-have-slow-in-the-name
 
 There are two types of test in our test suite:
-* tests that call the `cirodown.convert` \x[javascript-api] directly. These tests don't create file in the filesystem, and just mock the filesystem instead with a dictionary. TODO: use an in-memory sqlite DB to remove DB mocking effort/errors.
+* tests that call the `cirodown.convert` \x[javascript-api] directly. These tests don't create file in the filesystem, and just mock the filesystem instead with a dictionary. Database access is not mocked however, we just use Sqlite's fantastic in-memory mode.
 * tests that call the \x[cirodown-executable] itself:
   * their titles are prefixed with `executable: `
   * they tend to be slower than the API test

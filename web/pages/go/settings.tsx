@@ -27,12 +27,11 @@ const Settings = () => {
     setUserInfo({ ...userInfo, ...loggedInUser });
   }, [loggedInUser]);
   React.useEffect(() => {
-    storage("user").then(loggedInUser => {
-      const isLoggedIn = checkLogin(loggedInUser);
-      if (!isLoggedIn) {
-        Router.push(`/`);
-      }
-    })
+    const loggedInUser = storage("user")
+    const isLoggedIn = checkLogin(loggedInUser);
+    if (!isLoggedIn) {
+      Router.push(`/`);
+    }
   })
   const updateState = (field) => (e) => {
     const state = userInfo;

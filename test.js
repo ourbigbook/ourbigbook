@@ -2458,6 +2458,15 @@ assert_error('header parent cannot be an older id of a level',
 `,
   8, 1
 );
+assert_error('header child argument to id that does not exist gives an error',
+  `= 1
+{child=2}
+{child=3}
+
+== 2
+`,
+  3, 1
+);
 const header_id_new_line_expect =
   [a('H', undefined, {level: [t('1')], title: [t('aa')], id: [t('bb')]})];
 assert_convert_ast('header id new line sane',
@@ -4529,6 +4538,7 @@ assert_executable(
 == h2
 {child=h2-3}
 {child=h2-4}
+{child=notindex-h2-2}
 
 \\x[index]
 
@@ -4568,6 +4578,8 @@ assert_executable(
 == Notindex h2
 
 === Notindex h3
+
+== Notindex h2 2
 `,
     },
     expect_filesystem_xpath: {
@@ -4589,6 +4601,7 @@ assert_executable(
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='index.html#h2-3']`,
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='index.html#h2-4']`,
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='index.html#scope/scope-2']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='notindex.html#notindex-h2-2']`,
       ],
       'h2-2.html': [
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,

@@ -1714,32 +1714,6 @@ class HeaderTreeNode {
   }
 }
 
-/** Add an entry to the data structures that keep the map of incoming
- * and outgoing \x and \x {child} links. */
-function add_from_id(toid, context, fromid, relation_type) {
-  add_from_id_or_to(false, toid,   context, fromid, relation_type)
-  add_from_id_or_to(true,  fromid, context, toid,   relation_type)
-}
-
-function add_from_id_or_to(reverse, toid, context, fromid, relation_type) {
-  let from_to_dict_false = context.xref_from_to_dict[reverse];
-  let from_ids;
-  if (toid in from_to_dict_false) {
-    from_ids = from_to_dict_false[toid];
-  } else {
-    from_ids = {};
-    from_to_dict_false[toid] = from_ids;
-  }
-  let from_ids_relation_type;
-  if (relation_type in from_ids) {
-    from_ids_relation_type = from_ids[relation_type]
-  } else {
-    from_ids_relation_type = new Set()
-    from_ids[relation_type] = from_ids_relation_type
-  }
-  from_ids_relation_type.add(fromid);
-}
-
 /**
  * Determine if big_array contains small_array starting at index position
  * inside the big array.
@@ -4180,6 +4154,7 @@ function parse(tokens, options, context, extra_returns={}) {
           cur_header_graph_node = ast.header_graph_node;
           children_in_header = true;
 
+          // Add children to the child database.
           // https://cirosantilli.com/cirodown#h-child-argment
           const children = ast.args.child
           if (children !== undefined) {
@@ -4189,9 +4164,10 @@ function parse(tokens, options, context, extra_returns={}) {
                 context,
                 ast
               )
-              add_from_id(target_id_effective, context, ast.id, INCLUDES_TABLE_NAME_X_CHILD);
+              x_child_db_add_from_id(target_id_effective, context, ast.id, INCLUDES_TABLE_NAME_X_CHILD);
             }
           }
+
         } else {
           ast.header_graph_node = new HeaderTreeNode(ast, cur_header_graph_node);
           if (ast.in_header) {
@@ -4222,7 +4198,7 @@ function parse(tokens, options, context, extra_returns={}) {
               parent_id !== undefined
             ) {
               // Update xref database for incoming links.
-              const from_ids = add_from_id(target_id_effective, context, parent_id, INCLUDES_TABLE_NAME_X);
+              const from_ids = x_child_db_add_from_id(target_id_effective, context, parent_id, INCLUDES_TABLE_NAME_X);
 
               // Update xref database for child/parent relationships.
               {
@@ -4235,7 +4211,7 @@ function parse(tokens, options, context, extra_returns={}) {
                   fromid = target_id_effective;
                 }
                 if (toid !== undefined) {
-                  add_from_id(toid, context, fromid, INCLUDES_TABLE_NAME_X_CHILD);
+                  x_child_db_add_from_id(toid, context, fromid, INCLUDES_TABLE_NAME_X_CHILD);
                 }
               }
             }
@@ -4745,6 +4721,32 @@ function validate_ast(ast, context) {
   }
 }
 exports.validate_ast = validate_ast;
+
+/** Add an entry to the data structures that keep the map of incoming
+ * and outgoing \x and \x {child} links. */
+function x_child_db_add_from_id(toid, context, fromid, relation_type) {
+  x_child_db_add_from_id_or_to(false, toid,   context, fromid, relation_type)
+  x_child_db_add_from_id_or_to(true,  fromid, context, toid,   relation_type)
+}
+
+function x_child_db_add_from_id_or_to(reverse, toid, context, fromid, relation_type) {
+  let from_to_dict_false = context.xref_from_to_dict[reverse];
+  let from_ids;
+  if (toid in from_to_dict_false) {
+    from_ids = from_to_dict_false[toid];
+  } else {
+    from_ids = {};
+    from_to_dict_false[toid] = from_ids;
+  }
+  let from_ids_relation_type;
+  if (relation_type in from_ids) {
+    from_ids_relation_type = from_ids[relation_type]
+  } else {
+    from_ids_relation_type = new Set()
+    from_ids[relation_type] = from_ids_relation_type
+  }
+  from_ids_relation_type.add(fromid);
+}
 
 function x_child_db_effective_id(target_id, context, ast) {
   const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);
@@ -5814,6 +5816,20 @@ const DEFAULT_MACRO_LIST = [
       }
       if (header_has_meta) {
         ret += `</div>\n`;
+      }
+      // Ensure that all child targets exist. This is for error checking only.
+      // https://cirosantilli.com/cirodown#h-child-argment
+      const children = ast.args.child
+      if (children !== undefined) {
+        for (let child of children) {
+          const target_id = convert_arg_noescape(child.args.content, context)
+          const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node)
+          if (target_id_ast === undefined) {
+            let message = `cross reference to unknown id: "${target_id}"`
+            render_error(context, message, child.source_location)
+            ret += error_message_in_output(message, context)
+          }
+        }
       }
       return ret;
     },

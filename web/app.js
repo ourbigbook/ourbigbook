@@ -68,6 +68,19 @@ function doStart(app) {
   })
 
   // Error handlers
+  app.use(function(err, req, res, next) {
+    // Automatiaclly handle Sequelize validation errors.
+    if (err instanceof sequelize.Sequelize.ValidationError) {
+      if (!config.isProduction) {
+        // The fuller errors can be helpful during development.
+        console.error(err);
+      }
+      return res.status(422).json({
+        errors: err.errors.map(errItem => errItem.message)
+      })
+    }
+    return next(err)
+  })
   if (config.isProduction) {
     app.use(function(err, req, res, next) {
       console.error(err.stack)
@@ -76,6 +89,7 @@ function doStart(app) {
   } else {
     // Return errors with full stacks to caller.
     app.use(function(err, req, res, next) {
+      console.error('error handler 1');
       return next(err)
     });
     app.use(errorhandler())

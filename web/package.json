@@ -11,6 +11,7 @@
     "build-dev-nodeps": "NODE_ENV_OVERRIDE=development npm run build-nodeps",
     "deploy": "git push -f heroku master",
     "dev": "NODE_OPTIONS='--unhandled-rejections=strict' nodemon -w . -w ../index.js ./app.js",
+    "devi": "NODE_OPTIONS='--unhandled-rejections=strict' node inspect ./app.js",
     "postinstall": "cd .. && npm link cirodown",
     "migrate": "sequelize-cli db:migrate --debug",
     "start": "node --unhandled-rejections=strict ./app.js",

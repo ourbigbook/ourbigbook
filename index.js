@@ -8465,6 +8465,9 @@ const OUTPUT_FORMATS_LIST = [
           if (file_link_html !== undefined) {
             header_meta2.push(file_link_html);
           }
+          if (wiki_link !== undefined) {
+            header_meta2.push(wiki_link);
+          }
           if (!first_header && parent_links !== undefined) {
             header_meta2.push(parent_links);
           }

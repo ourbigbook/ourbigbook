@@ -5065,6 +5065,12 @@ The most important fact about those functions is that they do convert non-ASCII 
 
 These conversions are also specified in the Unicode standard.
 
+= JavaScript regular expression
+{c}
+{parent=OurBigBook Markup concepts}
+
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
+
 = Element ID
 {c}
 {parent=OurBigBook Markup concepts}
@@ -6391,10 +6397,29 @@ and so on.
 
 If we reach the root path `/` and no `ourbigbook.json` is found, then we understand that there is no `ourbigbook.json` file present.
 
+= `dontIgnore`
+{parent=ourbigbook.json}
+
+List of <JavaScript regular expression>. If a file path matches any of them, then override <`ignore`> and don't ignore the path. E.g., if you have several `.scss` examples that you don't want to convert, but you do want to convert the `main.scss` for the website itself:
+``
+"ignore": [
+  ".*\\.scss"
+]
+"dontIgnore": [
+  "main.scss"
+]
+``
+
+Note however that if an upper directory is ignored, then we don't recurse into it, and `dontIgnore` will have no effect.
+
 = `ignore`
 {parent=ourbigbook.json}
 
-List of paths relative to the <project toplevel directory> that <OurBigBook CLI> will ignore.
+List of paths relative to the <project toplevel directory> that <OurBigBook CLI> will ignore, unless it also has a match in <`dontIgnore`>.
+
+Each entry is a <JavaScript regular expression>, and it must match the entire path from start to end to count.
+
+If a directory is ignored, all its contents are also automatically ignored.
 
 Useful if your project has a large directory that does not contain OurBigBook sources, and you don't want OurBigBook to mess with it.
 
@@ -6415,6 +6440,20 @@ ourbigbook web/myfile.bigb
 converts it because it was explicitly requested.
 
 TODO: also ignore during <watch>.
+
+Examples:
+* ignore all files with a given extension;
+  ``
+  "ignore": [
+    ".*\\.tmp",
+  ]
+  ``
+  Yes, it is a bit obnoxious to have to escape `.` and the backslash. We should use some proper globbing library like: https://github.com/isaacs/node-glob[]. But on the other hand <ignore from `.gitignore`> makes this mostly useless, as `.gitignore` will be used most of the time.
+
+= Ignore from `.gitignore`
+{parent=ignore}
+
+TODO implement: automatically ignore all gitignored paths.
 
 = `ourbigbook.json` `id`
 {id=id}

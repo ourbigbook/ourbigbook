@@ -428,13 +428,21 @@ div.multiline-caption {
     @include multiline-caption;
   }
   table {
-    $table_border: 1px solid $color;
+    $table_border: 1px solid $table-border-color;
     border: $table_border;
     border-collapse: collapse;
     margin: math.div($p-margin-vert, 2) 0;
-    th, td {
-      border: $table_border;
-      padding: 5px 5px;
+    tr {
+      th, td {
+        border: $table_border;
+        padding: 5px 5px;
+      }
+      th {
+        color: $h-color;
+      }
+      &:nth-child(even) {
+        background-color: $table-even-background-color;
+      }
     }
   }
   .caption {

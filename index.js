@@ -1445,12 +1445,12 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
   }
   ast.index_id = index_id;
   if (ast.id !== undefined && !ast.force_no_index) {
-    const previous_ast = context.id_provider.get(ast.id, context, ast.header_graph_node);
+    let previous_ast = context.id_provider.get(ast.id, context, ast.header_graph_node);
     let input_path;
     if (previous_ast === undefined) {
       let non_indexed_id = non_indexed_ids[ast.id];
       if (non_indexed_id !== undefined) {
-        input_path = options.input_path;
+        input_path = input_path;
         previous_ast = non_indexed_id;
       }
     } else {
@@ -2216,20 +2216,28 @@ function parse(tokens, options, context, extra_returns={}) {
   let toplevel_parent_arg = new AstArgument([], 1, 1);
   let todo_visit = [[toplevel_parent_arg, ast_toplevel]];
   // IDs that are indexed: you can link to those.
-  let indexed_ids = {};
   const line_to_id_array = [];
   const macro_counts = {};
   const macro_counts_visible = {};
-  // Non-indexed-ids: auto-generated numeric ID's like p-1, p-2, etc.
-  // It is not possible to link to them from inside the document, since links
-  // break across versions.
-  let non_indexed_ids = {};
   const header_graph_stack = new Map();
   const header_graph_id_stack = new Map();
   let id_provider;
-  let local_id_provider = new DictIdProvider(indexed_ids);
   let cur_header_graph_node;
   let is_first_header = true;
+  // Prepare convert options for the child. Copy options so that the
+  // toplevel call won't change the input options, but children calls wlil.
+  const include_options = Object.assign({}, options);
+  include_options.include_path_set = context.include_path_set;
+  // Non-indexed-ids: auto-generated numeric ID's like p-1, p-2, etc.
+  // It is not possible to link to them from inside the document, since links
+  // break across versions.
+  if (include_options.non_indexed_ids === undefined) {
+    include_options.non_indexed_ids = {};
+  }
+  if (include_options.indexed_ids === undefined) {
+    include_options.indexed_ids = {};
+  }
+  let local_id_provider = new DictIdProvider(include_options.indexed_ids);
   if (options.id_provider !== undefined) {
     // Remove all remote IDs from the current file, to prevent false duplicates
     // when we start setting those IDs again.
@@ -2242,8 +2250,6 @@ function parse(tokens, options, context, extra_returns={}) {
     id_provider = local_id_provider;
   }
   context.id_provider = id_provider;
-  const include_options = Object.assign({}, options);
-  include_options.include_path_set = context.include_path_set;
   context.include_path_set.add(options.input_path);
   while (todo_visit.length > 0) {
     const [parent_arg, ast] = todo_visit.pop();
@@ -2538,7 +2544,7 @@ function parse(tokens, options, context, extra_returns={}) {
 
         // Must come after the header tree step is mostly done, because scopes influence ID,
         // and they also depend on the parent node.
-        calculate_id(ast, context, non_indexed_ids, indexed_ids, macro_counts,
+        calculate_id(ast, context, include_options.non_indexed_ids, include_options.indexed_ids, macro_counts,
           macro_counts_visible, state, true, line_to_id_array);
 
         // Now stuff that must come after calculate_id.
@@ -2866,7 +2872,7 @@ function parse(tokens, options, context, extra_returns={}) {
           // Header IDs already previously calculated for parent=.
           macro_name !== Macro.HEADER_MACRO_NAME
         ) {
-          calculate_id(ast, context, non_indexed_ids, indexed_ids, macro_counts,
+          calculate_id(ast, context, include_options.non_indexed_ids, include_options.indexed_ids, macro_counts,
             macro_counts_visible, state, false, line_to_id_array);
         }
 
@@ -2880,7 +2886,6 @@ function parse(tokens, options, context, extra_returns={}) {
         }
       }
     }
-    extra_returns.ids = indexed_ids;
 
     // Calculate header_graph_top_level.
     if (context.header_graph.children.length === 1) {
@@ -2898,6 +2903,7 @@ function parse(tokens, options, context, extra_returns={}) {
       context.toplevel_id = undefined;
     }
   }
+  extra_returns.ids = include_options.indexed_ids;
 
   context.line_to_id = function(line) {
     let index = binary_search(line_to_id_array,

@@ -1582,21 +1582,21 @@ const include_opts = {extra_convert_opts: {
   html_single_page: true,
   read_include: function(input_path) {
     if (input_path === 'include-one-level-1') {
-      return `\\H[1][cc]
+      return `= cc
 
 dd
 `
     } else if (input_path === 'include-one-level-2') {
-      return `\\H[1][ee]
+      return `= ee
 
 ff
 `
     } else if (input_path === 'include-two-levels') {
-      return `\\H[1][ee]
+      return `= ee
 
 ff
 
-\\H[2][gg]
+== gg
 
 hh
 `
@@ -1605,8 +1605,14 @@ hh
     }
   },
 }};
+const include_two_levels_ast_args = [
+  a('H', undefined, {level: [t('2')], title: [t('ee')]}),
+  a('P', [t('ff')]),
+  a('H', undefined, {level: [t('3')], title: [t('gg')]}),
+  a('P', [t('hh')]),
+]
 assert_convert_ast('include simple with paragraph',
-  `\\H[1][aa]
+  `= aa
 
 bb
 
@@ -1624,8 +1630,28 @@ bb
   ],
   include_opts
 );
+assert_convert_ast('x reference to include header',
+  `= aa
+
+\\x[include-two-levels]
+
+\\x[gg]
+
+\\Include[include-two-levels]
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('P', [
+      a('x', undefined, {href: [t('include-two-levels')]}),
+    ]),
+    a('P', [
+      a('x', undefined, {href: [t('gg')]}),
+    ]),
+  ].concat(include_two_levels_ast_args),
+  include_opts
+);
 assert_convert_ast('include multilevel with paragraph',
-  `\\H[1][aa]
+  `= aa
 
 bb
 
@@ -1636,18 +1662,16 @@ bb
   [
     a('H', undefined, {level: [t('1')], title: [t('aa')]}),
     a('P', [t('bb')]),
-    a('H', undefined, {level: [t('2')], title: [t('ee')]}),
-    a('P', [t('ff')]),
-    a('H', undefined, {level: [t('3')], title: [t('gg')]}),
-    a('P', [t('hh')]),
+  ].concat(include_two_levels_ast_args)
+  .concat([
     a('H', undefined, {level: [t('2')], title: [t('cc')]}),
     a('P', [t('dd')]),
-  ],
+  ]),
   include_opts
 );
 // TODO failing https://github.com/cirosantilli/cirodown/issues/35
 //assert_convert_ast('include simple no paragraph',
-//  `\\H[1][aa]
+//  `= aa
 //
 //bb
 //
@@ -1665,7 +1689,7 @@ bb
 //  include_opts
 //);
 //assert_convert_ast('include multilevel no paragraph',
-//  `\\H[1][aa]
+//  `= aa
 //
 //bb
 //
@@ -1680,6 +1704,15 @@ bb
 //    a('H', undefined, {level: [t('3')], title: [t('gg')]}),
 //    a('P', [t('hh')]),
 //    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
+//    a('P', [t('dd')]),
+//  ],
+//  include_opts
+//);
+// TODO https://github.com/cirosantilli/cirodown/issues/73
+//assert_convert_ast('include without parent header',
+//  '\\Include[include-one-level-1]',
+//  [
+//    a('H', undefined, {level: [t('1')], title: [t('cc')]}),
 //    a('P', [t('dd')]),
 //  ],
 //  include_opts

@@ -3,6 +3,7 @@ const assert = require('assert')
 const { DataTypes } = require('sequelize')
 
 const config = require('../front/config')
+const convert = require('../convert')
 
 module.exports = (sequelize) => {
   const Issue = sequelize.define(
@@ -65,6 +66,60 @@ module.exports = (sequelize) => {
     } else {
       return this.author
     }
+  }
+
+  Issue.prototype.getSlug = function() {
+    return `${this.article.getSlug()}#${this.number}`
+  }
+
+  Issue.prototype.rerender = async function({ convertOptionsExtra, ignoreErrors, transaction }={}) {
+    if (ignoreErrors === undefined)
+      ignoreErrors = false
+    await sequelize.transaction({ transaction }, async (transaction) => {
+      try {
+        await convert.convertIssue({
+          issue: this,
+          sequelize,
+          transaction,
+          user: this.author,
+        })
+      } catch(e) {
+        if (ignoreErrors) {
+          console.log(e)
+        } else {
+          throw e
+        }
+      }
+    })
+  }
+  Issue.prototype.toJson = async function(loggedInUser) {
+    // TODO do liked and followed with JOINs on caller, check if it is there and skip this if so.
+    const [followed, liked] = await Promise.all([
+      loggedInUser ? await loggedInUser.hasFollowedIssue(this.id) : false,
+      loggedInUser ? await loggedInUser.hasLikedIssue(this.id) : false,
+    ])
+    const ret = {
+      id: this.id,
+      number: this.number,
+      commentCount: this.commentCount,
+      followerCount: this.followerCount,
+      followed,
+      liked,
+      titleSource: this.titleSource,
+      bodySource: this.bodySource,
+      score: this.score,
+      titleRender: this.titleRender,
+      render: this.render,
+      createdAt: this.createdAt.toISOString(),
+      updatedAt: this.updatedAt.toISOString(),
+    }
+    if (this.author) {
+      ret.author = await this.author.toJson(loggedInUser)
+    }
+    if (this.article) {
+      ret.article = await this.article.toJson(loggedInUser)
+    }
+    return ret
   }
 
   Issue.createSideEffects = async function(author, article, fields, opts={}) {
@@ -173,38 +228,36 @@ module.exports = (sequelize) => {
     })
   }
 
-  Issue.prototype.getSlug = function() {
-    return `${this.article.getSlug()}#${this.number}`
-  }
-
-  Issue.prototype.toJson = async function(loggedInUser) {
-    // TODO do liked and followed with JOINs on caller, check if it is there and skip this if so.
-    const [followed, liked] = await Promise.all([
-      loggedInUser ? await loggedInUser.hasFollowedIssue(this.id) : false,
-      loggedInUser ? await loggedInUser.hasLikedIssue(this.id) : false,
-    ])
-    const ret = {
-      id: this.id,
-      number: this.number,
-      commentCount: this.commentCount,
-      followerCount: this.followerCount,
-      followed,
-      liked,
-      titleSource: this.titleSource,
-      bodySource: this.bodySource,
-      score: this.score,
-      titleRender: this.titleRender,
-      render: this.render,
-      createdAt: this.createdAt.toISOString(),
-      updatedAt: this.updatedAt.toISOString(),
+  /** Re-render multiple issues. */
+  Issue.rerender = async ({ convertOptionsExtra, ignoreErrors, log }={}) => {
+    if (log === undefined)
+      log = false
+    let offset = 0
+    while (true) {
+      const issues = await sequelize.models.Issue.findAll({
+        include: [
+          {
+            model: sequelize.models.Article,
+            as: 'article',
+          },
+          {
+            model: sequelize.models.User,
+            as: 'author',
+          }
+        ],
+        offset,
+        limit: config.maxArticlesInMemory,
+        order: [[{model: sequelize.models.Article, as: 'article'}, 'slug', 'ASC'], ['number', 'ASC']],
+      })
+      if (issues.length === 0)
+        break
+      for (const issue of issues) {
+        if (log)
+          console.log(issue.getSlug())
+        await issue.rerender({ convertOptionsExtra, ignoreErrors })
+      }
+      offset += config.maxArticlesInMemory
     }
-    if (this.author) {
-      ret.author = await this.author.toJson(loggedInUser)
-    }
-    if (this.article) {
-      ret.article = await this.article.toJson(loggedInUser)
-    }
-    return ret
   }
 
   return Issue

@@ -3164,6 +3164,10 @@ function convert_init_context(options={}, extra_returns={}) {
   if (!('h_show_split_header_link' in options)) {
     options.h_show_split_header_link = true;
   }
+  if (!('h_web_ancestors' in options)) {
+    // If true, reserve an empty metadata line for web ancestors, which are dynamically loaded.
+    options.h_web_ancestors = false;
+  }
   if (!('h_web_metadata' in options)) {
     // If true, reserve an empty metadata line for web injected elements
     // such as like count and date modified.
@@ -9065,7 +9069,7 @@ const OUTPUT_FORMATS_LIST = [
           if (header_has_meta) {
             ret += `<nav class="h-nav h-nav-toplevel">`;
           }
-          if (context.options.h_web_metadata && first_header && !context.options.isindex) {
+          if (context.options.h_web_ancestors && first_header && !context.options.isindex) {
             ret += `<div class="nav ancestors"></div>`
           }
           for (const meta of [web_meta, header_meta_ancestors, header_meta, header_meta2]) {

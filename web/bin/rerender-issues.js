@@ -8,20 +8,15 @@ const models = require('../models')
 const back_js = require('../back/js')
 
 const program = commander.program
-program.description('Re-render articles https://docs.ourbigbook.com/_file/web/bin/rerender-articles.js')
-program.option('-a, --author <username>', 'only convert articles by this authoru', undefined);
+program.description('Re-render issues https://docs.ourbigbook.com/_file/web/bin/rerender-issues.js')
 program.option('-i, --ignore-errors', 'ignore errors', false);
 program.parse(process.argv);
 const opts = program.opts()
-const author = program.args
-const slugs = program.args
 const sequelize = models.getSequelize(path.dirname(__dirname));
 (async () => {
-await sequelize.models.Article.rerender({
+await sequelize.models.Issue.rerender({
   log: true,
   convertOptionsExtra: { katex_macros: back_js.preloadKatex() },
-  author: opts.author,
-  ignoreErrors: opts.ignoreErrors,
-  slugs,
+  ignoreErrors: opts.ignoreErrors
 })
 })().finally(() => { return sequelize.close() });

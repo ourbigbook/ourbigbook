@@ -7219,7 +7219,12 @@ assert_lib(
     assert_xpath: {
       'included-by-index.html': [
         xpath_header_parent(1, 'included-by-index', 'index.html', 'Index'),
-        xpath_header_parent(1, 'included-by-index', 'not-readme.html', 'Not readme'),
+        // Multiple includers showing on parent used to work. But we killed it when we added breadcrumbs
+        // at 7e571ee7f8a2e1af30fccbf51029ce51d7cca529
+        // If we were to revive this, we should likely have a separate meta line for each includer.
+        // But lazy, especially considering that this construct do not work on OurBigBook Web and
+        // should likely be linted out by default instead.
+        //xpath_header_parent(1, 'included-by-index', 'not-readme.html', 'Not readme'),
       ],
     }
   }

@@ -125,6 +125,10 @@ function assert_no_error(description, input) {
   });
 }
 
+function assert_equal(description, output, expected_output) {
+  it(description, ()=>{assert.strictEqual(output, expected_output);});
+}
+
 /** Determine if a given Ast argument has a subset.
  *
  * For each lement of the array, only the subset of each object is checked.
@@ -1638,6 +1642,22 @@ assert_convert_ast('id autogeneration nested',
     a('P', [t('bb')], {}, {id: 'p-2'}),
   ],
 );
+assert_convert_ast('id autogeneration unicode',
+  `= 0A.你好z
+
+\\x[0a-你好z]
+`,
+  [
+    a('H', undefined, {title: [t('0A.你好z')]}, {id: '0a-你好z'}),
+    a('P', [
+      a('x', undefined, {href: [t('0a-你好z')]})
+    ])
+  ],
+);
+
+// title_to_id
+assert_equal('title_to_id with hyphen', cirodown.title_to_id('.0A. - z.a Z..'), '0a-z-a-z');
+assert_equal('title_to_id with unicode chars', cirodown.title_to_id('0A.你好z'), '0a-你好z');
 
 // Toplevel.
 assert_convert_ast('toplevel arguments',

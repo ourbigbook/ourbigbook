@@ -1161,7 +1161,7 @@ if (commander.helpMacros) {
 
           // Commit and push.
           if ('prepublish' in cirodown_json) {
-            if (commander.unsafeAce) {
+            if (!commander.unsafeAce) {
               cli_error('prepublish in cirodown.json requires running with --unsafe-ace');
             }
             const prepublish_path = cirodown_json.prepublish

@@ -20,8 +20,7 @@ export function decapitalize(s) {
   return s[0].toLowerCase() + s.slice(1)
 }
 
-export function slugFromArray(arr, opts={}) {
-  let { username } = opts
+export function slugFromArray(arr, { username }: { username?: boolean } = {}) {
   if (username === undefined) {
     username = true
   }

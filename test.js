@@ -353,6 +353,24 @@ cc
 `,
   4, 1
 )
+assert_convert_ast('insane list with literal with double newline is not an error',
+  `* aa
+
+  \`\`
+  bb
+
+  cc
+  \`\`
+`,
+  [
+    a('ul', [
+      a('l', [
+        a('p', [t('aa')]),
+        a('C', [t('bb\n\ncc\n')]),
+      ]),
+    ]),
+  ]
+)
 // https://github.com/cirosantilli/cirodown/issues/53
 assert_convert_ast('insane list with element with newline separated arguments',
   `* aa

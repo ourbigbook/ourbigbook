@@ -3633,14 +3633,6 @@ function getDescendantCountHtml(context, tree_node, options) {
   return ret;
 }
 
-function getDescendantCountHtmlSep(context, tree_node, options) {
-  let ret = getDescendantCountHtml(context, tree_node, options);
-  if (ret !== undefined) {
-    ret = `<span class="metrics-sep">${HEADER_MENU_ITEM_SEP + ret}</span>`;
-  }
-  return ret;
-}
-
 function checkAndUpdateLocalLink({
   context,
   href,
@@ -6684,13 +6676,13 @@ function renderTocFromEntryList({ add_test_instrumentation, entry_list, descenda
     ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
     let toc_href = htmlAttr('href', '#' + htmlEscapeAttr(my_toc_id));
     // c for current
-    ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${htmlAttr('class', 'c')}></a>`;
+    ret += `<a${toc_href}${htmlAttr('class', 'c')}></a>`;
     if (link_to_split) {
-      ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
+      ret += `${link_to_split}`;
     }
     if (parent_href) {
       // p for parent
-      ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${htmlAttr('class', 'p')}> ${parent_content}</a>`;
+      ret += `<a${parent_href}${htmlAttr('class', 'p')}> ${parent_content}</a>`;
     }
     if (entry.descendant_count_html) {
       ret += `${entry.descendant_count_html}`
@@ -6720,7 +6712,7 @@ function renderToc(context) {
   if (root_node.children.length === 1) {
     root_node = root_node.children[0];
   }
-  let descendant_count_html = getDescendantCountHtmlSep(context, root_node, { long_style: false, show_descendant_count: true });
+  let descendant_count_html = getDescendantCountHtml(context, root_node, { long_style: false, show_descendant_count: true });
   for (let i = root_node.children.length - 1; i >= 0; i--) {
     todo_visit.push([root_node.children[i], 1]);
   }
@@ -6776,7 +6768,7 @@ function renderToc(context) {
       // The inner <div></div> inside arrow is so that:
       // - outter div: takes up space to make clicking easy
       // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
-      entry.descendant_count_html = getDescendantCountHtmlSep(context, tree_node, { long_style: false, show_descendant_count: true });
+      entry.descendant_count_html = getDescendantCountHtml(context, tree_node, { long_style: false, show_descendant_count: true });
     }
     if (has_child) {
       for (let i = tree_node.children.length - 1; i >= 0; i--) {
@@ -8769,7 +8761,7 @@ function createLinkList(context, ast, id, title, target_ids, body) {
       ) {
         //let counts_str;
         //if (target_ast.header_tree_node !== undefined) {
-        //  counts_str = getDescendantCountHtmlSep(target_ast.header_tree_node, false);
+        //  counts_str = getDescendantCountHtml(target_ast.header_tree_node, false);
         //} else {
         //  counts_str = '';
         //}
@@ -9388,7 +9380,7 @@ const OUTPUT_FORMATS_LIST = [
                 for (const ancestor of ancestors) {
                   //let counts_str;
                   //if (ancestor.header_tree_node !== undefined) {
-                  //  counts_str = getDescendantCountHtmlSep(ancestor.header_tree_node, false);
+                  //  counts_str = getDescendantCountHtml(ancestor.header_tree_node, false);
                   //} else {
                   //  counts_str = '';
                   //}

@@ -501,6 +501,9 @@ class Macro {
       options.image_video_content_func = function() { throw new Error('unimplemented'); };
     }
     if (!('macro_counts_ignore' in options)) {
+      // Applications:
+      // * if an AST node with an ID but no-rendered HTML ID, this breaks editor scroll sync
+      //   Returning true makes it not have an ID at all.
       options.macro_counts_ignore = function(ast) {
         return false;
       }
@@ -2863,7 +2866,11 @@ function parse(tokens, options, context, extra_returns={}) {
       index = -(index + 1)
     }
     if (index == line_to_id_array.length) {
-      index = line_to_id_array.length - 1;
+      if (line_to_id_array.length > 0) {
+        index = line_to_id_array.length - 1;
+      } else {
+        return undefined;
+      }
     }
     return line_to_id_array[index][1];
   };
@@ -4418,6 +4425,7 @@ const DEFAULT_MACRO_LIST = [
       return ret;
     },
     {
+      macro_counts_ignore: function(ast) { return true; },
       named_args: [
         new MacroArgument({
           name: Macro.TITLE_ARGUMENT_NAME,

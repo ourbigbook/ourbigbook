@@ -7,6 +7,7 @@ router.get('/', function(req, res) {
 });
 router.use('/', require('./users'))
 router.use('/articles', require('./articles'))
+router.use('/editor', require('./editor'))
 router.use('/issues', require('./issues'))
 router.use('/topics', require('./topics'))
 //router.use(`/${minPath}`, require('./min'))

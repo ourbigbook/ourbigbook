@@ -1,8 +1,10 @@
 // https://docs.ourbigbook.com#ourbigbook-web-directory-structure
+//
+// Plus some other random stuff that has to be able to run on frontend, thus no backend stuff here.
 
 const axios = require('axios')
 
-const { WEB_API_PATH } = require('./index')
+const ourbigbook = require('./index');
 
 // https://stackoverflow.com/questions/8135132/how-to-encode-url-parameters/50288717#50288717
 function encodeGetParams(p) {
@@ -33,7 +35,7 @@ class WebApi {
       this.opts,
       opts
     )
-    return sendJsonHttp(method, `/${WEB_API_PATH}/${path}`, newopts)
+    return sendJsonHttp(method, `/${ourbigbook.WEB_API_PATH}/${path}`, newopts)
   }
 
   async articles(opts={}) {
@@ -77,8 +79,27 @@ class WebApi {
     return this.req('delete', `articles/like?id=${encodeURIComponent(slug)}`)
   }
 
-  articleUrl(slug) {
-    return `/${WEB_API_PATH}/articles?id=${encodeURIComponent(slug)}`
+  async editorGetNoscopesBaseFetch(ids, ignore_paths_set) {
+    return this.req('post',
+      `editor/get-noscopes-base-fetch`,
+      {
+        body: {
+          ids,
+          ignore_paths_set
+        }
+      },
+    )
+  }
+
+  async editorFetchFiles(paths) {
+    return this.req('post',
+      `editor/fetch-files`,
+      {
+        body: {
+          paths,
+        }
+      },
+    )
   }
 
   async issues(opts) {
@@ -186,8 +207,6 @@ class WebApi {
       `users/${username}/follow`,
     );
   }
-
-  userUrl(username) { return `/${WEB_API_PATH}/users/${username}` }
 }
 
 // https://stackoverflow.com/questions/6048504/synchronous-request-in-node-js/53338670#53338670
@@ -229,8 +248,97 @@ async function sendJsonHttp(method, path, opts={}) {
   return { data: response.data, status: response.status }
 }
 
+// Non-API stuff.
+
+class DbProviderBase extends ourbigbook.DbProvider {
+  constructor() {
+    super()
+    this.id_cache = {}
+    this.ref_cache = {
+      from_id: {},
+      to_id: {},
+    }
+    this.path_to_file_cache = {}
+  }
+
+  add_file_row_to_cache(row, context) {
+    this.path_to_file_cache[row.path] = row
+    if (
+      // Happens on some unminimized condition when converting
+      // cirosantilli.github.io @ 04f0f5bc03b9071f82b706b3481c09d616d44d7b + 1
+      // twice with ourbigbook -S ., no patience to minimize and test now.
+      row.Id !== null &&
+      // We have to do this if here because otherwise it would overwrite the reconciled header
+      // we have stiched into the tree with Include.
+      !this.id_cache[row.Id.idid]
+    ) {
+      this.add_row_to_id_cache(row.Id, context)
+    }
+  }
+
+  add_row_to_id_cache(row, context) {
+    if (row !== null) {
+      const ast = this.row_to_ast(row, context)
+      if (
+        // Possible on reference to ID that does not exist and some other
+        // non error cases I didn't bother to investigate.
+        row.to !== undefined
+      ) {
+        ast.header_parent_ids = row.to.map(to => to.from_id)
+      }
+      this.id_cache[ast.id] = ast
+      return ast
+    }
+  }
+
+  get_noscopes_base(ids, ignore_paths_set) {
+    const cached_asts = []
+    for (const id of ids) {
+      if (id in this.id_cache) {
+        const ast = this.id_cache[id]
+        if (
+          ignore_paths_set === undefined ||
+          !ignore_paths_set.has(ast.input_path)
+        ) {
+          cached_asts.push(ast)
+        }
+      }
+    }
+    return cached_asts
+  }
+
+  row_to_ast(row, context) {
+    const ast = ourbigbook.AstNode.fromJSON(row.ast_json, context)
+    ast.input_path = row.path
+    ast.id = row.idid
+    return ast
+  }
+
+  rows_to_asts(rows, context) {
+    const asts = []
+    for (const row of rows) {
+      asts.push(this.add_row_to_id_cache(row, context))
+      for (const row_title_title of row.from) {
+        if (
+          // We need this check because the version of the header it fetches does not have .to
+          // so it could override one that did have the .to, and then other things could blow up.
+          !(row_title_title.to && row_title_title.to.idid in this.id_cache)
+        ) {
+          const ret = this.add_row_to_id_cache(row_title_title.to, context)
+          if (ret !== undefined) {
+            asts.push(ret)
+          }
+        }
+      }
+    }
+    return asts
+  }
+
+}
+
 module.exports = {
   WebApi,
+  DbProviderBase,
   encodeGetParams,
   sendJsonHttp,
 }

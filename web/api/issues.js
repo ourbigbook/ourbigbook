@@ -109,6 +109,7 @@ router.put('/:number', auth.required, async function(req, res, next) {
       getIssue(req, res),
       sequelize.models.User.findByPk(req.payload.id),
     ])
+    const article = issue.issues
     if (cant.editIssue(loggedInUser, issue)) {
       return res.sendStatus(403)
     }
@@ -126,6 +127,7 @@ router.put('/:number', auth.required, async function(req, res, next) {
       defaultValue: undefined,
     })
     const newIssue = await convertIssue({
+      article,
       bodySource,
       issue,
       sequelize,

@@ -1,22 +1,96 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
+const util = require('util');
 
-const token_types = {
-  START_DIV: 0,
-  END_DIV: 1,
-  PLAINTEXT: 2,
+// https://stackoverflow.com/questions/44447847/enums-in-javascript-with-es6/49709701#49709701
+function make_enum(arr){
+    let obj = {};
+    for (let val of arr){
+        obj[val] = Symbol(val);
+    }
+    return Object.freeze(obj);
 }
+
+const TokenType = make_enum([
+  'START_DIV',
+  'END_DIV',
+  'PLAINTEXT'
+]);
 
 let Token = class {
   /**
    * @param {String} type
-   * @param {String} value
+   * @param {String} value - Default: undefined
    */
-  constructor(type, value='') {
+  constructor(type, value) {
     this.type = type;
     this.value = value;
   }
+}
+
+let Argument = class {
+  /**
+   * @param {String} name
+   * @param {Boolean} required - Default: false
+   * @param {Boolean} literal - Default: false
+   */
+  constructor(options) {
+    this.name = options.name;
+    if ('required' in options) {
+      this.requied = options.required;
+    } else {
+      this.requied = false;
+    }
+    if ('literal' in options) {
+      this.literal = options.literal;
+    } else {
+      this.literal = false;
+    }
+  }
+}
+
+let Macro = class {
+  /**
+   * @param {Array[Argument]} args
+   * @param {Function} convert
+   */
+  constructor(args, convert) {
+    this.args = args;
+    this.convert = convert;
+  }
+}
+
+let macros = {
+  p: Macro(
+    [
+      Argument({
+        name: 'content',
+        required: true,
+        literal: false,
+      }),
+    ],
+    function(args) {
+      return `<p>${args.content.convert()}</p>`
+    }
+  ),
+  a: Macro(
+    [
+      Argument({
+        name: 'href',
+        required: true,
+        literal: true,
+      }),
+      Argument({
+        name: 'content',
+        required: true,
+        literal: false,
+      }),
+    ],
+    function(args) {
+      return `<a href="${args.href.convert()}">${args.content.convert()}</p>`
+    }
+  ),
 }
 
 /**
@@ -24,48 +98,59 @@ let Token = class {
  * @returns {Array[Token]}
  */
 let tokenize = function(input_string) {
-  let chars = Array.from(text);
-  let tokens = [new Token(token_types.START_DIV)];
+  let chars = Array.from(input_string);
+  let tokens = [new Token(TokenType.START_DIV)];
   // https://stackoverflow.com/questions/21397316/split-javascript-string-into-array-of-codepoints-taking-into-account-surrogat/42596897#42596897
   i = 0;
   while (i < chars.length) {
     c = chars[i];
     if (c === '\n') {
-      if (chars[i + 1] === '\n') {
-        tokens.push(new Token(token_types.END_DIV));
+      if (((i + 1) === chars.length)) {
+        // Do nothing.
+      } else if (chars[i + 1] === '\n') {
+        tokens.push(new Token(TokenType.END_DIV));
+        tokens.push(new Token(TokenType.START_DIV));
         i += 1;
         done = true;
       } else {
-        tokens.push(new Token(token_types.PLAINTEXT, c));
+        tokens.push(new Token(TokenType.PLAINTEXT, c));
       }
     } else {
-      tokens.push(new Token(token_types.PLAINTEXT, c));
+      tokens.push(new Token(TokenType.PLAINTEXT, c));
     }
     i++;
   }
+  tokens.push(new Token(TokenType.END_DIV));
   return tokens;
 }
 
 let tokens_to_output = function(tokens) {
   output = '';
   for (const token of tokens) {
-    if (token.type == token_types.START_DIV) {
+    if (token.type == TokenType.START_DIV) {
       output += '<p>'
-    } else if (token.type == token_types.END_DIV) {
+    } else if (token.type == TokenType.END_DIV) {
       output += '</p>\n'
-    } else if (token.type == token_types.PLAINTEXT) {
+    } else if (token.type == TokenType.PLAINTEXT) {
       output += token.value;
     }
   }
   return output;
 }
 
-exports.convert = function(input_string, options = {}) {
+exports.convert = function(input_string, options = {verbose: true}) {
   let tokens = tokenize(input_string);
+  let output = tokens_to_output(tokens);
   if (options.verbose) {
+    console.log('input: ' + util.inspect(input_string));
+    console.log();
+    console.log('tokens:');
     console.log(tokens);
+    console.log();
+    console.log('output: ' + util.inspect(output));
+    console.log();
   }
-  return tokens_to_output(tokens);
+  return output;
 }
 
 if (require.main === module) {

@@ -1604,6 +1604,29 @@ which renders something like:
 ``
 Note how we added the synonym to the title only when it is not just a simple flexion variant, since `Quantum computing (Quantum computer)` would be kind of useless would be kind of useless.
 
+= `\H` `tag` argument
+{c}
+{parent=h-child-argument}
+
+Same as \x[x-child-argument] but in the opposite direction, e.g.:
+``
+== Mammal
+
+=== Bat
+{tag=flying-animal}
+
+=== Cat
+
+== Flying animal
+``
+
+Naming rationale:
+* `parent` as the opposite of child is already taken to be then "main parent" via the "\x[h-parent-argument]"
+* we could have renamed the \x[h-child-argument] to `tags` as in "this header tags that one", but it would be a bit confusing `tags` vs `tag`
+So `child` vs `tag` it is for now.
+
+You generally want to use `tag` instead of the \x[h-child-argument] because otherwise some very large header categories are going to contain Huge lists of children, which is not very nice when editing.
+
 = `\H` `title2` argument
 {parent=h-arguments}
 

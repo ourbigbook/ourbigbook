@@ -927,6 +927,8 @@ Macro.COMMON_ARGNAMES = new Set([
   Macro.TEST_DATA_ARGUMENT_NAME,
 ]);
 Macro.HEADER_MACRO_NAME = 'H';
+Macro.HEADER_CHILD_ARGNAME = 'child';
+Macro.HEADER_TAG_ARGNAME = 'tag';
 Macro.X_MACRO_NAME = 'x';
 Macro.HEADER_SCOPE_SEPARATOR = '/';
 Macro.INCLUDE_MACRO_NAME = 'Include';
@@ -4154,9 +4156,9 @@ function parse(tokens, options, context, extra_returns={}) {
           cur_header_graph_node = ast.header_graph_node;
           children_in_header = true;
 
-          // Add children to the child database.
+          // Add children/tags to the child database.
           // https://cirosantilli.com/cirodown#h-child-argment
-          const children = ast.args.child
+          const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
           if (children !== undefined) {
             for (let child of children) {
               const target_id_effective = x_child_db_effective_id(
@@ -4167,7 +4169,17 @@ function parse(tokens, options, context, extra_returns={}) {
               x_child_db_add_from_id(target_id_effective, context, ast.id, INCLUDES_TABLE_NAME_X_CHILD);
             }
           }
-
+          const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
+          if (tags !== undefined) {
+            for (let tag of tags) {
+              const target_id_effective = x_child_db_effective_id(
+                convert_arg_noescape(tag.args.content, context),
+                context,
+                ast
+              )
+              x_child_db_add_from_id(ast.id, context, target_id_effective, INCLUDES_TABLE_NAME_X_CHILD);
+            }
+          }
         } else {
           ast.header_graph_node = new HeaderTreeNode(ast, cur_header_graph_node);
           if (ast.in_header) {
@@ -5660,11 +5672,17 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      const children = ast.args.child
+      const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
+      const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
       if (ast.validation_output.synonym.boolean) {
         if (children !== undefined) {
           const message = `"synonym" and "child" are incompatible`;
-          render_error(context, message, ast.args.child.source_location);
+          render_error(context, message, children.source_location);
+          return error_message_in_output(message, context);
+        }
+        if (tags !== undefined) {
+          const message = `"synonym" and "tags" are incompatible`;
+          render_error(context, message, tags.source_location);
           return error_message_in_output(message, context);
         }
         return '';
@@ -5830,15 +5848,20 @@ const DEFAULT_MACRO_LIST = [
       }
       // Ensure that all child targets exist. This is for error checking only.
       // https://cirosantilli.com/cirodown#h-child-argment
+      let childrenAndTags = []
       if (children !== undefined) {
-        for (let child of children) {
-          const target_id = convert_arg_noescape(child.args.content, context)
-          const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node)
-          if (target_id_ast === undefined) {
-            let message = `unknown child id: "${target_id}"`
-            render_error(context, message, child.source_location)
-            ret += error_message_in_output(message, context)
-          }
+        childrenAndTags.push(...children)
+      }
+      if (tags !== undefined) {
+        childrenAndTags.push(...tags)
+      }
+      for (let child of childrenAndTags) {
+        const target_id = convert_arg_noescape(child.args.content, context)
+        const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node)
+        if (target_id_ast === undefined) {
+          let message = `unknown child id: "${target_id}"`
+          render_error(context, message, child.source_location)
+          ret += error_message_in_output(message, context)
         }
       }
       return ret;
@@ -5862,7 +5885,7 @@ const DEFAULT_MACRO_LIST = [
           boolean: true,
         }),
         new MacroArgument({
-          name: 'child',
+          name: Macro.HEADER_CHILD_ARGNAME,
           multiple: true,
         }),
         new MacroArgument({
@@ -5882,6 +5905,10 @@ const DEFAULT_MACRO_LIST = [
         }),
         new MacroArgument({
           name: 'splitSuffix',
+        }),
+        new MacroArgument({
+          name: Macro.HEADER_TAG_ARGNAME,
+          multiple: true,
         }),
         new MacroArgument({
           name: Macro.SYNONYM_ARGUMENT_NAME,

@@ -2,7 +2,7 @@
 
 const axios = require('axios')
 
-import { WEB_API_PATH } from '../index'
+const { WEB_API_PATH } = require('../index')
 
 class ApiBase {
   constructor({ getToken, https, hostname }) {
@@ -30,7 +30,7 @@ class ApiBase {
 
 // https://stackoverflow.com/questions/6048504/synchronous-request-in-node-js/53338670#53338670
 async function sendJsonHttp(method, path, opts={}) {
-  const { body, getToken, http, hostname, port } = opts
+  const { body, getToken, http, hostname, port, validateStatus } = opts
   const headers = {
     "Content-Type": "application/json",
   }
@@ -48,14 +48,16 @@ async function sendJsonHttp(method, path, opts={}) {
     url = path
   }
   const response = await axios({
-    data: body,
+    data: opts.body,
     headers,
     method,
     url,
+    validateStatus,
   })
   return { data: response.data, status: response.status }
 }
 
 module.exports = {
   ApiBase,
+  sendJsonHttp,
 }

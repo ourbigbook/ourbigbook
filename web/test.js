@@ -23,15 +23,15 @@ function assertRows(rows, rowsExpect) {
 }
 
 async function createUserApi(server, i) {
-  ;[res, data] = await sendJsonHttp(
+  const { data, status } = await sendJsonHttp(
     server,
-    method: 'POST',
-    path: '/api/users',
+    'POST',
+    '/api/users',
     {
       body: { user: createUserArg(i) },
     }
   )
-  assert.strictEqual(res.statusCode, 200)
+  assert.strictEqual(status, 200)
   assert.strictEqual(data.user.username, `user${i}`)
   return data.user
 }
@@ -86,15 +86,19 @@ function createUserArg(i, password=true) {
 }
 
 async function sendJsonHttp(server, method, path, opts={}) {
+  const { body, token } = opts
   return web_api.sendJsonHttp(
-    opts.method,
-    opts.path,
+    method,
+    path,
     {
+      body,
+      getToken: () => opts.token,
+      http: 'http',
       hostname: 'localhost',
-      port: opts.server.address().port,
-      token: opts.token,
+      port: server.address().port,
+      validateStatus: () => true,
     }
-  })
+  )
 }
 
 
@@ -157,9 +161,7 @@ it('feed shows articles by followers', async function() {
 
 it('api: create an article and see it on global feed', async () => {
   await testApp(async (server) => {
-    let res,
-      data,
-      article
+    let data, status, article
 
     // Create user.
     const user = await createUserApi(server, 0)
@@ -167,191 +169,91 @@ it('api: create an article and see it on global feed', async () => {
 
     // Create article.
     article = createArticleArg({ i: 0 })
-    ;[res, data] = await sendJsonHttp(
+    ;({data, status} = await sendJsonHttp(
       server,
-      method: 'POST',
-      path: '/api/articles',
+      'POST',
+      '/api/articles',
       {
         body: { article },
         token,
       }
-    )
-    assert.strictEqual(res.statusCode, 200)
+    ))
+    assert.strictEqual(status, 200)
     articles = data.articles
     assert.strictEqual(articles[0].title, 'Title 0')
-    assert.strictEqual(articles.length, 2)
+    assert.strictEqual(articles.length, 1)
 
     // See it on global feed.
-    ;[res, data] = await sendJsonHttp(
+    ;({data, status} = await sendJsonHttp(
       server,
-      method: 'GET',
-      path: '/api/articles',
+      'GET',
+      '/api/articles',
       {
         token,
       }
-    )
-    assert.strictEqual(res.statusCode, 200)
+    ))
+    assert.strictEqual(status, 200)
     sortByKey(data.articles, 'slug')
     assertRows(data.articles, [
       { title: 'Index', slug: 'user0' },
-      { title: 'Index', slug: 'user0/split' },
       { title: 'Title 0', slug: 'user0/title-0' },
-      { title: 'Title 0', slug: 'user0/title-0-split' },
     ])
 
     if (testNext) {
-      ;[res, data] = await sendJsonHttp(
+      ;({data, status} = await sendJsonHttp(
         server,
-        method: 'GET',
-        path: '/',
+        'GET',
+        '/',
         {
           token,
         }
-      )
-      assert.strictEqual(res.statusCode, 200)
+      ))
+      assert.strictEqual(status, 200)
 
       // Logged out.
-      ;[res, data] = await sendJsonHttp(
+      ;({data, status} = await sendJsonHttp(
         server,
-        method: 'GET',
-        path: '/',
-      )
-      assert.strictEqual(res.statusCode, 200)
+        'GET',
+        '/',
+      ))
+      assert.strictEqual(status, 200)
 
-      ;[res, data] = await sendJsonHttp(
+      ;({data, status} = await sendJsonHttp(
         server,
-        method: 'GET',
-        path: '/user0',
+        'GET',
+        '/user0',
         {
         token,
         }
-      )
-      assert.strictEqual(res.statusCode, 200)
+      ))
+      assert.strictEqual(status, 200)
 
       // Logged out.
-      ;[res, data] = await sendJsonHttp(
+      ;({data, status} = await sendJsonHttp(
         server,
-        method: 'GET',
-        path: '/user0',
-      )
-      assert.strictEqual(res.statusCode, 200)
+        'GET',
+        '/user0',
+      ))
+      assert.strictEqual(status, 200)
 
-      ;[res, data] = await sendJsonHttp(
+      ;({data, status} = await sendJsonHttp(
         server,
-        method: 'GET',
-        path: '/user0/title-0',
+        'GET',
+        '/user0/title-0',
         {
           token,
         }
-      )
-      assert.strictEqual(res.statusCode, 200)
+      ))
+      assert.strictEqual(status, 200)
 
       // Logged out.
-      ;[res, data] = await sendJsonHttp(
+      ;({data, status} = await sendJsonHttp(
         server,
-        method: 'GET',
-        path: '/user0/title-0',
-      )
-      assert.strictEqual(res.statusCode, 200)
+        'GET',
+        '/user0/title-0',
+      ))
+      assert.strictEqual(status, 200)
     }
-
-    //// Get request does not blow up.
-    //;[res, data] = await sendJsonHttp(
-    //  server,
-    //  method: 'GET',
-    //  path: '/user0/title-0',
-    //  {
-    //    token,
-    //  }
-    //)
-    //assert.strictEqual(res.statusCode, 200)
-
-    //// See the tags on the global feed.
-    //;[res, data] = await sendJsonHttp(
-    //  server,
-    //  method: 'GET',
-    //  path: '/api/tags',
-    //  {
-    //    token,
-    //  }
-    //)
-    //assert.strictEqual(res.statusCode, 200)
-    //data.tags.sort()
-    //assert.strictEqual(data.tags[0], 'tag0')
-    //assert.strictEqual(data.tags[1], 'tag1')
-    //assert.strictEqual(data.tags.length, 2)
-
-    //// Update article removing one tag and adding another.
-    //article.tagList = ['tag0', 'tag1']
-    //;[res, data] = await sendJsonHttp(
-    //  server,
-    //  method: 'PUT',
-    //  path: `/api/articles/${article.slug}`,
-    //  {
-    //    body: {
-    //      article: {
-    //        title: 'Title 0 hacked',
-    //        tagList: ['tag0', 'tag2'],
-    //      },
-    //    },
-    //    token,
-    //  }
-    //)
-    //assert.strictEqual(res.statusCode, 200)
-    //assert.strictEqual(data.article.title, 'Title 0 hacked')
-
-    //// See it on global feed.
-    //;[res, data] = await sendJsonHttp(
-    //  server,
-    //  method: 'GET',
-    //  path: '/api/articles',
-    //  {
-    //    token,
-    //  }
-    //)
-    //assert.strictEqual(data.articles[0].title, 'Title 0 hacked')
-    //assert.strictEqual(data.articles[0].author.username, 'user0')
-    //assert.strictEqual(data.articlesCount, 1)
-
-    //// See the tags on the global feed. tag1 should not exist anymore,
-    //// since the article was the only one that contained it, and it was
-    //// removed from the article.
-    //;[res, data] = await sendJsonHttp(
-    //  server,
-    //  method: 'GET',
-    //  path: '/api/tags',
-    //  {
-    //  token,
-    //  }
-    //)
-    //assert.strictEqual(res.statusCode, 200)
-    //data.tags.sort()
-    //assert.strictEqual(data.tags[0], 'tag0')
-    //assert.strictEqual(data.tags[1], 'tag2')
-    //assert.strictEqual(data.tags.length, 2)
-
-    //// Delete article
-    //;[res, data] = await sendJsonHttp({
-    //  server,
-    //  method: 'DELETE',
-    //  path: `/api/articles/${article.slug}`,
-    //  {
-    //    token,
-    //  }
-    //)
-    //assert.strictEqual(res.statusCode, 204)
-
-    //// Global feed now empty.
-    //;[res, data] = await sendJsonHttp({
-    //  server,
-    //  method: 'GET',
-    //  path: '/api/articles',
-    //  {
-    //    token,
-    //  }
-    //)
-    //assert.strictEqual(data.articles.length, 0)
-    //assert.strictEqual(data.articlesCount, 0)
   }, { canTestNext: true })
 })
 
@@ -366,45 +268,71 @@ it('api: multiheader file creates multiple articles', async () => {
     const token = user.token
 
     // Create article.
-    article = createArticleArg({ i: 0, body: `== Title 0 0
+    article = createArticleArg({ i: 0, body: `Body 0
+
+== Title 0 0
+
+Body 0 0
 
 == Title 0 1
+
+Body 0 1
 `})
-    ;[res, data] = await sendJsonHttp(
+    ;({data, status} = await sendJsonHttp(
       server,
-      method: 'POST',
-      path: '/api/articles',
+      'POST',
+      '/api/articles',
       {
         body: { article },
         token,
       }
-    )
-    assert.strictEqual(res.statusCode, 200)
+    ))
+    assert.strictEqual(status, 200)
     assertRows(data.articles, [
       { title: 'Title 0', slug: 'user0/title-0' },
       { title: 'Title 0 0', slug: 'user0/title-0-0' },
       { title: 'Title 0 1', slug: 'user0/title-0-1' },
-      { title: 'Title 0', slug: 'user0/title-0-split' },
     ])
+    assert.match(data.articles[0].render, /Body 0/)
+    assert.match(data.articles[0].render, /Body 0 0/)
+    assert.match(data.articles[0].render, /Body 0 1/)
+    assert.match(data.articles[1].render, /Body 0 0/)
+    assert.match(data.articles[2].render, /Body 0 1/)
 
     // See them on global feed.
-    ;[res, data] = await sendJsonHttp(
+    ;({data, status} = await sendJsonHttp(
       server,
-      method: 'GET',
-      path: '/api/articles',
+      'GET',
+      '/api/articles',
       {
         token,
       }
-    )
-    assert.strictEqual(res.statusCode, 200)
+    ))
+    assert.strictEqual(status, 200)
     sortByKey(data.articles, 'slug')
     assertRows(data.articles, [
       { title: 'Index', slug: 'user0' },
-      { title: 'Index', slug: 'user0/split' },
       { title: 'Title 0', slug: 'user0/title-0' },
       { title: 'Title 0 0', slug: 'user0/title-0-0' },
       { title: 'Title 0 1', slug: 'user0/title-0-1' },
-      { title: 'Title 0', slug: 'user0/title-0-split' },
     ])
+
+    //// Access one of them directly.
+    //;({data, status} = await sendJsonHttp(
+    //  server,
+    //  'GET',
+    //  '/api/articles?id=',
+    //  {
+    //    token,
+    //  }
+    //))
+    //assert.strictEqual(status, 200)
+    //sortByKey(data.articles, 'slug')
+    //assertRows(data.articles, [
+    //  { title: 'Index', slug: 'user0' },
+    //  { title: 'Title 0', slug: 'user0/title-0' },
+    //  { title: 'Title 0 0', slug: 'user0/title-0-0' },
+    //  { title: 'Title 0 1', slug: 'user0/title-0-1' },
+    //])
   })
 })

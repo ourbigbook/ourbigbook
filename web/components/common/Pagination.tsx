@@ -104,16 +104,15 @@ const Pagination = ({
       {pages.map((page) => {
         const isCurrent = !currentPage ? page === 0 : page === currentPage;
         return (
-          <>
+          <React.Fragment key={page.toString()}>
             <PaginationItem
-              key={page.toString()}
               className={isCurrent && "active"}
               onClick={(e) => handleClick(e, page)}
             >
               {page + 1}
             </PaginationItem>
             {' '}
-          </>
+          </React.Fragment>
         );
       })}
       <Maybe test={hasNextPage}>

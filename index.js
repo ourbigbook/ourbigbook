@@ -24,8 +24,12 @@ class AstNode {
     // {String} or undefined.
     this.id = undefined;
     this.macro = macros[this.macro_name];
+    this.macro_count = undefined;
+
     // Only for headers.
     this.level = undefined;
+    // {TreeNode}
+    this.header_tree_node = undefined;
 
     // Set all non-given arguments to empty plaintext nodes by default,
     // and store which args were given or not.
@@ -195,6 +199,9 @@ class Macro {
     if (!('x_style' in options)) {
       options.x_style = XStyle.full;
     }
+    if (!('get_number' in options)) {
+      options.get_number = function(ast, context) { return ast.macro_count; }
+    }
     this.name = name;
     this.positional_args = positional_args;
     {
@@ -297,7 +304,7 @@ class Macro {
         }
         ret += `${ast.macro.options.caption_prefix} `;
       }
-      ret += ast.macro_count;
+      ret += ast.macro.options.get_number(ast, context);
       if (options.show_caption_prefix && options.caption_prefix_span) {
         ret += `</span>`;
       }
@@ -566,7 +573,7 @@ class Tokenizer {
    * Start inside the literal argument after the opening,
    * and consume until its end.
    *
-   * @returns {boolean} - true if OK, false if EOF unexpected EOF
+   * @return {boolean} - true if OK, false if EOF unexpected EOF
    */
   tokenize_literal(open_char, close_string) {
     // Remove leading escapes.
@@ -629,9 +636,38 @@ class TreeNode {
     this.value = value;
     this.parent_node = parent_node;
     this.children = [];
+    this.index = undefined;
   }
+
   add_child(child) {
+    child.index = this.children.length;
     this.children.push(child);
+  }
+
+  add_child(child) {
+    child.index = this.children.length;
+    this.children.push(child);
+  }
+
+  /**
+   * E.g. get number 1.4.2.5 of a Section.
+   *
+   * @return {String}
+   */
+  get_nested_number(header_graph_top_level) {
+    let indexes = [];
+    let cur_node = this;
+    while (cur_node !== undefined) {
+      indexes.push(cur_node.index + 1);
+      cur_node = cur_node.parent_node;
+    }
+    let offset;
+    if (header_graph_top_level === 0) {
+      offset = 0;
+    } else {
+      offset = 1;
+    }
+    return indexes.reverse().slice(1 + offset).join('.');
   }
 }
 
@@ -696,7 +732,7 @@ function closing_token(token) {
  *
  * The CLI interface basically just feeds this.
  *
- * @returns {String}
+ * @return {String}
  */
 function convert(
   input_string,
@@ -1030,6 +1066,7 @@ function parse(tokens, macros, options, extra_returns={}) {
       let level = parseInt(convert_arg_noescape(node.args.level, id_context));
       node.level = level;
       let new_tree_node = new TreeNode(node, header_graph_stack[level - 1]);
+      node.header_tree_node = new_tree_node;
       if (((level - header_graph_last_level) > 1) && (header_graph_last_level != 0)) {
         parse_error(
           state,
@@ -1502,6 +1539,9 @@ const DEFAULT_MACRO_LIST = [
     {
       caption_prefix: 'Section',
       id_prefix: '',
+      get_number: function(ast, context) {
+        return ast.header_tree_node.get_nested_number(context.header_graph_top_level);
+      },
       x_style: XStyle.short,
     }
   ),

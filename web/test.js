@@ -4,6 +4,7 @@ const { WebApi } = require('ourbigbook/web_api')
 
 const app = require('./app')
 const config = require('./front/config')
+const routes = require('./front/routes')
 const convert = require('./convert')
 const test_lib = require('./test_lib')
 
@@ -391,63 +392,6 @@ it('api: create an article and see it on global feed', async () => {
     ;({data, status} = await test.webApi.articleAll({ limit: config.articleLimitMax + 1, page: 1 }))
     assert.strictEqual(status, 422)
 
-    if (testNext) {
-      // Logged in.
-
-        // Index.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          '/',
-        ))
-        assertStatus(status, data)
-
-        // User.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          '/user0',
-        ))
-        assertStatus(status, data)
-
-        // User that doesn't exist.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          '/dontexist',
-        ))
-        assert.strictEqual(status, 404)
-
-        // Article.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          '/user0/title-0',
-        ))
-        assertStatus(status, data)
-
-      // Logged out.
-
-        // Index.
-        test.disableToken()
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          '/',
-        ))
-        assertStatus(status, data)
-
-        // User.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          '/user0',
-        ))
-        assertStatus(status, data)
-
-        // Article.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          '/user0/title-0',
-        ))
-        assertStatus(status, data)
-        test.enableToken()
-    }
-
     // Create article with PUT.
     article = createArticleArg({ i: 1 })
     ;({data, status} = await test.webApi.articleCreateOrUpdate(article))
@@ -746,6 +690,96 @@ it('api: create an article and see it on global feed', async () => {
     assert.strictEqual(status, 404)
     ;({data, status} = await test.webApi.commentGet('user0/dontexist', 1))
     assert.strictEqual(status, 404)
+
+    if (testNext) {
+      async function testNextRun() {
+        // Index.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          routes.home(),
+        ))
+        assertStatus(status, data)
+
+        // User index.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          routes.users(),
+        ))
+        assertStatus(status, data)
+
+        // User.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          routes.userView('user0'),
+        ))
+        assertStatus(status, data)
+
+        // User that doesn't exist.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          routes.userView('dontexist'),
+        ))
+        assert.strictEqual(status, 404)
+
+        // Article.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          routes.articleView('user0/title-0'),
+        ))
+        assertStatus(status, data)
+
+        // Article that doesn't exist.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          routes.articleView('user0/dontexist'),
+        ))
+        assert.strictEqual(status, 404)
+
+        // Issue list for article.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          routes.issuesLatest('user0/title-0'),
+        ))
+        assertStatus(status, data)
+
+        // An issue of article.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          routes.issueView('user0/title-0', 1),
+        ))
+        assertStatus(status, data)
+
+        // An issue that doesn't exist.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          routes.issueView('user0/title-0', 999),
+        ))
+        assert.strictEqual(status, 404)
+
+        // Topic.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          routes.topicArticlesTop('title-0'),
+        ))
+        assertStatus(status, data)
+
+        // Empty topic.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          routes.topicArticlesTop('dontexist'),
+        ))
+        // Maybe we want 404?
+        assertStatus(status, data)
+      }
+
+      // Logged in.
+      await testNextRun()
+
+      // Logged out.
+      test.disableToken()
+      await testNextRun()
+      test.enableToken()
+    }
   }, { canTestNext: true })
 })
 

@@ -179,6 +179,10 @@ export function ourbigbook_runtime(toplevel, opts={}) {
           a.href = `#${e.target.id}`
           a.className = SELFLINK_CLASS
           e.target.prepend(a)
+          a.title = 'Copy link'
+          a.addEventListener('click', (e) => {
+            navigator.clipboard.writeText(a.href)
+          })
           hoverSelfLinkCallback(a)
         }
       })

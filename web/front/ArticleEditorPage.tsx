@@ -56,6 +56,11 @@ export default function ArticleEditorPageHoc({
     const ourbigbookEditorElem = useRef(null);
     const loggedInUser = useLoggedInUser()
     useEffect(() => {
+      if (loggedInUser === null) {
+        Router.push(routes.userNew());
+      }
+    }, [loggedInUser])
+    useEffect(() => {
       if (ourbigbookEditorElem && loggedInUser) {
         let editor;
         loader.init().then(monaco => {

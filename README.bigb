@@ -4122,11 +4122,17 @@ the link treated magically as follows:
   ``
   = \i[Internal] reference
 
-  <internal reference>
+  \x[internal reference]{magic}
   ``
   then the output would still contain the `<i>` italic tag.
+
+  If we had a scope as in `\x[my scope/Internal references]`, then each scope part is checked separately. E.g. in this case we would have upper case `Internal references`, even though `my scope` is lowercase, and so `{c}` would be set.
+
 * the ID is calculated as follows:
-  * \x[automatic-id-from-title] conversion is performed, giving `internal-reference`
+  * \x[automatic-id-from-title] conversion is performed, with you exception: forwards slashs `/` are kept, in order to make <scopes> work.
+
+    In our case, there aren't any slashes `/`, so it just gives `internal-reference`. But if instead we had e.g.: `\x[my scope/internal reference]{magic}`, then we would reach `my-scope/internal-reference` and not `my-scope-internal-reference`.
+
   * the last word is singularized as in the `x-p-argument` with `p=0`, giving `Internal reference`
 
 There are some cases where you might stilt want to use <cross reference title inflection> however, see: <inflection vs magic>{full}.

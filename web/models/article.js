@@ -1420,7 +1420,7 @@ LIMIT ${limit}` : ''}
       children: [],
       nextSibling: undefined,
       parent: undefined,
-      level: 0,
+      depth: 0,
       nestedSetIndex: undefined,
       nestedSetNextSibling: undefined,
     }
@@ -1428,14 +1428,14 @@ LIMIT ${limit}` : ''}
       [toplevelId]: idTreeNode,
     }
     for (const row of idRows) {
-      const level = row.level
+      const depth = row.level + 1
       const parent = idToIdTreeNode[row.from_id]
       const childIdx = parent.children.length
       const idTreeNode = {
         id: row.idid,
         children: [],
         childIdx,
-        level,
+        depth,
         parent,
         nestedSetIndex: undefined,
         nestedSetNextSibling: undefined,
@@ -1536,7 +1536,7 @@ LIMIT ${limit}` : ''}
       slug: s.id.slice(ourbigbook.AT_MENTION_CHAR.length),
       nestedSetIndex: s.nestedSetIndex,
       nestedSetNextSibling: s.nestedSetNextSibling,
-      depth: s.level,
+      depth: s.depth,
     }})
     return sequelize.transaction({ transaction: opts.transaction }, async (transaction) => {
       for (const val of vals) {

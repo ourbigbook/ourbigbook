@@ -7,6 +7,7 @@ import { cirodown_runtime } from 'cirodown/dist/cirodown_runtime.js';
 import { CirodownEditor } from 'cirodown/editor.js';
 
 import ListErrors from "components/common/ListErrors";
+import { slugFromRouter } from "lib"
 import ArticleAPI from "lib/api/article";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 import { modifyEditorInput } from "lib/shared";
@@ -95,7 +96,7 @@ export default function makeArticleEditor(isnew: boolean = false) {
       } else {
         ({ data, status } = await ArticleAPI.update(
           article,
-          router.query.slug.join(cirodown.Macro.HEADER_SCOPE_SEPARATOR),
+          slugFromRouter(router),
           loggedInUser?.token
         ));
       }

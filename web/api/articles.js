@@ -4,6 +4,7 @@ const Op = require('sequelize').Op
 const cirodown = require('cirodown')
 
 const auth = require('../auth')
+const { getArticle } = require('./lib')
 
 async function setArticleTags(req, article, tagList) {
   return req.app.get('sequelize').models.Tag.bulkCreate(
@@ -18,18 +19,6 @@ async function setArticleTags(req, article, tagList) {
       return article.setTags(tags)
     })
   })
-}
-
-async function getArticle(req, res) {
-  if (req.query.id) {
-    const article = await req.app.get('sequelize').models.Article.findOne({
-      where: { slug: req.query.id },
-      include: [{ model: req.app.get('sequelize').models.User, as: 'author' }]
-    })
-    if (!article)
-      res.status(404)
-    return article
-  }
 }
 
 router.param('comment', function(req, res, next, id) {
@@ -99,8 +88,10 @@ router.get('/', auth.optional, async function(req, res, next) {
       })
     } else {
       const article = await getArticle(req, res)
-      const user = req.payload ? await req.app.get('sequelize').models.User.findByPk(req.payload.id) : null
-      return res.json({ article: await article.toJSONFor(user) })
+      if (article) {
+        const user = req.payload ? await req.app.get('sequelize').models.User.findByPk(req.payload.id) : null
+        return res.json({ article: await article.toJSONFor(user) })
+      }
     }
   } catch(error) {
     next(error);
@@ -216,18 +207,14 @@ router.post('/favorite', auth.required, async function(req, res, next) {
   try {
     const article = await getArticle(req, res)
     if (article) {
-      const articleId = article.id
-      const [user, article] = await Promise.all([
-        req.app.get('sequelize').models.User.findByPk(req.payload.id),
-        req.app.get('sequelize').models.Article.findByPk(articleId),
-      ])
+      const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
       if (!user) {
         return res.sendStatus(401)
       }
       if (!article) {
         return res.sendStatus(404)
       }
-      await user.addFavorite(articleId)
+      await user.addFavorite(article.id)
       return res.json({ article: await article.toJSONFor(user) })
     }
   } catch(error) {
@@ -240,7 +227,6 @@ router.delete('/favorite', auth.required, async function(req, res, next) {
   try {
     const article = await getArticle(req, res)
     if (article) {
-      const articleId = article.id
       const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
       if (!user) {
         return res.sendStatus(401)
@@ -248,34 +234,8 @@ router.delete('/favorite', auth.required, async function(req, res, next) {
       if (!article) {
         return res.sendStatus(404)
       }
-      await user.removeFavorite(articleId)
+      await user.removeFavorite(article.id)
       return res.json({ article: await article.toJSONFor(user) })
-    }
-  } catch(error) {
-    next(error);
-  }
-})
-
-// return an article's comments
-router.get('/comments', auth.optional, async function(req, res, next) {
-  try {
-    const article = await getArticle(req, res)
-    if (article) {
-      let user;
-      if (req.payload) {
-        user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-      } else {
-        user = null
-      }
-      const comments = await article.getComments({
-        order: [['createdAt', 'DESC']],
-        include: [{ model: req.app.get('sequelize').models.User, as: 'author' }],
-      })
-      return res.json({
-        comments: await Promise.all(comments.map(function(comment) {
-          return comment.toJSONFor(user)
-        }))
-      })
     }
   } catch(error) {
     next(error);

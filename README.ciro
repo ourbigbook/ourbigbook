@@ -808,13 +808,13 @@ A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' `Im
 \cirodown_example[[
 Have a look at this amazing image: \x[fig-my-test-image].
 
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-{title=My test image is a very nice image}
+\Image[image.jpg]
+{title=The title of my image}
 {id=fig-my-test-image}
 {width=600}
 {height=200}
-{source=https://github.com/cirosantilli/media/blob/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg}
-{description=This image is amazing because it highlight's Xi's beauty and honesty.}
+{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
+{description=The description of my image.}
 ]]
 This exemplifies the following parameters:
 * `description`: similar to `title`, but allow for further explanations without them appearing in \x[internal-cross-references][cross references] to the image
@@ -823,16 +823,16 @@ For further discussion on the effects of ID see: \x[image-id][full].
 
 And this is how you make an inline image inline one with lower case `i`:
 \cirodown_example[[
-My inline \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg][test image] is awesome.
+My inline \image[image.jpg][test image] is awesome.
 ]]
 Inline images can't have captions.
 
 The `description` can have multiple paragraphs just like any other element, but we don't recommend this style because it makes it hard for readers to see what is part of the image caption and what is part of the next paragraph.
 \cirodown_example[[
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+\Image[image.jpg]
 {id=fig-my-test-image-description-paragraphs}
-{title=Title of the figure}
-{source=https://github.com/cirosantilli/media/blob/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg}
+{title=The title of my image}
+{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
 {description=Description paragraph 1.
 
 Description paragraph 2.
@@ -844,7 +844,7 @@ Maybe we could improve this with some CSS styling, but generally when you want m
 
 And now an image outside of \x[cirodown-example] to test how it looks directly under \x[toplevel]:
 
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+\Image[image.jpg]
 {id=fig-my-test-image-toplevel}
 
 === Image height
@@ -853,20 +853,21 @@ By default, we fix image heights to `height=315`, and let the `width` be calcula
 * prevent reflows as the page loads images and can determine their actual sizes, especially is the user opens the page at a given ID in the middle of the page
 * create a more uniform media experience by default, unless a custom image size is actually needed e.g. if the image needs to be larger
 
-=== Image ID
+=== Image IDs and captions
+{id=image-id}
 
-Here is one without a description but with an ID so we can link to it: \x[fig-my-test-image-2].
+Here is an image without a description but with an ID so we can link to it: \x[fig-my-test-image-2].
 \cirodown_example[[
 Have a look at this amazing image: \x[fig-my-test-image-2].
 
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+\Image[image.jpg]
 {id=fig-my-test-image-2}
 ]]
 This works because \x[cross-reference-full-argument][`full` is the default cross referene style for `Image`], otherwise the link text would be empty since there is no `title`, and cirodown would raise an error.
 
 If the image has neither ID nor title, then it does not get a caption at all, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
 \cirodown_example[[
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+\Image[image.jpg]
 ]]
 The image does however get an automatically generated ID based on its image number, and it is possible for readers to link to that ID on the rendered version, e.g. as:
 ``
@@ -876,36 +877,45 @@ This link is of course not stable across document revisions however, since if an
 
 We can also see that such an image does not increment the Figure count:
 \cirodown_example[[
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-{id=fig-my-test-image-3}
+\Image[image.jpg]{id=fig-my-test-image-count-before}
+\Image[image.jpg]
+\Image[image.jpg]{id=fig-my-test-image-count-after}
+]]
+
+If the image has any visible metadata such as `source` or `description` however, then the caption does show and the Figure count gets incremented:
+\cirodown_example[[
+\Image[image.jpg]{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
+\Image[image.jpg]{description=This is the description of my image.}
 ]]
 
 === Where to store images
+
+==== Store images inside the repository itself
 
 If you are making a limited repository that will not have a ton of images, then you can get away with simply git tracking your images in the main repository.
 
 With this setup, no further action is needed. For example, with a file structure of:
 ``
 ./README.ciro
-./Image_with_a_descriptive_title.jpeg
+./image.jpg
 ``
 just use the image from \C[README.ciro] as:
-``
-Here is a nice image:
-
-\Image[Image_with_a_descriptive_title.jpeg]
-``
+\cirodown_example[[
+\Image[image.jpg]
+]]
 
 However, if you are making a huge tutorial, which can have a huge undefined number of images (i.e. any scientific book), then you likely don't want to git track your images in the git repository.
 
-We recommend the following approach instead.
+==== Store images in a separate media repository
+
+This approach is more suitable than \x[store-images-inside-the-repository-itself] if you are going to have a lot of images.
 
 Create a separate GitHub repository in addition to the main one containing the text, for example:
 * `./my-tutorial/`
 * `./my-tutorial-media/`
 The name `*-media` suffix is not mandatory, but if you use this default, `cirodown` will handle it for you without any further configuration.
 
-And then set the \x[media-source-type] option in your \x[cirodown-json]:
+TODO And then set the \x[media-source-type] option in your \x[cirodown-json]:
 ``
 {
   media_source_type = "media_repo"
@@ -933,6 +943,27 @@ Therefore, images could easily fill up the maximum repository size you are allow
 
 https://git-lfs.github.com/[Git LFS] is one approach to deal with this, but we feel that it adds too much development overhead.
 
+==== Store images in Wikimedia Commons
+
+Wikimedia Commons is another great possibility to upload your images to:
+\cirodown_example[[
+\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
+{source=https://commons.wikimedia.org/wiki/File:Gel_electrophoresis_insert_comb.jpg}
+]]
+
+TODO https://github.com/cirosantilli/cirodown/issues/31 Cirodown likes Wikimedia Commons so much that we can even automatically parse the image URL to automatically deduce the source for you, so the above image renders the same without the `source` argument:
+\cirodown_example[[
+\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
+]]
+
+Upsides:
+* makes it easier for other writers to find and reuse your images
+* if you have so many images that they would blow even the size of a \x[store-images-in-a-separate-media-repository][separate media repository], this will still work
+Downsides:
+* forces you to use the Creative Commons license
+* requires the content to be educational in nature
+* uploading a bunch of images to Wikimedia Commons does feel a bit more laborious than it should because you have to write down so much repeated metadata for them
+
 === Image lazy loading
 
 We automatically mark all images with `lazy="loading"` which means that they only load when the viewport goes over those images on supporting browsers: \a[https://stackoverflow.com/questions/2321907/how-do-you-make-images-load-lazily-only-when-they-are-in-the-viewport/57389607#57389607].
@@ -954,7 +985,23 @@ https://github.com/cirosantilli/cirodown/issues/40
 
 Very analogous to \x[images], only differences will be documented here.
 
-First, \x[where-to-store-images] becomes even more critical here since videos are even larger than images. Arguably, one of the most reasonable options is to sell your soul to YouTube with the `youtube` \x[boolean-named-arguments][boolean named argument]. Here is an example: \x[sample-video-from-youtube].
+In the case of videos, \x[where-to-store-images] becomes even more critical since videos are even larger than images, such that the following storage approaches are impractical off the bat:
+* \x[store-images-inside-the-repository-itself]
+* \x[store-images-in-a-separate-media-repository]
+As a result, then https://commons.wikimedia.org[Wikimedia Commons] is one of the best options \x[store-images-in-wikimedia-commons][much like for images]:
+\cirodown_example[[
+\Video[https://upload.wikimedia.org/wikipedia/commons/8/85/Vacuum_pump_filter_cut_and_place_in_eppendorf.webm]
+{id=sample-video-in-wikimedia-commons}
+{title=Nice sample video stored in Wikimedia Commons}
+{source=https://commons.wikimedia.org/wiki/File:Vacuum_pump_filter_cut_and_place_in_eppendorf.webm}
+{start=5}
+]]
+Commons is better than YouTube if your content is on-topic there because:
+* they have no ads
+* it allows download of the videos: \a[https://www.quora.com/Can-I-download-Creative-Commons-licensed-YouTube-videos-to-edit-them-and-use-them].
+* it makes it easier for other users to find and re-use your videos
+
+If your video does not fit the above Wikimedia Commons requirements, YouTube is your next best bet. You just have to mark the video with the `youtube` \x[boolean-named-arguments][boolean named argument]. Here is an example: \x[sample-video-from-youtube].
 \cirodown_example[[
 \Video[YeFzeNAHEhU]{youtube}
 {id=sample-video-from-youtube}
@@ -973,16 +1020,6 @@ But you can also use raw video files from any location that can serve them of co
 {title=Nice sample video stored in this repository}
 {source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
 ]]
-
-And here is an external video from https://commons.wikimedia.org[Wikimedia Commons], which is a trustworthy free server for educational content:
-\cirodown_example[[
-\Video[https://upload.wikimedia.org/wikipedia/commons/8/85/Vacuum_pump_filter_cut_and_place_in_eppendorf.webm]
-{id=sample-video-in-wikimedia-commons}
-{title=Nice sample video stored in Wikimedia Commons}
-{source=https://commons.wikimedia.org/wiki/File:Vacuum_pump_filter_cut_and_place_in_eppendorf.webm}
-{start=5}
-]]
-Commons is better than YouTube if your content is on-topic there (educational) and has a CC licence, since they have no ads and allow download of the video.
 
 === Video `start` argument
 
@@ -1166,7 +1203,7 @@ $$
 $$
 ]]
 
-And just to test check that `{show=1}` actually shows, although it is useless, and that `{show=0}` skips incrementing the equation count:
+And just to test that `{show=1}` actually shows, although it is useless, and that `{show=0}` skips incrementing the equation count:
 \cirodown_example[[
 $$1 + 1$${show=1}
 $$2 + 2$${show=0}
@@ -1725,7 +1762,7 @@ For example, when the \x[internal-cross-references][ID of a node is derived from
 \cirodown_example[[
 \x[title-with-code]
 
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+\Image[image.jpg]
 {title=title `with code`}
 ]]
 In this example, see how the contents of the code block \c[`with code`] were rendered as plaintext and used for the ID.

@@ -12,7 +12,7 @@ export default function useMin(query, assign) {
   const router = useRouter();
   const { data, error } = useSWR(
     `${SERVER_BASE_URL}/${minPath}?query=${JSON.stringify(query)}`,
-    fetcher(!router.isFallback && getLoggedInUser())
+    fetcher(!router.isFallback && getLoggedInUser() !== undefined)
   );
   if (error) alert('Could not fetch your personalized data')
   if (data) {

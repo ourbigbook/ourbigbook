@@ -110,13 +110,13 @@ export default function UserPage({
           href={routes.userView(username)}
           className={`tab-item${what === 'home' ? ' active' : ''}`}
         >
-          Home
+          Home ({authoredArticleCount})
         </CustomLink>
         <CustomLink
           href={routes.userViewTop(username)}
           className={`tab-item${what === 'user-articles-top' ? ' active' : ''}`}
         >
-          Top ({authoredArticleCount})
+          Top
         </CustomLink>
         <CustomLink
           href={routes.userViewLatest(username)}

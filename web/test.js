@@ -4095,8 +4095,11 @@ it('api: uppercase article IDs are forbidden', async () => {
 
     // Uppercase is allowed with {file} however.
     article = createArticleArg({ i: 0, titleSource: 'path/to/main.S', bodySource: '{file}' })
-    ;({data, status} = await createOrUpdateArticleApi(test, article, { path: 'path/to/main.S' }))
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { path: '_file/path/to/main.S' }))
     assertStatus(status, data)
+    ;({data, status} = await test.webApi.article('user0/_file/path/to/main.S'))
+    assertStatus(status, data)
+    assert.notStrictEqual(data, undefined)
   })
 })
 

@@ -5676,6 +5676,7 @@ In this case, `cirodown` and `ourbigbook` don't have to be any regular IDs prese
 TODO ideally we should check for conflicts with regular output from split headers IDs or their synonyms. But lazy.
 
 = OurBigBook Library
+{c}
 {parent=ourbigbook}
 
 = JavaScript API

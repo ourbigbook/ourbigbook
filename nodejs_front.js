@@ -3,8 +3,24 @@
 // Value of environment variables considered as true.
 env_true = '1'
 
+function preload_katex(tex) {
+  let katex_macros = {};
+  require('katex').renderToString(
+    tex,
+    {
+      globalGroup: true,
+      macros: katex_macros,
+      output: 'html',
+      strict: 'error',
+      throwOnError: true,
+    }
+  );
+  return katex_macros
+}
+
 module.exports = {
   env_true,
+  preload_katex,
   // TODO convert to OURBIGBOOK_DBMS=pg rather than boolean.
   postgres: process.env.OURBIGBOOK_POSTGRES === env_true,
   sequelize_postgres_opts: {

@@ -95,7 +95,7 @@
     "test-pg": "OURBIGBOOK_POSTGRES=true npm test --",
     "test-release": "npm test && npm run test-pg -- --timeout 100000",
     "webpack": "webpack --",
-    "webpack-dev": "webpack serve --",
+    "webpack-dev": "webpack -- --mode development --watch",
     "web-setup": "npm run link && npm run build-assets && cd web/ && npm install"
   }
 }

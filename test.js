@@ -5470,16 +5470,16 @@ My Line 2
     },
     assert_xpath: {
       'index.html': [
-        `//x:a[@href='_dir/path/index.html' and text()='path' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='_file/path/to-/path']`,
-        `//x:a[@href='_dir/path/to/index.html' and text()='to' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='_file/path/to-/path/to']`,
+        `//x:a[@href='_dir/path/index.html' and text()='path' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to__path']`,
+        `//x:a[@href='_dir/path/to/index.html' and text()='to' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to__path/to']`,
         "//x:div[@class='p' and text()='My directory']",
 
         "//x:a[@href='_raw/path/to/my-file.txt' and text()='my-file.txt']",
         "//x:div[@class='p' and text()='My txt']",
         // Don't know how to include newlines in xPath!
         "//x:code[starts-with(text(), 'My Line 1')]",
-        `//x:a[@href='_dir/path/index.html' and text()='path' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='_file/path/to/my-file.txt-/path']`,
-        `//x:a[@href='_dir/path/to/index.html' and text()='to' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='_file/path/to/my-file.txt-/path/to']`,
+        `//x:a[@href='_dir/path/index.html' and text()='path' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path']`,
+        `//x:a[@href='_dir/path/to/index.html' and text()='to' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path/to']`,
 
         "//x:a[@href='_raw/path/to/my-file.png' and text()='my-file.png']",
         "//x:img[@src='_raw/path/to/my-file.png']",
@@ -5549,6 +5549,69 @@ assert_lib('header: file argument ignores text files on nosplit if they are too 
       'index.html': [
         `//x:pre//x:code[starts-with(text(), 'bbbb')]`,
       ],
+    }
+  },
+)
+assert_lib('header: file argument in subdir',
+  {
+    convert_dir: true,
+    filesystem: {
+      'path/to/notreadme.bigb': `= Notreadme
+
+<my-file.txt>{file}
+
+== my-file.txt
+{file}
+`,
+      'path/to/my-file.txt': `My Line 1
+
+My Line 2
+`,
+    },
+    assert_xpath: {
+      [`path/to/notreadme.html`]: [
+        `//x:a[@href='#${ourbigbook.FILE_PREFIX}/my-file.txt' and text()='path/to/my-file.txt']`,
+        // Maybe ID should be full path for _file. It's 3AM and I don't have the brains for this kind of stuff now.
+        xpath_header(2, `${ourbigbook.FILE_PREFIX}/my-file.txt`, `x:a[@href='#${ourbigbook.FILE_PREFIX}/my-file.txt' and text()='1. path/to/my-file.txt']`),
+      ],
+    }
+  },
+)
+assert_lib('header: file argument in _file directory toplevel header',
+  {
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': `= Index
+
+<path/to/my-file.txt>{file}
+`,
+      [`${ourbigbook.FILE_PREFIX}/path/to/my-file.txt.bigb`]: `= my-file.txt
+{file}
+
+My txt.
+`,
+      'path/to/my-file.txt': `My Line 1
+
+My Line 2
+`,
+    },
+    assert_xpath: {
+      [`index.html`]: [
+        // TODO text() should show path/to/my-file.txt. Maybe this could likely be factored out with
+        // the existing header handling code that adds full path to h1.
+        `//x:a[@href='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt.html' and text()='my-file.txt']`,
+      ],
+      [`${ourbigbook.FILE_PREFIX}/path/to/my-file.txt.html`]: [
+        "//x:a[@href='../../../_raw/path/to/my-file.txt' and text()='my-file.txt']",
+        // We actually get the full path always on the title of a {file} header.
+        "//x:h1//x:a[text()='path/to/my-file.txt']",
+        "//x:div[@class='p' and text()='My txt.']",
+        // Don't know how to include newlines in xPath!
+        "//x:code[starts-with(text(), 'My Line 1')]",
+        `//x:a[@href='../../../${ourbigbook.DIR_PREFIX}/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
+        `//x:a[@href='../../../${ourbigbook.DIR_PREFIX}/path/index.html' and text()='path' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path']`,
+        `//x:a[@href='../../../${ourbigbook.DIR_PREFIX}/path/to/index.html' and text()='to' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path/to']`,
+      ]
     }
   },
 )
@@ -10267,7 +10330,7 @@ assert_cli('cross file ancestors work on single file conversions in subdir',
   }
 )
 assert_cli(
-  // See also corresponding lib:.
+  // See also corresponding lib: test.
   'incoming links: cross reference incoming links and other children with magic',
   {
     args: ['-S', '.'],
@@ -10658,7 +10721,7 @@ assert_cli(
 assert_cli(
   'raw: directory listings simple',
   {
-    args: ['.'],
+    args: ['-S', '.'],
     filesystem: {
       'README.bigb': `= Index
 
@@ -10688,10 +10751,20 @@ assert_cli(
 
 \\a[subdir2][link to subdir2]
 `,
-      'myfile.txt': `ab`,
+      'myfile.txt': `myfile.txt line1
+
+myfile.txt line2
+`,
+      // An image and video to make sure the image handling is taken care of on file autogen. Yes there was a bug.
+      'myfile-autogen.png': `aaa`,
+      'myfile-autogen.mp4': `aaa`,
+
       'index.html': '',
       '_index.html': '',
-      'subdir/myfile-subdir.txt': `ab`,
+      'subdir/myfile-subdir.txt': `myfile-subdir.txt line1
+
+myfile-subdir.txt line2
+`,
       'subdir/index.html': '',
       'subdir/subdir2/index.bigb': `= Subdir2
 
@@ -10706,10 +10779,19 @@ assert_cli(
     },
     assert_exists: [
       `out/html/${ourbigbook.RAW_PREFIX}/myfile.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/myfile-autogen.png`,
+      `out/html/${ourbigbook.RAW_PREFIX}/myfile-autogen.mp4`,
       `out/html/${ourbigbook.RAW_PREFIX}/index.html`,
       `out/html/${ourbigbook.RAW_PREFIX}/_index.html`,
       `out/html/${ourbigbook.RAW_PREFIX}/subdir/index.html`,
       `out/html/${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
+
+      // Auto-generated {file} by ourbigbook CLI.
+      `out/html/${ourbigbook.FILE_PREFIX}/myfile.txt.html`,
+      `out/html/${ourbigbook.FILE_PREFIX}/index.html.html`,
+      `out/html/${ourbigbook.FILE_PREFIX}/_index.html.html`,
+      `out/html/${ourbigbook.FILE_PREFIX}/subdir/index.html.html`,
+      `out/html/${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt.html`,
     ],
     assert_not_exists: [
       // Ignored directories are not listed.
@@ -10717,8 +10799,8 @@ assert_cli(
     ],
     assert_xpath: {
       [`out/html/index.html`]: [
-        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='View file']`,
-        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html' and text()='View file']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='subdir' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/subdir__subdir']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html' and text()='subdir2' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/subdir/subdir2__subdir/subdir2']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/index.html' and text()='link to root']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='link to subdir']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
@@ -10738,29 +10820,46 @@ assert_cli(
         `//x:a[@href='../${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
       ],
       [`out/html/${ourbigbook.DIR_PREFIX}/index.html`]: [
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/myfile.txt' and text()='myfile.txt']`,
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/README.bigb' and text()='README.bigb']`,
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/index.html' and text()='index.html']`,
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/_index.html' and text()='_index.html']`,
+        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/myfile.txt.html' and text()='myfile.txt']`,
+        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/README.bigb.html' and text()='README.bigb']`,
+        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/index.html.html' and text()='index.html']`,
+        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/_index.html.html' and text()='_index.html']`,
 
         `//x:a[@href='subdir/index.html' and text()='subdir/']`,
       ],
       [`out/html/${ourbigbook.DIR_PREFIX}/subdir/index.html`]: [
-        `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt' and text()='myfile-subdir.txt']`,
-        `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='index.html']`,
+        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt.html' and text()='myfile-subdir.txt']`,
+        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/subdir/index.html.html' and text()='index.html']`,
 
         `//x:a[@href='subdir2/index.html' and text()='subdir2/']`,
-        `//x:a[@href='../index.html' and text()='(root)']`,
+        `//x:a[@href='../index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
       ],
       [`out/html/${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html`]: [
-        `//x:a[@href='../../index.html' and text()='(root)']`,
+        `//x:a[@href='../../index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
         `//x:a[@href='../index.html' and text()='subdir']`,
+      ],
+
+      // Auto-generated {file} by ourbigbook CLI.
+      // It feels natural to slot testing for that here.
+      [`out/html/${ourbigbook.FILE_PREFIX}/myfile.txt.html`]: [
+        // We actually get the full path always on the title of a {file} header.
+        "//x:h1//x:a[text()='myfile.txt']",
+        "//x:code[starts-with(text(), 'myfile.txt line1')]",
+        `//x:a[@href='../${ourbigbook.DIR_PREFIX}/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/myfile.txt' and text()='myfile.txt' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/myfile.txt__myfile.txt']`,
+      ],
+      [`out/html/${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt.html`]: [
+        "//x:h1//x:a[text()='subdir/myfile-subdir.txt']",
+        "//x:code[starts-with(text(), 'myfile-subdir.txt line1')]",
+        `//x:a[@href='../../${ourbigbook.DIR_PREFIX}/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
+        `//x:a[@href='../../${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='subdir' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt__subdir']`,
+        `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt' and text()='myfile-subdir.txt' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt__subdir/myfile-subdir.txt']`,
       ],
     },
     assert_not_xpath: {
       [`out/html/${ourbigbook.DIR_PREFIX}/index.html`]: [
         // ../ not added to root listing.
-        "//x:a[text()='(root)']",
+        `//x:a[text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
 
         // Ignored files don't show on listing.
         "//x:a[text()='.git']",
@@ -10772,7 +10871,7 @@ assert_cli(
 assert_cli(
   'raw: directory listings without .html',
   {
-    args: ['.'],
+    args: ['-S', '.'],
     filesystem: {
       'ourbigbook.json': `{
   "htmlXExtension": false
@@ -10827,6 +10926,12 @@ assert_cli(
       `out/html/${ourbigbook.RAW_PREFIX}/_index.html`,
       `out/html/${ourbigbook.RAW_PREFIX}/subdir/index.html`,
       `out/html/${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
+
+      `out/html/${ourbigbook.FILE_PREFIX}/myfile.txt.html`,
+      `out/html/${ourbigbook.FILE_PREFIX}/index.html.html`,
+      `out/html/${ourbigbook.FILE_PREFIX}/_index.html.html`,
+      `out/html/${ourbigbook.FILE_PREFIX}/subdir/index.html.html`,
+      `out/html/${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt.html`,
     ],
     assert_not_exists: [
       // Ignored directories are not listed.
@@ -10834,8 +10939,8 @@ assert_cli(
     ],
     assert_xpath: {
       [`out/html/index.html`]: [
-        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir' and text()='View file']`,
-        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2' and text()='View file']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir' and text()='subdir' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/subdir__subdir']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2' and text()='subdir2' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/subdir/subdir2__subdir/subdir2']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}' and text()='link to root']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir' and text()='link to subdir']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2' and text()='link to subdir2']`,
@@ -10855,33 +10960,69 @@ assert_cli(
         `//x:a[@href='../${ourbigbook.DIR_PREFIX}/subdir/subdir2' and text()='link to subdir2']`,
       ],
       [`out/html/${ourbigbook.DIR_PREFIX}/index.html`]: [
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/myfile.txt' and text()='myfile.txt']`,
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/README.bigb' and text()='README.bigb']`,
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/index.html' and text()='index.html']`,
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/_index.html' and text()='_index.html']`,
+        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/myfile.txt' and text()='myfile.txt']`,
+        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/README.bigb' and text()='README.bigb']`,
+        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/index.html' and text()='index.html']`,
+        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/_index.html' and text()='_index.html']`,
 
         `//x:a[@href='subdir' and text()='subdir/']`,
       ],
       [`out/html/${ourbigbook.DIR_PREFIX}/subdir/index.html`]: [
-        `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt' and text()='myfile-subdir.txt']`,
-        `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='index.html']`,
+        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt' and text()='myfile-subdir.txt']`,
+        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/subdir/index.html' and text()='index.html']`,
 
         `//x:a[@href='subdir2' and text()='subdir2/']`,
-        `//x:a[@href='..' and text()='(root)']`,
+        `//x:a[@href='..' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
       ],
       [`out/html/${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html`]: [
-        `//x:a[@href='../..' and text()='(root)']`,
+        `//x:a[@href='../..' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
         `//x:a[@href='..' and text()='subdir']`,
       ],
     },
     assert_not_xpath: {
       [`out/html/${ourbigbook.DIR_PREFIX}/index.html`]: [
         // ../ not added to root listing.
-        "//x:a[text()='(root)']",
+        `//x:a[text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
 
         // Ignored files don't show on listing.
         "//x:a[text()='.git']",
         "//x:a[text()='.git/']",
+      ],
+    },
+  }
+)
+assert_cli(
+  'raw: directory listings link to _raw when split pages are turned off',
+  {
+    args: ['.'],
+    filesystem: {
+      'myfile.txt': `myfile.txt line1
+
+myfile.txt line2
+`,
+      'subdir/myfile-subdir.txt': `myfile-subdir.txt line1
+
+myfile-subdir.txt line2
+`,
+    },
+    assert_exists: [
+      `out/html/${ourbigbook.RAW_PREFIX}/myfile.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
+    ],
+    assert_not_exists: [
+      // Don't auto-generate {file} without split
+      `out/html/${ourbigbook.FILE_PREFIX}/myfile.txt.html`,
+      `out/html/${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt.html`,
+    ],
+    assert_xpath: {
+      [`out/html/${ourbigbook.DIR_PREFIX}/index.html`]: [
+        // Link to _raw without split. This is a simple behaviour to work reasonably when {file} headers
+        // don't get their own separate file. The other possibility would be to always autogen without split,
+        // but then we would have to worry about not adding autogen to db to avoid ID conflicts. Doable as well,
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/myfile.txt.html' and text()='myfile.txt']`,
+      ],
+      [`out/html/${ourbigbook.DIR_PREFIX}/subdir/index.html`]: [
+        `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt.html' and text()='myfile-subdir.txt']`,
       ],
     },
   }

@@ -138,6 +138,7 @@ module.exports = {
   ]),
   revalidate: 10,
   secret: isProduction ? process.env.SECRET : 'secret',
+  sureLeaveMessage: 'Your change may be unsaved, are you sure you want to leave this page?',
   useCaptcha: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY !== undefined && !isTest,
   usernameMinLength: 3,
   usernameMaxLength: 40,

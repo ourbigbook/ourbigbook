@@ -132,7 +132,10 @@ class AstNode {
     this.source_location = source_location;
 
     this.args = args;
-    // The effetctive value for file, coming either from the file=XXX or title if that is empty.
+    // The effetctive path of the the file counting from the toplevel directory,
+    // coming either from the file=XXX or title if that is empty.
+    // Examples:
+    // - _file/path/to/myfile.txt.bigb: .file = path/to/myfile.txt, without the _file prefix
     this.file = undefined
     this.first_toplevel_child = options.first_toplevel_child;
     this.is_first_header_in_input_file = options.is_first_header_in_input_file;
@@ -391,7 +394,6 @@ class AstNode {
     }
 
     context.last_render = out
-    //console.error('context.toplevel_output_path: ' + require('util').inspect(context.toplevel_output_path));
     if (
       context.toplevel_output_path &&
       this.macro_name === Macro.HEADER_MACRO_NAME &&
@@ -664,7 +666,7 @@ class AstNode {
     let ast = this
     let id
     let input_path = ast.source_location.path
-    if (input_path === undefined) {
+    if (input_path === undefined || !context.options.db_provider) {
       return {}
     } else {
       if ('effective_id' in options) {
@@ -2408,7 +2410,6 @@ function calculateId(
   is_header,
   line_to_id_array
 ) {
-  let title_text
   const macro_name = ast.macro_name;
   const macro = context.macros[macro_name];
 
@@ -2427,32 +2428,34 @@ function calculateId(
   let id
   let file_header = ast.macro_name === Macro.HEADER_MACRO_NAME &&
     ast.validation_output.file.given
+  let file_id_text_append
+  const new_context = cloneAndSet(context, 'id_conversion', true);
+  const title_arg = macro.options.get_title_arg(ast, context);
+  const title_text = renderArgNoescape(title_arg, new_context)
+  if (file_header) {
+    const file_render = renderArg(ast.args.file, new_context)
+    if (file_render) {
+      file_id_text_append = file_render
+    } else {
+      file_id_text_append = title_text
+    }
+    ast.file = file_id_text_append
+  }
   if (
     // This can happen be false for included headers, and this is notably important
     // for the toplevel header which gets its ID from the filename.
     ast.id === undefined
   ) {
     const macro_id_arg = ast.args[Macro.ID_ARGUMENT_NAME];
-    const new_context = cloneAndSet(context, 'id_conversion', true);
     if (macro_id_arg === undefined) {
       let id_text = '';
       const id_prefix = context.macros[ast.macro_name].id_prefix;
-      const title_arg = macro.options.get_title_arg(ast, context);
       if (title_arg !== undefined) {
         if (id_prefix !== '') {
           id_text += id_prefix + ID_SEPARATOR
         }
-        title_text = renderArgNoescape(title_arg, new_context)
         if (file_header) {
-          let id_text_append
-          const file_render = renderArg(ast.args.file, new_context)
-          if (file_render) {
-            id_text_append = file_render
-          } else {
-            id_text_append = title_text
-          }
-          ast.file = id_text_append
-          id_text = Macro.FILE_ID_PREFIX + id_text + id_text_append
+          id_text = Macro.FILE_ID_PREFIX + id_text + file_id_text_append
         } else {
           id_text += titleToId(title_text, new_context.options.ourbigbook_json.id, new_context);
         }
@@ -2502,8 +2505,17 @@ function calculateId(
   if (id !== undefined) {
     ast.id = id
   }
-  if (ast.id && ast.subdir &&  !skip_scope) {
+  if (ast.id && ast.subdir && !skip_scope) {
     ast.id = ast.subdir + Macro.HEADER_SCOPE_SEPARATOR + ast.id
+  }
+  if (file_header && ast.scope) {
+    // TODO we should use the input directory here, not scope. {file} should ignore scope most likely
+    // and care only about the input directory.
+    let scopeSplit = ast.scope.split(Macro.HEADER_SCOPE_SEPARATOR)
+    if (scopeSplit[0] === FILE_PREFIX) {
+      scopeSplit = scopeSplit.slice(1)
+    }
+    ast.file = (scopeSplit.length ? scopeSplit.join(Macro.HEADER_SCOPE_SEPARATOR) + Macro.HEADER_SCOPE_SEPARATOR : '') + ast.file
   }
   if (id === '') {
     parseError(state, 'ID cannot be empty', ast.source_location);
@@ -2981,7 +2993,9 @@ function renderAstList({ asts, context, first_toplevel, header_count, split }) {
       )
       options.template_vars.root_relpath = new_root_relpath
       options.template_vars.raw_relpath = path.join(new_root_relpath, RAW_PREFIX)
+      options.template_vars.file_relpath = path.join(new_root_relpath, FILE_PREFIX)
       options.template_vars.dir_relpath = path.join(new_root_relpath, DIR_PREFIX)
+      options.template_vars.file_relpath = path.join(new_root_relpath, FILE_PREFIX)
       context.extra_returns.rendered_outputs[output_path] = rendered_outputs_entry
     }
     // Do the conversion.
@@ -3205,6 +3219,7 @@ function convertInitContext(options={}, extra_returns={}) {
       options.htmlXExtension = ourbigbook_json.htmlXExtension;
     }
   }
+  if (!('hFileShowLarge' in options)) { options.hFileShowLarge = false }
   if (!('h_parse_level_offset' in options)) {
     // When parsing, start the first header at this offset instead of h1.
     // This is used when doing includes, since the included header is at.
@@ -3401,6 +3416,8 @@ function convertInitContext(options={}, extra_returns={}) {
   //   If true, force the toplevel header to have this ID.
   //   Otherwise, derive the ID from the title.
   //   https://docs.ourbigbook.com#the-id-of-the-first-header-is-derived-from-the-filename
+  //
+  // TODO hard setting this option here is bad, maybe we should put it in context instead.
   options.toplevel_id = undefined;
   let root_relpath_shift
   let input_dir, basename
@@ -3645,6 +3662,10 @@ function getDescendantCountHtml(context, tree_node, options) {
   return ret;
 }
 
+/**
+ *
+ * @return - inputDirectory: input directory with prefix _file removed if present
+ */
 function checkAndUpdateLocalLink({
   context,
   href,
@@ -3654,14 +3675,15 @@ function checkAndUpdateLocalLink({
 }) {
   const was_protocol_given = protocolIsGiven(href)
 
-  let input_path_directory
-  if (context.options.input_path !== undefined) {
-    input_path_directory = dirname(
-      context.options.input_path,
+  let inputDirectory
+  const input_path = context.options.input_path
+  if (input_path !== undefined) {
+    inputDirectory = dirname(
+      input_path,
       context.options.path_sep
     )
   } else {
-    input_path_directory = '.'
+    inputDirectory = '.'
   }
 
   const is_absolute = href[0] === URL_SEP
@@ -3677,7 +3699,7 @@ function checkAndUpdateLocalLink({
       if (is_absolute) {
         check_path = href.slice(1)
       } else {
-        check_path = path.join(input_path_directory, href)
+        check_path = path.join(inputDirectory, href)
       }
       if (
         context.options.fs_exists_sync &&
@@ -3708,14 +3730,14 @@ function checkAndUpdateLocalLink({
             }
           }
           if (!is_absolute) {
-            pref = path.join(pref, context.input_dir)
+            pref = path.join(pref, inputDirectory)
           }
           href = path.join(pref, href)
         }
       }
     }
   }
-  return { href, error }
+  return { href, error, inputDirectory }
 }
 
 // Get description and other closely related attributes.
@@ -3755,13 +3777,17 @@ function getLinkHtml({
   external,
   href,
   source_location,
+  extraReturns,
 }) {
+  if (extraReturns === undefined) {
+    extraReturns = {}
+  }
   if (context.x_parents.size === 0) {
     if (attrs === undefined) {
       attrs = ''
     }
     let error
-    ;({ href, error } = checkAndUpdateLocalLink({
+    Object.assign(extraReturns, checkAndUpdateLocalLink({
       context,
       external,
       href,
@@ -3769,6 +3795,7 @@ function getLinkHtml({
       media_provider_type: 'local',
       source_location,
     }))
+    ;({ href, error } = extraReturns)
     let testData
     if (ast) {
       testData = getTestData(ast, context)
@@ -4526,7 +4553,10 @@ function outputPathBase(args={}) {
     return undefined
   }
   const [dirname, basename] = pathSplit(ast_input_path, path_sep);
-  const renamed_basename_noext = renameBasename(noext(basename));
+  let renamed_basename_noext = noext(basename)
+  if (ast_input_path.split(path_sep)[0] !== FILE_PREFIX) {
+    renamed_basename_noext = renameBasename(renamed_basename_noext)
+  }
   // We are the first header, or something that comes before it.
   if (ast_undefined) {
     const [dirname_ret, basename_ret] = indexPathFromDirname(dirname, renamed_basename_noext, path_sep)
@@ -7478,7 +7508,11 @@ function xTextBase(ast, context, options={}) {
         title_arg.get(title_arg.length() - 1).text = pluralizeWrap(last_ast.text, options.pluralize ? 2 : 1);
       }
     }
-    inner = renderArg(title_arg, context);
+    if (ast.file) {
+      inner = ast.file
+    } else {
+      inner = renderArg(title_arg, context);
+    }
     ret += inner
     if (style_full) {
       const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
@@ -8983,16 +9017,72 @@ const OUTPUT_FORMATS_LIST = [
             ourbigbookLink = `<a href="${context.webUrl}${context.options.ourbigbook_json.web.username}${p}"><img src="${logoPath}" class="logo" /> ${newContext.options.ourbigbook_json.web.hostCapitalized}</a>`;
           }
 
+          // file handling 1
           // Calculate file_link_html
-          let file_link_html
+          let fileLinkHtml, fileContent
+          const fileProtocolIsGiven = protocolIsGiven(ast.file)
+          const renderPostAstsContext = cloneAndSet(context, 'validateAst', true)
+          renderPostAstsContext.source_location = ast.source_location
           if (ast.file) {
-            file_link_html = getLinkHtml({
-              content: 'View file',
-              context,
-              href: ast.file,
-              external: undefined,
-              source_location: ast.source_location,
-            })
+            if (ast.file.match(media_provider_type_youtube_re)) {
+            } else {
+              const readFileRet = context.options.read_file(ast.file, context)
+              if (readFileRet) {
+                ;({ content: fileContent } = readFileRet)
+              }
+            }
+            // This section is about.
+            const pathArg = []
+            if (fileProtocolIsGiven) {
+              pathArg.push(
+                new AstNode(AstType.MACRO,
+                  Macro.LINK_MACRO_NAME,
+                  {
+                    href: new AstArgument([
+                      new PlaintextAstNode(ast.file)
+                    ]),
+                  }
+                ),
+              )
+            } else {
+              let curp = ''
+              pathArg.push(
+                new PlaintextAstNode(' '),
+                new AstNode(AstType.MACRO,
+                  Macro.LINK_MACRO_NAME,
+                  {
+                    content: new AstArgument([
+                      new PlaintextAstNode(FILE_ROOT_PLACEHOLDER)
+                    ]),
+                    href: new AstArgument([
+                      new PlaintextAstNode(URL_SEP)
+                    ]),
+                  }
+                ),
+              )
+              for (const p of ast.file.split(URL_SEP)) {
+                pathArg.push(new PlaintextAstNode(' ' + URL_SEP + ' '))
+                if (curp !== '') {
+                  curp += URL_SEP
+                }
+                curp += p
+                const astNodeArgs = {
+                  content: new AstArgument([
+                    new PlaintextAstNode(p)
+                  ]),
+                  href: new AstArgument([
+                    new PlaintextAstNode(Macro.HEADER_SCOPE_SEPARATOR + curp)
+                  ]),
+                }
+                if (context.options.add_test_instrumentation) {
+                  astNodeArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(ast.id + Macro.RESERVED_ID_PREFIX + Macro.RESERVED_ID_PREFIX + curp)]
+                }
+                pathArg.push(new AstNode(AstType.MACRO, Macro.LINK_MACRO_NAME, astNodeArgs))
+              }
+            }
+            fileLinkHtml = new AstNode(AstType.MACRO, 'b', {
+              content: new AstArgument(pathArg)
+            }).render(renderPostAstsContext)
           }
 
           // Calculate tag_ids_html
@@ -9054,10 +9144,10 @@ const OUTPUT_FORMATS_LIST = [
 
           // Calculate header_meta and header_meta
           let header_meta = [];
-          let header_meta2 = [];
           let header_meta_ancestors = [];
-          if (file_link_html !== undefined) {
-            header_meta.push(file_link_html);
+          let header_meta_file = [];
+          if (fileLinkHtml !== undefined) {
+            header_meta_file.push(fileLinkHtml);
           }
           if (first_header) {
             if (!context.options.h_web_metadata) {
@@ -9116,7 +9206,13 @@ const OUTPUT_FORMATS_LIST = [
             }
           }
 
-          const header_has_meta = header_meta2.length > 0 || header_meta.length > 0 || web_meta.length > 0
+          const metas = [
+            [web_meta, ''],
+            [header_meta_ancestors, 'ancestors'],
+            [header_meta, ''],
+            [header_meta_file, 'file'],
+          ]
+          const header_has_meta = metas.some((m) => m[0].length > 0)
           if (header_has_meta) {
             ret += `<nav class="h-nav h-nav-toplevel">`;
           }
@@ -9124,9 +9220,9 @@ const OUTPUT_FORMATS_LIST = [
             ret += `<div class="nav ancestors"></div>`
           }
           let i = 0
-          for (const meta of [web_meta, header_meta_ancestors, header_meta, header_meta2]) {
+          for (const [meta, cls] of metas) {
             if (meta.length > 0) {
-              ret += `<div class="nav${i == 1 ? ' ancestors' : ''}">${meta.join('')}</div>`;
+              ret += `<div class="nav${cls ? ` ${cls}` : ''}">${meta.join('')}</div>`;
             }
             i++
           }
@@ -9145,77 +9241,10 @@ const OUTPUT_FORMATS_LIST = [
           // Variables we want permanently modify the context.
           context_old.toc_was_rendered = context.toc_was_rendered
 
-          // {file} handling
+          // file handling 2
           const renderPostAsts = []
-          const renderPostAstsContext = cloneAndSet(context, 'validateAst', true)
-          renderPostAstsContext.source_location = ast.source_location
-          if (ast.file && context.options.output_format) {
-            let type, content
-            if (ast.file.match(media_provider_type_youtube_re)) {
-              type = 'video'
-            } else {
-              const indir = context.options.input_path === undefined ? '.' : path.dirname(context.options.input_path)
-              const readFileRet = context.options.read_file(path.join(indir, ast.file), context)
-              if (readFileRet) {
-                ;({ type, content } = readFileRet)
-              }
-            }
-
-            // This section is about.
-            const pathArg = []
-            if (protocolIsGiven(ast.file)) {
-              pathArg.push(
-                new AstNode(AstType.MACRO,
-                  Macro.LINK_MACRO_NAME,
-                  {
-                    href: new AstArgument([
-                      new PlaintextAstNode(ast.file)
-                    ]),
-                  }
-                ),
-              )
-            } else {
-              let curp = ''
-              // Show (root) or not. It is a bit ugly, so going for not right now...
-              pathArg.push(
-                new AstNode(AstType.MACRO,
-                  Macro.LINK_MACRO_NAME,
-                  {
-                    content: new AstArgument([
-                      new PlaintextAstNode(FILE_ROOT_PLACEHOLDER + ' ')
-                    ]),
-                    href: new AstArgument([
-                      new PlaintextAstNode(URL_SEP)
-                    ]),
-                  }
-                ),
-              )
-              for (const p of ast.file.split(URL_SEP)) {
-                pathArg.push(new PlaintextAstNode(' ' + URL_SEP + ' '))
-                curp += `${URL_SEP}${p}`
-                const astNodeArgs = {
-                  content: new AstArgument([
-                    new PlaintextAstNode(p)
-                  ]),
-                  href: new AstArgument([
-                    new PlaintextAstNode(curp)
-                  ]),
-                }
-                if (context.options.add_test_instrumentation) {
-                  astNodeArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(ast.id + ID_SEPARATOR + curp)]
-                }
-                pathArg.push(new AstNode(AstType.MACRO, Macro.LINK_MACRO_NAME, astNodeArgs))
-              }
-            }
-            renderPostAsts.push(new AstNode(AstType.MACRO, Macro.PARAGRAPH_MACRO_NAME, {
-              content: new AstArgument([
-                new PlaintextAstNode(`This section is about the ${type}: `),
-                new AstNode(AstType.MACRO, 'b', {
-                  content: new AstArgument(pathArg)
-                }),
-              ])
-            }))
-
+          if (ast.file) {
+            const absPref = fileProtocolIsGiven ? '' : URL_SEP
             if (IMAGE_EXTENSIONS.has(pathSplitext(ast.file)[1])) {
               renderPostAsts.push(new AstNode(
                 AstType.MACRO,
@@ -9223,7 +9252,7 @@ const OUTPUT_FORMATS_LIST = [
                 {
                   'src': new AstArgument(
                     [
-                      new PlaintextAstNode(ast.file)
+                      new PlaintextAstNode(absPref + ast.file)
                     ],
                   ),
                 },
@@ -9238,7 +9267,7 @@ const OUTPUT_FORMATS_LIST = [
                 {
                   'src': new AstArgument(
                     [
-                      new PlaintextAstNode(ast.file)
+                      new PlaintextAstNode(absPref +  ast.file)
                     ],
                   ),
                 },
@@ -9247,9 +9276,7 @@ const OUTPUT_FORMATS_LIST = [
               // Plaintext file. Possibly embed into HTML.
               const protocol = protocolGet(ast.file)
               if (protocol === null || protocol === 'file') {
-                if (
-                  content !== undefined
-                ) {
+                if (fileContent !== undefined) {
                   // https://stackoverflow.com/questions/1677644/detect-non-printable-characters-in-javascript
                   const bold_file_ast = new AstNode(AstType.MACRO, 'b', {
                     content: new AstArgument([
@@ -9257,11 +9284,12 @@ const OUTPUT_FORMATS_LIST = [
                     ])
                   })
                   let no_preview_msg
-                  if (/[\x00]/.test(content)) {
+                  if (/[\x00]/.test(fileContent)) {
                     no_preview_msg = ` it is a binary file (contains \\x00) of unsupported type (e.g. not an image).`
                   } else if (
-                    content.length > FILE_PREVIEW_MAX_SIZE &&
-                    !context.in_split_headers
+                    fileContent.length > FILE_PREVIEW_MAX_SIZE &&
+                    !context.in_split_headers &&
+                    !context.options.hFileShowLarge
                   ) {
                     no_preview_msg = `it is too large (> ${FILE_PREVIEW_MAX_SIZE} bytes)`
                   }
@@ -9281,7 +9309,7 @@ const OUTPUT_FORMATS_LIST = [
                     context_old.renderBeforeNextHeader.push(new AstNode(
                       AstType.MACRO,
                       Macro.CODE_MACRO_NAME.toUpperCase(), {
-                        content: new AstArgument([ new PlaintextAstNode(content)]),
+                        content: new AstArgument([ new PlaintextAstNode(fileContent)]),
                       },
                     ).render(renderPostAstsContext))
                   }

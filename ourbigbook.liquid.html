@@ -26,7 +26,7 @@
 {% if input_path != "" %}
 <div>Source code for this page: <a href="https://github.com/ourbigbook/ourbigbook/blob/{{ git_sha }}/{{ input_path }}">{{ input_path }}</a></div>
 {% endif %}
-{% endcomment %}{% if input_path != "" %}<div>Source code for this page: <a href="{{ raw_relpath }}/{{ input_path }}">{{ input_path }}</a></div>
+{% endcomment %}{% if input_path != "" %}<div>Source code for this page: <a href="{{ file_relpath }}/{{ input_path }}{{ html_ext }}">{{ input_path }}</a></div>
 {% endif %}</footer>
 {% if publishTargetIsWebsite %}{% comment %}Google Analytics, AKA selling my soul to Google for some backlinks.{% endcomment %}<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
 <script>

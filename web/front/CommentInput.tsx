@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router'
-import React from 'react'
+import React, { useEffect }from 'react'
 
 import { SignupOrLogin } from 'front'
 import { hasReachedMaxItemCount } from 'front/js';
@@ -8,6 +8,7 @@ import CustomLink from 'front/CustomLink'
 import { useCtrlEnterSubmit, slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, decapitalize } from 'front'
 import { webApi } from 'front/api'
 import MapErrors from 'front/MapErrors'
+import { sureLeaveMessage } from 'front/config'
 
 const CommentInput = ({
   commentCountByLoggedInUser,
@@ -32,7 +33,16 @@ const CommentInput = ({
       }
     }
   }
-  React.useEffect(() => changeBody(''), [])
+  useEffect(() => {
+    changeBody('')
+  }, [])
+  useEffect(() => {
+    window.onbeforeunload = function(){
+      if (body) {
+        return sureLeaveMessage
+      }
+    }
+  }, [body])
   const handleChange = e => {
     e.stopPropagation()
     changeBody(e.target.value)

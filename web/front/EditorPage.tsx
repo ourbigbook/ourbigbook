@@ -10,7 +10,7 @@ import web_api from 'ourbigbook/web_api';
 import { preload_katex } from 'ourbigbook/nodejs_front';
 import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js';
 import { OurbigbookEditor } from 'ourbigbook/editor.js';
-import { convertOptions, docsUrl, forbidMultiheaderMessage, isProduction, read_include_web } from 'front/config';
+import { convertOptions, docsUrl, forbidMultiheaderMessage, sureLeaveMessage, isProduction, read_include_web } from 'front/config';
 
 import { ArticleBy, capitalize, disableButton, enableButton, CancelIcon, HelpIcon, slugFromArray } from 'front'
 import ErrorList from 'front/ErrorList'
@@ -254,6 +254,13 @@ export default function EditorPageHoc({
       // Initial check here, then check only on title update.
       checkTitle(file.titleSource)
     }, [])
+    useEffect(() => {
+      window.onbeforeunload = function(){
+        if (file.titleSource) {
+          return sureLeaveMessage
+        }
+      }
+    }, [file.titleSource])
     useEffect(() => {
       if (
         // Can fail on maximum number of articles reached.
@@ -555,7 +562,7 @@ export default function EditorPageHoc({
                     <input
                       type="text"
                       className="title"
-                      placeholder={`Article with same parent that comes befor this one. Empty means first child.`}
+                      placeholder={`Article with same parent that comes before this one. Empty means first child.`}
                       value={previousSiblingTitle}
                       onChange={handlePreviousSiblingTitle}
                     />

@@ -20,6 +20,7 @@ tmp.*
 *.tmp.*
 tmp2.bigb
 logo.png
+logo-circle.png
 
 # web/
 /!web/**/*.css

@@ -744,7 +744,7 @@ function html_attr_value(arg, context) {
  * @param {Object} options
  * @param {Array[String]} arg_names - which argument names should be added as properties.
  *         Only arguments that were given in the text input are used.
- * @param {Object[String, AstNode]} custom_attrs - attributes that were not just passed in
+ * @param {Object[String, AstNode]} custom_args - attributes that were not just passed in
  *        directly from the input text, but may rather have been calculated from the node.
  */
 function html_convert_attrs(
@@ -1323,14 +1323,23 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'level',
+        type: 'int',
       }),
       new MacroArgument({
         name: Macro.TITLE_ARGUMENT_NAME,
       }),
     ],
     function(ast, context) {
-      let attrs = html_convert_attrs_id(ast, context);
+      let custom_args;
       let level = convert_arg(ast.args.level, context);
+      if (parseInt(level) > 6) {
+        custom_args = {'data-level': [new AstNode(AstType.PLAINTEXT,
+          context.macros, 'plaintext', level, ast.line, ast.column)]};
+        level = '6';
+      } else {
+        custom_args = {};
+      }
+      let attrs = html_convert_attrs_id(ast, context, [], custom_args);
       let title = convert_arg(ast.args.title, context);
       return `<h${level}${attrs}>${title}</h${level}>\n`;
     },

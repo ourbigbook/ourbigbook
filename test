@@ -415,6 +415,10 @@ My paragraph 2.
 <p>My paragraph 2.</p>
 `
 );
+assert_convert('header 7',
+  '\\h[7][My header]\n',
+  '<h6 data-level="7" id="my-header">My header</h6>\n'
+);
 
 // Code.
 assert_convert('code inline',

@@ -192,12 +192,18 @@ So for example, the following automatic IDs would be generated:
   \td[We leave the non ASCII uppercase \a[https://en.wikipedia.org/wiki/Acute_accent][acute accented] \c[e], \c[É], untouched by default]
 ]
 
-\h[2][Headers \c[[\h[1\]]], \c[[\h[2\]]], etc.]
+\h[2][Headers \c[[\h]]]
 {id=headers}
 
 \h[3][Unlimited header levels]
 
-There is no limit to how many levels we can have! HTML is limited to \c[h6], so Cirodown just renders \c[<div class="header">] instead.
+There is no limit to how many levels we can have!
+
+HTML is randomly limited to \c[h6], so Cirodown just renders higher levels as an \c[h6] with a \c[data-level] attribute to indicate the actual level for possible CSS styling:
+
+\C[[
+<h6 data-level="7">My title</h6>
+]]
 
 \h[4][My h4]
 
@@ -962,12 +968,10 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \h[3][TODO]
 
 \l[toc]
-\l[figure numbers, header numbers]
+\l[figure numbers, header numbers and xrefs with numbers. Missing proper checks and links.]
 \l[list caption]
-\l[xref full]
 \l[image description and source]
 \l[self links on images, headers, etc.]
-\l[h7 etc.]
 \l[indentation skip]
 \l[correct ID generation algorithm to be Unicode robust]
 \l[LaTeX output]

@@ -8,6 +8,8 @@ A Markup language to write multipage or single page HTML / PDF books that is san
 
 TODO: browser live test.
 
+TODO: remote npm install test.
+
 The README is a good example for a local test:
 
 \C[[
@@ -26,11 +28,15 @@ Cirodown is designed entirely to allow writing complex professional HTML and PDF
 
 Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation), supporting out of the box feature such as:
 
-\l[\x[internal-cross-references][references] to \x[headers][headers], \x[images][images], etc.]
+\l[\x[internal-cross-references][references] to \x[headers][headers], \x[images][images], etc. with error checking: never break internal links gain]
 \l[KaTeX server side \x[math][Mathematics]]
-\l[titles on \x[images][images], \x[math][math], etc.]
-\l[references across input files]
-\l[\x[table-of-contents][table of contents] that crosses input files]
+\l[multi file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
+  \l[\x[internal-cross-file-references]]
+  \l[\x[table-of-contents][table of contents] that crosses input files]
+  \l[\c[inotifywait] watch rebuild server]
+  \l[cross file includes that work as links on multi output file mode, and true includes in single output file mode]
+  \l[cross file configuration files to factor out common page parts like headers and footers]
+]
 
 It is meant to be both saner and more powerful than Markdown and Asciidoctor.
 
@@ -160,7 +166,9 @@ is the same as:
 Read this \x[my-id][My title].
 ]]
 
-To also show the section auto-generated number as in "Section X.Y My title" we add the optional \c[[{style=full}]] param to the cross reference, for example:
+\h[3][Cross reference style]
+
+To also show the section auto-generated number as in "Section X.Y My title" we add the optional \c[[{style=full}]] \x[positional-vs-named-arguments][named parameter] to the cross reference, for example:
 
 \C[[
 \h[2][My title]{id=my-id}
@@ -406,7 +414,7 @@ Explicit container to add further properties: \x[table-my-table].
 A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' \c[Image] can be seen at \x[image-my-xi-chrysanthemum]:
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg]
-{title=Xi Chrysanthemum}
+{title=Xi Chrysanthemum is a very nice image}
 {id=image-my-xi-chrysanthemum}
 {source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
 {description=
@@ -415,12 +423,20 @@ A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' \c[
   I'm not even kidding.
 }
 
-Here is one without a description but with an ID so we can link to it: \x[image-my-xi-chrysanthemum-2].
+Here is one without a description but with an ID so we can link to it: \x[image-my-xi-chrysanthemum-2]{style=full}.
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg]
 {id=image-my-xi-chrysanthemum-2}
 
-And here is an \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg][Xi Chrysanthemum] inline one with lower case 'i'.
+We must use \x[cross-reference-style][\c[style=full]] here because otherwise the link text would be empty and not show at all.
+
+If the image has neither ID nor title, then it does not get a caption and it is not possible to link to it, and it does not take up an image number:
+
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg]
+
+This kind of image is discouraged, because in paged output formats like PDF, it could float away from the text that refers to the image.
+
+And here is an \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg][Xi Chrysanthemum] inline one with lower case 'i'. Inline images can't have captions.
 
 \h[2][Code \c[[\c]] and \c[[\C]]]
 {id=code}
@@ -867,6 +883,8 @@ The distinction is required because there are lots of things you cannot put insi
 
 \h[2][Tooling]
 
+Unlike all languages which rely on ad-hoc tooling, we will support every single tool that is required and feasible to be in this repository in this repository, in a centralized manner.
+
 \h[3][\c[--help-macros]]
 {id=help-macros}
 
@@ -926,7 +944,7 @@ npm test -- 'one paragraph'
 
 As per: https://stackoverflow.com/questions/10832031/how-to-run-a-single-test-with-mocha TODO: what if the test name is a substring?
 
-TODO not working: step debug during a test run. Add the statement:
+Step debug during a test run. Add the statement:
 
 \C[[
 debugger;
@@ -984,7 +1002,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \l[toc]
 \l[figure numbers, header numbers and xrefs with numbers. Missing proper checks and links.]
-\l[list caption]
+\l[equation, list and code caption]
 \l[image description and source]
 \l[self links on tables with on hover over caption]
 \l[indentation skip]
@@ -992,11 +1010,13 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[LaTeX output]
 \l[local downloads and single HTML page with image / script embeds]
 \l[verify integer argument type e.g. on header level]
+\l[verify x style in choices \c[short] or \c[full]]
 \l[TODO: browser live quick test]
 
 \h[3][Related projects]
 
 \l[\a[https://github.com/rstudio/bookdown], \a[https://bookdown.org/]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: \a[https://bookdown.org/yihui/bookdown/pandoc.html], thus will never run on browser without huge translation layers. But does have an obscene ammount of output formats however.]
+\l[\a[https://gohugo.io/][Hugo]. Pretty good, similar feature set to ours. But Go based, so hard on browser, and adds adhoc features on top of markdown once again]
 
 Less related but of interest:
 

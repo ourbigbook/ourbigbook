@@ -707,44 +707,22 @@ And now a list outside of \x[cirodown-example] to test how it looks directly und
 \h[2][Images (`\Image` and `\image`)]
 {id=images}
 
-A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' `Image`: \x[fig-my-test-image].
+A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' `Image` showcasing most of the image properties \x[fig-my-test-image].
 \cirodown_example[[
 Have a look at this amazing image: \x[fig-my-test-image].
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {title=My test image is a very nice image}
 {id=fig-my-test-image}
+{width=600}
+{height=200}
 {source=https://github.com/cirosantilli/media/blob/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg}
 {description=This image is amazing because it highlight's Xi's beauty and honesty.}
 ]]
 This exemplifies the following parameters:
 \l[`description`: similar to `title`, but allow for further explanations without them appearing in \x[internal-cross-references][cross references] to the image]
 \l[`source`: a standardized way to credit an image by linking to a URL that contains further image metadata]
-
-Here is one without a description but with an ID so we can link to it: \x[fig-my-test-image-2].
-\cirodown_example[[
-Have a look at this amazing image: \x[fig-my-test-image-2].
-
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-{id=fig-my-test-image-2}
-]]
-This works because \x[cross-reference-style][`full` is the default cross referene style for `Image`], otherwise the link text would be empty since there is no `title`, and cirodown would raise an error.
-
-If the image has neither ID nor title, then it does not get a caption at all, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
-\cirodown_example[[
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-]]
-The image does however get an automatically generated ID based on its image number, and it is possible for readers to link to that ID on the rendered version, e.g. as:
-``
-#fig-123
-``
-This link is of course not stable across document revisions however, since if an image is added before that one, the link will break. This kind of image is discouraged, because in paged output formats like PDF, it could float away from the text that refers to the image.
-
-We can also see that such an image does not increment the Figure count:
-\cirodown_example[[
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-{id=fig-my-test-image-3}
-]]
+For further discussion on the effects of ID see: \x[image-id][full].
 
 And this is how you make an inline image inline one with lower case `i`:
 \cirodown_example[[
@@ -771,6 +749,39 @@ And now an image outside of \x[cirodown-example] to test how it looks directly u
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {id=fig-my-test-image-toplevel}
+
+\h[3][Image height]
+
+By default, we fix image heights to `height=315`, and let the `width` be calculated proportionally once the image loads. We therefore ignore the actual image size. This is done to:
+\l[prevent reflows as the page loads images and can determine their actual sizes, especially is the user opens the page at a given ID in the middle of the page]
+\l[create a more uniform media experience by default, unless a custom image size is actually needed e.g. if the image needs to be larger]
+
+\h[3][Image ID]
+
+Here is one without a description but with an ID so we can link to it: \x[fig-my-test-image-2].
+\cirodown_example[[
+Have a look at this amazing image: \x[fig-my-test-image-2].
+
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+{id=fig-my-test-image-2}
+]]
+This works because \x[cross-reference-style][`full` is the default cross referene style for `Image`], otherwise the link text would be empty since there is no `title`, and cirodown would raise an error.
+
+If the image has neither ID nor title, then it does not get a caption at all, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
+\cirodown_example[[
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+]]
+The image does however get an automatically generated ID based on its image number, and it is possible for readers to link to that ID on the rendered version, e.g. as:
+``
+#fig-123
+``
+This link is of course not stable across document revisions however, since if an image is added before that one, the link will break. This kind of image is discouraged, because in paged output formats like PDF, it could float away from the text that refers to the image.
+
+We can also see that such an image does not increment the Figure count:
+\cirodown_example[[
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+{id=fig-my-test-image-3}
+]]
 
 \h[3][Where to store images]
 
@@ -851,6 +862,14 @@ But you can also use raw video files from any location that can serve them of co
 {id=sample-video-in-repository}
 {title=Nice sample video stored in this repository}
 {source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
+]]
+
+Or an external video from \a[https://commons.wikimedia.org][Wikimedia Commons], which is a trustworthy free server for educational content:
+\cirodown_example[[
+\Video[https://upload.wikimedia.org/wikipedia/commons/8/85/Vacuum_pump_filter_cut_and_place_in_eppendorf.webm]
+{id=sample-video-in-wikimedia-commons}
+{title=Nice sample video stored in Wikimedia Commons}
+{source=https://commons.wikimedia.org/wiki/File:Vacuum_pump_filter_cut_and_place_in_eppendorf.webm}
 ]]
 
 \h[2][Code \c[[`]], \c[[``]], `\c` and `\C`]

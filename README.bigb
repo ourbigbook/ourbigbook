@@ -5265,6 +5265,17 @@ Can be tested interactively with:
 ourbigbook --no-db -O bigb --stdout test_bigb_output.bigb
 ``
 
+One important property of the `bigb` conversion is that is must not alter the <ast>, and therefore neither the final output, in any way.
+
+One good test is:
+``
+ourbigbook README.bigb &&
+mv out/html/index.html out/html/old.html &&
+ourbigbook --format-source README.bigb  &&
+ourbigbook README.bigb &&
+diff -u out/html/old.html out/html/index.html
+``
+
 This was tracked at: https://github.com/cirosantilli/ourbigbook/issues/83
 
 = `id` output format

@@ -957,6 +957,7 @@ TODO https://github.com/cirosantilli/cirodown/issues/31 Cirodown likes Wikimedia
 
 Upsides:
 * makes it easier for other writers to find and reuse your images
+* automatically generates resized versions of the uploaded images into several common dimensions so you can pick the smallest one that fits your desired \x[image-height] to reduce bandwidth usage
 * if you have so many images that they would blow even the size of a \x[store-images-in-a-separate-media-repository][separate media repository], this will still work
 Downsides:
 * forces you to use the Creative Commons license

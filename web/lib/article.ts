@@ -1,6 +1,8 @@
 import { GetStaticProps, GetStaticPaths } from 'next'
 import sequelize from "lib/db";
 
+const article = require('./articlejs')
+
 export const getStaticPathsArticle: GetStaticPaths = async () => {
   return {
     fallback: true,
@@ -17,10 +19,9 @@ export const getStaticPathsArticle: GetStaticPaths = async () => {
 }
 
 export const getStaticPropsArticle: GetStaticProps = async ({ params: { pid } }) => {
-  const article = await sequelize.models.Article.findOne({
-    where: { slug: pid },
-    include: [{ model: sequelize.models.User, as: 'Author' }],
-  });
-  const articleJson = article.toJSONFor(article.Author);
-  return { props: { article: articleJson } };
+  return {
+    props: {
+      article: await article.getArticleJson(sequelize, pid)
+    }
+  };
 }

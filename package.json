@@ -25,6 +25,7 @@
     "cirodown.embed.min.css",
     "cirodown.local.min.css",
     "cirodown.min.css",
+    "index.js",
     "main.liquid.html",
     "main.scss",
     "nodejs.js"
@@ -45,5 +46,5 @@
     "sass": "./build-sass",
     "test": "mocha test --ignore-leaks"
   },
-  "version": "0.3.0"
+  "version": "0.3.1"
 }

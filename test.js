@@ -2014,6 +2014,23 @@ assert_error('cross reference full and ref are incompatible',
 \\x[abc]{full}{ref}
 `, 3, 1);
 assert_convert_ast('cross reference to non-included header in another file',
+  `\\x[another-file]
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//x:a[@href='another-file.html' and text()='another file']",
+    ],
+    convert_before: [
+      'another-file.ciro',
+    ],
+    filesystem: {
+      'another-file.ciro': '= Another file'
+    },
+    input_path_noext: 'notindex',
+  },
+);
+assert_convert_ast('cross reference to non-included ids in another file',
   `= Notindex
 
 \\x[notindex]

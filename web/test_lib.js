@@ -26,7 +26,7 @@ const date0 = new Date(2000, 0, 0, 0, 0, 0, 0)
 async function generateDemoData(params) {
   // Input Param defaults.
   const nUsers = params.nUsers === undefined ? 10 : params.nUsers
-  const nArticlesPerUser = params.nArticlesPerUser === undefined ? 10 : params.nArticlesPerUser
+  const nArticlesPerUser = params.nArticlesPerUser === undefined ? 50 : params.nArticlesPerUser
   const nMaxCommentsPerArticle = params.nMaxCommentsPerArticle === undefined ? 3 : params.nMaxCommentsPerArticle
   const nMaxTagsPerArticle = params.nMaxTagsPerArticle === undefined ? 3 : params.nMaxTagsPerArticle
   const nFollowsPerUser = params.nFollowsPerUser === undefined ? 2 : params.nFollowsPerUser

@@ -2,13 +2,13 @@ import { useRouter } from "next/router";
 import React from "react";
 import useSWR from "swr";
 
-import CustomLink from "components/common/CustomLink";
-import ErrorMessage from "components/common/ErrorMessage";
-import FavoriteArticleButton, { FavoriteArticleButtonContext } from "components/common/FavoriteArticleButton";
-import LoadingSpinner from "components/common/LoadingSpinner";
-import Maybe from "components/common/Maybe";
-import Pagination from "components/common/Pagination";
-import UserLinkWithImage from "components/common/UserLinkWithImage";
+import CustomLink from "components/CustomLink";
+import ErrorMessage from "components/ErrorMessage";
+import FavoriteArticleButton, { FavoriteArticleButtonContext } from "components/FavoriteArticleButton";
+import LoadingSpinner from "components/LoadingSpinner";
+import Maybe from "components/Maybe";
+import Pagination from "components/Pagination";
+import UserLinkWithImage from "components/UserLinkWithImage";
 import { usePageDispatch, usePageState } from "lib/context/PageContext";
 import {
   usePageCountState,

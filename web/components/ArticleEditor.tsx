@@ -6,7 +6,7 @@ import cirodown from 'cirodown/dist/cirodown.js';
 import { cirodown_runtime } from 'cirodown/dist/cirodown_runtime.js';
 import { CirodownEditor } from 'cirodown/editor.js';
 
-import ListErrors from "components/common/ListErrors";
+import ListErrors from "components/ListErrors";
 import { slugFromRouter } from "lib"
 import ArticleAPI from "lib/api/article";
 import getLoggedInUser from "lib/utils/getLoggedInUser";

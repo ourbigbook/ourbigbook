@@ -1,4 +1,4 @@
-import CustomLink from "components/common/CustomLink";
+import CustomLink from "components/CustomLink";
 
 const Footer = () => (
   <footer>

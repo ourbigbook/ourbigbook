@@ -4,4 +4,6 @@ export type User = {
   image: string;
   effectiveImage: string;
   following: boolean;
+  articleScoreSum: number,
+  followerCount: number,
 };

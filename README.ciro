@@ -86,7 +86,7 @@ rm node_modules/cirodown
 Cirodown is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
 
 Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation), supporting out of the box feature such as:
-* \x[internal-cross-references][references] to \x[header]{p}, \x[image]{p}, etc. with amazing error checking and reporting: never break internal links without knoing again, and quickly find out what broke when you do
+* \x[internal-cross-references][references] to \x[header]{p}, \x[image]{p}, etc. with amazing \x[error-reporting][error checking and reporting]: never break internal links without knoing again, and quickly find out what broke when you do
 * KaTeX server side \x[mathematics]
 * multi file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
   * \x[internal-cross-file-references]
@@ -2637,6 +2637,67 @@ Some `ineline` code.
 Its input should be thought of as a literal code string, and it then injects the rendered output in the document.
 
 This macro is used extensively in the Cirodown documentation.
+
+= Error reporting
+{parent=cirodown}
+
+A lot of effort has been put into making error reporting as good as possible in Cirodown, to allow authors to quickly find what is wrong with their source code.
+
+Error reporting is for example tested with `assert_error` tests in \a[test.js].
+
+Please report any error reporting bug you find, as it will be seriously tracked. Notably, Cirodown should never throw an exception due to a syntax error, as that prevents error messages from being output at all.
+
+= Order of reported errors
+{parent=error-reporting}
+
+One important philosophy of the error reporting is that the very first message should be the root cause of the problem whenever possible: users should not be forced to search a hundred messages to find the root cause. In this way, the procedure:
+* solve the first error
+* reconvert
+* solving the new first error
+* reconvert
+* etc.
+should always deterministically lead to a resolution of all problems.
+
+Error messages are normally sorted by file, line and column, regardless of which conversion stage they happened (e.g. a tokeniser error first gets reported before a parser error).
+
+There is however one important exception to that: broken internal cross references are always reported last.
+
+For example, consider the following syntactically wrong document:
+```
+= a
+
+\x[b]
+
+``
+== b
+```
+Here we have an unterminated code block at line 5.
+
+However, this unterminated code block leads the header `b` not to be seen, and therefore the reference `\x[b]` on line 3 to fail.
+
+Therefore, if we sorted naively by line, the broken reference would shoe up first:
+``
+error: tmp.ciro:3:3: cross reference to unknown id: "b"
+error: tmp.ciro:5:1: unterminated literal argument
+``
+
+But in a big document, this case could lead to hundreds of undefined references to show up before the actual root unterminated literal problem.:
+``
+error: tmp.ciro:3:3: cross reference to unknown id: "b"
+error: tmp.ciro:4:3: cross reference to unknown id: "b"
+error: tmp.ciro:5:3: cross reference to unknown id: "b"
+...
+error: tmp.ciro:1000:1: unterminated literal argument
+``
+
+Therefore, we force undefined references to show up last to prevent this common problem:
+``
+error: tmp.ciro:1000:1: unterminated literal argument
+error: tmp.ciro:3:3: cross reference to unknown id: "b"
+error: tmp.ciro:4:3: cross reference to unknown id: "b"
+error: tmp.ciro:5:3: cross reference to unknown id: "b"
+...
+``
 
 == Cirodown syntax
 

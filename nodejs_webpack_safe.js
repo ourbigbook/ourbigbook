@@ -88,6 +88,77 @@ async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
   return rows
 }
 
+/**
+ * @param {string[]} starting_ids
+ * @return {Object[]} Id-like objects sorted in breadth first order representing the
+ *                    entire subtree of IDs under starting_ids, considering only
+ *                    ourbigbook.REFS_TABLE_PARENT type refs.
+ */
+async function fetch_header_tree_ids(sequelize, starting_ids, opts={}) {
+  if (starting_ids.length > 0) {
+    const to_id_index_order = opts.to_id_index_order || 'ASC'
+    let definedAtString
+    const definedAt = opts.definedAt
+    if (definedAt) {
+      definedAtString = ' AND "defined_at" = :definedAt'
+    } else {
+      definedAtString = ''
+    }
+    // Fetch all data recursively.
+    //
+    // Going for WITH RECURSIVE:
+    // https://stackoverflow.com/questions/192220/what-is-the-most-efficient-elegant-way-to-parse-a-flat-table-into-a-tree/192462#192462
+    //
+    // Sequelize doesn't support this of course.
+    // - https://stackoverflow.com/questions/34135555/recursive-include-sequelize
+    // - https://stackoverflow.com/questions/55091052/recursive-postgresql-query
+    // - https://github.com/sequelize/sequelize/issues/4890
+    // We could use one of the other constructs proposed besides WITH RECURSIVE,
+    // but it would likely be less efficient and harder to implement. So just going
+    // with this for now.
+    ;const [rows, meta] = await sequelize.query(`
+SELECT * FROM "${sequelize.models.Id.tableName}"
+INNER JOIN (
+WITH RECURSIVE
+tree_search (to_id, level, from_id, to_id_index) AS (
+  SELECT
+    to_id,
+    0,
+    from_id,
+    to_id_index
+  FROM "${sequelize.models.Ref.tableName}"
+  WHERE from_id IN (:starting_ids) AND type = :type${definedAtString}
+
+  UNION ALL
+
+  SELECT
+    t.to_id,
+    ts.level + 1,
+    ts.to_id,
+    t.to_id_index
+  FROM "${sequelize.models.Ref.tableName}" t, tree_search ts
+  WHERE t.from_id = ts.to_id AND type = :type${definedAtString}
+)
+SELECT * FROM tree_search
+) AS "RecRefs"
+ON "${sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
+  AND "${sequelize.models.Id.tableName}".macro_name = '${ourbigbook.Macro.HEADER_MACRO_NAME}'
+ORDER BY "RecRefs".level ASC, "RecRefs".from_id ASC, "RecRefs".to_id_index ${to_id_index_order}
+`,
+      {
+        replacements: {
+          starting_ids,
+          type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+          definedAt,
+        }
+      }
+    )
+    return rows
+  } else {
+    return []
+  }
+}
+
 class SqliteDbProvider extends web_api.DbProviderBase {
   constructor(sequelize) {
     super();
@@ -258,68 +329,7 @@ class SqliteDbProvider extends web_api.DbProviderBase {
   }
 
   async fetch_header_tree_ids(starting_ids, opts={}) {
-    if (starting_ids.length > 0) {
-      const to_id_index_order = opts.to_id_index_order || 'ASC'
-      let definedAtString
-      const definedAt = opts.definedAt
-      if (definedAt) {
-        definedAtString = ' AND "defined_at" = :definedAt'
-      } else {
-        definedAtString = ''
-      }
-      // Fetch all data recursively.
-      //
-      // Going for WITH RECURSIVE:
-      // https://stackoverflow.com/questions/192220/what-is-the-most-efficient-elegant-way-to-parse-a-flat-table-into-a-tree/192462#192462
-      //
-      // Sequelize doesn't support this of course.
-      // - https://stackoverflow.com/questions/34135555/recursive-include-sequelize
-      // - https://stackoverflow.com/questions/55091052/recursive-postgresql-query
-      // - https://github.com/sequelize/sequelize/issues/4890
-      // We could use one of the other constructs proposed besides WITH RECURSIVE,
-      // but it would likely be less efficient and harder to implement. So just going
-      // with this for now.
-      ;const [rows, meta] = await this.sequelize.query(`
-SELECT * FROM "${this.sequelize.models.Id.tableName}"
-INNER JOIN (
-WITH RECURSIVE
-  tree_search (to_id, level, from_id, to_id_index) AS (
-    SELECT
-      to_id,
-      0,
-      from_id,
-      to_id_index
-    FROM "${this.sequelize.models.Ref.tableName}"
-    WHERE from_id IN (:starting_ids) AND type = :type${definedAtString}
-
-    UNION ALL
-
-    SELECT
-      t.to_id,
-      ts.level + 1,
-      ts.to_id,
-      t.to_id_index
-    FROM "${this.sequelize.models.Ref.tableName}" t, tree_search ts
-    WHERE t.from_id = ts.to_id AND type = :type${definedAtString}
-  )
-  SELECT * FROM tree_search
-) AS "RecRefs"
-ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
-   AND "${this.sequelize.models.Id.tableName}".macro_name = '${ourbigbook.Macro.HEADER_MACRO_NAME}'
-ORDER BY "RecRefs".level ASC, "RecRefs".from_id ASC, "RecRefs".to_id_index ${to_id_index_order}
-`,
-        {
-          replacements: {
-            starting_ids,
-            type: this.sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-            definedAt,
-          }
-        }
-      )
-      return rows
-    } else {
-      return []
-    }
+    return fetch_header_tree_ids(this.sequelize, starting_ids, opts)
   }
 
   // Recursively fetch all ancestors of a given ID from the database.
@@ -808,6 +818,7 @@ module.exports = {
   create_sequelize,
   db_options,
   destroy_sequelize,
+  fetch_header_tree_ids,
   get_noscopes_base_fetch_rows,
   preload_katex,
   remove_duplicates_sorted_array,

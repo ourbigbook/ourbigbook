@@ -69,6 +69,7 @@ module.exports = (sequelize) => {
               html_x_extension: false,
               id_provider,
               file_provider,
+              magic_leading_at: false,
               input_path: `${cirodown.AT_MENTION_CHAR}${author.username}/${id}${cirodown.CIRODOWN_EXT}`,
               path_sep: path.sep,
               read_include: cirodown_nodejs_webpack_safe.read_include({
@@ -87,6 +88,7 @@ module.exports = (sequelize) => {
                 path_sep: cirodown.Macro.HEADER_SCOPE_SEPARATOR,
                 ext: '',
               }),
+              remove_leading_at: true,
             },
             extra_returns,
           )

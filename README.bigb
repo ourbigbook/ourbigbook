@@ -7005,10 +7005,17 @@ If you don't want the article to be the first child of a parent, you can also se
     * E: edit the page
     * L: like or unlike the page. This would require moving like state out of the Like button, which is a bit annoying.
 
+= OurBigBook.com
+{c}
+{parent=OurBigBook Web user manual}
+
+https://OurBigBook.com is the reference public instance of <OurBigBook Web>!
+
+This section describes policies specific to that instance, and which don't necessarily apply to other instances people may host elsewhere.
+
 = OurBigBook.com policies
 {c}
 {parent=OurBigBook Web user manual}
-{wiki}
 
 This session describes policies specific to the OurBigBook.com instance of <OurBigBook Web>.
 

@@ -9,14 +9,13 @@
     "git-url-parse": "11.1.2",
     "is-installed-globally": "0.3.1",
     "katex": "0.11.1",
-    "normalize.css": "8.0.1"
+    "normalize.css": "8.0.1",
+    "sass": "1.23.7"
   },
   "devDependencies": {
     "browserify": "16.5.0",
     "mocha": "6.2.2",
-    "mocha-list-tests": "1.0.2",
-    "sass": "1.23.7",
-    "webpack": "4.41.3"
+    "mocha-list-tests": "1.0.2"
   },
   "files": [
     "cirodown",

@@ -211,7 +211,7 @@ async function convertArticle({
     if (toplevelId !== toplevelId.toLowerCase()) {
       throw new ValidationError(`Article ID cannot contain uppercase characters: "${toplevelId}"`)
     }
-    if (forceNew && await sequelize.models.File.findOne({ where: { path: input_path }, transaction })) {
+    if (forceNew && (await sequelize.models.File.findOne({ where: { path: input_path }, transaction }))) {
       throw new ValidationError(`Article with this ID already exists: ${toplevelId}`)
     }
 

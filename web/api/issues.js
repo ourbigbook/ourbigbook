@@ -265,7 +265,7 @@ async function validateFollow(req, res, user, article, create) {
   if (msg) {
     throw new ValidationError([msg], 403)
   }
-  if (await user.hasFollowedIssue(article) === create) {
+  if ((await user.hasFollowedIssue(article)) === create) {
     throw new ValidationError(
       [`User '${user.username}' ${create ? 'already follows' : 'does not follow'} issue '${article.number}'`],
       403,
@@ -321,7 +321,7 @@ async function validateLike(req, res, user, article, isLike) {
   if (msg) {
     throw new ValidationError([msg], 403)
   }
-  if (await user.hasLikedIssue(article) === isLike) {
+  if ((await user.hasLikedIssue(article)) === isLike) {
     throw new ValidationError(
       [`User '${user.username}' ${isLike ? 'already likes' : 'does not like'} issue '${article.number}'`],
       403,

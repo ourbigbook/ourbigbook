@@ -99,6 +99,8 @@ class SqliteFileProvider extends cirodown.FileProvider {
     super();
     this.get_file_stmt = convert_input_options.db.prepare(
       `SELECT * FROM ${convert_input_options.files_table_name} WHERE path = ?`);
+    this.get_file_by_id_stmt = convert_input_options.db.prepare(
+      `SELECT * FROM ${convert_input_options.files_table_name} WHERE toplevel_id = ?`);
   }
 
   get(path) {
@@ -108,6 +110,10 @@ class SqliteFileProvider extends cirodown.FileProvider {
     } else {
       return get_ret;
     }
+  }
+
+  get_id(id) {
+    return this.get_file_by_id_stmt.get(id);
   }
 }
 
@@ -185,7 +191,7 @@ function convert_input(input, options, convert_input_options={}) {
   }
   if ('db' in convert_input_options) {
     new_options.id_provider = new SqliteIdProvider(convert_input_options);
-    new_options.file_provider = new SqliteFileProvider(convert_input_options);
+    new_options.file_provider = convert_input_options.file_provider;
   }
   if ('title' in convert_input_options) {
     new_options.title = convert_input_options.title;
@@ -287,7 +293,7 @@ function convert_input(input, options, convert_input_options={}) {
     console.error(`perf end: ${new_options.extra_returns.debug_perf.end}`);
   }
   for (const error of new_options.extra_returns.errors) {
-    console.error(error.toString(convert_input_options.input_path));
+    console.error(error.toString());
   }
   convert_input_options.extra_returns = new_options.extra_returns;
   if (new_options.extra_returns.errors.length > 0) {
@@ -392,6 +398,7 @@ function convert_path(base_path, input_path, options, convert_input_options) {
     toplevel_id = input_path_basename_noext;
   }
   new_options.toplevel_id = toplevel_id;
+  new_options.scope = input_path_parse.dir;
   let input_path_basename_noext_renamed = get_renamed_basename(input_path_basename_noext);
   let input_path_noext_renamed = path.join(input_path_parse.dir, input_path_basename_noext_renamed);
   new_convert_input_options.input_path_noext_renamed = input_path_noext_renamed;
@@ -427,11 +434,11 @@ function convert_path(base_path, input_path, options, convert_input_options) {
     convert_input_options.db.transaction(() => {
       for (const id in ids) {
         const ast = ids[id];
-        insert_id_stmt.run(id, ast.input_path, JSON.stringify(ast));
+        insert_id_stmt.run(id, ast.source_location.path, JSON.stringify(ast));
       }
       for (const header_ast of context.headers_with_include) {
         for (const include of header_ast.includes) {
-          insert_include_stmt.run(header_ast.id, header_ast.input_path, include);
+          insert_include_stmt.run(header_ast.id, header_ast.source_location.path, include);
         }
       }
       insert_file_stmt.run(
@@ -622,8 +629,8 @@ if (commander.helpMacros) {
     html_single_page: commander.htmlSinglePage,
     html_split_header: commander.htmlSplitHeader,
     output_format: commander.outputFormat,
-    read_include: function(input_path) {
-      return fs.readFileSync(input_path + CIRODOWN_EXT, ENCODING);
+    read_include: function(id) {
+      return fs.readFileSync(convert_input_options.file_provider.get_id(id).path + CIRODOWN_EXT, ENCODING);
     },
     render: true,
     show_ast: commander.showAstInside,
@@ -724,6 +731,8 @@ A link to another file: \\x[and-now-an-include]
     }
     process.exit(0);
   }
+  /* Options that are not directly passed to cirodown.convert,
+   * but rather used only by this cirodown executable. */
   let convert_input_options = {
     commander: commander,
     encoding: ENCODING,
@@ -832,7 +841,7 @@ A link to another file: \\x[and-now-an-include]
           CREATE TABLE '${files_table_name}' (
             path TEXT PRIMARY KEY,
             toplevel_scope_cut_length INT,
-            toplevel_id TEXT
+            toplevel_id TEXT UNIQUE
           )`
         ).run();
       }
@@ -840,6 +849,7 @@ A link to another file: \\x[and-now-an-include]
       convert_input_options.ids_table_name = ids_table_name;
       convert_input_options.includes_table_name = includes_table_name;
       convert_input_options.files_table_name = files_table_name;
+      convert_input_options.file_provider = new SqliteFileProvider(convert_input_options);
     }
     if (commander.generateRedirects) {
       generate_redirects(convert_input_options, cirodown_json, html_x_extension, outdir);

@@ -145,17 +145,11 @@ const ArticleList = ({
                       {' '}
                     </>
                   }
-                  <TimeIcon />
-                  {' '}
-                  {formatDate(article.createdAt)}
-                  {(article.createdAt !== article.updatedAt) &&
-                    <>
-                      updated:
-                      {' '}
-                      <TimeIcon />
-                      {formatDate(article.updatedAt)}
-                    </>
-                  }
+                  <span title="Last updated">
+                    <TimeIcon />
+                    {' '}
+                    {formatDate(article.updatedAt)}
+                  </span>
                 </div>
                 <div
                   className="ourbigbook"

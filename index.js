@@ -4878,14 +4878,11 @@ async function parse(tokens, options, context, extra_returns={}) {
           prefetch_file_ids.add(id)
         }
       }
-      const include_hrefs_ids = []
       for (const id in options.include_hrefs) {
         // We need the target it to be able to render the dummy include title
         // with link to the real content.
-        push_scope_resolution(include_hrefs_ids, options.include_hrefs[id].scope, id)
-      }
-      for (const id of include_hrefs_ids) {
-        prefetch_ids.add(id)
+        // https://github.com/cirosantilli/cirodown/issues/214
+        prefetch_ids.add(options.include_hrefs[id].scope + Macro.HEADER_SCOPE_SEPARATOR  + id)
       }
 
       let get_noscopes_base_fetch, get_refs_to_fetch, get_refs_to_fetch_reverse

@@ -2567,7 +2567,7 @@ The insaner version is a bit insaner because the `\Include` magically discards t
 = `\Include` from subdirectories
 {parent=include}
 
-When you are in a subdirectory, include resolution works analogously to \x[scope-resolution] of \x[internal-cross-reference]{p}: it peels off the input directory bit by bit until it finds a matching file. E.g. in:
+When you are in a subdirectory, include resolution just is simply relative to the subdirectory. E.g. we could do:
 
 subdir/index.ciro
 ``
@@ -2575,7 +2575,6 @@ subdir/index.ciro
 
 \Include[notindex]
 \Include[subdir2/notindex]
-\Include[top]
 ``
 
 subdir/notindex.ciro
@@ -2583,24 +2582,12 @@ subdir/notindex.ciro
 = Notindex
 ``
 
-top.ciro
-``
-= Top
-``
-
 subdir/subdir2/notindex.ciro
 ``
 = Notindex
 ``
 
-the resolutions in `subdir/index.ciro` would go as:
-* `\Include[notindex]`:
-  *  we are under subdir, try `subdir` + `notindex`. The file `subdir/notindex.ciro` exists, so we are done.
-* `\Include[subdir2/notindex]`:
-  * try `subdir` + `subdir2/notindex`. It exists, so we are done.
-* `\Include[top]`:
-  * try `subdir/top`. Does not exist, so we continue.
-  * so we remove one level from `subdir`, leading to an empty string `''` plus `top`. `top.ciro` exists, so we are done.
+It is not currently possible to include from ancestor directories: https://github.com/cirosantilli/cirodown/issues/214[].
 
 = `\Include` `parent` argument
 {parent=include}

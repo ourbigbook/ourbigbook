@@ -116,6 +116,7 @@ async function convert({
 async function convertArticle({
   author,
   bodySource,
+  enforceMaxArticles,
   forceNew,
   path,
   parentId,
@@ -126,6 +127,9 @@ async function convertArticle({
   transaction,
 }) {
   let articles, extra_returns
+  if (enforceMaxArticles === undefined) {
+    enforceMaxArticles = true
+  }
   await sequelize.transaction({ transaction }, async (transaction) => {
     if (render === undefined) {
       render = true
@@ -703,13 +707,10 @@ WHERE
           : null
         ,
       ])
-      //{
-      //  console.error(`post move nestedSetDelta = ${nestedSetDelta}`);
-      //  const articles = await sequelize.models.Article.findAll({ order: [['nestedSetIndex', 'ASC']] })
-      //  console.error(articles.map(a => [a.nestedSetIndex, a.nestedSetNextSibling, a.slug]));
-      //}
-      const err = hasReachedMaxItemCount(author, articleCountByLoggedInUser - 1, 'articles')
-      if (err) { throw new ValidationError(err, 403) }
+      if (enforceMaxArticles) {
+        const err = hasReachedMaxItemCount(author, articleCountByLoggedInUser - 1, 'articles')
+        if (err) { throw new ValidationError(err, 403) }
+      }
       await Promise.all([
         sequelize.models.Topic.updateTopics(articles, { newArticles: true, transaction }),
         articleMoved

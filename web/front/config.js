@@ -88,6 +88,9 @@ module.exports = {
   isProductionNext: process.env.NODE_ENV_NEXT_SERVER_ONLY === undefined ?
     (isProduction) :
     (process.env.NODE_ENV_NEXT_SERVER_ONLY === 'production'),
+  log: {
+    db: process.env.OURBIGBOOK_LOG_DB === ourbigbook_nodejs_front.env_true,
+  },
   // Per user limit defaults.
   maxArticleTitleSize: 1024,
   // Wikipedia also seems to start complaining at about that size:
@@ -126,7 +129,6 @@ module.exports = {
   usernameMinLength: 3,
   usernameMaxLength: 40,
   topicConsiderNArticles: 10,
-  verbose: process.env.VERBOSE,
 
   // Used by sequelize-cli as well as our source code.
   development: {

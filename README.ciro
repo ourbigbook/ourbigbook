@@ -660,11 +660,13 @@ Equation IDs and titles and linking to equations works identically to \x[images]
 
 \h[3][Math defines across blocks]
 
-TODO pending upstream tag bump: \a[https://github.com/KaTeX/KaTeX/pull/2091] First block defining with \c[\\newcommand]:
+TODO pending upstream tag bump: \a[https://github.com/KaTeX/KaTeX/pull/2091] First here is an invisible block defining with a \c[\\newcommand] definition after this paragraph:
 
-\M[[
+\M{show=0}[[
 \newcommand{\foo}[0]{bar}
 ]]
+
+We set the \c[\{show=0\}] argument because this block only contains KaTeX definitions, and should not render to anything.
 
 Second block using:
 
@@ -674,13 +676,13 @@ Second block using:
 ]]
 ]]]
 
-First block defining with \c[\\def]:
+First invisible block defining with \c[\\def] after this paragraph:
 
-\M[[
+\M{show=0}[[
 \gdef\foogdef{bar}
 ]]
 
-Second block using:
+Second block using it:
 
 \M[[
 \foogdef

@@ -1061,7 +1061,17 @@ is equivalent to the sane:
 \M[[c d]]
 ]]]
 
-It is not possible to escape backticks (\c[`]) inside an insane inline code, or dollar signs (\c[$]) in insane math.
+Literal backticks and dollar signs can be produced witha backslash escape as in:
+
+\C[[
+a \` \$ b
+]]
+
+which renders as:
+
+a \` \$ b
+
+It is not possible to escape backticks (\c[[`]]) inside an insane inline code, or dollar signs (\c[[$]]) in insane math.
 
 The design reason for that is because multiple backticks produce block code.
 
@@ -1069,11 +1079,17 @@ The upside is that then you don't have to escape anything else, e.g. backslashes
 
 The only way to do it is to use the sane syntax instead
 
-\C[[
-a \c[b \ ` c] d
+\C[[[
+a \c[[b ` c]] d
 
 a \m[[\sqrt{$4}]] d
-]]
+]]]
+
+which renders as:
+
+a \c[[b ` c]] d
+
+a \m[[\sqrt{\$4}]] d
 
 Within block code and math, you can just add more separators:
 

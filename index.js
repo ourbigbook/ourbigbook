@@ -578,11 +578,6 @@ class Tokenizer {
   }
 
   is_end() {
-    this.log_debug('is_end');
-    this.log_debug(`this.i: ${this.i}`);
-    this.log_debug(`this.chars ${this.chars}`);
-    this.log_debug(`this.chars.length ${this.chars.length}`);
-    this.log_debug('');
     return this.i === this.chars.length;
   }
 

@@ -2094,6 +2094,7 @@ Implemented at: https://github.com/ourbigbook/ourbigbook/issues/114
 
 = `\H` `title` argument
 {parent=H synonym argument}
+{tag=title argument}
 
 Contains the main content of the header. The <insane syntax>:
 ``
@@ -2105,7 +2106,7 @@ is equivalent to the sane:
 ``
 and in both cases `My title` is the title argument.
 
-The title argument is also notably used for <automatic ID from title>.
+The <`title` argument> is also notably used for <automatic ID from title>.
 
 = Automatic ID from title
 {parent=H title argument}
@@ -2875,6 +2876,7 @@ Analogous to the <\a href argument>.
 
 = Image `title` argument
 {parent=Image argument}
+{tag=title argument}
 
 Analogous to the <\H title argument>.
 
@@ -4026,6 +4028,7 @@ To prevent such problems, OurBigBook emits an error if you use an `\x` without c
   {id=myimage2}
   {title=my \x[h1]}
   ``
+  TODO both workaround are currently broken <todo/Image title with x to image with content incorrectly disallowed>, we forgot to add a test earlier on, and things inevitably broke... Should not be hard to fix though, we are just overchecking.
 
 While it is technically possible relax the above limitations and give an error only in case of loops, it would require a bit of extra work which we don't want to put in right now: https://github.com/ourbigbook/ourbigbook/issues/95[].
 
@@ -10268,6 +10271,8 @@ Video guidelines:
 * desktop recording area size: 700x700. This could perhaps be optimized, but this is a reasonable size that works both as an YouTube Short and Twitter post
 
   We've been happily using vokoscreenNG.
+
+  A good technique is to move the recording window to the lower left bottom of the screen, which stops things from floating around too much.
 * use Chromium/Chrome to record
 * resize window to fit recording area horizontally by using the Ctrl + Shift + C debugger view. Make sure to also resize the browser window vertically (cannot be done on debugger, needs resizing actual window) otherwise you won't be able to scroll if the page is not taller than the viewport.
 * music style guidelines: cool, beats, techno, mysterious, upbeat

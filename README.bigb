@@ -5413,6 +5413,7 @@ Defined variables:
   ``
 
   This will ideally be replaced with a more generic link to arbitrary ID mechnism at some point: https://github.com/cirosantilli/ourbigbook/issues/135
+* `input_path`: path to the \x[ourbigbook-markup] source file relative to the \x[project-toplevel-directory] that generated this output, e.g. `path/to/myfile.bigb`
 * `root_page`: relative path to the toplevel page, e.g. either `index.html`, `../index.html` locally or `./`, `../` on server oriented rendereing
 * `root_replath`: relative path from the rendered output to the toplevel directory.
 

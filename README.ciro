@@ -382,11 +382,11 @@ Explicit container to add further properties: \x[table-my-table].
 \h[2][Images \c[[\image]]]
 {id=images}
 
-A block image with capital 'i' can be seen at \c[I] \x[xi-chrysanthemum]:
+A block image with capital 'i' can be seen at \c[I] \x[image-my-xi-chrysanthemum]:
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg]
 {title=Xi Chrysanthemum}
-{id=image-}
+{id=image-my-xi-chrysanthemum}
 {source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
 {description=
   We can have multiple paragraphs here, just for any other parameter argument.
@@ -394,7 +394,7 @@ A block image with capital 'i' can be seen at \c[I] \x[xi-chrysanthemum]:
   I'm not even kidding.
 }
 
-And here is an \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg][Xi Chrysanthemum] inline one with lower case 'i'.
+And here is an \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg] inline one with lower case 'i'.
 
 \h[2][Code \c[[\c]] and \c[[\C]]]
 {id=code}

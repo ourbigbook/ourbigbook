@@ -5,7 +5,7 @@ import { trigger } from 'swr'
 import CustomImage from 'front/CustomImage'
 import CustomLink from 'front/CustomLink'
 import { useCtrlEnterSubmit, slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, decapitalize } from 'front'
-import { CommentApi } from 'front/api'
+import { commentApi } from 'front/api'
 import routes from 'front/routes'
 
 const CommentInput = ({ loggedInUser }) => {
@@ -33,10 +33,10 @@ const CommentInput = ({ loggedInUser }) => {
     e.preventDefault();
     if (body) {
       setLoading(true);
-      await CommentApi.create(slug, body)
+      await commentApi.create(slug, body)
       setLoading(false);
       changeBody('');
-      trigger(CommentApi.url(slug));
+      trigger(commentApi.url(slug));
     }
   };
   useCtrlEnterSubmit(handleSubmit)

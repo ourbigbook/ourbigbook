@@ -4,7 +4,7 @@ import { mutate } from 'swr'
 
 import ourbigbook from 'ourbigbook/dist/ourbigbook.js';
 
-import { UserApi } from 'front/api'
+import { userApi } from 'front/api'
 import routes from 'front/routes'
 
 export const AUTH_COOKIE_NAME = 'auth'
@@ -133,7 +133,7 @@ export function deleteCookie(name, path = '/') {
 export async function setupUserLocalStorage(data, setErrors) {
   // We fetch from /profiles/:username again because the return from /users/login above
   // does not contain the image placeholder.
-  const { data: userData, status: userStatus } = await UserApi.get(
+  const { data: userData, status: userStatus } = await userApi.get(
     data.user.username
   )
   if (userStatus !== 200) {

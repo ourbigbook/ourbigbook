@@ -440,10 +440,10 @@ One workaround is to use \x[embed-resources], but this of course generates large
 
 To run master globally from source for development see: \x[run-ourbigbook-master]{full}. This one actually works despite the dotfile thing since your development path is normally outside of dotfiles.
 
-Try out the JavaScript API with \a[api_hello.js]:
+Try out the JavaScript API with \a[lib_hello.js]:
 ``
 npm install ourbigbook
-./api_hello.js
+./lib_hello.js
 ``
 
 = Design goals
@@ -5732,7 +5732,7 @@ TODO ideally we should check for conflicts with regular output from split header
 
 The main entry point for the JavaScript API is the `ourbigbook.convert` function.
 
-An example can be seen under \a[api_hello.js].
+An example can be seen under \a[lib_hello.js].
 
 Note that while doing a simple conversion is easy, things get harder if you want to take multifile features in consideration, notably \x[internal-cross-file-reference-internals].
 
@@ -6072,7 +6072,7 @@ On the toplevel we have:
 * `.`: OurBigBook package
 * `web/`: \x[ourbigbook-web] package that depends on the local OurBigBook package through relative path `..`
 
-  Every require outside of `web/` must be relative, except for executables such as \a[ourbigbook] or demos such as \a[api_hello.js], or else the deployment will break.
+  Every require outside of `web/` must be relative, except for executables such as \a[ourbigbook] or demos such as \a[lib_hello.js], or else the deployment will break.
 
   This is because we don't know of a super clean way of adding the toplevel `ourbigbook` package to the search path as `npm run link` does not work well on Heroku.
 

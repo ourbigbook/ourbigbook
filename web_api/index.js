@@ -8,18 +8,14 @@ class ApiBase {
   constructor({ getToken, https, hostname }) {
     this.getToken = getToken
     this.hostname = hostname
-    if (https) {
-      this.http = 'https'
-    } else {
-      this.http = 'http'
-    }
+    this.https = https
   }
 
   async req(method, path, opts={}) {
     const newopts = Object.assign(
       {
         getToken: this.getToken,
-        http: this.http,
+        https: this.https,
         hostname: this.hostname,
       },
       opts
@@ -30,7 +26,13 @@ class ApiBase {
 
 // https://stackoverflow.com/questions/6048504/synchronous-request-in-node-js/53338670#53338670
 async function sendJsonHttp(method, path, opts={}) {
-  const { body, getToken, http, hostname, port, validateStatus } = opts
+  const { body, getToken, https, hostname, port, validateStatus } = opts
+  let http
+  if (https) {
+    http = 'https'
+  } else {
+    http = 'http'
+  }
   const headers = {
     "Content-Type": "application/json",
   }

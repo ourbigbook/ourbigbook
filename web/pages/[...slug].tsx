@@ -12,7 +12,7 @@ import { displayAndUsernameText } from 'front/user'
 import Article from 'front/Article'
 import ArticleInfo from 'front/ArticleInfo'
 import { AppContext, useEEdit } from 'front'
-import { CommentApi } from 'front/api'
+import { commentApi } from 'front/api'
 import fetcher from 'front/fetcher'
 import routes from 'front/routes'
 
@@ -27,7 +27,7 @@ const ArticlePage = ({
 
   // We fetch comments so that the new posted comment will appear immediately after posted.
   // Note that we cannot calculate the exact new comment element because we need the server datetime.
-  const { data: commentApi, error: commentError } = useSWR(CommentApi.url(article?.slug), fetcher(!router.isFallback));
+  const { data: commentApi, error: commentError } = useSWR(commentApi.url(article?.slug), fetcher(!router.isFallback));
   if (commentApi !== undefined) {
     comments = commentApi.comments
   }

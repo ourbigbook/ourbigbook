@@ -103,6 +103,8 @@ class AstNode {
    *        - {Object} ids - map of document IDs to their description:
    *                 - 'prefix': prefix to add for a  full reference, e.g. `Figure 1`, `Section 2`, etc.
    *                 - {AstArgument} 'title': the title of the element linked to
+   *                 - {AstArgument} 'title': the title of the element linked to
+   *        - {bool} in_caption_number_visible
    * @param {Object} context
    */
   convert(context) {
@@ -120,6 +122,9 @@ class AstNode {
     }
     if (!('id_provider' in context)) {
       context.id_provider = {};
+    }
+    if (!('in_caption_number_visible' in context)) {
+      context.in_caption_number_visible = false;
     }
     if (!('katex_macros' in context)) {
       context.katex_macros = {};
@@ -1145,6 +1150,11 @@ function capitalize_first_letter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
+function caption_number_visible(ast, context, index_id) {
+  return index_id || context.macros[ast.macro_name].options.caption_number_visible(
+    ast, clone_and_set(context, 'in_caption_number_visible', true));
+}
+
 function char_is_alphanumeric(c) {
   let code = c.codePointAt(0);
   return (
@@ -1658,11 +1668,7 @@ function macro_image_video_block_convert_function(ast, context) {
     }
   }
   let alt_arg;
-  const macro = context.macros[ast.macro_name];
-  const has_caption = ast.id !== undefined && (
-    ast.index_id ||
-    macro.options.caption_number_visible(ast, context)
-  );
+  const has_caption = ast.id !== undefined && caption_number_visible(ast, context, ast.id);
   if (ast.args.alt === undefined) {
     if (has_caption) {
       alt_arg = undefined;
@@ -1678,7 +1684,7 @@ function macro_image_video_block_convert_function(ast, context) {
   } else {
     alt = html_attr('alt', html_escape_attr(convert_arg(alt_arg, context)));;
   }
-  ret += macro.options.content_func(ast, context, src, rendered_attrs, alt, source_type);
+  ret += context.macros[ast.macro_name].options.content_func(ast, context, src, rendered_attrs, alt, source_type);
   if (has_caption) {
     ret += `<figcaption>${x_text(ast, context, {href_prefix: href_prefix})}${description}${source}</figcaption>\n`;
   }
@@ -2360,7 +2366,7 @@ function parse(tokens, macros, options, context, extra_returns={}) {
             message += `line ${previous_ast.line} colum ${previous_ast.column}`;
             parse_error(state, message, ast.line, ast.column);
           }
-          if (index_id || macro.options.caption_number_visible(ast, context)) {
+          if (caption_number_visible(ast, context, index_id)) {
             if (!(macro_name in macro_counts_visible)) {
               macro_counts_visible[macro_name] = 0;
             }
@@ -3156,7 +3162,11 @@ const DEFAULT_MACRO_LIST = [
         named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS,
         source_func: function (ast, context, src, source_type) {
           if ('source' in ast.args) {
-            return convert_arg(ast.args.source, context);
+            if (context.in_caption_number_visible) {
+              return 'visible';
+            } else {
+              return convert_arg(ast.args.source, context);
+            }
           } else if (source_type == macro_image_video_block_convert_function_source_types.WIKIMEDIA) {
             return macro_image_video_block_convert_function_wikimedia_source_url +
               basename(html_escape_attr(src)).replace(macro_image_video_block_convert_function_wikimedia_source_image_re, '');
@@ -3599,7 +3609,11 @@ const DEFAULT_MACRO_LIST = [
         ),
         source_func: function (ast, context, src, source_type) {
           if ('source' in ast.args) {
-            return convert_arg(ast.args.source, context);
+            if (context.in_caption_number_visible) {
+              return 'visible';
+            } else {
+              return convert_arg(ast.args.source, context);
+            }
           } else if (ast.validation_output.youtube.boolean) {
             return `https://youtube.com/watch?v=${html_escape_attr(src)}`;
           } else if (source_type === macro_image_video_block_convert_function_source_types.WIKIMEDIA) {

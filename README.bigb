@@ -11004,6 +11004,8 @@ TODO. Describe OurBigBook's formal grammar, and classify it in the grammar hiera
 = Do the release
 {parent=Release procedure}
 
+This section describes the release procedure for <OurBigBook CLI>, which is an npm package. For <OurBigBook Web> deployment see: <OurBigBook Web deployment>.
+
 Before the first time you release, make sure that you can login to NPM with:
 ``
 npm login

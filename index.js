@@ -65,6 +65,8 @@ class AstNode {
       options.header_graph_node_parent_id = undefined;
     }
     if (!('is_first_header_in_input_file' in options)) {
+      // Either the first header on a regular toplevel input,
+      // or the first header inside an included include.
       options.is_first_header_in_input_file = false;
     }
     if (!('parent_node' in options)) {
@@ -2373,6 +2375,11 @@ function convert_init_context(options={}, extra_returns={}) {
           }
         }
       }
+      {
+        if (!('lint' in cirodown_json)) { cirodown_json['lint'] = {}; }
+        const lint = cirodown_json['lint']
+        if (!('h-parent' in lint)) { lint['h-parent'] = undefined; }
+      }
     }
   if (!('embed_includes' in options)) { options.embed_includes = false; }
   if (!('file_provider' in options)) { options.file_provider = undefined; }
@@ -3313,7 +3320,7 @@ function parse(tokens, options, context, extra_returns={}) {
     const [parent_arg, ast] = todo_visit.pop();
     const macro_name = ast.macro_name;
     ast.from_include = options.from_include;
-    ast.from_cirodown_example = options.from_cirodown_example;;
+    ast.from_cirodown_example = options.from_cirodown_example;
     ast.source_location.path = options.input_path;
     if (macro_name === Macro.INCLUDE_MACRO_NAME) {
       let peek_ast = todo_visit[todo_visit.length - 1][1];
@@ -3585,7 +3592,7 @@ function parse(tokens, options, context, extra_returns={}) {
         } else {
           prev_header = include_options.cur_header;
           include_options.cur_header = ast;
-          cur_header_level = header_level + options.h_parse_level_offset;;
+          cur_header_level = header_level + options.h_parse_level_offset;
         }
 
         let parent_tree_node_error = false;
@@ -3596,7 +3603,7 @@ function parse(tokens, options, context, extra_returns={}) {
             const message = `synonym and parent are incompatible`;
             parse_error(state, message, ast.args.level.source_location);
           }
-          if (cur_header_level !== 1) {
+          if (header_level !== 1) {
             const message = `header with parent argument must have level equal 1`;
             ast.args[Macro.TITLE_ARGUMENT_NAME].push(
               new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location)
@@ -3621,6 +3628,29 @@ function parse(tokens, options, context, extra_returns={}) {
             ast.args.level.source_location);
         }
 
+        // lint['h-parent']
+        if (
+          context.options.cirodown_json.lint['h-parent'] &&
+          !ast.validation_output.synonym.boolean
+        ) {
+          let message;
+          if (
+            context.options.cirodown_json.lint['h-parent'] === 'parent' &&
+            !ast.validation_output.parent.given &&
+            !is_first_header
+          ) {
+            message = `no parent given with lint['h-parent'] = "parent"`;
+          } else if (context.options.cirodown_json.lint['h-parent'] === 'number' &&
+            ast.validation_output.parent.given
+          ) {
+            message = `parent given with lint['h-parent'] = "number"`;
+          }
+          if (message) {
+            parse_error(state, message, ast.source_location);
+            //ret += error_message_in_output(message, context);
+          }
+        }
+
         // Create the header tree.
         if (is_first_header) {
           ast.id = context.toplevel_id;
@@ -3642,6 +3672,7 @@ function parse(tokens, options, context, extra_returns={}) {
           ast.is_first_header_in_input_file = true;
           is_first_header = false;
         }
+
         if (include_options.is_first_global_header) {
           first_header = ast;
           first_header_level = cur_header_level;
@@ -5481,6 +5512,7 @@ const DEFAULT_MACRO_LIST = [
       }
       let custom_args;
       const level_int_output = level_int - context.header_graph_top_level + 1;
+      const is_top_level = level_int === context.header_graph_top_level
       let level_int_capped;
       if (level_int_output > 6) {
         custom_args = {'data-level': new AstArgument([new PlaintextAstNode(
@@ -5498,7 +5530,7 @@ const DEFAULT_MACRO_LIST = [
       ret += `<h${level_int_capped}${attrs}><a${html_self_link(ast, context)} title="link to this element">`;
       let x_text_options = {
         show_caption_prefix: false,
-        show_number: level_int !== context.header_graph_top_level,
+        show_number: !is_top_level,
         style_full: true,
       };
       ret += x_text(ast, context, x_text_options);
@@ -5515,7 +5547,7 @@ const DEFAULT_MACRO_LIST = [
           ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
         }
         let toc_href;
-        if (level_int !== context.header_graph_top_level && context.has_toc) {
+        if (!is_top_level && context.has_toc) {
           toc_href = html_attr('href', '#' + toc_id(ast, context));
           ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href} class="cirodown-h-to-toc"${html_attr('title', 'ToC entry for this header')}>\u21d1 toc</a>`;
         }

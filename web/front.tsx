@@ -1,9 +1,11 @@
 import React from 'react'
+import Router from 'next/router'
 import { mutate } from 'swr'
 
 import ourbigbook from 'ourbigbook/dist/ourbigbook.js';
 
 import { UserApi } from 'front/api'
+import routes from 'front/routes'
 
 export const AUTH_COOKIE_NAME = 'auth'
 export const AUTH_LOCAL_STORAGE_NAME = 'user'
@@ -59,7 +61,23 @@ export function useCtrlEnterSubmit(handleSubmit) {
     return () => {
       document.removeEventListener('keydown', ctrlEnterListener);
     };
-  });
+  }, []);
+}
+
+export function useEEdit(canEdit, slug) {
+  React.useEffect(() => {
+    function listener(e) {
+      if (e.code === 'KeyE') {
+        if (canEdit) {
+          Router.push(routes.articleEdit(slug))
+        }
+      }
+    }
+    document.addEventListener('keydown', listener);
+    return () => {
+      document.removeEventListener('keydown', listener);
+    };
+  }, [canEdit, slug]);
 }
 
 // https://stackoverflow.com/questions/4825683/how-do-i-create-and-read-a-value-from-cookie/38699214#38699214

@@ -2,6 +2,7 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import React from 'react'
 
+import { AppContext, useEEdit } from 'front'
 import ArticleList from 'front/ArticleList'
 import CustomLink from 'front/CustomLink'
 import CustomImage from 'front/CustomImage'
@@ -12,7 +13,6 @@ import FollowUserButton from 'front/FollowUserButton'
 import { UserApi } from 'front/api'
 import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import routes from 'front/routes'
-import { AppContext } from 'front'
 import Article from 'front/Article'
 import ArticleInfo from 'front/ArticleInfo'
 import { IndexPageProps } from 'front/IndexPage'
@@ -60,6 +60,8 @@ export default function UserPage({
       paginationUrlFunc = page => routes.userViewLatest(user.username, page)
       break
   }
+  const canEdit = loggedInUser && loggedInUser?.username === username
+  useEEdit(canEdit, article.slug)
 
   // Following state.
   const [following, setFollowing] = React.useState(false)
@@ -133,7 +135,7 @@ export default function UserPage({
       {what === 'home'
         ? <>
             <ArticleInfo {...{ article, loggedInUser }}/>
-            <Article {...{ article, comments }} />
+            <Article {...{ article, comments, loggedInUser }} />
           </>
         : <ArticleList {...{
             articles,

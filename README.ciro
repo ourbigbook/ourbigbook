@@ -951,18 +951,15 @@ The expansion algorithm is optimized so that when you first click on the arrow o
 At the start, all nodes are showing, to facilitate Ctrl + F queries, and so when you first click on a node, it collapses the children of children, so you can see only the direct children the node of interest, without getting a gazillion of sub descendants shown first.
 
 The exact behaviour is:
-* if a node is closed (not showing children), open it (show children), and close all children (don't show children of children)
-
-  This way, we see a summary of the node and direct children only.
 * if a node is open:
-  * if all chilren are closed, open all children. This allows you to see the full subtree.
-  * if all chilren are open, close the node. Except for the toplevel "Table of Contents" node, since we never want to close that one.
-  * otherwise (there are both open and closed children), close all children to get an overview of the node
+  * if all children are closed, close the element, This can improve the view of its siblings. The toplevel "Table of Contents" node never closes however, since we never want to close that one.
+  * otherwise, close all children. This Gives a good overview of the children, without any children of children getting in the way.
+* if a node is closed (not showing children), open it and show all children and their descendants.
 
 As a result of the above rules, clicking on a node three times goes through a loop of basically all useful states:
-* node closed
+* node open and children open (initial state
 * node open and children closed
-* node open and children open
+* node closed
 
 Clicking on the link from a \x[headers]{p=0} up to the table of contents also automatically opens up the node for you in case it had been previously closed manually.
 

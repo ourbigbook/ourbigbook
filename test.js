@@ -2886,7 +2886,7 @@ function assert_split_header_output_keys(description, options, keys_expect) {
       new_options,
       extra_returns
     );
-    assert.deepEqual(
+    assert.deepStrictEqual(
       Object.keys(extra_returns.rendered_outputs),
       keys_expect
     )
@@ -3132,23 +3132,23 @@ assert_executable(
       'included-by-index-split.html': [
         "//x:header//x:a[@href='index.html']",
         // Cross input file header on split header.
-        `//x:h1//x:a[@href='split.html' and text()='${cirodown.PARENT_MARKER} \"Index\"']`,
+        `//x:h1//x:a[@href='index.html' and text()='${cirodown.PARENT_MARKER} \"Index\"']`,
       ],
       'included-by-h2-in-index.html': [
         `//x:h1//x:a[@href='index.html#h2' and text()='${cirodown.PARENT_MARKER} \"h2\"']`,
       ],
       'included-by-h2-in-index-split.html': [
-        `//x:h1//x:a[@href='h2.html' and text()='${cirodown.PARENT_MARKER} \"h2\"']`,
+        `//x:h1//x:a[@href='index.html#h2' and text()='${cirodown.PARENT_MARKER} \"h2\"']`,
       ],
       'split.html': [
         // Full links between split header pages have correct numbering.
-        "//x:div[@class='p']//x:a[@href='h2.html' and text()='Section 2. \"h2\"']",
+        "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='Section 2. \"h2\"']",
 
         // CirodownExample renders in split header.
         "//x:blockquote[text()='A Cirodown example!']",
 
         // ToC entries of includes point directly to the separate file.
-        "//*[@id='toc']//x:a[@href='included-by-index-split.html' and text()='Included by index']",
+        "//*[@id='toc']//x:a[@href='included-by-index.html' and text()='Included by index']",
         // TODO This is more correct with the `1. `. Maybe wait for https://github.com/cirosantilli/cirodown/issues/126
         // to make sure we don't have to rewrite everything.
         //"//*[@id='toc']//x:a[@href='included-by-index-split.html' and text()='1. Included by index']",
@@ -3156,16 +3156,16 @@ assert_executable(
       'h2-2.html': [
         // These headers are not children of the current toplevel header.
         // Therefore, they do not get a number like "Section 2.".
-        "//x:div[@class='p']//x:a[@href='h2.html' and text()='Section \"h2\"']",
-        "//x:div[@class='p']//x:a[@href='h4-3-2-1.html' and text()='Section \"h4 3 2 1\"']",
+        "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='Section \"h2\"']",
+        "//x:div[@class='p']//x:a[@href='index.html#h4-3-2-1' and text()='Section \"h4 3 2 1\"']",
       ],
       'h3-2-1.html': [
         // Not a child of the current toplevel either.
-        "//x:div[@class='p']//x:a[@href='h4-3-2-1.html' and text()='Section \"h4 3 2 1\"']",
+        "//x:div[@class='p']//x:a[@href='index.html#h4-3-2-1' and text()='Section \"h4 3 2 1\"']",
       ],
       'h2-3.html': [
         // This one is under the current tree, so it shows fully.
-        "//x:div[@class='p']//x:a[@href='h4-3-2-1.html' and text()='Section 2.1. \"h4 3 2 1\"']",
+        "//x:div[@class='p']//x:a[@href='index.html#h4-3-2-1' and text()='Section 2.1. \"h4 3 2 1\"']",
       ],
       'notindex.html': [
         "//x:h1[@id='notindex']",

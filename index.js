@@ -2091,11 +2091,13 @@ function convert(
         } else {
           id = context.options.toplevel_id;
         }
-        outpath = output_path(
-          context.options.input_path,
-          id,
-          clone_and_set(context, 'to_split_headers', false)
-        )[0];
+        if (id !== undefined) {
+          outpath = output_path(
+            context.options.input_path,
+            id,
+            clone_and_set(context, 'to_split_headers', false)
+          )[0];
+        }
       }
     } else {
       outpath = context.options.outfile;
@@ -3014,15 +3016,11 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     // to take care of index and -split suffix.
     if (renamed_basename_noext === INDEX_BASENAME_NOEXT) {
       // basename_ret
-      if (
-        to_split_headers && ast.split_default ||
-        !to_split_headers && !ast.split_default
-      ) {
+      if (to_split_headers === ast.split_default) {
+        // The name is just index.html.
         basename_ret = renamed_basename_noext;
-      } else if (
-        !to_split_headers &&
-        ast.split_default
-      ) {
+      } else {
+        // The name is split.html or nospilt.html.
         basename_ret = '';
       }
 
@@ -3070,6 +3068,9 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
       }
       basename_ret += split_suffix;
     }
+  }
+  if (basename_ret === 'undefined-split.html') {
+    asdf
   }
 
   return [dirname_ret, basename_ret];
@@ -4593,9 +4594,6 @@ function x_href_parts(target_id_ast, context) {
       target_id_ast,
       context,
     );
-    console.error('target_output_path_basename ' + target_output_path_basename);
-    console.error('full_output_path ' + full_output_path);
-    console.error('context.toplevel_output_path ' + context.toplevel_output_path);
     if (full_output_path === context.toplevel_output_path) {
       href_path = ''
     } else {
@@ -4627,7 +4625,8 @@ function x_href_parts(target_id_ast, context) {
   let to_split_headers = is_to_split_headers(target_id_ast, context);
   if (
     !context.in_split_headers &&
-    context.include_path_set.has(target_input_path)
+    context.include_path_set.has(target_input_path) &&
+    !(context.to_split_headers !== undefined && context.to_split_headers)
   ) {
     // We are not split headears, and the output is in the current file.
     // Therefore, don't use the split header target no matter what its
@@ -4679,12 +4678,6 @@ function x_href_parts(target_id_ast, context) {
     }
     fragment = remove_toplevel_scope(target_id_ast.id, toplevel_ast, context);
   }
-  console.error('to_split_headers ' + to_split_headers);
-  console.error('target_id_ast.first_toplevel_child ' + target_id_ast.first_toplevel_child);
-  console.error('target_id_ast.macro_name ' + target_id_ast.macro_name);
-  console.error('target_id_ast.get_split_default(context) ' + target_id_ast.get_split_default(context));
-  console.error('fragment ' + fragment);
-  console.error('ast.split_default ' + target_id_ast.split_default);
 
   // return
   return [html_escape_attr(href_path), html_escape_attr(fragment)];
@@ -4763,9 +4756,11 @@ function x_text(ast, context, options={}) {
         // When in split headers, numbers are only added to headers that
         // are descendants of the toplevel header, thus matching the current ToC.
         // The numbers don't make much sense for other headers.
-        !is_to_split_headers(ast, context) ||
         ast.macro_name !== Macro.HEADER_MACRO_NAME ||
-        ast.is_header_descendant(context.toplevel_ast, context)
+        (
+          context.in_split_headers &&
+          ast.is_header_descendant(context.toplevel_ast, context)
+        )
       )
     ) {
       number = macro.options.get_number(ast, context);
@@ -5942,8 +5937,7 @@ const DEFAULT_MACRO_LIST = [
 <a href="{{ root_page }}">Homepage</a>
 </header>
 {{ body }}
-{{ post_body }}
-</body>
+{{ post_body }}</body>
 </html>
 `;
         }
@@ -6132,16 +6126,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      if (
-        ast.args.content !== undefined &&
-        ast.args.content[0] !== undefined
-      ) {
-        console.error();
-        console.error('text ' + ast.args.content[0].text);
-      }
       const [href, content, target_ast] = x_get_href_content(ast, context);
-      console.error('content ' + content);
-      console.error();
       if (context.x_parents.size === 0) {
         // Counts.
         let counts_str;

@@ -1,10 +1,8 @@
 const router = require('express').Router()
 
-const ourbigbook = require('ourbigbook')
-
 const auth = require('../auth')
 const front = require('../front/js')
-const { convert } = require('../convert')
+const { convertIssue, convertComment } = require('../convert')
 const { getArticle, ValidationError, validateParam, validatePositiveInteger } = require('./lib')
 const { modifyEditorInput } = require('../front/js')
 
@@ -94,23 +92,13 @@ router.post('/', auth.required, async function(req, res, next) {
     ])
     const titleSource = validateParam(req.body.issue, 'titleSource')
     const bodySource = validateParam(req.body.issue, 'bodySource')
-    const { extra_returns } = await convert({
-      author: user,
-      body: bodySource,
-      path: `${ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`,
-      render: true,
-      sequelize,
-      title: titleSource,
-    })
-    const outpath = `${ourbigbook.AT_MENTION_CHAR}${user.username}.${ourbigbook.HTML_EXT}`;
-    const issue = await sequelize.models.Issue.create({
-      articleId: article.id,
-      authorId: user.id,
-      titleSource,
+    const issue = await convertIssue({
+      article,
       bodySource,
-      titleRender: extra_returns.rendered_outputs[outpath].title,
-      render: extra_returns.rendered_outputs[outpath].full,
       number: lastIssue ? lastIssue.number + 1 : 1,
+      sequelize,
+      titleSource,
+      user
     })
     issue.author = user
     res.json({ issue: await issue.toJson(user) })
@@ -165,22 +153,14 @@ router.post('/:number/comments', auth.required, async function(req, res, next) {
       sequelize.models.User.findByPk(req.payload.id),
     ])
     const source = validateParam(req.body.comment, 'source')
-    const { extra_returns } = await convert({
-      author: user,
-      body: source,
-      path: `${ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`,
-      render: true,
-      sequelize,
-      title: undefined,
-    })
-    const outpath = `${ourbigbook.AT_MENTION_CHAR}${user.username}.${ourbigbook.HTML_EXT}`;
-    const comment = await sequelize.models.Comment.create({
-      issueId: issue.id,
+    const comment = await convertComment({
+      issue,
       number: lastComment ? lastComment.number + 1 : 1,
-      authorId: user.id,
+      sequelize,
       source,
-      render: extra_returns.rendered_outputs[outpath].full,
+      user,
     })
+
     comment.author = user
     res.json({ comment: await comment.toJson(user) })
   } catch(error) {

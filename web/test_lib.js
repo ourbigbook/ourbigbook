@@ -204,7 +204,8 @@ async function generateDemoData(params) {
   // Input Param defaults.
   const nUsers = params.nUsers === undefined ? 11 : params.nUsers
   const nArticlesPerUser = params.nArticlesPerUser === undefined ? articleDataCount : params.nArticlesPerUser
-  const nMaxCommentsPerArticle = params.nMaxCommentsPerArticle === undefined ? 3 : params.nMaxCommentsPerArticle
+  const nMaxIssuesPerArticle = params.nMaxIssuesPerArticle === undefined ? 3 : params.nMaxIssuesPerArticle
+  const nMaxCommentsPerIssue = params.nMaxCommentsPerIssue === undefined ? 3 : params.nMaxCommentsPerIssue
   const nFollowsPerUser = params.nFollowsPerUser === undefined ? 2 : params.nFollowsPerUser
   const nLikesPerUser = params.nLikesPerUser === undefined ? 20 : params.nLikesPerUser
   const directory = params.directory
@@ -278,6 +279,7 @@ async function generateDemoData(params) {
 
     if (verbose) console.error('Article');
     const articleDataProviders = {}
+    const articleIdToArticle = {}
     for (let userIdx = 0; userIdx < nUsers; userIdx++) {
       let authorId = users[userIdx].id
       articleDataProvider = new ArticleDataProvider(articleData, userIdx)
@@ -412,13 +414,17 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     let articleId = 0
     for (const articleArg of articleArgs) {
       if (verbose) console.error(`${articleId} authorId=${articleArg.authorId} title=${articleArg.title}`);
-      articles.push(...(await convert.convertArticle({
+      const newArticles = await convert.convertArticle({
         author: userIdToUser[articleArg.authorId],
         body: articleArg.body,
         sequelize,
         title: articleArg.title,
-      })))
-      articleId++
+      })
+      for (const article of newArticles) {
+        articleIdToArticle[article.id] = article
+        articles.push(article)
+        articleId++
+      }
     }
     // TODO This was livelocking (taking a very long time, live querries)
     // due to update_database_after_convert on the hook it would be good to investigate it.
@@ -502,22 +508,52 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     //await sequelize.models.UserLikeArticle.bulkCreate(likeArgs)
     if (verbose) printTime()
 
-    if (verbose) console.error('Comment');
-    const commentArgs = [];
-    let commentIdx = 0;
-    await sequelize.models.Comment.destroy({ where: { authorId: users.map(user => user.id) } })
+    if (verbose) console.error('Issue');
+    const issues = [];
+    let issueIdx = 0;
+    await sequelize.models.Issue.destroy({ where: { authorId: users.map(user => user.id) } })
     for (let i = 0; i < nArticles; i++) {
-      for (var j = 0; j < (i % (nMaxCommentsPerArticle + 1)); j++) {
-        const commentArg = {
-          body: `my comment ${commentIdx}`,
-          articleId: articles[i].id,
-          authorId: users[commentIdx % nUsers].id,
-        }
-        commentArgs.push(commentArg)
-        commentIdx += 1
+      let articleIssueIdx = 0;
+      const article = articles[i]
+      for (var j = 0; j < (i % (nMaxIssuesPerArticle + 1)); j++) {
+        if (verbose) console.error(`${article.slug}#${articleIssueIdx}`)
+        const issue = await convert.convertIssue({
+          article,
+          bodySource: `My body ${issueIdx}`,
+          number: articleIssueIdx + 1,
+          sequelize,
+          titleSource: `My title ${issueIdx}`,
+          user: users[issueIdx % nUsers],
+        })
+        issues.push(issue)
+        issueIdx++
+        articleIssueIdx++
       }
     }
-    const comments = await sequelize.models.Comment.bulkCreate(commentArgs)
+    const nIssues = issueIdx
+    if (verbose) printTime()
+
+    if (verbose) console.error('Comment');
+    const comments = [];
+    let commentIdx = 0;
+    await sequelize.models.Comment.destroy({ where: { authorId: users.map(user => user.id) } })
+    for (let i = 0; i < nIssues; i++) {
+      let issueCommentIdx = 0;
+      const issue = issues[i]
+      for (var j = 0; j < (i % (nMaxCommentsPerIssue + 1)); j++) {
+        if (verbose) console.error(`${articleIdToArticle[issue.articleId].slug}#${issue.number}#${issueCommentIdx}`)
+        const comment = await convert.convertComment({
+          issue,
+          source: `My body ${commentIdx}`,
+          number: issueCommentIdx + 1,
+          sequelize,
+          user: users[commentIdx % nUsers],
+        })
+        comments.push(comment)
+        commentIdx++
+        issueCommentIdx++
+      }
+    }
     if (verbose) printTime()
   }
 

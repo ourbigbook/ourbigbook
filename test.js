@@ -3571,7 +3571,7 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
 
         // Spilt/nosplit.
-        `//x:h1[@id='toplevel']//x:a[@href='nosplit.html' and text()='${cirodown.NOSPLIT_MARKER}']`,
+        //`//x:h1[@id='h2']//x:a[@href='nosplit.html#h2' and text()='${cirodown.NOSPLIT_MARKER}']`,
       ],
       'notindex.html': [
         // Link so the split one of index because that's the default of that page.
@@ -3593,6 +3593,9 @@ assert_executable(
         // Headers.
         "//x:h1[@id='notindex']//x:a[@href='' and text()='Notindex']",
         "//x:h2[@id='notindex-h2']//x:a[@href='#notindex-h2' and text()='1. Notindex h2']",
+
+        // Spilt/nosplit.
+        `//x:h1[@id='notindex']//x:a[@href='notindex-split.html' and text()='${cirodown.SPLIT_MARKER}']`,
       ],
       'notindex-split.html': [
         "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to toplevel']",
@@ -3608,6 +3611,9 @@ assert_executable(
 
         // The toplevel split header does not get a numerical prefix.
         "//x:h1[@id='notindex']//x:a[@href='' and text()='Notindex']",
+
+        // Spilt/nosplit.
+        `//x:h1[@id='notindex']//x:a[@href='notindex.html' and text()='${cirodown.NOSPLIT_MARKER}']`,
       ],
       'notindex-h2.html': [
         "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to toplevel']",
@@ -3618,7 +3624,10 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='notindex h2 to notindex']",
 
         // The toplevel split header does not get a numerical prefix.
-        //"//x:h1[@id='notindex-h2']//x:a[@href='' and text()='Notindex h2']",
+        "//x:h1[@id='notindex-h2']//x:a[@href='' and text()='Notindex h2']",
+
+        // Spilt/nosplit.
+        `//x:h1[@id='notindex-h2']//x:a[@href='notindex.html#notindex-h2' and text()='${cirodown.NOSPLIT_MARKER}']`,
       ],
     }
   }

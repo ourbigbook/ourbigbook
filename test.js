@@ -11,22 +11,27 @@ const convert_opts = {
   //show_tokenize: true,
 };
 
-const convert_opts_norender = Object.assign({render: false}, convert_opts);
-
 function assert_convert_ast_func(input_string, expected_ast_output_subset) {
   const extra_returns = {};
-  cirodown.convert(input_string, convert_opts_norender, extra_returns);
-  const is_subset = ast_arg_has_subset(extra_returns.ast.args.content, expected_ast_output_subset);
+  cirodown.convert(input_string, convert_opts, extra_returns);
+  const toplevel_content = extra_returns.ast.args.content;
+  const ast_arg_has_subset_extra_returns = {fail_reason: ''};
+  const is_subset = ast_arg_has_subset(toplevel_content, expected_ast_output_subset, ast_arg_has_subset_extra_returns);
   if (!is_subset || extra_returns.errors.length !== 0) {
     console.error('tokens:');
     console.error(JSON.stringify(extra_returns.tokens, null, 2));
     console.error();
-    console.error('ast expect:');
-    console.error(JSON.stringify(extra_returns.ast, null, 2));
-    console.error();
     console.error('ast output:');
+    console.error(JSON.stringify(toplevel_content, null, 2));
+    console.error();
+    console.error('ast expect:');
     console.error(JSON.stringify(expected_ast_output_subset, null, 2));
     console.error();
+    if (!is_subset) {
+      console.error('failure reason:');
+      console.error(ast_arg_has_subset_extra_returns.fail_reason);
+      console.error();
+    }
     for (const error of extra_returns.errors) {
       console.error(error.toString());
     }
@@ -105,93 +110,99 @@ function assert_no_error(description, input) {
  *        such as dict, array and string, to make writing tests a bit less verbose.
  * @return {Bool} true iff ast_subset is a subset of this node
  */
-function ast_arg_has_subset(arg, subset) {
-  if (arg.length !== subset.length)
+function ast_arg_has_subset(arg, subset, extra_returns) {
+  if (arg.length !== subset.length) {
+    extra_returns.fail_reason = `arg.length !== subset.length ${arg.length} ${subset.length}`;
     return false;
+  }
   for (let i = 0; i < arg.length; i++) {
-    if (!ast_has_subset(arg[i], subset[i]))
+    if (!ast_has_subset(arg[i], subset[i], extra_returns))
       return false;
   }
   return true;
 }
 
 /** See: ast_arg_has_subset. */
-function ast_has_subset(ast, ast_subset) {
+function ast_has_subset(ast, ast_subset, extra_returns) {
   for (const ast_subset_prop_name in ast_subset) {
-    if (!(ast_subset_prop_name in ast))
+    if (!(ast_subset_prop_name in ast)) {
+      extra_returns.fail_reason = `!(ast_subset_prop_name in ast: ${ast_subset_prop_name} ${ast_subset_prop_name}`;
       return false
+    }
     const ast_prop = ast[ast_subset_prop_name];
     const ast_subset_prop = ast_subset[ast_subset_prop_name];
     if (ast_subset_prop_name === 'args') {
       for (const ast_subset_arg_name in ast_subset_prop) {
-        if (!(ast_subset_arg_name in ast_prop))
+        if (!(ast_subset_arg_name in ast_prop)) {
+          extra_returns.fail_reason = `!(ast_subset_arg_name in ast_prop): ${ast_subset_prop_name} ${ast_subset_arg_name}`;
           return false;
-        if (!ast_arg_has_subset(ast_prop[ast_subset_arg_name], ast_subset_prop[ast_subset_arg_name]))
+        }
+        if (!ast_arg_has_subset(ast_prop[ast_subset_arg_name], ast_subset_prop[ast_subset_arg_name], extra_returns))
           return false;
       }
     } else {
-      if (ast_prop !== ast_subset_prop)
+      if (ast_prop !== ast_subset_prop) {
+        extra_returns.fail_reason = `ast_prop !== ast_subset_prop: '${ast_subset_prop_name}' '${ast_prop}' '${ast_subset_prop}'`;
         return false;
+      }
     }
   }
   return true;
 }
 
+/** Shortcut to create node with a 'content' argument for ast_arg_has_subset.
+ *
+ * @param {Array} the argument named content, which is very common across macros.
+ *                If undefined, don't add a content argument at all.
+ */
+function a(macro_name, content, extra_args={}) {
+  let args = extra_args;
+  if (content !== undefined) {
+    args.content = content;
+  }
+  return {
+    'macro_name': macro_name,
+    'args': args,
+  };
+}
+
+/** Shortcut to create plaintext nodes for ast_arg_has_subset, we have too many of those. */
+function t(text) { return {'macro_name': 'plaintext', 'text': text}; }
+
 // Paragraphs.
 assert_convert_ast('one paragraph implicit', 'ab\n',
   [
     // TODO actually, this would be better.
-    //{'macro_name': 'p', 'args': {'content': [{'macro_name': 'plaintext', 'text': 'ab'}]}},
-    {'macro_name': 'plaintext', 'text': 'ab'}
+    //a('p', [t('ab')]),
+    t('ab'),
   ],
 );
 assert_convert_ast('one paragraph explicit', '\\p[ab]\n',
-  [
-    {'macro_name': 'p', 'args': {'content': [{'macro_name': 'plaintext', 'text': 'ab'}]}},
-  ],
+  [a('p', [t('ab')])],
 );
 assert_convert_ast('two paragraphs', 'p1\n\np2\n',
   [
-    {'macro_name': 'p', 'args': {'content': [{'macro_name': 'plaintext', 'text': 'p1'}]}},
-    {'macro_name': 'p', 'args': {'content': [{'macro_name': 'plaintext', 'text': 'p2'}]}},
+    a('p', [t('p1')]),
+    a('p', [t('p2')]),
   ]
 );
 assert_convert_ast('three paragraphs',
   'p1\n\np2\n\np3\n',
   [
-    {'macro_name': 'p', 'args': {'content': [{'macro_name': 'plaintext', 'text': 'p1'}]}},
-    {'macro_name': 'p', 'args': {'content': [{'macro_name': 'plaintext', 'text': 'p2'}]}},
-    {'macro_name': 'p', 'args': {'content': [{'macro_name': 'plaintext', 'text': 'p3'}]}},
+    a('p', [t('p1')]),
+    a('p', [t('p2')]),
+    a('p', [t('p3')]),
   ]
 );
 
 // List.
 const l_with_explicit_ul_expect = [
-  {'macro_name': 'p', 'args': {'content': [{'macro_name': 'plaintext', 'text': 'ab'}]}},
-  {
-    'macro_name': 'ul',
-    'args': {
-      'content': [
-        {
-          'macro_name': 'l',
-          'args': {
-            'content': [
-              {'macro_name': 'plaintext', 'text': 'cd'}
-            ],
-          },
-        },
-        {
-          'macro_name': 'l',
-          'args': {
-            'content': [
-              {'macro_name': 'plaintext', 'text': 'ef'}
-            ],
-          },
-        },
-      ],
-    },
-  },
-  {'macro_name': 'p', 'args': {'content': [{'macro_name': 'plaintext', 'text': 'gh'}]}},
+  a('p', [t('ab')]),
+  a('ul', [
+    a('l', [t('cd')]),
+    a('l', [t('ef')]),
+  ]),
+  a('p', [t('gh')]),
 ];
 assert_convert_ast('l with explicit ul',
   `ab
@@ -226,114 +237,33 @@ assert_convert_ast('ordered list',
 gh
 `,
 [
-  {'macro_name': 'p', 'args': {'content': [{'macro_name': 'plaintext', 'text': 'ab'}]}},
-  {
-    'macro_name': 'ol',
-    'args': {
-      'content': [
-        {
-          'macro_name': 'l',
-          'args': {
-            'content': [
-              {'macro_name': 'plaintext', 'text': 'cd'}
-            ],
-          },
-        },
-        {
-          'macro_name': 'l',
-          'args': {
-            'content': [
-              {'macro_name': 'plaintext', 'text': 'ef'}
-            ],
-          },
-        },
-      ],
-    },
-  },
-  {'macro_name': 'p', 'args': {'content': [{'macro_name': 'plaintext', 'text': 'gh'}]}},
+  a('p', [t('ab')]),
+  a('ol', [
+    a('l', [t('cd')]),
+    a('l', [t('ef')]),
+  ]),
+  a('p', [t('gh')]),
 ]
 );
 
 // Table.
 const tr_with_explicit_table_expect = [
-  {'macro_name': 'p', 'args': {'content': [{'macro_name': 'plaintext', 'text': 'ab'}]}},
-  {
-    'macro_name': 'table',
-    'args': {
-      'content': [
-        {
-          'macro_name': 'tr',
-          'args': {
-            'content': [
-              {
-                'macro_name': 'th',
-                'args': {
-                  'content': [
-                    {'macro_name': 'plaintext', 'text': 'cd'},
-                  ],
-                },
-              },
-              {
-                'macro_name': 'th',
-                'args': {
-                  'content': [
-                    {'macro_name': 'plaintext', 'text': 'ef'},
-                  ],
-                },
-              },
-            ],
-          },
-        },
-        {
-          'macro_name': 'tr',
-          'args': {
-            'content': [
-              {
-                'macro_name': 'td',
-                'args': {
-                  'content': [
-                    {'macro_name': 'plaintext', 'text': '00'},
-                  ],
-                },
-              },
-              {
-                'macro_name': 'td',
-                'args': {
-                  'content': [
-                    {'macro_name': 'plaintext', 'text': '01'},
-                  ],
-                },
-              },
-            ],
-          },
-        },
-        {
-          'macro_name': 'tr',
-          'args': {
-            'content': [
-              {
-                'macro_name': 'td',
-                'args': {
-                  'content': [
-                    {'macro_name': 'plaintext', 'text': '10'},
-                  ],
-                },
-              },
-              {
-                'macro_name': 'td',
-                'args': {
-                  'content': [
-                    {'macro_name': 'plaintext', 'text': '11'},
-                  ],
-                },
-              },
-            ],
-          },
-        },
-      ],
-    },
-  },
-  {'macro_name': 'p', 'args': {'content': [{'macro_name': 'plaintext', 'text': 'gh'}]}},
+  a('p', [t('ab')]),
+  a('table', [
+    a('tr', [
+      a('th', [t('cd')]),
+      a('th', [t('ef')]),
+    ]),
+    a('tr', [
+      a('td', [t('00')]),
+      a('td', [t('01')]),
+    ]),
+    a('tr', [
+      a('td', [t('10')]),
+      a('td', [t('11')]),
+    ]),
+  ]),
+  a('p', [t('gh')]),
 ];
 assert_convert_ast('tr with explicit table',
   `ab
@@ -382,45 +312,17 @@ assert_convert_ast('auto_parent consecutive implicit tr and l',
 \\l[cd]
 `,
 [
-  {
-    'macro_name': 'table',
-    'args': {
-      'content': [
-        {
-          'macro_name': 'tr',
-          'args': {
-            'content': [
-              {
-                'macro_name': 'td',
-                'args': {
-                  'content': [
-                    {'macro_name': 'plaintext', 'text': 'ab'},
-                  ],
-                },
-              },
-            ],
-          },
-        },
-      ],
-    },
-  },
-  {
-    'macro_name': 'ul',
-    'args': {
-      'content': [
-        {
-          'macro_name': 'l',
-          'args': {
-            'content': [
-              {'macro_name': 'plaintext', 'text': 'cd'}
-            ],
-          },
-        },
-      ],
-    },
-  },
+  a('table', [
+    a('tr', [
+      a('td', [t('ab')]),
+    ]),
+  ]),
+  a('ul', [
+    a('l', [t('cd')]),
+  ]),
 ]
 );
+// TODO html test
 //assert_convert('table with id has caption',
 //  `\\table{id=ab}[
 //\\tr[
@@ -450,34 +352,21 @@ assert_convert_ast('image simple',
 gh
 `,
 [
-  {'macro_name': 'p', 'args': {'content': [{'macro_name': 'plaintext', 'text': 'ab'}]}},
-  {
-    'macro_name': 'Image',
-    'args': {
-      'src': [
-        {'macro_name': 'plaintext', 'text': 'cd'},
-      ],
-    },
-  },
-  {'macro_name': 'p', 'args': {'content': [{'macro_name': 'plaintext', 'text': 'gh'}]}},
+  a('p', [t('ab')]),
+  a('Image', undefined, {src: [t('cd')]}),
+  a('p', [t('gh')]),
 ]
 );
 assert_convert_ast('image title',
   `\\Image[ab]{title=c d}`,
 [
-  {
-    'macro_name': 'Image',
-    'args': {
-      'src': [
-        {'macro_name': 'plaintext', 'text': 'ab'},
-      ],
-      'title': [
-        {'macro_name': 'plaintext', 'text': 'c d'},
-      ],
-    },
-  },
+  a('Image', undefined, {
+    src: [t('ab')],
+    title: [t('c d')],
+  }),
 ]
 )
+// TODO inner property test
 //assert_convert_ast('image without id does not increment image count',
 //  `\\Image[ab]
 //\\Image[cd]{id=ef}
@@ -491,125 +380,137 @@ assert_convert_ast('image title',
 //</figure>
 //`
 //)
-//
-//// Escapes.
-//assert_convert_ast('escape backslash',            'a\\\\b\n', 'a\\b\n');
-//assert_convert_ast('escape left square bracket',  'a\\[b\n',  'a[b\n');
-//assert_convert_ast('escape right square bracket', 'a\\]b\n',  'a]b\n');
-//assert_convert_ast('escape left curly brace',     'a\\{b\n',  'a{b\n');
-//assert_convert_ast('escape right curly brace',    'a\\}b\n',  'a}b\n');
-//
+
+// Escapes.
+assert_convert_ast('escape backslash',            'a\\\\b\n', [t('a\\b')]);
+assert_convert_ast('escape left square bracket',  'a\\[b\n',  [t('a[b')]);
+assert_convert_ast('escape right square bracket', 'a\\]b\n',  [t('a]b')]);
+assert_convert_ast('escape left curly brace',     'a\\{b\n',  [t('a{b')]);
+assert_convert_ast('escape right curly brace',    'a\\}b\n',  [t('a}b')]);
+
 //// HTML Escapes.
+// TODO html or subfunction test
 //assert_convert_ast('html escapes',
 //  '\\a[ab&<>"\'cd][ef&<>"\'gh]\n',
 //  '<a href="ab&amp;&lt;&gt;&quot;&#039;cd">ef&amp;&lt;&gt;"\'gh</a>\n'
 //);
-//
-//// Positional arguments.
-//assert_convert_ast('p with no content argument', '\\p\n', '<p></p>\n');
-//assert_convert_ast('p with empty content argument', '\\p[]\n', '<p></p>\n');
-//
-//// Named arguments.
-//assert_convert_ast('p with id before', '\\p{id=ab}[cd]\n', '<p id="ab">cd</p>\n');
-//assert_convert_ast('p with id after', '\\p[cd]{id=ab}\n', '<p id="ab">cd</p>\n');
-//
-//// Literal arguments.
-//assert_convert_ast('literal argument code inline',
-//  '\\c[[\\ab[cd]{ef}]]\n',
-//  '<code>\\ab[cd]{ef}</code>\n'
-//);
-//assert_convert_ast('literal argument code block',
-//  `a
-//
-//\\C[[
-//\\[]{}
-//\\[]{}
-//]]
-//
-//d
-//`,
-//  `<p>a</p>
-//<pre><code>\\[]{}
-//\\[]{}
-//</code></pre>
-//<p>d</p>
-//`
-//);
-//assert_convert_ast("non-literal argument leading newline gets removed",
-//  `\\p[
-//a
-//b
-//]
-//`,
-//  `<p>a
-//b
-//</p>
-//`
-//);
-//assert_convert_ast('literal argument leading newline gets removed',
-//  `\\p[[
-//a
-//b
-//]]
-//`,
-//  `<p>a
-//b
-//</p>
-//`
-//);
-//assert_convert_ast('literal argument leading newline gets removed but not second',
-//  `\\p[[
-//
-//a
-//b
-//]]
-//`,
-//  `<p>
-//a
-//b
-//</p>
-//`
-//);
-//assert_convert_ast('literal agument escape leading open no escape',
-//  '\\c[[\\ab]]\n',
-//  '<code>\\ab</code>\n'
-//);
-//assert_convert_ast('literal agument escape leading open one backslash',
-//  '\\c[[\\[ab]]\n',
-//  '<code>[ab</code>\n'
-//);
-//assert_convert_ast('literal agument escape leading open two backslashes',
-//  '\\c[[\\\\[ab]]\n',
-//  '<code>\\[ab</code>\n'
-//);
-//assert_convert_ast('literal agument escape trailing close no escape',
-//  '\\c[[\\]]\n',
-//  '<code>\\</code>\n'
-//);
-//assert_convert_ast('literal agument escape trailing one backslash',
-//  '\\c[[\\]]]\n',
-//  '<code>]</code>\n'
-//);
-//assert_convert_ast('literal agument escape trailing two backslashes',
-//  '\\c[[\\\\]]]\n',
-//  '<code>\\]</code>\n'
-//);
-//
-//// Links.
-//assert_convert_ast('link simple',
-//  'a \\a[http://example.com][example link] b\n',
-//  'a <a href="http://example.com">example link</a> b\n'
-//);
-//assert_convert_ast('link auto',
-//  'a \\a[http://example.com] b\n',
-//  'a <a href="http://example.com">http://example.com</a> b\n'
-//);
-//assert_convert_ast('link with multiple paragraphs',
-//  '\\a[http://example.com][Multiple\n\nparagraphs]\n',
-//  '<a href="http://example.com"><p>Multiple</p>\n<p>paragraphs</p>\n</a>\n'
-//);
-//
+
+// Positional arguments.
+// Has no content argument.
+assert_convert_ast('p with no content argument', '\\p\n', [a('p')]);
+// Has empty content argument.
+assert_convert_ast('p with empty content argument', '\\p[]\n', [a('p', [])]);
+
+// Named arguments.
+assert_convert_ast('p with id before', '\\p{id=ab}[cd]\n',
+  [a('p', [t('cd')], {'id': [t('ab')]})]);
+assert_convert_ast('p with id after', '\\p[cd]{id=ab}\n',
+  [a('p', [t('cd')], {'id': [t('ab')]})]);
+
+// Literal arguments.
+assert_convert_ast('literal argument code inline',
+  '\\c[[\\ab[cd]{ef}]]\n',
+  [a('c', [t('\\ab[cd]{ef}')])],
+);
+assert_convert_ast('literal argument code block',
+  `a
+
+\\C[[
+\\[]{}
+\\[]{}
+]]
+
+d
+`,
+[
+  a('p', [t('a')]),
+  a('C', [t('\\[]{}\n\\[]{}\n')]),
+  a('p', [t('d')]),
+],
+);
+assert_convert_ast('non-literal argument leading newline gets removed',
+  `\\p[
+a
+b
+]
+`,
+  [a('p', [t('a\nb\n')])],
+);
+assert_convert_ast('literal argument leading newline gets removed',
+  `\\p[[
+a
+b
+]]
+`,
+  [a('p', [t('a\nb\n')])],
+);
+assert_convert_ast('literal argument leading newline gets removed but not the second one',
+  `\\p[[
+
+a
+b
+]]
+`,
+  [a('p', [t('\na\nb\n')])],
+);
+assert_convert_ast('literal agument escape leading open no escape',
+  '\\c[[\\ab]]\n',
+  [a('c', [t('\\ab')])],
+);
+assert_convert_ast('literal agument escape leading open one backslash',
+  '\\c[[\\[ab]]\n',
+  [a('c', [t('[ab')])],
+);
+assert_convert_ast('literal agument escape leading open two backslashes',
+  '\\c[[\\\\[ab]]\n',
+  [a('c', [t('\\[ab')])],
+);
+assert_convert_ast('literal agument escape trailing close no escape',
+  '\\c[[\\]]\n',
+  [a('c', [t('\\')])],
+);
+assert_convert_ast('literal agument escape trailing one backslash',
+  '\\c[[\\]]]\n',
+  [a('c', [t(']')])],
+);
+assert_convert_ast('literal agument escape trailing two backslashes',
+  '\\c[[\\\\]]]\n',
+  [a('c', [t('\\]')])],
+);
+
+// Links.
+assert_convert_ast('link simple',
+  'a \\a[http://example.com][example link] b\n',
+  [
+    t('a '),
+    a('a', [t('example link')], {'href': [t('http://example.com')]}),
+    t(' b'),
+  ]
+);
+assert_convert_ast('link auto',
+  'a \\a[http://example.com] b\n',
+  [
+    t('a '),
+    a('a', undefined, {'href': [t('http://example.com')]}),
+    t(' b'),
+  ]
+);
+assert_convert_ast('link with multiple paragraphs',
+  '\\a[http://example.com][Multiple\n\nparagraphs]\n',
+  [
+    a(
+      'a',
+      [
+        a('p', [t('Multiple')]),
+        a('p', [t('paragraphs')]),
+      ],
+      {'href': [t('http://example.com')]},
+    ),
+  ]
+);
+
 //// Cross references \x
+// TODO subfunction test
 //assert_convert_ast('cross reference simple',
 //  `\\h[1][My header]
 //
@@ -676,84 +577,96 @@ assert_error('cross reference without content nor target title style short',
 `, 3, 2);
 
 //// Headers.
+// TODO inner property test
 //assert_convert_ast('header simple',
 //  '\\h[1][My header]\n',
 //  `<h1 id="my-header"><a href="#my-header">1. My header</a></h1>\n`
 //);
-//assert_convert_ast('header and implicit paragraphs',
-//  `\\h[1][My header 1]
-//
-//My paragraph 1.
-//
-//\\h[2][My header 2]
-//
-//My paragraph 2.
-//`,
-//  `<h1 id="my-header-1"><a href="#my-header-1">1. My header 1</a></h1>
-//<p>My paragraph 1.</p>
-//<h2 id="my-header-2"><a href="#my-header-2">2. My header 2</a></h2>
-//<p>My paragraph 2.</p>
-//`
-//);
-//assert_convert_ast('header 7',
-//  `\\h[1][1]
-//\\h[2][2]
-//\\h[3][3]
-//\\h[4][4]
-//\\h[5][5]
-//\\h[6][6]
-//\\h[7][7]
-//`,
-//  `<h1 id="1"><a href="#1">1. 1</a></h1>
-//<h2 id="2"><a href="#2">2. 2</a></h2>
-//<h3 id="3"><a href="#3">3. 3</a></h3>
-//<h4 id="4"><a href="#4">4. 4</a></h4>
-//<h5 id="5"><a href="#5">5. 5</a></h5>
-//<h6 id="6"><a href="#6">6. 6</a></h6>
-//<h6 data-level="7" id="7"><a href="#7">7. 7</a></h6>
-//`
-//);
+assert_convert_ast('header and implicit paragraphs',
+  `\\h[1][My header 1]
+
+My paragraph 1.
+
+\\h[2][My header 2]
+
+My paragraph 2.
+`,
+[
+  a('h', undefined, {level: [t('1')], title: [t('My header 1')]}),
+  a('p', [t('My paragraph 1.')]),
+  a('h', undefined, {level: [t('2')], title: [t('My header 2')]}),
+  a('p', [t('My paragraph 2.')]),
+]
+);
+assert_convert_ast('header 7',
+  `\\h[1][1]
+\\h[2][2]
+\\h[3][3]
+\\h[4][4]
+\\h[5][5]
+\\h[6][6]
+\\h[7][7]
+`,
+[
+  a('h', undefined, {level: [t('1')], title: [t('1')]}),
+  a('h', undefined, {level: [t('2')], title: [t('2')]}),
+  a('h', undefined, {level: [t('3')], title: [t('3')]}),
+  a('h', undefined, {level: [t('4')], title: [t('4')]}),
+  a('h', undefined, {level: [t('5')], title: [t('5')]}),
+  a('h', undefined, {level: [t('6')], title: [t('6')]}),
+  a('h', undefined, {level: [t('7')], title: [t('7')]}),
+]
+);
 assert_error('header must be an integer', '\\h[a][b]\n', 1, 4);
 assert_error('header must not be zero', '\\h[0][b]\n', 1, 4);
 assert_error('header skip level is an error', '\\h[1][a]\n\\h[3][b]\n', 2, 4);
-//
-//// Code.
-//assert_convert_ast('code inline',
-//  'a \\c[b c] d\n',
-//  'a <code>b c</code> d\n'
-//);
-//assert_convert_ast('code block simple',
-//  `a
-//
-//\\C[[
-//b
-//c
-//]]
-//
-//d
-//`,
-//  `<p>a</p>
-//<pre><code>b
-//c
-//</code></pre>
-//<p>d</p>
-//`
-//);
-//
-//// Math.
-//assert_no_error('math inline', '\\m[[\\sqrt{1 + 1}]]');
-//assert_no_error('math block', '\\M[[\\sqrt{1 + 1}]]');
+
+// Code.
+assert_convert_ast('code inline',
+  'a \\c[b c] d\n',
+  [
+    t('a '),
+    a('c', [t('b c')]),
+    t(' d'),
+  ]
+);
+assert_convert_ast('code block simple',
+  `a
+
+\\C[[
+b
+c
+]]
+
+d
+`,
+[
+  a('p', [t('a')]),
+  a('C', [t('b\nc\n')]),
+  a('p', [t('d')]),
+]
+);
+
+// Math.
+assert_convert_ast('math inline',
+  '\\m[[\\sqrt{1 + 1}]]\n',
+  [a('m', [t('\\sqrt{1 + 1}')])],
+);
+assert_no_error('math block',
+  '\\M[[\\sqrt{1 + 1}]]',
+  [a('M', [t('\\sqrt{1 + 1}')])],
+);
 assert_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 5);
-//
+
 // Errors. Check that they return gracefully with the error line number,
-// rather than blowing up an exception.
-// TODO
-//assert_error('backslash without macro', '\\ a', 1, 1);
+// rather than blowing up an exception, or worse, not blowing up at all!
+assert_error('backslash without macro', '\\ a', 1, 2);
 assert_error('unknown macro', '\\reserved_undefined', 1, 2);
 assert_error('too many positional arguments', '\\p[ab][cd]', 1, 7);
 assert_error('unknown named macro argument', '\\c{reserved_undefined=abc}[]', 1, 4);
 assert_error('named argument without =', '\\p{id ab}[cd]', 1, 6);
+// TODO
 //assert_error('argument without close', '\\p[', 1, 3);
 //assert_error('argument without open', ']', 1, 1);
 //assert_error('unterminated literal argument', '\\c[[ab]', 1, 3;
-//assert_error('unterminated argument', '\\c[ab', 1, 3;
+//assert_error('unterminated argument', '\\c[ab', 1, 3);

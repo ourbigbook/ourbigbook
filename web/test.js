@@ -2,23 +2,66 @@ const assert = require('assert');
 const http = require('http')
 
 const app = require('./app')
+const convert = require('./convert')
 const test_lib = require('./test_lib')
 
-function testApp(cb) {
-  return app.start(0, false, async (server) => {
-    await cb(server)
-    server.close()
+async function createUserApi(server, i) {
+  ;[res, data] = await sendJsonHttp({
+    server,
+    method: 'POST',
+    path: '/api/users',
+    body: { user: createUserArg(i) },
   })
+  assert.strictEqual(res.statusCode, 200)
+  assert.strictEqual(data.user.username, `user${i}`)
+  return data.user
 }
 
-beforeEach(async function () {
-  this.currentTest.sequelize = await test_lib.generateDemoData({ empty: true })
-})
+async function createArticles(sequelize, author, i) {
+  const articleArg = createArticleArg(i, author)
+  return convert.convert({
+    author,
+    body: articleArg.body,
+    sequelize,
+    title:articleArg.title,
+  })
+  return sequelize.models.Article.create(createArticleArg(i, author))
+}
 
-afterEach(async function () {
-  return this.currentTest.sequelize.close()
-})
+async function createArticle(sequelize, author, i) {
+  return (await createArticles(sequelize, author, i))[0]
+}
 
+function createArticleArg(i, author) {
+  const ret = {
+    title: `Title ${i}`,
+    body: `Body ${i}`
+  }
+  if (author) {
+    ret.authorId = author.id
+  }
+  return ret
+}
+
+async function createUser(sequelize, i) {
+  const user = new sequelize.models.User(createUserArg(i, false))
+  sequelize.models.User.setPassword(user, 'asdf')
+  return user.save()
+}
+
+function createUserArg(i, password=true) {
+  const ret = {
+    email: `user${i}@mail.com`,
+    username: `user${i}`,
+    displayName: `User ${i}`,
+  }
+  if (password) {
+    ret.password = 'asdf'
+  }
+  return ret
+}
+
+// TODO factor this out with front/api.
 // https://stackoverflow.com/questions/6048504/synchronous-request-in-node-js/53338670#53338670
 function sendJsonHttp(opts) {
   return new Promise((resolve, reject) => {
@@ -72,66 +115,48 @@ function sendJsonHttp(opts) {
   })
 }
 
-async function makeArticle(sequelize, author, i) {
-  return sequelize.models.Article.create(makeArticleArg(i, author))
+function testApp(cb) {
+  return app.start(0, false, async (server) => {
+    await cb(server)
+    server.close()
+  })
 }
 
-function makeArticleArg(i, author) {
-  const ret = {
-    title: `Title ${i}`,
-    body: `Body ${i}`
-  }
-  if (author) {
-    ret.authorId = author.id
-  }
-  return ret
-}
+beforeEach(async function () {
+  this.currentTest.sequelize = await test_lib.generateDemoData({ empty: true })
+})
 
-async function makeUser(sequelize, i) {
-  const user = new sequelize.models.User(makeUserArg(i, false))
-  sequelize.models.User.setPassword(user, 'asdf')
-  return user.save()
-}
-
-function makeUserArg(i, password=true) {
-  const ret = {
-    email: `user${i}@mail.com`,
-    username: `user${i}`,
-    displayName: `User ${i}`,
-  }
-  if (password) {
-    ret.password = 'asdf'
-  }
-  return ret
-}
+afterEach(async function () {
+  return this.currentTest.sequelize.close()
+})
 
 it('feed shows articles by followers', async function() {
   const sequelize = this.test.sequelize
-  const user0 = await makeUser(sequelize, 0)
-  const user1 = await makeUser(sequelize, 1)
-  const user2 = await makeUser(sequelize, 2)
-  const user3 = await makeUser(sequelize, 3)
+  const user0 = await createUser(sequelize, 0)
+  const user1 = await createUser(sequelize, 1)
+  const user2 = await createUser(sequelize, 2)
+  const user3 = await createUser(sequelize, 3)
 
   await (user0.addFollowSideEffects(user1))
   await (user0.addFollowSideEffects(user3))
 
-  const article0_0 = await makeArticle(sequelize, user0, 0)
-  const article1_0 = await makeArticle(sequelize, user1, 0)
-  const article1_1 = await makeArticle(sequelize, user1, 1)
-  const article1_2 = await makeArticle(sequelize, user1, 2)
-  const article1_3 = await makeArticle(sequelize, user1, 3)
-  const article2_0 = await makeArticle(sequelize, user2, 0)
-  const article2_1 = await makeArticle(sequelize, user2, 1)
-  const article3_0 = await makeArticle(sequelize, user3, 0)
-  const article3_1 = await makeArticle(sequelize, user3, 1)
+  const article0_0 = await createArticle(sequelize, user0, 0)
+  const article1_0 = await createArticle(sequelize, user1, 0)
+  const article1_1 = await createArticle(sequelize, user1, 1)
+  const article1_2 = await createArticle(sequelize, user1, 2)
+  const article1_3 = await createArticle(sequelize, user1, 3)
+  const article2_0 = await createArticle(sequelize, user2, 0)
+  const article2_1 = await createArticle(sequelize, user2, 1)
+  const article3_0 = await createArticle(sequelize, user3, 0)
+  const article3_1 = await createArticle(sequelize, user3, 1)
 
-  const {count, rows} = await user0.findAndCountArticlesByFollowed(1, 3)
+  const { count, rows } = await user0.findAndCountArticlesByFollowed(1, 3)
   assert.strictEqual(rows[0].title, 'Title 0')
-  assert.strictEqual(rows[0].authorId, user3.id)
+  assert.strictEqual(rows[0].file.authorId, user3.id)
   assert.strictEqual(rows[1].title, 'Title 3')
-  assert.strictEqual(rows[1].authorId, user1.id)
+  assert.strictEqual(rows[1].file.authorId, user1.id)
   assert.strictEqual(rows[2].title, 'Title 2')
-  assert.strictEqual(rows[2].authorId, user1.id)
+  assert.strictEqual(rows[2].file.authorId, user1.id)
   assert.strictEqual(rows.length, 3)
   // 6 manually from all follows + 2 for the automatically created indexes.
   assert.strictEqual(count, 8)
@@ -144,18 +169,11 @@ it('api: create an article and see it on global feed', async () => {
       article
 
     // Create user.
-    ;[res, data] = await sendJsonHttp({
-      server,
-      method: 'POST',
-      path: '/api/users',
-      body: { user: makeUserArg(0) },
-    })
-    assert.strictEqual(res.statusCode, 200)
-    const token = data.user.token
-    assert.strictEqual(data.user.username, 'user0')
+    const user = await createUserApi(server, 0)
+    const token = user.token
 
     // Create article.
-    article = makeArticleArg(0)
+    article = createArticleArg(0)
     ;[res, data] = await sendJsonHttp({
       server,
       method: 'POST',
@@ -164,8 +182,9 @@ it('api: create an article and see it on global feed', async () => {
       token,
     })
     assert.strictEqual(res.statusCode, 200)
-    article = data.article
-    assert.strictEqual(article.title, 'Title 0')
+    articles = data.articles
+    assert.strictEqual(articles[0].title, 'Title 0')
+    assert.strictEqual(articles.length, 1)
 
     // See it on global feed.
     ;[res, data] = await sendJsonHttp({
@@ -265,5 +284,45 @@ it('api: create an article and see it on global feed', async () => {
     //})
     //assert.strictEqual(data.articles.length, 0)
     //assert.strictEqual(data.articlesCount, 0)
+  })
+})
+
+it('api: multiheader file creates multiple articles', async () => {
+  await testApp(async (server) => {
+    let res,
+      data,
+      article
+
+    // Create user.
+    const user = await createUserApi(server, 0)
+    const token = user.token
+
+    // Create article.
+    article = createArticleArg(0)
+    ;[res, data] = await sendJsonHttp({
+      server,
+      method: 'POST',
+      path: '/api/articles',
+      body: { article },
+      token,
+    })
+    assert.strictEqual(res.statusCode, 200)
+    articles = data.articles
+    assert.strictEqual(articles[0].title, 'Title 0')
+    assert.strictEqual(articles.length, 1)
+
+    // See it on global feed.
+    ;[res, data] = await sendJsonHttp({
+      server,
+      method: 'GET',
+      path: '/api/articles',
+      token,
+    })
+    assert.strictEqual(res.statusCode, 200)
+    assert.strictEqual(data.articles[0].title, 'Title 0')
+    assert.strictEqual(data.articles[0].author.username, 'user0')
+    assert.strictEqual(data.articles[1].title, 'Index')
+    assert.strictEqual(data.articles[1].author.username, 'user0')
+    assert.strictEqual(data.articlesCount, 2)
   })
 })

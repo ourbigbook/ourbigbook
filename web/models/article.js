@@ -21,6 +21,7 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
+      // Rendered title.
       title: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -84,7 +85,15 @@ module.exports = (sequelize) => {
   }
 
   // Helper for common queries.
-  Article.getArticles = async ({ sequelize, limit, offset, author, likedBy, topicId, order }) => {
+  Article.getArticles = async ({
+    author,
+    likedBy,
+    limit,
+    offset,
+    order,
+    sequelize,
+    topicId,
+  }) => {
     let where = {}
     const authorInclude = {
       model: sequelize.models.User,
@@ -93,7 +102,11 @@ module.exports = (sequelize) => {
     if (author) {
       authorInclude.where = { username: author }
     }
-    const include = [authorInclude]
+    const include = [{
+      model: sequelize.models.File,
+      as: 'file',
+      include: [authorInclude],
+    }]
     if (likedBy) {
       include.push({
         model: sequelize.models.User,
@@ -105,11 +118,11 @@ module.exports = (sequelize) => {
       where.topicId = topicId
     }
     return sequelize.models.Article.findAndCountAll({
-      where: where,
+      where,
       order: [[order, 'DESC']],
       limit: Number(limit),
       offset: Number(offset),
-      include: include,
+      include,
     })
   }
 

@@ -1,34 +1,38 @@
-module.exports = (sequelize) => {
+module.exports = (sequelize, web=false) => {
   const { DataTypes } = sequelize.Sequelize
+  const cols = {
+    path: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      unique: true,
+    },
+    toplevel_id: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      unique: true,
+    },
+    last_parse: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    last_render: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+  }
+  if (web) {
+    cols.title = {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    }
+    cols.body = {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    }
+  }
   return sequelize.define(
     'File',
-    {
-      path: {
-        type: DataTypes.TEXT,
-        allowNull: false,
-        unique: true,
-      },
-      // Source code body (without title).
-      // Not used on OurBigBook CLI where we have the filesystem, only used in
-      // OurBigBook Web where it acts as the filesystem.
-      body: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
-      toplevel_id: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-        unique: true,
-      },
-      last_parse: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
-      last_render: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
-    },
+    cols,
     {
       indexes: [
         { fields: ['last_parse'], },

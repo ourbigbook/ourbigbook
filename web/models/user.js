@@ -148,8 +148,8 @@ module.exports = (sequelize) => {
       order = 'createdAt'
     }
     return sequelize.models.Article.findAndCountAll({
-      offset: offset,
-      limit: limit,
+      offset,
+      limit,
       subQuery: false,
       order: [[
         order,
@@ -157,17 +157,24 @@ module.exports = (sequelize) => {
       ]],
       include: [
         {
-          model: sequelize.models.User,
-          as: 'author',
+          model: sequelize.models.File,
+          as: 'file',
           required: true,
           include: [
             {
-              model: sequelize.models.UserFollowUser,
-              on: {
-                followId: {[Op.col]: 'author.id' },
-              },
-              attributes: [],
-              where: {userId: this.id},
+              model: sequelize.models.User,
+              as: 'author',
+              required: true,
+              include: [
+                {
+                  model: sequelize.models.UserFollowUser,
+                  on: {
+                    followId: { [Op.col]: 'file.author.id' },
+                  },
+                  attributes: [],
+                  where: { userId: this.id },
+                }
+              ],
             }
           ],
         },
@@ -191,28 +198,6 @@ module.exports = (sequelize) => {
       articles: articlesJson,
       articlesCount,
     }
-  }
-
-  User.prototype.getArticleCountByFollowed = async function() {
-    return (await User.findByPk(this.id, {
-      subQuery: false,
-      attributes: [
-        [Sequelize.fn('COUNT', Sequelize.col('follows.authoredArticles.id')), 'count']
-      ],
-      include: [
-        {
-          model: User,
-          as: 'follows',
-          attributes: [],
-          through: {attributes: []},
-          include: [{
-              model: sequelize.models.Article,
-              as: 'authoredArticles',
-              attributes: [],
-          }],
-        },
-      ],
-    })).dataValues.count
   }
 
   User.prototype.addLikeSideEffects = async function(article) {

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# https://docs.ourbigbook.com/file/heroku
+set -eu
+cmd="$1"
+shift
+heroku "$cmd" -a ourbigbook "$@"

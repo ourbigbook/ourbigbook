@@ -154,7 +154,10 @@ class SqliteIdProvider extends cirodown.IdProvider {
             // so it could override one that did have the .to, and then other things could blow up.
             !(row_title_title.to && row_title_title.to.idid in this.id_cache)
           ) {
-            asts.push(this.add_row_to_id_cache(row_title_title.to, context))
+            const ret = this.add_row_to_id_cache(row_title_title.to, context)
+            if (ret !== undefined) {
+              asts.push(ret)
+            }
           }
         }
       }

@@ -489,6 +489,12 @@ HTML escaping happens as you would expect, e.g. < shows fine in:
 1 < 2
 ]]
 
+Equation IDs and titles and linking to equations works identically to \x[images][images], see that section for full details. Here is one equation reference example: \x[equation-my-first-equation].
+
+\M{title=My first equation}[[
+1 + 1 = 2
+]]
+
 \h[3][Math defines across blocks]
 
 TODO pending upstream tag bump: \a[https://github.com/KaTeX/KaTeX/pull/2091] First block defining with \c[\\newcommand]:
@@ -1004,17 +1010,19 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \h[3][TODO]
 
 \l[toc]
-\l[figure numbers, header numbers and xrefs with numbers. Missing proper checks and links.]
-\l[equation, list and code caption]
+\l[publis npm package]
+\l[browser live quick test]
+\l[publish webpage on cirosantilli.com]
+\l[header nested numbers]
+\l[list and code caption]
 \l[image description and source]
-\l[self links on tables with on hover over caption]
-\l[indentation skip]
+\l[self links on tables and equations with on hover over caption]
+\l[input indentation skip]
 \l[correct ID generation algorithm to be Unicode robust]
-\l[LaTeX output]
 \l[local downloads and single HTML page with image / script embeds]
 \l[verify integer argument type e.g. on header level]
 \l[verify x style in choices \c[short] or \c[full]]
-\l[TODO: browser live quick test]
+\l[LaTeX output]
 
 \h[3][Related projects]
 

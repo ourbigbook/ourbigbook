@@ -1421,7 +1421,24 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      return `<div>${this.katex_convert(ast, context)}</div>\n`;
+      let attrs = html_convert_attrs_id(ast, context);
+      let ret = ``;
+      ret += `<div class="math-containter"${attrs}>`;
+      if (ast.id !== undefined) {
+        ret += `<div class="math-caption">${this.x_text(ast, context)}</div>\n`;
+      }
+      ret += `<div>${this.katex_convert(ast, context)}</div>\n`;
+      ret += `</div>\n`;
+      return ret;
+    },
+    {
+      caption_prefix: 'Equation',
+      id_prefix: 'equation',
+      named_args: [
+        new MacroArgument({
+          name: Macro.TITLE_ARGUMENT_NAME,
+        }),
+      ],
     }
   ),
   new Macro(

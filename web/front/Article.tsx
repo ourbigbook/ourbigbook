@@ -39,7 +39,7 @@ import {
   TAGGED_ID_UNRESERVED,
   TAGS_MARKER,
   htmlAncestorLinks,
-  render_toc_from_entry_list,
+  renderTocFromEntryList,
 } from 'ourbigbook'
 // This also worked. But using the packaged one reduces the need to replicate
 // or factor out the webpack setup of the ourbigbook package.
@@ -373,7 +373,7 @@ const Article = ({
       })
     }
     if (entry_list.length) {
-      html += render_toc_from_entry_list({ entry_list })
+      html += renderTocFromEntryList({ entry_list })
     }
     html += articlesInSamePage.map(a => a.h2Render + a.render).join('')
   }

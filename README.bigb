@@ -7034,12 +7034,13 @@ For now, we are using the `deburr` method of Lodash: https://lodash.com/docs/4.1
 
 In addition to `deburr` we also convert:
 * en-dash and em-dash to simple ASCII dash `-`. Wikipedia Loves en-dashes in their article titles!
+* greek letters are replaced with their standard latin names, e.g. `α` to `alpha`
 
 One notable effect is that it converts variants of ASCII letters to ASCII letters. E.g. `é` to `e` removing the accent.
 
 This operation is kind of a superset of Unicode normalization acting only on Latin-like characters, where Unicode basically only removes things like diacritics.
 
-OurBigBook normalization also does other natural transformations that Unicode does not do, e.g. `æ` to `ae`.
+OurBigBook normalization on the other also does other natural transformations that Unicode does not do, e.g. `æ` to `ae` as encoded by `deburr` and further custom replacements.
 
 Bibliography:
 * https://stackoverflow.com/questions/990904/remove-accents-diacritics-in-a-string-in-javascript
@@ -7061,6 +7062,7 @@ Some selected punctuation marks are automatically converted into their dominant 
 * `&`: `and`
 * `+`: `plus`
 * `@`: `at`
+* `−` (Unicode minus sign, U+2212, distinct from the ASCII hyphen): `minus`
 
 Dashes are added around the signs if needed, e.g.:
 * `C++`: `c-plus-plus`

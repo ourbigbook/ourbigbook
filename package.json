@@ -1,7 +1,15 @@
 {
+  "name": "cirodown",
+  "version": "0.7.2",
+  "license": "AGPL-3.0",
+  "repository": "cirosantilli/cirodown",
   "bin": {
     "cirodown": "cirodown"
   },
+  "cacheDirectories": [
+    "node_modules",
+    "web/node_modules"
+  ],
   "dependencies": {
     "better-sqlite3": "7.4.1",
     "china-dictatorship": "0.0.74",
@@ -51,9 +59,6 @@
     "markdown",
     "markup"
   ],
-  "license": "AGPL-3.0",
-  "name": "cirodown",
-  "repository": "cirosantilli/cirodown",
   "scripts": {
     "build": "cd web && npm run build",
     "build-assets": "npm run sass && npm run webpack",
@@ -61,16 +66,9 @@
     "deploy": "git push -f heroku master",
     "dev": "cd web && npm run dev",
     "heroku-prebuild": "./heroku-prebuild",
-    "prepublishOnly": "./prepublishOnly",
-    "readme": "./cirodown -o index.html README.ciro",
     "sass": "./build-sass",
     "start": "cd web && npm start",
     "test": "mocha test --ignore-leaks",
     "webpack": "webpack"
-  },
-  "version": "0.7.2",
-  "cacheDirectories": [
-    "node_modules",
-    "web/node_modules"
-  ]
+  }
 }

@@ -238,15 +238,15 @@ iframe {
 .katex { font-size: 1.2em; }
 // Make block math larger, otherwise fractions and other tall constructs become tiny.
 // Users should avoid tall constructs inline.
-.math-container { .katex { font-size: 1.5em; } }
-.math-container {
+.math { .katex { font-size: 1.5em; } }
+.math {
   align-items: center;
   margin-bottom: $p-margin-vert;
   margin-top: $p-margin-vert;
-  .math-caption-container {
+  .caption {
     margin-bottom: $caption-margin-bottom;
   }
-  .math-equation {
+  .equation {
     align-items: center;
     display: flex;
     > :nth-child(1) {

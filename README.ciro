@@ -2,11 +2,21 @@
 
 A Markup language to write multipage or single page HTML / PDF books, blogs, etc. that is \x[saner][saner] and more powerful than Markdown and Asciidoctor, but still nicer to write than XML and JSON, with reference implementation in JavaScript.
 
-The source for this document is at: \a[https://github.com/cirosantilli/cirodown/blob/master/README.ciro] and a rendered version can be seen at: \a[https://cirosantilli.com/cirodown].
+The source for this document is at: \a[https://github.com/cirosantilli/cirodown/blob/master/README.ciro] and a rendered version can be seen at: \a[https://cirosantilli.com/cirodown] and a live demo at: \a[https://cirosantilli.com/cirodown/editor].
 
 \toc
 
 \h[2][Quick start]
+
+Live in-browser demo: \a[https://cirosantilli.com/cirodown/editor]. Clone and run it locally:
+``
+git clone https://github.com/cirosantilli/cirodown-template
+cd cirodown-template
+npm install
+./build
+xdg-open editor.html
+``
+We want to make that editor amazing later on: \x[editor-with-preview][live browser editor].
 
 Install the NPM package globally and use it from the command line for a quick conversion:
 ``
@@ -17,15 +27,6 @@ or \a[https://stackoverflow.com/questions/9679932/how-to-use-package-installed-l
 ``
 npm install -g cirodown
 printf 'ab\ncd\n' | npx cirodown --body-only
-``
-
-Play with it in a still crappy \x[editor-with-preview][live browser editor] at \a[https://cirosantilli.com/cirodown/editor] (TODO online version broken) or by cloning locally with:
-``
-git clone https://github.com/cirosantilli/cirodown-template
-cd cirodown-template
-npm install
-./build
-xdg-open editor.html
 ``
 
 To start a new project with a minimal and convenient template \x[generate][use `--generate`] and then \x[publish-to-github-pages][publish it to GitHub with `--publish`]:

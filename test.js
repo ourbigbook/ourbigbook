@@ -2413,6 +2413,31 @@ assert_convert_ast('cross reference to non-included image in another file',
     input_path_noext: 'notindex',
   },
 );
+assert_convert_ast('cross reference with link inside it does not blow up',
+  `= asdf
+{id=http://example.com}
+
+\\x[http://example.com]
+`,
+  [
+    a('H', undefined,
+      {
+        level: [t('1')],
+        title: [t('asdf')],
+      },
+      {
+        id: 'http:\/\/example.com',
+      }
+    ),
+    a('P', [
+      a('x', undefined, {
+        href: [
+          a('a', undefined, {'href': [t('http:\/\/example.com')]}),
+        ],
+      }),
+    ]),
+  ],
+);
 assert_convert_ast('x to image in another file that has x title in another file',
   // https://github.com/cirosantilli/ourbigbook/issues/198
   `= Tmp

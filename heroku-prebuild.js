@@ -50,7 +50,6 @@ function writeJson(outpath, jsonObj) {
   const devDependencies = packageJson.devDependencies
   deleteProps(devDependencies, [
     'mocha',
-    'newman',
     'nodemon',
     'sqlite3',
   ])

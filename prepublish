@@ -2,4 +2,17 @@
 set -eu
 publish_out_dir="$1"
 ./build
-cp cirodown.js "$publish_out_dir"
+
+# Hack the editor resources to work on the deployment.
+#
+# It is just too sweet to not have to rebuild this HTML from a proper template
+# when hacking the editor locally.
+#
+# The other alternative would be to keep deployed resources under dist/
+# but that makes all users' repos ugly.
+#
+# So hack it is. That's how we do things around here.
+editor="${publish_out_dir}/editor.html"
+sed -i 's/href="dist\/cirodown.css"/href="cirodown.css"/' "$editor"
+sed -i 's/href="dist\/cirodown.js"/href="cirodown.js"/' "$editor"
+sed -i 's/href="dist\/cirodown_runtime.js"/href="cirodown_runtime.js"/' "$editor"

@@ -1,12 +1,12 @@
 @import 'ourbigbook/ourbigbook.common.scss';
 
-$header-background-color: #222222;
+$navbar-background-color: #222222;
 body {
 background-color: $background-color;
 font-family: $font-family;
 
 header, footer {
-  background-color: $header-background-color;
+  background-color: $navbar-background-color;
 }
 header {
   align-items: center;
@@ -38,7 +38,7 @@ header {
       color: $h-color;
     }
     &:hover {
-      color: $header-background-color;
+      color: $navbar-background-color;
       background-color: $h-color;
     }
     &.font-awesome-container {

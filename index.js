@@ -324,21 +324,23 @@ class AstNode {
 
   /** Works with both actual this.header_graph_node and
    * this.header_graph_node_parent_id when coming from a database. */
-  get_header_parent_id() {
+  get_header_parent_id(context) {
     if (
       this.header_graph_node !== undefined &&
       this.header_graph_node.parent_node !== undefined &&
       this.header_graph_node.parent_node.value !== undefined
     ) {
       return this.header_graph_node.parent_node.value.id;
-    } else {
+    } else if (this.header_graph_node_parent_id !== undefined) {
       return this.header_graph_node_parent_id;
+    } else {
+      return Array.from(context.id_provider.get_refs_to_as_ids(REFS_TABLE_INCLUDE, this.id))[0];
     }
   }
 
   /* Like get_header_parent_id, but returns the parent AST. */
   get_header_parent(context) {
-    const header_parent_id = this.get_header_parent_id();
+    const header_parent_id = this.get_header_parent_id(context);
     if (header_parent_id === undefined) {
       return undefined;
     } else {
@@ -2969,6 +2971,21 @@ function get_parent_argument_ast(ast, context, prev_header, include_options) {
   return [parent_id, parent_ast];
 }
 
+// Ensure that all children and tg targets exist. This is for error checking only.
+// https://cirosantilli.com/cirodown#h-child-argment
+function header_check_child_tag_exists(ast, context, childrenOrTags, type) {
+  let ret = ''
+  for (let child of childrenOrTags) {
+    const target_id = render_arg_noescape(child.args.content, context)
+    const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node)
+    if (target_id_ast === undefined) {
+      let message = `unknown ${type} id: "${target_id}"`
+      render_error(context, message, child.source_location)
+      ret += error_message_in_output(message, context)
+    }
+  }
+}
+
 /** Convert a key value already fully HTML escaped strings
  * to an HTML attribute. The callers MUST escape any untrusted chars.
   e.g. with html_attr_value.
@@ -4740,7 +4757,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         context,
         ast
       )
-      const parent_id = ast.get_header_parent_id();
+      const parent_id = ast.get_header_parent_id(context);
       if (
         // Happens on some special elements e.g. the ToC.
         parent_id !== undefined
@@ -5457,7 +5474,7 @@ function x_href_parts(target_id_ast, context) {
       // Split header link to image in current header.
       context.in_split_headers &&
       target_id_ast.macro_name !== Macro.HEADER_MACRO_NAME &&
-      target_id_ast.get_header_parent_id() === context.toplevel_id
+      target_id_ast.get_header_parent_id(context) === context.toplevel_id
     ) ||
     to_current_toplevel
   ) {
@@ -6263,17 +6280,10 @@ const DEFAULT_MACRO_LIST = [
 
         // Parent links.
         let parent_asts = [];
-        let parent_tree_node = ast.header_graph_node.parent_node;
-        if (
-          // Undefined on toplevel.
-          parent_tree_node !== undefined &&
-          // May fail if there was a header skip error previously.
-          parent_tree_node.value !== undefined
-        ) {
-          parent_asts.push(parent_tree_node.value);
+        const main_parent = ast.get_header_parent(context)
+        if (main_parent !== undefined) {
+          parent_asts.push(main_parent);
         }
-        parent_asts.push(...(context.id_provider.get_refs_to_as_asts(
-          REFS_TABLE_INCLUDE, ast.id, context)));
         parent_links = [];
         for (const parent_ast of parent_asts) {
           let parent_href = x_href_attr(parent_ast, context);
@@ -6391,23 +6401,11 @@ const DEFAULT_MACRO_LIST = [
       if (header_has_meta) {
         ret += `</div>\n`;
       }
-      // Ensure that all child targets exist. This is for error checking only.
-      // https://cirosantilli.com/cirodown#h-child-argment
-      let childrenAndTags = []
       if (children !== undefined) {
-        childrenAndTags.push(...children)
+        ret += header_check_child_tag_exists(ast, context, children, 'child')
       }
       if (tags !== undefined) {
-        childrenAndTags.push(...tags)
-      }
-      for (let child of childrenAndTags) {
-        const target_id = render_arg_noescape(child.args.content, context)
-        const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node)
-        if (target_id_ast === undefined) {
-          let message = `unknown child id: "${target_id}"`
-          render_error(context, message, child.source_location)
-          ret += error_message_in_output(message, context)
-        }
+        ret += header_check_child_tag_exists(ast, context, tags, 'tag')
       }
       return ret;
     },
@@ -6993,18 +6991,10 @@ const DEFAULT_MACRO_LIST = [
             const ancestors = [];
             let cur_ast = context.toplevel_ast;
             while (true) {
-              let parent_ast = cur_ast.get_header_parent(context);
-              if (parent_ast === undefined) {
-                const include_asts = context.id_provider.get_refs_to_as_asts(REFS_TABLE_INCLUDE, cur_ast.id);
-                if (include_asts.length === 0) {
-                  break;
-                } {
-                  cur_ast = include_asts[0];
-                }
-              } else {
-                cur_ast = parent_ast;
+              cur_ast = cur_ast.get_header_parent(context);
+              if (cur_ast === undefined) {
+                break
               }
-              ancestors.push(cur_ast);
             }
             if (ancestors.length !== 0) {
               // TODO factor this out more with real headers.

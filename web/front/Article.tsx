@@ -15,23 +15,57 @@ import { cant } from 'front/cant'
 import CustomLink from 'front/CustomLink'
 import FollowArticleButton from 'front/FollowArticleButton'
 
-import { AT_MENTION_CHAR, render_toc_from_entry_list } from 'ourbigbook'
+import {
+  ANCESTORS_ID,
+  ANCESTORS_MAX,
+  AT_MENTION_CHAR,
+  htmlAncestorLinks,
+  INCOMING_LINKS_ID_UNRESERVED,
+  INCOMING_LINKS_MARKER,
+  Macro,
+  PARENT_MARKER,
+  TAGGED_ID_UNRESERVED,
+  TAGS_MARKER,
+  render_toc_from_entry_list,
+} from 'ourbigbook'
 // This also worked. But using the packaged one reduces the need to replicate
 // or factor out the webpack setup of the ourbigbook package.
 //import { ourbigbook_runtime } from 'ourbigbook/ourbigbook_runtime.js';
 import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js'
 
+function linkList(articles, idUnreserved, marker, title, linkPref) {
+  if (articles.length) return <>
+    <h2 id={`${Macro.RESERVED_ID_PREFIX}${idUnreserved}`}><a
+      href={`#${Macro.RESERVED_ID_PREFIX}${idUnreserved}`}
+      dangerouslySetInnerHTML={{ __html: `${marker} ${title}` }}
+      className="ourbigbook-title">
+    </a></h2>
+    <ul>
+      {articles.map(a =>
+        <li key={a.slug}><a
+          href={`${linkPref}${a.slug}`}
+          className="ourbigbook-title"
+          dangerouslySetInnerHTML={{ __html: a.titleRender}}
+        ></a></li>
+      )}
+    </ul>
+  </>
+}
+
 const Article = ({
+  ancestors,
   article,
   articlesInSamePage,
   articlesInSamePageForToc,
   comments,
   commentsCount=0,
   commentCountByLoggedInUser=undefined,
+  incomingLinks,
   isIssue=false,
   issueArticle=undefined,
   latestIssues,
   loggedInUser,
+  tagged,
   topIssues,
 }) => {
   const [curComments, setComments] = React.useState(comments)
@@ -50,6 +84,7 @@ const Article = ({
       }
     </>
   }
+  const linkPref = '../'.repeat(article.slug.split('/').length - 1)
   const articlesInSamePageMap = {}
   if (!isIssue) {
     for (const article of articlesInSamePage) {
@@ -64,8 +99,9 @@ const Article = ({
       if (elem) {
         for (const h of elem.querySelectorAll('.h')) {
           const id = h.id
-          const web = h.querySelector('.web')
-          const toplevel = web.classList.contains('top')
+          const webElem = h.querySelector('.web')
+          const ancestorsElem = h.querySelector('.ancestors')
+          const toplevel = webElem.classList.contains('top')
           // TODO rename to article later on.
           let curArticle, isIndex
           if (isIssue) {
@@ -88,6 +124,20 @@ const Article = ({
           let mySlug
           if (loggedInUser) {
             mySlug = `${loggedInUser.username}/${curArticle.topicId}`
+          }
+          if (ancestorsElem) {
+            ReactDOM.render(
+              <span dangerouslySetInnerHTML={{
+                __html: ' ' + htmlAncestorLinks(
+                  ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 0)).map(a => { return {
+                    href: ` href="${linkPref}${a.slug}"`,
+                    content: a.titleRender,
+                  }}),
+                  ancestors.length,
+                )
+              }} ></span>,
+              ancestorsElem
+            )
           }
           ReactDOM.render(
             <>
@@ -205,7 +255,7 @@ const Article = ({
                 </>
               }
             </>,
-            web
+            webElem
           );
         }
         ourbigbook_runtime(elem);
@@ -250,7 +300,7 @@ const Article = ({
         }
       }
     },
-    [articlesInSamePageMap]
+    [ancestors, articlesInSamePageMap]
   );
   let html = ''
   if (!isIssue) {
@@ -294,13 +344,11 @@ const Article = ({
   }
   return <>
     <div
-      dangerouslySetInnerHTML={{
-        __html: html
-      }}
+      dangerouslySetInnerHTML={{ __html: html }}
       className="ourbigbook"
       ref={renderRefCallback}
     />
-    <div className="comments content-not-ourbigbook">
+    <div className="meta content-not-ourbigbook">
       {isIssue
         ? <>
             <h2 id={commentsHeaderId}>
@@ -335,6 +383,25 @@ const Article = ({
             )}
           </>
         : <>
+            <div className="ourbigbook-title">
+              {linkList(tagged, TAGGED_ID_UNRESERVED, TAGS_MARKER, 'Tagged', linkPref)}
+              {ancestors.length && <>
+                <h2 id={ANCESTORS_ID}><a
+                  href={`#${ANCESTORS_ID}`} dangerouslySetInnerHTML={{ __html: PARENT_MARKER + ' Ancestors' }}
+                  className="ourbigbook-title">
+                </a></h2>
+                <ol>
+                  {ancestors.slice().reverse().map(a =>
+                    // Don't need href=../a.slug because this section cannot appear on the index page.
+                    <li key={a.slug}><a
+                      href={`${linkPref}${a.slug}`}
+                      dangerouslySetInnerHTML={{ __html: a.titleRender}}
+                    ></a></li>
+                  )}
+                </ol>
+              </>}
+            {linkList(incomingLinks, INCOMING_LINKS_ID_UNRESERVED, INCOMING_LINKS_MARKER, 'Incoming links', linkPref)}
+            </div>
             <h2>
               <CustomLink href={routes.issues(article.slug)}>
                 <IssueIcon /> Discussion ({ article.issueCount })

@@ -31,17 +31,20 @@ export interface ArticlePageProps {
 
 const ArticlePageHoc = (isIssue=false) => {
   return ({
+    ancestors,
     article,
     articlesInSamePage,
     articlesInSamePageForToc,
     commentCountByLoggedInUser,
     comments,
     commentsCount,
+    incomingLinks,
     issueArticle,
     latestIssues,
     topIssues,
     issuesCount,
     loggedInUser,
+    tagged,
     topicArticleCount,
   }: ArticlePageProps) => {
     const router = useRouter();
@@ -94,17 +97,20 @@ const ArticlePageHoc = (isIssue=false) => {
           </div>
           <div className="container page">
             <Article {...{
+              ancestors,
               article,
               articlesInSamePage,
               articlesInSamePageForToc,
               commentCountByLoggedInUser,
               comments,
               commentsCount,
+              incomingLinks,
               issueArticle,
               isIssue,
               issuesCount,
               latestIssues,
               loggedInUser,
+              tagged,
               topIssues,
             }} />
           </div>

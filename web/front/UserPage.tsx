@@ -48,14 +48,17 @@ export default function UserPage({
   articlesCount,
   articlesInSamePage,
   articlesInSamePageForToc,
+  ancestors,
   comments,
   commentCountByLoggedInUser,
+  incomingLinks,
   issuesCount,
   itemType,
   latestIssues,
   loggedInUser,
   order,
   page,
+  tagged,
   topIssues,
   user,
   users,
@@ -206,14 +209,17 @@ export default function UserPage({
       </div>
       {what === 'home' &&
         <Article {...{
+          ancestors,
           article,
           articlesInSamePage,
           articlesInSamePageForToc,
           comments,
           commentCountByLoggedInUser,
           latestIssues,
+          incomingLinks,
           issuesCount,
           loggedInUser,
+          tagged,
           topIssues,
         }}/>
       }

@@ -4,6 +4,7 @@ import React from "react";
 import ArticleActions from "components/article/ArticleActions";
 import CustomImage from "components/common/CustomImage";
 import CustomLink from "components/common/CustomLink";
+import { formatDate } from "lib/utils";
 
 const ArticleMetaContainer = styled("div")`
   display: block;
@@ -56,7 +57,7 @@ const ArticleMeta = ({ article }) => {
           &nbsp;
           {article.author?.username}
         </CustomLink>
-        <ArticleDate>{new Date(article.createdAt).toDateString()}</ArticleDate>
+        <ArticleDate>{formatDate(article.createdAt)}</ArticleDate>
       </ArticleMetaContainer>
       <ArticleActions article={article} />
     </>

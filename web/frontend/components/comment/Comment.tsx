@@ -99,7 +99,7 @@ const Comment = ({ comment }) => {
         >
           {comment.author.username}
         </CommentAuthorLink>
-        <CommentDate>{new Date(comment.createdAt).toDateString()}</CommentDate>
+        <CommentDate>{formatDate(comment.createdAt)}</CommentDate>
         <Maybe test={canModify}>
           <DeleteButton commentId={comment.id} />
         </Maybe>

@@ -2928,16 +2928,17 @@ cirodown README.ciro
 firefox hello.html
 ``
 
+Convert all `.ciro` files in a directory to HTML files next to each corresponding `.ciro` file, e.g. `somefile.ciro` to `somefile.html`:
+``
+cirodown .
+``
+The HTML output files are placed right next to each corresponding `.ciro`.
+
 The output file can be selected explicitly with: \x[outfile].
 
 Output to stdout instead of saving it to a file:
 ``
 cirodown --stdout README.ciro
-``
-
-Convert all `.ciro` files in a directory to HTML files next to each corresponding `.ciro` file, e.g. `somefile.ciro` to `somefile.html`:
-``
-cirodown .
 ``
 
 In order to resolve \x[internal-cross-file-references], this actually does two passes:

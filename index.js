@@ -594,9 +594,7 @@ class IdProvider {
   /** Like get, but do not resolve scope. */
   async get_noscope(id, context) {
     let get_ret = await this.get_noscope_entry(id);
-    if (get_ret === undefined) {
-      return undefined;
-    } else {
+    if (get_ret) {
       const ast = AstNode.fromJSON(get_ret.ast_json);
       ast.input_path = get_ret.path;
       ast.id = id;
@@ -604,6 +602,8 @@ class IdProvider {
         await validate_ast(ast, context);
       }
       return ast;
+    } else {
+      return undefined;
     }
   }
 
@@ -631,7 +631,7 @@ class IdProvider {
   async get_includes_entries(to_id) { throw new Error('unimplemented'); }
 
   /** Set of IDs. */
-  get_from_header_ids_of_xrefs_to(type, to_id) { throw new Error('unimplemented'); }
+  async get_from_header_ids_of_xrefs_to(type, to_id) { throw new Error('unimplemented'); }
 }
 exports.IdProvider = IdProvider;
 
@@ -661,15 +661,19 @@ class ChainedIdProvider extends IdProvider {
   }
 
   async get_includes(id, context) {
-    return (await this.id_provider_1.get_includes(id, context)).concat(
-      await this.id_provider_2.get_includes(id, context));
+    const arrs = await Promise.all([
+      this.id_provider_1.get_includes(id, context),
+      this.id_provider_2.get_includes(id, context),
+    ])
+    return (arrs[0]).concat(arrs[1])
   }
 
-  get_from_header_ids_of_xrefs_to(type, to_id, reverse=false) {
-    return new Set([
-      ...this.id_provider_1.get_from_header_ids_of_xrefs_to(type, to_id, reverse),
-      ...this.id_provider_2.get_from_header_ids_of_xrefs_to(type, to_id, reverse),
-    ]);
+  async get_from_header_ids_of_xrefs_to(type, to_id, reverse=false) {
+    const sets = await Promise.all([
+      this.id_provider_1.get_from_header_ids_of_xrefs_to(type, to_id, reverse),
+      this.id_provider_2.get_from_header_ids_of_xrefs_to(type, to_id, reverse),
+    ])
+    return new Set([...sets[0], ...sets[1]])
   }
 }
 
@@ -695,7 +699,7 @@ class DictIdProvider extends IdProvider {
     return [];
   }
 
-  get_from_header_ids_of_xrefs_to(type, to_id, reverse=false) {
+  async get_from_header_ids_of_xrefs_to(type, to_id, reverse=false) {
     const from_ids_reverse = this.xref_from_to_dict[reverse]
     if (from_ids_reverse !== undefined) {
       const from_ids_type = from_ids_reverse[to_id];

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+script_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+# https://stackoverflow.com/questions/12641676/how-to-get-a-status-of-a-running-query-in-postgresql-database/44211767#44211767
+"$script_dir/psql" -c "SELECT datname, pid, state, query, age(clock_timestamp(), query_start) AS age 
+FROM pg_stat_activity
+WHERE state <> 'idle' AND state <> 'idle in transaction'
+  AND query NOT LIKE '% FROM pg_stat_activity %'
+ORDER BY age" "$@"

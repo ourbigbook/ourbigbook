@@ -1,0 +1,42 @@
+{
+  "generateSitemap": true,
+  "ignore": [
+    "CONTRIBUTING\\.md",
+    "README\\.md",
+    "marked",
+    "vscode/CHANGELOG\\.md",
+    "vscode/README\\.md"
+  ],
+  "ignoreConvert": [
+    "ourbigbook.common.scss",
+    "ourbigbook.scss",
+    "editor.scss",
+    "ourbigbook_runtime.js",
+    "template",
+    "test_bigb_output.bigb",
+    "test_bigb_output_2.bigb",
+    "test_bigb_output_3.bigb",
+    "web/.*\\.bigb",
+    "web/.*\\.scss"
+  ],
+  "media-providers": {
+    "media-repo": {
+      "path": "../ourbigbook-media",
+      "type": "local",
+      "usedMediaOnly": true
+    }
+  },
+  "prepublish": "prepublish",
+  "publishCommitDate": "2000-01-01T00:00:00",
+  "publishCommitAuthorSameAsSource": true,
+  "publishRemoteUrl": "git@github.com:ourbigbook/ourbigbook.git",
+  "publishRootUrl": "https://docs.ourbigbook.com",
+  "target": {
+    "github-md": {
+      "prepublish": null,
+      "publishRemoteUrl": "git@github.com:ourbigbook/docs-md.git"
+    }
+  },
+  "sitemap": true,
+  "unsafeXss": true
+}

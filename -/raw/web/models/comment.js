@@ -1,0 +1,236 @@
+const { DataTypes } = require('sequelize')
+
+const config = require('../front/config')
+const { getCommentSlug } = require('../front/js')
+const convert = require('../convert')
+
+module.exports = (sequelize) => {
+  const Comment = sequelize.define(
+    'Comment',
+    {
+      // OurBigBook Markup source of the comment.
+      source: DataTypes.TEXT,
+      // Rendered comment.
+      render: DataTypes.TEXT,
+      // User-visible numeric identifier for the issue. 1-based.
+      number: DataTypes.INTEGER,
+      // Upvote count.
+      score: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      list: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
+    },
+    {
+      indexes: [
+        {
+          fields: ['issueId', 'number'],
+          unique: true,
+        },
+
+        // Foreign key indexes https://docs.ourbigbook.com/database-guidelines
+        { fields: ['issueId'], },
+        { fields: ['authorId'], },
+
+        // Efficient global listings.
+        { fields: ['createdAt'], },
+        { fields: ['updatedAt'], },
+        { fields: ['list', 'createdAt'], },
+        { fields: ['list', 'updatedAt'], },
+
+        // Efficient listing of issues by a given user.
+        { fields: ['authorId', 'createdAt'], },
+        { fields: ['authorId', 'updatedAt'], },
+        { fields: ['authorId', 'list', 'createdAt'], },
+        { fields: ['authorId', 'list', 'updatedAt'], },
+      ],
+    },
+  )
+
+  Comment.createSideEffects = async function(author, issue, fields, opts={}) {
+    return sequelize.transaction({ transaction: opts.transaction }, async (transaction) => {
+      const [comment, newIssue] = await Promise.all([
+        sequelize.models.Comment.create(
+          Object.assign({ authorId: author.id, issueId: issue.id }, fields),
+          { transaction }
+        ),
+        await author.addIssueFollowSideEffects(issue, { transaction }),
+      ])
+      return comment
+    })
+  }
+
+  Comment.getComments = async function({
+    authorId,
+    articleId,
+    issueId,
+    limit,
+    list,
+    offset,
+    order,
+    transaction,
+  }) {
+    const where = {}
+    if (authorId !== undefined) {
+      where.authorId = authorId
+    }
+    if (list !== undefined) {
+      where.list = list
+    }
+    if (order === undefined) {
+      order = [['createdAt', 'DESC']]
+    }
+    const articleInclude = {
+      model: sequelize.models.Article,
+      as: 'article',
+      required: true,
+      subQuery: false,
+      include: [{
+        model: sequelize.models.File,
+        as: 'file',
+      }],
+    }
+    if (articleId) {
+      articleInclude.where = { id: articleId }
+    }
+    let issueIncludeWhere
+    if (issueId) {
+      issueIncludeWhere = { id: issueId }
+    }
+    const ret = await sequelize.models.Comment.findAndCountAll({
+      include: [
+        {
+          model: sequelize.models.User,
+          as: 'author',
+        },
+        {
+          model: sequelize.models.Issue,
+          as: 'issue',
+          required: true,
+          subQuery: false,
+          where: issueIncludeWhere,
+          include: [
+            articleInclude
+          ],
+        },
+      ],
+      limit,
+      offset,
+      order,
+      transaction,
+      where,
+    })
+    // A nested issue->article->file->author include produces PostgreSQL column
+    // aliases longer than 63 bytes. PostgreSQL truncates them, which leaves
+    // some User fields undefined and makes Next.js reject the page props.
+    // Hydrate all file authors in one direct query instead.
+    const files = ret.rows
+      .map(comment => comment.issue.article.file)
+      .filter(file => file)
+    const authorIds = [...new Set(files.map(file => file.authorId))]
+    if (authorIds.length) {
+      const authors = await sequelize.models.User.findAll({
+        transaction,
+        where: { id: authorIds },
+      })
+      const authorsById = new Map(authors.map(author => [author.id, author]))
+      for (const file of files) file.author = authorsById.get(file.authorId)
+    }
+    return ret
+  }
+
+  Comment.prototype.destroySideEffects = async function(fields, opts={}) {
+    return this.destroy({ transaction: opts.transaction })
+  }
+
+  Comment.prototype.toJson = async function(loggedInUser) {
+    const ret = {
+      id: this.id,
+      list: this.list,
+      number: this.number,
+      source: this.source,
+      render: this.render,
+      createdAt: this.createdAt.toISOString(),
+      updatedAt: this.updatedAt.toISOString(),
+      score: this.score,
+    }
+    const author = this.author
+    if (author) {
+      ret.author = await author.toJson(loggedInUser)
+    }
+    const issue = this.issue
+    if (issue) {
+      ret.issue = await issue.toJson(loggedInUser)
+    }
+    return ret
+  }
+
+  Comment.prototype.rerender = async function({ convertOptionsExtra, ignoreErrors, transaction }={}) {
+    if (ignoreErrors === undefined)
+      ignoreErrors = false
+    await sequelize.transaction({ transaction }, async (transaction) => {
+      try {
+        await convert.convertComment({
+          comment: this,
+          sequelize,
+          transaction,
+          user: this.author,
+        })
+      } catch(e) {
+        if (ignoreErrors) {
+          console.log(e)
+        } else {
+          throw e
+        }
+      }
+    })
+  }
+
+  Comment.rerender = async ({ convertOptionsExtra, ignoreErrors, log }={}) => {
+    if (log === undefined)
+      log = false
+    let offset = 0
+    while (true) {
+      const comments = await sequelize.models.Comment.findAll({
+        include: [
+          {
+            model: sequelize.models.Issue,
+            as: 'issue',
+            include: [{
+              model: sequelize.models.Article,
+              as: 'article',
+            }]
+          },
+          {
+            model: sequelize.models.User,
+            as: 'author',
+          }
+        ],
+        offset,
+        limit: config.maxArticlesInMemory,
+        order: [
+          [{ model: sequelize.models.Issue, as: 'issue' }, { model: sequelize.models.Article, as: 'article' }, 'slug', 'ASC'],
+          [{ model: sequelize.models.Issue, as: 'issue' }, 'number', 'ASC'],
+          ['number', 'ASC']
+        ],
+      })
+      if (comments.length === 0)
+        break
+      for (const comment of comments) {
+        if (log)
+          console.log(getCommentSlug(comment))
+        await comment.rerender({ convertOptionsExtra, ignoreErrors })
+      }
+      offset += config.maxArticlesInMemory
+    }
+  }
+
+  Comment.ALLOWED_SORTS_EXTRA = {}
+
+  return Comment
+}

@@ -1,0 +1,26 @@
+#!/usr/bin/env node
+
+const path = require('path')
+
+const commander = require('commander')
+const { find_parent_cycles } = require('ourbigbook/nodejs_webpack_safe')
+
+const models = require('../models')
+
+const program = commander.program
+program.description('Check the web parent Ref graph for cycles')
+program.option('-a, --author <username>', 'only check one author')
+program.parse(process.argv)
+const opts = program.opts()
+const sequelize = models.getSequelize(path.dirname(__dirname))
+;(async () => {
+  const cycles = await find_parent_cycles(sequelize, {
+    idPrefix: opts.author === undefined ? undefined : `@${opts.author}`,
+  })
+  if (cycles.length) {
+    for (const cycle of cycles) console.error(cycle.join(' -> '))
+    process.exitCode = 1
+  } else {
+    console.log('No parent cycles found.')
+  }
+})().finally(() => sequelize.close())

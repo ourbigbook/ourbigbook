@@ -22,6 +22,7 @@ const SASS_EXT = '.scss';
 const OUT_DIRNAME = 'out';
 const DEFAULT_IGNORE_BASENAMES = [
   '.git',
+  '.gitignore',
   '.sass-cache',
   'node_modules',
   OUT_DIRNAME,
@@ -104,7 +105,7 @@ function cmd_get_stdout(cmd, args=[], options={}) {
   if (options.dry_run) {
     ret = '';
   } else {
-    if (out.status != 0) {
+    if (out.status != 0 && options.throw_on_error) {
       throw `cmd: \n${cmd_str}\nstdout: ` +
             `${out.stdout.toString(ENCODING)}\nstderr: ` +
             `${out.stderr.toString(ENCODING)}\n`;
@@ -437,6 +438,7 @@ if (commander.helpMacros) {
     let publish_out_dir;
     let cmd_options = {
       dry_run: commander.dryRun,
+      throw_on_error: true,
     }
     if (fs.lstatSync(inputPath).isFile()) {
       input_path_is_file = true;
@@ -564,6 +566,8 @@ if (commander.helpMacros) {
           convert_input_options.outdir = path.join(publish_out_dir, 'publish');
           convert_input_options.out_css_path = path.join(convert_input_options.outdir, cirodown_nodejs.PACKAGE_OUT_CSS_BASENAME);
           convert_input_options.include_contains_external = true;
+          // Remove all files from the gh-pages repository in case some were removed from the original source.
+          cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'rm', '-r', '-f', '.'], cmd_options);
         } else {
           actual_input = inputPath;
           convert_input_options.outdir = commander.outdir;
@@ -578,11 +582,14 @@ if (commander.helpMacros) {
           // Push the original source.
           cmd_get_stdout('git', ['-C', inputPath, 'push'], cmd_options);
           cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'init'], cmd_options);
-          if (publish_branch !== 'master') {
-            // https://stackoverflow.com/questions/42871542/how-to-create-a-git-repository-with-the-default-branch-name-other-than-master
-            cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'checkout', '-b', publish_branch], cmd_options);
+          // https://stackoverflow.com/questions/42871542/how-to-create-a-git-repository-with-the-default-branch-name-other-than-master
+          cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'checkout', '-B', publish_branch], cmd_options);
+          try {
+            // Fails if remote already exists.
+            cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'remote', 'add', 'origin', remote_url], cmd_options);
+          } catch(error) {
+            cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'remote', 'set-url', 'origin', remote_url], cmd_options);
           }
-          cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'remote', 'add', 'origin', remote_url], cmd_options);
           // Ensure that we are up-to-date with the upstream gh-pages if one exists.
           // TODO may fail on initial one, do a check for that.
           cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'fetch', 'origin'], cmd_options);

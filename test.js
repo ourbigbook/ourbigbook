@@ -995,10 +995,22 @@ assert_convert_ast('header id new line sane',
   '\\h[1][aa]\n{id=bb}',
   header_id_new_line_expect,
 );
-assert_convert_ast('header id new line insane',
+assert_convert_ast('header id new line insane no trailing elment',
   '= aa\n{id=bb}',
   header_id_new_line_expect,
 );
+//// TODO id goes to code.
+//assert_convert_ast('header id new line insane trailing element',
+//  '= aa \\c[bb]\n{id=bb}',
+//  [a('h', undefined, {
+//      level: [t('1')],
+//      title: [t(
+//        'aa ',
+//        a('c', [t('bb')]),
+//      )],
+//      id: [t('cc')],
+//  })],
+//);
 assert_error('header must be an integer letters', '\\h[a][b]\n', 1, 3);
 assert_error('header h2 must be an integer toc',
   `\\h[1][h1]

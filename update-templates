@@ -33,6 +33,7 @@ update-template() (
   fi
   if [ -n "$subdir" ]; then cd -; fi
   git init
+  git config core.sshCommand 'ssh -i ~/.ssh/id_rsa_ourbigbook_admin -o IdentitiesOnly=yes'
   git add .
   email=admin@ourbigbook.com
   name='OurBigBook Admin'

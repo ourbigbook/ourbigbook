@@ -4313,7 +4313,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: includer should how as a parent of the includee',
+  'executable: includer should show as a parent of the includee',
   {
     args: ['--split-headers', '.'],
     filesystem: {
@@ -5151,6 +5151,7 @@ assert_executable(
     }
   }
 );
+
 assert_executable(
   'executable: incoming links and other children',
   {

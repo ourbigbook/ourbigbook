@@ -2900,7 +2900,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 * https://github.com/rstudio/bookdown[], https://bookdown.org/[]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: https://bookdown.org/yihui/bookdown/pandoc.html[], thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.
 * https://gohugo.io/[Hugo]. Pretty good, similar feature set to ours. But Go based, so hard on browser, and adds adhoc features on top of markdown once again
 * https://en.wikipedia.org/wiki/Personal_wiki
-** https://github.com/vimwiki/vimwiki
+  * https://github.com/vimwiki/vimwiki
 
 Less related but of interest, similar philosophy to what Ciro wants, but no explicitly reusable system:
 * http://www.uprtcl.io/

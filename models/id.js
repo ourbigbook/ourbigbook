@@ -1,3 +1,4 @@
+const { EntryPlugin } = require('webpack')
 const ourbigbook = require('../index')
 
 module.exports = (sequelize) => {
@@ -69,17 +70,24 @@ module.exports = (sequelize) => {
         { '$duplicate->idDefinedAt.path$': paths },
       ]
     }
+    console.error('here')
+    console.log(`paths: ${require('util').inspect(paths, { depth: null })}`)
     return sequelize.models.Id.findAll({
+      logging: console.log,
       include: [
         {
           model: sequelize.models.Id,
           as: 'duplicate',
           required: true,
+          attributes: [],
+          //through: { attributes: [] },
           include: [
             {
               model: sequelize.models.File,
               as: 'idDefinedAt',
               required: true,
+              attributes: [],
+              //through: { attributes: [] },
             },
           ],
         },

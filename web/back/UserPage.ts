@@ -1,79 +1,92 @@
 import ourbigbook from 'ourbigbook/dist/ourbigbook'
-import { articleLimit  } from 'front/config'
-import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
-import { getLoggedInUser } from 'back'
 
-export const getServerSidePropsUserHoc = (what) => {
-  return async ({ params, req, res }) => {
-    const sequelize = req.params.sequelize
-    const loggedInUser = await getLoggedInUser(req, res)
-    const user = await sequelize.models.User.findOne({
-      where: { username: params.uid },
-    })
-    if (!user) {
-      return {
-        notFound: true
+import { getLoggedInUser } from 'back'
+import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
+import { articleLimit  } from 'front/config'
+import { MyGetServerSideProps } from 'front/types'
+import { UserPageProps } from 'front/UserPage'
+
+export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
+  return async (context) => {
+    const { params: { page, uid }, req, res } = context
+    if (
+      typeof uid === 'string' &&
+      ( typeof page === 'undefined' || typeof page === 'string' )
+    ) {
+      const sequelize = req.sequelize
+      const loggedInUser = await getLoggedInUser(req, res)
+      const user = await sequelize.models.User.findOne({
+        where: { username: uid },
+      })
+      if (!user) {
+        return {
+          notFound: true
+        }
       }
-    }
-    const page = params?.page ? parseInt(params.page as string, 10) - 1: 0
-    let order
-    let author
-    let likedBy
-    if (what !== 'home') {
-      switch (what) {
-        case 'likes':
-          order = 'createdAt'
-          likedBy = params.uid
-          break
-        case 'user-articles-top':
-          order = 'score'
-          author = params.uid
-          break
-        case 'user-articles-latest':
-          order = 'createdAt'
-          author = params.uid
-          break
-        default:
-          throw new Error(`Unknown search: ${what}`)
+      const pageNum = typeof page === 'undefined' ? 0 : parseInt(page, 10) - 1
+      let order
+      let author
+      let likedBy
+      if (what !== 'home') {
+        switch (what) {
+          case 'likes':
+            order = 'createdAt'
+            likedBy = uid
+            break
+          case 'user-articles-top':
+            order = 'score'
+            author = uid
+            break
+          case 'user-articles-latest':
+            order = 'createdAt'
+            author = uid
+            break
+          default:
+            throw new Error(`Unknown search: ${what}`)
+        }
       }
-    }
-    const articlesPromise = what === 'home' ? [] : sequelize.models.Article.getArticles({
-      sequelize,
-      limit: articleLimit,
-      offset: page * articleLimit,
-      order,
-      author,
-      likedBy,
-    })
-    ;const [
-      articles,
-      userJson,
-      authoredArticleCount,
-      likedArticleCount
-    ] = await Promise.all([
-      articlesPromise,
-      user.toJson(loggedInUser),
-      user.countAuthoredArticles(),
-      user.countLikes(),
-    ])
-    const props:any = {
-      user: userJson,
-      authoredArticleCount,
-      likedArticleCount,
-      page,
-      what,
-    }
-    if (loggedInUser) {
-      props.loggedInUser = await loggedInUser.toJson()
-    }
-    if (what === 'home') {
-      const articleProps = (await getServerSidePropsArticleHoc(true, loggedInUser)({
-        params: { slug: [ params.uid ] }, req, res }))
-      Object.assign(props, articleProps.props)
+      const articlesPromise = what === 'home' ? [] : sequelize.models.Article.getArticles({
+        sequelize,
+        limit: articleLimit,
+        offset: pageNum * articleLimit,
+        order,
+        author,
+        likedBy,
+      })
+      ;const [
+        articles,
+        userJson,
+        authoredArticleCount,
+        likedArticleCount
+      ] = await Promise.all([
+        articlesPromise,
+        user.toJson(loggedInUser),
+        user.countAuthoredArticles(),
+        user.countLikes(),
+      ])
+      const props: UserPageProps = {
+        user: userJson,
+        authoredArticleCount,
+        likedArticleCount,
+        page: pageNum,
+        what,
+      }
+      if (loggedInUser) {
+        props.loggedInUser = await loggedInUser.toJson()
+      }
+      if (what === 'home') {
+        const articleContext = Object.assign({}, context, { params: { slug: [ uid ] } })
+        const articleProps = await (getServerSidePropsArticleHoc(true, loggedInUser)(articleContext))
+        if ('props' in articleProps) {
+          Object.assign(props, articleProps.props)
+        }
+      } else {
+        props.articles = await Promise.all(articles.rows.map(article => article.toJson(loggedInUser)))
+        props.articlesCount = articles.count
+      }
+      return { props }
     } else {
-      props.articles = await Promise.all(articles.rows.map(article => article.toJson(loggedInUser)))
-      props.articlesCount = articles.count
+      throw new TypeError
     }
-    return { props }
   }
 }

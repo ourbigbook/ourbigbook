@@ -15,8 +15,8 @@ import routes from 'front/routes'
 import { AppContext, useCtrlEnterSubmit } from 'front'
 import { modifyEditorInput } from 'front/js';
 
-export default function ArticleEditorPageHoc(options:any={}) {
-  const isnew = options.isnew === undefined ? false : options.isnew
+export default function ArticleEditorPageHoc(options = { isnew: false}) {
+  const { isnew } = options
   const editor = ({ article: initialArticle }) => {
     const router = useRouter();
     const {

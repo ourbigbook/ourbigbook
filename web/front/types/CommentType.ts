@@ -1,3 +1,5 @@
+import { UserType } from 'front/types/UserType'
+
 export interface Comments {
   comments: CommentType[];
 }
@@ -7,12 +9,6 @@ export type CommentType = {
   id: string;
   body: string;
   slug: string;
-  author: Author;
+  author: UserType;
   updatedAt: number;
-};
-
-export type Author = {
-  username: string;
-  image: string;
-  following: boolean;
 };

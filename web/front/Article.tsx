@@ -34,7 +34,7 @@ const Article = ({
     seeAllCreateNew = <>
       {latestIssues.length > 0 &&
         <>
-          <a href={routes.issuesLatest(article.slug)}><i className="ion-eye" /> See all { issuesCount } threads</a>.{' '}
+          <a href={routes.issues(article.slug)}><i className="ion-eye" /> See all { issuesCount } threads</a>.{' '}
         </>
       }
       {loggedInUser

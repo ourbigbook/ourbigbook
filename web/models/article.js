@@ -1,5 +1,7 @@
 const { DataTypes, Op } = require('sequelize')
 
+const front = require('../front/js')
+
 module.exports = (sequelize) => {
   // Each Article contains rendered HTML output, analogous to a .html output file in OurBigBook CLI.
   // The input source is stored in the File model. A single file can then generate
@@ -90,6 +92,39 @@ module.exports = (sequelize) => {
 
   Article.prototype.isToplevelIndex = function(user) {
     return this.slug === user.username
+  }
+
+  Article.getArticle = async function({
+    includeIssues,
+    sequelize,
+    slug,
+  }) {
+    const include = [{
+      model: sequelize.models.File,
+      as: 'file',
+      include: [{
+        model: sequelize.models.User,
+        as: 'author',
+      }]
+    }]
+    let order
+    if (includeIssues) {
+      include.push({
+        model: sequelize.models.Issue,
+        as: 'issues',
+        order: [['number', 'DESC']],
+        include: [{ model: sequelize.models.User, as: 'author' }],
+        limit: front.DEFAULT_LIMIT,
+      })
+      order = [[
+        'issues', 'number', 'DESC'
+      ]]
+    }
+    return sequelize.models.Article.findOne({
+      where: { slug },
+      include,
+      order,
+    })
   }
 
   // Helper for common queries.

@@ -1,20 +1,13 @@
-async function getArticle(req, res) {
-  const id = validateParam(req.query, 'id')
+const front = require('../front/js')
+
+async function getArticle(req, res, options={}) {
+  const { includeIssues } = options
+  const slug = validateParam(req.query, 'id')
   const sequelize = req.app.get('sequelize')
-  const article = await sequelize.models.Article.findOne({
-    where: { slug: id },
-    include: [{
-      model: sequelize.models.File,
-      as: 'file',
-      include: [{
-        model: sequelize.models.User,
-        as: 'author',
-      }],
-    }]
-  })
+  const article = await sequelize.models.Article.getArticle({ includeIssues, sequelize, slug })
   if (!article) {
     throw new ValidationError(
-      [`Article slug not found: "${req.query.id}"`],
+      [`Article slug not found: "${slug}"`],
       404,
     )
   }

@@ -21,25 +21,16 @@ router.param('comment', function(req, res, next, id) {
     .catch(next)
 })
 
-// Return an article's issues
+// Get issues for an article.
 router.get('/', auth.optional, async function(req, res, next) {
   try {
-    const article = await getArticle(req, res)
-    let user;
-    if (req.payload) {
-      user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-    } else {
-      user = null
-    }
-    const issues = await article.getIssues({
-      order: [['number', 'DESC']],
-      include: [{ model: req.app.get('sequelize').models.User, as: 'author' }],
-      limit: front.DEFAULT_LIMIT,
-    })
+    const sequelize = req.app.get('sequelize')
+    const [article, user] = await Promise.all([
+      getArticle(req, res, { includeIssues: true }),
+      req.payload ? sequelize.models.User.findByPk(req.payload.id) : null,
+    ])
     return res.json({
-      issues: await Promise.all(issues.map(function(issue) {
-        return issue.toJson(user)
-      }))
+      issues: await Promise.all(article.issues.map(issue => issue.toJson(user)))
     })
   } catch(error) {
     next(error);
@@ -53,21 +44,14 @@ function getIssueParams(req, res) {
   }
 }
 
-async function getIssue(req, res) {
+async function getIssue(req, res, options={}) {
+  const { includeComments } = options
   const sequelize = req.app.get('sequelize')
   const { slug, number } = getIssueParams(req, res)
-  const issue = await sequelize.models.Issue.findOne({
-    where: {
-      number: number,
-    },
-    include: [{
-      model: sequelize.models.Article,
-      where: { slug },
-    }]
-  })
+  const issue = await sequelize.models.Issue.getIssue({ includeComments, number, sequelize, slug })
   if (!issue) {
     throw new ValidationError(
-      [`issue not found: article slug: "${req.query.id}" issue number: ${number}`],
+      [`issue not found: article slug: "${slug}" issue number: ${number}`],
       404,
     )
   }
@@ -77,14 +61,15 @@ async function getIssue(req, res) {
 // Create a new issue.
 router.post('/', auth.required, async function(req, res, next) {
   try {
-    const { slug, number } = getIssueParams(req, res)
     const sequelize = req.app.get('sequelize')
+    const slug = validateParam(req.query, 'id')
     const [article, lastIssue, user] = await Promise.all([
       getArticle(req, res),
       sequelize.models.Issue.findOne({
         orderBy: [['number', 'DESC']],
         include: [{
           model: sequelize.models.Article,
+          as: 'issues',
           where: { slug },
         }]
       }),
@@ -110,22 +95,12 @@ router.post('/', auth.required, async function(req, res, next) {
 // Get issues's comments.
 router.get('/:number/comments', auth.optional, async function(req, res, next) {
   try {
-    const issue = await getIssue(req, res)
-    let user;
-    if (req.payload) {
-      user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-    } else {
-      user = null
-    }
-    const comments = await issue.getComments({
-      order: [['number', 'DESC']],
-      include: [{ model: req.app.get('sequelize').models.User, as: 'author' }],
-      limit: front.DEFAULT_LIMIT,
-    })
+    const [issue, user] = await Promise.all([
+      getIssue(req, res, { includeComments: true }),
+      req.payload ? req.app.get('sequelize').models.User.findByPk(req.payload.id) : null,
+    ])
     return res.json({
-      comments: await Promise.all(comments.map(function(comment) {
-        return comment.toJson(user)
-      }))
+      comments: await Promise.all(issue.comments.map(comment => comment.toJson(user)))
     })
   } catch(error) {
     next(error);
@@ -134,18 +109,20 @@ router.get('/:number/comments', auth.optional, async function(req, res, next) {
 
 // Create a new comment.
 router.post('/:number/comments', auth.required, async function(req, res, next) {
-  const { slug, number } = getIssueParams(req, res)
-  const sequelize = req.app.get('sequelize')
   try {
+    const { slug, number } = getIssueParams(req, res)
+    const sequelize = req.app.get('sequelize')
     const [issue, lastComment, user] = await Promise.all([
       getIssue(req, res),
       sequelize.models.Comment.findOne({
         orderBy: [['number', 'DESC']],
         include: [{
           model: sequelize.models.Issue,
+          as: 'comments',
           where: { number },
           include: [{
             model: sequelize.models.Article,
+            as: 'issues',
             where: { slug },
           }],
         }]
@@ -160,7 +137,6 @@ router.post('/:number/comments', auth.required, async function(req, res, next) {
       source,
       user,
     })
-
     comment.author = user
     res.json({ comment: await comment.toJson(user) })
   } catch(error) {

@@ -14,12 +14,12 @@ import { webApi } from 'front/api'
 import fetcher from 'front/fetcher'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
-import { CommentType } from 'front/types/CommentType'
+import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
 
 export interface ArticlePageProps {
   article: ArticleType;
-  comments?: CommentType[];
+  issues?: IssueType[];
   loggedInUser?: UserType;
   sameArticleByLoggedInUser?: string;
   topicArticleCount: number;
@@ -27,7 +27,7 @@ export interface ArticlePageProps {
 
 const ArticlePage = ({
   article,
-  comments,
+  issues,
   loggedInUser,
   sameArticleByLoggedInUser,
   topicArticleCount,
@@ -81,7 +81,7 @@ const ArticlePage = ({
           <ArticleInfo {...{ article, loggedInUser }}/>
         </div>
         <div className="container page">
-          <Article {...{ article, comments, loggedInUser }} />
+          <Article {...{ article, issues, loggedInUser }} />
         </div>
       </div>
     </>

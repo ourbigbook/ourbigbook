@@ -2,9 +2,16 @@
 //
 // Plus some other random stuff that has to be able to run on frontend, thus no backend stuff here.
 
+const crypto = require('crypto')
+
 const axios = require('axios')
 
 const ourbigbook = require('./index');
+
+function articleHash(opts={}) {
+  const jsonStr = JSON.stringify(Object.fromEntries(Object.entries(opts).sort()))
+  return crypto.createHash('sha256').update(jsonStr).digest('hex')
+}
 
 // https://stackoverflow.com/questions/8135132/how-to-encode-url-parameters/50288717#50288717
 function encodeGetParams(p) {
@@ -102,8 +109,8 @@ class WebApi {
     return this.req('get', `articles${encodeGetParamsWithOffset(opts)}`)
   }
 
-  async articlesSha256(opts={}) {
-    return this.req('get', `articles/sha256${encodeGetParamsWithOffset(opts)}`)
+  async articlesHash(opts={}) {
+    return this.req('get', `articles/hash${encodeGetParamsWithOffset(opts)}`)
   }
 
   async articleCreate(article, opts={}) {
@@ -500,6 +507,7 @@ class DbProviderBase extends ourbigbook.DbProvider {
 }
 
 module.exports = {
+  articleHash,
   WebApi,
   DbProviderBase,
   encodeGetParams,

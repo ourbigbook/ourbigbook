@@ -9026,7 +9026,7 @@ const OUTPUT_FORMATS_LIST = [
           if (header_has_meta) {
             ret += `<nav class="h-nav h-nav-toplevel">`;
           }
-          if (context.options.h_web_metadata) {
+          if (context.options.h_web_metadata && first_header && ast.get_header_parent_asts(context).length !== 0) {
             ret += `<div class="nav ancestors"></div>`
           }
           for (const meta of [web_meta, header_meta_ancestors, header_meta, header_meta2]) {

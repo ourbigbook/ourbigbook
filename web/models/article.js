@@ -220,7 +220,7 @@ module.exports = (sequelize) => {
 
         // Update indices to account for space opened upbefore insertion.
         let nestedSetDelta = newNestedSetIndex - oldNestedSetIndex
-        if (newNestedSetIndex < oldNestedSetIndex) {
+        if (newNestedSetIndex <= oldNestedSetIndex) {
           oldNestedSetIndex += nArticles
           nestedSetDelta -= nArticles
           if (oldParentId === newParentId) {
@@ -304,6 +304,13 @@ WHERE
     })
   }
 
+  /** Sample output:
+   *
+   * nestedSetIndex, nestedSetNextSibling, depth, to_id_index, slug, parentId
+   * 0, 4, 0, null, user0, null
+   * 1, 3, 1, 0, user0/physics, @user0
+   * 3, 4, 1, 1, user0/mathematics, @user0
+   */
   Article.treeToString = async function(opts={}) {
     return 'nestedSetIndex, nestedSetNextSibling, depth, to_id_index, slug, parentId\n' + (
       await sequelize.models.Article.treeFindInOrder({ refs: true, transaction: opts.transaction })

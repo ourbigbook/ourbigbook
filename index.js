@@ -590,8 +590,17 @@ class AstNode {
       split_default: this.split_default,
       synonym:    this.synonym,
       word_count: this.word_count,
-      args:       this.args,
     }
+    const args_given = Object.assign({}, this.args)
+    for (const argname in this.args) {
+      if (
+        argname in this.validation_output &&
+        !this.validation_output[argname].given
+      ) {
+        delete args_given[argname]
+      }
+    }
+    ret.args = args_given
     if (this.header_graph_node !== undefined) {
       ret.header_graph_node_word_count = this.header_graph_node.word_count
     }
@@ -732,7 +741,7 @@ class FileProvider {
 
   get_path_entry(path) { throw new Error('unimplemented'); }
 
-  async get_path_entry_fetch(path) { throw new Error('unimplemented'); }
+  async get_path_entry_fetch(path, context) { throw new Error('unimplemented'); }
 }
 exports.FileProvider = FileProvider;
 
@@ -792,16 +801,8 @@ class IdProvider {
   }
 
   /** Like get, but do not resolve scope. */
-  get_noscope(id, context) {
-    const ast = this.get_noscope_base(id);
-    if (ast === undefined) {
-      return undefined;
-    } else {
-      if (context !== undefined) {
-        validate_ast(ast, context);
-      }
-      return ast;
-    }
+  get_noscope(id) {
+    return this.get_noscope_base(id);
   }
 
   get_noscope_raw(ids) { throw new Error('unimplemented'); }
@@ -4040,6 +4041,24 @@ async function parse(tokens, options, context, extra_returns={}) {
     } else {
       // Not CirodownExample.
       if (macro_name === Macro.HEADER_MACRO_NAME) {
+        if (is_first_header) {
+          ast.id = context.toplevel_id
+          if (options.toplevel_has_scope) {
+            // We also need to fake an argument here, because that will
+            // get serialiezd to the database, which his needed for
+            // toplevel scope removal from external links.
+            const scope_arg = new AstArgument([], ast.source_location);
+            ast.args.scope = scope_arg;
+            ast.setup_argument('scope', scope_arg);
+          }
+          if (options.toplevel_parent_scope !== undefined) {
+            ast.scope = options.toplevel_parent_scope;
+            // We skip calculation of scoped IDs, so gotta do it here.
+            ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id;
+          }
+          ast.is_first_header_in_input_file = true;
+        }
+
         // Required by calculate_id.
         validate_ast(ast, context);
 
@@ -4161,27 +4180,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
         }
 
-        // Create the header tree.
-        if (is_first_header) {
-          ast.id = context.toplevel_id;
-          if (options.toplevel_has_scope) {
-            // TODO why isn't the fake argument below enough?
-            ast.validation_output.scope.boolean = true;
-            // We also need to fake an argument here, because that will
-            // get serialiezd to the database, which his needed for
-            // toplevel scope removal from external links.
-            const scope_arg = new AstArgument([], ast.source_location);
-            ast.args.scope = scope_arg;
-            ast.setup_argument('scope', scope_arg);
-          }
-          if (options.toplevel_parent_scope !== undefined) {
-            ast.scope = options.toplevel_parent_scope;
-            // We skip calculation of scoped IDs, so gotta do it here.
-            ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id;
-          }
-          ast.is_first_header_in_input_file = true;
-          is_first_header = false;
-        }
+        is_first_header = false;
 
         if (options.is_first_global_header) {
           first_header = ast;
@@ -4438,6 +4437,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         id_conflict_asts_promise = options.id_provider.get_noscopes_base_fetch(
           ids,
           options.include_path_set,
+          context,
         )
       } else {
         id_conflict_asts_promise = []
@@ -4447,6 +4447,8 @@ async function parse(tokens, options, context, extra_returns={}) {
         id_conflict_asts_promise,
         options.id_provider.get_noscopes_base_fetch(
           Array.from(prefetch_ids),
+          new Set(),
+          context,
         ),
 
         // TODO merge the following two refs fetch into one single DB query. Lazy now.
@@ -4465,6 +4467,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           ],
           header_ids,
           {
+            context,
             ignore_paths_set: context.options.include_path_set,
           },
         ),
@@ -4475,6 +4478,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           ],
           header_ids,
           {
+            context,
             reversed: true,
             ignore_paths_set: context.options.include_path_set,
           }
@@ -4496,7 +4500,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
       }
       if (prefetch_files.size) {
-        await context.options.file_provider.get_path_entry_fetch(Array.from(prefetch_files))
+        await context.options.file_provider.get_path_entry_fetch(Array.from(prefetch_files), context)
       }
     }
 
@@ -4918,7 +4922,8 @@ async function parse(tokens, options, context, extra_returns={}) {
       }
     }
     if (options.id_provider !== undefined) {
-      context.options.id_provider.build_header_tree(options.include_hrefs, fetch_header_tree_ids_rows)
+      context.options.id_provider.build_header_tree(
+        options.include_hrefs, fetch_header_tree_ids_rows, { context })
     }
 
     // Check for ID conflicts.
@@ -5491,6 +5496,7 @@ function validate_ast(ast, context) {
     ];
   }
 }
+exports.validate_ast = validate_ast
 
 function x_child_db_effective_id(target_id, context, ast) {
   const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);

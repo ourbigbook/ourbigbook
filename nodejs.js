@@ -80,9 +80,9 @@ class SqliteIdProvider extends cirodown.IdProvider {
     ])
   }
 
-  add_row_to_id_cache(row) {
+  add_row_to_id_cache(row, context) {
     if (row !== null) {
-      const ast = this.row_to_ast(row)
+      const ast = this.row_to_ast(row, context)
       if (
         // Possible on reference to ID that does not exist and some other
         // non error cases I didn't bother to investigate.
@@ -95,7 +95,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
     }
   }
 
-  async get_noscopes_base_fetch(ids, ignore_paths_set) {
+  async get_noscopes_base_fetch(ids, ignore_paths_set, context) {
     const asts = []
     if (ids.length) {
       const where = {
@@ -123,7 +123,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
         ],
       })
       for (const row of rows) {
-        asts.push(this.add_row_to_id_cache(row))
+        asts.push(this.add_row_to_id_cache(row, context))
       }
     }
     return asts
@@ -145,7 +145,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
     return cached_asts
   }
 
-  async get_refs_to_fetch(types, to_ids, { reversed, ignore_paths_set }) {
+  async get_refs_to_fetch(types, to_ids, { reversed, ignore_paths_set, context }) {
     if (reversed === undefined) {
       reversed = false
     }
@@ -194,7 +194,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
           to_id_key_dict[row.type] = to_id_key_dict_type
         }
         to_id_key_dict_type.push(row)
-        this.add_row_to_id_cache(row[include_key])
+        this.add_row_to_id_cache(row[include_key], context)
       }
     }
   }
@@ -225,10 +225,10 @@ class SqliteIdProvider extends cirodown.IdProvider {
   // because we want to first fetch everything
   // and populate the ID cache with the include entry points that have proper header_graph_node.
   // Only then are we ready for linking up the rest of the tree.
-  build_header_tree(starting_ids_to_asts, fetch_header_tree_ids_rows) {
+  build_header_tree(starting_ids_to_asts, fetch_header_tree_ids_rows, {context}) {
     const asts = []
     for (const row of fetch_header_tree_ids_rows) {
-      const ast = this.row_to_ast(row)
+      const ast = this.row_to_ast(row, context)
       const parent_id = row.from_id
       const parent_ast = this.id_cache[parent_id]
       const parent_ast_header_graph_node = parent_ast.header_graph_node
@@ -290,10 +290,11 @@ ON "Ids".idid = "RecRefs"."to_id"
     return rows
   }
 
-  row_to_ast(row) {
+  row_to_ast(row, context) {
     const ast = cirodown.AstNode.fromJSON(row.ast_json)
     ast.input_path = row.path
     ast.id = row.idid
+    cirodown.validate_ast(ast, context)
     return ast
   }
 

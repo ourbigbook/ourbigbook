@@ -917,6 +917,8 @@ Note that when the `parent=` argument is given, the header level must be `1`, ot
 ``
 because the second header has level `2` instead of the required `= My h2`.
 
+When \x[scope][scopes] are involved, the rules are the same as those of internal reference resolution, including the leading `/` to break out of the scope in case of conflicts.
+
 See also: \x[header-explicit-levels-vs-nesting-design-choice]{full} for further rationale.
 
 === Unlimited header levels

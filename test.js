@@ -1274,6 +1274,56 @@ assert_no_error("internal cross references work with header scope and don't thro
 == h2 2
 `
 );
+assert_convert_ast('scope with parent leading slash conflict resolution',
+  `= h1
+
+= h2
+{parent=h1}
+
+= h3
+{scope}
+{parent=h2}
+
+= h2
+{parent=h3}
+
+= h4
+{parent=h2}
+
+= h4
+{parent=/h2}
+`, [
+  a('H', undefined, {level: [t('1')], title: [t('h1')]}, {id: 'h1'}),
+  a('H', undefined, {level: [t('2')], title: [t('h2')]}, {id: 'h2'}),
+  a('H', undefined, {level: [t('3')], title: [t('h3')]}, {id: 'h3'}),
+  a('H', undefined, {level: [t('4')], title: [t('h2')]}, {id: 'h3/h2'}),
+  a('H', undefined, {level: [t('5')], title: [t('h4')]}, {id: 'h3/h4'}),
+  a('H', undefined, {level: [t('3')], title: [t('h4')]}, {id: 'h4'}),
+]
+)
+assert_convert_ast('scope with parent breakout with no leading slash',
+  `= h1
+
+= h2
+{parent=h1}
+
+= h3
+{scope}
+{parent=h2}
+
+= h4
+{parent=h3}
+
+= h5
+{parent=h2}
+`, [
+  a('H', undefined, {level: [t('1')], title: [t('h1')]}, {id: 'h1'}),
+  a('H', undefined, {level: [t('2')], title: [t('h2')]}, {id: 'h2'}),
+  a('H', undefined, {level: [t('3')], title: [t('h3')]}, {id: 'h3'}),
+  a('H', undefined, {level: [t('4')], title: [t('h4')]}, {id: 'h3/h4'}),
+  a('H', undefined, {level: [t('3')], title: [t('h5')]}, {id: 'h5'}),
+]
+)
 
 //// Headers.
 // TODO inner ID property test

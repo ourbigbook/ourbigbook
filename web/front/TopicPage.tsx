@@ -45,7 +45,7 @@ export const TopicPage = ({
     <div className="topic-page content-not-ourbigbook">
       {topic ?
         <>
-          <h1><TopicIcon /> <span className="ourbigbook-title" dangerouslySetInnerHTML={{ __html: topic.titleRender }} /></h1>
+          <h1><a href=""><TopicIcon /> <span className="ourbigbook-title" dangerouslySetInnerHTML={{ __html: topic.titleRender }} /></a></h1>
           <div className="tab-list">
             <CustomLink
               className={`tab-item${order === 'score' ? ' active' : ''}`}
@@ -73,6 +73,7 @@ export const TopicPage = ({
             page,
             paginationUrlFunc,
             showAuthor: true,
+            showBody: true,
             what,
           }}/>
         </>

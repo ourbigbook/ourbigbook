@@ -1395,7 +1395,7 @@ Macro.TITLE2_ARGUMENT_NAME = 'title2';
 //   magic one.
 Macro.RESERVED_ID_PREFIX = '_'
 Macro.TOC_ID = Macro.RESERVED_ID_PREFIX + 'toc';
-Macro.TOC_PREFIX = Macro.TOC_ID + '-'
+Macro.TOC_PREFIX = Macro.TOC_ID + '/'
 Macro.TOPLEVEL_MACRO_NAME = 'Toplevel';
 
 /** Helper to create plaintext nodes, since so many of the fields are fixed in that case. */
@@ -2397,9 +2397,6 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
     }
   }
   if (id !== undefined) {
-    if (context.options.id_prefix) {
-      id = context.options.id_prefix + id
-    }
     ast.id = id
   }
   if (ast.id && ast.subdir &&  !skip_scope) {
@@ -2969,6 +2966,7 @@ function convert_id_arg(arg, context) {
 function convert_init_context(options={}, extra_returns={}) {
   options = Object.assign({}, options);
   if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
+  if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
   if (!('body_only' in options)) { options.body_only = false; }
   if (!('db_provider' in options)) { options.db_provider = undefined; }
   if (!('fixedScopeRemoval' in options)) {
@@ -3057,17 +3055,13 @@ function convert_init_context(options={}, extra_returns={}) {
   if (!('h_show_split_header_link' in options)) {
     options.h_show_split_header_link = true;
   }
+  if (!('h_web_metadata' in options)) {
+    // If true, reserve an empty metadata line for web injected elements
+    // such as like count and date modified.
+    options.h_web_metadata = false;
+  }
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('katex_macros' in options)) { options.katex_macros = {}; }
-  if (!('id_prefix' in options)) {
-    // Prefix all IDs of a file with this prefix.
-    // Internal links should be updated to still work.
-    // External incoming links to such modified IDs are not supported.
-    // Use case: avoid ID conflicts when web when showing multiple
-    // comments on issue page.
-    // https://github.com/cirosantilli/ourbigbook/issues/251
-    options.id_prefix = '';
-  }
   if (!('prefixNonIndexedIdsWithParentId' in options)) {
     // E.g. the first paragraph of a header would have ID `_1` without this.
     // This this option it becomes instead `header-id/_1`.
@@ -3139,12 +3133,16 @@ function convert_init_context(options={}, extra_returns={}) {
     if (!('root_relpath' in options.template_vars)) { options.template_vars.root_relpath = ''; }
     if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
     if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
-  if (!('web' in options)) {
-    // If true, inject elements that are used for OurBigBook Web.
-    options.web = false;
+  if (!('x_absolute' in options)) {
+    // Make all internal links absolute from website root.
+    // This is the only way that we can have a single rendering that works on both
+    // /go/topic/<topic> and /username/<topic>. It will also remove the need for
+    // the ../ hack we were using to make the same links work from both index /username
+    // and /username/<topic>.
+    options.x_absolute = false;
   }
+  if (!('tocIdPrefix' in options)) { options.tocIdPrefix = ''; }
   if (!('x_external_prefix' in options)) {
-    // Prefix all x reference targets not to the current document with this prefix.
     // Used in web to offset the relative paths of issues and editor preview, e.g.
     // go/issues/1/username/article
     options.x_external_prefix = '';
@@ -6183,10 +6181,10 @@ function render_error_x_undefined(ast, context, target_id, options={}) {
  * the static one had a tree representation, but the dynamic one has a list, so we convert
  * both to a single list representation and render it here.
  **/
-function render_toc_from_entry_list({ add_test_instrumentation, entry_list, descendant_count_html }) {
+function render_toc_from_entry_list({ add_test_instrumentation, entry_list, descendant_count_html, tocIdPrefix }) {
   let top_level = 0;
-  let ret = `<div id="${Macro.TOC_ID}"class="toc-container">\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
-  ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc" href="#${Macro.TOC_ID}">${TOC_MARKER_SYMBOL} Table of contents</a>`
+  let ret = `<div id="${tocIdPrefix}${Macro.TOC_ID}"class="toc-container">\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
+  ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc" href="#${tocIdPrefix}${Macro.TOC_ID}">${TOC_MARKER_SYMBOL} Table of contents</a>`
   if (descendant_count_html) {
     ret += `<span class="hover-metadata">${descendant_count_html}</span>`;
   }
@@ -6313,7 +6311,7 @@ function render_toc(context) {
           parent_ast.header_tree_node !== undefined &&
           parent_ast.header_tree_node.get_level() === context.header_tree_top_level
         ) {
-          parent_href_target = Macro.TOC_ID;
+          parent_href_target = context.options.tocIdPrefix + Macro.TOC_ID;
         } else {
           parent_href_target = toc_id(parent_ast.id);
         }
@@ -6335,7 +6333,8 @@ function render_toc(context) {
   return render_toc_from_entry_list({
     entry_list,
     descendant_count_html,
-    add_test_instrumentation: context.options.add_test_instrumentation
+    add_test_instrumentation: context.options.add_test_instrumentation,
+    tocIdPrefix: context.options.tocIdPrefix,
   })
 }
 
@@ -6850,8 +6849,13 @@ function x_href_parts(target_ast, context) {
     if (full_output_path === context.toplevel_output_path) {
       href_path = ''
     } else {
-      const href_path_dirname_rel = path.relative(
-        toplevel_output_path_dirname, target_output_path_dirname);
+      let href_path_dirname_rel
+      if (context.options.x_absolute) {
+        href_path_dirname_rel = target_output_path_dirname
+      } else {
+        href_path_dirname_rel = path.relative(
+          toplevel_output_path_dirname, target_output_path_dirname);
+      }
       if (
         // Same output path.
         href_path_dirname_rel === '' &&
@@ -6879,6 +6883,9 @@ function x_href_parts(target_ast, context) {
   if (context.options.ourbigbook_json.reroutePrefix !== undefined && href_path !== '' && split_suffix === undefined) {
     href_path = context.options.ourbigbook_json.reroutePrefix +
       path_join(toplevel_output_path_dirname, href_path, context.options.path_sep)
+  }
+  if (href_path && context.options.x_absolute) {
+    href_path = '/' + href_path
   }
 
   // Fragment
@@ -8386,7 +8393,7 @@ const OUTPUT_FORMATS_LIST = [
           ret += `</h${level_int_capped}>\n`;
 
           const web_meta = []
-          if (context.options.web) {
+          if (context.options.h_web_metadata) {
             const web_html = `<div class="web${first_header ? ' top' : ''}"></div>`
             if (first_header) {
               web_meta.push(web_html)
@@ -8545,7 +8552,7 @@ const OUTPUT_FORMATS_LIST = [
               header_meta.push(link_to_split);
             }
             if (has_toc(context)) {
-              header_meta.push(`<a${html_attr('href', '#' + Macro.TOC_ID)} class="toc">${TOC_MARKER}</a>`);
+              header_meta.push(`<a${html_attr('href', `#${context.options.tocIdPrefix}${Macro.TOC_ID}`)} class="toc">${TOC_MARKER}</a>`);
             }
             let descendant_count_html = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
             if (descendant_count_html !== undefined) {

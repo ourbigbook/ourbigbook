@@ -188,9 +188,9 @@ const Article = ({
               if (url.hash) {
                 idNoprefix = url.hash.slice(1)
               } else {
-                // + 3 for the '../'.
+                // + 1 for the '/' that prefixes every link.
                 // https://github.com/cirosantilli/ourbigbook/issues/283
-                idNoprefix = href.slice(3)
+                idNoprefix = href.slice(1)
               }
               const targetElem = document.getElementById(idNoprefix)
               if (
@@ -225,7 +225,7 @@ const Article = ({
       const a = articlesInSamePageForToc[i]
       const authorUsername = article.author.username
       const level = a.depth - article.depth
-      const href = ` href="../${a.slug}"`
+      const href = ` href="/${a.slug}"`
       const content = a.titleRender
       let parent_href, parent_content
       if (level > 1) {

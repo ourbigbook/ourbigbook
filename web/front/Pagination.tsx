@@ -104,7 +104,7 @@ const Pagination = ({
           <PaginationItem href={urlFunc(totalPages)}>{`>>`}</PaginationItem>
         </Maybe>
         <span className="page-item total">
-          Total {what} {itemsCount}
+          Total {what}: {itemsCount}
         </span>
       </ul>
     </nav>

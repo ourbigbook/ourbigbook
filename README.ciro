@@ -2,7 +2,7 @@
 
 A Markup language to write multipage or single page HTML / PDF books, blogs, etc. that is \x[saner][saner] and more powerful than Markdown and Asciidoctor, but still nicer to write than XML and JSON, with reference implementation in JavaScript.
 
-The source for this document is at: https://github.com/cirosantilli/cirodown/blob/master/README.ciro and a rendered version can be seen at: https://cirosantilli.com/cirodown and a live in-browser demo at: \a[https://cirosantilli.com/cirodown/editor].
+The source for this document is at: https://github.com/cirosantilli/cirodown/blob/master/README.ciro and a rendered version can be seen at: https://cirosantilli.com/cirodown and a live in-browser demo at: https://cirosantilli.com/cirodown/editor[].
 
 \toc
 
@@ -79,7 +79,7 @@ npm install <dependency>
 npm link
 npm link cirodown
 ``
-Asked if there is a better way at: \a[https://stackoverflow.com/questions/59389027/how-to-interactively-test-the-executable-of-an-npm-node-js-package-during-develo]. The symlink business can be undone with:
+Asked if there is a better way at: https://stackoverflow.com/questions/59389027/how-to-interactively-test-the-executable-of-an-npm-node-js-package-during-develo[]. The symlink business can be undone with:
 ``
 npm unlink
 rm node_modules/cirodown
@@ -220,6 +220,11 @@ Equivalent sane version:
 \cirodown_example[[
 The website \a[http://example.com][example.com] is cool.
 ]]
+If the custom text is empty, an autolink is generated. This is often useful if you want your link to be followed by punctuation:
+\cirodown_example[[
+The website is really cool: http://example.com[].
+]]
+This could also be achieved with the sane syntax of course, but this pattern saves a tiny bit of typing.
 
 Link with multiple paragraphs inside it:
 \cirodown_example[[
@@ -978,8 +983,6 @@ Downsides:
 
 === Image lazy loading
 
-We automatically mark all images with `lazy="loading"` which means that they only load when the viewport goes over those images on supporting browsers: \a[https://stackoverflow.com/questions/2321907/how-do-you-make-images-load-lazily-only-when-they-are-in-the-viewport/57389607#57389607].
-
 We do this by default because Cirodown is meant to allow producing huge single page documents like Ciro likes it, and in this way:
 * images that the user is looking at will load first
 * we save a lot of bandwidth for the user who only wants to browse one section
@@ -1015,7 +1018,7 @@ We also handle more complex transcoded video URLs just fine:
 ]]
 Commons is better than YouTube if your content is on-topic there because:
 * they have no ads
-* it allows download of the videos: \a[https://www.quora.com/Can-I-download-Creative-Commons-licensed-YouTube-videos-to-edit-them-and-use-them].
+* it allows download of the videos: https://www.quora.com/Can-I-download-Creative-Commons-licensed-YouTube-videos-to-edit-them-and-use-them[].
 * it makes it easier for other users to find and re-use your videos
 
 If your video does not fit the above Wikimedia Commons requirements, YouTube could be a good bet. Cirodown https://github.com/cirosantilli/cirodown/issues/50[automatically detects YouTube URLs] for you, so the following should just work:
@@ -1061,7 +1064,7 @@ Unlike \x[image-lazy-loading], we don't support video lazy loading yet because:
 * `youtube` videos are embedded with `iframe` and `iframe` has no `loading` property yet
 
 Both of this cases could be worked around with JavaScript:
-* non-`youtube`: set `src` from JavaScript as shown for images: \a[https://stackoverflow.com/questions/2321907/how-do-you-make-images-load-lazily-only-when-they-are-in-the-viewport/57389607#57389607].
+* non-`youtube`: set `src` from JavaScript as shown for images: https://stackoverflow.com/questions/2321907/how-do-you-make-images-load-lazily-only-when-they-are-in-the-viewport/57389607#57389607[].
 
   But this breaks page semantics however, we don't know how to work around that
 * `youtube` videos: same as above for the `iframe`, but this should be less problematic since YouTube videos are not viewable without JavaScript anyways, and who cares about `iframe` semantics?
@@ -1557,7 +1560,7 @@ The `full=0` version is useful in the case of reference targets that unlike \x[h
 \x[boolean-named-arguments]{full=1}
 ]]
 
-The name "boolean argument" is given by analogy to the \a[https://stackoverflow.com/questions/16109358/what-is-the-correct-readonly-attribute-syntax-for-input-text-elements/24588427#24588427]["boolean attribute" concept in HTML5].
+The name "boolean argument" is given by analogy to the https://stackoverflow.com/questions/16109358/what-is-the-correct-readonly-attribute-syntax-for-input-text-elements/24588427#24588427["boolean attribute" concept in HTML5].
 
 ==== JavaScript interface for arguments
 
@@ -1740,7 +1743,7 @@ If present, the `auto_parent` macro property determines which auto-parent gets a
 ==== `remove_whitespace_children` macro argument property
 {id=remove-whitespace-children}
 
-In HTML, certain elements such as `<ul>` cannot have any `text` nodes in them, and any whitespace is ignored, see \a[https://stackoverflow.com/questions/2161337/can-we-use-any-other-tag-inside-ul-along-with-li/60885802#60885802].
+In HTML, certain elements such as `<ul>` cannot have any `text` nodes in them, and any whitespace is ignored, see https://stackoverflow.com/questions/2161337/can-we-use-any-other-tag-inside-ul-along-with-li/60885802#60885802[].
 
 A similar concept applies to Cirodown, e.g.:
 ``
@@ -2202,7 +2205,7 @@ List all tests:
 ``
 node node_modules/mocha-list-tests/mocha-list-tests.js main.js
 ``
-as per: \a[https://stackoverflow.com/questions/41380137/list-all-mocha-tests-without-executing-them/58573986#58573986].
+as per: https://stackoverflow.com/questions/41380137/list-all-mocha-tests-without-executing-them/58573986#58573986[].
 
 Run just one test by name:
 ``
@@ -2310,7 +2313,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 == Related projects
 
-* \a[https://github.com/rstudio/bookdown], \a[https://bookdown.org/]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: \a[https://bookdown.org/yihui/bookdown/pandoc.html], thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.
+* https://github.com/rstudio/bookdown[], https://bookdown.org/[]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: https://bookdown.org/yihui/bookdown/pandoc.html[], thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.
 * https://gohugo.io/[Hugo]. Pretty good, similar feature set to ours. But Go based, so hard on browser, and adds adhoc features on top of markdown once again
 
 Less related but of interest:

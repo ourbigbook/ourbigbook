@@ -1667,7 +1667,11 @@ $$3 + 3$${show=1}
 == Tables
 {title2=(`|| `, `| `, `\table`, `\tr`, `\th` and `\td`)}
 
-The \x[insane-code-and-math-shortcuts][insane] syntax markds headers with `|| `, regular cells with `| ` and separates rows with double newline:
+The \x[insane-code-and-math-shortcuts][insane] syntax marks:
+* headers with `|| ` (pipe, pipe space) at the start of a line
+* regular cells with `| ` (pipe, space) at the start of a line
+* separates rows with double newline
+For example:
 \cirodown_example[[
 || Header 1
 || Header 2

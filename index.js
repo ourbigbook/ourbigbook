@@ -969,6 +969,7 @@ class Tokenizer {
     // Close the opening of toplevel.
     this.push_token(TokenType.PARAGRAPH);
     this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
+    this.push_token(TokenType.INPUT_END);
     return this.tokens;
   }
 
@@ -1639,7 +1640,7 @@ function parse(tokens, macros, options, extra_returns={}) {
   // Call parse_macro on the toplevel macro. The entire document is
   // under that macro, so this will recursively parse everything.
   let ast_toplevel = parse_macro(state);
-  if (state.i < tokens.length) {
+  if (state.token.type !== TokenType.INPUT_END) {
     parse_error(state, `unexpected tokens at the end of input`);
   }
 
@@ -2234,9 +2235,11 @@ function parse_add_paragraph(
 // Consume one token.
 function parse_consume(state) {
   state.i += 1;
-  if (state.i >= state.tokens.length)
-    return undefined;
-  state.token = state.tokens[state.i];
+  if (state.i < state.tokens.length) {
+    state.token = state.tokens[state.i];
+  } else {
+    throw new Error('programmer error');
+  }
   parse_log_debug(state, 'function: parse_consume');
   parse_log_debug(state, 'state.i = ' + state.i.toString())
   parse_log_debug(state, 'state.token = ' + JSON.stringify(state.token));
@@ -2274,8 +2277,12 @@ function parse_macro(state) {
     // Consume the MACRO_NAME token out.
     parse_consume(state);
     while (
-      state.token.type === TokenType.POSITIONAL_ARGUMENT_START ||
-      state.token.type === TokenType.NAMED_ARGUMENT_START
+      // End of stream.
+      state.token.type !== TokenType.INPUT_END &&
+      (
+        state.token.type === TokenType.POSITIONAL_ARGUMENT_START ||
+        state.token.type === TokenType.NAMED_ARGUMENT_START
+      )
     ) {
       let arg_name;
       let open_type = state.token.type;
@@ -2316,19 +2323,27 @@ function parse_macro(state) {
       }
       let arg_children = new AstArgument([], open_argument_line, open_argument_column);
       while (
+        state.token.type !== TokenType.INPUT_END &&
         state.token.type !== TokenType.POSITIONAL_ARGUMENT_END &&
         state.token.type !== TokenType.NAMED_ARGUMENT_END
       ) {
-        // The recursive case: the arguments are lists of macros, go into them.
+        // The recursive case: the argument is a lists of macros, go into all of them.
         arg_children.push(parse_macro(state));
       }
       if (state.token.type !== closing_token(open_type)) {
-        parse_error(state,
-          `expected a closing '${END_POSITIONAL_ARGUMENT_CHAR}' found '${state.token.type.toString()}'`);
+        let expect_description;
+        if (state.token.type === TokenType.INPUT_END) {
+          expect_description = 'the end of the document';
+        } else {
+          expect_description = `'${state.token.type.toString()}'`;
+        }
+        parse_error(state, `expected a closing '${END_POSITIONAL_ARGUMENT_CHAR}' found ${expect_description}`);
       }
       args[arg_name] = arg_children;
-      // Consume the *_ARGUMENT_END token out.
-      parse_consume(state);
+      if (state.token.type !== TokenType.INPUT_END) {
+        // Consume the *_ARGUMENT_END token out.
+        parse_consume(state);
+      }
     }
     if (macro_type === AstType.ERROR) {
       return new AstNode(
@@ -2447,14 +2462,15 @@ const AstType = make_enum([
   'PARAGRAPH',
 ]);
 const TokenType = make_enum([
-  'PLAINTEXT',
+  'INPUT_END',
   'MACRO_NAME',
-  'PARAGRAPH',
-  'POSITIONAL_ARGUMENT_START',
-  'POSITIONAL_ARGUMENT_END',
-  'NAMED_ARGUMENT_START',
   'NAMED_ARGUMENT_END',
   'NAMED_ARGUMENT_NAME',
+  'NAMED_ARGUMENT_START',
+  'PARAGRAPH',
+  'PLAINTEXT',
+  'POSITIONAL_ARGUMENT_END',
+  'POSITIONAL_ARGUMENT_START',
 ]);
 const DEFAULT_MEDIA_HEIGHT = 315;
 const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [

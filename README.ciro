@@ -4372,7 +4372,25 @@ The following support is provided:
 = Browser editor with preview
 {parent=editor-support}
 
-TODO make amazing. Being tracked under: https://github.com/cirosantilli/cirodown/labels/editor
+There are two versions of this editor:
+* \a[editor.html] is a toy/demo with no backing database.
+
+  That editor can be viewed directly locally with:
+  ``
+  git clone https://github.com/cirosantilli/cirodown
+  cd cirodown
+  npm install
+  npm run browserify
+  npm run sass
+  chrome editor.html
+  ``
+
+  It also appears at https://cirosantilli.com/cirodown/editor[] hosted simply under GitHub pages.
+* a similar looking editor will also appear on the \x[dynamic-website], but this time linked to the database.
+
+  That more advanced editor will actually save results back to the database, and show allow preview of features such as linking to headers of other pages.
+
+Issues for the editor are being tracked under: https://github.com/cirosantilli/cirodown/labels/editor
 
 We must achieve an editor setup with synchronized live side-by-side preview.
 

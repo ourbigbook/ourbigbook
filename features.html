@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Features - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg" />
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" />OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" /><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i></a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="features"><div class="notnav"><h1><a href="">Features</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."> OurBigBook Project</a><a href=".#ourbigbook-markup-and-cli-overview"> OurBigBook Markup and CLI overview</a></div><div class="nav"><a class="nosplit" href=".#features"></a><span class="metrics"><span class="wcntr"> words: 1k</span></span></div></nav></div><div><ul id="_62"><li id="_63"><div class="p" id="_64"><a href=".#cross-reference">cross references</a> to any <a href=".#header">header</a> (including e.g. h2, h3, etc. <a href=".#cross-file-reference">in other files</a>), <a href=".#image">images</a>, etc. with amazing <a href=".#error-reporting">error checking and reporting</a>: never break internal links without knoing again, and quickly find out what broke when you do. E.g.:</div><div class="p" id="_65">animal.bigb
+<div class="code" id="_66"><div><pre><code>= Animal
+
+&lt;Bats&gt; are &lt;flying animals&gt;.</code></pre></div></div>
+Mammal.bigb
+<div class="code" id="_67"><div><pre><code>= Flying animal
+
+== Bat</code></pre></div></div>
+<code>Animal.bigb</code> would render something like:
+<div class="code" id="_68"><div><pre><code>&lt;a href="flying-animal.html#bat"&gt;Bats&lt;/a&gt; are &lt;a href="flying-animal.html"&gt;flying animals&lt;/a&gt;.</code></pre></div></div>
+The following would fail and point you out the file and line of the failure:<div><ul id="_69"><li id="_70">nonexistent id:
+<div class="code" id="_71"><div><pre><code>&lt;Weird animal not documented&gt;</code></pre></div></div></li><li id="_72">duplicate IDs:
+<div class="code" id="_73"><div><pre><code>= Animal
+
+== Dog
+
+== Cat
+
+== Dog</code></pre></div></div></li></ul></div></div></li><li id="_74"><a href="https://katex.org/">KaTeX</a> server side <a href=".#mathematics">mathematics</a>, works on browsers with JavaScript disabled:
+<div class="code" id="_75"><div><pre><code>I like $\sqrt{2}$, but I adore this \x[equation-quadratic-equation]:
+
+$$
+x^2 + 2x + 1
+$$
+{title=Quadratic equation}</code></pre></div></div></li><li id="_76">multi-file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:<div><ul id="_77"><li id="_78"><a href=".#cross-file-reference">cross file references</a></li><li id="_79">single-source multi-format output based on <a href=".#include">includes</a> and build options:<div><ul id="_80"><li id="_81"><div class="p" id="_82">by default, one HTML per source with includes rendered as links between pages, e.g.:</div><div class="p" id="_83">README.bigb
+<div class="code" id="_84"><div><pre><code>= My website
+
+== h2
+
+\Include[not-readme]</code></pre></div></div>
+not-readme.bigb
+<div class="code" id="_85"><div><pre><code>= Not readme
+
+== Not readme h2</code></pre></div></div>
+produces <code>index.html</code> and <code>not-readme.html</code></div></li><li id="_86">with the <a href=".#split-headers"><code>-S</code>, <code>--split-headers</code></a> option, you can output each header of an input file into a separate output file. The previous filesystem would produce:<div><ul id="_87"><li id="_88"><code>index.html</code>: which contains the full <code>README.bigb</code> output</li><li id="_89"><code>split.html</code>: split version of the above containing only the <code>= My website</code> header and not <code>h2</code></li><li id="_90"><code>h2.html</code>: only contains the <code>h2</code> header</li><li id="_91"><code>not-readme.html</code> contains the full output of <code>not-readme.bigb</code></li><li id="_92"><code>not-readme-split.html</code>: only contains the <code>= Not readme</code> header</li><li id="_93"><code>not-readme-h2.html</code>: only contains the <code>= Not readme h2</code> header
+</li></ul></div>Each of those pages automatically gets a <a href=".#table-of-contents">table of contents</a></li><li id="_94"><div class="p" id="_95"><a href=".#embed-includes"><code>--embed-includes</code></a> single file output from multiple input files. Includes are parsed smartly, not just source copy pasted, e.g. included headers are shifted from <code>h1</code> to <code>h2</code> correctly.</div><div class="p" id="_96">On the previous sample filesystem, it would produce a single output file <code>index.html</code> which would contain a header structure like:
+<div class="code" id="_97"><div><pre><code>= My website
+
+== h2
+
+=== Not readme
+
+==== Not readme h2</code></pre></div></div></div></li><li id="_98">supports both local serverless rendering to HTML files for local viewing, and server oriented rendering such as GitHub pages, e.g. <a href=".#cross-reference">cross references</a> automatically get <code>.html</code> extension and or not. E.g.:<div><ul id="_99"><li id="_100">locally, a link <code>\x[not-readme]</code> would render as <code>&lt;a href="not-readme.html"&gt;</code> and <code>not-readme.bigb</code> produces <code>not-readme.html</code></li><li id="_101">when publishing, <code>\x[not-readme]</code> would render as <code>&lt;a  href="not-readme"&gt;</code> and <code>not-readme.bigb</code> also produces <code>not-readme.html</code>, which the server converts to just <code>http://my-website.com/not-readme</code></li></ul></div></li></ul></div></li><li id="_102">cross file configuration files to factor out common page parts like headers, footers and other metadata, e.g.:<div><ul id="_103"><li id="_104"><code>ourbigbook.liquid.html</code>: <a href="https://github.com/Shopify/liquid">Liquid template</a> used for all pages, see example at: <a href=".#play-with-the-template">Section "Play with the template"</a></li><li id="_105"><code>main.scss</code>: CSS stylesheet generated from <a href="https://sass-lang.com/">SASS</a> input, see example at: <a href=".#play-with-the-template">Section "Play with the template"</a></li><li id="_106"><code>ourbigbook.tex</code>: global LaTeX math definitions, e.g.:
+<div class="code" id="_107"><div><pre><code>\newcommand{\abs}[1]{\left|#1\right|}</code></pre></div></div>
+and then you can use:
+<div class="code" id="_108"><div><pre><code>$\abs{x}$</code></pre></div></div>
+in any .bigb file of the project.</li><li id="_109"><a href=".#ourbigbook-json"><code>ourbigbook.json</code></a>: per repository configuration options</li></ul></div></li><li id="_110"><div class="p" id="_111"><a href=".#table-of-contents">table of contents</a> that crosses input files via includes. E.g. in:</div><div class="p" id="_112">README.bigb
+<div class="code" id="_113"><div><pre><code>= My website
+
+== h2
+
+\Include[not-readme]</code></pre></div></div>
+not-readme.bigb
+<div class="code" id="_114"><div><pre><code>= Not readme
+
+== Not readme h2</code></pre></div></div>
+the table of contents for <code>index.html</code> also contains the headers for <code>not-readme.bigb</code> producing:<div><ul id="_115"><li id="_116">My website<div><ul id="_117"><li id="_118">h2<div><ul id="_119"><li id="_120">Not readme<div><ul id="_121"><li id="_122">Not readme h2
+</li></ul></div></li></ul></div></li></ul></div></li></ul></div>This means that you can split large <a href=".#h-splitdefault-argument">splitDefault</a> input files if rendering starts to slow you down, and things will still render exactly the same.</div></li><li id="_123">check that local files and images linked to actually exist: <a href=".#a-external-argument"><code>\a</code> <code>external</code> argument</a>. E.g.:
+<div class="code" id="_124"><div><pre><code>\a[i-don-exist.txt]</code></pre></div></div>
+would lead to a build error.</li><li id="_125">associate headers to files or directories with the <a href=".#h-file-argument"><code>\H</code> <code>file</code> argument</a> e.g.:
+<div class="code" id="_126"><div><pre><code>Here's an example of a nice image: \x[path/to/my/image.png]{file}.
+
+= path/to/my/image.png
+{file}
+
+This image was taken when I was on vacation!</code></pre></div></div>
+would automatically add a preview of the image on the output. Display files and their metadata nicely directly on your static website rather than relying exclusively on GitHub as a file browser.</li></ul></div></li><li id="_127">advanced header/ID related features:<div><ul id="_128"><li id="_129"><a href=".#h-parent-argument">ID-based header levels</a>:
+<div class="code" id="_130"><div><pre><code>= Furry animal
+
+I like \x[furry-animal]{p}, especially my cat, here is his photo: \x[image-my-cat].
+
+== Cat
+
+\Image[My_cat.jpg]
+{title=My cat}</code></pre></div></div></li><li id="_131"><a href=".#h-scope-argument">scopes</a> either with directories or with within a single file:
+<div class="code" id="_132"><div><pre><code>See the important conclusion of my experiment: \x[report-of-my-experiment/conclusion]
+
+= Report of my experiment
+{scope}
+
+== Introduction
+
+== Middle
+
+== Conclusion</code></pre></div></div></li><li id="_133"><a href=".#cross-reference-title-inflection">cross reference title inflection</a> for capitalization and pluralization, e.g.;
+<div class="code" id="_134"><div><pre><code>= Dog
+
+== Snoopy
+{c}
+
+\x[dog]{c}{p} are fun. But the \x[dog] I like the most is \x[snoopy]!</code></pre></div></div>
+would render:<div><ul id="_135"><li id="_136"><code>\x[dog]{c}{p}</code> as <code>Dogs</code>: capitalized because of <code>{c}</code> and pluralized because of <code>{p}</code></li><li id="_137"><code>\x[dog]</code> as <code>dogs</code>: auto lowercased because its header <code>= Dog</code> does not have <code>{c}</code></li><li id="_138"><code>\x[snoopy]</code> as <code>Snoopy</code>: title capitalization kept to upper case due to <code>{c}</code> on the header <code>== Snoopy</code></li></ul></div></li><li id="_139"><div class="p" id="_140"><a href=".#h-synonym-argument">synonyms</a>, e.g.:
+<div class="code" id="_141"><div><pre><code>= User interface
+
+= UI
+{c}
+{synonym}
+{title2}
+
+\x[user-interface]{c} is too long, I just say \x[ui].</code></pre></div></div>
+would render something like:
+<div class="code" id="_142"><div><pre><code>&lt;a href="#user-interface"&gt;User interface&lt;/a&gt; is too long, I just say &lt;a href="user-interface"&gt;UI&lt;/a&gt;</code></pre></div></div>
+Furthermore, this also generates a output file:
+<div class="code" id="_143"><div><pre><code>ui.html</code></pre></div></div>
+which redirects to the ain <code>user-interface.html</code>, so it serves as a way to have backward compatibility on page renames.</div><div class="p" id="_144">And the <code>title2</code> makes it appears on the main title under parenthesis, something like:
+<div class="code" id="_145"><div><pre><code>&lt;h1&gt;User interface (UI)&lt;/h1&gt;</code></pre></div></div></div></li><li id="_146"><a href=".#disambiguate-argument">header disambiguation</a>, e.g.:
+<div class="code" id="_147"><div><pre><code>My favorite fruits are \x[apple-fruit]{p}!
+
+My favorite least favorite brand is is \x[apple-company]! \x[apple] computers are too expensive.
+
+== Apple
+{disambiguate=fruit}
+
+== Apple
+{c}
+{disambiguate=company}
+
+= Apple
+{c}
+{synonym}</code></pre></div></div>
+which renders something like:<div><ul id="_148"><li id="_149"><code>\x[apple-fruit]{p}</code>: <code>&lt;a href="apple-fruit"&gt;apples&lt;/a&gt;</code></li><li id="_150"><code>\x[apple-company]</code>: <code>&lt;a href="apple-company"&gt;Apple&lt;/a&gt;</code></li><li id="_151"><code>\x[apple]</code>: also <code>&lt;a href="apple-company"&gt;Apple&lt;/a&gt;</code> because of the synonym</li><li id="_152"><code>== Apple\n{disambiguate=fruit}</code>: <code>&lt;h2 id="apple-fruit"&gt;Apple (fruit)&lt;/h2&gt;</code></li><li id="_153"><code>== Apple\n{disambiguate=company}</code>: <code>&lt;h2 id="apple-company"&gt;Apple (company)&lt;/h2&gt;</code></li></ul></div></li><li id="_154">tags are regular headers: <a href=".#h-child-argument"><code>\H</code> <code>child</code> argument</a>, <a href=".#x-child-argument"><code>\x</code> <code>child</code> argument</a>
+<div class="code" id="_155"><div><pre><code>= Animal
+
+== Dog
+{tag=domestic}
+{tag=cute}
+
+== Cat
+{tag=domestic}
+{tag=cute}
+
+== Bat
+{tag=flying}
+
+= Flying
+
+= Cute
+
+= Domestic</code></pre></div></div></li><li id="_156"><a href=".#unlimited-header-levels">unlimited header levels</a>, levels higher than 6 are rendered in HTML as an appropriately styled <code>div</code>s with an ID:
+<div class="code" id="_157"><div><pre><code>= h1
+
+== h2
+
+=== h3
+
+==== h4
+
+===== h5
+
+====== h6
+
+======= h7
+
+======== h8</code></pre></div></div></li><li id="_158">generate lists of <a href=".#incoming-links">incoming links</a> between internal headers: it shows every internal link coming into the current page</li></ul></div></li><li id="_159">automatic file upload and directory listing of non OurBigBook files: <a href=".#raw-directory"><code>_raw</code> directory</a>, e.g.:<div><ul id="_160"><li id="_161">link to a file:
+<div class="code" id="_162"><div><pre><code>The file \a[index.js] is cool.</code></pre></div></div><div class="p" id="_163">which renders as:</div><blockquote id="_164"><div class="p" id="_165">The file <a href="_raw/index.js">index.js</a> is cool.</div></blockquote></li><li id="_166">link to a directory:
+<div class="code" id="_167"><div><pre><code>The directory \a[file_demo] is cooler.</code></pre></div></div><div class="p" id="_168">which renders as:</div><blockquote id="_169"><div class="p" id="_170">The directory <a href="_dir/file_demo">file_demo</a> is cooler.</div></blockquote></li></ul></div></li><li id="_171">is written in JavaScript and therefore runs natively on the browser to allow live previews as shown at: <a href="https://docs.ourbigbook.com/_obb/dist/editor">docs.ourbigbook.com/_obb/dist/editor</a></li><li id="_172">helps you with the publishing:<div><ul id="_173"><li id="_174"><a href=".#p-publish"><code>ourbigbook --publish</code></a> publishes in a single command to the configured target (default <a href=".#publish-to-github-pages">GitHub Pages</a>)</li><li id="_175">OurBigBook tries to deal with media such as images and video intelligently for you, e.g.: <a href=".#where-to-store-images">Section "Where to store images"</a>. E.g. you can keep media in a separate media repository, <code>my-media-repository</code>, and then by configuring on <a href=".#ourbigbook-json"><code>ourbigbook.json</code></a>:
+<div class="code" id="_176"><div><pre><code>"media-providers": {
+  "github": {
+    "default-for": ["image", "video"],
+    "path": "media",
+    "remote": "yourname/myproject-media"
+  }
+}</code></pre></div></div>
+you can use images in that repository with:
+<div class="code" id="_177"><div><pre><code>\Image[My_image_basename.jpg]</code></pre></div></div>
+instead of:
+<div class="code" id="_178"><div><pre><code>\Image[https://raw.githubusercontent.com/cirosantilli/myproject--media/master/My_image_basename.jpg]</code></pre></div></div></li><li id="_179"><code>inotifywait</code> watch and automatically rebuild with <a href=".#watch"><code>-w</code>, <code>--watch</code></a>:
+<div class="code" id="_180"><div><pre><code>ourbigbook --watch input-file.bigb</code></pre></div></div></li></ul></div></li><li id="_181">automatic code formatting: <a href=".#format-source"><code>--format-source</code></a></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors</a></h2><div><ol><li><a href=".#ourbigbook-markup-and-cli-overview">OurBigBook Markup and CLI overview</a></li><li><a href=".">OurBigBook Project</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links</a></h2><div><ul><li><a href=".#design-goals">Design goals</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/README.bigb">README.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

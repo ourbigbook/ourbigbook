@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Image source argument - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg" />
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" />OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" /><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i></a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="image-source-argument"><div class="notnav"><h1><a href="">Image <code>source</code> argument</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."> OurBigBook Project</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#image"> Image</a><a href=".#image-argument"> Image argument</a></div><div class="nav"><span class="tags"> tags: <a href=".#named-argument">Named argument</a></span><a class="nosplit" href=".#image-source-argument"></a><span class="metrics"><span class="wcntr"> words: 43</span></span></div></nav></div><div class="p" id="_1342">Where the image was taken from, e.g.:
+<div class="code" id="_1343"><div><pre><code>\Image[https://upload.wikimedia.org/wikipedia/commons/6/68/Akha_cropped_hires.JPG]
+{title=A couple}
+{source=https://en.wikipedia.org/wiki/Human}</code></pre></div></div><div class="p" id="_1344">which renders as:</div><blockquote id="_1345"><figure id="image-a-couple"><div><div class="float-wrap"><a href="https://upload.wikimedia.org/wikipedia/commons/6/68/Akha_cropped_hires.JPG"><img src="https://upload.wikimedia.org/wikipedia/commons/6/68/Akha_cropped_hires.JPG" loading="lazy" height="315"></a></div><figcaption><a href="#image-a-couple"><span class="caption-prefix">Figure 22. </span></a><div class="title">A couple</div>. <a href="https://en.wikipedia.org/wiki/Human">Source</a>. </figcaption></div></figure></blockquote></div><div class="p" id="_1346">The <code>source</code> is automatically inferred for certain known websites, e.g.:<div><ul id="_1347"><li id="_1348">Wikimedia <code>https://upload.wikimedia.org/wikipedia/commons</code><div><ul id="_1349"><li id="_1350">from: <a href="https://upload.wikimedia.org/wikipedia/commons/6/68/Akha_cropped_hires.JPG">upload.wikimedia.org/wikipedia/commons/6/68/Akha_cropped_hires.JPG</a></li><li id="_1351">to: <a href="https://en.wikipedia.org/wiki/File:Akha_cropped_hires.JPG">en.wikipedia.org/wiki/File:Akha_cropped_hires.JPG</a>
+</li></ul></div>Example:
+<div class="code" id="_1352"><div><pre><code>\Image[https://upload.wikimedia.org/wikipedia/commons/6/68/Akha_cropped_hires.JPG]
+{title=A couple no source}</code></pre></div></div><div class="p" id="_1353">which renders as:</div><blockquote id="_1354"><figure id="image-a-couple-no-source"><div><div class="float-wrap"><a href="https://upload.wikimedia.org/wikipedia/commons/6/68/Akha_cropped_hires.JPG"><img src="https://upload.wikimedia.org/wikipedia/commons/6/68/Akha_cropped_hires.JPG" loading="lazy" height="315"></a></div><figcaption><a href="#image-a-couple-no-source"><span class="caption-prefix">Figure 23. </span></a><div class="title">A couple no source</div>. <a href="https://commons.wikimedia.org/wiki/File:Akha_cropped_hires.JPG">Source</a>. </figcaption></div></figure></blockquote></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors</a></h2><div><ol><li><a href=".#image-argument">Image argument</a></li><li><a href=".#image">Image</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href=".">OurBigBook Project</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links</a></h2><div><ul><li><a href=".#image">Image</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/README.bigb">README.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

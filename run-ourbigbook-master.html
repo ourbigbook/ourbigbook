@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Run OurBigBook master - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg" />
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" />OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" /><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i></a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="run-ourbigbook-master"><div class="notnav"><h1><a href="">Run OurBigBook master</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."> OurBigBook Project</a><a href=".#developing-ourbigbook"> Developing OurBigBook</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#run-ourbigbook-master"></a><span class="metrics"><span class="wcntr"> words: 275</span><span class="dcnt"> articles: 1</span></span></div></nav></div><div class="p" id="_4623">Install master globally on your machine:
+<div class="code" id="_4624"><div><pre><code>git clone https://github.com/ourbigbook/ourbigbook
+cd ourbigbook
+npm link
+npm link ourbigbook
+npm run build-assets</code></pre></div></div>
+so you can now run the <code>ourbigbook</code> command from any directory in your computer, for example to convert the ourbigbook documentation itself:
+<div class="code" id="_4625"><div><pre><code>ourbigbook .</code></pre></div></div>
+Note that this repository uses <a href=".#ourbigbook-json/outputoutoftree"><code>outputOutOfTree</code></a>, and so the output will be present at <code>out/html/index.html</code> rather than <code>index.html</code>.</div><div class="p" id="_4626">We also have a shortcut for <code>npm link</code> and <code>npm link ourbigbook</code>:
+<div class="code" id="_4627"><div><pre><code>npm run link</code></pre></div></div></div><div class="p" id="_4628"><code>npm run link</code> produces symlinks so that any changes made to the Git source tree will automatically be visible globally, see also: <a href="https://stackoverflow.com/questions/28440893/install-a-locally-developed-npm-package-globally">stackoverflow.com/questions/28440893/install-a-locally-developed-npm-package-globally</a> The symlink structure looks like:
+<div class="code" id="_4629"><div><pre><code>/home/ciro/ourbigbook/node_modules/ourbigbook -&gt; /home/ciro/.nvm/versions/node/v14.17.0/lib/node_modules/ourbigbook -&gt; /home/ciro/ourbigbook</code></pre></div></div></div><div class="p" id="_4630">As mentioned at <a href=".#useless-knowledge">useless knowledge</a>, most users don't want global installations of OurBigBook. But this can be handy during development, as you can immediately see how your changes to OurBigBook source code affect your complex example of interest. For example, Ciro developed a lot of OurBigBook by hacking <a href="https://github.com/cirosantilli/cirosantilli.github.io">github.com/cirosantilli/cirosantilli.github.io</a> directly with OurBigBook <code>master</code>.</div><div class="p" id="_4631">Just remember that if you add a new dependency, you must redo the symlinking business:
+<div class="code" id="_4632"><div><pre><code>npm install &lt;dependency&gt;
+npm run link</code></pre></div></div>
+Asked if there is a better way at: <a href="https://stackoverflow.com/questions/59389027/how-to-interactively-test-the-executable-of-an-npm-node-js-package-during-develo">stackoverflow.com/questions/59389027/how-to-interactively-test-the-executable-of-an-npm-node-js-package-during-develo</a>. The symlink business can be undone with:
+<div class="code" id="_4633"><div><pre><code>npm unlink
+rm node_modules/ourbigbook</code></pre></div></div></div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 275</span><span class="dcnt"> 1</span></span></span></span></div><ul><li><div id="_toc/run-an-isolated-ourbigbook-master"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#run-an-isolated-ourbigbook-master"><i class="n">1. </i>Run an isolated OurBigBook master</a><span class="hover-metadata"><a class="nosplit" href=".#run-an-isolated-ourbigbook-master"></a><a href="#_toc" class="u"> Run OurBigBook master</a><span class="metrics"><span class="wcntr"> 72</span></span></span></span></div></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors</a></h2><div><ol><li><a href=".#developing-ourbigbook">Developing OurBigBook</a></li><li><a href=".">OurBigBook Project</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links</a></h2><div><ul><li><a href=".#run-an-isolated-ourbigbook-master">Run an isolated OurBigBook master</a></li><li><a href=".#useless-knowledge">Useless knowledge</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/README.bigb">README.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

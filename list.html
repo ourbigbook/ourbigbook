@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>List - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg" />
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" />OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" /><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i></a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="list"><div class="notnav"><h1><a href="">List (<code>* </code>, <code>\L</code>, <code>\Ul</code>, <code>\Ol</code>)</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."> OurBigBook Project</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a></div><div class="nav"><span class="tags"> tags: <a href=".#macro-with-insane-shortcut">Macro with insane shortcut</a></span><a class="nosplit" href=".#list"></a><span class="metrics"><span class="wcntr"> words: 345</span></span></div></nav></div><div class="p" id="_1437"><a href=".#insane-macro-shortcut">Insane</a> with <code>* </code> (asterisk space):
+<div class="code" id="_1438"><div><pre><code>* a
+* b
+* c</code></pre></div></div><div class="p" id="_1439">which renders as:</div><blockquote id="_1440"><div><ul id="_1441"><li id="_1442">a</li><li id="_1443">b</li><li id="_1444">c</li></ul></div></blockquote></div><div class="p" id="_1445">Equivalent saner with <a href=".#auto-parent">implicit <code>ul</code> container</a>:
+<div class="code" id="_1446"><div><pre><code>\L[a]
+\L[b]
+\L[c]</code></pre></div></div><div class="p" id="_1447">which renders as:</div><blockquote id="_1448"><div><ul id="_1449"><li id="_1450">a</li><li id="_1451">b</li><li id="_1452">c</li></ul></div></blockquote></div><div class="p" id="_1453">Equivalent fully sane with explicit container:
+<div class="code" id="_1454"><div><pre><code>\Ul[
+\L[a]
+\L[b]
+\L[c]
+]</code></pre></div></div><div class="p" id="_1455">which renders as:</div><blockquote id="_1456"><div><ul id="_1457"><li id="_1458">a</li><li id="_1459">b</li><li id="_1460">c</li></ul></div></blockquote></div><div class="p" id="_1461">The explicit container is required if you want to pass extra arguments properties to the <code>ul</code> list macro, e.g. a title and an ID: <a href="#list-my-id">Ul 1</a>:
+<div class="code" id="_1462"><div><pre><code>\Ul
+{id=list-my-id}
+[
+\L[a]
+\L[b]
+\L[c]
+]</code></pre></div></div><div class="p" id="_1463">which renders as:</div><blockquote id="_1464"><div><div id="list-my-id"><div><div class="caption"><a href="#list-my-id"><span class="caption-prefix">Ul 1</span></a></div><ul><li id="_1465">a</li><li id="_1466">b</li><li id="_1467">c</li></ul></div></div></div></blockquote>
+This is the case because without the explicit container in an implicit <code>ul</code> list, the arguments would stick to the last list item instead of the list itself.</div><div class="p" id="_1468">It is also required if you want ordered lists:
+<div class="code" id="_1469"><div><pre><code>\Ol[
+\L[first]
+\L[second]
+\L[third]
+]</code></pre></div></div><div class="p" id="_1470">which renders as:</div><blockquote id="_1471"><div><ol id="_1472"><li id="_1473">first</li><li id="_1474">second</li><li id="_1475">third</li></ol></div></blockquote></div><div class="p" id="_1476">Insane nested list with two space indentation:
+<div class="code" id="_1477"><div><pre><code>* a
+  * a1
+  * a2
+  * a2
+* b
+* c</code></pre></div></div><div class="p" id="_1478">which renders as:</div><blockquote id="_1479"><div><ul id="_1480"><li id="_1481">a<div><ul id="_1482"><li id="_1483">a1</li><li id="_1484">a2</li><li id="_1485">a2</li></ul></div></li><li id="_1486">b</li><li id="_1487">c</li></ul></div></blockquote>
+The indentation must always be exactly equal to two spaces, anything else leads to errors or unintended output.</div><div class="p" id="_1488">Equivalent saner nested lists with implicit containers:
+<div class="code" id="_1489"><div><pre><code>\L[
+a
+\L[a1]
+\L[a2]
+\L[a2]
+]
+\L[b]
+\L[c]</code></pre></div></div><div class="p" id="_1490">which renders as:</div><blockquote id="_1491"><div><ul id="_1492"><li id="_1493">a
+<div><ul id="_1494"><li id="_1495">a1</li><li id="_1496">a2</li><li id="_1497">a2</li></ul></div></li><li id="_1498">b</li><li id="_1499">c</li></ul></div></blockquote></div><div class="p" id="_1500">Insane list item with a paragraph inside of it:
+<div class="code" id="_1501"><div><pre><code>* a
+* I have
+
+  Multiple paragraphs.
+
+  * And
+  * also
+  * a
+  * list
+* c</code></pre></div></div><div class="p" id="_1502">which renders as:</div><blockquote id="_1503"><div><ul id="_1504"><li id="_1505">a</li><li id="_1506"><div class="p" id="_1507">I have</div><div class="p" id="_1508">Multiple paragraphs.</div><div><ul id="_1509"><li id="_1510">And</li><li id="_1511">also</li><li id="_1512">a</li><li id="_1513">list</li></ul></div></li><li id="_1514">c</li></ul></div></blockquote></div><div class="p" id="_1515">Equivalent sane version:
+<div class="code" id="_1516"><div><pre><code>\L[a]
+\L[
+I have
+
+Multiple paragraphs.
+
+\L[And]
+\L[also]
+\L[a]
+\L[list]
+]
+\L[c]</code></pre></div></div><div class="p" id="_1517">which renders as:</div><blockquote id="_1518"><div><ul id="_1519"><li id="_1520">a</li><li id="_1521"><div class="p" id="_1522">I have</div><div class="p" id="_1523">Multiple paragraphs.</div><div><ul id="_1524"><li id="_1525">And</li><li id="_1526">also</li><li id="_1527">a</li><li id="_1528">list</li></ul></div></li><li id="_1529">c</li></ul></div></blockquote></div><div class="p" id="_1530">Insane lists may be escaped with a backslash as usual:
+<div class="code" id="_1531"><div><pre><code>\* paragraph starting with an asterisk.</code></pre></div></div><div class="p" id="_1532">which renders as:</div><blockquote id="_1533"><div class="p" id="_1534">* paragraph starting with an asterisk.</div></blockquote></div><div class="p" id="_1535">You can also start insane lists immediately at the start of a <a href=".#positional-vs-named-arguments">positional or named argument</a>, e.g.:
+<div class="code" id="_1536"><div><pre><code>\P[* a
+* b
+* c
+]</code></pre></div></div><div class="p" id="_1537">which renders as:</div><blockquote id="_1538"><div class="p" id="_1539"><div><ul id="_1540"><li id="_1541">a</li><li id="_1542">b</li><li id="_1543">c
+</li></ul></div></div></blockquote></div><div class="p" id="_1544">And now a list outside of <a href=".#ourbigbookexample"><code>\OurBigBookExample</code></a> to test how it looks directly under <a href=".#toplevel">the <code>\Toplevel</code> implicit macro</a>:</div><div><ul id="_1545"><li id="_1546">a</li><li id="_1547">b</li><li id="_1548">c</li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors</a></h2><div><ol><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href=".">OurBigBook Project</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links</a></h2><div><ul><li><a href=".#argument-leading-and-trailing-newline-removal">Argument leading and trailing newline removal</a></li><li><a href=".#auto-parent"><code>auto_parent</code> macro property</a></li><li><a href=".#escape-characters">Escape characters</a></li><li><a href=".#macro-with-insane-shortcut">Macro with insane shortcut</a></li><li><a href=".#ourbigbook-markup-quick-start">OurBigBook Markup quick start</a></li><li><a href=".#table">Table</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/README.bigb">README.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

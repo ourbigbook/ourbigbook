@@ -1,0 +1,98 @@
+// Shared across local ourbigbook and web.
+//
+// Also distributed with the NPM package so that users can harmonize
+// their design with Ourbigbook defaults.
+//
+// This file is intended to be used with @import. This means that
+// it contains only variables and mixins, and no actual style definitions.
+
+// Light
+//$a-color: #0000EE;
+//$a-color-visited: rgb(85, 26, 139);
+//$background-color: white;
+//$code-background-color: #eeeeee;
+//$color: black;
+//$target-background-color: #FFFFCC;
+
+// Dark.
+$a-color: #99CCFF;
+$background-color: #181818;
+// color-discreet was too dim, and $color was too bright and distracting. Let's try this then.
+$brandname-color: #CCCCCC;
+$code-background-color: #333333;
+$color: #EEEEEE;
+$color-discreet: #BBBBBB;
+$h-color: #DDDD00;
+$navbar-background-color: #000;
+// To make non-brand items a bit less visible than the brand.
+$table-border-color: #444444;
+$table-even-background-color: #222222;
+$table-head-background-color: #121212;
+$target-background-color: #442222;
+$ourbigbook-error-color: #F55;
+$ourbigbook-ok-color: #5F5;
+
+$font-family: Arial, Helvetica, sans-serif;
+// Optimal font size:
+// https://ux.stackexchange.com/questions/211/is-there-an-optimal-font-size
+$font-size: 16px;
+$header-font-size: 24px;
+$max-mobile-width: 635px;
+$table-padding-sides: 10px;
+$table-padding-top: 10px;
+$toplevel-horizontal-padding-mobile: 5px;
+$toplevel-horizontal-padding-left: 20px;
+$toplevel-horizontal-padding-right: 15px;
+
+// Derived parameters.
+// #FFAAFF was a reasonable value. But modern websites don't do this anymore.
+$a-color-visited: $a-color;
+$h1-font-size: $header-font-size * 1.5;
+$navbar-color-discrete: $color-discreet;
+$navbar-non-brandname-color: $a-color;
+$footer-color: $color;
+
+@mixin body {
+  background-color: $background-color;
+  color: $color;
+  font-family: $font-family;
+  font-size: $font-size;
+  a {
+    color: $a-color;
+    text-decoration: none;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+@mixin h-common {
+  box-sizing: border-box;
+  display: inline-block;
+  font-size: $header-font-size;
+  font-weight: bold;
+  width: 100%;
+  h1, h2, h3, h4, h5, h6 {
+    > a:first-child {
+      color: $h-color;
+      &:visited {
+        color: $h-color;
+      }
+    }
+    display: inline;
+    margin: 0;
+    // To make `word-wrap: break-word;` work, otherwise it does not take effect.
+    overflow-wrap: break-word;
+  }
+}
+
+@mixin h1-only {
+  font-size: $h1-font-size;
+}
+
+@mixin pre {
+  background-color: $code-background-color;
+  margin: 8px 0;
+  padding: 8px 8px;
+  overflow-x: auto;
+}

@@ -254,6 +254,10 @@ class Macro {
     }
   }
 
+  self_link(ast) {
+    return ` href="#${html_escape_attr(ast.id)}"`;
+  }
+
   toJSON() {
     return {
       name: this.name,
@@ -1341,7 +1345,7 @@ const DEFAULT_MACRO_LIST = [
       }
       let attrs = html_convert_attrs_id(ast, context, [], custom_args);
       let title = convert_arg(ast.args.title, context);
-      return `<h${level}${attrs}>${title}</h${level}>\n`;
+      return `<h${level}${attrs}><a${this.self_link(ast)}>${title}</a></h${level}>\n`;
     },
     {
       id_prefix: '',
@@ -1409,7 +1413,7 @@ const DEFAULT_MACRO_LIST = [
       let figure_attrs = html_convert_attrs_id(ast, context);
       let ret = `<figure${figure_attrs}>\n`
       if (ast.id !== undefined) {
-        ret += `<a href="#${html_escape_attr(ast.id)}">`
+        ret += `<a${this.self_link(ast)}>`
       }
       ret += `<img${img_attrs}>`;
       if (ast.id !== undefined) {
@@ -1572,20 +1576,29 @@ const DEFAULT_MACRO_LIST = [
 
 <style>
 /* Minimal table styling. */
+.katex { font-size: 1.5em; }
 body {
   padding-left: 15px;
   padding-right: 15px;
 }
 caption {
   caption-side: bottom;
+  color: black;
   text-align: left;
 }
-.katex { font-size: 1.5em; }
+h1 a:link, h2 a:link, h3 a:link, h4 a:link, h5 a:link, h6 a:link,
+h1 a:visited, h2 a:visited, h3 a:visited, h4 a:visited, h5 a:visited, h6 a:visited {
+  color: black;
+}
 table {
   border-collapse: collapse;
 }
 table, th, td {
   border: 1px solid black;
+}
+th, td {
+  padding-left: 2px;
+  padding-right: 2px;
 }
 </style>
 <body>

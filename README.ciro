@@ -3627,6 +3627,15 @@ This will get out of sync sooner or later with the code, but this should still s
 Defined variables:
 * `body`: the rendered body
 * `git_sha`: SHA of the latest git commit of the source code if in a git repository
+* `html_ext`: `.html` for local renders, empty for server renders.
+
+  So e.g. to link to an ID `myid` you can use:
+
+  ``
+  <a href="{{ root_relpath }}myid{{ html_ext }}">
+  ``
+
+  This will ideally be replaced with a more generic link to arbitrary ID mechnism at some point: https://github.com/cirosantilli/cirodown/issues/135
 * `root_page`: relative path to the toplevel page, e.g. either `index.html`, `../index.html` locally or `./`, `../` on server oriented rendereing
 * `root_replath`: relative path from the rendered output to the toplevel directory.
 
@@ -3650,6 +3659,8 @@ Defined variables:
   ``
   <link rel="stylesheet" type="text/css" href="main.css">
   ``
+
+  This will ideally be replaced with a more generic link to arbitrary ID mechnism at some point: https://github.com/cirosantilli/cirodown/issues/135
 * `style`: default Cirodown stylesheets
 * `title`
 

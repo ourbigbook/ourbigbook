@@ -127,9 +127,9 @@ Ourbigbook is the answer.]
 
 Ciro loves headers and headers!
 
-Reference to a header: \x[paragraphs-code-math].
+Reference to a header: \x[paragraphs-links-code-math].
 
-Make it show the section number as well with `{full}`: \x[paragraphs-code-math]{full}.
+Make it show the section number as well with `{full}`: \x[paragraphs-links-code-math]{full}.
 
 The following header is set to be uppercase by default due to the `{c}` (upperCase): \x[ciro-is-awesome]
 

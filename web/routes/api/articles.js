@@ -167,7 +167,6 @@ router.get('/:article', auth.optional, function(req, res, next) {
   Promise.all([req.payload ? User.findByPk(req.payload.id) : null, req.article.getAuthor()])
     .then(function(results) {
       let [user, author] = results
-
       return res.json({ article: req.article.toJSONFor(author, user) })
     })
     .catch(next)

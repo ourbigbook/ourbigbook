@@ -684,7 +684,7 @@ function* walk_files_recursively(file_or_dir, skip_basenames) {
 
 // CLI options.
 commander.option('--body-only', 'output only the content inside the HTLM body element', false);
-commander.option('--china', 'THE MOST IMPORTANT OPTION, see also: https://cirosantilli.com/china-dictatorship#mirrors. Usage:\n    cirodown --china > china.html\n    firefox china.html\n', false);
+commander.option('--china', 'https://cirosantilli.com/cirodown#debug-perf', false);
 commander.option('--debug-perf', 'https://cirosantilli.com/cirodown#debug-perf', false);
 commander.option('--dry-run', "don't run most external commands https://github.com/cirosantilli/cirodown#dry-run", false);
 commander.option('--embed-includes', 'http://cirosantilli.com/cirodown#embed-include', false);

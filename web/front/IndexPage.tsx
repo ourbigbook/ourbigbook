@@ -6,6 +6,7 @@ import {
   DiscussionAbout,
   IssueIcon,
   NewArticleIcon,
+  PinnedArticleIcon,
   SettingsIcon,
   TopicIcon,
   UserIcon,
@@ -195,7 +196,7 @@ function IndexPageHoc({
         {pinnedArticle &&
           <>
             <div className="content-not-ourbigbook pinned-article">
-              Pinned article: <CustomLink href={routes.article(pinnedArticle.slug)}>{pinnedArticle.slug}</CustomLink>
+              <PinnedArticleIcon /> Pinned article: <CustomLink href={routes.article(pinnedArticle.slug)}>{pinnedArticle.slug}</CustomLink>
             </div>
             <div
               className="ourbigbook"

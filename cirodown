@@ -387,36 +387,109 @@ const char_is_macro = function (c) {
 };
 char_is_macro.chars = new Set(['-', '_']);
 
+const closing_char = function(c) {
+  if (c === START_POSITIONAL_ARGUMENT_CHAR)
+    return END_POSITIONAL_ARGUMENT_CHAR;
+  if (c === START_NAMED_ARGUMENT_CHAR)
+    return END_NAMED_ARGUMENT_CHAR;
+  throw new Error('char does not have a close: ' + c);
+}
+
 const closing_token = function(token) {
   if (token === TokenType.POSITIONAL_ARGUMENT_START)
     return TokenType.POSITIONAL_ARGUMENT_END;
   if (token === TokenType.NAMED_ARGUMENT_START)
     return TokenType.NAMED_ARGUMENT_END;
-  return undefined;
+  throw new Error('token does not have a close: ' + token);
 }
 
-/**
- * @param {String} input_string
- * @returns {Array[Token]}
- */
-const tokenize = function(input_string, extra_returns={}) {
-  // https://stackoverflow.com/questions/21397316/split-javascript-string-into-array-of-codepoints-taking-into-account-surrogat/42596897#42596897
-  let chars = Array.from(input_string);
-  let tokens = [];
-  let i = 0;
-  let line = 1;
-  let column = 1;
-  let cur_c = input_string[0];
-  // Holds a FIFO with the currenty ongoing arguments.
-  // We must maintain this to know which argument is literal or not.
-  let macro_argument_stack = [];
-  // We are just after a previous argument, or just after the macro name.
-  // Therefore the next char could be the start of a new argument.
-  let failed = false;
-  extra_returns.errors = [];
+const Tokenizer = class {
+  /**
+   * @param {String} input_string
+   */
+  constructor(input_string, extra_returns={}, show_tokenize=false) {
+    this.chars = Array.from(input_string);
+    this.cur_c = this.chars[0];
+    this.column = 1;
+    this.extra_returns = extra_returns;
+    this.extra_returns.errors = [];
+    this.i = 0;
+    this.line = 1;
+    this.tokens = [];
+    this.show_tokenize = show_tokenize;
+  }
 
-  const error = function(message) {
-    extra_returns.errors.push(new ErrorMessage(message, line, column));
+  /**
+   * @returns {Array[Token]}
+   */
+  tokenize() {
+    // Ignore the last newline of the file.
+    // It is good practice to always have a newline
+    // at the end of files, but it doesn't really mean
+    // that the user wants the last element to contain one.
+    if (this.chars[this.chars.length - 1] === '\n') {
+      this.chars.pop();
+    }
+    // Add the magic implicit toplevel element.
+    this.push_token(TokenType.MACRO_NAME, 'toplevel');
+    this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
+    while (!this.is_end()) {
+      if (this.cur_c === '\\') {
+        let start_line = this.line;
+        let start_column = this.column;
+        this.consume();
+        if (this.is_end()) {
+          // Maybe this should be an error.
+        } else if (ESCAPABLE_CHARS.has(this.cur_c)) {
+          this.consume_plaintext_char();
+        } else {
+          let macro_name = this.tokenize_func(char_is_macro);
+          this.consume_optional_newline();
+          this.push_token(
+            TokenType.MACRO_NAME,
+            macro_name,
+            start_line,
+            start_column
+          );
+        }
+      } else if (this.cur_c === START_NAMED_ARGUMENT_CHAR) {
+        this.consume();
+        this.consume_optional_newline();
+      } else if (this.cur_c === END_NAMED_ARGUMENT_CHAR) {
+        this.consume();
+        this.consume_optional_newline();
+      } else if (this.cur_c === START_POSITIONAL_ARGUMENT_CHAR) {
+        this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
+        // Tokenize past the last open char.
+        let open_length = this.tokenize_func(
+          (c)=>{return c === START_POSITIONAL_ARGUMENT_CHAR}
+        ).length;
+        this.consume_optional_newline();
+        if (open_length > 1) {
+          // Literal argument.
+          let close_string = closing_char(START_POSITIONAL_ARGUMENT_CHAR).repeat(open_length);
+          this.tokenize_plaintext_until_string(close_string);
+          this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
+        }
+      } else if (this.cur_c === END_POSITIONAL_ARGUMENT_CHAR) {
+        this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
+        this.consume();
+        this.consume_optional_newline();
+      } else if (this.cur_c === '\n') {
+        if (this.peek() === '\n') {
+          this.push_token(TokenType.PARAGRAPH);
+          this.consume();
+          this.consume();
+        } else {
+          this.consume_plaintext_char();
+        }
+      } else {
+        this.consume_plaintext_char();
+      }
+    }
+    // Close the opening of toplevel.
+    this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
+    return this.tokens;
   }
 
   // Advance the current character and set cur_c to the next one.
@@ -425,118 +498,87 @@ const tokenize = function(input_string, extra_returns={}) {
   //
   // The current index must only be incremented through this function
   // and never directly.
-  const consume = function() {
-    if (chars[i] === '\n') {
-      line += 1;
-      column = 1;
+  consume() {
+    if (this.chars[this.i] === '\n') {
+      this.line += 1;
+      this.column = 1;
     } else {
-      column += 1;
+      this.column += 1;
     }
-    i += 1;
-    if (i >= chars.length) {
+    this.i += 1;
+    if (this.i >= this.chars.length) {
       return false;
     }
-    cur_c = chars[i];
+    this.cur_c = this.chars[this.i];
     return true;
   }
 
-  const peek = function() {
-    return chars[i + 1];
-  }
-
-  const consume_optional_newline = function() {
-    if (!is_end() && cur_c === '\n' && peek() !== '\n') {
-      consume();
-    }
-  }
-
-  const is_end = function() {
-    return i === chars.length;
-  }
-
-  const push_token = function(token, value, token_line, token_column) {
-    if (token_line === undefined)
-      token_line = line;
-    if (token_column === undefined)
-      token_column = column;
-    tokens.push(new Token(token, token_line, token_column, value));
-  }
-
-  const tokenize_plaintext_char = function() {
-    let last_token = tokens[tokens.length - 1];
+  consume_plaintext_char() {
+    let last_token = this.tokens[this.tokens.length - 1];
     if (last_token.type === TokenType.PLAINTEXT) {
-      last_token.value += cur_c;
+      last_token.value += this.cur_c;
     } else {
-      push_token(TokenType.PLAINTEXT, cur_c);
+      this.push_token(TokenType.PLAINTEXT, this.cur_c);
     }
-    consume();
+    this.consume();
   }
 
-  // Ignore the last newline of the file.
-  // It is good practice to always have a newline
-  // at the end of files, but it doesn't really mean
-  // that the user wants the last element to contain one.
-  if (chars[chars.length - 1] === '\n') {
-    chars.pop();
-  }
-  push_token(TokenType.MACRO_NAME, 'toplevel');
-  push_token(TokenType.POSITIONAL_ARGUMENT_START);
-  while (!is_end()) {
-    if (cur_c === '\\') {
-      let macro_start_line = line;
-      let macro_start_column = column;
-      consume();
-      if (is_end()) {
-        // Maybe this should be an error.
-      } else if (ESCAPABLE_CHARS.has(cur_c)) {
-        tokenize_plaintext_char();
-      } else {
-        let macro_name = '';
-        while (char_is_macro(cur_c)) {
-          macro_name += cur_c;
-          consume();
-          if (is_end())
-            break;
-        }
-        consume_optional_newline();
-        push_token(
-          TokenType.MACRO_NAME,
-          macro_name,
-          macro_start_line,
-          macro_start_column
-        );
-        macro_argument_stack.push([macros[macro_name], 0]);
-      }
-    } else if (cur_c === START_NAMED_ARGUMENT_CHAR) {
-      consume();
-      consume_optional_newline();
-    } else if (cur_c === END_NAMED_ARGUMENT_CHAR) {
-      consume();
-      consume_optional_newline();
-    } else if (cur_c === START_POSITIONAL_ARGUMENT_CHAR) {
-      push_token(TokenType.POSITIONAL_ARGUMENT_START);
-      consume();
-      consume_optional_newline();
-    } else if (cur_c === END_POSITIONAL_ARGUMENT_CHAR) {
-      push_token(TokenType.POSITIONAL_ARGUMENT_END);
-      consume();
-      consume_optional_newline();
-    } else if (cur_c === '\n') {
-      if (peek() === '\n') {
-        push_token(TokenType.PARAGRAPH);
-        done = true;
-        consume();
-        consume();
-      } else {
-        tokenize_plaintext_char();
-      }
-    } else {
-      tokenize_plaintext_char();
+  consume_optional_newline() {
+    if (!this.is_end() && this.cur_c === '\n' && this.peek() !== '\n') {
+      this.consume();
     }
   }
-  // Close the opening of toplevel.
-  push_token(TokenType.POSITIONAL_ARGUMENT_END);
-  return tokens;
+
+  error(message) {
+    this.extra_returns.errors.push(
+      new ErrorMessage(message, this.line, this.column));
+  }
+
+  is_end() {
+    return this.i === this.chars.length;
+  }
+
+  log_debug(message='') {
+    if (this.show_tokenize) {
+      console.error('tokenize: ' + message);
+    }
+  }
+
+  peek() {
+    return this.chars[this.i + 1];
+  }
+
+  push_token(token, value, token_line, token_column) {
+    if (token_line === undefined)
+      token_line = this.line;
+    if (token_column === undefined)
+      token_column = this.column;
+    this.tokens.push(new Token(token, token_line, token_column, value));
+  }
+
+  // Create a token with all consecutive chars that are accepted
+  // by the given function.
+  tokenize_func(f) {
+    this.log_debug('tokenize_func');
+    this.log_debug('this.cur_c: ' + this.cur_c);
+    this.log_debug();
+    let value = '';
+    while (f(this.cur_c)) {
+      value += this.cur_c;
+      this.consume();
+      if (this.is_end())
+        break;
+    }
+    return value;
+  }
+
+  tokenize_plaintext_until_string(close_string) {
+    while (this.chars.slice(this.i, this.i + close_string.length).join('') !== close_string) {
+      this.consume_plaintext_char();
+    }
+    for (let i = 0; i < close_string.length; i++)
+      this.consume();
+  }
 }
 
 // Parse tokens into the AST tree.
@@ -667,6 +709,7 @@ const parse_macro = function(state) {
         if (macro_type === AstType.ERROR) {
           arg_name = arg_count.toString();
         } else {
+          // TODO check if argument exists, and handle error otherwise.
           arg_name = macro.index_to_arg[arg_count].name;
         }
       } else {
@@ -763,14 +806,15 @@ const convert = function(
   if (options === undefined) {
     options = {};
   }
-  if (!('body_only'   in options)) { options.body_only   = false; }
-  if (!('show_ast'    in options)) { options.show_ast = false; }
-  if (!('show_parse'  in options)) { options.show_parse  = false; }
-  if (!('show_tokens' in options)) { options.show_tokens = false; }
+  if (!('body_only'     in options)) { options.body_only     = false; }
+  if (!('show_ast'      in options)) { options.show_ast      = false; }
+  if (!('show_parse'    in options)) { options.show_parse    = false; }
+  if (!('show_tokenize' in options)) { options.show_tokenize = false; }
+  if (!('show_tokens'   in options)) { options.show_tokens   = false; }
   extra_returns.errors = [];
   let sub_extra_returns;
   sub_extra_returns = {};
-  let tokens = tokenize(input_string, sub_extra_returns);
+  let tokens = (new Tokenizer(input_string, sub_extra_returns, options.show_tokenize)).tokenize();
   if (options.show_tokens) {
     console.error('tokens:');
     console.error(JSON.stringify(tokens, null, 2));
@@ -809,6 +853,7 @@ if (require.main === module) {
       'Useful to debug the program if conversion blow up on the next stages.'
   );
   program.option('--show-parse', 'print parsing internals to stderr');
+  program.option('--show-tokenize', 'print tokenization internals to stderr');
   program.option('--show-tokens', 'print the token stream to stderr');
   program.option(
     '--show-tokens-inside',
@@ -844,6 +889,7 @@ if (require.main === module) {
       show_ast: program.showAstInside,
       show_parse: program.showParse,
       show_tokens: program.showTokensInside,
+      show_tokenize: program.showTokenize,
       title: title,
     },
     extra_returns

@@ -6187,7 +6187,7 @@ function render_toc_from_entry_list({ add_test_instrumentation, entry_list, desc
       ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
     }
     if (parent_href) {
-      ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${html_attr('title', 'parent ToC entry')}>${PARENT_MARKER} "${parent_content}"</a>`;
+      ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${html_attr('title', 'parent ToC entry')}>${PARENT_MARKER} ${parent_content}</a>`;
     }
     if (entry.descendant_count_html) {
       ret += `${entry.descendant_count_html}`
@@ -8371,7 +8371,7 @@ const OUTPUT_FORMATS_LIST = [
             for (const parent_ast of parent_asts) {
               let parent_href = x_href_attr(parent_ast, context);
               let parent_content = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-              parent_links.push(`<a${parent_href}${html_attr('title', 'parent header')}>${PARENT_MARKER} "${parent_content}"</a>`);
+              parent_links.push(`<a${parent_href}${html_attr('title', 'parent header')}>${PARENT_MARKER} ${parent_content}</a>`);
             }
             parent_links = parent_links.join(HEADER_MENU_ITEM_SEP);
             if (parent_links) {

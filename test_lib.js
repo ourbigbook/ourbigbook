@@ -86,7 +86,7 @@ function xpath_header_split(n, id, href, marker) {
 
 // xpath to match the parent link inside of a header.
 function xpath_header_parent(n, id, href, title) {
-  return `${xpath_header(n, id)}//x:a[@href='${href}' and text()=' \"${title}\"']`;
+  return `${xpath_header(n, id)}//x:a[@href='${href}' and text()=' ${title}']`;
 }
 
 module.exports = {

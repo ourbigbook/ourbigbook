@@ -4092,6 +4092,11 @@ it('api: uppercase article IDs are forbidden', async () => {
     //article = createArticleArg({ i: 0, titleSource: 'Aa', bodySource: '\\Image[tmp.png]{id=cC}' })
     //;({data, status} = await createOrUpdateArticleApi(test, article))
     //assert.strictEqual(status, 422)
+
+    // Uppercase is allowed with {file} however.
+    article = createArticleArg({ i: 0, titleSource: 'path/to/main.S', bodySource: '{file}' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { path: 'path/to/main.S' }))
+    assertStatus(status, data)
   })
 })
 

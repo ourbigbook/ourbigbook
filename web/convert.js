@@ -207,8 +207,9 @@ async function convertArticle({
       transaction,
       type: 'article',
     }))
-    const toplevelId = extra_returns.context.header_tree.children[0].ast.id
-    if (toplevelId !== toplevelId.toLowerCase()) {
+    const toplevelAst = extra_returns.context.header_tree.children[0].ast
+    const toplevelId = toplevelAst.id
+    if (toplevelId !== toplevelId.toLowerCase() && !toplevelAst.validation_output.file.given) {
       throw new ValidationError(`Article ID cannot contain uppercase characters: "${toplevelId}"`)
     }
     if (forceNew && (await sequelize.models.File.findOne({ where: { path: input_path }, transaction }))) {

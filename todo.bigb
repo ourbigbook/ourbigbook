@@ -4,6 +4,10 @@
 
 == Issues
 
+=== split and nosplit links missing from cirosantilli.com
+
+https://cirosantilli.com/brazilian-music-split doesn't have nosplit
+
 === Blowup with unclosed image followed by math
 
 ``

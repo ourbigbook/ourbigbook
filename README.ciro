@@ -92,7 +92,7 @@ TODO: create a multifile blog example folder and link from here.
 Cirodown is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
 
 Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation), supporting out of the box feature such as:
-\l[\x[internal-cross-references][references] to \x[headers][headers], \x[images][images], etc. with error checking: never break internal links gain]
+\l[\x[internal-cross-references][references] to \x[headers][headers], \x[images][images], etc. with amazing error checking and reporting: never break internal links gain]
 \l[KaTeX server side \x[math][Mathematics]]
 \l[multi file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
   \l[\x[internal-cross-file-references]]

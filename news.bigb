@@ -7,6 +7,17 @@ Significant entries will have a corresponding announcement on the following <off
 * <twitter.com OurBigBook>
 * <mastodon.social @OurBigBook>
 
+= Pinned article
+{parent=News}
+{tag=OurBigBook Web}
+
+It is now possible for admins pin an article to the homepage. The initial use case is to help with new user onboarding. Documentation: <pinned article>.
+
+\Image[feature/pinned-article/pinned-article-on-topics-page-arrow.png]
+{provider=github}
+{height=1200}
+{border}
+
 = Automatically create `_file` pages for every file
 {parent=News}
 {tag=Static website}

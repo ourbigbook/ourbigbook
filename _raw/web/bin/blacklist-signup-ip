@@ -1,0 +1,28 @@
+#!/usr/bin/env node
+
+// https://docs.ourbigbook.com/ourbigbook-web-signup-ip-blacklist
+
+const path = require('path')
+
+const commander = require('commander')
+
+const models = require('../models')
+
+// cli arguments
+const program = commander.program
+program.allowExcessArguments(false)
+program.argument('<ip>', 'ip')
+program.argument('[note]', 'note')
+program.parse(process.argv)
+const [ip, note] = program.processedArgs
+
+// main
+const sequelize = models.getSequelize(path.dirname(__dirname))
+;(async () => {
+await sequelize.models.SignupBlacklistIp.create(
+  {
+    ip,
+    note,
+  },
+)
+})().finally(() => { return sequelize.close() })

@@ -2,7 +2,6 @@
 
 const globals = {};
 
-const katex = require('katex');
 if (typeof performance === 'undefined') {
   // Fuck, I can't find how to make this browser/node portable more nicely.
   // https://github.com/nodejs/node/issues/28635
@@ -14,6 +13,8 @@ if (typeof performance === 'undefined') {
 } else {
   globals.performance = performance;
 }
+
+const katex = require('katex');
 const lodash = require('lodash');
 const path = require('path');
 const pluralize = require('pluralize');

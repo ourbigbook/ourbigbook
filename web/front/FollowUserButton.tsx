@@ -18,7 +18,7 @@ const FollowUserButton = ({
   const handleClick = (e) => {
     e.preventDefault();
     if (!loggedInUser) {
-      Router.push(routes.userLogin());
+      Router.push(routes.userNew());
       return;
     }
     setFollowing(!following)

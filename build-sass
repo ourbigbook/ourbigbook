@@ -3,28 +3,23 @@
 const fs = require('fs');
 const path = require('path');
 
-// Can't easily require this, has some damned dependencies like jquery, etc.
-// which are not added automatically. Maybe one day I'll learn to do it nicely
-// with webpack, but no time for that stuff right now:
-// https://stackoverflow.com/questions/26773767/purpose-of-installing-twitter-bootstrap-through-npm
-//const bootstrap = require('bootstrap');
 const katex = require('katex');
+// Can't easily require this, its main is the css...
+//const normalize_css = require('normalize.css');
 const sass = require('sass');
 
 const cirodown_nodejs = require('cirodown/nodejs');
-
 const package_json = fs.readFileSync(cirodown_nodejs.PACKAGE_PACKAGE_JSON_PATH).toString();
 const package_json_json = JSON.parse(package_json);
 
-
 const embed_includes = `
-@use "${path.join(cirodown_nodejs.PACKAGE_NODE_MODULES_PATH, 'bootstrap', 'dist', 'css', 'bootstrap.min.css')}";
 @use "${path.join(cirodown_nodejs.PACKAGE_NODE_MODULES_PATH, 'katex', 'dist', 'katex.min.css')}";
+@use "${path.join(cirodown_nodejs.PACKAGE_NODE_MODULES_PATH, 'normalize.css', 'normalize.css')}";
 `;
 
 const external_includes = `
 @import "https://cdn.jsdelivr.net/npm/katex@${katex.version}/dist/katex.min.css";
-@import "https://netdna.bootstrapcdn.com/bootstrap/${package_json_json['dependencies']['bootstrap']}/css/bootstrap.min.css";
+@import "https://cdnjs.cloudflare.com/ajax/libs/normalize/${package_json_json['dependencies']['normalize.css']}/normalize.min.css";
 `;
 
 fs.mkdirSync(cirodown_nodejs.PACKAGE_OUT_PATH, {recursive: true})

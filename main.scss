@@ -1,9 +1,12 @@
+$caption_margin_bottom: 5px;
+$code_background_color: #eeeeee;
 $paragraph_margin_bottom: #c6538c;
 
 @mixin hidden {
   display: none;
   // The advantage of this is that when you hover, the height can increase a bit
-  // due to | separators which are very tall, and it is not very nice to see the page move.
+  // due to | separators which are very tall on certain fonts, and it is not very
+  // nice to see the page move.
   //
   // However, with visibility when the screen width is small, it always takes up a newline,
   // to it is even less acceptable.
@@ -20,6 +23,9 @@ $paragraph_margin_bottom: #c6538c;
 
 padding-left: 15px;
 padding-right: 15px;
+.caption-prefix {
+  font-weight: bold;
+}
 
 // Hide by default, show if last child of hovered element.
 .hide-hover:last-child {
@@ -34,31 +40,16 @@ padding-right: 15px;
 :target {
   background-color: #FFFFCC;
 }
-.caption-prefix {
-  font-weight: bold;
+
+a {
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
-// Headers are links to self, but we want them always black.
-h1 a:link, h2 a:link, h3 a:link, h4 a:link, h5 a:link, h6 a:link,
-h1 a:visited, h2 a:visited, h3 a:visited, h4 a:visited, h5 a:visited, h6 a:visited {
-  color: black;
-}
-h1, h2, h3, h4, h5, h6 {
-  font-size: 24px;
-  // Fix height so that height change due to high | on howver
-  // won't move bottom content down a bit.
-  height: 26px;
-  margin-top: 20px;
-}
-h1 a + span, h2 a + span, h3 a + span, h4 a + span, h5 a + span, h6 a + span {
-  @include hidden;
-}
-h1:hover a + span, h2:hover a + span, h3:hover a + span, h4:hover a + span, h5:hover a + span, h6:hover a  + span {
-  @include visible;
-}
-h1:hover span a:link, h2:hover span a:link, h3:hover span a:link, h4:hover span a:link, h5:hover span a:link, h6:hover span a:link,
-h1:hover span a:visited, h2:hover span a:visited, h3:hover span a:visited, h4:hover span a:visited, h5:hover span a:visited, h6:hover span a:visited {
-  color: blue;
+code {
+  background-color: $code_background_color;
 }
 
 // Figures.
@@ -66,50 +57,77 @@ figure {
   margin-bottom: $paragraph_margin_bottom;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  > a:first-child {
+    color: black;
+    &:visited {
+      color: black;
+    }
+  }
+  font-size: 24px;
+  margin: 20px 0 8px;
+  a + span {
+    @include hidden;
+  }
+  &:hover a + span {
+    @include visible;
+  }
+}
+
 // Math.
 .katex { font-size: 1.5em; }
-.math-caption-container > :last-child {
-  @include hidden;
-}
-.math-caption-container:hover > :last-child {
-  @include visible;
-}
 .math-container {
   align-items: center;
   margin-bottom: $paragraph_margin_bottom;
+  .math-caption-container {
+    margin-bottom: $caption_margin_bottom;
+    > :last-child {
+      @include hidden;
+    }
+    &:hover > :last-child {
+      @include visible;
+    }
+  }
+  .math-equation {
+    align-items: center;
+    display: flex;
+    > :nth-child(1) {
+      flex-grow: 9;
+    }
+    > :nth-child(2) {
+      flex-grow: 1;
+      text-align: right;
+    }
+  }
 }
-.math-equation {
-  align-items: center;
-  display: flex;
-}
-.math-equation > :nth-child(1) {
-  flex-grow: 9;
-}
-.math-equation > :nth-child(2) {
-  flex-grow: 1;
-  text-align: right;
+
+pre {
+  background-color: $code_background_color;
+  margin: 8px 0;
+  padding: 8px 8px;
 }
 
 // Tables
-
-// Add borders!
-table {
-  border-collapse: collapse;
-}
-table, th, td {
-  border: 1px solid black;
-}
-th, td {
-  padding-left: 2px;
-  padding-right: 2px;
-}
-.table-caption-container > :last-child {
-  @include hidden;
-}
-.table-caption-container:hover > :last-child {
-  @include visible;
-}
 .table-container {
+  .table-caption-container {
+    margin-bottom: $caption_margin_bottom;
+    > :last-child {
+      @include hidden;
+    }
+    &:hover > :last-child {
+      @include visible;
+    }
+  }
+  table {
+    $table_border: 1px solid black;
+    border: $table_border;
+    border-collapse: collapse;
+    th, td {
+      border: $table_border;
+      padding-left: 2px;
+      padding-right: 2px;
+    }
+  }
   margin-bottom: $paragraph_margin_bottom;
 }
 

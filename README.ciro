@@ -533,6 +533,7 @@ Static book generators:
 * https://github.com/JerrySievert/bookmarkdown
 * https://www.gitbook.com/
   * https://github.com/rust-lang/mdBook[]. Impressive integrated search feature. Like Gitbook but implemented in Rust.
+* https://github.com/facebook/docusaurus React + markdown based, written in TypeScript. So how can it be build fast? Gotta benchmark.
 
 Less related but of interest, similar philosophy to what Ciro wants, but no explicitly reusable system:
 * http://www.uprtcl.io/

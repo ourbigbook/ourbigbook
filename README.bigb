@@ -178,7 +178,7 @@ See the relevant specific section:
         * Not readme
           * Not readme h2
     This means that you can split large <\H splitDefault argument>[splitDefault] input files if rendering starts to slow you down, and things will still render exactly the same.
-  * check that local files and images linked to actually exist: <\a check argument>. E.g.:
+  * check that local files and images linked to actually exist: <\a external argument>. E.g.:
     ``
     \a[i-don-exist.txt]
     ``
@@ -758,9 +758,9 @@ The link target, e.g. in:
 ``
 `href` equals `http://example.com`.
 
-Important behaviours associated with this property for local links:
-* they are checked for existence in the local filesystem: <\a check argument>
-* they are modified as per <relative link>{full} to account for <scopes> with <split headers>
+Important behaviours associated with this property for local links are detailed at <\a external argument>{full}:
+* they are checked for existence in the local filesystem
+* they are modified to account for <scopes> with <split headers>
 
 = `\a` `ref` argument
 {parent=Link}
@@ -825,7 +825,7 @@ and the following are internal by default:
 * `index.js`
 * `../index.js`
 * `path/to/index.js`
-* `/path/to/index.js`. Note that paths starting with `/` refer to the root of the <OurBigBook CLI deployment>, not the root of the domain, see: <link to the domain root path>.
+* `/path/to/index.js`. Note that paths starting with `/` refer to the root of the <OurBigBook CLI> deployment, not the root of the domain, see: <link to the domain root path>.
 * `//example.com/path/to/index.js`
 
 A link being internal has the following effects
@@ -900,7 +900,7 @@ Then, in a server that omits the `.html` extension, if we didn't have `_raw/` bo
 
 = URL with protocol
 {c}
-{parent=Relative link}
+{parent=a `external` argument}
 
 A URL with protocol is a URL that matches the regular expression `^[a-zA-Z]+://`. The following are examples of URLs with protocol:
 * `http://cirosantilli.com`
@@ -2767,12 +2767,12 @@ Adds a border around the image. This can be useful to make it clearer where imag
 {title=Logo of the OurBigBook Project with a border around it.}
 ]]
 
-= Image `check` argument
+= Image `external` argument
 {parent=Image argument}
 {tag=Named argument}
 {tag=Boolean argument}
 
-Analogous to the <\a check argument> when checking if the <image src argument> exists or not.
+Analogous to the <\a external argument> when checking if the <image src argument> exists or not.
 
 = Image `description` argument
 {parent=Image argument}

@@ -52,6 +52,9 @@ class AstNode {
       options.is_first_header_in_input_file = false;
     }
     if (!('parent_node' in options)) {
+      // AstNode. TODO get rid of this and always use
+      // header_graph_node.parent_node.value instead, to reduce the duplication
+      // of information.
       options.parent_node = undefined;
     }
     if (!('text' in options)) {
@@ -81,8 +84,6 @@ class AstNode {
     // it is possible to force non-indexed IDs to count as well with
     // caption_number_visible.
     this.macro_count_visible = undefined;
-    // AstNode. TODO get rid of this and always use parent_argument.parent_node instead,
-    // to reduce the duplication of information.
     this.parent_node = options.parent_node;
     // AstArgument
     this.parent_argument = undefined;
@@ -1603,6 +1604,22 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
   }
 }
 
+/**/
+function calculate_scope_length(ast) {
+  let cur_node = ast.header_graph_node;
+  while (cur_node !== undefined) {
+    if (
+      cur_node.value !== undefined &&
+      cur_node.value.validation_output.scope !== undefined &&
+      cur_node.value.validation_output.scope.boolean
+    ) {
+      return cur_node.value.id.length + 1;
+    }
+    cur_node = cur_node.parent_node;
+  }
+  return 0;
+}
+
 function capitalize_first_letter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
@@ -1988,6 +2005,7 @@ function convert_header(cur_arg_list, context, has_toc) {
     context.header_graph = first_ast.header_graph_node;
     const output_path = output_path_from_ast(first_ast, context);
     context.toplevel_output_path = output_path;
+    context.toplevel_scope_cut_length = calculate_scope_length(first_ast);
 
     // root_relpath
     const [output_path_dirname, output_path_basename] =
@@ -2170,7 +2188,11 @@ function html_convert_attrs_id(
 ) {
   if (ast.id !== undefined) {
     custom_args[Macro.ID_ARGUMENT_NAME] = [
-        new PlaintextAstNode(ast.source_location, remove_toplevel_scope(ast, context))];
+        new PlaintextAstNode(
+          ast.source_location,
+          remove_toplevel_scope(ast, context)
+        )
+    ];
   }
   return html_convert_attrs(ast, context, arg_names, custom_args);
 }
@@ -3689,11 +3711,7 @@ function remove_toplevel_scope(ast, context) {
   if (
     // Besides being a minor optimization, this also prevents the case
     // without any headers from blowing up.
-    context.toplevel_scope_cut_length > 0 &&
-    // Can happen in split headers.
-    context.header_graph.children.length > 0 &&
-    // Don't remove if we are the toplevel element, otherwise empty ID.
-    context.header_graph.children[0].value !== ast
+    context.toplevel_scope_cut_length > 0
   ) {
     id = id.substr(context.toplevel_scope_cut_length);
   }
@@ -3967,6 +3985,10 @@ function x_href_parts(target_id_ast, context) {
   }
 
   // Fragment
+  const to_split_headers = (
+    (context.to_split_headers === undefined && context.in_split_headers) ||
+    (context.to_split_headers !== undefined && context.to_split_headers)
+  );
   let fragment;
   if (
     // Linking to a toplevel ID.
@@ -3974,16 +3996,16 @@ function x_href_parts(target_id_ast, context) {
     // Linking towards a split header.
     (
       target_id_ast.macro_name === Macro.HEADER_MACRO_NAME &&
-      (
-        (context.to_split_headers === undefined && context.in_split_headers) ||
-        (context.to_split_headers !== undefined && context.to_split_headers)
-      )
+      to_split_headers
     ) ||
     // Linking to the toplevel of the current output path.
     (
       target_id_ast.id === context.options.toplevel_id &&
       // Linking from a split header to the corresponding nonsplit one.
-      !(context.to_split_headers !== undefined && !context.to_split_headers)
+      !(
+        context.to_split_headers !== undefined &&
+        !context.to_split_headers
+      )
     )
   ) {
     fragment = '';
@@ -3992,7 +4014,8 @@ function x_href_parts(target_id_ast, context) {
       // The header was included inline into the current file.
       context.include_path_set.has(target_input_path) ||
       // The header is in the current file.
-      (target_input_path == context.options.input_path)
+      target_input_path == context.options.input_path ||
+      to_split_headers
     ) {
       fragment = remove_toplevel_scope(target_id_ast, context);
     } else {

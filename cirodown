@@ -161,7 +161,7 @@ function convert_input(input, options, convert_input_options={}) {
     new_options.input_path = convert_input_options.input_path;
   }
   if ('db' in convert_input_options) {
-    new_options.id_provider = new SqliteIdProvider(convert_input_options);
+    new_options.id_provider = convert_input_options.id_provider;
     new_options.file_provider = convert_input_options.file_provider;
   }
   if ('title' in convert_input_options) {
@@ -429,29 +429,19 @@ function convert_path(base_path, input_path, options, convert_input_options) {
   return output;
 }
 
-function generate_redirects(convert_input_options, cirodown_json, html_x_extension, outdir) {
-  const id_provider = new SqliteIdProvider(convert_input_options);
+function generate_redirects(
+  options,
+  cirodown_json,
+  outdir
+) {
   for (let redirect_src_id in cirodown_json.redirects) {
     const redirect_target_id = cirodown_json.redirects[redirect_src_id];
-    const target_id_ast = id_provider.get(redirect_target_id)
-    if (target_id_ast === undefined) {
+    options = Object.assign({}, options);
+    options.input_path = redirect_src_id;
+    const redirect_href = cirodown.convert_x_href(redirect_target_id, options);
+    if (redirect_href === undefined) {
       cli_error(`redirection target ID "${redirect_target_id}" not found`);
     }
-    const redirect_href = cirodown.x_href(
-      target_id_ast,
-      {
-        // This will need changing when we do:
-        // https://github.com/cirosantilli/cirodown/issues/44
-        // The simple solution is to just make all redirects point
-        // to the index in that case.
-        include_path_set: new Set(),
-        options: {
-          file_provider: new cirodown_nodejs.ZeroFileProvider(),
-          input_path: redirect_src_id,
-          html_x_extension: html_x_extension,
-        }
-      }
-    );
     // https://stackoverflow.com/questions/10178304/what-is-the-best-approach-for-redirection-of-old-pages-in-jekyll-and-github-page/36848440#36848440
     fs.writeFileSync(path.join(outdir, redirect_src_id + '.' + cirodown.HTML_EXT),
 `<!DOCTYPE html>
@@ -815,9 +805,10 @@ A link to another file: \\x[and-now-an-include]
       convert_input_options.includes_table_name = includes_table_name;
       convert_input_options.files_table_name = files_table_name;
       convert_input_options.file_provider = new SqliteFileProvider(convert_input_options);
+      convert_input_options.id_provider = new SqliteIdProvider(convert_input_options);
     }
     if (commander.generateRedirects) {
-      generate_redirects(convert_input_options, cirodown_json, html_x_extension, outdir);
+      generate_redirects(convert_input_options, cirodown_json, outdir);
       process.exit(0);
     }
     if (commander.watch) {
@@ -826,7 +817,7 @@ A link to another file: \\x[and-now-an-include]
       }
       if (!input_path_is_file) {
         convert_files_in_directory_extract_ids(inputPath, options, convert_input_options);
-        generate_redirects(convert_input_options, cirodown_json, html_x_extension, outdir);
+        generate_redirects(convert_input_options, cirodown_json, outdir);
       }
       let watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES});
       watcher.on('change', function(path) {
@@ -903,7 +894,7 @@ A link to another file: \\x[and-now-an-include]
         // Do the actual conversion.
         convert_files_in_directory_extract_ids(actual_input, options, convert_input_options);
         convert_files_in_directory(actual_input, options, convert_input_options);
-        generate_redirects(convert_input_options, cirodown_json, html_x_extension, publish_outdir);
+        generate_redirects(convert_input_options, cirodown_json, publish_outdir);
 
         // Publish the converted output if build succeeded.
         if (publish && !convert_input_options.had_error) {

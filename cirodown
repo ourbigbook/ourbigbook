@@ -153,7 +153,7 @@ function cmd_get_stdout(cmd, args=[], options={}) {
 
 function convert_files_in_directory(input_path, options, convert_input_options) {
   for (const one_path of walk_files_recursively(input_path, DEFAULT_IGNORE_BASENAMES_SET)) {
-    convert_path_to_file(input_path, one_path, options, convert_input_options);
+    convert_path_to_file(input_path, path.relative(input_path, one_path), options, convert_input_options);
   }
 }
 
@@ -476,7 +476,7 @@ function* walk_files_recursively(file_or_dir, skip_basenames) {
     const dirents = fs.readdirSync(file_or_dir, {withFileTypes: true});
     for (const dirent of dirents) {
       if (!skip_basenames.has(dirent.name)) {
-        const res = dirent.name;
+        const res = path.join(file_or_dir, dirent.name);
         if (dirent.isDirectory()) {
           yield* walk_files_recursively(res, skip_basenames);
         } else {

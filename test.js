@@ -105,6 +105,8 @@ function assert_convert(description, input, output) {
   it(description, ()=>{assert_convert_func(input, output);});
 }
 
+/** Assert that the conversion fails in a controlled way, giving correct
+ * error line and column, and without throwing an exception. */
 function assert_error(description, input, line, column) {
   it(description, ()=>{assert_error_func(input, line, column);});
 }
@@ -1067,6 +1069,35 @@ assert_error('cross reference from image title after without x content without i
 `,
   3, 18
 );
+assert_no_error("internal cross references work with scope don't throw",
+`= h1
+
+\\x[h2-1/h3-1].
+
+== h2 1
+{scope}
+
+=== h3 1
+
+\\x[h3-2].
+
+\\x[/h2-2]
+
+\\x[h2-2]
+
+==== h4 1
+{scope}
+
+===== h5 1
+{scope}
+
+=== h3 2
+
+=== h2 2
+
+== h2 2
+`
+);
 //// https://github.com/cirosantilli/cirodown/issues/45
 //assert_convert_ast('cross reference to plaintext id calculated from title',
 //  `\\h[1][aa \`bb\` cc]
@@ -1178,7 +1209,7 @@ assert_convert_ast('header id new line insane trailing element',
   })],
 );
 assert_error('header must be an integer letters', '\\h[a][b]\n', 1, 3);
-assert_error('header h2 must be an integer toc',
+assert_error('non integer h2 header level in a document with a toc does not throw',
   `\\h[1][h1]
 
 \\toc
@@ -1189,7 +1220,7 @@ assert_error('header h2 must be an integer toc',
 
 \\h[][h2 3]
 `, 5, 3);
-assert_error('header h1 must be an integer with ToC',
+assert_error('non integer h1 header level a in a document with a toc does not throw',
   `\\h[][h1]
 
 \\toc

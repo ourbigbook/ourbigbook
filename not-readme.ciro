@@ -1,10 +1,10 @@
-\h[1][Not the README]
+= Not the README
 
 This file is, surprisingly, not the README. It is used for multifile tests. It is also smaller and therefore compiles faster.
 
 \toc
 
-\h[2][h2 in not the README]
+== h2 in not the README
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {title=Figure in not the README}
@@ -13,13 +13,23 @@ This file is, surprisingly, not the README. It is used for multifile tests. It i
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {title=Figure in not the README without explicit id}
 
-\h[2][Some references back to the README]
+== Some references back to the README
 
 Toplevel: \x[cirodown].
 
 Non-toplevel: \x[internal-cross-references].
 
-\h[2][Not the README another include]
+== Not the README header with scope
+{scope}
+
+=== Not the README header with scope child
+
+== Not the README header with fixed case
+{c}
+
+=== Header with scope child
+
+== Not the README another include
 
 Here we include another file from this file to see if recursive includes work from the toplevel:
 

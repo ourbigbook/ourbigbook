@@ -397,6 +397,11 @@ ol, ul {
   }
 }
 
+sup.ref {
+  // https://stackoverflow.com/questions/6900124/how-to-make-certain-text-not-selectable-with-css
+  user-select: none;
+}
+
 // Overrides for the tablesort.css
 // https://raw.githubusercontent.com/tristen/tablesort/5.2.1/tablesort.css
 th[role=columnheader]:not(.no-sort):after {

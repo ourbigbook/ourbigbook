@@ -1,6 +1,8 @@
 const assert = require('assert');
 const child_process = require('child_process');
 const fs = require('fs');
+const path = require('path');
+const os = require('os');
 const util = require('util');
 
 const cirodown = require('cirodown')
@@ -319,7 +321,7 @@ function assert_error(description, input, line, column, path, options={}) {
   );
 }
 
-// Test the cirodown executable itself.
+// Test the cirodown executable via a separate child process call.
 function assert_executable(
   description,
   options={}
@@ -329,18 +331,51 @@ function assert_executable(
     if (!('args' in options)) {
       options.args = [];
     }
-    options.args.push('--body-only');
-    let stdin;
-    if ('stdin' in options) {
-      stdin = options.stdin;
+    if (!('filesystem' in options)) {
+      options.filesystem = {};
     }
-    { input : 'one two three' }
-    const out = child_process.spawnSync('./cirodown', options.args, {input: stdin});
-    assert.strictEqual(out.status, 0);
-    assert_xpath_matches(
-      options.expect_stdout_xpath,
-      out.stdout.toString(cirodown_nodejs.ENCODING),
-    );
+    if (!('expect_stdout_xpath' in options)) {
+      options.expect_stdout_xpath = [];
+    }
+    if (!('expect_filesystem_xpath' in options)) {
+      options.expect_filesystem_xpath = {};
+    }
+    const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'cirodown'));
+    for (const relpath in options.filesystem) {
+      const dirpath = path.join(tmpdir, path.parse(relpath).dir);
+      if (!fs.existsSync(dirpath)) {
+        fs.mkdirSync(dirpath);
+      }
+      fs.writeFileSync(path.join(tmpdir, relpath), options.filesystem[relpath]);
+    }
+    process.env.PATH = process.cwd() + ':' + process.env.PATH
+    const out = child_process.spawnSync('cirodown', options.args, {
+      cwd: tmpdir,
+      input: options.stdin,
+    });
+    const assert_msg = `stdout:
+${out.stdout.toString(cirodown_nodejs.ENCODING)}
+
+stderr:
+${out.stderr.toString(cirodown_nodejs.ENCODING)}`;
+    assert.strictEqual(out.status, 0, assert_msg);
+    for (const xpath_expr of options.expect_stdout_xpath) {
+      assert_xpath_matches(
+        xpath_expr,
+        out.stdout.toString(cirodown_nodejs.ENCODING),
+        {message: assert_msg},
+      );
+    }
+    for (const relpath in options.expect_filesystem_xpath) {
+      const assert_msg_xpath = `path: ${relpath}\n\n` + assert_msg;
+      const fullpath = path.join(tmpdir, relpath);
+      assert.ok(fs.existsSync(fullpath), assert_msg_xpath);
+      const html = fs.readFileSync(fullpath).toString(cirodown_nodejs.ENCODING);
+      for (const xpath_expr of options.expect_filesystem_xpath[relpath]) {
+        assert_xpath_matches(xpath_expr, html, {message: assert_msg_xpath});
+      }
+    }
+    fs.rmdirSync(tmpdir, {recursive: true});
   });
 }
 
@@ -454,6 +489,11 @@ ff
 == gg
 
 hh
+`;
+  } else if (input_path === 'include-two-levels-subdir/index') {
+    return `= Include two levels subdir h1
+
+== Include two levels subdir h2
 `;
   } else if (input_path === 'include-with-error') {
     return `= bb
@@ -1485,6 +1525,10 @@ assert_convert_ast('cross reference to non-included header in another file',
 
 \\x[include-two-levels]
 
+\\x[include-two-levels-subdir]
+
+\\x[include-two-levels-subdir/h2]
+
 \\x[gg]
 
 \\x[image-bb][image bb 1]
@@ -1504,6 +1548,8 @@ assert_convert_ast('cross reference to non-included header in another file',
     a('P', [a('x', undefined, {href: [t('notindex')]})]),
     a('P', [a('x', undefined, {href: [t('bb')]})]),
     a('P', [a('x', undefined, {href: [t('include-two-levels')]})]),
+    a('P', [a('x', undefined, {href: [t('include-two-levels-subdir')]})]),
+    a('P', [a('x', undefined, {href: [t('include-two-levels-subdir/h2')]})]),
     a('P', [a('x', undefined, {href: [t('gg')]})]),
     a('P', [a('x', [t('image bb 1')], {href: [t('image-bb')]})]),
     a('Toc'),
@@ -1557,7 +1603,11 @@ assert_convert_ast('cross reference to non-included header in another file',
         "//x:a[@href='#image-bb' and text()='image bb 2']",
       ],
     },
-    convert_before: ['include-two-levels'],
+    convert_before: [
+      'include-two-levels',
+        // https://github.com/cirosantilli/cirodown/issues/116
+      'include-two-levels-subdir/index',
+    ],
     input_path_noext: 'notindex',
   },
 );
@@ -2780,6 +2830,44 @@ assert_executable(
   'input from stdin produces output on stdout',
   {
     stdin: 'aabb',
-    expect_stdout_xpath: "//x:div[@class='p' and text()='aabb']",
+    expect_stdout_xpath: ["//x:div[@class='p' and text()='aabb']"],
+  }
+);
+assert_executable(
+  'input from file produces an output file',
+  {
+    args: ['notindex.ciro'],
+    filesystem: {
+      'notindex.ciro': `= Notindex\n`,
+    },
+    expect_filesystem_xpath: {
+      'notindex.html': ["//x:h1[@id='notindex']"],
+    }
+  }
+);
+assert_executable(
+  'input from directory produces several output files and cirodown.json',
+  {
+    args: ['.'],
+    filesystem: {
+      'README.ciro': `= Index\n`,
+      'notindex.ciro': `= Notindex\n`,
+      'subdir/index.ciro': `= Subdir index
+
+== Subdir index h2
+`,
+      //'subdir/notindex.ciro': `= Subdir notindex\n`,
+      'cirodown.json': `{}\n`,
+    },
+    expect_filesystem_xpath: {
+      'index.html': ["//x:h1[@id='index']"],
+      'notindex.html': ["//x:h1[@id='notindex']"],
+      'subdir/index.html': [
+        "//x:h1[@id='subdir']",
+        // TODO
+        //"//x:h2[@id='subdir/subdir-index-h2']",
+      ],
+      //'subdir/notindex.html': "//x:h1[@id='notindex']",
+    }
   }
 );

@@ -313,6 +313,7 @@ Key links:
     ``
     ourbigbook --watch input-file.bigb
     ``
+* automatic code formatting: <--format-code>
 
 = Quick start
 {parent=ourbigbook}
@@ -3671,6 +3672,8 @@ The <x magic argument> was introduced later, and basically became a better alter
   ``
   I like <pythons (animal)>.
   ``
+  https://github.com/cirosantilli/ourbigbook/issues/244
+
 * plural headers. We only attempt to singularize arguments for now, not pluralize them. So if you had:
   ``
   My <dog> is nice.

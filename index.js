@@ -2076,10 +2076,11 @@ function convert(
           has_toc = true;
         }
         if (
-          macro_name === Macro.HEADER_MACRO_NAME
+          macro_name === Macro.HEADER_MACRO_NAME &&
           // Just ignore extra added include headers, these
           // were overwritting index-split.html output.
-          && !child_ast.from_include
+          !child_ast.from_include &&
+          !child_ast.validation_output.synonym.boolean
         ) {
           convert_header(cur_arg_list, context, has_toc);
           cur_arg_list = [];

@@ -10303,6 +10303,68 @@ ignored-subdir
     ],
   }
 );
+assert_cli(
+  'git: .gitignore ignores individual files from conversion',
+  {
+    args: ['tmp.bigb'],
+    pre_exec: MAKE_GIT_REPO_PRE_EXEC,
+    filesystem: {
+      'README.bigb': `= Index
+`,
+      'tmp.bigb': `= Tmp
+
+\\asdf
+`,
+      '.gitignore': `tmp.bigb
+`,
+      'ourbigbook.json': `{
+  "outputOutOfTree": true
+}
+`,
+    },
+  }
+);
+assert_cli(
+  'git: .gitignore is used in --web conversion',
+  {
+    args: ['--web', '--web-dry', '.'],
+    pre_exec: MAKE_GIT_REPO_PRE_EXEC,
+    filesystem: {
+      'README.bigb': `= Index
+`,
+      'tmp.bigb': `= Tmp
+
+\\asdf
+`,
+      '.gitignore': `tmp.bigb
+`,
+      'ourbigbook.json': `{
+  "outputOutOfTree": true
+}
+`,
+    },
+  }
+);
+assert_cli(
+  'git: conversion of single file in git directory works',
+  {
+    args: ['README.bigb'],
+    pre_exec: MAKE_GIT_REPO_PRE_EXEC,
+    filesystem: {
+      'README.bigb': `= Index
+`,
+      '.gitignore': `tmp.bigb
+`,
+      'ourbigbook.json': `{
+  "outputOutOfTree": true
+}
+`,
+    },
+    assert_exists: [
+      `out/html/index.html`,
+    ],
+  }
+);
 
 assert_cli(
   '--web-dry on simple repository',

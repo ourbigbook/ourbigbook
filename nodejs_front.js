@@ -3,8 +3,10 @@
 // Value of environment variables considered as true.
 env_true = '1'
 
-function preload_katex(tex) {
-  let katex_macros = {};
+function preload_katex(tex, katex_macros) {
+  if (katex_macros === undefined) {
+    katex_macros = {}
+  }
   require('katex').renderToString(
     tex,
     {

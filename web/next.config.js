@@ -7,14 +7,13 @@ module.exports = {
     ignoreDuringBuilds: true,
   },
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
-    config.module.rules.push({
-      // To allow embedding the default defines into the Web Editor.
-      test: /\.tex$/,
-      use: 'raw-loader',
-    });
-    //config.plugins.push(new MonacoWebpackPlugin({
-    //  languages: ['javascript', 'typescript'],
-    //}))
+    config.module.rules.push(
+      {
+        // To allow embedding the default defines into the Web Editor.
+        test: /\.tex$/,
+        type: 'asset/source',
+      }
+    );
     return config
   },
 }

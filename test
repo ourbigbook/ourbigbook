@@ -81,3 +81,9 @@ My paragraph 2.
 <p>My paragraph 2.</p>
 `
 )});
+
+// Code..
+it('code', ()=>{assert_convert(
+  'a \\c[b c] d\n',
+  'a <code>b c</code> d\n'
+)});

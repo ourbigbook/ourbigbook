@@ -5,6 +5,8 @@ $like-button-active-color: #FF1493;
 $tab-bar-active-color: #FF80D0;
 $nav-background-color: #AA0;
 $toplevel-padding: 20px;
+$toplevel-padding-mobile: 5px;
+$max-mobile-width: 635px;
 
 html {
 height: 100%;
@@ -95,19 +97,23 @@ form {
 }
 
 div.article-list-container {
+  overflow-x: auto;
   table.article-list {
     border-collapse: collapse;
     margin-bottom: 20px;
-    width: 100%;
+    white-space: nowrap;
     tr {
       td, th {
         border: 1px solid $color;
         padding: 5px 10px;
+        &.center {
+          text-align: center;
+        }
         &.shrink {
-          white-space: nowrap
         }
         &.expand {
-          width: 100%
+          max-width: 60vw;
+          overflow: hidden;
         }
         &.title {
           font-weight: bold;
@@ -181,8 +187,12 @@ div.editor-page {
 
 div.tab-list {
   margin: 20px;
+  overflow: hidden;
   a.tab-item {
+    display: inline-block;
     padding-right: 10px;
+    white-space: pre;
+    overflow: hidden;
     &.active {
       color: $tab-bar-active-color;
       font-weight: bold;
@@ -201,8 +211,14 @@ i.ion-heart {
  * So for now we are taking the approach of adding this class to every content (non-hav/footer)
  * to make them align nicely with rendered Ourbigbook. */
 .content-not-ourbigbook {
-  padding-left: $toplevel-padding;
-  padding-right: $toplevel-padding;
+  @media only screen and (max-width: $max-mobile-width) {
+    padding-left: $toplevel-padding-mobile;
+    padding-right: $toplevel-padding-mobile;
+  }
+  @media only screen and (min-width: $max-mobile-width + 1) {
+    padding-left: $toplevel-padding;
+    padding-right: $toplevel-padding;
+  }
 }
 
 .comment {
@@ -349,6 +365,8 @@ nav.navbar {
     display: flex;
     margin-left: auto;
   }
+  overflow-x: hidden;
+  white-space: nowrap;
   a {
     /* Make buttons occupy the full height of the header bar.
     * https://stackoverflow.com/questions/28254332/how-to-vertically-center-the-contents-of-a-flexbox-item/28254903#28254903 */
@@ -361,8 +379,8 @@ nav.navbar {
     font-weight: bold;
     margin-left: 0;
     margin-right: 0;
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: 5px;
+    padding-right: 5px;
     text-decoration: none;
     &:visited {
       color: $background-color;
@@ -377,6 +395,13 @@ nav.navbar {
     img.profile-thumb {
       height: $font-size * 1.2;
       padding-right: 5px;
+    }
+    @media only screen and (max-width: $max-mobile-width) {
+      // TODO don't hardcode this width, autohide when there is no more room:
+      // https://stackoverflow.com/questions/43547430/how-can-i-completely-hide-elements-that-overflow-their-container-vertically
+      &.about {
+        display: none;
+      }
     }
   }
   &>:first-child {

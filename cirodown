@@ -1,8 +1,46 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
+const path = require('path');
 
 const cirodown = require('cirodown');
+const chokidar = require('chokidar');
+
+function convert_input(input, options, extra_returns, title, program) {
+  var new_options = Object.assign({}, options);
+  new_options.title = title;
+  let output = cirodown.convert(input, options, extra_returns);
+  if (program.showTokens) {
+    console.error('tokens:');
+    console.error(JSON.stringify(extra_returns.tokens, null, 2));
+    console.error();
+  }
+  if (program.showAst) {
+    console.error('ast:');
+    console.error(JSON.stringify(extra_returns.ast, null, 2));
+    console.error();
+  }
+  for (const error of extra_returns.errors) {
+    console.error(error.toString());
+  }
+  return output;
+}
+
+function convert_path_to_file(input_path, options, extra_returns, encoding, program) {
+  let input_path_parse = path.parse(input_path);
+  if (input_path_parse.ext === '.ciro') {
+    console.error(`convert: ${input_path}`);
+    let input = fs.readFileSync(input_path, encoding);
+    let output = convert_input(input, options, extra_returns, input_path, program);
+    let output_path = path.join(input_path_parse.dir, input_path_parse.name) + '.html'
+    fs.writeFileSync(output_path, output);
+  }
+}
+
+function convert_path(input_path, options, extra_returns, encoding, program) {
+  let input = fs.readFileSync(input_path, encoding);
+  return convert_input(input, options, extra_returns, input_path, program);
+}
 
 // CLI options.
 const program = require('commander');
@@ -26,6 +64,7 @@ program.option(
     'Also adds token index to the output, which makes debugging the parser ' +
     'way easier.'
 );
+program.option('--watch', 'http://cirosantilli.com/cirodown#watch');
 let inputPath;
 program.arguments(
   '[input_path]',
@@ -43,50 +82,35 @@ if (program.helpMacros) {
   const encoding = 'utf8';
   let input;
   let title;
+  let output;
+  let options = {
+    body_only: program.bodyOnly,
+    show_ast: program.showAstInside,
+    show_parse: program.showParse,
+    show_tokens: program.showTokensInside,
+    show_tokenize: program.showTokenize,
+  };
+  let extra_returns = {};
   if (inputPath === undefined) {
+    if (program.watch) {
+      console.error('error: --watch is incompatible from input from stdin');
+      process.exit(1);
+    }
     title = 'stdin';
     input = fs.readFileSync(0, encoding);
+    output = convert_input(input, options, extra_returns, title);
   } else {
-    title = inputPath;
-    input = fs.readFileSync(inputPath, encoding);
+    if (program.watch) {
+      let watcher = chokidar.watch(inputPath);
+      watcher.on('change', function(path) {
+        convert_path_to_file(path, options, extra_returns, encoding, program);
+      });
+    } else {
+      output = convert_path(inputPath, options, extra_returns, encoding, program);
+    }
   }
-  let extra_returns = {};
-  let output = cirodown.convert(
-    input,
-    {
-      body_only: program.bodyOnly,
-      show_ast: program.showAstInside,
-      show_parse: program.showParse,
-      show_tokens: program.showTokensInside,
-      show_tokenize: program.showTokenize,
-      title: title,
-    },
-    extra_returns
-  );
-  console.log(output);
-  if (program.showTokens) {
-    console.error('tokens:');
-    console.error(JSON.stringify(extra_returns.tokens, null, 2));
-    console.error();
+  if (!program.watch) {
+    console.log(output);
+    process.exit(extra_returns.errors.length > 0);
   }
-  if (program.showAst) {
-    console.error('ast:');
-    console.error(JSON.stringify(extra_returns.ast, null, 2));
-    console.error();
-  }
-  let sorted_errors = extra_returns.errors.sort((a, b)=>{
-    if (a.line < b.line)
-      return -1;
-    if (a.line > b.line)
-      return 1;
-    if (a.column < b.column)
-      return -1;
-    if (a.column > b.column)
-      return 1;
-    return 0;
-  });
-  for (const error of sorted_errors) {
-    console.error(error.toString());
-  }
-  process.exit(extra_returns.errors.length > 0);
 }

@@ -1,14 +1,6 @@
 import Router from "next/router";
 import { mutate, trigger } from "swr";
 
-interface NavLinkProps {
-  href: string;
-  as: string;
-  onClick?: () => void;
-  children: React.ReactNode;
-  className?: string;
-}
-
 const LogoutButton = () => {
   const handleLogout = async (e) => {
     e.preventDefault();

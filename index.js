@@ -1359,6 +1359,11 @@ class Tokenizer {
             (
               this.tokens.length > 0 &&
               this.tokens[this.tokens.length - 1].type === TokenType.PARAGRAPH
+            ) ||
+            // Immediately at the start of an argument.
+            this.tokens.length > 0 && (
+              this.tokens[this.tokens.length - 1].type === TokenType.NAMED_ARGUMENT_START ||
+              this.tokens[this.tokens.length - 1].type === TokenType.POSITIONAL_ARGUMENT_START
             )
           )
         ) {

@@ -13,41 +13,62 @@ export function displayAndUsernameText(user) {
   return ret
 }
 
+type DisplayAndUsernameProps = {
+  user: UserType,
+  showUsername?: boolean,
+  showUsernameMobile?: boolean,
+}
+
 export function DisplayAndUsername(
   {
     user,
-    showUsername
+    showUsername,
+    showUsernameMobile,
   }
-  : {
-    user: UserType,
-    showUsername?: boolean,
-  }
+  : DisplayAndUsernameProps
 ) {
-  let ret = ''
+  let mobileMandatoryPart = ''
+  let mobileOptionalPart = ''
   if (showUsername === undefined) {
     showUsername = true
   }
+  if (showUsernameMobile === undefined) {
+    showUsernameMobile = true
+  }
   if (user.displayName) {
-    ret += `${user.displayName} `
+    mobileMandatoryPart += `${user.displayName} `
   } else {
-    ret += `${user.username} `
+    mobileOptionalPart += `${user.username} `
   }
   const showParenthesis = user.displayName && showUsername
   if (showParenthesis) {
-    ret += `(`
+    mobileOptionalPart += `(`
   }
   if (showUsername) {
-    ret += `@${user.username}`
+    mobileOptionalPart += `@${user.username}`
+    // TODO https://stackoverflow.com/questions/33710833/how-do-i-conditionally-wrap-a-react-component
+    //if (showUsernameMobile) {
+    //  ret += `@${user.username}`
+    //} else {
+    //  ret += <span className="mobile-hide">`@${user.username}`</span>
+    //}
   }
   if (showParenthesis) {
     if (user.displayName) {
-      ret += ', '
+      mobileOptionalPart += ', '
     } else {
-      ret += ' ('
+      mobileOptionalPart += ' ('
     }
   }
+  let mobileOptionalPartPost = showParenthesis ? ')' : ''
+  if (!showUsernameMobile) {
+    mobileOptionalPart = <span className="mobile-hide">{mobileOptionalPart}</span>
+    mobileOptionalPartPost = <span className="mobile-hide">{mobileOptionalPartPost}</span>
+  }
   return <>
-    {ret}
-    <span title={defaultUserScoreTitle}>{user.articleScoreSum}<i className="ion-heart"></i></span>{showParenthesis ? ')' : ''}
+    {mobileMandatoryPart}
+    {mobileOptionalPart}
+    <span title={defaultUserScoreTitle}>{user.articleScoreSum}<i className="ion-heart"></i></span>
+    {mobileOptionalPartPost}
   </>
 }

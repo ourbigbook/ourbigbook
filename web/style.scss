@@ -30,6 +30,14 @@ flex-flow: column;
 
 div.main {
 
+@media only screen and (max-width: $max-mobile-width) {
+  .mobile-hide {
+    display: none;
+  }
+}
+@media only screen and (min-width: $max-mobile-width + 1) {
+}
+
 flex: 1 1 auto;
 height: 100%;
 overflow: auto;

@@ -8,7 +8,9 @@ The source for this document is at: \a[https://github.com/cirosantilli/cirodown/
 
 \h[2][Quick start]
 
-Live in-browser demo: \a[https://cirosantilli.com/cirodown/editor]. Clone and run it locally:
+Live in-browser demo: \a[https://cirosantilli.com/cirodown/editor]
+
+Alternatively, you can clone and run it locally with:
 ``
 git clone https://github.com/cirosantilli/cirodown-template
 cd cirodown-template
@@ -23,9 +25,10 @@ Install the NPM package globally and use it from the command line for a quick co
 npm install -g cirodown
 printf 'ab\ncd\n' | cirodown --body-only
 ``
-or \a[https://stackoverflow.com/questions/9679932/how-to-use-package-installed-locally-in-node-modules][install and run locally]:
+or \a[https://stackoverflow.com/questions/9679932/how-to-use-package-installed-locally-in-node-modules][install in a single directory and run locally from it]:
 ``
-npm install -g cirodown
+printf '{}\n' > package.json
+npm install --save cirodown
 printf 'ab\ncd\n' | npx cirodown --body-only
 ``
 

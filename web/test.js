@@ -5,6 +5,8 @@ const app = require('./app')
 const convert = require('./convert')
 const test_lib = require('./test_lib')
 
+const testNext = process.env.OURBIGBOOK_TEST_NEXT === 'true'
+
 function assertRows(rows, rowsExpect) {
   assert.strictEqual(rows.length, rowsExpect.length)
   for (let i = 0; i < rows.length; i++) {
@@ -134,8 +136,18 @@ function sendJsonHttp(opts) {
   })
 }
 
-function testApp(cb) {
-  return app.start(0, false, async (server) => {
+// https://stackoverflow.com/questions/8175093/simple-function-to-sort-an-array-of-objects
+function sortByKey(arr, key) {
+  return arr.sort((a, b) => {
+    let x = a[key]
+    var y = b[key]
+    return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+  })
+}
+
+function testApp(cb, opts={}) {
+  const canTestNext = opts.canTestNext === undefined ? false : opts.canTestNext
+  return app.start(0, canTestNext && testNext, async (server) => {
     await cb(server)
     server.close()
   })
@@ -203,7 +215,7 @@ it('api: create an article and see it on global feed', async () => {
     assert.strictEqual(res.statusCode, 200)
     articles = data.articles
     assert.strictEqual(articles[0].title, 'Title 0')
-    assert.strictEqual(articles.length, 1)
+    assert.strictEqual(articles.length, 2)
 
     // See it on global feed.
     ;[res, data] = await sendJsonHttp({
@@ -213,11 +225,39 @@ it('api: create an article and see it on global feed', async () => {
       token,
     })
     assert.strictEqual(res.statusCode, 200)
-    assert.strictEqual(data.articles[0].title, 'Title 0')
-    assert.strictEqual(data.articles[0].author.username, 'user0')
-    assert.strictEqual(data.articles[1].title, 'Index')
-    assert.strictEqual(data.articles[1].author.username, 'user0')
-    assert.strictEqual(data.articlesCount, 2)
+    sortByKey(data.articles, 'slug')
+    assertRows(data.articles, [
+      { title: 'Index', slug: 'user0' },
+      { title: 'Index', slug: 'user0/split' },
+      { title: 'Title 0', slug: 'user0/title-0' },
+      { title: 'Title 0', slug: 'user0/title-0-split' },
+    ])
+
+    if (testNext) {
+      ;[res, data] = await sendJsonHttp({
+        server,
+        method: 'GET',
+        path: '/',
+        token,
+      })
+      assert.strictEqual(res.statusCode, 200)
+
+      ;[res, data] = await sendJsonHttp({
+        server,
+        method: 'GET',
+        path: '/user0',
+        token,
+      })
+      assert.strictEqual(res.statusCode, 200)
+
+      ;[res, data] = await sendJsonHttp({
+        server,
+        method: 'GET',
+        path: '/user0/title-0',
+        token,
+      })
+      assert.strictEqual(res.statusCode, 200)
+    }
 
     //// Get request does not blow up.
     //;[res, data] = await sendJsonHttp({
@@ -243,7 +283,6 @@ it('api: create an article and see it on global feed', async () => {
 
     //// Update article removing one tag and adding another.
     //article.tagList = ['tag0', 'tag1']
-    //console.error('0')
     //;[res, data] = await sendJsonHttp({
     //  server,
     //  method: 'PUT',
@@ -303,7 +342,7 @@ it('api: create an article and see it on global feed', async () => {
     //})
     //assert.strictEqual(data.articles.length, 0)
     //assert.strictEqual(data.articlesCount, 0)
-  })
+  }, { canTestNext: true })
 })
 
 it('api: multiheader file creates multiple articles', async () => {
@@ -344,7 +383,7 @@ it('api: multiheader file creates multiple articles', async () => {
       token,
     })
     assert.strictEqual(res.statusCode, 200)
-    console.error(data.articles.map(article => article.slug));
+    sortByKey(data.articles, 'slug')
     assertRows(data.articles, [
       { title: 'Index', slug: 'user0' },
       { title: 'Index', slug: 'user0/split' },

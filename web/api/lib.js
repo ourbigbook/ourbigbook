@@ -1,8 +1,16 @@
 async function getArticle(req, res) {
   if (req.query.id) {
-    const article = await req.app.get('sequelize').models.Article.findOne({
+    const sequelize = req.app.get('sequelize')
+    const article = await sequelize.models.Article.findOne({
       where: { slug: req.query.id },
-      include: [{ model: req.app.get('sequelize').models.User, as: 'author' }]
+      include: [{
+        model: sequelize.models.File,
+        as: 'file',
+        include: [{
+          model: sequelize.models.User,
+          as: 'author',
+        }],
+      }]
     })
     if (!article) {
       throw new ValidationError(

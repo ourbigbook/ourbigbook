@@ -10,7 +10,7 @@
     "build-prod": "./prod.sh npm run build",
     "build-nodeps": "next build",
     "build-dev-nodeps": "NEXT_PUBLIC_NODE_ENV=development npm run build-nodeps",
-    "deploy-prod": "npm test && npm run test-pg && cd .. && npm run test-release && cd web && git push -f prod master && git push && git push origin HEAD:prod",
+    "deploy-prod": "npm run test-next && npm run test-pg-next && cd .. && npm run test-release && cd web && git push -f prod master && git push && git push origin HEAD:prod",
     "deploy-staging": "git push -f staging master && git push && git push origin HEAD:staging",
     "dev": "NODE_OPTIONS='--unhandled-rejections=strict' nodemon -w . -w ../index.js -w ./app.js -w ../nodejs.js -w ../nodejs_webpack_safe.js",
     "devi": "NODE_OPTIONS='--unhandled-rejections=strict' node inspect ./app.js",
@@ -22,9 +22,10 @@
     "start": "node --unhandled-rejections=strict ./app.js",
     "start-dev": "NEXT_PUBLIC_NODE_ENV=development NODE_ENV_NEXT_SERVER_ONLY=production node --unhandled-rejections=strict ./app.js",
     "start-prod": "./prod.sh npm start",
-    "test": "NODE_ENV=test mocha test --ignore-leaks test.js",
-    "test-api": "./realworld/api/run-api-tests.sh",
+    "test": "NEXT_PUBLIC_NODE_ENV=test mocha test --ignore-leaks test.js",
+    "test-next": "OURBIGBOOK_TEST_NEXT=true npm test -- --timeout 100000",
     "test-pg": "OURBIGBOOK_POSTGRES=true npm test --",
+    "test-pg-next": "OURBIGBOOK_TEST_NEXT=true npm run test-pg -- --timeout 100000",
     "typecheck": "tsc"
   },
   "repository": {

@@ -8245,6 +8245,7 @@ const MACRO_CONVERT_FUNCIONS = {
       return content;
     },
     'b': id_convert_simple_elem(),
+    'br': function(ast, context) { return '\n'; },
     [Macro.CODE_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
     [Macro.CODE_MACRO_NAME]: id_convert_simple_elem(),
     [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: unconvertible,

@@ -2532,15 +2532,18 @@ function get_descendant_count(tree_node) {
   ];
 }
 
-function get_descendant_count_html(tree_node) {
+function get_descendant_count_html(tree_node, long_style) {
+  if (long_style === undefined) {
+    long_style = false;
+  }
   const [descendant_count, word_count, descendant_word_count] = get_descendant_count(tree_node);
   let ret;
   if (tree_node.word_count > 0 || descendant_count > 0) {
     ret = `<span class="metrics">`;
-    ret += `<span class="word-count" title="word count for this node">${format_number_approx(word_count)}</span>`;
+    ret += `${long_style ? 'words: ' : ''}<span class="word-count" title="word count for this node">${format_number_approx(word_count)}</span>`;
     if (descendant_count > 0) {
-      ret += `, <span class="word-count-descendant" title="word count for this node + descendants">${format_number_approx(descendant_word_count)}</span>` +
-            `, <span class="descendant-count" title="number of descendant nodes">${format_number_approx(descendant_count)}</span>`;
+      ret += `${long_style ? `${HEADER_MENU_ITEM_SEP} descendant words:` : ','} <span class="word-count-descendant" title="word count for this node + descendants">${format_number_approx(descendant_word_count)}</span>` +
+            `${long_style ? `${HEADER_MENU_ITEM_SEP} descendants:` : ','} <span class="descendant-count" title="number of descendant nodes">${format_number_approx(descendant_count)}</span>`;
     }
     ret += `</span>`
   } else {
@@ -2549,8 +2552,8 @@ function get_descendant_count_html(tree_node) {
   return ret;
 }
 
-function get_descendant_count_html_sep(tree_node) {
-  let ret = get_descendant_count_html(tree_node);
+function get_descendant_count_html_sep(tree_node, long_style) {
+  let ret = get_descendant_count_html(tree_node, long_style);
   if (ret !== '') {
     ret = HEADER_MENU_ITEM_SEP + ret;
   }
@@ -5422,7 +5425,7 @@ const DEFAULT_MACRO_LIST = [
         if (parent_links) {
           ret += `${HEADER_MENU_ITEM_SEP}${parent_links}`;
         }
-        let descendant_count = get_descendant_count_html(ast.header_graph_node);
+        let descendant_count = get_descendant_count_html(ast.header_graph_node, true);
         if (descendant_count !== '') {
           ret += `${HEADER_MENU_ITEM_SEP}${descendant_count}`;
         }
@@ -5464,7 +5467,7 @@ const DEFAULT_MACRO_LIST = [
         header_meta.push(wiki_link);
       }
       if (first_header) {
-        let descendant_count_html = get_descendant_count_html(ast.header_graph_node);
+        let descendant_count_html = get_descendant_count_html(ast.header_graph_node, true);
         if (descendant_count_html !== '') {
           header_meta.push(descendant_count_html);
         }
@@ -5927,7 +5930,7 @@ const DEFAULT_MACRO_LIST = [
       if (root_node.children.length === 1) {
         root_node = root_node.children[0];
       }
-      let descendant_count_html = get_descendant_count_html_sep(root_node);
+      let descendant_count_html = get_descendant_count_html_sep(root_node, false);
       ret += `${TOC_ARROW_HTML}<a class="title"${x_href_attr(ast, context)}>Table of contents</a>${descendant_count_html}</div>\n`;
       for (let i = root_node.children.length - 1; i >= 0; i--) {
         todo_visit.push([root_node.children[i], 1]);
@@ -5973,7 +5976,7 @@ const DEFAULT_MACRO_LIST = [
         // The inner <div></div> inside arrow is so that:
         // - outter div: takes up space to make clicking easy
         // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
-        let descendant_count_html = get_descendant_count_html_sep(tree_node);
+        let descendant_count_html = get_descendant_count_html_sep(tree_node, false);
         ret += `><div${id_to_toc}>${TOC_ARROW_HTML}<a${href}>${content}</a>${descendant_count_html}<span class="hover-metadata">`;
 
         let toc_href = html_attr('href', '#' + my_toc_id);
@@ -6094,7 +6097,7 @@ const DEFAULT_MACRO_LIST = [
               for (const ancestor of ancestors) {
                 let counts_str;
                 if (ancestor.header_graph_node !== undefined) {
-                  counts_str = get_descendant_count_html_sep(ancestor.header_graph_node);
+                  counts_str = get_descendant_count_html_sep(ancestor.header_graph_node, false);
                 } else {
                   counts_str = '';
                 }
@@ -6160,7 +6163,7 @@ const DEFAULT_MACRO_LIST = [
                 let target_ast = context.id_provider.get(target_id, context);
                 let counts_str;
                 if (target_ast.header_graph_node !== undefined) {
-                  counts_str = get_descendant_count_html_sep(target_ast.header_graph_node);
+                  counts_str = get_descendant_count_html_sep(target_ast.header_graph_node, false);
                 } else {
                   counts_str = '';
                 }

@@ -8,7 +8,7 @@
     "build": "./bin/sync-db.js && next build",
     "build-dev": "./bin/sync-db.js && NODE_ENV_OVERRIDE=development npm run build",
     "deploy": "git push heroku-next next:master",
-    "dev": "nodemon ./app.js",
+    "dev": "nodemon -w app.js -w ../index.js ./app.js",
     "postinstall": "cd .. && npm link cirodown",
     "start": "node --unhandled-rejections=strict ./app.js",
     "start-dev": "NODE_ENV_OVERRIDE=development NODE_ENV_NEXT=production node --unhandled-rejections=strict ./app.js",

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>IssueCommentsIndexPage.ts - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="IssueCommentsIndexPage.ts"><div class="notnav"><h1><a href="">web/back/IssueCommentsIndexPage.ts</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir/">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/back">back</a> / <a href="../../../_raw/web/back/IssueCommentsIndexPage.ts">IssueCommentsIndexPage.ts</a></b></div></nav></div><div class="p"><b>web/back/IssueCommentsIndexPage.ts</b></div><div class="code"><div><pre><code>import { getLoggedInUser } from 'back'
+import { articleLimit, fallback } from 'front/config'
+import { IndexPageProps } from 'front/IndexPage'
+import { MyGetServerSideProps } from 'front/types'
+import { getOrderAndPage } from 'front/js'
+
+export const getServerSidePropsIssueCommentsIndexHoc = (): MyGetServerSideProps =&gt; {
+  return async ({ params = {}, query, req, res }) =&gt; {
+    const { slug } = params
+    const sequelize = req.sequelize
+    const { ascDesc, err, order, page } = getOrderAndPage(req, query.page)
+    if (err) { res.statusCode = 422 }
+    const [article, loggedInUser] = await Promise.all([
+      sequelize.models.Article.getArticle({
+        /** TODO implement comment fetch like this instead one day. */
+        //includeComments: false,
+        //limitComments: articleLimit,
+        //orderComments: order,
+        //offsetComments: offset,
+        sequelize,
+        slug: (slug as string[]).join('/'),
+      }),
+      getLoggedInUser(req, res),
+    ])
+    if (!article) { return { notFound: true } }
+    const offset = page * articleLimit
+    const [articleJson, [commentsCount, comments]] = await Promise.all([
+      article.toJson(loggedInUser),
+      sequelize.models.Comment.getComments({
+        articleId: article.id,
+        offset,
+        order: [[order, ascDesc]],
+        limit: articleLimit,
+      }).then(commentsAndCounts =&gt; {
+        return Promise.all([
+          commentsAndCounts.count,
+          Promise.all(commentsAndCounts.rows.map(comment =&gt; comment.toJson(loggedInUser))),
+        ])
+      })
+    ])
+    const props: IndexPageProps = {
+      comments: comments,
+      commentsCount: commentsCount,
+      itemType: 'comment',
+      issueArticle: articleJson,
+      page,
+      order,
+      orderAscDesc: ascDesc,
+    }
+    if (loggedInUser) {
+      props.loggedInUser = await loggedInUser.toJson()
+    }
+    return { props }
+  }
+}
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/back/";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

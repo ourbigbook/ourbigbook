@@ -8,11 +8,11 @@ npm run build-assets
 # It is just too sweet to not have to rebuild this HTML from a proper template
 # when hacking the editor locally.
 #
-# The other alternative would be to keep deployed resources under dist/
+# The other alternative would be to keep deployed resources under _obb/
 # but that makes all users' repos ugly.
 #
 # So hack it is. That's how we do things around here.
 editor="${publish_out_dir}/editor.html"
-#sed -i 's/href="dist\/ourbigbook.css"/href="ourbigbook.css"/' "$editor"
-#sed -i 's/src="dist\/ourbigbook.js"/src="ourbigbook.js"/' "$editor"
-#sed -i 's/src="dist\/ourbigbook_runtime.js"/src="ourbigbook_runtime.js"/' "$editor"
+#sed -i 's/href="_obb\/ourbigbook.css"/href="ourbigbook.css"/' "$editor"
+#sed -i 's/src="_obb\/ourbigbook.js"/src="ourbigbook.js"/' "$editor"
+#sed -i 's/src="_obb\/ourbigbook_runtime.js"/src="ourbigbook_runtime.js"/' "$editor"

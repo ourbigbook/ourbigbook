@@ -8,6 +8,7 @@ const util = require('util');
 const { Sequelize } = require('sequelize')
 
 const ourbigbook = require('./index')
+const ourbigbook_nodejs = require('./nodejs');
 const ourbigbook_nodejs_front = require('./nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe');
 const { read_include } = require('./web_api');
@@ -2002,6 +2003,14 @@ assert_lib_error(
     input_path_noext: 'notindex',
   }
 );
+assert_lib_error(
+  'named argument: open bracket at end of file fails gracefully',
+  '\\P[ab]{',
+  1, 7, 'notindex.bigb',
+  {
+    input_path_noext: 'notindex',
+  }
+)
 assert_lib_ast('empty named argument without = is allowed',
   '\\Image[img.png]{description=}{external}\n',
   [a('Image', undefined, {
@@ -3642,7 +3651,11 @@ assert_lib('x: ourbigbook.json xPrefix',
     filesystem: {
       'index.bigb': `= Index
 
+<Index>[index to index]
+
 <Index 2>[index to index 2]
+
+<Notindex>[index to notindex]
 
 <Notindex 2>[index to notindex 2]
 
@@ -3671,7 +3684,12 @@ assert_lib('x: ourbigbook.json xPrefix',
     },
     assert_xpath: {
       'index.html': [
+        // Maybe we'd want:
+        //`//x:h1//x:a[@href='asdf']`,
+        // but would be slightly inconsistent with the following, so not sure...
+        "//x:div[@class='p']//x:a[@href='' and text()='index to index']",
         "//x:div[@class='p']//x:a[@href='#index-2' and text()='index to index 2']",
+        "//x:div[@class='p']//x:a[@href='asdf/notindex.html' and text()='index to notindex']",
         "//x:div[@class='p']//x:a[@href='asdf/notindex.html#notindex-2' and text()='index to notindex 2']",
       ],
       'split.html': [
@@ -8722,19 +8740,20 @@ const publish_filesystem = {
 Goodbye world.
 `,
 };
+const publish_pre_exec = [
+  ['git', ['init']],
+  ['git', ['add', '.']],
+  ['git', ['commit', '-m', '0']],
+  ['git', ['remote', 'add', 'origin', 'git@github.com:ourbigbook/test.git']],
+]
 assert_cli(
-  '--dry-run --split-headers --publish works',
+  'publish: --dry-run --split-headers --publish works',
   {
     args: ['--dry-run', '--split-headers', '--publish', '.'],
     filesystem: publish_filesystem,
-    pre_exec: [
-      ['git', ['init']],
-      ['git', ['add', '.']],
-      ['git', ['commit', '-m', '0']],
-      ['git', ['remote', 'add', 'origin', 'git@github.com:ourbigbook/test.git']],
-    ],
+    pre_exec: publish_pre_exec,
     assert_exists: [
-      'out/publish/out/github-pages/dist/ourbigbook.css',
+      `out/publish/out/github-pages/${ourbigbook_nodejs.PUBLISH_ASSET_DIST_PREFIX}/ourbigbook.css`,
       // Non-converted files are copied over.
       `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/scss.css`,
       `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/ourbigbook.json`,
@@ -8744,11 +8763,15 @@ assert_cli(
       `out/publish/out/github-pages/${ourbigbook.DIR_PREFIX}/index.html`,
       `out/publish/out/github-pages/${ourbigbook.DIR_PREFIX}/subdir/index.html`,
     ],
+    assert_not_exists: [
+      // logo.svg is not added when web.linkFromHeaderMeta is not enabled on ourbigbook.json
+      `out/publish/out/github-pages/_obb/logo.svg`,
+    ],
     assert_xpath: {
       'out/publish/out/github-pages/index.html': [
         "//x:div[@class='p']//x:a[@href='notindex' and text()='link to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex#notindex-h2' and text()='link to notindex h2']",
-        "//x:style[contains(text(),'@import \"dist/ourbigbook.css\"')]",
+        `//x:style[contains(text(),'@import \"${ourbigbook_nodejs.PUBLISH_ASSET_DIST_PREFIX}/ourbigbook.css\"')]`,
       ],
       'out/publish/out/github-pages/notindex.html': [
         xpath_header(1, 'notindex'),
@@ -8756,33 +8779,28 @@ assert_cli(
         "//x:div[@class='p']//x:a[@href='.#h2' and text()='link to h2']",
       ],
       'out/publish/out/github-pages/toplevel-scope/toplevel-scope-h2.html': [
-        "//x:style[contains(text(),'@import \"../dist/ourbigbook.css\"')]",
+        `//x:style[contains(text(),'@import \"../${ourbigbook_nodejs.PUBLISH_ASSET_DIST_PREFIX}/ourbigbook.css\"')]`,
       ],
       'out/publish/out/github-pages/subdir.html': [
-        "//x:style[contains(text(),'@import \"dist/ourbigbook.css\"')]",
+        `//x:style[contains(text(),'@import \"${ourbigbook_nodejs.PUBLISH_ASSET_DIST_PREFIX}/ourbigbook.css\"')]`,
       ],
     },
   }
 );
 assert_cli(
-  '--publish-target local works',
+  'publish: --publish-target local works',
   {
     args: ['--dry-run', '--split-headers', '--publish', '--publish-target', 'local', '.'],
     filesystem: publish_filesystem,
-    pre_exec: [
-      ['git', ['init']],
-      ['git', ['add', '.']],
-      ['git', ['commit', '-m', '0']],
-      ['git', ['remote', 'add', 'origin', 'git@github.com:ourbigbook/test.git']],
-    ],
+    pre_exec: publish_pre_exec,
     assert_exists: [
-      'out/publish/out/local/dist/ourbigbook.css',
+      `out/publish/out/local/${ourbigbook_nodejs.PUBLISH_ASSET_DIST_PREFIX}/ourbigbook.css`,
     ],
     assert_xpath: {
       'out/publish/out/local/index.html': [
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='link to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='link to notindex h2']",
-        "//x:style[contains(text(),'@import \"dist/ourbigbook.css\"')]",
+        `//x:style[contains(text(),'@import \"${ourbigbook_nodejs.PUBLISH_ASSET_DIST_PREFIX}/ourbigbook.css\"')]`,
       ],
       'out/publish/out/local/notindex.html': [
         xpath_header(1, 'notindex'),
@@ -8790,10 +8808,10 @@ assert_cli(
         "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='link to h2']",
       ],
       'out/publish/out/local/toplevel-scope/toplevel-scope-h2.html': [
-        "//x:style[contains(text(),'@import \"../dist/ourbigbook.css\"')]",
+        `//x:style[contains(text(),'@import \"../${ourbigbook_nodejs.PUBLISH_ASSET_DIST_PREFIX}/ourbigbook.css\"')]`,
       ],
       'out/publish/out/local/subdir.html': [
-        "//x:style[contains(text(),'@import \"dist/ourbigbook.css\"')]",
+        `//x:style[contains(text(),'@import \"${ourbigbook_nodejs.PUBLISH_ASSET_DIST_PREFIX}/ourbigbook.css\"')]`,
       ],
       // Non-converted files are copied over.
       [`out/publish/out/local/${ourbigbook.RAW_PREFIX}/scss.css`]: [],
@@ -8802,6 +8820,79 @@ assert_cli(
     },
   }
 );
+assert_cli(
+  'json: web.linkFromHeaderMeta = true with publish',
+  {
+    args: ['--dry-run', '--split-headers', '--publish', '.'],
+    filesystem: {
+      'ourbigbook.json': `{
+  "web": {
+    "linkFromHeaderMeta": true,
+    "username": "myusername"
+  }
+}
+`,
+      'README.bigb': `= Index
+
+== h2
+{scope}
+
+=== h2 2
+`,
+    },
+    pre_exec: publish_pre_exec,
+    assert_exists: [
+      `out/publish/out/github-pages/_obb/logo.svg`,
+    ],
+    assert_xpath: {
+      'out/publish/out/github-pages/index.html': [
+        "//x:div[contains(@class, \"h \") and @id='index']//x:img[@class='logo' and @src='_obb/logo.svg']",
+        "//x:div[contains(@class, \"h \") and @id='index']//x:a[@href='https://ourbigbook.com/myusername' and text()=' OurBigBook.com']",
+        "//x:div[@class='h' and @id='h2']//x:a[@href='https://ourbigbook.com/myusername/h2' and text()=' OurBigBook.com']",
+      ],
+      'out/publish/out/github-pages/h2/h2-2.html': [
+        "//x:div[contains(@class, \"h \") and @id='h2-2']//x:img[@class='logo' and @src='../_obb/logo.svg']",
+        "//x:div[contains(@class, \"h \") and @id='h2-2']//x:a[@href='https://ourbigbook.com/myusername/h2/h2-2' and text()=' OurBigBook.com']",
+      ],
+    },
+  }
+)
+assert_cli(
+  'json: web.linkFromHeaderMeta = true without publish',
+  {
+    args: ['--split-headers', '.'],
+    filesystem: {
+      'ourbigbook.json': `{
+  "outputOutOfTree": true,
+  "web": {
+    "linkFromHeaderMeta": true,
+    "username": "myusername"
+  }
+}
+`,
+      'README.bigb': `= Index
+
+== h2
+{scope}
+
+=== h2 2
+`,
+    },
+    pre_exec: publish_pre_exec,
+    assert_xpath: {
+      'out/html/index.html': [
+        `//x:div[contains(@class, "h ") and @id='index']//x:img[@class='logo' and @src='${ourbigbook_nodejs.LOGO_PATH}']`,
+        "//x:div[contains(@class, \"h \") and @id='index']//x:a[@href='https://ourbigbook.com/myusername' and text()=' OurBigBook.com']",
+        `//x:div[@class='h' and @id='h2']//x:img[@class='logo' and @src='${ourbigbook_nodejs.LOGO_PATH}']`,
+        "//x:div[@class='h' and @id='h2']//x:a[@href='https://ourbigbook.com/myusername/h2' and text()=' OurBigBook.com']",
+      ],
+      'out/html/h2/h2-2.html': [
+        `//x:div[contains(@class, "h ") and @id='h2-2']//x:img[@class='logo' and @src='${ourbigbook_nodejs.LOGO_PATH}']`,
+        "//x:div[contains(@class, \"h \") and @id='h2-2']//x:a[@href='https://ourbigbook.com/myusername/h2/h2-2' and text()=' OurBigBook.com']",
+      ],
+    },
+  }
+)
 assert_cli(
   'convert subdirectory only with ourbigbook.json',
   {

@@ -910,10 +910,16 @@ Macro.CODE_MACRO_NAME = 'c';
 // Add arguments common to all macros.
 Macro.DISAMBIGUATE_ARGUMENT_NAME = 'disambiguate';
 Macro.ID_ARGUMENT_NAME = 'id';
+// Undocumented argument used only for testing.
+// Adds data-X to one of the rendered HTML elements.
+// to facilitate XPath selection.
+Macro.TEST_DATA_ARGUMENT_NAME = 'cirodownTestData';
+Macro.TEST_DATA_HTML_PROP = 'data-cirodown-test';
 Macro.SYNONYM_ARGUMENT_NAME = 'synonym';
 Macro.COMMON_ARGNAMES = new Set([
   Macro.DISAMBIGUATE_ARGUMENT_NAME,
   Macro.ID_ARGUMENT_NAME,
+  Macro.TEST_DATA_ARGUMENT_NAME,
 ]);
 Macro.HEADER_MACRO_NAME = 'H';
 Macro.X_MACRO_NAME = 'x';
@@ -2247,7 +2253,7 @@ function convert(
 }
 exports.convert = convert;
 
-/** Convert an argument to a string.
+/** Convert an argument to an XSS-safe output string.
  *
  * An argument contains a list of nodes, loop over that list of nodes,
  * converting them to strings and concatenate all strings.
@@ -2390,6 +2396,7 @@ function convert_init_context(options={}, extra_returns={}) {
   extra_returns.debug_perf = {};
   extra_returns.debug_perf.start = globals.performance.now();
   options = Object.assign({}, options);
+  if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
   if (!('body_only' in options)) { options.body_only = false; }
   if (!('cirodown_json' in options)) { options.cirodown_json = {}; }
     const cirodown_json = options.cirodown_json;
@@ -2811,7 +2818,17 @@ function html_convert_simple_elem(elem_name, options={}) {
     }
     let content_ast = ast.args.content;
     let content = convert_arg(content_ast, context);
-    let res = `<${elem_name}${extra_attrs_string}${attrs}>${newline_after_open_str}${content}</${elem_name}>${newline_after_close_str}`;
+
+    // testData
+    let test_data_arg = ast.args[Macro.TEST_DATA_ARGUMENT_NAME]
+    let test_data_attr;
+    if (test_data_arg === undefined) {
+      test_data_attr = ''
+    } else {
+      test_data_attr = html_attr(Macro.TEST_DATA_HTML_PROP, convert_arg(test_data_arg, context))
+    }
+
+    let res = `<${elem_name}${extra_attrs_string}${attrs}${test_data_attr}>${newline_after_open_str}${content}</${elem_name}>${newline_after_close_str}`;
     if (options.wrap) {
       res = html_elem('div', res);
     }
@@ -6753,13 +6770,13 @@ function create_link_list(context, ast, id, title, target_ids, body) {
         },
       ));
     }
-    const incoming_ul_ast = new AstNode(
-      AstType.MACRO,
-      'Ul',
-      {
-        'content': new AstArgument(target_id_asts)
-      },
-    );
+    let ulArgs = {
+      'content': new AstArgument(target_id_asts)
+    }
+    if (context.options.add_test_instrumentation) {
+      ulArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(id)]
+    }
+    const incoming_ul_ast = new AstNode(AstType.MACRO, 'Ul', ulArgs)
     const new_context = clone_and_set(context, 'validate_ast', true);
     new_context.source_location = ast.source_location;
     ret += incoming_ul_ast.convert(new_context);

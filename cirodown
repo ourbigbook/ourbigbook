@@ -407,7 +407,7 @@ function convert_path(input_path, options, convert_input_options) {
         }
       }
       for (const to_id in context.xref_from_to_dict[false]) {
-        const types = context.xref_from_to_dict[to_id];
+        const types = context.xref_from_to_dict[false][to_id];
         for (const type in types) {
           const from_ids = types[type];
           for (const from_id of from_ids) {
@@ -748,6 +748,7 @@ function* walk_files_recursively(file_or_dir, skip_basenames, ignore_paths) {
 }
 
 // CLI options.
+commander.option('--add-test-instrumentation', 'For testing only', false);
 commander.option('--body-only', 'output only the content inside the HTLM body element', false);
 commander.option('--china', 'https://cirosantilli.com/cirodown#china', false);
 commander.option('--debug-perf', 'https://cirosantilli.com/cirodown#debug-perf', false);
@@ -861,6 +862,7 @@ if (commander.helpMacros) {
   }
 
   let options = {
+    add_test_instrumentation: commander.addTestInstrumentation,
     body_only: commander.bodyOnly,
     cirodown_json: cirodown_json,
     embed_includes: commander.embedIncludes,

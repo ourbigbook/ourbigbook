@@ -5786,6 +5786,13 @@ Internally, the general philosophy is that the JavaScript API in \a[index.js] wo
 = `ourbigbook` executable options
 {synonym}
 
+= `--check-db`
+{parent=OurBigBook CLI options}
+
+Check the database for consistency, e.g. duplicated IDs. Don't do anything else, including <ID extraction>, which must have been done previously.
+
+The initial use case was for usage in <parallel builds>.
+
 = `--china`
 {parent=OurBigBook CLI options}
 
@@ -6185,6 +6192,18 @@ and we would see the database requests made at each conversion phase.
 
 Note that `--log perf` currently does not take sub-converts into account, e.g. <include> and <\OurBigBookExample> both call the toplevel conversion  function `convert`, and therefore go through all the conversion intervals, but we do not take those it account, and just dump them all into the same toplevel interval that they happen in, currently between `post_process_start` and `post_process_end`.
 
+= `--no-check-db`
+{parent=OurBigBook CLI options}
+
+= `--skip-check-db`
+{synonym}
+
+Skip the database sanity check that is normally done after the <ID extraction> step.
+
+This was originally added to speed up, originally added to speed up the <web upload> development loop, when we knew that there were no errors in the database after a local conversion, and wanted to get to the upload phase faster, but the DB check can take several seconds for a large input.
+
+But it then later also found usage with <parallel builds> followed by a <--check-db>
+
 = `--no-db`
 {parent=OurBigBook CLI options}
 
@@ -6550,15 +6569,6 @@ You then will also want to set your default repository branch to `dev` in the se
 It's a GitHub bug/feature: https://github.com/orgs/community/discussions/52252
 
 Maybe we should just ignore the `.github` directory when publishing, otherwise it leads to a broken link on the <`_dir` directory> listings.
-
-= `--skip-check-db`
-{parent=OurBigBook CLI options}
-
-Skip the database sanity check that is normally done after the <ID extraction> step.
-
-For development only.
-
-Originally added to speed up, originally added to speed up the <web upload> development loop, when we knew that there were no errors in the database after a local conversion, and wanted to get to the upload phase faster, but the DB check can take several seconds for a large input.
 
 = `-S`, `--split-headers`
 {id=split-headers}
@@ -7517,6 +7527,26 @@ We are strict about this in order to prevent accidentally polluting the database
 
 If the project is a <Git tracked project>, the standard `git` ignore rules are used for ignores. This includes `.git/info/exclude`, `.gitignore` and the user's global gitingnore file if any.
 
+= Parallel build
+{c}
+{parent=OurBigBook CLI}
+
+TODO: get this working. Maybe we should also bake it into the `ourbigbook` CLI tool as well for greater portability. Starting like this as a faster way to prototype:
+``
+rm -rf out/parallel
+mkdir -p out/parallel
+# ID extraction.
+git ls-files | grep -E '\.bigb$' | parallel -X ourbigbook --no-render --no-check-db --outdir 'out/parallel/{%}' '{}'
+./merge-dbs out/db.sqlite3 out/parallel/*/db.sqlite3
+ourbigbook --check-db
+# Render.
+git ls-files | grep -E '\.bigb$' | parallel -X ourbigbook --no-check-db '{}'
+``
+
+Observed `--no-render`  speedup on 1k small files from the <Wikipedia bot> and 8 cores: 3x. So not bad.
+
+Observed render speedup on 1k small files from the <Wikipedia bot> and 8 cores: none. TODO. Is this because of database contention?
+
 = OurBigBook Library
 {c}
 {parent=OurBigBook}
@@ -8024,14 +8054,57 @@ We don't have an amazing automation setup as we should, but the steps are:
   ``
   (
     rm -rf out
-    ./sqlite_preorder.py -D3 -d6 -M100000 -m -N enwiki.sqlite Mathematics Physics Chemistry Biology Technology
+    ./sqlite_preorder.py -D3 -d6 -Obigb -m -N enwiki.sqlite Mathematics Physics Chemistry Biology Technology
     cd out
-    ls . | grep -E '\.bigb$' | xargs sed -i '$ d'
+    ls . | grep -E '\.bigb$' | xargs sed -i -r '${/^$/d}'
     echo '{}' > ourbigbook.json
     echo '*.tmp' > .gitignore
+    # TODO parallelize.
     ourbigbook .
   )
   ``
+
+Now let's look at the shape of the data. Total pages:
+``
+sqlite3 enwiki.sqlite 'select count(*) from page'
+``
+gives ~59M.
+
+Total articles:
+``
+sqlite3 enwiki.sqlite 'select count(*) from page where page_namespace = 0'
+``
+gives ~17M.
+
+Total non-redirect articles:
+``
+sqlite3 enwiki.sqlite 'select count(*) from page where page_namespace = 0 page_is_redirect = 0'
+``
+gives: ~6.7M
+
+Categories:
+``
+sqlite3 enwiki.sqlite 'select count(*) from page where page_namespace = 14'
+``
+gives: ~2.3M.
+
+Allowing for depth 6 of all of STEM:
+``
+./sqlite_preorder.py -D3 -d6 -Obigb -m -N enwiki.sqlite Mathematics Physics Chemistry Biology Technology
+``
+leads to ~980k articles.
+
+Depth 6 on Mathematics only:
+``
+./sqlite_preorder.py -D3 -d6 -Obigb -m -N enwiki.sqlite Mathematics
+``
+leads to 150k articles.
+
+Allowing for unlimited depth on Mathematics:
+``
+./sqlite_preorder.py -D3 -Obigb -m -N enwiki.sqlite Mathematics
+``
+leads seems to reach all ~9M articles + categories , or most of them. We gave up around 8.6M, when things got really really slow, possibly due to heavy duplicate removal. We didn't log it properly, but depths of 3k+ were seen... so not setting depth is just pointless unless you want the entire Wiki.
 
 = Demo data
 {parent=Generated data}

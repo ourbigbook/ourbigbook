@@ -1352,8 +1352,7 @@ if (cli.helpMacros) {
         path.join(outdir, 'main.liquid.html'));
       fs.copyFileSync(path.join(ourbigbook_nodejs.PACKAGE_PATH, 'main.scss'),
         path.join(outdir, 'main.scss'));
-      fs.copyFileSync(path.join(ourbigbook_nodejs.PACKAGE_PATH, 'logo.svg'),
-        path.join(outdir, 'logo.svg'));
+      fs.copyFileSync(ourbigbook_nodejs.LOGO_PATH, path.join(outdir, ourbigbook_nodejs.LOGO_BASENAME));
       new_ourbigbook_json.template = 'main.liquid.html';
     }
 
@@ -1413,6 +1412,11 @@ if (cli.helpMacros) {
     publish,
     renderType,
   };
+  if (publish) {
+    ourbigbook_options.logoPath = ourbigbook_nodejs.LOGO_ROOT_RELPATH
+  } else {
+    ourbigbook_options.logoPath = ourbigbook_nodejs.LOGO_PATH
+  }
 
   // CLI options
   const cmd_options = {
@@ -1424,6 +1428,8 @@ if (cli.helpMacros) {
   // Commands that retrieve information and don't change state.
   const cmd_options_info = Object.assign({}, cmd_options_no_dry)
   cmd_options_info.show_cmd = false
+  const cmd_options_info_nothrow = Object.assign({}, cmd_options_info)
+  cmd_options_info_nothrow.throw_on_error = false
 
   const isInGitRepo = git_is_in_repo(ourbigbook_json_dir)
   if (isInGitRepo && inputPath !== undefined) {
@@ -2015,7 +2021,11 @@ if (cli.helpMacros) {
             // TODO ideally we should use the default remote for the given current branch, but there doesn't seem
             // to be a super easy way for now, so we just hardcode origin to start with.
             // https://stackoverflow.com/questions/171550/find-out-which-remote-branch-a-local-branch-is-tracking
-            const origin_url = cmd_get_stdout('git', ['-C', inputPath, 'config', '--get', 'remote.origin.url'], cmd_options_info).slice(0, -1);
+            const opts = {}
+            const origin_url = cmd_get_stdout('git', ['-C', inputPath, 'config', '--get', 'remote.origin.url'], cmd_options_info_nothrow).slice(0, -1);
+            if (cmd_options_info_nothrow.extra_returns.out.status != 0) {
+              cli_error('a "origin" git remote repository is required to publish, configure it with something like "git remote add origin git@github.com:username/reponame.git"')
+            }
             if (ourbigbook_json.publishRemoteUrl) {
               publish_remote_url = ourbigbook_json.publishRemoteUrl
             } else {
@@ -2063,7 +2073,8 @@ if (cli.helpMacros) {
           actual_input_dir = path.join(publish_dir, subdir_relpath);
           non_ourbigbook_options.ourbigbook_json_dir = actual_input_dir;
           publish_out_publish_dir = path.join(publish_tmpdir, publish_target);
-          publish_out_publish_dist_dir = path.join(publish_out_publish_dir, ourbigbook_nodejs.DIST_BASENAME)
+          publish_out_publish_obb_dir = path.join(publish_out_publish_dir, ourbigbook_nodejs.PUBLISH_OBB_PREFIX)
+          publish_out_publish_dist_dir = path.join(publish_out_publish_dir, ourbigbook_nodejs.PUBLISH_ASSET_DIST_PREFIX)
           non_ourbigbook_options.out_css_path = path.join(publish_out_publish_dist_dir, ourbigbook_nodejs.DIST_CSS_BASENAME);
           non_ourbigbook_options.out_js_path = path.join(publish_out_publish_dist_dir, ourbigbook_nodejs.DIST_JS_BASENAME);
           non_ourbigbook_options.external_css_and_js = true;
@@ -2165,13 +2176,20 @@ if (cli.helpMacros) {
             }
           }
 
-          // Copy runtime assets from dist/ into the output repository.
+          // Copy runtime assets from _obb/ into the output repository.
           const dir = fs.opendirSync(ourbigbook_nodejs.DIST_PATH)
           let dirent
           while ((dirent = dir.readSync()) !== null) {
             require('fs-extra').copySync(
               path.join(ourbigbook_nodejs.DIST_PATH, dirent.name),
               path.join(publish_out_publish_dist_dir, dirent.name)
+            )
+          }
+          fs.mkdirSync(publish_out_publish_obb_dir, { recursive: true })
+          if (ourbigbook_json.web && ourbigbook_json.web.linkFromHeaderMeta) {
+            fs.copyFileSync(
+              ourbigbook_nodejs.LOGO_PATH,
+              path.join(publish_out_publish_dir, ourbigbook_nodejs.LOGO_ROOT_RELPATH)
             )
           }
           dir.closeSync()

@@ -1,11 +1,12 @@
 const path = require('path');
 
+const ourbigbook_nodejs = require('./nodejs');
+
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const NodePolyfillPlugin = require("node-polyfill-webpack-plugin")
 const TerserPlugin = require("terser-webpack-plugin");
 
-const distDir = path.resolve(__dirname, 'dist');
 const nodeModulesPath = path.resolve(__dirname, 'node_modules');
 
 module.exports = {
@@ -76,6 +77,6 @@ module.exports = {
     globalObject: 'this',
     library: '[name]',
     libraryTarget: 'umd',
-    path: distDir,
+    path: ourbigbook_nodejs.DIST_PATH,
   },
 };

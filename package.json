@@ -59,11 +59,8 @@
   },
   "files": [
     "default.tex",
-    "web_api.js",
-    "gitignore",
-    "ourbigbook",
-    "ourbigbook.common.scss",
     "dist/*",
+    "gitignore",
     "index.js",
     "logo.svg",
     "main.liquid.html",
@@ -72,6 +69,9 @@
     "nodejs.js",
     "nodejs_front.js",
     "nodejs_webpack_safe.js",
+    "ourbigbook",
+    "ourbigbook.common.scss",
+    "web_api.js",
     "template/*"
   ],
   "keywords": [

@@ -221,15 +221,20 @@ ol, ul {
       $arrow-width: 5px;
       @mixin arrow {
         display: inline;
-        &:hover {
-          background-color: $target-background-color;
-        }
         > * {
           display: inline-block;
           height: 0;
           margin-right: $arrow-width * 1.5;
           vertical-align: middle;
           width: 0;
+        }
+      }
+      @mixin hover-highlight-arrow {
+        &:hover {
+          background-color: $target-background-color;
+        }
+        &:hover > * {
+          background-color: $target-background-color;
         }
       }
       div {
@@ -249,6 +254,7 @@ ol, ul {
       // Right arrow for open LIs.
       &.has-child > div > div.arrow {
         @include arrow;
+        @include hover-highlight-arrow;
         & > * {
           border-left: $arrow-width solid transparent;
           border-right: $arrow-width solid transparent;
@@ -262,6 +268,7 @@ ol, ul {
         // Down arrow for closed LIs.
         &.has-child > div > div.arrow {
           @include arrow;
+          @include hover-highlight-arrow;
           & > * {
             border-top: $arrow-width solid transparent;
             border-bottom: $arrow-width solid transparent;

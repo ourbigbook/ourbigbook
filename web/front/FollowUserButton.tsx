@@ -7,14 +7,13 @@ import { buttonActiveClass } from 'front/config'
 import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'routes'
 
-export const FollowUserButtonContext = React.createContext(undefined);
-
 const FollowUserButton = ({
   user,
   showUsername,
 }) => {
   const loggedInUser = useLoggedInUser()
-  const { following, setFollowing, followerCount, setFollowerCount } = React.useContext(FollowUserButtonContext);
+  const [following, setFollowing] = React.useState(user.following)
+  const [followerCount, setFollowerCount] = React.useState(user.followerCount)
   const { username } = user;
   const isCurrentUser = loggedInUser && username === loggedInUser?.username;
   const handleClick = (e) => {

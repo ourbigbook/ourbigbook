@@ -545,7 +545,7 @@ if (commander.helpMacros) {
     }
   }
   if (output !== undefined) {
-    console.log(output);
+    process.stdout.write(output);
   }
   if (!commander.watch) {
     process.exit(convert_input_options.had_error);

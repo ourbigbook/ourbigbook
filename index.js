@@ -2324,6 +2324,15 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
+    'q',
+    [
+      new MacroArgument({
+        name: 'content',
+      }),
+    ],
+    html_convert_simple_elem('blockquote'),
+  ),
+  new Macro(
     'table',
     [
       new MacroArgument({

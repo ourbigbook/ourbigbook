@@ -10,11 +10,11 @@ $color: black;
 $target-background-color: #FFFFCC;
 
 // Dark
-$a-color: #66AAFF;
-$a-color-visited: #FF66FF;
+$a-color: #88CCFF;
+$a-color-visited: #FFAAFF;
 $background-color: black;
 $code-background-color: #333333;
-$color: #00DD00;
+$color: #00FF00;
 $target-background-color: #442222;
 
 @mixin hidden {
@@ -67,6 +67,12 @@ a {
   &:visited {
     color: $a-color-visited;
   }
+}
+
+blockquote {
+  border-left: 2px solid $color;
+  margin-left: 10px;
+  padding-left: 10px;
 }
 
 code {

@@ -4,6 +4,8 @@
 
 import Link from 'next/link'
 import React from 'react'
+import { AppContext } from 'front'
+import useLoggedInUser from 'front/useLoggedInUser'
 
 interface CustomLinkProps {
   href: string;
@@ -12,6 +14,7 @@ interface CustomLinkProps {
   children: React.ReactNode;
   shallow?: boolean;
   newTab?: boolean;
+  updatePreviousPage?: boolean;
 }
 
 const CustomLink = ({
@@ -21,12 +24,24 @@ const CustomLink = ({
   newTab=false,
   onClick,
   shallow,
+  updatePreviousPage
 }: CustomLinkProps) => {
   if (shallow === undefined) {
     shallow = false;
   }
+  const { updatePrevPageNoSignup } = React.useContext(AppContext)
+  const loggedInUser = useLoggedInUser()
   const innerProps: any = {
-    onClick,
+    onClick: () => {
+      if (updatePreviousPage) {
+        if (!loggedInUser) {
+          updatePrevPageNoSignup(href)
+        }
+      }
+      if (onClick) {
+        onClick()
+      }
+    },
     className,
   }
   if (newTab) {

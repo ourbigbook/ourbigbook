@@ -24,7 +24,6 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": false,
-    "suppressImplicitAnyIndexErrors": true,
     "incremental": true
   },
   "exclude": [

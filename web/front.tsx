@@ -206,17 +206,23 @@ export function slugFromRouter(router, opts={}) {
 export const AppContext = React.createContext<{
   title: string
   setTitle: React.Dispatch<any> | undefined
+  prevPageNoSignup: string
+  updatePrevPageNoSignup: (newCur: string) => void | undefined,
 }>({
   title: '',
   setTitle: undefined,
+  prevPageNoSignup: '',
+  updatePrevPageNoSignup: undefined
 });
 
 // Global state.
-export const AppContextProvider = ({ children }) => {
-  const [title, setTitle] = React.useState()
-  return <AppContext.Provider value={{
-    title, setTitle,
-  }}>
+export const AppContextProvider = ({ children, vals }) => {
+  const [title, setTitle] = React.useState('')
+  return <AppContext.Provider value={
+    Object.assign({
+      title, setTitle,
+    }, vals)
+  }>
     {children}
   </AppContext.Provider>
 };

@@ -1824,7 +1824,7 @@ Description paragraph 2.
 
 Paragraph after.
 ]]
-Maybe we could improve this with some CSS styling, but generally when you want multiple paragraphs inside the image, you might instead be better off making an \x[internal-cross-file-reference]{p} to the image and adding your extended explanation outside.
+Maybe we could improve this with some CSS styling. If your description is truly huge however, you will likely be better off creating a dedicated header for the image, TODO implement: https://github.com/cirosantilli/cirodown/issues/164[].
 
 And now an image outside of \x[cirodownexample] to test how it looks directly under \x[toplevel]:
 

@@ -1,0 +1,38 @@
+= Not the index
+
+This file is, surprisingly, not the index. It is used for multifile tests. It is also smaller and therefore compiles faster.
+
+== h2 in not the index
+
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+{id=image-not-index-xi}
+{title=Figure in not the index}
+
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+{title=Figure in not the index without explicit id}
+
+=== h3 in not the index
+
+== Some references back to the index
+
+Toplevel: <OurBigBook>.
+
+Non-toplevel: <internal link>.
+
+== Not the index header with scope
+{scope}
+
+<not the index header with scope child>
+
+=== Not the index header with scope child
+
+== Not the index header with fixed case
+{c}
+
+=== Header with scope child
+
+== Not the index another include
+
+Here we include another file from this file to see if recursive includes work from the toplevel:
+
+\Include[included-by-not-index]

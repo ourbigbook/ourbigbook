@@ -368,8 +368,8 @@ class AstNode {
     }
 
     // Refs not defined from outside in the current .ciro file + include_path_set
-    // gUbut which were explicitly requested, e.g. we request it for all headers
-    // gUto look for external include parents
+    // but which were explicitly requested, e.g. we request it for all headers
+    // to look for external include parents
     if (context.options.id_provider) {
       const parents_from_db = context.options.id_provider.get_refs_to_as_ids(
         REFS_TABLE_PARENT,
@@ -400,18 +400,6 @@ class AstNode {
       }
     }
     return ret
-  }
-
-  /* Return split_default, if not in a HEADER, inherit from the parent header. */
-  get_split_default(context) {
-    let ast;
-    if (this.macro_name !== Macro.HEADER_MACRO_NAME) {
-      ast = this.get_header_parent_asts(context)[0]
-    }
-    if (ast === undefined) {
-      ast = this;
-    }
-    return ast.split_default;
   }
 
   is_header_local_descendant_of(ancestor, context) {
@@ -3648,7 +3636,7 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
   let dirname_ret;
   let basename_ret;
   const [id_dirname, id_basename] = path_split(id, URL_SEP);
-  const to_split_headers = is_to_split_headers(header_ast, context);
+  const to_split_headers = is_to_split_headers(ast, context);
   if (
     first_header_or_before ||
     (
@@ -3660,7 +3648,7 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     // to take care of index and -split suffix.
     if (renamed_basename_noext === INDEX_BASENAME_NOEXT) {
       // basename_ret
-      if (to_split_headers === header_ast.split_default) {
+      if (to_split_headers === ast.split_default) {
         // The name is just index.html.
         basename_ret = renamed_basename_noext;
       } else {
@@ -3697,7 +3685,7 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
         // To split.html
         (
           first_header_or_before &&
-          !header_ast.split_default
+          !ast.split_default
         ) ||
 
         // User explcitly gave {splitSuffix}
@@ -3705,7 +3693,7 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
       )
     ) ||
     // User gave {splitDefault}, so we link to nosplit.
-    !to_split_headers && header_ast.split_default
+    !to_split_headers && ast.split_default
   ) {
     if (basename_ret !== '') {
       basename_ret += '-';
@@ -4920,6 +4908,12 @@ async function parse(tokens, options, context, extra_returns={}) {
           let ret = calculate_id(ast, context, options.non_indexed_ids, options.indexed_ids, macro_counts,
             macro_count_global, macro_counts_visible, state, false, line_to_id_array);
           macro_count_global = ret.macro_count_global
+
+          // Propagate splitDefault to non header children.
+          // Headeres were already handled previously.
+          if (ast.header_tree_node.parent_node !== undefined && ast.header_tree_node.parent_node.ast !== undefined) {
+            ast.split_default = ast.header_tree_node.parent_node.ast.split_default;
+          }
         }
 
         // Push children to continue the search. We make the new argument be empty
@@ -5671,7 +5665,7 @@ function x_href(target_id_ast, context) {
 // id='subdir/notindex'      -> ['subdir', 'notindex']
 // id='subdir/notindex-h2'   -> ['subdir', 'notindex-h2']
 function is_to_split_headers(ast, context) {
-  return (context.to_split_headers === undefined && ast.get_split_default(context)) ||
+  return (context.to_split_headers === undefined && ast.split_default) ||
          (context.to_split_headers !== undefined && context.to_split_headers);
 }
 

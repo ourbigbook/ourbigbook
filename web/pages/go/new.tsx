@@ -1,3 +1,3 @@
-import makeArticleEditor from 'front/ArticleEditor'
+import makeArticleEditorPage from 'front/ArticleEditorPage'
 
-export default makeArticleEditor(true);
+export default makeArticleEditorPage(true);

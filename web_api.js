@@ -170,7 +170,7 @@ class WebApi {
           idid,
         }
       },
-    )
+    ).exists
   }
   async issues(opts) {
     return this.req('get',

@@ -1,4 +1,4 @@
-import { DEFAULT_USER_SCORE_TITLE } from "lib/utils/constant"
+import { DEFAULT_USER_SCORE_TITLE } from 'lib/utils/constant'
 
 export function displayAndUsernameText(user) {
   let ret = ''

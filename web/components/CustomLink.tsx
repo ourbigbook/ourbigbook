@@ -1,7 +1,7 @@
 /* Helper for a link that accepts parameters such as className */
 
-import Link from "next/link";
-import React from "react";
+import Link from 'next/link'
+import React from 'react'
 
 interface CustomLinkProps {
   href: string;

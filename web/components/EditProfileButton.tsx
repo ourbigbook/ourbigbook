@@ -1,8 +1,8 @@
-import React from "react";
+import React from 'react'
 
-import CustomLink from "components/CustomLink";
-import Maybe from "components/Maybe";
-import routes from "routes";
+import CustomLink from 'components/CustomLink'
+import Maybe from 'components/Maybe'
+import routes from 'routes'
 
 interface EditProfileButtonProps {
   isCurrentUser: boolean;

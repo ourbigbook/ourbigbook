@@ -1,16 +1,16 @@
-import { useRouter } from "next/router";
-import React from "react";
+import { useRouter } from 'next/router'
+import React from 'react'
 
-import CustomLink from "components/CustomLink";
-import LikeArticleButton, { LikeArticleButtonContext } from "components/LikeArticleButton";
-import LoadingSpinner from "components/LoadingSpinner";
-import Pagination from "components/Pagination";
-import UserLinkWithImage from "components/UserLinkWithImage";
-import { AppContext } from "lib";
-import { DEFAULT_LIMIT } from "lib/utils/constant";
-import { formatDate } from "lib/utils/date";
-import getLoggedInUser from "lib/utils/getLoggedInUser";
-import routes from "routes";
+import CustomLink from 'components/CustomLink'
+import LikeArticleButton, { LikeArticleButtonContext } from 'components/LikeArticleButton'
+import LoadingSpinner from 'components/LoadingSpinner'
+import Pagination from 'components/Pagination'
+import UserLinkWithImage from 'components/UserLinkWithImage'
+import { AppContext } from 'lib'
+import { DEFAULT_LIMIT } from 'lib/utils/constant'
+import { formatDate } from 'lib/utils/date'
+import getLoggedInUser from 'lib/utils/getLoggedInUser'
+import routes from 'routes'
 
 type Options = {
   articles: undefined;

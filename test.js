@@ -184,7 +184,7 @@ function assert_convert_ast(
         const input_string = filesystem[input_path];
         const dependency_convert_opts = Object.assign({}, new_convert_opts);
         dependency_convert_opts.input_path = input_path;
-        dependency_convert_opts.toplevel_id = path.parse(input_path).ext;
+        dependency_convert_opts.toplevel_id = path.parse(input_path).name;
         dependency_convert_opts.render = render;
         await ourbigbook.convert(input_string, dependency_convert_opts, extra_returns);
         Object.assign(rendered_outputs, extra_returns.rendered_outputs)
@@ -6233,14 +6233,30 @@ assert_lib('bigb output: x uses text conversion as the target link',
 \\x[dog-and-cat]{c}{p}
 
 \\x[asdf-asdf]
+
+\\x[matching-id]
+
+\\x[plural-apples]
+
+<plural apples>
+
+<accounts>
 `,
       'notindex.bigb': `= Notindex
 
 == Dog $and$ Cat
 
-== Qwer qwer
+== Qwer Qwer
 {id=asdf-asdf}
+
+== Matching ID
+{id=matching-id}
+
+== Plural Apples
+{id=plural-apples}
 `,
+      'accounts.bigb': `= My accounts
+`
     },
     convert_dir: true,
     assert_bigb: {
@@ -6249,6 +6265,14 @@ assert_lib('bigb output: x uses text conversion as the target link',
 <Dog and Cats>
 
 <asdf asdf>
+
+<matching ID>
+
+<plural Apples>
+
+<plural Apples>
+
+<accounts>
 `,
     }
   }
@@ -6378,6 +6402,8 @@ assert_lib('bigb output: x to scope',
 
 <fruit/banana>
 
+<fruit/orange>
+
 == Fruit
 {scope}
 
@@ -6388,6 +6414,9 @@ assert_lib('bigb output: x to scope',
 <car/ferrari>
 
 === Banana
+
+=== Orange
+{id=orange}
 
 == Car
 {scope}
@@ -6414,6 +6443,8 @@ assert_lib('bigb output: x to scope',
 
 <fruit/banana>
 
+<fruit/orange>
+
 == Fruit
 {scope}
 
@@ -6424,6 +6455,9 @@ assert_lib('bigb output: x to scope',
 <car/ferrari>
 
 === Banana
+
+=== Orange
+{id=orange}
 
 == Car
 {scope}
@@ -6521,7 +6555,7 @@ assert_lib('bigb output: magic x to image',
     }
   }
 );
-assert_lib('bigb output: slash in title',
+assert_lib('bigb output: x to slash in title',
   // We have to remove slashes, otherwise it searches for scopes instead.
   // Don't have a solution for that now.
   {
@@ -6627,6 +6661,30 @@ assert_lib('bigb output: to file',
 
 == path/to/my file
 {file}
+`,
+    }
+  }
+)
+assert_lib('bigb output: to explicit id with slash',
+  {
+    filesystem: {
+      'notindex.bigb': `= Index
+
+<asdf/qwer>
+
+== Qwer
+{id=asdf/qwer}
+`,
+      'path/to/my file': '',
+    },
+    convert_dir: true,
+    assert_bigb: {
+      'notindex.bigb': `= Index
+
+<asdf/qwer>
+
+== Qwer
+{id=asdf/qwer}
 `,
     }
   }

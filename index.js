@@ -4036,7 +4036,7 @@ function html_img({
   }
   const href = ast.validation_output.link.given ? render_arg(ast.args.link, context) : src
   return {
-    html: `<a${html_attr('href', href)}><img${html_attr('src', html_escape_attr(src))}${html_attr('loading', 'lazy')}${rendered_attrs}${alt}${border_attr}></a>${error}`,
+    html: `<div class="float-wrap"><a${html_attr('href', href)}><img${html_attr('src', html_escape_attr(src))}${html_attr('loading', 'lazy')}${rendered_attrs}${alt}${border_attr}></a></div>${error}`,
     src,
   };
 }
@@ -4242,7 +4242,7 @@ function macro_image_video_block_convert_function(ast, context) {
   } else {
     figure_class = ''
   }
-  let ret = `<figure${figure_attrs}${figure_class}>\n`
+  let ret = `<figure${figure_attrs}${figure_class}>`
   let href_prefix;
   if (ast.id !== undefined) {
     href_prefix = html_self_link(ast, context);
@@ -4296,7 +4296,7 @@ function macro_image_video_block_convert_function(ast, context) {
     const title_and_description = get_title_and_description({ title, description, source, inner })
     ret += `<figcaption>${title_and_description}</figcaption>\n`;
   }
-  ret += '</figure>\n';
+  ret += '</figure>';
   return ret;
 }
 
@@ -8525,8 +8525,8 @@ const DEFAULT_MACRO_LIST = [
               const DEFAULT_VIDEO_WIDTH = 560
               width = Math.floor(DEFAULT_VIDEO_WIDTH * height / DEFAULT_MEDIA_HEIGHT)
             }
-            return `<iframe width="${width}" height="${height}" loading="lazy" src="https://www.youtube.com/embed/${html_escape_attr(video_id)}${start}" ` +
-                  `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            return `<div class="float-wrap"><iframe width="${width}" height="${height}" loading="lazy" src="https://www.youtube.com/embed/${html_escape_attr(video_id)}${start}" ` +
+                  `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
           } else {
             let error
             ;({ href: src, error } = check_and_update_local_link({

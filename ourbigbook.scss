@@ -10,9 +10,17 @@
 @font-face { font-family: fa-regular-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2); }
 @font-face { font-family: fa-solid-900; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2); }
 
-$caption-margin-bottom: 5px;
+$caption-margin-bottom: 7px;
 $p-margin-vert: 14px;
 $toplevel-horizontal-padding-mobile: 5px;
+
+// Wraps "floating elements" such as images, so ensure they will not create a global scrollbar.
+// Related issue: https://docs.ourbigbook.com/todo/vertical-scrollbar-when-image-title-contains-math-underscore
+div.float-wrap {
+  display: inline-block;
+  overflow-x: auto;
+  width: 100%;
+}
 
 @mixin hidden {
   display: none;
@@ -31,6 +39,7 @@ $toplevel-horizontal-padding-mobile: 5px;
 
 @mixin img-border {
   border: 5px solid $color;
+  box-sizing: border-box;
 }
 
 @mixin multiline-caption {
@@ -152,7 +161,6 @@ div.p {
 // Figures.
 figure {
   margin: $p-margin-vert 0;
-  overflow-x: auto;
   &.multiline-caption {
     @include multiline-caption;
   }
@@ -228,6 +236,7 @@ nav {
 
 iframe {
   @include responsive-img;
+  box-sizing: border-box;
   &.border {
     @include img-border;
   }
@@ -235,7 +244,8 @@ iframe {
 
 // Math.
 // https://stackoverflow.com/questions/50896041/katex-font-size/57355836#57355836
-.katex { font-size: 1.2em; }
+.katex {
+font-size: 1.2em; }
 // Make block math larger, otherwise fractions and other tall constructs become tiny.
 // Users should avoid tall constructs inline.
 .math { .katex { font-size: 1.5em; } }

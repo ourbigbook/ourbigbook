@@ -1104,7 +1104,18 @@ Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello He
 Hello
 ``
 
-And nos a very long inline code: `Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello`
+Now with short description with math and underline:
+
+``
+Hello
+
+Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello
+    HelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHello
+Hello
+``
+{description=My long code! $a_b$}
+
+And now a very long inline code: `Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello`
 
 \Comment[[[[
 TODO implement.
@@ -2556,13 +2567,6 @@ And now for an image outside of <\OurBigBookExample> to test how it looks direct
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {id=image-my-test-image-toplevel}
 
-= Image height
-{parent=Image}
-
-By default, we fix image heights to `height=315`, and let the `width` be calculated proportionally once the image loads. We therefore ignore the actual image size. This is done to:
-* prevent reflows as the page loads images and can determine their actual sizes, especially is the user opens the page at a given ID in the middle of the page
-* create a more uniform media experience by default, unless a custom image size is actually needed e.g. if the image needs to be larger
-
 = Image ID
 {parent=Image}
 
@@ -2845,6 +2849,34 @@ We recommend adding a period or other punctuation to the end of every descriptio
 {tag=Boolean argument}
 
 Analogous to the <\a external argument> when checking if the <image src argument> exists or not.
+
+= Image `height` argument
+{parent=Image argument}
+
+= Image height
+{synonym}
+
+By default, we fix image heights to `height=315`, and let the `width` be calculated proportionally once the image loads. We therefore ignore the actual image size. This is done to:
+* prevent reflows as the page loads images and can determine their actual sizes, especially is the user opens the page at a given ID in the middle of the page
+* create a more uniform media experience by default, unless a custom image size is actually needed e.g. if the image needs to be larger
+When the <Mobile guidelines>[viewport is narrow enough], mobile CSS takes over and forces images to fill 100% of the page width instead.
+
+\OurBigBookExample[[
+\Image[logo.svg]
+{height=150}
+]]
+
+\OurBigBookExample[[
+\Image[logo.svg]
+{height=550}
+]]
+
+Here's a very long test image:
+
+\Image[https://upload.wikimedia.org/wikipedia/commons/4/45/Qian_Xuan_-_Early_Autumn.jpg]
+{title=Very long test image.}
+{description=And some tall inline maths: $a_b$.}
+{height=600}
 
 = Image `link` argument
 {parent=Image argument}
@@ -9116,6 +9148,13 @@ Historically, <Vim> support came first and was better developed. But that was ju
 Our syntax highlighting attempts mostly to follow the official HTML style, which is perhaps the best maintained data-language. We have also had a look at the LaTeX, Markdown and Asciidoctor ones for refernce.
 
 One current fundamental limitation of VS Code is that there is no way to preview images and mathematics inline with text: https://stackoverflow.com/questions/52709966/vscode-is-it-possible-to-show-an-image-inside-a-text-buffer If only it were able to do that, it would go a long way to being as good as a WYSIWYG interface.
+
+\Video[https://www.youtube.com/watch?v=Ghvlztiu6rI]
+{title=Edit locally and publish demo}
+{description=This shows editing <OurBigBook Markup> and <publishing> it using the <VS Code> extension.}
+{disambiguate=Visual Studio Code}
+{height=720}
+{width=720}
 
 = Vim
 {parent=Editor support}

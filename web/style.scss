@@ -21,6 +21,8 @@ height: 100%;
 
 div.toplevel {
 height: 100%;
+display: flex;
+flex-direction: column;
 &.editor {
   display: flex;
   flex-direction: column;
@@ -30,7 +32,7 @@ height: 100%;
 }
 
 div.main {
-flex: 0 1 auto;
+flex: 1 0 auto;
 overflow: auto;
 @media only screen and (max-width: $max-mobile-width) {
   .mobile-hide {

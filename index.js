@@ -2373,6 +2373,8 @@ function convert_init_context(options={}, extra_returns={}) {
     }
   if (!('embed_includes' in options)) { options.embed_includes = false; }
   if (!('file_provider' in options)) { options.file_provider = undefined; }
+  // Check if file exists.
+  if (!('fs_exists_sync' in options)) { options.fs_exists_sync }
   if (!('from_include' in options)) { options.from_include = false; }
   if (!('from_cirodown_example' in options)) { options.from_cirodown_example = false; }
   if (!('html_embed' in options)) { options.html_embed = false; }
@@ -5283,6 +5285,14 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       let [href, content] = link_get_href_content(ast, context);
+      if (
+        ast.validation_output.local.boolean &&
+        !context.options.fs_exists_sync(href)
+      ) {
+        const message = `link to inexistent local file: ${href}`;
+        render_error(context, message, ast.source_location);
+        content = error_message_in_output(message, context) + content;
+      }
       if (ast.validation_output.ref.boolean) {
         content = '*';
       }
@@ -5295,6 +5305,10 @@ const DEFAULT_MACRO_LIST = [
     },
     {
       named_args: [
+        new MacroArgument({
+          name: 'local',
+          boolean: true,
+        }),
         new MacroArgument({
           name: 'ref',
           boolean: true,

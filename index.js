@@ -1849,16 +1849,21 @@ function convert(
       // Gather up each header (must be a direct child of toplevel)
       // and all elements that belong to that header (up to the next header).
       let cur_arg_list = [];
+      let has_toc = false;
       for (const child_ast of content) {
         const macro_name = child_ast.macro_name;
+        if (macro_name === Macro.TOC_MACRO_NAME) {
+          has_toc = true;
+        }
         if (
           macro_name === Macro.HEADER_MACRO_NAME
           // Just ignore extra added include headers, these
           // were overwritting index-split.html output.
           && !child_ast.from_include
         ) {
-          convert_header(cur_arg_list, context);
+          convert_header(cur_arg_list, context, has_toc);
           cur_arg_list = [];
+          has_toc = false;
         }
         cur_arg_list.push(child_ast);
       }
@@ -1945,7 +1950,7 @@ function convert_arg_noescape(arg, context={}) {
 
 /* Convert one header (or content before the first header)
  * in --split-headers mode. */
-function convert_header(cur_arg_list, context) {
+function convert_header(cur_arg_list, context, has_toc) {
   if (
     // Can fail if:
     // * the first thing in the document is a header
@@ -1956,13 +1961,18 @@ function convert_header(cur_arg_list, context) {
     const options = Object.assign({}, context.options);
     context.options = options;
     const first_ast = cur_arg_list[0];
-    const header_graph_node = first_ast.header_graph_node;
     if (options.log['split-headers']) {
       console.error('split-headers: ' + first_ast.id);
     }
-    const header_graph_node_old_parent = header_graph_node.parent_node;
-    // Add a new toplevel parent.
-    //header_graph_node.parent_node = new HeaderTreeNode();
+    if (!has_toc) {
+      cur_arg_list.push(new AstNode(
+        AstType.MACRO,
+        Macro.TOC_MACRO_NAME,
+        {},
+        first_ast.source_location,
+        {id: 'toc-1'}
+      ));
+    }
     const ast_toplevel = new AstNode(
       AstType.MACRO,
       Macro.TOPLEVEL_MACRO_NAME,
@@ -1971,15 +1981,14 @@ function convert_header(cur_arg_list, context) {
       },
       first_ast.source_location,
     );
-    options.toplevel_id = first_ast.level;
-    options.h_parse_level_offset = 1 - header_graph_node.get_level();
+    options.toplevel_id = first_ast.id;
     context.in_split_headers = true;
+    context.header_graph_top_level = 1;
+    context.header_graph = first_ast.header_graph_node;
     const output_path = output_path_from_ast(first_ast, context);
     context.toplevel_output_path = output_path;
     context.extra_returns.rendered_outputs[output_path] =
       ast_toplevel.convert(context);
-    // Restore the original header_graph_node state.
-    header_graph_node.parent_node = header_graph_node_old_parent;
   }
 }
 
@@ -3057,7 +3066,10 @@ function parse(tokens, options, context, extra_returns={}) {
             continue;
           }
           context.has_toc = true;
-        } else if (macro_name === Macro.TOPLEVEL_MACRO_NAME && ast.parent_node !== undefined) {
+        } else if (
+          macro_name === Macro.TOPLEVEL_MACRO_NAME &&
+          ast.parent_node !== undefined
+        ) {
           // Prevent this from happening. When this was committed originally,
           // it actually worked and output an `html` inside another `html`.
           // Maybe we could do something with iframe, but who cares about that?
@@ -4947,11 +4959,15 @@ const DEFAULT_MACRO_LIST = [
       let root_node = context.header_graph;
       let ret = `<div class="toc-container"${attrs}>\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
       ret += `${TOC_ARROW_HTML}<a class="title"${x_href_attr(ast, context)}>Table of contents</a> ${get_descendant_count(root_node)}</div>\n`;
-      if (context.header_graph_top_level > 0) {
+      if (context.header_graph_top_level > 0 && !context.in_split_headers) {
         root_node = root_node.children[0];
       }
       for (let i = root_node.children.length - 1; i >= 0; i--) {
         todo_visit.push([root_node.children[i], 1]);
+      }
+      if (todo_visit.length === 0) {
+        // Empty ToC. Don't render. Initial common case: leaf split header nodes.
+        return '';
       }
       while (todo_visit.length > 0) {
         const [tree_node, level] = todo_visit.pop();

@@ -9,36 +9,22 @@ import CustomImage from "components/common/CustomImage";
 import LoadingSpinner from "components/common/LoadingSpinner";
 import LogoutButton from "components/common/LogoutButton";
 import Maybe from "components/common/Maybe";
-import EditProfileButton from "components/profile/EditProfileButton";
-import FollowUserButton, { FollowUserButtonContext } from "components/profile/FollowUserButton";
 import { SERVER_BASE_URL } from "lib/utils/constant";
 import fetcher from "lib/utils/fetcher";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 import routes from "routes";
 
-const ProfileHoc = (tab) => {
-  return ({ profile }) => {
+const TopicHoc = (tab) => {
+  return ({ }) => {
     const router = useRouter();
-    const { data: profileApi, error } = useSWR(`${SERVER_BASE_URL}/profiles/${profile?.username}`, fetcher(router.isFallback));
-    if (profileApi !== undefined) {
-      profile = profileApi.profile
-    }
-    const username = profile?.username
-    const bio = profile?.bio
-    const image = profile?.image
     const loggedInUser = getLoggedInUser()
     const isCurrentUser = loggedInUser && username === loggedInUser?.username
-    const [following, setFollowing] = React.useState(false)
-    React.useEffect(() => {
-      setFollowing(profile?.following)
-    }, [profile?.following])
-    if (router.isFallback) { return <LoadingSpinner />; }
     return (
       <>
         <Head>
           <title>{username}</title>
         </Head>
-        <div className="profile-page content-not-cirodown">
+        <div className="topic-page content-not-cirodown">
           <div className="user-info">
             <h1>{username}</h1>
             <CustomImage
@@ -57,14 +43,14 @@ const ProfileHoc = (tab) => {
           </div>
           <div className="tab-list">
             <CustomLink
-              href={routes.userView(username)}
-              className={`tab-item${tab === 'my-posts' ? ' active' : ''}`}
+              href={routes.topicArticlesView(username)}
+              className={`tab-item${tab === 'articles' ? ' active' : ''}`}
             >
               Authored Articles
             </CustomLink>
             <CustomLink
-              href={routes.userViewFavorites(username)}
-              className={`tab-item${tab === 'favorites' ? ' active' : ''}`}
+              href={routes.topicUsersView(username)}
+              className={`tab-item${tab === 'users' ? ' active' : ''}`}
             >
               Favorited Articles
             </CustomLink>
@@ -75,5 +61,31 @@ const ProfileHoc = (tab) => {
     );
   };
 }
+export default TopicHoc;
 
-export default ProfileHoc;
+import { GetStaticProps, GetStaticPaths } from 'next'
+
+import { revalidate } from "config";
+import sequelize from "lib/db";
+
+export const getStaticPathsTopic: GetStaticPaths = async () => {
+  return {
+    fallback: true,
+    paths: [],
+  }
+}
+
+export const getStaticPropsTopic: GetStaticProps = async ({ params: { id } }) => {
+  //const user = await sequelize.models.User.findOne({
+  //  where: { username: uid },
+  //})
+  //if (!user) {
+  //  return {
+  //    notFound: true
+  //  }
+  //}
+  return {
+    revalidate,
+    //props: { profile: await user.toProfileJSONFor() },
+  }
+}

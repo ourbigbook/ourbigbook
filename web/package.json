@@ -1,0 +1,53 @@
+{
+  "name": "conduit-node",
+  "version": "1.0.0",
+  "description": "conduit on node",
+  "main": "app.js",
+  "scripts": {
+    "back": "nodemon --unhandled-rejections=strict ./app.js",
+    "build": "cd frontend && npm run build",
+    "dev": "concurrently --kill-others 'npm run front --' 'npm run back --'",
+    "front": "cd frontend && npm start",
+    "heroku-postbuild": "npm run build",
+    "preinstall": "cd frontend && npm install",
+    "start": "node --unhandled-rejections=strict ./app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gothinkster/productionready-node-api.git"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "1.15.0",
+    "cors": "2.7.1",
+    "errorhandler": "1.4.3",
+    "express": "4.13.4",
+    "express-jwt": "3.3.0",
+    "express-session": "1.13.0",
+    "jsonwebtoken": "7.1.9",
+    "method-override": "2.3.5",
+    "methods": "1.1.2",
+    "morgan": "1.7.0",
+    "passport": "0.3.2",
+    "passport-local": "1.0.0",
+    "pg": "8.5.1",
+    "request": "2.69.0",
+    "sequelize": "^6.5.1",
+    "slug": "0.9.1",
+    "underscore": "1.8.3"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "semi": false,
+    "singleQuote": true
+  },
+  "devDependencies": {
+    "concurrent": "^0.3.2",
+    "eslint": "^4.19.1",
+    "eslint-plugin-prettier": "^2.6.0",
+    "nodemon": "^1.11.0",
+    "prettier": "^1.12.1",
+    "sqlite3": "^4.0.0"
+  },
+  "cacheDirectories": ["node_modules", "frontend/node_modules"]
+}

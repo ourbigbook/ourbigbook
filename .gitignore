@@ -2,7 +2,7 @@
 *.html
 !/main.liquid.html
 .sass-cache
-/node_modules
+node_modules
 /out
 
 # Custom ignores. Everything above this section, gets automatically parsed
@@ -19,3 +19,10 @@ tmp
 tmp.*
 *.tmp
 *.tmp.*
+
+# Web.
+!web/**/*.css
+!web/**/*.html
+web/frontend/build
+web/db.sqlite3
+web/.env

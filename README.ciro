@@ -192,7 +192,7 @@ Another advantage over Asciidoctor is that the reference implementation of Cirod
 Static wiki generators: this is perhaps the best way of classifying this project :-)
 * https://github.com/gollum/gollum[]: already has a local server editor! But no WYSIWYG nor live preview. Git integration by default, so when you save on the UI already generates a Git commit. We could achieve that with: https://github.com/isomorphic-git/isomorphic-git[], would be really nice.
 * https://github.com/wcchin/markypydia
-* https://obsidian.md/ closed source, Markdown with \x[internal-cross-file-reference] + a SaaS. Appears to require payment for any publishing. 28k followers 2021: https://twitter.com/obsdmd[]. Founders are likely Canadians of Asian descent from Waterloo University: https://www.linkedin.com/in/lishid/ | https://www.linkedin.com/in/ericaxu/ also working in parallel on https://dynalist.io/
+* https://obsidian.md/ closed source, Markdown with \x[internal-cross-file-reference] + a SaaS. Appears to require payment for any publishing. 28k followers 2021: https://twitter.com/obsdmd[]. Founders are likely Canadians of Asian descent from Waterloo University: https://www.linkedin.com/in/lishid/ | https://www.linkedin.com/in/ericaxu/ also working in parallel on https://dynalist.io/ 2020 review at: https://www.youtube.com/watch?v=aK2fOQRNSxc Has offline editor with side-by-side preview. Compares with https://roamresearch.com/[Roam] and https://roamresearch.com/[Notion], but can't find any public publishing on those, seem to be enterprise only things.
 * https://www.gitbook.com/
 
 Static book generators:
@@ -4270,6 +4270,7 @@ then visit the running website at: http://localhost:3000/
 Got it running perfectly at as of April 2021 https://cirosantilli-realworld-express.herokuapp.com/ with the following steps:
 
 ``
+sudo snap install --classic heroku
 heroku git:remote -a cirodown
 # Automatically sets DATABASE_URL.
 heroku addons:create heroku-postgresql:hobby-dev
@@ -4763,11 +4764,4 @@ git commit -m "$t"
 git tag -m "$t" "$t"
 git push --follow-tags
 npm publish
-``
-
-= Website release procedure
-{parent=release-procedure}
-
-``
-sudo snap install --classic heroku
 ``

@@ -462,7 +462,7 @@ Via KaTeX server side, oh yes!
 
 Just like code, but LaTeX math goes in.
 
-My inline \m[[\sqrt[1 + 1\]]] is awesome.
+My inline \m[[\sqrt{1 + 1}]] is awesome.
 
 Escape the closing bracket with backslash: \m[1 - \[1 + 1\] = -1].
 
@@ -471,8 +471,8 @@ Escape the closing bracket with double open and close: \m[[1 - [1 + 1] = -1]] is
 Display math is done with upper case \c[M]:
 
 \M[[
-\sqrt[1 + 1]
-\sqrt[1 + 1]
+\sqrt{1 + 1} \\
+\sqrt
 ]]
 
 \h[2][Cirodown syntax]
@@ -901,6 +901,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[pass CLIs to test command to enable token and ast logging]
 \l[correct ID generation algorithm to be Unicode robust]
 \l[LaTeX output]
+\l[local downloads and single HTML page with image / script embeds]
 
 \h[3][Related projects]
 

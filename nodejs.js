@@ -272,6 +272,17 @@ ON "Ids".idid = "RecRefs"."to_id"
     for (const row of rows) {
       asts.push(this.add_row_to_id_cache(row))
     }
+
+    // Add starting points to the ID cache, so that they will have the header_graph_node.
+    // This is needed to walk up the parent tree and determine if a header is a descendant of
+    // a \x{full}, which determines if it gets a number or not.
+    //
+    // Yes, this would omit other parent IDs from other includes, but we don't have a use
+    // case for this right now, so let's keep it simple for now.
+    //for (const id in starting_points) {
+    //  const ast = starting_points[id]
+    //  this.id_cache[id] = ast
+    //}
     //console.error({rows});
 
     // Patch up the HeaderTreeNode of the entry points and their descendants

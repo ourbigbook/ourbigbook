@@ -329,8 +329,7 @@ class AstNode {
     return out;
   }
 
-  /* Get parent ID, but only consider IDs that are present on the currently parsed
-   * include_path_set, and not anything coming from the database. */
+  /* Get parent ID, but only consider IDs that come through header_graph_node. */
   get_local_header_parent_id() {
     if (
       this.header_graph_node !== undefined &&
@@ -399,15 +398,26 @@ class AstNode {
     return ast.split_default;
   }
 
-  is_header_descendant(other, context) {
+  is_header_local_descendant_of(ancestor, context) {
     let cur_ast = this;
-    const other_id = other.id;
+    const ancestor_id = ancestor.id;
     while (true) {
-      cur_ast = cur_ast.get_header_parent_asts(context)[0];
-      if (cur_ast === undefined) {
+      let cur_ids = cur_ast.get_header_parent_ids(context)
+      let cur_id
+      for (const id of cur_ids) {
+        cur_ast = context.id_provider.get(id, context)
+        if (
+          cur_ast !== undefined &&
+          context.options.include_path_set.has(cur_ast.source_location.path)
+        ) {
+          cur_id = id
+          break
+        }
+      }
+      if (cur_id === undefined) {
         return false;
       }
-      if (cur_ast.id === other.id) {
+      if (cur_ast.id === ancestor_id) {
         return true;
       }
     }
@@ -3846,7 +3856,6 @@ async function parse(tokens, options, context, extra_returns={}) {
             header_ast.header_graph_node = new HeaderTreeNode(header_ast, parent_ast_header_graph_node);
             parent_ast_header_graph_node.add_child(header_ast.header_graph_node);
             new_child_nodes = [
-              header_ast,
               new AstNode(
                 AstType.PARAGRAPH,
               ),
@@ -3887,6 +3896,10 @@ async function parse(tokens, options, context, extra_returns={}) {
             for (const child_node of new_child_nodes) {
               child_node.set_source_location(ast.source_location)
             }
+            // Don't set the source location for this: it must be set to the external file
+            // in order to calculate link hrefs IDs correctly to it to the external file,
+            // and not the placeholder in the current file.
+            new_child_nodes.unshift(header_ast)
           }
           // Push all included nodes, but don't recurse because:
           // - all child includes will be resolved on the sub-render call
@@ -4477,11 +4490,11 @@ async function parse(tokens, options, context, extra_returns={}) {
               AstType.MACRO,
               Macro.TOC_MACRO_NAME,
               {},
-              ast.source_location,
+              new SourceLocation(undefined, undefined, context.options.input_path),
               {
                 parent_node: ast.parent_node
               }
-            ));
+            ))
             context.has_toc = true;
           }
         } else {
@@ -4760,31 +4773,42 @@ async function parse(tokens, options, context, extra_returns={}) {
     // Patch the ID of the include headers.
     // Deferred here after ID cache warming to group all DB queries.
     for (const href in options.include_hrefs) {
-      const header_ast = options.include_hrefs[href]
       const target_id_ast = context.id_provider.get(href, context);
-      let header_node_title;
-      if (target_id_ast === undefined) {
-        let message = `ID in include not found on database: "${href}", ` +
-          `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
-        header_node_title = error_message_in_output(message);
-        // Don't do an error if we are not going to render, because this is how
-        // we extract IDs on the first pass of ./cirodown .
-        if (options.render) {
-          parse_error(state, message);
+      if (target_id_ast) {
+        const header_ast = options.include_hrefs[href]
+        let header_node_title;
+        if (target_id_ast === undefined) {
+          let message = `ID in include not found on database: "${href}", ` +
+            `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
+          header_node_title = error_message_in_output(message);
+          // Don't do an error if we are not going to render, because this is how
+          // we extract IDs on the first pass of ./cirodown .
+          if (options.render) {
+            parse_error(state, message);
+          }
+        } else {
+          const x_text_options = {
+            show_caption_prefix: false,
+            style_full: false,
+          };
+          header_node_title = x_text(target_id_ast, context, x_text_options);
         }
-      } else {
-        const x_text_options = {
-          show_caption_prefix: false,
-          style_full: false,
-        };
-        header_node_title = x_text(target_id_ast, context, x_text_options);
+        header_ast.set_source_location(target_id_ast.source_location)
+        header_ast.args[Macro.TITLE_ARGUMENT_NAME][0].text = header_node_title
+        // This is a bit nasty and duplicates the below header processing code,
+        // but it is a bit hard to factor them out since this is a magic include header,
+        // and all includes and headers must be parsed concurrently since includes get
+        // injected under the last header.
+        validate_ast(header_ast, context);
+
+        // We modify the cache here to ensure that the header ID has the full header_graph_node, which
+        // then gets feched from \x{full} (notably ToC) in order to show the link number there.
+        //
+        // Yes, this erase IDs that come from other Includes, but we don´t have a use case for that
+        // right now, e.g. the placholder include header does not show parents.
+        target_id_ast.header_graph_node = header_ast.header_graph_node
+        target_id_ast.header_parent_ids = []
       }
-      header_ast.args[Macro.TITLE_ARGUMENT_NAME][0].text = header_node_title
-      // This is a bit nasty and duplicates the below header processing code,
-      // but it is a bit hard to factor them out since this is a magic include header,
-      // and all includes and headers must be parsed concurrently since includes get
-      // injected under the last header.
-      validate_ast(header_ast, context);
     }
 
     // Check for ID conflicts.
@@ -5713,7 +5737,7 @@ function x_text(ast, context, options={}) {
         (
           // Possible in case of broken header parent=.
           context.toplevel_ast !== undefined &&
-          ast.is_header_descendant(context.toplevel_ast, context)
+          ast.is_header_local_descendant_of(context.toplevel_ast, context)
         )
       )
     ) {

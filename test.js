@@ -847,6 +847,27 @@ assert_convert_ast('cross reference circular loop infinite recursion explicit bo
     }),
   ]
 );
+//// https://github.com/cirosantilli/cirodown/issues/45
+//assert_convert_ast('cross reference to plaintext id calculated from title',
+//  `\\h[1][aa \`bb\` cc]
+//
+//\\x[aa-bb-cc]
+//`,
+//  // TODO
+//  [
+//    a('h', undefined, {
+//      level: [t('1')],
+//      title: [
+//        t('aa '),
+//        a('c', [t('bb')]),
+//        t(' cc'),
+//      ],
+//    }),
+//    a('p', [
+//      a('x', undefined, { href: [t('aa-bb-cc')]}),
+//    ]),
+//  ]
+//);
 
 //// Headers.
 // TODO inner ID property test

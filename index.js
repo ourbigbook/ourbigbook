@@ -756,7 +756,7 @@ class Tokenizer {
     return true;
   }
 
-  consume_optional_newline_after_argument(literal) {
+  consume_optional_newline_after_argument() {
     if (
       !this.is_end() &&
       this.cur_c === '\n'
@@ -964,7 +964,7 @@ class Tokenizer {
       } else {
         let done = false;
 
-        // Insane autolink.
+        // Insane link.
         if (
           this.i === 0 ||
           this.chars[this.i - 1] === '\n' ||
@@ -983,6 +983,8 @@ class Tokenizer {
               if (
                 this.cur_c == ' ' ||
                 this.cur_c == '\n' ||
+                this.cur_c == START_POSITIONAL_ARGUMENT_CHAR ||
+                this.cur_c == START_NAMED_ARGUMENT_CHAR ||
                 this.cur_c == END_POSITIONAL_ARGUMENT_CHAR ||
                 this.cur_c == END_NAMED_ARGUMENT_CHAR
               ) {
@@ -993,6 +995,7 @@ class Tokenizer {
               }
             }
             this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
+            this.consume_optional_newline_after_argument();
             done = true;
           }
         }

@@ -10,7 +10,6 @@ const errorhandler = require('errorhandler')
 
 const model = require('./models')
 const config = require('./config')
-// Create global app object
 const app = express()
 
 require('./config/passport')
@@ -23,12 +22,13 @@ if (config.verbose) {
 }
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
-
 app.use(require('method-override')())
-app.use(express.static(path.join(__dirname, 'frontend', 'build')))
-
+const buildDir = path.join(__dirname, 'frontend', 'build');
+app.use(express.static(buildDir));
+app.get(new RegExp('^(?!' + config.apiPath + '(/|$))'), function (req, res) {
+  res.sendFile(path.join(buildDir, 'index.html'));
+});
 app.use(session({ secret: 'conduit', cookie: { maxAge: 60000 }, resave: false, saveUninitialized: false }))
-
 app.use(require('./routes'))
 
 // 404 handler.

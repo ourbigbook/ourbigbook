@@ -4023,7 +4023,11 @@ Note however that this does not work for tests that run the `cirodown` executabl
       stdio: 'inherit',
     });
 ``
-but not working, related: https://stackoverflow.com/questions/23612087/gulp-target-to-debug-mocha-tests
+but not working, related: https://stackoverflow.com/questions/23612087/gulp-target-to-debug-mocha-tests So for now, we are just printing the command being run as:
+``
+cmd: cd /tmp/cirodowniyLn7v && cirodown --split-headers .
+``
+so you can just re-run it manually with `node inspect`. This works since the `tmp` directory is not deleted in case of failure.
 
 === Overview of files in this repository
 

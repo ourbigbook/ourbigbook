@@ -3094,8 +3094,10 @@ function format_number_approx(num, digits) {
       break;
     }
   }
-  return (num / FORMAT_NUMBER_APPROX_MAP[i].value).toFixed(digits).replace(rx, "$1") + FORMAT_NUMBER_APPROX_MAP[i].symbol;
+  return (num / FORMAT_NUMBER_APPROX_MAP[i].value).toFixed(
+    digits).replace(rx, "$1") + FORMAT_NUMBER_APPROX_MAP[i].symbol;
 }
+exports.format_number_approx = format_number_approx
 
 // Get all possible IDs due to walking up scope resolution
 // into the given ids array.

@@ -2,13 +2,20 @@ import { useRouter } from 'next/router'
 import React from 'react'
 
 import { SignupOrLogin } from 'front'
+import { hasReachedMaxItemCount } from 'front/js';
 import CustomImage from 'front/CustomImage'
 import CustomLink from 'front/CustomLink'
 import { useCtrlEnterSubmit, slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, decapitalize } from 'front'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
 
-const CommentInput = ({ comments, loggedInUser, issueNumber, setComments }) => {
+const CommentInput = ({
+  commentCountByLoggedInUser,
+  comments,
+  loggedInUser,
+  issueNumber,
+  setComments,
+}) => {
   const router = useRouter();
   const slug = slugFromRouter(router)
   const [body, setBody] = React.useState("");
@@ -33,8 +40,10 @@ const CommentInput = ({ comments, loggedInUser, issueNumber, setComments }) => {
     e.preventDefault();
     if (body) {
       setLoading(true);
-      const ret = await webApi.commentCreate(slug, issueNumber, body)
-      setComments(comments => [...comments, ret.data.comment])
+      const {data, status} = await webApi.commentCreate(slug, issueNumber, body)
+      if (status === 200) {
+        setComments(comments => [...comments, data.comment])
+      }
       setLoading(false);
       changeBody('');
     }
@@ -42,6 +51,10 @@ const CommentInput = ({ comments, loggedInUser, issueNumber, setComments }) => {
   useCtrlEnterSubmit(handleSubmit)
   if (!loggedInUser) {
     return <SignupOrLogin to="comment on this issue"/>
+  }
+  const maxReached = hasReachedMaxItemCount(loggedInUser, commentCountByLoggedInUser, 'comments')
+  if (maxReached) {
+    return <>maxReached</>
   }
 
   return (

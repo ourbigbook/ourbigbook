@@ -30,6 +30,7 @@ export interface UserPageProps {
   articlesCount?: number;
   authoredArticleCount: number;
   comments?: CommentType[];
+  commentCountByLoggedInUser?: number;
   issuesCount?: number;
   itemType: string;
   latestIssues?: IssueType[];
@@ -50,6 +51,7 @@ export default function UserPage({
   articlesInSamePage,
   authoredArticleCount,
   comments,
+  commentCountByLoggedInUser,
   issuesCount,
   itemType,
   latestIssues,
@@ -171,6 +173,7 @@ export default function UserPage({
           article,
           articlesInSamePage,
           comments,
+          commentCountByLoggedInUser,
           latestIssues,
           issuesCount,
           loggedInUser,

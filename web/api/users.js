@@ -183,32 +183,51 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
     if (msg) {
       throw new lib.ValidationError( [msg], 403)
     }
-    if (req.body.user) {
+    const userArg = req.body.user
+    if (userArg) {
       // only update fields that were actually passed...
-      if (typeof req.body.user.username !== 'undefined') {
-        //user.username = req.body.user.username
-        if (user.username !== req.body.user.username) {
+      if (typeof userArg.username !== 'undefined') {
+        //user.username = userArg.username
+        if (user.username !== userArg.username) {
           throw new lib.ValidationError(
-            [`username cannot be modified currently, would change from ${user.username} to ${req.body.user.username}`],
+            [`username cannot be modified currently, would change from ${user.username} to ${userArg.username}`],
           )
         }
       }
-      if (typeof req.body.user.email !== 'undefined') {
-        //user.email = req.body.user.email
-        if (user.email !== req.body.user.email) {
+      if (typeof userArg.email !== 'undefined') {
+        //user.email = userArg.email
+        if (user.email !== userArg.email) {
           throw new lib.ValidationError(
-            [`email cannot be modified currently, would change from ${user.email} to ${req.body.user.email}`],
+            [`email cannot be modified currently, would change from ${user.email} to ${userArg.email}`],
           )
         }
       }
-      if (typeof req.body.user.displayName !== 'undefined') {
-        user.displayName = req.body.user.displayName
+      if (typeof userArg.displayName !== 'undefined') {
+        user.displayName = userArg.displayName
       }
-      if (typeof req.body.user.image !== 'undefined') {
-        user.image = req.body.user.image
+      if (typeof userArg.image !== 'undefined') {
+        user.image = userArg.image
       }
-      if (typeof req.body.user.password !== 'undefined') {
-        sequelize.models.User.setPassword(user, req.body.user.password)
+      if (!cant.setUserLimits(loggedInUser)) {
+        const maxArticles = lib.validateParam(userArg, 'maxArticles', {
+          typecast: front.typecastInteger,
+          validators: [front.isPositiveInteger],
+          defaultValue: undefined,
+        })
+        if (maxArticles !== undefined) {
+          user.maxArticles = maxArticles
+        }
+        const maxArticleSize = lib.validateParam(userArg, 'maxArticleSize', {
+          typecast: front.typecastInteger,
+          validators: [front.isPositiveInteger],
+          defaultValue: undefined,
+        })
+        if (maxArticleSize !== undefined) {
+          user.maxArticleSize = maxArticleSize
+        }
+      }
+      if (typeof userArg.password !== 'undefined') {
+        sequelize.models.User.setPassword(user, userArg.password)
       }
       await user.save()
     }

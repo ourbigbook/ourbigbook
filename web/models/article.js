@@ -1515,7 +1515,7 @@ LIMIT ${limit}` : ''}
     })
     for (const article of articles) {
       if (opts.log) {
-        console.log(`authorId=${article.file.authorId} title=${article.titleRender}`);
+        console.log(`authorId=${article.file.authorId} title=${article.file.titleSource}`);
       }
       await article.rerender()
     }

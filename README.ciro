@@ -272,7 +272,7 @@ HTML is randomly limited to \c[h6], so Cirodown just renders higher levels as an
 
 \h[12][My h12]
 
-\h[13][My h12]
+\h[13][My h13]
 
 \h[3][Table of contents \c[[\toc]]]
 {id=table-of-contents}

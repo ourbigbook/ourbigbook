@@ -7,7 +7,10 @@ if (typeof performance === 'undefined') {
   // Fuck, I can't find how to make this browser/node portable more nicely.
   // https://github.com/nodejs/node/issues/28635
   // https://github.com/browserify/perf-hooks-browserify
-  globals.performance = require('perf_hooks').performance;
+  //
+  // eval('require') because react-scripts build from web/
+  // calls webpack, which for some reason cannot find it.
+  globals.performance = eval('require')('perf_hooks').performance;
 } else {
   globals.performance = performance;
 }

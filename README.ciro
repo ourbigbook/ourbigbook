@@ -40,7 +40,7 @@ cd cirodown-template
 cirodown .
 ]]
 
-Convert the master README.ciro and \x[includes][includes] into a single HTML page and view it:
+Render all \c[.ciro] files form the master of this project to separate files:
 
 \C[[
 git clone https://github.com/cirosantilli/cirodown
@@ -51,11 +51,17 @@ npm link cirodown
 xdg-open index.html
 ]]
 
-or render instead as one separate HTML pages per include:
+or render README.ciro and all includes \x[includes][includes] into a single HTML page and view it:
 
 \C[[
 ./cirodown .
 xdg-open index.html
+]]
+
+or render instead as one fully offline standalone HTML file that can be given directly to readers with \x[html-embed]:
+
+\C[[
+./cirodown --html-single-page README.ciro > index.html
 ]]
 
 The \c[npm link] commands allow you to make changes to the code without re-installing the package all the time for development! Try hacking \a[cirodown] to see it. Just remember that if you add a new dependency, you must redo the symlinking business:
@@ -1668,6 +1674,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[link from first toplevel header of document to parents determined by includes]
 \l[proper reporting of which source file error is in when including, add a source field to the AST in addition to line and column]
 \l[auto-toc after the first paragraph]
+\l[on publish website, create a mechanism to share the auto-generated default main.scss CSS across all pages via @import, currently just embedding]
 
 \h[2][Related projects]
 

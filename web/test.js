@@ -179,10 +179,15 @@ it('api: create an article and see it on global feed', async () => {
   await testApp(async (test) => {
     let data, status, article
 
-    // Create user.
+    // Cannot create article without login.
+    article = createArticleArg({ i: 0 })
+    ;({data, status} = await test.webApi.articleCreate(article))
+    assert.strictEqual(status, 401)
+
+    // Create user and login.
     const user = await test.createUserApi(0)
 
-    // Create article.
+    // Create article with POST.
     article = createArticleArg({ i: 0 })
     ;({data, status} = await test.webApi.articleCreate(article))
     assert.strictEqual(status, 200)
@@ -190,13 +195,24 @@ it('api: create an article and see it on global feed', async () => {
     assert.strictEqual(articles[0].title, 'Title 0')
     assert.strictEqual(articles.length, 1)
 
+    // Recreating an article with POST is not allowed.
+    article = createArticleArg({ i: 0, body: 'Body 1' })
+    ;({data, status} = await test.webApi.articleCreate(article))
+    assert.strictEqual(status, 422)
+
+    // Access the article directly
+    ;({data, status} = await test.webApi.articleGet('user0/title-0'))
+    assert.strictEqual(status, 200)
+    assert.strictEqual(data.article.title, 'Title 0')
+    assert.match(data.article.render, /Body 0/)
+
     // See it on global feed.
     ;({data, status} = await test.webApi.articleAll())
     assert.strictEqual(status, 200)
     sortByKey(data.articles, 'slug')
     assertRows(data.articles, [
       { title: 'Index', slug: 'user0' },
-      { title: 'Title 0', slug: 'user0/title-0' },
+      { title: 'Title 0', slug: 'user0/title-0', render: /Body 0/ },
     ])
 
     if (testNext) {
@@ -239,6 +255,31 @@ it('api: create an article and see it on global feed', async () => {
       assert.strictEqual(status, 200)
       test.enableToken()
     }
+
+    // Create article with PUT.
+    article = createArticleArg({ i: 1 })
+    ;({data, status} = await test.webApi.articleCreateOrUpdate(article))
+    assert.strictEqual(status, 200)
+    articles = data.articles
+    assert.strictEqual(articles[0].title, 'Title 1')
+    assert.strictEqual(articles.length, 1)
+
+    // Access the article directly
+    ;({data, status} = await test.webApi.articleGet('user0/title-1'))
+    assert.strictEqual(status, 200)
+    assert.strictEqual(data.article.title, 'Title 1')
+    assert.match(data.article.render, /Body 1/)
+
+    // Update article with PUT.
+    article = createArticleArg({ i: 1, body: 'Body 2' })
+    ;({data, status} = await test.webApi.articleCreateOrUpdate(article))
+    assert.strictEqual(status, 200)
+
+    // Access the article directly
+    ;({data, status} = await test.webApi.articleGet('user0/title-1'))
+    assert.strictEqual(status, 200)
+    assert.strictEqual(data.article.title, 'Title 1')
+    assert.match(data.article.render, /Body 2/)
   }, { canTestNext: true })
 })
 
@@ -304,7 +345,7 @@ Body 0 0 hacked.
 
 Body 0 1.
 `})
-    ;({data, status} = await test.webApi.articleUpdate(article, 'user0/title-0'))
+    ;({data, status} = await test.webApi.articleCreateOrUpdate(article, 'user0/title-0'))
     assert.strictEqual(status, 200)
     assertRows(data.articles, [
       { title: 'Title 0', slug: 'user0/title-0' },

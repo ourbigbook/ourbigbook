@@ -65,9 +65,6 @@ router.get('/feed', auth.required, async function(req, res, next) {
       offset = Number(req.query.offset)
     }
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
-    if (!user) {
-      return res.sendStatus(401)
-    }
     const order = getOrder(req)
     const {count: articlesCount, rows: articles} = await user.findAndCountArticlesByFollowed(offset, limit, order)
     const articlesJson = await Promise.all(articles.map((article) => {
@@ -82,75 +79,67 @@ router.get('/feed', auth.required, async function(req, res, next) {
   }
 })
 
-// create article
+// Create File and corrsponding Articles. The File must not already exist.
 router.post('/', auth.required, async function(req, res, next) {
   try {
-    const sequelize = req.app.get('sequelize')
-    const user = await sequelize.models.User.findByPk(req.payload.id);
-    if (!user) {
-      return res.sendStatus(401)
-    }
-    const articleData = req.body.article
-    if (!articleData) {
-      throw new lib.ValidationError({ article: 'cannot be empty' })
-    }
-    if (!articleData.title) {
-      throw new lib.ValidationError({ article: { title: 'cannot be empty' } })
-    }
-    const articles = await convert.convert({
-      author: user,
-      body: articleData.body,
-      sequelize,
-      title: articleData.title,
-    })
-    return res.json({ articles: await Promise.all(articles.map(article => article.toJson(user))) })
+    return await createOrUpdateArticle(req, res, { forceNew: true })
   } catch(error) {
     next(error);
   }
 })
 
-// update article
+// Create or Update File and corrsponding Articles. The File must not already exist.
 router.put('/', auth.required, async function(req, res, next) {
   try {
-    const sequelize = req.app.get('sequelize')
-    const article = await lib.getArticle(req, res)
-    const user = await sequelize.models.User.findByPk(req.payload.id);
-    if (article.file.authorId.toString() === req.payload.id.toString()) {
-      const articleData = req.body.article
-      if (articleData) {
-        if (typeof articleData.title !== 'undefined') {
-          if (!articleData.title) {
-            throw new lib.ValidationError('title cannot be empty')
-          }
-          if (articleData.title !== article.file.title) {
-            // https://github.com/cirosantilli/ourbigbook/issues/228
-            throw new lib.ValidationError(`article ID change not implemented, create a new one instead, would change from ${article.file.title} to ${articleData.title}`)
-          }
-        }
-      }
-      const articles = await convert.convert({
-        author: user,
-        body: articleData.body,
-        sequelize,
-        title: articleData.title,
-      })
-      return res.json({ articles: await Promise.all(articles.map(article => article.toJson(user))) })
-    } else {
-      return res.sendStatus(403)
-    }
+    return await createOrUpdateArticle(req, res, { forceNew: false })
   } catch(error) {
     next(error);
   }
 })
+
+async function createOrUpdateArticle(req, res, opts) {
+  const sequelize = req.app.get('sequelize')
+  const user = await sequelize.models.User.findByPk(req.payload.id);
+  const articleData = req.body.article
+  if (!articleData) {
+    throw new lib.ValidationError({ article: 'cannot be empty' })
+  }
+  if (!articleData.title) {
+    throw new lib.ValidationError({ article: { title: 'cannot be empty' } })
+  }
+  const articles = await convert.convert({
+    author: user,
+    body: articleData.body,
+    forceNew: opts.forceNew,
+    sequelize,
+    title: articleData.title,
+  })
+  return res.json({ articles: await Promise.all(articles.map(article => article.toJson(user))) })
+}
+
+//// Create File and corrsponding Articles. The File must not already exist.
+//router.post('/', auth.required, async function(req, res, next) {
+//  try {
+//    return createOrUpdateArticle(req, res, { forceNew: true })
+//  } catch(error) {
+//    next(error);
+//  }
+//})
+//
+//// Create or Update File and corrsponding Articles. The File must not already exist.
+//router.put('/', auth.required, async function(req, res, next) {
+//  try {
+//    return createOrUpdateArticle(req, res, { forceNew: false })
+//  } catch(error) {
+//    next(error);
+//  }
+//})
 
 //// delete article
 //router.delete('/', auth.required, async function(req, res, next) {
 //  try {
 //    const article = await lib.getArticle(req, res)
 //    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-//    if (!user) {
-//      return res.sendStatus(401)
-//    }
 //    if (article.isToplevelIndex(user)) {
 //      throw new lib.ValidationError('Cannot delete the toplevel index')
 //    }
@@ -169,12 +158,6 @@ router.put('/', auth.required, async function(req, res, next) {
 // Likes.
 
 async function validateLike(req, res, user, article, isLike) {
-  if (!user) {
-    throw new lib.ValidationError(
-      ['Login required'],
-      401,
-    )
-  }
   if (!article) {
     throw new lib.ValidationError(
       ['Article not found'],

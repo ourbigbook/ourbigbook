@@ -2830,9 +2830,11 @@ function convert_init_context(options={}, extra_returns={}) {
     perf_prev: 0,
     katex_macros: Object.assign({}, options.katex_macros),
     in_split_headers: false,
+    in_parse: false,
     errors: [],
     extra_returns: extra_returns,
     include_path_set: new Set(options.include_path_set),
+    in_header: false,
     macros: macro_list_to_macros(),
     options: options,
     root_relpath_scope_shift: '',
@@ -3704,9 +3706,10 @@ exports.output_path_parts = output_path_parts;
  */
 async function parse(tokens, options, context, extra_returns={}) {
   perf_print(context, 'parse_start')
+  context.in_parse = true
   extra_returns.errors = [];
   let state = {
-    extra_returns: extra_returns,
+    extra_returns,
     i: 0,
     macros: context.macros,
     options: options,
@@ -5038,6 +5041,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     }
   }
 
+  context.in_parse = false
   perf_print(context, 'parse_end')
   return ast_toplevel;
 }
@@ -5477,7 +5481,13 @@ function toc_id(target_id_ast, context) {
 }
 
 function unconvertible(ast, context) {
-  throw new Error(`programmer error, macro "${ast.macro_name}" must never render`);
+  const msg = `macro "${ast.macro_name}" must never render`
+  if (context.in_parse) {
+    render_error(context, msg, ast.source_location);
+    return error_message_in_output(msg, context)
+  } else {
+    throw new Error(msg);
+  }
 }
 
 function url_basename(str) {
@@ -6496,6 +6506,15 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
+      if (context.in_header) {
+        // Previously was doing an infinite loop when rendering the parent header.
+        // But not valid HTML, so I don't think it is worth allowing at all:
+        // https://stackoverflow.com/questions/17363465/is-nesting-a-h2-tag-inside-another-header-with-h1-tag-semantically-wrong/71130770#71130770
+        const message = `cannot have a header inside another`;
+        render_error(context, message, ast.source_location);
+        return error_message_in_output(message, context);
+      }
+      context = clone_and_set(context, 'in_header', true)
       const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
       const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
       if (ast.validation_output.synonym.boolean) {

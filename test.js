@@ -2264,6 +2264,13 @@ assert_error('cross reference infinite recursion with explicit IDs fails gracefu
 == \\x[h1]
 {id=h2}
 `, 1, 3);
+assert_error('cross reference infinite recursion to self IDs fails gracefully',
+  `= \\x[tmp]
+`, 1, 3, 'tmp.ciro',
+  {
+    input_path_noext: 'tmp',
+  }
+);
 assert_convert_ast('cross reference from image to previous header with x content without image ID works',
   `= ab
 
@@ -4024,7 +4031,6 @@ bb
   3, 1, 'include-with-error.ciro',
   include_opts
 );
-
 const circular_entry = `= notindex
 
 \\Include[include-circular]
@@ -4075,6 +4081,39 @@ assert_error('include circular dependency 1 -> 2 <-> 3',
 //  ],
 //  include_opts
 //);
+assert_error('empty include in header title fails gracefully',
+  // https://github.com/cirosantilli/cirodown/issues/195
+  `= tmp
+
+== \\Include
+`,
+  3, 4
+);
+assert_error('header inside header fails gracefully',
+  `= \\H[2]
+`,
+  1, 3, 'tmp.ciro',
+  {
+    input_path_noext: 'tmp',
+  }
+);
+
+assert_error('include to file that exists in header title fails gracefully',
+  // https://github.com/cirosantilli/cirodown/issues/195
+  `= tmp
+
+== \\Include[tmp2]
+`,
+  3, 4, 'tmp.ciro',
+  {
+    filesystem: {
+      'tmp2.ciro': `= Tmp2
+`
+    },
+    convert_before: ['tmp2.ciro'],
+    input_path_noext: 'tmp',
+  }
+);
 assert_error('include to file that does not exist fails gracefully',
   `= h1
 

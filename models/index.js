@@ -16,6 +16,9 @@ function addModels(sequelize) {
   Ref.belongsTo(Id, { as: 'from', foreignKey: 'from_id', targetKey: 'idid', constraints: false })
   Id.hasMany(File, { foreignKey: 'toplevel_id', sourceKey: 'idid', constraints: false  })
   File.belongsTo(Id, { foreignKey: 'toplevel_id', targetKey: 'idid', constraints: false })
+
+  // Needed for finding duplicates.
+  Id.hasMany(Id, { as: 'duplicate', foreignKey: 'idid', sourceKey: 'idid', constraints: false });
 }
 
 module.exports = {

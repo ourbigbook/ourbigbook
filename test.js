@@ -103,6 +103,9 @@ function assert_convert_ast(
       // before the main conversion to build up the cross-file reference database.
       options.convert_before = [];
     }
+    if (!('duplicate_ids' in options)) {
+      options.duplicate_ids = []
+    }
     if (!('filesystem' in options)) {
       // Passed to cirodown.convert.
       options.filesystem = default_filesystem;
@@ -198,6 +201,21 @@ function assert_convert_ast(
       await new_convert_opts.id_provider.update(extra_returns, sequelize)
       await new_convert_opts.file_provider.update(new_convert_opts.input_path, extra_returns)
     }
+
+    // Duplicate IDs checks.
+    const duplicate_rows = await sequelize.models.Id.findDuplicates()
+    for (let i = 0; i < duplicate_rows.length; i++) {
+      const duplicate_row = duplicate_rows[i]
+      const duplicate_id_expect = options.duplicate_ids[i]
+      const ast = cirodown.AstNode.fromJSON(duplicate_row.ast_json)
+      const source_location = ast.source_location
+      assert.strictEqual(duplicate_row.idid, duplicate_id_expect[0])
+      assert.strictEqual(duplicate_row.path, duplicate_id_expect[1])
+      assert.strictEqual(source_location.line, duplicate_id_expect[2])
+      assert.strictEqual(source_location.column, duplicate_id_expect[3])
+    }
+    assert.strictEqual(duplicate_rows.length, options.duplicate_ids.length)
+
     const has_subset_extra_returns = {fail_reason: ''};
     let is_subset;
     let content;
@@ -630,11 +648,21 @@ function xpath_html(html, xpathStr) {
 
 function update_filesystem(filesystem, tmpdir) {
   for (const relpath in filesystem) {
-    const dirpath = path.join(tmpdir, path.parse(relpath).dir);
-    if (!fs.existsSync(dirpath)) {
-      fs.mkdirSync(dirpath);
+    const file_content = filesystem[relpath]
+    const file_path = path.join(tmpdir, relpath)
+    if (
+      // This special value means deletion.
+      file_content === null
+    ) {
+      fs.unlinkSync(file_path)
+    } else {
+      // This is the string that will be written to the file.
+      const dirpath = path.join(tmpdir, path.parse(relpath).dir);
+      if (!fs.existsSync(dirpath)) {
+        fs.mkdirSync(dirpath);
+      }
+      fs.writeFileSync(file_path, file_content);
     }
-    fs.writeFileSync(path.join(tmpdir, relpath), filesystem[relpath]);
   }
 }
 
@@ -4539,18 +4567,21 @@ assert_error('id conflict with previous id on the same file',
     input_path_noext: 'index',
   },
 );
-assert_error('id conflict with previous id on another file simple',
+assert_convert_ast('id conflict with id on another file simple',
   // https://github.com/cirosantilli/cirodown/issues/201
   `= index
 
 == notindex h2
 `,
-  3, 1, 'index.ciro',
+  undefined,
   {
     convert_before: ['notindex.ciro'],
-    error_message: cirodown.duplicate_id_error_message('notindex-h2', 'notindex.ciro', 3, 1),
+    duplicate_ids: [
+      ['notindex-h2', 'index.ciro', 3, 1],
+      ['notindex-h2', 'notindex.ciro', 3, 1],
+    ],
     filesystem: {
-     'notindex.ciro': `= notindex
+      'notindex.ciro': `= notindex
 
 == notindex h2
 `,
@@ -4558,17 +4589,37 @@ assert_error('id conflict with previous id on another file simple',
     input_path_noext: 'index'
   }
 );
-assert_error('id conflict with previous id on another file where conflict header has a child heder',
+assert_executable('executable: id conflict with id on another file simple',
+  {
+    args: ['.'],
+    filesystem: {
+      'index.ciro': `= index
+
+== notindex h2
+`,
+      'notindex.ciro': `= notindex
+
+== notindex h2
+`,
+    },
+    expect_exit_status: 1,
+  }
+);
+assert_convert_ast('id conflict with id on another file where conflict header has a child heder',
   // Bug introduced at ef9e2445654300c4ac41e1d06d3d2a1889dd0554
   `= tmp
 
 == aa
 `,
-  3, 1, 'tmp.ciro',
+  undefined,
   {
     convert_before: ['tmp2.ciro'],
+    duplicate_ids: [
+      ['aa', 'tmp.ciro', 3, 1],
+      ['aa', 'tmp2.ciro', 3, 1],
+    ],
     filesystem: {
-     'tmp2.ciro': `= tmp2
+      'tmp2.ciro': `= tmp2
 
 == aa
 
@@ -6176,7 +6227,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: IDs are removed from the database after you removed them from the source file and convert the directory',
+  'executable: IDs are removed from the database after you removed them from the source file and convert the directory one way',
   {
     args: ['.'],
     filesystem: {
@@ -6198,6 +6249,92 @@ assert_executable(
 `,
         }
       },
+    ],
+  }
+);
+assert_executable(
+  'executable: IDs are removed from the database after you removed them from the source file and convert the directory reverse',
+  {
+    args: ['.'],
+    filesystem: {
+      'README.ciro': `= Index
+
+== h2
+`,
+      'notindex.ciro': `= Notindex
+
+== h2
+`,
+    },
+    pre_exec: [
+      ['cirodown', ['notindex.ciro']],
+      // Remove h2 from README.ciro
+      {
+        filesystem_update: {
+          'notindex.ciro': `= Index
+`,
+        }
+      },
+    ],
+  }
+);
+assert_executable(
+  'executable: IDs are removed from the database after you delete the source file they were present in and convert the directory',
+  {
+    args: ['.'],
+    filesystem: {
+      'README.ciro': `= Index
+`,
+      'notindex.ciro': `= Notindex
+
+== h2
+`,
+    },
+    pre_exec: [
+      ['cirodown', ['.']],
+      {
+        filesystem_update: {
+          'README.ciro': `= Index
+
+== h2
+`,
+          'notindex.ciro': null,
+        }
+      },
+    ],
+  }
+);
+assert_executable(
+  'executable: when invoking with a single file timestamps are automatically ignored and render is forced',
+  {
+    args: ['notindex.ciro'],
+    expect_filesystem_xpath: {
+      'notindex.html': [
+        `//x:a[@href='index.html#h2' and text()='h2 hacked']`,
+      ],
+    },
+    filesystem: {
+      'README.ciro': `= Index
+
+== h2
+`,
+      'notindex.ciro': `= Notindex
+
+\\x[h2]
+`,
+    },
+    pre_exec: [
+      ['cirodown', ['.']],
+      {
+        filesystem_update: {
+          'README.ciro': `= Index
+
+== h2 hacked
+{id=h2}
+`,
+        }
+      },
+      ['cirodown', ['README.ciro']],
     ],
   }
 );

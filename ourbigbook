@@ -328,10 +328,10 @@ async function convert_input(input, ourbigbook_options, nonOurbigbookOptions={})
       includes_str += `@import "${include}";\n`;
     }
     for (const script of scripts) {
-      scripts_str += `<script src="${script}"></script>\n`;
+      scripts_str += `<script src="${script}"></script>\n`
     }
-    new_options.template_vars.style = `\n${includes_str}`;
-    new_options.template_vars.post_body = `${scripts_str}`;
+    new_options.template_vars.style = `\n${includes_str}`
+    new_options.template_vars.post_body = `${scripts_str}`
     new_options.template_styles_relative = template_includes_relative;
     new_options.template_scripts_relative = template_scripts_relative;
   }
@@ -1420,9 +1420,11 @@ if (cli.helpMacros) {
     },
     render: cli.render,
     split_headers: split_headers,
-    template_vars: {},
+    template_vars: {
+      publishTargetIsWebsite: false,
+    },
     unsafe_xss: cli.unsafeXss,
-  };
+  }
 
   ourbigbook_options.log = {};
   const nonOurbigbookOptions_log = {};
@@ -2216,6 +2218,7 @@ if (cli.helpMacros) {
 
         if (publish) {
           // Clone the source to ensure that only git tracked changes get built and published.
+          ourbigbook_options.template_vars.publishTargetIsWebsite = true
           if (!isInGitRepo) {
             cli_error('--publish must point to a path inside a git repository');
           }

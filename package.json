@@ -1,9 +1,10 @@
 {
   "dependencies": {
-    "commander": "3.0.2"
+    "commander": "3.0.2",
+    "katex": "0.11.1"
   },
   "devDependencies": {
-    "mocha": "0.10.2",
+    "mocha": "6.2.2",
     "mocha-list-tests": "1.0.2"
   },
   "scripts": {

@@ -3453,7 +3453,7 @@ assert_executable(
 
 \\x[notindex-h2][toplevel to notindex h2]
 
-\\x[my-image-h2][toplevel to my image h2]
+\\x[image-my-image-h2][toplevel to my image h2]
 
 == h2
 
@@ -3465,9 +3465,9 @@ assert_executable(
 
 \\x[notindex-h2][h2 to notindex h2]
 
-\\x[my-image-h2][h2 to my image h2]
+\\x[image-my-image-h2][h2 to my image h2]
 
-\\Image[img.jpg]{tltle=My image h2}
+\\Image[img.jpg]{title=My image h2}
 `,
       'notindex.ciro': `= Notindex
 
@@ -3479,7 +3479,7 @@ assert_executable(
 
 \\x[notindex-h2][notindex to notindex h2]
 
-\\x[my-image-h2][notindex to my image h2]
+\\x[image-my-image-h2][notindex to my image h2]
 
 == Notindex h2
 
@@ -3491,7 +3491,7 @@ assert_executable(
 
 \\x[notindex-h2][notindex h2 to notindex h2]
 
-\\x[my-image-h2][notindex to my image h2]
+\\x[image-my-image-h2][notindex to my image h2]
 `,
     },
     expect_filesystem_xpath: {

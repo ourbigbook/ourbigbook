@@ -380,6 +380,140 @@ To also show the section auto-generated number as in "Section X.Y My title" we a
 Compare \x[image-my-test-image]{full=0} vs \x[image-my-test-image]{full=1}.
 ]]
 
+==== Cross reference `full` argument Internal cross file references
+{id=cross-reference-full-argument-internal-cross-file-references}
+
+For example in the following \x[internal-cross-file-references][internal cross file reference]:
+\cirodown_example[[
+\x[h2-in-not-the-readme]{full}.
+]]
+we get just something like:
+``
+Section "h2 in not the readme"
+``
+instead of:
+``
+Section 1.2 "h2 in not the readme"
+``
+This is because the number "Section 1.2" might already have been used in the current page, leading to confusion.
+
+==== Cross reference title inflection
+
+A common usage pattern is that we want to use \x[headers][header] titles in \x[cross-reference-full-argument][non-full] \x[internal-cross-references] as the definition of a concept without repeating the title, for example:
+``
+== Dog
+
+Cute animal.
+
+\x[cats][Cats] are its natural enemies.
+
+== Cats
+
+This is the natural enemy of a \x[dog][dog].
+
+\x[dog][Dogs] are cute, but they are still the enemy.
+
+One example of a cat is \x[felix-the-cat].
+
+=== Felix the Cat
+
+Felix is not really a \x[cats][cat], just a carton character.
+``
+
+However, word https://en.wikipedia.org/wiki/Inflection[inflection] makes it much harder to avoid retyping the definition again.
+
+For example, in the previous example, without any further intelligent behaviour we would be forced to re-type `\x[dog][dog]` instead of the desired `\x[dog]`.
+
+Cirodown can take care of some inflection cases for you.
+
+For capitalization, both headers and cross reference macros have the `c` \x[boolean-named-arguments][boolean named argument] which stands for "capitalized":
+* for headers, `c` means that the header title has fixed capitalization as given in the title, i.e.
+  * if the title has a capital first character, it will always show as a capital, as is the case for most https://en.wikipedia.org/wiki/Proper_noun[proper noun]
+  * if it is lower case, it will also always remain lower case, as is the case for some rare proper nouns, notably https://en.wikipedia.org/wiki/Arm_Holdings[the name of certain companies]
+
+  This means that for such headers, `c` in the `x` has no effect. Maybe we should give an error in that case. But lazy now, send PR.
+* for cross reference macros, `c` means that the first letter of the title should be capitalized.
+
+  Using this option is required when you are starting a sentence with a non-proper noun.
+
+TODO: handle pluralization, e.g. https://github.com/blakeembrey/pluralize
+
+With those rules in mind, the previous Cirodown example can be written with less repetition as:
+``
+== Dog
+
+Cute animal.
+
+\x[cats]{c} are its natural enemies.
+
+== Cats
+
+This is the natural enemy of a \x[dog].
+
+\x[dog][Dogs] are cute, but they are still the enemy.
+
+One example of a cat is \x[Felix the Cat].
+
+=== Felix the Cat
+{c}
+
+Felix is not really a \x[cats][cat], just a carton character.
+``
+
+Now for a live example for quick and dirty interactive testing.
+
+===== Cross reference title inflection example
+
+\cirodown_example[[
+\x[inflection-example-not-proper]
+]]
+
+\cirodown_example[[
+\x[inflection-example-not-proper]{c}
+]]
+
+\cirodown_example[[
+\x[inflection-example-not-proper]{full}
+]]
+
+\cirodown_example[[
+\x[inflection-example-proper]
+]]
+
+\cirodown_example[[
+\x[inflection-example-proper]{c}
+]]
+
+\cirodown_example[[
+\x[inflection-example-not-proper-lower]
+]]
+
+\cirodown_example[[
+\x[inflection-example-not-proper-lower]{c}
+]]
+
+\cirodown_example[[
+\x[inflection-example-proper-lower]
+]]
+
+\cirodown_example[[
+\x[not-readme]
+]]
+
+\cirodown_example[[
+\x[not-readme]{c}
+]]
+
+====== Inflection example not-proper
+
+====== Inflection example proper
+{c}
+
+====== inflection example not-proper lower
+
+====== inflection example proper lower
+{c}
+
 === `\x` within `title` restrictions
 {id=x-within-title-restrictions}
 
@@ -469,10 +603,11 @@ Reference to the first header of another file that is a second inclusion:
 \x[included-by-not-readme]
 ]]
 
-Reference to another header of another file, with \x[cross-reference-full-argument] equals `full`:
+Reference to another header of another file, with \x[cross-reference-full-argument][`full`]:
 \cirodown_example[[
 \x[h2-in-not-the-readme]{full}.
 ]]
+Note that when `full` is used with references in another file in \x[html-single-page][multi page mode], the number is not rendered as explained at: \x[cross-reference-full-argument-internal-cross-file-references]{full}.
 
 Reference to an image in another file:
 \cirodown_example[[
@@ -2489,7 +2624,6 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 * parse_error: add in document error message, currently only to stderr
 * on the AST, put contents of headers inside headers
 * auto-toc after the first paragraph
-* capitalization property of headers
 
 == Related projects
 

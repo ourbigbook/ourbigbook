@@ -1,9 +1,9 @@
 // Shared between front and backend.
 
-const cirodown = require('cirodown')
+const ourbigbook = require('ourbigbook')
 
 function modifyEditorInput(title, body) {
-  let ret = cirodown.INSANE_HEADER_CHAR + ' ' + title
+  let ret = ourbigbook.INSANE_HEADER_CHAR + ' ' + title
   // Append title to body. Add a newline if the body doesn's start
   // with a header argument like `{c}` in:
   //
@@ -11,7 +11,7 @@ function modifyEditorInput(title, body) {
   // {c}
   if (body) {
     ret += '\n'
-    if (body[0] !== cirodown.START_NAMED_ARGUMENT_CHAR) {
+    if (body[0] !== ourbigbook.START_NAMED_ARGUMENT_CHAR) {
       ret += '\n'
     }
     ret += body

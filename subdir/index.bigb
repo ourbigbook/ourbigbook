@@ -1,0 +1,19 @@
+= subdir index
+
+This file is in a subdirectory.
+
+TODO
+
+\x[h2]
+
+Link to internal "ourbigbook" section: \x[ourbigbook]
+
+Link to toplevel "ourbigbook" section: \x[/ourbigbook]
+
+\Include[included-by-index]
+
+== h2
+
+TODO
+
+== ourbigbook

@@ -1,7 +1,7 @@
 const path = require('path')
 
-const cirodown = require('cirodown')
-const cirodown_nodejs_webpack_safe = require('cirodown/nodejs_webpack_safe')
+const ourbigbook = require('ourbigbook')
+const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 const { DataTypes, Op } = require('sequelize')
 
 const { convertOptions } = require('../front/config')
@@ -12,7 +12,7 @@ const {
   remove_duplicates_sorted_array,
   SqliteFileProvider,
   SqliteIdProvider,
-} = require('cirodown/nodejs_webpack_safe')
+} = require('ourbigbook/nodejs_webpack_safe')
 
 module.exports = (sequelize) => {
   const id_provider = new SqliteIdProvider(sequelize)
@@ -79,19 +79,19 @@ module.exports = (sequelize) => {
     const article = this
     const extra_returns = {};
     const author = await article.getAuthor({ transaction })
-    const id = cirodown.title_to_id(article.title)
+    const id = ourbigbook.title_to_id(article.title)
     article.body = article.body.replace(/\n+$/, '')
     const input = modifyEditorInput(article.title, article.body)
-    const input_path = `${cirodown.AT_MENTION_CHAR}${author.username}/${id}${cirodown.CIRODOWN_EXT}`
-    article.render = await cirodown.convert(
+    const input_path = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${id}${ourbigbook.OURBIGBOOK_EXT}`
+    article.render = await ourbigbook.convert(
       input,
       Object.assign({
         id_provider,
         file_provider,
         input_path,
-        read_include: cirodown_nodejs_webpack_safe.read_include({
+        read_include: ourbigbook_nodejs_webpack_safe.read_include({
           exists: async (inpath) => {
-            const suf = cirodown.Macro.HEADER_SCOPE_SEPARATOR + cirodown.INDEX_BASENAME_NOEXT
+            const suf = ourbigbook.Macro.HEADER_SCOPE_SEPARATOR + ourbigbook.INDEX_BASENAME_NOEXT
             let idid
             if (inpath.endsWith(suf)) {
               idid = inpath.slice(0, -suf.length)
@@ -102,7 +102,7 @@ module.exports = (sequelize) => {
           },
           // Only needed for --embed-includes, which is not implemented on the dynamic website for now.
           read: (inpath) => '',
-          path_sep: cirodown.Macro.HEADER_SCOPE_SEPARATOR,
+          path_sep: ourbigbook.Macro.HEADER_SCOPE_SEPARATOR,
           ext: '',
         }),
         remove_leading_at: true,
@@ -123,7 +123,7 @@ module.exports = (sequelize) => {
       render: true,
       transaction,
     })
-    const check_db_errors = await cirodown_nodejs_webpack_safe.check_db(
+    const check_db_errors = await ourbigbook_nodejs_webpack_safe.check_db(
       sequelize,
       [input_path],
     )
@@ -131,9 +131,9 @@ module.exports = (sequelize) => {
       throw new ValidationError(check_db_errors, 422)
     }
     // https://github.com/sequelize/sequelize/issues/8586#issuecomment-422877555
-    article.topicId = idid.slice(cirodown.AT_MENTION_CHAR.length + author.username.length + 1)
+    article.topicId = idid.slice(ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1)
     if (!article.slug) {
-      article.slug = `${idid.slice(cirodown.AT_MENTION_CHAR.length)}`
+      article.slug = `${idid.slice(ourbigbook.AT_MENTION_CHAR.length)}`
     }
   }
 

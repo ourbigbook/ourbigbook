@@ -3,8 +3,8 @@ const path = require('path')
 
 const { DatabaseError, Sequelize, DataTypes } = require('sequelize')
 
-const cirodown_models = require('cirodown/models')
-const cirodown_nodejs_webpack_safe = require('cirodown/nodejs_webpack_safe');
+const ourbigbook_models = require('ourbigbook/models')
+const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
 
 const config = require('../front/config')
 
@@ -13,7 +13,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
     {
       logging: config.verbose ? console.log : false,
     },
-    cirodown_nodejs_webpack_safe.db_options,
+    ourbigbook_nodejs_webpack_safe.db_options,
   );
   let sequelize;
   if (config.isProduction || config.postgres) {
@@ -100,7 +100,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
   });
   User.hasMany(Comment, {foreignKey: 'authorId'});
 
-  cirodown_models.addModels(sequelize)
+  ourbigbook_models.addModels(sequelize)
 
   return sequelize;
 }

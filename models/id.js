@@ -1,4 +1,4 @@
-const cirodown = require('../index')
+const ourbigbook = require('../index')
 
 module.exports = (sequelize) => {
   const { DataTypes, Op } = sequelize.Sequelize
@@ -78,14 +78,14 @@ module.exports = (sequelize) => {
         as: 'from',
         required: true,
         where: {
-          type: sequelize.models.Ref.Types[cirodown.REFS_TABLE_X_TITLE_TITLE],
+          type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_TITLE_TITLE],
         },
         include: {
           model: sequelize.models.Id,
           as: 'to',
           required: true,
           where: {
-            macro_name: { [Op.ne]: cirodown.Macro.HEADER_MACRO_NAME },
+            macro_name: { [Op.ne]: ourbigbook.Macro.HEADER_MACRO_NAME },
           }
         },
       },

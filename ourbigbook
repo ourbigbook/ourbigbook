@@ -16,12 +16,12 @@ const is_installed_globally = require('is-installed-globally');
 const { Liquid } = require('liquidjs');
 const { Op, Sequelize } = require('sequelize')
 
-const cirodown = require('cirodown');
-const cirodown_nodejs = require('cirodown/nodejs');
-const cirodown_nodejs_webpack_safe = require('cirodown/nodejs_webpack_safe');
+const ourbigbook = require('ourbigbook');
+const ourbigbook_nodejs = require('ourbigbook/nodejs');
+const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
 
-const CIRODOWN_JSON_BASENAME = 'cirodown.json';
-const CIRODOWN_TEX_BASENAME = 'cirodown.tex';
+const OURBIGBOOK_JSON_BASENAME = 'ourbigbook.json';
+const OURBIGBOOK_TEX_BASENAME = 'ourbigbook.tex';
 const LOG_OPTIONS = new Set([
   'ast',
   'ast-simple',
@@ -38,62 +38,62 @@ const DEFAULT_IGNORE_BASENAMES = [
   'node_modules',
   'package-lock.json',
   'package.json',
-  cirodown_nodejs_webpack_safe.TMP_DIRNAME,
-  cirodown_nodejs.PACKAGE_SASS_BASENAME,
+  ourbigbook_nodejs_webpack_safe.TMP_DIRNAME,
+  ourbigbook_nodejs.PACKAGE_SASS_BASENAME,
 ];
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
 const SQLITE_MAGIC_MEMORY_NAME = ':memory:'
 exports.SQLITE_MAGIC_MEMORY_NAME = SQLITE_MAGIC_MEMORY_NAME
 
 class IdProviderDbAdapter {
-  constructor(non_cirodown_options) {
+  constructor(non_ourbigbook_options) {
   }
 }
 
-// Reconcile the database with information that depends only on existence of Cirodown files, notably:
-// - remove any IDs from deleted files https://github.com/cirosantilli/cirodown/issues/125
+// Reconcile the database with information that depends only on existence of Ourbigbook files, notably:
+// - remove any IDs from deleted files https://github.com/cirosantilli/ourbigbook/issues/125
 // - prefetch all last_render timestamps in one go
-async function reconcile_db_and_filesystem(input_path, cirodown_options, non_cirodown_options) {
-  const sequelize = non_cirodown_options.sequelize
+async function reconcile_db_and_filesystem(input_path, ourbigbook_options, non_ourbigbook_options) {
+  const sequelize = non_ourbigbook_options.sequelize
   if (sequelize) {
-    const new_non_cirodown_options = cirodown.clone_and_set(
-      non_cirodown_options, 'cirodown_paths_converted_only', true)
+    const new_non_ourbigbook_options = ourbigbook.clone_and_set(
+      non_ourbigbook_options, 'ourbigbook_paths_converted_only', true)
     await convert_directory(
       input_path,
-      cirodown_options,
-      new_non_cirodown_options,
+      ourbigbook_options,
+      new_non_ourbigbook_options,
     );
-    const cirodown_paths_converted = new_non_cirodown_options.cirodown_paths_converted
+    const ourbigbook_paths_converted = new_non_ourbigbook_options.ourbigbook_paths_converted
     const [,,file_rows] = await Promise.all([
       sequelize.models.Id.destroy({
-        where: { path: { [Op.not]: cirodown_paths_converted } } }),
+        where: { path: { [Op.not]: ourbigbook_paths_converted } } }),
       sequelize.models.Ref.destroy({
-        where: { defined_at: { [Op.not]: cirodown_paths_converted } } }),
+        where: { defined_at: { [Op.not]: ourbigbook_paths_converted } } }),
       sequelize.models.File.findAll({
-        where: { path: cirodown_paths_converted } }),
+        where: { path: ourbigbook_paths_converted } }),
     ])
     const file_rows_dict = {}
     for (const file_row of file_rows) {
       file_rows_dict[file_row.path] = file_row
     }
-    non_cirodown_options.file_rows_dict = file_rows_dict
+    non_ourbigbook_options.file_rows_dict = file_rows_dict
   }
 }
 
 // Do various post conversion checks to verify database integrity:
 //
 // - duplicate IDs
-// - https://cirosantilli.com/cirodown/x-within-title-restrictions
+// - https://cirosantilli.com/ourbigbook/x-within-title-restrictions
 //
-// Previously these were done inside cirodown.convert. But then we started skipping render by timestamp,
+// Previously these were done inside ourbigbook.convert. But then we started skipping render by timestamp,
 // so if you e.g. move an ID from one file to another, a common operation, then it would still see
 // the ID in the previous file depending on conversion order. So we are moving it here instead at the end.
 // Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
-async function check_db(non_cirodown_options) {
-  const sequelize = non_cirodown_options.sequelize
+async function check_db(non_ourbigbook_options) {
+  const sequelize = non_ourbigbook_options.sequelize
   if (sequelize) {
-    const error_messages = await cirodown_nodejs_webpack_safe.check_db(
-      sequelize, non_cirodown_options.cirodown_paths_converted)
+    const error_messages = await ourbigbook_nodejs_webpack_safe.check_db(
+      sequelize, non_ourbigbook_options.ourbigbook_paths_converted)
     if (error_messages.length > 0) {
       cli_error('\n' + error_messages.join('\n'))
     }
@@ -128,14 +128,14 @@ function cmd_get_stdout(cmd, args=[], options={}) {
     if (out.status != 0 && options.throw_on_error) {
       let msg = `cmd: \n${cmd_str}\n`;
       if (out.stdout !== null) {
-        msg += `stdout: \n${out.stdout.toString(cirodown_nodejs_webpack_safe.ENCODING)}\n`;
+        msg += `stdout: \n${out.stdout.toString(ourbigbook_nodejs_webpack_safe.ENCODING)}\n`;
       }
       if (out.stderr !== null) {
-        msg += `stderr: \n${out.stderr.toString(cirodown_nodejs_webpack_safe.ENCODING)}\n`;
+        msg += `stderr: \n${out.stderr.toString(ourbigbook_nodejs_webpack_safe.ENCODING)}\n`;
       }
       throw msg;
     }
-    ret = out.stdout.toString(cirodown_nodejs_webpack_safe.ENCODING);
+    ret = out.stdout.toString(ourbigbook_nodejs_webpack_safe.ENCODING);
   }
   return ret;
 }
@@ -143,11 +143,11 @@ function cmd_get_stdout(cmd, args=[], options={}) {
 /**
  * @param {String} input_path - path to a directory to convert files in
  */
-async function convert_directory(input_path, cirodown_options, non_cirodown_options) {
-  non_cirodown_options.cirodown_paths_converted = []
+async function convert_directory(input_path, ourbigbook_options, non_ourbigbook_options) {
+  non_ourbigbook_options.ourbigbook_paths_converted = []
   const ignore_fullpaths = new Set();
-  for (const ignore of cirodown_options.cirodown_json.ignore) {
-    ignore_fullpaths.add(path.join(non_cirodown_options.cirodown_json_dir, ignore));
+  for (const ignore of ourbigbook_options.ourbigbook_json.ignore) {
+    ignore_fullpaths.add(path.join(non_ourbigbook_options.ourbigbook_json_dir, ignore));
   }
   for (const one_path of walk_files_recursively(
     input_path,
@@ -156,58 +156,58 @@ async function convert_directory(input_path, cirodown_options, non_cirodown_opti
   )) {
     await convert_path_to_file(
       one_path,
-      cirodown_options,
-      non_cirodown_options,
+      ourbigbook_options,
+      non_ourbigbook_options,
     );
-    if (non_cirodown_options.had_error) {
+    if (non_ourbigbook_options.had_error) {
       break;
     }
   }
 }
 
 /** Extract IDs from all input files into the ID database, without fully converting. */
-async function convert_directory_extract_ids(input_path, cirodown_options, non_cirodown_options) {
+async function convert_directory_extract_ids(input_path, ourbigbook_options, non_ourbigbook_options) {
   await convert_directory(
     input_path,
-    cirodown.clone_and_set(cirodown_options, 'render', false),
-    non_cirodown_options
+    ourbigbook.clone_and_set(ourbigbook_options, 'render', false),
+    non_ourbigbook_options
   );
-  if (non_cirodown_options.sequelize) {
-    non_cirodown_options.sequelize
+  if (non_ourbigbook_options.sequelize) {
+    non_ourbigbook_options.sequelize
   }
 }
 
 /** Convert input from a string to output and return the output as a string.
  *
- * Wraps cirodown.convert with CLI usage convenience.
+ * Wraps ourbigbook.convert with CLI usage convenience.
  *
  * @param {String} input
- * @param {Object} options - options to be passed to cirodown.convert
- * @param {Object} non_cirodown_options - control options for this function,
- *                 not passed to cirodown.convert. Also contains some returns:
+ * @param {Object} options - options to be passed to ourbigbook.convert
+ * @param {Object} non_ourbigbook_options - control options for this function,
+ *                 not passed to ourbigbook.convert. Also contains some returns:
  *                 - {bool} had_error
  *                 - {Object} extra_returns
  * @return {String}
  */
-async function convert_input(input, cirodown_options, non_cirodown_options={}) {
-  const new_options = Object.assign({}, cirodown_options);
-  if ('input_path' in non_cirodown_options) {
-    new_options.input_path = non_cirodown_options.input_path;
+async function convert_input(input, ourbigbook_options, non_ourbigbook_options={}) {
+  const new_options = Object.assign({}, ourbigbook_options);
+  if ('input_path' in non_ourbigbook_options) {
+    new_options.input_path = non_ourbigbook_options.input_path;
   }
-  if ('title' in non_cirodown_options) {
-    new_options.title = non_cirodown_options.title;
+  if ('title' in non_ourbigbook_options) {
+    new_options.title = non_ourbigbook_options.title;
   }
   new_options.extra_returns = {};
   // If we don't where the output will go (the case for stdout) or
   // the user did not explicitly request full embedding, inline all CSS.
   // Otherwise, include and external CSS to make each page lighter.
-  if (non_cirodown_options.commander.embedResources) {
+  if (non_ourbigbook_options.commander.embedResources) {
     new_options.template_vars.style = fs.readFileSync(
-      cirodown_nodejs.DIST_CSS_PATH,
-      cirodown_nodejs_webpack_safe.ENCODING
+      ourbigbook_nodejs.DIST_CSS_PATH,
+      ourbigbook_nodejs_webpack_safe.ENCODING
     );
     new_options.template_vars.post_body = `<script>${fs.readFileSync(
-      cirodown_nodejs.DIST_JS_PATH, cirodown_nodejs_webpack_safe.ENCODING)}</script>\n`;
+      ourbigbook_nodejs.DIST_JS_PATH, ourbigbook_nodejs_webpack_safe.ENCODING)}</script>\n`;
      ;
   } else {
     let includes_str = ``;
@@ -218,32 +218,32 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
     let scripts_local = [];
     let template_includes_relative = [];
     let template_scripts_relative = [];
-    if (non_cirodown_options.publish) {
+    if (non_ourbigbook_options.publish) {
       template_includes_relative.push(
         path.relative(
-          non_cirodown_options.outdir,
-          non_cirodown_options.out_css_path
+          non_ourbigbook_options.outdir,
+          non_ourbigbook_options.out_css_path
         )
       );
       template_scripts_relative.push(
         path.relative(
-          non_cirodown_options.outdir,
-          non_cirodown_options.out_js_path
+          non_ourbigbook_options.outdir,
+          non_ourbigbook_options.out_js_path
         )
       );
     } else {
-      includes_local.push(non_cirodown_options.out_css_path);
-      scripts_local.push(non_cirodown_options.out_js_path);
+      includes_local.push(non_ourbigbook_options.out_css_path);
+      scripts_local.push(non_ourbigbook_options.out_js_path);
     }
     if (
-      cirodown_options.outfile !== undefined &&
+      ourbigbook_options.outfile !== undefined &&
       !is_installed_globally
     ) {
       for (const include of includes_local) {
-        includes.push(path.relative(path.dirname(cirodown_options.outfile), include));
+        includes.push(path.relative(path.dirname(ourbigbook_options.outfile), include));
       }
       for (const script of scripts_local) {
-        scripts.push(path.relative(path.dirname(cirodown_options.outfile), script));
+        scripts.push(path.relative(path.dirname(ourbigbook_options.outfile), script));
       }
     } else {
       includes.push(...includes_local);
@@ -262,18 +262,18 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
     new_options.template_scripts_relative = template_scripts_relative;
   }
   // Finally, do the conversion!
-  const output = await cirodown.convert(input, new_options, new_options.extra_returns);
-  if (non_cirodown_options.log.tokens) {
+  const output = await ourbigbook.convert(input, new_options, new_options.extra_returns);
+  if (non_ourbigbook_options.log.tokens) {
     console.error('tokens:');
     console.error(JSON.stringify(new_options.extra_returns.tokens, null, 2));
     console.error();
   }
-  if (non_cirodown_options.log.ast) {
+  if (non_ourbigbook_options.log.ast) {
     console.error('ast:');
     console.error(JSON.stringify(new_options.extra_returns.ast, null, 2));
     console.error();
   }
-  if (non_cirodown_options.log['ast-simple']) {
+  if (non_ourbigbook_options.log['ast-simple']) {
     console.error('ast-simple:');
     console.error(new_options.extra_returns.ast.toString());
     console.error();
@@ -281,76 +281,76 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
   // Remove duplicate messages due to split header rendering. We could not collect
   // errors from that case at all maybe, but do we really want to run the risk of
   // missing errors?
-  for (const error_string of cirodown_nodejs_webpack_safe.remove_duplicates_sorted_array(new_options.extra_returns.errors.map(e => e.toString()))) {
+  for (const error_string of ourbigbook_nodejs_webpack_safe.remove_duplicates_sorted_array(new_options.extra_returns.errors.map(e => e.toString()))) {
     console.error(error_string);
   }
-  non_cirodown_options.extra_returns = new_options.extra_returns;
+  non_ourbigbook_options.extra_returns = new_options.extra_returns;
   if (new_options.extra_returns.errors.length > 0) {
-    non_cirodown_options.had_error = true;
+    non_ourbigbook_options.had_error = true;
   }
-  cirodown.perf_print(new_options.extra_returns.context, 'convert_input_end')
+  ourbigbook.perf_print(new_options.extra_returns.context, 'convert_input_end')
   return output;
 }
 
-/** Convert filetypes that cirodown knows how to convert, and just copy those that we don't, e.g.:
+/** Convert filetypes that ourbigbook knows how to convert, and just copy those that we don't, e.g.:
  *
- * * .ciro to .html
+ * * .bigb to .html
  * * .scss to .css
  *
- * @param {string} input_path - path relative to the base_path, e.g. `./cirodown subdir` gives:
- *   base_path: "subdir" and input_path "index.ciro" amongst other files.
+ * @param {string} input_path - path relative to the base_path, e.g. `./ourbigbook subdir` gives:
+ *   base_path: "subdir" and input_path "index.bigb" amongst other files.
  *
  * The output file name is derived from the input file name with the output extension.
  */
-async function convert_path_to_file(input_path, cirodown_options, non_cirodown_options={}) {
+async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbook_options={}) {
   let input_path_parse = path.parse(input_path);
   let msg_ret
   let output, first_output_path;
   let timestamp_skip = false
-  if (input_path_parse.ext === cirodown.CIRODOWN_EXT) {
+  if (input_path_parse.ext === ourbigbook.OURBIGBOOK_EXT) {
     let full_path = path.resolve(input_path);
     let input_path_parse = path.parse(full_path);
-    let path_relative_to_cirodown_json;
-    let input_path_relative_to_cirodown_json;
-    if (non_cirodown_options.cirodown_json_dir !== undefined) {
-      path_relative_to_cirodown_json = path.relative(non_cirodown_options.cirodown_json_dir, input_path_parse.dir);
-      input_path_relative_to_cirodown_json = path.join(path_relative_to_cirodown_json, input_path_parse.base);
+    let path_relative_to_ourbigbook_json;
+    let input_path_relative_to_ourbigbook_json;
+    if (non_ourbigbook_options.ourbigbook_json_dir !== undefined) {
+      path_relative_to_ourbigbook_json = path.relative(non_ourbigbook_options.ourbigbook_json_dir, input_path_parse.dir);
+      input_path_relative_to_ourbigbook_json = path.join(path_relative_to_ourbigbook_json, input_path_parse.base);
     }
-    non_cirodown_options.cirodown_paths_converted.push(input_path_relative_to_cirodown_json)
-    if (non_cirodown_options.cirodown_paths_converted_only) {
+    non_ourbigbook_options.ourbigbook_paths_converted.push(input_path_relative_to_ourbigbook_json)
+    if (non_ourbigbook_options.ourbigbook_paths_converted_only) {
       return
     }
-    msg_ret = convert_path_to_file_print_starting(cirodown_options, input_path)
-    let new_options = Object.assign({}, cirodown_options);
-    let new_non_cirodown_options = Object.assign({}, non_cirodown_options);
-    let input = fs.readFileSync(full_path, new_non_cirodown_options.encoding);
+    msg_ret = convert_path_to_file_print_starting(ourbigbook_options, input_path)
+    let new_options = Object.assign({}, ourbigbook_options);
+    let new_non_ourbigbook_options = Object.assign({}, non_ourbigbook_options);
+    let input = fs.readFileSync(full_path, new_non_ourbigbook_options.encoding);
     let input_path_basename_noext = input_path_parse.name;
-    const sequelize = non_cirodown_options.sequelize
-    if (input_path_relative_to_cirodown_json) {
-      const file_row = non_cirodown_options.file_rows_dict[input_path_relative_to_cirodown_json]
+    const sequelize = non_ourbigbook_options.sequelize
+    if (input_path_relative_to_ourbigbook_json) {
+      const file_row = non_ourbigbook_options.file_rows_dict[input_path_relative_to_ourbigbook_json]
       if (file_row !== undefined) {
         const mtime = fs.statSync(input_path).mtime
-        if (cirodown_options.render) {
-          timestamp_skip = non_cirodown_options.commander.renderTimestamp && file_row.last_render !== null && file_row.last_render > mtime
+        if (ourbigbook_options.render) {
+          timestamp_skip = non_ourbigbook_options.commander.renderTimestamp && file_row.last_render !== null && file_row.last_render > mtime
         } else {
           timestamp_skip = file_row.last_parse !== null && file_row.last_parse > mtime
         }
       }
     }
     if (!timestamp_skip) {
-      new_non_cirodown_options.input_path = input_path_relative_to_cirodown_json;
+      new_non_ourbigbook_options.input_path = input_path_relative_to_ourbigbook_json;
       if (sequelize) {
-        new_options.id_provider = non_cirodown_options.id_provider;
-        new_options.file_provider = non_cirodown_options.file_provider;
+        new_options.id_provider = non_ourbigbook_options.id_provider;
+        new_options.file_provider = non_ourbigbook_options.file_provider;
       }
 
       // Convert.
-      const output = await convert_input(input, new_options, new_non_cirodown_options);
+      const output = await convert_input(input, new_options, new_non_ourbigbook_options);
 
       // Write out the output the output files.
-      const extra_returns = new_non_cirodown_options.extra_returns
+      const extra_returns = new_non_ourbigbook_options.extra_returns
       for (const outpath in extra_returns.rendered_outputs) {
-        const output_path = path.join(non_cirodown_options.outdir, outpath);
+        const output_path = path.join(non_ourbigbook_options.outdir, outpath);
         if (first_output_path === undefined) {
           first_output_path = output_path
         }
@@ -361,57 +361,57 @@ async function convert_path_to_file(input_path, cirodown_options, non_cirodown_o
         for (const header_ast of extra_returns.context.synonym_headers) {
           let new_options_redir = Object.assign({}, new_options);
           new_options_redir.id_provider = extra_returns.context.id_provider;
-          await generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, non_cirodown_options.outdir);
+          await generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, non_ourbigbook_options.outdir);
         }
       }
 
       const context = extra_returns.context;
-      if (non_cirodown_options.log.headers) {
+      if (non_ourbigbook_options.log.headers) {
         console.error(context.header_tree.toString());
       }
 
       // Update the Sqlite databse with results from the conversion.
-      cirodown.perf_print(context, 'convert_path_pre_sqlite')
-      if ('sequelize' in non_cirodown_options) {
-        await cirodown_nodejs_webpack_safe.update_database_after_convert({
+      ourbigbook.perf_print(context, 'convert_path_pre_sqlite')
+      if ('sequelize' in non_ourbigbook_options) {
+        await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
           extra_returns,
-          id_provider: non_cirodown_options.id_provider,
-          sequelize: non_cirodown_options.sequelize,
-          path: input_path_relative_to_cirodown_json,
-          render: cirodown_options.render,
+          id_provider: non_ourbigbook_options.id_provider,
+          sequelize: non_ourbigbook_options.sequelize,
+          path: input_path_relative_to_ourbigbook_json,
+          render: ourbigbook_options.render,
         })
       }
-      if (new_non_cirodown_options.had_error) {
-        non_cirodown_options.had_error = true;
+      if (new_non_ourbigbook_options.had_error) {
+        non_ourbigbook_options.had_error = true;
       }
     }
   } else {
-    if (non_cirodown_options.cirodown_paths_converted_only) {
+    if (non_ourbigbook_options.ourbigbook_paths_converted_only) {
       // I should use callbacks instead of doing this. But lazy.
       return
     }
     let output_name = input_path_parse.name;
     let output_path_noext = path.join(
-      path.relative(non_cirodown_options.cirodown_json_dir, input_path_parse.dir),
+      path.relative(non_ourbigbook_options.ourbigbook_json_dir, input_path_parse.dir),
       output_name
     );
-    if (cirodown_options.outfile === undefined) {
-      output_path_noext = path.join(non_cirodown_options.outdir, output_path_noext);
+    if (ourbigbook_options.outfile === undefined) {
+      output_path_noext = path.join(non_ourbigbook_options.outdir, output_path_noext);
     } else {
-      output_path_noext = cirodown_options.outfile;
+      output_path_noext = ourbigbook_options.outfile;
     }
     fs.mkdirSync(path.dirname(output_path_noext), {recursive: true});
-    if (cirodown_options.render) {
+    if (ourbigbook_options.render) {
       if (input_path_parse.ext === SASS_EXT) {
         first_output_path = output_path_noext + '.css'
-        msg_ret = convert_path_to_file_print_starting(cirodown_options, input_path)
+        msg_ret = convert_path_to_file_print_starting(ourbigbook_options, input_path)
         fs.writeFileSync(
           first_output_path,
           require('sass').renderSync({
-            data: fs.readFileSync(path.join(input_path), non_cirodown_options.encoding),
+            data: fs.readFileSync(path.join(input_path), non_ourbigbook_options.encoding),
             outputStyle: 'compressed',
             includePaths: [
-              path.dirname(cirodown_nodejs.PACKAGE_PATH),
+              path.dirname(ourbigbook_nodejs.PACKAGE_PATH),
             ],
           }).css
         );
@@ -430,7 +430,7 @@ async function convert_path_to_file(input_path, cirodown_options, non_cirodown_o
     let t1 = performance.now();
     let output_path_str
     if (
-      cirodown_options.render &&
+      ourbigbook_options.render &&
       // Happens if:
       // - conversion to .tex
       first_output_path !== undefined
@@ -447,15 +447,15 @@ async function convert_path_to_file(input_path, cirodown_options, non_cirodown_o
     }
     console.log(`${msg_ret.message}${output_path_str} ${done_str}`);
   }
-  if (cirodown_options.perf) {
+  if (ourbigbook_options.perf) {
     console.error(`perf convert_path_to_file_end ${performance.now()}`);
   }
   return output;
 }
 
-function convert_path_to_file_print_starting(cirodown_options, input_path) {
+function convert_path_to_file_print_starting(ourbigbook_options, input_path) {
   let message_prefix;
-  if (cirodown_options.render) {
+  if (ourbigbook_options.render) {
     message_prefix = 'render';
   } else {
     message_prefix = 'extract_ids';
@@ -466,27 +466,27 @@ function convert_path_to_file_print_starting(cirodown_options, input_path) {
   return { message, t0 };
 }
 
-async function create_db(cirodown_options, non_cirodown_options) {
-  perf_print('create_db_begin', cirodown_options)
-  const db_dir = path.dirname(non_cirodown_options.db_options.storage);
+async function create_db(ourbigbook_options, non_ourbigbook_options) {
+  perf_print('create_db_begin', ourbigbook_options)
+  const db_dir = path.dirname(non_ourbigbook_options.db_options.storage);
   if (!fs.existsSync(db_dir)) {
     fs.mkdirSync(db_dir, {recursive: true});
   }
-  const sequelize = await cirodown_nodejs_webpack_safe.create_sequelize(non_cirodown_options.db_options, Sequelize)
-  non_cirodown_options.sequelize = sequelize;
-  non_cirodown_options.id_provider = new cirodown_nodejs_webpack_safe.SqliteIdProvider(sequelize);
-  non_cirodown_options.file_provider = new cirodown_nodejs_webpack_safe.SqliteFileProvider(
-    sequelize, non_cirodown_options.id_provider);
-  perf_print('create_db_end', cirodown_options)
+  const sequelize = await ourbigbook_nodejs_webpack_safe.create_sequelize(non_ourbigbook_options.db_options, Sequelize)
+  non_ourbigbook_options.sequelize = sequelize;
+  non_ourbigbook_options.id_provider = new ourbigbook_nodejs_webpack_safe.SqliteIdProvider(sequelize);
+  non_ourbigbook_options.file_provider = new ourbigbook_nodejs_webpack_safe.SqliteFileProvider(
+    sequelize, non_ourbigbook_options.id_provider);
+  perf_print('create_db_end', ourbigbook_options)
 }
 
-async function generate_redirect(cirodown_options, redirect_src_id, redirect_target_id, outdir) {
-  cirodown_options = Object.assign({}, cirodown_options);
-  cirodown_options.input_path = redirect_src_id;
-  const outpath_basename = redirect_src_id + '.' + cirodown.HTML_EXT
+async function generate_redirect(ourbigbook_options, redirect_src_id, redirect_target_id, outdir) {
+  ourbigbook_options = Object.assign({}, ourbigbook_options);
+  ourbigbook_options.input_path = redirect_src_id;
+  const outpath_basename = redirect_src_id + '.' + ourbigbook.HTML_EXT
   const outpath = path.join(outdir, outpath_basename);
-  cirodown_options.outfile = outpath_basename;
-  const redirect_href = await cirodown.convert_x_href(redirect_target_id, cirodown_options);
+  ourbigbook_options.outfile = outpath_basename;
+  const redirect_href = await ourbigbook.convert_x_href(redirect_target_id, ourbigbook_options);
   if (redirect_href === undefined) {
     cli_error(`redirection target ID "${redirect_target_id}" not found`);
   }
@@ -579,8 +579,8 @@ function is_subpath(parent, child) {
   return relative && !relative.startsWith('..') && !path.isAbsolute(relative);
 }
 
-function perf_print(name, cirodown_options) {
-  if (cirodown_options === undefined || cirodown_options.log.perf) {
+function perf_print(name, ourbigbook_options) {
+  if (ourbigbook_options === undefined || ourbigbook_options.log.perf) {
     console.error(`perf ${name} t=${performance.now()}`);
   }
 }
@@ -588,8 +588,8 @@ function perf_print(name, cirodown_options) {
 /** Render a template file from under template/ */
 function renderTemplate(templateRelpath, outdir, env) {
   const template = fs.readFileSync(
-    path.join(cirodown_nodejs.PACKAGE_PATH, 'template', templateRelpath),
-    cirodown_nodejs_webpack_safe.ENCODING
+    path.join(ourbigbook_nodejs.PACKAGE_PATH, 'template', templateRelpath),
+    ourbigbook_nodejs_webpack_safe.ENCODING
   );
   const out = (new Liquid()).parseAndRenderSync(
     template,
@@ -631,37 +631,37 @@ function* walk_files_recursively(file_or_dir, skip_basenames, ignore_paths) {
 // CLI options.
 commander.option('--add-test-instrumentation', 'For testing only', false);
 commander.option('--body-only', 'output only the content inside the HTLM body element', false);
-commander.option('--china', 'https://cirosantilli.com/cirodown#china', false);
-commander.option('--dry-run', "don't run most external commands https://github.com/cirosantilli/cirodown#dry-run", false);
-commander.option('--dry-run-push', "don't run git push commands https://github.com/cirosantilli/cirodown#dry-run-push", false);
-commander.option('--embed-includes', 'http://cirosantilli.com/cirodown#embed-include', false);
-commander.option('--embed-resources', 'http://cirosantilli.com/cirodown#embed-resources', false);
-commander.option('--fakeroot <fakeroot>', 'Stop searching for cirodown.json at this directory rather than at the filesystem root');
-commander.option('--generate <name>', 'http://cirosantilli.com/cirodown#generate', false);
-commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown#help-macros', false);
-commander.option('-l, --log <log...>', 'http://cirosantilli.com/cirodown#log');
-commander.option('--no-html-x-extension', 'http://cirosantilli.com/cirodown#no-html-x-extension');
-commander.option('--no-db', 'ignore the ID database, mostly for testing https://cirosantilli.com/cirodown#internal-cross-file-references-internals');
-commander.option('--no-render', "only extract IDs, don't render: https://cirosantilli.com/cirodown#no-render");
-commander.option('-T, --no-render-timestamp', "don't skip render by timestamp: https://cirosantilli.com/cirodown#no-render-timestamp");
-commander.option('--outdir <outdir>', 'http://cirosantilli.com/cirodown#outdir');
-commander.option('-o, --outfile <outfile>', 'http://cirosantilli.com/cirodown#outfile');
-commander.option('-O, --output-format <output-format>', 'https://cirosantilli.com/cirodown#output-format', 'html');
-commander.option('-p --publish', 'http://cirosantilli.com/cirodown#publish', false);
-commander.option('-P, --publish-commit <commit-message>', 'http://cirosantilli.com/cirodown#publish-commit');
-commander.option('-S, --split-headers', 'http://cirosantilli.com/cirodown#split-headers', false);
+commander.option('--china', 'https://cirosantilli.com/ourbigbook#china', false);
+commander.option('--dry-run', "don't run most external commands https://github.com/cirosantilli/ourbigbook#dry-run", false);
+commander.option('--dry-run-push', "don't run git push commands https://github.com/cirosantilli/ourbigbook#dry-run-push", false);
+commander.option('--embed-includes', 'http://cirosantilli.com/ourbigbook#embed-include', false);
+commander.option('--embed-resources', 'http://cirosantilli.com/ourbigbook#embed-resources', false);
+commander.option('--fakeroot <fakeroot>', 'Stop searching for ourbigbook.json at this directory rather than at the filesystem root');
+commander.option('--generate <name>', 'http://cirosantilli.com/ourbigbook#generate', false);
+commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/ourbigbook#help-macros', false);
+commander.option('-l, --log <log...>', 'http://cirosantilli.com/ourbigbook#log');
+commander.option('--no-html-x-extension', 'http://cirosantilli.com/ourbigbook#no-html-x-extension');
+commander.option('--no-db', 'ignore the ID database, mostly for testing https://cirosantilli.com/ourbigbook#internal-cross-file-references-internals');
+commander.option('--no-render', "only extract IDs, don't render: https://cirosantilli.com/ourbigbook#no-render");
+commander.option('-T, --no-render-timestamp', "don't skip render by timestamp: https://cirosantilli.com/ourbigbook#no-render-timestamp");
+commander.option('--outdir <outdir>', 'http://cirosantilli.com/ourbigbook#outdir');
+commander.option('-o, --outfile <outfile>', 'http://cirosantilli.com/ourbigbook#outfile');
+commander.option('-O, --output-format <output-format>', 'https://cirosantilli.com/ourbigbook#output-format', 'html');
+commander.option('-p --publish', 'http://cirosantilli.com/ourbigbook#publish', false);
+commander.option('-P, --publish-commit <commit-message>', 'http://cirosantilli.com/ourbigbook#publish-commit');
+commander.option('-S, --split-headers', 'http://cirosantilli.com/ourbigbook#split-headers', false);
 commander.option('--stdout', 'print output to stdout instead of saving to a file', false);
-commander.option('--template <template>', 'http://cirosantilli.com/cirodown#template');
-commander.option('-w, --watch', 'http://cirosantilli.com/cirodown#watch', false);
+commander.option('--template <template>', 'http://cirosantilli.com/ourbigbook#template');
+commander.option('-w, --watch', 'http://cirosantilli.com/ourbigbook#watch', false);
 // Originally added for testing, this allows the test filesystems to be put under the repository iteslf,
-// otherwise they would pickup our toplevel cirodown.json.
-commander.option('--unsafe-ace', 'https://cirosantilli.com/cirodown#unsafe-ace', false);
-commander.option('--unsafe-xss', 'https://cirosantilli.com/cirodown#unsafe-xss');
+// otherwise they would pickup our toplevel ourbigbook.json.
+commander.option('--unsafe-ace', 'https://cirosantilli.com/ourbigbook#unsafe-ace', false);
+commander.option('--unsafe-xss', 'https://cirosantilli.com/ourbigbook#unsafe-xss');
 let inputPath;
 commander.arguments(
   '[input_path]',
   undefined,
-  'http://cirosantilli.com/cirodown#cirodown-executable',
+  'http://cirosantilli.com/ourbigbook#ourbigbook-executable',
 ).action(function (input_path) {
   inputPath = input_path;
 });
@@ -670,7 +670,7 @@ commander.parse(process.argv);
 // main action.
 (async () => {
 if (commander.helpMacros) {
-  console.log(JSON.stringify(cirodown.macro_list(), null, 2));
+  console.log(JSON.stringify(ourbigbook.macro_list(), null, 2));
 } else if (commander.china) {
   console.log(china_dictatorship.get_data());
 } else {
@@ -690,7 +690,7 @@ if (commander.helpMacros) {
     }
   }
 
-  // Determine the cirodown.json file by walking up the directory tree.
+  // Determine the ourbigbook.json file by walking up the directory tree.
   let input_path_is_file;
   if (inputPath === undefined) {
     // Input from stdin.
@@ -708,11 +708,11 @@ if (commander.helpMacros) {
     }
   }
 
-  // Initialize cirodown.json and directories determined from it if present.
-  let cirodown_json_dir;
-  const cirodown_json = {};
+  // Initialize ourbigbook.json and directories determined from it if present.
+  let ourbigbook_json_dir;
+  const ourbigbook_json = {};
   if (inputPath === undefined) {
-    cirodown_json_dir = '.'
+    ourbigbook_json_dir = '.'
   } else {
     let curdir = path.resolve(inputPath);
     let initial_dir;
@@ -722,10 +722,10 @@ if (commander.helpMacros) {
     initial_dir = curdir;
     const fakeroot = commander.fakeroot === undefined ? undefined : path.resolve(commander.fakeroot)
     while (true) {
-      const cirodown_json_path = path.join(curdir, CIRODOWN_JSON_BASENAME);
-      if (fs.existsSync(cirodown_json_path)) {
-        Object.assign(cirodown_json, JSON.parse(fs.readFileSync(cirodown_json_path)));
-        cirodown_json_dir = curdir;
+      const ourbigbook_json_path = path.join(curdir, OURBIGBOOK_JSON_BASENAME);
+      if (fs.existsSync(ourbigbook_json_path)) {
+        Object.assign(ourbigbook_json, JSON.parse(fs.readFileSync(ourbigbook_json_path)));
+        ourbigbook_json_dir = curdir;
         break;
       }
       if (
@@ -736,23 +736,23 @@ if (commander.helpMacros) {
       }
       curdir = path.dirname(curdir)
     }
-    if (cirodown_json_dir === undefined) {
-      // No cirodown.json found.
+    if (ourbigbook_json_dir === undefined) {
+      // No ourbigbook.json found.
       const cwd = process.cwd();
       if (is_subpath(cwd, inputPath)) {
-        cirodown_json_dir = cwd
+        ourbigbook_json_dir = cwd
       } else {
         if (input_path_is_file) {
-          cirodown_json_dir = path.dirname(inputPath)
+          ourbigbook_json_dir = path.dirname(inputPath)
         } else {
-          cirodown_json_dir = inputPath
+          ourbigbook_json_dir = inputPath
         }
       }
     }
   }
   let ignore;
-  if (!('ignore' in cirodown_json)) {
-    cirodown_json.ignore = [];
+  if (!('ignore' in ourbigbook_json)) {
+    ourbigbook_json.ignore = [];
   }
 
   let split_headers;
@@ -765,21 +765,21 @@ if (commander.helpMacros) {
     split_headers = commander.splitHeaders;
   }
 
-  // Options that will be passed directly to cirodown.convert().
-  const cirodown_options = {
+  // Options that will be passed directly to ourbigbook.convert().
+  const ourbigbook_options = {
     add_test_instrumentation: commander.addTestInstrumentation,
     body_only: commander.bodyOnly,
-    cirodown_json: cirodown_json,
+    ourbigbook_json: ourbigbook_json,
     embed_includes: commander.embedIncludes,
-    fs_exists_sync: (my_path) => fs.existsSync(path.join(cirodown_json_dir, my_path)),
+    fs_exists_sync: (my_path) => fs.existsSync(path.join(ourbigbook_json_dir, my_path)),
     html_x_extension: html_x_extension,
     output_format: commander.outputFormat,
     outfile: commander.outfile,
     path_sep: path.sep,
-    read_include: cirodown_nodejs_webpack_safe.read_include({
-      exists: (inpath) => fs.existsSync(path.join(cirodown_json_dir, inpath)),
-      read: (inpath) => fs.readFileSync(path.join(cirodown_json_dir, inpath), cirodown_nodejs_webpack_safe.ENCODING),
-      path_sep: cirodown.Macro.HEADER_SCOPE_SEPARATOR,
+    read_include: ourbigbook_nodejs_webpack_safe.read_include({
+      exists: (inpath) => fs.existsSync(path.join(ourbigbook_json_dir, inpath)),
+      read: (inpath) => fs.readFileSync(path.join(ourbigbook_json_dir, inpath), ourbigbook_nodejs_webpack_safe.ENCODING),
+      path_sep: ourbigbook.Macro.HEADER_SCOPE_SEPARATOR,
     }),
     // Part of considering file previews for source code.
     //read_file: (readpath, context) => {
@@ -787,9 +787,9 @@ if (commander.helpMacros) {
     //  if (
     //    fs.existsSync(readpath) &&
     //    // Let's prevent path transverasl a bit by default.
-    //    path.resolve(readpath).startsWith(path.resolve(cirodown_json_dir))
+    //    path.resolve(readpath).startsWith(path.resolve(ourbigbook_json_dir))
     //  ) {
-    //    return fs.readFileSync(readpath, cirodown_nodejs_webpack_safe.ENCODING);
+    //    return fs.readFileSync(readpath, ourbigbook_nodejs_webpack_safe.ENCODING);
     //  } else {
     //    return undefined
     //  }
@@ -800,14 +800,14 @@ if (commander.helpMacros) {
     unsafe_xss: commander.unsafeXss,
   };
 
-  cirodown_options.log = {};
-  const non_cirodown_options_log = {};
+  ourbigbook_options.log = {};
+  const non_ourbigbook_options_log = {};
   if (commander.log !== undefined) {
     for (const log of commander.log) {
-      if (cirodown.LOG_OPTIONS.has(log)) {
-        cirodown_options.log[log] = true;
+      if (ourbigbook.LOG_OPTIONS.has(log)) {
+        ourbigbook_options.log[log] = true;
       } else if (LOG_OPTIONS.has(log)) {
-        non_cirodown_options_log[log] = true;
+        non_ourbigbook_options_log[log] = true;
       } else {
         cli_error('unknown --log option: ' + log);
       }
@@ -817,18 +817,18 @@ if (commander.helpMacros) {
 
   if (commander.template !== undefined) {
     template_path = commander.template;
-  } else if ('template' in cirodown_json) {
-    template_path = path.join(cirodown_json_dir, cirodown_json.template);
+  } else if ('template' in ourbigbook_json) {
+    template_path = path.join(ourbigbook_json_dir, ourbigbook_json.template);
   }
   if (template_path === undefined) {
-    cirodown_options.template = undefined;
+    ourbigbook_options.template = undefined;
   } else {
-    cirodown_options.template = fs.readFileSync(template_path).toString();
+    ourbigbook_options.template = fs.readFileSync(template_path).toString();
   }
 
   if (inputPath !== undefined) {
     try {
-      cirodown_options.template_vars.git_sha = git_sha(input_dir);
+      ourbigbook_options.template_vars.git_sha = git_sha(input_dir);
     } catch(error) {
       // Not in a git repo.
     }
@@ -838,7 +838,7 @@ if (commander.helpMacros) {
     if (commander.generate) {
       outdir = '.'
     } else {
-      outdir = cirodown_json_dir;
+      outdir = ourbigbook_json_dir;
     }
   } else {
     outdir = commander.outdir;
@@ -852,10 +852,10 @@ if (commander.helpMacros) {
 
     // Generate package.json.
     const package_json = JSON.parse(fs.readFileSync(
-      cirodown_nodejs.PACKAGE_PACKAGE_JSON_PATH).toString());
+      ourbigbook_nodejs.PACKAGE_PACKAGE_JSON_PATH).toString());
     const package_json_str = `{
   "dependencies": {
-    "cirodown": "${package_json.version}"
+    "ourbigbook": "${package_json.version}"
   }
 }
 `;
@@ -864,8 +864,8 @@ if (commander.helpMacros) {
     // Generate .gitignore. Reuse our gitignore up to the first blank line.
     let gitignore_new = '';
     const gitignore = fs.readFileSync(
-      cirodown_nodejs.GITIGNORE_PATH,
-      cirodown_nodejs_webpack_safe.ENCODING
+      ourbigbook_nodejs.GITIGNORE_PATH,
+      ourbigbook_nodejs_webpack_safe.ENCODING
     );
     for (const line of gitignore.split('\n')) {
       if (line === '') {
@@ -875,32 +875,32 @@ if (commander.helpMacros) {
     }
     fs.writeFileSync(path.join(outdir, '.gitignore'), gitignore_new);
 
-    const new_cirodown_json = {};
-    let title = 'Cirodown Template';
+    const new_ourbigbook_json = {};
+    let title = 'Ourbigbook Template';
     let multifile
     if (generate === 'default') {
-      renderTemplate('not-readme.ciro', outdir, {});
+      renderTemplate('not-readme.bigb', outdir, {});
       multifile = true
     } else {
       title += ' ' + generate
       multifile = false
     }
-    renderTemplate('README.ciro', outdir, {
+    renderTemplate('README.bigb', outdir, {
       title,
       multifile,
       version: package_json.version,
     });
     if (multifile) {
-      fs.copyFileSync(path.join(cirodown_nodejs.PACKAGE_PATH, 'main.liquid.html'),
+      fs.copyFileSync(path.join(ourbigbook_nodejs.PACKAGE_PATH, 'main.liquid.html'),
         path.join(outdir, 'main.liquid.html'));
-      fs.copyFileSync(path.join(cirodown_nodejs.PACKAGE_PATH, 'main.scss'),
+      fs.copyFileSync(path.join(ourbigbook_nodejs.PACKAGE_PATH, 'main.scss'),
         path.join(outdir, 'main.scss'));
-      new_cirodown_json.template = 'main.liquid.html';
+      new_ourbigbook_json.template = 'main.liquid.html';
     }
 
-    if (new_cirodown_json !== {}) {
-      fs.writeFileSync(path.join(outdir, CIRODOWN_JSON_BASENAME),
-        JSON.stringify(new_cirodown_json, null, 2) + '\n');
+    if (new_ourbigbook_json !== {}) {
+      fs.writeFileSync(path.join(outdir, OURBIGBOOK_JSON_BASENAME),
+        JSON.stringify(new_ourbigbook_json, null, 2) + '\n');
     }
     process.exit(0);
   }
@@ -909,36 +909,36 @@ if (commander.helpMacros) {
     // Possible on intput from stdin.
     outdir !== undefined
   ) {
-    tmpdir = path.join(outdir, cirodown_nodejs_webpack_safe.TMP_DIRNAME);
+    tmpdir = path.join(outdir, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME);
     if (
       commander.outdir === undefined &&
-      cirodown_json.outputOutOfTree
+      ourbigbook_json.outputOutOfTree
     ) {
       outdir = path.join(tmpdir, 'html')
     }
   }
-  // Options that are not directly passed to cirodown.convert
-  // but rather used only by this cirodown executable.
-  const non_cirodown_options = {
-    cirodown_json_dir,
-    cirodown_paths_converted: [],
-    cirodown_paths_converted_only: false,
+  // Options that are not directly passed to ourbigbook.convert
+  // but rather used only by this ourbigbook executable.
+  const non_ourbigbook_options = {
+    ourbigbook_json_dir,
+    ourbigbook_paths_converted: [],
+    ourbigbook_paths_converted_only: false,
     commander,
-    db_options: cirodown_nodejs_webpack_safe.db_options,
+    db_options: ourbigbook_nodejs_webpack_safe.db_options,
     file_rows_dict: {},
-    encoding: cirodown_nodejs_webpack_safe.ENCODING,
+    encoding: ourbigbook_nodejs_webpack_safe.ENCODING,
     external_css_and_js: false,
     had_error: false,
-    log: non_cirodown_options_log,
-    out_css_path: cirodown_nodejs.DIST_CSS_PATH,
-    out_js_path: cirodown_nodejs.DIST_JS_PATH,
+    log: non_ourbigbook_options_log,
+    out_css_path: ourbigbook_nodejs.DIST_CSS_PATH,
+    out_js_path: ourbigbook_nodejs.DIST_JS_PATH,
     outdir,
     publish,
   };
-  if (!non_cirodown_options_log.db) {
+  if (!non_ourbigbook_options_log.db) {
     // They do not like true, has to be false or function.
     // And setting undefined is also considered true.
-    non_cirodown_options.db_options.logging = false;
+    non_ourbigbook_options.db_options.logging = false;
   }
   let input_git_toplevel;
   let subdir_relpath;
@@ -946,8 +946,8 @@ if (commander.helpMacros) {
   if (inputPath === undefined) {
     // Input from stdin.
     title = 'stdin';
-    input = fs.readFileSync(0, cirodown_nodejs_webpack_safe.ENCODING);
-    output = await convert_input(input, cirodown_options, non_cirodown_options);
+    input = fs.readFileSync(0, ourbigbook_nodejs_webpack_safe.ENCODING);
+    output = await convert_input(input, ourbigbook_options, non_ourbigbook_options);
   } else {
     if (!fs.existsSync(inputPath)) {
       cli_error(`input_path does not exist: "${inputPath}"`);
@@ -970,19 +970,19 @@ if (commander.helpMacros) {
           // This cleanup has to be done before the database initialization.
           cmd_get_stdout('git', ['-C', publish_dir, 'clean', '-x', '-d', '-f'], cmd_options);
         }
-        publish_tmpdir = path.join(publish_dir, subdir_relpath, cirodown_nodejs_webpack_safe.TMP_DIRNAME);
+        publish_tmpdir = path.join(publish_dir, subdir_relpath, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME);
       }
     }
     if (publish_tmpdir === undefined) {
       publish_tmpdir = tmpdir;
     }
 
-    // CIRODOWN_TEX_BASENAME
-    let tex_path = path.join(cirodown_json_dir, CIRODOWN_TEX_BASENAME);
+    // OURBIGBOOK_TEX_BASENAME
+    let tex_path = path.join(ourbigbook_json_dir, OURBIGBOOK_TEX_BASENAME);
     const katex_macros = {};
     if (fs.existsSync(tex_path)) {
       require('katex').renderToString(
-        fs.readFileSync(tex_path, cirodown_nodejs_webpack_safe.ENCODING),
+        fs.readFileSync(tex_path, ourbigbook_nodejs_webpack_safe.ENCODING),
         {
           globalGroup: true,
           macros: katex_macros,
@@ -992,28 +992,28 @@ if (commander.helpMacros) {
         }
       );
     }
-    cirodown_options.katex_macros = katex_macros;
+    ourbigbook_options.katex_macros = katex_macros;
 
     // Setup the ID database.
     if (commander.db) {
-      non_cirodown_options.db_options.storage = path.join(publish_tmpdir, 'db.sqlite3');
+      non_ourbigbook_options.db_options.storage = path.join(publish_tmpdir, 'db.sqlite3');
     } else {
-      non_cirodown_options.db_options.storage = SQLITE_MAGIC_MEMORY_NAME
+      non_ourbigbook_options.db_options.storage = SQLITE_MAGIC_MEMORY_NAME
     }
     if (commander.watch) {
       if (publish) {
         cli_error('--publish and --watch are incompatible');
       }
-      await create_db(cirodown_options, non_cirodown_options);
+      await create_db(ourbigbook_options, non_ourbigbook_options);
       if (!input_path_is_file) {
-        await reconcile_db_and_filesystem(inputPath, cirodown_options, non_cirodown_options);
-        await convert_directory_extract_ids(inputPath, cirodown_options, non_cirodown_options);
+        await reconcile_db_and_filesystem(inputPath, ourbigbook_options, non_ourbigbook_options);
+        await convert_directory_extract_ids(inputPath, ourbigbook_options, non_ourbigbook_options);
       }
       const watcher = require('chokidar').watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES})
       const convert = async (subpath) => {
-        await convert_path_to_file(subpath, cirodown_options, non_cirodown_options);
-        await check_db(non_cirodown_options)
-        non_cirodown_options.cirodown_paths_converted = []
+        await convert_path_to_file(subpath, ourbigbook_options, non_ourbigbook_options);
+        await check_db(non_ourbigbook_options)
+        non_ourbigbook_options.ourbigbook_paths_converted = []
       }
       watcher.on('change', convert).on('add', convert)
     } else {
@@ -1021,9 +1021,9 @@ if (commander.helpMacros) {
         if (publish) {
           cli_error('--publish must take a directory as input, not a file');
         }
-        await create_db(cirodown_options, non_cirodown_options);
-        output = await convert_path_to_file(inputPath, cirodown_options, non_cirodown_options);
-        await check_db(non_cirodown_options)
+        await create_db(ourbigbook_options, non_ourbigbook_options);
+        output = await convert_path_to_file(inputPath, ourbigbook_options, non_ourbigbook_options);
+        await check_db(non_ourbigbook_options)
       } else {
         let actual_input_dir;
         let publish_branch;
@@ -1040,7 +1040,7 @@ if (commander.helpMacros) {
           remote_url = cmd_get_stdout('git', ['-C', inputPath, 'config', '--get', 'remote.origin.url'], cmd_options).slice(0, -1);
           src_branch = cmd_get_stdout('git', ['-C', inputPath, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options).slice(0, -1);
           if (commander.dryRun) {
-            remote_url = 'git@github.com:cirosantilli/cirodown.git';
+            remote_url = 'git@github.com:cirosantilli/ourbigbook.git';
             src_branch = 'master';
           }
           const parsed_remote_url = require("git-url-parse")(remote_url);
@@ -1067,17 +1067,17 @@ if (commander.helpMacros) {
             cmd_get_stdout('git', ['-C', publish_dir, 'submodule', 'update', '--init'], cmd_options);
           } else {
             cmd_get_stdout('git', ['clone', '--recursive', input_git_toplevel, publish_dir],
-              cirodown.clone_and_set(cmd_options, 'dry_run', false));
+              ourbigbook.clone_and_set(cmd_options, 'dry_run', false));
           }
 
           // Set some variables especially for publishing.
           actual_input_dir = path.join(publish_dir, subdir_relpath);
-          non_cirodown_options.cirodown_json_dir = actual_input_dir;
+          non_ourbigbook_options.ourbigbook_json_dir = actual_input_dir;
           publish_out_publish_dir = path.join(publish_tmpdir, 'publish');
-          publish_out_publish_dist_dir = path.join(publish_out_publish_dir, cirodown_nodejs.DIST_BASENAME)
-          non_cirodown_options.out_css_path = path.join(publish_out_publish_dist_dir, cirodown_nodejs.DIST_CSS_BASENAME);
-          non_cirodown_options.out_js_path = path.join(publish_out_publish_dist_dir, cirodown_nodejs.DIST_JS_BASENAME);
-          non_cirodown_options.external_css_and_js = true;
+          publish_out_publish_dist_dir = path.join(publish_out_publish_dir, ourbigbook_nodejs.DIST_BASENAME)
+          non_ourbigbook_options.out_css_path = path.join(publish_out_publish_dist_dir, ourbigbook_nodejs.DIST_CSS_BASENAME);
+          non_ourbigbook_options.out_js_path = path.join(publish_out_publish_dist_dir, ourbigbook_nodejs.DIST_JS_BASENAME);
+          non_ourbigbook_options.external_css_and_js = true;
           // Remove all files from the gh-pages repository in case some were removed from the original source.
           if (
             fs.existsSync(path.join(publish_out_publish_dir, '.git'))
@@ -1092,23 +1092,23 @@ if (commander.helpMacros) {
           actual_input_dir = inputPath;
           publish_out_publish_dir = outdir;
         }
-        non_cirodown_options.outdir = publish_out_publish_dir;
-        await create_db(cirodown_options, non_cirodown_options);
-        await reconcile_db_and_filesystem(actual_input_dir, cirodown_options, non_cirodown_options);
+        non_ourbigbook_options.outdir = publish_out_publish_dir;
+        await create_db(ourbigbook_options, non_ourbigbook_options);
+        await reconcile_db_and_filesystem(actual_input_dir, ourbigbook_options, non_ourbigbook_options);
 
         // Do the actual conversion.
-        await convert_directory_extract_ids(actual_input_dir, cirodown_options, non_cirodown_options);
-        if (!non_cirodown_options.had_error) {
-          await check_db(non_cirodown_options)
+        await convert_directory_extract_ids(actual_input_dir, ourbigbook_options, non_ourbigbook_options);
+        if (!non_ourbigbook_options.had_error) {
+          await check_db(non_ourbigbook_options)
         }
         if (commander.render) {
-          if (!non_cirodown_options.had_error) {
-            await convert_directory(actual_input_dir, cirodown_options, non_cirodown_options);
+          if (!non_ourbigbook_options.had_error) {
+            await convert_directory(actual_input_dir, ourbigbook_options, non_ourbigbook_options);
           }
         }
 
         // Publish the converted output if build succeeded.
-        if (publish && !non_cirodown_options.had_error) {
+        if (publish && !non_ourbigbook_options.had_error) {
           // Push the original source.
           if (!commander.dryRunPush) {
             cmd_get_stdout('git', ['-C', inputPath, 'push'], cmd_options);
@@ -1128,7 +1128,7 @@ if (commander.helpMacros) {
             'git',
             ['-C', publish_out_publish_dir, 'reset', `origin/${publish_branch}`],
             // Fails on the first commit in an empty repository.
-            cirodown.clone_and_set(cmd_options, 'throw_on_error', false)
+            ourbigbook.clone_and_set(cmd_options, 'throw_on_error', false)
           );
 
           // Generate special files needed for GitHub pages.
@@ -1136,27 +1136,27 @@ if (commander.helpMacros) {
           fs.writeFileSync(path.join(publish_out_publish_dir, 'Gemfile'), gemfile_content);
 
           // Commit and push.
-          if ('prepublish' in cirodown_json) {
+          if ('prepublish' in ourbigbook_json) {
             if (!commander.dryRun && !commander.dryRunPush && !commander.unsafeAce) {
-              cli_error('prepublish in cirodown.json requires running with --unsafe-ace');
+              cli_error('prepublish in ourbigbook.json requires running with --unsafe-ace');
             }
-            const prepublish_path = cirodown_json.prepublish
+            const prepublish_path = ourbigbook_json.prepublish
             if (!fs.existsSync(prepublish_path)) {
-              cli_error(`${CIRODOWN_JSON_BASENAME} prepublish file not found: ${prepublish_path}`);
+              cli_error(`${OURBIGBOOK_JSON_BASENAME} prepublish file not found: ${prepublish_path}`);
             }
             try {
               cmd_get_stdout(path.resolve(prepublish_path), [publish_out_publish_dir]);
             } catch(error) {
-              cli_error(`${CIRODOWN_JSON_BASENAME} prepublish command exited non-zero, aborting`);
+              cli_error(`${OURBIGBOOK_JSON_BASENAME} prepublish command exited non-zero, aborting`);
             }
           }
 
           // Copy runtime assets from dist/ into the output repository.
-          const dir = fs.opendirSync(cirodown_nodejs.DIST_PATH)
+          const dir = fs.opendirSync(ourbigbook_nodejs.DIST_PATH)
           let dirent
           while ((dirent = dir.readSync()) !== null) {
             require('fs-extra').copySync(
-              path.join(cirodown_nodejs.DIST_PATH, dirent.name),
+              path.join(ourbigbook_nodejs.DIST_PATH, dirent.name),
               path.join(publish_out_publish_dist_dir, dirent.name)
             )
           }
@@ -1186,9 +1186,9 @@ if (commander.helpMacros) {
   ) {
     process.stdout.write(output);
   }
-  perf_print('exit', cirodown_options)
+  perf_print('exit', ourbigbook_options)
   if (!commander.watch) {
-    process.exit(non_cirodown_options.had_error);
+    process.exit(non_ourbigbook_options.had_error);
   }
 }
 })().catch((e) => {

@@ -6,7 +6,7 @@ const perf_hooks = require('perf_hooks')
 
 const lodash = require('lodash')
 
-const cirodown = require('cirodown')
+const ourbigbook = require('ourbigbook')
 const models = require('./models')
 
 const now = perf_hooks.performance.now
@@ -218,7 +218,7 @@ async function generateDemoData(params) {
     const userArgs = [];
     for (let i = 0; i < nUsers; i++) {
       let [displayName, image] = userData[i % userData.length]
-      let username = cirodown.title_to_id(displayName)
+      let username = ourbigbook.title_to_id(displayName)
       if (i >= userData.length) {
         username = `user${i}`
         displayName = `User${i}`
@@ -293,14 +293,14 @@ async function generateDemoData(params) {
         }
         let includesString, refsString
         if (children.length > 0) {
-          const ids = children.map(child => cirodown.title_to_id(child[0]))
+          const ids = children.map(child => ourbigbook.title_to_id(child[0]))
           includesString = '\n\n' + ids.map(id => `\\Include[${id}]`).join('\n')
           refsString = 'Internal links: ' + ids.map(id => `\\x[${id}]`).join(', ') + '\n\n'
         } else {
           includesString = ''
           refsString = ''
         }
-        const id_noscope = cirodown.title_to_id(title)
+        const id_noscope = ourbigbook.title_to_id(title)
         const articleArg = {
           title,
           authorId,
@@ -419,7 +419,7 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
       const articleDataProvider = articleDataProviders[user.id]
       const ids = []
       for (const title of articleDataProvider.toplevelSet) {
-        ids.push(cirodown.title_to_id(title))
+        ids.push(ourbigbook.title_to_id(title))
       }
       const includesString = '\n' + ids.map(id => `\\Include[${id}]`).join('\n')
       const article = await sequelize.models.Article.findOne({ where: { slug: user.username } })

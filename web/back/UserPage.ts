@@ -1,4 +1,4 @@
-import cirodown from 'cirodown/dist/cirodown'
+import ourbigbook from 'ourbigbook/dist/ourbigbook'
 import sequelize from 'db'
 import { articleLimit  } from 'front/config'
 import { getServerSidePropsArticleHoc } from 'back/ArticlePage'

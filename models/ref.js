@@ -1,7 +1,7 @@
 /* Models different types of references between two sections, e.g.
  * \x from one link to the other. */
 
-const cirodown = require('../index');
+const ourbigbook = require('../index');
 
 module.exports = (sequelize) => {
   const { DataTypes } = sequelize.Sequelize
@@ -42,14 +42,14 @@ module.exports = (sequelize) => {
     }
   )
   Ref.Types = {
-    // https://cirosantilli.com/cirodown/include
-    [cirodown.REFS_TABLE_PARENT]: 0,
-    // https://cirosantilli.com/cirodown/internal-cross-reference
-    [cirodown.REFS_TABLE_X]: 1,
-    // https://cirosantilli.com/cirodown/secondary-children
-    [cirodown.REFS_TABLE_X_CHILD]: 2,
-    // https://github.com/cirosantilli/cirodown/issues/198
-    [cirodown.REFS_TABLE_X_TITLE_TITLE]: 3,
+    // https://cirosantilli.com/ourbigbook/include
+    [ourbigbook.REFS_TABLE_PARENT]: 0,
+    // https://cirosantilli.com/ourbigbook/internal-cross-reference
+    [ourbigbook.REFS_TABLE_X]: 1,
+    // https://cirosantilli.com/ourbigbook/secondary-children
+    [ourbigbook.REFS_TABLE_X_CHILD]: 2,
+    // https://github.com/cirosantilli/ourbigbook/issues/198
+    [ourbigbook.REFS_TABLE_X_TITLE_TITLE]: 3,
   };
   return Ref;
 }

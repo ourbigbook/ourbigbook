@@ -1,5 +1,5 @@
 // TODO I don't know why, but webpack was failing with:
-//   Error: Cannot find module 'cirodown/package.json'
+//   Error: Cannot find module 'ourbigbook/package.json'
 // at:
 //   const PACKAGE_PATH = path.dirname(require.resolve(path.join(PACKAGE_NAME, 'package.json')));
 // from nodejs.js. Just splitting this out here until I find the patience to
@@ -11,10 +11,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const cirodown = require('./index');
+const ourbigbook = require('./index');
 const models = require('./models')
 
-// DB options that have to be given to both cirodown CLI and dynamic website.
+// DB options that have to be given to both ourbigbook CLI and dynamic website.
 // These must be used for both for consistency, e.g. freezeTableName would lead
 // to different able names in the database, which could break manually written queries.
 // Yes, we could work around that by using model properties like models.Id.tableName,
@@ -25,7 +25,7 @@ const db_options = {
   },
 }
 
-class SqliteIdProvider extends cirodown.IdProvider {
+class SqliteIdProvider extends ourbigbook.IdProvider {
   constructor(sequelize) {
     super();
     this.sequelize = sequelize
@@ -46,7 +46,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
   async clear_prefix(prefix) {
     let prefix_literal;
     if (prefix) {
-      prefix_literal = prefix + cirodown.Macro.HEADER_SCOPE_SEPARATOR + '%'
+      prefix_literal = prefix + ourbigbook.Macro.HEADER_SCOPE_SEPARATOR + '%'
     } else {
       // Toplevel dir, delete all IDs.
       prefix_literal = '%'
@@ -88,7 +88,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
           {
             model: this.sequelize.models.Ref,
             as: 'to',
-            where: { type: this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_PARENT] },
+            where: { type: this.sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT] },
             required: false,
           },
           {
@@ -96,8 +96,8 @@ class SqliteIdProvider extends cirodown.IdProvider {
             as: 'from',
             where: {
               type: { [this.sequelize.Sequelize.Op.or]: [
-                this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_PARENT],
-                this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_X_TITLE_TITLE],
+                this.sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+                this.sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_TITLE_TITLE],
               ]}
             },
             required: false,
@@ -116,7 +116,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
                   // so just duplicating it here.
                   '$from.to_id$': {[this.sequelize.Sequelize.Op.col]: 'from->to.idid' },
                   // This gets only the TITLE TITLE.
-                  '$from.type$': this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_X_TITLE_TITLE],
+                  '$from.type$': this.sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_TITLE_TITLE],
                 }
               }
             ]
@@ -246,13 +246,13 @@ class SqliteIdProvider extends cirodown.IdProvider {
         const parent_id = row.from_id
         const parent_ast = this.id_cache[parent_id]
         const parent_ast_header_tree_node = parent_ast.header_tree_node
-        ast.header_tree_node = new cirodown.HeaderTreeNode(ast, parent_ast_header_tree_node);
+        ast.header_tree_node = new ourbigbook.HeaderTreeNode(ast, parent_ast_header_tree_node);
         // I love it when you get potential features like this for free.
         // Only noticed when Figures showed up on ToC.
-        if (ast.macro_name === cirodown.Macro.HEADER_MACRO_NAME) {
+        if (ast.macro_name === ourbigbook.Macro.HEADER_MACRO_NAME) {
           parent_ast_header_tree_node.add_child(ast.header_tree_node);
         }
-        cirodown.propagate_numbered(ast, context)
+        ourbigbook.propagate_numbered(ast, context)
         this.id_cache[ast.id] = ast
         asts.push(ast)
       }
@@ -300,12 +300,12 @@ WITH RECURSIVE
   SELECT * FROM tree_search
 ) AS "RecRefs"
 ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
-   AND "${this.sequelize.models.Id.tableName}".macro_name = '${cirodown.Macro.HEADER_MACRO_NAME}'
+   AND "${this.sequelize.models.Id.tableName}".macro_name = '${ourbigbook.Macro.HEADER_MACRO_NAME}'
 ORDER BY "RecRefs".level, "RecRefs".from_id, "RecRefs".to_id_index
 `,
         { replacements: {
           starting_ids,
-          type: this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_PARENT],
+          type: this.sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
         } }
       )
       return rows
@@ -344,7 +344,7 @@ ORDER BY "RecRefs".level DESC
 `,
         { replacements: {
           toplevel_id,
-          type: this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_PARENT],
+          type: this.sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
         } }
       )
       return rows
@@ -366,11 +366,11 @@ ORDER BY "RecRefs".level DESC
         if (parent_ast) {
           parent_ast_header_tree_node = parent_ast.header_tree_node
         }
-        ast.header_tree_node = new cirodown.HeaderTreeNode(ast, parent_ast_header_tree_node);
+        ast.header_tree_node = new ourbigbook.HeaderTreeNode(ast, parent_ast_header_tree_node);
         if (parent_ast) {
           parent_ast_header_tree_node.add_child(ast.header_tree_node);
         }
-        cirodown.propagate_numbered(ast, context)
+        ourbigbook.propagate_numbered(ast, context)
         parent_ast = ast
       }
     }
@@ -378,21 +378,21 @@ ORDER BY "RecRefs".level DESC
   }
 
   row_to_ast(row, context) {
-    const ast = cirodown.AstNode.fromJSON(row.ast_json, context)
+    const ast = ourbigbook.AstNode.fromJSON(row.ast_json, context)
     ast.input_path = row.path
     ast.id = row.idid
     return ast
   }
 
-  // Update the databases based on the output of the Cirodown conversion.
-  async update(cirodown_extra_returns, sequelize, transaction) {
-    const context = cirodown_extra_returns.context
+  // Update the databases based on the output of the Ourbigbook conversion.
+  async update(ourbigbook_extra_returns, sequelize, transaction) {
+    const context = ourbigbook_extra_returns.context
     // Remove all IDs from the converted files to ensure that removed IDs won't be
     // left over hanging in the database.
     await this.clear(Array.from(context.options.include_path_set), transaction);
 
     // Calculate create_ids
-    const ids = cirodown_extra_returns.ids;
+    const ids = ourbigbook_extra_returns.ids;
     const create_ids = []
     for (const id in ids) {
       const ast = ids[id];
@@ -414,7 +414,7 @@ ORDER BY "RecRefs".level DESC
         const from_ids = types[type];
         for (const from_id in from_ids) {
           if (
-            // TODO happens on CirodownExample, likely also include,
+            // TODO happens on OurbigbookExample, likely also include,
             // need to fix and remove this if.
             from_id !== undefined
           ) {
@@ -443,7 +443,7 @@ ORDER BY "RecRefs".level DESC
   }
 }
 
-class SqliteFileProvider extends cirodown.FileProvider {
+class SqliteFileProvider extends ourbigbook.FileProvider {
   constructor(sequelize, id_provider) {
     super();
     this.sequelize = sequelize;
@@ -462,7 +462,7 @@ class SqliteFileProvider extends cirodown.FileProvider {
       if (
         // Happens on some unminimized condition when converting
         // cirosantilli.github.io @ 04f0f5bc03b9071f82b706b3481c09d616d44d7b + 1
-        // twice with cirodown -S ., no patience to minimize and test now.
+        // twice with ourbigbook -S ., no patience to minimize and test now.
         row.Id !== null &&
         // We have to do this if here because otherwise it would overwrite the reconciled header
         // we have stiched into the tree with Include.
@@ -487,7 +487,7 @@ async function create_sequelize(db_options, Sequelize) {
   const new_db_options = Object.assign({}, default_options, db_options)
   const sequelize = new Sequelize(new_db_options)
   models.addModels(sequelize)
-  if (db_path === cirodown.SQLITE_MAGIC_MEMORY_NAME && db_path || !fs.existsSync(db_path)) {
+  if (db_path === ourbigbook.SQLITE_MAGIC_MEMORY_NAME && db_path || !fs.existsSync(db_path)) {
     await sequelize.sync()
   }
   return sequelize
@@ -502,7 +502,7 @@ async function update_database_after_convert({
   transaction,
 }) {
   const context = extra_returns.context;
-  cirodown.perf_print(context, 'convert_path_pre_sqlite_transaction')
+  ourbigbook.perf_print(context, 'convert_path_pre_sqlite_transaction')
   let toplevel_id;
   if (context.toplevel_ast !== undefined) {
     toplevel_id = context.toplevel_ast.id;
@@ -525,7 +525,7 @@ async function update_database_after_convert({
     }
   }
 
-  // This was the 80% bottleneck at Cirodown f8fc9eacfa794b95c1d9982a04b62603e6d0bb83
+  // This was the 80% bottleneck at Ourbigbook f8fc9eacfa794b95c1d9982a04b62603e6d0bb83
   // before being converted to a single transaction!
   // Likely would not have been a bottleneck if we new more about databases/had more patience
   // and instead of doing INSERT one by one we would do a single insert with a bunch of data.
@@ -551,15 +551,15 @@ async function update_database_after_convert({
       )
     ])
   });
-  cirodown.perf_print(context, 'convert_path_post_sqlite_transaction')
+  ourbigbook.perf_print(context, 'convert_path_post_sqlite_transaction')
 }
 
 // Do various post conversion checks to verify database integrity:
 //
 // - duplicate IDs
-// - https://cirosantilli.com/cirodown/x-within-title-restrictions
+// - https://cirosantilli.com/ourbigbook/x-within-title-restrictions
 //
-// Previously these were done inside cirodown.convert. But then we started skipping render by timestamp,
+// Previously these were done inside ourbigbook.convert. But then we started skipping render by timestamp,
 // so if you e.g. move an ID from one file to another, a common operation, then it would still see
 // the ID in the previous file depending on conversion order. So we are moving it here instead at the end.
 // Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
@@ -573,7 +573,7 @@ async function check_db(sequelize, paths_converted) {
   const error_messages = []
   if (duplicate_rows.length > 0) {
     for (const duplicate_row of duplicate_rows) {
-      const ast = cirodown.AstNode.fromJSON(duplicate_row.ast_json)
+      const ast = ourbigbook.AstNode.fromJSON(duplicate_row.ast_json)
       const source_location = ast.source_location
       error_messages.push(
         `${source_location.path}:${source_location.line}:${source_location.column}: ID duplicate: "${duplicate_row.idid}"`
@@ -582,10 +582,10 @@ async function check_db(sequelize, paths_converted) {
   }
   if (invalid_title_title_rows.length > 0) {
     for (const invalid_title_title_row of invalid_title_title_rows) {
-      const ast = cirodown.AstNode.fromJSON(invalid_title_title_row.ast_json)
+      const ast = ourbigbook.AstNode.fromJSON(invalid_title_title_row.ast_json)
       const source_location = ast.source_location
       error_messages.push(
-        `${source_location.path}:${source_location.line}:${source_location.column}: cannot \\x link from a title to a non-header element: https://cirosantilli.com/cirodown/x-within-title-restrictions`
+        `${source_location.path}:${source_location.line}:${source_location.column}: cannot \\x link from a title to a non-header element: https://cirosantilli.com/ourbigbook/x-within-title-restrictions`
       )
     }
   }
@@ -597,7 +597,7 @@ function read_include({exists, read, path_sep, ext}) {
     return parts.join(path_sep)
   }
   if (ext === undefined) {
-    ext = cirodown.CIRODOWN_EXT
+    ext = ourbigbook.OURBIGBOOK_EXT
   }
   return async (id, input_dir) => {
     let found = undefined;
@@ -624,7 +624,7 @@ function read_include({exists, read, path_sep, ext}) {
       }
     }
     if (found === undefined) {
-      test = join(id, cirodown.INDEX_BASENAME_NOEXT + ext);
+      test = join(id, ourbigbook.INDEX_BASENAME_NOEXT + ext);
       if (input_dir !=='') {
         test = join(input_dir, test)
       }
@@ -633,8 +633,8 @@ function read_include({exists, read, path_sep, ext}) {
       }
       if (found === undefined) {
         const id_parse = path.parse(id);
-        if (id_parse.name === cirodown.INDEX_BASENAME_NOEXT) {
-          for (let index_basename_noext of cirodown.INDEX_FILE_BASENAMES_NOEXT) {
+        if (id_parse.name === ourbigbook.INDEX_BASENAME_NOEXT) {
+          for (let index_basename_noext of ourbigbook.INDEX_FILE_BASENAMES_NOEXT) {
             test = join(id_parse.dir, index_basename_noext + ext);
             if (await exists(test)) {
               found = test;

@@ -9,9 +9,9 @@ import { AppContext, AppContextProvider } from 'front'
 import { appName } from 'front/config'
 
 // Css
-// migrating the local cirodown to webpack: https://github.com/cirosantilli/cirodown/issues/157
-import 'cirodown/dist/cirodown.css'
-import 'cirodown/editor.scss'
+// migrating the local ourbigbook to webpack: https://github.com/cirosantilli/ourbigbook/issues/157
+import 'ourbigbook/dist/ourbigbook.css'
+import 'ourbigbook/editor.scss'
 import 'ionicons/css/ionicons.min.css'
 import 'style.scss'
 
@@ -61,8 +61,8 @@ const MyApp = ({ Component, pageProps }) => {
           <footer>
             <div className="container">
               Content license <a href="https://cirosantilli.com/ourbigbook-com/content-license">CC BY-SA 4.0 unless noted</a>  |
-              {' '}<a href="https://github.com/cirosantilli/cirodown/tree/master/web">Website source code</a> |
-              {' '}<a href="https://github.com/cirosantilli/cirodown/issues">Contact, bugs, suggestions, abuse reports</a>
+              {' '}<a href="https://github.com/cirosantilli/ourbigbook/tree/master/web">Website source code</a> |
+              {' '}<a href="https://github.com/cirosantilli/ourbigbook/issues">Contact, bugs, suggestions, abuse reports</a>
             </div>
           </footer>
         }

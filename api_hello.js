@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const cirodown = require('cirodown');
+const ourbigbook = require('ourbigbook');
 (async () => {
-console.log(await cirodown.convert('ab\ncd\n', {'body_only': true}));
+console.log(await ourbigbook.convert('ab\ncd\n', {'body_only': true}));
 })()

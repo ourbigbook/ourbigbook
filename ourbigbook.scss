@@ -1,11 +1,11 @@
-// https://cirosantilli.com/cirodown#insane-link-parsing-rules#overview-of-files-in-this-repository
+// https://cirosantilli.com/ourbigbook#insane-link-parsing-rules#overview-of-files-in-this-repository
 
 @use 'sass:math';
 
 @use 'normalize.css/normalize.css';
 @use 'katex/dist/katex.min.css';
 @use 'tablesort/tablesort.css';
-@import 'cirodown.common.scss';
+@import 'ourbigbook.common.scss';
 @font-face { font-family: fa-brands-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-brands-400.woff2); }
 @font-face { font-family: fa-regular-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2); }
 @font-face { font-family: fa-solid-900; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2); }
@@ -27,7 +27,7 @@ $toplevel-horizontal-padding-mobile: 5px;
   //
   // So instead we fix the header height for now.
   //
-  // https://github.com/cirosantilli/cirodown/issues/98
+  // https://github.com/cirosantilli/ourbigbook/issues/98
   //visibility: hidden;
 }
 
@@ -48,7 +48,7 @@ $toplevel-horizontal-padding-mobile: 5px;
   //visibility: visible;
 }
 
-.cirodown {
+.ourbigbook {
 @include body;
 
 // Helps prevent the horizontal scrollbar on mobile.
@@ -200,7 +200,7 @@ nav.h-nav {
   }
 }
 
-// https://cirosantilli.com/cirodown#background-color-of-transparent-images
+// https://cirosantilli.com/ourbigbook#background-color-of-transparent-images
 img {
   background-color: white;
   @include responsive-img;
@@ -274,7 +274,7 @@ pre {
 ol, ul {
   padding-left: 30px;
   li {
-    // https://github.com/cirosantilli/cirodown/issues/68
+    // https://github.com/cirosantilli/ourbigbook/issues/68
     margin-bottom: $p-margin-vert;
     margin-top: $p-margin-vert;
   }
@@ -311,7 +311,7 @@ ol, ul {
   ul {
     list-style-type: none;
     li {
-      // https://github.com/cirosantilli/cirodown/issues/68
+      // https://github.com/cirosantilli/ourbigbook/issues/68
       $toc-sep: 0.3em;
       margin-bottom: $toc-sep;
       margin-top: $toc-sep;

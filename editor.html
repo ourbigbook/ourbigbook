@@ -2,8 +2,8 @@
 <html lang=en>
 <head>
 <meta charset=utf-8>
-<title>Cirodown editor demo</title>
-<link rel="stylesheet" href="dist/cirodown.css">
+<title>Ourbigbook editor demo</title>
+<link rel="stylesheet" href="dist/ourbigbook.css">
 <link rel="stylesheet" href="dist/editor.css">
 <style>
 html, body {
@@ -18,10 +18,10 @@ html, body {
 </style>
 </head>
 <body>
-<div class="cirodown-editor"></div>
-<div id="example">= Cirodown hello world
+<div class="ourbigbook-editor"></div>
+<div id="example">= Ourbigbook hello world
 
-Welcome to Cirodown! Here's the table of contents:
+Welcome to Ourbigbook! Here's the table of contents:
 
 == Paragraphs, code, math
 
@@ -113,7 +113,7 @@ And now for tables, see this one: \x[table-my-table]. Try clicking next to the h
 And a quotation:
 \Q[To be or not to be!
 
-Cirodown is the answer.]
+Ourbigbook is the answer.]
 
 == References, headers, images
 
@@ -187,7 +187,7 @@ These will show up on the metadata of a given header.
 
 Note that metadata is only visible when the header is the toplevel header of a page, otherwise it would clutter your headers too much, so it is not very easy to see in this single page example.
 
-But all headers get their own toplevel pages when using split headers: https://cirosantilli.com/cirodown/split-headers
+But all headers get their own toplevel pages when using split headers: https://cirosantilli.com/ourbigbook/split-headers
 
 === Animal
 
@@ -219,15 +219,15 @@ my nice code
 {{title=Nice code}}
 </div>
 <script src="editor.js"></script>
-<script src="dist/cirodown.js"></script>
-<script src="dist/cirodown_runtime.js"></script>
+<script src="dist/ourbigbook.js"></script>
+<script src="dist/ourbigbook_runtime.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.26.1/min/vs/loader.min.js" integrity="sha512-SExj71Cw3B9C9EE8BC/ad3AKia5zQXDj/2SM4THgkeKh5GIFZhKM/R3uclUG8YZwJrjcVhydAlIHmfNvsBCKZA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 const example_elem = document.getElementById('example');
-const root_elem = document.getElementsByClassName('cirodown-editor')[0];
+const root_elem = document.getElementsByClassName('ourbigbook-editor')[0];
 require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.26.1/min/vs' }});
 require(["vs/editor/editor.main"], () => {
-  new CirodownEditor(root_elem, example_elem.textContent, monaco, cirodown, cirodown_runtime.cirodown_runtime)
+  new OurbigbookEditor(root_elem, example_elem.textContent, monaco, ourbigbook, ourbigbook_runtime.ourbigbook_runtime)
 })
 </script>
 </body>

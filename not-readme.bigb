@@ -17,7 +17,7 @@ A test child link to another section: \x[not-readme-2]{child}.
 
 == Some references back to the README
 
-Toplevel: \x[cirodown].
+Toplevel: \x[ourbigbook].
 
 Non-toplevel: \x[internal-cross-reference].
 

@@ -33,7 +33,7 @@ const IndexPage = ({
       break
   }
   return (
-    <div className="home-page content-not-cirodown">
+    <div className="home-page content-not-ourbigbook">
       <div className="tab-list">
         {loggedInUser &&
           <>

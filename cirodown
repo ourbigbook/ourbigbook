@@ -368,8 +368,12 @@ function generate_redirects(convert_input_options, cirodown_json, html_x_extensi
   const id_provider = new SqliteIdProvider(convert_input_options);
   for (let redirect_src_id in cirodown_json.redirects) {
     const redirect_target_id = cirodown_json.redirects[redirect_src_id];
+    const target_id_ast = id_provider.get(redirect_target_id)
+    if (target_id_ast === undefined) {
+      cli_error(`redirection target ID "${redirect_target_id}" not found`);
+    }
     const redirect_href = cirodown.x_href(
-      id_provider.get(redirect_target_id),
+      target_id_ast,
       {
         // This will need changing when we do:
         // https://github.com/cirosantilli/cirodown/issues/44
@@ -448,6 +452,7 @@ function* walk_files_recursively(file_or_dir, skip_basenames) {
 commander.option('--body-only', 'output only the content inside the HTLM body element', false);
 commander.option('--dry-run', "don't run most external commands, see: https://github.com/cirosantilli/linux-kernel-module-cheat/tree/6d0a900f4c3c15e65d850f9d29d63315a6f976bf#dry-run-to-get-commands-for-your-project", false);
 commander.option('--generate', 'http://cirosantilli.com/cirodown#generate', false);
+commander.option('--generate-redirects', 'http://cirosantilli.com/cirodown#redirects', false);
 commander.option('--generate-multifile', 'http://cirosantilli.com/cirodown#generate-multifile', false);
 commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown/#', false);
 commander.option('--html-embed', 'http://cirosantilli.com/cirodown#html-embed', false);
@@ -732,6 +737,10 @@ A link to another file: \\x[and-now-an-include]
       convert_input_options.ids_table_name = ids_table_name;
       convert_input_options.includes_table_name = includes_table_name;
       convert_input_options.files_table_name = files_table_name;
+    }
+    if (commander.generateRedirects) {
+      generate_redirects(convert_input_options, cirodown_json, html_x_extension, outdir);
+      process.exit(0);
     }
     if (commander.watch) {
       if (publish) {

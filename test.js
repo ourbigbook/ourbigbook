@@ -3468,13 +3468,33 @@ assert_convert_ast('table of contents contains included headers numbered without
   {
     assert_xpath_matches: [
       "//*[@id='toc']//x:a[@href='notindex2.html' and text()='1. Notindex2']",
+      "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='1.1. Notindex2 h2']",
+      "//*[@id='toc']//x:a[@href='notindex3.html' and text()='1.1.1. Notindex3']",
+      "//*[@id='toc']//x:a[@href='notindex3.html#notindex3-h2' and text()='1.1.1.1. Notindex3 h2']",
+      "//*[@id='toc']//x:a[@href='#notindex-h2' and text()='2. Notindex h2']",
     ],
-    convert_before: ['notindex2.ciro'],
+    assert_xpath_split_headers: {
+      'notindex-split.html': [
+        "//*[@id='toc']//x:a[@href='notindex2.html' and text()='1. Notindex2']",
+        // Links to external source files keep the default just like regular likes.
+        "//*[@id='toc']//x:a[@href='notindex-h2.html' and text()='2. Notindex h2']",
+      ],
+    },
+    convert_before: [
+      'notindex3.ciro',
+      'notindex2.ciro',
+    ],
     filesystem: {
       'notindex2.ciro': `= Notindex2
 
 == Notindex2 h2
-`
+
+\\Include[notindex3]
+`,
+      'notindex3.ciro': `= Notindex3
+
+== Notindex3 h2
+`,
     },
     input_path_noext: 'notindex',
   },

@@ -225,7 +225,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
   // because we want to first fetch everything
   // and populate the ID cache with the include entry points that have proper header_graph_node.
   // Only then are we ready for linking up the rest of the tree.
-  build_header_tree(starting_ids_to_asts, fetch_header_tree_ids_rows, {context}) {
+  build_header_tree(starting_ids_to_asts, fetch_header_tree_ids_rows, { context }) {
     const asts = []
     for (const row of fetch_header_tree_ids_rows) {
       const ast = this.row_to_ast(row, context)
@@ -238,6 +238,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
       if (ast.macro_name === cirodown.Macro.HEADER_MACRO_NAME) {
         parent_ast_header_graph_node.add_child(ast.header_graph_node);
       }
+      cirodown.propagate_numbered(ast, context)
       this.id_cache[ast.id] = ast
     }
   }

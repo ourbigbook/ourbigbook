@@ -5921,17 +5921,32 @@ cd web
 npm run deploy-prod
 ``
 
-Update the \x[demo-data]:
+Get an interactive shell on the production server:
+``
+heroku run -a ourbigbook bash
+``
+From there you could then for example update the \x[demo-data] with:
+``
+cd web
+bin/generate-demo-data.js --force-production
+``
+This should in theory not affect any real user data, only the demo articles and users, so it might be safe. In theory!
+
+Alternatively, we could do this at once with;
 ``
 heroku run -a ourbigbook web/bin/generate-demo-data.js --force-production
 ``
-This should in theory not affect any real user data, only the demo articles and users, so it might be safe. In theory!
 
 Drop into a PostgreSQL shell on production:
 ``
 heroku psql -a ourbigbook
 ``
-Of course, any writes could mean loss of data!
+Of course, any writes could mean loss of user data!
+
+If some spurious bugs crashes the server, you might want to restart it with:
+``
+heroku restart -a ourbigbook
+``
 
 = Custom domain name setup
 {parent=heroku-deployment}

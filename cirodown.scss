@@ -122,6 +122,18 @@ h1, h2, h3, h4, h5, h6 {
   &:hover a + span {
     @include visible;
   }
+  // Clicked navigation expand button.
+  &:target a + span {
+    @include visible;
+  }
+}
+div.h-nav {
+  span.nav {
+    font-weight: bold;
+    &:before {
+      content: "\21b3";
+    }
+  }
 }
 
 // https://cirosantilli.com/cirodown#background-color-of-transparent-images
@@ -197,6 +209,9 @@ ol, ul {
       margin-bottom: 4px;
       margin-top: 4px;
       div:hover a + span {
+        @include visible;
+      }
+      div:target a + span {
         @include visible;
       }
 

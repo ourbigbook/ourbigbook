@@ -20,6 +20,7 @@
     "next": "^9.5.1",
     "react": "16.13.1",
     "react-dom": "16.13.1",
+    "sass": "^1.32.13",
     "swr": "^0.3.0"
   },
   "devDependencies": {

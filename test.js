@@ -2761,7 +2761,7 @@ assert_convert_ast('cross reference from image title to following non-header is 
     ],
   }
 );
-assert_executable('executable: cross reference from image title to previous non-header is not allowed',
+assert_executable('cli: cross reference from image title to previous non-header is not allowed',
   {
     args: ['.'],
     expect_exit_status: 1,
@@ -4546,7 +4546,7 @@ assert_convert_ast('toplevel scope gets removed on table of contents of included
   },
 );
 
-assert_executable('executable: toplevel scope gets removed on table of contents of included headers',
+assert_executable('cli: toplevel scope gets removed on table of contents of included headers',
   {
     args: ['--split-headers', '.'],
     filesystem: {
@@ -5425,7 +5425,7 @@ assert_convert_ast('id conflict with id on another file simple',
     input_path_noext: 'index'
   }
 );
-assert_executable('executable: id conflict with id on another file simple',
+assert_executable('cli: id conflict with id on another file simple',
   {
     args: ['.'],
     filesystem: {
@@ -5541,7 +5541,7 @@ assert_convert_ast('bigb output format is unchanched for the preferred format',
 
 // ourbigbook executable tests.
 assert_executable(
-  'executable: input from stdin produces output on stdout',
+  'cli: input from stdin produces output on stdout',
   {
     stdin: 'aabb',
     expect_not_exists: ['out'],
@@ -5549,7 +5549,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: input from file and --stdout produces output on stdout',
+  'cli: input from file and --stdout produces output on stdout',
   {
     args: ['--stdout', 'notindex.bigb'],
     assert_xpath_stdout: ["//x:div[@class='p' and text()='aabb']"],
@@ -5558,7 +5558,7 @@ assert_executable(
 );
 assert_executable(
   // Was blowing up on file existence check.
-  'executable: input from stdin with relative link does not blow up',
+  'cli: input from stdin with relative link does not blow up',
   {
     stdin: '\\a[asdf]',
     expect_not_exists: ['out'],
@@ -5567,7 +5567,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: input from file produces an output file',
+  'cli: input from file produces an output file',
   {
     args: ['notindex.bigb'],
     filesystem: {
@@ -5726,7 +5726,7 @@ Goodbye world.
 `,
 };
 assert_executable(
-  'executable: input from directory with ourbigbook.json produces several output files',
+  'cli: input from directory with ourbigbook.json produces several output files',
   {
     args: ['--split-headers', '.'],
     filesystem: complex_filesystem,
@@ -5895,7 +5895,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: directory name is removed from link to subdir h2',
+  'cli: directory name is removed from link to subdir h2',
   {
     args: ['.'],
     filesystem: {
@@ -5919,7 +5919,7 @@ assert_executable(
 );
 assert_executable(
   // https://github.com/cirosantilli/ourbigbook/issues/123
-  'executable: includers should show as a parents of the includee',
+  'cli: includers should show as a parents of the includee',
   {
     args: ['.'],
     filesystem: {
@@ -5943,7 +5943,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: include should not generate an incoming links entry',
+  'cli: include should not generate an incoming links entry',
   {
     args: ['--split-headers', '.'],
     filesystem: {
@@ -5962,7 +5962,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: --dry-run --split-headers --publish works',
+  'cli: --dry-run --split-headers --publish works',
   {
     args: ['--dry-run', '--split-headers', '--publish', '.'],
     filesystem: complex_filesystem,
@@ -5999,7 +5999,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: convert subdirectory only with ourbigbook.json',
+  'cli: convert subdirectory only with ourbigbook.json',
   {
     args: ['subdir'],
     filesystem: {
@@ -6031,7 +6031,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: convert subdirectory only without ourbigbook.json',
+  'cli: convert subdirectory only without ourbigbook.json',
   {
     args: ['subdir'],
     filesystem: {
@@ -6060,7 +6060,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: convert a subdirectory file only with ourbigbook.json',
+  'cli: convert a subdirectory file only with ourbigbook.json',
   {
     args: ['subdir/notindex.bigb'],
     filesystem: {
@@ -6078,7 +6078,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: convert a subdirectory file only without ourbigbook.json',
+  'cli: convert a subdirectory file only without ourbigbook.json',
   {
     args: ['subdir/notindex.bigb'],
     filesystem: {
@@ -6095,7 +6095,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: convert with --outdir',
+  'cli: convert with --outdir',
   {
     args: ['--outdir', 'my_outdir', '.'],
     filesystem: {
@@ -6122,7 +6122,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: ourbigbook.tex does not blow up',
+  'cli: ourbigbook.tex does not blow up',
   {
     args: ['README.bigb'],
     filesystem: {
@@ -6133,7 +6133,7 @@ assert_executable(
 );
 assert_executable(
   // https://github.com/cirosantilli/ourbigbook/issues/114
-  'executable: synonym basic',
+  'cli: synonym basic',
   {
     args: ['--split-headers', '.'],
     filesystem: {
@@ -6186,7 +6186,7 @@ assert_executable(
 );
 assert_executable(
   // https://github.com/cirosantilli/ourbigbook/issues/225
-  'executable: synonym in splitDefault',
+  'cli: synonym in splitDefault',
   {
     args: ['--split-headers', '.'],
     filesystem: {
@@ -6212,7 +6212,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: synonym to outdir generates correct redirct',
+  'cli: synonym to outdir generates correct redirct',
   {
     args: ['--outdir', 'asdf', '--split-headers', '.'],
     filesystem: {
@@ -6234,7 +6234,7 @@ assert_executable(
 );
  https://github.com/cirosantilli/ourbigbook/issues/131
 assert_executable(
-  'executable: splitDefault',
+  'cli: splitDefault',
   {
     args: ['--split-headers', '.'],
     filesystem: {
@@ -6432,7 +6432,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: link to image in another file after link to the toplevel header of that file does not blow up',
+  'cli: link to image in another file after link to the toplevel header of that file does not blow up',
   {
     args: ['.'],
     filesystem: {
@@ -6451,7 +6451,7 @@ assert_executable(
   }
 )
 assert_executable(
-  'executable: --generate min followed by conversion does not blow up',
+  'cli: --generate min followed by conversion does not blow up',
   {
     args: ['.'],
     pre_exec: [
@@ -6460,7 +6460,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: --generate min in subdir does not alter toplevel',
+  'cli: --generate min in subdir does not alter toplevel',
   {
     args: ['.'],
     filesystem: {
@@ -6479,7 +6479,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: --generate default followed by conversion does not blow up',
+  'cli: --generate default followed by conversion does not blow up',
   {
     args: ['.'],
     pre_exec: [
@@ -6491,7 +6491,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: --generate min followed by publish conversion does not blow up',
+  'cli: --generate min followed by publish conversion does not blow up',
   {
     args: ['--dry-run', '--publish'],
     pre_exec: [
@@ -6504,7 +6504,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: --generate default followed by publish conversion does not blow up',
+  'cli: --generate default followed by publish conversion does not blow up',
   {
     args: ['--dry-run', '--publish'],
     pre_exec: [
@@ -6517,7 +6517,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: --embed-resources actually embeds resources',
+  'cli: --embed-resources actually embeds resources',
   {
     args: ['--embed-resources', '.'],
     filesystem: {
@@ -6539,7 +6539,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: reference to subdir with --embed-includes',
+  'cli: reference to subdir with --embed-includes',
   {
     args: ['--embed-includes', 'README.bigb'],
     filesystem: {
@@ -6569,9 +6569,9 @@ assert_executable(
   }
 );
 
-// executable: link:
+// cli: link:
 assert_executable(
-  'executable: link: relative reference to nonexistent file leads to failure',
+  'cli: link: relative reference to nonexistent file leads to failure',
   {
     args: ['README.bigb'],
     filesystem: {
@@ -6582,7 +6582,7 @@ assert_executable(
   }
 );
 assert_executable(
-  "executable: link: relative reference to existent files do not lead to failure",
+  "cli: link: relative reference to existent files do not lead to failure",
   {
     args: ['README.bigb'],
     filesystem: {
@@ -6592,7 +6592,7 @@ assert_executable(
   }
 );
 assert_executable(
-  "executable: link: check=0 prevents existence checks",
+  "cli: link: check=0 prevents existence checks",
   {
     args: ['README.bigb'],
     filesystem: {
@@ -6602,7 +6602,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: link: relative links and images are corrected for different output paths with scope and split-headers',
+  'cli: link: relative links and images are corrected for different output paths with scope and split-headers',
   {
     args: ['--split-headers', '.'],
     filesystem: {
@@ -6685,7 +6685,7 @@ assert_executable(
 
 // executable cwd tests
 assert_executable(
-  "executable: cwd outside project directory given by ourbigbook.json",
+  "cli: cwd outside project directory given by ourbigbook.json",
   {
     args: ['myproject'],
     filesystem: {
@@ -6727,7 +6727,7 @@ assert_executable(
   }
 );
 assert_executable(
-  "executable: if there is no ourbigbook.json and the input is not under cwd then the project dir is the input dir",
+  "cli: if there is no ourbigbook.json and the input is not under cwd then the project dir is the input dir",
   {
     args: [path.join('..', 'myproject')],
     cwd: 'notmyproject',
@@ -6768,7 +6768,7 @@ assert_executable(
 );
 
 assert_executable(
-  'executable: root_relpath and root_path in main.liquid.html work',
+  'cli: root_relpath and root_path in main.liquid.html work',
   {
     args: ['-S', '.'],
     filesystem: {
@@ -6834,7 +6834,7 @@ assert_executable(
 );
 
 assert_executable(
-  'executable: incoming links and other children',
+  'cli: incoming links and other children',
   {
     args: ['-S', '.'],
     filesystem: {
@@ -6950,7 +6950,7 @@ assert_executable(
   }
 );
 assert_executable(
-  "executable: multiple incoming child and parent links don't blow up",
+  "cli: multiple incoming child and parent links don't blow up",
   {
     args: ['.'],
     filesystem: {
@@ -6976,7 +6976,7 @@ assert_executable(
 );
 
 assert_executable(
-  'executable: ourbigbook.json: outputOutOfTree',
+  'cli: ourbigbook.json: outputOutOfTree',
   {
     args: ['-S', '.'],
     filesystem: {
@@ -7014,7 +7014,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: IDs are removed from the database after you removed them from the source file and convert the file',
+  'cli: IDs are removed from the database after you removed them from the source file and convert the file',
   {
     args: ['notindex.bigb'],
     filesystem: {
@@ -7041,7 +7041,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: IDs are removed from the database after you removed them from the source file and convert the directory one way',
+  'cli: IDs are removed from the database after you removed them from the source file and convert the directory one way',
   {
     args: ['.'],
     filesystem: {
@@ -7067,7 +7067,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: IDs are removed from the database after you removed them from the source file and convert the directory reverse',
+  'cli: IDs are removed from the database after you removed them from the source file and convert the directory reverse',
   {
     args: ['.'],
     filesystem: {
@@ -7093,7 +7093,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: IDs are removed from the database after you delete the source file they were present in and convert the directory',
+  'cli: IDs are removed from the database after you delete the source file they were present in and convert the directory',
   {
     args: ['.'],
     filesystem: {
@@ -7119,7 +7119,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: when invoking with a single file timestamps are automatically ignored and render is forced',
+  'cli: when invoking with a single file timestamps are automatically ignored and render is forced',
   {
     args: ['notindex.bigb'],
     assert_xpath: {
@@ -7154,7 +7154,7 @@ assert_executable(
 );
 
 assert_executable(
-  "executable: toplevel index file without a header produces output to index.html",
+  "cli: toplevel index file without a header produces output to index.html",
   {
     args: ['README.bigb'],
     filesystem: {
@@ -7168,7 +7168,7 @@ assert_executable(
     },
   }
 );
-assert_executable('executable: cross file ancestors work on single file conversions at toplevel',
+assert_executable('cli: cross file ancestors work on single file conversions at toplevel',
   {
     // After we pre-convert everything, we convert just one file to ensure that the ancestors are coming
     // purely from the database, and not from a cache shared across several input files.
@@ -7214,7 +7214,7 @@ assert_executable('executable: cross file ancestors work on single file conversi
     },
   }
 );
-assert_executable('executable: cross file ancestors work on single file conversions in subdir',
+assert_executable('cli: cross file ancestors work on single file conversions in subdir',
   {
     // After we pre-convert everything, we convert just one file to ensure that the ancestors are coming
     // purely from the database, and not from a cache shared across several input files.

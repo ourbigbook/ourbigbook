@@ -13,7 +13,6 @@ import storage from "../../lib/utils/storage";
 const UpdateArticleEditor = ({ article: initialArticle }) => {
   const initialState = {
     title: initialArticle.title,
-    description: initialArticle.description,
     body: initialArticle.body,
     tagList: initialArticle.tagList,
   };
@@ -29,8 +28,6 @@ const UpdateArticleEditor = ({ article: initialArticle }) => {
 
   const handleTitle = (e) =>
     dispatch({ type: "SET_TITLE", text: e.target.value });
-  const handleDescription = (e) =>
-    dispatch({ type: "SET_DESCRIPTION", text: e.target.value });
   const handleBody = (e) =>
     dispatch({ type: "SET_BODY", text: e.target.value });
   const addTag = (tag) => dispatch({ type: "ADD_TAG", tag: tag });
@@ -75,16 +72,6 @@ const UpdateArticleEditor = ({ article: initialArticle }) => {
                     placeholder="Article Title"
                     value={posting.title}
                     onChange={handleTitle}
-                  />
-                </fieldset>
-
-                <fieldset className="form-group">
-                  <input
-                    className="form-control"
-                    type="text"
-                    placeholder="What's this article about?"
-                    value={posting.description}
-                    onChange={handleDescription}
                   />
                 </fieldset>
 

@@ -8,7 +8,7 @@ A Markup language to write multipage or single page HTML / PDF books, blogs, etc
 
 TODO: browser live test.
 
-Install NPM package and use it from the command line:
+Install NPM package and use it from the command line for a quick conversion:
 
 \C[[
 npm install cirodown
@@ -20,6 +20,14 @@ Same with an API call in \a[api_hello.js]:
 \C[[
 npm install cirodown
 ./api_hello.js
+]]
+
+For a minimal but convenient project template, consdier:
+
+\C[[
+git clone https://github.com/cirosantilli/cirodown-template
+cd cirodown-template
+cirodown .
 ]]
 
 Run the latest master on README.ciro and view it:

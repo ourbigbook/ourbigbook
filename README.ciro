@@ -1221,6 +1221,24 @@ Note how:
 
   So in the example above, `\x[/introduction]` refers to the ID `introduction`, and not `full-and-unique-experiment-name/introduction`.
 
+When nested scopes are involved, \x[internal-cross-references] resolution peels off the scopes one by one trying to find the closes match, e.g. the following works as expected:
+``
+= h1
+{scope}
+
+== h2
+{scope}
+
+=== h3
+{scope}
+
+\x[h2]
+``
+Here Cirodown:
+* first tries to loop for an `h1/h2/h3/h2`, since `h1/h2/h3` is the current scope, but that ID does not exist
+* so it removes the `h3` from the current scope, and looks for `h1/h2/h2`, which is still not found
+* then it removes the `h2`, leading to `h1/h2`, and that one is found, and therefore is taken
+
 = Directory-based `scope`
 {parent=scope}
 

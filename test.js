@@ -1382,6 +1382,26 @@ assert_convert_ast('nested scope with parent',
   a('H', undefined, {level: [t('4')], title: [t('h1 2 1 1')]}, {id: 'h1/h1-2/h1-2-1/h1-2-1-1'}),
 ]
 );
+assert_convert_ast('nested scope internal cross references resolves progressively',
+  `= h1
+{scope}
+
+= h1 1
+{parent=h1}
+{scope}
+
+= h1 1 1
+{parent=h1-1}
+
+\\x[h1-1]
+`, [
+  a('H', undefined, {level: [t('1')], title: [t('h1')]}, {id: 'h1'}),
+  a('Toc'),
+  a('H', undefined, {level: [t('2')], title: [t('h1 1')]}, {id: 'h1/h1-1'}),
+  a('H', undefined, {level: [t('3')], title: [t('h1 1 1')]}, {id: 'h1/h1-1/h1-1-1'}),
+  a('P', [a('x', undefined, {href: [t('h1-1')]})]),
+]
+);
 // https://github.com/cirosantilli/cirodown/issues/100
 assert_error('broken parent still generates a header ID',
   `= h1

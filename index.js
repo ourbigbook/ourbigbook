@@ -4009,6 +4009,7 @@ function html_img({
   ast,
   context,
   external,
+  inline,
   media_provider_type,
   rendered_attrs,
   relpath_prefix,
@@ -4035,8 +4036,12 @@ function html_img({
     src = path.join(relpath_prefix, src)
   }
   const href = ast.validation_output.link.given ? render_arg(ast.args.link, context) : src
+  let html = `<a${html_attr('href', href)}><img${html_attr('src', html_escape_attr(src))}${html_attr('loading', 'lazy')}${rendered_attrs}${alt}${border_attr}></a>`;
+  if (!inline) {
+    html = `<div class="float-wrap">${html}</div>`
+  }
   return {
-    html: `<div class="float-wrap"><a${html_attr('href', href)}><img${html_attr('src', html_escape_attr(src))}${html_attr('loading', 'lazy')}${rendered_attrs}${alt}${border_attr}></a></div>${error}`,
+    html: `${html}${error}`,
     src,
   };
 }
@@ -9104,7 +9109,7 @@ const OUTPUT_FORMATS_LIST = [
           let rendered_attrs = html_render_attrs_id(ast, context, ['height', 'width']);
           let { error_message, media_provider_type, src } = macro_image_video_resolve_params(ast, context);
           const external = ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined
-          let { html: imgHtml } = html_img({ alt, ast, context, external, media_provider_type, rendered_attrs, src })
+          let { html: imgHtml } = html_img({ alt, ast, context, external, inline: true, media_provider_type, rendered_attrs, src })
           if (error_message) {
             imgHtml += error_message_in_output(error_message, context)
           }

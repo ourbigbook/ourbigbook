@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>ourbigbook.liquid.html - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ourbigbook.liquid.html"><div class="notnav"><h1><a href="">ourbigbook.liquid.html</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../_dir/">(root)</a> / <a href="../_raw/ourbigbook.liquid.html">ourbigbook.liquid.html</a></b></div></nav></div><div class="p"><b>ourbigbook.liquid.html</b></div><div class="code"><div><pre><code>&lt;!doctype html&gt;
+&lt;html lang=en&gt;
+&lt;head&gt;
+&lt;meta charset=utf-8&gt;
+&lt;title&gt;{{ title }}{% unless is_index_article %} - OurBigBook Docs{% endunless %}&lt;/title&gt;
+{% if is_index_article %}&lt;script type="application/ld+json"&gt;{"name":"OurBigBook Docs","url":"https://docs.ourbigbook.com"}&lt;/script&gt;
+{% endif %}&lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+&lt;link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer"&gt;
+&lt;style&gt;{{ style }}&lt;/style&gt;
+&lt;link rel="stylesheet" type="text/css" href="{{ raw_relpath }}/main.css"&gt;
+&lt;link rel="shortcut icon" href="{{ raw_relpath }}/logo.svg"&gt;
+{{ head }}&lt;/head&gt;
+&lt;body&gt;
+&lt;header
+&lt;div class="brand-group"&gt;
+&lt;a href="{{ root_page }}" class="brand"&gt;&lt;img src="{{ raw_relpath }}/logo.svg" alt="OurBigBook logo"&gt;OurBigBook Docs&lt;/a&gt;
+&lt;a href="https://ourbigbook.com" class="brand"&gt;&lt;img src="{{ raw_relpath }}/logo.svg" alt="OurBigBook logo"&gt;&lt;span class="mobile-hide"&gt;OurBigBook.com&lt;/span&gt;&lt;span class="mobile-show"&gt;Site&lt;/span&gt;&lt;/a&gt;
+&lt;a href="https://github.com/ourbigbook/ourbigbook"&gt;&lt;i class="fab fa-github fa-fw icon"&gt;&lt;/i&gt; Source code&lt;/a&gt;
+&lt;/div&gt;
+&lt;/header&gt;
+&lt;main class="ourbigbook"&gt;
+{{ body }}&lt;/main&gt;
+&lt;footer&gt;
+&lt;div&gt;License: &lt;a href="https://creativecommons.org/licenses/by-sa/4.0/"&gt;CC BY-SA 4.0&lt;/a&gt; unless noted&lt;/div&gt;
+&lt;div&gt;&lt;a href="{{ dir_relpath }}{{ html_index }}"&gt;Website source code&lt;/a&gt;&lt;/div&gt;
+{% comment %}
+&lt;div&gt;Website source code: &lt;a href="https://github.com/ourbigbook/ourbigbook"&gt;https://github.com/ourbigbook/ourbigbook&lt;/a&gt;&lt;/div&gt;
+&lt;div&gt;Website Git version: &lt;a href="https://github.com/ourbigbook/ourbigbook/commit/{{ git_sha }}"&gt;{{ git_sha }}&lt;/a&gt;&lt;/div&gt;
+{% if input_path != "" %}
+&lt;div&gt;Source code for this page: &lt;a href="https://github.com/ourbigbook/ourbigbook/blob/{{ git_sha }}/{{ input_path }}"&gt;{{ input_path }}&lt;/a&gt;&lt;/div&gt;
+{% endif %}
+{% endcomment %}{% if input_path != "" %}&lt;div&gt;Source code for this page: &lt;a href="{{ file_relpath }}/{{ input_path }}{{ html_ext }}"&gt;{{ input_path }}&lt;/a&gt;&lt;/div&gt;
+{% endif %}&lt;/footer&gt;
+{% if publishTargetIsWebsite %}{% comment %}Google Analytics, AKA selling my soul to Google for some backlinks.{% endcomment %}&lt;script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"&gt;&lt;/script&gt;
+&lt;script&gt;
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+&lt;/script&gt;
+&lt;script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async&gt;
+&lt;/script&gt;
+{% endif %}{{ post_body }}&lt;/body&gt;
+&lt;/html&gt;
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

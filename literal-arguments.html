@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Literal arguments - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="literal-arguments"><div class="notnav"><h1><a href="">Literal arguments <span class="meta">(<code>[[...]]</code> and <code>{{key=...}}</code>)</span></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#ourbigbook-markup-syntax"> OurBigBook Markup syntax</a><a href=".#macro-argument"> Macro argument</a></div><div class="nav"><a class="nosplit" href=".#literal-arguments"></a><span class="metrics"><span class="wcntr"> Words: 274</span></span></div></nav></div><div class="p" id="_2763">Arguments that are opened with more than one square brackets <code>[</code> or curly braces <code>{</code> are literal arguments.</div><div class="p" id="_2764">In literal arguments, OurBigBook is not parsed, and the entire argument is considered as text until a corresponding close with the same number of characters.</div><div class="p" id="_2765">Therefore, you cannot have nested content, but it makes it extremely convenient to write <a href=".#code-block">code blocks</a> or <a href=".#mathematics">mathematics</a>.</div><div class="p" id="_2766">For example, a multiline code block with double open and double close square brackets inside can be enclosed in triple square brackets:<div class="code" id="_2767"><div><pre><code>A literal argument looks like this in OurBigBook:
+
+\C[[
+\C[
+A multiline
+
+code block.
+]
+]]
+
+And another paragraph.</code></pre></div></div><div class="p" id="_2768">which renders as:</div><div><blockquote id="_2769"><div class="p" id="_2770">A literal argument looks like this in OurBigBook:</div><div class="code" id="_2771"><div><pre><code>\C[
+A multiline
+
+code block.
+]</code></pre></div></div><div class="p" id="_2772">And another paragraph.</div></blockquote></div></div><div class="p" id="_2773">The same works for inline code:<div class="code" id="_2774"><div><pre><code>The program \c[[puts("]");]] is very complex.</code></pre></div></div><div class="p" id="_2775">which renders as:</div><div><blockquote id="_2776"><div class="p" id="_2777">The program <code>puts("]");</code> is very complex.</div></blockquote></div></div><div class="p" id="_2778">Within literal blocks, only one thing can be escaped with backslashes are:<div class="list"><ul id="_2779"><li id="_2780">leading open square bracket <code>[</code></li><li id="_2781">trailing close square bracket <code>]</code></li></ul></div></div><div class="p" id="_2782">The rule is that:<div class="list"><ul id="_2783"><li id="_2784">if the first character of a literal argument is a sequence of backslashes (<code>\</code>), and it is followed by another argument open character (e.g. <code>[</code>, remove the first <code>\</code> and treat the other characters as regular text</li><li id="_2785">if the last character of a literal argument is a <code>\</code>, ignore it and treat the following closing character (e.g. <code>]</code>) as regular text</li></ul></div></div><div class="p" id="_2786">See the following open input/output pairs:<div class="code" id="_2787"><div><pre><code>\c[[\ b]]
+&lt;code&gt;\ b&lt;/code&gt;
+
+\c[[\a b]]
+&lt;code&gt;\a b&lt;/code&gt;
+
+\c[[\[ b]]
+&lt;code&gt;[ b&lt;/code&gt;
+
+\c[[\\[ b]]
+&lt;code&gt;\[ b&lt;/code&gt;
+
+\c[[\\\[ b]]
+&lt;code&gt;\\[ b&lt;/code&gt;</code></pre></div></div>and close examples:<div class="code" id="_2788"><div><pre><code>\c[[a \]]
+&lt;code&gt;a \&lt;/code&gt;
+
+\c[[a \]]]
+&lt;code&gt;a ]&lt;/code&gt;
+
+\c[[a \\]]]
+&lt;code&gt;a \]&lt;/code&gt;</code></pre></div></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href=".#macro-argument">Macro argument</a></li><li><a href=".#ourbigbook-markup-syntax">OurBigBook Markup syntax</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(6)</span></a></h2><div class="list"><ul><li><a href=".#code-block">Code block</a></li><li><a href=".#comment">Comment</a></li><li><a href=".#escape-characters">Escape characters</a></li><li><a href=".#line-break">Line break</a></li><li><a href=".#newline-removal">Newline removal</a></li><li><a href=".#shorthand-syntax-extra-arguments">Shorthand syntax extra arguments</a></li></ul></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#literal-arguments">Literal argument</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

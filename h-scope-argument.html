@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>\H scope argument - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="h-scope-argument"><div class="notnav"><h1><a href=""><code>\H</code> <code>scope</code> argument</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#header"> Header</a><a href=".#h-arguments"> <code>\H</code> arguments</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#h-scope-argument"></a><span class="metrics"><span class="wcntr"> Words: 504</span><span class="dcnt"> Articles: 6</span></span></div></nav></div><div class="p" id="_964">In some use cases, the sections under a section describe inseparable parts of something.</div><div class="p" id="_965">For example, when documenting an experiment you executed, you will generally want an "Introduction", then a "Materials" section, and then a "Results" section for every experiment.</div><div class="p" id="_966">On their own, those sections don't make much sense: they are always referred to in the context of the given experiment.</div><div class="p" id="_967">The problem is then how to get unique IDs for those sections.</div><div class="p" id="_968">One solution, would be to manually add the experiment ID as prefix to every subsection, as in:<div class="code" id="_969"><div><pre><code>= Experiments
+
+See: \x[full-and-unique-experiment-name/materials]
+
+== Introduction
+
+== Full and unique experiment name
+
+=== Introduction
+{id=full-and-unique-experiment-name/introduction}
+
+See our awesome results: \x[full-and-unique-experiment-name/results]
+
+For a more general introduction to all experiments, see: \x[introduction].
+
+=== Materials
+{id=full-and-unique-experiment-name/materials}
+
+=== Results
+{id=full-and-unique-experiment-name/results}</code></pre></div></div></div><div class="p" id="_970">but this would be very tedious.</div><div class="p" id="_971">To keep those IDs shorter, OurBigBook provides the <code>scope</code> <a href=".#boolean-argument">boolean argument</a> property of <a href=".#header">headers</a>, which works analogously to C++ namespaces with the header IDs.</div><div class="p" id="_972">Using <code>scope</code>, the previous example could be written more succinctly as:<div class="code" id="_973"><div><pre><code>= Experiments
+
+See: \x[full-and-unique-experiment-name/materials]
+
+== Introduction
+
+== Full and unique experiment name
+{scope}
+
+=== Introduction
+
+See our awesome results: \x[results]
+
+For a more general introduction to all experiments, see: \x[/introduction].
+
+=== Materials
+
+=== Results</code></pre></div></div></div><div class="p" id="_974">Note how:<div class="list"><ul id="_975"><li id="_976">full IDs are automatically prefixed by the parent scopes prefixed and joined with a slash <code>/</code></li><li id="_977">we can refer to other IDs withing the current scope without duplicating the scope. E.g. <code>\x[results]</code> in the example already refers to the ID <code>full-and-unique-experiment-name/materials</code></li><li id="_978"><div class="p" id="_979">to refer to an ID outside of the scope and avoid name conflicts with IDs inside of the current scope, we start a reference with a slash <code>/</code></div><div class="p" id="_980">So in the example above, <code>\x[/introduction]</code> refers to the ID <code>introduction</code>, and not <code>full-and-unique-experiment-name/introduction</code>.</div></li></ul></div></div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"></input><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 504</span><span class="dcnt"> 6</span></span></span></span></div><ul><li><div id="_toc/scope-resolution"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#scope-resolution"><code>scope</code> resolution</a><span class="hover-metadata"><a class="nosplit" href=".#scope-resolution"></a><a href="#_toc" class="u"> <code>\H</code> <code>scope</code> argument</a><span class="metrics"><span class="wcntr"> 95</span></span></span></span></div></li><li><div id="_toc/directory-based-scope"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#directory-based-scope">Directory-based <code>scope</code></a><span class="hover-metadata"><a class="nosplit" href=".#directory-based-scope"></a><a href="#_toc" class="u"> <code>\H</code> <code>scope</code> argument</a><span class="metrics"><span class="wcntr"> 41</span></span></span></span></div></li><li class="has-child"><div id="_toc/test-scope-1"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#test-scope-1">Test scope 1</a><span class="hover-metadata"><a class="nosplit" href=".#test-scope-1"></a><a href="#_toc" class="u"> <code>\H</code> <code>scope</code> argument</a><span class="metrics"><span class="wcntr"> 10</span><span class="dcnt"> 2</span></span></span></span></div><ul><li class="has-child"><div id="_toc/test-scope-1/test-scope-2"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#test-scope-1/test-scope-2">Test scope 2</a><span class="hover-metadata"><a class="nosplit" href=".#test-scope-1/test-scope-2"></a><a href="#_toc/test-scope-1" class="u"> Test scope 1</a><span class="metrics"><span class="wcntr"> 6</span><span class="dcnt"> 1</span></span></span></span></div><ul><li><div id="_toc/test-scope-1/test-scope-2/not-scoped"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#test-scope-1/test-scope-2/not-scoped">Not scoped</a><span class="hover-metadata"><a class="nosplit" href=".#test-scope-1/test-scope-2/not-scoped"></a><a href="#_toc/test-scope-1/test-scope-2" class="u"> Test scope 2</a></span></span></div></li></ul></li></ul><li><div id="_toc/h-scope-argument-of-toplevel-headers"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#h-scope-argument-of-toplevel-headers"><code>\H</code> <code>scope</code> argument of toplevel headers</a><span class="hover-metadata"><a class="nosplit" href=".#h-scope-argument-of-toplevel-headers"></a><a href="#_toc" class="u"> <code>\H</code> <code>scope</code> argument</a><span class="metrics"><span class="wcntr"> 71</span></span></span></span></div></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#h-arguments"><code>\H</code> arguments</a></li><li><a href=".#header">Header</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(2)</span></a></h2><div class="list"><ul><li><a href=".#h-scope-argument">Scope</a></li><li><a href=".#h-scope-argument">Scoped</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

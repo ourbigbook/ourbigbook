@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>URL with protocol - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="url-with-protocol"><div class="notnav"><h1><a href="">URL with protocol</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#link"> Link</a><a href=".#a-argument"> <code>\a</code> argument</a><a href=".#a-external-argument"> <code>\a</code> <code>external</code> argument</a></div><div class="nav"><a class="nosplit" href=".#url-with-protocol"></a><span class="metrics"><span class="wcntr"> Words: 92</span></span></div></nav></div><div class="p" id="_648">A URL with protocol is a URL that matches the regular expression <code>^[a-zA-Z]+://</code>. The following are examples of URLs with protocol:<div class="list"><ul id="_649"><li id="_650"><code>http://cirosantilli.com</code></li><li id="_651"><code>https://cirosantilli.com</code></li><li id="_652"><code>file:///etc/fstab</code></li><li id="_653"><code>ftp://cirosantilli.com</code></li></ul></div></div><div class="p" id="_654">The following aren't:<div class="list"><ul id="_655"><li id="_656"><code>index.js</code></li><li id="_657"><code>../index.js</code></li><li id="_658"><code>path/to/index.js</code></li><li id="_659"><code>/path/to/index.js</code></li><li id="_660"><div class="p" id="_661"><code>//example.com/path/to/index.js</code>. This one is a bit tricky. Web browsers would consider this as a <a href="https://stackoverflow.com/questions/28446314/why-use-protocol-relative-urls-at-all">protocol-relative URL</a>, which technically implies a protocol, although that protocol would be different depending how you are viewing the file, e.g. locally through <code>file://</code> vs on a with website <code>https://</code>.</div><div class="p" id="_662">For simplicity's sake, we just consider it as a URL without protocol.</div></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(6)</span></a></h2><div class="list"><ol><li><a href=".#a-external-argument"><code>\a</code> <code>external</code> argument</a></li><li><a href=".#a-argument"><code>\a</code> argument</a></li><li><a href=".#link">Link</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#external-link">External link</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>TODO / Article create and update slow on web - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="article-create-and-update-slow-on-web"><div class="notnav"><h1><a href="../todo">TODO</a><span class="meta"> / </span><a href="">Article create and update slow on web</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="../todo"> TODO</a><a href="../todo#closed-issues"> Closed issues</a></div><div class="nav"><a href="#_toc" class="toc"></a><span class="tags"> Tags: <a href="../todo#performance">Performance</a>, <a href="../todo#web">Web</a></span><a class="nosplit" href="../todo#article-create-and-update-slow-on-web"></a><span class="metrics"><span class="wcntr"> Words: 1k</span><span class="dcnt"> Articles: 1</span></span></div></nav></div><div class="p" id="_590"><a href="https://ourbigbook.com/api/articles">ourbigbook.com/api/articles</a></div><div class="p" id="_591">For user cirosantilli, just pushed cirosantilli.github.io at aa60ccb934bf9646d548e6b761489d31aec1a341, which has almost 7k articles.</div><div class="p" id="_592">The POST to <a href="https://ourbigbook.com/api/articles">ourbigbook.com/api/articles</a> is taking about 3s to 4s on ourbigbook.com "Waiting for server response", 3.44s seems like an common average exact value that often comes back.</div><div class="p" id="_593">This was after dynamic article tree, one suspicion is that it might be linked to maintaining the nested set state on a large set of articles. I really hope that's not it, as it would be hard to fix.</div><div class="p" id="_594">Doing it from the <code>barack-obama</code> test user which only has about 50 articles leads to the same result, but we believe it is because we are not indexing things by user properly (this was added later), so might still be due to nested set.</div><div class="p" id="_595">Locally on sqlite is only 800 ms to 900 ms.</div><div class="p" id="_596">Locally on postgresql with <code>barack-obama</code> user and no <code>cirosantilli</code> data, the POST is almost instantaneous however... 100ms or less!</div><div class="p" id="_597">Local postgresql with <code>cirosantilli</code> user after uploading cirosantilli.github.io with about 7k articles: usually around 2.4s, sometimes a bit less.</div><div class="p" id="_598">Same but with <code>barack-obama</code>: 2.16s! So the main slowdown is likely that we are not properly indexing things, as one users' article affects the other's!</div><div class="p" id="_599">Let's hack it up to see:<div class="code" id="_600"><div><pre><code>./bin/psql
+alter table "Article" add "authorId" integer;
+update "Article" as a set "authorId" = f."authorId" from "File" as f where a."fileId" = f.id
+create index idx_nested ON "Article" using btree ("authorId", "nestedSetIndex");</code></pre></div></div></div><div class="p" id="_601">and patch:</div><div class="code" id="_602"><div><pre><code>diff --git a/web/convert.js b/web/convert.js
+index 59870ae3..ff834708 100644
+--- a/web/convert.js
++++ b/web/convert.js
+@@ -568,6 +568,7 @@ async function convertArticle({
+         const rendered_output = extra_returns.rendered_outputs[outpath]
+         const renderFull = rendered_output.full
+         articleArgs.push({
++          authorId: file.authorId,
+           depth: newDepth,
+           fileId: file.id,
+           h1Render: renderFull.substring(0, rendered_output.h1RenderLength),
+@@ -599,6 +600,7 @@ async function convertArticle({
+         articleArgs,
+         {
+           updateOnDuplicate: [
++            'authorId',
+             'h1Render',
+             'h2Render',
+             'titleRender',
+diff --git a/web/models/article.js b/web/models/article.js
+index 40dbbdba..1c382acc 100644
+--- a/web/models/article.js
++++ b/web/models/article.js
+@@ -13,6 +13,10 @@ module.exports = (sequelize) =&gt; {
+     'Article',
+     {
+       // E.g. `johnsmith/mathematics`.
++      authorId: {
++        type: DataTypes.INTEGER,
++        allowNull: false,
++      },
+       slug: {
+         type: DataTypes.TEXT,
+         unique: {</code></pre></div></div><div class="p" id="_603">Didin't help :-(</div><div class="p" id="_604">A cleaner benchmarking can now be done with:<div class="code" id="_605"><div><pre><code>OURBIGBOOK_POSTGRES=1 ./bin/generate-demo-data.js -C -u1 -a650 -i0 -c0</code></pre></div></div>By this size, things are already unreasonably slow, and you can visibly see the latter renders being much slower than the early ones. We can then do a very minimal one off benchmark of a single slow article update with:<div class="code" id="_606"><div><pre><code>OURBIGBOOK_POSTGRES=1 ./bin/generate-demo-data.js -u1 -a1 -i0 -c0</code></pre></div></div>OK, now the test case is clearer.</div><div class="p" id="_607">By also enabling SQL logging:<div class="code" id="_608"><div><pre><code>time DEBUG='*:sql:*' OURBIGBOOK_POSTGRES=1 ./bin/generate-demo-data.js -u1 -a1 -i0 -c0</code></pre></div></div>which gave:<div class="code" id="_609"><div><pre><code>real    0m1.400s
+user    0m0.643s
+sys     0m0.068s</code></pre></div></div>we will be able to see any slow queries. We reach the following two massively slow queries:<div class="code" id="_610"><div><pre><code>SELECT
+  "Ref".*,
+  "to"."id" AS "to.id",
+  "to"."idid" AS "to.idid",
+  "to"."path" AS "to.path",
+  "to"."toplevel_id" AS "to.toplevel_id",
+  "to"."ast_json" AS "to.ast_json",
+  "to"."macro_name" AS "to.macro_name",
+  "to"."createdAt" AS "to.createdAt",
+  "to"."updatedAt" AS "to.updatedAt",
+  "to-&gt;File"."id" AS "to.File.id",
+  "to-&gt;File"."path" AS "to.File.path",
+  "to-&gt;File"."toplevel_id" AS "to.File.toplevel_id",
+  "to-&gt;File"."last_parse" AS "to.File.last_parse",
+  "to-&gt;File"."last_render" AS "to.File.last_render",
+  "to-&gt;File"."titleSource" AS "to.File.titleSource",
+  "to-&gt;File"."bodySource" AS "to.File.bodySource",
+  "to-&gt;File"."createdAt" AS "to.File.createdAt",
+  "to-&gt;File"."updatedAt" AS "to.File.updatedAt",
+  "to-&gt;File"."authorId" AS "to.File.authorId",
+  "to-&gt;File-&gt;file"."id" AS "to.File.file.id",
+  "to-&gt;File-&gt;file"."slug" AS "to.File.file.slug",
+  "to-&gt;File-&gt;file"."topicId" AS "to.File.file.topicId",
+  "to-&gt;File-&gt;file"."titleRender" AS "to.File.file.titleRender",
+  "to-&gt;File-&gt;file"."titleSource" AS "to.File.file.titleSource",
+  "to-&gt;File-&gt;file"."titleSourceLine" AS "to.File.file.titleSourceLine",
+  "to-&gt;File-&gt;file"."render" AS "to.File.file.render",
+  "to-&gt;File-&gt;file"."h1Render" AS "to.File.file.h1Render",
+  "to-&gt;File-&gt;file"."h2Render" AS "to.File.file.h2Render",
+  "to-&gt;File-&gt;file"."depth" AS "to.File.file.depth",
+  "to-&gt;File-&gt;file"."score" AS "to.File.file.score",
+  "to-&gt;File-&gt;file"."nestedSetIndex" AS "to.File.file.nestedSetIndex",
+  "to-&gt;File-&gt;file"."nestedSetNextSibling" AS "to.File.file.nestedSetNextSibling",
+  "to-&gt;File-&gt;file"."createdAt" AS "to.File.file.createdAt",
+  "to-&gt;File-&gt;file"."updatedAt" AS "to.File.file.updatedAt",
+  "to-&gt;File-&gt;file"."fileId" AS "to.File.file.fileId",
+  "from"."id" AS "from.id",
+  "from"."idid" AS "from.idid",
+  "from"."path" AS "from.path",
+  "from"."toplevel_id" AS "from.toplevel_id",
+  "from"."ast_json" AS "from.ast_json",
+  "from"."macro_name" AS "from.macro_name",
+  "from"."createdAt" AS "from.createdAt",
+  "from"."updatedAt" AS "from.updatedAt",
+  "from-&gt;File"."id" AS "from.File.id",
+  "from-&gt;File"."path" AS "from.File.path",
+  "from-&gt;File"."toplevel_id" AS "from.File.toplevel_id",
+  "from-&gt;File"."last_parse" AS "from.File.last_parse",
+  "from-&gt;File"."last_render" AS "from.File.last_render",
+  "from-&gt;File"."titleSource" AS "from.File.titleSource",
+  "from-&gt;File"."bodySource" AS "from.File.bodySource",
+  "from-&gt;File"."createdAt" AS "from.File.createdAt",
+  "from-&gt;File"."updatedAt" AS "from.File.updatedAt",
+  "from-&gt;File"."authorId" AS "from.File.authorId",
+  "from-&gt;File-&gt;file"."id" AS "from.File.file.id",
+  "from-&gt;File-&gt;file"."slug" AS "from.File.file.slug",
+  "from-&gt;File-&gt;file"."topicId" AS "from.File.file.topicId",
+  "from-&gt;File-&gt;file"."titleRender" AS "from.File.file.titleRender",
+  "from-&gt;File-&gt;file"."titleSource" AS "from.File.file.titleSource",
+  "from-&gt;File-&gt;file"."titleSourceLine" AS "from.File.file.titleSourceLine",
+  "from-&gt;File-&gt;file"."render" AS "from.File.file.render",
+  "from-&gt;File-&gt;file"."h1Render" AS "from.File.file.h1Render",
+  "from-&gt;File-&gt;file"."h2Render" AS "from.File.file.h2Render",
+  "from-&gt;File-&gt;file"."depth" AS "from.File.file.depth",
+  "from-&gt;File-&gt;file"."score" AS "from.File.file.score",
+  "from-&gt;File-&gt;file"."nestedSetIndex" AS "from.File.file.nestedSetIndex",
+  "from-&gt;File-&gt;file"."nestedSetNextSibling" AS "from.File.file.nestedSetNextSibling",
+  "from-&gt;File-&gt;file"."createdAt" AS "from.File.file.createdAt",
+  "from-&gt;File-&gt;file"."updatedAt" AS "from.File.file.updatedAt",
+  "from-&gt;File-&gt;file"."fileId" AS "from.File.file.fileId"
+FROM
+  (
+    SELECT
+      "Ref"."id",
+      "Ref"."type",
+      "Ref"."from_id",
+      "Ref"."to_id",
+      "Ref"."defined_at",
+      "Ref"."defined_at_line",
+      "Ref"."defined_at_col",
+      "Ref"."inflected",
+      "Ref"."to_id_index",
+      "Ref"."createdAt",
+      "Ref"."updatedAt"
+    FROM
+      "Ref" AS "Ref"
+    WHERE
+      "Ref"."to_id" = '@barack-obama/test-data'
+      AND "Ref"."type" = 0
+    LIMIT
+      1
+  ) AS "Ref"
+  LEFT OUTER JOIN "Id" AS "to" ON "Ref"."to_id" = "to"."idid"
+  LEFT OUTER JOIN "File" AS "to-&gt;File" ON "to"."idid" = "to-&gt;File"."toplevel_id"
+  LEFT OUTER JOIN "Article" AS "to-&gt;File-&gt;file" ON "to-&gt;File"."id" = "to-&gt;File-&gt;file"."fileId"
+  LEFT OUTER JOIN "Id" AS "from" ON "Ref"."from_id" = "from"."idid"
+  LEFT OUTER JOIN "File" AS "from-&gt;File" ON "from"."idid" = "from-&gt;File"."toplevel_id"
+  LEFT OUTER JOIN "Article" AS "from-&gt;File-&gt;file" ON "from-&gt;File"."id" = "from-&gt;File-&gt;file"."fileId";
+
++451ms
+
+SELECT
+  "Id".*,
+  "File"."id" AS "File.id",
+  "File"."path" AS "File.path",
+  "File"."toplevel_id" AS "File.toplevel_id",
+  "File"."last_parse" AS "File.last_parse",
+  "File"."last_render" AS "File.last_render",
+  "File"."titleSource" AS "File.titleSource",
+  "File"."bodySource" AS "File.bodySource",
+  "File"."createdAt" AS "File.createdAt",
+  "File"."updatedAt" AS "File.updatedAt",
+  "File"."authorId" AS "File.authorId",
+  "File-&gt;file"."id" AS "File.file.id",
+  "File-&gt;file"."slug" AS "File.file.slug",
+  "File-&gt;file"."topicId" AS "File.file.topicId",
+  "File-&gt;file"."titleRender" AS "File.file.titleRender",
+  "File-&gt;file"."titleSource" AS "File.file.titleSource",
+  "File-&gt;file"."titleSourceLine" AS "File.file.titleSourceLine",
+  "File-&gt;file"."render" AS "File.file.render",
+  "File-&gt;file"."h1Render" AS "File.file.h1Render",
+  "File-&gt;file"."h2Render" AS "File.file.h2Render",
+  "File-&gt;file"."depth" AS "File.file.depth",
+  "File-&gt;file"."score" AS "File.file.score",
+  "File-&gt;file"."nestedSetIndex" AS "File.file.nestedSetIndex",
+  "File-&gt;file"."nestedSetNextSibling" AS "File.file.nestedSetNextSibling",
+  "File-&gt;file"."createdAt" AS "File.file.createdAt",
+  "File-&gt;file"."updatedAt" AS "File.file.updatedAt",
+  "File-&gt;file"."fileId" AS "File.file.fileId"
+FROM
+  (
+    SELECT
+      "Id"."id",
+      "Id"."idid",
+      "Id"."path",
+      "Id"."toplevel_id",
+      "Id"."ast_json",
+      "Id"."macro_name",
+      "Id"."createdAt",
+      "Id"."updatedAt"
+    FROM
+      "Id" AS "Id"
+    WHERE
+      "Id"."idid" = '@barack-obama'
+    LIMIT
+      1
+  ) AS "Id"
+  LEFT OUTER JOIN "File" AS "File" ON "Id"."idid" = "File"."toplevel_id"
+  LEFT OUTER JOIN "Article" AS "File-&gt;file" ON "File"."id" = "File-&gt;file"."fileId"
+
++227m</code></pre></div></div>Hmmm, so no slow updates, only selects. Surprising!</div><div class="p" id="_611">The first query is the:<div class="code" id="_612"><div><pre><code>const oldRef = await sequelize.models.Ref.findOne({</code></pre></div></div></div><div class="p" id="_613">OK, we manually reduced the first query to a subset:<div class="code" id="_614"><div><pre><code>SELECT
+  "Ref"."to_id",
+  "Ref"."from_id",
+  "From"."idid" AS "From.idid",
+  "From-&gt;File"."titleSource" AS "From-&gt;File.titleSource"
+FROM "Ref"
+INNER JOIN "Id" AS "From"
+ON
+  "Ref"."from_id" = "From"."idid" AND
+  "Ref"."to_id" = '@barack-obama/test-data' AND
+  "Ref"."type" = 0
+INNER JOIN "File" AS "From-&gt;File"
+  ON "From"."idid" = "From-&gt;File"."toplevel_id"
+INNER JOIN "Article" AS "From-&gt;Article"
+  ON "From-&gt;File"."id" = "From-&gt;Article"."fileId"
+;</code></pre></div></div>which we were certain should not be slow, and then by commenting things out learnt that foreign keys are not automatically indexed, so the <code>fileId</code> finding was super slow!!! OMG.</div><div class="p" id="_615">That single one line change drops us down to half the creation time, amazing:<div class="code" id="_616"><div><pre><code>real    0m0.668s
+user    0m0.638s
+sys     0m0.035s</code></pre></div></div></div><div class="p" id="_617">On heroku, after manually doing:<div class="code" id="_618"><div><pre><code>create index article_file_id ON "Article" using btree ("fileId");</code></pre></div></div>new article time fell down to 400ms, which is amazing. One liner! Special thanks to sequelize for the timing info.</div><div class="p" id="_619">After this, the only DB activity that has more than 15ms is:<div class="code" id="_620"><div><pre><code>sequelize:sql:pg Executing (default): SELECT "id", "username", "ip", "displayName", "email", "image", "hash", "salt", "score", "followerCount", "admin", "verified", "verificationCode", "verificationCodeSent", "maxArticles", "maxArticleSize", "createdAt", "updatedAt" FROM "User" AS "User" WHERE "User"."username" = 'barack-obama'; +53ms</code></pre></div></div>but we don't reproduce it in isolation, must be something else in play, e.g. something in parallel.</div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"></input><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 1k</span><span class="dcnt"> 1</span></span></span></span></div><ul><li><div id="_toc/article-create-and-update-slow-on-web-update-1"><div class="arrow"><div></div></div><span class="not-arrow"><a href="../todo#article-create-and-update-slow-on-web-update-1">Article create and update slow on web update 1</a><span class="hover-metadata"><a class="nosplit" href="../todo#article-create-and-update-slow-on-web-update-1"></a><a href="#_toc" class="u"> Article create and update slow on web</a><span class="metrics"><span class="wcntr"> 154</span></span></span></span></div></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href="../todo#closed-issues">Closed issues</a></li><li><a href="../todo">TODO</a></li><li><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href="../todo#progress-spinner-after-submit">Progress spinner after submit</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/todo.bigb">todo.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "todo/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>{{ title }}{% unless is_index_article %} - OurBigBook Docs{% endunless %}</title>
+{% if is_index_article %}<script type="application/ld+json">{"name":"OurBigBook Docs","url":"https://docs.ourbigbook.com"}</script>
+{% endif %}<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>{{ style }}</style>
+<link rel="stylesheet" type="text/css" href="{{ raw_relpath }}/main.css">
+<link rel="shortcut icon" href="{{ raw_relpath }}/logo.svg">
+{{ head }}</head>
+<body>
+<header
+<div class="brand-group">
+<a href="{{ root_page }}" class="brand"><img src="{{ raw_relpath }}/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="{{ raw_relpath }}/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+{{ body }}</main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="{{ dir_relpath }}{{ html_index }}">Website source code</a></div>
+{% comment %}
+<div>Website source code: <a href="https://github.com/ourbigbook/ourbigbook">https://github.com/ourbigbook/ourbigbook</a></div>
+<div>Website Git version: <a href="https://github.com/ourbigbook/ourbigbook/commit/{{ git_sha }}">{{ git_sha }}</a></div>
+{% if input_path != "" %}
+<div>Source code for this page: <a href="https://github.com/ourbigbook/ourbigbook/blob/{{ git_sha }}/{{ input_path }}">{{ input_path }}</a></div>
+{% endif %}
+{% endcomment %}{% if input_path != "" %}<div>Source code for this page: <a href="{{ file_relpath }}/{{ input_path }}{{ html_ext }}">{{ input_path }}</a></div>
+{% endif %}</footer>
+{% if publishTargetIsWebsite %}{% comment %}Google Analytics, AKA selling my soul to Google for some backlinks.{% endcomment %}<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+{% endif %}{{ post_body }}</body>
+</html>

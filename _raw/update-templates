@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+set -eux
+
+template_repos_dir=template/repos
+
+dry_run=false
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -d)
+      dry_run=true
+      shift
+      ;;
+    *)
+      echo "unknown argument: $1"
+      exit 1
+      ;;
+  esac
+done
+
+
+update-template() (
+  name="$1"
+  dirname="$2"
+  subdir="${3:-}"
+  dir="${template_repos_dir}/$dirname"
+  rm -rf "$dir"
+  ourbigbook --generate="$name" --outdir="$dir"
+  cd "$dir"
+  if [ -n "$subdir" ]; then cd "$subdir"; fi
+  if ! $dry_run; then
+    npm install
+  fi
+  if [ -n "$subdir" ]; then cd -; fi
+  git init
+  git config core.sshCommand 'ssh -i ~/.ssh/id_rsa_ourbigbook_admin -o IdentitiesOnly=yes'
+  git add .
+  email=admin@ourbigbook.com
+  name='OurBigBook Admin'
+  GIT_COMMITTER_NAME="$name" \
+    GIT_AUTHOR_NAME="$name" \
+    GIT_COMMITTER_EMAIL="$email" \
+    GIT_AUTHOR_EMAIL="$email" \
+    GIT_COMMITTER_DATE='2000-01-01T00:00:00+0000' \
+    git commit --date '2000-01-01T00:00:00+0000' -m 'Create template'
+  git remote add origin "git@github.com:ourbigbook/${dirname}.git"
+  if ! $dry_run; then
+    git push -f
+    if [ -n "$subdir" ]; then cd "$subdir"; fi
+    npx ourbigbook --publish
+    if [ -n "$subdir" ]; then cd -; fi
+  fi
+)
+
+# https://github.com/ourbigbook/ourbigbook/issues/160
+update-template subdir template-subdir docs
+update-template min template-min
+update-template default template

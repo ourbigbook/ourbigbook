@@ -51,7 +51,6 @@ module.exports = (sequelize) => {
 
   Article.associate = function() {
     Article.belongsTo(sequelize.models.User, {
-      onDelete: 'CASCADE',
       as: 'Author',
       foreignKey: {
         allowNull: false

@@ -926,7 +926,6 @@ class Tokenizer {
         )) {
           let i = this.i;
           let new_header_level = 0;
-          debugger;
           while (this.chars[i] === INSANE_HEADER_CHAR) {
             i += 1;
             new_header_level += 1;
@@ -1658,7 +1657,7 @@ function macro_image_video_block_convert_function(ast, context) {
   if (description !== '') {
     description = '. ' + description;
   }
-  let {error_message, src, source, source_type} = macro_image_video_source(ast, context);
+  let {error_message, source, source_type, src} = macro_image_video_source(ast, context);
   if (error_message !== undefined) {
     return error_message;
   }
@@ -2864,8 +2863,8 @@ function macro_image_video_source(ast, context) {
   return {
     error_message: error_message,
     source: context.macros[ast.macro_name].options.source_func(ast, context, src, source_type),
+    source_type: source_type,
     src: src,
-    type: source_type,
   }
 }
 const MACRO_IMAGE_VIDEO_OPTIONS = {

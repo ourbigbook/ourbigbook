@@ -28,16 +28,13 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
         getLoggedInUser(req, res).then(loggedInUser => Promise.all([
           loggedInUser,
           loggedInUser
-            ? sequelize.models.Article.count({
-                include: [{
-                  model: sequelize.models.File,
-                  as: 'file',
-                  where: { authorId: loggedInUser.id },
-                }]
-              })
+            ? isIssue
+                ? sequelize.models.Issue.count({ where: { authorId: loggedInUser.id } })
+                : sequelize.models.File.count({ where: { authorId: loggedInUser.id } })
             : null,
         ])),
       ])
+      console.error({articleCountByLoggedInUser});
       if (!loggedInUser) {
         return {
           redirect: {

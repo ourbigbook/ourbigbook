@@ -347,35 +347,6 @@ function convert_path(input_path, options, convert_input_options) {
     path_relative_to_cirodown_json = path.relative(convert_input_options.cirodown_json_dir, input_path_parse.dir);
     input_path_relative_to_cirodown_json = path.join(path_relative_to_cirodown_json, input_path_parse.base);
   }
-  let toplevel_id;
-  if (cirodown.INDEX_FILE_BASENAMES_NOEXT.has(input_path_basename_noext)) {
-    if (path_relative_to_cirodown_json === '') {
-      // https://cirosantilli.com/cirodown#the-toplevel-index-file
-      toplevel_id = undefined;
-    } else {
-      // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
-      toplevel_id = path_relative_to_cirodown_json;
-      new_options.toplevel_has_scope = true;
-    }
-  } else {
-    toplevel_id = input_path_basename_noext;
-    if (path_relative_to_cirodown_json === '') {
-      new_options.toplevel_parent_scope = undefined;
-    } else {
-      new_options.toplevel_parent_scope = path_relative_to_cirodown_json;
-    }
-  }
-  // TODO htmlEmbed was split into embedIncludes and embedResources.
-  // This was likely meant to beembedIncludes, but I don't have a filing test if this is commented out
-  // so not sure.
-  if (!convert_input_options.commander.embedIncludes) {
-    let root_relpath = path.relative(input_path_parse.dir, convert_input_options.cirodown_json_dir)
-    if (root_relpath !== '') {
-      root_relpath += cirodown.URL_SEP;
-    }
-    new_options.template_vars.root_relpath = root_relpath;
-  }
-  new_options.toplevel_id = toplevel_id;
   new_convert_input_options.input_path = input_path_relative_to_cirodown_json;
   let output = convert_input(input, new_options, new_convert_input_options);
   const context = new_convert_input_options.extra_returns.context;

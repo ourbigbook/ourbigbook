@@ -1826,11 +1826,10 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
       ast.id !== undefined &&
       ast.header_graph_node &&
       ast.header_graph_node.parent_node !== undefined &&
-      ast.header_graph_node.parent_node.value !== undefined
+      ast.header_graph_node.parent_node.value !== undefined &&
+      ast.scope !== undefined
     ) {
-      if (ast.scope !== undefined) {
-        ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id
-      }
+      ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id
     }
   }
   ast.index_id = index_id;
@@ -2425,22 +2424,59 @@ function convert_init_context(options={}, extra_returns={}) {
     if (!('root_relpath' in options.template_vars)) { options.template_vars.root_relpath = ''; }
     if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
     if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
-  if (!('toplevel_id' in options)) {
-    // If given, force the toplevel header to have this ID.
-    // Otherwise, derive the ID from the title.
-    // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
-    options.toplevel_id = undefined;
+
+  // Handle scope and IDs that are based on the input path:
+  //
+  // - toplevel_has_scope
+  //
+  //   Set for index files in subdirectories. Is equivalent to
+  //   adding a {scope} to the toplevel header.
+  //
+  // - toplevel_parent_scope
+  //
+  //   Set for files in subdirectories. Means that the (faked non existent)
+  //   parent toplevel header has {scope} set.
+  //
+  // - toplevel_id
+  //
+  //   If true, force the toplevel header to have this ID.
+  //   Otherwise, derive the ID from the title.
+  //   https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
+  options.toplevel_id = undefined;
+  if (options.input_path !== undefined) {
+    const [dirname, basename] = path_split(options.input_path, options.path_sep)
+    const [basename_noext, ext] = path_splitext(basename)
+    let toplevel_id;
+    if (INDEX_FILE_BASENAMES_NOEXT.has(basename_noext)) {
+      if (dirname === '') {
+        // https://cirosantilli.com/cirodown#the-toplevel-index-file
+        toplevel_id = undefined;
+      } else {
+        // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
+        toplevel_id = dirname;
+        options.toplevel_has_scope = true;
+      }
+    } else {
+      toplevel_id = basename_noext;
+      if (dirname === '') {
+        options.toplevel_parent_scope = undefined;
+      } else {
+        options.toplevel_parent_scope = dirname;
+      }
+    }
+    // TODO htmlEmbed was split into embedIncludes and embedResources.
+    // This was likely meant to be embedIncludes, but I don't have a filing test if this is commented out
+    // so not sure.
+    if (!options.embed_includes) {
+      let root_relpath = path.relative(dirname, '')
+      if (root_relpath !== '') {
+        root_relpath += URL_SEP;
+      }
+      options.template_vars.root_relpath = root_relpath;
+    }
+    options.toplevel_id = toplevel_id;
   }
-  if (!('toplevel_has_scope' in options)) {
-    // Set for index files in subdirectories. Is equivalent to
-    // adding a {scope} to the toplevel header.
-    options.toplevel_has_scope = false;
-  }
-  if (!('toplevel_parent_scope' in options)) {
-    // Set for files in subdirectories. Means that the (faked non existent)
-    // parent toplevel header has {scope} set.
-    options.toplevel_parent_scope = undefined;
-  }
+
   if (options.xss_unsafe === undefined) {
     const xss_unsafe = cirodown_json['xss-unsafe'];
     if (xss_unsafe !== undefined) {
@@ -2677,10 +2713,10 @@ function html_convert_attrs_id(
   let id = ast.id;
   if (id !== undefined) {
     custom_args[Macro.ID_ARGUMENT_NAME] = [
-        new PlaintextAstNode(
-          remove_toplevel_scope(id, context.toplevel_ast, context),
-          ast.source_location,
-        ),
+      new PlaintextAstNode(
+        remove_toplevel_scope(id, context.toplevel_ast, context),
+        ast.source_location,
+      ),
     ];
   }
   return html_convert_attrs(ast, context, arg_names, custom_args);
@@ -3627,7 +3663,18 @@ function parse(tokens, options, context, extra_returns={}) {
             parent_tree_node.add_child(cur_header_graph_node);
             const parent_ast = parent_tree_node.value;
             if (parent_ast !== undefined) {
-              ast.scope = calculate_scope(parent_ast, context);
+              let scope = calculate_scope(parent_ast, context);
+              // The ast might already have a scope here through less common means such as
+              // being in a subdirectory.
+              if (ast.scope) {
+                if (scope === undefined) {
+                  scope = ''
+                } else {
+                  scope += Macro.HEADER_SCOPE_SEPARATOR
+                }
+                scope += ast.scope
+              }
+              ast.scope = scope;
             }
           }
           const old_graph_node = include_options.header_graph_stack.get(cur_header_level);
@@ -4317,6 +4364,15 @@ function path_split(str, sep) {
     return ['', str];
   } else {
     return [str.substring(0, dir_sep_index), str.substr(dir_sep_index + 1)];
+  }
+}
+
+function path_splitext(str) {
+  const sep_index = str.lastIndexOf('.')
+  if (sep_index == -1) {
+    return [str, ''];
+  } else {
+    return [str.substring(0, sep_index), str.substr(sep_index + 1)];
   }
 }
 

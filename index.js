@@ -890,6 +890,8 @@ class Tokenizer {
       new_source_location.line = this.source_location.line;
     if (new_source_location.column === undefined)
       new_source_location.column = this.source_location.column;
+    if (new_source_location.path === undefined)
+      new_source_location.path = this.source_location.path;
     this.tokens.push(new Token(token, new_source_location, value));
   }
 

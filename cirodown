@@ -689,8 +689,8 @@ A link to another file: \\x[and-now-an-include]
       }
       if (!input_path_is_file) {
         convert_files_in_directory_extract_ids(inputPath, options, convert_input_options);
+        generate_redirects(convert_input_options, cirodown_json, html_x_extension, outdir);
       }
-      generate_redirects(convert_input_options, cirodown_json, html_x_extension, outdir);
       let watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES});
       watcher.on('change', function(path) {
         convert_path_to_file(input_dir, path, options, convert_input_options);

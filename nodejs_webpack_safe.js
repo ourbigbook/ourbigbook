@@ -397,6 +397,7 @@ ORDER BY "RecRefs".level DESC
         path: ast.source_location.path,
         ast_json: JSON.stringify(ast),
         macro_name: ast.macro_name,
+        toplevel_id: ast.toplevel_id,
       })
     }
 

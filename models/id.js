@@ -28,6 +28,24 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: false,
       },
+      // The ID of the toplevel header for this element. E.g. in:
+      //
+      // ``
+      // = h1
+      //
+      // == h2
+      // {toplevel}
+      //
+      // === h3
+      //
+      // == h2 2
+      // ``
+      //
+      // both h2 and h3 had toplevel_id = h2.
+      toplevel_id: {
+        type: DataTypes.TEXT,
+        // Can be NULL e.g. for an image before any header.
+      },
       ast_json: {
         type: DataTypes.TEXT,
         allowNull: false,

@@ -139,6 +139,8 @@ class AstNode {
     // it is possible to force non-indexed IDs to count as well with
     // caption_number_visible.
     this.macro_count_visible = undefined;
+    // Is this header numbered? Note that this is not set based on the numbered= argument:
+    // that argument determines this .numbered of descendants only. This is analogous to scope.
     this.numbered = options.numbered;
     // {AstNode} that contains this as an argument.
     this.parent_node = options.parent_node;
@@ -186,6 +188,12 @@ class AstNode {
 
     // Array of AstNode of synonym headers of this one that have title2 set.
     this.title2s = []
+
+    // Has this node already been validated? This cannot happen twice e.g. because of booleans:
+    // booleans currently just work by adding a dummy argument with a default. But then we lose
+    // the fact if the thing was given or not. This matters for example for numbered, which
+    // inherits from parent if the arg is not given on parent.
+    this.validated = false
 
 
     this.count_words = options.count_words
@@ -283,7 +291,7 @@ class AstNode {
         this.args[argname].source_location = context.source_location;
       }
     }
-    if (context.validate_ast) {
+    if (context.validate_ast && !this.validated) {
       validate_ast(this, context);
     }
     if (this.node_type === AstType.PARAGRAPH) {
@@ -4235,19 +4243,6 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
           header_graph_last_level = cur_header_level;
 
-          // numbered propagation to children.
-          // Note that the property only affects descendants, but not the node itself.
-          if (parent_tree_node === undefined || parent_tree_node.value === undefined) {
-            ast.numbered = context.options.cirodown_json.numbered
-          } else {
-            const parent_ast = parent_tree_node.value
-            if (parent_ast.validation_output.numbered.given) {
-              ast.numbered = parent_ast.validation_output.numbered.boolean
-            } else {
-              ast.numbered = parent_ast.numbered
-            }
-          }
-
         }
         ast.header_graph_node = cur_header_graph_node
 
@@ -4504,6 +4499,53 @@ async function parse(tokens, options, context, extra_returns={}) {
       }
     }
 
+    // Reconcile the dummy include header with our actual knowledge from the DB, e.g.:
+    // * patch the ID of the include headers.
+    // Has to be deferred here after DB fetch obviously because we need he DB data.
+    for (const href in options.include_hrefs) {
+      const target_id_ast = context.id_provider.get(href, context);
+      const header_ast = options.include_hrefs[href]
+      if (target_id_ast === undefined) {
+        let message = `ID in include not found on database: "${href}", ` +
+          `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
+        header_ast.args[Macro.TITLE_ARGUMENT_NAME].get(0).text = error_message_in_output(message)
+        if (options.render) {
+          parse_error(state, message, header_ast.source_location);
+        }
+      } else {
+        header_ast.set_source_location(target_id_ast.source_location)
+        header_ast.header_graph_node.update_ancestor_counts(target_id_ast.header_graph_node_word_count)
+        for (const argname in target_id_ast.args) {
+          if (
+            // We have to patch the level of the target ID (1) do our new dummy one in the current tree.
+            argname !== 'level' &&
+            target_id_ast.validation_output[argname].given
+          ) {
+            header_ast.args[argname] = target_id_ast.args[argname]
+          }
+        }
+      }
+      // This is a bit nasty and duplicates the header processing code,
+      // but it is a bit hard to factor them out since this is a magic include header,
+      // and all includes and headers must be parsed concurrently since includes get
+      // injected under the last header.
+      validate_ast(header_ast, context);
+
+      if (target_id_ast !== undefined) {
+        // We modify the cache here to ensure that the header ID has the full header_graph_node, which
+        // then gets feched from \x{full} (notably ToC) in order to show the link number there.
+        //
+        // Yes, this erase IDs that come from other Includes, but we don´t have a use case for that
+        // right now, e.g. the placholder include header does not show parents.
+        target_id_ast.header_graph_node = header_ast.header_graph_node
+        target_id_ast.header_parent_ids = []
+      }
+    }
+    if (options.id_provider !== undefined) {
+      context.options.id_provider.build_header_tree(
+        options.include_hrefs, fetch_header_tree_ids_rows, { context })
+    }
+
     // Ast post process pass 2
     //
     // Post process the AST pre-order depth-first search after
@@ -4564,6 +4606,23 @@ async function parse(tokens, options, context, extra_returns={}) {
           const message = `the "${Macro.TOPLEVEL_MACRO_NAME}" cannot be used explicitly`;
           ast = new PlaintextAstNode(error_message_in_output(message), ast.source_location);
           parse_error(state, message, ast.source_location);
+        } else if (
+          ast.macro_name === Macro.HEADER_MACRO_NAME
+        ) {
+          propagate_numbered(ast, context)
+          if (ast.from_include) {
+            // This to ensure that the ast we get from \x will have a consistent
+            // numbering with the local parent.
+            // This code will likely be removed if we do:
+            // https://github.com/cirosantilli/cirodown/issues/188
+            const cached_ast = context.id_provider.get(ast.id, context)
+            if (
+              // Possible in error cases and TODO apparently some non-error too.
+              cached_ast !== undefined
+            ) {
+              cached_ast.numbered = ast.numbered
+            }
+          }
         }
         // Dump index of headers with includes.
         if (ast.includes.length > 0) {
@@ -4572,9 +4631,11 @@ async function parse(tokens, options, context, extra_returns={}) {
         if (
           // These had been validated earlier during header processing.
           macro_name === Macro.HEADER_MACRO_NAME
-          && !context.has_toc
         ) {
-          if (ast.toc_header) {
+          if (
+            !context.has_toc &&
+            ast.toc_header
+          ) {
             parent_arg.push(new AstNode(
               AstType.MACRO,
               Macro.TOC_MACRO_NAME,
@@ -4881,50 +4942,6 @@ async function parse(tokens, options, context, extra_returns={}) {
 
     // Now for some final operations that don't go over the entire Ast Tree.
     perf_print(context, 'post_process_4')
-
-    // Patch the ID of the include headers.
-    // Deferred here after ID cache warming to group all DB queries.
-    for (const href in options.include_hrefs) {
-      const target_id_ast = context.id_provider.get(href, context);
-      const header_ast = options.include_hrefs[href]
-      let header_node_title;
-      if (target_id_ast === undefined) {
-        let message = `ID in include not found on database: "${href}", ` +
-          `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
-        header_node_title = error_message_in_output(message);
-        if (options.render) {
-          parse_error(state, message, header_ast.source_location);
-        }
-      } else {
-        const x_text_options = {
-          show_caption_prefix: false,
-          style_full: false,
-        };
-        header_node_title = x_text(target_id_ast, context, x_text_options);
-        header_ast.set_source_location(target_id_ast.source_location)
-        header_ast.header_graph_node.update_ancestor_counts(target_id_ast.header_graph_node_word_count)
-      }
-      header_ast.args[Macro.TITLE_ARGUMENT_NAME].get(0).text = header_node_title
-      // This is a bit nasty and duplicates the header processing code,
-      // but it is a bit hard to factor them out since this is a magic include header,
-      // and all includes and headers must be parsed concurrently since includes get
-      // injected under the last header.
-      validate_ast(header_ast, context);
-
-      if (target_id_ast !== undefined) {
-        // We modify the cache here to ensure that the header ID has the full header_graph_node, which
-        // then gets feched from \x{full} (notably ToC) in order to show the link number there.
-        //
-        // Yes, this erase IDs that come from other Includes, but we don´t have a use case for that
-        // right now, e.g. the placholder include header does not show parents.
-        target_id_ast.header_graph_node = header_ast.header_graph_node
-        target_id_ast.header_parent_ids = []
-      }
-    }
-    if (options.id_provider !== undefined) {
-      context.options.id_provider.build_header_tree(
-        options.include_hrefs, fetch_header_tree_ids_rows, { context })
-    }
 
     // Check for ID conflicts.
     for (const other_ast of id_conflict_asts) {
@@ -5370,6 +5387,29 @@ function perf_print(context, name) {
 }
 exports.perf_print = perf_print
 
+function propagate_numbered(ast, context) {
+  // numbered propagation to children.
+  // Note that the property only affects descendants, but not the node itself.
+  const parent_tree_node = ast.header_graph_node.parent_node
+  if (parent_tree_node === undefined || parent_tree_node.value === undefined) {
+    // Try getting parents from \Include.
+    // https://github.com/cirosantilli/cirodown/issues/188
+    //const parent_asts = ast.get_header_parent_asts(context)
+    //if (parent_asts.length > 0) {
+    //  ast.numbered = parent_asts.some(ast => ast.numbered)
+    //} else {
+    ast.numbered = context.options.cirodown_json.numbered
+  } else {
+    const parent_ast = parent_tree_node.value
+    if (parent_ast.validation_output.numbered.given) {
+      ast.numbered = parent_ast.validation_output.numbered.boolean
+    } else {
+      ast.numbered = parent_ast.numbered
+    }
+  }
+}
+exports.propagate_numbered = propagate_numbered
+
 // Fuck JavaScript? Can't find a built-in way to get the symbol string without the "Symbol(" part.
 // https://stackoverflow.com/questions/30301728/get-the-description-of-a-es6-symbol
 function symbol_to_string(symbol) {
@@ -5423,8 +5463,16 @@ function url_basename(str) {
   return basename(str, URL_SEP);
 }
 
-// Do some error checking. If no errors are found, convert normally. Save output on out.
+// Do some error checking and setup some stuff like boolean.
+// We should likely do this in the AstNode constructor. The reason we didn't
+// was likely to not need context at that point, and be nicer to serialization.
 function validate_ast(ast, context) {
+  if (ast.validated) {
+    throw new Error(`ast has already been validated:
+${ast.toString()}`)
+  } else {
+    ast.validated = true
+  }
   const macro_name = ast.macro_name;
   const macro = context.macros[macro_name];
   const name_to_arg = macro.name_to_arg;

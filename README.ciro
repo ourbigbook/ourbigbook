@@ -6016,10 +6016,15 @@ Step debug during a test run. Add the statement:
 ``
 debugger;
 ``
-to where you want to break in the code, and then:
+to where you want to break in the code, and then run:
 ``
-node inspect ./node_modules/.bin/mocha test --ignore-leaks -g 'p with id before'
+npm run testi -- -g 'p with id before'
 ``
+where `i` in `testi` stands for `inspect` from `node inspect`. Also consider the alias:
+``
+npmtgi() ( npm run testi -- -g "$*" )
+``
+
 Note however that this does not work for tests that run the `cirodown` executable itself, since those spawn a separate process. TODO how to do it? Tried along:
 ``
     const out = child_process.spawnSync('node', ['inspect', 'cirodown'].concat(options.args), {

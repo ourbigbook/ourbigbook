@@ -176,7 +176,7 @@ class AstNode {
       if (error_message === undefined) {
         out = macro.convert(effective_this, context, validation_output);
       } else {
-        macro.error(context, error_message[0], error_message[1], error_message[2]);
+        render_error(context, error_message[0], error_message[1], error_message[2]);
         out = error_message_in_output(error_message[0], context);
       }
     }
@@ -508,10 +508,6 @@ class Macro {
     }
   }
 
-  error(context, message, line, column) {
-    context.errors.push(new ErrorMessage(message, line, column));
-  }
-
   katex_convert(ast, context) {
     try {
       return katex.renderToString(
@@ -527,7 +523,7 @@ class Macro {
       // It uses Unicode char hacks to add underlines... and there are two trailing
       // chars after the final newline, so the error message is taking up two lines
       let message = error.toString().replace(/\n\xcc\xb2$/, '');
-      this.error(context, message, ast.args.content.line, ast.args.content.column);
+      render_error(context, message, ast.args.content.line, ast.args.content.column);
       return error_message_in_output(message, context);
     }
   }
@@ -2554,6 +2550,10 @@ function parse_error(state, message, line, column) {
     message, line, column));
 }
 
+function render_error(context, message, line, column) {
+  context.errors.push(new ErrorMessage(message, line, column));
+}
+
 function title_to_id(title) {
   return title.toLowerCase()
     .replace(/[^a-z0-9-]+/g, ID_SEPARATOR)
@@ -2882,7 +2882,7 @@ const DEFAULT_MACRO_LIST = [
         let show = convert_arg_noescape(show_arg, context);
         if (!(show === '0' || show === '1')) {
           let message = `show must be 0 or 1: "${level}"`;
-          this.error(context, message, show_arg, show_arg.column);
+          render_error(context, message, show_arg, show_arg.column);
           return error_message_in_output(message, context);
         }
         do_show = (show === '1');
@@ -3275,7 +3275,7 @@ const DEFAULT_MACRO_LIST = [
       const target_id_ast = context.id_provider.get(target_id);
       if (target_id_ast === undefined) {
         let message = `cross reference to unknown id: "${target_id}"`;
-        this.error(context, message, ast.args.href.line, ast.args.href.column);
+        render_error(context, message, ast.args.href.line, ast.args.href.column);
         return error_message_in_output(message, context);
       }
       const content_arg = ast.args.content;
@@ -3291,7 +3291,7 @@ const DEFAULT_MACRO_LIST = [
         content = Macro.x_text(target_id_ast, context, x_text_options);
         if (content === ``) {
           let message = `empty cross reference body: "${target_id}"`;
-          this.error(context, message, ast.line, ast.column);
+          render_error(context, message, ast.line, ast.column);
           return error_message_in_output(message, context);
         }
       } else {

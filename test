@@ -94,6 +94,24 @@ gh
 <p>gh</p>
 `
 );
+assert_convert('ordered list',
+  `ab
+
+\\ol[
+\\l[cd]
+\\l[ef]
+]
+
+gh
+`,
+  `<p>ab</p>
+<ol>
+<li>cd</li>
+<li>ef</li>
+</ol>
+<p>gh</p>
+`
+);
 
 // Table.
 assert_convert('tr with explicit table',

@@ -1,8 +1,10 @@
 = Cirodown
 
-A Markup language to write multipage or single page HTML / PDF books, blogs, etc. that is \x[saner][saner] and more powerful than Markdown and Asciidoctor, but still nicer to write than XML and JSON, with reference implementation in JavaScript.
+A Markup language to write complex structured HTML wikis/books that is \x[saner] and more powerful than Markdown and Asciidoctor, with reference implementation in JavaScript.
 
 The source for this document is at: https://github.com/cirosantilli/cirodown/blob/master/README.ciro and a rendered version can be seen at: https://cirosantilli.com/cirodown and a live in-browser demo at: https://cirosantilli.com/cirodown/editor[].
+
+If Mark had his Down, why can't Ciro have his own? ;-)
 
 == Quick start
 
@@ -3287,7 +3289,11 @@ a conversion command:
 cirodown --split-headers hello.ciro
 ``
 would produce the following output files:
-* `hello.html`: contains the entire rendered document as usual. Remember that this is called `hello.html` instead of `h1.html` because \x[the-toplevel-header][the toplevel header ID is automatically derived from its filename]
+* `hello.html`: contains the entire rendered document as usual.
+
+  Remember that this is called `hello.html` instead of `h1.html` because \x[the-toplevel-header][the toplevel header ID is automatically derived from its filename].
+
+  Each header contains a on-hover link to the single-file split version of the header.
 * `hello-split.html`: contains only the contents directly under `= h1`, but not under any of the subheaders, e.g.:
   * `h1 content.` appears in this rendered output
   * `h1-1-1` does not appear in this rendered output

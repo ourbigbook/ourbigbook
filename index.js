@@ -1856,7 +1856,6 @@ function convert(
       }
       convert_header(cur_arg_list, context);
       // Because the following conversion would redefine them.
-      context.katex_macros = {};
     }
     if (options.log['split-headers']) {
       console.error('split-headers non-split: ' + options.input_path);
@@ -1868,6 +1867,8 @@ function convert(
     } else if (options.input_path !== undefined) {
       outpath = output_path(options.input_path, options.toplevel_id, context);
     }
+    context.katex_macros = {};
+    context.in_split_headers = false;
     context.toplevel_output_path = outpath;
     output = ast.convert(context);
     if (outpath !== undefined) {
@@ -2468,7 +2469,14 @@ function output_path_parts(input_path, id, context) {
   let ret = '';
   const [dirname, basename] = path_split(input_path, context.options.path_sep);
   const renamed_basename = rename_basename(noext(basename));
-  if (context.in_split_headers) {
+  if (
+    // to_split_headers is set explicitly when making
+    // links across splitnon-split versions of the output.
+    // Otherwise, link to the same type of output as the current one
+    // as given in in_split_headers.
+    (context.to_split_headers === undefined && context.in_split_headers) ||
+    (context.to_split_headers !== undefined && context.to_split_headers)
+  ) {
     // id='cirodown'             -> ['',       'index-split']
     // id='quick-start'          -> ['',       'quick-start']
     // id='not-readme'           -> ['',       'not-readme-split']
@@ -3854,6 +3862,7 @@ function x_href_parts(target_id_ast, context) {
     context.toplevel_output_path === undefined ||
     (
       !context.in_split_headers &&
+      context.to_split_headers === undefined &&
       context.include_path_set.has(target_input_path)
     )
   ) {
@@ -3884,25 +3893,28 @@ function x_href_parts(target_id_ast, context) {
 
   // fragment
   let fragment;
-  if (context.in_split_headers) {
+  if (
+    (context.to_split_headers === undefined && context.in_split_headers) ||
+    (context.to_split_headers !== undefined && context.to_split_headers)
+  ) {
     fragment = '';
   } else {
-    if (
-      // The header was included inline into the current file.
-      context.include_path_set.has(target_input_path) ||
-      // The header is in the current file.
-      (target_input_path == context.options.input_path)
-    ) {
-      fragment = remove_toplevel_scope(target_id_ast, context);
+    if (target_id_ast.first_toplevel_child) {
+      fragment = '';
     } else {
-      const file_provider_ret = context.options.file_provider.get(target_input_path);
-      if (file_provider_ret === undefined) {
-        let message = `file not found on database: "${target_input_path}", needed for toplevel scope removal`;
-        render_error(context, message, target_id_ast.source_location);
-        return error_message_in_output(message, context);
+      if (
+        // The header was included inline into the current file.
+        context.include_path_set.has(target_input_path) ||
+        // The header is in the current file.
+        (target_input_path == context.options.input_path)
+      ) {
+        fragment = remove_toplevel_scope(target_id_ast, context);
       } else {
-        if (target_id_ast.first_toplevel_child) {
-          fragment = '';
+        const file_provider_ret = context.options.file_provider.get(target_input_path);
+        if (file_provider_ret === undefined) {
+          let message = `file not found on database: "${target_input_path}", needed for toplevel scope removal`;
+          render_error(context, message, target_id_ast.source_location);
+          return error_message_in_output(message, context);
         } else {
           if (file_provider_ret.toplevel_id === target_id_ast.id) {
             fragment = target_id_ast.id;
@@ -4486,6 +4498,18 @@ const DEFAULT_MACRO_LIST = [
         let parent_href = x_href_attr(parent_ast, context);
         let parent_body = convert_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
         ret += ` | <a${parent_href}>\u2191 parent "${parent_body}"</a>`;
+      }
+      if (context.options.split_headers) {
+        // Link to the other split/non-split version.
+        let content;
+        if (context.in_split_headers) {
+          content = 'nosplit';
+        } else {
+          content = 'split';
+        }
+        let other_context = clone_and_set(context, 'to_split_headers', !context.in_split_headers);
+        let other_href = x_href_attr(ast, other_context);
+        ret += ` | <a${other_href}>${content}</a>`;
       }
       ret += `</span>`;
       ret += `</h${level_int_capped}>\n`;

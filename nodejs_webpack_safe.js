@@ -696,7 +696,7 @@ async function check_db(sequelize, paths_converted, transaction) {
   // So just doing some Js code and an extra deletion query afterwards
   let i = 0
   const delete_unused_inflection_ids = []
-  //console.error(new_refs.map((r, i) => { return {
+  //console.dir(new_refs.map((r, i) => { return {
   //  i,
   //  defined_at: r.defined_at,
   //  defined_at_line: r.defined_at_line,
@@ -705,7 +705,7 @@ async function check_db(sequelize, paths_converted, transaction) {
   //  to_id: r.to_id,
   //  type: r.type,
   //  inflected: r.inflected,
-  //} }));
+  //} }), { maxArrayLength: null } );
   while (i < new_refs.length) {
     let new_ref_start = i
     let new_ref = new_refs[i]

@@ -52,6 +52,7 @@ const Article = ({
       articlesInSamePageMap[article.topicId] = article
     }
   }
+  articlesInSamePageMap[article.topicId] = article
   const canEdit = isIssue ? !cant.editIssue(loggedInUser, article) : !cant.editArticle(loggedInUser, article)
   const renderRefCallback = React.useCallback(
     (elem) => {
@@ -175,38 +176,43 @@ const Article = ({
     },
     []
   );
-  const firstArticle = articlesInSamePage[0]
-  // A mega hacky version. Would it significantly improve rendering time?
-  //const tocHtml = articlesInSamePage.slice(1).map(a => `<div style="padding-left:${30 * (a.depth - firstArticle.depth)}px;"><a href="../${article.author.username}/${a.topicId}">${a.titleRender}</a></div>`).join('') +
-  const entry_list = []
-  const levelToHeader = {}
-  for (let i = 1; i < articlesInSamePage.length; i++) {
-    const a = articlesInSamePage[i]
-    const level = a.depth - firstArticle.depth
-    const href = ` href="../${article.author.username}/${a.topicId}"`
-    const content = a.titleRender
-    let parent_href, parent_content
-    if (level > 1) {
-      ;({ href: parent_href, content: parent_content } = levelToHeader[level - 1])
-    }
-    levelToHeader[level] = { href, content }
-    entry_list.push({
-      content,
-      href,
-      level,
-      has_child: i < articlesInSamePage.length - 1 && articlesInSamePage[i + 1].depth === a.depth + 1,
-      parent_href,
-      parent_content,
-      target_id: a.topicId,
-    })
+  let html = ''
+  if (!isIssue) {
+     html += article.h1Render
   }
-  const tocHtml = render_toc_from_entry_list({ entry_list })
+  html += article.render
+  if (!isIssue) {
+    // A mega hacky version. Would it significantly improve rendering time?
+    //const tocHtml = articlesInSamePage.slice(1).map(a => `<div style="padding-left:${30 * (a.depth - firstArticle.depth)}px;"><a href="../${article.author.username}/${a.topicId}">${a.titleRender}</a></div>`).join('') +
+    const entry_list = []
+    const levelToHeader = { 0: article }
+    for (let i = 0; i < articlesInSamePage.length; i++) {
+      const a = articlesInSamePage[i]
+      const level = a.depth - article.depth
+      const href = ` href="../${article.author.username}/${a.topicId}"`
+      const content = a.titleRender
+      let parent_href, parent_content
+      if (level > 1) {
+        ;({ href: parent_href, content: parent_content } = levelToHeader[level - 1])
+      }
+      levelToHeader[level] = { href, content }
+      entry_list.push({
+        content,
+        href,
+        level,
+        has_child: i < articlesInSamePage.length - 1 && articlesInSamePage[i + 1].depth === a.depth + 1,
+        parent_href,
+        parent_content,
+        target_id: a.topicId,
+      })
+    }
+    const tocHtml = render_toc_from_entry_list({ entry_list })
+    html += tocHtml + articlesInSamePage.slice(1).map(a => a.h2Render + a.render).join('')
+  }
   return <>
     <div
       dangerouslySetInnerHTML={{
-        __html: firstArticle.h1Render + firstArticle.render +
-                tocHtml +
-                articlesInSamePage.slice(1).map(a => a.h2Render + a.render).join('')
+        __html: html
       }}
       className="ourbigbook"
       ref={renderRefCallback}

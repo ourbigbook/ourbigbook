@@ -2875,9 +2875,9 @@ function render_ast_list(opts) {
         first_ast.header_tree_node.parent_ast = header_tree_h1
         //header_tree_h1.add_child(first_ast.header_tree_node)
 
-        rendered_outputs_entry.h2Render = first_ast.render(
-          clone_and_set(context, 'skipOutputEntry', true))
-        //rendered_outputs_entry.h2Render = 'asdf'
+        context.skipOutputEntry = true
+        context.forceHeadersHaveTocLink = true
+        rendered_outputs_entry.h2Render = first_ast.render(context)
       }
     }
     return ret
@@ -3212,6 +3212,7 @@ function convert_init_context(options={}, extra_returns={}) {
     in_parse: false,
     errors: [],
     extra_returns,
+    forceHeaderHasToc: false,
     include_path_set: new Set(options.include_path_set),
     in_header: false,
     macros: macro_list_to_macros(),
@@ -8338,7 +8339,13 @@ const OUTPUT_FORMATS_LIST = [
               }
             }
             let toc_href;
-            if (!is_top_level && has_toc(context)) {
+            if (
+              context.forceHeadersHaveTocLink ||
+              (
+                !is_top_level &&
+                has_toc(context)
+              )
+            ) {
               toc_href = html_attr('href', '#' + html_escape_attr(toc_id(ast.id)));
               items.push(`<a${toc_href} class="toc"${html_attr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`);
             }

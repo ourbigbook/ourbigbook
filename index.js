@@ -4637,7 +4637,8 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
         let target_id = convert_id_arg(ast.args.href, context)
         validate_ast(ast, context);
-        if (ast.validation_output.magic.boolean) {
+        const fetch_plural = ast.validation_output.magic.boolean || context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK
+        if (fetch_plural) {
           target_id = magic_title_to_id(target_id)
         }
         options.refs_to_x.push({
@@ -4645,14 +4646,14 @@ async function parse(tokens, options, context, extra_returns={}) {
           title_ast_ancestors: Object.assign([], title_ast_ancestors),
           target_id,
         })
-        if (ast.validation_output.magic.boolean) {
+        if (fetch_plural) {
           // In the case of magic, also fetch a singularized version from DB. We don't know
           // which one is the correct one, so just fetch both and decide at render time.
           const href_arg = ast.args.href
           const last_ast = href_arg.get(href_arg.length() - 1);
           if (last_ast.node_type === AstType.PLAINTEXT) {
             const old_text = last_ast.text
-            const new_text = pluralize(old_text,  1)
+            const new_text = pluralize(old_text,  context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK ? 2 : 1)
             if (new_text !== old_text) {
               last_ast.text = new_text
               const target_id = magic_title_to_id(convert_id_arg(ast.args.href, context))
@@ -8643,7 +8644,19 @@ OUTPUT_FORMATS_LIST.push(
             href = href[0].toUpperCase() + href.substring(1)
           }
           if (ast.validation_output.p.boolean) {
-            href = pluralize(href, 2)
+            const href_plural = pluralize(href, 2)
+            if (
+              // When we have \x without magic to a destination that exists
+              // in both plural and singular, we can't use the magic plural,
+              // or it will resolve to plural rather than the correct singular.
+              !ast.validation_output.magic.boolean &&
+              context.id_provider.get(href, context) &&
+              context.id_provider.get(href_plural, context)
+            ) {
+              return `<${href}>${ourbigbook_convert_args(ast, context, { skip: new Set(['c', 'href', 'magic']) }).join('')}`
+            } else {
+              href = href_plural
+            }
           }
           return `<${href}>${ourbigbook_convert_args(ast, context, { skip: new Set(['c', 'href', 'magic', 'p']) }).join('')}`
         },

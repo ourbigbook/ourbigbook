@@ -955,6 +955,11 @@ TODO https://github.com/cirosantilli/cirodown/issues/31 Cirodown likes Wikimedia
 \Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
 ]]
 
+And a quick test for a more complex thumb resized URL:
+\cirodown_example[[
+\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
+]]
+
 Upsides:
 * makes it easier for other writers to find and reuse your images
 * automatically generates resized versions of the uploaded images into several common dimensions so you can pick the smallest one that fits your desired \x[image-height] to reduce bandwidth usage
@@ -993,8 +998,13 @@ As a result, then https://commons.wikimedia.org[Wikimedia Commons] is one of the
 \Video[https://upload.wikimedia.org/wikipedia/commons/8/85/Vacuum_pump_filter_cut_and_place_in_eppendorf.webm]
 {id=sample-video-in-wikimedia-commons}
 {title=Nice sample video stored in Wikimedia Commons}
-{source=https://commons.wikimedia.org/wiki/File:Vacuum_pump_filter_cut_and_place_in_eppendorf.webm}
 {start=5}
+]]
+We also handle more complex transcoded video URLs just fine:
+\cirodown_example[[
+\Video[https://upload.wikimedia.org/wikipedia/commons/transcoded/1/19/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv.480p.vp9.webm]
+{id=sample-video-in-wikimedia-commons-transcoded}
+{title=Nice sample video stored in Wikimedia Commons transcoded}
 ]]
 Commons is better than YouTube if your content is on-topic there because:
 * they have no ads

@@ -48,8 +48,33 @@ $toplevel-horizontal-padding-mobile: 5px;
   //visibility: visible;
 }
 
-.ourbigbook {
-@include body;
+// CSS border triangles.
+// https://css-tricks.com/snippets/css/css-triangle/
+$toc-arrow-color: #009900;
+$toc-arrow-width: 0.7em;
+@mixin toc-arrow {
+  color: blue;
+  display: inline;
+  > * {
+    display: inline-block;
+    height: 0;
+    margin-right: 0.6 * $toc-arrow-width;
+    vertical-align: middle;
+    width: 0;
+  }
+}
+@mixin toc-hover-highlight-arrow {
+  @media only screen and (min-width: $max-mobile-width + 1) {
+    &:hover {
+      background-color: $target-background-color;
+    }
+    &:hover > * {
+      background-color: $target-background-color;
+    }
+  }
+}
+
+@mixin ourbigbook-title {
 
 // Helps prevent the horizontal scrollbar on mobile.
 word-wrap: break-word;
@@ -69,21 +94,6 @@ padding-left: 0;
 }
 .caption-prefix {
   font-weight: bold;
-}
-
-// Produces the margin on all toplevel elements.
-// The on-hover links will show up in that margin.
-> * {
-  @media only screen and (max-width: $max-mobile-width) {
-    padding-left: $toplevel-horizontal-padding-mobile;
-  }
-  @media only screen and (min-width: $max-mobile-width + 1) {
-    padding-left: $toplevel-horizontal-padding-left;
-  }
-  // Makes the absolute on hover link be absolute relative to this element.
-  // This makes it show up inside the padding-left of this element.
-  // https://stackoverflow.com/questions/10487292/position-absolute-but-relative-to-parent
-  position: relative;
 }
 
 .fa-regular-400, .fa-brands-400, .fa-solid-900 {
@@ -322,31 +332,6 @@ ol, ul {
         @include visible;
       }
 
-      // CSS border triangles.
-      // https://css-tricks.com/snippets/css/css-triangle/
-      $arrow-color: #009900;
-      $arrow-width: 0.7em;
-      @mixin arrow {
-        color: blue;
-        display: inline;
-        > * {
-          display: inline-block;
-          height: 0;
-          margin-right: 0.6 * $arrow-width;
-          vertical-align: middle;
-          width: 0;
-        }
-      }
-      @mixin hover-highlight-arrow {
-        @media only screen and (min-width: $max-mobile-width + 1) {
-          &:hover {
-            background-color: $target-background-color;
-          }
-          &:hover > * {
-            background-color: $target-background-color;
-          }
-        }
-      }
       div {
         display: flex;
         span.not-arrow {
@@ -356,22 +341,22 @@ ol, ul {
         }
         // Take up space on LIs that don't have an arrow.
         &.arrow {
-          @include arrow;
+          @include toc-arrow;
           & > * {
-            border-left: $arrow-width solid transparent;
-            border-right: $arrow-width solid transparent;
-            border-top: $arrow-width solid transparent;
+            border-left: $toc-arrow-width solid transparent;
+            border-right: $toc-arrow-width solid transparent;
+            border-top: $toc-arrow-width solid transparent;
           }
         }
       }
       // Right arrow for open LIs.
       &.has-child > div > div.arrow {
-        @include arrow;
-        @include hover-highlight-arrow;
+        @include toc-arrow;
+        @include toc-hover-highlight-arrow;
         & > * {
-          border-left: $arrow-width solid transparent;
-          border-right: $arrow-width solid transparent;
-          border-top: $arrow-width solid $arrow-color;
+          border-left: $toc-arrow-width solid transparent;
+          border-right: $toc-arrow-width solid transparent;
+          border-top: $toc-arrow-width solid $toc-arrow-color;
         }
       }
       &.close {
@@ -380,12 +365,12 @@ ol, ul {
         }
         // Down arrow for closed LIs.
         &.has-child > div > div.arrow {
-          @include arrow;
-          @include hover-highlight-arrow;
+          @include toc-arrow;
+          @include toc-hover-highlight-arrow;
           & > * {
-            border-top: $arrow-width solid transparent;
-            border-bottom: $arrow-width solid transparent;
-            border-left: $arrow-width solid $arrow-color;
+            border-top: $toc-arrow-width solid transparent;
+            border-bottom: $toc-arrow-width solid transparent;
+            border-left: $toc-arrow-width solid $toc-arrow-color;
           }
         }
       }
@@ -450,4 +435,29 @@ th[role=columnheader]:not(.no-sort):after {
 video {
   @include responsive-img;
 }
+}
+
+.ourbigbook {
+  @include body;
+  @include ourbigbook-title;
+
+  // Produces the margin on all toplevel elements.
+  // The on-hover links will show up in that margin.
+  > * {
+    @media only screen and (max-width: $max-mobile-width) {
+      padding-left: $toplevel-horizontal-padding-mobile;
+    }
+    @media only screen and (min-width: $max-mobile-width + 1) {
+      padding-left: $toplevel-horizontal-padding-left;
+    }
+    // Makes the absolute on hover link be absolute relative to this element.
+    // This makes it show up inside the padding-left of this element.
+    // https://stackoverflow.com/questions/10487292/position-absolute-but-relative-to-parent
+    position: relative;
+  }
+}
+
+// A subset of .ourbigbook used for titles-only renders as appear or article lists on OurBigBook Web.
+.ourbigbook-title {
+  @include ourbigbook-title;
 }

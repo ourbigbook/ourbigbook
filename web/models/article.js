@@ -62,7 +62,7 @@ module.exports = (sequelize) => {
 
   Article.prototype.getFileCached = async function() {
     let file
-    if (this.file === undefined || this.file.author === undefined) {
+    if (!this.file || this.file.author === undefined) {
       file = await this.getFile({ include: [ { model: sequelize.models.User, as: 'author' } ]})
     } else {
       file = this.file
@@ -177,6 +177,7 @@ module.exports = (sequelize) => {
     const authorInclude = {
       model: sequelize.models.User,
       as: 'author',
+      required: true,
     }
     if (author) {
       authorInclude.where = { username: author }
@@ -185,12 +186,13 @@ module.exports = (sequelize) => {
       model: sequelize.models.File,
       as: 'file',
       include: [authorInclude],
+      required: true,
     }]
     if (likedBy) {
       include.push({
         model: sequelize.models.User,
         as: 'likedBy',
-        where: {username: likedBy},
+        where: { username: likedBy },
       })
     }
     if (topicId) {

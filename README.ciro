@@ -12,6 +12,33 @@ Markup language + static site generator to write complex structured wikis/books/
 * https://cirosantilli.com/cirodown/editor[]: live in-browser demo
 * https://cirosantilli.com/cirodown-template[]: good template to get started, see \x[quick-start]{full}
 
+= Features
+{parent=cirodown}
+
+* \x[internal-cross-reference][references] to \x[header]{p}, \x[image]{p}, etc. with amazing \x[error-reporting][error checking and reporting]: never break internal links without knoing again, and quickly find out what broke when you do
+* KaTeX server side \x[mathematics], works on browsers with JavaScript disabled
+* multi-file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
+  * \x[internal-cross-file-reference]{p}
+  * `inotifywait` watch rebuild server
+  * single-source multi-format output based on \x[include]{p} and build options:
+    * one HTML per source with includes rendered as links between pages
+    * \x[embed-includes] single file output. Includes are parsed smartly, not just source copy pasted, e.g. included headers are shifted from `h1` to `h2` correctly
+    * \x[split-headers] option to output each header of an input file into a separate output file
+    * supports both local serverless rendering to HTML files for local viewing, and server oriented rendering such as GitHub pages, e.g. \x[internal-cross-reference]{p} automatically get `.html` extension and or not
+  * cross file configuration files to factor out common page parts like headers, footers and other metadata
+  * \x[table-of-contents] that crosses input files (TODO https://github.com/cirosantilli/cirodown/issues/126[])
+  * check that local files and images linked to actually exist: \x[a-check-argument]
+* advanced header/ID related features:
+  * \x[scope]{p}
+  * \x[synonym]{p}
+  * tags are regular headers: \x[h-child-argument], \x[x-child-argument]
+  * \x[unlimited-header-levels]
+  * \x[id-based-header-levels]
+* is written in JavaScript and therefore runs natively on the browser to allow live previews
+* helps you with the publishing:
+  * `./cirodown --publish` helper for single command publishing to the configured target (default GitHub pages): \x[publish]
+  * Cirodown tries to deal with media such as images and video intelligently for you, see e.g.: \x[where-to-store-images]
+
 = Quick start
 {parent=cirodown}
 
@@ -152,33 +179,6 @@ npm install cirodown
 Cirodown is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
 
 Cirodown aims to be the ultimate \x[latex-output-format][LaTeX] "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation).
-
-= Features
-{parent=design-goals}
-
-* \x[internal-cross-reference][references] to \x[header]{p}, \x[image]{p}, etc. with amazing \x[error-reporting][error checking and reporting]: never break internal links without knoing again, and quickly find out what broke when you do
-* KaTeX server side \x[mathematics]
-* multi-file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
-  * \x[internal-cross-file-reference]{p}
-  * `inotifywait` watch rebuild server
-  * single-source multi-format output based on \x[include]{p} and build options:
-    * one HTML per source with includes rendered as links between pages
-    * \x[embed-includes] single file output. Includes are parsed smartly, not just source copy pasted, e.g. included headers are shifted from `h1` to `h2` correctly
-    * \x[split-headers] option to output each header of an input file into a separate output file
-    * supports both local serverless rendering to HTML files for local viewing, and server oriented rendering such as GitHub pages, e.g. \x[internal-cross-reference]{p} automatically get `.html` extension and or not
-  * cross file configuration files to factor out common page parts like headers, footers and other metadata
-  * \x[table-of-contents] that crosses input files (TODO https://github.com/cirosantilli/cirodown/issues/126[])
-  * check that local files and images linked to actually exist: \x[a-check-argument]
-* advanced header/ID related features:
-  * \x[scope]{p}
-  * \x[synonym]{p}
-  * tags are regular headers: \x[h-child-argument], \x[x-child-argument]
-  * \x[unlimited-header-levels]
-  * \x[id-based-header-levels]
-* is written in JavaScript and therefore runs natively on the browser to allow live previews
-* helps you with the publishing:
-  * `./cirodown --publish` helper for single command publishing to the configured target (default GitHub pages): \x[publish]
-  * Cirodown tries to deal with media such as images and video intelligently for you, see e.g.: \x[where-to-store-images]
 
 = Saner
 {parent=design-goals}
@@ -384,6 +384,19 @@ See this awesome style guide: \a[markdown-style-guide]{check=0}
 
 The general lesson is clear: in a server, paths could be re-routed to anything, including content that lies outside of a Cirodown project.
 
+= `\a` `href` argument
+{parent=link}
+
+The link target, e.g. in:
+``
+\a[http://example.com]
+``
+`href` equals `http://example.com`.
+
+Important behaviours associated with this property for local links:
+* they are checked for existence in the local filesystem: \x[a-check-argument]
+* they are modified as per \x[relative-link]{full} to account for \x[scope]{p} with \x[split-headers]
+
 = `\a` `ref` argument
 {parent=link}
 
@@ -395,7 +408,7 @@ Trump said this and that.https://en.wikipedia.org/wiki/Donald_Trump_Access_Holly
 = `\a` `relative` argument
 {parent=link}
 
-If given, this \x[boolean-named-argument] forces a given link to be a \x[relative-link] or not.
+If given, this \x[boolean-argument] forces a given link to be a \x[relative-link] or not.
 
 Otherwise, the link is automatically guessed based on the address given as explained at \x[relative-link]{full}.
 
@@ -707,69 +720,6 @@ Sane equivalent:
 
 \H[3][My h3]{id=h3}
 ``
-
-= Automatic ID from title
-{parent=header}
-
-If a \x[the-toplevel-header][non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:
-* do a \x[id-output-format] conversion on the title to remove for example any HTML tags that would be present in the conversion output
-* convert all characters to lowercase. This uses \x[javascript-case-conversion]. Note that this does convert non-ASCII characters to lowercase, e.g. `É` to `é`.
-* if \x[cirodown-json/id-normalize-latin] is `true` (the default) do \x[cirodown-json/latin-normalization]. This converts e.g. `é` to `e`.
-* if \x[cirodown-json/id-normalize-punctuation] is `true` (the default) do \x[cirodown-json/punctuation-normalization]. This converts e.g. `+` to `plus`.
-* convert consecutive sequences of all non `a-z0-9` ASCII characters to a single hyphen `-`. Note that this leaves non-ASCII characters untouched.
-* strip leading or trailing hyphens
-Note how those rules leave non-ASCII Unicode characters untouched, except for:
-* capitalization changes wher applicable, e.g. `É` to `é`
-as capitalization and determining if something "is a letter or not" in those cases can be tricky.
-
-For toplevel headers, see: \x[the-id-of-the-first-header-is-derived-from-the-filename].
-
-So for example, the following automatic IDs would be generated: \x[table-examples-of-automatically-generated-ids].
-
-\Table{title=Examples of automatically generated IDs.}
-[
-|| title
-|| id
-|| latin normalization
-|| punctuation normalization
-|| comments
-
-| My favorite title
-| my-favorite-title
-|
-|
-|
-
-| Ciro's markdown is awesome
-| ciro-s-markdown-is-awesome
-|
-|
-| `'` is an ASCII character, but it is not in `a-z0-9`, therefore it gets converted to a hyphen `-`
-
-| É你
-| e你
-| true
-|
-| The Latin https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, is converted to its lower case form `é` as per the \x[javascript-case-conversion].
-
-  Then, due to \x[cirodown-json/latin-normalization], `é` is converted to `e`.
-
-  The Chinese character `你` is left untouched as Chinese characters have no case, and no ASCII analogue.
-
-| É你
-| é你
-| false
-|
-| Same as the previous, but `é` is not converted to `e` since \x[cirodown-json/latin-normalization] is turned off.
-
-| C++ is great
-| c-plus-plus-is-great
-|
-| true
-| This is the effect of \x[cirodown-json/punctuation-normalization].
-]
-
-For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the Cirodown file without extension instead of from the `title` argument.
 
 = Unlimited header levels
 {parent=header}
@@ -1122,7 +1072,7 @@ An explanation of what this video is about.
 {c}
 {parent=h-arguments}
 
-This \x[boolean-named-argument] determines whether renderings of a header will have section numbers or not. This affects all of:
+This \x[boolean-argument] determines whether renderings of a header will have section numbers or not. This affects all of:
 * \x[header]{p} themselves
 * \x[table-of-contents] links
 * \x[internal-cross-reference]{p} with the \x[x-full-argument]
@@ -1396,7 +1346,7 @@ For a more general introduction to all experiments, see: \x[introduction].
 
 but this would be very tedious.
 
-To keep those IDs shorter, Cirodown provides the `scope` \x[boolean-named-argument] property of \x[header]{p}, which works analogously to C++ namespaces with the header IDs.
+To keep those IDs shorter, Cirodown provides the `scope` \x[boolean-argument] property of \x[header]{p}, which works analogously to C++ namespaces with the header IDs.
 
 Using `scope`, the previous example could be written more succinctly as:
 ``
@@ -1501,7 +1451,7 @@ Some quick interactive cross file link tests:
 
 When using \x[split-headers], \x[internal-cross-reference]{p} always point to non-split pages as mentioned at \x[internal-cross-reference-targets-in-split-headers].
 
-If the `splitDefault` \x[boolean-named-argument] is given however:
+If the `splitDefault` \x[boolean-argument] is given however:
 * the split header becomes the default, e.g. `index.html` is now the split one, and `nosplit.html` is the non-split one
 * the header it is given for, and all of its descendant headers will use the split header as the default internal cross target, unless the header is already rendered in the current page. This does not propagate across \x[include]{p} however.
 
@@ -1665,6 +1615,84 @@ gdb.html
 which contains a redirection from `gdb.html` to `gnu-debugger.html`.
 
 Implemented at: https://github.com/cirosantilli/cirodown/issues/114
+
+= `\H` `title` argument
+{parent=h-synonym-argument}
+
+Contains the main content of the header. The \x[insane-syntax]:
+``
+= My title
+``
+is equivalent to the sane:
+``
+\H[1][My title]
+``
+and in both cases `My title` is the title argument.
+
+The title argument is also notably used for \x[automatic-id-from-title].
+
+= Automatic ID from title
+{parent=h-title-argument}
+
+If a \x[the-toplevel-header][non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:
+* do a \x[id-output-format] conversion on the title to remove for example any HTML tags that would be present in the conversion output
+* convert all characters to lowercase. This uses \x[javascript-case-conversion]. Note that this does convert non-ASCII characters to lowercase, e.g. `É` to `é`.
+* if \x[cirodown-json/id-normalize-latin] is `true` (the default) do \x[cirodown-json/latin-normalization]. This converts e.g. `é` to `e`.
+* if \x[cirodown-json/id-normalize-punctuation] is `true` (the default) do \x[cirodown-json/punctuation-normalization]. This converts e.g. `+` to `plus`.
+* convert consecutive sequences of all non `a-z0-9` ASCII characters to a single hyphen `-`. Note that this leaves non-ASCII characters untouched.
+* strip leading or trailing hyphens
+Note how those rules leave non-ASCII Unicode characters untouched, except for:
+* capitalization changes wher applicable, e.g. `É` to `é`
+as capitalization and determining if something "is a letter or not" in those cases can be tricky.
+
+For toplevel headers, see: \x[the-id-of-the-first-header-is-derived-from-the-filename].
+
+So for example, the following automatic IDs would be generated: \x[table-examples-of-automatically-generated-ids].
+
+\Table{title=Examples of automatically generated IDs.}
+[
+|| title
+|| id
+|| latin normalization
+|| punctuation normalization
+|| comments
+
+| My favorite title
+| my-favorite-title
+|
+|
+|
+
+| Ciro's markdown is awesome
+| ciro-s-markdown-is-awesome
+|
+|
+| `'` is an ASCII character, but it is not in `a-z0-9`, therefore it gets converted to a hyphen `-`
+
+| É你
+| e你
+| true
+|
+| The Latin https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, is converted to its lower case form `é` as per the \x[javascript-case-conversion].
+
+  Then, due to \x[cirodown-json/latin-normalization], `é` is converted to `e`.
+
+  The Chinese character `你` is left untouched as Chinese characters have no case, and no ASCII analogue.
+
+| É你
+| é你
+| false
+|
+| Same as the previous, but `é` is not converted to `e` since \x[cirodown-json/latin-normalization] is turned off.
+
+| C++ is great
+| c-plus-plus-is-great
+|
+| true
+| This is the effect of \x[cirodown-json/punctuation-normalization].
+]
+
+For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the Cirodown file without extension instead of from the `title` argument.
 
 = `\H` `title2` argument of a synonym header
 {parent=h-synonym-argument}
@@ -1887,7 +1915,8 @@ Have a look at this amazing image: \x[image-my-test-image].
 {description=The description of my image.}
 ]]
 This exemplifies the following parameters:
-* `description`: similar to `title`, but allow for further explanations without them appearing in \x[internal-cross-reference][cross references] to the image
+* `title`: analogous to the \x[h-title-argument]. Shows up preeminently, and sets a default ID if one is not given.
+* \x[image-description-argument][`description`]: similar to `title`, but allow for further explanations without them appearing in \x[internal-cross-reference][cross references] to the image
 * `source`: a standardized way to credit an image by linking to a URL that contains further image metadata
 For further discussion on the effects of ID see: \x[image-id][full].
 
@@ -1896,21 +1925,6 @@ And this is how you make an inline image inline one with lower case `i`:
 My inline \image[Tank_man_standing_in_front_of_some_tanks.jpg][test image] is awesome.
 ]]
 Inline images can't have captions.
-
-The `description` can have multiple paragraphs just like any other element, but we don't recommend this style because it makes it hard for readers to see what is part of the image caption and what is part of the next paragraph.
-\CirodownExample[[
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{id=image-my-test-image-description-paragraphs}
-{title=The title of my image.}
-{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
-{description=Description paragraph 1.
-
-Description paragraph 2.
-}
-
-Paragraph after.
-]]
-Maybe we could improve this with some CSS styling. If your description is truly huge however, you will likely be better off creating a dedicated header for the image, TODO implement: https://github.com/cirosantilli/cirodown/issues/164[].
 
 And now an image outside of \x[cirodownexample] to test how it looks directly under \x[toplevel]:
 
@@ -1928,16 +1942,16 @@ By default, we fix image heights to `height=315`, and let the `width` be calcula
 {id=image-id}
 {parent=image}
 
-Here is an image without a description but with an ID so we can link to it: \x[image-my-test-image-2].
+Here is an image without a \x[image-description-argument][description] but with an ID so we can link to it: \x[image-my-test-image-2].
 \CirodownExample[[
 Have a look at this amazing image: \x[image-my-test-image-2].
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {id=image-my-test-image-2}
 ]]
-This works because \x[x-full-argument][`full` is the default cross reference style for `Image`], otherwise the link text would be empty since there is no `title`, and cirodown would raise an error.
+This works because \x[x-full-argument][`full` is the default cross reference style for `Image`], otherwise the link text would be empty since there is no `title`, and Cirodown would raise an error.
 
-Cirodown can optionally deduce the title from the basename of the `src` argument if the `titleFromSrc` \x[boolean-named-argument] is given, or if `title-from-src` is set as the default \x[cirodown-json/media-providers][media provider] for the media type:
+Cirodown can optionally deduce the title from the basename of the `src` argument if the `titleFromSrc` \x[boolean-argument] is given, or if `title-from-src` is set as the default \x[cirodown-json/media-providers][media provider] for the media type:
 \CirodownExample[[
 Have a look at this amazing image: \x[image-tank-man-standing-in-front-of-some-tanks].
 
@@ -1949,11 +1963,15 @@ If the image has neither ID nor title, then it does not get a caption at all, an
 \CirodownExample[[
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 ]]
-The image does however get an automatically generated ID based on its image number, and it is possible for readers to link to that ID on the rendered version, e.g. as:
+The image does however get an automatically generated ID, just like every other Cirodown output HTML element, and it is possible for readers to link to that ID on the rendered version, e.g. as:
 ``
-#image-123
+#_123
 ``
-This link is of course not stable across document revisions however, since if an image is added before that one, the link will break. This kind of image is discouraged, because in paged output formats like PDF, it could float away from the text that refers to the image.
+Note that the `123` is not linked to the `Figure <number>.`, but just a sequential ID that runs over all elements.
+
+This type of ID is of course not stable across document revisions however, since if an image is added before that one, the link will break. So give an ID or title for anything that you expect users to link to.
+
+Another issue to consider is that in paged output formats like PDF, the image could float away from the text that refers to the image, so you basically always want to refer to image by ID, and not just by saying "the following image".
 
 We can also see that such an image does not increment the Figure count:
 \CirodownExample[[
@@ -2086,7 +2104,7 @@ Cirodown likes Wikimedia Commons so much that we automatically parse the image U
 \Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
 ]]
 
-And like for non-Wikimedia images, you can automatically generate a `title` from the `src` by setting the `titleFromSrc` \x[boolean-named-argument] or if `title-from-src` is set as the default \x[cirodown-json/media-providers][media provider] for the media type:
+And like for non-Wikimedia images, you can automatically generate a `title` from the `src` by setting the `titleFromSrc` \x[boolean-argument] or if `title-from-src` is set as the default \x[cirodown-json/media-providers][media provider] for the media type:
 \CirodownExample[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
 {titleFromSrc}
@@ -2139,6 +2157,70 @@ Then if someone ever has an SVG that needs another background color, we can add 
 TODO implement: mechanism where you enter a textual description of the image inside the code body, and it then converts to an image, adds to the `-media` repo and pushes all automatically. Start with dot.
 
 https://github.com/cirosantilli/cirodown/issues/40
+
+= Image argument
+{parent=image}
+
+= Image `check` argument
+{parent=image-argument}
+{tag=named-argument}
+{tag=boolean-argument}
+
+Analogous to the \x[a-check-argument] when checking if the \x[image-src-argument] exists or not.
+
+= Image `description` argument
+{parent=image-argument}
+{tag=named-argument}
+
+The `description` argument similar to the \x[image-title-argument] argument, but allows allowing longer explanations without them appearing in \x[internal-cross-reference][cross references] to the image.
+
+For example, consider:
+\CirodownExample[[
+See this image: \x[image-description-argument-test-1].
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=Tank man standing in front of some tanks.}
+{id=image-description-argument-test-1}
+{description=Note how the tanks are green.}
+{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
+]]
+In this example, the reference `\x[image-description-argument-test-1]` expands just to
+\Q[Tank man standing in front of some tanks]
+and does not include the description, which only shows on the image.
+
+The description can be as large as you like. If it gets really large however, you might want to consider moving the image to its own header to keep things slightly saner. This will be especially true after we eventually do: https://github.com/cirosantilli/cirodown/issues/180[].
+
+If the description contains any element that would take its own separate line, like multiple paragraphs or a list, we automatically add a line grouping the description with the corresponding image to make that clearer, otherwise it can be hard to know which title corresponds to a far away image. Example with multiple paragraphs:
+\CirodownExample[[
+Stuff before the image.
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=Tank man standing in front of some tanks.}
+{id=image-description-argument-test-2}
+{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
+{description=Note how the tanks are green.
+
+But the shirt is white.}
+
+Stuff after the image description.
+]]
+
+= Image `src` argument
+{parent=image-argument}
+{tag=positional-argument}
+
+The address of the image, e.g. in:
+``
+\Image[image.png]
+``
+the `src` is `image.png`.
+
+Analogous to the \x[a-href-argument].
+
+= Image `title` argument
+{parent=image-argument}
+
+Analogous to the \x[h-title-argument].
 
 = Include
 {title2=`\Include`}
@@ -3021,7 +3103,7 @@ For example, in the previous example, without any further intelligent behaviour 
 
 Cirodown can take care of some inflection cases for you.
 
-For capitalization, both headers and cross reference macros have the `c` \x[boolean-named-argument] which stands for "capitalized":
+For capitalization, both headers and cross reference macros have the `c` \x[boolean-argument] which stands for "capitalized":
 * for headers, `c` means that the header title has fixed capitalization as given in the title, i.e.
   * if the title has a capital first character, it will always show as a capital, as is the case for most https://en.wikipedia.org/wiki/Proper_noun[proper noun]
   * if it is lower case, it will also always remain lower case, as is the case for some rare proper nouns, notably https://en.wikipedia.org/wiki/Arm_Holdings[the name of certain companies]
@@ -3032,7 +3114,7 @@ For capitalization, both headers and cross reference macros have the `c` \x[bool
   Using this option is required when you are starting a sentence with a non-proper noun.
 Capitalization is handled by a \x[javascript-case-conversion].
 
-For pluralization, cross reference macros have the `p` \x[boolean-named-argument] which stands for "pluralize":
+For pluralization, cross reference macros have the `p` \x[boolean-argument] which stands for "pluralize":
 * if given and true, this automatically pluralizes the last word of the target title by using the https://github.com/blakeembrey/pluralize library
 * if given and false, automatically singularize
 * if not given, don't change the number of elements
@@ -3419,7 +3501,7 @@ For more details, see: \x[cross-reference-title-inflection]{full}.
 = `\x` `child` argument
 {parent=x-arguments}
 
-Setting the `child` \x[boolean-named-argument] on a cross reference to a header as in:
+Setting the `child` \x[boolean-argument] on a cross reference to a header as in:
 ``
 \x[my-header]{child}
 ``
@@ -3540,7 +3622,7 @@ The `parent` argument is exactly like the \x[x-child-argument], but it reverses 
 = `\x` `full` argument
 {parent=x-arguments}
 
-To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` \x[boolean-named-argument] to the cross reference, for example:
+To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` \x[boolean-argument] to the cross reference, for example:
 \CirodownExample[[
 \x[x-full-argument]{full}.
 ]]
@@ -3596,9 +3678,14 @@ but later on we might add more precise reference fields like the page of a book 
 
 Implemented at: https://github.com/cirosantilli/cirodown/issues/137
 
-== Cirodown syntax
+= Cirodown syntax
+{parent=cirodown}
 
-=== Insane macro shortcuts
+= Insane macro shortcuts
+{parent=cirodown-syntax}
+
+= Insane syntax
+{synonym}
 
 Certain commonly used macros have insane macro shortcuts that do not start with backslash (`\`).
 
@@ -3708,7 +3795,8 @@ nice
 ```
 ]]
 
-=== Macro argument syntax
+= Macro argument syntax
+{parent=cirodown-syntax}
 
 = Positional vs named arguments
 {parent=macro-argument-syntax}
@@ -3780,8 +3868,13 @@ The following are therefore all equivalent:
 
 Just like named arguments, positional arguments are never mandatory.
 
-= Positional argument default values
+= Positional argument
 {parent=positional-vs-named-arguments}
+
+See: \x[positional-vs-named-arguments]{full}.
+
+= Positional argument default values
+{parent=positional-argument}
 
 Most positional arguments will default to an empty string if not given.
 
@@ -3796,12 +3889,12 @@ has the special effect of generating automatic links as in:
 \a[http://example.com][http://example.com]
 ``
 
-This can be contrasted with named arguments, for which there is always a default value, notably for \x[boolean-named-argument]{p}.
+This can be contrasted with named arguments, for which there is always a default value, notably for \x[boolean-argument]{p}.
 
 See also: \x[link]{full}.
 
 = Mandatory positional arguments
-{parent=positional-argument-default-values}
+{parent=positional-argument}
 
 Some positional arguments are required, and if not given Cirodown reports an error and does not render the node.
 
@@ -3809,8 +3902,13 @@ This is for example the `level` of a \x[header].
 
 These arguments marked with the `mandatory: true` \x[help-macros] argument property.
 
-= Boolean named argument
+= Named argument
 {parent=positional-vs-named-arguments}
+
+See: \x[positional-vs-named-arguments]{full}.
+
+= Boolean argument
+{parent=macro-argument-syntax}
 {child=a-relative-argument}
 {child=h-child-argument}
 {child=h-numbered-argument}
@@ -3819,7 +3917,7 @@ These arguments marked with the `mandatory: true` \x[help-macros] argument prope
 {child=x-p-argument}
 {child=x-ref-argument}
 
-To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` \x[boolean-named-argument] to the cross reference, for example:
+To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` \x[boolean-argument] to the cross reference, for example:
 
 Name arguments marked in \x[help-macros] as `boolean: true` must either:
 * take no value and no `=` sign, in which case the value is implicitly set to `1`
@@ -3828,15 +3926,15 @@ Name arguments marked in \x[help-macros] as `boolean: true` must either:
 
 For example, \x[x-full-argument][the `full` argument] of \x[internal-cross-reference]{p} is correctly written as:
 \CirodownExample[[
-\x[boolean-named-argument]{full}
+\x[boolean-argument]{full}
 ]]
 without the `=` sign, or equivalently:
 \CirodownExample[[
-\x[boolean-named-argument]{full=1}
+\x[boolean-argument]{full=1}
 ]]
 The `full=0` version is useful in the case of reference targets that unlike \x[header]{p} expand the title on the cross reference by default, e.g. \x[image]{p}:
 \CirodownExample[[
-\x[boolean-named-argument]{full=1}
+\x[boolean-argument]{full=1}
 ]]
 
 The name "boolean argument" is given by analogy to the https://stackoverflow.com/questions/16109358/what-is-the-correct-readonly-attribute-syntax-for-input-text-elements/24588427#24588427["boolean attribute" concept in HTML5].
@@ -5662,7 +5760,14 @@ Source files:
 * \a[main.scss] this file simply contains the customized CSS for https://cirosantilli.com/cirodown/[] and does not get otherwise distributed with Cirodown, see: \x[css]
 
 Generated files:
-* `dist/` contains fully embedded packaged versions that work on browsers as per common JavaScript package naming convention. All the following files are generated with Webpack with `npm run webpack`, which is called from `npm run build-assets`
+* `dist/` contains fully embedded packaged versions that work on browsers as per common JavaScript package naming convention. All the following files are generated with Webpack with:
+  ``
+  npm run webpack
+  ``
+  , which is called from `npm run build-assets`. If you are developing just one of those files interactively, e.g. just the CSS or just the JavaScript;, you could speed thing up a bit by using watch mode, which only recompiles what is needed:
+  ``
+  npm run webpack -- -w
+  ``
   * `dist/cirodown.js`: Cirodown \x[javascript-api] converter for browser usage. The source entrypoint for it is located at \a[index.js]. Contains the code of every single dependency used from `node_modules` used by `index.js`. This is notably used for the live-preview of a \x[browser-editor-with-preview].
   * `dist/cirodown_runtime.js`: similar `dist/cirodown.js`, but contains the converted output of \a[cirodown_runtime.js]. You should include this in every Cirodown HTML output.
   * `dist/cirodown.css`: minimized CSS needed to view Cirodown output as intended. Embeds all Cirodown CSS dependencies, notably the KaTeX CSS without which \x[mathematics] displays as garbage. The Sass entry point for it is: \a[cirodown.scss].

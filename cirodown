@@ -325,7 +325,7 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
     }
     let message = `${message_prefix} ${input_path}`;
     console.log(message);
-    const output_path = output_path_noext + HTML_EXT;
+    const output_path = output_path_noext + '.' + options.output_format;
     const new_convert_input_options = Object.assign({}, convert_input_options);
     new_convert_input_options.output_path = output_path;
     let t0 = performance.now();
@@ -540,7 +540,7 @@ commander.option('--no-html-x-extension', 'http://cirosantilli.com/cirodown#no-h
 commander.option('--no-db', 'ignore the ID database, mostly for testing https://cirosantilli.com/cirosantilli#internal-cross-file-references-internals');
 commander.option('--outdir <outdir>', 'if the output would be saved to a file e.g. when building a directory, use this directory as the root');
 commander.option('-o, --outfile <outfile>', 'http://cirosantilli.com/cirodown#outfile');
-commander.option('--output-format <output-format>', 'output format');
+commander.option('-O, --output-format <output-format>', 'https://cirosantilli.com/cirodown#output-format', 'html');
 commander.option('-p --publish', 'http://cirosantilli.com/cirodown#publish', false);
 commander.option('-P, --publish-commit <commit-message>', 'http://cirosantilli.com/cirodown#publish-commit');
 commander.option('--show-ast', 'print the AST to stderr', false);
@@ -607,6 +607,7 @@ if (commander.helpMacros) {
     html_embed: commander.htmlEmbed,
     html_x_extension: html_x_extension,
     html_single_page: commander.htmlSinglePage,
+    output_format: commander.outputFormat,
     read_include: function(input_path) {
       return fs.readFileSync(input_path + CIRODOWN_EXT, ENCODING);
     },
@@ -722,7 +723,7 @@ A link to another file: \\x[and-now-an-include]
     ) {
       input_path_parse = path.parse(inputPath);
       outfile = path.join(input_path_parse.dir,
-        get_renamed_basename(input_path_parse.name) + HTML_EXT);
+        get_renamed_basename(input_path_parse.name) + '.' + options.output_format);
     }
   } else {
     outfile = commander.outfile;

@@ -468,6 +468,7 @@ Static book generators:
   * https://github.com/rust-lang/mdBook[]. Impressive integrated search feature. Like Gitbook but implemented in Rust.
 * https://github.com/facebook/docusaurus React + markdown based, written in TypeScript. So how can it be build fast? Gotta benchmark.
 * vimdoc: http://vimdoc.sourceforge.net/ They do have perfectly working <Internal cross file references>, see any page e.g. http://vimdoc.sourceforge.net/htmldoc/pattern.html[].
+* typst: https://github.com/typst/typst An attempt at a LaTeX killer.
 
 Less related but of interest, similar philosophy to what Ciro wants, but no explicitly reusable system:
 * http://www.uprtcl.io/
@@ -10486,6 +10487,16 @@ obb
 
 \Image[text-logo/3x3-1000.png]
 {title=3x3-1000.png text logo}
+{provider=github}
+
+\Image[text-logo/circle-1000.png]
+{title=circle-1000.png text logo}
+{description=Useful for circular profile pictures.}
+{provider=github}
+
+\Image[text-logo/square-1000.png]
+{title=square-1000.png text logo}
+{description=Useful for square profile pictures.}
 {provider=github}
 
 = Project slogan

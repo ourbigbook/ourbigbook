@@ -26,12 +26,12 @@ module.exports = (sequelize) => {
       },
       // Rendered title.
       title: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
         allowNull: false,
       },
       // Rendered full article.
       render: {
-        type: DataTypes.STRING(2**20),
+        type: DataTypes.TEXT,
         allowNull: false,
       },
       score: {

@@ -57,7 +57,7 @@ nextApp.prepare().then(() => {
 
   // Use express for everything else (i.e. anything under /api).
   app.use(session({ secret: 'conduit', cookie: { maxAge: 60000 }, resave: false, saveUninitialized: false }))
-  app.use(require('./routes'))
+  app.use(config.apiPath, require('./api'))
 
   // 404 handler.
   app.use(function (req, res, next) {

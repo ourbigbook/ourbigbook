@@ -3,7 +3,6 @@ import { css, jsx } from '@emotion/react'
 import styled from "@emotion/styled";
 import React from "react";
 import Head from "next/head";
-import { GetStaticProps, GetStaticPaths } from 'next'
 
 import cirodown from 'cirodown';
 import { cirodown_runtime } from 'cirodown/cirodown.runtime.js';
@@ -16,7 +15,7 @@ import { ArticleType } from "lib/types/articleType";
 import CustomImage from "components/common/CustomImage";
 import CustomLink from "components/common/CustomLink";
 import { formatDate } from "lib/utils";
-import sequelize from "lib/db";
+import { getStaticPathsArticle, getStaticPropsArticle } from "lib/article";
 
 function ArticleMeta({ article }) {
   if (!article) return;
@@ -92,26 +91,5 @@ export default class ArticlePage extends React.Component<Props, {}> {
   }
 }
 
-export const getStaticPaths: GetStaticPaths = async () => {
-  return {
-    fallback: true,
-    paths: (await sequelize.models.Article.findAll()).map(
-      article => {
-        return {
-          params: {
-            pid: article.slug,
-          }
-        }
-      }
-    ),
-  }
-}
-
-export const getStaticProps: GetStaticProps = async ({ params: { pid } }) => {
-  const article = await sequelize.models.Article.findOne({
-    where: { slug: pid },
-    include: [{ model: sequelize.models.User, as: 'Author' }],
-  });
-  const articleJson = article.toJSONFor(article.Author);
-  return { props: { article: articleJson } };
-}
+export const getStaticPaths = getStaticPathsArticle;
+export const getStaticProps = getStaticPropsArticle;

@@ -1,5 +1,5 @@
 const router = require('express').Router()
-const auth = require('../auth')
+const auth = require('./auth')
 
 // Preload user profile on routes with ':username'
 router.param('username', function(req, res, next, username) {

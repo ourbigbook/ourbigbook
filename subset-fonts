@@ -24,6 +24,7 @@ const glyphs = {
   ],
 }
 
+fs.mkdirSync(path.join(cirodown_nodejs.DIST_PATH), {recursive: true})
 for (const fontname in glyphs) {
   const font_basename = fontname + EXT
   fs.copyFileSync(

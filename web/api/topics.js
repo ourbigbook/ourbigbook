@@ -18,7 +18,6 @@ router.get('/', auth.optional, async function(req, res, next) {
         limit,
         offset,
         author: req.query.author,
-        likedBy: req.query.likedBy,
         topicId: req.query.topicId,
         order: lib.getOrder(req),
         slug: req.query.id,

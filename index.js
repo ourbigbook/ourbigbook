@@ -3823,6 +3823,7 @@ function html_escape_content(str) {
     .replace(/>/g, '&gt;')
   ;
 }
+exports.html_escape_content = html_escape_content
 
 /** Escape string depending on the current context. */
 function html_escape_context(context, str) {

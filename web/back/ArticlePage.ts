@@ -94,7 +94,6 @@ export const getServerSidePropsArticleHoc = ({
         h1ArticleInSamePage
       ) {
         articleJson.topicCount = h1ArticleInSamePage.topicCount
-        articleJson.issueCount = h1ArticleInSamePage.issueCount
         articleJson.hasSameTopic = h1ArticleInSamePage.hasSameTopic
       }
       const props: ArticlePageProps = {

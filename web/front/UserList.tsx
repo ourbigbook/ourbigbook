@@ -2,15 +2,12 @@ import { useRouter } from 'next/router'
 import React from 'react'
 
 import CustomLink from 'front/CustomLink'
-import LoadingSpinner from 'front/LoadingSpinner'
 import Pagination, { PaginationPropsUrlFunc } from 'front/Pagination'
 import UserLinkWithImage from 'front/UserLinkWithImage'
-import { AppContext } from 'front'
 import { UserLink, UserScore } from 'front/user'
 import { articleLimit } from 'front/config'
 import { formatDate } from 'front/date'
 import routes from 'front/routes'
-import { ArticleType } from 'front/types/ArticleType'
 import { UserType } from 'front/types/UserType'
 
 export type UserListProps = {
@@ -57,7 +54,7 @@ const UserList = ({
                   <UserLinkWithImage showUsername={false} showScore={false} user={user} />
                 </td>
                 <td className="shrink"><UserLink user={user}>@{user.username}</UserLink></td>
-                <td className="shrink right">{user.followerCount}</td>
+                <td className="shrink right bold"><CustomLink href={routes.userFollowed(user.username)}>{user.followerCount}</CustomLink></td>
                 <td className="shrink">{formatDate(user.createdAt)}</td>
               </tr>
             ))}

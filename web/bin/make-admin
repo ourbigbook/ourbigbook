@@ -11,8 +11,10 @@ const models = require('../models')
 // CLI arguments
 const program = commander.program
 program.allowExcessArguments(false)
+program.option('-f, --false', 'remove admin instead of giving it')
 program.argument('<username>', 'username')
 program.parse(process.argv);
+const opts = program.opts()
 const [username] = program.processedArgs
 
 // main
@@ -20,7 +22,7 @@ const sequelize = models.getSequelize(path.dirname(__dirname));
 (async () => {
 await sequelize.models.User.update(
   {
-    admin: true
+    admin: !opts.false
   },
   {
     where: {

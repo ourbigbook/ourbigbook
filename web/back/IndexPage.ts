@@ -38,18 +38,19 @@ export const getServerSidePropsIndexHoc = ({
     if (err) { res.statusCode = 422 }
     let articles
     let articlesCount
+    let articlesAndCounts
     const offset = pageNum * articleLimit
     const limit = articleLimit
     const sequelize = req.sequelize
     switch (itemTypeEff) {
       case 'article':
         if (followedEff) {
-          const articlesAndCounts = await loggedInUser.findAndCountArticlesByFollowedToJson(
+          articlesAndCounts = await loggedInUser.findAndCountArticlesByFollowedToJson(
             offset, limit, order)
           articles = articlesAndCounts.articles
           articlesCount = articlesAndCounts.articlesCount
         } else {
-          const articlesAndCounts = await sequelize.models.Article.getArticles({
+          articlesAndCounts = await sequelize.models.Article.getArticles({
             sequelize,
             offset,
             order,
@@ -60,8 +61,22 @@ export const getServerSidePropsIndexHoc = ({
           articlesCount = articlesAndCounts.count
         }
         break
+      case 'discussion':
+          articlesAndCounts = await sequelize.models.Issue.getIssues({
+            sequelize,
+            includeArticle: true,
+            offset,
+            order,
+            limit,
+          })
+          articles = await Promise.all(articlesAndCounts.rows.map(
+            (article) => {
+              return article.toJson(loggedInUser)
+            }))
+          articlesCount = articlesAndCounts.count
+        break
       case 'topic':
-          const articlesAndCounts = await sequelize.models.Topic.getTopics({
+          articlesAndCounts = await sequelize.models.Topic.getTopics({
             sequelize,
             offset,
             order,

@@ -58,6 +58,39 @@ function getLimitAndOffset(req, res, opts={}) {
   ]
 }
 
+async function sendEmail({
+  fromName='OurBigBook.com',
+  html,
+  subject,
+  text,
+  to,
+}) {
+  if (!config.isTest) {
+    if (process.env.OURBIGBOOK_SEND_EMAIL === '1' || config.isProduction) {
+      const sgMail = require('@sendgrid/mail')
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+      const msg = {
+        to,
+        from: {
+          email: 'notification@ourbigbook.com',
+          name: fromName,
+        },
+        subject,
+        text,
+        html,
+      }
+      await sgMail.send(msg)
+    } else {
+      console.log(`Email sent:
+to: ${to}
+fromName: ${fromName}
+subject: ${subject}
+text: ${text}
+html: ${html}`)
+    }
+  }
+}
+
 // When this class is thrown and would blows up on toplevel, we catch it instead
 // and gracefully return the specified error to the client instead of doing a 500.
 class ValidationError extends Error {
@@ -133,6 +166,7 @@ module.exports = {
   getArticle,
   getLimitAndOffset,
   getOrder,
+  sendEmail,
   validate,
   validateBodySize,
   validateParam,

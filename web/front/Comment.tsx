@@ -9,7 +9,6 @@ import CustomLink from 'front/CustomLink'
 import { cant } from 'front/cant'
 import { formatDate } from 'front/date'
 import UserLinkWithImage from 'front/UserLinkWithImage'
-import ourbigbook from 'ourbigbook'
 
 const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
   const router = useRouter();

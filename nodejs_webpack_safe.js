@@ -154,7 +154,8 @@ ORDER BY "RecRefs".level ASC, "RecRefs".from_id ASC, "RecRefs".to_id_index ${to_
           starting_ids,
           type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
           definedAt,
-        }
+        },
+        transaction: opts.transaction,
       }
     )
     return rows

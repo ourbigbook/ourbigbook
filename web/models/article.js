@@ -111,11 +111,23 @@ module.exports = (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
+      followerCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      issueCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
     },
     {
       // TODO updatedAt lazy to create migration now.
       indexes: [
         { fields: ['createdAt'], },
+        { fields: ['issueCount'], },
+        { fields: ['followerCount'], },
         { fields: ['topicId'], },
         { fields: ['slug'], },
         { fields: ['score'], },
@@ -198,8 +210,10 @@ module.exports = (sequelize) => {
 
   Article.prototype.toJson = async function(loggedInUser) {
     const authorPromise = this.file && this.file.author ? this.file.author : this.getAuthor()
-    const [liked, author] = await Promise.all([
+    // TODO do liked and followed with JOINs on caller, check if it is there and skip this if so.
+    const [liked, followed, author] = await Promise.all([
       loggedInUser ? loggedInUser.hasLikedArticle(this.id) : false,
+      loggedInUser ? loggedInUser.hasFollowedArticle(this.id) : false,
       (await authorPromise).toJson(loggedInUser),
     ])
     function addToDictWithoutUndefined(target, source, keys) {
@@ -214,22 +228,21 @@ module.exports = (sequelize) => {
     const file = {}
     addToDictWithoutUndefined(file, this.file, ['titleSource', 'bodySource', 'path', 'sha256'])
     const ret = {
+      followed,
       liked,
       // Putting it here rather than in the more consistent file.author
       // to improve post serialization polymorphism with issues.
       author,
       file,
     }
-    const issueCount = this.get('issueCount')
-    if (issueCount !== undefined) {
-      this.issueCount = parseInt(issueCount, 10)
-    }
     this.topicCount = this.get('topicCount')
     addToDictWithoutUndefined(ret, this, [
       'depth',
+      'followerCount',
       'h1Render',
       'h2Render',
       'id',
+      'issueCount',
       'slug',
       'sha256',
       'topicId',
@@ -302,11 +315,13 @@ module.exports = (sequelize) => {
         ],
         ['nestedSetIndex', 'ASC'],
       ],
+      transaction: opts.transaction,
     })
   }
 
   Article.getArticle = async function({
     includeIssues,
+    includeIssueNumber,
     includeIssuesOrder,
     includeParentAndPreviousSibling,
     limit,
@@ -379,11 +394,16 @@ module.exports = (sequelize) => {
     }]
     let order
     if (includeIssues) {
-      include.push({
+      const includeIssue = {
         model: sequelize.models.Issue,
         as: 'issues',
+        required: false,
         include: [{ model: sequelize.models.User, as: 'author' }],
-      })
+      }
+      if (includeIssueNumber) {
+        includeIssue.where = { number: includeIssueNumber }
+      }
+      include.push(includeIssue)
       order = [[
         'issues', includeIssuesOrder === undefined ? 'createdAt' : includeIssuesOrder, 'DESC'
       ]]
@@ -413,7 +433,7 @@ module.exports = (sequelize) => {
   Article.getArticles = async ({
     author,
     count,
-    // Set<string>
+    followedBy,
     likedBy,
     limit,
     offset,
@@ -447,6 +467,13 @@ module.exports = (sequelize) => {
       include: [authorInclude],
       required: true,
     }]
+    if (followedBy) {
+      include.push({
+        model: sequelize.models.User,
+        as: 'followers',
+        where: { username: followedBy },
+      })
+    }
     if (likedBy) {
       include.push({
         model: sequelize.models.User,
@@ -659,6 +686,7 @@ SELECT
   "Article"."score" AS "score",
   "Article"."slug" AS "slug",
   "Article"."topicId" AS "topicId",
+  "Article"."issueCount" AS "issueCount",
   "Article"."titleSource" AS "titleSource",${render ? `\n  "Article"."render" AS "render",` : ''}
   ${h1 ? '"Article"."h1Render" AS "h1Render"' : '"Article"."h2Render" AS "h2Render"'},
   "Article"."topicId" AS "topicId",
@@ -668,8 +696,7 @@ SELECT
   "File.Author"."username" AS "file.author.username",
   "SameTopic"."articleCount" AS "topicCount",
   "ArticleSameTopicByLoggedIn"."id" AS "hasSameTopic",
-  "UserLikeArticle"."userId" AS "liked",
-  COUNT("issues"."id") AS "issueCount"
+  "UserLikeArticle"."userId" AS "liked"
 FROM
   "Article"
   INNER JOIN "File" ON "Article"."fileId" = "File"."id"${h1 ? '\n  INNER JOIN "Id" ON "File"."toplevel_id" = "Id"."idid"' : ''}
@@ -734,7 +761,6 @@ LIMIT ${limit}` : ''}
     for (const row of rows) {
       row.hasSameTopic = row.hasSameTopic === null ? false : true
       row.liked = row.liked === null ? false : true
-      row.issueCount = Number(row.issueCount)
       row.author = {
         id: row['file.author.id'],
         username: row['file.author.username'],
@@ -755,11 +781,12 @@ LIMIT ${limit}` : ''}
    * 
    * @param {string} username
    */
-  Article.getNestedSetsFromRefs = async function(username) {
+  Article.getNestedSetsFromRefs = async function(username, opts={}) {
     const toplevelId = `${ourbigbook.AT_MENTION_CHAR}${username}`
     const idRows = await ourbigbook_nodejs_webpack_safe.fetch_header_tree_ids(
       sequelize,
       [toplevelId],
+      { transaction: opts.transaction },
     )
     let idTreeNode = {
       id: toplevelId,
@@ -843,6 +870,10 @@ LIMIT ${limit}` : ''}
       }
       await article.rerender()
     }
+  }
+
+  Article.prototype.getSlug = function() {
+    return this.slug
   }
 
   /**

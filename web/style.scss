@@ -221,6 +221,34 @@ div.tab-list {
   }
 }
 
+// Duping /editor.html a bit, but so be it.
+.editor-page {
+  #container {
+    align-items: center;
+    display: flex;
+    /* https://stackoverflow.com/questions/12989931/body-height-100-displaying-vertical-scrollbar/46847795#46847795
+    * 20 == 2x 10px padding (top + bottom). */
+    height: calc(100% - 20px);
+    padding: 10px;
+  }
+  #input {
+    border: 1px black solid;
+    flex-grow: 1;
+    height: 100%;
+    margin: 0 5px 0 0;
+    overflow: hidden;
+    width: 50%;
+  }
+  #output {
+    border: 1px black solid;
+    flex-grow: 1;
+    height: 100%;
+    margin: 0 0 0 5px;
+    overflow: auto;
+    width: 50%;
+  }
+}
+
 .error-message {
   display: flex;
   justify-content: center;

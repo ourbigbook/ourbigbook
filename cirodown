@@ -5,6 +5,21 @@ const util = require('util');
 
 const yargs = require('commander')
 
+const ESCAPE_CHAR = '\\';
+const ID_SEPARATOR = '-';
+const START_POSITIONAL_ARGUMENT_CHAR = '[';
+const END_POSITIONAL_ARGUMENT_CHAR = ']';
+const START_NAMED_ARGUMENT_CHAR = '{';
+const NAMED_ARGUMENT_EQUAL_CHAR = '=';
+const END_NAMED_ARGUMENT_CHAR = '}';
+const ESCAPABLE_CHARS = new Set([
+  ESCAPE_CHAR,
+  START_POSITIONAL_ARGUMENT_CHAR,
+  END_POSITIONAL_ARGUMENT_CHAR,
+  START_NAMED_ARGUMENT_CHAR,
+  END_NAMED_ARGUMENT_CHAR,
+]);
+
 const AstNode = class {
   /**
    * @param {AstType} node_type -
@@ -50,6 +65,10 @@ const AstNode = class {
         this.args[arg_name].parent_node = this;
       }
     }
+  }
+
+  arg_given(arg_name) {
+    return this.args_given.has(arg_name);
   }
 
   /**
@@ -176,24 +195,34 @@ const Macro = class {
    *        {Set[String]} auto_parent_skip - don't do auto parent generation if the parent is one of these types.
    */
   constructor(name, positional_args, convert, options={}) {
-    if (!('named_args' in options)) {
-      options.named_args = {};
-    }
-    if (!('properties' in options)) {
-      options.properties = {};
-    }
     if (!('auto_parent' in options)) {
       options.auto_parent = undefined;
     }
     if (!('auto_parent_skip' in options)) {
       options.auto_parent_skip = new Set([]);
     }
+    if (!('named_args' in options)) {
+      options.named_args = [];
+    }
+    if (!('properties' in options)) {
+      options.properties = {};
+    }
+    if (!('id_prefix' in options)) {
+      options.id_prefix = title_to_id(name);
+    }
     this.name = name;
     this.positional_args = positional_args;
-    this.named_args = options.named_args;
+    {
+      let named_args = {};
+      for (const arg of options.named_args) {
+        named_args[arg.name] = arg;
+      }
+      this.named_args = named_args;
+    }
     this.auto_parent = options.auto_parent;
     this.auto_parent_skip = options.auto_parent_skip;
     this.convert = convert;
+    this.id_prefix = options.id_prefix;
     this.properties = options.properties;
     if (!('phrasing' in this.properties)) {
       this.properties['phrasing'] = false;
@@ -206,18 +235,18 @@ const Macro = class {
     }
     for (const name in this.named_args) {
       this.check_name(name);
-      this.name_to_arg[name] = arg;
+      this.name_to_arg[name] = this.named_args[name];
     }
     // Add the ID argument.
-    this.named_args[Macro.id_macro_name] = new MacroArgument({
-      name: Macro.id_macro_name,
+    this.named_args[Macro.id_argument_name] = new MacroArgument({
+      name: Macro.id_argument_name,
     })
-    this.name_to_arg[Macro.id_macro_name] = this.named_args[Macro.id_macro_name];
+    this.name_to_arg[Macro.id_argument_name] = this.named_args[Macro.id_argument_name];
   }
 
   check_name(name) {
-    if (name === Macro.id_macro_name) {
-      throw new Error(`name "${Macro.id_macro_name}" is reserved and automatically added`);
+    if (name === Macro.id_argument_name) {
+      throw new Error(`name "${Macro.id_argument_name}" is reserved and automatically added`);
     }
     if (name in this.name_to_arg) {
       throw new Error('name already taken: ' + name);
@@ -234,7 +263,8 @@ const Macro = class {
   }
 
 }
-Macro.id_macro_name = 'id'
+Macro.id_argument_name = 'id'
+Macro.title_argument_name = 'title'
 
 // https://stackoverflow.com/questions/7837456/how-to-compare-arrays-in-javascript
 const array_equals = function(arr1, arr2) {
@@ -247,14 +277,6 @@ const array_equals = function(arr1, arr2) {
   return true;
 }
 
-/**
- * Convert a list of arguments and join them up.
- *
- * @param {List[AstNode]} arg
- * @param {Object} options - global options passed in from toplevel
- * @param {boolean} is_attr - are we inside an HTML attribute?
- *        If the parent is, then the child must also be.
- */
 const convert_arg = function(arg, options, is_attr=false) {
   let converted_arg = '';
   for (const ast_node of arg) {
@@ -270,23 +292,61 @@ const convert_arg = function(arg, options, is_attr=false) {
  * @param {AstNode} ast
  * @param {Object} options
  * @param {Array[String]} arg_names - which argument names should be added as properties.
- *        Default: ['id'] if the 'id' argument was given.
- * @param {String} id - if given, use this value for ID, even 'id' was not given
+ *         Only arguments that were given in the text input are used.
+ * @param {Object[String,AstNode]} custom_attrs - attributes that were not just passed in
+ *        directly from the input text, but may have been calculated.
  */
 const html_convert_attrs = function(
-  ast, options, arg_names=[], id
+  ast, options, arg_names=[], custom_args={}
 ) {
-  let ret = '';
-  if (ast.args_given.has(Macro.id_macro_name)) {
-    arg_names.push(Macro.id_macro_name);
+  // Determine the arguments.
+  let args = [];
+  for (const arg_name in custom_args) {
+    args.push([arg_name, custom_args[arg_name]]);
   }
   for (const arg_name of arg_names) {
-    ret += ` ${arg_name}="${convert_arg(ast.args[arg_name], options, true)}"`;
+    if (ast.arg_given(arg_name)) {
+      args.push([arg_name, ast.args[arg_name]]);
+    }
   }
-  if (id !== undefined) {
-    ret += ` ${Macro.id_macro_name}="${id}"`;
+
+  // Build the output string.
+  let ret = '';
+  for (const name_arg_pair of args) {
+    [arg_name, arg] = name_arg_pair;
+    ret += ` ${arg_name}="${convert_arg(arg, options, true)}"`;
   }
   return ret;
+}
+
+const title_to_id = function(title) {
+  return title.toLowerCase()
+    .replace(/[^a-z0-9-]+/g, ID_SEPARATOR)
+    .replace(new RegExp('^' + ID_SEPARATOR + '+'), '')
+    .replace(new RegExp(ID_SEPARATOR + '+$'), '')
+  ;
+}
+
+/**
+ * Same as html_convert_attrs, but automatically add the ID to the list
+ * of arguments.
+ */
+const html_convert_attrs_id = function(
+  ast, options, arg_names=[], custom_args={}
+) {
+  if (ast.arg_given('id')) {
+    arg_names.push(Macro.id_argument_name);
+  } else if(ast.arg_given('title')) {
+    // TODO correct unicode aware algorithm.
+    let id_text = '';
+    let id_prefix = macros[ast.macro_name].id_prefix;
+    if (id_prefix !== '') {
+      id_text += id_prefix + ID_SEPARATOR
+    }
+    id_text += title_to_id(convert_arg(ast.args.title, options, true));
+    custom_args.id = [new AstNode(AstType.PLAINTEXT, 'plaintext', id_text, ast.line, ast.column)];
+  }
+  return html_convert_attrs(ast, options, arg_names, custom_args);
 }
 
 function html_escape_content(str) {
@@ -316,12 +376,12 @@ let macro_list = [
       }),
     ],
     function(ast, options, is_attr) {
-      if (ast.args_given.has('content')) {
+      if (ast.arg_given('content')) {
         content = ast.args.content;
       } else {
         content = ast.args.href;
       }
-      return `<a${html_convert_attrs(ast, options, ['href'])}>${convert_arg(content, options, is_attr)}</a>`;
+      return `<a${html_convert_attrs_id(ast, options, ['href'])}>${convert_arg(content, options, is_attr)}</a>`;
     },
     {
       properties: {
@@ -337,7 +397,7 @@ let macro_list = [
       }),
     ],
     function(ast, options, is_attr) {
-      return `<pre${html_convert_attrs(ast, options)}><code>${convert_arg(ast.args.content, options, is_attr)}</code></pre>\n`;
+      return `<pre${html_convert_attrs_id(ast, options)}><code>${convert_arg(ast.args.content, options, is_attr)}</code></pre>\n`;
     },
   ),
   new Macro(
@@ -348,7 +408,7 @@ let macro_list = [
       }),
     ],
     function(ast, options, is_attr) {
-      return `<code${html_convert_attrs(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</code>`;
+      return `<code${html_convert_attrs_id(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</code>`;
     },
     {
       properties: {
@@ -363,21 +423,16 @@ let macro_list = [
         name: 'level',
       }),
       new MacroArgument({
-        name: 'content',
+        name: 'title',
       }),
     ],
     function(ast, options, is_attr) {
-      let content = convert_arg(ast.args.content, options, is_attr);
-      let id;
-      if (ast.args_given.has('id')) {
-        id = convert_arg(ast.args.id, options, true);
-      } else {
-        // TODO correct unicode aware algorithm.
-        //let content_chars = content
-        id = content.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
-      }
+      let title = convert_arg(ast.args.title, options, is_attr);
       let level = convert_arg(ast.args.level, options, is_attr);
-      return `<h${level}${html_convert_attrs(ast, options, [], id)}>${content}</h${level}>\n`;
+      return `<h${level}${html_convert_attrs_id(ast, options)}>${title}</h${level}>\n`;
+    },
+    {
+      id_prefix: '',
     }
   ),
   new Macro(
@@ -388,7 +443,7 @@ let macro_list = [
       }),
     ],
     function(ast, options, is_attr) {
-      return `<li${html_convert_attrs(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</li>\n`;
+      return `<li${html_convert_attrs_id(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</li>\n`;
     },
     {
       auto_parent: 'ul',
@@ -403,7 +458,61 @@ let macro_list = [
       }),
     ],
     function(ast, options, is_attr) {
-      return `<ol${html_convert_attrs(ast, options)}>\n${convert_arg(ast.args.content, options, is_attr)}</ol>\n`;
+      return `<ol${html_convert_attrs_id(ast, options)}>\n${convert_arg(ast.args.content, options, is_attr)}</ol>\n`;
+    }
+  ),
+  new Macro(
+    'Image',
+    [
+      new MacroArgument({
+        name: 'src',
+      }),
+    ],
+    function(ast, options, is_attr) {
+      let ret = `<figure${html_convert_attrs_id(ast, options)}>
+<img${html_convert_attrs(ast, options, ['src', 'alt'])}>
+`
+      if (ast.arg_given(Macro.title_argument_name)) {
+        ret += `<figcaption>${convert_arg(ast.args[Macro.title_argument_name], options, is_attr)}</figcaption>\n`;
+      }
+      ret += '</figure>\n';
+      return ret;
+    },
+    {
+      named_args: [
+        new MacroArgument({
+          name: Macro.title_argument_name,
+        }),
+        new MacroArgument({
+          name: 'description',
+        }),
+        new MacroArgument({
+          name: 'source',
+        }),
+      ],
+    }
+  ),
+  new Macro(
+    'image',
+    [
+      new MacroArgument({
+        name: 'src',
+      }),
+    ],
+    function(ast, options, is_attr) {
+      let custom_args = {};
+      if (ast.arg_given('title')) {
+        custom_args[alt] = ast.args.title;
+      }
+      return `<img${html_convert_attrs_id(ast, options, ['src'], custom_args)}>`;
+    },
+    {
+      named_args: [
+        new MacroArgument({
+          name: Macro.title_argument_name,
+        }),
+      ],
+      phrasing: true,
     }
   ),
   new Macro(
@@ -414,7 +523,7 @@ let macro_list = [
       }),
     ],
     function(ast, options, is_attr) {
-      return `<p${html_convert_attrs(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</p>\n`;
+      return `<p${html_convert_attrs_id(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</p>\n`;
     }
   ),
   new Macro(
@@ -445,7 +554,7 @@ let macro_list = [
       }),
     ],
     function(ast, options, is_attr) {
-      return `<table${html_convert_attrs(ast, options)}>\n${convert_arg(ast.args.content, options, is_attr)}</table>\n`;
+      return `<table${html_convert_attrs_id(ast, options)}>\n${convert_arg(ast.args.content, options, is_attr)}</table>\n`;
     },
   ),
   new Macro(
@@ -456,7 +565,7 @@ let macro_list = [
       }),
     ],
     function(ast, options, is_attr) {
-      return `<td${html_convert_attrs(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</td>\n`;
+      return `<td${html_convert_attrs_id(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</td>\n`;
     },
   ),
   new Macro(
@@ -471,7 +580,7 @@ let macro_list = [
     ],
     function(ast, options, is_attr) {
       let title;
-      if (ast.args_given.has('title')) {
+      if (ast.arg_given('title')) {
         title = ast.args.title;
       } else {
         let text_title;
@@ -521,7 +630,7 @@ pre {
       }),
     ],
     function(ast, options, is_attr) {
-      return `<th${html_convert_attrs(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</th>\n`;
+      return `<th${html_convert_attrs_id(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</th>\n`;
     }
   ),
   new Macro(
@@ -532,7 +641,7 @@ pre {
       }),
     ],
     function(ast, options, is_attr) {
-      return `<tr${html_convert_attrs(ast, options)}>\n${convert_arg(ast.args.content, options, is_attr)}</tr>\n`;
+      return `<tr${html_convert_attrs_id(ast, options)}>\n${convert_arg(ast.args.content, options, is_attr)}</tr>\n`;
     },
     {
       auto_parent: 'table',
@@ -546,7 +655,7 @@ pre {
       }),
     ],
     function(ast, options, is_attr) {
-      return `<ul${html_convert_attrs(ast, options)}>\n${convert_arg(ast.args.content, options, is_attr)}</ul>\n`;
+      return `<ul${html_convert_attrs_id(ast, options)}>\n${convert_arg(ast.args.content, options, is_attr)}</ul>\n`;
     },
   ),
 ];
@@ -556,20 +665,6 @@ let macros = {};
 for (const macro of macro_list) {
   macros[macro.name] = macro;
 }
-
-const ESCAPE_CHAR = '\\';
-const START_POSITIONAL_ARGUMENT_CHAR = '[';
-const END_POSITIONAL_ARGUMENT_CHAR = ']';
-const START_NAMED_ARGUMENT_CHAR = '{';
-const NAMED_ARGUMENT_EQUAL_CHAR = '=';
-const END_NAMED_ARGUMENT_CHAR = '}';
-const ESCAPABLE_CHARS = new Set([
-  ESCAPE_CHAR,
-  START_POSITIONAL_ARGUMENT_CHAR,
-  END_POSITIONAL_ARGUMENT_CHAR,
-  START_NAMED_ARGUMENT_CHAR,
-  END_NAMED_ARGUMENT_CHAR,
-]);
 
 const char_is_alphanumeric = function(c) {
   let code = c.codePointAt(0);
@@ -1242,6 +1337,8 @@ if (require.main === module) {
   const program = require('commander');
   program.option('--body-only', 'output only the content inside the HTLM body element', false);
   program.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown/#', false);
+  program.option('--html-embed', 'TODO embed all external resources like images and linked CSS into a single HTML file', false);
+  program.option('--output-format', 'output format');
   program.option('--show-ast', 'print the AST to stderr');
   program.option(
     '--show-ast-inside',

@@ -203,6 +203,30 @@ assert_convert('auto_parent consecutive implicit tr and l',
 `
 );
 
+// Images.
+assert_convert('image simple',
+  `ab
+
+\\Image[cd]
+
+gh
+`,
+  `<p>ab</p>
+<figure>
+<img src="cd">
+</figure>
+<p>gh</p>
+`
+)
+assert_convert('image title',
+  `\\Image[ab]{title=c d}`,
+  `<figure id="image-c-d">
+<img src="ab">
+<figcaption>c d</figcaption>
+</figure>
+`
+)
+
 // Escapes.
 assert_convert('escape backslash',            'a\\\\b\n', 'a\\b\n');
 assert_convert('escape left square bracket',  'a\\[b\n',  'a[b\n');

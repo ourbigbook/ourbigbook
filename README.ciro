@@ -745,7 +745,7 @@ Besides disambiguating headers, the `disambiguate` argument has a second related
 ]]
 Note that unlike for headers, `disambiguate` does not appear on the title of images at all. It serves only to create an unique ID that can be later referred to. Headers are actually the only case where `disambiguate` shows up on the visible rendered output.
 
-This use case is even more useful when `title-from-src` is enable by default for the \x[media-providers] entry, so you don't have to repeat titles several times over and over.
+This use case is even more useful when `title-from-src` is enable by default for the \x[cirodown-json-media-providers] entry, so you don't have to repeat titles several times over and over.
 
 = `\H` `parent` argument
 {c}
@@ -1154,7 +1154,7 @@ This option is similar to \x[h-title2-argument] but it additionally:
 * creates a new ID that you can refer to, and renders it with the alternate chosen title
 * the rendered ID on \x[internal-cross-reference]{p} is the same as what it is a synonym for
 * the synonym header is not rendered at all, including in the \x[table-of-contents]
-* when using \x[split-headers], a redirect output file is generated from the synonym to the main ID. This is generally a superior redirection alternative to using \x[redirects] from \x[cirodown-json]
+* when using \x[split-headers], a redirect output file is generated from the synonym to the main ID. This is generally a superior redirection alternative to using \x[cirodown-json-redirects] from \x[cirodown-json]
 
 Example:
 ``
@@ -1375,7 +1375,7 @@ Have a look at this amazing image: \x[image-my-test-image-2].
 ]]
 This works because \x[x-full-argument][`full` is the default cross reference style for `Image`], otherwise the link text would be empty since there is no `title`, and cirodown would raise an error.
 
-Cirodown can optionally deduce the title from the basename of the `src` argument if the `titleFromSrc` \x[boolean-named-argument] is given, or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
+Cirodown can optionally deduce the title from the basename of the `src` argument if the `titleFromSrc` \x[boolean-named-argument] is given, or if `title-from-src` is set as the default \x[cirodown-json-media-providers][media provider] for the media type:
 \CirodownExample[[
 Have a look at this amazing image: \x[image-tank-man-standing-in-front-of-some-tanks].
 
@@ -1442,7 +1442,7 @@ but Cirodown allows you use configurations that allow you to enter just the imag
 In order to get this to work, the recommended repository setup is:
 * `./main-repo/.git`: main repository at https://github.com/username/main-repo
 * `./main-repo/data/media/.git/`: media repository at https://github.com/username/main-repo-media[], and where `data/` is gitignored.
-The directory and repository names are not mandatory, but if you place media in `data/media` and name its repository by adding the `*-media` suffix, then `cirodown` will handle everything for you without any further configuration in \x[media-providers].
+The directory and repository names are not mandatory, but if you place media in `data/media` and name its repository by adding the `*-media` suffix, then `cirodown` will handle everything for you without any further configuration in \x[cirodown-json-media-providers].
 
 This particular documentation repository does have a different setup as can be seen from its \a[cirodown.json]. Then, when everything is setup correctly, we can refer to images simply as:
 \CirodownExample[[
@@ -1463,7 +1463,7 @@ You should then use the following rules inside `my-tutorial-media`:
 * never ever delete any files, nor change their content, unless it is an improvement in format that does change the information contained of the image TODO link to nice Wikimedia Commons guideline page
 This way, even though the repositories are not fully in sync, anyone who clones the latest version of the `*-media` directory will be able to view any version of the main repository.
 
-Then, if one day the media repository ever blows up GitHub's limit, you can just migrate the images to another image server that allows arbitrary basenames, e.g. AWS, and just configure your project to use that new media base URL with the \x[media-providers] option.
+Then, if one day the media repository ever blows up GitHub's limit, you can just migrate the images to another image server that allows arbitrary basenames, e.g. AWS, and just configure your project to use that new media base URL with the \x[cirodown-json-media-providers] option.
 
 The reason why images should be kept in a separate repository is that images are hundreds or thousands of times larger than hand written text.
 
@@ -1485,7 +1485,7 @@ Cirodown likes Wikimedia Commons so much that we automatically parse the image U
 \Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
 ]]
 
-And like for non-Wikimedia images, you can automatically generate a `title` from the `src` by setting the `titleFromSrc` \x[boolean-named-argument] or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
+And like for non-Wikimedia images, you can automatically generate a `title` from the `src` by setting the `titleFromSrc` \x[boolean-named-argument] or if `title-from-src` is set as the default \x[cirodown-json-media-providers][media provider] for the media type:
 \CirodownExample[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
 {titleFromSrc}
@@ -3431,7 +3431,7 @@ Cirodown HTML output is designed to be XSS safe by default, any non-XSS safe con
 
 Of course, we are walking on eggs, and this is hard to assert, so the best thing to do later on will be to parse the output e.g. with https://developer.mozilla.org/en-US/docs/Web/API/DOMParser[`DOMParser`] to ensure that it is valid and does not contain any `script` tags, but it is not as simple as that: https://stackoverflow.com/questions/37435077/execute-javascript-for-xss-without-script-tags/61588322#61588322
 
-About server safety, we have to think about it. E.g. stuff like \x[prepublish] already allows ACE.
+About server safety, we have to think about it. E.g. stuff like \x[cirodown-json-prepublish] already allows ACE.
 
 ==== xss-unsafe
 {title2=`--xss-unsafe`}
@@ -3580,7 +3580,7 @@ Examples of embeddings done:
   The embedded version of the document can be viewed offline however.
 * \x[image]{p} are downloaded if needed and embedded as `data:` URLs.
 
-  Images that are managed by the project itself and already locally present, such as those inside the project itself or due to \x[media-providers] usually don't require download.
+  Images that are managed by the project itself and already locally present, such as those inside the project itself or due to \x[cirodown-json-media-providers] usually don't require download.
 
   For images linked directly from the web, we maintain a local download cache, and skip downloads if the image is already in the cache.
 
@@ -4008,6 +4008,7 @@ We pick Liquid because it is server-side safe: if we ever some day offer a compi
 
 = `cirodown.json`
 {parent=cirodown-executable}
+{scope}
 
 Cirodown configuration file that affects the behaviour of cirodown for all files in the directory.
 
@@ -4037,8 +4038,20 @@ Then, in that case:
   * \x[the-out-directory] is located at `./out`
 If given, the \x[outdir] option forces \x[the-out-directory] to be placed in `--outdir` however.
 
-= `media-providers`
+= `ignore`
 {parent=cirodown-json}
+
+= `cirodown.json` schema
+
+= `ignore`
+{parent=cirodown-json-schema}
+
+List of paths relative to the root directory that \x[cirodown-executable] will ignore.
+
+Useful if your project has a large directory that does not contain Cirodown sources, and you don't want Cirodown to mess with it.
+
+= `media-providers`
+{parent=cirodown-json-schema}
 
 The `media-providers` entry of `cirodown.json` specifies properties of how media such as \x[image]{p} and \x[video]{p} are retrieved and rendered.
 
@@ -4077,7 +4090,7 @@ Direct children of media-providers and subproperties that are valid only for the
 See also: https://github.com/cirosantilli/cirodown/issues/40
 
 = `prepublish`
-{parent=cirodown-json}
+{parent=cirodown-json-schema}
 
 Path of a script that gets executed before running \x[publish][`cirodown --publish`].
 
@@ -4093,7 +4106,7 @@ The script arguments are:
 If the `prepublish` script returns with a non-zero exit value, the publish is aborted.
 
 = `redirects`
-{parent=cirodown-json}
+{parent=cirodown-json-schema}
 
 You are generally better using the newer \x[h-synonym-argument] feature instead of `redirects`, as that concentrates more header specific data in the .ciro files it belongs.
 

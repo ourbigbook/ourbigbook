@@ -26,7 +26,8 @@
     "start": "cross-env PORT=4101 REACT_APP_API_URL=http://localhost:3000 REACT_EDITOR=none react-scripts start",
     "build": "REACT_APP_API_URL= react-scripts build",
     "test": "cross-env PORT=4101 react-scripts test --env=jsdom",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "postinstall": "cd ../.. && npm link cirodown"
   },
   "browserslist": {
     "production": [

@@ -3850,17 +3850,25 @@ async function parse(tokens, options, context, extra_returns={}) {
       if (parent_ast === undefined) {
         parent_ast = options.cur_header;
       }
-      const parent_ast_header_tree_node = parent_ast.header_tree_node;
-      const parent_ast_header_level = parent_ast_header_tree_node.get_level();
+      let parent_ast_header_level
+      let parent_ast_header_tree_node
+      if (parent_ast === undefined) {
+        parent_ast_header_level = 0
+        parent_ast_header_tree_node = context.header_tree
+      } else {
+        // Possible on include without a parent header.
+        parent_ast_header_tree_node = parent_ast.header_tree_node;
+        parent_ast_header_level = parent_ast_header_tree_node.get_level();
 
-      add_to_refs_to(
-        href,
-        context,
-        parent_ast.id,
-        REFS_TABLE_PARENT,
-        parent_ast_header_tree_node.children.length
-      );
-      parent_ast.includes.push(href);
+        add_to_refs_to(
+          href,
+          context,
+          parent_ast.id,
+          REFS_TABLE_PARENT,
+          parent_ast_header_tree_node.children.length
+        );
+        parent_ast.includes.push(href);
+      }
       const read_include_ret = options.read_include(href);
       if (read_include_ret === undefined) {
         let message = `could not find include: "${href}"`;

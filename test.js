@@ -3791,6 +3791,20 @@ assert_convert_ast('table of contents include placeholder header has no number w
     input_path_noext: 'notindex',
   },
 );
+assert_convert_ast('the toc is added before the first h1 when there are multiple toplevel h1',
+  `aa
+
+= h1
+
+= h2
+`,
+  [
+    a('P', [t('aa')]),
+    a('Toc'),
+    a('H', undefined, {level: [t('1')], title: [t('h1')]}),
+    a('H', undefined, {level: [t('1')], title: [t('h2')]}),
+  ],
+)
 
 // Math. Minimal testing since this is mostly factored out with code tests.
 assert_convert_ast('math inline sane',
@@ -4072,15 +4086,69 @@ assert_error('include circular dependency 1 -> 2 <-> 3',
   undefined, undefined, undefined,
   cirodown.clone_and_set(include_opts, 'has_error', true)
 );
-// TODO https://github.com/cirosantilli/cirodown/issues/73
-//assert_convert_ast('include without parent header',
-//  '\\Include[include-one-level-1]',
-//  [
-//    a('H', undefined, {level: [t('1')], title: [t('cc')]}),
-//    a('P', [t('dd')]),
-//  ],
-//  include_opts
-//);
+assert_convert_ast('include without parent header with embed includes',
+  // https://github.com/cirosantilli/cirodown/issues/73
+  `\\Include[include-one-level-1]
+\\Include[include-one-level-2]
+`,
+  [
+    // TODO this is what we really want.
+    //a('Toc'),
+    a('H', undefined, {level: [t('1')], title: [t('cc')]}),
+    a('P', [t('dd')]),
+    a('H', undefined, {level: [t('1')], title: [t('ee')]}),
+    a('P', [t('ff')]),
+  ],
+  {
+    //assert_xpath_matches: [
+    //  // TODO getting corrupt <hNaN>
+    //  xpath_header(1, 'include-one-level-1'),
+    //  xpath_header(1, 'include-one-level-2'),
+    //],
+    extra_convert_opts: {
+      embed_includes: true,
+    }
+  },
+);
+assert_convert_ast('include without parent header without embed includes',
+  // https://github.com/cirosantilli/cirodown/issues/73
+  `aa
+
+\\Include[include-one-level-1]
+\\Include[include-one-level-2]
+`,
+  [
+    a('P', [t('aa')]),
+    a('Toc'),
+    a('H', undefined, {level: [t('1')], title: [t('cc')]}),
+    a('P', [
+      a(
+        'x',
+        [t('This section is present in another page, follow this link to view it.')],
+        {'href': [t('include-one-level-1')]}
+      ),
+    ]),
+    a('H', undefined, {level: [t('1')], title: [t('ee')]}),
+    a('P', [
+      a(
+        'x',
+        [t('This section is present in another page, follow this link to view it.')],
+        {'href': [t('include-one-level-2')]}
+      ),
+    ]),
+  ],
+  {
+    convert_before: [
+      'include-one-level-1.ciro',
+      'include-one-level-2.ciro',
+    ],
+    assert_xpath_matches: [
+      // TODO getting corrupt <hNaN>
+      //xpath_header(1, 'include-one-level-1'),
+      //xpath_header(1, 'include-one-level-2'),
+    ],
+  },
+);
 assert_error('empty include in header title fails gracefully',
   // https://github.com/cirosantilli/cirodown/issues/195
   `= tmp
@@ -4170,7 +4238,7 @@ assert_convert_ast('CirodownExample that links to id in another file',
   },
 );
 
-// ID auto-gneration.
+// ID auto-generation.
 // https://cirosantilli.com/cirodown/automatic-id-from-title
 assert_convert_ast('id autogeneration without title',
   '\\P[aa]\n',

@@ -1,3 +1,5 @@
+"use strict";
+
 const katex = require('katex');
 
 // consts used by classes.
@@ -191,11 +193,18 @@ class IdProvider {
 
   /**
    * @param {String} id
-   * @return {Union[Array[String,AstNode],undefined]}.
+   * @return {Union[AstNode,undefined]}.
    *         undefined: ID not found
-   *         Array: path/AstNode pair
+   *         Otherwise, the ast node for the given ID
    */
   get(id) { throw 'unimplemented'; }
+
+  /**
+   * @param {String} id
+   * @return {Array[AstNode]}: all header nodes that have the given ID
+   *                           as a parent includer.
+   */
+  get_includes(id) { throw 'unimplemented'; }
 }
 exports.IdProvider = IdProvider;
 
@@ -222,23 +231,29 @@ class ChainedIdProvider extends IdProvider {
     }
     return undefined;
   }
+  get_includes(id) {
+    return this.id_provider_1.get_includes(id).concat(
+      this.id_provider_2.get_includes(id));
+  }
 }
 
-/** ID provider from a dict with a fixed path.
- * The initial use caes is to represent locally defined IDs, and inject
+/** ID provider from a dict.
+ * The initial use case is to represent locally defined IDs, and inject
  * them into ChainedIdProvider together with externally defined IDs.
  */
 class DictIdProvider extends IdProvider {
-  constructor(path, dict) {
+  constructor(dict) {
     super();
-    this.path = path;
     this.dict = dict;
   }
   get(id) {
     if (id in this.dict) {
-      return [this.path, this.dict[id]];
+      return this.dict[id];
     }
     return undefined;
+  }
+  get_includes(id) {
+    return [];
   }
 }
 
@@ -896,7 +911,7 @@ function convert(
   if (!('show_tokens' in options)) { options.show_tokens = false; }
   // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
   if (!('toplevel_id' in options)) { options.toplevel_id = undefined; }
-  macros = macro_list_to_macros();
+  const macros = macro_list_to_macros();
   extra_returns.errors = [];
   let sub_extra_returns;
   sub_extra_returns = {};
@@ -1047,7 +1062,7 @@ function html_convert_attrs(
   // Build the output string.
   let ret = '';
   for (const name_arg_pair of args) {
-    [arg_name, arg] = name_arg_pair;
+    const [arg_name, arg] = name_arg_pair;
     ret += html_attr(arg_name, html_attr_value(arg, context));
   }
   return ret;
@@ -1220,7 +1235,7 @@ function parse(tokens, macros, options, extra_returns={}) {
   // break across versions.
   let non_indexed_ids = {};
   let id_provider;
-  let local_id_provider = new DictIdProvider(options.input_path, indexed_ids);
+  let local_id_provider = new DictIdProvider(indexed_ids);
   let cur_header_tree_node;
   let is_first_header = true;
   if (options.id_provider !== undefined) {
@@ -1253,6 +1268,7 @@ function parse(tokens, macros, options, extra_returns={}) {
         );
         parent_arg.push(new PlaintextAstNode(ast.line, ast.column, message));
       } else {
+        let new_child_nodes;
         if (options.html_single_page) {
           const include_options = Object.assign({}, options);
           include_options.from_include = true;
@@ -1269,9 +1285,9 @@ function parse(tokens, macros, options, extra_returns={}) {
           );
           new_child_nodes = include_extra_returns.ast.args.content;
         } else {
-          const id_provider_get = id_provider.get(href);
+          const target_id_ast = id_provider.get(href);
           let header_node_title;
-          if (id_provider_get === undefined) {
+          if (target_id_ast === undefined) {
             let message = `ID in include not found on database: "${href}", needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
             header_node_title = error_message_in_output(message);
             // Don't do an error if we are not going to render, because this is how
@@ -1285,7 +1301,6 @@ function parse(tokens, macros, options, extra_returns={}) {
               );
             }
           } else {
-            [target_input_path, target_id_ast] = id_provider_get;
             const x_text_options = {
               show_caption_prefix: false,
               style: XStyle.short,
@@ -1384,7 +1399,7 @@ function parse(tokens, macros, options, extra_returns={}) {
         let arg = ast.args[arg_name];
         // We make the new argument be empty so that children can
         // decide if they want to push themselves or not.
-        new_arg = [];
+        const new_arg = [];
         for (const child_node of arg) {
           todo_visit.push([new_arg, child_node]);
         }
@@ -1478,7 +1493,7 @@ function parse(tokens, macros, options, extra_returns={}) {
         if (!(macro_name in macro_counts)) {
           macro_counts[macro_name] = 0;
         }
-        macro_count = macro_counts[macro_name] + 1;
+        const macro_count = macro_counts[macro_name] + 1;
         macro_counts[macro_name] = macro_count;
         ast.macro_count = macro_count;
       }
@@ -1516,16 +1531,15 @@ function parse(tokens, macros, options, extra_returns={}) {
         }
       }
       if (ast.id !== undefined && !ast.force_no_index) {
-        const id_provider_get = id_provider.get(ast.id);
-        let previous_ast = undefined;
-        if (id_provider_get === undefined) {
+        const previous_ast = id_provider.get(ast.id);
+        if (previous_ast === undefined) {
           let non_indexed_id = non_indexed_ids[ast.id];
           if (non_indexed_id !== undefined) {
             input_path = options.input_path;
             previous_ast = non_indexed_id;
           }
         } else {
-          [input_path, previous_ast] = id_provider_get;
+          input_path = previous_ast.input_path;
         }
         if (previous_ast === undefined) {
           non_indexed_ids[ast.id] = ast;
@@ -1825,6 +1839,27 @@ function parse_error(state, message, line, column) {
     message, line, column));
 }
 
+/**
+  * @param {AstNode} target_id_ast
+  * @return {String} the href="..." that an \x cross reference to the given target_id_ast
+  */
+function x_href(target_id_ast, context) {
+  let href_path;
+  const target_input_path = target_id_ast.input_path;
+  if (
+    context.options.include_path_set.has(target_input_path) ||
+    (target_input_path == context.options.input_path)
+  ) {
+    href_path = '';
+  } else {
+    href_path = target_input_path;
+    if (context.options.html_x_extension) {
+      href_path += '.html';
+    }
+  }
+  return html_attr('href', href_path + '#' + html_escape_attr(target_id_ast.id));
+}
+
 const END_NAMED_ARGUMENT_CHAR = '}';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';
 const ESCAPE_CHAR = '\\';
@@ -1985,22 +2020,26 @@ const DEFAULT_MACRO_LIST = [
       }
       ret += Macro.x_text(ast, context, x_text_options);
       ret += `</a>`;
+      ret += `<span> `;
       if (level_int !== context.header_graph_top_level) {
-        ret += `<span> `;
         if (context.has_toc) {
           let toc_href = html_attr('href', '#' + Macro.TOC_PREFIX + ast.id);
           ret += ` | <a${toc_href}>\u21d1 toc</a>`;
         }
-        let parent_tree_node = ast.header_tree_node.parent_node;
-        // May fail if there was a header skip error previously.
-        if (parent_tree_node !== undefined) {
-          let parent_ast = ast.header_tree_node.parent_node.value;
-          let parent_href = html_attr('href', '#' + parent_ast.id);
-          let parent_body = convert_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-          ret += ` | <a${parent_href}>\u2191 parent "${parent_body}"</a>`;
-        }
-        ret += `</span>`;
       }
+      let parent_asts = [];
+      let parent_tree_node_ast = ast.header_tree_node.parent_node.value;
+      // May fail if there was a header skip error previously.
+      if (parent_tree_node_ast !== undefined) {
+        parent_asts.push(parent_tree_node_ast);
+      }
+      parent_asts.push(...context.id_provider.get_includes(ast.id));
+      for (const parent_ast of parent_asts) {
+        let parent_href = x_href(parent_ast, context);
+        let parent_body = convert_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+        ret += ` | <a${parent_href}>\u2191 parent "${parent_body}"</a>`;
+      }
+      ret += `</span>`;
       ret += `</h${level}>\n`;
       return ret;
     },
@@ -2401,14 +2440,14 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       const target_id = convert_arg_noescape(ast.args.href, context);
-      const id_provider_get = context.id_provider.get(target_id);
-      if (id_provider_get === undefined) {
+      const target_id_ast = context.id_provider.get(target_id);
+      if (target_id_ast === undefined) {
         let message = `cross reference to unknown id: "${target_id}"`;
         this.error(context, message, ast.args.href[0].line, ast.args.href[0].column);
         return error_message_in_output(message, context);
       }
-      [target_input_path, target_id_ast] = id_provider_get;
       const content_arg = ast.args.content;
+      let content;
       if (content_arg === undefined) {
         let x_text_options = {
           caption_prefix_span: false,
@@ -2434,20 +2473,8 @@ const DEFAULT_MACRO_LIST = [
       } else {
         content = convert_arg(content_arg, context);
       }
-      let attrs = html_convert_attrs_id(ast, context);
-      let href_path;
-      if (
-        context.options.include_path_set.has(target_input_path) ||
-        (target_input_path == context.options.input_path)
-      ) {
-        href_path = '';
-      } else {
-        href_path = target_input_path;
-        if (context.options.html_x_extension) {
-          href_path += '.html';
-        }
-      }
-      let href = html_attr('href', href_path + '#' + html_escape_attr(target_id));
+      const attrs = html_convert_attrs_id(ast, context);
+      const href = x_href(target_id_ast, context);
       return `<a${href}${attrs}>${content}</a>`;
     },
     {

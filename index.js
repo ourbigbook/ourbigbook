@@ -15,23 +15,30 @@ class AstNode {
    * @param {Number} line - the best representation of where the macro is starts in the document
    *                        used primarily to present useful debug messages
    * @param {Number} column
-   * @param {String} text - the text content of an AstType.PLAINTEXT, undefined for other types
+   * @param {Object} options
+   *                 {String} text - the text content of an AstType.PLAINTEXT, undefined for other types
    */
-  constructor(node_type, macro_name, args, line, column, text, options={}) {
+  constructor(node_type, macro_name, args, line, column, options={}) {
     if (!('from_include' in options)) {
       options.from_include = false;
     }
     if (!('id' in options)) {
       options.id = undefined;
     }
+    if (!('text' in options)) {
+      options.text = undefined;
+    }
 
+    // Generic fields.
     this.node_type = node_type;
     this.macro_name = macro_name;
     this.args = args;
     this.line = line;
     this.column = column;
-    this.text = text
     this.macro_count = undefined;
+
+    // For elements that are of AstType.PLAINTEXT.
+    this.text = options.text
 
     // For elements that have an id.
     // {String} or undefined.
@@ -89,7 +96,7 @@ class AstNode {
     return context.macros[this.macro_name].convert(this, context);
   }
 
-  /** Manual implementation. There must be a better way, but I can find it... */
+  /** Manual implementation. There must be a better way, but I can't find it... */
   static fromJSON(json_string) {
     let json = JSON.parse(json_string);
     let toplevel_ast = new AstNode(AstType[json.node_type], json.macro_name,
@@ -102,7 +109,7 @@ class AstNode {
         let new_arg = [];
         for (let macro of arg) {
           let new_ast = new AstNode(AstType[macro.node_type], macro.macro_name,
-            macro.args, macro.line, macro.column, macro.text);
+            macro.args, macro.line, macro.column, {text: macro.text});
           new_arg.push(new_ast);
           nodes.push(new_ast);
         }
@@ -432,7 +439,7 @@ Macro.TOPLEVEL_MACRO_NAME = 'toplevel';
 class PlaintextAstNode extends AstNode {
   constructor(line, column, text) {
     super(AstType.PLAINTEXT, Macro.PLAINTEXT_MACRO_NAME,
-      {}, line, column, text);
+      {}, line, column, {text: text});
   }
 }
 
@@ -1727,7 +1734,7 @@ function parse_macro(state) {
         {},
         state.token.line,
         state.token.column,
-        error_message_in_output(unknown_macro_message)
+        {text: error_message_in_output(unknown_macro_message)},
       );
     } else {
       return new AstNode(macro_type, macro_name, args, macro_line, macro_column);

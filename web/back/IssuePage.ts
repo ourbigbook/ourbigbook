@@ -31,6 +31,7 @@ export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
           article: issueJson,
           comments,
           commentsCount,
+          issueArticle: articleJson,
           loggedInUser,
         }
       };

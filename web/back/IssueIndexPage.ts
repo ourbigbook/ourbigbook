@@ -73,13 +73,14 @@ export const getServerSidePropsIssueIndexHoc = (what): MyGetServerSideProps => {
       let issues
       let issuesCount
       const offset = pageNum * articleLimit
+      let issuesAndCounts, articleJson
       if (loggedInQuery) {
         //const issuesAndCounts = await loggedInUser.findAndCountIssuesByFollowedToJson(
         //  offset, articleLimit, order)
         //issues = issuesAndCounts.issues
         //issuesCount = issuesAndCounts.issuesCount
       } else {
-        const issuesAndCounts = await sequelize.models.Issue.findAndCountAll({
+        issuesAndCounts = await sequelize.models.Issue.findAndCountAll({
           where: { articleId: article.id },
           offset,
           order: [[order, 'DESC']],
@@ -89,14 +90,16 @@ export const getServerSidePropsIssueIndexHoc = (what): MyGetServerSideProps => {
             as: 'author',
           }],
         })
-        issues = await Promise.all(issuesAndCounts.rows.map(
-          (issue) => {return issue.toJson(loggedInUser) }))
-        issuesCount = issuesAndCounts.count
+        ;[articleJson, issues] = await Promise.all([
+          article.toJson(loggedInUser),
+          Promise.all(issuesAndCounts.rows.map(
+            (issue) => {return issue.toJson(loggedInUser) })),
+        ])
       }
       const props: IndexPageProps = {
         articles: issues,
-        articlesCount: issuesCount,
-        issueArticle: await article.toJson(loggedInUser),
+        articlesCount: issuesAndCounts.count,
+        issueArticle: articleJson,
         page: pageNum,
         what: whatEffective,
       }

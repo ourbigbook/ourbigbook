@@ -521,8 +521,8 @@ it('api: create an article and see it on global feed', async () => {
 
     ;({data, status} = await test.webApi.commentGet('user0/title-0', 1))
     assertRows(data.comments, [
-      { number: 2, render: /The <i>body<\/i> 0 0 1\./ },
       { number: 1, render: /The <i>body<\/i> 0 0 0\./ },
+      { number: 2, render: /The <i>body<\/i> 0 0 1\./ },
     ])
 
     ;({data, status} = await test.webApi.commentGet('user0/title-0', 2))

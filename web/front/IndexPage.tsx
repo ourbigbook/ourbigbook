@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { AppContext } from 'front'
+import { AppContext, DiscussionAbout } from 'front'
 import ArticleList from 'front/ArticleList'
 import CustomLink from 'front/CustomLink'
 import ErrorMessage from 'front/ErrorMessage'
@@ -9,6 +9,7 @@ import { appName, aboutHref, articleLimit, apiPath } from 'front/config'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
 import { UserType } from 'front/types/UserType'
+import { DisplayAndUsername } from 'front/user'
 
 export interface IndexPageProps {
   articles: ArticleType[];
@@ -46,15 +47,13 @@ function IndexPageHoc(isIssue = false) {
     const { setTitle } = React.useContext(AppContext)
     React.useEffect(
       () => { setTitle(
-        isIssue ? `Discussion about "${ issueArticle.titleRender }" by ${ issueArticle.author.displayName }` : ''
+        isIssue ? `Discussion about "${ issueArticle.file.titleSource }" by ${ issueArticle.author.displayName }` : ''
       )},
       []
     )
     return (
       <div className="home-page content-not-ourbigbook">
-        {isIssue &&
-          <h1>Discussion about <a href={routes.articleView(issueArticle.slug)}>"{ issueArticle.titleRender }" by { issueArticle.author.displayName }</a></h1>
-        }
+        {isIssue && <DiscussionAbout article={issueArticle} />}
         <div className="tab-list">
           {(loggedInUser && !isIssue) &&
             <>
@@ -83,6 +82,12 @@ function IndexPageHoc(isIssue = false) {
             href={isIssue ? routes.issuesTop(issueArticle.slug) : routes.articlesTop()}
           >
             Top
+          </CustomLink>
+          <CustomLink
+            className="tab-item"
+            href={isIssue ? routes.issueNew(issueArticle.slug) : routes.articleNew()}
+          >
+            <i className="ion-edit" /> New {isIssue ? 'thread' : 'article'}
           </CustomLink>
         </div>
         <ArticleList {...{

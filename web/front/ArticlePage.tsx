@@ -6,10 +6,10 @@ import LoadingSpinner from 'front/LoadingSpinner'
 import Maybe from 'front/Maybe'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 import FollowUserButton from 'front/FollowUserButton'
-import { displayAndUsernameText } from 'front/user'
+import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import Article from 'front/Article'
 import ArticleInfo from 'front/ArticleInfo'
-import { AppContext, useEEdit } from 'front'
+import { AppContext, DiscussionAbout, useEEdit } from 'front'
 import { webApi } from 'front/api'
 import can from 'front/can'
 import fetcher from 'front/fetcher'
@@ -60,6 +60,7 @@ const ArticlePageHoc = (isIssue) => {
       <>
         <div className="article-page">
           <div className="content-not-ourbigbook article-meta">
+            {isIssue && <DiscussionAbout article={issueArticle} />}
             <div className="article-info">
               <span className="mobile-hide">Author: </span>
               <UserLinkWithImage user={author} showUsernameMobile={false} />

@@ -67,7 +67,11 @@ async function generateDemoData(params) {
       authorId: users[userIdx].id,
       createdAt: date,
       updatedAt: date,
-      body: `\\i[Italic]
+      body: `== h2
+
+=== h3
+
+\\i[Italic]
 
 \\b[Bold]
 

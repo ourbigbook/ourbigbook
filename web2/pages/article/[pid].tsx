@@ -23,6 +23,12 @@ interface ArticlePageProps {
   pid: string;
 }
 
+function renderRefCallback(elem) {
+  if (elem) {
+    cirodown_runtime(elem);
+  }
+}
+
 const ArticlePage = ({ article, comments }: ArticlePageProps) => {
   const router = useRouter();
   if (router.isFallback) { return <LoadingSpinner />; }
@@ -64,7 +70,11 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
       <div className="container page">
         <div className="row article-content">
           <div className="col-md-12">
-            <div dangerouslySetInnerHTML={markup} className="cirodown" />
+            <div
+              dangerouslySetInnerHTML={markup}
+              className="cirodown"
+              ref={renderRefCallback}
+            />
             <ul className="tag-list">
               {article.tagList?.map((tag) => (
                 <li className="tag-default tag-pill tag-outline" key={tag}>{tag}</li>

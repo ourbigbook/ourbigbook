@@ -937,7 +937,7 @@ class Tokenizer {
           }
         }
 
-        // Insane lists.
+        // Insane lists and tables.
         if (!done && (
           this.i === 0 ||
           this.cur_c === '\n' ||
@@ -952,8 +952,9 @@ class Tokenizer {
             i += INSANE_LIST_INDENT.length;
             new_list_level += 1;
           }
-          let insane_start = this.tokenize_insane_start(i);
-          if (insane_start !== undefined) {
+          let insane_start_return = this.tokenize_insane_start(i);
+          if (insane_start_return !== undefined) {
+            const [insane_start, insane_start_length] = insane_start_return;
             if (new_list_level <= this.list_level + 1) {
               if (this.cur_c === '\n') {
                 this.consume();
@@ -963,7 +964,7 @@ class Tokenizer {
               this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
               this.list_level += 1;
               done = true;
-              for (const c in insane_start) {
+              for (let i = 0; i < insane_start_length; i++) {
                 this.consume();
               }
             }
@@ -1040,13 +1041,29 @@ class Tokenizer {
    * Determine if we are at the start of an insane indented sequence
    * like an insane list '* ' or table '| '
    *
-   * @return {Union[String,undefined]} - which insane start if any
-   *         undefined if none found.
+   * @return {Union[[String,Number],undefined]} -
+   *         - [insane_start, length] if any is found. For an empty table or list without space,
+   *           length is insane_start.length - 1. Otherwise it equals insane_start.length.
+   *         - undefined if none found.
    */
   tokenize_insane_start(i) {
     for (const insane_start in INSANE_STARTS_TO_MACRO_NAME) {
-      if (array_contains_array_at(this.chars, i, insane_start)) {
-        return insane_start;
+      if (
+        array_contains_array_at(this.chars, i, insane_start)
+      ) {
+        // Full insane start match.
+        return [insane_start, insane_start.length];
+      }
+      // Empty table or list without space.
+      let insane_start_nospace = insane_start.substring(0, insane_start.length - 1);
+      if (
+        array_contains_array_at(this.chars, i, insane_start_nospace) &&
+        (
+          i === this.chars.length - 1 ||
+          this.chars[i + insane_start.length - 1] === '\n'
+        )
+      ) {
+        return [insane_start, insane_start.length - 1];
       }
     }
     return undefined;

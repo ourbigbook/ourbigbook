@@ -263,6 +263,19 @@ gh
 `,
   l_with_explicit_ul_expect
 );
+assert_convert_ast('empty insane list item without a space',
+  `* ab
+*
+* cd
+`,
+  [
+  a('ul', [
+    a('l', [t('ab')]),
+    a('l', []),
+    a('l', [t('cd')]),
+  ]),
+]
+);
 assert_convert_ast('l with explicit ul and extra spaces',
   `ab
 
@@ -535,7 +548,7 @@ gh
 `,
   tr_with_explicit_table_expect
 );
-assert_convert_ast('table inside list inside table',
+assert_convert_ast('insane table inside insane list inside insane table',
   `| 00
 | 01
 
@@ -581,6 +594,34 @@ assert_convert_ast('table inside list inside table',
       ]),
     ]),
   ]
+);
+assert_convert_ast('insane table body with empty cell and no space',
+  `| 00
+|
+| 02
+`, [
+  a('table', [
+    a('tr', [
+      a('td', [t('00')]),
+      a('td', []),
+      a('td', [t('02')]),
+    ]),
+  ]),
+],
+);
+assert_convert_ast('insane table head with empty cell and no space',
+  `|| 00
+||
+|| 02
+`, [
+  a('table', [
+    a('tr', [
+      a('th', [t('00')]),
+      a('th', []),
+      a('th', [t('02')]),
+    ]),
+  ]),
+],
 );
 assert_convert_ast('implicit table escape', '\\| a\n',
   [a('p', [t('| a')])],

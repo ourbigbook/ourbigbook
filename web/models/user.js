@@ -143,6 +143,11 @@ module.exports = (sequelize) => {
         type: DataTypes.DATE,
         allowNull: true,
       },
+      nestedSetNeedsUpdate: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
     },
     {
       hooks: {
@@ -220,6 +225,7 @@ module.exports = (sequelize) => {
         if (this.newScoreLastCheck) {
           ret.newScoreLastCheck = this.newScoreLastCheck.toISOString()
         }
+        ret.nestedSetNeedsUpdate = this.nestedSetNeedsUpdate
       }
     } else {
       ret.following = false

@@ -106,7 +106,7 @@ export function ErrorIcon(opts) {
   return Icon("ion-close", "Edit", opts)
 }
 
-export function HelpIcon(opts) {
+export function HelpIcon(opts={}) {
   return Icon("ion-help-circled", "Help", opts)
 }
 

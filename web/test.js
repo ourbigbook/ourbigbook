@@ -108,16 +108,29 @@ function createIssueArg(i, j, k, opts={}) {
 }
 
 async function createUser(sequelize, i) {
-  const user = new sequelize.models.User(createUserArg(i, false))
+  const user = new sequelize.models.User(createUserArg(i, { password: false }))
   sequelize.models.User.setPassword(user, 'asdf')
   return user.save()
 }
 
-function createUserArg(i, password=true) {
+function createUserArg(i, opts={}) {
+  let { password } = opts
+  if (password === undefined) {
+    password = true
+  }
   const ret = {
     email: `user${i}@mail.com`,
     username: `user${i}`,
     displayName: `User ${i}`,
+  }
+  if (opts.username !== undefined) {
+    ret.username = opts.username
+  }
+  if (opts.displayName !== undefined) {
+    ret.displayName = opts.displayName
+  }
+  if (opts.email !== undefined) {
+    ret.email = opts.email
   }
   if (password) {
     ret.password = 'asdf'
@@ -180,8 +193,8 @@ function testApp(cb, opts={}) {
       )
     }
     // Create user and save the token for future requests.
-    test.createUserApi = async function(i) {
-      const { data, status } = await test.webApi.userCreate(createUserArg(i))
+    test.createUserApi = async function(i, opts) {
+      const { data, status } = await test.webApi.userCreate(createUserArg(i, opts))
       test.tokenSave = data.user.token
       test.enableToken()
       assertStatus(status, data)
@@ -394,14 +407,35 @@ it('api: create an article and see it on global feed', async () => {
   await testApp(async (test) => {
     let data, status, article
 
-    // Cannot create article without login.
-    article = createArticleArg({ i: 0 })
-    ;({data, status} = await test.webApi.articleCreate(article))
-    assert.strictEqual(status, 401)
-
     // User
 
-      // Create user and login.
+      // User creation failure cases.
+
+      // Invalid username: too short
+      ;({ data, status } = await test.webApi.userCreate(createUserArg(0, { username: 'a'.repeat(config.usernameMinLength - 1) })))
+      assert.strictEqual(status, 422)
+
+      // Invalid username: too long
+      ;({ data, status } = await test.webApi.userCreate(createUserArg(0, { username: 'a'.repeat(config.usernameMaxLength + 1) })))
+      assert.strictEqual(status, 422)
+
+      // Invalid username char: _
+      ;({ data, status } = await test.webApi.userCreate(createUserArg(0, { username: 'ab_cd' })))
+      assert.strictEqual(status, 422)
+
+      // Invalid username char: uppercase
+      ;({ data, status } = await test.webApi.userCreate(createUserArg(0, { username: 'abCd' })))
+      assert.strictEqual(status, 422)
+
+      // Invalid username: starts in -, ends in -, double -
+      ;({ data, status } = await test.webApi.userCreate(createUserArg(0, { username: '-abcd' })))
+      assert.strictEqual(status, 422)
+      ;({ data, status } = await test.webApi.userCreate(createUserArg(0, { username: 'abcd-' })))
+      assert.strictEqual(status, 422)
+      ;({ data, status } = await test.webApi.userCreate(createUserArg(0, { username: 'ab--cd' })))
+      assert.strictEqual(status, 422)
+
+      // Create some users.
       const user = await test.createUserApi(0)
       const user1 = await test.createUserApi(1)
       const user2 = await test.createUserApi(2)
@@ -415,26 +449,27 @@ it('api: create an article and see it on global feed', async () => {
       assertRows([data], [{ username: 'user0', displayName: 'User 0' }])
 
       // User edit.
-      ;({data, status} = await test.webApi.userUpdate('user0', { displayName: 'User 0 hacked' }))
-      assertStatus(status, data)
-      ;({data, status} = await test.webApi.user('user0'))
-      assertStatus(status, data)
-      assertRows([data], [{ username: 'user0', displayName: 'User 0 hacked' }])
 
-      // Non-admin users cannot edit other users.
-      test.enableToken(user1.token)
-      ;({data, status} = await test.webApi.userUpdate('user0', { displayName: 'User 0 hacked 2' }))
-      assert.strictEqual(status, 403)
-      test.enableToken(user.token)
+        ;({data, status} = await test.webApi.userUpdate('user0', { displayName: 'User 0 hacked' }))
+        assertStatus(status, data)
+        ;({data, status} = await test.webApi.user('user0'))
+        assertStatus(status, data)
+        assertRows([data], [{ username: 'user0', displayName: 'User 0 hacked' }])
 
-      // Admin users can edit other users.
-      test.enableToken(user2.token)
-      ;({data, status} = await test.webApi.userUpdate('user0', { displayName: 'User 0 hacked 3' }))
-      assertStatus(status, data)
-      test.enableToken(user.token)
-      ;({data, status} = await test.webApi.user('user0'))
-      assertStatus(status, data)
-      assertRows([data], [{ username: 'user0', displayName: 'User 0 hacked 3' }])
+        // Non-admin users cannot edit other users.
+        test.enableToken(user1.token)
+        ;({data, status} = await test.webApi.userUpdate('user0', { displayName: 'User 0 hacked 2' }))
+        assert.strictEqual(status, 403)
+        test.enableToken(user.token)
+
+        // Admin users can edit other users.
+        test.enableToken(user2.token)
+        ;({data, status} = await test.webApi.userUpdate('user0', { displayName: 'User 0 hacked 3' }))
+        assertStatus(status, data)
+        test.enableToken(user.token)
+        ;({data, status} = await test.webApi.user('user0'))
+        assertStatus(status, data)
+        assertRows([data], [{ username: 'user0', displayName: 'User 0 hacked 3' }])
 
       // Users see their own email on GET.
       ;({data, status} = await test.webApi.user('user0'))

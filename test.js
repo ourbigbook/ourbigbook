@@ -5532,6 +5532,14 @@ assert_executable(
   }
 );
 assert_executable(
+  'executable: input from file and --stdout produces output on stdout',
+  {
+    args: ['--stdout', 'notindex.bigb'],
+    assert_xpath_stdout: ["//x:div[@class='p' and text()='aabb']"],
+    filesystem: { 'notindex.bigb': 'aabb' },
+  }
+);
+assert_executable(
   // Was blowing up on file existence check.
   'executable: input from stdin with relative link does not blow up',
   {

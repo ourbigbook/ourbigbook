@@ -191,6 +191,10 @@ async function check_db(nonOurbigbookOptions) {
   }
 }
 
+function chomp(s) {
+  return s.replace(/(\r\n|\n)$/, '')
+}
+
 /** Report an error with the CLI usage and exit in error. */
 function cli_error(message) {
   if (message !== undefined) {
@@ -958,14 +962,14 @@ function gitSha(input_path, srcBranch) {
   if (srcBranch !== undefined) {
     args.push(srcBranch);
   }
-  return runCmd('git', args, {showCmd: false, throwOnError: true}).slice(0, -1);
+  return chomp(runCmd('git', args, {showCmd: false, throwOnError: true}))
 }
 
 function git_toplevel(input_path) {
-  return runCmd('git', ['rev-parse', '--show-toplevel'], {
+  return chomp(runCmd('git', ['rev-parse', '--show-toplevel'], {
     showCmd: false,
     throwOnError: true
-  }).slice(0, -1);
+  }))
 }
 
 function handleWebApiErr(err) {
@@ -2335,7 +2339,7 @@ if (cli.helpMacros) {
             // to be a super easy way for now, so we just hardcode origin to start with.
             // https://stackoverflow.com/questions/171550/find-out-which-remote-branch-a-local-branch-is-tracking
             const opts = {}
-            const originUrl = runCmd('git', ['-C', inputPathCwd, 'config', '--get', 'remote.origin.url'], cmdOptsInfoNothrow).slice(0, -1);
+            const originUrl = chomp(runCmd('git', ['-C', inputPathCwd, 'config', '--get', 'remote.origin.url'], cmdOptsInfoNothrow))
             if (cmdOptsInfoNothrow.extra_returns.out.status != 0) {
               cli_error('a "origin" git remote repository is required to publish, configure it with something like "git remote add origin git@github.com:username/reponame.git"')
             }
@@ -2347,7 +2351,7 @@ if (cli.helpMacros) {
             if (!publishRemoteUrl) {
               publishRemoteUrl = 'git@github.com:ourbigbook/ourbigbook.git';
             }
-            srcBranch = runCmd('git', ['-C', inputPathCwd, 'rev-parse', '--abbrev-ref', 'HEAD'], cmdOptsInfo).slice(0, -1);
+            srcBranch = chomp(runCmd('git', ['-C', inputPathCwd, 'rev-parse', '--abbrev-ref', 'HEAD'], cmdOptsInfo))
             const parsed_remote_url = require("git-url-parse")(publishRemoteUrl);
             if (parsed_remote_url.source !== 'github.com') {
               cli_error('only know how  to publish to origin == github.com currently, please send a patch');
@@ -2460,6 +2464,10 @@ if (cli.helpMacros) {
 
           if (publish_uses_git) {
             runCmd('git', ['-C', publishOutPublishDirCwd, 'init'], cmdOpts);
+            const coreSshCommand = chomp(runCmd('git', ['-C', inputPath, 'config', '--get', 'core.sshCommand'], cmdOptsInfoNothrow))
+            if (coreSshCommand) {
+              runCmd('git', ['-C', publishOutPublishDirCwd, 'config', 'core.sshCommand', coreSshCommand], cmdOpts)
+            }
             // https://stackoverflow.com/questions/42871542/how-to-create-a-git-repository-with-the-default-branch-name-other-than-master
             runCmd('git', ['-C', publishOutPublishDirCwd, 'checkout', '-B', publishBranch], cmdOptsNoStdout);
             try {
@@ -2526,8 +2534,8 @@ if (cli.helpMacros) {
               args.push('--amend')
             }
             const commitCmdOptions = { ...cmdOptsNoStdout }
-            const name = runCmd('git', ['-C', inputPath, 'config', '--get', 'user.name'], cmdOpts)
-            const email = runCmd('git', ['-C', inputPath, 'config', '--get', 'user.email'], cmdOpts)
+            const name = chomp(runCmd('git', ['-C', inputPath, 'config', '--get', 'user.name'], cmdOpts))
+            const email = chomp(runCmd('git', ['-C', inputPath, 'config', '--get', 'user.email'], cmdOpts))
             if (name && email) {
               commitCmdOptions.env_extra = {
                 ...commitCmdOptions.env_extra,
@@ -2546,7 +2554,6 @@ if (cli.helpMacros) {
             }
             runCmd('git', args, commitCmdOptions);
             if (!cli.dryRunPush) {
-              runCmd('git', ['-C', publishOutPublishDirCwd, 'config', 'core.sshCommand', runCmd('git', ['-C', inputPath, 'config', '--get', 'core.sshCommand'], cmdOptsInfo)], cmdOpts)
               runCmd('git', ['-C', publishOutPublishDirCwd, 'push', '-f', 'origin', `${publishBranch}:${publishBranch}`], cmdOpts);
               // Mark the commit with the `published` branch to make it easier to find what was last published.
               runCmd('git', ['-C', inputPathCwd, 'checkout', '-B', 'published'], cmdOpts);

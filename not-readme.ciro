@@ -15,7 +15,7 @@ This file is, surprisingly, not the README. It is used for multifile tests. It i
 
 Toplevel: \x[cirodown].
 
-Non-toplevel: \x[internal-cross-references].
+Non-toplevel: \x[internal-cross-reference].
 
 == Not the README header with scope
 {scope}

@@ -2,7 +2,7 @@
 
 This file, surprisingly, includes \c[not-readme.ciro].
 
-It is meant a more minimal interactive test of \x[includes] than the full blown \c[README.ciro].
+It is meant a more minimal interactive test of \x[include]{p} than the full blown \c[README.ciro].
 
 Here are some internal cross references to the includes: \x[not-readme], \x[not-readme-2], \x[h2-in-not-the-readme].
 

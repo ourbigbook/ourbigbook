@@ -119,6 +119,10 @@ Table:
 | c
 | 2
 | 3.4
+
+| c
+| 3
+| 3.3
 `,
     }
     articleArgs.push(articleArg)

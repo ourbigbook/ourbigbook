@@ -484,17 +484,20 @@ async function update_database_after_convert({
   cirodown.perf_print(context, 'convert_path_post_sqlite_transaction')
 }
 
-function read_include(exists, read, path_sep) {
+function read_include({exists, read, path_sep, ext}) {
   function join(...parts) {
     return parts.join(path_sep)
   }
-  return (id, input_dir) => {
+  if (ext === undefined) {
+    ext = cirodown.CIRODOWN_EXT
+  }
+  return async (id, input_dir) => {
     let found = undefined;
     let test
-    let basename = id + cirodown.CIRODOWN_EXT;
+    let basename = id + ext;
     if (basename[0] === path_sep) {
       test = id.substr(1)
-      if (exists(test)) {
+      if (await exists(test)) {
         found = test;
       }
     } else {
@@ -502,30 +505,30 @@ function read_include(exists, read, path_sep) {
       for (let i = input_dir_with_sep.length - 1; i > 0; i--) {
         if (input_dir_with_sep[i] === path_sep) {
           test = input_dir_with_sep.slice(0, i + 1) + basename
-          if (exists(test)) {
+          if (await exists(test)) {
             found = test;
             break
           }
         }
       }
-      if (found === undefined && exists(basename)) {
+      if (found === undefined && await exists(basename)) {
         found = basename;
       }
     }
     if (found === undefined) {
-      test = join(id, cirodown.INDEX_BASENAME_NOEXT + cirodown.CIRODOWN_EXT);
+      test = join(id, cirodown.INDEX_BASENAME_NOEXT + ext);
       if (input_dir !=='') {
         test = join(input_dir, test)
       }
-      if (exists(test)) {
+      if (await exists(test)) {
         found = test;
       }
       if (found === undefined) {
         const id_parse = path.parse(id);
         if (id_parse.name === cirodown.INDEX_BASENAME_NOEXT) {
           for (let index_basename_noext of cirodown.INDEX_FILE_BASENAMES_NOEXT) {
-            test = join(id_parse.dir, index_basename_noext + cirodown.CIRODOWN_EXT);
-            if (exists(test)) {
+            test = join(id_parse.dir, index_basename_noext + ext);
+            if (await exists(test)) {
               found = test;
               break;
             }
@@ -534,7 +537,7 @@ function read_include(exists, read, path_sep) {
       }
     }
     if (found !== undefined) {
-      return [found, read(found)];
+      return [found, await read(found)];
     }
     return undefined;
   }

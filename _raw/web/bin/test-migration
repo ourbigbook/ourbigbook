@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# https://docs.ourbigbook.com/test-migration
+set -eux
+
+reset() (
+  if [ "$db" = sqlite3 ]; then
+    rm -f "${script_dir}/db.sqlite3"
+  else
+    "${script_dir}/pg-setup"
+  fi
+)
+
+schema() (
+  out="$d/$1.$db.${schema_ext}"
+  if [ "$db" = sqlite3 ]; then
+    sqlite3 db.sqlite3 .schema > "$out"
+  else
+    #"${script_dir}/pg_dump" -s
+    PGPASSWORD=a pg_dump -U ourbigbook_user -h localhost ourbigbook -s | grep -E -v -- '^(--|$)' > "$out"
+  fi
+)
+
+args=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --)
+      shift
+      break
+      ;;
+    *)
+      args+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if [ "${OURBIGBOOK_POSTGRES:-0}" = 1 ]; then
+  db=postgres
+else
+  db=sqlite3
+fi
+schema_ext=sql
+
+script_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+d="${script_dir}/tmp/test-migration"
+rm -rf "$d"
+mkdir -p "$d"
+
+git add migrations
+git commit --amend --no-edit
+
+# Cean from scratch sanity check.
+reset
+"${script_dir}/generate-demo-data.js" --clear "${args[@]}"
+schema new-clean
+
+# Go back to old DB.
+git checkout "${1:-HEAD~}"
+reset
+"${script_dir}/generate-demo-data.js" --clear "${args[@]}"
+schema old
+
+# Migrate.
+git checkout -
+if [ "$db" = postgres ]; then
+  export NODE_ENV=production
+  "${script_dir}/psql" -P pager=off -c 'SELECT * FROM "SequelizeMeta";'
+fi
+"${script_dir}/sync-db.js"
+schema new-migration
+
+# Compare the above.
+diff_args='-u0'
+if [ "$db" = sqlite3 ]; then
+  sort "$d/old.$db.${schema_ext}"           > "$d/old.$db.sort.${schema_ext}"
+  sort "$d/new-clean.$db.${schema_ext}"     > "$d/new-clean.$db.sort.${schema_ext}"
+  sort "$d/new-migration.$db.${schema_ext}" > "$d/new-migration.$db.sort.${schema_ext}"
+  diff $diff_args "$d/old.$db.sort.${schema_ext}" "$d/new-clean.$db.sort.${schema_ext}" || true
+  diff="$(diff $diff_args "$d/new-clean.$db.sort.${schema_ext}" "$d/new-migration.$db.sort.${schema_ext}" || true)"
+  echo
+  echo "$diff"
+  if [ ! -z "$diff" ]; then
+    echo 'error: Clean DB and migrated are different'
+    exit 1
+  fi
+else
+  # PostgreSQL statements are not one per line so it is harder to automatically compare things correctly,
+  # eye inspection for now.
+  diff $diff_args "$d/old.$db.${schema_ext}" "$d/new-clean.$db.${schema_ext}" || true
+  diff $diff_args "$d/new-clean.$db.${schema_ext}" "$d/new-migration.$db.${schema_ext}" || true
+fi

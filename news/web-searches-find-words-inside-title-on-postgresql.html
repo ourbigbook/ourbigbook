@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>News / Web searches find words inside title on PostgreSQL - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="web-searches-find-words-inside-title-on-postgresql"><div class="notnav"><h1><a href="../news">News</a><span class="meta"> / </span><a href="">Web searches find words inside title on PostgreSQL</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="../#developing-ourbigbook"> Developing OurBigBook</a><a href="../#publicity"> Publicity</a><a href="../news"> News</a></div><div class="nav"><span class="tags"> Tags: <a href="../#ourbigbook-web-postgresql">OurBigBook Web PostgreSQL</a>, <a href="../#web"><code>-W</code>, <code>--web</code></a></span><a class="nosplit" href="../news#web-searches-find-words-inside-title-on-postgresql"></a><span class="metrics"><span class="wcntr"> Words: 106</span></span></div></nav></div><div class="p" id="_11">When searching articles and topics on <a href="../#ourbigbook-web-postgresql">OurBigBook Web PostgreSQL</a>, which is the case for <a href="../#ourbigbook-com">OurBigBook.com</a>:<div class="list"><ul id="_12"><li id="_13">each searched word can match exactly within any word of article <a href="../#element-id">IDs</a></li><li id="_14">the last word is considered as a prefix, and matches the start of any word of the ID</li></ul></div>Previously, searches would only work if they were exactly a prefix of the title ID.</div><div class="p" id="_15">For example, if you search:<div class="code" id="_16"><div><pre><code>calculus fun</code></pre></div></div>then it will match titles such as:<div class="code" id="_17"><div><pre><code>Fundamental theorem of calculus</code></pre></div></div>since it contains both:<div class="list"><ul id="_18"><li id="_19">the full word <code>calculus</code></li><li id="_20"><code>fundamental</code> which contains the prefix <code>fun</code></li></ul></div></div><div class="p" id="_21">This feature implemented efficiently by using PostgreSQL's built-in full text search module.</div><div class="figure"><figure id="image-ourbigbook-web-search-highlighting-full-text-search"><div class="float-wrap"><a href="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/search/full-text-calculus-fun-arrow.png"><img src="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/search/full-text-calculus-fun-arrow.png" loading="lazy" height="738"  class="border"></a></div><figcaption><a href="#image-ourbigbook-web-search-highlighting-full-text-search"><span class="caption-prefix">Figure 1. </span></a><div class="title"><a href="../#ourbigbook-web-search">OurBigBook Web search</a> highlighting full text search</div>. <a href="https://ourbigbook.com/go/articles?body=false&amp;search=calculus%20fun">Source</a>. </figcaption></figure></div><div class="p" id="_22">Announcements:<div class="list"><ul id="_23"><li id="_24"><a href="https://mastodon.social/@ourbigbook/114009281220745242">mastodon.social/@ourbigbook/114009281220745242</a></li><li id="_25"><a href="https://x.com/OurBigBook/status/1890828492222124218">x.com/OurBigBook/status/1890828492222124218</a></li><li id="_26"><a href="https://www.linkedin.com/feed/update/urn:li:share:7296594330725568512">www.linkedin.com/feed/update/urn:li:share:7296594330725568512</a></li><li id="_27"><a href="https://www.facebook.com/OurBigBook/posts/pfbid02oxfZ1kpfvPexovaEKqcE7D2MSEgQFM25ZdsQDXCLpV9C6uREKGNGV2A4E9MGuWi8l">www.facebook.com/OurBigBook/posts/pfbid02oxfZ1kpfvPexovaEKqcE7D2MSEgQFM25ZdsQDXCLpV9C6uREKGNGV2A4E9MGuWi8l</a></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href="../news">News</a></li><li><a href="../#publicity">Publicity</a></li><li><a href="../#developing-ourbigbook">Developing OurBigBook</a></li><li><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href="../#ourbigbook-web-search">OurBigBook Web search</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/news.bigb">news.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "news/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

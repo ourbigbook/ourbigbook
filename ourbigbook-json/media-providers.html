@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title><code>ourbigbook.json</code> / media-providers - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="media-providers"><div class="notnav"><h1><a href="../#ourbigbook-json"><code>ourbigbook.json</code></a><span class="meta"> / </span><a href=""><code>media-providers</code></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="../#ourbigbook-cli"> OurBigBook CLI</a><a href="../#ourbigbook-json"> <code>ourbigbook.json</code></a></div><div class="nav"><a class="nosplit" href="../#ourbigbook-json/media-providers"></a><span class="metrics"><span class="wcntr"> Words: 400</span></span></div></nav></div><div class="p" id="_3709">The <code>media-providers</code> entry of <code>ourbigbook.json</code> specifies properties of how media such as <a href="../#image">images</a> and <a href="../#video">videos</a> are retrieved and rendered.</div><div class="p" id="_3710">The general format of <code>media-providers</code> looks like:<div class="code" id="_3711"><div><pre><code>"media-providers": {
+  "github": {
+    "default-for": ["image"], // "all" to default for both image, video and anything else
+    "path": "data/media/",    // data is gitignored, but should not be nuked like _out/
+    "remote": "ourbigbook/ourbigbook-media"
+  },
+  "local": {
+    "default-for": ["video"],
+    "path": "media/",
+  },
+  "youtube": {}
+}</code></pre></div></div></div><div class="p" id="_3712">Properties that are valid for every provider:<div class="list"><ul id="_3713"><li id="_3714"><div class="p" id="_3715"><code>default-for</code>: use this provider as the default for the given types of listed macros.</div><div class="p" id="_3716">The first character of the macros are case insensitive and must be given as lower case. Therefore e.g.:<div class="list"><ul id="_3717"><li id="_3718"><code>image</code> applies to both <code>image</code> and <code>Image</code></li><li id="_3719">giving <code>Image</code> is an error because that starts with an upper case character</li></ul></div></div></li><li id="_3720"><code>title-from-src</code> (<code>bool</code>): extract the <code>title</code> argument from the <code>src</code> by default for media such as <a href="../#image">images</a> and <a href="../#video">videos</a> as if the <code>titleFromSrc</code> macro argument had been given, see also: <a href="../#image-id">Section "Image ID"</a></li></ul></div></div><div class="p" id="_3721">Direct children of media-providers and subproperties that are valid only for them specifically:<div class="list"><ul id="_3722"><li id="_3723"><code>local</code>: tracked in the current Git repository as mentioned at <a href="../#store-images-inside-the-repository-itself">Section "Store images inside the repository itself"</a><div class="list"><ul id="_3724"><li id="_3725"><code>path</code>: location of the cloned local repository relative to the root the main repository</li></ul></div></li><li id="_3726"><code>github</code>: tracked in a separate Git repository as mentioned at <a href="../#store-images-in-a-separate-media-repository">Section "Store images in a separate media repository"</a><div class="list"><ul id="_3727"><li id="_3728"><div class="p" id="_3729"><code>path</code>: analogous to <code>path</code> for <code>local</code>: a local location for this GitHub provider, where the repository can optionally be cloned.</div><div class="p" id="_3730">When not during a run with the <a href="../#p-publish"><code>--publish</code> option</a>, OurBigBook checks if the path exists locally, and if it does, then it uses that local directory as the source intead of the GitHub repository.</div><div class="p" id="_3731">This allows you to develop locally without Internet and see the latest version of the images without pushing them.</div><div class="p" id="_3732">During publishing, the GitHub version is used instead.</div><div class="p" id="_3733">TODO make this even more awesome by finishing to implement <a href="https://github.com/ourbigbook/ourbigbook/issues/184">github.com/ourbigbook/ourbigbook/issues/184</a>:<div class="list"><ul id="_3734"><li id="_3735">automatically <code>git push</code> this repository during deployment to ensure that any asset changes will be available.</li><li id="_3736"><div class="p" id="_3737">ignore the path from OurBigBook conversion as if added to <a href="../#ourbigbook-json/ignore"><code>ignore</code></a>, and is not added to the final output, because you are already going to have a copy of it.</div><div class="p" id="_3738">This way you can use the sanes approach which is to track the directory as a Git submodule as mentioned at: <a href="../#store-images-in-a-separate-media-repository-and-track-it-as-a-git-submodule">store images in a separate media repository and track it as a git submodule</a>, instead of either:<div class="list"><ul id="_3739"><li id="_3740">keeping it outside of the repository</li><li id="_3741">keeping it in the repository but explicitly ignoring it as well, which is a bit redundant</li></ul></div></div></li></ul></div></div></li><li id="_3742"><code>remote</code>: <code>&lt;github-username&gt;/&lt;repo-name&gt;</code></li></ul></div></li><li id="_3743"><code>youtube</code>: YouTube <a href="../#video">videos</a></li></ul></div></div><div class="p" id="_3744">See also: <a href="https://github.com/ourbigbook/ourbigbook/issues/40">github.com/ourbigbook/ourbigbook/issues/40</a></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href="../#ourbigbook-json"><code>ourbigbook.json</code></a></li><li><a href="../#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(7)</span></a></h2><div class="list"><ul><li><a href="../#disambiguate-argument"><code>disambiguate</code> argument</a></li><li><a href="../#embed-resources"><code>--embed-resources</code></a></li><li><a href="../#image-id">Image ID</a></li><li><a href="../#store-images-in-a-separate-media-repository">Store images in a separate media repository</a></li><li><a href="../#store-images-in-a-separate-media-repository-and-track-it-as-a-git-submodule">Store images in a separate media repository and track it as a git submodule</a></li><li><a href="../#store-images-in-wikimedia-commons">Store images in Wikimedia Commons</a></li><li><a href="../#template"><code>--template</code></a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "ourbigbook-json/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Cross file internal link - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="cross-file-internal-link"><div class="notnav"><h1><a href="">Cross file internal link</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#internal-link"> Internal link</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#cross-file-internal-link"></a><span class="metrics"><span class="wcntr"> Words: 882</span><span class="dcnt"> Articles: 3</span></span></div></nav></div><div class="figure"><figure id="image-cross-file-internal-link"><div class="float-wrap"><a href="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/x/hilbert-space-arrow.png"><img src="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/x/hilbert-space-arrow.png" loading="lazy" height="571"  class="border"></a></div><figcaption><a href="#image-cross-file-internal-link"><span class="caption-prefix">Figure 42. </span></a><div class="title"><a href=".#cross-file-internal-link">Cross file internal link</a></div>. </figcaption></figure></div><div class="p" id="_2323">Reference to the first header of another file:<div class="code" id="_2324"><div><pre><code>\x[not-index]</code></pre></div></div><div class="p" id="_2325">which renders as:</div><div><blockquote id="_2326"><div class="p" id="_2327"><a href="not-index">not the index</a></div></blockquote></div></div><div class="p" id="_2328">Reference to a non-first header of another file:<div class="code" id="_2329"><div><pre><code>\x[h2-in-not-the-index]</code></pre></div></div><div class="p" id="_2330">which renders as:</div><div><blockquote id="_2331"><div class="p" id="_2332"><a href="not-index#h2-in-not-the-index">h2 in not the index</a></div></blockquote></div></div><div class="p" id="_2333">To make toplevel links cleaner, if the target header is the very first element of the other page, then the link does not get a fragment, e.g.: <code>\x[not-index]</code> rendered as:<div class="code" id="_2334"><div><pre><code>&lt;a href="not-index"</code></pre></div></div>and not:<div class="code" id="_2335"><div><pre><code>&lt;a href="not-index#not-index"</code></pre></div></div>while <code>\x[h2-in-not-the-index]</code> is rendered with the fragment:<div class="code" id="_2336"><div><pre><code>&lt;a href="not-index#h2-in-not-the-index"</code></pre></div></div></div><div class="p" id="_2337">Reference to the first header of another file that is a second inclusion:<div class="code" id="_2338"><div><pre><code>\x[included-by-not-index]</code></pre></div></div><div class="p" id="_2339">which renders as:</div><div><blockquote id="_2340"><div class="p" id="_2341"><a href="included-by-not-index">included by not the index</a></div></blockquote></div></div><div class="p" id="_2342">Reference to another header of another file, with <a href=".#x-full-argument"><code>full</code></a>:<div class="code" id="_2343"><div><pre><code>\x[h2-in-not-the-index]{full}.</code></pre></div></div><div class="p" id="_2344">which renders as:</div><div><blockquote id="_2345"><div class="p" id="_2346"><a href="not-index#h2-in-not-the-index">Section "h2 in not the index"</a>.</div></blockquote></div>Note that when <code>full</code> is used with references in another file in <a href=".#embed-includes">multi page mode</a>, the number is not rendered as explained at: <a href=".#x-full-argument-in-cross-file-internal-links">Section "<code>\x</code> <code>full</code> argument in cross file internal links"</a>.</div><div class="p" id="_2347">Reference to an image in another file:<div class="code" id="_2348"><div><pre><code>\x[image-not-index-xi]{full}.</code></pre></div></div><div class="p" id="_2349">which renders as:</div><div><blockquote id="_2350"><div class="p" id="_2351"><a href="not-index#image-not-index-xi">Figure "Figure in not the index"</a>.</div></blockquote></div></div><div class="p" id="_2352">Reference to an image in another file:<div class="code" id="_2353"><div><pre><code>\x[image-figure-in-not-the-index-without-explicit-id]{full}.</code></pre></div></div><div class="p" id="_2354">which renders as:</div><div><blockquote id="_2355"><div class="p" id="_2356"><a href="not-index#image-figure-in-not-the-index-without-explicit-id">Figure "Figure in not the index without explicit id"</a>.</div></blockquote></div></div><div class="p" id="_2357">Remember that the <a href=".#the-toplevel-header">ID of the toplevel header</a> is automatically derived from its file name, that's why we have to use:<div class="code" id="_2358"><div><pre><code>\x[not-index]</code></pre></div></div><div class="p" id="_2359">which renders as:</div><div><blockquote id="_2360"><div class="p" id="_2361"><a href="not-index">not the index</a></div></blockquote></div>instead of:<div class="code" id="_2362"><div><pre><code>\x[not-the-index]</code></pre></div></div></div><div class="p" id="_2363">Reference to a subdirectory:<div class="code" id="_2364"><div><pre><code>\x[subdir]
+
+\x[subdir/h2]
+
+\x[subdir/notindex]
+
+\x[subdir/notindex-h2]</code></pre></div></div><div class="p" id="_2365">which renders as:</div><div><blockquote id="_2366"><div class="p" id="_2367"><a href="subdir">subdir index</a></div><div class="p" id="_2368"><a href="subdir#h2">h2</a></div><div class="p" id="_2369"><a href="subdir/notindex">subdir/notindex</a></div><div class="p" id="_2370"><a href="subdir/notindex#notindex-h2">notindex h2</a></div></blockquote></div>Implemented at: <a href="https://github.com/ourbigbook/ourbigbook/issues/116">github.com/ourbigbook/ourbigbook/issues/116</a></div><div class="p" id="_2371">Reference to an internal header of another file: <a href="not-index#h2-in-not-the-index">h2 in not the index</a>. By default, That header ID gets prefixed by the ID of the top header.</div><div class="p" id="_2372">When using <a href=".#embed-includes"><code>--embed-includes</code></a> mode, the cross file internal links end up pointing to an ID inside the current HTML element, e.g.:<div class="code" id="_2373"><div><pre><code>&lt;a href="#not-index"&gt;</code></pre></div></div>rather than:<div class="code" id="_2374"><div><pre><code>&lt;a href="not-index.html/#not-index"&gt;</code></pre></div></div>This is why IDs must be unique for elements across all pages.</div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"></input><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 882</span><span class="dcnt"> 3</span></span></span></span></div><ul><li><div id="_toc/cross-file-internal-link-internals"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#cross-file-internal-link-internals">Cross file internal link internals <span class="meta">(<code>db.sqlite3</code>)</span></a><span class="hover-metadata"><a class="nosplit" href=".#cross-file-internal-link-internals"></a><a href="#_toc" class="u"> Cross file internal link</a><span class="metrics"><span class="wcntr"> 171</span></span></span></span></div></li><li><div id="_toc/link-to-ids-not-url-path"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#link-to-ids-not-url-path">Link to IDs, not URL path</a><span class="hover-metadata"><a class="nosplit" href=".#link-to-ids-not-url-path"></a><a href="#_toc" class="u"> Cross file internal link</a><span class="metrics"><span class="wcntr"> 336</span></span></span></span></div></li><li><div id="_toc/internal-link-title-link-removal"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#internal-link-title-link-removal">Internal link title link removal</a><span class="hover-metadata"><a class="nosplit" href=".#internal-link-title-link-removal"></a><a href="#_toc" class="u"> Cross file internal link</a><span class="metrics"><span class="wcntr"> 123</span></span></span></span></div></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href=".#internal-link">Internal link</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(12)</span></a></h2><div class="list"><ul><li><a href=".#cross-file-internal-link">Cross file internal link</a></li><li><a href=".#embed-includes"><code>--embed-includes</code></a></li><li><a href=".#features">Features</a></li><li><a href=".#h-c-argument"><code>\H</code> <code>c</code> argument</a></li><li><a href=".#important-command-line-options">Important command line options</a></li><li><a href=".#internal-link-targets-in-split-headers">Internal link targets in split headers</a></li><li><a href=".#link-to-ids-not-url-path">Link to IDs, not URL path</a></li><li><a href=".#log"><code>--log</code></a></li><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href=".#related-projects">Related projects</a></li><li><a href=".#watch"><code>-w</code>, <code>--watch</code></a></li><li><a href=".#x-full-argument-in-cross-file-internal-links"><code>\x</code> <code>full</code> argument in cross file internal links</a></li></ul></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(2)</span></a></h2><div class="list"><ul><li><a href=".#cross-file-internal-link">Cross file reference</a></li><li><a href=".#cross-file-internal-link">Internal cross file internal link</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

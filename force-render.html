@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>-F, --force-render - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="force-render"><div class="notnav"><h1><a href="">-<code>F</code>, <code>--force-render</code></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-cli"> OurBigBook CLI</a><a href=".#ourbigbook-cli-options"> OurBigBook CLI options</a></div><div class="nav"><a class="nosplit" href=".#force-render"></a><span class="metrics"><span class="wcntr"> Words: 349</span></span></div></nav></div><div class="p" id="_3202">Always render all selected files, irrespectively of if they are known to be outdated or not.</div><div class="p" id="_3203">OurBigBook stores the timestamp of the last successful <a href=".#id-extraction">ID extraction</a> step for each file.</div><div class="p" id="_3204">For <a href=".#id-extraction">ID extraction</a>, we always skip the extraction if the filesystem timestamp of a source file is older than the last successful extraction.</div><div class="p" id="_3205">For render:<div class="list"><ul id="_3206"><li id="_3207">we mark output files as outdated when the corresponding source file is parsed</li><li id="_3208">we also skip rendering non-outdated files by default when you invoke ourbigbook on a directory, e.g. <code>ourbigbook .</code>, as this greatly speeds up the interactive error fixing turnaround time</li><li id="_3209">we always re-render fully when you specify a single file, e.g. <code>ourbigbook path/to/index.bigb</code></li></ul></div></div><div class="p" id="_3210">However, note that skipping renders, unlike for ID extraction, can lead to some outdated pages.</div><div class="p" id="_3211">This option disables the timestamp skip for rendering, so ensure that you will get a fully clean updated render.</div><div class="p" id="_3212">E.g. consider if you had two files:</div><div class="p" id="_3213">file1.bigb</div><div class="code" id="_3214"><div><pre><code>= File 1
+
+== File 1 1</code></pre></div></div><div class="p" id="_3215">file2.bigb</div><div class="code" id="_3216"><div><pre><code>= File 2
+
+== File 2 1
+
+\x[file-1-1]</code></pre></div></div><div class="p" id="_3217">We then do the initial conversion:<div class="code" id="_3218"><div><pre><code>ourbigbook .</code></pre></div></div>we see output like:<div class="code" id="_3219"><div><pre><code>extract_ids file1.bigb
+extract_ids file1.bigb finished in 45.61287499964237 ms
+extract_ids file2.bigb
+extract_ids file2.bigb finished in 15.163879998028278 ms
+render file1.bigb
+render file1.bigb finished in 23.21016100049019 ms
+render file2.bigb
+render file2.bigb finished in 25.92908499762416 ms</code></pre></div></div>indicating full conversion without skips.</div><div class="p" id="_3220">But then if we just modify fil1.bigb as:<div class="code" id="_3221"><div><pre><code>= File 1
+
+== File 1 1 hacked
+{id=file-1-1}</code></pre></div></div>the following conversion with <code>ourbigbook .</code> would look like:<div class="code" id="_3222"><div><pre><code>extract_ids file1.bigb
+extract_ids file1.bigb finished in 45.61287499964237 ms
+extract_ids file2.bigb
+extract_ids file2.bigb skipped by timestamp
+render file1.bigb
+render file1.bigb finished in 41.026930000633 ms
+render file2.bigb
+render file2.bigb skipped by timestamp</code></pre></div></div>and because we skipped <code>file2.bigb</code> render, it will still have the outdated "File 1 1" instead of "File 1 1 hacked".</div><div class="p" id="_3223">We could in principle solve this problem by figuring out exactly which files need to be changed when a given ID changes, and we already <a href=".#conversion-process-overview">have to solve a similar problem due to query bundling</a>. Also, this will need to be done sonner or later for the <a href=".#ourbigbook-web">OurBigBook Web</a>. But lazy now: <a href="https://github.com/ourbigbook/ourbigbook/issues/207">github.com/ourbigbook/ourbigbook/issues/207</a>, this is hard stuff.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-cli-options">OurBigBook CLI options</a></li><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#web-force-render"><code>--web-force-render</code></a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title><code>ourbigbook.json</code> / xPrefix - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="xprefix"><div class="notnav"><h1><a href="../#ourbigbook-json"><code>ourbigbook.json</code></a><span class="meta"> / </span><a href=""><code>xPrefix</code></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="../#ourbigbook-cli"> OurBigBook CLI</a><a href="../#ourbigbook-json"> <code>ourbigbook.json</code></a></div><div class="nav"><a class="nosplit" href="../#ourbigbook-json/xprefix"></a><span class="metrics"><span class="wcntr"> Words: 133</span></span></div></nav></div><div class="p" id="_3824">If given, prepend the given string to every single <a href="../#cross-file-internal-link">internal cross file internal link</a> output.</div><div class="p" id="_3825">The initial application of this option was to <a href="../#redirect-from-a-static-website-to-a-dynamic-website">Section "Redirect from a static website to a dynamic website"</a>.</div><div class="p" id="_3826">E.g. suppose that you previously had at <code>myoldsite.com</code> you had:</div><div class="p" id="_3827">animal.bigb<div class="code" id="_3828"><div><pre><code>= Animal
+
+&lt;Dogs&gt; don't eat &lt;bananas&gt;.
+
+== Dog</code></pre></div></div></div><div class="p" id="_3829">plant.bigb<div class="code" id="_3830"><div><pre><code>= Plant
+
+== Banana</code></pre></div></div>Originally that would render as:<div class="code" id="_3831"><div><pre><code>&lt;a href="#dog"&gt;Dogs&lt;/a&gt; don't eat &lt;a href="plant#banana"&gt;bananas&lt;/a&gt;.</code></pre></div></div></div><div class="p" id="_3832">But then if you set in <code>ourbigbook.json</code>:<div class="code" id="_3833"><div><pre><code>{
+  "xPrefix": "https://mynewsite.com/"
+}</code></pre></div></div>it will instead render as:<div class="code" id="_3834"><div><pre><code>&lt;a href="#dog"&gt;Dogs&lt;/a&gt; don't eat &lt;a href="https://mynewsite.com/plant#banana"&gt;bananas&lt;/a&gt;.</code></pre></div></div>where:<div class="list"><ul id="_3835"><li id="_3836">dogs: untouched as it links to the same page as the current one</li><li id="_3837">bananas: the prefix is added, as it is on another page</li></ul></div></div><div class="p" id="_3838"><a href="../#h-scope-argument">Scopes</a> are automatically resolved so that they will also be present in the target. E.g. in:</div><div class="p" id="_3839">subdir/notindex.bigb<div class="code" id="_3840"><div><pre><code>&lt;notindex2&gt;</code></pre></div></div></div><div class="p" id="_3841">subdir/notindex2.bigb<div class="code" id="_3842"><div><pre><code>= Notindex2</code></pre></div></div></div><div class="p" id="_3843">we get on <code>subdir/notindex.html</code>:<div class="code" id="_3844"><div><pre><code>&lt;a href="https://mynewsite.com/subdir/notindex2.html"&gt;</code></pre></div></div>and not:<div class="code" id="_3845"><div><pre><code>&lt;a href="https://mynewsite.com/notindex2.html"&gt;</code></pre></div></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href="../#ourbigbook-json"><code>ourbigbook.json</code></a></li><li><a href="../#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href="../#redirect-from-a-static-website-to-a-dynamic-website">Redirect from a static website to a dynamic website</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "ourbigbook-json/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

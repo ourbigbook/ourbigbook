@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>style.scss - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../_raw/main.css">
+<link rel="shortcut icon" href="../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../" class="brand"><img src="../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="style.scss"><div class="notnav"><h1><a href="">web/style.scss</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../_dir/">(root)</a> / <a href="../../_dir/web">web</a> / <a href="../../_raw/web/style.scss">style.scss</a></b></div></nav></div><div class="p"><b>web/style.scss</b></div><div class="code"><div><pre><code>@import '../ourbigbook.common.scss';
+
+// Colors
+$like-button-inactive-color: white;
+// Less bright than $like-button-hover-color otherwise too much glare.
+$like-button-active-color: #BB1070;
+$like-button-hover-color: #FF1493;
+$img-background-color: white;
+
+$border-radius: 10px;
+$pagination-page-height: 2em;
+$toplevel-padding: $toplevel-horizontal-padding-left;
+
+// Derived parameters
+$button-hover-background-color: $code-background-color;
+$heart-background-hover-color: #FF1493;
+$icon-color: $color;
+$tab-bar-active-color: $color;
+
+html {
+height: 100%;
+
+body {
+@include ourbigbook-body;
+background-color: $background-color;
+margin: 0;
+height: 100%;
+
+#__next {
+height: 100%;
+
+div.toplevel {
+height: 100%;
+display: flex;
+flex-direction: column;
+&amp;.editor {
+  height: 100%;
+}
+
+// Everything outside of navbar.
+div.main {
+// We import ourbigbookbook stuff here.
+//
+// We do this internally rather than at toplevel so that ourbigbook styles will
+// take higher priority than other non-ourbigbook specific styles. E.g. on toplevel
+// the issue static toc search bar was broken with width: 100%; from unrelated stuff.
+@import 'ourbigbook/ourbigbook';
+@import 'ourbigbook/editor';
+// A subset of .ourbigbook used for titles-only renders which appear often on article lists on OurBigBook Web.
+.ourbigbook-title {
+  @include ourbigbook-title;
+}
+
+flex: 1 0 auto;
+overflow: auto;
+@media only screen and (max-width: $max-mobile-width) {
+  .mobile-hide {
+    display: none;
+  }
+}
+@media only screen and (min-width: $max-mobile-width + 1) {
+  .desktop-hide {
+    display: none;
+  }
+}
+
+button, a.btn {
+  $button-fg-color: #E8E6E3;
+  border-radius: 3px;
+  border: 2px solid #666666;
+  cursor: pointer;
+  display: inline-block;
+  font-size: 15px;
+  font-weight: bold;
+  line-height: 24px;
+  margin: 0;
+  padding: 2px 5px;
+  text-decoration: none;
+  vertical-align: bottom;
+  &amp;.wider {
+    $p: 0.6em;
+    padding-left: $p;
+    padding-right: $p;
+  }
+  &amp;:not(.disabled):not(:disabled) {
+    // We make hover more visible than active because it glares too much
+    // when you have an article list with lost of like buttons.
+    &amp;, &amp;:hover.active {
+      background-color: #181818;
+      color: $button-fg-color;
+      .icon-heart {
+        color: $like-button-hover-color;
+      }
+    }
+    &amp;:hover, &amp;.active {
+      background-color: $button-hover-background-color;
+      text-decoration: none;
+      .icon-heart {
+        color: white;
+      }
+    }
+    &amp;:not(:hover).active {
+      background-color: $like-button-active-color;
+    }
+    &amp;:hover:not(.active) {
+      border-color: $color;
+      &amp;.modal {
+        background-color: $like-button-hover-color;
+      }
+    }
+  }
+      //background-color: #BB1070;
+  &amp;.disabled, &amp;:disabled {
+    background-color: #444;
+    color: white;
+    cursor: default;
+    text-decoration: none;
+  }
+  &amp;.small {
+    // A button that can be placed side-by-side with text taking up a comparable height.
+    // Because the default button is way taller and looks terrible when side-by-side.
+    //
+    // The button is still taller than surrounding text, and this should not be used
+    // when you need it to be strictly as tall, e.g. on things that appear on hover,
+    // otherwise this will cause vertical displacement.
+    //
+    // Important here because we were getting conflicts with .tab-item,
+    // no patience to sort that out better right now.
+    padding: 1px 5px !important;
+    line-height: 1.3em;
+  }
+  &amp;.abs {
+    // Button removed from normal page flow. Suitable for
+    // on-hover show elements that would otherwise cause vertical displacement.
+    padding: 0.05em 5px;
+    line-height: 1.3em;
+    position: absolute;
+    transform: translateY(-0.3em);
+    margin-left: 0.5em;
+  }
+}
+
+input, textarea.not-monaco {
+  @include input;
+}
+label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 10px;
+  .label {
+    display: block;
+    margin-bottom: 5px;
+    &amp;.inline {
+      display: inline;
+    }
+  }
+  &amp;.flex {
+    display: flex;
+    justify-content: flex-start;
+    .label.flex {
+      align-self: center;
+      display: inline;
+      margin-right: 1ch;
+    }
+    input {
+      &amp;[type="text"] {
+        flex-grow: 1;
+      }
+    }
+  }
+  &amp;.inline {
+    display: inline-block;
+  }
+}
+
+/* For lists of items like Article and Comment, which can display or not
+ * full body or body previews in addition to title. */
+div.list-container {
+  overflow-x: auto;
+  margin-bottom: 1em;
+  .item:not(:last-child) {
+    margin-bottom: 1em;
+  }
+  div.title-container {
+    margin-bottom: 1.0em;
+  }
+  table.list {
+    border-collapse: collapse;
+    white-space: nowrap;
+    thead {
+      background-color: $table-head-background-color;
+    }
+    tr {
+      td, th {
+        border: 1px solid $table-border-color;
+        padding: $table-padding-top $table-padding-sides;
+        &amp;.like {
+          // Too tall otherwise.
+          padding: 0;
+        }
+        &amp;.center {
+          text-align: center;
+        }
+        &amp;.left {
+          text-align: left;
+        }
+        &amp;.right {
+          text-align: right;
+        }
+        &amp;.expand {
+          max-width: 60vw;
+          overflow: hidden;
+        }
+        &amp;.bold {
+          font-weight: bold;
+        }
+      }
+      &amp;:nth-child(even) {
+        background-color: $table-even-background-color;
+      }
+    }
+  }
+  &amp;.show-body {
+    $padding: 10px;
+    $border-color: $color-discreet;
+    .item {
+      border: 1px solid $border-color;
+      border-radius: $border-radius;
+      margin-bottom: $padding;
+      .item-header {
+        border-bottom: 1px solid $border-color;
+        border-radius: $border-radius $border-radius 0 0;
+        background-color: $table-head-background-color;
+        padding-bottom: $padding;
+        padding-top: $padding;
+        .item-date {
+          font-weight: bold;
+        }
+        .number {
+          color: $h-color;
+          font-weight: bold;
+          font-size: 1.2em;
+        }
+        // TODO this makes everything in the title look vertically centered nicely.
+        // But it breaks down if the page becomes narrow and title goes in different
+        // line than the other elements. Related:
+        // https://stackoverflow.com/questions/44707141/how-to-force-flex-columns-to-stay-on-the-same-line-if-container-flex-wrap-is-s
+        //align-items:center;
+        //display: flex;
+        //flex-wrap: wrap;
+        //column-gap: 7px;
+
+        .ourbigbook-title {
+          @include h-meta;
+          color: $h-color;
+          font-size: $header-font-size;
+          font-weight: bold;
+        }
+        &amp;.empty-body {
+          border-bottom: none;
+        }
+      }
+      &amp;:target .item-header {
+        background-color: $target-background-color;
+      }
+      .item-body {
+        // Limit render height:
+        // - avoid double margins on rendered content. Margin collapse is disabled if we set overflow:
+        //   - https://gist.github.com/gokulkrishh/1c197d0369c45a8153d327b11d1626ca
+        //   - https://stackoverflow.com/questions/47958007/why-does-overflow-hidden-add-padding-margin
+        // - show indicator if there is overflow: these were for scrollable stuff.
+        //   - https://stackoverflow.com/questions/70131020/how-to-display-scroll-down-if-and-only-if-content-overflows-in-pure-css
+        //   - https://stackoverflow.com/questions/45105611/css-only-solution-for-overflow-scroll-indicators
+        //   We ended up going for a relatively positioned element instead since we are non scrollable.
+        &amp;.cut {
+          $max-height: 1000px;
+          max-height: $max-height;
+          overflow-y: hidden;
+          .show-more {
+            $h: 50px;
+            a {
+              background-color: $background-color;
+              cursor: pointer;
+              font-weight: bold;
+              padding-left: 0.5em;
+              padding-right: 0.5em;
+            }
+            background: linear-gradient(rgba($background-color, 0), $background-color);
+            height: $h;
+            margin-top: -$h;
+            position: relative;
+            line-height: $h * 1.3;
+            text-align: center;
+            top: $max-height;
+            z-index: 1;
+          }
+        }
+      }
+      .item-footer {
+        background-color: $table-head-background-color;
+        border-radius: 0 0 $border-radius $border-radius;
+        border-top: 1px solid $border-color;
+        font-weight: bold;
+        padding-bottom: $padding;
+        padding-top: $padding;
+      }
+    }
+  }
+}
+
+.icon {
+  &amp;:not(.icon-heart) {
+    color: $icon-color;
+  }
+  &amp;.icon-cancel,
+  &amp;.icon-delete,
+  &amp;.icon-error
+  {
+    color: $ourbigbook-error-color;
+  }
+  &amp;.icon-ok {
+    color: $ourbigbook-ok-color;
+  }
+}
+
+/*
+.ourbigbook.title {
+  // Maybe rather than doing this we should instead create a minimal CSS.
+  // To override the default body color of .ourbigbook elements.
+  color: $a-color;
+  &gt; * {
+    // Undo the toplevel padding, otherwise elements (but not text) like maths and code
+    // all get that padding.
+    padding-left: 0px;
+  }
+}
+*/
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  color: $h-color;
+  a {
+    color: $h-color;
+  }
+  .link {
+    color: $a-color;
+  }
+  &amp;.meta, .meta {
+    color: $color-slightly-discreet;
+  }
+  &amp;.inline {
+    display: inline;
+  }
+}
+
+span.pill {
+  border-radius: 0.8em;
+  border: 1px solid $color-discreet;
+  display: inline-block;
+  font-weight: bold;
+  line-height: 1em;
+  padding: 0.2em 0.5em;
+  white-space: pre;
+  a {
+    color: $color;
+  }
+}
+
+// For elements that are injected into the rendered OurBigBook HTML.
+.ourbigbook {
+  .web {
+    display: inline;
+    .tmp {
+      display: inline;
+    }
+    &amp;.top {
+      font-size: 18px;
+      // Gives a small vertical margin between buttons on narrow screens.
+      // TODO derive from other params rather than this hardcode.
+      // This does lead to a slight increase in distance to the above ancestors metadata line which is not ideal,
+      // but it is not very noticeable on the h1.
+      line-height: 2.0em;
+    }
+    &amp;:not(.top) {
+      margin-left: 0.5ch;
+      a.btn, button {
+        vertical-align: text-bottom;
+      }
+      .see, .new, .edit {
+        .icon {
+          padding: 0 4px;
+        }
+      }
+    }
+    .by-others, .issues, .see, .new, .edit {
+      .icon {
+        line-height: 1em;
+        vertical-align: text-bottom;
+      }
+    }
+  }
+}
+
+//.toc-new {
+//  border: 1px solid $color;
+//  border-radius: 2px;
+//}
+.toc-limited {
+  font-weight: bold;
+}
+
+pre {
+  @include pre;
+}
+
+div.discussion-about {
+  a {
+    color: $a-color;
+  }
+  font-weight: bold;
+}
+div.parent-article {
+  a {
+    color: $a-color;
+    .meta {
+      color: $a-color;
+    }
+  }
+}
+
+div.article-page {
+  div.article-meta {
+    div.article-info {
+      @media only screen and (max-width: $max-mobile-width) {
+        margin-bottom: 10px;
+      }
+      @media only screen and (min-width: $max-mobile-width + 1) {
+        margin-bottom: 20px;
+      }
+      .username {
+        font-size: 1.2em;
+        img.profile-thumb {
+          $size: 1.5em;
+          height: $size;
+          width: $size;
+        }
+      }
+      .by-others {
+        font-weight: bold;
+        .icon {
+          font-size: 1.5em;
+        }
+      }
+    }
+    div.article-info-3 {
+      margin-bottom: 10px;
+      button, a.btn {
+        margin-right: 3px;
+      }
+      span.article-dates {
+        font-weight: bold;
+      }
+    }
+  }
+  div.meta {
+    margin-bottom: 10px;
+  }
+  .see-all {
+    font-weight: bold;
+  }
+}
+
+div.editor-page {
+  $title-font-size: 24px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  div.header {
+    flex-grow: 0;
+    flex-shrink: 0;
+    h1 {
+      font-size: 1.8em;
+      margin-bottom: 0.5em;
+    }
+    a {
+      color: $a-color;
+    }
+  }
+  div.tabs {
+    flex-grow: 1;
+    div.editor-tab {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      div.help {
+        margin-bottom: 0.7em;
+      }
+      div.ourbigbook-editor {
+        overflow-y: auto;
+        flex-grow: 1;
+        flex-shrink: 1;
+        // Crucial here so that the scrollbar appears on this internal element and not outside.
+        // https://stackoverflow.com/questions/45551624/flexbox-overflow-scrollbar-displaying-on-body-instead-of-inner-elements
+        flex-basis: 0;
+      }
+    }
+  }
+  input.title {
+    font-size: $title-font-size * 0.75;
+  }
+  label: {
+    font-size: $title-font-size;
+  }
+}
+
+/** Paragraph-like vertical spacing. */
+div.p {
+  margin-bottom: $p-margin-vert;
+  margin-top: $p-margin-vert;
+}
+
+div.tab-list {
+  font-weight: bold;
+  margin: 5px 0 10px;
+  overflow: hidden;
+  .tab-item {
+    border-radius: 5px;
+    line-height: 1.5em;
+    overflow: hidden;
+    padding: 5px;
+    // TODO https://docs.ourbigbook.com/todo/firefox-tab-lists-don-t-wrap
+    // we want "pre" here to prevent individual items from breaking up.
+    // But bloody Firefox then prevents the entire line from breaking up and hides items!
+    // So we keep the less broken but not ideal option.
+    white-space: pre-line;
+    &amp;.active {
+      color: $tab-bar-active-color;
+    }
+    &amp;:hover {
+      color: $tab-bar-active-color;
+      background-color: $button-hover-background-color;
+    }
+  }
+}
+
+.icon.icon-star {
+  color: yellow;
+}
+.icon.icon-heart {
+  color: $like-button-hover-color;
+}
+
+span.shortcut {
+  text-decoration: underline;
+  text-underline-offset: 1px;
+}
+
+/* Ourbigbook has a complex per-element padding structure that we can't easily override.
+ * So for now we are taking the approach of adding this class to every content (non-hav/footer)
+ * to make them align nicely with rendered Ourbigbook. */
+.content-not-ourbigbook {
+  h1, .h1 {
+    @include h-common;
+    @include h1-only;
+    margin-top: 0;
+    margin-bottom: 0.2em;
+    &amp;.inline {
+      display: inline;
+    }
+  }
+  .h2, .h2-nocolor {
+    @include h-common;
+    margin-bottom: 0.3em;
+    &amp;.inline {
+      display: inline;
+    }
+  }
+  @media only screen and (max-width: $max-mobile-width) {
+    padding-left: $toplevel-horizontal-padding-mobile;
+    padding-right: $toplevel-horizontal-padding-mobile;
+  }
+  @media only screen and (min-width: $max-mobile-width + 1) {
+    padding-left: $toplevel-padding;
+    padding-right: $toplevel-padding;
+  }
+}
+
+.comment-form-holder {
+  margin-bottom: 10px;
+  .comment-form {
+    border: 1px solid $color;
+    border-radius: $border-radius;
+    margin-bottom: 10px;
+    .comment-form-textarea {
+      border-bottom: 1px solid $color;
+      padding: 5px 5px 2px 5px;
+      textarea {
+        border-radius: $border-radius;
+        box-sizing: border-box;
+        margin-bottom: 0;
+        resize: vertical;
+        width: 100%;
+      }
+    }
+    .comment-form-submit {
+      padding: 10px;
+    }
+  }
+}
+
+.error-messages, .loading, .ok-messages {
+  font-weight: bold;
+  margin-top: 0;
+  margin-bottom: 0.5em;
+  .presenter {
+    display: inline-block;
+    margin: 20px auto;
+    padding: 8px 15px;
+    border-radius: 4px;
+    font-weight: 600;
+    background: rgba(240, 45, 45, 0.1);
+  }
+}
+.error-messages {
+  color: $ourbigbook-error-color;
+}
+.ok-messages {
+  color: $ourbigbook-ok-color;
+}
+
+.hide {
+  display: none !important;
+}
+
+.home-page {
+  .pinned-article {
+    color: $h-color;
+    font-weight: bold;
+    margin-top: 1em;
+  }
+  .site-settings {
+    font-weight: bold;
+    margin-top: 10px;
+  }
+}
+
+.settings-page {
+  .profile-picture-container {
+    $size: 250px;
+    cursor: pointer;
+    position: relative;
+    text-align: center;
+    img.profile-picture {
+      height: $size;
+      width: $size;
+    }
+    .profile-picture-caption {
+      background-color: $background-color;
+      bottom: 0.1em;
+      color: $color;
+      left: 50%;
+      padding: 0.2em;
+      // https://www.w3schools.com/howto/howto_css_image_text.asp
+      position: absolute;
+      transform: translate(-50%, -50%);
+    }
+  }
+}
+
+.topic-page {
+  .h1-container {
+    margin-bottom: 0.1em;
+  }
+}
+
+.list-nav-container {
+  .controls {
+    margin-bottom: 1em;
+  }
+  .search {
+    @include search;
+  }
+  .show-body {
+    line-height: $pagination-page-height;
+    margin-right: 1ch;
+    margin-bottom: 0;
+  }
+}
+
+.loading-spinner {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  margin: 90px auto;
+  border-radius: 50%;
+  border-top: 3px solid rgba(0, 0, 0, 0.1);
+  border-right: 3px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 3px solid rgba(0, 0, 0, 0.1);
+  border-left: 3px solid #818a91;
+  transform: translateZ(0);
+  animation: spin 0.5s infinite linear;
+  /* TODO the spinner appears broken, might be because of this typo that existed in the original.
+   * We noticed it when migrating to SASS which does a compile check ;-). */
+  /*
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+  */
+}
+
+.modal-page {
+  //background-color: rgba(128, 128, 128, 10);
+  //position: absolute;
+  //top: 50%;
+  //left: 50%;
+  //transform: translate(-50%, -50%);
+  //width: 100%;
+  //height: 100%;
+
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+  .modal-container {
+    padding: 1em;
+    background-color: $background-color;
+    box-sizing: border-box;
+    position: fixed;
+    //height: 50%;
+    //width: 50%;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    .modal-title {
+      font-weight: bold;
+    }
+    &amp; &gt; * {
+      //display: block;
+      //width: 100%;
+      //height: 100%;
+      //margin: 15% auto; /* 15% from the top and centered */
+      //padding: 20px;
+      &amp;:not(:last-child) {
+        margin-bottom: 0.5em;
+      }
+      box-sizing: border-box;
+      text-align: center;
+      width: 100%;
+    }
+    &amp; &gt; textarea {
+      text-align: left;
+    }
+  }
+}
+
+/* Links for internal navigation between pages. */
+.navlink {
+  font-weight: bold;
+}
+
+.pagination {
+  display: inline-block;
+  height: 100%;
+  list-style-type: none;
+  padding: 0;
+  .pages {
+    margin-right: 10px;
+    .page-item {
+      a {
+        font-weight: bold;
+        text-decoration: none;
+      }
+      &amp;.active {
+        a {
+          color: $tab-bar-active-color;
+        }
+      }
+      &amp;:hover {
+        a {
+          background-color: $button-hover-background-color;
+          color: $tab-bar-active-color;
+          font-weight: bold;
+        }
+      }
+    }
+  }
+  /* https://github.com/gothinkster/angular-realworld-example-app/blob/9e8c49514ee874e5e0bbfe53ffdba7d2fd0af36f/src/app/shared/article-helpers/article-list.component.css#L1 */
+  .page-link {
+    border: 2px solid $table-border-color;
+    border-radius: 5px;
+    cursor: pointer;
+    display: inline-block;
+    margin-right: 0.2em;
+    padding: 0.5em;
+    &amp;:hover {
+      border-color: $color;
+    }
+  }
+  .total {
+    line-height: $pagination-page-height;
+  }
+}
+
+.profile-page {
+  .name-and-image {
+    @media only screen and (min-width: $max-mobile-width + 1) {
+      display: flex;
+      gap: 1em;
+      flex-direction: row-reverse;
+    }
+    .no-image {
+      .username-and-score {
+        color: $color;
+      }
+      @media only screen and (min-width: $max-mobile-width + 1) {
+        flex-grow: 1;
+        .display-name {
+          font-size: $h1-font-size * 1.4
+        }
+        .username-and-score {
+          display: block;
+          $p: 0.2em;
+          padding-bottom: $p;
+          padding-top: $p;
+          .par {
+            display: none;
+          }
+        }
+      }
+      @media only screen and (max-width: $max-mobile-width) {
+        margin-bottom: 0.5em;
+      }
+    }
+    @media only screen and (max-width: $max-mobile-width) {
+      h1 {
+        display: inline;
+      }
+    }
+    .user-actions {
+      @media only screen and (max-width: $max-mobile-width) {
+        display: inline;
+        margin-left: 0.5em;
+      }
+      margin-bottom: 1em;
+      &gt;:not(:last-child) {
+        margin-right: 0.5ch;
+      }
+    }
+    .user-img {
+      background-color: $img-background-color;
+      @media only screen and (max-width: $max-mobile-width) {
+        // Make image a bit larger otherwise feels too empty.
+        $size: 250px;
+        height: $size;
+        width: $size;
+      }
+      @media only screen and (min-width: $max-mobile-width + 1) {
+        $size: 180px;
+        height: $size;
+        width: $size;
+        flex-basis: $size;
+        flex-shrink: 0;
+      }
+    }
+  }
+}
+
+img.profile-thumb {
+  $size: 26px;
+  background-color: $img-background-color;
+  height: $size;
+  width: $size;
+  vertical-align: middle;
+}
+
+.username {
+  font-weight: bold;
+}
+} // div.main
+
+footer {
+  line-height: 1.5em;
+  margin-top: 10px;
+  padding: 10px $toplevel-padding;
+  a {
+    &amp;:not(:last-child) {
+      margin-right: 0.8em;
+    }
+    color: $color;
+    text-decoration: none;
+    &amp;:visited {
+      color: $color;
+    }
+    &amp;:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+footer, nav.navbar {
+  background-color: $navbar-background-color;
+  color: $h-color;
+}
+
+nav.navbar {
+  $font-size: 24px;
+  /* https://stackoverflow.com/questions/5078239/how-do-i-remove-the-space-between-inline-block-elements */
+  display: flex;
+  height: $font-size * 1.8;
+  @media only screen and (max-width: $max-mobile-width) {
+    height: $font-size * 1.5;
+  }
+  flex: 0 0 auto;
+  margin-bottom: 0.6em;
+  @media only screen and (max-width: $max-mobile-width) {
+    margin-bottom: 1em;
+  }
+  .brand-group {
+    display: inline-block;
+  }
+  .navbar-list {
+    display: flex;
+    margin-left: auto;
+    @media only screen and (max-width: $max-mobile-width) {
+      padding-right: $toplevel-horizontal-padding-mobile;
+    }
+    @media only screen and (min-width: $max-mobile-width + 1) {
+      padding-right: $toplevel-padding;
+    }
+  }
+  white-space: nowrap;
+  a {
+    /* Make buttons occupy the full height of the header bar.
+    * https://stackoverflow.com/questions/28254332/how-to-vertically-center-the-contents-of-a-flexbox-item/28254903#28254903 */
+    align-items: center;
+    align-self: stretch;
+
+    display: flex;
+    font-size: 24px;
+    font-weight: bold;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 5px;
+    padding-right: 5px;
+    text-decoration: none;
+    color: $navbar-non-brandname-color;
+    &amp;:visited {
+      color: $navbar-non-brandname-color;
+    }
+    &amp;:hover, &amp;.active {
+      color: $navbar-background-color;
+      background-color: $navbar-non-brandname-color;
+    }
+    &amp;.score.changed {
+      //background-color: $like-button-inactive-color;
+      //color: $like-button-active-color;
+      // Need to go a bit custom here because of the golden background.
+      .icon-heart {
+        color: $heart-background-hover-color;
+      }
+      .txt {
+        color: $h-color;
+      }
+    }
+    &amp;.profile {
+      padding-left: 3px;
+    }
+    .home {
+      padding-left: 3px;
+    }
+    img.profile-thumb, img.logo {
+      $size: $font-size * 1.2;
+      height: $size;
+      width: $size;
+      padding-right: 5px;
+      padding-left: 5px;
+    }
+    &amp;.brand {
+      color: $brandname-color;
+      &amp;:hover, &amp;.active {
+        color: $navbar-background-color;
+        background-color: $navbar-non-brandname-color;
+      }
+    }
+    @media only screen and (max-width: $max-mobile-width + 55px) {
+      // TODO don't hardcode this width, autohide when there is no more room:
+      // https://stackoverflow.com/questions/43547430/how-can-i-completely-hide-elements-that-overflow-their-container-vertically
+      &amp;.about, &amp;.donate {
+        display: none;
+      }
+    }
+    @media only screen and (max-width: 450px) {
+      &amp;.login {
+        display: none;
+      }
+    }
+    .icon {
+      color: $icon-color;
+    }
+    &amp;:hover {
+      .icon {
+        color: $navbar-background-color;
+      }
+    }
+  }
+  .brand-group {
+    display: flex;
+    @media only screen and (max-width: $max-mobile-width) {
+      padding-left: 0px;
+    }
+    @media only screen and (min-width: $max-mobile-width + 1) {
+      padding-left: $toplevel-padding;
+    }
+  }
+}
+nav.navbar.logged-in {
+  .brand {
+    @media only screen and (max-width: 450px) {
+      .appname {
+        display: none;
+      }
+    }
+  }
+}
+
+}
+}
+}
+}
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/";
+</script>
+<script src="../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>-W, --web - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="web"><div class="notnav"><h1><a href=""><code>-W</code>, <code>--web</code> <span class="meta">(Web upload)</span></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-cli"> OurBigBook CLI</a><a href=".#ourbigbook-cli-options"> OurBigBook CLI options</a></div><div class="nav"><a href="#_toc" class="toc"></a><span class="tags"> Tags: <a href=".#publish-your-content">Publish your content</a></span><a class="nosplit" href=".#web"></a><span class="metrics"><span class="wcntr"> Words: 455</span><span class="dcnt"> Articles: 2</span></span></div></nav></div><div class="p" id="_3531">Sync local directory to <a href=".#ourbigbook-web">OurBigBook Web</a> instead of doing anything else.</div><div class="p" id="_3532">To upload the entire repository, run from toplevel:<div class="code" id="_3533"><div><pre><code>ourbigbook --web</code></pre></div></div></div><div class="p" id="_3534">To update just all IDs in a single <code>physics.bigb</code> source file use:<div class="code" id="_3535"><div><pre><code>ourbigbook --web physics.bigb</code></pre></div></div>This requires that all external IDs that <code>physics.bigb</code> might depend on have already been previously uploaded, e.g. with a previous <code>ourbigbook --web</code> from toplevel.</div><div class="p" id="_3536">The source code is uploaded, and conversion to HTML happens on the server, no conversion is done locally.</div><div class="p" id="_3537">This option is not amazing right now. It was introduced mostly to allow uploading the reference demo content from <a href="https://cirosantilli.com">cirosantilli.com</a> to <a href="https://ourbigbook.com/cirosantilli">ourbigbook.com/cirosantilli</a>, and it is not expected that it will be a major use case for end users for a long time, as most users are likely to just edit on <a href=".#ourbigbook-web">OurBigBook Web</a> directly.</div><div class="p" id="_3538">Some important known limitations:<div class="list"><ul id="_3539"><li id="_3540">every local file has to be uploaded every time to check if it needs rebuilding or not by comparing old vs new file contents. At <a href="todo#store-sha-of-each-article-plus-descendants-and-skip-api-re-renders-for-entire-subtrees">Store SHA of each article + descendants and skip API re-renders for entire subtrees</a> we describe a better Git-like Merkle tree method where entire unchanged subtress can be skipped, that will be Nirvana.</li><li id="_3541">file renaming does not work, it will think that you are creating a new file and blows up duplicates</li><li id="_3542">if there's an error in a later file, the database is still modified by the previous files, i.e. there is no atomicity. A way to improve that would be to upload all files to the server in one go, and let the server convert everything in one transaction. However, this would lead to a very long server action, which would block any other incoming request (I tested, everything is single threaded)</li></ul></div></div><div class="p" id="_3543">However, all of those are fixable, and in an ideal world, will be fixed. Patches welcome.</div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"></input><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 455</span><span class="dcnt"> 2</span></span></span></span></div><ul><li class="has-child"><div id="_toc/local-header-deletion-on-web-upload"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#local-header-deletion-on-web-upload">Local header deletion on web upload</a><span class="hover-metadata"><a class="nosplit" href=".#local-header-deletion-on-web-upload"></a><a href="#_toc" class="u"> <code>-W</code>, <code>--web</code></a><span class="metrics"><span class="wcntr"> 174</span><span class="dcnt"> 1</span></span></span></span></div><ul><li><div id="_toc/ourbigbook-web-unlisted-articles"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#ourbigbook-web-unlisted-articles">OurBigBook Web unlisted articles</a><span class="hover-metadata"><a class="nosplit" href=".#ourbigbook-web-unlisted-articles"></a><a href="#_toc/local-header-deletion-on-web-upload" class="u"> Local header deletion on web upload</a><span class="metrics"><span class="wcntr"> 92</span></span></span></span></div></li></ul></li></ul></li></ul></div><h2 id="_tagged"><a href="#_tagged"><span title="Tags" class="fa-solid-900 icon"></span> Tagged <span class="meta">(11)</span></a></h2><div class="list"><ul><li><a href="news#article-and-topic-id-prefix-search">Article and topic ID prefix search</a></li><li><a href="news#article-announcement">Article announcement</a></li><li><a href="news#create-new-articles-from-table-of-contents">Create new articles from table of contents</a></li><li><a href="news#ourbigbook-com-cirosantilli-loads-2x-as-fast-after-database-optimizations">Ourbigbook.com/cirosantilli loads 2x as fast after database optimizations</a></li><li><a href="news#profile-picture-upload">Profile picture upload</a></li><li><a href="news#scope-ancestors-show-on-toplevel-header-and-page-title">Scope ancestors show on toplevel header and page title</a></li><li><a href="news#static-toc-search">Static ToC search</a></li><li><a href="news#tagged-articles-and-other-article-lists-added-to-web">Tagged articles and other article lists added to Web</a></li><li><a href="news#topic-id-shows-on-web-editor-when-creating-a-new-article">Topic ID shows on web editor when creating a new article</a></li><li><a href="news#web-navigation-two-level-tab-cleanup">Web navigation two level tab cleanup</a></li><li><a href="news#web-searches-find-words-inside-title-on-postgresql">Web searches find words inside title on PostgreSQL</a></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-cli-options">OurBigBook CLI options</a></li><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(15)</span></a></h2><div class="list"><ul><li><a href=".#demo-data-local-file-output">Demo data local file output</a></li><li><a href=".#local-header-deletion-on-web-upload">Local header deletion on web upload</a></li><li><a href="news#disambiguate-shows-on-navigation">Disambiguate shows on navigation</a></li><li><a href="news#tagged-articles-and-other-article-lists-added-to-web">Tagged articles and other article lists added to Web</a></li><li><a href=".#no-web-render"><code>--no-web-render</code></a></li><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href=".#ourbigbook-web-unlisted-articles">OurBigBook Web unlisted articles</a></li><li><a href=".#publish-your-content">Publish your content</a></li><li><a href=".#web-dry"><code>--web-dry</code></a></li><li><a href=".#web-force-id-extraction"><code>--web-force-id-extraction</code></a></li><li><a href=".#web-force-render"><code>--web-force-render</code></a></li><li><a href=".#web-id"><code>--web-id</code></a></li><li><a href=".#web-nested-set-option"><code>--web-nested-set</code> (option)</a></li><li><a href=".#web-url"><code>--web-url</code></a></li><li><a href=".#web-user"><code>--web-user</code></a></li></ul></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(2)</span></a></h2><div class="list"><ul><li><a href=".#web">Local to Web upload</a></li><li><a href=".#web">Web upload</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

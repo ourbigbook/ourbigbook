@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>--embed-resources - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="embed-resources"><div class="notnav"><h1><a href=""><code>--embed-resources</code></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-cli"> OurBigBook CLI</a><a href=".#ourbigbook-cli-options"> OurBigBook CLI options</a></div><div class="nav"><a class="nosplit" href=".#embed-resources"></a><span class="metrics"><span class="wcntr"> Words: 528</span></span></div></nav></div><div class="p" id="_3166">Embed as many external resources such as images and CSS as possible into the HTML output files, rather than linking to external resources.</div><div class="p" id="_3167">For example, when converting a simple document to HTML:</div><div class="p" id="_3168">index.bigb<div class="code" id="_3169"><div><pre><code>= Index
+
+My paragraph.</code></pre></div></div></div><div class="p" id="_3170">with:<div class="code" id="_3171"><div><pre><code>ourbigbook index.bigb</code></pre></div></div>the output contains references to where OurBigBook is installed in our local filesystem:<div class="code" id="_3172"><div><pre><code>&lt;style&gt;
+@import "/home/ciro/bak/git/ourbigbook/_obb/ourbigbook.css";
+&lt;/style&gt;
+&lt;script src="/home/ciro/bak/git/ourbigbook/_obb/ourbigbook_runtime.js"&gt;&lt;/script&gt;</code></pre></div></div>The advantage of this is that we don't have to duplicate this for every single file. But if you are giving this file to someone else, they would likely not have those files at those exact locations, which would break the HTML page.</div><div class="p" id="_3173">With <code>--embed-resources</code>, the output contains instead something like:<div class="code" id="_3174"><div><pre><code>&lt;style&gt;/*! normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css */html{ [[ ... A LOT MORE CSS ... ]]&lt;/style&gt;
+&lt;script&gt;/*! For license information please see ourbigbook_runtime.js.LICENSE.txt */ !function(t,e){"object"==typeof exports&amp;&amp;"object"==typeof module?module.exports=e() [[ ... A LOT MORE JAVASCRIPT ... ]]&lt;/script&gt;</code></pre></div></div>This way, all the required CSS and JavaScript will be present in the HTML file itself, and so readers will be able to view the file correctly without needing to install any missing dependencies.</div><div class="p" id="_3175">The use case for this option is to produce a single HTML file for an entire build that is fully self contained, and can therefore be given to consumers and viewed offline, much like a PDF.</div><div class="p" id="_3176">Examples of embeddings done:<div class="list"><ul id="_3177"><li id="_3178"><div class="p" id="_3179">CSS and JavaScript are copy pasted in place into the HTML.</div><div class="p" id="_3180">The default built-in CSS and JavaScript files used by OurBigBook (e.g. the KaTeX CSS <a href=".#mathematics">used for mathematics</a>) are currently all automatically downloaded as NPM package dependencies to ourbigbook</div><div class="p" id="_3181">Without <code>--embed-resources</code>, those CSS and JavaScript use their main cloud CDN URLs, and therefore require Internet connection to view the generated documents.</div><div class="p" id="_3182">The embedded version of the document can be viewed offline however.</div><div class="p" id="_3183">There is however a known bug: KaTeX fonts are not currently embedded, so math won't work properly. The situation is similar as for images, but a bit harder because we also need to fetch the blobs from the CSS, which is likely doable from Webpack:<div class="list"><ul id="_3184"><li id="_3185"><a href="https://github.com/ourbigbook/ourbigbook/issues/157">github.com/ourbigbook/ourbigbook/issues/157</a></li><li id="_3186"><a href="https://stackoverflow.com/questions/41657087/webpack-inline-font-with-url-loader">stackoverflow.com/questions/41657087/webpack-inline-font-with-url-loader</a></li><li id="_3187"><a href="https://stackoverflow.com/questions/35369419/how-to-use-images-in-css-with-webpack">stackoverflow.com/questions/35369419/how-to-use-images-in-css-with-webpack</a></li></ul></div></div></li></ul></div></div><div class="p" id="_3188">Examples of embedding that could be implemented in the future:<div class="list"><ul id="_3189"><li id="_3190"><div class="p" id="_3191"><a href=".#image">images</a> are downloaded if needed and embedded as <code>data:</code> URLs.</div><div class="p" id="_3192">Doing this however has a downside: it would slow the page loading down. The root problem is that HTML was not designed to contain assets, and notably it doesn't have byte position indices that can tell it to skip blobs while parsing, and how to refer to them later on when they show up on the screen. This is kind of why EPUB exists: <a href="https://github.com/ourbigbook/ourbigbook/issues/158">github.com/ourbigbook/ourbigbook/issues/158</a></div><div class="p" id="_3193">Images that are managed by the project itself and already locally present, such as those inside the project itself or due to <a href=".#ourbigbook-json/media-providers"><code>media-providers</code></a> usually don't require download.</div><div class="p" id="_3194">For images linked directly from the web, we maintain a local download cache, and skip downloads if the image is already in the cache.</div><div class="p" id="_3195">To re-download due to image updates, use either:<div class="list"><ul id="_3196"><li id="_3197"><code>--asset-cache-update</code>: download all images such that the local disk timestamp is older than the HTTP modification date with <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since"><code>If-Modified-Since</code></a></li><li id="_3198"><code>--asset-cache-update-force</code>: forcefully redownload all assets</li></ul></div></div></li></ul></div></div><div class="p" id="_3199">Keep in mind that certain things can never be embedded, e.g.:<div class="list"><ul id="_3200"><li id="_3201">YouTube videos, since YouTube does not offer any download API</li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-cli-options">OurBigBook CLI options</a></li><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(3)</span></a></h2><div class="list"><ul><li><a href=".#embed-includes"><code>--embed-includes</code></a></li><li><a href=".#produce-a-standalone-html-file">Produce a standalone HTML file</a></li><li><a href=".#useless-knowledge">Useless knowledge</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

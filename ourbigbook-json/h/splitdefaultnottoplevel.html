@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title><code>ourbigbook.json</code> / <code>h</code> / splitDefaultNotToplevel - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../_raw/main.css">
+<link rel="shortcut icon" href="../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../" class="brand"><img src="../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="splitdefaultnottoplevel"><div class="notnav"><h1><a href="../../#ourbigbook-json"><code>ourbigbook.json</code></a><span class="meta"> / </span><a href="../../#ourbigbook-json/h"><code>h</code></a><span class="meta"> / </span><a href=""><code>splitDefaultNotToplevel</code></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="../../"><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="../../#ourbigbook-cli"> OurBigBook CLI</a><a href="../../#ourbigbook-json"> <code>ourbigbook.json</code></a><a href="../../#ourbigbook-json/h"> <code>h</code></a></div><div class="nav"><a class="nosplit" href="../../#ourbigbook-json/h/splitdefaultnottoplevel"></a><span class="metrics"><span class="wcntr"> Words: 192</span></span></div></nav></div><div class="p" id="_3686">If given, the toplevel output of each input source is always non-split, and a split version is not generated at all.</div><div class="p" id="_3687">This of course overrides the <a href="../../#h-splitdefault-argument"><code>\H</code> <code>splitDefault</code> argument</a> for toplevel headers, making any links go to the non split version, as we won't have a split version at all in this case.</div><div class="p" id="_3688">E.g.:</div><div class="p" id="_3689">ourbigbook.json<div class="code" id="_3690"><div><pre><code>{
+  "h": {
+    "splitDefault": true,
+    "splitDefaultNoToplevel": true,
+  }
+}</code></pre></div></div></div><div class="p" id="_3691">my-first-header.bigb<div class="code" id="_3692"><div><pre><code>= My first header
+
+== My second header</code></pre></div></div></div><div class="p" id="_3693">When converted with:<div class="code" id="_3694"><div><pre><code>ourbigbook --split-headers my-first-header.bigb</code></pre></div></div>would lead only to two output files:<div class="list"><ul id="_3695"><li id="_3696">my-first-header: not split</li><li id="_3697">my-second-header: split</li></ul></div></div><div class="p" id="_3698">Without <code>splitDefaultNoToplevel</code> we would instead have:<div class="list"><ul id="_3699"><li id="_3700">my-first-header: split</li><li id="_3701">my-first-header-nosplit: not split</li><li id="_3702">my-second-header: split</li></ul></div></div><div class="p" id="_3703">The initial use case for this was in <a href="../../#ourbigbook-web">OurBigBook Web</a>. If we didn't do this, then there would be two versions of every article at the toplevel of a file: split and nosplit.</div><div class="p" id="_3704">This would be confusing for users, who would e.g. see two new articles on the article index every time they create a new one.</div><div class="p" id="_3705">It would also mean that metadata such as comments would be visible in two separate locations.</div><div class="p" id="_3706">So instead of filtering the duplicate articles on every index, we just don't generate them in the first place.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href="../../#ourbigbook-json/h"><code>h</code></a></li><li><a href="../../#ourbigbook-json"><code>ourbigbook.json</code></a></li><li><a href="../../#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="../../"><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../../_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "ourbigbook-json/h/";
+</script>
+<script src="../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

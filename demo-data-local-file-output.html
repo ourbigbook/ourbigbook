@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Demo data local file output - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="demo-data-local-file-output"><div class="notnav"><h1><a href="">Demo data local file output</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-web"> OurBigBook Web</a><a href=".#ourbigbook-web-development"> OurBigBook Web development</a><a href=".#generated-data"> Generated data</a><a href=".#demo-data"> Demo data</a></div><div class="nav"><a class="nosplit" href=".#demo-data-local-file-output"></a><span class="metrics"><span class="wcntr"> Words: 120</span></span></div></nav></div><div class="p" id="_4167">By default, when you run <a href="_raw/web/bin/generate-demo-data.js">web/bin/generate-demo-data.js</a>, besides inserting the data into the database directly, the command also generates a in-file-system tree that contains equivalent content under:<div class="code" id="_4168"><div><pre><code>web/tmp/&lt;username&gt;/&lt;id&gt;.bigb</code></pre></div></div></div><div class="p" id="_4169">Sample paths to some files could be:<div class="code" id="_4170"><div><pre><code>web/tmp/demo/barack-obama/ourbigbook.json
+web/tmp/demo/barack-obama/test-child-1.bigb
+web/tmp/demo/barack-obama/test-scope/test-scope-1.bigb</code></pre></div></div></div><div class="p" id="_4171">Because each user has its own <code>ourbigbook.json</code> file added to the directory, you can for example build each user directory in isolation with:<div class="code" id="_4172"><div><pre><code>cd web/tmp/demo/barack-obama
+ourbigbook .</code></pre></div></div></div><div class="p" id="_4173">This setup can be useful for quickly testing things locally, and in particular to test <a href=".#web"><code>-W</code>, <code>--web</code></a> upload to a local test server.</div><div class="p" id="_4174">These files have nothing to do with <a href=".#ourbigbook-web">OurBigBook Web</a> specifically, and would be used from <a href=".#ourbigbook-cli">OurBigBook CLI</a> itself. It would be nice to bring them up to <a href=".#ourbigbook-cli">OurBigBook CLI</a> at some point, and only expose the Web-specific database functions from Web.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#demo-data">Demo data</a></li><li><a href=".#generated-data">Generated data</a></li><li><a href=".#ourbigbook-web-development">OurBigBook Web development</a></li><li><a href=".#ourbigbook-web">OurBigBook Web</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

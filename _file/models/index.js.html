@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>index.js - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../_raw/main.css">
+<link rel="shortcut icon" href="../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../" class="brand"><img src="../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="index.js"><div class="notnav"><h1><a href="">models/index.js</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../_dir/">(root)</a> / <a href="../../_dir/models">models</a> / <a href="../../_raw/models/index.js">index.js</a></b></div></nav></div><div class="p"><b>models/index.js</b></div><div class="code"><div><pre><code>const assert = require('assert')
+
+const file = require('./file')
+const id = require('./id')
+const ref = require('./ref')
+const render = require('./render')
+const cliModel = require('./cli')
+
+function addModels(sequelize, { web, cli }={}) {
+  const File = file(sequelize, web)
+  const Id = id(sequelize)
+  const Ref = ref(sequelize)
+  const Render = render.render(sequelize)
+  if (cli) {
+    const Cli = cliModel(sequelize)
+  }
+
+  // Id &lt;-&gt; Ref
+  // constraints: false for now because when we convert multiple files, we are creating IDs
+  // and refs of files one by one. So if one file references another, it will initially reference
+  // an undefined ID. The better solution would be to group data from conversion of all files,
+  // then create all IDs and then create all refs, but lazy.
+  Id.hasMany(Ref, { as: 'to', foreignKey: 'to_id', sourceKey: 'idid', constraints: false })
+  Ref.belongsTo(Id, { as: 'to', foreignKey: 'to_id', targetKey: 'idid', constraints: false })
+  Id.hasMany(Ref, { as: 'from', foreignKey: 'from_id', sourceKey: 'idid', constraints: false })
+  Ref.belongsTo(Id, { as: 'from', foreignKey: 'from_id', targetKey: 'idid', constraints: false })
+
+  // Id &lt;-&gt; File
+  Id.hasOne(File, { as: 'toplevelId', foreignKey: 'toplevel_id', sourceKey: 'idid', constraints: false })
+  File.belongsTo(Id, { as: 'toplevelId', foreignKey: 'toplevel_id', targetKey: 'idid', constraints: false })
+  Id.belongsTo(File, { as: 'idDefinedAt', foreignKey: 'defined_at', onDelete: 'CASCADE' })
+  File.hasMany(Id, { as: 'idDefinedAt', foreignKey: 'defined_at', onDelete: 'CASCADE' })
+
+  // Ref &lt;-&gt; File
+  Ref.belongsTo(File, { as: 'definedAt', foreignKey: 'defined_at', onDelete: 'CASCADE' })
+  File.hasMany(Ref, { as: 'definedAt', foreignKey: 'defined_at', onDelete: 'CASCADE' })
+
+  Render.belongsTo(File, { foreignKey: { name: 'fileId', allowNull: false }, onDelete: 'CASCADE' })
+  File.hasOne(Render, { foreignKey: { name: 'fileId', allowNull: false }, onDelete: 'CASCADE' })
+
+  // Id &lt;-&gt; Id
+  // Needed for finding duplicates.
+  Id.hasMany(Id, { as: 'duplicate', foreignKey: 'idid', sourceKey: 'idid', constraints: false });
+
+  // Ref &lt;-&gt; Ref
+  // Needed for finding multiple parents.
+  Ref.hasMany(Ref, { as: 'duplicate', foreignKey: 'to_id', sourceKey: 'to_id', constraints: false });
+}
+
+function sequelizeWhereStartsWith(sequelize, topicIdSearch, col) {
+  if (sequelize.options.dialect === 'postgres') {
+    return { [sequelize.Sequelize.Op.startsWith]: topicIdSearch }
+  } else {
+    // explicit col is terrible here, but I can't find a way around it in v6:
+    // https://stackoverflow.com/questions/52397419/sequelize-custom-operators/79233911#79233911
+    return sequelize.literal(`${col} GLOB ${sequelize.escape(topicIdSearch + '*')}`)
+  }
+}
+
+module.exports = {
+  addModels,
+  sequelizeWhereStartsWith,
+}
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/models/";
+</script>
+<script src="../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>DEBUG sql - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="debug-sql"><div class="notnav"><h1><a href="">DEBUG sql</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-web"> OurBigBook Web</a><a href=".#ourbigbook-web-development"> OurBigBook Web development</a><a href=".#log-database-queries"> Log database queries</a></div><div class="nav"><a class="nosplit" href=".#debug-sql"></a><span class="metrics"><span class="wcntr"> Words: 149</span></span></div></nav></div><div class="p" id="_4176">One option is to use the standard Express.js logging mechanism:<div class="code" id="_4177"><div><pre><code>DEBUG='sequelize:sql:*' npm run dev</code></pre></div></div>Shortcut:<div class="code" id="_4178"><div><pre><code>npm run devs</code></pre></div></div></div><div class="p" id="_4179">These logs also include some kind of timing information. However, we are not entirely sure that the timings mean, as they show for both <code>Executing</code> (query is about to start) and <code>Executed</code> (query finished) lines with possibly different values e.g.:<div class="code" id="_4180"><div><pre><code>sequelize:sql:pg Executing (default): SELECT 1+1 AS result +0ms
+sequelize:sql:pg Executed (default): SELECT 1+1 AS result +1ms</code></pre></div></div>The meaning of <code>+0ms</code> and <code>+1ms</code> appears to be the timing since last the last message with the same ID, i.e. <code>sequelize:sql:pg</code> in this case. Therefore, so long as there wasn't any <code>sequelize:sql:pg</code> between and the corresponding <code>Executing</code>, the <code>Executing</code> timing should give us the query time.</div><div class="p" id="_4181">This is a bit messy however, as we often want to find the largest numbers for profiling, and there could be a large time delta during inactivity.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href=".#log-database-queries">Log database queries</a></li><li><a href=".#ourbigbook-web-development">OurBigBook Web development</a></li><li><a href=".#ourbigbook-web">OurBigBook Web</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#ourbigbook-log-db"><code>OURBIGBOOK_LOG_DB</code></a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>News / Short URL fragments on OurBigBook Web - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="short-url-fragments-on-ourbigbook-web"><div class="notnav"><h1><a href="../news">News</a><span class="meta"> / </span><a href="">Short URL fragments on OurBigBook Web</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="../#developing-ourbigbook"> Developing OurBigBook</a><a href="../#publicity"> Publicity</a><a href="../news"> News</a></div><div class="nav"><span class="tags"> Tags: <a href="../#ourbigbook-web-dynamic-article-tree">Dynamic article tree</a>, <a href="../#implemented-by-sidstuff">Implemented by sidstuff</a>, <a href="../#ourbigbook-web">OurBigBook Web</a></span><a class="nosplit" href="../news#short-url-fragments-on-ourbigbook-web"></a><span class="metrics"><span class="wcntr"> Words: 258</span></span></div></nav></div><div class="p" id="_276">Previously, when clicking a link to an element that is present in the current page, the URL fragment would contain the full ID that element.</div><div class="p" id="_277">Now, only the ID relative to URL path shows.</div><div class="p" id="_278">A very common use case for this is when clicking table of content items.</div><div class="p" id="_279">For exmple, from <a href="https://ourbigbook.com/barack-obama/mathematics">ourbigbook.com/barack-obama/mathematics</a>, clicking the ToC item for "Calculus" would previously lead to <a href="https://ourbigbook.com/barack-obama/mathematics#barack-obama/calculus">ourbigbook.com/barack-obama/mathematics#barack-obama/calculus</a></div><div class="p" id="_280">After this change it leads just to: <a href="https://ourbigbook.com/barack-obama/mathematics#calculus">ourbigbook.com/barack-obama/mathematics#calculus</a>, without repeating the "<code>#barack-obama</code> part as it already appears in the URL path <code>/barack-obama/mathematics</code>.</div><div class="figure"><figure id="_281"><div class="float-wrap"><a href="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/short-fragment.png"><img src="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/short-fragment.png" loading="lazy" height="800" alt="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/short-fragment.png"  class="border"></a></div></figure></div><div class="p" id="_282">Short URLs were already used on <a href="../#p-publish">Static website</a> publishes, and weren't implemented on <a href="../#ourbigbook-web">OurBigBook Web</a> yet simply because this is hard. The reason this was much harder to implement on Web is that due to <a href="../#ourbigbook-web-dynamic-article-tree">Dynamic article trees</a> we can't know at render-time what the correct fragment will be, as it depends on what shows on the page or not.</div><div class="p" id="_283">And furthermore, articles by different users can appear on the same page due to <a href="../#ourbigbook-web-topics">topics</a>.</div><div class="p" id="_284">The simple but not ideal solution that we were using up to now was to just have full IDs on every HTML element, make every a point to an absolute ID like <code>/barack-obama/mathematics</code>, and then use JS effect to hack that to <code>#barack-obama/mathematics</code> if the element is in the page.</div><div class="p" id="_285">What we did now is to take the Js hacks one step further, and actually replace the "long URLs" with short ones. This was not easy, partly because the browser interfaces are not amazing in that area, partly due to fighting with React. But we manage to get it working mostly well.</div><div class="p" id="_286">Announcements:<div class="list"><ul id="_287"><li id="_288"><a href="https://mastodon.social/@ourbigbook/112553597134131989">mastodon.social/@ourbigbook/112553597134131989</a></li><li id="_289"><a href="https://x.com/OurBigBook/status/1797665231273177182">x.com/OurBigBook/status/1797665231273177182</a></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href="../news">News</a></li><li><a href="../#publicity">Publicity</a></li><li><a href="../#developing-ourbigbook">Developing OurBigBook</a></li><li><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/news.bigb">news.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "news/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

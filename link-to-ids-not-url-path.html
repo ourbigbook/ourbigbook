@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Link to IDs, not URL path - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="link-to-ids-not-url-path"><div class="notnav"><h1><a href="">Link to IDs, not URL path</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#internal-link"> Internal link</a><a href=".#cross-file-internal-link"> Cross file internal link</a></div><div class="nav"><a class="nosplit" href=".#link-to-ids-not-url-path"></a><span class="metrics"><span class="wcntr"> Words: 336</span></span></div></nav></div><div class="p" id="_2388">This section describes the philosophy of <a href=".#internal-link">internal links</a>.</div><div class="p" id="_2389">In many static website generators, you just link to URL specific paths of internal headers.</div><div class="p" id="_2390">In OurBigBook, <a href=".#internal-link">internal links</a> point to IDs, not paths.</div><div class="p" id="_2391">For example, suppose "Superconductivity" is a descendant of "Condensed Matter Physics", and that the source for both is located at <code>condensed-matter-physics.bigb</code>, so that both appear on the same .html page <code>condensed-matter-physics.html</code>.</div><div class="p" id="_2392">When linking to Superconductivity from an external page such as <code>statistical-physics.bigb</code> you write just <code>&lt;superconductivity&gt;</code> and NOT <code>&lt;condensed-matter-physics#superconductivity&gt;</code>. OurBigBook then automatically trakcs where superconductivity is located and produces <code>href="condensed-matter-physics#superconductivity"</code> for you.</div><div class="p" id="_2393">This is important because on a static website, the location of headers might change. E.g. if you start writing a lot about superconductivity you would eventually want to split it to its own page, <code>superconductivity.html</code> otherwise page loads for <code>condensed-matter-physics.html</code> would become too slow as that file would become too large.</div><div class="p" id="_2394">But if your links read <code>&lt;condensed-matter-physics#superconductivity&gt;</code>, and all links would break when you move things around.</div><div class="p" id="_2395">So instead, you simply link to the ID <code>&lt;superconductivity&gt;</code>, and ourbigbook renders links correctly for you wherever the output lands.</div><div class="p" id="_2396">When moving headers to separate pages, it is true that existing links to subheaders will break, but that simply cannot be helped. Large pages must be split into smaller ones. The issue can be mitigated in the following ways:<div class="list"><ul id="_2397"><li id="_2398"><a href=".#split-headers"><code>-S</code>, <code>--split-headers</code></a>, which readers will eventually understand are better permalinks</li><li id="_2399"><a href=".#javascript-redirect-to-split-on-missing-id">JavaScript redirect to split on missing ID</a>, which automatically redirect <code>condensed-matter-physics#superconductivity</code> to <code>superconductivity</code>, potentially hitting a <a href=".#split-headers">split header</a> if the current page does not contain the HTML ID <code>superconductivity</code>.</li></ul></div></div><div class="p" id="_2400">For <a href=".#ourbigbook-web">OurBigBook Web</a>, this is even more important, as we have <a href=".#ourbigbook-web-dynamic-article-tree">dynamic article trees</a>, so every header can appear on top.</div><div class="p" id="_2401">If you really want to to use scopes, e.g. enforce the ID of "superconductivity" to be "condensed-matter-physics/superconductivity", then you can use the <a href=".#h-scope-argument">scope</a> feature. However, this particular case would likely be a bad use case for that feature. You want your IDs to be as short as possible, which causes less need for refactoring, and makes <a href=".#ourbigbook-web-topics">topics</a> on <a href=".#ourbigbook-web">OurBigBook Web</a> more likely to have matches from other users.</div><div class="figure"><figure id="image-cross-file-internal-link-link-to-ids-not-url-path"><div class="float-wrap"><a href="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/x/hilbert-space-arrow.png"><img src="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/x/hilbert-space-arrow.png" loading="lazy" height="571"  class="border"></a></div><figcaption><a href="#image-cross-file-internal-link-link-to-ids-not-url-path"><span class="caption-prefix">Figure 43. </span></a><div class="title"><a href=".#cross-file-internal-link">Cross file internal link</a></div>. </figcaption></figure></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#cross-file-internal-link">Cross file internal link</a></li><li><a href=".#internal-link">Internal link</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

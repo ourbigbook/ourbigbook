@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>package.json - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../_raw/main.css">
+<link rel="shortcut icon" href="../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../" class="brand"><img src="../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="package.json"><div class="notnav"><h1><a href="">vscode/package.json</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../_dir/">(root)</a> / <a href="../../_dir/vscode">vscode</a> / <a href="../../_raw/vscode/package.json">package.json</a></b></div></nav></div><div class="p"><b>vscode/package.json</b></div><div class="code"><div><pre><code>{
+  "name": "ourbigbook-vscode",
+  "displayName": "OurBigBook",
+  "publisher": "ourbigbook",
+  "description": "OurBigBook markup and publishing",
+  "icon": "logo.png",
+  "repository": "https://docs.ourbigbook.com/_dir/vscode",
+  "version": "0.0.56",
+  "engines": {
+    "vscode": "^1.91.0"
+  },
+  "capabilities": {
+    "workspaceSymbolProvider": "true"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:ourbigbook",
+    "workspaceContains:**/ourbigbook.json"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "ourbigbook.helloWorld",
+        "title": "OurBigBook: Hello World"
+      },
+      {
+        "command": "ourbigbook.build",
+        "title": "OurBigBook: Build all"
+      },
+      {
+        "command": "ourbigbook.buildAndView",
+        "title": "OurBigBook: Build all and view output for current file"
+      },
+      {
+        "command": "ourbigbook.publishStatic",
+        "title": "OurBigBook: Publish static website (--publish)"
+      },
+      {
+        "command": "ourbigbook.publishWeb",
+        "title": "OurBigBook: Publish to OurBigBook Web (--web)"
+      },
+      {
+        "command": "ourbigbook.publishWebAndStatic",
+        "title": "OurBigBook: Publish to OurBigBook Web and static website (--web and --publish)"
+      },
+      {
+        "command": "ourbigbook.viewOutput",
+        "title": "OurBigBook: View output for current file"
+      }
+    ],
+    "configuration": {
+      "title": "OurBigBook",
+      "properties": {
+        "ourbigbook.gitAutoCommitAfterBuild": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically git add and commit after a successful build. New .bigb files are automatically added, but you must manually git add new non-.bigb files to help prevent accidental data leaks."
+        }
+      }
+    },
+    "configurationDefaults": {
+      "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/node_modules/**": true,
+        "_out/**": true
+      },
+      "[ourbigbook]": {
+        "editor.autoClosingBrackets": "never",
+        "editor.quickSuggestions": {
+            "other": "on",
+            "comments": "off",
+            "strings": "off"
+        },
+        "editor.tabSize": 2,
+        "editor.wordWrap": "on",
+        "terminal.integrated.scrollback": 100000
+      }
+    },
+    "keybindings": [
+      {
+        "command": "ourbigbook.build",
+        "key": "ctrl+shift+b",
+        "when": "editorLangId == 'ourbigbook'"
+      },
+      {
+        "command": "ourbigbook.publishWeb",
+        "key": "ctrl+shift+alt+b",
+        "when": "editorLangId == 'ourbigbook'"
+      },
+      {
+        "command": "ourbigbook.publishWebAndStatic",
+        "key": "ctrl+alt+b",
+        "when": "editorLangId == 'ourbigbook'"
+      },
+      {
+        "command": "ourbigbook.buildAndView",
+        "key": "f5",
+        "when": "editorLangId == 'ourbigbook'"
+      }
+    ],
+    "grammars": [
+      {
+        "embeddedLanguages": {
+          "math.bigb": "latex"
+        },
+        "language": "ourbigbook",
+        "scopeName": "source.ourbigbook",
+        "path": "./syntaxes/ourbigbook.tmLanguage.json"
+      }
+    ],
+    "languages": [
+      {
+        "icon": {
+          "light": "logo.png",
+          "dark": "logo.png"
+        },
+        "id": "ourbigbook",
+        "aliases": [
+          "OurBigBook",
+          "ourbigbook"
+        ],
+        "extensions": [
+          ".bigb"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "ourbigbook",
+        "path": "./snippets.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile &amp;&amp; npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test"
+  },
+  "dependencies": {
+    "open": "8.4.2",
+    "ourbigbook": "0.9.29"
+  },
+  "devDependencies": {
+    "@types/mocha": "10.0.7",
+    "@types/node": "20.x",
+    "@types/vscode": "1.91.0",
+    "@typescript-eslint/eslint-plugin": "7.14.1",
+    "@typescript-eslint/parser": "7.11.0",
+    "@vscode/test-cli": "0.0.9",
+    "@vscode/test-electron": "2.4.0",
+    "@vscode/vsce": "2.31.1",
+    "eslint": "8.57.0",
+    "ts-loader": "9.5.1",
+    "typescript": "5.4.5"
+  }
+}
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/vscode/";
+</script>
+<script src="../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

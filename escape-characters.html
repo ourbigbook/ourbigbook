@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Escape characters - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="escape-characters"><div class="notnav"><h1><a href="">Escape characters</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#ourbigbook-markup-syntax"> OurBigBook Markup syntax</a><a href=".#macro-argument"> Macro argument</a></div><div class="nav"><a class="nosplit" href=".#escape-characters"></a><span class="metrics"><span class="wcntr"> Words: 222</span></span></div></nav></div><div class="p" id="_2825">Every character that cannot be a <a href=".#macro-identifier">macro identifier</a> can be escaped with a backslash <code>\</code>. If you try to escape a macro identifier it of course treats the thing as a macro instead and fails, e.g. in <code>\a</code> it would try to use a macro called <code>\a</code>, not escape the character <code>a</code>.</div><div class="p" id="_2826">For some characters, escaping or not does not make any difference because they don't have any meaning to <a href=".#ourbigbook-markup">OurBigBook Markup</a>, e.g. currently <code>%</code> is always the exact same as <code>\%</code>.</div><div class="p" id="_2827">But in <a href=".#literal-arguments">non-literal macro arguments</a>, you have to use a backslash to escape the following if you want them to not have any magical meaning:<div class="list"><ul id="_2828"><li id="_2829"><code>\</code>: backslashes start macros</li><li id="_2830"><code>\[</code> and <code>\]</code>: open and close <a href=".#positional-vs-named-arguments">positional macro arguments</a></li><li id="_2831"><code>\{</code> and <code>\}</code>: open and close <a href=".#positional-vs-named-arguments">optional macro arguments</a></li><li id="_2832">escapes for <a href=".#macro-with-shorthand-syntax">macros with shorthand syntax</a>:<div class="list"><ul id="_2833"><li id="_2834"><code>&lt;</code> (open angle brackets, less than sign): <a href=".#macro-shorthand-syntax">macro shorthand syntax</a> for <a href=".#shorthand-internal-link">shorthand internal links</a></li><li id="_2835"><code>$</code> (dollar sign): <a href=".#macro-shorthand-syntax">macro shorthand syntax</a> for <a href=".#mathematics">mathematics</a></li><li id="_2836"><code>`</code> (backtick): <a href=".#macro-shorthand-syntax">macro shorthand syntax</a> for <a href=".#code-block">code blocks</a></li><li id="_2837"><code>#</code> (hash): <a href=".#shorthand-topic-link">shorthand topic links</a></li></ul></div></li></ul></div></div><div class="p" id="_2838">Furthermore, only at:<div class="list"><ul id="_2839"><li id="_2840">at the start of the document</li><li id="_2841">after a newline</li><li id="_2842">at the start of a new argument</li></ul></div>you must also escape the following <a href=".#macro-with-shorthand-syntax">macros with shorthand syntax</a>:<div class="list"><ul id="_2843"><li id="_2844"><code>* </code> for shorthand <a href=".#list">lists</a></li><li id="_2845"><code>| </code> and <code>|| </code> for shorthand <a href=".#table">tables</a></li><li id="_2846"><code>= </code> for shorthand <a href=".#header">headers</a></li></ul></div></div><div class="p" id="_2847">The escape rules for literal arguments are described at: <a href=".#literal-arguments">Section "Literal arguments"</a>.</div><div class="p" id="_2848">This is good for short arguments of regular text, but for longer blocks like <a href=".#code-block">code blocks</a> or <a href=".#mathematics">mathematics</a>, you may want to use <a href=".#literal-arguments">literal arguments</a></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href=".#macro-argument">Macro argument</a></li><li><a href=".#ourbigbook-markup-syntax">OurBigBook Markup syntax</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(3)</span></a></h2><div class="list"><ul><li><a href=".#code-block">Code block</a></li><li><a href=".#line-break">Line break</a></li><li><a href=".#mathematics">Mathematics</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

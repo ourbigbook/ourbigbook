@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>External link - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="external-link"><div class="notnav"><h1><a href="">External link</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#link"> Link</a><a href=".#a-argument"> <code>\a</code> argument</a><a href=".#a-external-argument"> <code>\a</code> <code>external</code> argument</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#external-link"></a><span class="metrics"><span class="wcntr"> Words: 325</span><span class="dcnt"> Articles: 1</span></span></div></nav></div><div class="p" id="_570">An external link is a link that points to a resource that is not present in the current OurBigBook project sources. A typical external link is something like:<div class="code" id="_571"><div><pre><code>This is great website: https://cirosantilli.com</code></pre></div></div><div class="p" id="_572">which renders as:</div><div><blockquote id="_573"><div class="p" id="_574">This is great website: <a href="https://cirosantilli.com">cirosantilli.com</a></div></blockquote></div>which points to an absolute URL.</div><div class="p" id="_575"><a href=".#external-link">Internal path links</a> are links that point to files present inside the current project. For example, in computer programming tutorials we will often want to refer to source files in the current directory. So from our <code>index.bigb</code>, we could want to write something like:<div class="code" id="_576"><div><pre><code>Have a look at this amazing source file: \a[index.js].</code></pre></div></div><div class="p" id="_577">which renders as:</div><div><blockquote id="_578"><div class="p" id="_579">Have a look at this amazing source file: <a href="_raw/index.js">index.js</a>.</div></blockquote></div>and here <code>\a[ourbigbook]</code> is a internal link. These should not to be confused with <a href=".#internal-link">internal links</a>, which may point not only to files, but to any <a href=".#element-id">ID</a>, e.g. of headers inside a OurBigBook file.</div><div class="p" id="_580">OurBigBook considers a link external by default if it does not have a <a href=".#url-with-protocol">URL with protocol</a>.</div><div class="p" id="_581">Therefore, the following links are external by default:<div class="list"><ul id="_582"><li id="_583"><code>http://cirosantilli.com</code></li><li id="_584"><code>https://cirosantilli.com</code></li><li id="_585"><code>file:///etc/fstab</code></li><li id="_586"><code>ftp://cirosantilli.com</code></li></ul></div>and the following are internal by default:<div class="list"><ul id="_587"><li id="_588"><code>index.js</code></li><li id="_589"><code>../index.js</code></li><li id="_590"><code>path/to/index.js</code></li><li id="_591"><code>/path/to/index.js</code>. Note that paths starting with <code>/</code> refer to the root of the <a href=".#ourbigbook-cli">OurBigBook CLI</a> deployment, not the root of the domain, see: <a href=".#link-to-the-domain-root-path">link to the domain root path</a>.</li><li id="_592"><code>//example.com/path/to/index.js</code></li></ul></div></div><div class="p" id="_593">Implemented at: <a href="https://github.com/ourbigbook/ourbigbook/issues/87">github.com/ourbigbook/ourbigbook/issues/87</a> as <code>relative</code>, and subsequently modified to the more accurate/useful <code>external</code>.</div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"></input><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 325</span><span class="dcnt"> 1</span></span></span></span></div><ul><li><div id="_toc/internal-path-links-are-smart"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#internal-path-links-are-smart">Internal path links are smart</a><span class="hover-metadata"><a class="nosplit" href=".#internal-path-links-are-smart"></a><a href="#_toc" class="u"> External link</a><span class="metrics"><span class="wcntr"> 109</span></span></span></span></div></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(6)</span></a></h2><div class="list"><ol><li><a href=".#a-external-argument"><code>\a</code> <code>external</code> argument</a></li><li><a href=".#a-argument"><code>\a</code> argument</a></li><li><a href=".#link">Link</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#a-external-argument"><code>\a</code> <code>external</code> argument</a></li></ul></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#external-link">Internal path link</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>News / ourbigbook.com/cirosantilli loads 2x as fast after database optimizations - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="ourbigbook-com-cirosantilli-loads-2x-as-fast-after-database-optimizations"><div class="notnav"><h1><a href="../news">News</a><span class="meta"> / </span><a href="">ourbigbook.com/cirosantilli loads 2x as fast after database optimizations</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="../#developing-ourbigbook"> Developing OurBigBook</a><a href="../#publicity"> Publicity</a><a href="../news"> News</a></div><div class="nav"><span class="tags"> Tags: <a href="../#ourbigbook-web-performance-benchmarking">OurBigBook Web performance benchmarking</a>, <a href="../#web"><code>-W</code>, <code>--web</code></a></span><a class="nosplit" href="../news#ourbigbook-com-cirosantilli-loads-2x-as-fast-after-database-optimizations"></a><span class="metrics"><span class="wcntr"> Words: 78</span></span></div></nav></div><div class="p" id="_220">At <a href="https://github.com/ourbigbook/ourbigbook/commit/075872a0a5ca7faf171d45834bc2b47995a15634">github.com/ourbigbook/ourbigbook/commit/075872a0a5ca7faf171d45834bc2b47995a15634</a> and nearby previous commits we've optimized the database queries made on article pages, mostly by adding some key missing indices and cache columns.</div><div class="p" id="_221">As a result, <a href="https://ourbigbook.com/cirosantilli">ourbigbook.com/cirosantilli</a> now starts downloading the first byte 2x as fast as before, going down from about 1200 ms to around 600 ms, at a time region which makes a huge difference for user experience.</div><div class="p" id="_222">We will also start keeping better performance logs at: <a href="../#ourbigbook-web-performance-log">Section "OurBigBook Web performance log"</a> to make sure we don't regress as easily.</div><div class="p" id="_223">Announcements:<div class="list"><ul id="_224"><li id="_225"><a href="https://mastodon.social/@ourbigbook/113068626468247721">mastodon.social/@ourbigbook/113068626468247721</a></li><li id="_226"><a href="https://x.com/OurBigBook/status/1830626456235299211">x.com/OurBigBook/status/1830626456235299211</a></li><li id="_227"><a href="https://www.linkedin.com/feed/update/urn:li:share:7236392360090243075">www.linkedin.com/feed/update/urn:li:share:7236392360090243075</a></li><li id="_228"><a href="https://www.facebook.com/OurBigBook/posts/pfbid029F6xK7QrV725cAfFoVbb2RhGtKXvfzqBDcy2kvY1AALNSHDbnbuvZJkYFhzmejUcl">www.facebook.com/OurBigBook/posts/pfbid029F6xK7QrV725cAfFoVbb2RhGtKXvfzqBDcy2kvY1AALNSHDbnbuvZJkYFhzmejUcl</a></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href="../news">News</a></li><li><a href="../#publicity">Publicity</a></li><li><a href="../#developing-ourbigbook">Developing OurBigBook</a></li><li><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/news.bigb">news.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "news/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

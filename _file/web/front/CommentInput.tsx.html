@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>CommentInput.tsx - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="CommentInput.tsx"><div class="notnav"><h1><a href="">web/front/CommentInput.tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir/">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/front">front</a> / <a href="../../../_raw/web/front/CommentInput.tsx">CommentInput.tsx</a></b></div></nav></div><div class="p"><b>web/front/CommentInput.tsx</b></div><div class="code"><div><pre><code>import { useRouter } from 'next/router'
+import React from 'react'
+
+import { NewArticleIcon, SignupOrLogin, useConfirmExitPage } from 'front'
+import { hasReachedMaxItemCount } from 'front/js';
+import CustomImage from 'front/CustomImage'
+import { useCtrlEnterSubmit, slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, decapitalize } from 'front'
+import { webApi } from 'front/api'
+import MapErrors from 'front/MapErrors'
+
+const CommentInput = ({
+  commentCountByLoggedInUser,
+  loggedInUser,
+  issueNumber,
+  setComments,
+  setCommentsCount,
+}) =&gt; {
+  const router = useRouter();
+  const slug = slugFromRouter(router)
+  const [body, setBody] = React.useState('');
+  const [isLoading, setLoading] = React.useState(false);
+  const [errors, setErrors] = React.useState([]);
+  const submitButton = React.useRef(null);
+  function updateSubmitButton(body) {
+    const e = submitButton.current
+    if (e) {
+      if (body) {
+        e.classList.remove('disabled')
+        e.removeAttribute('title')
+      } else {
+        e.classList.add('disabled')
+        e.title = 'Comment body cannot be empty'
+      }
+    }
+  }
+  function changeBody(body) {
+    setBody(body)
+    updateSubmitButton(body)
+  }
+  useConfirmExitPage(body === '')
+  const handleChange = e =&gt; {
+    e.stopPropagation()
+    changeBody(e.target.value)
+  };
+  const handleSubmit = async e =&gt; {
+    e.preventDefault();
+    if (body) {
+      setLoading(true);
+      const {data, status} = await webApi.commentCreate(slug, issueNumber, body)
+      if (status === 200) {
+        setComments(comments =&gt; [...comments, data.comment])
+        setCommentsCount(count =&gt; count + 1)
+        changeBody('');
+        setErrors([]);
+      } else {
+        if (data.errors) {
+          setErrors(data.errors);
+        } else {
+          setErrors(['server error, try again later']);
+        }
+      }
+      setLoading(false);
+    }
+  };
+  useCtrlEnterSubmit(handleSubmit)
+  if (!loggedInUser) {
+    return &lt;SignupOrLogin to="comment on this issue"/&gt;
+  }
+  const maxReached = hasReachedMaxItemCount(loggedInUser, commentCountByLoggedInUser, 'comments')
+  if (maxReached) {
+    return &lt;&gt;maxReached&lt;/&gt;
+  }
+
+  return (
+    &lt;&gt;
+      &lt;MapErrors errors={errors} /&gt;
+      &lt;form className="card comment-form" onSubmit={handleSubmit}&gt;
+        &lt;div className="comment-form-textarea"&gt;
+          &lt;textarea
+            rows={5}
+            placeholder="Write a comment..."
+            value={body}
+            onChange={handleChange}
+            // We need this to prevent the E shortcut from firing
+            // when we are editing a comment.
+            onKeyDown={(e) =&gt; {
+              if (e.code === 'Enter' &amp;&amp; e.ctrlKey) {
+                handleSubmit(e)
+              }
+              e.stopPropagation()
+            }}
+            disabled={isLoading}
+            className="not-monaco"
+          /&gt;
+        &lt;/div&gt;
+        &lt;div className="comment-form-submit"&gt;
+          &lt;CustomImage
+            className="profile-thumb"
+            src={loggedInUser.effectiveImage}
+            alt="author profile image"
+          /&gt;
+          {' '}
+          &lt;button
+            className="btn"
+            type="submit"
+            ref={(elem) =&gt; {
+              submitButton.current = elem
+              updateSubmitButton(body)
+            }}
+          &gt;
+            &lt;span className="disable-part"&gt;&lt;NewArticleIcon /&gt; Post comment&lt;/span&gt;
+          &lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/form&gt;
+    &lt;/&gt;
+  );
+};
+
+export default CommentInput;
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/front/";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

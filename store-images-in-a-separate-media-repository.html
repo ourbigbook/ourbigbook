@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Store images in a separate media repository - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="store-images-in-a-separate-media-repository"><div class="notnav"><h1><a href="">Store images in a separate media repository</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#image"> Image</a><a href=".#where-to-store-images"> Where to store images</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#store-images-in-a-separate-media-repository"></a><span class="metrics"><span class="wcntr"> Words: 662</span><span class="dcnt"> Articles: 1</span></span></div></nav></div><div class="p" id="_1332">In this approach, you create a separate GitHub repository in addition to the main one containing the text to contain only media such as images.</div><div class="p" id="_1333">This approach is more suitable than <a href=".#store-images-inside-the-repository-itself">store images inside the repository itself</a> if you are going to have a lot of images.</div><div class="p" id="_1334">When using this approach, you could of course just point directly to the final image URL, e.g. as in:<div class="code" id="_1335"><div><pre><code>\Image[https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_topic_page_arrow_to_full_article.png]</code></pre></div></div><div class="p" id="_1336">which renders as:</div><div><blockquote id="_1337"><div class="figure"><figure id="_1338"><div class="float-wrap"><a href="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_topic_page_arrow_to_full_article.png"><img src="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_topic_page_arrow_to_full_article.png" loading="lazy" height="315" alt="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_topic_page_arrow_to_full_article.png"></a></div></figure></div></blockquote></div>but OurBigBook allows you use configurations that allow you to enter just the image basename: <code>Fundamental_theorem_of_calculus_topic_page_arrow_to_full_article.png</code> which we will cover next.</div><div class="p" id="_1339">In order to get this to work, the recommended repository setup is:<div class="list"><ul id="_1340"><li id="_1341"><code>./main-repo/.git</code>: main repository at <a href="https://github.com/username/main-repo">github.com/username/main-repo</a></li><li id="_1342"><code>./main-repo/data/media/.git/</code>: media repository at <a href="https://github.com/username/main-repo-media">github.com/username/main-repo-media</a>, and where <code>data/</code> is gitignored.</li></ul></div>The directory and repository names are not mandatory, but if you place media in <code>data/media</code> and name its repository by adding the <code>*-media</code> suffix, then <code>ourbigbook</code> will handle everything for you without any further configuration in <a href=".#ourbigbook-json/media-providers"><code>media-providers</code></a>.</div><div class="p" id="_1343">This particular documentation repository does have a different setup as can be seen from its <a href="_raw/ourbigbook.json">ourbigbook.json</a>. Then, when everything is setup correctly, we can refer to images simply as:<div class="code" id="_1344"><div><pre><code>\Image[Fundamental_theorem_of_calculus_topic_page_arrow_to_full_article.png]{provider=github}</code></pre></div></div><div class="p" id="_1345">which renders as:</div><div><blockquote id="_1346"><div class="figure"><figure id="_1347"><div class="float-wrap"><a href="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_topic_page_arrow_to_full_article.png"><img src="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_topic_page_arrow_to_full_article.png" loading="lazy" height="315" alt="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_topic_page_arrow_to_full_article.png"></a></div></figure></div></blockquote></div>In this example, we also needed to set <code>{provider=github}</code> explicitly since it was not set as the default image provider in our <code>ourbigbook.json</code>. In most projects however, all of your images will be in the default repository, so this won't be needed.</div><div class="p" id="_1348"><code>provider</code> must not be given when a full URL is given because we automatically detect providers from URLs, e.g.:<div class="code" id="_1349"><div><pre><code>\Image[https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_topic_page.png]{provider=github}</code></pre></div></div>is an error.</div><div class="p" id="_1350">TODO implement: <code>ourbigbook</code> will even automatically add and push used images in the <code>my-tutorial-media</code> repository for you <a href=".#p-publish">during publishing</a>!</div><div class="p" id="_1351">You should then use the following rules inside <code>my-tutorial-media</code>:<div class="list"><ul id="_1352"><li id="_1353">give every file a very descriptive and unique name as a full English sentence</li><li id="_1354">never ever delete any files, nor change their content, unless it is an improvement in format that does change the information contained of the image TODO link to nice Wikimedia Commons guideline page</li></ul></div>This way, even though the repositories are not fully in sync, anyone who clones the latest version of the <code>*-media</code> directory will be able to view any version of the main repository.</div><div class="p" id="_1355">Then, if one day the media repository ever blows up GitHub's limit, you can just migrate the images to another image server that allows arbitrary basenames, e.g. AWS, and just configure your project to use that new media base URL with the <a href=".#ourbigbook-json/media-providers"><code>media-providers</code></a> option.</div><div class="p" id="_1356">The reason why images should be kept in a separate repository is that images are hundreds or thousands of times larger than hand written text.</div><div class="p" id="_1357">Therefore, images could easily fill up the maximum repository size you are allowed: <a href="https://webapps.stackexchange.com/questions/45254/file-size-and-storage-limits-on-github#84746">webapps.stackexchange.com/questions/45254/file-size-and-storage-limits-on-github#84746</a> and then what will you do when GitHub comes asking you to reduce the repository size?</div><div class="p" id="_1358"><a href="https://git-lfs.github.com/">Git LFS</a> is one approach to deal with this, but we feel that it adds too much development overhead.</div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><input class="search" placeholder="🔍 Search. Shortcut: / (slash)"></input><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 662</span><span class="dcnt"> 1</span></span></span></span></div><ul><li><div id="_toc/store-images-in-a-separate-media-repository-and-track-it-as-a-git-submodule"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#store-images-in-a-separate-media-repository-and-track-it-as-a-git-submodule">Store images in a separate media repository and track it as a git submodule</a><span class="hover-metadata"><a class="nosplit" href=".#store-images-in-a-separate-media-repository-and-track-it-as-a-git-submodule"></a><a href="#_toc" class="u"> Store images in a separate media repository</a><span class="metrics"><span class="wcntr"> 188</span></span></span></span></div></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#where-to-store-images">Where to store images</a></li><li><a href=".#image">Image</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(5)</span></a></h2><div class="list"><ul><li><a href=".#known-url-protocols">Known URL protocols</a></li><li><a href=".#ourbigbook-json/media-providers"><code>media-providers</code></a></li><li><a href=".#store-images-in-wikimedia-commons">Store images in Wikimedia Commons</a></li><li><a href=".#store-images-inside-the-repository-itself">Store images inside the repository itself</a></li><li><a href=".#video">Video</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

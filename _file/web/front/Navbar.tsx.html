@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Navbar.tsx - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="Navbar.tsx"><div class="notnav"><h1><a href="">web/front/Navbar.tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir/">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/front">front</a> / <a href="../../../_raw/web/front/Navbar.tsx">Navbar.tsx</a></b></div></nav></div><div class="p"><b>web/front/Navbar.tsx</b></div><div class="code"><div><pre><code>import React from 'react'
+
+import CustomImage from 'front/CustomImage'
+import CustomLink from 'front/CustomLink'
+import Maybe from 'front/Maybe'
+import {
+  HelpIcon,
+  LOGIN_ACTION,
+  LikeIcon,
+  NewArticleIcon,
+  REGISTER_ACTION,
+  UserIcon,
+} from 'front'
+import { appNameShort, aboutUrl, donateUrl } from 'front/config'
+import routes from 'front/routes'
+
+interface NavLinkProps {
+  href: string;
+  onClick?: () =&gt; void;
+  children: React.ReactNode;
+  className?: string;
+  newTab?: boolean
+}
+
+const NavLink = ({ href, onClick, children, className, newTab=false }: NavLinkProps) =&gt; {
+  const classes = ['nav-link']
+  // This would mark toplevel nav items as selected or not. But it doesn't make
+  // much sense on current toplevel nav configuration.
+  //if (encodeURIComponent(router.asPath) === encodeURIComponent(href)) {
+  //  classes.push('active')
+  //}
+  if (className) {
+    classes.push(...className.split(' '))
+  }
+  return (
+    &lt;CustomLink {...{
+      href,
+      onClick,
+      className: classes.join(' '),
+      newTab,
+      newTabIcon: false,
+    }} &gt;
+      {children}
+    &lt;/CustomLink&gt;
+  );
+};
+
+const Navbar = ({ clearScoreDelta, isEditor, loggedInUser }) =&gt; {
+  let scoreDelta = loggedInUser?.scoreDelta
+  if (clearScoreDelta) {
+    scoreDelta = 0
+  }
+  return (
+    &lt;nav className={`navbar${loggedInUser ? ' logged-in' : ''}`}&gt;
+      &lt;div className="brand-group"&gt;
+        &lt;CustomLink href={routes.home()} className="brand" newTab={isEditor} newTabIcon={false}&gt;
+          &lt;CustomImage src="/logo.svg" className="logo"/&gt;
+          &lt;span className="appname"&gt;{appNameShort}&lt;/span&gt;
+        &lt;/CustomLink&gt;
+        &lt;a href={aboutUrl} className="about" target={ isEditor ? '_blank' : '_self' }&gt;&lt;HelpIcon /&gt;&amp;nbsp;About&lt;/a&gt;
+        &lt;a href={donateUrl} className="donate" target={ isEditor ? '_blank' : '_self' }&gt;&lt;span className="icon"&gt;$&lt;/span&gt;&amp;nbsp;Donate&lt;/a&gt;
+      &lt;/div&gt;
+      &lt;div className="navbar-list"&gt;
+        &lt;Maybe test={loggedInUser}&gt;
+          &lt;NavLink href={routes.articleNew()} newTab={isEditor}&gt;
+            &lt;NewArticleIcon /&gt;
+            &amp;nbsp;New
+          &lt;/NavLink&gt;
+          &lt;NavLink
+            href={routes.userLiked(loggedInUser?.username)}
+            className={`score${ scoreDelta ? ` changed` : '' }`}
+          &gt;
+            &lt;LikeIcon /&gt; &lt;span className="txt"&gt;+{scoreDelta}&lt;/span&gt;
+          &lt;/NavLink&gt;
+          &lt;NavLink
+            href={routes.user(loggedInUser?.username)}
+            className="profile"
+            newTab={isEditor}
+          &gt;
+            &lt;CustomImage
+              className="profile-thumb"
+              src={loggedInUser?.effectiveImage}
+            /&gt;
+            {loggedInUser?.score}&lt;LikeIcon /&gt;
+          &lt;/NavLink&gt;
+        &lt;/Maybe&gt;
+        &lt;Maybe test={!loggedInUser}&gt;
+          &lt;NavLink href={routes.userLogin()} className="login" newTab={isEditor}&gt;
+            &lt;UserIcon /&gt;&amp;nbsp;{LOGIN_ACTION}
+          &lt;/NavLink&gt;
+          &lt;NavLink href={routes.userNew()} className="signup" newTab={isEditor}&gt;
+            &lt;NewArticleIcon /&gt;&amp;nbsp;{REGISTER_ACTION}
+          &lt;/NavLink&gt;
+        &lt;/Maybe&gt;
+      &lt;/div&gt;
+    &lt;/nav&gt;
+  );
+};
+
+export default Navbar;
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/front/";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

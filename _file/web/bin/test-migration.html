@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>test-migration - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="test-migration"><div class="notnav"><h1><a href="">web/bin/test-migration</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir/">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/bin">bin</a> / <a href="../../../_raw/web/bin/test-migration">test-migration</a></b></div></nav></div><div class="p"><b>web/bin/test-migration</b></div><div class="code"><div><pre><code>#!/usr/bin/env bash
+# https://docs.ourbigbook.com/test-migration
+set -eux
+
+reset() (
+  if [ "$db" = sqlite3 ]; then
+    rm -f "${script_dir}/db.sqlite3"
+  else
+    "${script_dir}/pg-setup"
+  fi
+)
+
+schema() (
+  out="$d/$1.$db.${schema_ext}"
+  if [ "$db" = sqlite3 ]; then
+    sqlite3 db.sqlite3 .schema &gt; "$out"
+  else
+    #"${script_dir}/pg_dump" -s
+    PGPASSWORD=a pg_dump -U ourbigbook_user -h localhost ourbigbook -s | grep -E -v -- '^(--|$)' &gt; "$out"
+  fi
+)
+
+args=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --)
+      shift
+      break
+      ;;
+    *)
+      args+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if [ "${OURBIGBOOK_POSTGRES:-0}" = 1 ]; then
+  db=postgres
+else
+  db=sqlite3
+fi
+schema_ext=sql
+
+script_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &amp;&gt; /dev/null &amp;&amp; pwd )"
+d="${script_dir}/tmp/test-migration"
+rm -rf "$d"
+mkdir -p "$d"
+
+git add migrations
+git commit --amend --no-edit
+
+# Cean from scratch sanity check.
+reset
+"${script_dir}/generate-demo-data.js" --clear "${args[@]}"
+schema new-clean
+
+# Go back to old DB.
+git checkout "${1:-HEAD~}"
+reset
+"${script_dir}/generate-demo-data.js" --clear "${args[@]}"
+schema old
+
+# Migrate.
+git checkout -
+if [ "$db" = postgres ]; then
+  export NODE_ENV=production
+  "${script_dir}/psql" -P pager=off -c 'SELECT * FROM "SequelizeMeta";'
+fi
+"${script_dir}/sync-db.js"
+schema new-migration
+
+# Compare the above.
+diff_args='-u0'
+if [ "$db" = sqlite3 ]; then
+  sort "$d/old.$db.${schema_ext}"           &gt; "$d/old.$db.sort.${schema_ext}"
+  sort "$d/new-clean.$db.${schema_ext}"     &gt; "$d/new-clean.$db.sort.${schema_ext}"
+  sort "$d/new-migration.$db.${schema_ext}" &gt; "$d/new-migration.$db.sort.${schema_ext}"
+  diff $diff_args "$d/old.$db.sort.${schema_ext}" "$d/new-clean.$db.sort.${schema_ext}" || true
+  diff="$(diff $diff_args "$d/new-clean.$db.sort.${schema_ext}" "$d/new-migration.$db.sort.${schema_ext}" || true)"
+  echo
+  echo "$diff"
+  if [ ! -z "$diff" ]; then
+    echo 'error: Clean DB and migrated are different'
+    exit 1
+  fi
+else
+  # PostgreSQL statements are not one per line so it is harder to automatically compare things correctly,
+  # eye inspection for now.
+  diff $diff_args "$d/old.$db.${schema_ext}" "$d/new-clean.$db.${schema_ext}" || true
+  diff $diff_args "$d/new-clean.$db.${schema_ext}" "$d/new-migration.$db.${schema_ext}" || true
+fi
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/bin/";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

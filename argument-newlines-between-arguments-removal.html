@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Argument newlines between arguments removal - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="argument-newlines-between-arguments-removal"><div class="notnav"><h1><a href="">Argument newlines between arguments removal</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#ourbigbook-markup-syntax"> OurBigBook Markup syntax</a><a href=".#macro-argument"> Macro argument</a><a href=".#newline-removal"> Newline removal</a></div><div class="nav"><a class="nosplit" href=".#argument-newlines-between-arguments-removal"></a><span class="metrics"><span class="wcntr"> Words: 109</span></span></div></nav></div><div class="p" id="_2817">The macro name and the first argument, and any two consecutive arguments, can be optionally separated by exactly one newline character, e.g.:<div class="code" id="_2818"><div><pre><code>\H
+[2]
+{scope}
+[Design goals]</code></pre></div></div>is equivalent to:<div class="code" id="_2819"><div><pre><code>\H[2]{scope}[Design goals]</code></pre></div></div>which is also equivalent to:<div class="code" id="_2820"><div><pre><code>\H[2]{scope}
+[Design goals]</code></pre></div></div>This allows to greatly improve the readability of long argument lists by having them one per line.</div><div class="p" id="_2821">There is one exception to this however: inside an <a href=".#header">shorthand header</a>, any newline is interpreted as the end of the shorthand header. This is why the following works as expected:<div class="code" id="_2822"><div><pre><code>== My header 2 `some code`
+{id=asdf}</code></pre></div></div>and the <code>id</code> gets assigned to the header rather than the trailing code element.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#newline-removal">Newline removal</a></li><li><a href=".#macro-argument">Macro argument</a></li><li><a href=".#ourbigbook-markup-syntax">OurBigBook Markup syntax</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#newline-removal">Newline removal</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

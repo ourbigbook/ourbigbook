@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>UserPage.tsx - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="UserPage.tsx"><div class="notnav"><h1><a href="">web/front/UserPage.tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir/">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/front">front</a> / <a href="../../../_raw/web/front/UserPage.tsx">UserPage.tsx</a></b></div></nav></div><div class="p"><b>web/front/UserPage.tsx</b></div><div class="code"><div><pre><code>import { useRouter } from 'next/router'
+import Link from 'next/link'
+import React from 'react'
+
+import pluralize from 'pluralize'
+
+import {
+  ArticleIcon,
+  ChildrenIcon,
+  CommentIcon,
+  IncomingIcon,
+  DiscussionIcon,
+  LikeIcon,
+  MyHead,
+  SettingsIcon,
+  StarIcon,
+  UserIcon,
+  TagIcon,
+  orderToPageTitle,
+  useEEdit,
+  TimeIcon,
+  FollowIcon,
+  ArrowRightIcon,
+  ArrowLeftIcon,
+  AlphabeticalOrderTabTitle,
+  AnnounceIcon,
+} from 'front'
+import ArticleList from 'front/ArticleList'
+import CommentList from 'front/CommentList'
+import { cant } from 'front/cant'
+import config from 'front/config'
+import CustomLink from 'front/CustomLink'
+import CustomImage from 'front/CustomImage'
+import LoadingSpinner from 'front/LoadingSpinner'
+import LogoutButton from 'front/LogoutButton'
+import Maybe from 'front/Maybe'
+import FollowUserButton from 'front/FollowUserButton'
+import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
+import routes from 'front/routes'
+import Article from 'front/Article'
+import UserList from 'front/UserList'
+
+import { ArticleType, ArticleLinkType } from 'front/types/ArticleType'
+import { CommentType } from 'front/types/CommentType'
+import { CommonPropsType } from 'front/types/CommonPropsType'
+import { IssueType } from 'front/types/IssueType'
+import { TopicType } from 'front/types/TopicType'
+import { UserType } from 'front/types/UserType'
+
+export interface UserPageProps extends CommonPropsType {
+  ancestors?: ArticleLinkType[];
+  article?: ArticleType &amp; IssueType;
+  articles?: (ArticleType &amp; IssueType &amp; TopicType)[];
+  articlesCount?: number;
+  articlesInSamePage?: ArticleType[];
+  articlesInSamePageCount?: number;
+  articlesInSamePageForToc?: ArticleType[];
+  articlesInSamePageForTocCount?: number;
+  commentCountByLoggedInUser?: number;
+  comments?: CommentType[];
+  commentsCount?: number;
+  hasUnlisted?: boolean;
+  incomingLinks?: ArticleLinkType[];
+  issuesCount?: number;
+  itemType?: 'article' | 'comment' | 'discussion' | 'like'| 'topic' | 'user';
+  latestIssues?: IssueType[];
+  list: boolean,
+  order: string;
+  orderAscDesc: string;
+  page: number;
+  // For when listed articles are relative to another article,
+  // e.g. tagged by, incoming links or children.
+  parentArticle?: ArticleLinkType;
+  synonymLinks?: ArticleLinkType[];
+  tagged?: ArticleLinkType[];
+  topIssues?: IssueType[];
+  user: UserType;
+  users?: UserType[];
+  usersCount?: number;
+  what:
+    'followed' |
+    'followed-articles' |
+    'followed-discussions' |
+    'follows' |
+    'home' |
+    'liked' |
+    'liked-discussions' |
+    'likes' |
+    'likes-discussions' |
+    'user-articles' |
+    'user-child-articles' |
+    'user-incoming-articles' |
+    'user-tagged-articles' |
+    'user-comments' |
+    'user-issues'
+  ;
+}
+
+export default function UserPage({
+  article,
+  articles,
+  articlesCount,
+  articlesInSamePage,
+  articlesInSamePageCount,
+  articlesInSamePageForToc,
+  articlesInSamePageForTocCount,
+  ancestors,
+  comments,
+  commentsCount,
+  commentCountByLoggedInUser,
+  hasUnlisted,
+  incomingLinks,
+  issuesCount,
+  itemType,
+  latestIssues,
+  list,
+  loggedInUser,
+  order,
+  orderAscDesc,
+  page,
+  parentArticle,
+  synonymLinks,
+  tagged,
+  topIssues,
+  user,
+  users,
+  usersCount,
+  what,
+}: UserPageProps) {
+  const router = useRouter();
+  const username = user?.username
+  const isCurrentUser = loggedInUser &amp;&amp; username === loggedInUser?.username
+  const canEdit = loggedInUser &amp;&amp; loggedInUser?.username === username
+  useEEdit(canEdit, article?.slug)
+
+  // Following state.
+  const [following, setFollowing] = React.useState(false)
+  const [followerCount, setFollowerCount] = React.useState(user?.followerCount)
+  React.useEffect(() =&gt; {
+    setFollowing(user?.following)
+    setFollowerCount(user?.followerCount)
+  }, [
+    user?.following,
+    user?.followerCount,
+  ])
+
+  // title
+  const displayAndUsername = displayAndUsernameText(user)
+  let title2
+  switch (what) {
+    case 'followed':
+      title2 = 'Newly followed by'
+      break;
+    case 'follows':
+      title2 = 'New follows'
+      break;
+    case 'liked':
+      title2 = `New received likes`
+      break;
+    case 'likes':
+    case 'likes-discussions':
+      title2 = `Newly liked ${pluralize(itemType)}`
+      break;
+    case 'followed-articles':
+    case 'followed-discussions':
+      title2 = `Newly followed ${pluralize(itemType)}`
+      break;
+    default:
+      if (itemType) {
+        title2 = `${orderToPageTitle(order)} ${pluralize(itemType)}`
+      }
+  }
+  const title = `${displayAndUsername} ${title2 ? ` - ${title2}` : ''}`
+
+  const handleShortFragmentSkipOnce = React.useRef(false)
+  if (router.isFallback) { return &lt;LoadingSpinner /&gt;; }
+  return &lt;&gt;
+    &lt;MyHead title={title} /&gt;
+    &lt;div className="profile-page"&gt;
+      &lt;div className="user-info content-not-ourbigbook"&gt;
+        &lt;div className="name-and-image"&gt;
+          &lt;div className="no-image"&gt;
+            &lt;h1&gt;
+              &lt;a href={routes.user(user.username)}&gt;&lt;DisplayAndUsername user={user} showParenthesis={false} /&gt;&lt;/a&gt;
+            &lt;/h1&gt;
+            &lt;div className="user-actions"&gt;
+              &lt;FollowUserButton {...{ loggedInUser, user, showUsername: false }}/&gt;
+              &lt;CustomLink className="btn" href={routes.issueNew(`${user.username}`)}&gt;
+                &lt;DiscussionIcon /&gt; Message
+              &lt;/CustomLink&gt;
+              &lt;Maybe test={!cant.viewUserSettings(loggedInUser, user)}&gt;
+                &lt;CustomLink
+                  href={routes.userEdit(user.username)}
+                  className="btn btn-sm btn-outline-secondary action-btn"
+                &gt;
+                  &lt;SettingsIcon /&gt; Settings
+                &lt;/CustomLink&gt;
+              &lt;/Maybe&gt;
+              {isCurrentUser &amp;&amp;
+                &lt;LogoutButton /&gt;
+              }
+              {user.admin &amp;&amp; &lt;span className="h2 inline"&gt;&lt;a href={`${config.docsAdminUrl}`}&gt;&lt;StarIcon /&gt; Admin &lt;StarIcon /&gt;&lt;/a&gt;&lt;/span&gt;}
+            &lt;/div&gt;
+          &lt;/div&gt;
+          &lt;a href={routes.user(user.username)}&gt;
+            &lt;CustomImage
+              src={user.effectiveImage}
+              alt="User's profile image"
+              className="user-img"
+            /&gt;
+          &lt;/a&gt;
+        &lt;/div&gt;
+        {parentArticle
+          ? &lt;div className="parent-article"&gt;
+              &lt;h2&gt;{
+                  what === 'user-child-articles' ? &lt;&gt;&lt;ChildrenIcon /&gt; Children&lt;/&gt; :
+                  what === 'user-incoming-articles' ? &lt;&gt;&lt;IncomingIcon /&gt; Incoming links&lt;/&gt; :
+                  what === 'user-tagged-articles' ? &lt;&gt;&lt;TagIcon /&gt; Tagged&lt;/&gt; :
+                  (() =&gt; { throw new Error("TODO shit's bugged") })()
+                }:
+                {' '}
+                &lt;Link href={routes.article(parentArticle.slug)}&gt;
+                  &lt;span
+                    className="ourbigbook-title title"
+                    dangerouslySetInnerHTML={{ __html: parentArticle.titleRender }}
+                  /&gt;
+                &lt;/Link&gt;
+              &lt;/h2&gt;
+            &lt;/div&gt;
+          : &lt;&gt;
+              &lt;div className="tab-list"&gt;
+                &lt;CustomLink
+                  href={routes.userArticles(username, { sort: 'created' })}
+                  className={`tab-item${itemType === 'article' ? ' active' : ''}`}
+                &gt;
+                  &lt;ArticleIcon /&gt; Articles
+                &lt;/CustomLink&gt;
+                &lt;CustomLink
+                  href={routes.userIssues(user.username, { sort: 'created' })}
+                  className={`tab-item${itemType === 'discussion' ? ' active' : ''}`}
+                &gt;
+                  &lt;DiscussionIcon /&gt; Discussions
+                &lt;/CustomLink&gt;
+                &lt;CustomLink
+                  href={routes.userComments(user.username, { sort: 'created' })}
+                  className={`tab-item${itemType === 'comment' ? ' active' : ''}`}
+                &gt;
+                  &lt;CommentIcon /&gt; Comments
+                &lt;/CustomLink&gt;
+                &lt;CustomLink
+                  href={routes.userFollows(username)}
+                  className={`tab-item${itemType === 'user' ? ' active' : ''}`}
+                &gt;
+                  &lt;UserIcon /&gt; Follows
+                &lt;/CustomLink&gt;
+                &lt;CustomLink
+                  href={routes.userLiked(username)}
+                  className={`tab-item${what === 'liked' ? ' active' : ''}`}
+                &gt;
+                  &lt;LikeIcon /&gt; Received&lt;span className="mobile-hide"&gt; likes&lt;/span&gt;
+                &lt;/CustomLink&gt;
+                {false &amp;&amp;
+                  // TODO https://github.com/ourbigbook/ourbigbook/issues/313
+                  &lt;CustomLink
+                    href={routes.userLikedDiscussions(username)}
+                    className={`tab-item${what === 'liked-discussions' ? ' active' : ''}`}
+                  &gt;
+                    &lt;LikeIcon /&gt;&lt;DiscussionIcon /&gt; Received&lt;span className="mobile-hide"&gt; discussion likes&lt;/span&gt;
+                  &lt;/CustomLink&gt;
+                }
+              &lt;/div&gt;
+              &lt;div className="tab-list"&gt;
+                {itemType === 'article' &amp;&amp; &lt;&gt;
+                  &lt;CustomLink
+                    href={routes.userArticles(username, { sort: 'created' })}
+                    className={`tab-item${what === 'user-articles' &amp;&amp; order === 'createdAt' ? ' active' : ''}`}
+                  &gt;
+                    &lt;TimeIcon /&gt; New
+                  &lt;/CustomLink&gt;
+                  &lt;CustomLink
+                    href={routes.userArticles(username, { sort: 'updated' })}
+                    className={`tab-item${what === 'user-articles' &amp;&amp; order === 'updatedAt' ? ' active' : ''}`}
+                  &gt;
+                    &lt;TimeIcon /&gt; Updated
+                  &lt;/CustomLink&gt;
+                  &lt;CustomLink
+                    href={routes.userArticles(username, { sort: 'score' })}
+                    className={`tab-item${what === 'user-articles' &amp;&amp; order === 'score' ? ' active' : ''}`}
+                  &gt;
+                    &lt;StarIcon /&gt; Top
+                  &lt;/CustomLink&gt;
+                  &lt;CustomLink
+                    href={routes.userArticles(username, { sort: 'announced' })}
+                    className={`tab-item${what === 'user-articles' &amp;&amp; order === 'announced' ? ' active' : ''}`}
+                  &gt;
+                    &lt;AnnounceIcon /&gt; Announced
+                  &lt;/CustomLink&gt;
+                  &lt;CustomLink
+                    className={`tab-item${order === 'topicId' ? ' active' : ''}`}
+                    href={routes.userArticles(username, { sort: 'id' })}
+                  &gt;
+                    &lt;ArticleIcon /&gt; &lt;AlphabeticalOrderTabTitle /&gt;
+                  &lt;/CustomLink&gt;
+                  &lt;CustomLink
+                    href={routes.userLikes(username)}
+                    className={`tab-item${what === 'likes' ? ' active' : ''}`}
+                  &gt;
+                    &lt;LikeIcon /&gt; Liked
+                  &lt;/CustomLink&gt;
+                  &lt;CustomLink
+                    href={routes.userFollowsArticles(username)}
+                    className={`tab-item${what === 'followed-articles' ? ' active' : ''}`}
+                  &gt;
+                    &lt;FollowIcon /&gt; Followed
+                  &lt;/CustomLink&gt;
+                &lt;/&gt;}
+                {itemType === 'discussion' &amp;&amp; &lt;&gt;
+                  &lt;CustomLink
+                    href={routes.userIssues(user.username, { sort: 'created' })}
+                    className={`tab-item${what === 'user-issues' &amp;&amp; order === 'createdAt' ? ' active' : ''}`}
+                  &gt;
+                    &lt;TimeIcon /&gt; New
+                  &lt;/CustomLink&gt;
+                  &lt;CustomLink
+                    href={routes.userIssues(user.username, { sort: 'updated' })}
+                    className={`tab-item${what === 'user-issues' &amp;&amp; order === 'updatedAt' ? ' active' : ''}`}
+                  &gt;
+                    &lt;TimeIcon /&gt; Updated
+                  &lt;/CustomLink&gt;
+                  &lt;CustomLink
+                    href={routes.userIssues(user.username, { sort: 'score' })}
+                    className={`tab-item${what === 'user-issues' &amp;&amp; order === 'score' ? ' active' : ''}`}
+                  &gt;
+                    &lt;StarIcon /&gt; Top
+                  &lt;/CustomLink&gt;
+                  &lt;CustomLink
+                    href={routes.userLikesDiscussions(username)}
+                    className={`tab-item${what === 'likes-discussions' ? ' active' : ''}`}
+                  &gt;
+                    &lt;LikeIcon /&gt; Liked
+                  &lt;/CustomLink&gt;
+                  &lt;CustomLink
+                    href={routes.userFollowsDiscussions(username)}
+                    className={`tab-item${what === 'followed-discussions' ? ' active' : ''}`}
+                  &gt;
+                    &lt;FollowIcon /&gt; Followed
+                  &lt;/CustomLink&gt;
+                &lt;/&gt;}
+                {itemType === 'user' &amp;&amp; &lt;&gt;
+                  &lt;CustomLink
+                    href={routes.userFollows(username)}
+                    className={`tab-item${what === 'follows' ? ' active' : ''}`}
+                  &gt;
+                    &lt;ArrowRightIcon /&gt; Follows
+                  &lt;/CustomLink&gt;
+                  &lt;CustomLink
+                    href={routes.userFollowed(username)}
+                    className={`tab-item${what === 'followed' ? ' active' : ''}`}
+                  &gt;
+                    &lt;ArrowLeftIcon /&gt; Followed by
+                  &lt;/CustomLink&gt;
+                &lt;/&gt;}
+              &lt;/div&gt;
+            &lt;/&gt;
+          }
+      &lt;/div&gt;
+      {what === 'home' &amp;&amp;
+        &lt;Article {...{
+          ancestors,
+          article,
+          articlesInSamePage,
+          articlesInSamePageCount,
+          articlesInSamePageForToc,
+          articlesInSamePageForTocCount,
+          comments,
+          commentCountByLoggedInUser,
+          handleShortFragmentSkipOnce,
+          incomingLinks,
+          isIndex: true,
+          issuesCount,
+          latestIssues,
+          loggedInUser,
+          synonymLinks,
+          tagged,
+          topIssues,
+        }}/&gt;
+      }
+    &lt;/div&gt;
+    {(itemType === 'article' || itemType === 'discussion' || itemType === 'like') &amp;&amp;
+      &lt;ArticleList {...{
+        articles,
+        articlesCount,
+        handleShortFragmentSkipOnce,
+        hasUnlisted,
+        itemType,
+        list,
+        loggedInUser,
+        page,
+        showAuthor: what === 'likes' || what === 'followed-articles',
+        what,
+      }}/&gt;
+    }
+    {itemType === 'comment' &amp;&amp;
+      &lt;CommentList {...{
+        comments,
+        commentsCount,
+        page,
+        showAuthor: false,
+      }}/&gt;
+    }
+    {itemType === 'user' &amp;&amp;
+      &lt;UserList {...{
+        loggedInUser,
+        page,
+        users,
+        usersCount,
+      }}/&gt;
+    }
+  &lt;/&gt;
+}
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/front/";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

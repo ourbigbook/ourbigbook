@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>test_bigb_output.bigb - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="test_bigb_output.bigb"><div class="notnav"><h1><a href="">test_bigb_output.bigb</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../_dir/">(root)</a> / <a href="../_raw/test_bigb_output.bigb">test_bigb_output.bigb</a></b></div></nav></div><div class="p"><b>test_bigb_output.bigb</b></div><div class="code"><div><pre><code>= tmp
+
+Escape chars: \\, \[, \], \{, \}, \&lt;, \`, \$
+
+Escape at start of newline only:
+\* *
+\= =
+\|| ||
+\| |
+
+Same in list indent:
+
+* the list
+  \* *
+  \= =
+  \|| ||
+  \| |
+
+Sane inline element: \i[qwer] after.
+
+Sane inline element with named argument: \a[qwer]{external} after.
+
+Sane inline element with positional and named argument: \a[qwer][zxcv]{external} after.
+
+Test sane only inline: \testSaneOnly[inside TestSaneOnly inline]
+
+Test sane only block:
+
+\TestSaneOnly[inside TestSaneOnly block]
+
+Test sane only literal with subelement: \testSaneOnly[a \\testSaneOnly\[b\] c]{{preferLiteral=a \testSaneOnly[b] c}}
+
+Test sane only literal with http escape: \testSaneOnly[a \http://example.com c]{{preferLiteral=a http://example.com c}}
+
+Shorthand link http://example.com after.
+
+Shorthand link http://example.com[], with comma immediately following.
+
+Escaped shorthand link: \http://example.com
+
+Shorthand ref to toplevel: &lt;&gt;.
+
+Shorthand ref: &lt;black cat&gt;.
+
+Shorthand ref capital: &lt;Black cat&gt;.
+
+Shorthand ref plural: &lt;black cats&gt;.
+
+Shorthand ref tuberculosis bug https://github.com/plurals/pluralize/issues/172[]: &lt;tuberculosis&gt;.
+
+Shorthand ref full: &lt;black cats&gt;{full}.
+
+Topic link with spaces: &lt;#rare topic with spaces&gt;.
+
+Topic link without spaces: #RareTopic
+
+Topic link without spaces must have delimiters if followed by non-whitespace: &lt;#RareTopic&gt;after
+
+Same but followed by shorthand link: &lt;#RareTopic&gt;http://example.com
+
+Sane xref that cannot be converted to shorthand: \x[\$]
+
+Shorthand ref with greater than: &lt;greater than&gt;
+
+Inline code block: `f(x + 1)[]` after.
+
+Inline code block with backtick: \c[[a ` b]] after.
+
+Inline code block with backtick and double open square brackets: \c[[[a ` [[ b]]] after.
+
+Inline code block with backtick and double close square brackets: \c[[[a ` ]] b]]] after.
+
+Inline code block with backtick and triple open square brackets: \c[[[[a ` [[[ b]]]] after.
+
+\TestSaneOnly[Sane block with a single line.]
+
+\TestSaneOnly[
+Sane block with a single line.
+
+No, actually multiple lines.
+]
+
+\TestSaneOnly[
+\TestSaneOnly[Nested sane block]
+tight.
+]
+
+Sane block together with text in paragraph:
+\TestSaneOnly[To be]
+and another:
+\TestSaneOnly[or maybe not]
+and finally.
+
+Sane block together with macros paragraph:
+\TestSaneOnly[To be]
+\i[and another:]
+\TestSaneOnly[or maybe not]
+\i[and finally.]
+
+Explicit br is required at the end of an argument:
+
+\TestSaneOnly[
+aa
+bb\br
+]
+
+Explicit br is required before a paragraph:
+
+\TestSaneOnly[
+asdf\br
+
+qwer
+]
+
+Literal\
+newline
+
+Non-br macro without arguments\i
+followed by a newline
+
+Empty argument followed by paragraph:
+
+\TestSaneOnly[]
+
+and something after.
+
+Argument ending in list:
+
+\TestSaneOnly[
+* asdf
+]
+
+and something after.
+
+Literal block that renders as sane:
+
+\TestSaneOnly[To be \\i\[or\] maybe not.]
+{{preferLiteral=To be \i[or] maybe not.}}
+
+Literal block with escaped leading and trailing:
+
+\TestSaneOnly[\[asdf\]]
+{{preferLiteral=\{asdf\}}}
+
+\TestSaneOnly[
+\TestSaneOnly[inside double TestSaneOnly]
+]
+
+Literal block with multiple lines starting in \[ and ending in \]:
+
+\TestSaneOnly[]
+[[
+[
+]
+]]
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{description=\{asdf\}}
+
+Shorthand block together with paragraph:
+``
+x = 1
+``
+and another:
+``
+x = 2
+``
+
+Block code block:
+
+``
+x = 1
+x = x + 1
+``
+
+Block code with double backtick:
+
+```
+x = 1
+``
+x = x + 1
+```
+
+Block code with triple backtick:
+
+````
+x = 1
+```
+x = x + 1
+````
+
+Shorthand code block with attribute:
+
+``
+x = 1
+``
+{description=My code}
+
+Block code description is not literal by default:
+
+``
+000
+``
+{description=
+aaa\$bbb
+
+* ccc
+ddd
+}
+
+Inline math: $\sqrt{2}$ after.
+
+Block math:
+
+$$
+\sqrt{2} \\
+\sqrt{2}
+$$
+
+Block math single line:
+
+$$
+\sqrt{2}
+$$
+
+List:
+
+* p1
+
+  Sane block:
+
+  \TestSaneOnly[To be]
+
+  and another:
+
+  \TestSaneOnly[or maybe not]
+* p2
+
+List with paragraph:
+
+* p1
+
+  p1 2
+
+  p1 3
+* p2
+
+Nested list:
+
+* p1
+* p2
+  * p2 1
+  * p2 2
+    * p2 2 1
+  * p2 3
+* p3
+  * p3 1
+
+Nested list with paragraph:
+
+* p1
+* p2
+  * p2 p1
+
+    p2 p2
+
+    * p2 p2 1
+    * p2 p2 2
+
+    p2 p3
+  * p2 2
+  * p2 3
+* p3
+  * p3 1
+
+List with ID:
+
+\Ul[
+* p1
+* p2
+]
+{id=my-list}
+
+Shorthand ordered list:
+
+\Ol[
+* p1
+* p2
+]
+
+Tight list:
+* aaa
+* bbb
+and another:
+* ccc
+* ddd
+done.
+
+Nested and tight:
+* aaa
+  * bbb
+  * ccc
+  ddd
+
+* tight code in list without paragraph
+  ``
+  aaa
+  bbb
+  ``
+* after
+
+* tight block in list without paragraph
+  \TestSaneOnly[first]
+  and
+  \TestSaneOnly[second]
+  done.
+* after
+
+\TestSaneOnly[list after block tight]
+* the list
+
+List in paragraph with blocks with paragraph:
+* \TestSaneOnly[first]
+
+  \TestSaneOnly[second]
+
+List in paragraph with block followed by nested list tight:
+* \TestSaneOnly[first]
+
+  * second
+
+List immediately in list item:
+
+* * first
+  * second
+
+Link immediately after list:
+* first
+* second
+http://example.com
+
+One-word topic immediately after list:
+* first
+* second
+#mathematics
+
+Multi-word topic immediately after list:
+* first
+* second
+&lt;#linear algebra&gt;
+
+Internal link immediately after list:
+* first
+* second
+&lt;dog&gt;
+
+Inline code immediately after list:
+* first
+* second
+`my code`
+
+Inline math immediately after list:
+* first
+* second
+$\sqrt{2}$
+
+Quote in paragraph:
+&gt; My quote in paragraph
+
+Quote on next paragraph:
+
+&gt; My quote on next paragraph
+
+On shorthand quote after another in the same paragraph:
+
+&gt; shorthand quote 1
+&gt; shorthand quote 2
+
+One-word topic immediately after quote:
+
+&gt; My quote
+#mathematics
+
+Table:
+
+|| header 1
+|| header 2
+
+| row 1 1
+| row 1 2
+
+| row 2 1
+| row 2 2
+
+Table with title:
+
+\Table[
+|| header 1
+|| header 2
+
+| row 1 1
+| row 1 2
+
+| row 2 1
+| row 2 2
+]
+{title=My table}
+
+Table with paragraph and list:
+
+|| header 1
+|| header 2
+
+| row 1 1
+
+  row 1 1 1
+
+  * row 1 1 1 1
+  * row 1 1 1 2
+    * row 1 1 1 2 1
+
+  row 1 1 2
+| row 1 2
+
+| row 2 1
+| row 2 2
+
+Table with empty cell:
+
+| row 1 1
+|
+
+| row 2 1
+| row 2 2
+
+\Comment[[
+TODO coming soon:
+
+Quote with single paragraph:
+
+&gt; inside quote with single paragraph
+
+Quote with multiple paragraphs:
+
+&gt; inside quote with
+
+  multiple paragraphs
+]]
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=The title of my image.}
+{description=The description of my image.}
+{id=image-my-test-image}
+{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+
+== Dog
+
+&lt;code In OurBigBookExample&gt;
+
+&lt;image Tank man standing in front of some tanks.&gt;
+
+\OurBigBookExample[[
+Hello
+
+World
+
+``
+Hello
+``
+{title=In OurBigBookExample}
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{external}
+{provider=github}
+{titleFromSrc}
+]]
+
+\Comment[[
+Hello
+
+World
+]]
+
+\Include[test-bigb-output-2]{parent=dog}
+\Include[test-bigb-output-3]{parent=dog}
+
+== Black cat
+
+== Black
+
+== Black dog
+{tag=Dog}
+{tag=Black}
+
+== My \i[Tag]
+
+== My tagged
+{tag=My Tag}
+
+== Dollar
+{id=\$}
+
+== Greater &gt; than
+
+== My scope
+{scope}
+
+=== h1
+
+== Tank_man_standing_in_front_of_some_tanks.jpg
+{file}
+
+== not-index.bigb
+{file}
+
+Hyphens are not removed from shorthand links to file: &lt;not-index.bigb&gt;{file}
+
+== Header with args
+{c}
+{id=tmp-2}
+{wiki}
+
+== Synonym main
+
+= Synonym secondary
+{synonym}
+
+== Tuberculosis
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

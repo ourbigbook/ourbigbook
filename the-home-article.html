@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>The home article - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="the-home-article"><div class="notnav"><h1><a href="">The home article</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-cli"> OurBigBook CLI</a><a href=".#index-file"> Index file</a><a href=".#project-toplevel-directory"> Project toplevel directory</a><a href=".#the-toplevel-index-file"> The toplevel index file</a></div><div class="nav"><span class="tags"> Tags: <a href=".#the-toplevel-header">Toplevel header</a></span><a class="nosplit" href=".#the-home-article"></a><span class="metrics"><span class="wcntr"> Words: 237</span></span></div></nav></div><div class="p" id="_3094">The "home article" is the first article of <a href=".#the-toplevel-index-file">the toplevel index file</a>. E.g. in:</div><div class="p" id="_3095">index.bigb<div class="code" id="_3096"><div><pre><code>= John Smith's Homepage
+
+== I like dogs</code></pre></div></div>then "John Smith's Homepage" is the home article, but "I like dogs" is not.</div><div class="p" id="_3097">The home article has some special handling done to it, notably:<div class="list"><ul id="_3098"><li id="_3099">it renders as "Home" in many places as such as the breadcrumb, a way to make things more unified and succinct, especially on web</li><li id="_3100"><div class="p" id="_3101">it automatically gets two IDs:<div class="list"><ul id="_3102"><li id="_3103">a main empty ID</li><li id="_3104">a <a href=".#h-synonym-argument">synonym</a> to that empty ID</li></ul></div>For example we could write:<div class="code" id="_3105"><div><pre><code>= John Smith's Homepage
+
+== I like dogs
+
+This is my homepage: &lt;&gt;
+
+And also: &lt;John Smith's Homepage&gt;</code></pre></div></div>Here<div class="list"><ul id="_3106"><li id="_3107"><code>&lt;&gt;</code> renders as "Home"</li><li id="_3108"><code>&lt;John Smith's Homepage&gt;</code> renders as <code>John Smith's Homepage</code></li></ul></div>but both link to the same location</div><div class="p" id="_3109">As a consequence of the ID being empty, you have to set <a href=".#h-parent-argument"><code>\H</code> <code>parent</code> argument</a> of subsequent headers to empty if you witsh to use them as in:<div class="code" id="_3110"><div><pre><code>= John Smith's Homepage
+
+= I like dogs
+{parent=}</code></pre></div></div></div><div class="p" id="_3111">Doing:<div class="code" id="_3112"><div><pre><code>= John Smith's Homepage
+
+= I like dogs
+{parent=John Smith's Homepage}</code></pre></div></div>doesn't current work because the ID <code>john-smith-s-homepage</code> is just a synonym to the empty ID, and you can't currently set <code>parent=</code> to point to synonyms:</div><div class="p" id="_3113">This is because the ID John Smith's Homepage</div><div class="p" id="_3114">You can prevent a second ID from being giving by simply setting the ID to be explicitly empty:<div class="code" id="_3115"><div><pre><code>= John Smith's Homepage
+{id=}</code></pre></div></div>which would generte just a single empty ID.</div></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#the-toplevel-index-file">The toplevel index file</a></li><li><a href=".#project-toplevel-directory">Project toplevel directory</a></li><li><a href=".#index-file">Index file</a></li><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#the-id-of-the-first-header-is-derived-from-the-filename">The ID of the first header is derived from the filename</a></li></ul></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#the-home-article">The index article</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

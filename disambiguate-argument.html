@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>disambiguate argument - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="disambiguate-argument"><div class="notnav"><h1><a href=""><code>disambiguate</code> argument</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#ourbigbook-markup-syntax"> OurBigBook Markup syntax</a><a href=".#macro-argument"> Macro argument</a><a href=".#common-argument"> Common argument</a></div><div class="nav"><a class="nosplit" href=".#disambiguate-argument"></a><span class="metrics"><span class="wcntr"> Words: 324</span></span></div></nav></div><div class="p" id="_2733">Sometimes the short version of a name is ambiguous, and you need to add some extra text to make both its title and ID unique.</div><div class="p" id="_2734">For example, the word "Python" could either refer to:<div class="list"><ul id="_2735"><li id="_2736">the programming language: <a href="https://en.wikipedia.org/wiki/Python_(programming_language)">en.wikipedia.org/wiki/Python_(programming_language)</a></li><li id="_2737">the genus of snakes: <a href="https://en.wikipedia.org/wiki/Python_(genus)">en.wikipedia.org/wiki/Python_(genus)</a></li></ul></div></div><div class="p" id="_2738">The <code>disambiguate</code> <a href=".#named-argument">named argument</a> helps you deal more neatly with such problems.</div><div class="p" id="_2739">Have a look at this example:<div class="code" id="_2740"><div><pre><code>My favorite snakes are \x[python-genus]{p}!
+
+My favorite programming language is \x[python-programming-language]!
+
+\x[python-genus]{full}
+
+\x[python-programming-language]{full}
+
+= Python
+{disambiguate=genus}
+{parent=disambiguate-argument}
+
+= Python
+{c}
+{disambiguate=programming language}
+{parent=disambiguate-argument}
+{title2=.py}
+{wiki}</code></pre></div></div>from which we observe how <code>disambiguate</code>:<div class="list"><ul id="_2741"><li id="_2742">gets added to the ID after conversion following the same rules as <a href=".#automatic-id-from-title">automatic ID from title</a></li><li id="_2743">shows up on the header between parenthesis, much like Wikipedia, as well as in <a href=".#x-full-argument"><code>full</code> internal links</a></li><li id="_2744">does not show up on non-<code>full</code> references. This makes it much more likely that you will be able to reuse the title automatically on an <a href=".#internal-link">internal link</a> without the <a href=".#content-argument"><code>content</code> argument</a>: we wouldn't want to say "My favorite programming language is Python (programming language)" all the time, would we?</li><li id="_2745">gets added to the default <a href=".#h-wiki-argument"><code>\H</code> <code>wiki</code> argument</a> inside parenthesis, following Wikipedia convention, therefore increasing the likelihood that you will be able to go with the default Wikipedia value</li></ul></div></div><div class="p" id="_2746">Besides disambiguating headers, the <code>disambiguate</code> argument has a second related application: disambiguating IDs of images. For example:<div class="code" id="_2747"><div><pre><code>\x[image-the-title-of-my-disambiguate-image]{full=0}
+
+\x[image-the-title-of-my-disambiguate-image-2]{full=0}
+
+\x[image-the-title-of-my-disambiguate-image]{full}
+
+\x[image-the-title-of-my-disambiguate-image-2]{full}
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=The title of my disambiguate image}
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=The title of my disambiguate image}
+{disambiguate=2}</code></pre></div></div><div class="p" id="_2748">which renders as:</div><div><blockquote id="_2749"><div class="p" id="_2750"><a href="#image-the-title-of-my-disambiguate-image">The title of my disambiguate image</a></div><div class="p" id="_2751"><a href="#image-the-title-of-my-disambiguate-image-2">The title of my disambiguate image</a></div><div class="p" id="_2752"><a href="#image-the-title-of-my-disambiguate-image">Figure 45. "The title of my disambiguate image"</a></div><div class="p" id="_2753"><a href="#image-the-title-of-my-disambiguate-image-2">Figure 46. "The title of my disambiguate image"</a></div><div class="figure"><figure id="image-the-title-of-my-disambiguate-image"><div class="float-wrap"><a href="_raw/Tank_man_standing_in_front_of_some_tanks.jpg"><img src="_raw/Tank_man_standing_in_front_of_some_tanks.jpg" loading="lazy" height="315"></a></div><figcaption><a href="#image-the-title-of-my-disambiguate-image"><span class="caption-prefix">Figure 45. </span></a><div class="title">The title of my disambiguate image</div>. </figcaption></figure></div><div class="figure"><figure id="image-the-title-of-my-disambiguate-image-2"><div class="float-wrap"><a href="_raw/Tank_man_standing_in_front_of_some_tanks.jpg"><img src="_raw/Tank_man_standing_in_front_of_some_tanks.jpg" loading="lazy" height="315"></a></div><figcaption><a href="#image-the-title-of-my-disambiguate-image-2"><span class="caption-prefix">Figure 46. </span></a><div class="title">The title of my disambiguate image</div>. </figcaption></figure></div></blockquote></div>Note that unlike for headers, <code>disambiguate</code> does not appear on the title of images at all. It serves only to create an unique ID that can be later referred to. Headers are actually the only case where <code>disambiguate</code> shows up on the visible rendered output. We intend on making this application obsolete however with:</div><div class="p" id="_2754">This use case is even more useful when <code>title-from-src</code> is enable by default for the <a href=".#ourbigbook-json/media-providers"><code>media-providers</code></a> entry, so you don't have to repeat titles several times over and over.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href=".#common-argument">Common argument</a></li><li><a href=".#macro-argument">Macro argument</a></li><li><a href=".#ourbigbook-markup-syntax">OurBigBook Markup syntax</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#disambiguate-argument"><code>\H</code> <code>disambiguate</code> argument</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Redirect from a static website to a dynamic website - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="redirect-from-a-static-website-to-a-dynamic-website"><div class="notnav"><h1><a href="">Redirect from a static website to a dynamic website</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-cli"> OurBigBook CLI</a></div><div class="nav"><a class="nosplit" href=".#redirect-from-a-static-website-to-a-dynamic-website"></a><span class="metrics"><span class="wcntr"> Words: 109</span></span></div></nav></div><div class="p" id="_3846">This section describes how to generate mass redirects from a <a href=".#p-publish">static website</a> such as <a href="https://cirosantilli.com">cirosantilli.com</a> to a <a href=".#ourbigbook-web">OurBigBook Web</a> dynamic website such as <a href="https://ougbook.com/cirosantilli">ougbook.com/cirosantilli</a>.</div><div class="p" id="_3847">The use case of this is if you are migrating from one domain to another, and want to keep old files around to not break links, but would rather redirect users to the new preferred pages instead to gather PageRank there.</div><div class="p" id="_3848">This happened in our case when Ciro felt that <a href=".#ourbigbook-web">OurBigBook Web</a> had reach enough maturity to be a reasonable reader alternative to the static website.</div><div class="p" id="_3849">Basically what you want to do in that case is to use the following options:<div class="list"><ul id="_3850"><li id="_3851"><a href=".#ourbigbook-json/tosplitheaders"><code>toSplitHeaders</code></a></li><li id="_3852"><a href=".#ourbigbook-json/htmlxextension"><code>htmlXExtension</code></a></li><li id="_3853"><a href=".#ourbigbook-json/xprefix"><code>xPrefix</code></a></li><li id="_3854"><a href=".#ourbigbook-json/publishoptions"><code>publishOptions</code></a></li></ul></div>as in:<div class="code" id="_3855"><div><pre><code>"publishOptions": {
+  "toSplitHeaders": true,
+  "htmlXExtension": false,
+  "xPrefix": "https://ourbigbook.com/cirosantilli/"
+},</code></pre></div></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(2)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(3)</span></a></h2><div class="list"><ul><li><a href=".#ourbigbook-json/htmlxextension"><code>htmlXExtension</code></a></li><li><a href=".#ourbigbook-json/tosplitheaders"><code>toSplitHeaders</code></a></li><li><a href=".#ourbigbook-json/xprefix"><code>xPrefix</code></a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

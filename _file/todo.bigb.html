@@ -1,0 +1,2261 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>todo.bigb - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="todo.bigb"><div class="notnav"><h1><a href="">todo.bigb</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../_dir/">(root)</a> / <a href="../_raw/todo.bigb">todo.bigb</a></b></div></nav></div><div class="p"><b>todo.bigb</b></div><div class="code"><div><pre><code>= TODO
+{c}
+{scope}
+
+== Issues
+
+=== Encrypted client hello
+{tag=Web}
+
+One day we'll enable it, e.g. with Cloudfare:
+* https://developers.cloudflare.com/support/third-party-software/others/configure-cloudflare-and-heroku-over-https/
+* https://developers.cloudflare.com/ssl/edge-certificates/ech/
+
+=== Add button on web to move article to trash on web
+{tag=Web}
+
+Having the same effect as whatever we decide to make &lt;Move articles deleted locally to under a trash article on web&gt;{full} do.
+
+=== Convert ordered list Ol to a boolean argument of unordered lists Ul
+{tag=File autogen}
+
+We are better than HTML, we have arguments! This is just a style matter, HTML was wrong to add it to content model.
+
+=== Allow linking to auto-generated files
+{tag=File autogen}
+
+=== Link to _file rather than _raw if there's split pages
+{tag=File autogen}
+
+E.g.:
+``
+= path/to/myfile.txt
+{file}
+``
+whould generate a breadcrumb like:
+``
+(root)/path/to/&lt;myfile.txt&gt;{file}{split}
+``
+where `{split}` is a possibly new argument that ensures it links to split if there are split pages, and not the current:
+``
+(root)/path/to/\a[myfile.txt]
+``
+This would make &lt;file autogen&gt; much more useful and visible. The general premise is that we should link to split `{file}` preferentially always.
+
+Pre-requisite: &lt;Allow linking to auto-generated files&gt;
+
+=== Show directory listings on `{file}` headers
+
+Like big files, only show on split pages.
+
+Once this is done, we can entirely replace the custom directory listing generated in the `ourbigbook` executable by it, which will be the exact same code path as `{file}` generation.
+
+Closely related issue: https://github.com/ourbigbook/ourbigbook/issues/348
+
+=== Nested set index corruption
+{tag=Web}
+{tag=Bug}
+{id=5}
+
+There is an outstanding nested set index corruption going on which hasn't been identified yet. Running on Heroku:
+``
+web/bin/rerender-articles.js
+``
+blew up with:
+``
+cirosantilli/simply-connected-space
+cirosantilli/simulation
+/app/web/convert.js:459
+        throw new ValidationError(`the parent choice "${newParentId}" would create an infinite loop`)
+              ^
+
+ValidationError
+    at /app/web/convert.js:459:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async /app/web/node_modules/sequelize/dist/lib/sequelize.js:463:24
+    at async Object.convertArticle (/app/web/convert.js:176:3)
+    at async /app/web/models/article.js:844:9
+    at async /app/web/node_modules/sequelize/dist/lib/sequelize.js:463:24
+    at async Article.rerender (/app/web/models/article.js:842:5)
+    at async Article.rerender (/app/web/models/article.js:1615:9)
+    at async /app/web/bin/rerender-articles.js:19:1 {
+  info: undefined,
+  errors: 'the parent choice "@cirosantilli/conceptual-model" would create an infinite loop',
+  status: 422
+}
+``
+and the DB check:
+``
+heroku run web/bin/normalize -c nested-set -u cirosantilli
+``
+failed with:
+``
+AssertionError [ERR_ASSERTION]: nested-set: (slug, nestedSetIndex, nestedSetNextSibling, depth): actual: (cirosantilli/natural-science, 419, 3414, 2) !== expected: (@cirosantilli/natural-science, 419, 3411, 2)
+    at Object.normalize (/app/web/models/index.js:400:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async /app/web/bin/normalize:28:3 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 3414,
+  expected: 3411,
+  operator: 'strictEqual'
+}
+``
+
+The local source corresponding to that was:
+``
+= Conceptual model
+{parent=Scientific method}
+{wiki}
+
+= Model
+{synonym}
+
+= Simulation
+{parent=Conceptual model}
+{wiki}
+``
+and it hadn't changed in a long time according to git log, also:
+``
+= Natural science
+{parent=Science}
+{wiki}
+
+...
+
+= Thermo Electron
+{c}
+{parent=Thermo Fisher Scientific}
+{title2=1956-}
+{wiki}
+
+= Natural science YouTube channel
+{parent=Natural science}
+{wiki}
+
+= The Thought Emporium
+{c}
+{parent=Natural science YouTube channel}
+{wiki}
+
+\Include[linguistics]{parent=science}
+
+...
+
+= Scientific method
+{parent=Science}
+{wiki}
+``
+are three consecutive siblings.
+
+Some related database lines via:
+``
+bin/psql -A -F' ' &lt;&lt;EOF &gt;db.tmp
+select "nestedSetIndex","nestedSetNextSibling",slug from "Article" where slug like 'cirosantilli/%' order by "nestedSetIndex"
+EOF
+``
+are:
+``
+  419 | 3414 | cirosantilli/natural-science
+
+ 3411 | 3412 | cirosantilli/thermo-electron
+ 3412 | 3414 | cirosantilli/natural-science-youtube-channel
+ 3413 | 3414 | cirosantilli/the-thought-emporium
+ 3414 | 3553 | cirosantilli/linguistics
+
+ 3551 | 3553 | cirosantilli/chinese-slang
+ 3552 | 3553 | cirosantilli/shabi
+ 3553 | 3864 | cirosantilli/scientific-method
+``
+Humm, that index looks correct, what's going on?
+
+I hack:
+``
+
+@@ -392,6 +392,7 @@ async function normalize({
+         const articles = await Article.treeFindInOrder({ username, transaction })
+         if (check) {
+           const nestedSetsFromRefs = await Article.getNestedSetsFromRefs(username, { transaction })
++          nestedSetsFromRefs.map(e =&gt; console.error(`${e.nestedSetIndex} ${e.nestedSetNextSibling} ${e.id}`))
+``
+and see:
+``
+3550 3864 @cirosantilli/scientific-method
+``
+There's an offset of 3 somewhere!
+
+OK the first glaring error in the DB is social science right in the middle of physics things:
+``
+1497 1498 cirosantilli/physx
+1500 1801 cirosantilli/social-science
+1501 1503 cirosantilli/3d-ridig-body-dynamics-benchmark
+1502 1503 cirosantilli/simbenchmark
+``
+Also https://ourbigbook.com/cirosantilli/social-science gave 500.
+
+Possibly related:
+``
+1501 1503 cirosantilli/3d-ridig-body-dynamics-benchmark
+``
+was a recent change, and part of this complex source code move that can be simplified to:
+```
+--- a/science.bigb
++++ b/science.bigb
+@@ -345,40 +345,7 @@ https://www.youtube.com/watch?v=H_H_TF5Kxks This Lab is RIDICULOUS (2021) gives
+-= 3D physics engine
+-{parent=Physics engine}
+-{tag=3D}
+-
+-= 3D physics engine benchmark
+-{parent=3D physics engine}
+```
+to:
+```
+@@ -512,3 +512,117 @@ This idealization does not seems to be possible at all in the context of &lt;Maxwel
+ = Rigid body
+ {parent=Point particle}
+ {wiki}
++
++= Rigid body dynamics
++{parent=Rigid body}
++
++= 3D rigid body dynamics
++{parent=Rigid body dynamics}
++{tag=3D}
++
++= 3D rigid body dynamics simulator
++{parent=3D rigid body dynamics}
++
++= 3D physics engine
++{synonym}
++
++= PhysX
++{c}
++{parent=3D rigid body dynamics simulator}
++{tag=C++ library}
++
++= 3D ridig body dynamics benchmark
++{parent=3D rigid body dynamics}
++
++= 3D physics engine benchmark
++{synonym}
++
++= SimBenchmark
++{parent=3D ridig body dynamics benchmark}
+```
+so it contains two simultaneous renames, before:
+``
+= 3D physics engine
+  = 3D physics engine benchmark
+``
+after:
+``
+= 3D rigid body dynamics
+  = 3D rigid body dynamics simulator (3D physics engine)
+    = PhysX
+  = 3D ridig body dynamics benchmark (3D physics engine benchmark)
+    = SimBenchmark
+``
+Gotta try to make a minimal test reproduction for this mess.
+
+=== Like and unlike requests are very slow
+{tag=Performance}
+{tag=Web}
+
+On ourbigbook.com like and unlike takes 4s-10s! Something is wrong. It must be because of the complex side effects like topic updating? Maybe those should be deferred? This only appears noticeable on a larger database.
+
+Edit: as of today it was taking 500 ms, so likely some index was added that improved it a lot.
+
+=== Incoming links and tagged metadata does not show synonyms
+{tag=Metadata section}
+{tag=Synonym}
+
+Both CLI and web. E.g.:
+
+README.bigb
+``
+= Index
+
+&lt;notindex2&gt;
+``
+
+notindex.bigb
+``
+= Notindex
+
+= Notindex2
+{synonym}
+``
+
+then:
+``
+ourbigbook .
+``
+the output notindex.html does not have an incoming links metadata section. With `&lt;notindex&gt;` it does have a metadata section. The outcome metadata section should be identical on both.
+
+Same for tags that use the synonym.
+
+Added a test now for it.
+
+=== Image title with x to image with content incorrectly disallowed
+{tag=Lib}
+
+Should only blow up if the `\\x` does not have a content explicitly set. See broken test `cross reference from image title to previous non-header with content is allowed`.
+
+To fix we need to store some extra data on the Ref or Id table that determines if the reference needs the title or not to determine its own ID.
+
+=== Lint tables for correct number of columns
+{tag=Lib}
+{tag=Table}
+
+Maybe there is a valid use case for rows with different number of columns. But likely by default we should error unless the use explicitly allows this.
+
+=== Remove synonym from JSON, use Ref.type = synonym instead
+{tag=web}
+{tag=refactor}
+
+When hydrating JSON asts from server we just need to do that extra join.
+
+=== Forbid uppercase IDs on web and CLI by default
+{tag=web}
+
+=== Option to add view on ourbigbook link on header metadata of CLI static renders
+{tag=web}
+
+=== Reorder convert to move Article.destroySideEffect before File.destroy
+{id=4}
+{tag=web}
+{tag=Refactor}
+
+=== List synonyms on metadata section
+{tag=Synonym}
+
+Edit: done for CLI. On web, showing just IDs to user to start with. Attempted to render on fly but failing for now. That's the only missing thing.
+
+Both web and CLI.
+
+=== Move all header metadata from source to HTML in Web
+{tag=Web}
+{id=web-header-metadata-to-widgets}
+
+This is way more user friendly. We have currently done that for `parent=` which would be:
+``
+= Calculus
+{parent=Mathematics}
+``
+but now is just set on the Web UI.
+
+But we should likely do this for every other metadata, e.g.:
+* `synonym`
+* `id`
+* `scope`
+* `title2`
+* `c`
+and so on.
+
+=== Fix parentId and previousSiblingId on articles API
+{id=fix-parentid-and-previoussiblingid-on-articles-api}
+
+The underlying reason is that:
+``
+.getArticles({includeParentAndPreviousSibling: true
+``
+is broken. The singular version `getArticle` however is not.
+
+=== Id, Ref and File foreign normalization
+{id=ref-file-normalization}
+{tag=DB}
+
+We've started noticing this as we went along and became more familiar with proper database design:
+* Ref.from_id and to_id should point to Id
+* File should be removed when deleted: https://github.com/ourbigbook/ourbigbook/issues/216 Currently this can only happen locally. Edit: will also start happening on upstream with synonym moves.
+* toplevel_id
+  * File.toplevel_id should point to an Id object via primary key. Currently done via idid text.
+  * Id.toplevel_id should point to an Id object. No links at all apparently.
+* Article.topicId should point to Topic.id, not be TEXT
+
+We could then consider removing several `Ref.destroy` and `Id.destroy` `ON CASCADE` with `File` and `Id`, rather than manually.
+
+=== Allow creation of multiple headers in one go on web
+{tag=Web}
+{id=web-create-multiple-headers}
+
+=== Option to add zip of local conversion to converted GitHub pages website
+{tag=Publish}
+
+Would be cool, easily allowing full website download for offline viewing! One day.
+
+=== Cross source file word count is always 0 on ToC hover
+{tag=Word count}
+{id=3}
+
+=== Internal cross reference to non-existent ID is not checked before render the second time we try to convert
+{id=1}
+{tag=Bug}
+{tag=Error checking}
+
+README.bigb
+``
+= Index
+
+&lt;asdf&gt;
+``
+Then the first:
+``
+ourbigbook .
+``
+fails as desired before any rendering takes place:
+``
+extract_ids: README.bigb
+extract_ids: README.bigb finished in 45.4546590000391 ms
+error:
+README.bigb:3:2: cross reference to unknown id: "asdf"
+``
+Then the second:
+``
+ourbigbook .
+``
+fails differently, incorrectly trying to render but failing:
+``
+extract_ids: README.bigb
+extract_ids: README.bigb skipped by timestamp
+render: README.bigb
+error: README.bigb:3:2: cross reference to unknown id: "asdf" at render time
+copy README.bigb -&gt; out/html/_raw/README.bigb
+render: README.bigb -&gt; out/html/index.html finished in 51.55012200027704 ms
+``
+with an error at render time.
+
+This is especially noticeable/confusing when you are converting a large number of files, and the second run will start converting a large number of files instead of failing early, until it eventually reaches the error when rendering the specific file.
+
+The key code point is:
+``
+async function check_db(sequelize, paths_converted, { transaction }) {
+``
+We are only checking the DB for the paths converted, but then due to parse skipping we skip the paths and don't check them anymore.
+
+Instead, we should check the entire database.
+
+The question then is: is there a way to do this efficiently with a query, without bringing the entire Refs database into memory, notably conisdering inflections?
+
+=== Add a `File:` prefix to `{file}` headers
+{tag=File}
+
+And also to full links, at least on ToC.
+
+=== Allow `{parent}` to point to `{file}` header
+{tag=File}
+
+``
+= my/file.txt
+
+= Asdf
+{parent=my/file.txt}
+{parentFile}
+``
+
+Same for tags.
+
+Currently there is some confusion in the code on treating the `&lt;&gt;{file}` like the file in `= Header{file}`: one if about pointing to things, the other is about the current thing. We will disambiguate with `parentFile`.
+
+Same for `tag` and `tagFile`.
+
+=== Show likers list on article page
+{tag=Web}
+
+=== Show like and follow date on user like follow lists
+{tag=Web}
+
+=== Handle email replies to notification@ourbigbook.com
+{tag=Web}
+
+=== Firefox tab lists don't wrap
+{tag=Firefox}
+{tag=Web}
+
+On Firefox 109, tab lists such as those in the home page don't wrap if the screen is narrow.
+
+This is due to:
+``
+.tab-item: { white-space: pre }
+``
+but does not make much sense, as it should only take effect inside `.tab-item`, not on the `.tab-list` itself, feels like a firefox bug.
+
+We want the `white-space: pre` so that tab entries won't be broken up across lines.
+
+Works fine in Chromium 109.
+
+TODO can't reproduce on a minimal HTML page, so anoying!!!
+```
+&lt;!doctype html&gt;
+&lt;html lang=en&gt;
+&lt;head&gt;
+&lt;meta charset=utf-8&gt;
+&lt;title&gt;Min sane&lt;/title&gt;
+&lt;style&gt;
+span {
+  white-space: pre;
+}
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;span&gt;My item 1&lt;/span&gt;
+  &lt;span&gt;My item 2&lt;/span&gt;
+  &lt;span&gt;My item 3&lt;/span&gt;
+  &lt;span&gt;My item 4&lt;/span&gt;
+  &lt;span&gt;My item 5&lt;/span&gt;
+  &lt;span&gt;My item 6&lt;/span&gt;
+  &lt;span&gt;My item 7&lt;/span&gt;
+  &lt;span&gt;My item 8&lt;/span&gt;
+  &lt;span&gt;My item 9&lt;/span&gt;
+  &lt;span&gt;My item 10&lt;/span&gt;
+  &lt;span&gt;My item 11&lt;/span&gt;
+  &lt;span&gt;My item 12&lt;/span&gt;
+  &lt;span&gt;My item 13&lt;/span&gt;
+  &lt;span&gt;My item 14&lt;/span&gt;
+  &lt;span&gt;My item 15&lt;/span&gt;
+  &lt;span&gt;My item 16&lt;/span&gt;
+  &lt;span&gt;My item 17&lt;/span&gt;
+  &lt;span&gt;My item 18&lt;/span&gt;
+  &lt;span&gt;My item 19&lt;/span&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+```
+
+=== Follow topic
+{tag=Web}
+{tag=Topic}
+
+This is one of those things that require a smart algorithm otherwise it will be quickly useless.
+
+=== At mention and topics on web
+{tag=Web}
+
+Currently on web:
+* `&lt;@user-name&gt;` produces a working link, but with bad title "index"
+* `&lt;#some-topic&gt;` fails
+
+What we want to work is either of:
+* `@user-name`
+* `#some-topic`
+* `&lt;#some topic&gt;`
+
+Perfect topic rendering can be a bit trick because it might require fetching actual topic from DB to see its preferred title.
+
+At mentions ideally bring the side-effect of notifications, but then we have to think about spam a bit too.
+
+=== At mention and topics locally
+{tag=Web}
+
+The constructs from &lt;at mention and topics on web&gt; should also just work locally, and redirect to ourbigbook.com by default.
+
+Once they work, document them with something like:
+
+``
+= `\x` `href` argument
+{parent=`\x` sargument}
+
+If the `href` argument starts with certain prefixes, magic links are generated:
+* `@`: link to &lt;OurBigBook.com&gt; user profiles, e.g.:
+  \OurBigBookExample[[
+  I love \a[@cirosantilli], he is great!
+  ]]
+  links to: https://ourbigbook.com/cirosantilli
+
+  TODO make it work without the `\a`, just: `@cirosantilli`.
+* `#`: link to &lt;OurBigBook.com&gt; &lt;OurBigBook Web topics&gt;[topics]:
+  \OurBigBookExample[[
+  \a[#quantum-mechanics][Quantum mechanics] is very difficult to understand.
+  ]]
+  links to: https://ourbigbook.com/go/topic/quantum-mechanics
+``
+
+It is not perfectly elegant to use `&lt;&gt;` for this, especially locally, since it means linking to IDs that don't exist (on Web, `@username` is an actually regular ID on the DB. But `#topic` isn't). But perhaps just having the `&lt;&gt;` links to non-files is just the way to go.
+
+=== View article and issue likers and followers
+{tag=Web}
+{tag=Issue}
+
+=== Like comments
+{tag=Web}
+{tag=Issue}
+
+=== Use same parent title if the current user has a matching article when clicking "Create my own version of article" 
+{tag=Web}
+{tag=Topic}
+
+=== Delete article
+{tag=Web}
+
+This is a bit hard to to properly as it requires checking that a billion dependant objects are also deleted:
+* issues
+* comments of those issues
+* file
+* IDs defined in that article
+* change the parentId of all chidren to the parent article of the deleted article, and also updated nested set index
+Some of those can go on cascades, but others will require side-effects.
+
+Related:
+* https://github.com/ourbigbook/ourbigbook/issues/216
+
+=== Serialize parsed build-in KaTeX macros
+{tag=Math}
+
+I.e. save the output of `katex.renderToString` to JSON or some other format. This approach would ensure minimal load times no matter what KaTeX is doing, and possibly provide some good portability.
+
+Off the bat `JSON.stringify` doesn't work due to circular references though that can be overcome: https://stackoverflow.com/questions/10392293/stringify-convert-to-json-a-javascript-object-with-circular-reference
+
+=== Handle web upload after local article renaming with synonym redirection set
+{tag=Web}
+{tag=Web upload}
+
+Web upload breaks with duplicate ID if you rename a header and synonym the old one.
+
+TODO this issue is the same as: https://github.com/ourbigbook/ourbigbook/issues/319[]?
+
+=== Photos of the merchandise!
+{tag=Publicity}
+
+=== Flyers
+{tag=Publicity}
+
+=== ourbigbook.com --web uploads sometimes fail with ETIMEDOUT or ECONNRESET
+{tag=Bug}
+{tag=Web upload}
+
+ourbigbook --web sometimes randomly times out on ourbigbook.com. First an ID extraction or render hangs, and then after a few seconds things blow up Usually happens around the thousands of articles uploaded.
+
+I've seen it happen once or twice locally as well.
+
+There are no server exceptions on `heroku logs`. I simply can't understand why it happens.
+
+Once the error was `ETIMEDOUT`, but most times it was `ECONNRESET`.
+
+* https://stackoverflow.com/questions/17245881/how-do-i-debug-error-econnreset-in-node-js
+
+Next time it happens I'm just going to add a timeout plus retry mechanism as it is rare enough that it shouldn't matter, and the problem does seem to go away if I try to continue the upload immediately afterwards: given the SHA2-based skips, restarting from the CLI we just start exactly where we had left off, so hopefully will also work from Js.
+
+=== Header followed by paragraph without blank line does not split correctly
+{tag=Bug}
+
+README.bigb
+
+``
+= Asdf
+
+== Qwer
+zxcv
+``
+
+then:
+
+``
+ourbigbook --split-headers README.bigb
+``
+
+leads to `out/html/split.html` that contains the `Qwer` header, and no `qwer.html` output.
+
+This construct should just be forbidden by linting instead forcing the preferred:
+
+``
+= Asdf
+
+== Qwer
+
+zxcv
+``
+
+Similar problem with preceeding paragraph:
+
+README.bigb
+
+``
+= Asdf
+
+zxcv
+== Qwer
+``
+
+The root failure case in both cases is that the header goes inside the paragraph.
+
+Hmm, perhaps that is not a bad behaviour... OK so going back a bit further, the problem is the outcome of:
+``
+ourbigbook --web .
+``
+on such cases, which leads to errors.
+
+=== Store SHA of each article + descendants and skip API re-renders for entire subtrees
+{tag=Web}
+{tag=Web upload}
+
+This is one step beyond &lt;skip re-render from API if article was unchanged&gt; as it removes the requirement of actually uploading thousands of lines of content.
+
+It requires negotiating with the server instead.
+
+This would be particularly powerful if we included the descendants on the SHA of each parent, much like Git. This way we could skip enter unmodified subtrees, likely like Git.
+
+Yes, we are somewhat re-implementing parts of Git with this. But at least it is simple, and works at a sub-blob level given our grater specialization to our specific use case.
+
+=== Multiheader editing
+{tag=Web}
+
+Maybe we should only do this after: https://github.com/ourbigbook/ourbigbook/issues/248 to prevent data loss.
+
+One possibility is to prevent deletion/renaming of headers. We could just check the new ID list agains the previous ID list.
+
+This was possible previously on Web, but we forbade it for simplicity of implementation sake.
+
+We can then think about how the UI would look like, there might be a "Edit article and descendants" button on toplevel only for example.
+
+=== Make open and close arrows have the same height on ToC
+{tag=ToC}
+{tag=UI}
+
+Otherwise the difference in ToC line entry spacing is very unnerving.
+
+=== Add sibling/add child buttons next to toc entries of articles owned by the current user
+{tag=ToC}
+{tag=Web}
+
+= Add sibling/add child buttons next to self headers and toc
+{synonym}
+
+Self headers done. ToC missing.
+
+=== Progress spinner after submit
+{tag=UI}
+{tag=Web}
+
+&lt;Article create and update slow on web&gt; was an extreme case of slowness, but it taught us that we do want some kind of immediate feedback as soon as users click a form submission, and one feedback blocks further action such as typing.
+
+=== Hide unconfirmed users
+{tag=Web}
+
+Will likely get solved via: https://github.com/ourbigbook/ourbigbook/issues/329
+
+=== Fragment redirects not working on web
+{tag=Web}
+
+E.g. https://ourbigbook.com/cirosantilli/mathematics#cirosantilli/physics should redirect to https://ourbigbook.com/cirosantilli/physics
+
+Is working on static website: https://cirosantilli.com/mathematics#physics does redirect to https://cirosantilli.com/physics
+
+=== WYSIWYG
+{tag=Editor}
+{tag=Web}
+
+=== Live error checking as you type on editor if chosen previous sibling is not a child of the selected parent article
+{tag=Editor}
+{tag=Error checking}
+{tag=Web}
+
+Current failure behavior if use submits anyways is: shows API error `previousSiblingId "@cirosantilli/physics" does not exist, is not a header or is not a child of parentId "@cirosantilli/test-article"` under title, and it only goes away if you edit title, which is confusing as it is not title related. Also, while title error is visible, the submit button is inactive so the user is left a bit stuck.
+
+=== Reach the same performance as static website with dynamic tree
+{tag=Performance}
+{tag=Web}
+
+The move to dynamic tree slowed things down a lot for large pages such as: https://ourbigbook.com/cirosantilli[], making it is just unacceptably slow, and actually blocks any other page loads as the server does work.
+
+These were at cirosantilli.github.io at aa60ccb934bf9646d548e6b761489d31aec1a341, which has almost 7k articles.
+
+Some benchmarks on Chromium:
+* `ping cirosantilli.com`: 17 ms
+* https://cirosantilli.com `GET /`: 1.3s. Waiting for server: ping time only, the rest is content download. `content-length` from response: 300 kB zipped.
+* https://ourbigbook/cirosantilli `GET /`:
+  * Waiting for server response: 3.5s to 4s. That's our problem!
+  * Contend download: 2.5s
+* http://localhost:3000/cirosantilli `npm run dev` `GET /`:
+  * Waiting for server response: between 2 and 3s. So we reproduce relatively well locally.
+
+    curl `time_starttransfer` after a few stabilizing runs: 2.6s
+  * Contend download: 1.6s
+
+If we comment the single line in Article.tsx:
+``
+//html += renderTocFromEntryList({ entry_list })
+``
+TTFB falls from 2.6s to 0.77s.
+
+Removing the `renderRefCallback` drops it to between 2.2 and 2.4.
+
+Limiting the ToC to 1k articles on server side leads to 0.5s. Maybe that's the first workaround we have to do until something else is understood. It is a shame that we have to go so much lower than the static website.
+
+Maybe we can use some of the techniques from: https://reactjs.org/docs/optimizing-performance.html#virtualize-long-lists[] to improve things.
+
+=== Inject React header metadata on each header separately
+{tag=Web}
+
+This is closely related to: &lt;Reach the same performance as static website with dynamic tree&gt;. Performance considerations should guide if we actually want this or not.
+
+No more need for:
+``
+for (const h of elem.querySelectorAll('.h')) {
+``
+on `Article.tsx` now that we have separate headers, we can just inject it one by one.
+
+Bibliography:
+
+* https://stackoverflow.com/questions/44643424/how-to-parse-html-to-react-component
+* https://stackoverflow.com/questions/36104302/how-do-i-convert-a-string-to-jsx
+* https://stackoverflow.com/questions/71224517/is-it-possible-to-inject-a-next-js-component-into-an-existing-application-html
+
+=== Include should work transparently with README in subdirectory
+{tag=Include}
+{tag=Web}
+
+We should be able to write:
+
+animal.bigb
+``
+= Animal
+
+\Include[dog]
+``
+
+dog/README.bigb
+``
+= Dog
+``
+
+since the dog.bigb file should ideally be fully equivalent to
+
+dog.bigb
+``
+= Dog
+{scope}
+``
+
+=== Remove the path parameter from the article creation API
+{tag=Web}
+
+Edit: a use case has come up for this: if we can find an existing article that the user is trying to update, we might be able to determine that it does not need to be converted in the first place: &lt;skip re-render from API if article was unchanged&gt;. But then of course we can't render the article to find its ID, as the hole point is to skip that render in the first place.
+
+We likely want to get rid of the `path` parameter, and instead determine IDs fully from more "in-band" things like `{id}` and `{scope}`.
+
+Both `{scope}` for subdirs and `{id}` for custom id basename !== from title should already be working, we just haven't setup ourbigbook CLI to inject `{id}` based on file path I think.
+
+`{scope}` is however not really usable in general on the same source tree of cirosantilli.github.io due to https://github.com/ourbigbook/ourbigbook/issues/284[].
+
+This would forbid some constructs that are currently possible locally, e.g. scopes that are not children such as:
+
+parent.bigb
+``
+= Parent
+
+== Child
+{scope}
+
+=== Child 2
+{scope}
+``
+
+parent2.bigb
+``
+= Parent
+
+\Include[child/subdir]
+``
+
+child/subdir.bigb
+``
+= Subdir
+``
+
+but that is fine, it is saner if we enforce scopes to match the tree article tree hierarchy.
+
+=== Statically render links to issues and topic under each header for better SEO
+{tag=Web}
+
+The links don't show without JavaScript, this can be seen by disabling Js.
+
+The counts can be dynamic loaded, but the links we really want to do at compile time... any way?
+
+== Make rendered issue and comment fragments as short as possible
+{tag=Comment}
+{tag=Web}
+
+For now I made them almost fully correct AFAIS:
+* no ID conflicts that would show on the same page, e.g. across issue IDs and comment IDs
+* links seem to go to where we want them to
+
+The only known bug is: &lt;cannot link from comment to article&gt;
+
+However, in order to achieve this easily we used scopes liberally, and so the fragments are horrendously long.
+
+The ideal fragment setup for both comments and issues would be either:
+* we don't ever want to show multiple comments/issues from different issues on same page
+  * issue IDs:
+    * regular elements `my-header`
+    * ToC IDs
+      * the ToC: `_toc`
+      * the links: `_toc/my-header`
+  * comment IDs:
+    * regular elements `_comment/1/my-header`
+    * ToC IDs
+      * the ToC: `_comment/1/_toc`
+      * the links: `_comment/1/_toc/my-header`
+* we want to show multiple comments/issues from different issues on same page:
+  * issue IDs:
+    * regular elements `_issue/barack-obama/article-topic/1/my-header`
+    * ToC IDs
+      * the ToC: `_issue/barack-obama/article-topic/1/_toc`
+      * the links: `_issue/barack-obama/article-topic/1/_toc/my-header`
+  * comment IDs:
+    * regular elements `_comment/barack-obama/article-topic/&lt;issue-id&gt;/&lt;comment-id&gt;/my-header`
+    * ToC IDs
+      * the ToC: `_comment/barack-obama/article-topic/&lt;issue-id&gt;/&lt;comment-id&gt;/_toc`
+      * the links: `_comment/barack-obama/article-topic/&lt;issue-id&gt;/&lt;comment-id&gt;/_toc/my-header`
+
+== Cannot link from comment to article
+{tag=Comment}
+{tag=Web}
+
+https://github.com/ourbigbook/ourbigbook/issues/277
+
+As of now, does work with a leading slash: `&lt;/test data&gt;`.
+
+Also: it does work if there is a header in the comment before the link.
+
+=== Clicking on the comment header does not highlight the header line
+{tag=Comment}
+{tag=Web}
+
+By that we mean the hardcoded `#n` area with the metadata, not an h1.
+
+However if you refresh the page, it highlights! Mystery.
+
+=== Comment h1 self link is empty and thus refreshes the page
+{tag=Comment}
+{tag=Web}
+
+=== Remove all unnecessary newlines from HTML output
+{tag=Lib}
+
+These newlines were added for debugging purposes, but debugging should just be done with:
+``
+npx js-beautify min.html
+``
+
+Newlines just add complexity to our codebase, and are not even getting removed from final output as things stand to take up a little bit of useless space.
+
+=== ToC link on headers not opening collapsed toc entries
+{c}
+{tag=Bug}
+
+=== parentId dropdown autocomplete
+{tag=Web}
+
+=== LIKE metadata on JOIN on
+
+* web descendants
+* all article lists
+
+=== Load more articles
+{tag=Dynamic tree fetch}
+{tag=Web}
+
+Either with scroll or a load more button. Slightly tempted by a load more button?
+
+To implement, we just have to expose the ArticlePage.ts fetch in an API manner. The page then tracks current limit on a state variable, and just requests more from that point onwards.
+
+Starting from the commit of this line, we are also going to limit the ToC, so a load more button on ToC would also be of interest: &lt;load more ToC entrie&gt;.
+
+=== Load more ToC entrie
+{tag=Dynamic tree fetch}
+{tag=Web}
+
+=== Word count on web
+{tag=Web}
+{tag=Word count}
+
+Likely also at same time do a source character count.
+
+Likely would be easy to implement as it would reuse the exact same query that we already use to update ncestors of the nested set index.
+
+Was removed at: &lt;remove word count on web&gt; because would require actually implementing properly but lazy.
+
+We should likely not show it on link hover however, only headers, as doing so would mean having to update every single page that links to a header for correctness. If this is ever done, it should be Js runtime stuff only.
+
+=== Monaco editor requires web
+{tag=Offline development}
+{tag=Editor}
+{tag=Web}
+
+It seems that the third party library we are using is just a hack and doesn't properly provide the thing offline... OMG could it be so crap? https://stackoverflow.com/questions/59773190/monaco-editor-with-nextjs/68611592#68611592
+
+=== Respect ourbigbook.json `htmlXExtension` on ourbigbook.json redirects
+
+Would require either moving `htmlXExtension` vs `--no-html-x-extension` processing out of `index.js`, or more ideally moving the redirection generation into index.js.
+
+But aint't nobody got time for that!
+
+=== iframe macro
+
+Reasonable results can already be obtained with:
+\passthrough[[
+&lt;iframe src="_raw/js/matterjs/examples.html#top-down-asdw-fixed-viewport" width="1000" height="850"&gt;&lt;/iframe&gt;
+]]
+The main issue with that is the possibly changing `_raw/js/matterjs/examples.html` path depending on scopes, and it is also not very nice to have to write `_raw` explicitly.
+
+Instead we should do the same handling as is currently done for `\a[]` and `\Image[]` on thes paths.
+
+== Closed issues
+
+=== Allow disambiguate and id header arguments on web
+{tag=Scope}
+{tag=Web}
+
+Currently these do not affect the article's ID as there is a fundamental limitation of the `convert` function, which determines the "file path" based solely on the title content, and ignores the title arguments such as `disambiguate`. The ID of the first header, the toplevel ID, then just gets fixed to that (as is meant to happen, first toplevel gets Id fixed), ignoring `disambiguate`.
+
+This is worked around on web upload by passing the `id` as the `path` explicitly as an argument. But this argument is not available on web UI, and it would be ugly anyways, what we want is for it to "just work" by default without the user having to explicitly set an ID on web UI.
+
+Fixed at: 56e8d17aa1b716ce69689c6b8aaae0acf4804421 web: fix editing for articles with ID modifiers like scope or disambiguate
+
+=== Remove scope from toc entry IDs
+{tag=Scope}
+{tag=CLI}
+
+Happens on CLI and Web, though the web one is a bit artificial.
+
+E.g. https://cirosantilli.com/x86-paging#toc-x86-paging/sample-code should instead be just: https://cirosantilli.com/x86-paging#toc-sample-code[]. Links from headers to currently work however.
+
+On web will require extra caution after we decided to initially stop culling scopes: &lt;missing header metadata such as like button, same topic and issue link on headers under a scope&gt;.
+
+Edit: this was fixed on web after we did the insane and amazing dynamic tree JavaScript redirects: https://ourbigbook.com/cirosantilli/x86-paging#_toc/sample-code But we never got round to fixing it on static where it still goes to the bad https://cirosantilli.com/x86-paging#_toc/x86-paging/sample-code
+
+=== split and nosplit links missing from cirosantilli.com
+
+https://cirosantilli.com/brazilian-music-split doesn't have nosplit
+
+=== Move articles deleted locally to under a trash article on web
+{tag=Web}
+
+During `--web` upload.
+
+The exact name of that article is a somewhat difficult question, if we go non-magical then:
+\Q[My deleted articles]
+will do. But we could go more magical:
+``
+_my/trash
+``
+or polluting a bit without `_`:
+``
+my/trash
+``
+Perhaps such a namespace would be useful for stuff like `my/contact`, `my/body`, `my/hardware` and so on.
+
+Edit: we decided to create unlisted articles rather than doing this.
+
+=== Vs Code symbol provider
+{tag=Visual Studio Code}
+
+Allow you to Ctrl + Click on any internal link such as `\x[]` and jump to the corresponding header.
+
+https://code.visualstudio.com/api/language-extensions/programmatic-language-feature
+
+We'd just use the SQLite database with some exiting wrapper function most likely. Hardest part is likely calculating the target ID.
+
+=== Allow creating new pages under scope on web
+{tag=Scope}
+{tag=Web}
+
+This casually started working without us noticing much after 3f4e7594ea5d28c3b30a0b7e874ca4627849cbea made parent selection a bit more accurate for scopes. Hurray.
+
+We likely just have to set the `path:` API argument based on the has scope status of the parent article.
+
+As of the commit that adds this line, it should likely be possible to do it on the backend. On the frontend however we convert `/` to `-` so it doesn't work on the existence checks. We need a more accurate ID conversion there.
+
+=== Show tagged list of non toplevel pages
+{tag=Tag}
+
+Both web and CLI.
+
+=== Shorthand block quotes
+{tag=Web}
+
+= Insane block quotes
+{synonym}
+
+OK, I need that, let's go. `__` like Asciidoctor?
+``
+Before.
+
+__
+In quote
+
+Another paragraph.
+__
+
+After
+``
+
+Maybe also just add inline (non-block) quotes now?
+
+We could also consider an indent based method:
+``
+&gt; In quote
+
+  Another paragraph.
+
+After
+``
+
+The cool thing about that is that it would save the sweet sweet one liners:
+``
+Before
+
+&gt; In quote
+
+After
+``
+but meh, too much indentation typing I think.
+
+Prototype implemented on branch `insane-quote` with just the single underscore `_` version to make it fully symmetric with code/math, which is easier to implement. Just by running the tests we saw some common conflicts with the single `_` due to it appearing in some local file paths pieces of URLs, e.g.:
+``
+= My topic
+{wiki=Another_one}
+``
+and:
+``
+= Notindex
+
+&lt;file/path/to/my_file.jpg&gt;
+
+== path/to/my_file.jpg
+{file}
+``
+Some ideas:
+* generalize things a bit so that `_` does not exist. Inline quotes go just with the usual `""` ascii art
+* make some arguments literal by default to cover those common cases. Makes language a bit more insane, but perhaps it is for the best, we don't want HTML expanding in anything that won't end up in the HTML right. That makes the possible future case of defining variables a bit harder. But we could overcome it by just making literals be non literals then when literal is the default, e.g.:
+  ``
+  = My topic
+  {wiki=Another_one}
+
+  = My topic
+  {{wiki=\somevar}}
+  ``
+
+Hmm, going with `&gt;` finally. Part of the reason being that for multiline quotes: `\Q[]` is just saner and same number of characters. But for single line quotes, `&gt;` is just too sweet.
+
+=== ToC Js folding broken on Web
+{tag=ToC}
+{tag=Web}
+{tag=Bug}
+
+Working on static.
+
+=== Allow user to edit other user's articles
+{tag=Web}
+
+Curently impossible on the API level: it just takes the logged in user and uses that as the new/edit target.
+
+Current use case: allow admin to edit other user's articles e.g. as part of moderation.
+
+=== Blowup with unclosed image followed by math
+
+``
+= Index
+
+\Image[qwer
+
+$$
+asdf
+$$
+``
+
+=== Ordered list lost when rendering to bigb output format
+{tag=`bigb` output format}
+
+Added a commented out test to \a[test_bigb_output.bigb]:
+``
+\Ol[
+* p1
+* p2
+]
+``
+renders to just:
+``
+* p1
+* p2
+``
+Also it might be possible to get an extra newline due to this which breaks web upload, but we don't have a min repro currently.
+
+=== Render large files on split headers
+{tag=File}
+
+Currently files that are large don't render in either multi nor split headers.
+
+But instead we want it to render on split headers because the _raw version does not always show on GitHub pages, but rather gets downloaded which is bad.
+
+The `{file}` version is also cool as it allows easy navigation to other files, and comments to be added.
+
+This is currently not so easy to implement because things are done at the ast tree level rather than at render time, which is bad. So the same ast ends up going for both split and nosplit renders.
+
+=== Don't use helper synthetic AST nodes, render at render time instead
+{id=remove-synthetic-asts}
+{tag=File}
+{tag=Refactor}
+
+This is a hard refactor that likely will never be done. But so be it.
+
+=== View article source on web
+{tag=Web}
+
+Can start simple with either raw or contained, and then add both some day. GitHub copy.
+
+=== Benchmark and optimize output size
+
+Test repo source code size during tests: 7.2 MiB
+
+Full ToC removal with hack:
+``
+ function renderTocFromEntryList({ add_test_instrumentation, entry_list, descendant_count_html, tocIdPrefix }) {
++  return ''
+``
+Test repo output size: 166.6 MB -&gt; 114.2 MB, so ToC was 31 %
+
+Let's check header knockout with:
+``
+        [Macro.HEADER_MACRO_NAME]: function(ast, context, opts={}) {
+          return ''
+``
+down to 151.7 MiB, so headers were about 9%.
+
+And finally removing the toplevel stuff:
+``
+       toplevel_child_modifier: function(ast, context, out) {
++        return 'out'
+``
+down to 161.8 MB, so these were only about 3%.
+
+These should be the only bulk things we have really, everything else will likely be much harder to get wrong.
+
+=== Web upload fails when renaming a header to a synonym
+{tag=Web upload}
+
+First:
+
+test-data.bigb
+``
+= Test data
+
+== Tmp
+``
+then:
+``
+ourbigbook --web-test
+``
+
+Then modify to:
+``
+= Test data
+
+== Tmp2
+
+= Tmp
+``
+and rerun:
+``
+ourbigbook --web-test
+``
+
+Error message:
+``
+param "bodySource" is mandatory when not rendering or when "path" to an existing article is not given. path="tmp"
+``
+
+Can be worked around by:
+``
+rm -rf out
+``
+therefore it is just a case of some outdated local state, thank God for that, should be simple to fix.
+
+The root problem seems to be that `sqlite3 _out/web/web.sqlite3 .dump` still contains `tmp`, we have to get rid of any synonym headers during ID extraction.
+
+=== Render ancestors, incoming links and tagged on web
+{tag=Web}
+
+All dynamic.
+
+=== Vertical scrollbar when image title contains math underscore
+{tag=CSS}
+
+Only happens when the title would fit in a single line:
+``
+\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/BSD_data_plot_for_elliptic_curve_800h1.svg/640px-BSD_data_plot_for_elliptic_curve_800h1.svg.png]
+{title=$a_b$}
+{height=400}
+``
+
+For long titles that go over a single line, it doesn't happen.
+
+Removing from `ourbigbook.scss`:
+``
+figure {
+  overflow-x: auto;
+``
+fixes for some reason, but breaks everything else, as it adds a global vertical scrollbar to the page if there are any images wider than it (when above the mobile mode where images are just width 100%.
+
+The fundamental issue seems to be: https://stackoverflow.com/questions/6421966/css-overflow-x-visible-and-overflow-y-hidden-causing-scrollbar-issue[] which we don't know how to work around. Omg.
+
+To get a clearer effect edit ourbigbook.scss to:
+``
+.katex { font-size: 20.2em; }
+``
+Only the separation between `a` and its subscript `b` seems to matter.
+
+=== Make articles removed locally empty on web upload
+{tag=Web}
+{tag=Web upload}
+
+Otherwise the following sequence leads to a hard to understand failure for the end user.
+
+First the user uploads with:
+
+``
+== Header 1
+
+== Header 2
+
+\Image[img.png]{title=My image}
+``
+
+Then, `Header 2` is completely removed from all source files and the image is moved to `Header 1`:
+
+``
+== Header 1
+
+\Image[img.png]{title=My image}
+``
+
+Then, when the use tries to upload again, it fails because of duplicated id `image-my-image`.
+
+This above sequence of events is not ideal from the users' perspective, as a synonym generation would lead to better URLs:
+
+``
+== Header 1
+
+= Header 2
+{synonym}
+
+\Image[img.png]{title=My image}
+``
+
+In that sequence, the File for `Header 2` would be effectively emptied of Ids, and there would be no duplicates.
+
+But still, if the user deletes a header, it becomes very difficult to know it later on. So perhaps when the CLI downloads the SHA list, it could also check if there are articles on server that both:
+* are not present locally anymore
+* have a non-empty hash
+and then proceed to make any such headers empty to avoid ID duplication.
+
+Aditionaly, it would also be good to move the deleted articles to some predefined header to avoid cluttering the headers. E.g. we could start with a dummy "My deleted articles". Dedicated section: &lt;Move articles deleted locally to under a trash article on web&gt;{full}.
+
+=== Don't skip parent/previous sibling updates on --web uploads
+{tag=Web}
+{tag=Web upload}
+
+We have recently implemented SHA-256 skips when article content hasn't changed.
+
+But we also need to check if the parent or previous sibling has changed, and if it has then update that.
+
+We could just return parent and previous sibling on the `/hash` endpoint.
+
+Or we need to add that information to the SHA.
+
+Ideally we should also have a way to change the tree without re-render, though we could start with re-render for simplicity.
+
+This actually breaks uploads because it leads to inconsistencies when finding previousSiblingId.
+
+=== CLI nosplit points to self
+{tag=CLI}
+{tag=Web upload}
+
+E.g.: https://cirosantilli.com/education-level nosplit points to the page itself. Should instead point to https://cirosantilli.com/education#education-level
+
+Possiby happens only with:
+``
+  "publishOptions": {
+    "toSplitHeaders": true,
+    "htmlXExtension": false,
+    "xPrefix": "https://ourbigbook.com/cirosantilli/"
+  },
+``
+redirects enabled.
+
+Further investigation shows that `"toSplitHeaders": true,` is the issue. Fixing this for now bu ust removing the split/nosplit in that case.
+
+=== Pass previousSiblingId on web upload
+{tag=Web}
+{tag=Web upload}
+
+Otherwise uploads become irreproducible if you stop half way. Unacceptable.
+
+=== Links to synonym header have fragment
+{tag=Bug}
+{tag=Web}
+
+E.g. from https://ourbigbook.com/cirosantilli/ciro-santilli[]:
+``
+&lt;Python&gt;
+``
+renders as:
+``
+/cirosantilli/python-programming-language#cirosantilli/python-programming-language
+``
+instead of the desired:
+``
+/cirosantilli/python-programming-language
+``
+
+However the link to the non-synonym header:
+``
+&lt;Python (programming language)&gt;
+``
+renders correctly without the fragment
+
+OK, this was also reproducible on CLI, links to toplevel synonyms had fragments, just it is infinitely more visible on web where everything is toplevel.
+
+=== Put raw files in a separate magic prefix
+{tag=File}
+
+We should have:
+* `_raw/path/to/main.py`: raw file
+for every file `path/to/main.py` in the repo to avoid URL clashes, e.g. between:
+``
+configure
+configure.bigb
+``
+
+Will also serve as a mechanism to view .bigb source without GitHub.
+
+=== Synonym redirects on web
+{tag=Web}
+
+=== Start a basic notification system
+{tag=Web}
+
+OK, now after the big redirect from cirosantilli.com to ourbigbook.com, this is becoming more pressing.
+
+We could start simple without any in-browser things, email only. Though having both would be ideal...
+
+=== Find a way to show index.html raw files that get overriden by directory listings
+{id=2}
+{tag=File}
+
+Edit: first implemented the `_index` thing. But actually noticed would be saner with a separate `_dir/` prefix for directories. Otherwise a recursive wget/zip would not work out of box which makes me sad. It is a bit sad that you can't just remove a path from `_raw/path/to/file.txt` to go to `_raw/path/to/` as you need `_dir/path/to/` instead. But so bet it.
+
+E.g. `subdir/index.html` which would show up under `_raw/subdir/index.html` gets overriden by the directory listing of `subdir/` which goes to the same location.
+
+One possibility would be to add an underscore: `_raw/subdir/_index.html` for the file. And another underscore for `_index.html` and so on.
+
+=== Automatically add `source` to archive.org images
+{tag=Image}
+
+E.g. https://web.archive.org/web/20230227073734im_/https://upload.wikimedia.org/wikipedia/commons/2/2b/STED_Mikroskop_PSFs.jpg[] to https://upload.wikimedia.org/wikipedia/commons/2/2b/STED_Mikroskop_PSFs.jpg[].
+
+Edit: OK that is useless. The source needs to be an HTML page, and we can't infer that from the archive links. Manual sources are necessary in that case.
+
+=== Put files in a separate namespace
+{tag=File}
+
+We should have:
+* `_file/path/to/main.py`: OurBigBook section showing preview of file + comments/metadata
+* `_raw/path/to/main.py`: raw file
+Done the `_file` part.
+
+=== Following and followed tabs are swapped
+{tag=Web}
+
+=== Undefined tag error message for directory conversion says header ID is not defined instead of tag ID
+{tag=Bug}
+{tag=Tag}
+
+README.bigb
+``
+= Tmp
+
+== Tmp 2
+{tag=adsf}
+``
+convert:
+``
+ourbigbook .
+``
+outcome:
+``
+extract_ids: README.bigb
+extract_ids: README.bigb finished in 43.47357300110161 ms
+error:
+README.bigb:4:1: cross reference to unknown id: "tmp-2"
+``
+expected outcome:
+``
+README.bigb:4:1: cross reference to unknown id: "asdf"
+``
+
+=== Design a project banner
+{tag=Publicity}
+
+E.g. for Twitter and LinkedIn.
+
+Maybe a screenshot of the website?
+
+If we could represent topics somehow that would be ideal...
+
+=== Subsections missing on web dynamic tree
+{tag=Bug}
+{tag=Dynamic tree fetch}
+
+Going to close it for now as irreproducible. Worked around it by fixing data manualy with the new `nested-set` CLI tool. Will try to debug further if it shows up again in the future.
+
+On web now:
+* https://ourbigbook.com/barack-obama shows Fundamental theorem of calculus under "Integral", correct
+* https://ourbigbook.com/barack-obama/mathematics does not show "Fundamental theorem of calculus", incorrect
+
+We can only reproduce locally by copying the database, we haven't managed to reach such state by a clean sequence of pure API calls, clean naive `web/bin/generate-demo-data -C -u1` didn't reproduce either.
+
+Upon quickly inspectig the DB we see that the nested set indexes are wrong:
+``
+[ 'barack-obama', 0, 36 ],
+[ 'barack-obama/mathematics', 1, 9 ],
+[ 'barack-obama/fundamental-theorem-of-calculus', 9, 11 ],
+``
+`barack-obama/mathematics` should stop something larger than `9` to include `barack-obama/fundamental-theorem-of-calculus` and other children.
+
+The question is now if this is still reachable, of if it was due to a previous bug.
+
+=== Enable web math defines default on non-web
+{tag=Math}
+{tag=Web}
+
+This is the only way to have portable maths across local and server.
+
+The definitions are also useful by default to users, and should just be enabled out-of-box.
+
+=== Enable web math defines on web editor
+{tag=Math}
+{tag=Web}
+{tag=Editor}
+
+They're not enabled there, conversion just fails and user can't submit because button is grayed out. Via API already works however, supposing the user has defined them: &lt;enable web math defines default on non-web&gt;.
+
+=== Store auto-formated bigb source on web
+{tag=Bug}
+
+Edit: caching only fails if you edit on web, then somehow download it and change and reupload. But change implies rerender. Hard to see a case where this actually causes problems.
+
+We are auto-formatting locally for splitting and to get rid of includes.
+
+So we need to also format on web in order for content caching to work.
+
+=== Split _out/bigb and _out/web
+{tag=Bug}
+
+Currently:
+``
+ourbigbook --web
+``
+stores the split renders under:
+``
+out/bigb
+``
+since it is a bigb output.
+
+However, that bigb output is different from the one gnerated with:
+``
+ourbigbook -O bigb .
+``
+since the latter contains `\Include` which need to be removed from the `web/` output.
+
+=== Skip re-render from API if article was unchanged
+{tag=Web}
+{tag=Web upload}
+
+Would radically speed sync up.
+
+=== Computer sticker
+{tag=Publicity}
+
+=== Prevent full page reload on links using our existing link capture
+{tag=Web}
+
+Would be a possibly good solution now to: https://github.com/ourbigbook/ourbigbook/issues/274 now that we already have link click capturing necessarily.
+
+=== Second meta line showing up on index page even if empty
+{tag=Web}
+
+Index has no parent, so the line may be empty in that case.
+
+=== Article create and update slow on web
+{tag=Performance}
+{tag=Web}
+
+https://ourbigbook.com/api/articles
+
+For user cirosantilli, just pushed cirosantilli.github.io at aa60ccb934bf9646d548e6b761489d31aec1a341, which has almost 7k articles.
+
+The POST to https://ourbigbook.com/api/articles is taking about 3s to 4s on ourbigbook.com "Waiting for server response", 3.44s seems like an common average exact value that often comes back.
+
+This was after dynamic article tree, one suspicion is that it might be linked to maintaining the nested set state on a large set of articles. I really hope that's not it, as it would be hard to fix.
+
+Doing it from the `barack-obama` test user which only has about 50 articles leads to the same result, but we believe it is because we are not indexing things by user properly (this was added later), so might still be due to nested set.
+
+Locally on sqlite is only 800 ms to 900 ms.
+
+Locally on postgresql with `barack-obama` user and no `cirosantilli` data, the POST is almost instantaneous however... 100ms or less!
+
+Local postgresql with `cirosantilli` user after uploading cirosantilli.github.io with about 7k articles: usually around 2.4s, sometimes a bit less.
+
+Same but with `barack-obama`: 2.16s! So the main slowdown is likely that we are not properly indexing things, as one users' article affects the other's!
+
+Let's hack it up to see:
+``
+./bin/psql
+alter table "Article" add "authorId" integer;
+update "Article" as a set "authorId" = f."authorId" from "File" as f where a."fileId" = f.id
+create index idx_nested ON "Article" using btree ("authorId", "nestedSetIndex");
+``
+
+and patch:
+
+``
+diff --git a/web/convert.js b/web/convert.js
+index 59870ae3..ff834708 100644
+--- a/web/convert.js
++++ b/web/convert.js
+@@ -568,6 +568,7 @@ async function convertArticle({
+         const rendered_output = extra_returns.rendered_outputs[outpath]
+         const renderFull = rendered_output.full
+         articleArgs.push({
++          authorId: file.authorId,
+           depth: newDepth,
+           fileId: file.id,
+           h1Render: renderFull.substring(0, rendered_output.h1RenderLength),
+@@ -599,6 +600,7 @@ async function convertArticle({
+         articleArgs,
+         {
+           updateOnDuplicate: [
++            'authorId',
+             'h1Render',
+             'h2Render',
+             'titleRender',
+diff --git a/web/models/article.js b/web/models/article.js
+index 40dbbdba..1c382acc 100644
+--- a/web/models/article.js
++++ b/web/models/article.js
+@@ -13,6 +13,10 @@ module.exports = (sequelize) =&gt; {
+     'Article',
+     {
+       // E.g. `johnsmith/mathematics`.
++      authorId: {
++        type: DataTypes.INTEGER,
++        allowNull: false,
++      },
+       slug: {
+         type: DataTypes.TEXT,
+         unique: {
+``
+
+Didin't help :-(
+
+A cleaner benchmarking can now be done with:
+``
+OURBIGBOOK_POSTGRES=1 ./bin/generate-demo-data.js -C -u1 -a650 -i0 -c0
+``
+By this size, things are already unreasonably slow, and you can visibly see the latter renders being much slower than the early ones. We can then do a very minimal one off benchmark of a single slow article update with:
+``
+OURBIGBOOK_POSTGRES=1 ./bin/generate-demo-data.js -u1 -a1 -i0 -c0
+``
+OK, now the test case is clearer.
+
+By also enabling SQL logging:
+``
+time DEBUG='*:sql:*' OURBIGBOOK_POSTGRES=1 ./bin/generate-demo-data.js -u1 -a1 -i0 -c0
+``
+which gave:
+``
+real    0m1.400s
+user    0m0.643s
+sys     0m0.068s
+``
+we will be able to see any slow queries. We reach the following two massively slow queries:
+``
+SELECT
+  "Ref".*,
+  "to"."id" AS "to.id",
+  "to"."idid" AS "to.idid",
+  "to"."path" AS "to.path",
+  "to"."toplevel_id" AS "to.toplevel_id",
+  "to"."ast_json" AS "to.ast_json",
+  "to"."macro_name" AS "to.macro_name",
+  "to"."createdAt" AS "to.createdAt",
+  "to"."updatedAt" AS "to.updatedAt",
+  "to-&gt;File"."id" AS "to.File.id",
+  "to-&gt;File"."path" AS "to.File.path",
+  "to-&gt;File"."toplevel_id" AS "to.File.toplevel_id",
+  "to-&gt;File"."last_parse" AS "to.File.last_parse",
+  "to-&gt;File"."last_render" AS "to.File.last_render",
+  "to-&gt;File"."titleSource" AS "to.File.titleSource",
+  "to-&gt;File"."bodySource" AS "to.File.bodySource",
+  "to-&gt;File"."createdAt" AS "to.File.createdAt",
+  "to-&gt;File"."updatedAt" AS "to.File.updatedAt",
+  "to-&gt;File"."authorId" AS "to.File.authorId",
+  "to-&gt;File-&gt;file"."id" AS "to.File.file.id",
+  "to-&gt;File-&gt;file"."slug" AS "to.File.file.slug",
+  "to-&gt;File-&gt;file"."topicId" AS "to.File.file.topicId",
+  "to-&gt;File-&gt;file"."titleRender" AS "to.File.file.titleRender",
+  "to-&gt;File-&gt;file"."titleSource" AS "to.File.file.titleSource",
+  "to-&gt;File-&gt;file"."titleSourceLine" AS "to.File.file.titleSourceLine",
+  "to-&gt;File-&gt;file"."render" AS "to.File.file.render",
+  "to-&gt;File-&gt;file"."h1Render" AS "to.File.file.h1Render",
+  "to-&gt;File-&gt;file"."h2Render" AS "to.File.file.h2Render",
+  "to-&gt;File-&gt;file"."depth" AS "to.File.file.depth",
+  "to-&gt;File-&gt;file"."score" AS "to.File.file.score",
+  "to-&gt;File-&gt;file"."nestedSetIndex" AS "to.File.file.nestedSetIndex",
+  "to-&gt;File-&gt;file"."nestedSetNextSibling" AS "to.File.file.nestedSetNextSibling",
+  "to-&gt;File-&gt;file"."createdAt" AS "to.File.file.createdAt",
+  "to-&gt;File-&gt;file"."updatedAt" AS "to.File.file.updatedAt",
+  "to-&gt;File-&gt;file"."fileId" AS "to.File.file.fileId",
+  "from"."id" AS "from.id",
+  "from"."idid" AS "from.idid",
+  "from"."path" AS "from.path",
+  "from"."toplevel_id" AS "from.toplevel_id",
+  "from"."ast_json" AS "from.ast_json",
+  "from"."macro_name" AS "from.macro_name",
+  "from"."createdAt" AS "from.createdAt",
+  "from"."updatedAt" AS "from.updatedAt",
+  "from-&gt;File"."id" AS "from.File.id",
+  "from-&gt;File"."path" AS "from.File.path",
+  "from-&gt;File"."toplevel_id" AS "from.File.toplevel_id",
+  "from-&gt;File"."last_parse" AS "from.File.last_parse",
+  "from-&gt;File"."last_render" AS "from.File.last_render",
+  "from-&gt;File"."titleSource" AS "from.File.titleSource",
+  "from-&gt;File"."bodySource" AS "from.File.bodySource",
+  "from-&gt;File"."createdAt" AS "from.File.createdAt",
+  "from-&gt;File"."updatedAt" AS "from.File.updatedAt",
+  "from-&gt;File"."authorId" AS "from.File.authorId",
+  "from-&gt;File-&gt;file"."id" AS "from.File.file.id",
+  "from-&gt;File-&gt;file"."slug" AS "from.File.file.slug",
+  "from-&gt;File-&gt;file"."topicId" AS "from.File.file.topicId",
+  "from-&gt;File-&gt;file"."titleRender" AS "from.File.file.titleRender",
+  "from-&gt;File-&gt;file"."titleSource" AS "from.File.file.titleSource",
+  "from-&gt;File-&gt;file"."titleSourceLine" AS "from.File.file.titleSourceLine",
+  "from-&gt;File-&gt;file"."render" AS "from.File.file.render",
+  "from-&gt;File-&gt;file"."h1Render" AS "from.File.file.h1Render",
+  "from-&gt;File-&gt;file"."h2Render" AS "from.File.file.h2Render",
+  "from-&gt;File-&gt;file"."depth" AS "from.File.file.depth",
+  "from-&gt;File-&gt;file"."score" AS "from.File.file.score",
+  "from-&gt;File-&gt;file"."nestedSetIndex" AS "from.File.file.nestedSetIndex",
+  "from-&gt;File-&gt;file"."nestedSetNextSibling" AS "from.File.file.nestedSetNextSibling",
+  "from-&gt;File-&gt;file"."createdAt" AS "from.File.file.createdAt",
+  "from-&gt;File-&gt;file"."updatedAt" AS "from.File.file.updatedAt",
+  "from-&gt;File-&gt;file"."fileId" AS "from.File.file.fileId"
+FROM
+  (
+    SELECT
+      "Ref"."id",
+      "Ref"."type",
+      "Ref"."from_id",
+      "Ref"."to_id",
+      "Ref"."defined_at",
+      "Ref"."defined_at_line",
+      "Ref"."defined_at_col",
+      "Ref"."inflected",
+      "Ref"."to_id_index",
+      "Ref"."createdAt",
+      "Ref"."updatedAt"
+    FROM
+      "Ref" AS "Ref"
+    WHERE
+      "Ref"."to_id" = '@barack-obama/test-data'
+      AND "Ref"."type" = 0
+    LIMIT
+      1
+  ) AS "Ref"
+  LEFT OUTER JOIN "Id" AS "to" ON "Ref"."to_id" = "to"."idid"
+  LEFT OUTER JOIN "File" AS "to-&gt;File" ON "to"."idid" = "to-&gt;File"."toplevel_id"
+  LEFT OUTER JOIN "Article" AS "to-&gt;File-&gt;file" ON "to-&gt;File"."id" = "to-&gt;File-&gt;file"."fileId"
+  LEFT OUTER JOIN "Id" AS "from" ON "Ref"."from_id" = "from"."idid"
+  LEFT OUTER JOIN "File" AS "from-&gt;File" ON "from"."idid" = "from-&gt;File"."toplevel_id"
+  LEFT OUTER JOIN "Article" AS "from-&gt;File-&gt;file" ON "from-&gt;File"."id" = "from-&gt;File-&gt;file"."fileId";
+
++451ms
+
+SELECT
+  "Id".*,
+  "File"."id" AS "File.id",
+  "File"."path" AS "File.path",
+  "File"."toplevel_id" AS "File.toplevel_id",
+  "File"."last_parse" AS "File.last_parse",
+  "File"."last_render" AS "File.last_render",
+  "File"."titleSource" AS "File.titleSource",
+  "File"."bodySource" AS "File.bodySource",
+  "File"."createdAt" AS "File.createdAt",
+  "File"."updatedAt" AS "File.updatedAt",
+  "File"."authorId" AS "File.authorId",
+  "File-&gt;file"."id" AS "File.file.id",
+  "File-&gt;file"."slug" AS "File.file.slug",
+  "File-&gt;file"."topicId" AS "File.file.topicId",
+  "File-&gt;file"."titleRender" AS "File.file.titleRender",
+  "File-&gt;file"."titleSource" AS "File.file.titleSource",
+  "File-&gt;file"."titleSourceLine" AS "File.file.titleSourceLine",
+  "File-&gt;file"."render" AS "File.file.render",
+  "File-&gt;file"."h1Render" AS "File.file.h1Render",
+  "File-&gt;file"."h2Render" AS "File.file.h2Render",
+  "File-&gt;file"."depth" AS "File.file.depth",
+  "File-&gt;file"."score" AS "File.file.score",
+  "File-&gt;file"."nestedSetIndex" AS "File.file.nestedSetIndex",
+  "File-&gt;file"."nestedSetNextSibling" AS "File.file.nestedSetNextSibling",
+  "File-&gt;file"."createdAt" AS "File.file.createdAt",
+  "File-&gt;file"."updatedAt" AS "File.file.updatedAt",
+  "File-&gt;file"."fileId" AS "File.file.fileId"
+FROM
+  (
+    SELECT
+      "Id"."id",
+      "Id"."idid",
+      "Id"."path",
+      "Id"."toplevel_id",
+      "Id"."ast_json",
+      "Id"."macro_name",
+      "Id"."createdAt",
+      "Id"."updatedAt"
+    FROM
+      "Id" AS "Id"
+    WHERE
+      "Id"."idid" = '@barack-obama'
+    LIMIT
+      1
+  ) AS "Id"
+  LEFT OUTER JOIN "File" AS "File" ON "Id"."idid" = "File"."toplevel_id"
+  LEFT OUTER JOIN "Article" AS "File-&gt;file" ON "File"."id" = "File-&gt;file"."fileId"
+
++227m
+``
+Hmmm, so no slow updates, only selects. Surprising!
+
+The first query is the:
+``
+const oldRef = await sequelize.models.Ref.findOne({
+``
+
+OK, we manually reduced the first query to a subset:
+``
+SELECT
+  "Ref"."to_id",
+  "Ref"."from_id",
+  "From"."idid" AS "From.idid",
+  "From-&gt;File"."titleSource" AS "From-&gt;File.titleSource"
+FROM "Ref"
+INNER JOIN "Id" AS "From"
+ON
+  "Ref"."from_id" = "From"."idid" AND
+  "Ref"."to_id" = '@barack-obama/test-data' AND
+  "Ref"."type" = 0
+INNER JOIN "File" AS "From-&gt;File"
+  ON "From"."idid" = "From-&gt;File"."toplevel_id"
+INNER JOIN "Article" AS "From-&gt;Article"
+  ON "From-&gt;File"."id" = "From-&gt;Article"."fileId"
+;
+``
+which we were certain should not be slow, and then by commenting things out learnt that foreign keys are not automatically indexed, so the `fileId` finding was super slow!!! OMG.
+
+That single one line change drops us down to half the creation time, amazing:
+``
+real    0m0.668s
+user    0m0.638s
+sys     0m0.035s
+``
+
+On heroku, after manually doing:
+``
+create index article_file_id ON "Article" using btree ("fileId");
+``
+new article time fell down to 400ms, which is amazing. One liner! Special thanks to sequelize for the timing info.
+
+After this, the only DB activity that has more than 15ms is:
+``
+sequelize:sql:pg Executing (default): SELECT "id", "username", "ip", "displayName", "email", "image", "hash", "salt", "score", "followerCount", "admin", "verified", "verificationCode", "verificationCodeSent", "maxArticles", "maxArticleSize", "createdAt", "updatedAt" FROM "User" AS "User" WHERE "User"."username" = 'barack-obama'; +53ms
+``
+but we don't reproduce it in isolation, must be something else in play, e.g. something in parallel.
+
+==== Article create and update slow on web update 1
+
+As of this commit did a bit further investigation with a better tooling and more understanding, notably now we run:
+``
+OURBIGBOOK_LOG_DB=1 num run dev-pg
+``
+
+Heroku is definitely slower than local, at around 1 t o2 s on the bit first ten pages:
+``
+ourbigbook --web --web-force-render --web-max-renders 10
+``
+but local was also rather slow when we have about the same number of articles for the user.
+
+After some improved benchmarking setup, there seem to be two separate causes:
+* preventing: `options.db_provider.fetch_header_tree_ids(` on web. It is not necessary as we render the ToC dynamically.
+
+  This matters the most for toplevel articles with many descendants.
+* the other problem we haven't solved yet: the nested index update querries are slow. We don't know how to solve that easily.
+
+  Those querries simply update a huge number of rows.
+
+  Maybe we could have a fallback mechanism to build that index on the background, and use the tree index temporarily?
+
+  Hard call.
+
+=== Donate button on web
+{tag=Web}
+
+=== `(beta)` on navbar gets pushed down half way at a specific page width just above mobile shift
+{tag=Web}
+{tag=CSS}
+
+Just keep making viewport smaller an smaller, until it happen. Sample width that reproduces: 680px.
+
+Removing `white-space: pre-wrap` solves it. But then the space between `(beta)` and `OurBigBook.com` gets removed.
+
+OK: found out I had already previously solved the same issue with `&amp;nbsp;`, redoing the "hack". Every header space has to be `&amp;nbsp;`.
+
+=== Empty Latest Followed shows as There are no articles on this website yet
+{tag=Web}
+
+=== Add sibling/add child buttons next to headers owned by the current user
+{tag=Web}
+
+=== Infinite navbar profile image refresh loop when there is no Internet
+{tag=Offline development}
+
+This might be something to do with us trying to have a dummy fallbak image when the image URL does not exist.
+
+The request is:
+``
+GET https://static.productionready.io/images/smiley-cyrus.jpg net::ERR_INTERNET_DISCONNECTED
+``
+so it appears to be trying to infinitely fetch the default image.
+
+For now we seem to have managed to stop it from going infinite by selecting an image that is stored locally in the website.
+
+=== Separate lines with field label for parent and previous sibling on web editor
+{tag=Web}
+{tag=Editor}
+
+Otherwise too confusing what is what when fields are pre-filled, e.g. when editing existing, and in the future when clicking a "add here" button.
+
+=== Allow showing article body on article lists
+{tag=Web}
+
+Maybe some will be list by default, but some will definitely be article show by default. Notably topic has to show the rendered body by default.
+
+This is a superset of: https://github.com/ourbigbook/ourbigbook/issues/270
+
+=== Comment h1 has empty metadata line where likes would be placed
+{tag=Comment}
+{tag=Web}
+
+Likes will not go under header which does not need to be present, so gonna remove it.
+
+=== Comment autogenerated IDs are wrong when there is header in the comment
+{tag=Comment}
+{tag=Web}
+
+=== Add an option to add a prefix to every ID of rendered output to avoid conflicts across comments and issue
+{tag=Comment}
+{tag=Web}
+
+https://github.com/ourbigbook/ourbigbook/issues/251
+
+We noticed this is hard to implement, because we want internal links to still work, and just adding a prefix to every ID does not take that into account.
+
+We later noticed that what we actually want to solve the comment use case, is a custom toplevel scope, which we can easily implement with a custom named directory. So... scopes save the day for once?
+
+Will be useful for comments on web, since a single author can make multiple comments, so prefixing by usernme won't be enough.
+
+For topic pages, we can just prefix by username, and that is already currently done.
+
+=== First on-hover heder self link after table of content activates table of contents instead of header 
+{tag=Web}
+
+E.g.: https://cirosantilli.com/physics#how-to-teach-and-learn-physics
+
+Broken ToC HTML render?
+
+OK, understood the root cause: we moved to rendering the ToC from inside the H rendering function itself, and as a result there is a single toplevel_child_modifier which acts on that entire output.
+
+We'll need to create something more custom to properly handle this case.
+
+=== h2 on hover self links are empty on Web
+{tag=Web}
+
+And therefore lead users to the toplevel page instead of a link to current header.
+
+The links by clicking on the header itself are correct and go to a dedicated page with it on top. The problem is just for the on-hover links on the margin which we'd like to link to self in the current page.
+
+=== Test scope 2 appears after Test scope 1 on generated data
+{tag=Web}
+
+OK, everything was reversed, I just hadn't noticed before because there was no numbered test data :-)
+
+=== Prefix unnumbered IDs with the parent header's ID
+{tag=Dynamic tree fetch}
+{tag=Web}
+
+=== Remove @ from toc IDs
+{tag=Web}
+
+E.g. currently have: http://localhost:3000/barack-obama#toc-@barack-obama/mitochondrion It works, but is ugly.
+
+=== Missing header metadata such as like button, same topic and issue link on headers under a scope
+{tag=Scope}
+
+=== Headers under scope don't have scope on ID leads to ID conflicts and a link misses on Web
+{tag=Scope}
+{tag=Web}
+
+E.g. in:
+``
+= x86
+
+== Sample code
+
+== x86 paging
+{scope}
+
+=== Sample code
+``
+
+both `Sample code` headers have `id="sample-code"`, which would lead to ID conflicts on the same page.
+
+Also, as a result, the toc link from `x86` intended to go to `x86-paging/sample-code` misses and opens on a separate page.
+
+I don't know how to solve this besides always including scopes on every ID... This does however lead to ugly local IDs on individual pages which is a bit of a shame... oh cruel life.
+
+We could also have two versions of every page, scoped and non scoped, but things likely go exponential when we start dealing with subscope.
+
+This could mean that a lot of toplevel scope removal work will go to the trash! :-( But what can you do, it is the inevitable outcome of dynamic page fetch?
+
+=== Tags show up twice under scopes
+{tag=Web}
+{tag=Scope}
+
+= Each header tag shows up twice on web
+{synonym}
+
+Happens on CLI, though was first noticed, and most important, on Web due to the all present user prefix.
+
+Was already fully present on the previous deployment but we just completely missed it, e.g.: https://ourbigbook.com/cirosantilli/physics#physics-education-needs-more-focus-on-understanding-experiments-and-their-history
+
+Minimal CLI example to reproduce:
+
+subdir/asdf.bigb
+
+``
+= asdf
+``
+
+subdir/qwer.bigb
+
+``
+= qwer
+{tag=asdf}
+``
+
+Then in the rendering of `subdir/qwer.html`, the tag `asdf` appears twice.
+
+The root cause is that scope resolution is finding the same thing twice, one as `subdir/asdf` and then once again with just `asdf` (which is then correctly resolved).
+
+=== Skip absolute link exit check on web
+{tag=Web}
+
+Maybe: https://stackoverflow.com/questions/10687099/how-to-test-if-a-url-string-is-absolute-or-relative
+
+=== Prop dangerouslySetInnerHtml did not match on some pages
+{tag=Web}
+
+Happens on some pages but not others, e.g. `barack-obama/ciro-santilli`.
+
+OK: that simply happens due to invalid HTML constructs:
+* https://stackoverflow.com/questions/58266356/what-is-happening-such-i-receive-dangerouslysetinnerhtml-warning-and-empty-conte
+* https://flaviocopes.com/react-fix-dangerouslysetinnerhtml-did-not-match/
+and we had invalid or implicitly self closing HTML at: &lt;self links broken on ciro-santilli starting at Budget transparency&gt;.
+
+=== Self links broken on /ciro-santilli starting at Budget transparency
+
+There is some kind of fundamentally wrong HTML content being rendered, not Web specific: https://cirosantilli.com/sponsor#budget-transparency
+
+Resolution: was due to missing a close tag that appeared when we used `\Quote` with `title`. It was even valid HTML OMG, but wront semantic. What a stack.
+
+=== Don't move to a separate page when clicking link to image to another header that is already visible on current page on web
+{tag=Web}
+
+=== Don't move to a separate page when clicking toc links in a page that has scope on web
+{tag=Scope}
+{tag=Web}
+
+=== Wiki link on same line as parent link on web h1
+{tag=Web}
+
+Likely locally too then right. Will also be more uniform with h2 which now has parent link.
+
+Also seems like empty line (no wiki) is showing: http://localhost:3000/barack-obama/x86-paging/sample-code
+
+=== h1 arguments broken on web
+{tag=Bug}
+{tag=Web}
+
+Both preview and render.
+
+OK, was not the arguments in general, was `{wiki}` alone with which I was testing, thank God!
+
+=== Capture link clicks to headers in current page and don't change page
+{tag=Dynamic tree fetch}
+{tag=Web}
+
+=== Remove word count on web
+{tag=Dynamic tree fetch}
+{tag=Web}
+{tag=Word count}
+
+It is broken, and lazy to fix now.
+
+Can be fixed later at: &lt;word count on web&gt;.
+
+=== Fix ToC links on web, missing scope
+{tag=Scope}
+{tag=Dynamic tree fetch}
+{tag=Web}
+
+Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
+
+== Tags
+
+=== DB
+
+Database specific tasks, usually refactoring.
+
+=== File
+
+This tag is about handling non-OurBigBook files, notably related to using the &lt;`\H` `file` argument&gt;.
+
+==== File autogen
+
+=== Metadata section
+
+=== Elements
+
+==== Image
+
+==== Math
+
+==== Table
+
+==== Header
+
+===== Synonym
+
+=== UI
+
+==== Firefox
+
+==== CSS
+
+=== Web
+
+==== Web upload
+
+This tag is about `ourbigbook --web` uploading from the local filesystem to OurBigBook Web.
+
+==== Comment
+
+==== Dynamic tree fetch
+
+==== Editor
+
+==== Error checking
+
+==== Include
+
+==== Issue
+
+==== Offline development
+
+==== Topic
+
+=== CLI
+
+=== Word count
+
+=== Lib
+
+==== Tag
+
+=== Bug
+
+=== Scope
+
+=== Performance
+
+=== Publicity
+
+=== Publish
+
+=== Refactor
+
+=== ToC
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

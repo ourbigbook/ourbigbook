@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>--generate - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="generate"><div class="notnav"><h1><a href=""><code>--generate</code></a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-cli"> OurBigBook CLI</a><a href=".#ourbigbook-cli-options"> OurBigBook CLI options</a></div><div class="nav"><a class="nosplit" href=".#generate"></a><span class="metrics"><span class="wcntr"> Words: 197</span></span></div></nav></div><div class="p" id="_3232">The project templates are simple ourbigbook project directories that serve as good starting point for new ourbigbook projects.</div><div class="p" id="_3233">They also contain useful examples of <a href=".#ourbigbook-markup">OurBigBook Markup</a> usage to help users get started quickly.</div><div class="p" id="_3234">Generate one of the template repositories locally:<div class="list"><ul id="_3235"><li id="_3236"><code>ourbigbook --generate default</code>: a good starter template that illustrates many key OurBigBook features<div class="list"><ul id="_3237"><li id="_3238"><a href="https://github.com/ourbigbook/template">github.com/ourbigbook/template</a></li><li id="_3239"><a href="https://ourbigbook.github.io/template">ourbigbook.github.io/template</a></li></ul></div></li><li id="_3240"><code>ourbigbook --generate min</code>: a minimal template that is still sane<div class="list"><ul id="_3241"><li id="_3242"><a href="https://github.com/ourbigbook/template-min">github.com/ourbigbook/template-min</a></li><li id="_3243"><a href="https://ourbigbook.github.io/template-min">ourbigbook.github.io/template-min</a></li></ul></div></li><li id="_3244"><div class="p" id="_3245"><code>ourbigbook --generate subdir</code>: a template in which OurBigBook source is located a subdirectory <code>docs/</code>:<div class="list"><ul id="_3246"><li id="_3247"><a href="https://github.com/ourbigbook/template-subdir">github.com/ourbigbook/template-subdir</a></li><li id="_3248"><a href="https://ourbigbook.github.io/template-subdir">ourbigbook.github.io/template-subdir</a></li></ul></div>This template illustrates that everything works exactly as if OurBigBook source were in the git repository toplevel.</div><div class="p" id="_3249">This is a convenient setup for programming projects that want to use OurBigBook for their documentation without polluting their toplevel.</div></li></ul></div></div><div class="p" id="_3250">End users almost never want this, because it means that to have a sane setup you need to:<div class="list"><ul id="_3251"><li id="_3252">install OurBigBook globally with <code>npm install -g ourbigbook</code></li><li id="_3253">generate the template</li><li id="_3254">then install OurBigBook locally again with <code>npm install</code></li></ul></div>so maybe we should just get rid of that option and just ensure that we can provide an up-to-date working template for the latest relase.</div><div class="p" id="_3255">For now we are keeping this as it is useful to automate the updating of templates during the <a href=".#release-procedure">release procedure</a>.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#ourbigbook-cli-options">OurBigBook CLI options</a></li><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900 icon"></span> Incoming links <span class="meta">(1)</span></a></h2><div class="list"><ul><li><a href=".#play-with-the-template">Play with the template</a></li></ul></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900 icon"></span> Synonyms <span class="meta">(2)</span></a></h2><div class="list"><ul><li><a href=".#generate">Project template</a></li><li><a href=".#generate">Template project</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

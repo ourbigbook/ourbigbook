@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>News / Profile picture upload - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="profile-picture-upload"><div class="notnav"><h1><a href="../news">News</a><span class="meta"> / </span><a href="">Profile picture upload</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="../#developing-ourbigbook"> Developing OurBigBook</a><a href="../#publicity"> Publicity</a><a href="../news"> News</a></div><div class="nav"><span class="tags"> Tags: <a href="../#web"><code>-W</code>, <code>--web</code></a></span><a class="nosplit" href="../news#profile-picture-upload"></a><span class="metrics"><span class="wcntr"> Words: 208</span></span></div></nav></div><div class="p" id="_90">You can now update your profile picture on <a href="../#ourbigbook-web">OurBigBook Web</a> by uploading an image to the website like in a normal website.</div><div class="p" id="_91">Previously, we only supported linking to an external image URL. Now this is not allowed anymore and you must instead upload your image to the website. Existing external links will continue to work, but if you want to update the profile picture again, then you will need to upload your own next time.</div><div class="p" id="_92">Besides being a basic feature expected from any modern website, this is the first instance of "static file upload" on the site, and serves as part of a more general static file upload mechanism that can be later reused for other important features like uploading images for your articles.</div><div class="p" id="_93">This initial implementation is very simplistic: we are just storing the image directly in the database. We will look into migrating to a more proper static file solution later on if this starts to hurt performance. We're using the <a href="https://github.com/lovell/sharp">sharp</a> Node.js image processing library, a frontend to <a href="https://github.com/libvips/libvips">libvips</a>, to downsize input images as needed.</div><div class="figure"><figure id="image-ourbigbook-web-profile-picture-upload"><div class="float-wrap"><a href="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/profile-picture/update-arrow.png"><img src="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/profile-picture/update-arrow.png" loading="lazy" height="800"  class="border"></a></div><figcaption><a href="#image-ourbigbook-web-profile-picture-upload"><span class="caption-prefix">Figure 10. </span></a><div class="title"><a href="../#ourbigbook-web">OurBigBook Web</a> profile picture upload</div>. Clicking on the current profile picture opens up a file dialog which allows you to select an image from your computer to be your new profile picture.</figcaption></figure></div><div class="p" id="_94">Announcements:<div class="list"><ul id="_95"><li id="_96"><a href="https://x.com/OurBigBook/status/1868924960749826281">x.com/OurBigBook/status/1868924960749826281</a></li><li id="_97"><a href="https://mastodon.social/@ourbigbook/113667036536861645">mastodon.social/@ourbigbook/113667036536861645</a></li><li id="_98"><a href="https://www.linkedin.com/posts/ourbigbook_httpslnkdinexqfia-u-you-can-now-update-activity-7274690906065145856-1ho7/">www.linkedin.com/posts/ourbigbook_httpslnkdinexqfia-u-you-can-now-update-activity-7274690906065145856-1ho7/</a></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(4)</span></a></h2><div class="list"><ol><li><a href="../news">News</a></li><li><a href="../#publicity">Publicity</a></li><li><a href="../#developing-ourbigbook">Developing OurBigBook</a></li><li><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/news.bigb">news.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "news/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

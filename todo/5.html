@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>TODO / Nested set index corruption - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="5"><div class="notnav"><h1><a href="../todo">TODO</a><span class="meta"> / </span><a href="">Nested set index corruption</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="../todo"> TODO</a><a href="../todo#issues"> Issues</a></div><div class="nav"><span class="tags"> Tags: <a href="../todo#bug">Bug</a>, <a href="../todo#web">Web</a></span><a class="nosplit" href="../todo#5"></a><span class="metrics"><span class="wcntr"> Words: 569</span></span></div></nav></div><div class="p" id="_22">There is an outstanding nested set index corruption going on which hasn't been identified yet. Running on Heroku:<div class="code" id="_23"><div><pre><code>web/bin/rerender-articles.js</code></pre></div></div>blew up with:<div class="code" id="_24"><div><pre><code>cirosantilli/simply-connected-space
+cirosantilli/simulation
+/app/web/convert.js:459
+        throw new ValidationError(`the parent choice "${newParentId}" would create an infinite loop`)
+              ^
+
+ValidationError
+    at /app/web/convert.js:459:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async /app/web/node_modules/sequelize/dist/lib/sequelize.js:463:24
+    at async Object.convertArticle (/app/web/convert.js:176:3)
+    at async /app/web/models/article.js:844:9
+    at async /app/web/node_modules/sequelize/dist/lib/sequelize.js:463:24
+    at async Article.rerender (/app/web/models/article.js:842:5)
+    at async Article.rerender (/app/web/models/article.js:1615:9)
+    at async /app/web/bin/rerender-articles.js:19:1 {
+  info: undefined,
+  errors: 'the parent choice "@cirosantilli/conceptual-model" would create an infinite loop',
+  status: 422
+}</code></pre></div></div>and the DB check:<div class="code" id="_25"><div><pre><code>heroku run web/bin/normalize -c nested-set -u cirosantilli</code></pre></div></div>failed with:<div class="code" id="_26"><div><pre><code>AssertionError [ERR_ASSERTION]: nested-set: (slug, nestedSetIndex, nestedSetNextSibling, depth): actual: (cirosantilli/natural-science, 419, 3414, 2) !== expected: (@cirosantilli/natural-science, 419, 3411, 2)
+    at Object.normalize (/app/web/models/index.js:400:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async /app/web/bin/normalize:28:3 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 3414,
+  expected: 3411,
+  operator: 'strictEqual'
+}</code></pre></div></div></div><div class="p" id="_27">The local source corresponding to that was:<div class="code" id="_28"><div><pre><code>= Conceptual model
+{parent=Scientific method}
+{wiki}
+
+= Model
+{synonym}
+
+= Simulation
+{parent=Conceptual model}
+{wiki}</code></pre></div></div>and it hadn't changed in a long time according to git log, also:<div class="code" id="_29"><div><pre><code>= Natural science
+{parent=Science}
+{wiki}
+
+...
+
+= Thermo Electron
+{c}
+{parent=Thermo Fisher Scientific}
+{title2=1956-}
+{wiki}
+
+= Natural science YouTube channel
+{parent=Natural science}
+{wiki}
+
+= The Thought Emporium
+{c}
+{parent=Natural science YouTube channel}
+{wiki}
+
+\Include[linguistics]{parent=science}
+
+...
+
+= Scientific method
+{parent=Science}
+{wiki}</code></pre></div></div>are three consecutive siblings.</div><div class="p" id="_30">Some related database lines via:<div class="code" id="_31"><div><pre><code>bin/psql -A -F' ' &lt;&lt;EOF &gt;db.tmp
+select "nestedSetIndex","nestedSetNextSibling",slug from "Article" where slug like 'cirosantilli/%' order by "nestedSetIndex"
+EOF</code></pre></div></div>are:<div class="code" id="_32"><div><pre><code>  419 | 3414 | cirosantilli/natural-science
+
+ 3411 | 3412 | cirosantilli/thermo-electron
+ 3412 | 3414 | cirosantilli/natural-science-youtube-channel
+ 3413 | 3414 | cirosantilli/the-thought-emporium
+ 3414 | 3553 | cirosantilli/linguistics
+
+ 3551 | 3553 | cirosantilli/chinese-slang
+ 3552 | 3553 | cirosantilli/shabi
+ 3553 | 3864 | cirosantilli/scientific-method</code></pre></div></div>Humm, that index looks correct, what's going on?</div><div class="p" id="_33">I hack:<div class="code" id="_34"><div><pre><code>
+@@ -392,6 +392,7 @@ async function normalize({
+         const articles = await Article.treeFindInOrder({ username, transaction })
+         if (check) {
+           const nestedSetsFromRefs = await Article.getNestedSetsFromRefs(username, { transaction })
++          nestedSetsFromRefs.map(e =&gt; console.error(`${e.nestedSetIndex} ${e.nestedSetNextSibling} ${e.id}`))</code></pre></div></div>and see:<div class="code" id="_35"><div><pre><code>3550 3864 @cirosantilli/scientific-method</code></pre></div></div>There's an offset of 3 somewhere!</div><div class="p" id="_36">OK the first glaring error in the DB is social science right in the middle of physics things:<div class="code" id="_37"><div><pre><code>1497 1498 cirosantilli/physx
+1500 1801 cirosantilli/social-science
+1501 1503 cirosantilli/3d-ridig-body-dynamics-benchmark
+1502 1503 cirosantilli/simbenchmark</code></pre></div></div>Also <a href="https://ourbigbook.com/cirosantilli/social-science">ourbigbook.com/cirosantilli/social-science</a> gave 500.</div><div class="p" id="_38">Possibly related:<div class="code" id="_39"><div><pre><code>1501 1503 cirosantilli/3d-ridig-body-dynamics-benchmark</code></pre></div></div>was a recent change, and part of this complex source code move that can be simplified to:<div class="code" id="_40"><div><pre><code>--- a/science.bigb
++++ b/science.bigb
+@@ -345,40 +345,7 @@ https://www.youtube.com/watch?v=H_H_TF5Kxks This Lab is RIDICULOUS (2021) gives
+-= 3D physics engine
+-{parent=Physics engine}
+-{tag=3D}
+-
+-= 3D physics engine benchmark
+-{parent=3D physics engine}</code></pre></div></div>to:<div class="code" id="_41"><div><pre><code>@@ -512,3 +512,117 @@ This idealization does not seems to be possible at all in the context of &lt;Maxwel
+ = Rigid body
+ {parent=Point particle}
+ {wiki}
++
++= Rigid body dynamics
++{parent=Rigid body}
++
++= 3D rigid body dynamics
++{parent=Rigid body dynamics}
++{tag=3D}
++
++= 3D rigid body dynamics simulator
++{parent=3D rigid body dynamics}
++
++= 3D physics engine
++{synonym}
++
++= PhysX
++{c}
++{parent=3D rigid body dynamics simulator}
++{tag=C++ library}
++
++= 3D ridig body dynamics benchmark
++{parent=3D rigid body dynamics}
++
++= 3D physics engine benchmark
++{synonym}
++
++= SimBenchmark
++{parent=3D ridig body dynamics benchmark}</code></pre></div></div>so it contains two simultaneous renames, before:<div class="code" id="_42"><div><pre><code>= 3D physics engine
+  = 3D physics engine benchmark</code></pre></div></div>after:<div class="code" id="_43"><div><pre><code>= 3D rigid body dynamics
+  = 3D rigid body dynamics simulator (3D physics engine)
+    = PhysX
+  = 3D ridig body dynamics benchmark (3D physics engine benchmark)
+    = SimBenchmark</code></pre></div></div>Gotta try to make a minimal test reproduction for this mess.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href="../todo#issues">Issues</a></li><li><a href="../todo">TODO</a></li><li><a href="../"><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/todo.bigb">todo.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "todo/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

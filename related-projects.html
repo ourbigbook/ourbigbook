@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Related projects - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="." class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="related-projects"><div class="notnav"><h1><a href="">Related projects</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href=".#ourbigbook-markup-and-cli-overview"> OurBigBook Markup and CLI overview</a><a href=".#design-goals"> Design goals</a></div><div class="nav"><a class="nosplit" href=".#related-projects"></a><span class="metrics"><span class="wcntr"> Words: 297</span></span></div></nav></div><div class="p" id="_326">Static wiki generators: this is perhaps the best way of classifying this project :-)<div class="list"><ul id="_327"><li id="_328"><a href="https://github.com/gollum/gollum">github.com/gollum/gollum</a>: already has a local server editor! But no WYSIWYG nor live preview. Git integration by default, so when you save on the UI already generates a Git commit. We could achieve that with: <a href="https://github.com/isomorphic-git/isomorphic-git">github.com/isomorphic-git/isomorphic-git</a>, would be really nice. Does not appear to have built-in static generation:<div class="list"><ul id="_329"><li id="_330"><a href="https://stackoverflow.com/questions/7210391/have-anyone-use-gollum-site-to-generete-markdown-wikis-and-host-it-on-heroku">stackoverflow.com/questions/7210391/have-anyone-use-gollum-site-to-generete-markdown-wikis-and-host-it-on-heroku</a></li><li id="_331"><a href="https://github.com/dreverri/gollum-site">github.com/dreverri/gollum-site</a></li></ul></div>Does not appear to check that any links are correct.</li><li id="_332"><a href="https://github.com/wcchin/markypydia">github.com/wcchin/markypydia</a></li><li id="_333"><a href="https://obsidian.md/">obsidian.md/</a> closed source, Markdown with <a href=".#cross-file-internal-link">cross file internal link</a> + a SaaS. Appears to require payment for any publishing. 28k followers 2021: <a href="https://twitter.com/obsdmd">twitter.com/obsdmd</a>. Founders are likely Canadians of Asian descent from Waterloo University: <a href="https://www.linkedin.com/in/lishid/">www.linkedin.com/in/lishid/</a> | <a href="https://www.linkedin.com/in/ericaxu/">www.linkedin.com/in/ericaxu/</a> also working in parallel on <a href="https://dynalist.io/">dynalist.io/</a> 2020 review at: <a href="https://www.youtube.com/watch?v=aK2fOQRNSxc">www.youtube.com/watch?v=aK2fOQRNSxc</a> Has offline editor with side-by-side preview. Compares with <a href="https://roamresearch.com/">Roam</a> and <a href="https://roamresearch.com/">Notion</a>, but can't find any public publishing on those, seem to be enterprise only things.</li></ul></div></div><div class="p" id="_334">Static book generators:<div class="list"><ul id="_335"><li id="_336"><a href="https://github.com/rstudio/bookdown">github.com/rstudio/bookdown</a>, <a href="https://bookdown.org/">bookdown.org/</a>. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: <a href="https://bookdown.org/yihui/bookdown/pandoc.html">bookdown.org/yihui/bookdown/pandoc.html</a>, thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.</li><li id="_337"><a href="https://gohugo.io/">Hugo</a>. Pretty good, similar feature set to ours. But Go based, so hard on browser, and adds adhoc features on top of markdown once again</li><li id="_338"><a href="https://en.wikipedia.org/wiki/Personal_wiki">en.wikipedia.org/wiki/Personal_wiki</a><div class="list"><ul id="_339"><li id="_340"><a href="https://github.com/vimwiki/vimwiki">github.com/vimwiki/vimwiki</a></li></ul></div></li><li id="_341"><a href="https://github.com/hplgit/doconce">github.com/hplgit/doconce</a></li><li id="_342"><a href="https://www.gwern.net/About#source">www.gwern.net/About#source</a> is pretty interesting, uses <a href="https://github.com/jaspervdj/Hakyll/">github.com/jaspervdj/Hakyll/</a> + some custom stuff.</li><li id="_343"><a href="https://github.com/JerrySievert/bookmarkdown">github.com/JerrySievert/bookmarkdown</a></li><li id="_344"><a href="https://www.gitbook.com/">www.gitbook.com/</a><div class="list"><ul id="_345"><li id="_346"><a href="https://github.com/rust-lang/mdBook">github.com/rust-lang/mdBook</a>. Impressive integrated search feature. Like Gitbook but implemented in Rust.</li></ul></div></li><li id="_347"><a href="https://github.com/facebook/docusaurus">github.com/facebook/docusaurus</a> React + markdown based, written in TypeScript. So how can it be build fast? Gotta benchmark.</li><li id="_348">vimdoc: <a href="http://vimdoc.sourceforge.net/">vimdoc.sourceforge.net/</a> They do have perfectly working <a href=".#internal-link">internal links</a>, see any page e.g. <a href="http://vimdoc.sourceforge.net/htmldoc/pattern.html">vimdoc.sourceforge.net/htmldoc/pattern.html</a>.</li><li id="_349">typst: <a href="https://github.com/typst/typst">github.com/typst/typst</a> An attempt at a LaTeX killer. Has its own typesetting engine, does not simply transpile to LaTeX. Meant to be faster and simpler to write. No HTML output as of writing: <a href="https://github.com/typst/typst/issues/721">github.com/typst/typst/issues/721</a></li></ul></div></div><div class="p" id="_350">Less related but of interest, similar philosophy to what Ciro wants, but no explicitly reusable system:<div class="list"><ul id="_351"><li id="_352"><a href="http://www.uprtcl.io/">www.uprtcl.io/</a></li><li id="_353"><a href="https://libretexts.org">libretexts.org</a></li><li id="_354"><a href="https://physics.info/">physics.info/</a></li><li id="_355"><a href="https://hypertextbook.com/">hypertextbook.com/</a></li><li id="_356"><a href="https://tutorial.math.lamar.edu/">tutorial.math.lamar.edu/</a></li></ul></div></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(3)</span></a></h2><div class="list"><ol><li><a href=".#design-goals">Design goals</a></li><li><a href=".#ourbigbook-markup-and-cli-overview">OurBigBook Markup and CLI overview</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/index.bigb">index.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

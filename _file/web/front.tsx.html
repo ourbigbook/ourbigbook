@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>front.tsx - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../_raw/main.css">
+<link rel="shortcut icon" href="../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../" class="brand"><img src="../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="front.tsx"><div class="notnav"><h1><a href="">web/front.tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../_dir/">(root)</a> / <a href="../../_dir/web">web</a> / <a href="../../_raw/web/front.tsx">front.tsx</a></b></div></nav></div><div class="p"><b>web/front.tsx</b></div><div class="code"><div><pre><code>import Head from 'next/head'
+import Link from 'next/link'
+import Router from 'next/router'
+import Script from 'next/script'
+import React from 'react'
+import { mutate } from 'swr'
+
+import ourbigbook, {
+  Macro,
+  INCOMING_LINKS_MARKER,
+  TAGS_MARKER,
+} from 'ourbigbook'
+
+import { webApi } from 'front/api'
+import {
+  docsUrl,
+  sureLeaveMessage,
+  useCaptcha
+} from 'front/config'
+import { AUTH_COOKIE_NAME } from 'front/js'
+import CustomLink from 'front/CustomLink'
+import { formatDate } from 'front/date'
+import routes from 'front/routes'
+import { ArticleType } from 'front/types/ArticleType'
+import { UserLinkWithImageInner } from 'front/UserLinkWithImage'
+
+export const AUTH_LOCAL_STORAGE_NAME = 'user'
+export const LOGIN_ACTION = 'Sign in'
+export const REGISTER_ACTION = 'Sign up'
+
+export function AlphabeticalOrderTabTitle() {
+  return &lt;&gt;A-Z&lt;/&gt;
+}
+
+/** https://stackoverflow.com/questions/2901102/how-to-format-a-number-with-commas-as-thousands-separators */
+export function addCommasToInteger(i: number): string {
+  return i.toLocaleString('en-US', { maximumFractionDigits: 0 })
+}
+
+export function capitalize(s) {
+  return s[0].toUpperCase() + s.slice(1)
+}
+
+export function CreateMyOwnVersionOfThisTopic({ titleSource, toplevel } : { titleSource: string, toplevel: boolean}) {
+  return &lt;Link href={routes.articleNew({ title: titleSource })} className="btn new" title="Create my own version of this topic"&gt;
+    {' '}&lt;NewArticleIcon title={null}/&gt;{toplevel ? ' Create my own version' : ''}{' '}
+  &lt;/Link&gt;
+}
+
+export function SeeMyOwnVersionOfThisTopic({ slug, toplevel } : { slug: string, toplevel: boolean}) {
+  return &lt;Link href={routes.article(slug)} className="btn see" title="See my version of this topic"&gt;
+    {' '}&lt;SeeIcon title={null}/&gt;{toplevel ? ' See my version' : ''}{' '}
+  &lt;/Link&gt;
+}
+
+export function decapitalize(s) {
+  return s[0].toLowerCase() + s.slice(1)
+}
+
+export function ArticleBy(
+  {
+    article,
+    newTab=false,
+    showArticleIcon=false,
+    showAuthor=true,
+    showTopicId=false,
+  }: {
+    article?: ArticleType,
+    newTab?: boolean,
+    showArticleIcon?: boolean,
+    showAuthor?: boolean,
+    showTopicId?: boolean,
+  }
+) {
+  const isIndex = article.topicId === ''
+  const quote = (!isIndex &amp;&amp; showAuthor) ? '"' : ''
+  const inner = &lt;&gt;
+    {showArticleIcon &amp;&amp; &lt;&gt;&lt;ArticleIcon /&gt; &lt;/&gt;}
+    {quote}&lt;span
+      className="ourbigbook-title"
+      dangerouslySetInnerHTML={{ __html: article.titleRender }}
+    /&gt;{quote}{showAuthor &amp;&amp; &lt;&gt;
+      {' '}by &lt;UserLinkWithImageInner {...{
+        user: article.author,
+        showUsername: true,
+      }} /&gt;
+    &lt;/&gt;}
+    {showTopicId &amp;&amp; &lt;&gt; &lt;span className="meta"&gt;({article.topicId})&lt;/span&gt;&lt;/&gt;}
+  &lt;/&gt;
+  const href = routes.article(article.slug)
+  if (newTab) {
+    return &lt;a href={href} target="_blank"&gt;{inner} &lt;LinkOpensInNewTabIcon /&gt;&lt;/a&gt;
+  } else {
+    return &lt;CustomLink href={href}&gt;{inner}&lt;/CustomLink&gt;
+  }
+}
+
+export function IssueBy(
+  { article }:
+  { article?: ArticleType }
+) {
+  return &lt;CustomLink href={routes.article(article.slug)}&gt;
+    "&lt;span
+      className="ourbigbook-title"
+      dangerouslySetInnerHTML={{ __html: article.titleRender }}
+    /&gt;" by { article.author.displayName }
+  &lt;/CustomLink&gt;
+}
+
+export function DiscussionAbout(
+  { article, children, span }:
+  { article?: ArticleType; children?: React.ReactNode, span?: boolean }
+) {
+  const inner = &lt;&gt;
+      &lt;DiscussionIcon /&gt;{' '}
+      Discussion on{' '}
+      &lt;ArticleBy {...{article}} /&gt;
+      {children}
+    &lt;/&gt;
+  let inner2
+  if (span) {
+    inner2 = &lt;span className="h2"&gt;{ inner }&lt;/span&gt;
+  } else {
+    inner2 = &lt;h1 className="h2"&gt;{ inner }&lt;/h1&gt;
+  }
+  return &lt;div className="discussion-about"&gt;{inner2}&lt;/div&gt;
+}
+
+// Icons.
+
+export function Icon(cls, title, opts) {
+  const showTitle = opts.title === undefined ? true : opts.title
+  const extraClasses = opts.extraClasses === undefined ? [] : opts.extraClasses
+  return &lt;i className={extraClasses.concat([cls, 'icon']).join(' ')} title={showTitle ? title : undefined } /&gt;
+}
+
+
+type FontAwesomeIconOptsType = {
+  title?: string|null
+}
+
+// Icon IDs can be found by searching under: https://fontawesome.com/search
+export function FontAwesomeIcon(
+  code,
+  opts: {
+    cls?: string,
+    clsExtra?: string[],
+    title?: string,
+    opts?: FontAwesomeIconOptsType,
+  } ={}
+) {
+  let { cls, clsExtra, opts: _opts, title } = opts
+  const classes = ['icon']
+  if (cls === undefined) {
+    cls = 'fa-solid-900'
+  }
+  if (_opts === undefined) {
+    _opts = {}
+  }
+  let _title = _opts.title
+  if (_title === null) {
+    title = undefined
+  } else if (_title !== undefined) {
+    title = _title
+  }
+  classes.push(cls)
+  if (clsExtra === undefined) {
+    clsExtra = []
+  }
+  classes.push(...clsExtra)
+  return &lt;span
+    title={title}
+    className={classes.join(' ')}
+   &gt;
+    {String.fromCharCode(code)}
+  &lt;/span&gt;
+}
+
+export function AnnounceIcon(opts) {
+  return FontAwesomeIcon(0xf0a1, { opts, title: "Announce" })
+}
+
+export function ArticleIcon(opts) {
+  return FontAwesomeIcon(0xf518, { opts, title: "Article" })
+}
+
+export function ArrowLeftIcon(opts) {
+  return FontAwesomeIcon(0xf060, { opts })
+}
+
+export function ArrowRightIcon(opts) {
+  return FontAwesomeIcon(0xf061, { opts })
+}
+
+export function ArrowUpIcon(opts) {
+  return FontAwesomeIcon(0xf062, { opts })
+}
+
+export function CancelIcon(opts) {
+  return FontAwesomeIcon(0xf00d, { clsExtra: ['icon-cancel'], opts, title: "Cancel" })
+}
+
+export function ChildrenIcon(opts) {
+  return FontAwesomeIcon(0xf063, { opts, title: "Children" })
+}
+
+export function CommentIcon(opts) {
+  return FontAwesomeIcon(0xf086, { opts, title: "Comments" })
+}
+
+export function DeleteIcon(opts) {
+  return FontAwesomeIcon(0xf2ed, { clsExtra: ['icon-delete'], opts, title: "Delete" })
+}
+export function EditArticleIcon(opts) {
+  return FontAwesomeIcon(0xf044, { opts, title: "Edit" })
+}
+
+export function ErrorIcon(opts) {
+  return FontAwesomeIcon(0xf00d, { clsExtra: ['icon-error'], opts, title: "Error" })
+}
+
+export function LinkOpensInNewTabIcon(opts) {
+  return FontAwesomeIcon(0xf08e, { opts, title: "Link opens in a new tab" })
+}
+
+export function FollowIcon(opts) {
+  // https://fontawesome.com/icons/eye?f=classic&amp;s=regular
+  return FontAwesomeIcon(0xf06e, { opts, title: "Follow" })
+}
+
+export function HelpIcon(opts) {
+  return FontAwesomeIcon(0xf05a, { opts, title: "Help" })
+}
+
+export function IdIcon(opts) {
+  return FontAwesomeIcon(0xf2c1, { opts, title: "Discussion" })
+}
+
+export function IncomingIcon() {
+  return &lt;span dangerouslySetInnerHTML={{ __html: INCOMING_LINKS_MARKER }} /&gt;
+}
+
+export function DiscussionIcon(opts) {
+  return FontAwesomeIcon(0xf075, { opts, title: "Discussion" })
+}
+
+export function LikeIcon(opts) {
+  return FontAwesomeIcon(0xf004, { clsExtra: ['icon-heart'], opts, title: "Like" })
+}
+
+export function LogoutIcon(opts) {
+  return FontAwesomeIcon(0xf2f5, { opts, title: "Logout" })
+}
+
+export function MoreIcon(opts) {
+  return FontAwesomeIcon(0xf05a, { opts, title: "More" })
+}
+
+let logging = false
+export function NewArticleIcon(opts) {
+  logging = true
+  const ret = FontAwesomeIcon(0x2b, { opts, title: "New" })
+  logging = false
+  return ret
+}
+
+export function OkIcon(opts) {
+  return FontAwesomeIcon(0xf00c, { clsExtra: ['icon-ok'], opts, title: "Submit" })
+  
+}
+
+export function PinnedArticleIcon(opts) {
+  return FontAwesomeIcon(0xf08d, { opts, title: "Pin" })
+  
+}
+
+export function SeeIcon(opts) {
+  // https://fontawesome.com/icons/eye?f=classic&amp;s=regular
+  return FontAwesomeIcon(0xf06e, { opts, title: "View" })
+}
+
+export function SettingsIcon(opts) {
+  return FontAwesomeIcon(0xf013, { opts, title: "Settings" })
+}
+
+export function SourceIcon(opts) {
+  return FontAwesomeIcon(0xf15c, { opts, title: "Source" })
+}
+
+export function StarIcon(opts) {
+  return FontAwesomeIcon(0xf005, { clsExtra: ['icon-star'], opts, title: "Admin" })
+}
+
+export function TagIcon() {
+  return &lt;span dangerouslySetInnerHTML={{ __html: TAGS_MARKER }} /&gt;
+}
+
+export function TimeIcon(opts) {
+  return FontAwesomeIcon(0xf017, { cls: 'fa-regular-400'})
+}
+
+export function TopicIcon(opts) {
+  return FontAwesomeIcon(0xf500, { opts, title: "Topic" })
+}
+
+export function UserIcon(opts) {
+  return FontAwesomeIcon(0xf007, { opts, title: "User" })
+}
+
+export function UnfollowIcon(opts) {
+  return FontAwesomeIcon(0xf070, { opts, title: "Unfollow" })
+}
+
+export function UnlistedIcon(opts) {
+  return FontAwesomeIcon(0xf070, { opts, title: "Unlisted" })
+}
+
+export function SignupOrLogin(
+  { to }:
+  { to: string }
+) {
+  return &lt;&gt;
+    &lt;UserIcon /&gt;{' '}
+    &lt;CustomLink href={routes.userNew()}&gt;
+      {REGISTER_ACTION}
+    &lt;/CustomLink&gt;
+    {' '}or{' '}
+    &lt;CustomLink href={routes.userLogin()}&gt;
+      {decapitalize(LOGIN_ACTION)}
+    &lt;/CustomLink&gt;
+    {' '}to {to}.
+  &lt;/&gt;
+}
+
+export function TopicsHelp({ className=undefined }) {
+  return &lt;span className={className ? className : ''}&gt;
+    &lt;HelpIcon /&gt; New to &lt;b&gt;topics&lt;/b&gt;?
+    {' '}
+    &lt;a href={`${docsUrl}/ourbigbook-web-topics`}&gt;Read the docs here!&lt;/a&gt;
+  &lt;/span&gt;
+}
+
+export function disableButton(btn, msg='Cannot submit due to errors') {
+  btn.setAttribute('disabled', '')
+  btn.setAttribute('title', msg)
+}
+
+export function enableButton(btn) {
+  btn.removeAttribute('disabled')
+  btn.removeAttribute('title')
+}
+
+/// Logout the current user on web UI.
+export function logout() {
+  window.localStorage.removeItem(AUTH_LOCAL_STORAGE_NAME);
+  deleteCookie(AUTH_COOKIE_NAME)
+  mutate('user', null);
+}
+
+export function slugFromArray(arr, { username }: { username?: boolean } = {}) {
+  if (username === undefined) {
+    username = true
+  }
+  const start = username ? 0 : 1
+  return arr.slice(start).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
+}
+
+export function slugFromRouter(router, opts={}) {
+  let arr = router.query.slug
+  if (!arr) {
+    return router.query.uid
+  }
+  return slugFromArray(arr, opts)
+}
+
+export const AppContext = React.createContext&lt;{
+  prevPageNoSignup: string
+  updatePrevPageNoSignup: (newCur: string) =&gt; void | undefined,
+}&gt;({
+  prevPageNoSignup: '',
+  updatePrevPageNoSignup: undefined
+});
+
+// Global state.
+export const AppContextProvider = ({ children, vals }) =&gt; {
+  return &lt;AppContext.Provider value={vals} &gt;
+    {children}
+  &lt;/AppContext.Provider&gt;
+};
+
+export function useCtrlEnterSubmit(handleSubmit) {
+  React.useEffect(() =&gt; {
+    function ctrlEnterListener(e) {
+      if (e.code === 'Enter' &amp;&amp; e.ctrlKey) {
+        handleSubmit(e)
+      }
+    }
+    document.addEventListener('keydown', ctrlEnterListener);
+    return () =&gt; {
+      document.removeEventListener('keydown', ctrlEnterListener);
+    };
+  }, [handleSubmit]);
+}
+
+export function useEEdit(
+  canEdit: boolean,
+  slug: string,
+) {
+  React.useEffect(() =&gt; {
+    function listener(e) {
+      if (
+        e.code === 'KeyE' &amp;&amp;
+        document.activeElement === document.body
+      ) {
+        if (canEdit) {
+          Router.push(routes.articleEdit(slug))
+        }
+      }
+    }
+    if (slug !== undefined) {
+      document.addEventListener('keydown', listener);
+      return () =&gt; {
+        document.removeEventListener('keydown', listener);
+      }
+    }
+  }, [canEdit, slug]);
+}
+
+export function useEEditIssue(
+  canEdit: boolean,
+  slug: string,
+  number: number,
+) {
+  React.useEffect(() =&gt; {
+    function listener(e) {
+      if (
+        e.code === 'KeyE' &amp;&amp;
+        document.activeElement === document.body
+      ) {
+        if (canEdit) {
+          Router.push(routes.issueEdit(slug, number))
+        }
+      }
+    }
+    document.addEventListener('keydown', listener);
+    return () =&gt; {
+      document.removeEventListener('keydown', listener);
+    }
+  }, [canEdit, slug, number]);
+}
+
+/** Add a window event listener but only for the current page.
+ * Remove the event when next.js router moves away. */
+export function useWindowEventListener(event, callback) {
+  React.useEffect(() =&gt; {
+    window.addEventListener(event, callback)
+    // Cleanup listener after leaving the page.
+    return () =&gt; {
+      window.removeEventListener(event, callback)
+    }
+  }, [callback, event])
+}
+
+/** Ask if user really wants to save page that may have unsaved changes.
+ * https://stackoverflow.com/questions/63064778/next-js-warn-user-for-unsaved-form-before-route-change
+ */
+export function useConfirmExitPage(okToLeave: boolean) {
+  React.useEffect(() =&gt; {
+    // If closing tab or browser history or input another domain on URL bar.
+    const beforeUnloadHandler = (e: BeforeUnloadEvent) =&gt; {
+      if (!okToLeave) {
+        (e || window.event).returnValue = sureLeaveMessage
+        return sureLeaveMessage
+      }
+    }
+    // If exiting by clicking a Next.js link.
+    const routeChangeStartHandler = (url: string) =&gt; {
+      if (!okToLeave &amp;&amp; Router.pathname !== url &amp;&amp; !confirm(sureLeaveMessage)) {
+        // to inform NProgress or something ...
+        Router.events.emit('routeChangeError')
+        // tslint:disable-next-line: no-string-throw
+        throw `Route change to "${url}" was aborted (this error can be safely ignored). See https://github.com/vercel/next.js/discussions/32231`
+      }
+    }
+    Router.events.on('routeChangeStart', routeChangeStartHandler)
+    window.addEventListener('beforeunload', beforeUnloadHandler)
+    return () =&gt; {
+      Router.events.off('routeChangeStart', routeChangeStartHandler)
+      window.removeEventListener('beforeunload', beforeUnloadHandler)
+    }
+  }, [okToLeave])
+}
+
+// https://stackoverflow.com/questions/4825683/how-do-i-create-and-read-a-value-from-cookie/38699214#38699214
+export function setCookie(name, value, days?: number, path = '/') {
+  let delta
+  if (days === undefined) {
+    delta = Number.MAX_SAFE_INTEGER
+  } else {
+    delta = days * 864e5
+  }
+  const expires = new Date(Date.now() + delta).toUTCString()
+  document.cookie = `${name}=${encodeURIComponent(
+    value
+  )};expires=${expires};path=${path}`
+}
+
+export function setCookies(cookieDict, days, path = '/') {
+  for (let key in cookieDict) {
+    setCookie(key, cookieDict[key], days, path)
+  }
+}
+
+export function getCookie(name) {
+  return getCookieFromString(document.cookie, name)
+}
+
+export function getCookieFromReq(req, name) {
+  const cookie = req.headers.cookie
+  if (cookie) {
+    return getCookieFromString(cookie, name)
+  } else {
+    return null
+  }
+}
+
+export function getCookieFromString(s, name) {
+  return getCookiesFromString(s)[name]
+}
+
+// https://stackoverflow.com/questions/5047346/converting-strings-like-document-cookie-to-objects
+export function getCookiesFromString(s) {
+  return s.split('; ').reduce((prev, current) =&gt; {
+    const [name, ...value] = current.split('=')
+    prev[name] = value.join('=')
+    return prev
+  }, {})
+}
+
+export function deleteCookie(name, path = '/') {
+  setCookie(name, '', -1, path)
+}
+
+export async function setupUserLocalStorage(user, setErrors?) {
+  // We fetch from /profiles/:username again because the return from /users/login above
+  // does not contain the image placeholder.
+  const { data: userData, status: userStatus } = await webApi.user(
+    user.username
+  )
+  user.effectiveImage = userData.effectiveImage
+  window.localStorage.setItem(
+    AUTH_LOCAL_STORAGE_NAME,
+    JSON.stringify(user)
+  );
+  setCookie(AUTH_COOKIE_NAME, user.token)
+  mutate(AUTH_COOKIE_NAME, user.token)
+  mutate(AUTH_LOCAL_STORAGE_NAME, user);
+}
+
+// URL Fragment handling
+
+/**
+ * Based on the given URL path, decide the short version of a given long fragment:
+ * on /user: user/mathematics -&gt; mathematics
+ * on /user: _toc/user/mathematics -&gt; _toc/mathematics
+ * on /user/mathematics: user/algebra -&gt; algebra
+ * on /user/has-scope: user/has-scope/no-scope -&gt; no-scope
+ */
+export function getShortFragFromLongForPath(fragNoHash, pathNoSlash) {
+  // e.g. mathematics/
+  const path = pathNoSlash + '/'
+  let prefix
+  if (fragNoHash.startsWith(Macro.TOC_PREFIX)) {
+    prefix = Macro.TOC_PREFIX
+    fragNoHash = fragNoHash.replace(prefix, '')
+  } else {
+    prefix = ''
+  }
+  let removePrefix
+  if (fragNoHash === pathNoSlash) {
+    // Toplevel element '#mathematics' -&gt; '#'
+    removePrefix = pathNoSlash
+  } else if (fragNoHash.startsWith(path)) {
+    // Toplevel "mathematics" has scope, e.g. /username/mathematics.
+    // So we convert #username/mathematics/algebra to #algebra
+    removePrefix = path
+  } else {
+    removePrefix = pathNoSlash.split('/').slice(0, -1).join('/') + '/'
+  }
+  return prefix + fragNoHash.replace(removePrefix, '')
+}
+
+export function getShortFragFromLong(fragNoHash) {
+  return getShortFragFromLongForPath(fragNoHash, window.location.pathname.substring(1))
+}
+
+/** Modify the current URL to have this hash. Do not add alter browser history. */
+export function replaceFrag(fragNoHash) {
+  const newUrl = window.location.pathname + window.location.search + '#' + fragNoHash
+  // Using this internal-looking API works. Not amazing, bu we can't find a better way.
+  // replaceState first arg is an arbitrary object, and we just make it into what Next.js uses.
+  // https://github.com/vercel/next.js/discussions/18072
+  window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl)
+  // Makes user/mathematics -&gt; user/mathematics#algebra -&gt; user/linear-algebra -&gt; browser back history button work
+  // However makes: user/mathematics -&gt; user/mathematics#algebra -&gt; user/mathematics#linear-algebra -&gt; browser back history button work
+  // give "Error: Cancel rendering route"
+  //await Router.replace(shortFrag)
+}
+
+/** Input: we are in an url with long fragment such as #barack-obama/mathematics
+ * Outcome: replace the URL fragment with the corresponding short one without altering browser history. */
+export function replaceShortFrag() {
+  replaceFrag(getShortFragFromLong(window.location.hash.substring(1)))
+}
+
+/** Use explicit .target class to overcome https://github.com/ourbigbook/ourbigbook/issues/302 */
+export function fragSetTarget(elem: HTMLElement) {
+  const es = window.document.getElementsByClassName('target')
+  for (let i = 0; i &lt; es.length; i++) {
+    es[i].classList.remove('target')
+  }
+  elem.classList.add('target')
+}
+
+/** Does everything we want to do on our short fragment redirection hacks, e.g. when you click
+  * a link to an element that is in the current page. Supposes that the element is for sure in page.  */
+export function shortFragGoTo(
+  handleShortFragmentSkipOnce: React.MutableRefObject&lt;boolean&gt;,
+  shortFrag: string,
+  longFrag: string,
+  targetElem: HTMLElement
+) {
+  handleShortFragmentSkipOnce.current = true
+  window.location.hash = longFrag
+  replaceFrag(shortFrag)
+  fragSetTarget(targetElem)
+}
+
+export function orderToPageTitle(order: string): string {
+  switch(order) {
+    case 'createdAt':
+      return 'New'
+    case 'score':
+      return 'Top'
+    case 'updatedAt':
+      return 'Recently updated'
+  }
+}
+
+export function MyHead({ title }) {
+  return &lt;Head&gt;
+    &lt;meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1"
+    /&gt;
+    &lt;title&gt;{(title ? `${title} - ` : '') + 'OurBigBook.com'}&lt;/title&gt;
+  &lt;/Head&gt;
+}
+
+export function ArticleCreatedUpdatedPills({ article }) {
+  return &lt;&gt;
+    &lt;span className="pill" title="Last updated"&gt;
+      &lt;TimeIcon /&gt;
+      {' '}
+      {article.createdAt !== article.updatedAt &amp;&amp; &lt;&gt;
+        &lt;span className="desktop-hide"&gt;&lt;EditArticleIcon /&gt;&lt;/span&gt;
+        &lt;span className="mobile-hide"&gt;Updated&lt;/span&gt;
+        {' '}
+      &lt;/&gt;}
+      &lt;span className="article-dates"&gt;
+        {formatDate(article.updatedAt)}
+      &lt;/span&gt;
+    &lt;/span&gt;
+    {article.createdAt !== article.updatedAt &amp;&amp;
+      &lt;&gt;
+        {' '}
+        &lt;span className="pill" title="Created"&gt;
+          &lt;TimeIcon /&gt;
+          {' '}
+          &lt;span className="desktop-hide"&gt;&lt;NewArticleIcon /&gt;&lt;/span&gt;
+          &lt;span className="mobile-hide"&gt;Created&lt;/span&gt;
+          {' '}
+          &lt;span className="article-dates"&gt;
+            {formatDate(article.createdAt)}
+          &lt;/span&gt;
+        &lt;/span&gt;
+      &lt;/&gt;
+    }
+  &lt;/&gt;
+}
+
+export async function getRecaptchaToken() : Promise&lt;string|undefined&gt; {
+  if (useCaptcha) {
+    return new Promise((resolve, reject) =&gt; {
+      grecaptcha.ready(function() {
+        grecaptcha.execute(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY, {action: 'submit'}).then(function(token) {
+          resolve(token)
+        })
+      })
+    })
+  }
+}
+
+export function RecaptchaScript() {
+  if (useCaptcha) {
+    return &lt;Script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} /&gt;
+  } else {
+    return &lt;&gt;&lt;/&gt;
+  }
+}
+
+// URL operations.
+
+/** /my/path?aaa=bbb -&gt; /my/path?aaa=000&amp;bbb=111 */
+export function addParameterToUrlPath(path, key: string, value: string): string {
+  const url = new URL('http://a.com' + path)
+  const params = new URLSearchParams(url.search)
+  params.set(key, value)
+  return `${url.pathname}?${params.toString()}`
+}
+
+export function removeParameterFromUrlPath(path, key: string): string {
+  const url = new URL('http://a.com' + path)
+  const params = new URLSearchParams(url.search)
+  params.delete(key)
+  let paramsString = params.toString()
+  if (paramsString) {
+    paramsString = `?${paramsString}`
+  }
+  return `${url.pathname}${paramsString}`
+}
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/";
+</script>
+<script src="../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

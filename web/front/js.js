@@ -3,8 +3,6 @@
 
 const ourbigbook = require('ourbigbook')
 
-const DEFAULT_LIMIT = 20
-
 function modifyEditorInput(title, body) {
   let ret = ''
   if (title !== undefined) {

@@ -1,26 +1,45 @@
 import axios from "axios";
 
 import { SERVER_BASE_URL } from "lib/utils/constant";
+import { addAuthHeader } from "./lib"
 
 const UserAPI = {
   current: async () => {
     const user: any = window.localStorage.getItem("user");
     const token = user?.token;
     try {
-      const response = await axios.get(`/user`, {
-        headers: {
-          Authorization: `Token ${encodeURIComponent(token)}`,
-        },
+      const response = await axios.get(`/users`, {
+        headers: addAuthHeader(token),
       });
       return response;
     } catch (error) {
       return error.response;
     }
   },
+
+  follow: async (username) => {
+    const user: any = JSON.parse(window.localStorage.getItem("user"));
+    const token = user?.token;
+    try {
+      const response = await axios.post(
+        `${SERVER_BASE_URL}/users/${username}/follow`,
+        {},
+        {
+          headers: addAuthHeader(token),
+        }
+      );
+      return response;
+    } catch (error) {
+      return error.response;
+    }
+  },
+
+  get: async username => axios.get(UserAPI.url(username)),
+
   login: async (email, password) => {
     try {
       const response = await axios.post(
-        `${SERVER_BASE_URL}/users/login`,
+        `${SERVER_BASE_URL}/login`,
         JSON.stringify({ user: { email, password } }),
         {
           headers: {
@@ -33,6 +52,7 @@ const UserAPI = {
       return error.response;
     }
   },
+
   register: async (username, email, password) => {
     try {
       const response = await axios.post(
@@ -49,10 +69,11 @@ const UserAPI = {
       return error.response;
     }
   },
+
   save: async (user) => {
     try {
       const response = await axios.put(
-        `${SERVER_BASE_URL}/user`,
+        `${SERVER_BASE_URL}/users`,
         JSON.stringify({ user }),
         {
           headers: {
@@ -65,34 +86,25 @@ const UserAPI = {
       return error.response;
     }
   },
-  follow: async (username) => {
-    const user: any = JSON.parse(window.localStorage.getItem("user"));
-    const token = user?.token;
-    try {
-      const response = await axios.post(
-        `${SERVER_BASE_URL}/profiles/${username}/follow`,
-        {},
-        {
-          headers: {
-            Authorization: `Token ${encodeURIComponent(token)}`,
-          },
-        }
-      );
-      return response;
-    } catch (error) {
-      return error.response;
+
+  update: (user, token) => axios.put(
+    UserAPI.url(user.username),
+    JSON.stringify({ user }),
+    {
+      headers: addAuthHeader(token, {
+        "Content-Type": "application/json",
+      }),
     }
-  },
+  ),
+
   unfollow: async (username) => {
     const user: any = JSON.parse(window.localStorage.getItem("user"));
     const token = user?.token;
     try {
       const response = await axios.delete(
-        `${SERVER_BASE_URL}/profiles/${username}/follow`,
+        `${SERVER_BASE_URL}/users/${username}/follow`,
         {
-          headers: {
-            Authorization: `Token ${encodeURIComponent(token)}`,
-          },
+          headers: addAuthHeader(token),
         }
       );
       return response;
@@ -100,9 +112,8 @@ const UserAPI = {
       return error.response;
     }
   },
-  get: async (username) => {
-    return axios.get(`${SERVER_BASE_URL}/profiles/${username}`)
-  }
+
+  url: username => `${SERVER_BASE_URL}/users/${username}`,
 };
 
 export default UserAPI;

@@ -27,13 +27,13 @@ export function getStaticPropsArticle(revalidate?, addComments?) {
       })
     }
     const ret: any = {
-      props: { article: await article.toJSONFor() },
+      props: { article: await article.toJson() },
     }
     if (revalidate !== undefined) {
       ret.revalidate = revalidate
     }
     if (addComments) {
-      ret.props.comments = await Promise.all(comments.map(comment => comment.toJSONFor()))
+      ret.props.comments = await Promise.all(comments.map(comment => comment.toJson()))
     }
     return ret;
   }

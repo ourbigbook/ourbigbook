@@ -99,7 +99,7 @@ router.get('/', auth.optional, async function(req, res, next) {
       ])
       return res.json({
         articles: await Promise.all(articles.map(function(article) {
-          return article.toJSONFor(user)
+          return article.toJson(user)
         })),
         articlesCount: articlesCount
       })
@@ -107,7 +107,7 @@ router.get('/', auth.optional, async function(req, res, next) {
       const article = await getArticle(req, res)
       if (article) {
         const user = req.payload ? await req.app.get('sequelize').models.User.findByPk(req.payload.id) : null
-        return res.json({ article: await article.toJSONFor(user) })
+        return res.json({ article: await article.toJson(user) })
       }
     }
   } catch(error) {
@@ -131,7 +131,7 @@ router.get('/feed', auth.required, async function(req, res, next) {
     }
     const {count: articlesCount, rows: articles} = await user.findAndCountArticlesByFollowed(offset, limit)
     const articlesJson = await Promise.all(articles.map((article) => {
-      return article.toJSONFor(user)
+      return article.toJson(user)
     }))
     return res.json({
       articles: articlesJson,
@@ -158,7 +158,7 @@ router.post('/', auth.required, async function(req, res, next) {
       article.save()
     ])
     article.author = user
-    return res.json({ article: await article.toJSONFor(user) })
+    return res.json({ article: await article.toJson(user) })
   } catch(error) {
     next(error);
   }
@@ -187,7 +187,7 @@ router.put('/', auth.required, async function(req, res, next) {
             : setArticleTags(req, article, tagList),
           article.save()
         ])
-        return res.json({ article: await article.toJSONFor(user) })
+        return res.json({ article: await article.toJson(user) })
       } else {
         return res.sendStatus(403)
       }
@@ -235,10 +235,11 @@ router.post('/favorite', auth.required, async function(req, res, next) {
         await Promise.all([
           user.addFavorite(article.id, { transaction: t }),
           article.increment('score', { transaction: t }),
+          user.increment('articleScoreSum', { transaction: t }),
         ])
       })
       const newArticle = await getArticle(req, res)
-      return res.json({ article: await newArticle.toJSONFor(user) })
+      return res.json({ article: await newArticle.toJson(user) })
     }
   } catch(error) {
     next(error);
@@ -261,10 +262,11 @@ router.delete('/favorite', auth.required, async function(req, res, next) {
         await Promise.all([
           user.removeFavorite(article.id, { transaction: t }),
           article.decrement('score', { transaction: t }),
+          user.decrement('articleScoreSum', { transaction: t }),
         ])
       })
       const newArticle = await getArticle(req, res)
-      return res.json({ article: await newArticle.toJSONFor(user) })
+      return res.json({ article: await newArticle.toJson(user) })
     }
   } catch(error) {
     next(error);

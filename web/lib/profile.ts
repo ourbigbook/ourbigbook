@@ -21,6 +21,6 @@ export const getStaticPropsProfile: GetStaticProps = async ({ params: { uid } })
   }
   return {
     revalidate,
-    props: { profile: await user.toProfileJSONFor() },
+    props: { profile: await user.toJson() },
   }
 }

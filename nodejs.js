@@ -5,31 +5,38 @@ const path = require('path');
 
 const ENCODING = 'utf8';
 exports.ENCODING = ENCODING;
+
 const PACKAGE_NAME = 'cirodown';
 exports.PACKAGE_NAME = PACKAGE_NAME;
+
 // https://stackoverflow.com/questions/10111163/in-node-js-how-can-i-get-the-path-of-a-module-i-have-loaded-via-require-that-is
 const PACKAGE_PATH = path.dirname(require.resolve(path.join(PACKAGE_NAME, 'package.json')));
 exports.PACKAGE_PATH = PACKAGE_PATH;
+
 const DIST_PATH = path.join(PACKAGE_PATH, 'dist');
 exports.DIST_PATH = DIST_PATH;
-const PACKAGE_OUT_PATH = path.join(PACKAGE_PATH, 'out');
-exports.PACKAGE_OUT_PATH = PACKAGE_OUT_PATH;
-const PACKAGE_OUT_CSS_BASENAME = PACKAGE_NAME + '.min.css';
-exports.PACKAGE_OUT_CSS_BASENAME = PACKAGE_OUT_CSS_BASENAME;
-const PACKAGE_OUT_CSS_PATH = path.join(PACKAGE_PATH, PACKAGE_OUT_CSS_BASENAME);
-exports.PACKAGE_OUT_CSS_PATH = PACKAGE_OUT_CSS_PATH;
-const PACKAGE_OUT_CSS_EMBED_PATH = path.join(DIST_PATH, PACKAGE_NAME + '.css');
-exports.PACKAGE_OUT_CSS_EMBED_PATH = PACKAGE_OUT_CSS_EMBED_PATH;
-const PACKAGE_OUT_JS_BASENAME = PACKAGE_NAME + '_runtime.js';
-exports.PACKAGE_OUT_JS_BASENAME = PACKAGE_OUT_JS_BASENAME;
-const PACKAGE_OUT_JS_LOCAL_PATH = path.join(DIST_PATH, PACKAGE_OUT_JS_BASENAME);
-exports.PACKAGE_OUT_JS_LOCAL_PATH = PACKAGE_OUT_JS_LOCAL_PATH;
+
+const DIST_CSS_BASENAME = PACKAGE_NAME + '.css';
+exports.DIST_CSS_BASENAME = DIST_CSS_BASENAME;
+
+const DIST_CSS_PATH = path.join(DIST_PATH, DIST_CSS_BASENAME);
+exports.DIST_CSS_PATH = DIST_CSS_PATH;
+
+const DIST_JS_BASENAME = PACKAGE_NAME + '_runtime.js';
+exports.DIST_JS_BASENAME = DIST_JS_BASENAME;
+
+const DIST_JS_PATH = path.join(DIST_PATH, DIST_JS_BASENAME);
+exports.DIST_JS_PATH = DIST_JS_PATH;
+
 const PACKAGE_NODE_MODULES_PATH = path.join(PACKAGE_PATH, 'node_modules');
 exports.PACKAGE_NODE_MODULES_PATH = PACKAGE_NODE_MODULES_PATH;
+
 const PACKAGE_PACKAGE_JSON_PATH = path.join(PACKAGE_PATH, 'package.json');
 exports.PACKAGE_PACKAGE_JSON_PATH = PACKAGE_PACKAGE_JSON_PATH;
+
 const GITIGNORE_PATH = path.join(PACKAGE_PATH, 'gitignore');
 exports.GITIGNORE_PATH = GITIGNORE_PATH;
+
 const PACKAGE_SASS_BASENAME = PACKAGE_NAME + '.scss';
 exports.PACKAGE_SASS_BASENAME = PACKAGE_SASS_BASENAME;
 

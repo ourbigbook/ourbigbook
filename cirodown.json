@@ -1,5 +1,8 @@
 {
   "ignore": [
+    "cirodown.common.scss",
+    "cirodown.scss",
+    "cirodown_runtime.js",
     "web"
   ],
   "media-providers": {

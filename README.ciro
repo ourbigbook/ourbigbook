@@ -277,7 +277,11 @@ HTML is randomly limited to \c[h6], so Cirodown just renders higher levels as an
 \h[3][Table of contents \c[[\toc]]]
 {id=table-of-contents}
 
-We can add table of contents anywhere in the document, e.g. here is another one:
+TODO implement: ToC only shows headers contained under the header it is put.
+
+For example, if we have a document with a single \c[[\h[1\]]] and put the ToC just below it after a short introduction, which is the recommended document structure, then that ToC will now show the initial \c[[\h[1\]]] as expected.
+
+Here is another ToC, which contains very few elements since it is here is a subtree in the middle of the document:
 
 \toc
 

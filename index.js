@@ -1644,7 +1644,7 @@ const DEFAULT_MACRO_LIST = [
     'toc',
     [],
     function(ast, context) {
-      let ret = ``;
+      let ret = `<div class="toc-container">\n`;
       let todo_visit = [];
       let last_level = 0;
       for (let i = context.header_graph.children.length - 1; i >= 0; i--) {
@@ -1673,6 +1673,7 @@ const DEFAULT_MACRO_LIST = [
         last_level = level;
       }
       ret += `</li>\n</ul>\n`.repeat(last_level);
+      ret += `</div>\n`
       return ret;
     },
   ),
@@ -1735,6 +1736,10 @@ table, th, td {
 th, td {
   padding-left: 2px;
   padding-right: 2px;
+}
+/* Table of contents. */
+.toc-container ul {
+  list-style-type: none;
 }
 </style>
 <body>

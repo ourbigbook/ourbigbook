@@ -46,7 +46,7 @@ const ProfileHoc = (tab) => {
               className="user-img"
             />
             <p>{bio}</p>
-            {loggedInUser &&
+            {isCurrentUser &&
               <LogoutButton />
             }
             <EditProfileButton isCurrentUser={isCurrentUser} />

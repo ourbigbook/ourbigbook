@@ -1,6 +1,14 @@
 = Not the README with scope
 {scope}
 
+\Toc
+
 == h2
 
+\x[h2]
+
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=My image}
+
+== h2 2
+
+=== h3

@@ -123,7 +123,13 @@ async function start(port, startNext, cb) {
         }
         errorsForColumn.push(errItem.message)
       }
-      return res.status(422).json({ errors })
+      const ret = { errors }
+      if (!config.isProduction) {
+        // err.errors can be empty in some cases, e.g. NOT NULL constraint faiures on SQLite
+        // In those cases, the actual error appears under "parent".
+        ret.fullError = err
+      }
+      return res.status(422).json(ret)
     } else if (err instanceof apilib.ValidationError) {
       return res.status(err.status).json({
         errors: err.errors,

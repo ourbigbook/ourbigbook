@@ -66,7 +66,19 @@ module.exports = (sequelize) => {
         set(value) {
           throw new Error('cannot set virtual`author` value directly');
         }
-      }
+      },
+      // To fetch the tree recursively on the fly.
+      // https://stackoverflow.com/questions/192220/what-is-the-most-efficient-elegant-way-to-parse-a-flat-table-into-a-tree/42781302#42781302
+      nestedSetIndex: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      // Points to the nestedSetIndex of the next sibling, or where the
+      // address at which the next sibling would be if it existed.
+      nestedSetNextSibling: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
     },
     {
       // TODO updatedAt lazy to create migration now.
@@ -75,6 +87,9 @@ module.exports = (sequelize) => {
         { fields: ['topicId'], },
         { fields: ['slug'], },
         { fields: ['score'], },
+        { fields: ['nestedSetIndex'], },
+        // For parent searches.
+        { fields: ['nestedSetIndex', 'nestedSetNextSibling'], },
       ],
     }
   )

@@ -140,7 +140,7 @@ pre {
     }
   }
   table {
-    $table_border: 1px solid black;
+    $table_border: 1px solid $color;
     border: $table_border;
     border-collapse: collapse;
     th, td {

@@ -105,19 +105,13 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
 
 router.post('/users/:username/follow', auth.required, async function(req, res, next) {
   try {
-    let profileId = req.user.id
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
     if (!user) {
       return res.sendStatus(401)
     }
-    await req.app.get('sequelize').transaction(async t => {
-      await Promise.all([
-        user.addFollow(profileId),
-        user.increment('followerCount', { transaction: t }),
-      ])
-    })
+    await user.addFollowSideEffects(req.user)
     const newUser = await req.app.get('sequelize').models.User.findOne({
-      where: { username: username } })
+      where: { username: user.username } })
     return res.json({ user: await req.user.toJson(newUser) })
   } catch(error) {
     next(error);
@@ -126,19 +120,13 @@ router.post('/users/:username/follow', auth.required, async function(req, res, n
 
 router.delete('/users/:username/follow', auth.required, async function(req, res, next) {
   try {
-    let profileId = req.user.id
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
     if (!user) {
       return res.sendStatus(401)
     }
-    await req.app.get('sequelize').transaction(async t => {
-      await Promise.all([
-        user.removeFollow(profileId),
-        user.decrement('followerCount', { transaction: t }),
-      ])
-    })
+    await user.removeFollowSideEffects(req.user)
     const newUser = await req.app.get('sequelize').models.User.findOne({
-      where: { username: username } })
+      where: { username: user.username } })
     return res.json({ user: await req.user.toJson(user) })
   } catch(error) {
     next(error);

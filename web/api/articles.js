@@ -231,13 +231,7 @@ router.post('/favorite', auth.required, async function(req, res, next) {
       if (!article) {
         return res.sendStatus(404)
       }
-      await req.app.get('sequelize').transaction(async t => {
-        await Promise.all([
-          user.addFavorite(article.id, { transaction: t }),
-          article.increment('score', { transaction: t }),
-          user.increment('articleScoreSum', { transaction: t }),
-        ])
-      })
+      await user.addFavoriteSideEffects(article)
       const newArticle = await getArticle(req, res)
       return res.json({ article: await newArticle.toJson(user) })
     }
@@ -258,13 +252,7 @@ router.delete('/favorite', auth.required, async function(req, res, next) {
       if (!article) {
         return res.sendStatus(404)
       }
-      await req.app.get('sequelize').transaction(async t => {
-        await Promise.all([
-          user.removeFavorite(article.id, { transaction: t }),
-          article.decrement('score', { transaction: t }),
-          user.decrement('articleScoreSum', { transaction: t }),
-        ])
-      })
+      await user.removeFavoriteSideEffects(article)
       const newArticle = await getArticle(req, res)
       return res.json({ article: await newArticle.toJson(user) })
     }

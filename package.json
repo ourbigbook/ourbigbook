@@ -3,15 +3,16 @@
     "cirodown": "cirodown"
   },
   "dependencies": {
-    "better-sqlite3": "^5.4.3",
+    "better-sqlite3": "5.4.3",
     "chokidar": "3.3.0",
     "commander": "3.0.2",
     "git-url-parse": "11.1.2",
     "is-installed-globally": "0.3.1",
     "katex": "cirosantilli/KaTeX#branch-7e359f0f8d2dffeb2edec8a20aba283c074bee6f",
     "liquidjs": "9.11.7",
+    "lodash": "4.17.20",
     "normalize.css": "8.0.1",
-    "pluralize": "^8.0.0",
+    "pluralize": "8.0.0",
     "sass": "1.23.7",
     "tablesort": "5.2.1"
   },

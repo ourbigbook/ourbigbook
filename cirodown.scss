@@ -172,6 +172,10 @@ pre {
   margin-bottom: $p-margin-vert;
 }
 
+ol, ul {
+  padding-left: 30px;
+}
+
 // Table of contents.
 .toc-container {
   div a + span {

@@ -518,7 +518,7 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
           sass.renderSync({
             data: fs.readFileSync(path.join(base_path, input_path), convert_input_options.encoding),
             outputStyle: 'compressed',
-            includePaths: [cirodown_nodejs.PACKAGE_NODE_MODULES_PATH],
+            includePaths: [path.join(convert_input_options.cirodown_json_dir, 'node_modules')],
           }).css
         );
       } else {
@@ -941,7 +941,7 @@ Hello!
 `;
     if (commander.generateMultifile) {
       readme_cirodown_str += `
-\\Toc
+\\x[h2-in-not-the-README]
 
 == And now an include
 
@@ -950,6 +950,8 @@ Hello!
       not_readme_str = `= Not the readme
 
 A link to another file: \\x[and-now-an-include]
+
+== h2 in not the README
 `
       fs.writeFileSync(path.join(outdir, 'not-readme.ciro'), not_readme_str);
     }

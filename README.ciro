@@ -40,9 +40,9 @@ To start a new project with a minimal sane template \x[generate][use `--generate
 ``
 mkdir -p cirodown-generate
 cd cirodown-generate
-git init
-git remote add origin git@github.com:USERNAME/cirodown-generate.git
 cirodown --generate
+git init
+git remote add origin git@github.com:cirosantilli/cirodown-generate.git
 git add .
 git commit -m 'First commit'
 cirodown --publish
@@ -51,6 +51,15 @@ Or to start with a more complex template suitable for multifile projects use \x[
 ``
 cirodown --generate-multifile
 ``
+Previews of the output of those templates can be seen at:
+* `--generate`:
+  * live: http://cirosantilli.com/cirodown-generate/
+  * source: https://github.com/cirosantilli/cirodown-generate
+* `--generate-multifile`
+  * live:
+    * http://cirosantilli.com/cirodown-generate-multifile/
+    * http://cirosantilli.com/cirodown-generate-multifile/not-readme
+  * source: https://github.com/cirosantilli/cirodown-generate-multifile
 
 Render all `.ciro` files from the master of this project to separate files, e.g. `README.ciro` to `index.html`, `not-readme.ciro` to `not-readme.html` and so on:
 ``

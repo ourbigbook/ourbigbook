@@ -352,7 +352,7 @@ function assert_executable(
   description,
   options={}
 ) {
-  it(description, ()=>{
+  it(description, function () {
     options = Object.assign({}, options);
     if (!('args' in options)) {
       options.args = [];
@@ -377,6 +377,10 @@ function assert_executable(
     }
     if (!('pre_exec' in options)) {
       options.pre_exec = [];
+    }
+    if ('timeout' in options) {
+      // https://stackoverflow.com/questions/15971167/how-to-increase-timeout-for-a-single-test-case-in-mocha
+      this.timeout(options.timeout);
     }
     const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'cirodown'));
     for (const relpath in options.filesystem) {
@@ -3708,5 +3712,52 @@ assert_executable(
         xpath_header_split(1, 'notindex-h2', 'notindex.html#notindex-h2', cirodown.NOSPLIT_MARKER),
       ],
     }
+  }
+);
+assert_executable(
+  'executable: --generate followed by conversion does not blow up',
+  {
+    args: ['.'],
+    pre_exec: [
+      ['cirodown', ['--generate']],
+    ],
+  }
+);
+assert_executable(
+  'executable: --generate-multifile followed by conversion does not blow up',
+  {
+    args: ['.'],
+    pre_exec: [
+      ['cirodown', ['--generate-multifile']],
+      ['git', ['init']],
+      ['git', ['add', '.']],
+      ['git', ['commit', '-m', '0']],
+    ],
+  }
+);
+assert_executable(
+  'executable: --generate followed by publish conversion does not blow up',
+  {
+    args: ['--dry-run', '--publish'],
+    pre_exec: [
+      ['cirodown', ['--generate']],
+      ['git', ['init']],
+      ['git', ['add', '.']],
+      ['git', ['commit', '-m', '0']],
+      ['git', ['remote', 'add', 'origin', 'git@github.com:cirosantilli/cirodown-generate.git']],
+    ],
+  }
+);
+assert_executable(
+  'executable: --generate-multifile followed by publish conversion does not blow up',
+  {
+    args: ['--dry-run', '--publish'],
+    pre_exec: [
+      ['cirodown', ['--generate-multifile']],
+      ['git', ['init']],
+      ['git', ['add', '.']],
+      ['git', ['commit', '-m', '0']],
+      ['git', ['remote', 'add', 'origin', 'git@github.com:cirosantilli/cirodown-generate.git']],
+    ],
   }
 );

@@ -80,7 +80,7 @@ async function createOrUpdateArticleApi(test, article, opts={}) {
 
 async function createArticles(sequelize, author, opts) {
   const articleArg = createArticleArg(opts, author)
-  return convert.convertArticle({
+  const { articles } = await convert.convertArticle({
     author,
     bodySource: articleArg.bodySource,
     path: opts.path,
@@ -88,6 +88,7 @@ async function createArticles(sequelize, author, opts) {
     sequelize,
     titleSource: articleArg.titleSource,
   })
+  return articles
 }
 
 async function createArticle(sequelize, author, opts) {

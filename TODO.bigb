@@ -21,6 +21,13 @@
 
 == Issues
 
+=== h2 on hover self links are empty on Web
+{tag=Web}
+
+And therefore lead users to the toplevel page instead of a link to current header.
+
+The links by clicking on the header itself are correct and go to a dedicated page with it on top. The problem is just for the on-hover links on the margin which we'd like to link to self in the current page.
+
 === Missing header metadata such as like button, same topic and issue link on headers under a scope
 {tag=Scope}
 
@@ -68,6 +75,8 @@ Maybe some will be list by default, but some will definitely be article show by 
 {tag=Web}
 
 We likely just have to set the `path:` API argument based on the has scope status of the parent article.
+
+As of the commit that adds this line, it should likely be possible to do it on the backend. On the frontend however we convert `/` to `-` so it doesn't work on the existence checks. We need a more accurate ID conversion there.
 
 === Remove all unnecessary newlines from HTML output
 {tag=Lib}
@@ -163,13 +172,6 @@ subdir/qwer.bigb
 Then in the rendering of `subdir/qwer.html`, the tag `asdf` appears twice.
 
 The root cause is that scope resolution is finding the same thing twice, one as `subdir/asdf` and then once again with just `asdf` (which is then correctly resolved).
-
-=== h2 self links are empty on Web
-{tag=Web}
-
-And therefore lead users to the toplevel page instead of a link to current header.
-
-TODO can't reproduce anymore. Find exact reproducer page?
 
 === Skip absolute link exit check on web
 {tag=Web}

@@ -1002,7 +1002,8 @@ assert_error('missing mandatory positional argument level of h', '\\h', 1, 1);
 assert_error('argument without close empty', '\\c[\n', 1, 4);
 assert_error('argument without close nonempty', '\\c[ab\n', 1, 6);
 // TODO failing
-//assert_error('argument without open', ']', 1, 1);
+//assert_error('stray closing ]', ']', 1, 1);
+//assert_error('stray closing }', 'a}b', 1, 2);
 assert_error('unterminated literal positional argument', '\\c[[\n', 1, 3);
 assert_error('unterminated literal named argument', '\\c{{id=\n', 1, 3);
 assert_error('unterminated insane inline code', '`\n', 1, 1);

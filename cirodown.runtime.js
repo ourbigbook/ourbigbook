@@ -2,6 +2,64 @@
 
 // tablesort
 window.onload = function() {
+  // ToC interaction.
+  const CLOSE_CLASS = 'close';
+  const TOC_CONTAINER_CLASS = 'toc-container';
+  const toc_arrows = document.querySelectorAll(`.${TOC_CONTAINER_CLASS} div.arrow`);
+  for(const toc_arrow of toc_arrows) {
+    toc_arrow.addEventListener('click', () => {
+      // https://cirosantilli.com/cirodown#table-of-contents-javascript-open-close-interaction
+      const parent_li = toc_arrow.parentElement.parentElement;
+      let all_children_closed = true;
+      let was_open;
+      if (parent_li.classList.contains(CLOSE_CLASS)) {
+        was_open = false;
+        // Open self.
+        parent_li.classList.toggle(CLOSE_CLASS);
+      } else {
+        was_open = true;
+        // Check if all children are closed.
+        for (const toc_arrow_child of parent_li.childNodes) {
+          if (toc_arrow_child.tagName === 'UL') {
+            for (const toc_arrow_child_2 of toc_arrow_child.childNodes) {
+              if (toc_arrow_child_2.tagName === 'LI') {
+                if (!toc_arrow_child_2.classList.contains(CLOSE_CLASS)) {
+                  all_children_closed = false;
+                }
+              }
+            }
+          }
+        }
+      }
+      // Open or close all children.
+      for (const toc_arrow_child of parent_li.childNodes) {
+        if (toc_arrow_child.tagName === 'UL') {
+          for (const toc_arrow_child_2 of toc_arrow_child.childNodes) {
+            if (toc_arrow_child_2.tagName === 'LI') {
+              if (was_open && all_children_closed) {
+                toc_arrow_child_2.classList.remove(CLOSE_CLASS);
+              } else {
+                toc_arrow_child_2.classList.add(CLOSE_CLASS);
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Open ToC when jumping to it from header.
+  const h_to_tocs = document.getElementsByClassName('cirodown-h-to-toc');
+  for (const h_to_toc of h_to_tocs) {
+    h_to_toc.addEventListener('click', () => {
+      let cur_elem = document.getElementById(h_to_toc.getAttribute('href').slice(1)).parentElement;
+      while (!cur_elem.classList.contains(TOC_CONTAINER_CLASS)) {
+        cur_elem.classList.remove(CLOSE_CLASS);
+        cur_elem = cur_elem.parentElement;
+      }
+    });
+  }
+
   const tables = document.getElementsByTagName('table');
   for(const table of tables) {
     new Tablesort(table);

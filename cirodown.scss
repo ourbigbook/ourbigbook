@@ -1,6 +1,7 @@
 // https://cirosantilli.com/cirodown#insane-link-parsing-rules#overview-of-files-in-this-repository
 
 $caption-margin-bottom: 5px;
+$header-font-size: 24px;
 $p-margin-vert: 14px;
 
 // Light
@@ -105,7 +106,7 @@ figure {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-size: 24px;
+  font-size: $header-font-size;
   margin: 20px 0 8px;
   > a:first-child {
     color: $color;
@@ -183,29 +184,105 @@ ol, ul {
 
 // Table of contents.
 .toc-container {
-  div a + span {
-    @include hidden;
-  }
-  div:hover a + span {
-    @include visible;
-  }
   ul {
-    border-left: 1px solid black;
     list-style-type: none;
     li {
       // https://github.com/cirosantilli/cirodown/issues/68
       margin-bottom: 4px;
       margin-top: 4px;
+      div:hover a + span {
+        @include visible;
+      }
+
+      // CSS border triangles.
+      // https://css-tricks.com/snippets/css/css-triangle/
+      $arrow-width: 5px;
+      @mixin arrow {
+        display: inline;
+        &:hover {
+          background-color: $target-background-color;
+        }
+        > * {
+          display: inline-block;
+          height: 0;
+          margin-right: $arrow-width * 1.5;
+          vertical-align: middle;
+          width: 0;
+        }
+      }
+      div {
+        a + span {
+          @include hidden;
+        }
+        // Take up space on LIs that don't have an arrow.
+        &.arrow {
+          @include arrow;
+          & > * {
+            border-left: $arrow-width solid transparent;
+            border-right: $arrow-width solid transparent;
+            border-top: $arrow-width solid transparent;
+          }
+        }
+      }
+      // Right arrow for open LIs.
+      &.has-child > div > div.arrow {
+        @include arrow;
+        & > * {
+          border-left: $arrow-width solid transparent;
+          border-right: $arrow-width solid transparent;
+          border-top: $arrow-width solid $color;
+        }
+      }
+      &.close {
+        ul {
+          display: none;
+        }
+        // Down arrow for closed LIs.
+        &.has-child > div > div.arrow {
+          @include arrow;
+          & > * {
+            border-top: $arrow-width solid transparent;
+            border-bottom: $arrow-width solid transparent;
+            border-left: $arrow-width solid $color;
+          }
+        }
+      }
     }
   }
   > ul {
-    border-left: 0px solid black;
     padding-left: 0px;
+    > li > ul {
+      padding-left: 0px;
+      * {
+        background-color: $background-color;
+      }
+    }
+  }
+  .title {
+    font-size: $header-font-size;
+    font-weight: bold;
+  }
+
+  // Override the default URL fragment behaviour, only color the toc title when the ToC
+  // is targeted, otherwise it is too annoying. Especially because the first thing
+  // you want to do on a ToC is to click that nice big link. And then the entire ToC becomes
+  // red and unreadable (especially due to link colors) and then it requires some thinking to how
+  // to make it stop being red (remove #fragment from URL manually or find another ID on page).
+  // So we just take the solution that prevents the user from shooting themselves.
+  background-color: $background-color;
+  div:target {
+    background-color: $target-background-color;
+  }
+  div:target * {
+    background-color: $target-background-color;
+  }
+  &:target div.title-div {
+    background-color: $target-background-color;
   }
 }
 
-/* Taken from: https://raw.githubusercontent.com/tristen/tablesort/5.2.1/tablesort.css
- * Not on CDNJS for some reason: https://github.com/tristen/tablesort/issues/196 */
+// Taken from: https://raw.githubusercontent.com/tristen/tablesort/5.2.1/tablesort.css
+// Not on CDNJS for some reason: https://github.com/tristen/tablesort/issues/196
 th[role=columnheader]:not(.no-sort) {
   cursor: pointer;
 }

@@ -5590,10 +5590,16 @@ assert_lib('header: file argument in _file directory toplevel header',
 
 My txt.
 `,
+      [`${ourbigbook.FILE_PREFIX}/path/to/my-file.png.bigb`]: `= my-file.png
+{file}
+
+My png txt.
+`,
       'path/to/my-file.txt': `My Line 1
 
 My Line 2
 `,
+      'path/to/my-file.png': `aaaa`,
     },
     assert_xpath: {
       [`index.html`]: [
@@ -5611,7 +5617,10 @@ My Line 2
         `//x:a[@href='../../../${ourbigbook.DIR_PREFIX}/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
         `//x:a[@href='../../../${ourbigbook.DIR_PREFIX}/path/index.html' and text()='path' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path']`,
         `//x:a[@href='../../../${ourbigbook.DIR_PREFIX}/path/to/index.html' and text()='to' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path/to']`,
-      ]
+      ],
+      [`${ourbigbook.FILE_PREFIX}/path/to/my-file.png.html`]: [
+        "//x:img[@src='../../../_raw/path/to/my-file.png']",
+      ],
     }
   },
 )
@@ -11448,3 +11457,27 @@ assert_cli(
 //    ],
 //  }
 //);
+assert_cli('file: _file auto-generation conversion image media provider works',
+  {
+    args: ['-S', 'project'],
+    filesystem: {
+      'project/myimg.png': `aaa`,
+      'media/outside.png': `aaa`,
+      'project/ourbigbook.json': `{
+  "media-providers": {
+    "github": {
+      "default-for": ["image"],
+      "title-from-src": false,
+      "path": "../media",
+      "remote": "ourbigbook/ourbigbook-media"
+    }
+  }
+}`
+    },
+    assert_xpath: {
+      [`project/out/html/${ourbigbook.FILE_PREFIX}/myimg.png.html`]: [
+        `//x:img[@src='../${ourbigbook.RAW_PREFIX}/myimg.png']`,
+      ],
+    },
+  },
+)

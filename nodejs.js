@@ -125,38 +125,40 @@ class SqliteIdProvider extends cirodown.IdProvider {
   }
 
   async get_refs_to_warm_cache(types, to_ids, reversed=false) {
-    let to_id_key, other_key;
-    if (reversed) {
-      to_id_key = 'from_id'
-      other_key = 'to_id'
-    } else {
-      to_id_key = 'to_id'
-      other_key = 'from_id'
-    }
-    const rows = await this.sequelize.models.Ref.findAll({
-      where: {
-        [to_id_key]: to_ids,
-        type: types.map(type => this.sequelize.models.Ref.Types[type]),
-      },
-      attributes: [
-        [other_key, 'id'],
-        'defined_at',
-        to_id_key,
-        'type',
-      ]
-    })
-    for (const row of rows) {
-      let to_id_key_dict = this.ref_cache[to_id_key][row[to_id_key]]
-      if (to_id_key_dict === undefined) {
-        to_id_key_dict = {}
-        this.ref_cache[to_id_key][row[to_id_key]] = to_id_key_dict
+    if (to_ids.length) {
+      let to_id_key, other_key;
+      if (reversed) {
+        to_id_key = 'from_id'
+        other_key = 'to_id'
+      } else {
+        to_id_key = 'to_id'
+        other_key = 'from_id'
       }
-      let to_id_key_dict_type = to_id_key_dict[row.type]
-      if (to_id_key_dict_type === undefined) {
-        to_id_key_dict_type = []
-        to_id_key_dict[row.type] = to_id_key_dict_type
+      const rows = await this.sequelize.models.Ref.findAll({
+        where: {
+          [to_id_key]: to_ids,
+          type: types.map(type => this.sequelize.models.Ref.Types[type]),
+        },
+        attributes: [
+          [other_key, 'id'],
+          'defined_at',
+          to_id_key,
+          'type',
+        ]
+      })
+      for (const row of rows) {
+        let to_id_key_dict = this.ref_cache[to_id_key][row[to_id_key]]
+        if (to_id_key_dict === undefined) {
+          to_id_key_dict = {}
+          this.ref_cache[to_id_key][row[to_id_key]] = to_id_key_dict
+        }
+        let to_id_key_dict_type = to_id_key_dict[row.type]
+        if (to_id_key_dict_type === undefined) {
+          to_id_key_dict_type = []
+          to_id_key_dict[row.type] = to_id_key_dict_type
+        }
+        to_id_key_dict_type.push(row)
       }
-      to_id_key_dict_type.push(row)
     }
   }
 

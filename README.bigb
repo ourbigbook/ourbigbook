@@ -7696,6 +7696,18 @@ If some spurious bugs crashes the server, you might want to restart it with:
 heroku restart -a ourbigbook
 ``
 
+= heroku
+{file}
+
+The \a[heroku] helper allows us to omit the boring `-a ourbigbook`, e.g. we can just type:
+``
+./heroku logs -f
+``
+instead of:
+``
+./heroku logs -a ourbigbook -f
+``
+
 = Upgrade PostgreSQL database
 {parent=Heroku deployment}
 

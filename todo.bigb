@@ -595,6 +595,9 @@ But aint't nobody got time for that!
 
 == Closed issues
 
+=== Following and followed tabs are swapped
+{tag=Web}
+
 === Undefined tag error message for directory conversion says header ID is not defined instead of tag ID
 {tag=Bug}
 {tag=Tag}

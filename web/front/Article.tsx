@@ -13,6 +13,7 @@ import {
   NewArticleIcon,
   SeeIcon,
   SignupOrLogin,
+  SourceIcon,
   TimeIcon,
   TopicIcon,
 } from 'front'
@@ -486,6 +487,7 @@ const Article = ({
                 </>
               : <p>There are no discussions about this article yet.</p>
             }
+            <div className="source"><a href={routes.articleSource(article.slug)}><SourceIcon /> View article source</a></div>
           </>
       }
     </div>

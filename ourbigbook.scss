@@ -397,10 +397,7 @@ iframe {
 }
 
 pre {
-  background-color: $code-background-color;
-  margin: 8px 0;
-  padding: 8px 8px;
-  overflow-x: auto;
+  @include pre;
 }
 
 div.multiline-caption {

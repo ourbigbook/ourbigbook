@@ -67,3 +67,10 @@ $max-mobile-width: 635px;
 @mixin h1-only {
   font-size: $h1-font-size;
 }
+
+@mixin pre {
+  background-color: $code-background-color;
+  margin: 8px 0;
+  padding: 8px 8px;
+  overflow-x: auto;
+}

@@ -1190,11 +1190,11 @@ cli_parser.option('--unsafe-ace', 'https://docs.ourbigbook.com#unsafe-ace');
 cli_parser.option('--unsafe-xss', 'https://docs.ourbigbook.com#unsafe-xss');
 
 // Positional arguments.
-cli_parser.argument('[input_path]', 'file or directory to convert http://docs.ourbigbook.com#ourbigbook-executable');
+cli_parser.argument('[input_path...]', 'file or directory to convert http://docs.ourbigbook.com#ourbigbook-executable. If the first path is a file, all others must also be files (and not directories) as an optimization limitation. And they must lie in the same OurBigBook project.');
 
 // Parse CLI.
 cli_parser.parse(process.argv);
-let [inputPath] = cli_parser.processedArgs
+let [inputPaths] = cli_parser.processedArgs
 const cli = cli_parser.opts()
 
 // main action.
@@ -1211,46 +1211,51 @@ if (cli.helpMacros) {
   let htmlXExtension;
   let input_dir;
   const web = cli.web || cli.webTest
-  if (inputPath === undefined) {
+  if (inputPaths.length === 0) {
     if (web || publish || cli.watch || cli.generate) {
-      inputPath = '.';
+      inputPaths = ['.'];
     }
   } else {
     if (cli.generate) {
       cli_error('canot give an input path with --generate');
     }
   }
-  if (inputPath !== undefined) {
-    inputPathCwd = relpathCwd(inputPath)
-  }
 
   // Determine the ourbigbook.json file by walking up the directory tree.
   let input_path_is_file;
-  if (inputPath === undefined) {
+  let inputPath
+  if (inputPaths.length === 0) {
     // Input from stdin.
     input_dir = undefined;
     input_path_is_file = false;
   } else {
-    if (!fs.existsSync(inputPath)) {
-      cli_error('input path does not exist: ' + inputPath);
-    }
+    inputPathCwd = relpathCwd(inputPaths[0])
+    inputPath = inputPaths[0]
     input_path_is_file = fs.lstatSync(inputPath).isFile();
     if (input_path_is_file) {
       input_dir = path.dirname(inputPath);
     } else {
       input_dir = inputPath;
     }
+    for (const inputPath of inputPaths) {
+      if (!fs.existsSync(inputPath)) {
+        cli_error('input path does not exist: ' + inputPath);
+      }
+      if (input_path_is_file && !fs.lstatSync(inputPath).isFile()) {
+        cli_error(`the first input path is a file, but one of the other ones isn't: "{inputPath}"`);
+      }
+    }
   }
 
   // Initialize ourbigbook.json and directories determined from it if present.
   let ourbigbook_json_dir;
   const ourbigbook_json = {};
-  if (inputPath === undefined) {
+  if (inputPaths.length === 0) {
     ourbigbook_json_dir = '.'
   } else {
     let curdir = path.resolve(inputPath);
     let initial_dir;
-    if (fs.lstatSync(inputPath).isFile()) {
+    if (input_path_is_file) {
       curdir = path.dirname(curdir)
     }
     initial_dir = curdir;
@@ -2106,19 +2111,21 @@ if (cli.helpMacros) {
         if (publish) {
           cli_error('--publish must take a directory as input, not a file');
         }
-        if (ignore_path(
-          DEFAULT_IGNORE_BASENAMES_SET,
-          nonOurbigbookOptions.ignore_paths,
-          nonOurbigbookOptions.ignore_path_regexps,
-          nonOurbigbookOptions.dont_ignore_path_regexps,
-          inputPath
-        )) {
-          console.error(`skipping conversion of "${inputPath}" because it is ignored: ;`);
-        } else {
-          await create_db(ourbigbook_options, nonOurbigbookOptions);
-          output = await convert_path_to_file(inputPath, ourbigbook_options, nonOurbigbookOptions);
-          await check_db(nonOurbigbookOptions)
+        await create_db(ourbigbook_options, nonOurbigbookOptions);
+        for (const inputPath of inputPaths) {
+          if (ignore_path(
+            DEFAULT_IGNORE_BASENAMES_SET,
+            nonOurbigbookOptions.ignore_paths,
+            nonOurbigbookOptions.ignore_path_regexps,
+            nonOurbigbookOptions.dont_ignore_path_regexps,
+            inputPath
+          )) {
+            console.error(`skipping conversion of "${inputPath}" because it is ignored: ;`);
+          } else {
+            output = await convert_path_to_file(inputPath, ourbigbook_options, nonOurbigbookOptions);
+          }
         }
+        await check_db(nonOurbigbookOptions)
       } else {
         if (cli.stdout) {
           cli_error('--publish cannot be used in directory conversion');

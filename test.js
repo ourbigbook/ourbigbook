@@ -79,6 +79,9 @@ function assert_convert_ast(
       // to test rendered stuff. All in list must match.
       options.assert_xpath_matches = [];
     }
+    if (!('assert_not_xpath_matches' in options)) {
+      options.assert_not_xpath_matches = [];
+    }
     if (!('assert_xpath_split_headers' in options)) {
       // Map of output paths for split headers mode. Each output
       // path must match all xpath expresssions in its list.
@@ -246,6 +249,9 @@ function assert_convert_ast(
     }
     for (const xpath_expr of options.assert_xpath_matches) {
       assert_xpath_matches(xpath_expr, output);
+    }
+    for (const xpath_expr of options.assert_not_xpath_matches) {
+      assert_xpath_matches(xpath_expr, output, { count: 0 });
     }
     for (const key in options.assert_xpath_split_headers) {
       const output = extra_returns.rendered_outputs[key];
@@ -669,6 +675,34 @@ aa
     assert_xpath_matches: [
       "//x:span[@class='hide-hover']//x:a[@href='#p-1']",
       "//x:span[@class='hide-hover']//x:a[@href='#q-1']",
+    ],
+  }
+);
+assert_convert_ast('the first element has a on-hover link if it is not a header',
+  `aa`,
+  [
+    a('P', [t('aa')]),
+  ],
+  {
+    assert_xpath_matches: [
+      "//x:span[@class='hide-hover']//x:a[@href='#p-1']",
+    ],
+  }
+);
+assert_convert_ast('the first element does not have a on-hover link if it is a header',
+  `= tmp`,
+  [
+    a('H', undefined, {
+      level: [t('1')],
+      title: [t('tmp')],
+    }),
+  ],
+  {
+    assertnot_xpath_matches: [
+      "//x:span[@class='hide-hover']//x:a[@href='']",
+    ],
+    assert_not_xpath_matches: [
+      "//x:span[@class='hide-hover']//x:a[@href='#tmp']",
     ],
   }
 );

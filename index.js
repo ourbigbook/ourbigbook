@@ -5365,12 +5365,14 @@ async function x_href_parts(target_id_ast, context) {
   }
   let fragment;
   if (
-    // Linking to a toplevel ID.
-    target_id_ast.first_toplevel_child ||
-    // Linking towards a split header not included in the current output.
     (
       target_id_ast.macro_name === Macro.HEADER_MACRO_NAME &&
-      to_split_headers
+      (
+        // Linking to a toplevel ID.
+        target_id_ast.first_toplevel_child ||
+        // Linking towards a split header not included in the current output.
+        to_split_headers
+      )
     ) ||
     to_current_toplevel
   ) {

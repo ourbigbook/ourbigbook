@@ -24,7 +24,7 @@ const Settings = () => {
   return (
     <div className="settings-page content-not-cirodown">
       <h1>Your Settings</h1>
-      <button className="btn btn-outline-danger" onClick={handleLogout}>Logout</button>
+      <button className="btn" onClick={handleLogout}>Logout</button>
       <SettingsForm />
     </div>
   );

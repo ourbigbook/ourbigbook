@@ -1804,6 +1804,32 @@ it('api: article follow', async () => {
       // Trying to follow article that does not exist fails gracefully.
       ;({data, status} = await test.webApi.articleUnfollow('user0/dontexist'))
       assert.strictEqual(status, 404)
+
+    // Updating your own article does not make you follow it, only new article creation does.
+
+      // Make user1 unfollowe article user1/title-0.
+      test.loginUser(user1)
+      ;({data, status} = await test.webApi.articleUnfollow('user1/title-0'))
+      assertStatus(status, data)
+
+      // Follower count goes back down.
+      ;({data, status} = await test.webApi.article('user1/title-0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 0)
+      assert.strictEqual(data.followed, false)
+
+      // Edit the article.
+      article = createArticleArg({ i: 0, bodySource: 'hacked' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article))
+      assertStatus(status, data)
+
+      // This does not make user1 follow the article.
+      ;({data, status} = await test.webApi.article('user1/title-0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 0)
+      assert.strictEqual(data.followed, false)
+
+      test.loginUser(user0)
   })
 })
 

@@ -2096,7 +2096,7 @@ The `title2` argument has a special meaning when applied to a \x[header] with th
 {tag=boolean-argument}
 
 This option is a convenience helper for the common use case of "writting a tutorial". The same would also apply to a report, or an article.
-]]]
+]]]]
 
 = `\H` `wiki` argument
 {parent=h-arguments}

@@ -452,7 +452,14 @@ class AstNode {
         }
       }
 
-      let isLeaf = Object.keys(ast_json.args).length === 0
+      let isLeaf = true
+      for (const arg_name in ast_json.args) {
+        const arg_json = ast_json.args[arg_name];
+        if (arg_json.asts.length > 0) {
+          isLeaf = false
+          break
+        }
+      }
 
       if (finishedSubtrees || isLeaf) {
         todo_visit.pop()

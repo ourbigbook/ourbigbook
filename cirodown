@@ -32,6 +32,31 @@ const AstNode = class {
   }
 }
 
+const ErrorMessage = class {
+  constructor(message, line, column) {
+    this.message = message;
+    this.line = line;
+    this.column = column;
+  }
+
+  toString() {
+    let ret = 'error: ';
+    let had_line_or_col = false;
+    if (this.line !== undefined) {
+      ret += `line ${this.line} `;
+      had_line_or_col = true;
+    }
+    if (this.column !== undefined) {
+      ret += `column ${this.column} `;
+      had_line_or_col = true;
+    }
+    if (had_line_or_col)
+      ret += ': ';
+    ret += this.message;
+    return ret
+  }
+}
+
 const TokenType = make_enum([
   'PLAINTEXT',
   'MACRO_NAME',
@@ -57,10 +82,10 @@ const Token = class {
 
   toJSON() {
     return {
-      type:         this.type.toString(),
+      type:   this.type.toString(),
       line:   this.line,
       column: this.column,
-      value:        this.value
+      value:  this.value
     }
   }
 }
@@ -222,14 +247,6 @@ const closing_token = function(token) {
   return undefined;
 }
 
-const report_error = function(line, column, message) {
-  report_error_noline(`line ${line} column ${column}: ${message}`);
-}
-
-const report_error_noline = function(message) {
-  console.error(`error: ${message}`);
-}
-
 /**
  * @param {String} input_string
  * @returns {Array[Token]}
@@ -249,10 +266,10 @@ const tokenize = function(input_string, extra_returns={}) {
   // Therefore the next char could be the start of a new argument.
   let last_possible_new_argument_index;
   let failed = false;
+  extra_returns.errors = [];
 
   const error = function(message) {
-    report_error(line, column, message);
-    failed = true;
+    extra_returns.errors.push(new ErrorMessage(message, line, column));
   }
 
   const assert_could_be_argument = function() {
@@ -355,12 +372,11 @@ const tokenize = function(input_string, extra_returns={}) {
   }
   push_token(TokenType.POSITIONAL_ARGUMENT_END);
   push_token(TokenType.POSITIONAL_ARGUMENT_END);
-  extra_returns.failed = true;
   return tokens;
 }
 
 const parse = function(tokens, options, extra_returns={}) {
-  extra_returns.fail = false;
+  extra_returns.errors = [];
   let state = {
     i: -1,
     cur_token: undefined,
@@ -388,7 +404,7 @@ const parse_macro = function(tokens, state) {
     cur_token = tokens[state.i];
     log_parse_debug(state, 'function: consume');
     log_parse_debug(state, 'state.i = ' + state.i.toString())
-    log_parse_debug(state, 'state.cur_token = ' + cur_token.toString());
+    log_parse_debug(state, 'state.cur_token = ' + JSON.stringify(cur_token));
     log_parse_debug(state);
     state.cur_token = cur_token;
     return cur_token;
@@ -401,13 +417,9 @@ const parse_macro = function(tokens, state) {
     return tokens[i];
   }
 
-  const report_parse_error = function(state, msg) {
-    state.fail = true
-    report_error(
-      cur_token.line,
-      cur_token.column,
-      msg
-    );
+  const report_parse_error = function(state, message) {
+    state.extra_returns.errors.push(new ErrorMessage(
+      message, cur_token.line, cur_token.column));
   }
 
   while (consume() !== undefined) {
@@ -448,6 +460,7 @@ const parse_macro = function(tokens, state) {
         }
         args[arg.name] = arg_children;
         arg_count += 1;
+        consume();
       }
       return new AstNode(macro_name, args, macro_line, macro_column);
       macro_node = {
@@ -494,47 +507,19 @@ const convert = function(
     options = {};
   }
   if (!'body_only'     in options) { options.body_only   = false; }
-  if (!'show_ast'      in options) { options.show_ast    = false; }
-  if (!'show_input'    in options) { options.show_input  = false; }
-  if (!'show_output'   in options) { options.show_output = false; }
   if (!'show_parse'    in options) { options.show_parse  = false; }
   if (!'show_tokens'   in options) { options.show_tokens = false; }
-  if (options.show_input) {
-    console.log('input:')
-    console.log(util.inspect(input_string));
-    console.log();
-  }
-  let sub_extra_returns = {
-    fail: false,
-  };
-  let tokens = tokenize(input_string, extra_returns);
-  if (options.show_tokens) {
-    console.log('tokens:');
-    console.log(JSON.stringify(tokens, null, 2));
-    console.log();
-  }
-  if (sub_extra_returns.fail) {
-    extra_returns.fail = true;
-  }
-  sub_extra_returns = {
-    fail: false,
-  };
+  extra_returns.errors = [];
+  let sub_extra_returns;
+  sub_extra_returns = {};
+  let tokens = tokenize(input_string, sub_extra_returns);
+  extra_returns.tokens = tokens;
+  extra_returns.errors.push(...sub_extra_returns.errors);
+  sub_extra_returns = {};
   let ast = parse(tokens, options, sub_extra_returns);
-  if (sub_extra_returns.fail) {
-    extra_returns.fail = true;
-  }
-  if (options.show_ast) {
-    console.log('ast:');
-    console.log(JSON.stringify(ast, null, 2));
-    console.log();
-  }
-  let output = ast.convert(options);
-  if (options.show_output) {
-    console.log('output: ');
-    console.log(util.inspect(output));
-    console.log();
-  }
-  return output;
+  extra_returns.ast = ast;
+  extra_returns.errors.push(...sub_extra_returns.errors);
+  return ast.convert(options);
 }
 
 exports.convert = convert;
@@ -551,18 +536,28 @@ if (require.main === module) {
     input = fs.readFileSync(0, encoding);
   }
   let extra_returns = {};
-  console.log(convert(
+  let output = convert(
     input,
     {
       body_only: true,
       title: title,
-      show_ast: true,
-      show_input: true,
-      show_output: true,
-      show_parse: true,
-      show_tokens: true,
+      //show_parse: true,
     },
     extra_returns
-  ));
-  process.exit(!extra_returns.fail);
+  );
+  console.log(output);
+  if (true) {
+    console.error('tokens:');
+    console.error(JSON.stringify(extra_returns.tokens, null, 2));
+    console.error();
+  }
+  if (true) {
+    console.error('ast:');
+    console.error(JSON.stringify(extra_returns.ast, null, 2));
+    console.error();
+  }
+  for (const error of extra_returns.errors) {
+    console.error(error.toString());
+  }
+  process.exit(extra_returns.errors.length > 0);
 }

@@ -56,6 +56,8 @@ export const getServerSideProps = async ({ params = {}, req, res }) => {
       let verificationOk
       if (user.verificationCode === code) {
         user.token = user.generateJWT()
+        user.verified = true
+        await user.save()
         verificationOk = true
       } else {
         verificationOk = false

@@ -213,13 +213,17 @@ function convert_path_to_file(input_path, options, convert_input_options={}) {
     if (input_path_parse.name in IO_RENAME_MAP) {
       name = IO_RENAME_MAP[name];
     }
-    let output_path = path.join(input_path_parse.dir, name) + '.html';
     const new_convert_input_options = Object.assign({}, convert_input_options);
-    if (new_convert_input_options.outdir) {
-      fs.mkdirSync(new_convert_input_options.outdir, {recursive: true});
-      output_path = path.join(new_convert_input_options.outdir, output_path);
+    if (new_convert_input_options.output_path === undefined) {
+      let output_path = path.join(input_path_parse.dir, name) + '.html';
+      if (new_convert_input_options.outdir) {
+        output_path = path.join(new_convert_input_options.outdir, output_path);
+      }
+    } else {
+      output_path = new_convert_input_options.output_path;
     }
     new_convert_input_options.output_path = output_path;
+    fs.mkdirSync(path.dirname(output_path), {recursive: true});
     let t0 = performance.now();
     let output = convert_path(input_path, options, new_convert_input_options);
     let t1 = performance.now();
@@ -234,9 +238,6 @@ function convert_path_to_file(input_path, options, convert_input_options={}) {
  * @return {String}
  */
 function convert_path(input_path, options, convert_input_options) {
-  if (!('multifile' in convert_input_options)) {
-    convert_input_options.multifile = false;
-  }
   let new_options = Object.assign({}, options);
   let new_convert_input_options = Object.assign({}, convert_input_options);
   let input = fs.readFileSync(input_path, new_convert_input_options.encoding);
@@ -317,6 +318,7 @@ commander.option('--html-embed', 'http://cirosantilli.com/cirodown#html-embed', 
 commander.option('--html-single-page', 'http://cirosantilli.com/cirodown#html-single-page', false);
 commander.option('--no-html-x-extension', 'http://cirosantilli.com/cirodown#no-html-x-extension');
 commander.option('--outdir <outdir>', 'if the output would be saved to a file e.g. when building a directory, use this directory as the root');
+commander.option('-o, --outfile <outfile>', 'http://cirosantilli.com/cirodown#outfile');
 commander.option('--output-format <output-format>', 'output format');
 commander.option('--publish', 'http://cirosantilli.com/cirodown#publish', false);
 commander.option('-P, --publish-commit <commit-message>', 'http://cirosantilli.com/cirodown#publish-commit');
@@ -382,16 +384,17 @@ if (commander.helpMacros) {
     commander: commander,
     encoding: ENCODING,
     had_error: false,
-    multifile: true,
     out_css_path: cirodown_nodejs.PACKAGE_OUT_CSS_LOCAL_PATH,
   };
   if (inputPath === undefined && (publish || commander.watch)) {
     inputPath = '.';
   }
+  if (commander.outfile !== undefined) {
+    convert_input_options.output_path = commander.outfile;
+  }
   if (inputPath === undefined) {
     title = 'stdin';
     input = fs.readFileSync(0, ENCODING);
-    convert_input_options.multifile = false;
     output = convert_input(input, options, convert_input_options);
   } else {
     if (!fs.existsSync(inputPath)) {
@@ -405,6 +408,9 @@ if (commander.helpMacros) {
     } else {
       input_path_is_file = false;
       outdir = path.join(inputPath, OUT_DIRNAME);
+      if (commander.outfile !== undefined) {
+        cli_error(`--outfile given but multiple output files must be generated, maybe you want --outdir?`);
+      }
     }
 
     // Setup the ID database.
@@ -463,7 +469,6 @@ if (commander.helpMacros) {
         if (publish) {
           cli_error('--publish must take a directory as input, not a file');
         }
-        convert_input_options.multifile = false;
         output = convert_path(inputPath, options, convert_input_options);
       } else {
         let actual_input;
@@ -557,7 +562,11 @@ if (commander.helpMacros) {
     }
   }
   if (output !== undefined) {
-    process.stdout.write(output);
+    if (commander.outfile === undefined) {
+      process.stdout.write(output);
+    } else {
+      fs.writeFileSync(commander.outfile, output);
+    }
   }
   if (!commander.watch) {
     process.exit(convert_input_options.had_error);

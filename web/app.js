@@ -35,18 +35,21 @@ async function start(port, startNext, cb) {
   passport.use(
     new passport_local.Strategy(
       {
-        usernameField: 'user[email]',
+        usernameField: 'user[username]',
         passwordField: 'user[password]'
       },
-      function(email, password, done) {
-        sequelize.models.User.findOne({ where: { email: email } })
-          .then(function(user) {
-            if (!user || !sequelize.models.User.validPassword(user, password)) {
-              return done(null, false, { errors: { 'email or password': 'is invalid' } })
-            }
-            return done(null, user)
-          })
-          .catch(done)
+      async function(usernameOrEmail, password, done) {
+        let field
+        if (usernameOrEmail.indexOf('@') === -1) {
+          field = 'username'
+        } else {
+          field = 'email'
+        }
+        const user = await sequelize.models.User.findOne({ where: { [field]: usernameOrEmail } })
+        if (!user || !sequelize.models.User.validPassword(user, password)) {
+          return done(null, false, { errors: { 'username or password': 'is invalid' } })
+        }
+        return done(null, user)
       }
     )
   )

@@ -19,7 +19,7 @@ async function authenticate(req, res, next) {
 
 // Preload user profile on routes with ':username'
 router.param('username', function(req, res, next, username) {
-  req.app.get('sequelize').models.User.findOne({ where: { username: username } })
+  req.app.get('sequelize').models.User.findOne({ where: { username } })
     .then(function(user) {
       if (!user) {
         return res.sendStatus(404)
@@ -36,8 +36,8 @@ router.post('/login', async function(req, res, next) {
     if (!req.body.user) {
       throw new lib.ValidationError('user cannot be empty')
     }
-    if (!req.body.user.email) {
-      throw new lib.ValidationError({ email: 'cannot be empty' })
+    if (!req.body.user.username) {
+      throw new lib.ValidationError({ username: 'cannot be empty' })
     }
     if (!req.body.user.password) {
       throw new lib.ValidationError({ password: 'cannot be empty' })

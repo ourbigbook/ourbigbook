@@ -75,5 +75,5 @@ highlight link ourbigbookMacroXHashInsane Label
 highlight link ourbigbookMacroXHashSane Label
 
 " Backslash escapes of magic chars.
-syntax match ourbigbookNone /\\[<$`[\]{}]#/
+syntax match ourbigbookNone /\\[<$`[\]{}#]/
 highlight link ourbigbookNone NONE

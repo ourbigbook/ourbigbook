@@ -5852,8 +5852,8 @@ git push heroku-staging
 
 To copy the main database in staging we can follow the instructions at: https://stackoverflow.com/questions/10673630/how-do-i-transfer-production-database-to-staging-on-heroku-using-pgbackups-gett Considering a production Heroku app ID of `ourbigbook`:
 ``
-heroku maintenance:on -a ourbigbook-staging
-heroku pg:copy cirodown::DATABASE_URL DATABASE_URL -a ourbigbook-staging
+heroku maintenance:on -a ourbigbook-staging &&
+heroku pg:copy cirodown::DATABASE_URL DATABASE_URL -a ourbigbook-staging &&
 heroku maintenance:off -a ourbigbook-staging
 ``
 

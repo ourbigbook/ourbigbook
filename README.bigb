@@ -5724,12 +5724,14 @@ npm run build-assets &&
 cd web/ &&
 npm install &&
 ./bin/generate-demo-data.js --users 2 --articles-per-user 10
+# Or short version:
+#./bin/generate-demo-data.js -u 2 -a 10
 ``
 where:
 * `npm run build-assets` needs to be re-run if any assets (e.g. CSS or Js file mentioned at \x[overview-of-files-in-this-repository]) on the `./ourbigbook/` toplevel are modified. No need to re-run it for changes under `web/`.
 * \a[web/bin/generate-demo-data.js] also creates the database and is not optional. If you want to start with an empty database instead of the demo one, you can run instead \a[web/bin/sync-db.js]:
   ``
-  ./bin/sync-db.js
+  ./bin/sync-db
   ``
 
 After this initial setup, run the development server:
@@ -5737,9 +5739,15 @@ After this initial setup, run the development server:
 npm run dev
 ``
 
-And the website is now running at http://localhost:3000[]. If you created the demo data, you can login with:
+And the website is now running at http://localhost:3000[]. If you created the \x[demo-data], you can login with:
 * email: `user0@mail.com`, `user1@mail.com`, etc.
 * password: `asdf`
+
+  Custom demo user passwords can be set by exporting the `OURBIGBOOK_DEMO_USER_PASSWORD` variable, e.g.:
+  ``
+  OURBIGBOOK_DEMO_USER_PASSWORD=qwer ./bin/generate-demo-data.js -u 2 -a 10
+  ``
+  this is useful for production.
 
 We also offer shortcuts on toplevel for the `npm install` and `npm run dev` commands so you can skip the `cd web` for those:
 ``
@@ -5750,6 +5758,42 @@ npm run dev
 Whenever you save any changes to the backend server, we listen to this and automatically restart the server, so after a few seconds or less, you can refresh the web page to obtain the backend update.
 
 For frontend, changes are automatically recompiled by the webpack development server, so you can basically just refresh pages and they will be updated straightaway.
+
+= Demo data
+{parent=ourbigbook-web}
+
+You can generate demo data for \x[ourbigbook-web] with \a[web/bin/generate-demo-data.js], e.g.:
+``
+cd web
+./bin/generate-demo-data --users 2 --articles-per-user 10
+``
+
+Every time this is run, it tries to update existing entities such as users and articles first, and only creates them if they don't exist. This allows us to update all demo data on a live website that also has users without deleting any user data.
+
+Note however that if you ever increase the ammount of demo users, you might overwrite real user data. E.g. if you first do:
+``
+./bin/generate-demo-data --users 2 --articles-per-user 10
+``
+and then some time later:
+``
+./bin/generate-demo-data --users 4 --articles-per-user 10
+``
+it is possible that some real user will have taken up the username that we use for the third user, which did not exist previously, and then hacks their articles away. So never ever do that! Just stick to the default values in production.
+
+As a safeguard, to be able to run this in production you have to also pass the `--force-production` flag;
+``
+./bin/generate-demo-data --users 2 --articles-per-user 10 --force-production
+``
+
+To first fully clear the database, including any real user data, before doing anything else, use `--clear`, e.g.:
+``
+./bin/generate-demo-data --users 4 --articles-per-user 10 --clear
+``
+
+To clear the database and start with an empty database use `--empty`:
+``
+./bin/generate-demo-data --empty
+``
 
 = Log database queries done
 {parent=ourbigbook-web}
@@ -5855,9 +5899,11 @@ heroku login
 heroku git:remote -a ourbigbook
 git remote rename heroku prod
 # Automatically sets DATABASE_URL.
-heroku addons:create heroku-postgresql:hobby-dev
+heroku addons:create -a ourbigbook heroku-postgresql:hobby-dev
 # We need this to be able to require("ourbigbook")
-heroku config:set SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)"
+heroku config:set -a ourbigbook SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)"
+# Password of users generated with ./web/bin/generate-demo-data
+heroku config:set -a ourbigbook OURBIGBOOK_DEMO_USER_PASSWORD="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 20)"
 ``
 
 Additionally, you also need to setup the PostgreSQL test database for both OurBigBook CLI and OurBigBook Web as documented at: \x[test-system] and \x[local-run-as-identical-to-deployment-as-possible], because we will be running tests on PostgreSQL before pushing:
@@ -5875,10 +5921,11 @@ cd web
 npm run deploy-prod
 ``
 
-Nuke the database and generate a demo database:
+Update the \x[demo-data]:
 ``
-# heroku run -a ourbigbookREMOVE_ME web/bin/generate-demo-data.js --force-production
+heroku run -a ourbigbook web/bin/generate-demo-data.js --force-production
 ``
+This should in theory not affect any real user data, only the demo articles and users, so it might be safe. In theory!
 
 Drop into a PostgreSQL shell on production:
 ``

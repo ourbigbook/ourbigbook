@@ -1,4 +1,6 @@
-/// Need a separate file from test.js because Mocha automatically defines stuff like it,
+// https://cirosantilli/ourbigbook/demo-data
+//
+// Need a separate file from test.js because Mocha automatically defines stuff like it,
 // which would break non-Mocha requirers.
 
 const path = require('path')
@@ -207,12 +209,13 @@ async function generateDemoData(params) {
   const directory = params.directory
   const basename = params.basename
   const verbose = params.verbose === undefined ? false : params.verbose
+  const empty = params.empty === undefined ? false : params.empty
+  const clear = params.clear === undefined ? false : params.clear
 
   const nArticles = nUsers * nArticlesPerUser
   const sequelize = models.getSequelize(directory, basename);
-  await models.sync(sequelize, { force: true })
-  if (!params.empty) {
-
+  await models.sync(sequelize, { force: empty || clear })
+  if (!empty) {
     if (verbose) printTimeNow = now()
     if (verbose) console.error('User');
     const userArgs = [];
@@ -232,12 +235,18 @@ async function generateDemoData(params) {
       if (image) {
         userArg.image = image
       }
-      sequelize.models.User.setPassword(userArg, 'asdf')
+      sequelize.models.User.setPassword(userArg, process.env.OURBIGBOOK_DEMO_USER_PASSWORD || 'asdf')
       userArgs.push(userArg)
     }
     const users = []
     for (const userArg of userArgs) {
-      const user = await sequelize.models.User.create(userArg)
+      let user = await sequelize.models.User.findOne({ where: { username: userArg.username } })
+      if (user) {
+        Object.assign(user, userArg)
+        await user.save()
+      } else {
+        user = await sequelize.models.User.create(userArg)
+      }
       users.push(user)
     }
     // TODO started livelocking after we started creating index articles on hooks.
@@ -254,7 +263,11 @@ async function generateDemoData(params) {
     for (let i = 0; i < nUsers; i++) {
       let nFollowsPerUserEffective = nUsers < nFollowsPerUser ? nUsers : nFollowsPerUser
       for (var j = 0; j < nFollowsPerUserEffective; j++) {
-        await (users[i].addFollowSideEffects(users[(i + 1 + j) % nUsers]))
+        const follower = users[i]
+        const followed = users[(i + 1 + j) % nUsers]
+        if (!await follower.hasFollow(followed)) {
+          await follower.addFollowSideEffects(followed)
+        }
       }
     }
 
@@ -397,8 +410,16 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     let articleId = 0
     for (const articleArg of articleArgs) {
       if (verbose) console.error(`${articleId} authorId=${articleArg.authorId} title=${articleArg.title}`);
-      const article = new sequelize.models.Article(articleArg)
-      await article.save()
+      let article = await sequelize.models.Article.findOne({ where: {
+        authorId: articleArg.authorId,
+        title: articleArg.title,
+      } })
+      if (article) {
+        Object.assign(article, articleArg)
+        await article.save()
+      } else {
+        article = await sequelize.models.Article.create(articleArg)
+      }
       articles.push(article)
       articleId++
     }
@@ -414,6 +435,7 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     //)
 
     // Now we update the index pages.
+    if (verbose) console.error('Index update');
     for (let userIdx = 0; userIdx < nUsers; userIdx++) {
       const user = users[userIdx]
       const articleDataProvider = articleDataProviders[user.id]
@@ -421,9 +443,9 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
       for (const title of articleDataProvider.toplevelSet) {
         ids.push(ourbigbook.title_to_id(title))
       }
-      const includesString = '\n' + ids.map(id => `\\Include[${id}]`).join('\n')
+      const includesString = '\n\n' + ids.map(id => `\\Include[${id}]`).join('\n')
       const article = await sequelize.models.Article.findOne({ where: { slug: user.username } })
-      article.body += includesString
+      article.body = sequelize.models.User.defaultIndexBody + includesString
       await article.save()
 
       // TODO get working. Looks like all values that are not updated are
@@ -453,7 +475,10 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
       const user = users[i]
       for (let j = 0; j < nLikesPerUser; j++) {
         const article = articles[(i * j) % nArticles];
-        if (article.authorId !== user.id) {
+        if (
+          article.authorId !== user.id &&
+          !await user.hasLike(article)
+        ) {
           await user.addLikeSideEffects(article)
         }
       }
@@ -478,6 +503,7 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     if (verbose) console.error('Comment');
     const commentArgs = [];
     let commentIdx = 0;
+    sequelize.models.Comment.destroy({ where: { authorId: users.map(user => user.id) } })
     for (let i = 0; i < nArticles; i++) {
       for (var j = 0; j < (i % (nMaxCommentsPerArticle + 1)); j++) {
         const commentArg = {

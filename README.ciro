@@ -2,6 +2,8 @@
 
 A Markup language to write multipage or single page HTML / PDF books, blogs, etc. that is saner and more powerful than Markdown and Asciidoctor, but still nicer to write than XML and JSON, with reference implementation in JavaScript.
 
+The source for this document is at: \a[https://github.com/cirosantilli/cirodown/blob/master/README.ciro] and a rendered version can be seen at: \a[https://cirosantilli.com/cirodown].
+
 \toc
 
 \h[2][Quick start]
@@ -367,6 +369,40 @@ Aftter the initial header however, you must not skip a header level, e.g. the fo
 
 \h[4][my 4]
 ]]
+
+\h[3][The toplevel header]
+
+If the document has only a single header of the highest level, e.g. like the following has only a single \c[h2];
+
+\C[[
+\h[2][My 2]
+
+\h[3][My 3 1]
+
+\h[3][My 3 2]
+]]
+
+then this has some magical effects, notably that header IDs won't show that level. For example, the headers would render like:
+
+\C[[
+My 2
+
+1. My 3 1
+
+2. My 3 2
+]]
+
+rather than:
+
+\C[[
+1. My 2
+
+1.2. My 3 1
+
+1.2. My 3 2
+]]
+
+This is because in this case, we guess that the \c[h2] is the toplevel
 
 \h[2][Lists \c[[\l]]]
 {id=lists}

@@ -13,6 +13,7 @@
     "deploy": "git push -f heroku master",
     "dev": "NODE_OPTIONS='--unhandled-rejections=strict' nodemon -w . -w ../index.js ./app.js",
     "devi": "NODE_OPTIONS='--unhandled-rejections=strict' node inspect ./app.js",
+    "devs": "DEBUG='sequelize:sql:*' npm run dev",
     "postinstall": "cd .. && npm run link",
     "migrate": "sequelize-cli db:migrate --debug",
     "seed-prod": "./prod.sh ./bin/generate-demo-data.js --force-production",

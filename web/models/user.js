@@ -95,7 +95,7 @@ module.exports = (sequelize) => {
             body: 'Welcome to my home page!\n',
             authorId: user.id,
           })
-          return article.saveSideEffects()
+          return article.saveSideEffects({ transaction: options.transaction })
         }
       },
       indexes: [{ fields: ['username'] }, { fields: ['email'] }]
@@ -242,8 +242,9 @@ module.exports = (sequelize) => {
     })
   }
 
-  User.prototype.saveSideEffects = async function() {
-    await sequelize.transaction(async (transaction) => {
+  User.prototype.saveSideEffects = async function(options = {}) {
+    const transaction = options.transaction
+    await sequelize.transaction({ transaction }, async (transaction) => {
       return this.save({ transaction })
     })
   }

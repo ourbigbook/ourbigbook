@@ -21,6 +21,20 @@ async function setArticleTags(req, article, tagList) {
   })
 }
 
+function getOrder(req) {
+  let order;
+  let sort = req.query.sort;
+  if (sort) {
+    if (sort === 'createdAt' || sort === 'score') {
+      return sort
+    } else {
+      return false
+    }
+  } else {
+    return 'createdAt'
+  }
+}
+
 router.param('comment', function(req, res, next, id) {
   req.app.get('sequelize').models.Comment.findOne({
     where: { id: id },
@@ -73,20 +87,8 @@ router.get('/', auth.optional, async function(req, res, next) {
           where: {name: req.query.tag},
         })
       }
-
-      // order
-      let order;
-      let sort = req.query.sort;
-      if (sort) {
-        if (sort === 'createdAt' || sort === 'score') {
-          order = sort
-        } else {
-          return res.sendStatus(422)
-        }
-      } else {
-        order = 'createdAt'
-      }
-
+      const order = getOrder(req)
+      if (!order) return res.sendStatus(422)
       const [{count: articlesCount, rows: articles}, user] = await Promise.all([
         req.app.get('sequelize').models.Article.findAndCountAll({
           where: where,
@@ -129,7 +131,9 @@ router.get('/feed', auth.required, async function(req, res, next) {
     if (!user) {
       return res.sendStatus(401)
     }
-    const {count: articlesCount, rows: articles} = await user.findAndCountArticlesByFollowed(offset, limit)
+    const order = getOrder(req)
+    if (!order) return res.sendStatus(422)
+    const {count: articlesCount, rows: articles} = await user.findAndCountArticlesByFollowed(offset, limit, order)
     const articlesJson = await Promise.all(articles.map((article) => {
       return article.toJson(user)
     }))

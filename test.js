@@ -1934,11 +1934,9 @@ assert_convert_ast('cross reference to scoped split header',
     assert_xpath_split_headers: {
       'notindex/bb.html': [
         "//x:a[@href='cc.html' and text()='cc2']",
-        // TODO
         "//x:a[@href='#image-bb' and text()='image bb 1']",
       ],
       'notindex/cc.html': [
-        // TODO
         "//x:a[@href='bb.html#image-bb' and text()='image bb 2']",
       ],
     },

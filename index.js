@@ -487,7 +487,9 @@ class AstNode {
             word_count: ast_json.word_count,
           }
         );
-        validate_ast(new_ast, context)
+        if (context !== undefined) {
+          validate_ast(new_ast, context)
+        }
         parent_arg.push(new_ast)
 
         ast_head = new_ast
@@ -4501,21 +4503,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       }
       const prefetch_refs_ids = new Set()
 
-      // Get IDs to check for ID conflicts.
-      const ids = Object.keys(options.indexed_ids)
-      let id_conflict_asts_promise
-      if (ids.length) {
-        id_conflict_asts_promise = options.id_provider.get_noscopes_base_fetch(
-          ids,
-          options.include_path_set,
-          context,
-        )
-      } else {
-        id_conflict_asts_promise = []
-      }
-
-      ;[id_conflict_asts,,,,fetch_header_tree_ids_rows] = await Promise.all([
-        id_conflict_asts_promise,
+      ;[,,,fetch_header_tree_ids_rows] = await Promise.all([
         options.id_provider.get_noscopes_base_fetch(
           Array.from(prefetch_ids),
           new Set(),
@@ -5057,17 +5045,6 @@ async function parse(tokens, options, context, extra_returns={}) {
 
     // Now for some final operations that don't go over the entire Ast Tree.
     perf_print(context, 'post_process_4')
-
-    // Check for ID conflicts.
-    for (const other_ast of id_conflict_asts) {
-      const message = duplicate_id_error_message(
-        other_ast.id,
-        other_ast.source_location.path,
-        other_ast.source_location.line,
-        other_ast.source_location.column,
-      )
-      parse_error(state, message, options.indexed_ids[other_ast.id].source_location);
-    }
 
     // Setup refs DB.
     for (const ref of options.add_refs_to_h) {

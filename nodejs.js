@@ -388,8 +388,6 @@ ON "Ids".idid = "RecRefs"."to_id"
 
     return Promise.all([
       sequelize.models.Id.bulkCreate(create_ids, {
-        // We error check duplicate separately before, just ignore them here.
-        ignoreDuplicates: true,
         transaction,
       }),
       sequelize.models.Ref.bulkCreate(refs, { transaction }),

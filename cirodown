@@ -4,21 +4,22 @@ const fs = require('fs');
 const util = require('util');
 
 // https://stackoverflow.com/questions/44447847/enums-in-javascript-with-es6/49709701#49709701
-function make_enum(arr){
-    let obj = {};
-    for (let val of arr){
-        obj[val] = Symbol(val);
-    }
-    return Object.freeze(obj);
+const make_enum = function(arr) {
+  let obj = {};
+  for (let val of arr){
+    obj[val] = Symbol(val);
+  }
+  return Object.freeze(obj);
 }
 
 const TokenType = make_enum([
-  'START_DIV',
-  'END_DIV',
-  'PLAINTEXT'
+  'PLAINTEXT',
+  'MACRO_NAME',
+  'ARGUMENT_START',
+  'ARGUMENT_END',
 ]);
 
-let Token = class {
+const Token = class {
   /**
    * @param {String} type
    * @param {String} value - Default: undefined
@@ -29,7 +30,7 @@ let Token = class {
   }
 }
 
-let Argument = class {
+const Argument = class {
   /**
    * @param {String} name
    * @param {Boolean} required - Default: false
@@ -50,7 +51,7 @@ let Argument = class {
   }
 }
 
-let Macro = class {
+const Macro = class {
   /**
    * @param {Array[Argument]} args
    * @param {Function} convert
@@ -58,13 +59,185 @@ let Macro = class {
   constructor(args, convert) {
     this.args = args;
     this.convert = convert;
+    this.optional_args = {
+      id: new Argument({
+        name: 'id',
+        required: false,
+        literal: false,
+      }),
+    };
+    this.required_args = [];
+    let required_arg_names = new Set();
+    for (const arg of args) {
+      let name = arg.name
+      if (required_arg_names.has(name) || name in this.optional_args) {
+        throw new Error('name already taken: ' + name);
+      }
+      if (arg.required) {
+        this.required_args.push(arg);
+        required_arg_names.add(name);
+      } else {
+        this.optional_args[name] = arg;
+      }
+    }
   }
 }
 
+const char_is_alphanumeric = function(c) {
+  let code = c.codePointAt(0);
+  return (
+    // 0-9
+    (code > 47 && code < 58) ||
+    // A-Z
+    (code > 64 && code < 91) ||
+    // a-z
+    (code > 96 && code < 123)
+  )
+}
+
+// Valid macro name characters.
+const char_is_macro = function (c) {
+  return char_is_alphanumeric(c) || c == '_';
+};
+char_is_macro.chars = new Set(['-', '_']);
+
+/**
+ * @param {String} input_string
+ * @returns {Array[Token]}
+ */
+const tokenize = function(input_string, extra_returns={}) {
+  // https://stackoverflow.com/questions/21397316/split-javascript-string-into-array-of-codepoints-taking-into-account-surrogat/42596897#42596897
+  let chars = Array.from(input_string);
+  let tokens = [
+    new Token(TokenType.MACRO_NAME, 'p'),
+    new Token(TokenType.ARGUMENT_START),
+  ];
+  let i = -1;
+  let line = 0;
+  let column = 0;
+  let cur_c;
+  // Holds a FIFO with the currenty ongoing arguments.
+  // We must maintain this to know which argument is literal or not.
+  let macro_argument_stack = [];
+  // We are just after a previous argument, or just after the macro name.
+  // Therefore the next char could be the start of a new argument.
+  let last_possible_new_argument_index;
+  let failed = false;
+
+  const report_error = function(message) {
+    console.error(`error at line ${line} column ${column}: ${message}`);
+    failed = true;
+  }
+
+  const assert_could_be_argument = function() {
+    if (i !== last_possible_new_argument_index) {
+      report_error('cannot start a macro argument here. It has to come after a macro name or another macro argument.');
+    }
+  }
+
+  // Advance the current character and set cur_c to the next one.
+  //
+  // Maintain the newline count up to date for debug messages.
+  //
+  // The current index must only be incremented through this function
+  // and never directly.
+  const consume = function() {
+    if (chars[i] == '\n') {
+      line += 1;
+      column = 0;
+    } else {
+      column += 1;
+    }
+    i += 1;
+    if (i >= chars.length) {
+      return false;
+    }
+    cur_c = chars[i];
+    return true;
+  }
+
+  const consume_optional_newline = function() {
+    if (cur_c == '\n') {
+      consume();
+    }
+  }
+
+  while (consume()) {
+    if (cur_c === '\\') {
+      next_c = chars[i + 1];
+      if (tokenize.escapable_chars.has(next_c)) {
+        tokenize.tokenize_plaintext(tokens, next_c);
+        consume();
+      } else {
+        let macro_name = '';
+        consume();
+        while (char_is_macro(cur_c)) {
+          macro_name += cur_c;
+          consume();
+        }
+        consume_optional_newline();
+        last_possible_new_argument_index = i;
+        tokens.push(new Token(TokenType.MACRO_NAME, macro_name));
+        macro_argument_stack.push([macros[macro_name], 0]);
+      }
+    } else if (cur_c === '[') {
+      assert_could_be_argument();
+      consume_optional_newline();
+    } else if (cur_c === ']') {
+      consume_optional_newline();
+      last_possible_new_argument_index = i;
+    } else if (cur_c === '{') {
+      consume_optional_newline();
+      tokens.push(new Token(TokenType.ARGUMENT_START, ''));
+    } else if (cur_c === '}') {
+      consume_optional_newline();
+      last_possible_new_argument_index = i;
+      tokens.push(new Token(TokenType.ARGUMENT_END));
+    } else if (cur_c === '\n') {
+      if (((i + 1) === chars.length)) {
+        // Do nothing.
+      } else if (chars[i + 1] === '\n') {
+        // Double newline.
+        tokens.push(new Token(TokenType.ARGUMENT_END));
+        tokens.push(new Token(TokenType.MACRO_NAME, 'p'));
+        tokens.push(new Token(TokenType.ARGUMENT_START));
+        consume();
+        done = true;
+      } else {
+        tokenize.tokenize_plaintext(tokens, cur_c);
+      }
+    } else {
+      tokenize.tokenize_plaintext(tokens, cur_c);
+    }
+  }
+  tokens.push(new Token(TokenType.ARGUMENT_END));
+  extra_returns.failed = true;
+  return tokens;
+}
+
+tokenize.escapable_chars = new Set(['\\', '{', '}', '[', ']']);
+
+tokenize.tokenize_plaintext = function(tokens, c) {
+  let last_token = tokens[tokens.length - 1];
+  if (last_token.type === TokenType.PLAINTEXT) {
+    last_token.value += c;
+  } else {
+    tokens.push(new Token(TokenType.PLAINTEXT, c));
+  }
+}
+
+const parse = function(tokens) {
+  return {};
+}
+
+const ast_to_output = function(ast) {
+  return 'asdf';
+}
+
 let macros = {
-  p: Macro(
+  p: new Macro(
     [
-      Argument({
+      new Argument({
         name: 'content',
         required: true,
         literal: false,
@@ -74,14 +247,14 @@ let macros = {
       return `<p>${args.content.convert()}</p>`
     }
   ),
-  a: Macro(
+  a: new Macro(
     [
-      Argument({
+      new Argument({
         name: 'href',
         required: true,
         literal: true,
       }),
-      Argument({
+      new Argument({
         name: 'content',
         required: true,
         literal: false,
@@ -94,58 +267,38 @@ let macros = {
 }
 
 /**
- * @param {String} input_string
- * @returns {Array[Token]}
+ * Main cirodown input to HTML/LaTeX/etc. output API wrapper.
+ *
+ * @returns {String}
  */
-let tokenize = function(input_string) {
-  let chars = Array.from(input_string);
-  let tokens = [new Token(TokenType.START_DIV)];
-  // https://stackoverflow.com/questions/21397316/split-javascript-string-into-array-of-codepoints-taking-into-account-surrogat/42596897#42596897
-  i = 0;
-  while (i < chars.length) {
-    c = chars[i];
-    if (c === '\n') {
-      if (((i + 1) === chars.length)) {
-        // Do nothing.
-      } else if (chars[i + 1] === '\n') {
-        tokens.push(new Token(TokenType.END_DIV));
-        tokens.push(new Token(TokenType.START_DIV));
-        i += 1;
-        done = true;
-      } else {
-        tokens.push(new Token(TokenType.PLAINTEXT, c));
-      }
-    } else {
-      tokens.push(new Token(TokenType.PLAINTEXT, c));
-    }
-    i++;
+const convert = function(
+  input_string,
+  options,
+  extra_returns={}
+) {
+  if (options === undefined) {
+    options = {};
   }
-  tokens.push(new Token(TokenType.END_DIV));
-  return tokens;
-}
-
-let tokens_to_output = function(tokens) {
-  output = '';
-  for (const token of tokens) {
-    if (token.type == TokenType.START_DIV) {
-      output += '<p>'
-    } else if (token.type == TokenType.END_DIV) {
-      output += '</p>\n'
-    } else if (token.type == TokenType.PLAINTEXT) {
-      output += token.value;
-    }
+  if (!'verbose' in options) {
+    options.verbose = false;
   }
-  return output;
-}
-
-exports.convert = function(input_string, options = {verbose: true}) {
-  let tokens = tokenize(input_string);
-  let output = tokens_to_output(tokens);
+  let sub_extra_returns = {
+    fail: false,
+  };
+  let tokens = tokenize(input_string, sub_extra_returns);
+  if (sub_extra_returns.fail) {
+    extra_returns.fail = true;
+  }
+  let ast = parse(tokens);
+  let output = ast_to_output(ast);
   if (options.verbose) {
     console.log('input: ' + util.inspect(input_string));
     console.log();
     console.log('tokens:');
     console.log(tokens);
+    console.log();
+    console.log('ast:');
+    console.log(ast);
     console.log();
     console.log('output: ' + util.inspect(output));
     console.log();
@@ -153,12 +306,23 @@ exports.convert = function(input_string, options = {verbose: true}) {
   return output;
 }
 
+exports.convert = convert;
+
 if (require.main === module) {
   let input;
+  const encoding = 'utf8';
   if (process.argv.length > 2) {
-    input = fs.readFileSync(process.argv[2], 'utf8');
+    input = fs.readFileSync(process.argv[2], encoding);
   } else {
-    input = fs.readFileSync(0, 'utf8');
+    input = fs.readFileSync(0, encoding);
   }
-  console.log(exports.convert(input));
+  let extra_returns = {};
+  console.log(convert(
+    input,
+    {
+      verbose: true,
+    },
+    extra_returns
+  ));
+  process.exit(!extra_returns.fail);
 }

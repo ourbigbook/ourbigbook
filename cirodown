@@ -333,6 +333,44 @@ function convert_path(base_path, input_path, options, convert_input_options) {
   return output;
 }
 
+function generate_redirects(convert_input_options, cirodown_json, html_x_extension, outdir) {
+  const id_provider = new SqliteIdProvider(convert_input_options);
+  for (let redirect_src_id in cirodown_json.redirects) {
+    const redirect_target_id = cirodown_json.redirects[redirect_src_id];
+    const redirect_href = cirodown.x_href(
+      id_provider.get(redirect_target_id), {
+        // This will need changing when we do:
+        // https://github.com/cirosantilli/cirodown/issues/44
+        // The simple solution is to just make all redirects point
+        // to the index in that case.
+        include_path_set: new Set(),
+        options: {
+          input_path: redirect_src_id,
+          html_x_extension: html_x_extension,
+        }
+      }
+    );
+    // https://stackoverflow.com/questions/10178304/what-is-the-best-approach-for-redirection-of-old-pages-in-jekyll-and-github-page/36848440#36848440
+    fs.writeFileSync(path.join(outdir, redirect_src_id + '.html'),
+`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Redirecting...</title>
+<link rel="canonical" href="${redirect_href}"/>
+<meta http-equiv="refresh" content="0;url=${redirect_href}" />
+</head>
+<body>
+<h1>Redirecting...</h1>
+<a href="${redirect_href}">Click here if you are not redirected.<a>
+<script>location='${redirect_href}'</script>
+</body>
+</html>
+`);
+  }
+}
+
+
 /**
  * @return {String} full Git SHA of the source.
  */
@@ -625,6 +663,7 @@ A link to another file: \\x[and-now-an-include]
       if (!input_path_is_file) {
         convert_files_in_directory_extract_ids(inputPath, options, convert_input_options);
       }
+      generate_redirects(convert_input_options, cirodown_json, html_x_extension, outdir);
       let watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES});
       watcher.on('change', function(path) {
         convert_path_to_file(input_dir, path, options, convert_input_options);
@@ -640,6 +679,7 @@ A link to another file: \\x[and-now-an-include]
       } else {
         let actual_input;
         let publish_branch;
+        let publish_outdir;
         let remote_url;
         let src_branch;
 
@@ -682,41 +722,43 @@ A link to another file: \\x[and-now-an-include]
 
           // Set some variables especially for publishing.
           actual_input = publish_dir;
-          outdir = path.join(publish_out_dir, 'publish');
-          convert_input_options.out_css_path = path.join(outdir, cirodown_nodejs.PACKAGE_OUT_CSS_BASENAME);
+          publish_outdir = path.join(publish_out_dir, 'publish');
+          convert_input_options.out_css_path = path.join(publish_outdir, cirodown_nodejs.PACKAGE_OUT_CSS_BASENAME);
           convert_input_options.include_contains_external = true;
           // Remove all files from the gh-pages repository in case some were removed from the original source.
-          cmd_get_stdout('git', ['-C', outdir, 'rm', '-r', '-f', '.'], cmd_options);
+          cmd_get_stdout('git', ['-C', publish_outdir, 'rm', '-r', '-f', '.'], cmd_options);
         } else {
           actual_input = inputPath;
+          publish_outdir = outdir;
         }
-        convert_input_options.outdir = outdir;
+        convert_input_options.outdir = publish_outdir;
 
         // Do the actual conversion.
         convert_files_in_directory_extract_ids(actual_input, options, convert_input_options);
         convert_files_in_directory(actual_input, options, convert_input_options);
+        generate_redirects(convert_input_options, cirodown_json, html_x_extension, publish_outdir);
 
         // Publish the converted output if build succeeded.
         if (publish && !convert_input_options.had_error) {
           // Push the original source.
           cmd_get_stdout('git', ['-C', inputPath, 'push'], cmd_options);
-          cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'init'], cmd_options);
+          cmd_get_stdout('git', ['-C', publish_outdir, 'init'], cmd_options);
           // https://stackoverflow.com/questions/42871542/how-to-create-a-git-repository-with-the-default-branch-name-other-than-master
-          cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'checkout', '-B', publish_branch], cmd_options);
+          cmd_get_stdout('git', ['-C', publish_outdir, 'checkout', '-B', publish_branch], cmd_options);
           try {
             // Fails if remote already exists.
-            cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'remote', 'add', 'origin', remote_url], cmd_options);
+            cmd_get_stdout('git', ['-C', publish_outdir, 'remote', 'add', 'origin', remote_url], cmd_options);
           } catch(error) {
-            cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'remote', 'set-url', 'origin', remote_url], cmd_options);
+            cmd_get_stdout('git', ['-C', publish_outdir, 'remote', 'set-url', 'origin', remote_url], cmd_options);
           }
           // Ensure that we are up-to-date with the upstream gh-pages if one exists.
           // TODO may fail on initial one, do a check for that.
-          cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'fetch', 'origin'], cmd_options);
-          cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'reset', `origin/${publish_branch}`], cmd_options);
+          cmd_get_stdout('git', ['-C', publish_outdir, 'fetch', 'origin'], cmd_options);
+          cmd_get_stdout('git', ['-C', publish_outdir, 'reset', `origin/${publish_branch}`], cmd_options);
 
           // Generate special files needed for GitHub pages.
           gemfile_content = "gem 'github-pages', group: :jekyll_plugins\n";
-          fs.writeFileSync(path.join(convert_input_options.outdir, 'Gemfile'), gemfile_content);
+          fs.writeFileSync(path.join(publish_outdir, 'Gemfile'), gemfile_content);
 
           // Commit and push.
           if ('prepublish' in cirodown_json) {
@@ -725,56 +767,18 @@ A link to another file: \\x[and-now-an-include]
               cli_error(`${CIRODOWN_JSON} prepublish file not found: ${prepublish_path}`);
             }
             try {
-              cmd_get_stdout(path.resolve(prepublish_path), [convert_input_options.outdir], cmd_options);
+              cmd_get_stdout(path.resolve(prepublish_path), [publish_outdir, cmd_options]);
             } catch(error) {
               cli_error(`${CIRODOWN_JSON} prepublish command exited non-zero, aborting`);
             }
           }
           // Copy the CSS into the repository.
           fs.copyFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_PATH, convert_input_options.out_css_path)
-          cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'add', '.'], cmd_options);
+          cmd_get_stdout('git', ['-C', publish_outdir, 'add', '.'], cmd_options);
           source_commit = git_sha(inputPath, src_branch);
-          cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'commit', '-m', source_commit], cmd_options);
-          cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'push', 'origin', `${publish_branch}:${publish_branch}`], cmd_options);
+          cmd_get_stdout('git', ['-C', publish_outdir, 'commit', '-m', source_commit], cmd_options);
+          cmd_get_stdout('git', ['-C', publish_outdir, 'push', 'origin', `${publish_branch}:${publish_branch}`], cmd_options);
         }
-      }
-    }
-    // Generate redirects.
-    // https://cirosantilli.com/cirodown#redirects
-    if (!input_path_is_file) {
-      const id_provider = new SqliteIdProvider(convert_input_options);
-      for (let redirect_src_id in cirodown_json.redirects) {
-        const redirect_target_id = cirodown_json.redirects[redirect_src_id];
-        const redirect_href = cirodown.x_href(
-          id_provider.get(redirect_target_id), {
-            // This will need changing when we do:
-            // https://github.com/cirosantilli/cirodown/issues/44
-            // The simple solution is to just make all redirects point
-            // to the index in that case.
-            include_path_set: new Set(),
-            options: {
-              input_path: redirect_src_id,
-              html_x_extension: html_x_extension,
-            }
-          }
-        );
-        // https://stackoverflow.com/questions/10178304/what-is-the-best-approach-for-redirection-of-old-pages-in-jekyll-and-github-page/36848440#36848440
-        fs.writeFileSync(path.join(outdir, redirect_src_id + '.html'),
-`<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>Redirecting...</title>
-<link rel="canonical" href="${redirect_href}"/>
-<meta http-equiv="refresh" content="0;url=${redirect_href}" />
-</head>
-<body>
-<h1>Redirecting...</h1>
-<a href="${redirect_href}">Click here if you are not redirected.<a>
-<script>location='${redirect_href}'</script>
-</body>
-</html>
-`);
       }
     }
   }

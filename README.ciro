@@ -952,6 +952,8 @@ renders exactly as:
 
 The header `child` syntax is generally preferred because at some point while editing the content of the header, you might accidentally remove mentions to e.g. `\x[bat]{child}`, and then the relationship would be lost.
 
+The \x[h-tag-argument] does the same as the \x[x-child-argument] but in the opposite direction.
+
 = `\H` `disambiguate` argument
 {parent=h-arguments}
 
@@ -1606,7 +1608,8 @@ Note how we added the synonym to the title only when it is not just a simple fle
 
 = `\H` `tag` argument
 {c}
-{parent=h-child-argument}
+{parent=h-arguments}
+{tag=multiple-argument}
 
 Same as \x[x-child-argument] but in the opposite direction, e.g.:
 ``
@@ -1619,6 +1622,17 @@ Same as \x[x-child-argument] but in the opposite direction, e.g.:
 
 == Flying animal
 ``
+is equivalent in every way to:
+``
+== Mammal
+
+=== Bat
+
+=== Cat
+
+== Flying animal
+{child=bat}
+``
 
 Naming rationale:
 * `parent` as the opposite of child is already taken to be then "main parent" via the "\x[h-parent-argument]"
@@ -1626,6 +1640,8 @@ Naming rationale:
 So `child` vs `tag` it is for now.
 
 You generally want to use `tag` instead of the \x[h-child-argument] because otherwise some very large header categories are going to contain Huge lists of children, which is not very nice when editing.
+
+It is possible to enforce the \x[h-child-argument] or the \x[h-tag-argument] in a given project with the \x[cirodown-json/lint-h-tag] option.
 
 = `\H` `title2` argument
 {parent=h-arguments}
@@ -4726,7 +4742,7 @@ Default: `true`.
 {c}
 {parent=id-normalize-punctuation}
 
-Some selected punctuation marks are automatically converted into thier dominant corresponding pronounciations. These are:
+Some selected punctuation marks are automatically converted into their dominant corresponding pronunciations. These are:
 * `+`: `plus`
 * `&`: `and`
 
@@ -4734,19 +4750,26 @@ Dashes are added around the signs if needed, e.g.:
 * `C++`: `c-plus-plus`
 * `Q&A`: `q-and-a`
 
-= `cirodown.json` `lint`
+= `lint`
 {parent=cirodown-json-schema}
 
 Dictionary of lint options to enable. Cirodown tries to be strict about forcing specific styles by default, e.g. forbids triple newline paragraph. But sometimes we just can't bear it :-)
 
-= `cirodown.json` `lint` `h-parent`
-{parent=cirodown-json-lint}
+= `lint` `h-parent`
+{parent=lint}
 
 Possible values:
 * `parent`: forces headers to use \x[h-parent-argument] to specify their level
 * `number`: forces headers to not use \x[h-parent-argument] to specify their level, i.e. to use a number or a number of `=`
 
 You should basically always set either one of those on any serious project. Forgetting a `parent=` in a project that uses `parent=` everywhere else is a common cause of build bugs, and can be hard to debug without this type of linting enabled.
+
+= `lint` `h-tag`
+{parent=lint}
+
+Possible values:
+* `child`: forbids \x[header]{p} from using the \x[h-tag-argument]. They should instead use the \x[h-child-argument].
+* `tag`: forbids \x[header]{p} from using the \x[h-child-argument]. They should instead use the \x[h-tag-argument].
 
 = `media-providers`
 {parent=cirodown-json-schema}

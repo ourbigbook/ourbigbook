@@ -2399,6 +2399,7 @@ function convert_init_context(options={}, extra_returns={}) {
       {
         if (!('lint' in cirodown_json)) { cirodown_json.lint = {}; }
         const lint = cirodown_json.lint
+        if (!('h-tag' in lint)) { lint['h-tag'] = undefined; }
         if (!('h-parent' in lint)) { lint['h-parent'] = undefined; }
       }
       {
@@ -3359,6 +3360,7 @@ function parse(tokens, options, context, extra_returns={}) {
   context.include_path_set.add(options.input_path);
   while (todo_visit.length > 0) {
     const [parent_arg, ast] = todo_visit.pop();
+    const parent_arg_push_after = []
     const macro_name = ast.macro_name;
     ast.from_include = options.from_include;
     ast.from_cirodown_example = options.from_cirodown_example;
@@ -3683,15 +3685,40 @@ function parse(tokens, options, context, extra_returns={}) {
             !is_first_header
           ) {
             message = `no parent given with lint['h-parent'] = "parent"`;
-          } else if (context.options.cirodown_json.lint['h-parent'] === 'number' &&
+          } else if (
+            context.options.cirodown_json.lint['h-parent'] === 'number' &&
             ast.validation_output.parent.given
           ) {
             message = `parent given with lint['h-parent'] = "number"`;
           }
           if (message) {
             parse_error(state, message, ast.source_location);
-            ast.args[Macro.TITLE_ARGUMENT_NAME].push(
-              new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location));
+            parent_arg_push_after.push(new PlaintextAstNode(error_message_in_output(message), ast.source_location));
+          }
+        }
+
+        // lint['h-tag']
+        if (
+          context.options.cirodown_json.lint['h-tag'] !== undefined
+        ) {
+          let message;
+          let arg;
+          if (
+            context.options.cirodown_json.lint['h-tag'] === 'child' &&
+            ast.validation_output[Macro.HEADER_TAG_ARGNAME].given
+          ) {
+            message = `tag given with lint['h-tag'] = "child"`;
+            arg = ast.args[Macro.HEADER_TAG_ARGNAME]
+          } else if (
+            context.options.cirodown_json.lint['h-tag'] === 'tag' &&
+            ast.validation_output[Macro.HEADER_CHILD_ARGNAME].given
+          ) {
+            message = `child given with lint['h-tag'] = "tag"`;
+            arg = ast.args[Macro.HEADER_CHILD_ARGNAME]
+          }
+          if (message) {
+            parse_error(state, message, arg.source_location);
+            parent_arg_push_after.push(new PlaintextAstNode(error_message_in_output(message), arg.source_location));
           }
         }
 
@@ -3817,6 +3844,7 @@ function parse(tokens, options, context, extra_returns={}) {
       // Push this node into the parent argument list.
       // This allows us to skip nodes, or push multiple nodes if needed.
       parent_arg.push(ast);
+      parent_arg.push(...parent_arg_push_after);
 
       // Recurse.
       for (const arg_name in ast.args) {

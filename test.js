@@ -2775,6 +2775,41 @@ assert_error('header parent fails with cirodown.json lint h-parent = parent and 
     }
   }
 );
+// lint h-tag
+assert_error('lint h-tag child failure',
+  `= 1
+{tag=2}
+
+== 2
+`,
+  2, 1, undefined,
+  { extra_convert_opts: { cirodown_json: { lint: { 'h-tag': 'child', } } } }
+);
+assert_no_error('lint h-tag child pass',
+  `= 1
+{child=2}
+
+== 2
+`,
+  { extra_convert_opts: { cirodown_json: { lint: { 'h-tag': 'child', } } } }
+);
+assert_error('lint h-tag tag failure',
+  `= 1
+{child=2}
+
+== 2
+`,
+  2, 1, undefined,
+  { extra_convert_opts: { cirodown_json: { lint: { 'h-tag': 'tag', } } } }
+);
+assert_no_error('lint h-tag child pass',
+  `= 1
+{tag=2}
+
+== 2
+`,
+  { extra_convert_opts: { cirodown_json: { lint: { 'h-tag': 'tag', } } } }
+);
 
 // Toc
 assert_convert_ast('second explicit toc is removed',

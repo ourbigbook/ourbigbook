@@ -6,7 +6,7 @@ import useLoggedInUser from 'front/useLoggedInUser'
 
 import { aboutUrl, appName, contactUrl, docsUrl, donateUrl, googleAnalyticsId, isProduction } from 'front/config';
 import Navbar from 'front/Navbar'
-import { AppContext, AppContextProvider, HelpIcon } from 'front'
+import { AppContext, AppContextProvider, HelpIcon, logout } from 'front'
 import { webApi } from 'front/api'
 
 // Css
@@ -67,6 +67,11 @@ const MyApp = ({ Component, pageProps }) => {
   } else {
     scoreDelta = data.data.scoreDelta
   }
+  useEffect(() => {
+    if (error || (data && !data.data.loggedIn)) {
+      logout()
+    }
+  }, [data, error])
 
   const isEditor = !!Component.isEditor
   return (

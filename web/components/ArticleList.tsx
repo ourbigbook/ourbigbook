@@ -17,9 +17,11 @@ import {
 import { SERVER_BASE_URL, DEFAULT_LIMIT } from "lib/utils/constant";
 import { formatDate } from "lib/utils/date";
 import fetcher from "lib/utils/fetcher";
+import getLoggedInUser from "lib/utils/getLoggedInUser";
 import routes from "routes";
 
 const ArticleList = (props) => {
+  const loggedInUser = getLoggedInUser()
   const page = usePageState();
   const pageCount = usePageCountState();
   const setPage = usePageDispatch();
@@ -95,23 +97,28 @@ const ArticleList = (props) => {
   if (!data) return <div className="article-preview">Loading articles...</div>;
   if (articles?.length === 0) {
     let message;
+    let voice;
+    console.error(uid);
+    console.error(loggedInUser.username);
+    if (loggedInUser.username === uid) {
+      voice = "You have not"
+    } else {
+      voice = "This user has not"
+    }
     switch (props.what) {
       case 'likes':
-        message = "This user has not liked any articles yet"
+        message = `${voice} liked any articles yet`
         break
       case 'user-articles-top':
       case 'user-articles-latest':
-        message = "This user does not have any articles yet"
+        message = `${voice} published any articles yet`
         break
       case 'followed-latest':
       case 'followed-top':
-        message = "This user does not follow anybody"
+        message = `You haven't followed anybody yet`
         break
       case 'tag':
         message = `There are no articles with the tag: ${props.tag}`
-        break
-      case 'feed':
-        message = 'Follow some users to see their articles here'
         break
       case 'global-top':
       case 'global-latest':

@@ -4422,6 +4422,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   }
 
   let fetch_header_tree_ids_rows
+  const prefetch_file_ids = new Set()
   if (!options.from_include) {
     perf_print(context, 'db_queries')
 
@@ -4433,7 +4434,6 @@ async function parse(tokens, options, context, extra_returns={}) {
         prefetch_ids.add(id)
         ref.target_id = id
       }
-      const prefetch_file_ids = new Set()
       for (const ref of options.add_refs_to_x) {
         const ast = ref.ast
         const id = render_arg_noescape(ast.args.href, context)
@@ -4535,20 +4535,6 @@ async function parse(tokens, options, context, extra_returns={}) {
           options.include_hrefs,
         ),
       ])
-
-      const prefetch_files = new Set()
-      for (const prefetch_file_id of prefetch_file_ids) {
-        const prefetch_ast = context.id_provider.get_noscope(prefetch_file_id, context)
-        if (
-          // Possible in some error cases.
-          prefetch_ast !== undefined
-        ) {
-          prefetch_files.add(prefetch_ast.source_location.path)
-        }
-      }
-      if (prefetch_files.size) {
-        await context.options.file_provider.get_path_entry_fetch(Array.from(prefetch_files), context)
-      }
     }
 
     // Reconcile the dummy include header with our actual knowledge from the DB, e.g.:
@@ -4605,9 +4591,32 @@ async function parse(tokens, options, context, extra_returns={}) {
         target_id_ast.header_parent_ids = []
       }
     }
+    let build_header_tree_asts
     if (options.id_provider !== undefined) {
-      context.options.id_provider.build_header_tree(
+      build_header_tree_asts = context.options.id_provider.build_header_tree(
         options.include_hrefs, fetch_header_tree_ids_rows, { context })
+    }
+
+    if (context.options.file_provider !== undefined) {
+      const prefetch_files = new Set()
+      // TODO convert this to a join with the above queries. Lazy.
+      for (const prefetch_file_id of prefetch_file_ids) {
+        const prefetch_ast = context.id_provider.get_noscope(prefetch_file_id, context)
+        if (
+          // Possible in some error cases.
+          prefetch_ast !== undefined
+        ) {
+          prefetch_files.add(prefetch_ast.source_location.path)
+        }
+      }
+      if (options.id_provider !== undefined) {
+        for (const ast of build_header_tree_asts) {
+          prefetch_files.add(ast.source_location.path)
+        }
+      }
+      if (prefetch_files.size) {
+        await context.options.file_provider.get_path_entry_fetch(Array.from(prefetch_files), context)
+      }
     }
 
     // Ast post process pass 2

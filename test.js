@@ -5743,6 +5743,7 @@ assert_error('stray named argument end}', 'a}b', 1, 2);
 assert_error('unterminated literal positional argument', '\\c[[\n', 1, 3);
 assert_error('unterminated literal named argument', '\\c{{id=\n', 1, 3);
 assert_error('unterminated insane inline code', '`\n', 1, 1);
+assert_error('unescaped trailing backslash', '\\', 1, 1);
 
 // API minimal tests.
 it(`api: x does not blow up without ID provider`, async function () {

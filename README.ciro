@@ -919,17 +919,42 @@ The distinction is required because there are lots of things you cannot put insi
 
 Unlike all languages which rely on ad-hoc tooling, we will support every single tool that is required and feasible to be in this repository in this repository, in a centralized manner.
 
-\h[3][\c[--watch]]
+\h[3][\c[cirodown] executable]
+{id=cirodown-executable}
+
+Convert a \c[.ciro] file to HTML and output the HTML to stdout:
+
+\C[[
+cirodown README.ciro
+]]
+
+Convert all \c[.ciro] files in a directory to HTML files next to each corresponding \c[.ciro] file:
+
+\C[[
+cirodown .
+]]
+
+Convert a \c[.ciro] file from stdin to HTML and output the contents of \c[<body>] to stdout:
+
+\C[[
+printf 'ab\ncd\n' | cirodown --body-only
+]]
+
+\h[4][\c[--watch]]
 
 Don't quit \c[cirodown] immediately.
 
-Instead, watch the selected file or directory for changes, and rebuild as they are made.
+Instead, watch the selected file or directory for changes, and rebuild individual files when changes are detected.
 
 Watch a single file:
 
 \C[[
 ./cirodown --watch README.ciro
 ]]
+
+Now you can just edit \c[README.ciro], save the file in your editor, and refresh the webpage and your change should be visible, no need to run a \c[cirodown] command excplicitly every time.
+
+TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with-live-preview/ to also dispense the browser refresh.
 
 Watch every \c[.ciro] file in an entire directory:
 
@@ -941,7 +966,7 @@ Save the output to \c[.html] files automatically instead of outputting it to std
 
 Exit by entering Ctrl + C on the terminal.
 
-\h[3][\c[--help-macros]]
+\h[4][\c[--help-macros]]
 {id=help-macros}
 
 You can get an overview of all macros in JSON format with:
@@ -1065,9 +1090,10 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \h[3][TODO]
 
-\l[browser live quick test]
 \l[publish webpage on cirosantilli.com]
+\l[make h1 special: don't take up number count, don't show on toc, don't show number, use as default title]
 \l[header nested numbers]
+\l[browser live quick test]
 \l[list and code caption]
 \l[image description and source]
 \l[input indentation skip]

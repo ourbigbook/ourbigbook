@@ -121,7 +121,7 @@ function assert_convert_ast(
     if (!('read_include' in options.extra_convert_opts)) {
       options.extra_convert_opts.read_include = (input_path_noext) => {
         return [input_path_noext + cirodown.CIRODOWN_EXT,
-           options.filesystem[input_path_noext]];
+           options.filesystem[input_path_noext + cirodown.CIRODOWN_EXT]];
       };
     }
     options.extra_convert_opts.fs_exists_sync = (my_path) => options.filesystem[my_path] !== undefined
@@ -156,14 +156,13 @@ function assert_convert_ast(
     })
     new_convert_opts.id_provider = new cirodown_nodejs.SqliteIdProvider(sequelize);
     new_convert_opts.file_provider = new MockFileProvider();
-    for (const input_path_noext of options.convert_before) {
+    for (const input_path of options.convert_before) {
       const extra_returns = {};
-      const input_path = input_path_noext + cirodown.CIRODOWN_EXT;
-      const input_string = options.filesystem[input_path_noext];
+      const input_string = options.filesystem[input_path];
       options.convert_before = [];
       const dependency_convert_opts = Object.assign({}, new_convert_opts);
       dependency_convert_opts.input_path = input_path;
-      dependency_convert_opts.toplevel_id = input_path_noext;
+      dependency_convert_opts.toplevel_id = path.parse(input_path).ext;
       await cirodown.convert(input_string, dependency_convert_opts, extra_returns);
       await Promise.all([
         new_convert_opts.id_provider.update(extra_returns, sequelize),
@@ -290,6 +289,7 @@ function assert_error(description, input, line, column, path, options={}) {
   new_convert_opts.error_line = line;
   new_convert_opts.error_column = column;
   new_convert_opts.error_path = path;
+  new_convert_opts.error_message = '';
   assert_convert_ast(
     description,
     input,
@@ -523,15 +523,15 @@ function a(macro_name, content, extra_args={}, extra_props={}) {
 }
 
 const default_filesystem = {
-  'include-one-level-1': `= cc
+  'include-one-level-1.ciro': `= cc
 
 dd
 `,
-  'include-one-level-2': `= ee
+  'include-one-level-2.ciro': `= ee
 
 ff
 `,
-  'include-two-levels': `= ee
+  'include-two-levels.ciro': `= ee
 
 ff
 
@@ -539,7 +539,7 @@ ff
 
 hh
 `,
-  'include-two-levels-parent': `= Include two levels parent
+  'include-two-levels-parent.ciro': `= Include two levels parent
 
 h1 content
 
@@ -548,19 +548,19 @@ h1 content
 
 h2 content
 `,
-  'include-two-levels-subdir/index': `= Include two levels subdir h1
+  'include-two-levels-subdir/index.ciro': `= Include two levels subdir h1
 
 == Include two levels subdir h2
 `,
-  'include-with-error': `= bb
+  'include-with-error.ciro': `= bb
 
 \\reserved_undefined
 `,
-  'include-circular-1': `= bb
+  'include-circular-1.ciro': `= bb
 
 \\Include[include-circular-2]
 `,
-  'include-circular-2': `= cc
+  'include-circular-2.ciro': `= cc
 
 \\Include[include-circular-1]
 `,
@@ -2071,9 +2071,9 @@ assert_convert_ast('cross reference to non-included header in another file',
       ],
     },
     convert_before: [
-      'include-two-levels',
+      'include-two-levels.ciro',
       // https://github.com/cirosantilli/cirodown/issues/116
-      'include-two-levels-subdir/index',
+      'include-two-levels-subdir/index.ciro',
     ],
     filesystem: Object.assign({}, default_filesystem, {
       'bb.png': ''
@@ -2524,10 +2524,10 @@ assert_convert_ast('cross reference to non-included file with toplevel scope',
       //  "//x:a[@href='toplevel-scope/h2.html#image-h2' and text()='image h2']",
       //],
     },
-    convert_before: ['toplevel-scope'],
+    convert_before: ['toplevel-scope.ciro'],
     input_path_noext: 'notindex',
     filesystem: {
-      'toplevel-scope': `= Toplevel scope
+      'toplevel-scope.ciro': `= Toplevel scope
 {scope}
 
 \\Image[h1.png]{title=h1}
@@ -3123,7 +3123,7 @@ cc
 )
 
 // lint h-parent
-assert_no_error('header parent works with cirodown.json lint h-parent = parent and no includes',
+assert_no_error('header parent works with cirodown.json lint h-parent equal parent and no includes',
   `= 1
 
 = 2
@@ -3155,7 +3155,7 @@ assert_error('header parent fails with cirodown.json lint h-parent = number',
   3, 1, undefined,
   { extra_convert_opts: { cirodown_json: { lint: { 'h-parent': 'number', } } } }
 );
-assert_no_error('header parent works with cirodown.json lint h-parent = parent and includes with parent',
+assert_no_error('header parent works with cirodown.json lint h-parent equal parent and includes with parent',
   `= 1
 
 = 2
@@ -3170,7 +3170,7 @@ assert_no_error('header parent works with cirodown.json lint h-parent = parent a
     }
   }
 );
-assert_error('header parent fails with cirodown.json lint h-parent = parent and includes with number',
+assert_error('header parent fails with cirodown.json lint h-parent equal parent and includes with number',
   `= 1
 
 = 2
@@ -3539,7 +3539,7 @@ bb
     ]),
   ],
   {
-    convert_before: ['include-two-levels'],
+    convert_before: ['include-two-levels.ciro'],
   },
 );
 // https://github.com/cirosantilli/cirodown/issues/74
@@ -3658,8 +3658,8 @@ assert_error('include circular dependency 1 <-> 2',
     },
     has_error: true,
     filesystem: {
-      'notindex': circular_entry,
-      'include-circular': `= include-circular
+      'notindex.ciro': circular_entry,
+      'include-circular.ciro': `= include-circular
 
 \\Include[notindex]
 `
@@ -3808,9 +3808,9 @@ assert_error('id conflict with previous id on another file',
 `,
   3, 1, 'index.ciro',
   {
-    convert_before: ['notindex'],
+    convert_before: ['notindex.ciro'],
     filesystem: {
-     'notindex': `= notindex
+     'notindex.ciro': `= notindex
 
 == notindex h2
 `,

@@ -3,6 +3,7 @@ import ourbigbook from 'ourbigbook/dist/ourbigbook'
 import { getLoggedInUser } from 'back'
 import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
 import { articleLimit  } from 'front/config'
+import { getPage } from 'front/js'
 import { MyGetServerSideProps } from 'front/types'
 import { UserPageProps } from 'front/UserPage'
 
@@ -23,7 +24,8 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           notFound: true
         }
       }
-      const pageNum = typeof page === 'undefined' ? 0 : parseInt(page, 10) - 1
+      const [pageNum, err] = getPage(page)
+      if (err) { res.statusCode = 422 }
       let order
       let author
       let likedBy

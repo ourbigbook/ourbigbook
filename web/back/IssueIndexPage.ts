@@ -4,6 +4,7 @@ import { getLoggedInUser } from 'back'
 import { articleLimit, fallback } from 'front/config'
 import { IndexPageProps } from 'front/IndexPage'
 import { MyGetServerSideProps } from 'front/types'
+import { getPage } from 'front/js'
 
 export const getServerSidePropsIssueIndexHoc = (what): MyGetServerSideProps => {
   return async ({ params = {}, req, res }) => {
@@ -37,12 +38,8 @@ export const getServerSidePropsIssueIndexHoc = (what): MyGetServerSideProps => {
       let order
       let loggedInQuery
       let whatEffective = what
-      const pageNum = typeof page === 'undefined' ? 0 : parseInt(page, 10) - 1
-      if (isNaN(pageNum)) {
-        return {
-          notFound: true
-        }
-      }
+      const [pageNum, err] = getPage(page)
+      if (err) { res.statusCode = 422 }
       if (!loggedInUser) {
         if (what === 'latest-followed') {
           whatEffective = 'latest'

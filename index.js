@@ -2069,8 +2069,12 @@ function convert(
       let id;
       if (context.options.toplevel_id === undefined) {
         const toplevel_header_node = context.header_graph.children[0];
-        const toplevel_header_ast = toplevel_header_node.value;
-        id = toplevel_header_ast.id;
+        if (toplevel_header_node === undefined) {
+          id = undefined
+        } else {
+          const toplevel_header_ast = toplevel_header_node.value;
+          id = toplevel_header_ast.id;
+        }
       } else {
         id = context.options.toplevel_id;
       }
@@ -2079,7 +2083,7 @@ function convert(
         id,
         clone_and_set(context, 'to_split_headers', false)
       )[0];
-    } else if (context.options.input_path !== undefined) {
+    } else {
       outpath = context.options.outfile;
     }
     context.toplevel_output_path = outpath;
@@ -2970,67 +2974,80 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
   let custom_split_suffix;
   const [dirname, basename] = path_split(input_path, context.options.path_sep);
   const renamed_basename_noext = rename_basename(noext(basename));
-  if (id === undefined) {
-    // Possible on toplevel.
+  const ast = context.id_provider.get(id, context);
+  // We are the first header, or something that comes before it.
+  let first_header_or_before = false;
+  if (ast === undefined) {
     return [dirname, renamed_basename_noext];
   } else {
-    const ast = context.id_provider.get(id, context);
-    // We are the first header, or something that comes before it.
-    let first_header_or_before = false;
-    if (ast === undefined) {
-      return [dirname, renamed_basename_noext];
-    } else {
-      if (ast.macro_name === Macro.HEADER_MACRO_NAME) {
-        if (ast.is_first_header_in_input_file) {
-          first_header_or_before = true;
-        }
-      } else {
-        id = ast.get_header_parent_id();
+    if (ast.macro_name === Macro.HEADER_MACRO_NAME) {
+      if (ast.is_first_header_in_input_file) {
+        first_header_or_before = true;
       }
+    } else {
+      id = ast.get_header_parent_id();
     }
-    let dirname_ret;
-    let basename_ret;
-    const [id_dirname, id_basename] = path_split(id, URL_SEP);
-    const to_split_headers = is_to_split_headers(ast, context);
-    if (first_header_or_before) {
-      // For toplevel elements in split header mode, we have
-      // to take care of index and -split suffix.
-      if (renamed_basename_noext === INDEX_BASENAME_NOEXT) {
-        basename_ret = '';
-        if (id_dirname === '') {
-          dirname_ret = dirname;
-        } else {
-          // Not a https://cirosantilli.com/cirodown#the-toplevel-index-file
-          dirname_ret = path_join(id_dirname, id_basename, context.options.path_sep);
-        }
-      } else {
-        dirname_ret = dirname;
+  }
+  let dirname_ret;
+  let basename_ret;
+  const [id_dirname, id_basename] = path_split(id, URL_SEP);
+  const to_split_headers = is_to_split_headers(ast, context);
+  if (first_header_or_before) {
+    // For toplevel elements in split header mode, we have
+    // to take care of index and -split suffix.
+    if (renamed_basename_noext === INDEX_BASENAME_NOEXT) {
+      // basename_ret
+      if (
+        to_split_headers && ast.split_default ||
+        !to_split_headers && !ast.split_default
+      ) {
         basename_ret = renamed_basename_noext;
+      } else if (!to_split_headers && ast.split_default) {
+        basename_ret = '';
+      }
+
+      // dirname_ret
+      if (id_dirname === '') {
+        dirname_ret = dirname;
+      } else {
+        // Not a https://cirosantilli.com/cirodown#the-toplevel-index-file
+        dirname_ret = path_join(id_dirname, id_basename, context.options.path_sep);
       }
     } else {
-      // Non-toplevel elements in split header mode are simple,
-      // the ID just gives the output path directly.
-      dirname_ret = id_dirname;
-      basename_ret = id_basename;
+      dirname_ret = dirname;
+      basename_ret = renamed_basename_noext;
     }
-    if (first_header_or_before || split_suffix !== undefined) {
-      if (split_suffix === undefined || split_suffix === '') {
-        if (to_split_headers && !ast.split_default) {
-          split_suffix = 'split';
-        } else if (!to_split_headers && ast.split_default) {
-          split_suffix = 'nosplit';
-        }
+  } else {
+    // Non-toplevel elements in split header mode are simple,
+    // the ID just gives the output path directly.
+    dirname_ret = id_dirname;
+    basename_ret = id_basename;
+  }
+
+  // Add -split, -nosplit or custom suffixes.
+  if (
+    first_header_or_before ||
+    (
+      to_split_headers &&
+      split_suffix !== undefined
+    )
+  ) {
+    if (split_suffix === undefined || split_suffix === '') {
+      if (to_split_headers && !ast.split_default) {
+        split_suffix = 'split';
+      } else if (!to_split_headers && ast.split_default) {
+        split_suffix = 'nosplit';
       }
-      if (basename_ret === '') {
+    }
+    if (split_suffix !== undefined) {
+      if (basename_ret !== '') {
         basename_ret += '-';
-      }
-      if (split_suffix === undefined) {
-        throw new Error('split_suffix is undefined');
       }
       basename_ret += split_suffix;
     }
-    return [dirname_ret, basename_ret];
   }
+
+  return [dirname_ret, basename_ret];
 }
 exports.output_path_parts = output_path_parts;
 

@@ -9,4 +9,4 @@ export const ARTICLE_QUERY_MAP = {
 export const BUTTON_ACTIVE_CLASS = 'active';
 export const DEFAULT_PROFILE_IMAGE = `https://static.productionready.io/images/smiley-cyrus.jpg`;
 export const DEFAULT_LIMIT = 20;
-export const DEFAULT_USER_SCORE_TITLE = 'Sum of scores of all articles authored by user';
+export const DEFAULT_USER_SCORE_TITLE = 'Sum of likes of all articles authored by user';

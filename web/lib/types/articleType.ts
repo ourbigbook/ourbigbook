@@ -18,6 +18,6 @@ export type ArticleType = {
   topicId: string;
   updatedAt: number;
   score: number;
-  favorited: boolean;
+  liked: boolean;
   render: string;
 };

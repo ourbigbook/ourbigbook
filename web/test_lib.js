@@ -30,7 +30,7 @@ async function generateDemoData(params) {
   const nMaxCommentsPerArticle = params.nMaxCommentsPerArticle === undefined ? 3 : params.nMaxCommentsPerArticle
   const nMaxTagsPerArticle = params.nMaxTagsPerArticle === undefined ? 3 : params.nMaxTagsPerArticle
   const nFollowsPerUser = params.nFollowsPerUser === undefined ? 2 : params.nFollowsPerUser
-  const nFavoritesPerUser = params.nFavoritesPerUser === undefined ? 20 : params.nFavoritesPerUser
+  const nLikesPerUser = params.nLikesPerUser === undefined ? 20 : params.nLikesPerUser
   const nTags = params.nTags === undefined ? 10 : params.nTags
   const directory = params.directory
   const basename = params.basename
@@ -178,32 +178,32 @@ Table:
   )
   printTime()
 
-  console.error('Favorite');
+  console.error('Like');
   let articleIdx = 0
   for (let i = 0; i < nUsers; i++) {
     const user = users[i]
-    for (let j = 0; j < nFavoritesPerUser; j++) {
+    for (let j = 0; j < nLikesPerUser; j++) {
       const article = articles[(i * j) % nArticles];
       if (article.authorId !== user.id) {
-        await user.addFavoriteSideEffects(article)
+        await user.addLikeSideEffects(article)
       }
     }
   }
 
-  // 0.5s faster than the addFavoriteSideEffects version, total run 7s.
+  // 0.5s faster than the addLikeSideEffects version, total run 7s.
   //let articleIdx = 0
-  //const favoriteArgs = []
+  //const likeArgs = []
   //for (let i = 0; i < nUsers; i++) {
   //  const userId = users[i].id
-  //  for (var j = 0; j < nFavoritesPerUser; j++) {
-  //    favoriteArgs.push({
+  //  for (var j = 0; j < nLikesPerUser; j++) {
+  //    likeArgs.push({
   //      userId: userId,
   //      articleId: articles[articleIdx % nArticles].id,
   //    })
   //    articleIdx += 1
   //  }
   //}
-  //await sequelize.models.UserFavoriteArticle.bulkCreate(favoriteArgs)
+  //await sequelize.models.UserLikeArticle.bulkCreate(likeArgs)
   printTime()
 
   console.error('Tag');

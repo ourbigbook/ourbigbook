@@ -1022,7 +1022,7 @@ function parse(tokens, macros, options, extra_returns={}) {
       node.macro_count = macro_count;
     }
 
-    // Linear count of each macro type for macros that have IDs.
+    // Header tree.
     if (macro_name === Macro.HEADER_MACRO_NAME) {
       let level = parseInt(convert_arg_noescape(node.args.level, id_context));
       let new_tree_node = new TreeNode(node, header_graph_stack[level - 1]);
@@ -1473,7 +1473,13 @@ const DEFAULT_MACRO_LIST = [
       let attrs = html_convert_attrs_id(ast, context, [], custom_args);
       let ret = `<h${level}${attrs}><a${this.self_link(ast)} title="link to this element">`;
       let toc_href = html_attr('href', '#' + Macro.TOC_PREFIX + ast.id);
-      ret += this.x_text(ast, context, {show_caption_prefix: false});
+      let x_text_options = {
+        show_caption_prefix: false,
+      };
+      if (level_int === 1) {
+        x_text_options.style = XStyle.short;
+      }
+      ret += this.x_text(ast, context, x_text_options);
       ret += `</a>`;
       if (context.has_toc) {
         ret += `<span> <a${toc_href}>(toc \u2191)</a></span>`;
@@ -1750,6 +1756,8 @@ const DEFAULT_MACRO_LIST = [
         let text_title;
         if (Macro.TITLE_ARGUMENT_NAME in context.options) {
           text_title = context.options[Macro.TITLE_ARGUMENT_NAME];
+        } else if (context.header_graph.children.length > 0) {
+          text_title = convert_arg(context.header_graph.children[0].value.args.title, context);
         } else {
           text_title = 'dummy title because title is mandatory in HTML';
         }

@@ -223,7 +223,7 @@ if (commander.helpMacros) {
       if (publish) {
         cli_error('--publish and --watch are incompatible');
       }
-      let watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES, ignoreInitial: true});
+      let watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES});
       watcher.on('change', function(path) {
         convert_path_to_file(path, options, convert_input_options);
       }).on('add',  function(path) {

@@ -7501,14 +7501,25 @@ assert_lib_ast('id autogeneration nested',
   ],
 );
 assert_lib_ast('id autogeneration unicode normalize',
-  `= 0\u{2013}A.你É\u{2014}ŁŒy++z
+  // 00C9: Latin capital letter E with acute
+  // 00DE: capital Thorn: https://en.wikipedia.org/wiki/Thorn_(letter)
+  // 0141: capital L with a stroke: https://en.wikipedia.org/wiki/%C5%81
+  // 0152: Latin capital ligature oe: https://en.wikipedia.org/wiki/%C5%92
+  // 0152: capital ligature oe (ethel): https://en.wikipedia.org/wiki/%C5%92
+  // 0391: capital alpha: https://en.wikipedia.org/wiki/Alpha[].
+  // 03B1: lowercase alpha
+  // 2013: en-dash -> -
+  // 2014: em-dash -> -
+  // 2212: Unicode minus sign
+  // 4F60: Chinese ni3 (you): https://en.wiktionary.org/wiki/%E4%BD%A0
+  `= 0\u{2013}A.\u{4F60}\u{00C9}\u{2014}\u{0141}\u{0152}y++z\u{00DE}\u{0391}\u{2212}
 
-\\x[0-a-你e-loey-plus-plus-z]
+\\x[0-a-\u{4F60}e-loey-plus-plus-zth-alpha-minus]
 `,
   [
-    a('H', undefined, {title: [t('0\u{2013}A.你É\u{2014}ŁŒy++z')]}, {id: '0-a-你e-loey-plus-plus-z'}),
+    a('H', undefined, {title: [t('0\u{2013}A.\u{4F60}\u{00C9}\u{2014}\u{0141}\u{0152}y++z\u{00DE}\u{0391}\u{2212}')]}, {id: '0-a-\u{4F60}e-loey-plus-plus-zth-alpha-minus'}),
     a('P', [
-      a('x', undefined, {href: [t('0-a-你e-loey-plus-plus-z')]})
+      a('x', undefined, {href: [t('0-a-\u{4F60}e-loey-plus-plus-zth-alpha-minus')]})
     ])
   ],
 );

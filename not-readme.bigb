@@ -2,13 +2,13 @@
 
 This file is, surprisingly, not the README. It is used for multifile tests. It is also smaller and therefore compiles faster.
 
-A test child link to another section: \x[not-readme-2]{child}.
+A test child link to another section: <not readme 2>{child}.
 
 == h2 in not the README
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-{title=Figure in not the README}
 {id=image-not-readme-xi}
+{title=Figure in not the README}
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {title=Figure in not the README without explicit id}
@@ -17,14 +17,14 @@ A test child link to another section: \x[not-readme-2]{child}.
 
 == Some references back to the README
 
-Toplevel: \x[ourbigbook].
+Toplevel: <OurBigBook>.
 
-Non-toplevel: \x[internal-cross-reference].
+Non-toplevel: <internal cross reference>.
 
 == Not the README header with scope
 {scope}
 
-\x[not-the-readme-header-with-scope-child]
+<not the README header with scope child>
 
 === Not the README header with scope child
 

@@ -1671,6 +1671,16 @@ hh
 
 \\reserved_undefined
 `
+    } else if (input_path === 'include-circular-1') {
+      ret = `= bb
+
+\\Include[include-circular-2]
+`
+    } else if (input_path === 'include-circular-2') {
+      ret = `= cc
+
+\\Include[include-circular-1]
+`
     } else {
       throw new Error(`unknown lnclude path: ${input_path}`);
     }
@@ -1792,6 +1802,14 @@ bb
 \\Include[include-with-error]
 `,
   3, 1, 'include-with-error.ciro',
+  include_opts
+);
+assert_error('include circular dependency',
+  `= aa
+
+\\Include[include-circular-1]
+`,
+  3, 1, 'include-circular-2.ciro',
   include_opts
 );
 // TODO https://github.com/cirosantilli/cirodown/issues/73

@@ -88,7 +88,7 @@
     "test": "NODE_OPTIONS='--unhandled-rejections=strict' mocha test --ignore-leaks",
     "testi": "NODE_OPTIONS='--unhandled-rejections=strict' node inspect ./node_modules/.bin/mocha test --ignore-leaks",
     "test-pg": "OURBIGBOOK_POSTGRES=true npm test",
-    "test-release": "npm test && npm test-pg",
+    "test-release": "npm test && npm run test-pg",
     "webpack": "webpack",
     "webpack-dev": "webpack serve"
   }

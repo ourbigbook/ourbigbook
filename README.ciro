@@ -1070,7 +1070,7 @@ Following those rules for example, a file `tmp.ciro`:
 = h1 2 1 1
 {parent=h1-2/h1-2-1}
 ``
-will lead to the following header tree with \x[show-headers]:
+will lead to the following header tree with \x[log-headers]:
 ``
 = h1  tmp
 == h2 1 tmp/h1-1
@@ -1132,7 +1132,7 @@ Only one ToC is rendered per document. Any ToC besides the first one is ignored.
 
 The ToC ignores \x[the-toplevel-header] if you have one.
 
-For when you want a quick outline of the header tree on the terminal, also consider the \x[show-headers] option.
+For when you want a quick outline of the header tree on the terminal, also consider the \x[log-headers] option.
 
 ==== Table of contents JavaScript open close interaction
 
@@ -2932,7 +2932,8 @@ Convert a `.ciro` file from stdin to HTML and output the contents of `<body>` to
 printf 'ab\ncd\n' | cirodown --body-only
 ``
 
-==== Index files
+= Index files
+{parent=cirodown-executable}
 
 The following basenames are considered "index files":
 * `README.ciro`
@@ -2942,7 +2943,8 @@ Those basenames have the following magic properties:
 * the default output file name for an index file in HTML output is always `index.html`, including that of `README.ciro`. This way it will appear on both the root of the HTML output and on the GitHub home page once GitHub adds Cirodown support.
 * the default \x[the-toplevel-header][toplevel header] ID of an index files is derived from the parent directory basename rather than from the source file basename
 
-===== The toplevel index file
+= The toplevel index file
+{parent=index-files}
 
 The toplevel index file is the index file that is present on the root directory of a Cirodown project.
 
@@ -2960,9 +2962,11 @@ So for this reason users should basically always add a `cirodown.json` to their 
 Being the toplevel index file has the following implications:
 * its ID is derived fromthe header itself, not the directory, see also: \x[the-id-of-the-first-header-is-derived-from-the-filename]
 
-==== `cirodown` executable options
+= `cirodown` executable options
+{parent=cirodown-executable}
 
-===== `--dry-run`
+= `--dry-run`
+{parent=cirodown-executable-options}
 
 The `--dry-run` option is a good way to debug \x[publish][`--publish` option], as it builds the publish output files without doing any git commands that would be annoying to revert. So after doing:
 ``
@@ -3043,6 +3047,58 @@ You can get an overview of all macros in JSON format with:
 ``
 cirodown --help-macros
 ``
+
+= `--log`
+{parent=cirodown-executable-options}
+
+Give multiple times to enable a list of certain types of logs to help debugging, e.g.:
+``
+./cirodown --log tokens --log ast
+``
+
+```
+commander.option('--show-ast', 'print the AST to stderr', false);
+commander.option(
+  '--show-ast-inside',
+  'print the AST to stderr from inside convert before it returns. ' +
+    'Useful to debug the program if conversion blow up on the next stages.',
+  false
+);
+commander.option('--show-headers', 'https://cirosantilli.com/cirodown#show-headers', false);
+commander.option('--show-parse', 'print parsing internals to stderr', false);
+commander.option('--show-tokenize', 'print tokenization internals to stderr', false);
+commander.option('--show-tokens', 'print the token stream to stderr', false);
+commander.option(
+  '--show-tokens-inside',
+  'print the token stream to stderr from inside convert before it returns. ' +
+    'Useful to debug the program if conversion blow up on the next stages. ' +
+    'Also adds token index to the output, which makes debugging the parser ' +
+    'way easier.',
+  false
+);
+```
+
+= `--log headers`
+{parent=log}
+
+This nifty little option outputs to stderr what the header graph looks like!
+
+It is a bit like a \x[table-of-contents] in your terminal, for when you need to have a look at the outline of the document to decide where to place a new header, but are not in the mood to open a browser or use the \x[editor-with-preview].
+
+Sample output excerpt for this document:
+``
+= h1  cirodown
+== h2 1 quick-start
+== h2 2 design-goals
+=== h3 2.1 saner
+=== h3 2.2 more-powerful
+== h2 3 paragraphs
+== h2 4 links
+``
+
+This option can also serve as a debug tool for header tree related features (confession: that was its original motivation!).
+
+TODO
 
 = `--no-html-x-extension`
 {parent=cirodown-executable-options}
@@ -3145,12 +3201,8 @@ When `--publish` is given, stdin input is not accepted, and so the current direc
 
 Publishing only happens if the build has no errors.
 
-= `--split-headers`
-{parent=cirodown-executable-options}
-
-Split each header into its own separate HTML output file.
-
-====== Publish to GitHub Pages
+= Publish to GitHub Pages
+{parent=publish}
 
 https://pages.github.com/[GitHub pages] is the default Cirodown publish target.
 
@@ -3160,7 +3212,8 @@ Then, if you want to publish to the GitHub pages root page, you need to setup th
 
 Finally, for both root and non-root pages, follow the steps at: \x[publish-to-github-common-steps].
 
-======= Publish to GitHub pages root page
+= Publish to GitHub pages root page
+{parent=publish-to-github-pages}
 
 If you want to publish your root user page, which appears at `/` (e.g. https://github.com/cirosantilli/cirosantilli.github.io for the user `cirosantilli`), GitHub annoyingly forces you to use the `master` branch for the HTML output:
 * https://github.com/isaacs/github/issues/212
@@ -3185,7 +3238,8 @@ git push --delete origin master
 
 You then will also want to set your default repository branch to `dev` in the settings for that repository: https://help.github.com/en/github/administering-a-repository/setting-the-default-branch
 
-======= Publish to GitHub common steps
+= Publish to GitHub common steps
+{parent=publish-to-github-pages}
 
 For non-root GitHub pages, no special setup is needed, `cirodown` automatically populates the `gh-pages` branch for you.
 
@@ -3197,8 +3251,9 @@ git commit --message 'initial commit from template'
 cirodown --publish .
 ``
 
-===== `-P, --publish-commit <commit-message>`
+= `-P, --publish-commit <commit-message>`
 {id=publish-commit}
+{parent=cirodown-executable-options}
 
 Like \x[publish], but also automatically:
 * `git add -u` to automatically add change to any files that have been previously git tracked
@@ -3211,26 +3266,50 @@ cirodown --publish-commit 'my amazing change' .
 
 With great power comes great responsibility of course, but who cares!
 
-===== `--show-headers`
+= `--split-headers`
+{parent=cirodown-executable-options}
 
-This nifty little option outputs to stderr what the header graph looks like!
+Split each header into its own separate HTML output file.
 
-It is a bit like a \x[table-of-contents] in your terminal, for when you need to have a look at the outline of the document to decide where to place a new header, but are not in the mood to open a browser or use the \x[editor-with-preview].
-
-Sample output excerpt for this document:
+For example given an input file called `hello.ciro` and containing:
 ``
-= h1  cirodown
-== h2 1 quick-start
-== h2 2 design-goals
-=== h3 2.1 saner
-=== h3 2.2 more-powerful
-== h2 3 paragraphs
-== h2 4 links
+= h1
+
+h1 content.
+
+A link to another section: \x[h1-1].
+
+== h1 1
+
+h1-1 content.
+
+== h1 1 1
+
+h1-1-1 content.
+
+== h1 1 2
+
+h1-1-2 content.
 ``
+a conversion command:
+``
+cirodown --split-headers hello.ciro
+``
+would produce the following output files:
+* `hello.html`: contains the entire rendered document as usual. Remember that this is called `hello.html` instead of `h1.html` because \x[the-toplevel-header][the toplevel header ID is automatically derived from its filename]
+* `hello-split.html`: contains only the contents directly under `= h1`, but not under any of the subheaders, e.g.:
+  * `h1 content.` appears in this rendered output
+  * `h1-1-1` does not appear in this rendered output
+  The `-split` suffix is appended in order to differentiate the output path from `hello.html`
+* `h1-1.html`, `h1-1-1.html`, `h1-1-2.html`: contain only the contents direcly under their headers, analogously to `hello-split.html`, but now we don't need to worry about the input filename and collisiont, and just directly use the ID of each header
 
-This option can also serve as a debug tool for header tree related features (confession: that was its original motivation!).
+\x[internal-cross-references] such as `\x[h1-1]` automatically point to the same type of split/non-split output as the current output file, for example:
+* in `hello.html`, it points to the section in the current (non-split) file
+* in `hello-split.html`, it points to the section the separate split `h1-1.html` output file
+The same applies to \x[internal-cross-file-references] when there are multiple input files.
 
-===== `--watch`
+= `--watch`
+{parent=cirodown-executable-options}
 
 Don't quit `cirodown` immediately.
 
@@ -3258,7 +3337,8 @@ otherwise you will just get a bunch of undefined ID errors every time the input 
 
 TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with-live-preview/ to also dispense the browser refresh.
 
-===== `--template`
+= `--template`
+{parent=cirodown-executable-options}
 
 Select a custom https://github.com/harttle/liquidjs[Liquid template] file for the output.
 
@@ -3288,7 +3368,8 @@ Defined variables:
 
 We pick Liquid because it is server-side safe: if we ever some day offer a compilation service, Liquid is designed to prevent arbitrary code execution and infinite loops in templates.
 
-==== `cirodown.json`
+= `cirodown.json`
+{parent=cirodown-executable}
 
 Cirodown configuration file that affects the behaviour of cirodown for all files in the directory.
 
@@ -3296,7 +3377,8 @@ Cirodown configuration file that affects the behaviour of cirodown for all files
 
 While `cirodown.json` is optional, it is used to determine the toplevel directory of a Cirodown project, which has some effects such as those mentioned at \x[the-toplevel-index-file]. Therefore, it is recommended that you always have a `cirodown.json` in your project's toplevel directory, even if it is going to be an empty JSON `{}`.
 
-===== `media-providers`
+= `media-providers`
+{parent=cirodown-json}
 
 The `media-providers` entry of `cirodown.json` specifies properties of how media such as \x[images] and \x[videos][videos] are retrieved and rendered.
 
@@ -3334,7 +3416,8 @@ Direct children of media-providers and subproperties that are valid only for the
 
 See also: https://github.com/cirosantilli/cirodown/issues/40
 
-===== `prepublish`
+= `prepublish`
+{parent=cirodown-json}
 
 Path of a script that gets executed before running \x[publish][`cirodown --publish`].
 
@@ -3349,7 +3432,8 @@ The script arguments are:
 
 If the `prepublish` script returns with a non-zero exit value, the publish is aborted.
 
-===== `redirects`
+= `redirects`
+{parent=cirodown-json}
 
 Create HTML redirects from \x[the-toplevel-header][toplevel headers] to arbitrary IDs, for example:
 ``
@@ -3697,7 +3781,8 @@ sudo snap install --classic heroku
 * on the AST, put contents of headers inside headers
 * auto-toc after the first paragraph
 
-== Related projects
+= Related projects
+{parent=cirodown}
 
 Static wiki generators: this is perhaps the best way of classifying this project :-)
 * https://github.com/gollum/gollum[]: already has a local server editor! But no WYSIWYG nor live preview. Git integration by default, so when you save on the UI already generates a Git commit. We could achieve that with: https://github.com/isomorphic-git/isomorphic-git[], would be really nice.

@@ -2111,7 +2111,8 @@ and the sane equivalent \x[equation-my-first-sane-equation]:
 Here is a raw one just to test the formatting outside of a `cirodown_comment`:
 $$\sqrt{1 + 1}$$
 
-=== Math defines across blocks
+= Math defines across blocks
+{parent=mathematics}
 
 First here is an invisible block (with `{show=0}`) defining with a `\newcommand` definition after this paragraph:
 \CirodownExample[[
@@ -2147,6 +2148,22 @@ $$1 + 1$${show=1}
 $$2 + 2$${show=0}
 $$3 + 3$${show=1}
 ]]
+
+= `cirodown.tex`
+{parent=mathematics}
+
+If your project has multiple `.ciro` input files, you can share Mathematics definitions across all files by adding them to the `cirodown.tex` file on the toplevel directory.
+
+For example, if `cirodown.tex` contains:
+``
+\newcommand{\foo}[0]{bar}
+``
+then from any `.ciro` file we in the project can use:
+``
+$$
+\foo
+$$
+``
 
 == Tables
 {title2=`|| `, `| `, `\Table`, `\Tr`, `\Th` and `\Td`}

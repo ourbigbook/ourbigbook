@@ -15,6 +15,7 @@ module.exports = {
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   ESCAPE_USERNAME,
   databaseUrl: process.env.DATABASE_URL || '',
+  googleAnalyticsId: 'UA-47867706-4',
   revalidate: 10,
   isProduction: isProduction,
   isProductionNext: process.env.NODE_ENV_NEXT === undefined ?

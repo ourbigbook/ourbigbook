@@ -64,7 +64,7 @@ const ArticleAPI = {
   feed: (page, limit = 10) =>
     axios.get(`${SERVER_BASE_URL}/articles/feed?${getQuery(limit, page)}`),
 
-  get: (slug) => axios.get(ArticleAPI.articleUrl(slug)),
+  get: (slug) => axios.get(ArticleAPI.url(slug)),
 
   unfavorite: (slug, token) =>
     axios.delete(

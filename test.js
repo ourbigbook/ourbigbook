@@ -5920,7 +5920,7 @@ aa
       "//x:span[@class='caption-prefix' and text()='Code 1']",
     ]
   }
-);
+)
 assert_lib_ast('code: without id, title, nor description does not have caption',
   `\`\`
 aa
@@ -6634,6 +6634,21 @@ $$
 `,
 );
 assert_lib_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 3);
+assert_lib_ast('math: with description has caption',
+  `$$
+aa
+$$
+{description=b b}
+`,
+  [
+    a('M', [t('aa')], { description: [t('b b')] }, { id: '_1'} ),
+  ],
+  {
+    assert_xpath_stdout: [
+      "//x:span[@class='caption-prefix' and text()='Equation 1']",
+    ]
+  }
+)
 
 // Quote.
 // \Q

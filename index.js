@@ -773,7 +773,7 @@ class IdProvider {
         header_tree_node.parent_node !== undefined &&
         header_tree_node.parent_node.ast !== undefined
       ) {
-        let parent_scope_id = calculate_scope(header_tree_node.parent_node.ast, context);
+        let parent_scope_id = calculate_scope(header_tree_node.parent_node.ast);
         if (parent_scope_id !== undefined) {
           parent_scope_id += Macro.HEADER_SCOPE_SEPARATOR
           for (let i = parent_scope_id.length - 1; i > 0; i--) {
@@ -2176,7 +2176,7 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
 // * any scopes of any parents
 // * the ID of the node if it has a scope set for itself
 // If none of those provide scopes, return undefined.
-function calculate_scope(ast, context) {
+function calculate_scope(ast) {
   let parent_scope;
   if (ast.scope !== undefined) {
     parent_scope = ast.scope;
@@ -2215,9 +2215,9 @@ function calculate_scope(ast, context) {
 }
 
 /* Calculate the length of the scope of a child header given its parent ast. */
-function calculate_scope_length(parent_ast, context) {
+function calculate_scope_length(parent_ast) {
   if (parent_ast !== undefined) {
-    let scope = calculate_scope(parent_ast, context);
+    let scope = calculate_scope(parent_ast);
     if (scope !== undefined) {
       return scope.length + 1;
     }
@@ -4199,7 +4199,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             parent_tree_node.add_child(cur_header_tree_node);
             const parent_ast = parent_tree_node.ast;
             if (parent_ast !== undefined) {
-              let scope = calculate_scope(parent_ast, context);
+              let scope = calculate_scope(parent_ast);
               // The ast might already have a scope here through less common means such as
               // being in a subdirectory.
               if (ast.scope) {
@@ -4895,7 +4895,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             children_in_header = false;
           }
           if (cur_header_tree_node !== undefined) {
-            ast.scope = calculate_scope(cur_header_tree_node.ast, context);
+            ast.scope = calculate_scope(cur_header_tree_node.ast);
           }
 
           // Header IDs already previously calculated for parent= so we don't redo it in that case.
@@ -5330,7 +5330,7 @@ function remove_toplevel_scope(id, toplevel_ast, context) {
     }
     return id;
   } else {
-    return id.substr(calculate_scope_length(toplevel_ast, context));
+    return id.substr(calculate_scope_length(toplevel_ast));
   }
 }
 

@@ -1,9 +1,9 @@
 let isProduction;
 
-if (process.env.NODE_ENV_OVERRIDE === undefined) {
+if (process.env.NEXT_PUBLIC_NODE_ENV === undefined) {
   isProduction = process.env.NODE_ENV === 'production'
 } else {
-  isProduction = process.env.NODE_ENV_OVERRIDE === 'production'
+  isProduction = process.env.NEXT_PUBLIC_NODE_ENV === 'production'
 }
 
 const API_PATH_COMPONENT = 'api'
@@ -15,10 +15,16 @@ module.exports = {
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   ESCAPE_USERNAME,
   googleAnalyticsId: 'UA-47867706-4',
-  isProduction: isProduction,
-  isProductionNext: process.env.NODE_ENV_NEXT === undefined ?
+  // Default isProduction check. Affetcs all aspects of the application unless
+  // they are individually overridden, including:
+  // * is Next.js server dev or prod?
+  // * use SQLite or PostgreSQL?
+  // * in browser effects, e.g. show Google Analytics or not?
+  isProduction,
+  // Overrides isProduction for the "is Next.js server dev or prod?" only.
+  isProductionNext: process.env.NODE_ENV_NEXT_SERVER_ONLY === undefined ?
     (isProduction) :
-    (process.env.NODE_ENV_NEXT === 'production'),
+    (process.env.NODE_ENV_NEXT_SERVER_ONLY === 'production'),
   secret: isProduction ? process.env.SECRET : 'secret',
   port: process.env.PORT || 3000,
   postgres: process.env.CIRODOWN_POSTGRES === 'true',

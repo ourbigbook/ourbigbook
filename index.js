@@ -20,6 +20,9 @@ const UNICODE_LINK = String.fromCodePoint(0x1F517);
 
 class AstNode {
   /**
+   * Abstract syntax tree node. This is the base node type that
+   * represents the parsed output.
+   *
    * @param {AstType} node_type -
    * @param {String} macro_name - - if node_type === AstType.PLAINTEXT or AstType.ERROR: fixed to
    *                                AstType.PLAINTEXT_MACRO_NAME
@@ -1865,7 +1868,7 @@ function convert(
     if (options.outfile !== undefined) {
       outpath = options.outfile;
     } else if (options.input_path !== undefined) {
-      outpath = output_path(options.input_path, options.toplevel_id, context);
+      outpath = output_path(options.input_path, options.toplevel_id, context)[0];
     }
     context.katex_macros = {};
     context.in_split_headers = false;
@@ -2456,13 +2459,16 @@ function object_subset(source_object, keys) {
  */
 function output_path(input_path, id, context={}) {
   const [dirname, basename] = output_path_parts(input_path, id, context);
-  return path_join(dirname, basename + '.' + HTML_EXT, context.options.path_sep);
+  return [
+    path_join(dirname, basename + '.' + HTML_EXT, context.options.path_sep),
+    dirname,
+    basename
+  ];
 }
-exports.output_path = output_path
 
 /** Helper for when we have an actual AstNode. */
 function output_path_from_ast(ast, context) {
-  return output_path(ast.source_location.path, ast.id, context);
+  return output_path(ast.source_location.path, ast.id, context)[0];
 }
 
 function output_path_parts(input_path, id, context) {
@@ -3870,57 +3876,64 @@ function x_href_parts(target_id_ast, context) {
   } else {
     const [toplevel_output_path_dirname, toplevel_output_path_basename] =
       path_split(context.toplevel_output_path, context.options.path_sep);
-    let [target_output_path_dirname, target_output_path_basename] = output_path_parts(
+    let [full_output_path, target_output_path_dirname, target_output_path_basename] = output_path(
       target_id_ast.source_location.path, target_id_ast.id, context);
-    const href_path_dirname_rel = path.relative(
-      toplevel_output_path_dirname, target_output_path_dirname);
-    if (
-      // Same output path.
-      href_path_dirname_rel === '' &&
-      target_output_path_basename === toplevel_output_path_basename
-    ) {
-      target_output_path_basename = '';
+    if (full_output_path === context.toplevel_output_path) {
+      href_path = ''
     } else {
-      if (context.options.html_x_extension) {
-        target_output_path_basename += '.' + HTML_EXT;
-      } else if (target_output_path_basename === INDEX_BASENAME_NOEXT) {
+      const href_path_dirname_rel = path.relative(
+        toplevel_output_path_dirname, target_output_path_dirname);
+      if (
+        // Same output path.
+        href_path_dirname_rel === '' &&
+        target_output_path_basename === toplevel_output_path_basename
+      ) {
         target_output_path_basename = '';
+      } else {
+        if (context.options.html_x_extension) {
+          target_output_path_basename += '.' + HTML_EXT;
+        } else if (target_output_path_basename === INDEX_BASENAME_NOEXT) {
+          target_output_path_basename = '';
+        }
       }
+      href_path = path_join(href_path_dirname_rel,
+        target_output_path_basename, context.options.path_sep);
     }
-    href_path = path_join(href_path_dirname_rel,
-      target_output_path_basename, context.options.path_sep);
   }
 
-  // fragment
+  // Fragment
   let fragment;
   if (
-    (context.to_split_headers === undefined && context.in_split_headers) ||
-    (context.to_split_headers !== undefined && context.to_split_headers)
+    // Linking to the toplevel of the current output path.
+    target_id_ast.id === context.options.toplevel_id ||
+    // Linking to the toplevel ID of another output path.
+    target_id_ast.first_toplevel_child ||
+    // Linking towards a split header.
+    (
+      (context.to_split_headers === undefined && context.in_split_headers) ||
+      (context.to_split_headers !== undefined && context.to_split_headers)
+    )
   ) {
     fragment = '';
   } else {
-    if (target_id_ast.first_toplevel_child) {
-      fragment = '';
+    if (
+      // The header was included inline into the current file.
+      context.include_path_set.has(target_input_path) ||
+      // The header is in the current file.
+      (target_input_path == context.options.input_path)
+    ) {
+      fragment = remove_toplevel_scope(target_id_ast, context);
     } else {
-      if (
-        // The header was included inline into the current file.
-        context.include_path_set.has(target_input_path) ||
-        // The header is in the current file.
-        (target_input_path == context.options.input_path)
-      ) {
-        fragment = remove_toplevel_scope(target_id_ast, context);
+      const file_provider_ret = context.options.file_provider.get(target_input_path);
+      if (file_provider_ret === undefined) {
+        let message = `file not found on database: "${target_input_path}", needed for toplevel scope removal`;
+        render_error(context, message, target_id_ast.source_location);
+        return error_message_in_output(message, context);
       } else {
-        const file_provider_ret = context.options.file_provider.get(target_input_path);
-        if (file_provider_ret === undefined) {
-          let message = `file not found on database: "${target_input_path}", needed for toplevel scope removal`;
-          render_error(context, message, target_id_ast.source_location);
-          return error_message_in_output(message, context);
+        if (file_provider_ret.toplevel_id === target_id_ast.id) {
+          fragment = target_id_ast.id;
         } else {
-          if (file_provider_ret.toplevel_id === target_id_ast.id) {
-            fragment = target_id_ast.id;
-          } else {
-            fragment = target_id_ast.id.substr(file_provider_ret.toplevel_scope_cut_length);
-          }
+          fragment = target_id_ast.id.substr(file_provider_ret.toplevel_scope_cut_length);
         }
       }
     }

@@ -1,5 +1,5 @@
 $caption-margin-bottom: 5px;
-$p-margin-vert: 16px;
+$p-margin-vert: 14px;
 
 // Light
 $a-color: #0000EE;
@@ -167,6 +167,11 @@ pre {
 
 ol, ul {
   padding-left: 30px;
+  li {
+    // https://github.com/cirosantilli/cirodown/issues/68
+    margin-bottom: $p-margin-vert;
+    margin-top: $p-margin-vert;
+  }
 }
 
 // Table of contents.
@@ -180,6 +185,11 @@ ol, ul {
   ul {
     border-left: 1px solid black;
     list-style-type: none;
+    li {
+      // https://github.com/cirosantilli/cirodown/issues/68
+      margin-bottom: 4px;
+      margin-top: 4px;
+    }
   }
   > ul {
     border-left: 0px solid black;

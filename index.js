@@ -839,7 +839,7 @@ class AstNode {
       synonym:    this.synonym,
       word_count: this.word_count,
     }
-    const args_given = Object.assign({}, this.args)
+    const args_given = { ...this.args }
     for (const argname in this.args) {
       if (
         argname in this.validation_output &&
@@ -1196,7 +1196,7 @@ class MacroArgument {
    * @param {String} name
    */
   constructor(options) {
-    options = Object.assign({}, options)
+    options = { ...options }
     if (!('elide_link_only' in options)) {
       // If the only thing contained in this argument is a single
       // Macro.LINK_MACRO_NAME macro, AST post processing instead extracts
@@ -2770,7 +2770,7 @@ async function convert(
     if (context.options.split_headers) {
       // Reset katex_macros to the ourbigbook.json defaults, otherwise
       // macros will get redefiend in the split render, as they are redefined on every render.
-      context.katex_macros = Object.assign({}, context.options.katex_macros);
+      context.katex_macros = { ...context.options.katex_macros }
       const content = toplevel_ast.args.content;
       // Gather up each header (must be a direct child of toplevel)
       // and all elements that belong to that header (up to the next header).
@@ -2892,8 +2892,8 @@ function render_ast_list({ asts, context, first_toplevel, header_count, split })
       header_count === 1
     )
   ) {
-    context = Object.assign({}, context);
-    const options = Object.assign({}, context.options);
+    context = { ...context }
+    const options = { ...context.options }
     context.options = options;
     const first_ast = clone_object(asts[0]);
     if (!first_toplevel) {
@@ -2939,7 +2939,7 @@ function render_ast_list({ asts, context, first_toplevel, header_count, split })
     let rendered_outputs_entry = {}
     if (output_path !== undefined) {
       // root_relpath
-      options.template_vars = Object.assign({}, options.template_vars);
+      options.template_vars = { ...options.template_vars }
       const new_root_relpath = get_root_relpath(output_path, context)
       context.root_relpath_shift = path.relative(
         options.template_vars.root_relpath,
@@ -3010,7 +3010,7 @@ async function parse_include(
   href,
   options={}
 ) {
-  convert_options = Object.assign({}, convert_options);
+  convert_options = { ...convert_options }
   convert_options.from_include = true;
   convert_options.h_parse_level_offset = cur_header_level;
   convert_options.input_path = input_path;
@@ -3048,7 +3048,7 @@ function convert_id_arg(arg, context) {
 }
 
 function convert_init_context(options={}, extra_returns={}) {
-  options = Object.assign({}, options);
+  options = { ...options }
   if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
   if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
   if (!('body_only' in options)) { options.body_only = false; }
@@ -3252,7 +3252,7 @@ function convert_init_context(options={}, extra_returns={}) {
     options.template_styles_relative = [];
   }
   if ('template_vars' in options) {
-    options.template_vars = Object.assign({}, options.template_vars);
+    options.template_vars = { ...options.template_vars }
   } else {
     options.template_vars = {};
   }
@@ -3385,7 +3385,7 @@ function convert_init_context(options={}, extra_returns={}) {
   extra_returns.errors = [];
   extra_returns.rendered_outputs = {};
   const context = {
-    katex_macros: Object.assign({}, options.katex_macros),
+    katex_macros: { ...options.katex_macros },
     in_split_headers: false,
     in_parse: false,
     errors: [],
@@ -8964,9 +8964,9 @@ const OUTPUT_FORMATS_LIST = [
           let ourbigbookLink
           if (context.options.ourbigbook_json.web.linkFromHeaderMeta) {
             // Same procedure that can be done from ourbigbook.json to redirect every link out.
-            const newContext = Object.assign({}, context);
-            const newOptions = Object.assign({}, context.options);
-            const newOurbigbookJson = Object.assign({}, context.options.ourbigbook_json);
+            const newContext = { ...context }
+            const newOptions = { ...context.options }
+            const newOurbigbookJson = { ...context.options.ourbigbook_json }
             newContext.options = newOptions
             newOptions.ourbigbook_json = newOurbigbookJson
             newContext.to_split_headers = true

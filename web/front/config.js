@@ -26,6 +26,7 @@ module.exports = {
     html_x_extension: false,
     magic_leading_at: false,
     path_sep: '/',
+    remove_leading_at: true,
   },
   convertOptionsJson: {
     h: {

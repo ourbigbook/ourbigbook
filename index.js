@@ -3921,7 +3921,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         return undefined;
       }
     }
-    return line_to_id_array[index][1];
+    return remove_toplevel_scope(line_to_id_array[index][1], context.toplevel_ast, context);
   };
   let macro_count_global = 0
   const macro_counts = {};

@@ -339,7 +339,12 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
       if (file_row !== undefined) {
         const mtime = fs.statSync(input_path).mtime
         if (ourbigbook_options.render) {
-          timestamp_skip = non_ourbigbook_options.commander.renderTimestamp && file_row.last_render !== null && file_row.last_render > mtime
+          timestamp_skip = non_ourbigbook_options.commander.renderTimestamp &&
+            file_row.last_render !== null &&
+            file_row.last_render > mtime &&
+            // Some day we might have one timestamp per output format. But lazy now, just never use
+            // timestamp for --format-source.
+            !non_ourbigbook_options.commander.formatSource
         } else {
           timestamp_skip = file_row.last_parse !== null && file_row.last_parse > mtime
         }

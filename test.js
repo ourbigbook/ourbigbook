@@ -326,7 +326,7 @@ function assert_convert_ast(
         }
       }
       for (const key in options.assert_bigb) {
-        assert.strictEqual(options.assert_bigb[key], rendered_outputs[key].full);
+        assert.strictEqual(rendered_outputs[key].full, options.assert_bigb[key]);
       }
       for (const key in options.assert_xpath) {
         const output = rendered_outputs[key];
@@ -6174,6 +6174,22 @@ assert_lib('bigb output: checks target IDs to decide between plural or not on co
 <dog>{p}
 `,
     }
+  }
+);
+assert_lib('bigb output: unused ID check does not blow up across files with magic plural',
+  {
+    filesystem: {
+      'index.bigb': `= Index
+
+<dogs>
+`,
+      'notindex.bigb': `= Notindex
+
+== Dog
+`,
+    },
+    convert_dir: true,
+    extra_convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
   }
 );
 

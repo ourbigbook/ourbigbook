@@ -649,6 +649,15 @@ function git_has_commit(input_path) {
   }
 }
 
+function git_is_in_repo(input_path) {
+  try {
+    cmd_get_stdout('git', ['-C', input_path, 'status'], {throw_on_error: true})
+    return true
+  } catch(err) {
+    return false
+  }
+}
+
 /**
  * @return {String} full Git SHA of the source.
  */
@@ -900,6 +909,10 @@ if (commander.helpMacros) {
     outdir = commander.outdir;
   }
   if (commander.generate) {
+    let generate = commander.generate
+    if (generate === 'subdir') {
+      outdir = path.join(outdir, 'docs')
+    }
     fs.mkdirSync(outdir, {recursive: true});
 
     // Generate package.json.
@@ -930,11 +943,11 @@ if (commander.helpMacros) {
     const new_cirodown_json = {};
     let title = 'Cirodown Template';
     let multifile
-    if (commander.generate === 'default') {
+    if (generate === 'default') {
       renderTemplate('not-readme.ciro', outdir, {});
       multifile = true
     } else {
-      title += ' ' + commander.generate
+      title += ' ' + generate
       multifile = false
     }
     renderTemplate('README.ciro', outdir, {
@@ -1066,8 +1079,8 @@ if (commander.helpMacros) {
 
         if (publish) {
           // Clone the source to ensure that only git tracked changes get built and published.
-          if (!fs.existsSync(path.join(inputPath, '.git'))) {
-            cli_error('--publish must point to the root of a git repository');
+          if (!git_is_in_repo(inputPath)) {
+            cli_error('--publish must point to a path inside a git repository');
           }
           remote_url = cmd_get_stdout('git', ['-C', inputPath, 'config', '--get', 'remote.origin.url'], cmd_options).slice(0, -1);
           src_branch = cmd_get_stdout('git', ['-C', inputPath, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options).slice(0, -1);

@@ -4,7 +4,7 @@ Markup language + static site generator to write complex structured wikis/books/
 
 * https://cirosantilli.com[]: showcase demo document with interesting content. Primary inspiration for Cirodown development.
   * https://cirosantilli.com/oxford-nanopore-river-bacteria[]: a tutorial style part of the above. Note how internal links integrate seamlessly into the more global topic of biology.
-* https://github.com/cirosantilli/cirosantilli.github.io[]: source of the above showcase document
+  * https://github.com/cirosantilli/cirosantilli.github.io[] and https://github.com/cirosantilli/cirosantilli.github.io/blob/dev/oxford-nanopore-river-bacteria.ciro[]: source of the above showcase documents
 * \x[design-goals]{full}: feature overview
 * https://github.com/cirosantilli/cirodown[]: Cirodown source code
 * https://github.com/cirosantilli/cirodown/blob/master/README.ciro[]: source for this document
@@ -3843,9 +3843,10 @@ Keep in mind that certain things can never be embedded, e.g.:
 = `--generate`
 {parent=cirodown-executable-options}
 
-Generate template repositories locally:
+Generate one of the template repositories locally:
 * `cirodown --generate default`: https://github.com/cirosantilli/cirodown-template
 * `cirodown --generate simple`: https://github.com/cirosantilli/cirodown-template-simple
+* `cirodown --generate subdir`: https://github.com/cirosantilli/cirodown-template-subdir
 
 End users almost never want this, because it means that to have a sane setup you need to:
 * install Cirodown globally with `npm install -g cirodown`

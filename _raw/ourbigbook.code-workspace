@@ -1,0 +1,31 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../ourbigbook-private-data"
+		}
+	],
+	"settings": {
+		"cSpell.words": [
+			"Ourbigbook"
+		],
+        "files.exclude": {
+            "**/.git/**": true,
+            "**/_out/**": true,
+            "**/.next/**": true
+        },
+        "files.watcherExclude": {
+            "**/.git/**": true,
+            "**/_out/**": true,
+            "**/.next/**": true
+        },
+        "search.exclude": {
+            "**/.git/**": true,
+            "**/_out/**": true,
+            "**/.next/**": true
+        },
+        "editor.detectIndentation": false,
+	}
+}

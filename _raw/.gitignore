@@ -1,0 +1,37 @@
+.sass-cache
+/_out
+node_modules
+
+# Custom ignores. Everything above this section, gets automatically parsed
+# and used by the default template generation!
+!/editor.html
+/dist
+/my_node_modules
+/template/repos
+gitignore
+
+# Temporary files.
+tmp
+tmp.*
+*.tmp
+*.tmp.*
+tmp2.bigb
+logo.png
+logo-circle.png
+
+# web/
+/!web/**/*.css
+/!web/**/*.html
+/web/build
+/web/db.sqlite3
+/web/.env
+
+# next.js
+/web/.next/
+/web/out/
+/web/.now/
+/web/.now
+
+# PostgreSQL dumps.
+*.dump
+latest.dump.*

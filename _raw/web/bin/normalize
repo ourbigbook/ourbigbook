@@ -1,0 +1,37 @@
+#!/usr/bin/env node
+// https://docs.ourbigbook.com/file/web/bin/normalize
+
+const path = require('path')
+
+const commander = require('commander')
+
+const models = require('../models')
+
+// main
+const program = commander.program
+
+program.description('View, check or update (i.e. normalize redundant database data: https://docs.ourbigbook.com/ourbigbook-web-dynamic-article-tree https://docs.ourbigbook.com/_file/web/bin/normalize')
+program.option('-c, --check', 'check if something is up-to-date', false);
+program.option('-f, --fix', 'fix before printing', false);
+program.option('-p, --print', 'print the final state after any update if any', false);
+program.option(
+  '-u, --username <username>',
+  'which user to check or fix for. If not given do it for all users. Can be given multiple times.',
+  (value, previous) => previous.concat([value]),
+  [],
+);
+program.parse(process.argv);
+const opts = program.opts()
+const whats = program.args
+const sequelize = models.getSequelize(path.dirname(__dirname))
+;(async () => {
+  await models.normalize({
+    check: opts.check,
+    fix: opts.fix,
+    log: true,
+    print: opts.print,
+    sequelize,
+    usernames: opts.username,
+    whats,
+  })
+})().finally(() => { return sequelize.close() });

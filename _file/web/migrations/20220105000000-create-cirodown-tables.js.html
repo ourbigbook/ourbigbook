@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>20220105000000-create-cirodown-tables.js - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg">
+</head>
+<body>
+<header
+<div class="brand-group">
+<a href="../../../" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo">OurBigBook Docs</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../_raw/logo.svg" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="20220105000000-create-cirodown-tables.js"><div class="notnav"><h1><a href="">web/migrations/20220105000000-create-cirodown-tables.js</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir/">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/migrations">migrations</a> / <a href="../../../_raw/web/migrations/20220105000000-create-cirodown-tables.js">20220105000000-create-cirodown-tables.js</a></b></div></nav></div><div class="p"><b>web/migrations/20220105000000-create-cirodown-tables.js</b></div><div class="code"><div><pre><code>// This is just a toy migration, to do it correctly we would have had to
+// actually create new File/Id/Ref objects for existing articles.
+module.exports = {
+  up: async (queryInterface, Sequelize) =&gt; queryInterface.sequelize.transaction(async transaction =&gt; {
+    const DataTypes = Sequelize.DataTypes
+    await Promise.all([
+      queryInterface.createTable(
+        'File',
+        {
+          id: {
+            type: Sequelize.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          path: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+            unique: true,
+          },
+          toplevel_id: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+            unique: true,
+          },
+          last_parse: {
+            type: DataTypes.DATE,
+            allowNull: true,
+          },
+          last_render: {
+            type: DataTypes.DATE,
+            allowNull: true,
+          },
+        },
+        {
+          indexes: [
+            { fields: ['last_parse'], },
+            { fields: ['last_render'], },
+            { fields: ['path'], },
+            { fields: ['toplevel_id'], },
+          ],
+          transaction,
+        }
+      ),
+      queryInterface.createTable(
+        'Id',
+        {
+          id: {
+            type: Sequelize.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          idid: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+          },
+          path: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+          },
+          ast_json: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+          },
+          macro_name: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+          },
+        },
+        {
+          indexes: [
+            { fields: ['idid'], },
+            { fields: ['path'], },
+          ],
+          transaction,
+        }
+      ),
+      queryInterface.createTable(
+        'Ref',
+        {
+          id: {
+            type: Sequelize.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          from_id: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+          },
+          defined_at: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+          },
+          to_id: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+          },
+          to_id_index: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+          },
+          type: {
+            type: DataTypes.TINYINT,
+            allowNull: false,
+          },
+        },
+        {
+          indexes: [
+            { fields: ['defined_at'], },
+            { fields: ['from_id', 'type'], },
+            { fields: ['to_id', 'type'], },
+            {
+              fields: ['from_id', 'defined_at', 'to_id', 'type'],
+              unique: true
+            },
+          ],
+          transaction,
+        }
+      ),
+    ])
+  }),
+  down: async (queryInterface, Sequelize) =&gt; queryInterface.sequelize.transaction(async transaction =&gt; {
+    await Promise.all([
+      await queryInterface.dropTable('File', { transaction }),
+      await queryInterface.dropTable('Id', { transaction }),
+      await queryInterface.dropTable('Ref', { transaction }),
+    ])
+  }),
+};
+</code></pre></div></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/migrations/";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

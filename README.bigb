@@ -4452,13 +4452,11 @@ the link treated magically as follows:
 
   If we had a scope as in `\x[my scope/Internal references]`, then each scope part is checked separately. E.g. in this case we would have upper case `Internal references`, even though `my scope` is lowercase, and so `{c}` would be set.
 * the ID is calculated as follows:
-  * if the ID starts with `file/`, use it as is, to work better with the <\H file argument>
-  * otherwise:
-    * <automatic ID from title> conversion is performed, with you exception: forwards slashs `/` are kept, in order to make <scopes> work.
+  * <automatic ID from title> conversion is performed, with you exception: forwards slashs `/` are kept, in order to make <scopes> work.
 
-      In our case, there aren't any slashes `/`, so it just gives `internal-references`. But if instead we had e.g.: `\x[my scope/internal reference]{magic}`, then we would reach `my-scope/internal-reference` and not `my-scope-internal-reference`.
-    * if there is a match to an existing ID use it. `internal-references` in the plural does not match, so go to the next step
-    * if the above failed, try singularizing the last word as in the <\x p argument> with `p=0` before doing <automatic ID from title> conversion. This gives `internal-reference`, which does exist, and so we use that.
+    In our case, there aren't any slashes `/`, so it just gives `internal-references`. But if instead we had e.g.: `\x[my scope/internal reference]{magic}`, then we would reach `my-scope/internal-reference` and not `my-scope-internal-reference`.
+  * if there is a match to an existing ID use it. `internal-references` in the plural does not match, so go to the next step
+  * if the above failed, try singularizing the last word as in the <\x p argument> with `p=0` before doing <automatic ID from title> conversion. This gives `internal-reference`, which does exist, and so we use that.
 
 There may be some cases where you might still want to use <cross reference title inflection> however, see: <inflection vs magic>{full}.
 
@@ -7820,7 +7818,7 @@ The tests include two broad classes of tests:
 * TODO: create frontend tests: https://github.com/cirosantilli/node-express-sequelize-nextjs-realworld-example-app/issues/11
 
 = OurBigBook Web run unit tests in PostgreSQL
-{parent=OurBigBook Web development}
+{parent=OurBigBook Web unit tests}
 
 To run the tests on PostgreSQL instead of the default SQLite, first setup the test database analogously to <local run as identical to deployment as possible>:
 ``
@@ -7842,7 +7840,7 @@ DATABASE_URL_TEST=postgres://realworld_next_user:a@localhost:5432/realworld_next
 ``
 We don't use `DATABASE_URL` when running tests as a safeguard to reduce the likelihood of accidentally nuking the production database.
 
-The test database contains the state of the latest test run at the end of the run. You can inspect it with <web/bin/psql>{full} with:
+The test database contains the state of the latest test run at the end of the run. You can inspect it with <web/bin/psql>{file} with:
 ``
 bin/psql -d ourbigbook_test
 ``

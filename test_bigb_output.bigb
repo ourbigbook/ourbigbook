@@ -34,6 +34,8 @@ Insane ref plural: <black cats>.
 
 Insane ref full: <black cats>{full}.
 
+Sane xref that cannot be converted to insane: \x[[$]]
+
 Insane ref with greater than: <greater than>
 
 Inline code block: `f(x + 1)[]` after.
@@ -373,6 +375,9 @@ World
 
 == My tagged
 {tag=My Tag}
+
+== Dollar
+{{id=$}}
 
 == Greater > than
 

@@ -11,31 +11,21 @@
 
 === CLI
 
+=== Lib
+
 === Bug
+
+=== Scope
 
 === ToC
 
 == Issues
 
-=== Prop dangerouslySetInnerHtml did not match on some pages
-{tag=Web}
-
-Happens on some pages but not others, e.g. `barack-obama/ciro-santilli`.
-
-=== h2 self links are empty on Web
-{tag=Web}
-
-And therefore lead users to the toplevel page instead of a link to current header.
-
-=== Separate lines with field label for parent and previous sibling on web editor
-{tag=Web}
-
-Otherwise too confusing what is what when fields are pre-filled, e.g. when editing existing, and in the future when clicking a "add here" button.
-
-=== Don't move to a separate page when clicking link to image to another header that is already visible on current page on web
-{tag=Web}
+=== Missing header metadata such as like button, same topic and issue link on headers under a scope
+{tag=Scope}
 
 === Headers under scope don't have scope on ID leads to ID conflicts and a link misses on Web
+{tag=Scope}
 {tag=Web}
 
 E.g. in:
@@ -60,13 +50,10 @@ We could also have two versions of every page, scoped and non scoped, but things
 
 This could mean that a lot of toplevel scope removal work will go to the trash! :-( But what can you do, it is the inevitable outcome of dynamic page fetch?
 
-=== Each header tag shows up twice on web
+=== Separate lines with field label for parent and previous sibling on web editor
 {tag=Web}
 
-=== Skip absolute link exit check on web
-{tag=Web}
-
-Maybe: https://stackoverflow.com/questions/10687099/how-to-test-if-a-url-string-is-absolute-or-relative
+Otherwise too confusing what is what when fields are pre-filled, e.g. when editing existing, and in the future when clicking a "add here" button.
 
 === Add sibling/add child buttons next to self headers and toc
 {tag=Web}
@@ -77,9 +64,20 @@ Maybe: https://stackoverflow.com/questions/10687099/how-to-test-if-a-url-string-
 Maybe some will be list by default, but some will definitely be article show by default. Notably topic has to show the rendered body by default.
 
 === Allow creating new pages under scope
+{tag=Scope}
 {tag=Web}
 
 We likely just have to set the `path:` API argument based on the has scope status of the parent article.
+
+=== Remove all unnecessary newlines from HTML output
+{tag=Lib}
+
+These newlines were added for debugging purpoes, but debugging should just be done with:
+``
+npx js-beautify min.html
+``
+
+Newlines just add complexity to our codebase, and are not even getting removed from final output as things stand to take up a little bit of useless space.
 
 === Prefix unnumbered IDs with the parent header's ID
 {tag=Dynamic tree fetch}
@@ -93,6 +91,7 @@ We likely just have to set the `path:` API argument based on the has scope statu
 {tag=Web}
 
 === Remove scope from toc entry IDs
+{tag=Scope}
 {tag=CLI}
 
 Happens on CLI and Web, though the web one is a bit artificial.
@@ -136,13 +135,68 @@ It seems that the third party library we are using is just a hack and doesn't pr
 
 == Closed issues
 
+=== Tags show up twice under scopes
+{tag=Web}
+
+=== Each header tag shows up twice on web
+{synonym}
+
+Happens on CLI, though was first noticed, and most important, on Web due to the all present user prefix.
+
+Was already fully present on the previous deployment but we just completely missed it, e.g.: https://ourbigbook.com/cirosantilli/physics#physics-education-needs-more-focus-on-understanding-experiments-and-their-history
+
+Minimal CLI example to reproduce:
+
+subdir/asdf.bigb
+
+``
+= asdf
+``
+
+subdir/qwer.bigb
+
+``
+= qwer
+{tag=asdf}
+``
+
+Then in the rendering of `subdir/qwer.html`, the tag `asdf` appears twice.
+
+The root cause is that scope resolution is finding the same thing twice, one as `subdir/asdf` and then once again with just `asdf` (which is then correctly resolved).
+
+=== h2 self links are empty on Web
+{tag=Web}
+
+And therefore lead users to the toplevel page instead of a link to current header.
+
+TODO can't reproduce anymore. Find exact reproducer page?
+
+=== Skip absolute link exit check on web
+{tag=Web}
+
+Maybe: https://stackoverflow.com/questions/10687099/how-to-test-if-a-url-string-is-absolute-or-relative
+
+=== Prop dangerouslySetInnerHtml did not match on some pages
+{tag=Web}
+
+Happens on some pages but not others, e.g. `barack-obama/ciro-santilli`.
+
+OK: that simply happens due to invalid HTML constructs:
+* https://stackoverflow.com/questions/58266356/what-is-happening-such-i-receive-dangerouslysetinnerhtml-warning-and-empty-conte
+* https://flaviocopes.com/react-fix-dangerouslysetinnerhtml-did-not-match/
+and we had invalid or implicitly self closing HTML at: <self links broken on ciro-santilli starting at Budget transparency>.
+
 === Self links broken on /ciro-santilli starting at Budget transparency
 
 There is some kind of fundamentally wrong HTML content being rendered, not Web specific: https://cirosantilli.com/sponsor#budget-transparency
 
-Resolution: was due to missing a close tag. It was even valid HTML OMG, but wront semantic. What a stack.
+Resolution: was due to missing a close tag that appeared when we used `\Quote` with `title`. It was even valid HTML OMG, but wront semantic. What a stack.
+
+=== Don't move to a separate page when clicking link to image to another header that is already visible on current page on web
+{tag=Web}
 
 === Don't move to a separate page when clicking toc links in a page that has scope on web
+{tag=Scope}
 {tag=Web}
 
 === Wiki link on same line as parent link on web h1
@@ -173,6 +227,7 @@ It is broken, and lazy to fix now.
 Can be fixed later at: <word count on web>.
 
 === Fix ToC links on web, missing scope
+{tag=Scope}
 {tag=Dynamic tree fetch}
 {tag=Web}
 

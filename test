@@ -13,7 +13,7 @@ const convert_opts = {
   //show_tokenize: true,
 };
 
-const assert_convert = function(input_string, expected_output) {
+const assert_convert_func = function(input_string, expected_output) {
   let extra_returns = {fail: false};
   let output = cirodown.convert(input_string, convert_opts, extra_returns);
   if (output !== expected_output || extra_returns.errors.length !== 0) {
@@ -34,7 +34,7 @@ const assert_convert = function(input_string, expected_output) {
   }
 }
 
-const assert_error = function(input_string, line, column) {
+const assert_error_func = function(input_string, line, column) {
   let extra_returns = {fail: false};
   let output = cirodown.convert(input_string, convert_opts, extra_returns);
   assert.ok(extra_returns.errors.length >= 1);
@@ -43,13 +43,24 @@ const assert_error = function(input_string, line, column) {
   assert.strictEqual(error.column, column);
 }
 
+const assert_convert = function(description, input, output) {
+  it(description, ()=>{assert_convert_func(input, output);});
+}
+
+const assert_error = function(description, input, line, column) {
+  it(description, ()=>{assert_error_func(input, line, column);});
+}
+
 // Paragraphs.
-it('one paragraph', ()=>{assert_convert('\\p[ab]\n', '<p>ab</p>\n');});
-it('two paragraphs', ()=>{assert_convert('p1\n\np2\n', '<p>p1</p>\n<p>p2</p>\n');});
-it('three paragraphs', ()=>{assert_convert('p1\n\np2\n\np3\n', '<p>p1</p>\n<p>p2</p>\n<p>p3</p>\n');});
+assert_convert('one paragraph', '\\p[ab]\n', '<p>ab</p>\n');
+assert_convert('two paragraphs', 'p1\n\np2\n', '<p>p1</p>\n<p>p2</p>\n');
+assert_convert('three paragraphs',
+  'p1\n\np2\n\np3\n',
+  '<p>p1</p>\n<p>p2</p>\n<p>p3</p>\n'
+);
 
 // List.
-it('l with implicit ul', ()=>{assert_convert(
+assert_convert('l with implicit ul',
   `ab
 
 \\l[cd]
@@ -63,35 +74,35 @@ gh`,
 </ul>
 <p>gh</p>
 `
-);});
+);
 
 // Escapes.
-it('escape backslash',            ()=>{assert_convert('a\\\\b\n', 'a\\b\n')});
-it('escape left square bracket',  ()=>{assert_convert('a\\[b\n',  'a[b\n')});
-it('escape right square bracket', ()=>{assert_convert('a\\]b\n',  'a]b\n')});
-it('escape left curly brace',     ()=>{assert_convert('a\\{b\n',  'a{b\n')});
-it('escape right curly brace',    ()=>{assert_convert('a\\}b\n',  'a}b\n')});
+assert_convert('escape backslash',            'a\\\\b\n', 'a\\b\n');
+assert_convert('escape left square bracket',  'a\\[b\n',  'a[b\n');
+assert_convert('escape right square bracket', 'a\\]b\n',  'a]b\n');
+assert_convert('escape left curly brace',     'a\\{b\n',  'a{b\n');
+assert_convert('escape right curly brace',    'a\\}b\n',  'a}b\n');
 
 // HTML Escapes.
-it('html escapes', ()=>{assert_convert(
+assert_convert('html escapes',
   '\\a[ab&<>"\'cd][ef&<>"\'gh]\n',
   '<a href="ab&amp;&lt;&gt;&quot;&#039;cd">ef&amp;&lt;&gt;"\'gh</a>\n'
-)});
+);
 
 // Positional arguments.
-it('p with no content argument', ()=>{assert_convert('\\p\n', '<p></p>\n')});
-it('p with empty content argument', ()=>{assert_convert('\\p[]\n', '<p></p>\n')});
+assert_convert('p with no content argument', '\\p\n', '<p></p>\n');
+assert_convert('p with empty content argument', '\\p[]\n', '<p></p>\n');
 
 // Named arguments.
-it('p with id before', ()=>{assert_convert('\\p{id=ab}[cd]\n', '<p id="ab">cd</p>\n')});
-it('p with id after', ()=>{assert_convert('\\p[cd]{id=ab}\n', '<p id="ab">cd</p>\n')});
+assert_convert('p with id before', '\\p{id=ab}[cd]\n', '<p id="ab">cd</p>\n');
+assert_convert('p with id after', '\\p[cd]{id=ab}\n', '<p id="ab">cd</p>\n');
 
 // Literal arguments.
-it('literal argument code inline', ()=>{assert_convert(
+assert_convert('literal argument code inline',
   '\\c[[\\ab[cd]{ef}]]\n',
   '<code>\\ab[cd]{ef}</code>\n'
-)});
-it('literal argument code block', ()=>{assert_convert(
+);
+assert_convert('literal argument code block',
   `a
 
 \\C[[
@@ -107,8 +118,8 @@ d
 </code></pre>
 <p>d</p>
 `
-)});
-it("non-literal argument leading newline gets removed", ()=>{assert_convert(
+);
+assert_convert("non-literal argument leading newline gets removed",
   `\\p[
 a
 b
@@ -118,8 +129,8 @@ b
 b
 </p>
 `
-)});
-it('literal argument leading newline gets removed', ()=>{assert_convert(
+);
+assert_convert('literal argument leading newline gets removed',
   `\\p[[
 a
 b
@@ -129,8 +140,8 @@ b
 b
 </p>
 `
-)});
-it('literal argument leading newline gets removed but not second', ()=>{assert_convert(
+);
+assert_convert('literal argument leading newline gets removed but not second',
   `\\p[[
 
 a
@@ -142,52 +153,52 @@ a
 b
 </p>
 `
-)});
-it('literal agument escape leading open no escape', ()=>{assert_convert(
+);
+assert_convert('literal agument escape leading open no escape',
   '\\c[[\\ab]]\n',
   '<code>\\ab</code>\n'
-)});
-it('literal agument escape leading open one backslash', ()=>{assert_convert(
+);
+assert_convert('literal agument escape leading open one backslash',
   '\\c[[\\[ab]]\n',
   '<code>[ab</code>\n'
-)});
-it('literal agument escape leading open two backslashes', ()=>{assert_convert(
+);
+assert_convert('literal agument escape leading open two backslashes',
   '\\c[[\\\\[ab]]\n',
   '<code>\\[ab</code>\n'
-)});
-it('literal agument escape trailing close no escape', ()=>{assert_convert(
+);
+assert_convert('literal agument escape trailing close no escape',
   '\\c[[\\]]\n',
   '<code>\\</code>\n'
-)});
-it('literal agument escape trailing one backslash', ()=>{assert_convert(
+);
+assert_convert('literal agument escape trailing one backslash',
   '\\c[[\\]]]\n',
   '<code>]</code>\n'
-)});
-it('literal agument escape trailing two backslashes', ()=>{assert_convert(
+);
+assert_convert('literal agument escape trailing two backslashes',
   '\\c[[\\\\]]]\n',
   '<code>\\]</code>\n'
-)});
+);
 
 // Links.
-it('link simple', ()=>{assert_convert(
+assert_convert('link simple',
   'a \\a[http://example.com][example link] b\n',
   'a <a href="http://example.com">example link</a> b\n'
-)});
-it('link auto', ()=>{assert_convert(
+);
+assert_convert('link auto',
   'a \\a[http://example.com] b\n',
   'a <a href="http://example.com">http://example.com</a> b\n'
-)});
-it('link with multiple paragraphs', ()=>{assert_convert(
+);
+assert_convert('link with multiple paragraphs',
   '\\a[http://example.com][Multiple\n\nparagraphs]\n',
   '<a href="http://example.com"><p>Multiple</p>\n<p>paragraphs</p>\n</a>\n'
-)});
+);
 
 // Headers.
-it('header simple', ()=>{assert_convert(
+assert_convert('header simple',
   '\\h[1][My header]\n',
   '<h1 id="my-header">My header</h1>\n'
-)});
-it('header and implicit paragraphs', ()=>{assert_convert(
+);
+assert_convert('header and implicit paragraphs',
   `\\h[1][My header 1]
 
 My paragraph 1.
@@ -201,14 +212,14 @@ My paragraph 2.
 <h2 id="my-header-2">My header 2</h2>
 <p>My paragraph 2.</p>
 `
-)});
+);
 
 // Code.
-it('code inline', ()=>{assert_convert(
+assert_convert('code inline',
   'a \\c[b c] d\n',
   'a <code>b c</code> d\n'
-)});
-it('code block simple', ()=>{assert_convert(
+);
+assert_convert('code block simple',
   `a
 
 \\C[[
@@ -224,16 +235,16 @@ c
 </code></pre>
 <p>d</p>
 `
-)});
+);
 
 // Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception.
 // TODO
-//it('backslash without macro', ()=>{assert_error('\\ a', 1, 1)});
-it('unknown macro', ()=>{assert_error('\\reserved_undefined', 1, 2)});
-it('too many positional arguments', ()=>{assert_error('\\p[ab][cd]', 1, 7)});
-it('unknown named macro argument', ()=>{assert_error('\\c{reserved_undefined=abc}[]', 1, 4)});
-it('named argument without =', ()=>{assert_error('\\p{id ab}[cd]', 1, 6)});
-//it('argument without close', ()=>{assert_error('\\p[', 1, 3)});
-//it('argument without open', ()=>{assert_error(']', 1, 1)});
-//it('unterminated literal argument', ()=>{assert_error('\\c[[ab]', 1, 3)});
+//assert_error('backslash without macro', '\\ a', 1, 1);
+assert_error('unknown macro', '\\reserved_undefined', 1, 2);
+assert_error('too many positional arguments', '\\p[ab][cd]', 1, 7);
+assert_error('unknown named macro argument', '\\c{reserved_undefined=abc}[]', 1, 4);
+assert_error('named argument without =', '\\p{id ab}[cd]', 1, 6);
+//assert_error('argument without close', '\\p[', 1, 3);
+//assert_error('argument without open', ']', 1, 1);
+//assert_error('unterminated literal argument', '\\c[[ab]', 1, 3;

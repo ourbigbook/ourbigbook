@@ -1075,7 +1075,7 @@ if (commander.helpMacros) {
         await generate_redirects(convert_input_options, cirodown_json, outdir);
       }
       const watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES})
-      const convert = async (subpath) => convert_path_to_file(path.join(input_dir, subpath), options, convert_input_options)
+      const convert = async (subpath) => await convert_path_to_file(path.join(input_dir, subpath), options, convert_input_options)
       watcher.on('change', convert).on('add', convert)
     } else {
       if (input_path_is_file) {
@@ -1083,7 +1083,7 @@ if (commander.helpMacros) {
           cli_error('--publish must take a directory as input, not a file');
         }
         await create_db(convert_input_options);
-        output = convert_path_to_file(inputPath, options, convert_input_options);
+        output = await convert_path_to_file(inputPath, options, convert_input_options);
       } else {
         let actual_input_dir;
         let publish_branch;

@@ -1,10 +1,15 @@
+const id = require('./id')
+const include = require('./include')
+const file = require('./file')
+const ref = require('./ref')
+
 function addModels(sequelize) {
-  const Id = require('./id')(sequelize)
-  const Include = require('./include')(sequelize)
-  const File = require('./file')(sequelize)
-  const Ref = require('./ref')(sequelize)
+  const Id = id(sequelize)
+  const Include = include(sequelize)
+  const File = file(sequelize)
+  const Ref = ref(sequelize)
 }
 
-exports = {
+module.exports = {
   addModels
 }

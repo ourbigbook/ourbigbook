@@ -87,8 +87,6 @@ npm unlink
 rm node_modules/cirodown
 ``
 
-TODO: create a multifile blog example folder and link from here.
-
 == Design goals
 
 Cirodown is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
@@ -740,7 +738,7 @@ You can force `cirodown` to not use the ID database with `--no-db`:
 If a \x[the-toplevel-header][non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:
 * do a \x[id-output-format] conversion on the title to remove for example any HTML tags that would be present in the conversion output
 * convert all of `A-Z` characters to lowercase
-* convert consecutive sequences of all non `a-z0-9` ASCII characters to a single hyphen `-`. Note that this leaves non-ASCII character untouched.
+* convert consecutive sequences of all non `a-z0-9` ASCII characters and hyphens `-` to a single hyphen `-`. Note that this leaves non-ASCII character untouched.
 * strip leading or trailing hyphens
 Note how those rules leave non ASCII Unicode characters untouched, as capitalization and determining if something "is a letter or not" in those cases can be tricky.
 
@@ -748,26 +746,21 @@ So for example, the following automatic IDs would be generated: \x[table-example
 
 \Table{title=Examples of automatically generated IDs.}
 [
-\Tr[
-  \Th[title]
-  \Th[id]
-  \Th[comments]
-]
-\Tr[
-  \Td[My favorite title]
-  \Td[my-favorite-title]
-  \Td
-]
-\Tr[
-  \Td[Ciro's markdown is awesome]
-  \Td[ciro-s-markdown-is-awesome]
-  \Td
-]
-\Tr[
-  \Td[The École Polytechnique]
-  \Td[the-École-polytechnique]
-  \Td[We leave the non ASCII uppercase https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, untouched by default]
-]
+|| title
+|| id
+|| comments
+
+| My favorite title
+| my-favorite-title
+|
+
+| Ciro's markdown is awesome
+| ciro-s-markdown-is-awesome
+|
+
+| The École Polytechnique
+| the-École-polytechnique
+| We leave the uppercase https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, untouched because it is not an ASCII character.
 ]
 
 For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the Cirodown file without extension instead of from the `title` argument.

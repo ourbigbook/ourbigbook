@@ -345,6 +345,11 @@ class AstNode {
     return out;
   }
 
+  add_argument(argname, arg) {
+    this.args[argname] = arg
+    this.setup_argument(argname, arg)
+  }
+
   /* Get parent ID, but only consider IDs that come through header_tree_node. */
   get_local_header_parent_id() {
     if (
@@ -418,57 +423,75 @@ class AstNode {
   }
 
   /** Manual implementation. There must be a better way, but I can't find it... */
-  static fromJSON(json_string) {
-    let json = JSON.parse(json_string);
-    for (const argname in json.args) {
-      const arg = json.args[argname]
-      json.args[argname] = new AstArgument(arg.asts, arg.source_location)
-    }
-    let toplevel_ast = new AstNode(
-      AstType[json.node_type],
-      json.macro_name,
-      json.args,
-      json.source_location,
-      {
-        text: json.text,
-        first_toplevel_child: json.first_toplevel_child,
-        header_tree_node_word_count: json.header_tree_node_word_count,
-        is_first_header_in_input_file: json.is_first_header_in_input_file,
-        scope: json.scope,
-        split_default: json.split_default,
-        synonym: json.synonym,
-        word_count: json.word_count,
-      }
-    );
-    let asts = [toplevel_ast];
-    while (asts.length !== 0) {
-      let cur_ast = asts.pop();
-      for (let arg_name in cur_ast.args) {
-        let arg = cur_ast.args[arg_name];
-        let new_arg = [];
-        for (let ast of arg) {
-          for (const argname in ast.args) {
-            const arg = ast.args[argname]
-            ast.args[argname] = new AstArgument(arg.asts, arg.source_location)
+  static fromJSON(json_string, context) {
+    let ast_json_toplevel = JSON.parse(json_string);
+
+    // Post order depth first convert the AST JSON tree.
+    let new_ast
+    let ast_head = ast_json_toplevel
+    const toplevel_arg = []
+    const todo_visit = [[toplevel_arg, ast_json_toplevel]];
+    while (todo_visit.length !== 0) {
+      const [parent_arg, ast_json] = todo_visit[todo_visit.length - 1];
+
+      let finishedSubtrees = false
+      let done = false
+      for (const argname in ast_json.args) {
+        for (const child_ast_json of ast_json.args[argname].asts) {
+          if (child_ast_json === ast_head) {
+            finishedSubtrees = true
+            done = true
+            break
           }
-          let new_ast = new AstNode(
-            AstType[ast.node_type],
-            ast.macro_name,
-            ast.args,
-            ast.source_location,
-            {
-              text: ast.text,
-              first_toplevel_child: ast.first_toplevel_child,
-              is_first_header_in_input_file: ast.is_first_header_in_input_file,
-            }
-          );
-          new_arg.push(new_ast);
-          asts.push(new_ast);
         }
-        arg.splice(0, new_arg.length, ...new_arg);
+        if (done) {
+          break
+        }
+      }
+
+      let isLeaf = Object.keys(ast_json.args).length === 0
+
+      if (finishedSubtrees || isLeaf) {
+        todo_visit.pop()
+
+        // Visit.
+        const new_args = {}
+        for (const arg_name in ast_json.args) {
+          const arg_json = ast_json.args[arg_name];
+          const new_arg = new AstArgument(arg_json.asts, arg_json.source_location);
+          new_args[arg_name] = new_arg
+        }
+        new_ast = new AstNode(
+          AstType[ast_json.node_type],
+          ast_json.macro_name,
+          new_args,
+          ast_json.source_location,
+          {
+            text: ast_json.text,
+            first_toplevel_child: ast_json.first_toplevel_child,
+            header_tree_node_word_count: ast_json.header_tree_node_word_count,
+            is_first_header_in_input_file: ast_json.is_first_header_in_input_file,
+            scope: ast_json.scope,
+            split_default: ast_json.split_default,
+            synonym: ast_json.synonym,
+            word_count: ast_json.word_count,
+          }
+        );
+        validate_ast(new_ast, context)
+        parent_arg.push(new_ast)
+
+        ast_head = new_ast
+      } else {
+        for (const arg_name in ast_json.args) {
+          const arg_json = ast_json.args[arg_name];
+          for (const ast_child_json of arg_json.asts.reverse()) {
+            todo_visit.push([arg_json.asts, ast_child_json]);
+          }
+          arg_json.asts.length = 0
+        }
       }
     }
-    return toplevel_ast;
+    return new_ast
   }
 
   setup_argument(argname, arg) {
@@ -4663,7 +4686,14 @@ async function parse(tokens, options, context, extra_returns={}) {
             context.has_toc = true;
           }
         } else {
-          validate_ast(ast, context);
+          if (
+            // This only happens in one known case: when you have include without embed,
+            // where we do a context.id_provider.get, and we set the attributes to it
+            // and the thing comes out of serialization validated.
+            !ast.validated
+          ) {
+            validate_ast(ast, context);
+          }
         }
 
         // Push this node into the parent argument list.

@@ -2296,6 +2296,7 @@ It is possible to enforce the <\H child argument> or the <\H tag argument> in a 
 
 = `\H` `title2` argument
 {parent=H arguments}
+{tag=`multiple` argument}
 
 The `title2` argument can be given to any element that has the `title` argument.
 

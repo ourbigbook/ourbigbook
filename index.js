@@ -1384,6 +1384,7 @@ Macro.COMMON_ARGNAMES = [
   Macro.TEST_DATA_ARGUMENT_NAME,
 ];
 Macro.COMMON_ARGNAMES_SET = new Set(Macro.COMMON_ARGNAMES)
+Macro.CONTENT_ARGUMENT_NAME = 'content';
 Macro.HEADER_MACRO_NAME = 'H';
 Macro.HEADER_CHILD_ARGNAME = 'child';
 Macro.HEADER_TAG_ARGNAME = 'tag';
@@ -4840,10 +4841,12 @@ async function parse(tokens, options, context, extra_returns={}) {
               parse_error(state, message, ast.args.level.source_location);
             }
             ast.synonym = options.cur_header.id;
-            if (ast.args.title2 !== undefined) {
-              if (ast.args.title2.length > 0) {
-                const message = `the title2 of synonym headers must be empty`;
-                parse_error(state, message, ast.args.level.source_location);
+            if (ast.args[Macro.TITLE2_ARGUMENT_NAME] !== undefined) {
+              if (ast.args[Macro.TITLE2_ARGUMENT_NAME].asts.length > 1) {
+                parse_error(state, `synonym headeres can have at most one ${Macro.TITLE2_ARGUMENT_NAME} argument`, ast.args[Macro.TITLE2_ARGUMENT_NAME].source_location);
+              }
+              if (ast.args[Macro.TITLE2_ARGUMENT_NAME].asts[0].args[Macro.CONTENT_ARGUMENT_NAME].asts.length > 0) {
+                parse_error(state, `the ${Macro.TITLE2_ARGUMENT_NAME} of synonym headers must be empty`, ast.args[Macro.TITLE2_ARGUMENT_NAME].source_location);
               }
               options.cur_header.title2s.push(ast);
             }
@@ -7319,24 +7322,22 @@ function x_text_base(ast, context, options={}) {
       const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
       const title2_arg = ast.args[Macro.TITLE2_ARGUMENT_NAME];
       const show_disambiguate = (disambiguate_arg !== undefined) && macro.options.show_disambiguate;
-      if (
-        show_disambiguate ||
-        (title2_arg !== undefined && title2_arg.asts.length > 0) ||
-        ast.title2s.length > 0
-      ) {
-        ret += ' (';
-        const title2_renders = [];
-        if (show_disambiguate) {
-          title2_renders.push(render_arg(disambiguate_arg, context));
+      const title2_renders = [];
+      if (show_disambiguate) {
+        title2_renders.push(render_arg(disambiguate_arg, context));
+      }
+      if (title2_arg !== undefined) {
+        for (const arg of title2_arg.asts.map(ast => ast.args[Macro.CONTENT_ARGUMENT_NAME])) {
+          if (arg.asts.length) {
+            title2_renders.push(render_arg(arg, context));
+          }
         }
-        if (title2_arg !== undefined) {
-          title2_renders.push(render_arg(title2_arg, context));
-        }
-        for (const title2ast of ast.title2s) {
-          title2_renders.push(render_arg(title2ast.args.title, context));
-        }
-        ret += title2_renders.join(', ');
-        ret += ')';
+      }
+      for (const title2ast of ast.title2s) {
+        title2_renders.push(render_arg(title2ast.args.title, context));
+      }
+      if (title2_renders.length) {
+        ret += ` (${title2_renders.join(', ')})`
       }
       if (options.quote) {
         ret += html_escape_context(context, `"`);
@@ -7808,7 +7809,7 @@ const DEFAULT_MACRO_LIST = [
     'Comment',
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         ourbigbook_output_prefer_literal: true,
       }),
     ],
@@ -7820,7 +7821,7 @@ const DEFAULT_MACRO_LIST = [
     'comment',
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
       }),
     ],
     {
@@ -7900,6 +7901,7 @@ const DEFAULT_MACRO_LIST = [
         }),
         new MacroArgument({
           name: Macro.TITLE2_ARGUMENT_NAME,
+          multiple: true,
         }),
         // Should I?
         //new MacroArgument({

@@ -149,5 +149,6 @@ export async function setupUserLocalStorage(data, setErrors) {
     JSON.stringify(data.user)
   );
   setCookie(AUTH_COOKIE_NAME, data.user.token)
+  mutate(AUTH_COOKIE_NAME, data.user.token)
   mutate(AUTH_LOCAL_STORAGE_NAME, data.user);
 }

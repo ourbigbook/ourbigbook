@@ -374,8 +374,13 @@ function convert_path(base_path, input_path, options, convert_input_options) {
 
   let toplevel_id;
   if (INDEX_FILE_BASENAMES_NOEXT.has(input_path_basename_noext)) {
-    // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
-    toplevel_id = path.basename(path.dirname(path.resolve(input_path)));
+    if (fs.existsSync(path.join(input_path_parse.dir, CIRODOWN_JSON))) {
+      // https://cirosantilli.com/cirodown#the-toplevel-index-file
+      toplevel_id = undefined;
+    } else {
+      // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
+      toplevel_id = path.basename(path.dirname(path.resolve(input_path)));
+    }
   } else {
     toplevel_id = input_path_basename_noext;
   }

@@ -3020,6 +3020,7 @@ bb
     convert_before: ['include-two-levels'],
   },
 );
+// https://github.com/cirosantilli/cirodown/issues/74
 assert_convert_ast('cross reference to embed include header',
   `= aa
 
@@ -3042,6 +3043,7 @@ assert_convert_ast('cross reference to embed include header',
   Object.assign({
     assert_xpath_matches: [
       "//x:div[@class='p']//x:a[@href='#include-two-levels' and text()='ee']",
+      "//x:div[@class='p']//x:a[@href='#gg' and text()='gg']",
     ]},
     include_opts
   ),
@@ -4175,7 +4177,7 @@ assert_executable(
   }
 );
 assert_executable(
-  // at cross reference to non-included header in another file
+  // At "cross reference to non-included header in another file"
   // we have a commented out stub for this without executable:
   // but it would require generalizing the test system a bit,
   // and we are lazy right now.

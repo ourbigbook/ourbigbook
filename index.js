@@ -3638,6 +3638,16 @@ async function parse(tokens, options, context, extra_returns={}) {
   if (include_options.is_first_global_header === undefined) {
     include_options.is_first_global_header = true;
   }
+  if (include_options.add_refs_to_h === undefined) {
+    include_options.add_refs_to_h = [];
+  }
+  if (include_options.add_refs_to_x === undefined) {
+    include_options.add_refs_to_x = [];
+  }
+  if (include_options.include_hrefs === undefined) {
+    include_options.include_hrefs = {};
+  }
+
   // Format:
   // refs_to[false][to_id][type]{from_id: Set[defined_at]}
   // refs_to[to][from_id][type]{to_id: Set[defined_at]}
@@ -3661,10 +3671,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   context.id_provider = id_provider;
   context.include_path_set.add(options.input_path);
   let header_file_preview_ast, header_file_preview_ast_next
-  const add_refs_to_h = []
-  const add_refs_to_x = []
   const header_ids = []
-  const include_hrefs = {}
   while (todo_visit.length > 0) {
     const [parent_arg, ast] = todo_visit.pop();
     let parent_arg_push_after = []
@@ -3764,7 +3771,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                 level: parent_ast_header_level + 1,
               },
             );
-            include_hrefs[href] = header_ast
+            include_options.include_hrefs[href] = header_ast
             header_ast.header_graph_node = new HeaderTreeNode(header_ast, parent_ast_header_graph_node);
             parent_ast_header_graph_node.add_child(header_ast.header_graph_node);
             new_child_nodes = [
@@ -3850,7 +3857,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           {
             'content': await parse_include(
               render_arg_noescape(ast.args.content, context),
-              clone_and_set(options, 'from_cirodown_example', true),
+              clone_and_set(include_options, 'from_cirodown_example', true),
               0,
               options.input_path,
               undefined,
@@ -4193,17 +4200,17 @@ async function parse(tokens, options, context, extra_returns={}) {
         const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
         if (children !== undefined) {
           for (let child of children) {
-            add_refs_to_h.push({ ast, child: true, content: child.args.content, type: REFS_TABLE_X_CHILD })
+            include_options.add_refs_to_h.push({ ast, child: true, content: child.args.content, type: REFS_TABLE_X_CHILD })
           }
         }
         const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
         if (tags !== undefined) {
           for (let tag of tags) {
-            add_refs_to_h.push({ ast, child: false, content: tag.args.content, type: REFS_TABLE_X_CHILD })
+            include_options.add_refs_to_h.push({ ast, child: false, content: tag.args.content, type: REFS_TABLE_X_CHILD })
           }
         }
       } else if (macro_name === Macro.X_MACRO_NAME) {
-        add_refs_to_x.push({ ast })
+        include_options.add_refs_to_x.push({ ast })
       }
 
       // Push this node into the parent argument list.
@@ -4233,101 +4240,101 @@ async function parse(tokens, options, context, extra_returns={}) {
     console.error();
   }
 
-  perf_print(context, 'db_queries')
+  if (!options.from_include) {
+    perf_print(context, 'db_queries')
 
-  let id_conflict_asts = []
-  if (options.id_provider !== undefined) {
-    const prefetch_ids = new Set()
-    for (const ref of add_refs_to_h) {
-      const id = render_arg_noescape(ref.content, context)
-      ref.target_id = id
-    }
-    const prefetch_file_ids = new Set()
-    for (const ref of add_refs_to_x) {
-      const id = render_arg_noescape(ref.ast.args.href, context)
-      // We need the target IDs of any x to render it.
-      prefetch_ids.add(id)
-      prefetch_file_ids.add(id)
-      ref.target_id = id
-    }
-    for (const id in include_hrefs) {
-      // We need the target it to be able to render the dummy include title
-      // with link to the real content.
-      prefetch_ids.add(id)
-    }
-    const prefetch_refs_ids = new Set()
+    let id_conflict_asts = []
+    if (options.id_provider !== undefined) {
+      const prefetch_ids = new Set()
+      for (const ref of include_options.add_refs_to_h) {
+        const id = render_arg_noescape(ref.content, context)
+        ref.target_id = id
+      }
+      const prefetch_file_ids = new Set()
+      for (const ref of include_options.add_refs_to_x) {
+        const id = render_arg_noescape(ref.ast.args.href, context)
+        // We need the target IDs of any x to render it.
+        prefetch_ids.add(id)
+        prefetch_file_ids.add(id)
+        ref.target_id = id
+      }
+      for (const id in include_options.include_hrefs) {
+        // We need the target it to be able to render the dummy include title
+        // with link to the real content.
+        prefetch_ids.add(id)
+      }
+      const prefetch_refs_ids = new Set()
 
-    // Get IDs to check for ID conflicts.
-    const ids = Object.keys(include_options.indexed_ids)
-    let id_conflict_asts_promise
-    if (ids.length) {
-      id_conflict_asts_promise = options.id_provider.get_noscopes_base_fetch(
-        ids,
-        context.include_path_set,
-      )
-    } else {
-      id_conflict_asts_promise = []
-    }
+      // Get IDs to check for ID conflicts.
+      const ids = Object.keys(include_options.indexed_ids)
+      let id_conflict_asts_promise
+      if (ids.length) {
+        id_conflict_asts_promise = options.id_provider.get_noscopes_base_fetch(
+          ids,
+          context.include_path_set,
+        )
+      } else {
+        id_conflict_asts_promise = []
+      }
 
-    ;[id_conflict_asts,,,] = await Promise.all([
-      id_conflict_asts_promise,
-      options.id_provider.get_noscopes_base_fetch(
-        Array.from(prefetch_ids),
-      ),
+      ;[id_conflict_asts,,,] = await Promise.all([
+        id_conflict_asts_promise,
+        options.id_provider.get_noscopes_base_fetch(
+          Array.from(prefetch_ids),
+        ),
 
-      // TODO merge these two into one single DB query. Lazy now.
-      // Started prototype at: https://github.com/cirosantilli/cirodown/tree/merge-ref-cache
-      // The annoying part is deciding what needs to go in which direction of the cache.
-      options.id_provider.get_refs_to_fetch(
-        [
-          // These are needed to render each header.
-          // Shows on parents.
-          REFS_TABLE_INCLUDE,
-          // Shows on tags.
-          REFS_TABLE_X_CHILD,
+        // TODO merge these two into one single DB query. Lazy now.
+        // Started prototype at: https://github.com/cirosantilli/cirodown/tree/merge-ref-cache
+        // The annoying part is deciding what needs to go in which direction of the cache.
+        options.id_provider.get_refs_to_fetch(
+          [
+            // These are needed to render each header.
+            // Shows on parents.
+            REFS_TABLE_INCLUDE,
+            // Shows on tags.
+            REFS_TABLE_X_CHILD,
 
-          // This is needed for the Incoming links at the bottom of each output file.
-          REFS_TABLE_X,
-        ],
-        header_ids,
-      ),
-      // This is needed to generate the "tagged" at the end of each output file.
-      options.id_provider.get_refs_to_fetch(
-        [
-          REFS_TABLE_X_CHILD,
-        ],
-        header_ids,
-        true
-      ),
-    ])
+            // This is needed for the Incoming links at the bottom of each output file.
+            REFS_TABLE_X,
+          ],
+          header_ids,
+        ),
+        // This is needed to generate the "tagged" at the end of each output file.
+        options.id_provider.get_refs_to_fetch(
+          [
+            REFS_TABLE_X_CHILD,
+          ],
+          header_ids,
+          true
+        ),
+      ])
 
-    const prefetch_files = new Set()
-    for (const prefetch_file_id of prefetch_file_ids) {
-      const prefetch_ast = context.id_provider.get_noscope(prefetch_file_id, context)
-      if (
-        // Possible in some error cases.
-        prefetch_ast !== undefined
-      ) {
-        prefetch_files.add(prefetch_ast.source_location.path)
+      const prefetch_files = new Set()
+      for (const prefetch_file_id of prefetch_file_ids) {
+        const prefetch_ast = context.id_provider.get_noscope(prefetch_file_id, context)
+        if (
+          // Possible in some error cases.
+          prefetch_ast !== undefined
+        ) {
+          prefetch_files.add(prefetch_ast.source_location.path)
+        }
+      }
+      if (prefetch_files.size) {
+        await context.options.file_provider.get_path_entry_fetch(Array.from(prefetch_files))
       }
     }
-    if (prefetch_files.size) {
-      await context.options.file_provider.get_path_entry_fetch(Array.from(prefetch_files))
-    }
-  }
 
-  // Ast post process pass 2
-  //
-  // Post process the AST breadth-first after inclusions are resolved to support things like:
-  //
-  // - the insane but necessary paragraphs double newline syntax
-  // - automatic ul parent to li and table to tr
-  // - remove whitespace only text children from ul
-  // - extract all IDs into an ID index
-  //
-  // Normally only the toplevel includer will enter this code section.
-  perf_print(context, 'post_process_2')
-  if (!options.from_include) {
+    // Ast post process pass 2
+    //
+    // Post process the AST breadth-first after inclusions are resolved to support things like:
+    //
+    // - the insane but necessary paragraphs double newline syntax
+    // - automatic ul parent to li and table to tr
+    // - remove whitespace only text children from ul
+    // - extract all IDs into an ID index
+    //
+    // Normally only the toplevel includer will enter this code section.
+    perf_print(context, 'post_process_2')
     // Calculate header_graph_top_level.
     //
     // - if aa header of this level is present in the document,
@@ -4673,108 +4680,108 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
       }
     }
-  }
 
-  // Patch the ID of the include headers.
-  // Deferred here after ID cache warming to group all DB queries.
-  for (const href in include_hrefs) {
-    const header_ast = include_hrefs[href]
-    const target_id_ast = context.id_provider.get(href, context);
-    let header_node_title;
-    if (target_id_ast === undefined) {
-      let message = `ID in include not found on database: "${href}", ` +
-        `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
-      header_node_title = error_message_in_output(message);
-      // Don't do an error if we are not going to render, because this is how
-      // we extract IDs on the first pass of ./cirodown .
-      if (options.render) {
-        parse_error(state, message);
+    // Patch the ID of the include headers.
+    // Deferred here after ID cache warming to group all DB queries.
+    for (const href in include_options.include_hrefs) {
+      const header_ast = include_options.include_hrefs[href]
+      const target_id_ast = context.id_provider.get(href, context);
+      let header_node_title;
+      if (target_id_ast === undefined) {
+        let message = `ID in include not found on database: "${href}", ` +
+          `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
+        header_node_title = error_message_in_output(message);
+        // Don't do an error if we are not going to render, because this is how
+        // we extract IDs on the first pass of ./cirodown .
+        if (options.render) {
+          parse_error(state, message);
+        }
+      } else {
+        const x_text_options = {
+          show_caption_prefix: false,
+          style_full: false,
+        };
+        header_node_title = x_text(target_id_ast, context, x_text_options);
       }
-    } else {
-      const x_text_options = {
-        show_caption_prefix: false,
-        style_full: false,
-      };
-      header_node_title = x_text(target_id_ast, context, x_text_options);
+      header_ast.args[Macro.TITLE_ARGUMENT_NAME][0].text = header_node_title
+      // This is a bit nasty and duplicates the below header processing code,
+      // but it is a bit hard to factor them out since this is a magic include header,
+      // and all includes and headers must be parsed concurrently since includes get
+      // injected under the last header.
+      validate_ast(header_ast, context);
     }
-    header_ast.args[Macro.TITLE_ARGUMENT_NAME][0].text = header_node_title
-    // This is a bit nasty and duplicates the below header processing code,
-    // but it is a bit hard to factor them out since this is a magic include header,
-    // and all includes and headers must be parsed concurrently since includes get
-    // injected under the last header.
-    validate_ast(header_ast, context);
-  }
 
-  // Check for ID conflicts.
-  for (const other_ast of id_conflict_asts) {
-    const message = duplicate_id_error_message(
-      other_ast.id,
-      other_ast.source_location.path,
-      other_ast.source_location.line,
-      other_ast.source_location.column,
-    )
-    parse_error(state, message, include_options.indexed_ids[other_ast.id].source_location);
-  }
-
-  // Setup refs DB.
-  for (const ref of add_refs_to_h) {
-    const target_id_effective = x_child_db_effective_id(
-      ref.target_id,
-      context,
-      ref.ast
-    )
-    if (ref.child) {
-      add_to_refs_to(target_id_effective, context, ref.ast.id, ref.type);
-    } else {
-      add_to_refs_to(ref.ast.id, context, target_id_effective, ref.type);
+    // Check for ID conflicts.
+    for (const other_ast of id_conflict_asts) {
+      const message = duplicate_id_error_message(
+        other_ast.id,
+        other_ast.source_location.path,
+        other_ast.source_location.line,
+        other_ast.source_location.column,
+      )
+      parse_error(state, message, include_options.indexed_ids[other_ast.id].source_location);
     }
-  }
-  for (const ref of add_refs_to_x) {
-    const ast = ref.ast
-    const target_id_effective = x_child_db_effective_id(
-      ref.target_id,
-      context,
-      ast
-    )
-    const parent_id = ast.get_header_parent_id();
-    if (
-      // Happens on some special elements e.g. the ToC.
-      parent_id !== undefined
-    ) {
-      // TODO add test and enable this possible fix.
+
+    // Setup refs DB.
+    for (const ref of include_options.add_refs_to_h) {
+      const target_id_effective = x_child_db_effective_id(
+        ref.target_id,
+        context,
+        ref.ast
+      )
+      if (ref.child) {
+        add_to_refs_to(target_id_effective, context, ref.ast.id, ref.type);
+      } else {
+        add_to_refs_to(ref.ast.id, context, target_id_effective, ref.type);
+      }
+    }
+    for (const ref of include_options.add_refs_to_x) {
+      const ast = ref.ast
+      const target_id_effective = x_child_db_effective_id(
+        ref.target_id,
+        context,
+        ast
+      )
+      const parent_id = ast.get_header_parent_id();
       if (
-        // We don't want the "This section is present in another page" to count as a link.
-        !ast.from_include
+        // Happens on some special elements e.g. the ToC.
+        parent_id !== undefined
       ) {
-        // Update xref database for incoming links.
-        const from_ids = add_to_refs_to(target_id_effective, context, parent_id, REFS_TABLE_X);
-      }
-
-      // Update xref database for child/parent relationships.
-      {
-        let toid, fromid;
-        if (ast.validation_output.child.boolean) {
-          fromid = parent_id;
-          toid = target_id_effective;
-        } else if (ast.validation_output.parent.boolean) {
-          toid = parent_id;
-          fromid = target_id_effective;
+        // TODO add test and enable this possible fix.
+        if (
+          // We don't want the "This section is present in another page" to count as a link.
+          !ast.from_include
+        ) {
+          // Update xref database for incoming links.
+          const from_ids = add_to_refs_to(target_id_effective, context, parent_id, REFS_TABLE_X);
         }
-        if (toid !== undefined) {
-          add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD);
+
+        // Update xref database for child/parent relationships.
+        {
+          let toid, fromid;
+          if (ast.validation_output.child.boolean) {
+            fromid = parent_id;
+            toid = target_id_effective;
+          } else if (ast.validation_output.parent.boolean) {
+            toid = parent_id;
+            fromid = target_id_effective;
+          }
+          if (toid !== undefined) {
+            add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD);
+          }
         }
       }
     }
-  }
 
-  const first_toplevel_child = ast_toplevel.args.content[0];
-  if (first_toplevel_child !== undefined) {
-    first_toplevel_child.first_toplevel_child = true;
-  }
-  if (context.options.log['ast-pp-simple']) {
-    console.error('ast-pp-simple: after pass 2');
-    console.error(ast_toplevel.toString());
-    console.error();
+    const first_toplevel_child = ast_toplevel.args.content[0];
+    if (first_toplevel_child !== undefined) {
+      first_toplevel_child.first_toplevel_child = true;
+    }
+    if (context.options.log['ast-pp-simple']) {
+      console.error('ast-pp-simple: after pass 2');
+      console.error(ast_toplevel.toString());
+      console.error();
+    }
   }
 
   return ast_toplevel;

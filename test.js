@@ -3726,6 +3726,41 @@ assert_error('include circular dependency 1 -> 2 <-> 3',
 //  include_opts
 //);
 
+// CirodownExample
+assert_convert_ast('CirodownExample basic',
+  `\\CirodownExample[[aa \\i[bb] cc]]`,
+  [
+    // TODO get rid of this paragaraph.
+    a('P', [
+      a('C', [t('aa \\i[bb] cc')]),
+      a('P', [t('which renders as:')]),
+      a('Q', [
+        // TODO get rid of this paragaraph.
+        a('P', [
+          t('aa '),
+          a('i', [t('bb')]),
+          t(' cc'),
+        ])
+      ]),
+    ])
+  ],
+);
+assert_convert_ast('CirodownExample that links to id in another file',
+  `\\CirodownExample[[\\x[notindex\\]]]`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//x:a[@href='notindex.html' and text()='notindex h1']",
+    ],
+    convert_before: ['notindex.ciro'],
+    filesystem: {
+     'notindex.ciro': `= notindex h1
+`,
+    },
+    input_path_noext: 'abc',
+  },
+);
+
 // ID auto-gneration.
 // https://cirosantilli.com/cirodown/automatic-id-from-title
 assert_convert_ast('id autogeneration without title',

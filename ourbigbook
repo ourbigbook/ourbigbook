@@ -252,7 +252,7 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
           const outpath = path.join(nonOurbigbookOptions.outdir, ourbigbook.FILE_PREFIX, inputPathRelativeToOurbigbookJson + '.' + ourbigbook.HTML_EXT)
           if (!sequelize || (await ourbigbook_nodejs_webpack_safe.get_noscopes_base_fetch_rows(sequelize, [ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson])).length === 0) {
             const pathSplit = inputPathRelativeToOurbigbookJson.split(ourbigbook.URL_SEP)
-            const src = `${ourbigbook.INSANE_HEADER_CHAR} ${pathSplit[pathSplit.length - 1]}
+            const src = `${ourbigbook.INSANE_HEADER_CHAR} ${ourbigbook.escapeNotStart(pathSplit[pathSplit.length - 1])}
 {file}
 `
             const inputPath = ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson + '.' + ourbigbook.OURBIGBOOK_EXT
@@ -683,9 +683,9 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
               bname = ourbigbook.FILE_ROOT_PLACEHOLDER
             }
             if (upcount === 0) {
-              crumbArr.push(bname)
+              crumbArr.push(ourbigbook.escapeNotStart(bname))
             } else {
-              crumbArr.push(`\\a[${path.join(...Array(upcount).fill('..').concat([indexHtml]))}][${bname}]{external}`)
+              crumbArr.push(`\\a[${ourbigbook.escapeNotStart(path.join(...Array(upcount).fill('..').concat([indexHtml])))}][${ourbigbook.escapeNotStart(bname)}]{external}`)
             }
             if (breadcrumbDir === '') {
               break
@@ -710,7 +710,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
             } else {
               targetHref = path.join(path.relative(input_path_relative_to_ourbigbook_json, '..'), pref, input_path_relative_to_ourbigbook_json, target) + (htmlXExtension ? '.' + ourbigbook.HTML_EXT : '')
             }
-            dirArr.push(`* \\a[${targetHref}][${target}${isdir ? ourbigbook.URL_SEP : ''}]{external}\n`)
+            dirArr.push(`* \\a[${ourbigbook.escapeNotStart(targetHref)}][${ourbigbook.escapeNotStart(target)}${isdir ? ourbigbook.URL_SEP : ''}]{external}\n`)
           }
           for (const name of [...dirs].sort()) {
             push_li(name, true)

@@ -146,13 +146,13 @@ nav.navbar {
  * to make them align nicely with rendered Cirodown. */
 .content-not-cirodown {
   padding-left: $toplevel-padding;
+  padding-right: $toplevel-padding;
 }
 
 .comment {
   border: 1px solid $color;
   border-radius: $border-radius;
   margin-bottom: 10px;
-  margin-right: $toplevel-padding;
   .comment-body {
     padding: 10px 10px;
   }
@@ -168,7 +168,6 @@ nav.navbar {
   border: 1px solid $color;
   border-radius: $border-radius;
   margin-bottom: 10px;
-  margin-right: $toplevel-padding;
   .comment-form-textarea {
     border-bottom: 1px solid $color;
     padding: 5px 10px 2px 5px;
@@ -216,7 +215,6 @@ nav.navbar {
   */
 }
 div.article-list-container {
-  padding-right: $toplevel-padding;
   table.article-list {
     border-collapse: collapse;
     margin-bottom: 20px;

@@ -7276,7 +7276,7 @@ Note however that if an upper directory is ignored, then we don't recurse into i
 = `dontIgnoreConvert`
 {parent=ourbigbook.json}
 
-Analogous to <dontIgnore> but acts on <<ignoreConvert> rather than <ignore>.
+Analogous to <dontIgnore> but acts on <ignoreRender> rather than <ignore>.
 
 = `ignore`
 {parent=ourbigbook.json}

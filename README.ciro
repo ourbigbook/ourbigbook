@@ -5369,7 +5369,9 @@ rm node_modules/cirodown
 = Run an isolated Cirodown master
 {parent=run-cirodown-master}
 
-\x[run-cirodown-master] mentions how to install and then run Cirodown master globally. To install locally in the current directory only instead, which can be useful for bisection:
+\x[run-cirodown-master] mentions how to install and then run Cirodown master globally, which is useful build some projects locally on maste.
+
+To instead install locally in the current directory only instead, which can be useful for bisection:
 ``
 npm install
 ln -s .. node_modules/cirodown
@@ -5753,6 +5755,8 @@ On P51:
     ``
 
     The question is: is it because we added `async` Everywhere, or is it because of changes in the database queries?
+
+    Answering the question: added old DB at: https://github.com/cirosantilli/cirodown/tree/async-slow-old-db and it is fast again. So DB debugging it is, hurray.
 
 = Internals API
 {parent=developing-cirodown}

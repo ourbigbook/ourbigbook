@@ -5,32 +5,31 @@ class Header extends React.Component {
   render() {
     return (
       <header>
-        <div className="container">
-          <Link to="/">
-            {this.props.appName}
-          </Link>
-          <div>
-          {
-            this.props.currentUser
-            ? [
-              <Link to="/editor">
-                <i className="ion-compose"></i>New Post
-              </Link>,
-              <Link to="/settings">
-                <i className="ion-gear-a"></i>Settings
-              </Link>,
-              <Link
-                to={`/@${this.props.currentUser.username}`}
-              >
-                <img src={this.props.currentUser.image} className="user-pic" alt={this.props.currentUser.username} />
-                {this.props.currentUser.username}
-              </Link>,
-            ] :
-              <Link to="/register" className="nav-link">
-                Sign up
-              </Link>
-          }
-          </div>
+        <Link to="/">
+          {this.props.appName}
+        </Link>
+        <div>
+        {
+          this.props.currentUser
+          ? [
+            <Link to="/editor">
+              <i className="ion-compose"></i>&nbsp;New Post
+            </Link>,
+            <Link
+              to={`/@${this.props.currentUser.username}`}
+            >
+              <img src={this.props.currentUser.image} className="user-pic" alt={this.props.currentUser.username} />
+              {this.props.currentUser.username}
+            </Link>,
+          ] :
+          [ <Link to="/login">
+              Sign in
+            </Link>,
+            <Link to="/register">
+              Sign up
+            </Link>,
+          ]
+        }
         </div>
       </header>
     );

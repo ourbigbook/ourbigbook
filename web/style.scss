@@ -189,6 +189,7 @@ div.list-container {
       font-size: 18px;
     }
     &:not(.top) {
+      margin-left: 0.5ch;
       a.btn, button {
         vertical-align: text-bottom;
       }

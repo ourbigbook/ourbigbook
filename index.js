@@ -8825,6 +8825,7 @@ function htmlToplevelChildModifierById(out, id) {
   const href = id ? `#${id}` : ''
   return htmlToplevelChildModifierByHref(out, href)
 }
+exports.htmlToplevelChildModifierById = htmlToplevelChildModifierById
 
 class OutputFormat {
   constructor(id, opts={}) {
@@ -9220,7 +9221,7 @@ const OUTPUT_FORMATS_LIST = [
           let i = 0
           for (const meta of [web_meta, header_meta_ancestors, header_meta, header_meta2]) {
             if (meta.length > 0) {
-              ret += `<div class="nav${i == 1 ? ' ancestors' : ''}"> ${meta.join('')}</div>`;
+              ret += `<div class="nav${i == 1 ? ' ancestors' : ''}">${meta.join('')}</div>`;
             }
             i++
           }

@@ -39,6 +39,7 @@ import {
   TAGGED_ID_UNRESERVED,
   TAGS_MARKER,
   htmlAncestorLinks,
+  htmlToplevelChildModifierById,
   renderTocFromEntryList,
 } from 'ourbigbook'
 // This also worked. But using the packaged one reduces the need to replicate
@@ -148,17 +149,12 @@ const Article = ({
           }
           if (ancestorsElem) {
             if (ancestors.length) {
-              ReactDOM.render(
-                <span dangerouslySetInnerHTML={{
-                  __html: ' ' + htmlAncestorLinks(
-                    ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 0)).map(a => { return {
-                      href: ` href="${linkPref}${a.slug}"`,
-                      content: a.titleRender,
-                    }}),
-                    ancestors.length,
-                  )
-                }} ></span>,
-                ancestorsElem
+              ancestorsElem.innerHTML = htmlAncestorLinks(
+                ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 0)).map(a => { return {
+                  href: ` href="${linkPref}${a.slug}"`,
+                  content: a.titleRender,
+                }}),
+                ancestors.length,
               )
             } else {
               ReactDOM.render(
@@ -379,7 +375,7 @@ const Article = ({
       })
     }
     if (entry_list.length) {
-      html += renderTocFromEntryList({ entry_list })
+      html += htmlToplevelChildModifierById(renderTocFromEntryList({ entry_list }), Macro.TOC_ID) 
     }
     html += articlesInSamePage.map(a => a.h2Render + a.render).join('')
   }

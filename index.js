@@ -8512,7 +8512,13 @@ function ourbigbook_li(marker) {
       const content = render_arg(ast.args.content, context)
       const content_indent = content.replace(/\n(.)/g, '\n  $1')
       const newline = ast.is_last_in_argument() ? '' : '\n'
-      return `${newline_before}${marker}${content_indent}${newline}`
+      let marker_eff
+      if (!content_indent) {
+        marker_eff = marker.substring(0, marker.length - 1)
+      } else {
+        marker_eff = marker
+      }
+      return `${newline_before}${marker_eff}${content_indent}${newline}`
     }
   }
 }

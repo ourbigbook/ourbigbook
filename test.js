@@ -1,9 +1,7 @@
-#!/usr/bin/env node
-
 const assert = require('assert');
 const util = require('util');
 
-const cirodown = require('./cirodown')
+const cirodown = require('cirodown')
 
 const convert_opts = {
   body_only: true,

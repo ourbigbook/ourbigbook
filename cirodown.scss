@@ -1,6 +1,5 @@
-$caption_margin_bottom: 5px;
+$caption-margin-bottom: 5px;
 $p-margin-vert: 16px;
-$paragraph_margin_bottom: #c6538c;
 
 // Light
 $a-color: #0000EE;
@@ -104,7 +103,10 @@ div.p {
 
 // Figures.
 figure {
-  margin-bottom: $paragraph_margin_bottom;
+  margin: 0 0 $p-margin-vert 0;
+  figcaption {
+    margin-top: 5px;
+  }
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -127,12 +129,11 @@ h1, h2, h3, h4, h5, h6 {
 // Math.
 .katex { font-size: 1.5em; }
 .math-container {
+  align-items: center;
   margin-bottom: $p-margin-vert;
   margin-top: $p-margin-vert;
-  align-items: center;
-  margin-bottom: $paragraph_margin_bottom;
   .math-caption-container {
-    margin-bottom: $caption_margin_bottom;
+    margin-bottom: $caption-margin-bottom;
   }
   .math-equation {
     align-items: center;
@@ -156,7 +157,7 @@ pre {
 // Tables
 .table-container {
   .table-caption-container {
-    margin-bottom: $caption_margin_bottom;
+    margin-bottom: $caption-margin-bottom;
   }
   table {
     $table_border: 1px solid $color;
@@ -168,7 +169,7 @@ pre {
       padding-right: 2px;
     }
   }
-  margin-bottom: $paragraph_margin_bottom;
+  margin-bottom: $p-margin-vert;
 }
 
 // Table of contents.

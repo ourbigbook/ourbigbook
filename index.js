@@ -1334,13 +1334,6 @@ function html_convert_simple_elem(elem_name, options={}) {
   if (!('newline_after_close' in options)) {
     options.newline_after_close = false;
   }
-  if (!('wrap' in options)) {
-    // To get the left padding toplevel margin right, elements that have
-    // background color like code blocks or left hanging stuff like lists
-    // need a wrapper div. But some don't, like paragraphs, so we allow them
-    // to remove this wrapper as an optimization to get smaller HTML.
-    options.wrap = true;
-  }
   let newline_after_open_str;
   if (options.newline_after_open) {
     newline_after_open_str = '\n';
@@ -1364,20 +1357,8 @@ function html_convert_simple_elem(elem_name, options={}) {
     if (content_ast === undefined) {
       content_ast = [new PlaintextAstNode(ast.line, ast.column, '')];
     }
-    let do_wrap = options.wrap && !context.macros[ast.macro_name].properties.phrasing;
-    let link_to_self_in
-    if (do_wrap) {
-      link_to_self_in = ``;
-    } else {
-      link_to_self_in = link_to_self;
-    }
     let content = convert_arg(content_ast, context);
-    let res = `<${elem_name}${extra_attrs_string}${attrs}>${link_to_self_in}${newline_after_open_str}${content}</${elem_name}>${newline_after_close_str}`;
-    // TODO this could be optimized further to only add the wrapper on toplevel direct children,
-    // but it would require tracking the parent elem on AstNode, which we don't do it.
-    if (do_wrap) {
-      res = html_wrap(link_to_self + res, 'div');
-    }
+    let res = `<${elem_name}${extra_attrs_string}${attrs}>${newline_after_open_str}${content}</${elem_name}>${newline_after_close_str}`;
     return res;
   };
 }
@@ -1433,7 +1414,7 @@ function html_is_whitespace(string) {
 }
 
 function html_wrap(content, tag) {
-  return `<${tag}>${content}</${tag}>`
+  return `<${tag}>${content}</${tag}>`;
 }
 
 function macro_list_to_macros() {
@@ -2328,7 +2309,7 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       let attrs = html_convert_attrs_id(ast, context);
       let content = convert_arg(ast.args.content, context);
-      return `<pre${attrs}><code>${content}</code></pre>\n`;
+      return `<pre${attrs}><code>${content}</code></pre>`;
     },
   ),
   new Macro(
@@ -2658,7 +2639,6 @@ const DEFAULT_MACRO_LIST = [
       {
         attrs: {'class': 'p'},
         link_to_self: true,
-        wrap: false,
       }
     ),
   ),

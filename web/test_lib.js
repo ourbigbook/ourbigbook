@@ -143,6 +143,7 @@ const articleData = [
         ['Test tagged', [], { headerArgs: '{tag=Test tagger}' }],
         ['Test tagger', []],
       ]],
+      ['Test wiki', [], { headerArgs: '{wiki}' }],
       ['Test child', [
         ['Test child 1', [
           ['Test child 1 1', []],

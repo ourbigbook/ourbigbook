@@ -402,11 +402,13 @@ function assert_executable(
       const out = child_process.spawnSync(cmd, args, {cwd: cwd});
       assert.strictEqual(out.status, 0, exec_assert_message(out, cmd, args, tmpdir));
     }
-    const out = child_process.spawnSync('cirodown', options.args, {
+    const cmd = 'cirodown'
+    const args = options.args
+    const out = child_process.spawnSync(cmd, args, {
       cwd: cwd,
       input: options.stdin,
     });
-    const assert_msg = exec_assert_message(out, 'cirodown', options.args, tmpdir);
+    const assert_msg = exec_assert_message(out, cmd, args, tmpdir);
     assert.strictEqual(out.status, options.expect_exit_status, assert_msg);
     for (const xpath_expr of options.expect_stdout_xpath) {
       assert_xpath_matches(
@@ -435,11 +437,13 @@ function assert_executable(
     }
     for (const relpath of options.expect_exists) {
       const fullpath = path.join(tmpdir, relpath);
-      assert.ok(fs.existsSync(fullpath), 'path should exist: ' + relpath);
+      assert.ok(fs.existsSync(fullpath), exec_assert_message(
+        out, cmd, args, tmpdir, 'path should exist: ' + relpath));
     }
     for (const relpath of options.expect_not_exists) {
       const fullpath = path.join(tmpdir, relpath);
-      assert.ok(!fs.existsSync(fullpath), 'path should not exist: ' + relpath);
+      assert.ok(!fs.existsSync(fullpath), exec_assert_message(
+        out, cmd, args, tmpdir, 'path should not exist: ' + relpath));
     }
     fs.rmdirSync(tmpdir, {recursive: true});
   });
@@ -581,13 +585,18 @@ hh
   }
 }
 
-function exec_assert_message(out, cmd, args, cwd) {
-  return `cmd: cd ${cwd} && ${cmd} ${args.join(' ')}
+function exec_assert_message(out, cmd, args, cwd, msg_extra) {
+  let ret;
+  if (msg_extra !== undefined) {
+    ret = msg_extra + '\n\n'
+  }
+  ret += `cmd: cd ${cwd} && ${cmd} ${args.join(' ')}
 stdout:
 ${out.stdout.toString(cirodown_nodejs.ENCODING)}
 
 stderr:
 ${out.stderr.toString(cirodown_nodejs.ENCODING)}`;
+  return ret;
 }
 
 /** Shortcut to create plaintext nodes for ast_arg_has_subset, we have too many of those. */
@@ -3368,14 +3377,27 @@ assert_executable(
   {
     args: ['subdir'],
     filesystem: {
+      'cirodown.json': `{}\n`,
       'README.ciro': `= Index`,
       'subdir/index.ciro': `= Subdir index`,
       'subdir/notindex.ciro': `= Subdir notindex`,
-      'cirodown.json': `{}\n`,
+      // A Sass file.
+      'subdir/scss.scss': `body { color: red }`,
+      // A random non-cirodown file.
+      'subdir/xml.xml': `<?xml version='1.0'?><a/>`,
     },
     // Place out next to cirodown.json which should be the toplevel.
-    expect_exists: ['out'],
-    expect_not_exists: ['subdir/out', 'index.html'],
+    expect_exists: [
+      'out',
+      'subdir/scss.css',
+      'subdir/xml.xml',
+    ],
+    expect_not_exists: [
+      'subdir/out',
+      'xml.xml',
+      'scss.css',
+      'index.html',
+    ],
     expect_filesystem_xpath: {
       'subdir/index.html': [xpath_header(1, 'subdir')],
       'subdir/notindex.html': [xpath_header(1, 'notindex')],
@@ -3390,15 +3412,23 @@ assert_executable(
       'README.ciro': `= Index`,
       'subdir/index.ciro': `= Subdir index`,
       'subdir/notindex.ciro': `= Subdir notindex`,
+      'subdir/scss.scss': `body { color: red }`,
+      'subdir/xml.xml': `<?xml version='1.0'?><a/>`,
     },
     // Don't know a better place to place out, so just put it int subdir.
-    expect_exists: ['subdir/out'],
-    expect_not_exists: ['out', 'index.html'],
+    expect_exists: [
+      'out',
+      'subdir/scss.css',
+      'subdir/xml.xml',
+    ],
+    expect_not_exists: [
+      'index.html',
+      'scss.css',
+      'subdir/out',
+      'xml.xml',
+    ],
     expect_filesystem_xpath: {
-      // The id is not just "subdir" derived from parent because
-      // subdir is now the toplevel directory, so the ID is derived
-      // from the title.
-      'subdir/index.html': [xpath_header(1, 'subdir-index')],
+      'subdir/index.html': [xpath_header(1, 'subdir')],
       'subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
@@ -3431,8 +3461,8 @@ assert_executable(
       'subdir/notindex.ciro': `= Subdir notindex`,
     },
     // Don't know a better place to place out, so just put it int subdir.
-    expect_exists: ['subdir/out'],
-    expect_not_exists: ['out', 'index.html', 'subdir/index.html'],
+    expect_exists: ['out'],
+    expect_not_exists: ['subdir/out', 'index.html', 'subdir/index.html'],
     expect_filesystem_xpath: {
       'subdir/notindex.html': [xpath_header(1, 'notindex')],
     },

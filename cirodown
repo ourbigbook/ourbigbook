@@ -4,25 +4,24 @@ const child_process = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const PACKAGE_NAME = 'cirodown';
-const cirodown = require('cirodown');
 const chokidar = require('chokidar');
 const commander = require('commander');
 const git_url_parse = require("git-url-parse");
+
+const cirodown = require('cirodown');
+const cirodown_nodejs = require('cirodown/nodejs');
 
 const DEFAULT_IGNORE_BASENAMES = [
   '.git',
   'node_modules',
   'out',
 ];
+
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
+const ENCODING = 'utf8';
 const IO_RENAME_MAP = {
   README: 'index',
 }
-// https://stackoverflow.com/questions/10111163/in-node-js-how-can-i-get-the-path-of-a-module-i-have-loaded-via-require-that-is
-const PACKAGE_PATH = path.dirname(require.resolve(path.join(PACKAGE_NAME, 'package.json')));
-const PACKAGE_OUT_PATH = path.join(PACKAGE_PATH, 'out');
-const PACKAGE_OUT_CSS_PATH = path.join(PACKAGE_OUT_PATH, 'main.css');
 
 /** Report an error with the CLI usage and exit in error. */
 function cli_error(message) {
@@ -46,10 +45,10 @@ function cmd_get_stdout(cmd, args=[], options={}) {
   } else {
     if (out.status != 0) {
       throw `cmd: \n${cmd_str}\nstdout: ` +
-            `${out.stdout.toString(cirodown.ENCODING)}\nstderr: ` +
+            `${out.stdout.toString(ENCODING)}\nstderr: ` +
             `${out.stderr.toString(ENCODING)}\n`;
     }
-    ret = out.stdout.toString(cirodown.ENCODING);
+    ret = out.stdout.toString(ENCODING);
   }
   return ret;
 }
@@ -157,7 +156,7 @@ function* walk_files_recursively(file_or_dir, skip_basenames) {
 commander.option('--body-only', 'output only the content inside the HTLM body element', false);
 commander.option('--dry-run', "don't run most external commands, see: https://github.com/cirosantilli/linux-kernel-module-cheat/tree/6d0a900f4c3c15e65d850f9d29d63315a6f976bf#dry-run-to-get-commands-for-your-project", false);
 commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown/#', false);
-commander.option('--html-embed', 'TODO embed all external resources like images and linked CSS into a single HTML file', false);
+commander.option('--html-embed', 'embed all external resources like images and linked CSS into a single HTML file', false);
 commander.option('--outdir <outdir>', 'if the output would be saved to a file e.g. when building a directory, use this directory as the root');
 commander.option('--output-format', 'output format');
 commander.option('--publish', 'http://cirosantilli.com/cirodown#publish');
@@ -196,9 +195,15 @@ if (commander.helpMacros) {
   let input;
   let title;
   let output;
+  let css_path;
+  if (commander.htmlEmbed) {
+    css_path = cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH;
+  } else {
+    css_path = cirodown_nodejs.PACKAGE_OUT_CSS_PATH;
+  }
   let options = {
     body_only: commander.bodyOnly,
-    css: fs.readFileSync(PACKAGE_OUT_CSS_PATH, cirodown.ENCODING),
+    css: fs.readFileSync(css_path, ENCODING),
     show_ast: commander.showAstInside,
     show_parse: commander.showParse,
     show_tokens: commander.showTokensInside,
@@ -206,7 +211,7 @@ if (commander.helpMacros) {
   };
   let convert_input_options = {
     cli_options: commander,
-    encoding: cirodown.ENCODING,
+    encoding: ENCODING,
     had_error: false,
     multifile: true,
   };
@@ -216,7 +221,7 @@ if (commander.helpMacros) {
   }
   if (inputPath === undefined) {
     title = 'stdin';
-    input = fs.readFileSync(0, cirodown.ENCODING);
+    input = fs.readFileSync(0, ENCODING);
     convert_input_options.multifile = false;
     output = convert_input(input, options, convert_input_options);
   } else {

@@ -3,22 +3,25 @@
     "cirodown": "cirodown"
   },
   "dependencies": {
+    "bootstrap": "4.4.1",
     "chokidar": "3.3.0",
     "commander": "3.0.2",
     "git-url-parse": "11.1.2",
-    "katex": "0.11.1",
-    "sass": "1.23.7"
+    "katex": "0.11.1"
   },
   "devDependencies": {
     "browserify": "16.5.0",
     "mocha": "6.2.2",
     "mocha-list-tests": "1.0.2",
+    "sass": "1.23.7",
     "webpack": "4.41.3"
   },
   "files": [
     "cirodown",
     "index.js",
-    "out/main.css"
+    "nodejs.js",
+    "out/main.embed.min.css",
+    "out/main.min.css"
   ],
   "keywords": [
     "asciidoctor",
@@ -31,9 +34,10 @@
   "repository": "cirosantilli/cirodown",
   "scripts": {
     "browserify": "npx browserify --outfile out/index.js --standalone cirodown index.js",
+    "prepublishOnly": "./prepublishOnly",
     "readme": "./cirodown README.ciro > index.html",
-    "sass": "npx sass --style compressed main.scss out/main.css",
+    "sass": "./build-sass",
     "test": "mocha test --ignore-leaks"
   },
-  "version": "0.1.3"
+  "version": "0.1.4"
 }

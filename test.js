@@ -119,8 +119,12 @@ function assert_convert_ast(
     }
     if (!('read_include' in options.extra_convert_opts)) {
       options.extra_convert_opts.read_include = (input_path_noext) => {
-        return [input_path_noext + cirodown.CIRODOWN_EXT,
-           options.filesystem[input_path_noext + cirodown.CIRODOWN_EXT]];
+        const inpath = input_path_noext + cirodown.CIRODOWN_EXT
+        if (inpath in options.filesystem) {
+          return [input_path_noext + cirodown.CIRODOWN_EXT,
+            options.filesystem[input_path_noext + cirodown.CIRODOWN_EXT]];
+        }
+        return undefined
       };
     }
     options.extra_convert_opts.fs_exists_sync = (my_path) => options.filesystem[my_path] !== undefined
@@ -3729,7 +3733,7 @@ bb
   include_opts
 );
 // https://github.com/cirosantilli/cirodown/issues/23
-assert_error('include with error',
+assert_error('include with error reports error on the include source',
   `= aa
 
 bb
@@ -3790,6 +3794,26 @@ assert_error('include circular dependency 1 -> 2 <-> 3',
 //  ],
 //  include_opts
 //);
+assert_error('include to file that does not exist fails gracefully',
+  `= h1
+
+\\Include[asdf]
+`,
+  3, 1
+);
+assert_error('include to file that does exists without embed includes before extracting IDs fails gracefully',
+  `= h1
+
+\\Include[asdf]
+`,
+  3, 1, undefined, {
+    // No error with this.
+    //convert_before: ['asdf.ciro'],
+    filesystem: {
+      'asdf.ciro': '= asdf'
+    }
+  }
+);
 
 // CirodownExample
 assert_convert_ast('CirodownExample basic',

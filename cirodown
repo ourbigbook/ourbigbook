@@ -814,7 +814,7 @@ const parse_macro = function(state) {
     let args = {};
     let macro;
     let macro_type;
-    const unknown_macro_message = `unknown macro name: ${macro_name}\n`;
+    const unknown_macro_message = `unknown macro name: ${macro_name}`;
     if (macro_name in macros) {
       macro = macros[macro_name];
       macro_type = AstType.MACRO;
@@ -840,7 +840,7 @@ const parse_macro = function(state) {
         } else {
           if (positional_arg_count >= macro.positional_args.length) {
             parse_report_error(state,
-              `unknown named macro argument "${arg_name}" of macro "${macro_name}"\n`,
+              `unknown named macro argument "${arg_name}" of macro "${macro_name}"`,
               open_argument_line,
               open_argument_column
             );
@@ -857,7 +857,7 @@ const parse_macro = function(state) {
         arg_name = state.token.value;
         if (macro_type !== AstType.ERROR && !(arg_name in macro.named_args)) {
           parse_report_error(state,
-            `unknown named macro argument "${arg_name}" of macro "${macro_name}"\n`,
+            `unknown named macro argument "${arg_name}" of macro "${macro_name}"`,
             name_line,
             name_column
           );

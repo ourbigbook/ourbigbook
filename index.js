@@ -2729,9 +2729,10 @@ const DEFAULT_MACRO_LIST = [
     Macro.TOC_MACRO_NAME,
     [],
     function(ast, context) {
-      let ret = `<div class="toc-container">\n`;
+      let attrs = html_convert_attrs_id(ast, context);
+      let ret = `<div class="toc-container"${attrs}>\n`;
       let todo_visit = [];
-      let last_level = context.header_graph_top_level - 1;
+      let top_level = context.header_graph_top_level - 1;
       let root_node = context.header_graph;
       if (context.header_graph_top_level > 0) {
         root_node = root_node.children[0];
@@ -2741,20 +2742,19 @@ const DEFAULT_MACRO_LIST = [
       }
       while (todo_visit.length > 0) {
         const [tree_node, level] = todo_visit.pop();
-        if (level > last_level) {
+        if (level > top_level) {
           ret += `<ul>\n`;
-        } else if (level < last_level) {
-          ret += `</li>\n</ul>\n`.repeat(last_level - level);
+        } else if (level < top_level) {
+          ret += `</li>\n</ul>\n`.repeat(top_level - level);
         } else {
           ret += `</li>\n`;
         }
         let target_ast = tree_node.value;
-        let attrs = html_convert_attrs_id(ast, context);
         let content = Macro.x_text(target_ast, context, {show_caption_prefix: false});
         let target_id = html_escape_attr(target_ast.id);
         let href = html_attr('href', '#' + target_id);
         let id_to_toc = html_attr('id', Macro.TOC_PREFIX + target_id);
-        ret += `<li><div${id_to_toc}><a${href}${attrs}>${content}</a><span>`;
+        ret += `<li><div${id_to_toc}><a${href}>${content}</a><span>`;
 
         let toc_href = html_attr('href', '#' + Macro.TOC_PREFIX + target_id);
         ret += ` | <a${toc_href}>${UNICODE_LINK} link</a>`;
@@ -2771,9 +2771,9 @@ const DEFAULT_MACRO_LIST = [
           }
           ret += `\n`;
         }
-        last_level = level;
+        top_level = level;
       }
-      ret += `</li>\n</ul>\n`.repeat(last_level);
+      ret += `</li>\n</ul>\n`.repeat(top_level);
       ret += `</div>\n`
       return ret;
     },

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Video - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg" />
+</head>
+<body>
+<header>
+<a href="."><img src="_raw/logo.svg" />OurBigBook</a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw"></i></a>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="video"><div class="notnav"><h1><a href="">Video (<code>\Video</code>)</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."> OurBigBook Project</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#video"></a><span class="metrics"><span class="wcntr"> words: 511</span><span class="dcnt"> articles: 5</span></span></div></nav></div><div class="p" id="_1832">Very analogous to <a href=".#image">images</a>, only differences will be documented here.</div><div class="p" id="_1833">In the case of videos, <a href=".#where-to-store-images">where to store images</a> becomes even more critical since videos are even larger than images, such that the following storage approaches are impractical off the bat:<div><ul id="_1834"><li id="_1835"><a href=".#store-images-inside-the-repository-itself">store images inside the repository itself</a></li><li id="_1836"><a href=".#store-images-in-a-separate-media-repository">store images in a separate media repository</a>
+</li></ul></div>As a result, then <a href="https://commons.wikimedia.org">Wikimedia Commons</a> is one of the best options <a href=".#store-images-in-wikimedia-commons">much like for images</a>:
+<div class="code" id="_1837"><pre><code>\Video[https://upload.wikimedia.org/wikipedia/commons/8/85/Vacuum_pump_filter_cut_and_place_in_eppendorf.webm]
+{id=sample-video-in-wikimedia-commons}
+{title=Nice sample video stored in Wikimedia Commons}
+{start=5}</code></pre></div><div class="p" id="_1838">which renders as:</div><blockquote id="_1839"><figure id="sample-video-in-wikimedia-commons"><video src="https://upload.wikimedia.org/wikipedia/commons/8/85/Vacuum_pump_filter_cut_and_place_in_eppendorf.webm#t=5" height="315" preload="none" controls></video><figcaption><a href="#sample-video-in-wikimedia-commons"><span class="caption-prefix">Video 4</span></a>. Nice sample video stored in Wikimedia Commons. <a href="https://commons.wikimedia.org/wiki/File:Vacuum_pump_filter_cut_and_place_in_eppendorf.webm">Source</a>. </figcaption></figure></blockquote>
+We also handle more complex transcoded video URLs just fine:
+<div class="code" id="_1840"><pre><code>\Video[https://upload.wikimedia.org/wikipedia/commons/transcoded/1/19/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv.480p.vp9.webm]
+{id=sample-video-in-wikimedia-commons-transcoded}
+{title=Nice sample video stored in Wikimedia Commons transcoded}</code></pre></div><div class="p" id="_1841">which renders as:</div><blockquote id="_1842"><figure id="sample-video-in-wikimedia-commons-transcoded"><video src="https://upload.wikimedia.org/wikipedia/commons/transcoded/1/19/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv.480p.vp9.webm" height="315" preload="none" controls></video><figcaption><a href="#sample-video-in-wikimedia-commons-transcoded"><span class="caption-prefix">Video 5</span></a>. Nice sample video stored in Wikimedia Commons transcoded. <a href="https://commons.wikimedia.org/wiki/File:Scientific_Industries_Inc_Vortex-Genie_2_running.ogv">Source</a>. </figcaption></figure></blockquote>
+Commons is better than YouTube if your content is on-topic there because:<div><ul id="_1843"><li id="_1844">they have no ads</li><li id="_1845">it allows download of the videos: <a href="https://www.quora.com/Can-I-download-Creative-Commons-licensed-YouTube-videos-to-edit-them-and-use-them">www.quora.com/Can-I-download-Creative-Commons-licensed-YouTube-videos-to-edit-them-and-use-them</a>.</li><li id="_1846">it makes it easier for other users to find and re-use your videos</li></ul></div></div><div class="p" id="_1847">If your video does not fit the above Wikimedia Commons requirements, YouTube could be a good bet. OurBigBook <a href="https://github.com/ourbigbook/ourbigbook/issues/50">automatically detects YouTube URLs</a> for you, so the following should just work:
+<div class="code" id="_1848"><pre><code>\Video[https://youtube.com/watch?v=YeFzeNAHEhU&amp;t=38]
+{id=sample-video-from-youtube-implicit-youtube}
+{title=Nice sample video embedded from YouTube implicit from `youtube.com` URL}</code></pre></div><div class="p" id="_1849">which renders as:</div><blockquote id="_1850"><figure id="sample-video-from-youtube-implicit-youtube"><div class="float-wrap"><iframe width="560" height="315" loading="lazy" src="https://www.youtube.com/embed/YeFzeNAHEhU?start=38" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><figcaption><a href="#sample-video-from-youtube-implicit-youtube"><span class="caption-prefix">Video 6</span></a>. Nice sample video embedded from YouTube implicit from <code>youtube.com</code> URL. <a href="https://youtube.com/watch?v=YeFzeNAHEhU&amp;t=38">Source</a>. </figcaption></figure></blockquote>
+The <code>youtu.be</code> domain hack URLs also work;
+<div class="code" id="_1851"><pre><code>\Video[https://youtu.be/YeFzeNAHEhU?t=38]
+{id=sample-video-from-youtube-implicit-youtu-be}
+{title=Nice sample video embedded from YouTube implicit from `youtu.be` URL}</code></pre></div><div class="p" id="_1852">which renders as:</div><blockquote id="_1853"><figure id="sample-video-from-youtube-implicit-youtu-be"><div class="float-wrap"><iframe width="560" height="315" loading="lazy" src="https://www.youtube.com/embed/YeFzeNAHEhU?start=38" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><figcaption><a href="#sample-video-from-youtube-implicit-youtu-be"><span class="caption-prefix">Video 7</span></a>. Nice sample video embedded from YouTube implicit from <code>youtu.be</code> URL. <a href="https://youtu.be/YeFzeNAHEhU?t=38">Source</a>. </figcaption></figure></blockquote>
+Alternatively, you can reach the same result in a more explicit and minimal way by setting <code>{provider=youtube}</code> and the <a href=".#video-start-argument"><code>start</code></a> arguments:
+<div class="code" id="_1854"><pre><code>\Video[YeFzeNAHEhU]{provider=youtube}
+{id=sample-video-from-youtube-explicit}
+{title=Nice sample video embedded from YouTube with explicit `youtube` argument}
+{start=38}</code></pre></div><div class="p" id="_1855">which renders as:</div><blockquote id="_1856"><figure id="sample-video-from-youtube-explicit"><div class="float-wrap"><iframe width="560" height="315" loading="lazy" src="https://www.youtube.com/embed/YeFzeNAHEhU?start=38" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><figcaption><a href="#sample-video-from-youtube-explicit"><span class="caption-prefix">Video 8</span></a>. Nice sample video embedded from YouTube with explicit <code>youtube</code> argument. <a href="https://youtube.com/watch?v=YeFzeNAHEhU">Source</a>. </figcaption></figure></blockquote>
+When the <code>youtube</code> provider is selected, the Video address should only to contain the YouTube video ID, which shows in the YouTube URL for the video as:
+<div class="code" id="_1857"><pre><code>https://www.youtube.com/watch?v=&lt;video-id&gt;</code></pre></div>
+Remember that you can also enable the <code>youtube</code> provider by default on your <a href=".#ourbigbook-json"><code>ourbigbook.json</code></a> with:
+<div class="code" id="_1858"><pre><code>"media-provider" {
+  "youtube": {"default-for": "video"}
+}</code></pre></div></div><div class="p" id="_1859">But you can also use raw video files from any location that can serve them of course, e.g. here is one stored in this repository: <a href="#sample-video-in-repository">Video 9. "Nice sample video stored in this repository"</a>.
+<div class="code" id="_1860"><pre><code>\Video[Tank_man_side_hopping_in_front_of_some_tanks.mp4]
+{id=sample-video-in-repository}
+{title=Nice sample video stored in this repository}
+{source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
+{start=3}</code></pre></div><div class="p" id="_1861">which renders as:</div><blockquote id="_1862"><figure id="sample-video-in-repository"><video src="_raw/Tank_man_side_hopping_in_front_of_some_tanks.mp4#t=3" height="315" preload="none" controls></video><figcaption><a href="#sample-video-in-repository"><span class="caption-prefix">Video 9</span></a>. Nice sample video stored in this repository. <a href="https://www.youtube.com/watch?v=YeFzeNAHEhU">Source</a>. </figcaption></figure></blockquote></div><div class="p" id="_1863">And as for images, setting <code>titleFromSrc</code> automatically calculates a title for you:
+<div class="code" id="_1864"><pre><code>\Video[Tank_man_side_hopping_in_front_of_some_tanks.mp4]
+{titleFromSrc}
+{source=https://www.youtube.com/watch?v=YeFzeNAHEhU}</code></pre></div><div class="p" id="_1865">which renders as:</div><blockquote id="_1866"><figure id="video-tank-man-side-hopping-in-front-of-some-tanks"><video src="_raw/Tank_man_side_hopping_in_front_of_some_tanks.mp4" height="315" preload="none" controls></video><figcaption><a href="#video-tank-man-side-hopping-in-front-of-some-tanks"><span class="caption-prefix">Video 10</span></a>. Tank man side hopping in front of some tanks. <a href="https://www.youtube.com/watch?v=YeFzeNAHEhU">Source</a>. </figcaption></figure></blockquote></div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 511</span><span class="dcnt"> 5</span></span></span></span></div><ul><li><div id="_toc/video-lazy-loading"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#video-lazy-loading">1. Video lazy loading</a><span class="hover-metadata"><a href="#_toc/video-lazy-loading" class="c"></a><a class="nosplit" href=".#video-lazy-loading"></a><a href="#_toc" class="u"> Video</a><span class="metrics"><span class="wcntr"> 102</span></span></span></span></div></li><li class="has-child"><div id="_toc/video-argument"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#video-argument">2. <code>\Video</code> argument</a><span class="hover-metadata"><a href="#_toc/video-argument" class="c"></a><a class="nosplit" href=".#video-argument"></a><a href="#_toc" class="u"> Video</a><span class="metrics"><span class="wcntr"> 21</span><span class="dcnt"> 3</span></span></span></span></div><ul><li><div id="_toc/video-description-argument"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#video-description-argument">2.1. <code>\Video</code> <code>description</code> argument</a><span class="hover-metadata"><a href="#_toc/video-description-argument" class="c"></a><a class="nosplit" href=".#video-description-argument"></a><a href="#_toc/video-argument" class="u"> <code>\Video</code> argument</a><span class="metrics"><span class="wcntr"> 2</span></span></span></span></div></li><li><div id="_toc/video-title-argument"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#video-title-argument">2.2. <code>\Video</code> <code>title</code> argument</a><span class="hover-metadata"><a href="#_toc/video-title-argument" class="c"></a><a class="nosplit" href=".#video-title-argument"></a><a href="#_toc/video-argument" class="u"> <code>\Video</code> argument</a><span class="metrics"><span class="wcntr"> 2</span></span></span></span></div></li><li><div id="_toc/video-start-argument"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#video-start-argument">2.3. <code>\Video</code> <code>start</code> argument</a><span class="hover-metadata"><a href="#_toc/video-start-argument" class="c"></a><a class="nosplit" href=".#video-start-argument"></a><a href="#_toc/video-argument" class="u"> <code>\Video</code> argument</a><span class="metrics"><span class="wcntr"> 17</span></span></span></span></div></li></ul></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900"></span> Ancestors</a></h2><div><ol><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href=".">OurBigBook Project</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900"></span> Incoming links</a></h2><div><ul><li><a href=".#h-file-argument"><code>\H</code> <code>file</code> argument</a></li><li><a href=".#h-splitdefault-argument"><code>\H</code> <code>splitDefault</code> argument</a></li><li><a href=".#ourbigbook-json/media-providers"><code>media-providers</code></a></li><li><a href=".#ourbigbook-markup-quick-start">OurBigBook Markup quick start</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/README.bigb">README.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

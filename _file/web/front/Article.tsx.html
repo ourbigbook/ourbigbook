@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Article.tsx - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg" />
+</head>
+<body>
+<header>
+<a href="../../../"><img src="../../../_raw/logo.svg" />OurBigBook</a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw"></i></a>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="Article.tsx"><div class="notnav"><h1><a href="">web/front/Article.tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir/">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/front">front</a> / <a href="../../../_raw/web/front/Article.tsx">Article.tsx</a></b></div></nav></div><div class="p"><b>web/front/Article.tsx</b></div><div class="code"><pre><code>import React from 'react'
+import * as ReactDOM from 'react-dom'
+import ReactDomServer from 'react-dom/server'
+import Router from 'next/router'
+
+import { commentsHeaderId } from 'front/config'
+import { formatDate } from 'front/date'
+import {
+  DeleteIcon,
+  EditArticleIcon,
+  HelpIcon,
+  IssueIcon,
+  NewArticleIcon,
+  SeeIcon,
+  SignupOrLogin,
+  SourceIcon,
+  TimeIcon,
+  TopicIcon,
+} from 'front'
+import Comment from 'front/Comment'
+import CommentInput from 'front/CommentInput'
+import LikeArticleButton from 'front/LikeArticleButton'
+import { CommentType } from 'front/types/CommentType'
+import ArticleList from 'front/ArticleList'
+import routes from 'front/routes'
+import { cant } from 'front/cant'
+import CustomLink from 'front/CustomLink'
+import FollowArticleButton from 'front/FollowArticleButton'
+
+import {
+  ANCESTORS_ID,
+  ANCESTORS_MAX,
+  AT_MENTION_CHAR,
+  INCOMING_LINKS_ID_UNRESERVED,
+  INCOMING_LINKS_MARKER,
+  Macro,
+  HTML_PARENT_MARKER,
+  SYNONYM_LINKS_ID_UNRESERVED,
+  SYNONYM_LINKS_MARKER,
+  TAGGED_ID_UNRESERVED,
+  TAGS_MARKER,
+  htmlAncestorLinks,
+  htmlToplevelChildModifierById,
+  renderTocFromEntryList,
+} from 'ourbigbook'
+// This also worked. But using the packaged one reduces the need to replicate
+// or factor out the webpack setup of the ourbigbook package.
+//import { ourbigbook_runtime } from 'ourbigbook/ourbigbook_runtime.js';
+import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js'
+
+function linkList(articles, idUnreserved, marker, title, linkPref) {
+  if (articles.length) return &lt;&gt;
+    &lt;h2 id={`${Macro.RESERVED_ID_PREFIX}${idUnreserved}`}&gt;&lt;a
+      href={`#${Macro.RESERVED_ID_PREFIX}${idUnreserved}`}
+      dangerouslySetInnerHTML={{ __html: `${marker} ${title}` }}
+      className="ourbigbook-title"&gt;
+    &lt;/a&gt;&lt;/h2&gt;
+    &lt;ul&gt;
+      {articles.map(a =&gt;
+        &lt;li key={a.slug}&gt;&lt;a
+          href={`${linkPref}${a.slug}`}
+          className="ourbigbook-title"
+          dangerouslySetInnerHTML={{ __html: a.titleRender}}
+        &gt;&lt;/a&gt;&lt;/li&gt;
+      )}
+    &lt;/ul&gt;
+  &lt;/&gt;
+}
+
+const Article = ({
+  ancestors,
+  article,
+  articlesInSamePage,
+  articlesInSamePageForToc,
+  comments,
+  commentsCount=0,
+  commentCountByLoggedInUser=undefined,
+  incomingLinks,
+  isIssue=false,
+  issueArticle=undefined,
+  latestIssues,
+  loggedInUser,
+  synonymLinks,
+  tagged,
+  topIssues,
+}) =&gt; {
+  const [curComments, setComments] = React.useState(comments)
+  let seeAllCreateNew
+  if (!isIssue) {
+    seeAllCreateNew = &lt;&gt;
+      {latestIssues.length &gt; 0 &amp;&amp;
+        &lt;&gt;
+          &lt;CustomLink href={routes.issues(article.slug)} className="btn small"&gt;&lt;SeeIcon /&gt; See All ({ article.issueCount })&lt;/CustomLink&gt;
+          {' '}
+        &lt;/&gt;
+      }
+      {loggedInUser
+        ? &lt;CustomLink
+            className="btn small"
+            href={routes.issueNew(article.slug)}
+            updatePreviousPage={true}
+          &gt;
+            &lt;NewArticleIcon /&gt; New Discussion
+          &lt;/CustomLink&gt;
+        : &lt;SignupOrLogin to="create discussions"/&gt;
+      }
+    &lt;/&gt;
+  }
+  let linkPref: string
+  const articlesInSamePageMap = {}
+  if (!isIssue) {
+    linkPref = '../'.repeat(article.slug.split('/').length - 1)
+    for (const article of articlesInSamePage) {
+      articlesInSamePageMap[article.slug] = article
+    }
+  }
+  articlesInSamePageMap[article.slug] = article
+  const canEdit = isIssue ? !cant.editIssue(loggedInUser, article) : !cant.editArticle(loggedInUser, article)
+  const canDelete = isIssue ? !cant.deleteIssue(loggedInUser, article) : !cant.deleteArticle(loggedInUser, article)
+  const renderRefCallback = React.useCallback(
+    (elem) =&gt; {
+      if (elem) {
+        for (const h of elem.querySelectorAll('.h')) {
+          const id = h.id
+          const webElem = h.querySelector('.web')
+          const ancestorsElem = h.querySelector('.ancestors')
+          const toplevel = webElem.classList.contains('top')
+          // TODO rename to article later on.
+          let curArticle, isIndex
+          if (isIssue) {
+            if (!toplevel) {
+              continue
+            }
+            curArticle = article
+          } else if (
+            id === article.author.username
+          ) {
+            curArticle = article
+            isIndex = true
+          } else {
+            curArticle = articlesInSamePageMap[id]
+            if (!curArticle) {
+              // Possible for Include headers. Maybe one day we will cover them.
+              continue
+            }
+          }
+          let mySlug
+          if (loggedInUser) {
+            mySlug = `${loggedInUser.username}/${curArticle.topicId}`
+          }
+          if (ancestorsElem) {
+            if (ancestors.length) {
+              ancestorsElem.innerHTML = htmlAncestorLinks(
+                ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 0)).map(a =&gt; { return {
+                  href: ` href="${linkPref}${a.slug}"`,
+                  content: a.titleRender,
+                }}),
+                ancestors.length,
+              )
+            } else {
+              ReactDOM.render(
+                &lt;span dangerouslySetInnerHTML={{
+                  __html: `&lt;span&gt; ${ReactDomServer.renderToString(&lt;HelpIcon /&gt;)} Ancestors will show here when the tree index is updated&lt;/span&gt;`
+                }} &gt;&lt;/span&gt;,
+                ancestorsElem
+              )
+            }
+          }
+          ReactDOM.render(
+            &lt;&gt;
+              &lt;LikeArticleButton {...{
+                article: curArticle,
+                issueArticle,
+                isIssue,
+                loggedInUser,
+                showText: toplevel,
+              }} /&gt;
+              {!isIssue &amp;&amp;
+                &lt;&gt;
+                  {' '}
+                  {!isIndex &amp;&amp;
+                    &lt;a className="by-others btn" href={routes.topic(curArticle.topicId)} title="Articles by others on the same topic"&gt;
+                      &lt;TopicIcon title={false} /&gt; {curArticle.topicCount}{toplevel ? &lt;&gt; By Others&lt;span className="mobile-hide"&gt; On Same Topic&lt;/span&gt;&lt;/&gt; : ''}
+                    &lt;/a&gt;
+                  }
+                  {' '}
+                  &lt;a className="issues btn" href={routes.issues(curArticle.slug)} title="Discussions"&gt;
+                    &lt;IssueIcon title={false} /&gt; {curArticle.issueCount}{toplevel ? ' Discussions' : ''}&lt;/a&gt;
+                &lt;/&gt;
+              }
+              {toplevel &amp;&amp;
+                &lt;&gt;
+                  {' '}
+                  &lt;span title="Last updated"&gt;
+                    &lt;TimeIcon /&gt;{' '}
+                    &lt;span className="article-dates"&gt;
+                      {formatDate(article.updatedAt)}
+                    &lt;/span&gt;
+                  &lt;/span&gt;
+                &lt;/&gt;
+              }
+              {false &amp;&amp; article.createdAt !== article.updatedAt &amp;&amp;
+                &lt;&gt;
+                  &lt;span className="mobile-hide"&gt;
+                    {' Updated: '}
+                  &lt;/span&gt;
+                  &lt;span className="article-dates"&gt;
+                    {formatDate(article.updatedAt)}
+                  &lt;/span&gt;
+                &lt;/&gt;
+              }
+              {canEdit
+                ? &lt;&gt;
+                    {' '}
+                    &lt;span&gt;
+                      {false &amp;&amp; &lt;&gt;TODO: convert this a and all other injected links to Link. https://github.com/ourbigbook/ourbigbook/issues/274&lt;/&gt; }
+                      &lt;a
+                        href={isIssue ? routes.issueEdit(issueArticle.slug, curArticle.number) : routes.articleEdit(curArticle.slug)}
+                        className="btn edit"
+                      &gt;
+                        &lt;EditArticleIcon /&gt;{toplevel &amp;&amp; &lt;&gt; &lt;span className="shortcut"&gt;E&lt;/span&gt;dit&lt;/&gt;}
+                      &lt;/a&gt;
+                    &lt;/span&gt;
+                    {' '}
+                    {!isIssue &amp;&amp;
+                      &lt;&gt;
+                        &lt;a href={routes.articleNew({ 'parent-title': curArticle.titleSource })} className="btn new" title="Create a new article that is the first child of this one"&gt;
+                          {' '}&lt;NewArticleIcon title={false}/&gt;
+                          {/* TODO spacing too large on non toplevel, not sure what's the difference*/ toplevel ? ' ' : ''}
+                          &lt;i className="ion-arrow-down-c"/&gt;{toplevel ? ' Create child article' : ''}{' '}
+                        &lt;/a&gt;
+                        {' '}
+                        {!isIndex &amp;&amp;
+                          &lt;a
+                            href={routes.articleNew({ 'parent-title': curArticle.parentTitle, 'previous-sibling': curArticle.titleSource })}
+                            className="btn new"
+                            title="Create a new article that is the next sibling of this one"
+                          &gt;
+                            {' '}&lt;NewArticleIcon title={false}/&gt;{toplevel ? ' ' : ''}&lt;i className="ion-arrow-right-c"/&gt;{toplevel ? ' Create sibling article' : ''}{' '}
+                          &lt;/a&gt;
+                        }
+                      &lt;/&gt;
+                    }
+                  &lt;/&gt;
+                : &lt;&gt;
+                    {!(isIssue || isIndex) &amp;&amp;
+                      &lt;&gt;
+                        {(curArticle.hasSameTopic)
+                          ? &lt;&gt;
+                              {article.slug !== mySlug &amp;&amp;
+                                &lt;&gt;
+                                  {' '}
+                                  &lt;a href={routes.article(mySlug)} className="btn see" title="See my version of this topic"&gt;
+                                      {' '}&lt;SeeIcon title={false}/&gt;{toplevel ? ' See My Version' : ''}{' '}
+                                  &lt;/a&gt;
+                                &lt;/&gt;
+                              }
+                            &lt;/&gt;
+                          : &lt;&gt;
+                              {' '}
+                              &lt;a href={routes.articleNew({ title: curArticle.titleSource })} className="btn new" title="Create my version of this topic"&gt;
+                                {' '}&lt;NewArticleIcon title={false}/&gt;{toplevel ? ' Create my own version' : ''}{' '}
+                              &lt;/a&gt;
+                            &lt;/&gt;
+                        }
+                      &lt;/&gt;
+                    }
+                  &lt;/&gt;
+              }
+              {(false &amp;&amp; canDelete) &amp;&amp;
+                &lt;&gt;
+                  TODO https://docs.ourbigbook.com/todo/delete-articles
+                  {' '}
+                  &lt;span&gt;
+                    &lt;a
+                      href={isIssue ? routes.issueDelete(issueArticle.slug, curArticle.number) : routes.articleDelete(curArticle.slug)}
+                      className="btn edit"
+                    &gt;
+                      &lt;DeleteIcon /&gt; Delete
+                    &lt;/a&gt;
+                  &lt;/span&gt;
+                &lt;/&gt;
+              }
+            &lt;/&gt;,
+            webElem
+          );
+        }
+        ourbigbook_runtime(elem);
+        // Capture link clicks, use ID on current page if one is present.
+        // Only go to another page if the ID is not already present on the page.
+        for (const a of elem.getElementsByTagName('a')) {
+          a.addEventListener(`click`, e =&gt; {
+            const target = e.currentTarget
+            const href = target.getAttribute('href')
+            const url = new URL(href, document.baseURI)
+            if (
+              // Don't do processing for external links.
+              url.origin === new URL(document.baseURI).origin
+            ) {
+              let idNoprefix
+              if (url.hash) {
+                idNoprefix = url.hash.slice(1)
+              } else {
+                // + 1 for the '/' that prefixes every link.
+                // https://github.com/ourbigbook/ourbigbook/issues/283
+                idNoprefix = href.slice(1)
+              }
+              const targetElem = document.getElementById(idNoprefix)
+              if (
+                // Don't capture Ctrl + Click, as that means user wants link to open on a separate page.
+                // https://stackoverflow.com/questions/16190455/how-to-detect-controlclick-in-javascript-from-an-onclick-div-attribute
+                !e.ctrlKey
+              ) {
+                e.preventDefault()
+                if (
+                  // This is needed to prevent a blowup when clicking the "parent" link of a direct child of the toplevel page of an issue.
+                  // For artiles all works fine because each section is rendered separately and thus has a non empty href.
+                  // But issues currently work more like static renderings, and use empty ID for the toplevel header. This is even though
+                  // the toplevel header does have already have an ID. We should instead of doing this actually make those hrefs correct.
+                  // But lazy now.
+                  !href
+                ) {
+                  window.location.hash = ''
+                } else {
+                  if (
+                    targetElem &amp;&amp;
+                    // h2 self link, we want those to actually go to the separated page.
+                    target.parentElement.tagName !== 'H2'
+                  ) {
+                    window.location.hash = idNoprefix
+                  } else {
+                    Router.push(href)
+                  }
+                }
+              }
+            }
+          });
+        }
+      }
+    },
+    [ancestors, articlesInSamePageMap]
+  );
+  let html = ''
+  if (!isIssue) {
+     html += article.h1Render
+  }
+  html += article.render
+  if (!isIssue) {
+    // A mega hacky version. TODO benchmark: would it significantly improve rendering time?
+    //const tocHtml = articlesInSamePage.slice(1).map(a =&gt; `&lt;div style="padding-left:${30 * (a.depth - firstArticle.depth)}px;"&gt;&lt;a href="../${article.author.username}/${a.topicId}"&gt;${a.titleRender}&lt;/a&gt;&lt;/div&gt;`).join('') +
+    const entry_list = []
+    const levelToHeader = { 0: article }
+    for (let i = 0; i &lt; articlesInSamePageForToc.length; i++) {
+      const a = articlesInSamePageForToc[i]
+      const authorUsername = article.author.username
+      const level = a.depth - article.depth
+      const href = ` href="/${a.slug}"`
+      const content = a.titleRender
+      let parent_href, parent_content
+      if (level &gt; 1) {
+        ;({ href: parent_href, content: parent_content } = levelToHeader[level - 1])
+      }
+      levelToHeader[level] = { href, content }
+      entry_list.push({
+        content,
+        href,
+        level,
+        has_child: i &lt; articlesInSamePageForToc.length - 1 &amp;&amp; articlesInSamePageForToc[i + 1].depth === a.depth + 1,
+        // A quick hack as it will be easier to do it here than to modify the link generation.
+        // We'll later fix both at once to remove the user prefix one day. Maybe.
+        // https://docs.ourbigbook.com/TODO/remove-scope-from-toc-entry-ids
+        id_prefix: AT_MENTION_CHAR + authorUsername + '/',
+        parent_href,
+        parent_content,
+        target_id: a.slug,
+      })
+    }
+    if (entry_list.length) {
+      html += htmlToplevelChildModifierById(renderTocFromEntryList({ entry_list }), Macro.TOC_ID) 
+    }
+    html += articlesInSamePage.map(a =&gt; a.h2Render + a.render).join('')
+  }
+  return &lt;&gt;
+    &lt;div
+      dangerouslySetInnerHTML={{ __html: html }}
+      className="ourbigbook"
+      ref={renderRefCallback}
+    /&gt;
+    &lt;div className="meta content-not-ourbigbook"&gt;
+      {isIssue
+        ? &lt;&gt;
+            &lt;h2 id={commentsHeaderId}&gt;
+              &lt;a href={`#${commentsHeaderId}`}&gt;&lt;IssueIcon /&gt; Comments ({ commentsCount })&lt;/a&gt;
+              {' '}
+              &lt;FollowArticleButton {...{
+                article,
+                issueArticle,
+                isIssue: true,
+                loggedInUser,
+                showText: false,
+              }} /&gt;
+            &lt;/h2&gt;
+            &lt;div className="comment-form-holder"&gt;
+              &lt;CommentInput {...{
+                comments,
+                commentCountByLoggedInUser,
+                issueNumber: article.number,
+                loggedInUser,
+                setComments,
+              }}/&gt;
+            &lt;/div&gt;
+            {curComments?.map((comment: CommentType) =&gt;
+              &lt;Comment {...{
+                comment,
+                comments,
+                id: comment.id,
+                key: comment.id,
+                loggedInUser,
+                setComments,
+              }} /&gt;
+            )}
+          &lt;/&gt;
+        : &lt;&gt;
+            &lt;div className="ourbigbook-title"&gt;
+              {linkList(tagged, TAGGED_ID_UNRESERVED, TAGS_MARKER, 'Tagged', linkPref)}
+              {(ancestors.length !== 0) &amp;&amp; &lt;&gt;
+                &lt;h2 id={ANCESTORS_ID}&gt;&lt;a
+                  href={`#${ANCESTORS_ID}`} dangerouslySetInnerHTML={{ __html: HTML_PARENT_MARKER + ' Ancestors' }}
+                  className="ourbigbook-title"&gt;
+                &lt;/a&gt;&lt;/h2&gt;
+                &lt;ol&gt;
+                  {ancestors.slice().reverse().map(a =&gt;
+                    // Don't need href=../a.slug because this section cannot appear on the index page.
+                    &lt;li key={a.slug}&gt;&lt;a
+                      href={`${linkPref}${a.slug}`}
+                      dangerouslySetInnerHTML={{ __html: a.titleRender}}
+                    &gt;&lt;/a&gt;&lt;/li&gt;
+                  )}
+                &lt;/ol&gt;
+              &lt;/&gt;}
+            {linkList(incomingLinks, INCOMING_LINKS_ID_UNRESERVED, INCOMING_LINKS_MARKER, 'Incoming links', linkPref)}
+            {linkList(synonymLinks, SYNONYM_LINKS_ID_UNRESERVED, SYNONYM_LINKS_MARKER, 'Synonyms', linkPref)}
+            &lt;/div&gt;
+            &lt;h2&gt;
+              &lt;CustomLink href={routes.issues(article.slug)}&gt;
+                &lt;IssueIcon /&gt; Discussion ({ article.issueCount })
+              &lt;/CustomLink&gt;
+              {' '}
+              &lt;FollowArticleButton {...{
+                article,
+                classNames: ['btn', 'small'],
+                isIssue: false,
+                loggedInUser,
+                showText: false,
+              }} /&gt;
+            &lt;/h2&gt;
+            { seeAllCreateNew }
+            { latestIssues.length &gt; 0 ?
+                &lt;&gt;
+                  &lt;h3&gt;Latest threads&lt;/h3&gt;
+                  &lt;ArticleList {...{
+                    articles: latestIssues,
+                    articlesCount: article.issueCount,
+                    comments,
+                    commentsCount,
+                    issueArticle: article,
+                    itemType: 'discussion',
+                    loggedInUser,
+                    page: 0,
+                    showAuthor: true,
+                    what: 'discussion',
+                  }}/&gt;
+                  &lt;h3&gt;Top threads&lt;/h3&gt;
+                  &lt;ArticleList {...{
+                    articles: topIssues,
+                    articlesCount: article.issueCount,
+                    comments,
+                    commentsCount,
+                    issueArticle: article,
+                    itemType: 'discussion',
+                    loggedInUser,
+                    page: 0,
+                    showAuthor: true,
+                    what: 'issues',
+                  }}/&gt;
+                  { seeAllCreateNew }
+                &lt;/&gt;
+              : &lt;p&gt;There are no discussions about this article yet.&lt;/p&gt;
+            }
+            &lt;div className="source"&gt;&lt;a href={routes.articleSource(article.slug)}&gt;&lt;SourceIcon /&gt; View article source&lt;/a&gt;&lt;/div&gt;
+          &lt;/&gt;
+      }
+    &lt;/div&gt;
+  &lt;/&gt;
+}
+export default Article
+</code></pre></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/front/";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Allow {parent} to point to {file} header - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg" />
+</head>
+<body>
+<header>
+<a href="../"><img src="../_raw/logo.svg" />OurBigBook</a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw"></i></a>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="allow-parent-to-point-to-file-header"><div class="notnav"><h1><a href="">Allow <code>{parent}</code> to point to <code>{file}</code> header</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="../todo"> TODO</a><a href="../todo#issues"> Issues</a></div><div class="nav"><span class="tags"> tags: <a href="../todo#file">File</a></span><a class="nosplit" href="../todo#allow-parent-to-point-to-file-header"></a><span class="metrics"><span class="wcntr"> words: 53</span></span></div></nav></div><div class="code" id="_110"><pre><code>= my/file.txt
+
+= Asdf
+{parent=my/file.txt}
+{parentFile}</code></pre></div><div class="p" id="_111">Same for tags.</div><div class="p" id="_112">Currently there is some confusion in the code on treating the <code>&lt;&gt;{file}</code> like the file in <code>= Header{file}</code>: one if about pointing to things, the other is about the current thing. We will disambiguate with <code>parentFile</code>.</div><div class="p" id="_113">Same for <code>tag</code> and <code>tagFile</code>.</div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900"></span> Ancestors</a></h2><div><ol><li><a href="../todo#issues">Issues</a></li><li><a href="../todo">TODO</a></li></ol></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+<div>Source code for this page: <a href="../_file/todo.bigb">todo.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "todo/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,649 @@
+@import '../ourbigbook.common.scss';
+
+$border-radius: 10px;
+$like-button-inactive-color: white;
+$like-button-active-color: #FF1493;
+$nav-background-color: #AA0;
+$tab-bar-active-color: #CC0;
+$toplevel-padding: 20px;
+$toplevel-padding-mobile: 5px;
+
+html {
+height: 100%;
+
+body {
+@include body;
+background-color: $background-color;
+margin: 0;
+height: 100%;
+
+#__next {
+height: 100%;
+
+div.toplevel {
+height: 100%;
+&.editor {
+  display: flex;
+  flex-direction: column;
+  div.main {
+    height: 100%;
+  }
+}
+
+div.main {
+flex: 0 1 auto;
+overflow: auto;
+@media only screen and (max-width: $max-mobile-width) {
+  .mobile-hide {
+    display: none;
+  }
+}
+@media only screen and (min-width: $max-mobile-width + 1) {
+}
+
+button, a.btn {
+  $button-fg-color: #E8E6E3;
+  border-radius: 3px;
+  border: 2px solid #666666;
+  cursor: pointer;
+  display: inline-block;
+  font-size: 15px;
+  font-weight: bold;
+  line-height: 24px;
+  margin: 0;
+  padding: 2px 5px;
+  text-decoration: none;
+  vertical-align: middle;
+  &:not(.disabled) {
+    &, &:hover.active {
+      background-color: #181818;
+      color: $button-fg-color;
+      i.ion-heart {
+        color: $like-button-active-color;
+      }
+    }
+    &:hover, &.active {
+      background-color: #BB1070;
+      color: $like-button-inactive-color;
+      i.ion-heart {
+        color: white;
+      }
+      //border-color: $button-bg-color;
+    }
+  }
+  &.disabled {
+    cursor: default;
+    background-color: #444;
+    color: white;
+  }
+  &.small {
+    // A button that can be placed side-by-side with text taking up a comparable height.
+    // Because the default button is way taller and looks terrible when side-by-side.
+    //
+    // Important here because we were getting conflicts with .tab-item,
+    // no patience to sort that out better right now.
+    padding: 1px 5px !important;
+    line-height: 1.3em;
+  }
+}
+
+input, textarea.not-monaco {
+  background-color: $background-color;
+  border-radius: 3px;
+  border: 1px solid gray;
+  box-sizing: border-box;
+  color: white;
+  padding: 0.3em 0.5em;
+  margin-bottom: 10px;
+  width: 100%;
+  &[disabled] {
+    background-color: rgb(50, 50, 50);
+  }
+  &:focus {
+    outline: none;
+    border-color: #CCC;
+  }
+  &::placeholder {
+    color: #AAA;
+  }
+  // Unable to make it work for password fields.
+  // https://stackoverflow.com/questions/55131944/how-to-remove-blue-background-on-chrome-autocomplete
+}
+input[type=checkbox] {
+  margin-left: 10px;
+  width: auto;
+}
+label {
+  font-weight: bold;
+  display: block;
+  div.label {
+    margin-bottom: 5px;
+    &.inline {
+      display: inline;
+    }
+  }
+}
+
+div.list-container {
+  overflow-x: auto;
+  margin-bottom: 20px;
+  .item:not(:last-child) {
+    margin-bottom: 1em;
+  }
+  div.title-container {
+    margin-bottom: 1.0em;
+  }
+  table.list {
+    border-collapse: collapse;
+    white-space: nowrap;
+    tr {
+      td, th {
+        border: 1px solid $color;
+        padding: 5px 10px;
+        &.center {
+          text-align: center;
+        }
+        &.left {
+          text-align: left;
+        }
+        &.right {
+          text-align: right;
+        }
+        &.shrink {
+        }
+        &.expand {
+          max-width: 60vw;
+          overflow: hidden;
+        }
+        &.bold {
+          font-weight: bold;
+        }
+      }
+    }
+  }
+  .title {
+    font-weight: bold;
+  }
+}
+
+/*
+.ourbigbook.title {
+  // Maybe rather than doing this we should instead create a minimal CSS.
+  // To override the default body color of .ourbigbook elements.
+  color: $a-color;
+  > * {
+    // Undo the toplevel padding, otherwise elements (but not text) like maths and code
+    // all get that padding.
+    padding-left: 0px;
+  }
+}
+*/
+
+div.source {
+  margin-top: 1em;
+  font-weight: bold;
+}
+
+// For elements that are injected into the rendered OurBigBook HTML.
+.ourbigbook {
+  .web {
+    display: inline;
+    &.top {
+      font-size: 18px;
+    }
+    &:not(.top) {
+      margin-left: 0.5ch;
+      a.btn, button {
+        vertical-align: text-bottom;
+      }
+      .see, .new, .edit {
+        i {
+          padding: 0 4px;
+        }
+      }
+    }
+    .by-others, .issues, .see, .new, .edit {
+      i {
+        line-height: 1em;
+        vertical-align: text-bottom;
+      }
+    }
+    .by-others {
+      i {
+        font-size: 1.3em;
+      }
+    }
+    .issues {
+      i {
+        font-size: 1.2em;
+      }
+    }
+    .see, .new, .edit {
+      i {
+        font-size: 1.2em;
+      }
+    }
+  }
+}
+
+pre {
+  @include pre;
+}
+
+div.article-page {
+  div.article-meta {
+    nav.issue-nav {
+      font-weight: bold;
+      .see-all {
+        font-size: 1.2em;
+        margin-bottom: 1em;
+        a {
+          white-space: pre;
+        }
+      }
+    }
+    div.article-info {
+      @media only screen and (max-width: $max-mobile-width) {
+        margin-bottom: 10px;
+      }
+      @media only screen and (min-width: $max-mobile-width + 1) {
+        margin-bottom: 20px;
+      }
+      .username {
+        font-size: 1.2em;
+        img.profile-thumb {
+          $size: 1.5em;
+          height: $size;
+          width: $size;
+        }
+      }
+      .by-others {
+        font-weight: bold;
+        i {
+          font-size: 1.5em;
+        }
+      }
+    }
+    div.article-info-3 {
+      margin-bottom: 10px;
+      button, a.btn {
+        margin-right: 3px;
+      }
+      span.article-dates {
+        font-weight: bold;
+      }
+    }
+  }
+  div.meta {
+    margin-bottom: 10px;
+  }
+  .see-all {
+    font-weight: bold;
+  }
+}
+
+div.editor-page {
+  $title-font-size: 24px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  div.header {
+    flex-grow: 0;
+    flex-shrink: 0;
+    h1 {
+      font-size: 1.8em;
+      margin-bottom: 0.5em;
+    }
+    div.help {
+      margin-bottom: 0.7em;
+    }
+  }
+  div.title-and-actions, div.parent-id-container {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 0;
+    flex-shrink: 0;
+    font-size: $title-font-size * 0.75;
+    margin-bottom: 10px;
+    input.title {
+      flex: 1 1 auto;
+      margin-bottom: 0;
+    }
+    div.actions {
+      flex: 0 0 auto;
+      margin-left: auto;
+      button {
+        font-size: $title-font-size * 0.75;
+        height: 100%;
+        margin-left: 5px;
+      }
+    }
+    .spacer {
+      width: 15px;
+    }
+  }
+  label: {
+    font-size: $title-font-size;
+  }
+  div.ourbigbook-editor {
+    overflow-y: auto;
+    flex-grow: 1;
+    flex-shrink: 1;
+  }
+}
+
+div.tab-list {
+  font-weight: bold;
+  margin: 5px 0 10px;
+  overflow: hidden;
+  .tab-item {
+    overflow: hidden;
+    padding-right: 10px;
+    white-space: pre;
+    &.active {
+      color: $tab-bar-active-color;
+    }
+    &:hover {
+      color: $tab-bar-active-color;
+    }
+  }
+}
+
+i.ion-star {
+  color: yellow;
+}
+i.ion-heart {
+  color: $like-button-active-color;
+}
+
+span.shortcut {
+  text-decoration: underline;
+  text-underline-offset: 1px;
+}
+
+/* Ourbigbook has a complex per-element padding structure that we can't easily override.
+ * So for now we are taking the approach of adding this class to every content (non-hav/footer)
+ * to make them align nicely with rendered Ourbigbook. */
+.content-not-ourbigbook {
+  h1, .h1 {
+    @include h-common;
+    @include h1-only;
+    margin-top: 0;
+    margin-bottom: 0.2em;
+  }
+  .h2 {
+    @include h-common;
+    margin-bottom: 0.3em;
+    &.inline {
+      display: inline;
+    }
+  }
+  @media only screen and (max-width: $max-mobile-width) {
+    padding-left: $toplevel-padding-mobile;
+    padding-right: $toplevel-padding-mobile;
+  }
+  @media only screen and (min-width: $max-mobile-width + 1) {
+    padding-left: $toplevel-padding;
+    padding-right: $toplevel-padding;
+  }
+}
+
+.comment {
+  border: 1px solid $color;
+  border-radius: $border-radius;
+  margin-bottom: 10px;
+  &:target .comment-header {
+    background-color: #552222;
+  }
+  .comment-header {
+    border-bottom: 1px solid $color;
+    border-radius: $border-radius $border-radius 0 0;
+    background-color: #003300;
+    margin-bottom: 10px;
+    padding: 10px 10px;
+    .number {
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+  }
+}
+
+.comment-form-holder {
+  margin-bottom: 10px;
+  .comment-form {
+    border: 1px solid $color;
+    border-radius: $border-radius;
+    margin-bottom: 10px;
+    .comment-form-textarea {
+      border-bottom: 1px solid $color;
+      padding: 5px 5px 2px 5px;
+      textarea {
+        border-radius: $border-radius;
+        box-sizing: border-box;
+        margin-bottom: 0;
+        resize: vertical;
+        width: 100%;
+      }
+    }
+    .comment-form-submit {
+      padding: 10px;
+    }
+  }
+}
+
+.error-messages {
+  color: #F55;
+  font-weight: bold;
+  margin-top: 0;
+  margin-bottom: 0.5em;
+  .error-message-presenter {
+    display: inline-block;
+    margin: 20px auto;
+    padding: 8px 15px;
+    border-radius: 4px;
+    color: #f02d2d;
+    font-weight: 600;
+    background: rgba(240, 45, 45, 0.1);
+  }
+}
+
+.hide {
+  display: none !important;
+}
+
+.loading-spinner {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  margin: 90px auto;
+  border-radius: 50%;
+  border-top: 3px solid rgba(0, 0, 0, 0.1);
+  border-right: 3px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 3px solid rgba(0, 0, 0, 0.1);
+  border-left: 3px solid #818a91;
+  transform: translateZ(0);
+  animation: spin 0.5s infinite linear;
+  /* TODO the spinner appears broken, might be because of this typo that existed in the original.
+   * We noticed it when migrating to SASS which does a compile check ;-). */
+  /*
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+  */
+}
+
+/* https://github.com/gothinkster/angular-realworld-example-app/blob/9e8c49514ee874e5e0bbfe53ffdba7d2fd0af36f/src/app/shared/article-helpers/article-list.component.css#L1 */
+.page-link {
+  cursor: pointer;
+}
+
+.pagination {
+  padding: 0;
+  list-style-type: none;
+  margin-bottom: 10px;
+  .pages {
+    margin-right: 10px;
+    .page-item {
+      &.active {
+        a {
+          color: $tab-bar-active-color;
+        }
+        font-weight: bold;
+      }
+      &:hover {
+        a {
+          color: $tab-bar-active-color;
+        }
+      }
+      &.total {
+        margin-left: 10px;
+      }
+    }
+  }
+}
+
+.profile-page {
+  div.user-actions {
+    margin-bottom: 1em;
+    >:not(:last-child) {
+      margin-right: 2px
+    }
+  }
+  .user-img {
+    $size: 256px;
+    height: $size;
+    width: $size;
+  }
+}
+
+img.profile-thumb {
+  $size: 26px;
+  height: $size;
+  width: $size;
+  vertical-align: middle;
+}
+
+.username {
+  font-weight: bold;
+}
+
+} // div.main
+
+footer {
+  margin-top: 10px;
+  padding: 10px $toplevel-padding;
+  a {
+    &:not(:last-child) {
+      margin-right: 10px;
+    }
+    color: $background-color;
+    text-decoration: none;
+    &:visited {
+      color: $background-color;
+    }
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+footer, nav.navbar {
+  background-color: $nav-background-color;
+  color: $background-color;
+}
+
+nav.navbar {
+  $font-size: 24px;
+  /* https://stackoverflow.com/questions/5078239/how-do-i-remove-the-space-between-inline-block-elements */
+  display: flex;
+  height: $font-size * 1.2;
+  flex: 0 0 auto;
+  margin-bottom: 20px;
+  .navbar-list {
+    display: flex;
+    margin-left: auto;
+  }
+  white-space: nowrap;
+  a {
+    /* Make buttons occupy the full height of the header bar.
+    * https://stackoverflow.com/questions/28254332/how-to-vertically-center-the-contents-of-a-flexbox-item/28254903#28254903 */
+    align-items: center;
+    align-self: stretch;
+
+    color: $background-color;
+    display: flex;
+    font-size: 24px;
+    font-weight: bold;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 5px;
+    padding-right: 5px;
+    text-decoration: none;
+    &:visited {
+      color: $background-color;
+    }
+    &:hover, &.active {
+      color: $nav-background-color;
+      background-color: $background-color;
+    }
+    &.score.changed {
+      //background-color: $like-button-inactive-color;
+      //color: $like-button-active-color;
+      // Need to go a bit custom here because of the golden background.
+      i.ion-heart {
+        color: #ac1968;
+      }
+    }
+    &.profile {
+      padding-left: 3px;
+    }
+    .home {
+      padding-left: 3px;
+    }
+    img.profile-thumb, img.logo {
+      height: $font-size * 1.2;
+      padding-right: 5px;
+      padding-left: 5px;
+    }
+    @media only screen and (max-width: $max-mobile-width) {
+      // TODO don't hardcode this width, autohide when there is no more room:
+      // https://stackoverflow.com/questions/43547430/how-can-i-completely-hide-elements-that-overflow-their-container-vertically
+      &.about {
+        display: none;
+      }
+    }
+    @media only screen and (max-width: 780px) {
+      &.donate {
+        display: none;
+      }
+    }
+    .beta {
+      // Otherwise flex ignores the space.
+      // https://stackoverflow.com/questions/39325039/css-flex-box-last-space-removed
+      white-space: pre-wrap;
+    }
+    @media only screen and (max-width: $max-mobile-width) {
+      // TODO don't hardcode this width, autohide when there is no more room:
+      // https://stackoverflow.com/questions/43547430/how-can-i-completely-hide-elements-that-overflow-their-container-vertically
+      .beta {
+        display: none;
+      }
+    }
+  }
+  &>:first-child {
+    @media only screen and (max-width: $max-mobile-width) {
+      padding-left: 0px;
+    }
+    @media only screen and (min-width: $max-mobile-width + 1) {
+      padding-left: $toplevel-padding;
+    }
+  }
+}
+
+}
+}
+}
+}

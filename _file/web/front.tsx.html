@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>front.tsx - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../_raw/main.css">
+<link rel="shortcut icon" href="../../_raw/logo.svg" />
+</head>
+<body>
+<header>
+<a href="../../"><img src="../../_raw/logo.svg" />OurBigBook</a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw"></i></a>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="front.tsx"><div class="notnav"><h1><a href="">web/front.tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../_dir/">(root)</a> / <a href="../../_dir/web">web</a> / <a href="../../_raw/web/front.tsx">front.tsx</a></b></div></nav></div><div class="p"><b>web/front.tsx</b></div><div class="code"><pre><code>import React from 'react'
+import Router from 'next/router'
+import { mutate } from 'swr'
+
+import ourbigbook from 'ourbigbook';
+
+import { webApi } from 'front/api'
+import { AUTH_COOKIE_NAME } from 'front/js'
+import CustomLink from 'front/CustomLink'
+import routes from 'front/routes'
+import { ArticleType } from 'front/types/ArticleType'
+import { IssueType } from 'front/types/IssueType'
+import { UserLinkWithImageInner } from 'front/UserLinkWithImage'
+
+export const AUTH_LOCAL_STORAGE_NAME = 'user'
+export const LOGIN_ACTION = 'Sign in'
+export const REGISTER_ACTION = 'Sign up'
+
+export function capitalize(s) {
+  return s[0].toUpperCase() + s.slice(1)
+}
+
+export function decapitalize(s) {
+  return s[0].toLowerCase() + s.slice(1)
+}
+
+export function ArticleBy(
+  {
+    article,
+    newTab=false
+  }: {
+    article?: ArticleType,
+    newTab?: boolean,
+  }
+) {
+  const inner = &lt;&gt;
+    "&lt;span
+      className="comment-body ourbigbook-title"
+      dangerouslySetInnerHTML={{ __html: article.titleRender }}
+    /&gt;" by &lt;UserLinkWithImageInner {...{
+      user: article.author,
+      showUsername: false,
+    }} /&gt;
+  &lt;/&gt;
+  const href = routes.article(article.slug)
+  if (newTab) {
+    return &lt;a href={href} target="_blank"&gt;{inner}&lt;/a&gt;
+  } else {
+    return &lt;CustomLink href={href}&gt;{inner}&lt;/CustomLink&gt;
+  }
+}
+
+export function IssueBy(
+  { article }:
+  { article?: ArticleType }
+) {
+  return &lt;CustomLink href={routes.article(article.slug)}&gt;
+    "&lt;span
+      className="comment-body ourbigbook-title"
+      dangerouslySetInnerHTML={{ __html: article.titleRender }}
+    /&gt;" by { article.author.displayName }
+  &lt;/CustomLink&gt;
+}
+
+export function DiscussionAbout(
+  { article, children, issue, }:
+  { article?: ArticleType; issue?: IssueType, children?: React.ReactNode }
+) {
+  const inner = &lt;&gt;
+      &lt;IssueIcon /&gt;{' '}
+      Discussion{issue ? ` #${issue.number}` : ''} on {' '}
+      &lt;ArticleBy {...{article, issue}} /&gt;
+      {children}
+    &lt;/&gt;
+  if (issue) {
+    return &lt;span className="h2"&gt;{ inner }&lt;/span&gt;
+  } else {
+    return &lt;h1 className="h2"&gt;{ inner }&lt;/h1&gt;
+  }
+}
+
+// Icons.
+
+export function Icon(cls, title, opts) {
+  const showTitle = opts.title === undefined ? true : opts.title
+  const extraClasses = opts.extraClasses === undefined ? [] : opts.extraClasses
+  return &lt;i className={extraClasses.concat(cls).join(' ')} title={showTitle ? title : undefined } /&gt;
+}
+
+export function ArticleIcon(opts) {
+  return Icon("ion-ios-book", "Article", opts)
+}
+
+export function CancelIcon(opts) {
+  return Icon("ion-close", "Cancel", opts)
+}
+
+export function DeleteIcon(opts) {
+  return Icon("ion-ios-trash", "Delete", opts)
+}
+export function EditArticleIcon(opts) {
+  return Icon("ion-edit", "Edit", opts)
+}
+
+export function ErrorIcon(opts) {
+  return Icon("ion-close", "Edit", opts)
+}
+
+export function HelpIcon(opts={}) {
+  return Icon("ion-help-circled", "Help", opts)
+}
+
+export function HomeIcon(opts) {
+  return Icon("ion-android-home", "Home", opts)
+}
+
+export function IssueIcon(opts) {
+  return Icon("ion-ios-chatbubble", "Discussion", opts)
+}
+
+export function LikeIcon(opts) {
+  return Icon("ion-heart", "Like", opts)
+}
+
+export function NewArticleIcon(opts) {
+  return Icon("ion-plus", "New", opts)
+}
+
+export function NotificationIcon(opts) {
+  return Icon("i ion-ios-bell", "Notifications", opts)
+}
+
+export function SeeIcon(opts) {
+  return Icon("ion-eye", "View", opts)
+}
+
+export function SourceIcon(opts) {
+  return Icon("ion-document-text", "View", opts)
+}
+
+export function TimeIcon(opts) {
+  return Icon("ion-android-time", undefined, opts)
+}
+
+export function TopicIcon(opts) {
+  return Icon("ion-ios-people", "Topic", opts)
+}
+
+export function UserIcon(opts) {
+  return Icon("ion-ios-person", "User", opts)
+}
+
+export function SignupOrLogin(
+  { to }:
+  { to: string }
+) {
+  return &lt;&gt;
+    &lt;CustomLink href={routes.userNew()}&gt;
+      {REGISTER_ACTION}
+    &lt;/CustomLink&gt;
+    {' '}or{' '}
+    &lt;CustomLink href={routes.userLogin()}&gt;
+      {decapitalize(LOGIN_ACTION)}
+    &lt;/CustomLink&gt;
+    {' '}{to}.
+  &lt;/&gt;
+}
+
+export function TopicsHelp() {
+  return &lt;div&gt;&lt;HelpIcon /&gt; New to topics? &lt;a href="https://docs.ourbigbook.com/#ourbigbook-web-topics"&gt;Read the documentation here!&lt;/a&gt;&lt;/div&gt;
+}
+
+export function disableButton(btn, msg) {
+  btn.setAttribute('disabled', '')
+  btn.setAttribute('title', msg)
+  btn.classList.add('disabled')
+}
+
+export function enableButton(btn, msgGiven) {
+  btn.removeAttribute('disabled')
+  if (msgGiven) {
+    btn.removeAttribute('title')
+  }
+  btn.classList.remove('disabled')
+}
+
+/// Logout the current user on web UI.
+export function logout() {
+  window.localStorage.removeItem(AUTH_LOCAL_STORAGE_NAME);
+  deleteCookie(AUTH_COOKIE_NAME)
+  mutate('user', null);
+}
+
+export function slugFromArray(arr, { username }: { username?: boolean } = {}) {
+  if (username === undefined) {
+    username = true
+  }
+  const start = username ? 0 : 1
+  return arr.slice(start).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
+}
+
+export function slugFromRouter(router, opts={}) {
+  let arr = router.query.slug
+  if (!arr) {
+    return router.query.uid
+  }
+  return slugFromArray(arr, opts)
+}
+
+export const AppContext = React.createContext&lt;{
+  title: string
+  setTitle: React.Dispatch&lt;any&gt; | undefined
+  prevPageNoSignup: string
+  updatePrevPageNoSignup: (newCur: string) =&gt; void | undefined,
+}&gt;({
+  title: '',
+  setTitle: undefined,
+  prevPageNoSignup: '',
+  updatePrevPageNoSignup: undefined
+});
+
+// Global state.
+export const AppContextProvider = ({ children, vals }) =&gt; {
+  const [title, setTitle] = React.useState('')
+  return &lt;AppContext.Provider value={
+    Object.assign({
+      title, setTitle,
+    }, vals)
+  }&gt;
+    {children}
+  &lt;/AppContext.Provider&gt;
+};
+
+export function useCtrlEnterSubmit(handleSubmit) {
+  React.useEffect(() =&gt; {
+    function ctrlEnterListener(e) {
+      if (e.code === 'Enter' &amp;&amp; e.ctrlKey) {
+        handleSubmit(e)
+      }
+    }
+    document.addEventListener('keydown', ctrlEnterListener);
+    return () =&gt; {
+      document.removeEventListener('keydown', ctrlEnterListener);
+    };
+  }, [handleSubmit]);
+}
+
+export function useEEdit(canEdit, slug) {
+  React.useEffect(() =&gt; {
+    function listener(e) {
+      if (e.code === 'KeyE') {
+        if (canEdit) {
+          Router.push(routes.articleEdit(slug))
+        }
+      }
+    }
+    if (slug !== undefined) {
+      document.addEventListener('keydown', listener);
+      return () =&gt; {
+        document.removeEventListener('keydown', listener);
+      }
+    }
+  }, [canEdit, slug]);
+}
+
+// https://stackoverflow.com/questions/4825683/how-do-i-create-and-read-a-value-from-cookie/38699214#38699214
+export function setCookie(name, value, days?: number, path = '/') {
+  let delta
+  if (days === undefined) {
+    delta = Number.MAX_SAFE_INTEGER
+  } else {
+    delta = days * 864e5
+  }
+  const expires = new Date(Date.now() + delta).toUTCString()
+  document.cookie = `${name}=${encodeURIComponent(
+    value
+  )};expires=${expires};path=${path}`
+}
+
+export function setCookies(cookieDict, days, path = '/') {
+  for (let key in cookieDict) {
+    setCookie(key, cookieDict[key], days, path)
+  }
+}
+
+export function getCookie(name) {
+  return getCookieFromString(document.cookie, name)
+}
+
+export function getCookieFromReq(req, name) {
+  const cookie = req.headers.cookie
+  if (cookie) {
+    return getCookieFromString(cookie, name)
+  } else {
+    return null
+  }
+}
+
+export function getCookieFromString(s, name) {
+  return getCookiesFromString(s)[name]
+}
+
+// https://stackoverflow.com/questions/5047346/converting-strings-like-document-cookie-to-objects
+export function getCookiesFromString(s) {
+  return s.split('; ').reduce((prev, current) =&gt; {
+    const [name, ...value] = current.split('=')
+    prev[name] = value.join('=')
+    return prev
+  }, {})
+}
+
+export function deleteCookie(name, path = '/') {
+  setCookie(name, '', -1, path)
+}
+
+export async function setupUserLocalStorage(user, setErrors?) {
+  // We fetch from /profiles/:username again because the return from /users/login above
+  // does not contain the image placeholder.
+  const { data: userData, status: userStatus } = await webApi.user(
+    user.username
+  )
+  user.effectiveImage = userData.effectiveImage
+  window.localStorage.setItem(
+    AUTH_LOCAL_STORAGE_NAME,
+    JSON.stringify(user)
+  );
+  setCookie(AUTH_COOKIE_NAME, user.token)
+  mutate(AUTH_COOKIE_NAME, user.token)
+  mutate(AUTH_LOCAL_STORAGE_NAME, user);
+}
+</code></pre></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/";
+</script>
+<script src="../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

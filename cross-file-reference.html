@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Cross file reference - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="_raw/main.css">
+<link rel="shortcut icon" href="_raw/logo.svg" />
+</head>
+<body>
+<header>
+<a href="."><img src="_raw/logo.svg" />OurBigBook</a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw"></i></a>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="cross-file-reference"><div class="notnav"><h1><a href="">Cross file reference</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."> OurBigBook Project</a><a href=".#ourbigbook-markup"> OurBigBook Markup</a><a href=".#macro"> Macro</a><a href=".#cross-reference"> Cross reference</a></div><div class="nav"><a href="#_toc" class="toc"></a><a class="nosplit" href=".#cross-file-reference"></a><span class="metrics"><span class="wcntr"> words: 881</span><span class="dcnt"> articles: 3</span></span></div></nav></div><div class="p" id="_2061">Reference to the first header of another file:
+<div class="code" id="_2062"><pre><code>\x[not-readme]</code></pre></div><div class="p" id="_2063">which renders as:</div><blockquote id="_2064"><div class="p" id="_2065"><a href="not-readme">not the README</a></div></blockquote></div><div class="p" id="_2066">Reference to a non-first header of another file:
+<div class="code" id="_2067"><pre><code>\x[h2-in-not-the-readme]</code></pre></div><div class="p" id="_2068">which renders as:</div><blockquote id="_2069"><div class="p" id="_2070"><a href="not-readme#h2-in-not-the-readme">h2 in not the README</a></div></blockquote></div><div class="p" id="_2071">To make toplevel links cleaner, if the target header is the very first element of the other page, then the link does not get a fragment, e.g.: <code>\x[not-readme]</code> rendered as:
+<div class="code" id="_2072"><pre><code>&lt;a href="not-readme"</code></pre></div>
+and not:
+<div class="code" id="_2073"><pre><code>&lt;a href="not-readme#not-readme"</code></pre></div>
+while <code>\x[h2-in-not-the-readme]</code> is rendered with the fragment:
+<div class="code" id="_2074"><pre><code>&lt;a href="not-readme#h2-in-not-the-readme"</code></pre></div></div><div class="p" id="_2075">Reference to the first header of another file that is a second inclusion:
+<div class="code" id="_2076"><pre><code>\x[included-by-not-readme]</code></pre></div><div class="p" id="_2077">which renders as:</div><blockquote id="_2078"><div class="p" id="_2079"><a href="included-by-not-readme">included by not the README</a></div></blockquote></div><div class="p" id="_2080">Reference to another header of another file, with <a href=".#x-full-argument"><code>full</code></a>:
+<div class="code" id="_2081"><pre><code>\x[h2-in-not-the-readme]{full}.</code></pre></div><div class="p" id="_2082">which renders as:</div><blockquote id="_2083"><div class="p" id="_2084"><a href="not-readme#h2-in-not-the-readme">Section "h2 in not the README"</a>.</div></blockquote>
+Note that when <code>full</code> is used with references in another file in <a href=".#embed-includes">multi page mode</a>, the number is not rendered as explained at: <a href=".#x-full-argument-in-cross-file-references">Section "<code>\x</code> <code>full</code> argument in cross file references"</a>.</div><div class="p" id="_2085">Reference to an image in another file:
+<div class="code" id="_2086"><pre><code>\x[image-not-readme-xi]{full}.</code></pre></div><div class="p" id="_2087">which renders as:</div><blockquote id="_2088"><div class="p" id="_2089"><a href="not-readme#image-not-readme-xi">Figure "Figure in not the README"</a>.</div></blockquote></div><div class="p" id="_2090">Reference to an image in another file:
+<div class="code" id="_2091"><pre><code>\x[image-figure-in-not-the-readme-without-explicit-id]{full}.</code></pre></div><div class="p" id="_2092">which renders as:</div><blockquote id="_2093"><div class="p" id="_2094"><a href="not-readme#image-figure-in-not-the-readme-without-explicit-id">Figure "Figure in not the README without explicit id"</a>.</div></blockquote></div><div class="p" id="_2095">Remember that the <a href=".#the-toplevel-header">ID of the toplevel header</a> is automatically derived from its file name, that's why we have to use:
+<div class="code" id="_2096"><pre><code>\x[not-readme]</code></pre></div><div class="p" id="_2097">which renders as:</div><blockquote id="_2098"><div class="p" id="_2099"><a href="not-readme">not the README</a></div></blockquote>
+instead of:
+<div class="code" id="_2100"><pre><code>\x[not-the-readme]</code></pre></div></div><div class="p" id="_2101">Reference to a subdirectory:
+<div class="code" id="_2102"><pre><code>\x[subdir]
+
+\x[subdir/h2]
+
+\x[subdir/notindex]
+
+\x[subdir/notindex-h2]</code></pre></div><div class="p" id="_2103">which renders as:</div><blockquote id="_2104"><div class="p" id="_2105"><a href="subdir">subdir index</a></div><div class="p" id="_2106"><a href="subdir#h2">h2</a></div><div class="p" id="_2107"><a href="subdir/notindex">subdir/notindex</a></div><div class="p" id="_2108"><a href="subdir/notindex#notindex-h2">notindex h2</a></div></blockquote>
+Implemented at: <a href="https://github.com/ourbigbook/ourbigbook/issues/116">github.com/ourbigbook/ourbigbook/issues/116</a></div><div class="p" id="_2109">Reference to an internal header of another file: <a href="not-readme#h2-in-not-the-readme">h2 in not the README</a>. By default, That header ID gets prefixed by the ID of the top header.</div><div class="p" id="_2110">When using <a href=".#embed-includes"><code>--embed-includes</code></a> mode, the cross file references end up pointing to an ID inside the current HTML element, e.g.:
+<div class="code" id="_2111"><pre><code>&lt;a href="#not-readme"&gt;</code></pre></div>
+rather than:
+<div class="code" id="_2112"><pre><code>&lt;a href="not-readme.html/#not-readme"&gt;</code></pre></div>
+This is why IDs must be unique for elements across all pages.</div><div class="toc-container" id="_toc"><ul><li class="has-child toplevel"><div class="title-div"><div class="arrow"><div></div></div><span class="not-arrow"><a class="title toc" href="#_toc"> Table of contents</a><span class="hover-metadata"><span class="metrics"><span class="wcntr"> 881</span><span class="dcnt"> 3</span></span></span></span></div><ul><li><div id="_toc/cross-file-reference-internals"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#cross-file-reference-internals">1. Cross file reference internals (<code>db.sqlite3</code>)</a><span class="hover-metadata"><a href="#_toc/cross-file-reference-internals" class="c"></a><a class="nosplit" href=".#cross-file-reference-internals"></a><a href="#_toc" class="u"> Cross file reference</a><span class="metrics"><span class="wcntr"> 171</span></span></span></span></div></li><li><div id="_toc/link-to-ids-not-url-path"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#link-to-ids-not-url-path">2. Link to IDs, not URL path</a><span class="hover-metadata"><a href="#_toc/link-to-ids-not-url-path" class="c"></a><a class="nosplit" href=".#link-to-ids-not-url-path"></a><a href="#_toc" class="u"> Cross file reference</a><span class="metrics"><span class="wcntr"> 336</span></span></span></span></div></li><li><div id="_toc/cross-reference-title-link-removal"><div class="arrow"><div></div></div><span class="not-arrow"><a href=".#cross-reference-title-link-removal">3. Cross reference title link removal</a><span class="hover-metadata"><a href="#_toc/cross-reference-title-link-removal" class="c"></a><a class="nosplit" href=".#cross-reference-title-link-removal"></a><a href="#_toc" class="u"> Cross file reference</a><span class="metrics"><span class="wcntr"> 123</span></span></span></span></div></li></ul></li></ul></div><h2 id="_ancestors"><a href="#_ancestors"><span class="fa-solid-900"></span> Ancestors</a></h2><div><ol><li><a href=".#cross-reference">Cross reference</a></li><li><a href=".#macro">Macro</a></li><li><a href=".#ourbigbook-markup">OurBigBook Markup</a></li><li><a href=".">OurBigBook Project</a></li></ol></div><h2 id="_incoming-links"><a href="#_incoming-links"><span title="Incoming links" class="fa-solid-900"></span> Incoming links</a></h2><div><ul><li><a href=".#cross-reference-targets-in-split-headers">Cross reference targets in split headers</a></li><li><a href=".#embed-includes"><code>--embed-includes</code></a></li><li><a href=".#features">Features</a></li><li><a href=".#h-c-argument"><code>\H</code> <code>c</code> argument</a></li><li><a href=".#important-command-line-options">Important command line options</a></li><li><a href=".#log"><code>--log</code></a></li><li><a href=".#ourbigbook-cli">OurBigBook CLI</a></li><li><a href=".#related-projects">Related projects</a></li><li><a href=".#watch"><code>-w</code>, <code>--watch</code></a></li><li><a href=".#x-full-argument-in-cross-file-references"><code>\x</code> <code>full</code> argument in cross file references</a></li></ul></div><h2 id="_synonyms"><a href="#_synonyms"><span title="Synonyms" class="fa-solid-900"></span> Synonyms</a></h2><div><ul><li><a href=".#cross-file-reference">Internal cross file reference</a></li></ul></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="_dir">Website source code</a></div>
+<div>Source code for this page: <a href="_file/README.bigb">README.bigb</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

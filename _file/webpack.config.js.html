@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>webpack.config.js - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../_raw/main.css">
+<link rel="shortcut icon" href="../_raw/logo.svg" />
+</head>
+<body>
+<header>
+<a href="../"><img src="../_raw/logo.svg" />OurBigBook</a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw"></i></a>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="webpack.config.js"><div class="notnav"><h1><a href="">webpack.config.js</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../_dir/">(root)</a> / <a href="../_raw/webpack.config.js">webpack.config.js</a></b></div></nav></div><div class="p"><b>webpack.config.js</b></div><div class="code"><pre><code>const path = require('path');
+
+const ourbigbook_nodejs = require('./nodejs');
+
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const NodePolyfillPlugin = require("node-polyfill-webpack-plugin")
+const TerserPlugin = require("terser-webpack-plugin");
+
+const nodeModulesPath = path.resolve(__dirname, 'node_modules');
+
+module.exports = {
+  entry: {
+    ourbigbook: ['./index.js'],
+    ourbigbook_runtime: ['./ourbigbook_runtime.js'],
+    ourbigbook_css: ['./ourbigbook.scss'],
+    editor: ['./editor.scss'],
+  },
+  mode: 'production',
+  module: {
+    rules: [
+      {
+        test: /\.(scss|css)$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          // This finds and pulls Katex fonts for us.
+          'resolve-url-loader',
+          {
+            loader: "sass-loader",
+            options: {
+              // This is needed for resolve-url-loader to work:
+              // https://github.com/bholloway/resolve-url-loader/issues/212#issuecomment-1011630220
+              sourceMap: true,
+              sassOptions: {
+                includePaths: [nodeModulesPath],
+              },
+            },
+          },
+        ],
+      },
+      // Working CSS in Js version.
+      //{
+      //  test: /\.(scss|css)$/,
+      //  use: ['style-loader', 'css-loader', 'sass-loader'],
+      //},
+      // Fonts.
+      {
+        test: /\.(woff|eot|ttf|otf|woff2)$/i,
+        type: 'asset/resource',
+      },
+    ],
+  },
+  plugins: [
+    new MiniCssExtractPlugin({
+      filename: (pathData) =&gt; {
+        // https://stackoverflow.com/questions/70698775/how-to-make-webpack-generate-separate-css-and-js-with-the-same-name-index-e-g/70698776#70698776
+        if (pathData.chunk.name === 'ourbigbook_css') {
+          return 'ourbigbook.css'
+        }
+        return '[name].css'
+      },
+    }),
+    new NodePolyfillPlugin(),
+  ],
+  optimization: {
+    minimizer: [
+      new CssMinimizerPlugin(),
+      // Minimizes the JavaScript.
+      new TerserPlugin(),
+    ],
+    minimize: true,
+  },
+  output: {
+    clean: false,
+    filename: '[name].js',
+    globalObject: 'this',
+    library: '[name]',
+    libraryTarget: 'umd',
+    path: ourbigbook_nodejs.DIST_PATH,
+  },
+};
+</code></pre></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/";
+</script>
+<script src="../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

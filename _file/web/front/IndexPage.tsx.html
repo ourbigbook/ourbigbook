@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>IndexPage.tsx - OurBigBook Docs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>@import "../../../_obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../_raw/main.css">
+<link rel="shortcut icon" href="../../../_raw/logo.svg" />
+</head>
+<body>
+<header>
+<a href="../../../"><img src="../../../_raw/logo.svg" />OurBigBook</a>
+<a class="font-awesome-container" href="https://github.com/ourbigbook/ourbigbook"><i class="fab fa-github fa-fw"></i></a>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="IndexPage.tsx"><div class="notnav"><h1><a href="">web/front/IndexPage.tsx</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav file"><b> <a href="../../../_dir/">(root)</a> / <a href="../../../_dir/web">web</a> / <a href="../../../_dir/web/front">front</a> / <a href="../../../_raw/web/front/IndexPage.tsx">IndexPage.tsx</a></b></div></nav></div><div class="p"><b>web/front/IndexPage.tsx</b></div><div class="code"><pre><code>import React from 'react'
+
+import { AppContext, ArticleIcon, DiscussionAbout, IssueIcon, NewArticleIcon, TopicIcon, UserIcon } from 'front'
+import ArticleList from 'front/ArticleList'
+import UserList from 'front/UserList'
+import CustomLink from 'front/CustomLink'
+import routes from 'front/routes'
+import { ArticleType } from 'front/types/ArticleType'
+import { IssueType } from 'front/types/IssueType'
+import FollowArticleButton from 'front/FollowArticleButton'
+import { UserType } from 'front/types/UserType'
+import { TopicType } from 'front/types/TopicType'
+
+export interface IndexPageProps {
+  articles?: (ArticleType &amp; IssueType &amp; TopicType)[];
+  articlesCount?: number;
+  issueArticle?: ArticleType;
+  followed?: boolean;
+  itemType?: 'article' | 'discussion' | 'topic' | 'user';
+  loggedInUser?: UserType;
+  order: string;
+  page: number;
+  users?: UserType[];
+  usersCount?: number;
+}
+
+function IndexPageHoc({
+  pageType='home'
+}={}) {
+  const isHomepage = pageType === 'home'
+  return ({
+    articles,
+    articlesCount,
+    followed=false,
+    issueArticle,
+    itemType,
+    loggedInUser,
+    order,
+    page,
+    users,
+    usersCount,
+  }: IndexPageProps) =&gt; {
+    let paginationUrlFunc
+    let isIssue, isUsers
+    switch (itemType) {
+      case 'article':
+        if (followed) {
+          paginationUrlFunc = (page) =&gt; routes.articlesFollowed({ page, sort: order })
+        } else {
+          paginationUrlFunc = (page) =&gt; routes.articles({ page, sort: order })
+        }
+        break
+      case 'discussion':
+        if (isHomepage) {
+          paginationUrlFunc = (page) =&gt; routes.issuesAll({ page, sort: order })
+        } else {
+          paginationUrlFunc = (page) =&gt; routes.issues(issueArticle.slug, { page, sort: order })
+        }
+        isIssue = true
+        break
+      case 'topic':
+        paginationUrlFunc = (page) =&gt; routes.topics({ page, sort: order })
+        break
+      case 'user':
+        paginationUrlFunc = (page) =&gt; routes.users({ page, sort: order })
+        isUsers = true
+        break
+    }
+    const { setTitle } = React.useContext(AppContext)
+    React.useEffect(
+      () =&gt; { setTitle(
+        (isIssue &amp;&amp; !isHomepage) ? `Discussion: ${ issueArticle.titleSource } by ${ issueArticle.author.displayName }` : ''
+      )},
+      []
+    )
+    return (
+      &lt;div className="home-page content-not-ourbigbook"&gt;
+        {(isIssue &amp;&amp; !isHomepage) &amp;&amp; &lt;DiscussionAbout article={issueArticle}/&gt;}
+        &lt;div className="tab-list"&gt;
+          {isHomepage &amp;&amp;
+            &lt;&gt;
+              &lt;CustomLink
+                className={`tab-item${itemType === 'topic' ? ' active' : ''}`}
+                href={routes.topics({ loggedInUser, sort: 'article-count' })}
+              &gt;
+                &lt;TopicIcon /&gt; Topics
+              &lt;/CustomLink&gt;
+              {loggedInUser &amp;&amp;
+                &lt;&gt;
+                  &lt;CustomLink
+                    className={`tab-item${itemType === 'article' &amp;&amp; order === 'createdAt' &amp;&amp; followed ? ' active' : ''}`}
+                    href={routes.articlesFollowed()}
+                  &gt;
+                    &lt;ArticleIcon /&gt; Latest Followed
+                  &lt;/CustomLink&gt;
+                  &lt;CustomLink
+                    className={`tab-item${itemType === 'article' &amp;&amp; order === 'score' &amp;&amp; followed ? ' active' : ''}`}
+                    href={routes.articlesFollowed({ sort: 'score' })}
+                  &gt;
+                    &lt;ArticleIcon /&gt; Top Followed
+                  &lt;/CustomLink&gt;
+                &lt;/&gt;
+              }
+              &lt;CustomLink
+                className={`tab-item${itemType === 'article' &amp;&amp; order === 'createdAt' &amp;&amp; !followed ? ' active' : ''}`}
+                href={(isIssue &amp;&amp; !isHomepage) ? routes.issues(issueArticle.slug, { sort: 'created' }) : routes.articles()}
+              &gt;
+                &lt;ArticleIcon /&gt; Latest&lt;span className="mobile-hide"&gt; Articles&lt;/span&gt;
+              &lt;/CustomLink&gt;
+              &lt;CustomLink
+                className={`tab-item${(itemType === 'article' || itemType === 'discussion') &amp;&amp; order === 'score' &amp;&amp; !followed ? ' active' : ''}`}
+                href={(isIssue &amp;&amp; !isHomepage) ? routes.issues(issueArticle.slug, { sort: 'score' }) : routes.articles({ sort: 'score' })}
+              &gt;
+                &lt;ArticleIcon /&gt; Top&lt;span className="mobile-hide"&gt; Articles&lt;/span&gt;
+              &lt;/CustomLink&gt;
+              &lt;CustomLink
+                className={`tab-item${itemType === 'user' &amp;&amp; order === 'score' ? ' active' : ''}`}
+                href={routes.users({ sort: 'score' })}
+              &gt;
+                &lt;UserIcon /&gt; Top Users
+              &lt;/CustomLink&gt;
+              &lt;CustomLink
+                className={`tab-item${itemType === 'user' &amp;&amp; order === 'createdAt' ? ' active' : ''}`}
+                href={routes.users({ sort: 'created' })}
+              &gt;
+                &lt;UserIcon /&gt; New Users
+              &lt;/CustomLink&gt;
+            &lt;/&gt;
+          }
+          &lt;CustomLink
+            className={`tab-item${itemType === 'discussion' &amp;&amp; order === 'createdAt' ? ' active' : ''}`}
+            href={isHomepage ? routes.issuesAll() : routes.issues(issueArticle.slug)}
+          &gt;
+            &lt;IssueIcon /&gt; Latest&lt;span className="mobile-hide"&gt; Discussions&lt;/span&gt;
+          &lt;/CustomLink&gt;
+          &lt;CustomLink
+            className={`tab-item${itemType === 'discussion' &amp;&amp; order === 'score' ? ' active' : ''}`}
+            href={isHomepage ? routes.issuesAll({ sort: 'score' }) : routes.issues(issueArticle.slug, { sort: 'score' })}
+          &gt;
+            &lt;IssueIcon /&gt; Top&lt;span className="mobile-hide"&gt; Discussions&lt;/span&gt;
+          &lt;/CustomLink&gt;
+          {!isHomepage &amp;&amp;
+            &lt;span className='tab-item'&gt;
+              &lt;FollowArticleButton {...{
+                article: issueArticle,
+                classNames: ['btn', 'small'],
+                isIssue: false,
+                loggedInUser,
+                showText: false,
+              }} /&gt;
+            &lt;/span&gt;
+          }
+          &lt;CustomLink
+            className="tab-item btn small"
+            href={(isIssue &amp;&amp; !isHomepage) ? routes.issueNew(issueArticle.slug) : routes.articleNew()}
+            updatePreviousPage={true}
+          &gt;
+            &lt;NewArticleIcon /&gt; New {pageType === 'articleIssues' ? 'Discussion' : 'Article'}
+          &lt;/CustomLink&gt;
+        &lt;/div&gt;
+        {itemType === 'user'
+          ? &lt;UserList {...{
+              loggedInUser,
+              page,
+              paginationUrlFunc,
+              users,
+              usersCount,
+            }}/&gt;
+          : &lt;ArticleList {...{
+              articles,
+              articlesCount,
+              followed,
+              isIssue,
+              issueArticle,
+              itemType,
+              loggedInUser,
+              page,
+              paginationUrlFunc,
+              showAuthor: true,
+            }}/&gt;
+        }
+      &lt;/div&gt;
+    )
+  }
+}
+
+export default IndexPageHoc;
+</code></pre></div></main>
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="../../../_dir">Website source code</a></div>
+</footer>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-2XSEK2ND00');
+</script>
+<script src="https://giscus.app/client.js"
+        data-repo="ourbigbook/ourbigbook"
+        data-repo-id="MDEwOlJlcG9zaXRvcnkyMTEyOTA2NzA="
+        data-category="giscus"
+        data-category-id="DIC_kwDODJgKLs4CZ61S"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="dark_high_contrast"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "_file/web/front/";
+</script>
+<script src="../../../_obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -20,6 +20,7 @@ import { AppContext, useCtrlEnterSubmit } from 'front'
 import { hasReachedMaxItemCount, modifyEditorInput } from 'front/js';
 import { ArticleType } from 'front/types/ArticleType'
 import { IssueType } from 'front/types/IssueType'
+import Label from 'front/Label'
 import { UserType } from 'front/types/UserType'
 
 /** Fetchs ID and other DB elements via our REST API. */
@@ -131,8 +132,8 @@ async function cachedIdExists(idid) {
   }
 }
 
-const parentTitleDisplay = 'Parent Title'
-const previousSiblingTitleDisplay = 'Insert after article'
+const parentTitleDisplay = 'Parent article'
+const previousSiblingTitleDisplay = 'Previous sibling'
 
 export default function ArticleEditorPageHoc({
   isIssue=false,
@@ -294,8 +295,8 @@ export default function ArticleEditorPageHoc({
                 const { ourbigbook_editor, line_number, line_number_orig } = opts
                 const editor = ourbigbook_editor.editor
                 const visibleRange = editor.getVisibleRanges()[0]
-                const target_line_number = visibleRange.startLineNumber
-                if (target_line_number === 1) {
+                const firstVisibleLine = visibleRange.startLineNumber
+                if (firstVisibleLine === 1) {
                   ourbigbookHeaderElem.current.classList.remove('hide')
                   if (
                     // Fails for index page.
@@ -309,11 +310,11 @@ export default function ArticleEditorPageHoc({
                     // - user left line 1, hide header
                     // - editor becomes larger, but text is not much larger than the small viewport, so line 1 now visible again, show header
                     // - loop
-                    // What we want is to find the correct number of lines without hardcoding that 10.
-                    // That 10 is a number of lines that is taller than what gets hidden,
+                    // What we would like is to find the correct number of lines without hardcoding this line count
+                    // That hardcoded number is a number of lines that is taller than what gets hidden,
                     // which was about 5 lines high when this was hardcoded.
                     // Maybe something smarter can be done with editor.onDidLayoutChange.
-                    editor.getModel().getLineCount() - (visibleRange.endLineNumber - visibleRange.startLineNumber) > 10
+                    editor.getModel().getLineCount() - (visibleRange.endLineNumber - visibleRange.startLineNumber) > 14
                   ) {
                     ourbigbookHeaderElem.current.classList.add('hide')
                     ourbigbookParentIdContainerElem.current.classList.add('hide')
@@ -518,22 +519,27 @@ export default function ArticleEditorPageHoc({
               </div>
               <ErrorList errors={titleErrors}/>
               {(!isIssue && !isIndex) &&
-                <div className="parent-id-container" ref={ourbigbookParentIdContainerElem}>
-                  <input
-                    type="text"
-                    className="title"
-                    placeholder={parentTitleDisplay}
-                    value={parentTitle}
-                    onChange={handleParentTitle}
-                  />
-                  <div className="spacer" />
-                  <input
-                    type="text"
-                    className="title"
-                    placeholder={`${previousSiblingTitleDisplay}. Empty means first child.`}
-                    value={previousSiblingTitle}
-                    onChange={handlePreviousSiblingTitle}
-                  />
+                <div ref={ourbigbookParentIdContainerElem}>
+                  <Label label="Parent" />
+                  <div className="parent-id-container">
+                    <input
+                      type="text"
+                      className="title"
+                      placeholder={parentTitleDisplay}
+                      value={parentTitle}
+                      onChange={handleParentTitle}
+                    />
+                  </div>
+                  <Label label={previousSiblingTitleDisplay} />
+                  <div className="parent-id-container">
+                    <input
+                      type="text"
+                      className="title"
+                      placeholder={`Article with same parent that comes befor this one. Empty means first child.`}
+                      value={previousSiblingTitle}
+                      onChange={handlePreviousSiblingTitle}
+                    />
+                  </div>
                 </div>
               }
               <ErrorList errors={parentErrors}/>

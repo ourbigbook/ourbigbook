@@ -267,7 +267,7 @@ div.editor-page {
     flex-direction: row;
     flex-grow: 0;
     flex-shrink: 0;
-    font-size: $title-font-size;
+    font-size: $title-font-size * 0.75;
     margin-bottom: 10px;
     input.title {
       flex: 1 1 auto;
@@ -285,6 +285,9 @@ div.editor-page {
     .spacer {
       width: 15px;
     }
+  }
+  label: {
+    font-size: $title-font-size;
   }
   div.ourbigbook-editor {
     overflow-y: auto;
@@ -557,6 +560,18 @@ nav.navbar {
       // TODO don't hardcode this width, autohide when there is no more room:
       // https://stackoverflow.com/questions/43547430/how-can-i-completely-hide-elements-that-overflow-their-container-vertically
       &.about {
+        display: none;
+      }
+    }
+    .beta {
+      // Otherwise flex ignores the space.
+      // https://stackoverflow.com/questions/39325039/css-flex-box-last-space-removed
+      white-space: pre-wrap;
+    }
+    @media only screen and (max-width: $max-mobile-width) {
+      // TODO don't hardcode this width, autohide when there is no more room:
+      // https://stackoverflow.com/questions/43547430/how-can-i-completely-hide-elements-that-overflow-their-container-vertically
+      .beta {
         display: none;
       }
     }

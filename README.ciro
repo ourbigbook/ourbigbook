@@ -4187,15 +4187,6 @@ npm publish
 sudo snap install --classic heroku
 ``
 
-=== TODO
-
-* correct ID generation algorithm to be Unicode robust
-* local downloads and single HTML page with image / script embeds
-* image management: upload to separate media directory
-* parse_error: add in document error message, currently only to stderr
-* on the AST, put contents of headers inside headers
-* auto-toc after the first paragraph
-
 = Related projects
 {parent=cirodown}
 

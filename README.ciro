@@ -309,6 +309,20 @@ instead of:
 
 Reference to an internal header of another file: \x[h2-in-not-the-readme]. By default, That header ID gets prefixed by the ID of the top header.
 
+When using \x[html-single-page] mode, the cross file references end up pointing to an ID inside the current HTML element, e.g.:
+
+\C[[
+<a href="#not-readme">
+]]
+
+rather than:
+
+\C[[
+<a href="not-readme.html/#not-readme">
+]]
+
+This is why IDs must be unique for elements across all pages.
+
 \h[4][Internal cross file references internals]
 
 When running in Node.js, Cirodown dumps the IDs of all processed files to a \c[out/ids.sqlite3] file, and then reads from that file when IDs are needed.
@@ -432,33 +446,17 @@ It exists to allow optional single page HTML output while still retaining the ab
 \l[split up large input files into multiple files to make renders faster during document development]
 \l[suggest an optional custom output split with one HTML output per Cirodown input, in order to avoid extremely large HTML pages which could be slow to load]
 
-\c[[\include]] takes one mandatory argument, which is the ID of the header you want to include, which is analogous to how \x[internal-cross-references][\c[\\x]] works.
+\c[[\include]] takes one mandatory argument, which is the reltaive path without extension to the \c[.ciro] file that you want to include.
 
-The most common use case by far is to include \x[the-toplevel-header] of other files into the current Cirodown source.
+Things would have been a bit more clean if the argument would take the ID of the header you want to include rather than the filename, which is analogous to how \x[internal-cross-references][\c[\\x]] works, but that would mean that a single page build would require an initial parse to determine IDs, so we are just going with the easier option of pointing out the file name directly.
 
 Headers of the included document are automatically shifted to match the level of the child of the level where they are being included.
-
-Remember that the \x[the-toplevel-header][ID of the toplevel header] is automatically derived from its file name, that's why we have to use:
-
-\C[[
-\include[not-readme]
-]]
-
-instead of:
-
-\C[[
-\include[not-the-readme]
-]]
-
-So to make things saner, you generally just want to have a single \x[the-toplevel-header][\c[h1] toplevel header] in such included headers.
 
 Wether the external page is actually embedded into the HTML directly, or just on the ToC depends on the \x[html-single-page] option.
 
 Here is an example of inclusion of the header \x[not-readme].
 
-\Comment[[
 \include[not-readme]
-]]
 
 \h[3][Skipping header levels]
 
@@ -1374,7 +1372,17 @@ Keep in mind that certain things can never be embedded, e.g.:
 \h[5][\c[--html-single-page]]
 {id=html-single-page}
 
-If given, the \x[includes][\c[include]] macro parses the target file to be included and includes it in-place.
+If given:
+
+\l[the \x[includes][\c[include]] macro parses the target file to be included and includes it in-place]
+\l[\x[internal-cross-file-references] are disabled, and the cross file ID database does not get updated.
+
+It should be possible to work around this, but we are starting with the simplest implementation that forbids it.
+
+The problem those cause is that the IDs of included headers show as duplicate IDs of those in the ID database.
+
+This should be OK to start with because the more common use case with \c[--html-sinle-page] is that of including all headers in a single document.
+]
 
 Otherwise, \c[include] only adds the headers of the other file to the table of contents of the current one, but not the body of the other file. The ToC entries then point to the headers of the included external files.
 
@@ -1608,6 +1616,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[parse_error: add in document error message, currently only to stderr]
 \l[LaTeX output]
 \l[infinite xref header recursion: \a[https://github.com/asciidoctor/asciidoctor/issues/3543] Solution: forbid x in titles, pass down context from parent.]
+\l[on the AST, put contents of headers inside headers]
 \l[parallel build across files on \c[./cirodown .]]
 
 \h[2][Related projects]

@@ -224,6 +224,8 @@ To also show the section auto-generated number as in "Section X.Y My title" we a
 Read this \x[my-id]{style=full}.
 ]]
 
+Example: \x[cross-reference-style]{style=full}.
+
 \h[3][Internal cross file references]
 
 TODO

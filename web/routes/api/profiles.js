@@ -1,10 +1,9 @@
 const router = require('express').Router()
 const auth = require('../auth')
-const { User } = require('../../models')
 
 // Preload user profile on routes with ':username'
 router.param('username', function(req, res, next, username) {
-  User.findOne({ where: { username: username } })
+  req.app.get('sequelize').models.User.findOne({ where: { username: username } })
     .then(function(user) {
       if (!user) {
         return res.sendStatus(404)
@@ -19,7 +18,7 @@ router.param('username', function(req, res, next, username) {
 
 router.get('/:username', auth.optional, function(req, res, next) {
   if (req.payload) {
-    User.findByPk(req.payload.id).then(function(user) {
+    req.app.get('sequelize').models.User.findByPk(req.payload.id).then(function(user) {
       if (!user) {
         return res.json({ profile: req.profile.toProfileJSONFor(false) })
       }
@@ -34,7 +33,7 @@ router.get('/:username', auth.optional, function(req, res, next) {
 router.post('/:username/follow', auth.required, function(req, res, next) {
   let profileId = req.profile.id
 
-  User.findByPk(req.payload.id)
+  req.app.get('sequelize').models.User.findByPk(req.payload.id)
     .then(function(user) {
       if (!user) {
         return res.sendStatus(401)
@@ -50,7 +49,7 @@ router.post('/:username/follow', auth.required, function(req, res, next) {
 router.delete('/:username/follow', auth.required, function(req, res, next) {
   let profileId = req.profile.id
 
-  User.findByPk(req.payload.id)
+  req.app.get('sequelize').models.User.findByPk(req.payload.id)
     .then(function(user) {
       if (!user) {
         return res.sendStatus(401)

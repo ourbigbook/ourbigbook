@@ -1725,6 +1725,7 @@ if (cli.helpMacros) {
       // Do a local conversion that splits mutiheader files into single header files for upload.
       ourbigbook_options.split_headers = true
       ourbigbook_options.render_include = false
+      ourbigbook_options.forbid_multi_h1 = true
       const titleRegex = new RegExp(`${ourbigbook.INSANE_HEADER_CHAR} (.*)`)
       // We create this quick and dirty separate database to store information for upload.
       // Technically much of this information is part of Article, but factoring that would be risky/hard,

@@ -3126,6 +3126,10 @@ function convert_init_context(options={}, extra_returns={}) {
     // If given, must be a string, and is an error given \\Include is used.
     options.forbid_include = undefined;
   }
+  if (!('forbid_multi_h1' in options)) {
+    // Only allow 1 h1 per input source.
+    options.forbid_multi_h1 = false
+  }
   if (!('forbid_multiheader' in options)) {
     // Input can only contain a single header.
     // If given, must be the string explaining the error.
@@ -5015,6 +5019,16 @@ async function parse(tokens, options, context, extra_returns={}) {
           ast.args.level = new AstArgument([
             new PlaintextAstNode(cur_header_level.toString(), ast.args.level.source_location)],
             ast.args.level.source_location);
+        }
+        if (
+          cur_header_level === 1 &&
+          !is_first_header &&
+          options.forbid_multi_h1 &&
+          !ast.validation_output.synonym.boolean
+        ) {
+          const msg = 'only one level 1 header is allowed in this conversion'
+          parse_error(state, msg, ast.source_location);
+          parent_arg.push(new PlaintextAstNode(msg, ast.source_location));
         }
 
         // lint['h-parent']

@@ -39,6 +39,8 @@ function renderRefCallback(elem) {
 
 const ArticlePage = ({ article, comments }: ArticlePageProps) => {
   const loggedInUser = getLoggedInUser()
+  const canModify =
+    loggedInUser && loggedInUser?.username === article?.author?.username;
   const router = useRouter();
 
   // Fetch user-specific data.
@@ -71,14 +73,12 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
 
   const handleDelete = async () => {
     if (!loggedInUser) return;
-    const result = window.confirm("Do you really want to delete it?");
+    const result = window.confirm("Do you really want to delete this article?");
     if (!result) return;
     await ArticleAPI.delete(slug, loggedInUser?.token);
     trigger(ArticleAPI.url(slug));
     Router.push(`/`);
   };
-  const canModify =
-    loggedInUser && loggedInUser?.username === article?.author?.username;
 
   if (router.isFallback) { return <LoadingSpinner />; }
   const markup = { __html: article.render };
@@ -98,7 +98,7 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
               <div className="article-meta">
                 <div className="article-info">
                   <UserLinkWithImage user={article.author} />
-                  {' '}
+                  {' Created: '}
                   {formatDate(article.createdAt)}
                   {article.createdAt !== article.updatedAt &&
                     <>
@@ -106,6 +106,13 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
                       Updated: {formatDate(article.updatedAt)}
                     </>
                   }
+                </div>
+                <div>
+                  <CustomLink
+                    href={routes.topicArticlesView(article.articleId)}
+                  >
+                    <i className="ion-edit" /> Same topic by other authors
+                  </CustomLink>
                 </div>
                 <div className="article-actions">
                   <FavoriteArticleButton

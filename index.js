@@ -644,9 +644,9 @@ class AstArgument {
     // String
     this.argument_name = undefined;
     let i = 0;
-    for (const node of this.asts) {
-      node.parent_argument = this;
-      node.parent_argument_index = i;
+    for (const ast of this.asts) {
+      ast.parent_argument = this;
+      ast.parent_argument_index = i;
       i++;
     };
   }
@@ -688,9 +688,10 @@ class AstArgument {
     const old_length = this.asts.length;
     const ret = this.asts.push(...new_asts);
     let i = 0;
-    for (const node of new_asts) {
-      node.parent_argument = this;
-      node.parent_argument_index = old_length + i;
+    for (const ast of new_asts) {
+      ast.parent_argument = this;
+      ast.parent_argument = this;
+      ast.parent_argument_index = old_length + i;
       i++;
     }
     return ret;
@@ -2855,11 +2856,11 @@ function convert_init_context(options={}, extra_returns={}) {
     in_split_headers: false,
     in_parse: false,
     errors: [],
-    extra_returns: extra_returns,
+    extra_returns,
     include_path_set: new Set(options.include_path_set),
     in_header: false,
     macros: macro_list_to_macros(),
-    options: options,
+    options,
     root_relpath_scope_shift: '',
     synonym_headers: new Set(),
     toplevel_id: options.toplevel_id,
@@ -3840,9 +3841,19 @@ async function parse(tokens, options, context, extra_returns={}) {
   context.id_provider = id_provider;
   options.include_path_set.add(options.input_path);
   let header_file_preview_ast, header_file_preview_ast_next
+  const title_ast_stack = []
   const header_ids = []
   while (todo_visit.length > 0) {
-    const [parent_arg, ast] = todo_visit.pop();
+    const pop = todo_visit.pop();
+    if (pop === 'pop_title_ast_stack') {
+      title_ast_stack.pop()
+      continue
+    }
+    const [parent_arg, ast] = pop
+    if (parent_arg.argument_name === Macro.TITLE_ARGUMENT_NAME) {
+      title_ast_stack.push(parent_arg.parent_node)
+      todo_visit.push('pop_title_ast_stack')
+    }
     let parent_arg_push_after = []
     let parent_arg_push_before = []
     const macro_name = ast.macro_name;
@@ -4065,8 +4076,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             // get serialiezd to the database, which his needed for
             // toplevel scope removal from external links.
             const scope_arg = new AstArgument([], ast.source_location);
-            ast.args.scope = scope_arg;
-            ast.setup_argument('scope', scope_arg);
+            ast.add_argument('scope', scope_arg);
           }
           if (options.toplevel_parent_scope !== undefined) {
             ast.scope = options.toplevel_parent_scope;
@@ -4377,7 +4387,10 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
         }
       } else if (macro_name === Macro.X_MACRO_NAME) {
-        options.add_refs_to_x.push({ ast })
+        options.add_refs_to_x.push({
+          ast,
+          title_ast_stack: Object.assign([], title_ast_stack)
+        })
       }
 
       // Push this node into the parent argument list.
@@ -5060,6 +5073,9 @@ async function parse(tokens, options, context, extra_returns={}) {
             if (toid !== undefined) {
               add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD);
             }
+          }
+          for (const title_ast of ref.title_ast_stack) {
+            add_to_refs_to(target_id_effective, context, title_ast.id, REFS_TABLE_X_TITLE_TITLE);
           }
         }
       }
@@ -6079,6 +6095,9 @@ const REFS_TABLE_X = 'X';
 exports.REFS_TABLE_X = REFS_TABLE_X;
 const REFS_TABLE_X_CHILD = 'X_CHILD';
 exports.REFS_TABLE_X_CHILD = REFS_TABLE_X_CHILD;
+// https://github.com/cirosantilli/cirodown/issues/198
+const REFS_TABLE_X_TITLE_TITLE = 'X_TITLE_TITLE';
+exports.REFS_TABLE_X_TITLE_TITLE = REFS_TABLE_X_TITLE_TITLE;
 const END_NAMED_ARGUMENT_CHAR = '}';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';
 const ESCAPE_CHAR = '\\';

@@ -117,13 +117,46 @@ class SqliteIdProvider extends cirodown.IdProvider {
           {
             model: this.sequelize.models.Ref,
             as: 'from',
-            where: { type: this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_PARENT] },
+            where: {
+              type: { [Op.or]: [
+                this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_PARENT],
+                this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_X_TITLE_TITLE],
+              ]}
+            },
             required: false,
-          }
+            include: [
+              {
+                model: this.sequelize.models.Id,
+                as: 'to',
+                required: false,
+                // This is to only get IDs here for REFS_TABLE_X_TITLE_TITLE,
+                // and not for REFS_TABLE_PARENT.
+                // Can't do it with a second include easily it seems:
+                // https://stackoverflow.com/questions/51480266/joining-same-table-multiple-times-with-sequelize
+                // so we are just hacking this custom ON here.
+                on: {
+                  // This is the default ON condition. Don't know how to add a new condition to the default,
+                  // so just duplicating it here.
+                  '$from.to_id$': {[Op.col]: 'from->to.idid' },
+                  // This gets only the TITLE TITLE.
+                  '$from.type$': this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_X_TITLE_TITLE],
+                }
+              }
+            ]
+          },
         ],
       })
       for (const row of rows) {
         asts.push(this.add_row_to_id_cache(row, context))
+        for (const row_title_title of row.from) {
+          if (
+            // We need this check because the version of the header it fetches does not have .to
+            // so it could override one that did have the .to, and then other things could blow up.
+            !(row_title_title.to && row_title_title.to.idid in this.id_cache)
+          ) {
+            asts.push(this.add_row_to_id_cache(row_title_title.to, context))
+          }
+        }
       }
     }
     return asts
@@ -300,6 +333,7 @@ ON "Ids".idid = "RecRefs"."to_id"
 
   // Update the databases based on the output of the Cirodown conversion.
   async update(cirodown_extra_returns, sequelize, transaction) {
+
     const context = cirodown_extra_returns.context
     // Remove all IDs from the converted files to ensure that removed IDs won't be
     // left over hanging in the database.

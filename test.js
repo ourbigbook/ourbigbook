@@ -177,6 +177,7 @@ function assert_convert_ast(
       dependency_convert_opts.input_path = input_path;
       dependency_convert_opts.toplevel_id = path.parse(input_path).ext;
       await cirodown.convert(input_string, dependency_convert_opts, extra_returns);
+      assert.strictEqual(extra_returns.errors.length, 0)
       await Promise.all([
         new_convert_opts.id_provider.update(extra_returns, sequelize),
         new_convert_opts.file_provider.update(input_path, extra_returns),
@@ -2209,6 +2210,27 @@ assert_convert_ast('cross reference to non-included image in another file',
     },
     input_path_noext: 'notindex',
   },
+);
+assert_convert_ast('x to image in another file that has x title in another file',
+  // https://github.com/cirosantilli/cirodown/issues/198
+  `= Tmp
+
+\\x[image-tmp2-2]
+`,
+  undefined,
+  {
+    convert_before: ['tmp2.ciro'],
+    filesystem: {
+     'tmp2.ciro': `= Tmp2
+
+\\Image[a]{check=0}
+{title=\\x[tmp2-2]}
+
+== Tmp2 2
+`,
+    },
+    input_path_noext: 'tmp'
+  }
 );
 // TODO was working, but lazy now, will have to worry about
 // mock ID provider or modify index.js. Edit: there is no more mock
@@ -4380,21 +4402,6 @@ assert_error('id conflict with previous id on another file',
     input_path_noext: 'index'
   }
 );
-//assert_executable('executable: id conflict with previous id on another file',
-//  {
-//    args: ['.'],
-//    filesystem: {
-//      'README.ciro': `= index
-//
-//== notindex h2
-//`,
-//     'notindex.ciro': `= notindex
-//
-//== notindex h2
-//`,
-//    },
-//  }
-//);
 
 // title_to_id
 assert_equal('title_to_id with hyphen', cirodown.title_to_id('.0A. - z.a Z..'), '0a-z-a-z');
@@ -5381,6 +5388,25 @@ assert_executable(
     }
   }
 );
+assert_executable(
+  'executable: link to image in another file after link to the toplevel header of that file does not blow up',
+  {
+    args: ['.'],
+    filesystem: {
+      'README.ciro': `= Toplevel
+
+\\Image[img.jpg]{title=My image toplevel}
+`,
+      'notindex.ciro': `= Notindex
+
+\\x[toplevel]
+
+\\x[image-my-image-toplevel]
+`,
+      'img.jpg': '',
+    },
+  }
+)
 assert_executable(
   'executable: --generate min followed by conversion does not blow up',
   {

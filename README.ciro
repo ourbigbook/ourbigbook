@@ -2012,7 +2012,7 @@ One major advantage of this, is that when writing documentation, you often want 
 
 = Passthrough
 {parent=macro}
-{title2=`\Passthrough`}
+{title2=`\passthrough`}
 
 Dumps its contents directly into the rendered output.
 
@@ -2020,9 +2020,14 @@ This construct is not XSS safe, see: \x[xss-unsafe]{full}.
 
 Here for example we define a paragraph in raw HTML:
 \CirodownExample[[[
-\Passthrough[[
+\passthrough[[
 <p>Hello <b>raw</b> HTML!</p>
 ]]
+]]]
+
+And for an inline passthrough:
+\CirodownExample[[[
+Hello \passthrough[[<b>raw</b>]] world!
 ]]]
 
 = Quotation

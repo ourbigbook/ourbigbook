@@ -93,12 +93,15 @@ const ArticleList = ({
   let pagination
   if (paginationUrlFunc) {
     pagination = <Pagination {...{
-      currentPage: page,
-      what: isIssue ? 'threads' : 'articles',
-      itemsCount: articlesCount,
-      itemsPerPage: articleLimit,
-      urlFunc: paginationUrlFunc,
-    }} />
+        currentPage: page,
+        what: isIssue ? 'threads' : 'articles',
+        itemsCount: articlesCount,
+        itemsPerPage: articleLimit,
+        urlFunc: paginationUrlFunc,
+      }} />
+    if (showBody) {
+      pagination = <div className="content-not-ourbigbook">{pagination}</div>
+    }
   } else {
     pagination = <></>
   }
@@ -108,45 +111,65 @@ const ArticleList = ({
       <div className="list-container">
         {showBody
           ? articles?.map((article, i) => (
-              <div key={itemType === 'discussion' ? article.number : itemType === 'article' ? article.slug : article.topicId}>
-                <LikeArticleButton {...{
-                  article,
-                  isIssue,
-                  issueArticle,
-                  loggedInUser,
-                  showText: false,
-                }} />
-                {' '}
-                {showAuthor &&
-                  <>
-                    by
-                    <UserLinkWithImage showUsername={false} user={article.author} />
-                    {' '}
-                  </>
-                }
-                <TimeIcon />
-                {' '}
-                {formatDate(article.createdAt)}
-                {(article.createdAt !== article.updatedAt) &&
-                  <>
-                    updated:
-                    {' '}
-                    <TimeIcon />
-                    {formatDate(article.updatedAt)}
-                  </>
-                }
+              <div
+                key={itemType === 'discussion' ? article.number : itemType === 'article' ? article.slug : article.topicId}
+                className="item"
+              >
+                <div className="content-not-ourbigbook">
+                  <LikeArticleButton {...{
+                    article,
+                    isIssue,
+                    issueArticle,
+                    loggedInUser,
+                    showText: false,
+                  }} />
+                  {' '}
+                  <CustomLink
+                    href={itemType === 'discussion' ? routes.issue(issueArticle.slug, article.number) :
+                          itemType === 'article' ? routes.article(article.slug) :
+                          routes.topic(article.topicId, { sort: 'score' })
+                    }
+                  >
+                    <span
+                      className="comment-body ourbigbook-title title"
+                      dangerouslySetInnerHTML={{ __html: article.titleRender }}
+                    />
+                  </CustomLink>
+                  {' '}
+                  {showAuthor &&
+                    <>
+                      by
+                      {' '}
+                      <UserLinkWithImage showUsername={false} user={article.author} />
+                      {' '}
+                    </>
+                  }
+                  <TimeIcon />
+                  {' '}
+                  {formatDate(article.createdAt)}
+                  {(article.createdAt !== article.updatedAt) &&
+                    <>
+                      updated:
+                      {' '}
+                      <TimeIcon />
+                      {formatDate(article.updatedAt)}
+                    </>
+                  }
+                </div>
                 <div
                   className="ourbigbook"
                   dangerouslySetInnerHTML={{ __html: article.render }}
                 />
-                <CustomLink
-                  href={itemType === 'discussion' ? routes.issue(issueArticle.slug, article.number) :
-                        itemType === 'article' ? routes.article(article.slug) :
-                        routes.topic(article.topicId, { sort: 'score' })
-                  }
-                >
-                  <ArticleIcon /> Read the full article.
-                </CustomLink>
+                <div className="content-not-ourbigbook read-full">
+                  <CustomLink
+                    href={itemType === 'discussion' ? routes.issue(issueArticle.slug, article.number) :
+                          itemType === 'article' ? routes.article(article.slug) :
+                          routes.topic(article.topicId, { sort: 'score' })
+                    }
+                  >
+                    <ArticleIcon /> Read the full article
+                  </CustomLink>
+                </div>
               </div>
             ))
           : <table className="list">
@@ -195,7 +218,7 @@ const ArticleList = ({
                               routes.topic(article.topicId, { sort: 'score' })
                         }
                       >
-                        <div
+                        <span
                           className="comment-body ourbigbook-title"
                           dangerouslySetInnerHTML={{ __html: article.titleRender }}
                         />

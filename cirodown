@@ -80,13 +80,15 @@ const AstNode = class {
    *        If a call will change this object, it must first make a copy,
    *        otherwise future calls to non descendants would also be affected by the change.
    *
-   *        {bool} html_is_attr - are we inside an HTML attribute, which implies implies different
-   *               escape rules, e.g. " and ' must be escaped.
-   *        {bool} html_escape - if false, disable HTML escaping entirely. This is needed for
-   *               content that is passed for an external tool for processing, for example
-   *               Math equations to KaTeX, In that case, the arguments need to be passed as is,
-   *               otherwise e.g. `1 < 2` would escape the `<` to `&lt;` and KaTeX would receive bad input.
-   *
+   *        - {bool} html_is_attr - are we inside an HTML attribute, which implies implies different
+   *                 escape rules, e.g. " and ' must be escaped.
+   *        - {bool} html_escape - if false, disable HTML escaping entirely. This is needed for
+   *                 content that is passed for an external tool for processing, for example
+   *                 Math equations to KaTeX, In that case, the arguments need to be passed as is,
+   *                 otherwise e.g. `1 < 2` would escape the `<` to `&lt;` and KaTeX would receive bad input.
+   *        - {Object} ids - map of document IDs to their description:
+   *                 - 'prefix': prefix to add if style=full, e.g. `Figure 1`, `Section 2`, etc.
+   *                 - 'title': the title of the element linked to
    */
   convert(options, context) {
     if (context === undefined) {
@@ -97,6 +99,9 @@ const AstNode = class {
     }
     if (!('html_escape' in context)) {
       context.html_escape = true;
+    }
+    if (!('ids' in context)) {
+      context.ids = {};
     }
     if (!('errors' in options.extra_returns)) {
       options.extra_returns.errors = [];
@@ -306,12 +311,29 @@ const array_equals = function(arr1, arr2) {
   return true;
 }
 
+/** Convert an argument to a string.
+ *
+ * An argument contains a list of nodes, loop over that list of nodes,
+ * converting them to strings and concatenate all strings.
+ *
+ * @param {Array[AstNode]}
+ * @return {String}
+ */
 const convert_arg = function(arg, options, context) {
   let converted_arg = '';
   for (const ast_node of arg) {
     converted_arg += ast_node.convert(options, context);
   }
   return converted_arg;
+}
+
+/** Convert a key value fully HTML escaped strings to an attribute.
+ *
+ * @param {String} key
+ * @param {String} value
+ */
+const html_attr = function(key, value) {
+  return ` ${key}="${value}"`;
 }
 
 /** Helper to convert multiple parameters directly to HTML attributes.
@@ -322,8 +344,8 @@ const convert_arg = function(arg, options, context) {
  * @param {Object} options
  * @param {Array[String]} arg_names - which argument names should be added as properties.
  *         Only arguments that were given in the text input are used.
- * @param {Object[String,AstNode]} custom_attrs - attributes that were not just passed in
- *        directly from the input text, but may have been calculated.
+ * @param {Object[String, AstNode]} custom_attrs - attributes that were not just passed in
+ *        directly from the input text, but may rather have been calculated from the node.
  */
 const html_convert_attrs = function(
   ast, options, arg_names=[], custom_args={}
@@ -343,30 +365,9 @@ const html_convert_attrs = function(
   let ret = '';
   for (const name_arg_pair of args) {
     [arg_name, arg] = name_arg_pair;
-    ret += ` ${arg_name}="${convert_arg(arg, options, {html_is_attr: true})}"`;
+    ret += html_attr(arg_name, convert_arg(arg, options, {html_is_attr: true}));
   }
   return ret;
-}
-
-const katex_convert = function(ast, options, context) {
-  let new_context = {...context};
-  new_context.html_escape = false;
-  try {
-    return katex.renderToString(
-      convert_arg(ast.args.content, options, new_context),
-      {
-        macros: macros,
-        throwOnError: true,
-        globalGroup: true
-      }
-    );
-  } catch(error) {
-    let message = error.toString();
-    options.extra_returns.errors.push(
-      new ErrorMessage(message, ast.args.content[0].line, ast.args.content[0].column)
-    );
-    return in_output_error(message);
-  }
 }
 
 const title_to_id = function(title) {
@@ -378,15 +379,17 @@ const title_to_id = function(title) {
 }
 
 /**
- * Same as html_convert_attrs, but automatically add the ID to the list
+ * Same interface as html_convert_attrs, but automatically add the ID to the list
  * of arguments.
+ *
+ * If the ID argument is not explicitly given, derive it from the title argument.
  */
 const html_convert_attrs_id = function(
   ast, options, arg_names=[], custom_args={}
 ) {
-  if (ast.arg_given('id')) {
+  if (ast.arg_given(Macro.id_argument_name)) {
     arg_names.push(Macro.id_argument_name);
-  } else if(ast.arg_given('title')) {
+  } else if (ast.arg_given(Macro.title_argument_name)) {
     // TODO correct unicode aware algorithm.
     let id_text = '';
     let id_prefix = macros[ast.macro_name].id_prefix;
@@ -412,6 +415,27 @@ function html_escape_attr(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
   ;
+}
+
+const katex_convert = function(ast, options, context) {
+  let new_context = {...context};
+  new_context.html_escape = false;
+  try {
+    return katex.renderToString(
+      convert_arg(ast.args.content, options, new_context),
+      {
+        macros: macros,
+        throwOnError: true,
+        globalGroup: true
+      }
+    );
+  } catch(error) {
+    let message = error.toString();
+    options.extra_returns.errors.push(
+      new ErrorMessage(message, ast.args.content[0].line, ast.args.content[0].column)
+    );
+    return in_output_error(message);
+  }
 }
 
 let macro_list = [
@@ -473,7 +497,7 @@ let macro_list = [
         name: 'level',
       }),
       new MacroArgument({
-        name: 'title',
+        name: Macro.title_argument_name,
       }),
     ],
     function(ast, options, context) {
@@ -578,7 +602,7 @@ let macro_list = [
     ],
     function(ast, options, context) {
       let custom_args = {};
-      if (ast.arg_given('title')) {
+      if (ast.arg_given(Macro.title_argument_name)) {
         custom_args[alt] = ast.args.title;
       }
       return `<img${html_convert_attrs_id(ast, options, ['src'], custom_args)}>`;
@@ -656,17 +680,17 @@ let macro_list = [
         name: 'content',
       }),
       new MacroArgument({
-        name: 'title',
+        name: Macro.title_argument_name,
       }),
     ],
     function(ast, options, context) {
       let title;
-      if (ast.arg_given('title')) {
+      if (ast.arg_given(Macro.title_argument_name)) {
         title = ast.args.title;
       } else {
         let text_title;
-        if ('title' in options) {
-          text_title = options['title'];
+        if (Macro.title_argument_name in options) {
+          text_title = options[Macro.title_argument_name];
         } else {
           let message = 'missing title';
           text_title = in_output_error(message);
@@ -748,6 +772,38 @@ pre {
     function(ast, options, context) {
       return `<ul${html_convert_attrs_id(ast, options)}>\n${convert_arg(ast.args.content, options, context)}</ul>\n`;
     },
+  ),
+  new Macro(
+    'x',
+    [
+      new MacroArgument({
+        name: 'href',
+      }),
+      new MacroArgument({
+        name: 'content',
+      }),
+    ],
+    function(ast, options, context) {
+      if (ast.arg_given('content')) {
+        content = ast.args.content;
+      } else {
+        content = ast.args.href;
+      }
+      let new_context = {...context};
+      new_context.html_is_attr = true;
+      let href_text = '#' + convert_arg(ast.args.href, options, new_context);
+      return `<a${html_attr('href', href_text)}${html_convert_attrs_id(ast, options)}>${convert_arg(content, options, context)}</a>`;
+    },
+    {
+      named_args: [
+        new MacroArgument({
+          name: 'style',
+        }),
+      ],
+      properties: {
+        phrasing: true,
+      }
+    }
   ),
 ];
 

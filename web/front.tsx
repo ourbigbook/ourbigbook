@@ -2,7 +2,7 @@ import React from 'react'
 import Router from 'next/router'
 import { mutate } from 'swr'
 
-import ourbigbook from 'ourbigbook/dist/ourbigbook.js';
+import ourbigbook from 'ourbigbook';
 
 import { webApi } from 'front/api'
 import CustomLink from 'front/CustomLink'
@@ -27,9 +27,9 @@ export function DiscussionAbout(
   { article, issue }:
   { article?: ArticleType; issue?: IssueType }
 ) {
-  return <h1><IssueIcon /> Discussion{issue ? ` #${issue.number}` : ''}: <a href={routes.article(article.slug)}
+  return <h1><IssueIcon /> Discussion{issue ? ` #${issue.number}` : ''}: <CustomLink href={routes.article(article.slug)}
     >"<span className="comment-body ourbigbook-title" dangerouslySetInnerHTML={{ __html: article.titleRender }}
-    />" by { article.author.displayName }</a></h1>
+    />" by { article.author.displayName }</CustomLink></h1>
 }
 
 // Icons.
@@ -42,8 +42,20 @@ export function IssueIcon() {
   return <i className="ion-ios-chatbubble" title="Discussion" />
 }
 
+export function EditArticleIcon() {
+  return <i className="ion-edit" title="Edit" />
+}
+
+export function NewArticleIcon() {
+  return <i className="ion-compose" title="New" />
+}
+
+export function SeeIcon() {
+  return <i className="ion-eye" />
+}
+
 export function TimeIcon() {
-  return <i className="ion-android-time" title="Discussion" />
+  return <i className="ion-android-time" />
 }
 
 export function TopicIcon() {

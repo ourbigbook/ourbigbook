@@ -135,7 +135,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
       allowNull: false
     },
   });
-  User.hasMany(Comment, {foreignKey: 'authorId'});
+  User.hasMany(Comment, { foreignKey: 'authorId' });
 
   // User authors Comment
   Comment.belongsTo(User, {
@@ -145,9 +145,12 @@ function getSequelize(toplevelDir, toplevelBasename) {
       allowNull: false
     },
   });
-  User.hasMany(Comment, {foreignKey: 'authorId'});
+  User.hasMany(Comment, { foreignKey: 'authorId' });
 
   Topic.belongsTo(Article, { as: 'article' })
+  Article.hasOne(Topic, { as: 'article', constraints: false })
+
+  Article.hasMany(Article, { as: 'sameTopic', foreignKey: 'topicId', sourceKey: 'topicId', constraints: false })
 
   return sequelize;
 }

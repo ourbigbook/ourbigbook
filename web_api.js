@@ -48,6 +48,15 @@ class WebApi {
     );
   }
 
+  async articleCreateOrUpdate(article, opts={}) {
+    const { path, render } = opts
+    console.error({path, article});
+    return this.req('put',
+      `articles`,
+      { body: { article, path, render } },
+    );
+  }
+
   async articleDelete(slug) {
     return this.req('delete', `articles?id=${slug}`)
   }
@@ -67,14 +76,6 @@ class WebApi {
 
   async articleUnlike(slug) {
     return this.req('delete', `articles/like?id=${encodeURIComponent(slug)}`)
-  }
-
-  async articleCreateOrUpdate(article, opts={}) {
-    const { path, render } = opts
-    return this.req('put',
-      `articles`,
-      { body: { article, path, render } },
-    );
   }
 
   articleUrl(slug) {

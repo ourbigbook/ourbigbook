@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { AppContext, ArticleIcon, DiscussionAbout, TopicIcon, UserIcon } from 'front'
+import { AppContext, ArticleIcon, DiscussionAbout, NewArticleIcon, TopicIcon, UserIcon } from 'front'
 import ArticleList from 'front/ArticleList'
 import UserList from 'front/UserList'
 import CustomLink from 'front/CustomLink'
@@ -105,13 +105,13 @@ function IndexPageHoc({
             </>
           }
           <CustomLink
-            className={`tab-item${itemType === 'article' && order === 'createdAt' && !followed ? ' active' : ''}`}
+            className={`tab-item${(itemType === 'article' || itemType === 'issue') && order === 'createdAt' && !followed ? ' active' : ''}`}
             href={isIssue ? routes.issues(issueArticle.slug, { sort: 'createdAt' }) : routes.articles()}
           >
             {!showFollowed && <><ArticleIcon />{' '}</>}Latest
           </CustomLink>
           <CustomLink
-            className={`tab-item${itemType === 'article' && order === 'score' && !followed ? ' active' : ''}`}
+            className={`tab-item${(itemType === 'article' || itemType === 'issue') && order === 'score' && !followed ? ' active' : ''}`}
             href={isIssue ? routes.issues(issueArticle.slug, { sort: 'score' }) : routes.articles({ sort: 'score' })}
           >
             Top
@@ -136,7 +136,7 @@ function IndexPageHoc({
             className="tab-item"
             href={isIssue ? routes.issueNew(issueArticle.slug) : routes.articleNew()}
           >
-            <i className="ion-edit" /> New {isIssue ? 'thread' : 'article'}
+            <NewArticleIcon /> New {isIssue ? 'Discussion' : 'Article'}
           </CustomLink>
         </div>
         {isUsers ?

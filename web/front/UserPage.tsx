@@ -16,7 +16,6 @@ import { webApi } from 'front/api'
 import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import routes from 'front/routes'
 import Article from 'front/Article'
-import ArticleInfo from 'front/ArticleInfo'
 import { ArticleType } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
 import { IssueType } from 'front/types/IssueType'
@@ -27,6 +26,7 @@ import UserList from 'front/UserList'
 export interface UserPageProps {
   article?: ArticleType;
   articles?: (ArticleType & IssueType & TopicType)[];
+  articlesInSamePage: ArticleType[];
   articlesCount?: number;
   authoredArticleCount: number;
   comments?: CommentType[];
@@ -47,6 +47,7 @@ export default function UserPage({
   article,
   articles,
   articlesCount,
+  articlesInSamePage,
   authoredArticleCount,
   comments,
   issuesCount,
@@ -100,9 +101,9 @@ export default function UserPage({
   }, [user?.displayName, user?.username])
 
   if (router.isFallback) { return <LoadingSpinner />; }
-  return (
-    <div className="profile-page content-not-ourbigbook">
-      <div className="user-info">
+  return (<>
+    <div className="profile-page">
+      <div className="user-info content-not-ourbigbook">
         <h1>
           <DisplayAndUsername user={user}></DisplayAndUsername>
         </h1>
@@ -126,59 +127,59 @@ export default function UserPage({
           alt="User's profile image"
           className="user-img"
         />
-      </div>
-      <div className="tab-list">
-        <CustomLink
-          href={routes.user(username)}
-          className={`tab-item${what === 'home' ? ' active' : ''}`}
-        >
-          Home
-        </CustomLink>
-        <CustomLink
-          href={routes.userArticles(username, { sort: 'score' })}
-          className={`tab-item${what === 'user-articles' && order === 'score' ? ' active' : ''}`}
-        >
-          <ArticleIcon /> Top
-        </CustomLink>
-        <CustomLink
-          href={routes.userArticles(username,  { sort: 'createdAt' })}
-          className={`tab-item${what === 'user-articles' && order === 'createdAt' ? ' active' : ''}`}
-        >
-          Latest
-        </CustomLink>
-        <CustomLink
-          href={routes.userLikes(username)}
-          className={`tab-item${what === 'likes' ? ' active' : ''}`}
-        >
-          Liked
-        </CustomLink>
-        <CustomLink
-          href={routes.userFollowing(username)}
-          className={`tab-item${what === 'following' ? ' active' : ''}`}
-        >
-          <UserIcon /> Follows
-        </CustomLink>
-        <CustomLink
-          href={routes.userFollowed(username)}
-          className={`tab-item${what === 'followed' ? ' active' : ''}`}
-        >
-          Followed by
-        </CustomLink>
+        <div className="tab-list">
+          <CustomLink
+            href={routes.user(username)}
+            className={`tab-item${what === 'home' ? ' active' : ''}`}
+          >
+            Home
+          </CustomLink>
+          <CustomLink
+            href={routes.userArticles(username, { sort: 'score' })}
+            className={`tab-item${what === 'user-articles' && order === 'score' ? ' active' : ''}`}
+          >
+            <ArticleIcon /> Top
+          </CustomLink>
+          <CustomLink
+            href={routes.userArticles(username,  { sort: 'createdAt' })}
+            className={`tab-item${what === 'user-articles' && order === 'createdAt' ? ' active' : ''}`}
+          >
+            Latest
+          </CustomLink>
+          <CustomLink
+            href={routes.userLikes(username)}
+            className={`tab-item${what === 'likes' ? ' active' : ''}`}
+          >
+            Liked
+          </CustomLink>
+          <CustomLink
+            href={routes.userFollowing(username)}
+            className={`tab-item${what === 'following' ? ' active' : ''}`}
+          >
+            <UserIcon /> Follows
+          </CustomLink>
+          <CustomLink
+            href={routes.userFollowed(username)}
+            className={`tab-item${what === 'followed' ? ' active' : ''}`}
+          >
+            Followed by
+          </CustomLink>
+        </div>
       </div>
       {what === 'home' &&
-        <>
-          <ArticleInfo {...{ article, loggedInUser }}/>
-          <Article {...{
-            article,
-            comments,
-            latestIssues,
-            issuesCount,
-            loggedInUser,
-            topIssues,
-          }}/>
-        </>
+        <Article {...{
+          article,
+          articlesInSamePage,
+          comments,
+          latestIssues,
+          issuesCount,
+          loggedInUser,
+          topIssues,
+        }}/>
       }
-      {itemType === 'article' &&
+    </div>
+    {itemType === 'article' &&
+      <div className="content-not-ourbigbook">
         <ArticleList {...{
           articles,
           articlesCount,
@@ -188,8 +189,10 @@ export default function UserPage({
           showAuthor: what === 'likes',
           what,
         }}/>
-      }
-      {itemType === 'user' &&
+      </div>
+    }
+    {itemType === 'user' &&
+      <div className="content-not-ourbigbook">
         <UserList {...{
           loggedInUser,
           page,
@@ -197,7 +200,7 @@ export default function UserPage({
           users,
           usersCount,
         }}/>
-      }
-    </div>
-  );
+      </div>
+    }
+  </>);
 }

@@ -85,25 +85,37 @@ module.exports = (sequelize) => {
       loggedInUser ? loggedInUser.hasLikedArticle(this.id) : false,
       (await authorPromise).toJson(loggedInUser),
     ])
-    return {
-      id: this.id,
-      slug: this.slug,
-      topicId: this.topicId,
-      titleRender: this.titleRender,
-      createdAt: this.createdAt.toISOString(),
-      updatedAt: this.updatedAt.toISOString(),
+    function addToDictWithoutUndefined(target, source, keys) {
+      for (const prop of keys) {
+        const val = source[prop]
+        if (val !== undefined) {
+          target[prop] = val
+        }
+      }
+      return target
+    }
+    const file = {}
+    addToDictWithoutUndefined(file, this.file, ['titleSource', 'bodySource', 'path'])
+    const ret = {
       liked,
-      score: this.score,
       // Putting it here rather than in the more consistent file.author
       // to improve post serialization polymorphism with issues.
       author,
-      file: {
-        titleSource: this.file.titleSource,
-        bodySource: this.file.bodySource,
-        path: this.file.path,
-      },
-      render: this.render,
+      file,
     }
+    const issueCount = this.get('issueCount')
+    if (issueCount !== undefined) {
+      this.issueCount = parseInt(issueCount, 10)
+    }
+    this.topicCount = this.get('topicCount')
+    addToDictWithoutUndefined(ret, this, ['id', 'slug', 'topicId', 'titleRender', 'score', 'render', 'issueCount', 'topicCount'])
+    if (this.createdAt) {
+      ret.createdAt = this.createdAt.toISOString()
+    }
+    if (this.updatedAt) {
+      ret.updatedAt = this.updatedAt.toISOString()
+    }
+    return ret
   }
 
   Article.prototype.rerender = async function(options = {}) {
@@ -211,6 +223,62 @@ module.exports = (sequelize) => {
       limit,
       offset,
       include,
+    })
+  }
+
+  // Maybe try to merge into getArticle one day?
+  Article.getArticlesInSamePage = async ({
+    sequelize,
+    slug,
+  }) => {
+    const articlesInSamePageAttrs = [
+      'id',
+      'score',
+      'slug',
+      'topicId',
+    ]
+    return sequelize.models.Article.findAll({
+      attributes: articlesInSamePageAttrs.concat([
+        [sequelize.fn('COUNT', sequelize.col('issues.id')), 'issueCount'],
+        [sequelize.col('sameTopic.article.articleCount'), 'topicCount'],
+      ]),
+      group: articlesInSamePageAttrs.map(a => `Article.${a}`),
+      include: [
+        {
+          model: sequelize.models.File,
+          as: 'file',
+          required: true,
+          attributes: ['id'],
+          include: [
+            {
+              model: sequelize.models.User,
+              as: 'author',
+            },
+            {
+              model: sequelize.models.Article,
+              as: 'file',
+              required: true,
+              attributes: ['id'],
+              where: { slug },
+            }
+          ]
+        },
+        {
+          model: sequelize.models.Issue,
+          as: 'issues',
+        },
+        {
+          model: sequelize.models.Article,
+          as: 'sameTopic',
+          attributes: [],
+          required: true,
+          include: [{
+            model: sequelize.models.Topic,
+            as: 'article',
+            required: true,
+          }]
+        },
+      ],
     })
   }
 

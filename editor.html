@@ -316,6 +316,8 @@ require(["vs/editor/editor.main"], function () {
   const editor = monaco.editor.create(
     input_elem,
     {
+      // https://stackoverflow.com/questions/47017753/monaco-editor-dynamically-resizable
+      automaticLayout: true,
       folding: false,
       language: 'cirodown',
       minimap: {enabled: false},

@@ -6061,9 +6061,6 @@ const DEFAULT_MACRO_LIST = [
 {{ head }}
 </head>
 <body class="cirodown">
-<header>
-<a href="{{ root_page }}">Homepage</a>
-</header>
 {{ body }}
 {{ post_body }}</body>
 </html>

@@ -6431,6 +6431,15 @@ That ID must belong to a file being converted for everything to work well. e.g.:
 ourbigbook --web --web-id quantum-mechanics physics.bigb
 ``
 
+= `--web-force-id-extraction`
+{parent=OurBigBook CLI options}
+
+Force <ID extraction> on <web>, even if article content is unchanged.
+
+The only use case so far for this has been as a hack for incomplete database updates.
+
+The correct approach is instead to actually re-extract server side as part of the migration. We should do this by implementing a `Article.reextract` analogous to `Article.rerender`, and a helper <web/bin/rerender-articles.js>{file}.
+
 = `--web-force-render`
 {parent=OurBigBook CLI options}
 
@@ -7642,14 +7651,6 @@ web/bin/psql -c 'SELECT * FROM "Article";'
 ``
 It uses `PGPASSWORD` is mentioned at: https://stackoverflow.com/questions/6405127/how-do-i-specify-a-password-to-psql-non-interactively
 
-= OurBigBook Web without Next.js
-{parent=OurBigBook Web development}
-
-When developing the backend only, Next.js adds several seconds to the debug loop. This is a life saver in that case:
-``
-npm run dev-pg-back
-``
-
 = OurBigBook Web PostgreSQL setup
 {parent=OurBigBook Web PostgreSQL}
 
@@ -7753,6 +7754,14 @@ Then to restore it later with \a[web/bin/pg_restore]:
 web/bin/pg_restore tmp.dump
 ``
 https://stackoverflow.com/questions/2732474/restore-a-postgres-backup-file-using-the-command-line
+
+= OurBigBook Web without Next.js
+{parent=OurBigBook Web development}
+
+When developing the backend only, Next.js adds several seconds to the debug loop. This is a life saver in that case:
+``
+npm run dev-pg-back
+``
 
 = OurBigBook Web step debug
 {parent=OurBigBook Web development}

@@ -3346,6 +3346,11 @@ it('api: synonym rename', async () => {
       { nestedSetIndex: 0, nestedSetNextSibling: 1,  depth: 0, to_id_index: null, slug: 'user1' },
     ])
 
+    // Add a tag to the new synonym.
+    article = createArticleArg({ i: 0, titleSource: 'Integral', bodySource: '{tag=Calculus 2}\n' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus', previousSiblingId: '@user0/derivative' }))
+    assertStatus(status, data)
+
     // Rename Calculus to Calculus 3
     article = createArticleArg({
       i: 0,
@@ -3655,5 +3660,65 @@ it('api: synonym rename', async () => {
       assertStatus(status, data)
       assert.strictEqual(data.username, 'user0')
       assert.strictEqual(data.score, 0)
+
+      // Creating a new article with a synonym does not blow up
+      article = createArticleArg({
+        i: 0,
+        titleSource: 'Geometry',
+        bodySource: `= Geometry 2
+{synonym}
+`,
+      })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, {
+        parentId: '@user0/mathematics',
+        previousSiblingId: '@user0/algebra',
+      }))
+      assertStatus(status, data)
+
+      // Current tree state:
+      // * 0 user0/Index
+      //  * 1 Mathematics
+      //    * 2 Calculus 3 (Calculus, Calculus 2, Derivative)
+      //      * 3 Limit
+      //        * 4 Limit of a series
+      //      * 5 Integral
+      //        * 6 Fundamental theorem of calculus
+      //      * 7 Chain rule
+      //    * 8 Algebra
+      //    * 9 Geometry (Geometry 2)
+
+      // Creating a new article with a synonym with render: false does not blow up.
+      article = createArticleArg({
+        i: 0,
+        titleSource: 'Number theory',
+        bodySource: `= Number theory 2
+{synonym}
+`,
+      })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, {
+        parentId: '@user0/mathematics',
+        previousSiblingId: '@user0/geometry',
+        render: false,
+      }))
+      assertStatus(status, data)
+      ;({data, status} = await createOrUpdateArticleApi(test, article, {
+        parentId: '@user0/mathematics',
+        previousSiblingId: '@user0/geometry',
+        render: true,
+      }))
+      assertStatus(status, data)
+
+      // Current tree state:
+      // * 0 user0/Index
+      //  * 1 Mathematics
+      //    * 2 Calculus 3 (Calculus, Calculus 2, Derivative)
+      //      * 3 Limit
+      //        * 4 Limit of a series
+      //      * 5 Integral
+      //        * 6 Fundamental theorem of calculus
+      //      * 7 Chain rule
+      //    * 8 Algebra
+      //    * 9 Geometry (Geometry 2)
+      //    * 10 Number theory (Number theory 2)
   })
 })

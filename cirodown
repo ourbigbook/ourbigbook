@@ -17,6 +17,7 @@ const fs_extra = require('fs-extra');
 const git_url_parse = require("git-url-parse");
 const is_installed_globally = require('is-installed-globally');
 const katex = require('katex');
+const { Liquid } = require('liquidjs');
 const sass = require('sass');
 
 const cirodown = require('cirodown');
@@ -687,6 +688,23 @@ function remove_duplicates_sorted_array(arr) {
   return arr.filter((e, i, a) => e !== a[i - 1]);
 }
 
+/** Render a template file from under template/ */
+function renderTemplate(templateRelpath, outdir, env) {
+  const template = fs.readFileSync(
+    path.join(cirodown_nodejs.PACKAGE_PATH, 'template', templateRelpath),
+    cirodown_nodejs.ENCODING
+  );
+  const out = (new Liquid()).parseAndRenderSync(
+    template,
+    env,
+    {
+      strictFilters: true,
+      strictVariables: true,
+    }
+  );
+  fs.writeFileSync(path.join(outdir, templateRelpath), out);
+}
+
 /** https://stackoverflow.com/questions/5827612/node-js-fs-readdir-recursive-directory-search
  *
  * @param {Set} skip_basenames
@@ -917,8 +935,6 @@ if (commander.helpMacros) {
 `;
     fs.writeFileSync(path.join(outdir, 'package.json'), package_json_str);
 
-    const new_cirodown_json = {};
-
     // Generate .gitignore. Reuse our gitignore up to the first blank line.
     let gitignore_new = '';
     const gitignore = fs.readFileSync(
@@ -933,29 +949,22 @@ if (commander.helpMacros) {
     }
     fs.writeFileSync(path.join(outdir, '.gitignore'), gitignore_new);
 
-    // Generate README.ciro and other .ciro files.
-    let readme_cirodown_str = `= Cirodown Template
-
-Hello!
-`;
+    const new_cirodown_json = {};
+    let title = 'Cirodown Template';
+    let multifile
     if (commander.generate === 'default') {
-      readme_cirodown_str += `
-\\x[h2-in-not-the-readme]
-
-== And now an include
-
-\\Include[not-readme]
-`
-      not_readme_str = `= Not the readme
-
-A link to another file: \\x[and-now-an-include]
-
-== h2 in not the README
-`
-      fs.writeFileSync(path.join(outdir, 'not-readme.ciro'), not_readme_str);
+      renderTemplate('not-readme.ciro', outdir, {});
+      multifile = true
+    } else {
+      title += ' ' + commander.generate
+      multifile = false
     }
-    fs.writeFileSync(path.join(outdir, 'README.ciro'), readme_cirodown_str);
-    if (commander.generate === 'default') {
+    renderTemplate('README.ciro', outdir, {
+      title,
+      multifile,
+      version: package_json.version,
+    });
+    if (multifile) {
       fs.copyFileSync(path.join(cirodown_nodejs.PACKAGE_PATH, 'main.liquid.html'),
         path.join(outdir, 'main.liquid.html'));
       fs.copyFileSync(path.join(cirodown_nodejs.PACKAGE_PATH, 'main.scss'),

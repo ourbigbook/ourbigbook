@@ -8575,6 +8575,7 @@ function ourbigbook_ul(ast, context) {
 function ourbigbook_prefer_literal(ast, context, ast_arg, arg, open, close) {
   let rendered_arg
   let delim_repeat
+  let has_newline
   const argname = arg.name
   if (
     ast_arg.asts.length === 1 &&
@@ -8594,10 +8595,17 @@ function ourbigbook_prefer_literal(ast, context, ast_arg, arg, open, close) {
       ) {
         delim_repeat++
       }
-      if (rendered_arg[0] === open) {
+      has_newline = rendered_arg.indexOf('\n') !== -1
+      if (
+        rendered_arg[0] === open &&
+        !has_newline
+      ) {
         rendered_arg = ESCAPE_CHAR + rendered_arg
       }
-      if (rendered_arg[rendered_arg.length - 1] === close) {
+      if (
+        rendered_arg[rendered_arg.length - 1] === close &&
+        !has_newline
+      ) {
         rendered_arg = rendered_arg.substring(0, rendered_arg.length - 1) + ESCAPE_CHAR + close
       }
     }
@@ -8606,8 +8614,9 @@ function ourbigbook_prefer_literal(ast, context, ast_arg, arg, open, close) {
     // Not a literal.
     delim_repeat = 1
     rendered_arg = render_arg(ast_arg, context)
+    has_newline = rendered_arg.indexOf('\n') !== -1
   }
-  return { delim_repeat, rendered_arg }
+  return { delim_repeat, has_newline, rendered_arg }
 }
 
 function ourbigbook_convert_args(ast, context, options={}) {
@@ -8622,10 +8631,9 @@ function ourbigbook_convert_args(ast, context, options={}) {
     const ret_arg = []
     const argname = arg.name
     if (!skip.has(argname) && ast.validation_output[argname].given) {
-      const { delim_repeat, rendered_arg } = ourbigbook_prefer_literal(
+      const { delim_repeat, has_newline, rendered_arg } = ourbigbook_prefer_literal(
         ast, context, ast.args[argname], arg, START_POSITIONAL_ARGUMENT_CHAR, END_POSITIONAL_ARGUMENT_CHAR)
       ret_arg.push(START_POSITIONAL_ARGUMENT_CHAR.repeat(delim_repeat))
-      const has_newline = rendered_arg.indexOf('\n') !== -1
       if (arg.remove_whitespace_children) {
         ret_arg.push('\n')
       } else {
@@ -8660,9 +8668,8 @@ function ourbigbook_convert_args(ast, context, options={}) {
     for (const ast_arg of ast_args) {
       const ret_arg = []
       const macro_arg = macro.name_to_arg[argname]
-      const { delim_repeat, rendered_arg } = ourbigbook_prefer_literal(
+      const { delim_repeat, has_newline, rendered_arg } = ourbigbook_prefer_literal(
         ast, context, ast_arg, arg, START_NAMED_ARGUMENT_CHAR, END_NAMED_ARGUMENT_CHAR)
-      const has_newline = rendered_arg.indexOf('\n') !== -1
       let skip_val = false
       if (macro_arg.boolean) {
         const argstr_default = macro_arg.default === undefined ? '0' : '1'

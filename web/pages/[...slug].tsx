@@ -60,15 +60,20 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
   // button shows up on both profile and article pages, and thus comes from different
   // API data, so useSWR is not a clean.
   const [following, setFollowing] = React.useState(false)
-  React.useEffect(() => {
-    setFollowing(article?.author.following)
-  }, [article?.author.following])
+  const [followerCount, setFollowerCount] = React.useState(article?.author.followerCount)
   const [favorited, setFavorited] = React.useState(false);
   const [score, setScore] = React.useState(article?.score);
   React.useEffect(() => {
-    setFavorited(article?.favorited);
+    setFavorited(article?.favorited)
     setScore(article?.score)
-  }, [article?.favorited, article?.score])
+    setFollowing(article?.author.following)
+    setFollowerCount(article?.author.followerCount)
+  }, [
+    article?.favorited,
+    article?.score,
+    article?.author.following,
+    article?.author.followerCount,
+  ])
 
   const handleDelete = async () => {
     if (!loggedInUser) return;
@@ -93,7 +98,7 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
               <UserLinkWithImage user={article.author} />
               {' '}
               <FollowUserButtonContext.Provider value={{
-                following, setFollowing
+                following, setFollowing, followerCount, setFollowerCount
               }}>
                 <FollowUserButton profile={article.author} showUsername={false} />
               </FollowUserButtonContext.Provider>
@@ -133,11 +138,15 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
                 />
               </FavoriteArticleButtonContext.Provider>
               {' Created: '}
-              {formatDate(article.createdAt)}
+              <span className="article-dates">
+                {formatDate(article.createdAt)}
+              </span>
               {article.createdAt !== article.updatedAt &&
                 <>
-                  {' '}
-                  Updated: {formatDate(article.updatedAt)}
+                  {' Updated: '}
+                  <span className="article-dates">
+                    {formatDate(article.updatedAt)}
+                  </span>
                 </>
               }
             </div>

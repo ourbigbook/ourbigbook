@@ -28,9 +28,14 @@ const ProfileHoc = (tab) => {
     const loggedInUser = getLoggedInUser()
     const isCurrentUser = loggedInUser && username === loggedInUser?.username
     const [following, setFollowing] = React.useState(false)
+    const [followerCount, setFollowerCount] = React.useState(profile?.followerCount)
     React.useEffect(() => {
       setFollowing(profile?.following)
-    }, [profile?.following])
+      setFollowerCount(profile?.followerCount)
+    }, [
+      profile?.following,
+      profile?.followerCount,
+    ])
     if (router.isFallback) { return <LoadingSpinner />; }
     return (
       <>
@@ -42,7 +47,7 @@ const ProfileHoc = (tab) => {
             <h1>{username} <span title={DEFAULT_USER_SCORE_TITLE}>({profile.articleScoreSum})</span>
             </h1>
             <p>
-              <FollowUserButtonContext.Provider value={{following, setFollowing}}>
+              <FollowUserButtonContext.Provider value={{following, setFollowing, followerCount, setFollowerCount}}>
                 <FollowUserButton profile={profile} showUsername={false}/>
               </FollowUserButtonContext.Provider>
               {isCurrentUser &&

@@ -25,7 +25,7 @@ function render(sequelize) {
         allowNull: false,
       },
       outdated: {
-        // Instead of having this field we could as wee just delete the
+        // Instead of having this field we could as well just delete the
         // objects when we are outdated. Would be slightly nicer, but
         // less extensible and lazy now.
         type: DataTypes.BOOLEAN,

@@ -64,6 +64,8 @@ module.exports = (sequelize) => {
     [ourbigbook.REFS_TABLE_X_CHILD]: 2,
     // https://github.com/ourbigbook/ourbigbook/issues/198
     [ourbigbook.REFS_TABLE_X_TITLE_TITLE]: 3,
+    // From: the synonym
+    // To: the main header
     [ourbigbook.REFS_TABLE_SYNONYM]: 4,
   };
   return Ref;

@@ -8128,6 +8128,11 @@ const DEFAULT_MACRO_LIST = [
     {
       phrasing: true,
       xss_safe: false,
+      xss_safe_alt: {
+        [OUTPUT_FORMAT_HTML]: (ast, context) => {
+          return html_code(render_arg(ast.args.content, context));
+        }
+      }
     }
   ),
   new Macro(

@@ -1,6 +1,3 @@
-const ourbigbook = require('../index')
-const render = require('./render')
-
 module.exports = (sequelize, web=false) => {
   const { DataTypes } = sequelize.Sequelize
   const cols = {

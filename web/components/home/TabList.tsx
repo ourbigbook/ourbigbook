@@ -8,43 +8,37 @@ import getLoggedInUser from "lib/utils/getLoggedInUser";
 const TabList = ({tab, setTab, tag}) => {
   const loggedInUser = getLoggedInUser()
   return (
-    <ul className="nav nav-pills outline-active">
+    <div className="tab-list">
       <Maybe test={loggedInUser}>
-        <li className="nav-item">
-          <CustomLink
-            className={`nav-link${tab === 'feed' ? ' active' : ''}`}
-            href="/"
-            onClick={() => {setTab('feed')}}
-            shallow
-          >
-            Your Feed
-          </CustomLink>
-        </li>
-      </Maybe>
-      <li className="nav-item">
         <CustomLink
-          className={`nav-link${tab === 'global' ? ' active' : ''}`}
+          className={`tab-item${tab === 'feed' ? ' active' : ''}`}
           href="/"
+          onClick={() => {setTab('feed')}}
           shallow
-          onClick={() => {
-            setTab('global')
-          }}
         >
-          Global Feed
+          Your Feed
         </CustomLink>
-      </li>
-      <Maybe test={tab == 'tag'}>
-        <li className="nav-item">
-          <CustomLink
-            href={`/`}
-            className="nav-link active"
-            shallow
-          >
-            <i className="ion-pound" /> {tag}
-          </CustomLink>
-        </li>
       </Maybe>
-    </ul>
+      <CustomLink
+        className={`tab-item${tab === 'global' ? ' active' : ''}`}
+        href="/"
+        shallow
+        onClick={() => {
+          setTab('global')
+        }}
+      >
+        Global Feed
+      </CustomLink>
+      <Maybe test={tab == 'tag'}>
+        <CustomLink
+          href={`/`}
+          className="tab-item active"
+          shallow
+        >
+          <i className="ion-pound" /> {tag}
+        </CustomLink>
+      </Maybe>
+    </div>
   );
 };
 

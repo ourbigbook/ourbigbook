@@ -14,7 +14,7 @@ const convert_opts = {
 };
 
 const assert_convert_func = function(input_string, expected_output) {
-  let extra_returns = {fail: false};
+  let extra_returns = {};
   let output = cirodown.convert(input_string, convert_opts, extra_returns);
   if (output !== expected_output || extra_returns.errors.length !== 0) {
     console.error('tokens:');
@@ -35,7 +35,7 @@ const assert_convert_func = function(input_string, expected_output) {
 }
 
 const assert_error_func = function(input_string, line, column) {
-  let extra_returns = {fail: false};
+  let extra_returns = {};
   let output = cirodown.convert(input_string, convert_opts, extra_returns);
   assert.ok(extra_returns.errors.length >= 1);
   let error = extra_returns.errors[0];
@@ -51,6 +51,15 @@ const assert_error = function(description, input, line, column) {
   it(description, ()=>{assert_error_func(input, line, column);});
 }
 
+/** For stuff that is hard to predict the exact output of, just check the
+ * exit status at least. */
+const assert_no_error = function(description, input) {
+  it(description, ()=>{
+    let extra_returns = {};
+    cirodown.convert(input, convert_opts, extra_returns);
+    assert.strictEqual(extra_returns.errors.length, 0);
+  });
+}
 // Paragraphs.
 assert_convert('one paragraph', '\\p[ab]\n', '<p>ab</p>\n');
 assert_convert('two paragraphs', 'p1\n\np2\n', '<p>p1</p>\n<p>p2</p>\n');
@@ -410,6 +419,11 @@ c
 <p>d</p>
 `
 );
+
+// Math.
+assert_no_error('math inline', '\\m[[\\sqrt{1 + 1}]]');
+assert_no_error('math block', '\\M[[\\sqrt{1 + 1}]]');
+assert_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 5);
 
 // Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception.

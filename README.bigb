@@ -10896,14 +10896,16 @@ The logo can be seen at: <image Logo of the OurBigBook Project>.
 
 \Image[logo.svg]
 {height=150}
-{title=logo.svg canonical source of the project logo}
+{title=logo.svg}
 {description=
-This file was actually manually created, and therefore counts as code and can be tracked on this git repository.
+Canonical project logo.
+
+This SVG file was actually manually created, and therefore counts as code and can be tracked on this git repository.
 
 Since it does not contain text, only geometric primitives, this SVG file does not rely on any external system fonts and is fully reproducible.
 }
 
-\Image[logo.png]
+\Image[logo-256.png]
 {height=150}
 {title=logo-256.png}
 {provider=github}

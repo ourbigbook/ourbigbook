@@ -2310,11 +2310,15 @@ function html_convert_attrs(
 function html_convert_attrs_id(
   ast, context, arg_names=[], custom_args={}
 ) {
-  if (ast.id !== undefined) {
+  let id = ast.id;
+  if (id !== undefined) {
+    if (context.toplevel_ast !== undefined && ast.id !== context.toplevel_ast.id) {
+      id = remove_toplevel_scope(id, context.toplevel_ast, context)
+    }
     custom_args[Macro.ID_ARGUMENT_NAME] = [
         new PlaintextAstNode(
           ast.source_location,
-          remove_toplevel_scope(ast.id, context.toplevel_ast, context)
+          id
         )
     ];
   }
@@ -3112,7 +3116,6 @@ function parse(tokens, options, context, extra_returns={}) {
 
         // Create the header tree.
         if (is_first_header) {
-          console.error(options.toplevel_id);
           ast.id = options.toplevel_id;
           if (options.toplevel_has_scope) {
             ast.validation_output.scope.boolean = true

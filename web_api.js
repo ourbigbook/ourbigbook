@@ -80,26 +80,26 @@ class WebApi {
     return `/${WEB_API_PATH}/articles?id=${encodeURIComponent(slug)}`
   }
 
-  async issueGet(slug) {
+  async issueGet(id, number=undefined) {
     return this.req('get',
-      `/issues?id=${encodeURIComponent(slug)}`,
+      `/issues${encodeGetParams({ id, number })}`,
     )
   }
 
-  async issueCreate(slug, titleSource, bodySource) {
+  async issueCreate(slug, issue) {
     return this.req('post',
       `/issues?id=${encodeURIComponent(slug)}`,
       {
-        body: { issue: { titleSource, bodySource } },
+        body: { issue },
       },
     )
   }
 
-  async issueEdit(slug, issueNumber, titleSource, bodySource) {
+  async issueEdit(slug, issueNumber, issue) {
     return this.req('put',
       `/issues/${issueNumber}?id=${encodeURIComponent(slug)}`,
       {
-        body: { issue: { titleSource, bodySource } },
+        body: { issue },
       },
     )
   }

@@ -21,7 +21,7 @@ router.get(routes.home(), auth.required, async function(req, res, next) {
     if (query.articleIds) {
       const ids = []
       for (let idString of query.articleIds) {
-        ids.push(lib.validate(idString, lib.validatePositiveInteger, 'articleIds'))
+        ids.push(lib.validate(idString, lib.isPositiveInteger, 'articleIds'))
       }
       const objArr = await req.app.get('sequelize').models.UserLikeArticle.findAll({
         where: {
@@ -36,7 +36,7 @@ router.get(routes.home(), auth.required, async function(req, res, next) {
     if (query.userIds) {
       const ids = []
       for (let idString of query.userIds) {
-        ids.push(lib.validate(idString, lib.validatePositiveInteger, 'userIds'))
+        ids.push(lib.validate(idString, lib.isPositiveInteger, 'userIds'))
       }
       const objArr = await req.app.get('sequelize').models.UserFollowUser.findAll({
         where: {

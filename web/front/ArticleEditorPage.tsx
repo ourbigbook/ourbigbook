@@ -17,14 +17,17 @@ import routes from 'front/routes'
 import { AppContext, useCtrlEnterSubmit } from 'front'
 import { modifyEditorInput } from 'front/js';
 
-export default function ArticleEditorPageHoc(options = { isnew: false}) {
-  const { isnew } = options
+export default function ArticleEditorPageHoc(options = {
+  isIssue: false,
+  isNew: false,
+}) {
+  const { isIssue, isNew } = options
   const editor = ({ article: initialArticle }: ArticlePageProps) => {
     const router = useRouter();
     const {
       query: { slug },
     } = router;
-    let body;
+    let bodySource;
     let slugString
     if (Array.isArray(slug)) {
       slugString = slug.join('/')
@@ -34,18 +37,18 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
     let initialFileState;
     let initialFile
     if (initialArticle) {
-      initialFile = initialArticle.file
-      body = initialFile.body
-      if (slugString && isnew) {
-        body += `${ourbigbook.PARAGRAPH_SEP}Adapted from: \\x[${ourbigbook.AT_MENTION_CHAR}${slugString}].`
+      initialFile = isIssue ? initialArticle : initialArticle.file
+      bodySource = initialFile.bodySource
+      if (slugString && isNew) {
+        bodySource += `${ourbigbook.PARAGRAPH_SEP}Adapted from: \\x[${ourbigbook.AT_MENTION_CHAR}${slugString}].`
       }
       initialFileState = {
-        title: initialFile.title,
+        titleSource: initialFile.titleSource,
       }
     } else {
-      body = ""
+      bodySource = ""
       initialFileState = {
-        title: "",
+        titleSource: "",
       }
     }
     const [isLoading, setLoading] = React.useState(false);
@@ -57,11 +60,11 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
       if (ourbigbookEditorElem && loggedInUser) {
         let editor;
         loader.init().then(monaco => {
-          //const id = ourbigbook.title_to_id(file.title)
+          //const id = ourbigbook.title_to_id(file.titleSource)
           //const input_path = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/${id}.${ourbigbook.OURBIGBOOK_EXT}`
           editor = new OurbigbookEditor(
             ourbigbookEditorElem.current,
-            body,
+            bodySource,
             monaco,
             ourbigbook,
             ourbigbook_runtime,
@@ -71,7 +74,7 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
                 ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`,
               }, convertOptions),
               handleSubmit,
-              modifyEditorInput: (oldInput) => modifyEditorInput(file.title, oldInput),
+              modifyEditorInput: (oldInput) => modifyEditorInput(file.titleSource, oldInput),
               production: isProduction,
             },
           )
@@ -95,7 +98,7 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
     const handleTitle = async (e) => {
       setFile(file => { return {
         ...file,
-        title: e.target.value,
+        titleSource: e.target.value,
       }})
       await ourbigbookEditorElem.current.ourbigbookEditor.setModifyEditorInput(
         oldInput => modifyEditorInput(e.target.value, oldInput))
@@ -106,16 +109,24 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
       }
       setLoading(true);
       let data, status;
-      file.body = ourbigbookEditorElem.current.ourbigbookEditor.getValue()
-      if (isnew) {
-        ({ data, status } = await webApi.articleCreate(file));
+      file.bodySource = ourbigbookEditorElem.current.ourbigbookEditor.getValue()
+      if (isNew) {
+        if (isIssue) {
+          ;({ data, status } = await webApi.issueCreate(slugString, file));
+        } else {
+          ;({ data, status } = await webApi.articleCreate(file));
+        }
       } else {
-        ({ data, status } = await webApi.articleCreateOrUpdate(
-          file,
-          {
-            path: slugFromArray(initialFile.path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR), { username: false }),
-          }
-        ));
+        if (isIssue) {
+          ;({ data, status } = await webApi.issueEdit(slugString, router.query.number, file))
+        } else {
+          ;({ data, status } = await webApi.articleCreateOrUpdate(
+            file,
+            {
+              path: slugFromArray(initialFile.path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR), { username: false }),
+            }
+          ))
+        }
       }
       setLoading(false);
       if (status !== 200) {
@@ -126,16 +137,20 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
       ourbigbookEditorElem.current.ourbigbookEditor.dispose()
 
       let redirTarget
-      if (isnew) {
-        redirTarget = routes.articleView(data.articles[0].slug)
+      if (isIssue) {
+        redirTarget = routes.issueView(slugString, data.issue.number)
       } else {
-        redirTarget = routes.articleView((slug as string[]).join('/'))
+        if (isNew) {
+          redirTarget = routes.articleView(data.articles[0].slug)
+        } else {
+          redirTarget = routes.articleView(slugString)
+        }
       }
       Router.push(redirTarget, null, { scroll: true });
     };
     useCtrlEnterSubmit(handleSubmit)
     const handleCancel = async (e) => {
-      if (isnew) {
+      if (isNew) {
         Router.push(`/`);
       } else {
         // This is a hack for the useEffect cleanup callback issue.
@@ -145,8 +160,8 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
     }
     const { setTitle } = React.useContext(AppContext)
     React.useEffect(() => {
-      setTitle(isnew ? 'New article' : `Editing: ${initialFile?.title}`)
-    }, [isnew, initialFile?.title])
+      setTitle(isNew ? `New ${isIssue ? 'issue' : 'article'}` : `Editing: ${initialFile?.titleSource}`)
+    }, [isNew, initialFile?.titleSource])
     return (
       <div className="editor-page content-not-ourbigbook">
         { /* <ListErrors errors={errors} /> */ }
@@ -156,7 +171,7 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
               type="text"
               className="title"
               placeholder="Article Title"
-              value={file.title}
+              value={file.titleSource}
               onChange={handleTitle}
             />
             <div className="actions">
@@ -173,7 +188,7 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
                 disabled={isLoading}
                 onClick={handleSubmit}
               >
-                <i className="ion-checkmark" />&nbsp;{isnew ? 'Create' : 'Submit'}
+                <i className="ion-checkmark" />&nbsp;{isNew ? 'Create' : 'Submit'}
               </button>
             </div>
           </div>

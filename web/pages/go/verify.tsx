@@ -29,13 +29,16 @@ function VerifyPage({ code, email, user, verificationOk } : VerifyPageProps) {
     <div className="verify-page content-not-ourbigbook">
       <h1>Verify your account.</h1>
       {!code &&
-        <div>Click the verification link we've sent to your email: {email} to verify your account.</div>
+        <>
+          <p>Click the verification link we've sent to your email: {email} to verify your account.</p>
+          <p>Also check your spam box if you can't see the email.</p>
+        </>
       }
       {verificationOk &&
-        <div>Verification done, you are now being redirected.</div>
+        <p>Verification done, you are now being redirected.</p>
       }
       {(code && email && !verificationOk) &&
-        <div>Verification code invalid. TODO give user something to do about it, e.g. resend.</div>
+        <p>Verification code invalid. TODO give user something to do about it, e.g. resend.</p>
       }
     </div>
   )

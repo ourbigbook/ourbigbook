@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -eux
+rm -rf out/db.sqlite3
+echo a | ./cirodown
+rm -rf out/db.sqlite3
+echo '\\reserved' | ./cirodown
+rm -rf out/db.sqlite3
+./cirodown .
+rm -rf out/db.sqlite3
+./cirodown --html-single-page README.ciro

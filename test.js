@@ -1641,18 +1641,19 @@ const include_opts = {extra_convert_opts: {
   file_provider: new cirodown_nodejs.ZeroFileProvider(),
   html_single_page: true,
   read_include: function(input_path) {
+    let ret;
     if (input_path === 'include-one-level-1') {
-      return `= cc
+      ret = `= cc
 
 dd
 `
     } else if (input_path === 'include-one-level-2') {
-      return `= ee
+      ret = `= ee
 
 ff
 `
     } else if (input_path === 'include-two-levels') {
-      return `= ee
+      ret = `= ee
 
 ff
 
@@ -1663,6 +1664,7 @@ hh
     } else {
       throw new Error(`unknown lnclude path: ${input_path}`);
     }
+    return [input_path + '.ciro', ret];
   },
 }};
 const include_two_levels_ast_args = [

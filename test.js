@@ -2069,20 +2069,28 @@ assert_convert_ast('cross reference to non-included file with toplevel scope',
     }
   }
 );
-assert_convert_ast('toplevel scope gets removed',
+assert_convert_ast('toplevel scope gets removed from IDs in the file',
   `= Notindex
 {scope}
+
+\\x[notindex][link to notindex]
+
+\\x[h2][link to h2]
 
 == h2
 `,
   [
     a('H', undefined, {level: [t('1')], title: [t('Notindex')]}),
+    a('P', [a('x', undefined, {href: [t('notindex')]})]),
+    a('P', [a('x', undefined, {href: [t('h2')]})]),
     a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('h2')]}),
   ],
   {
     assert_xpath_matches: [
       "//x:h1[@id='notindex']",
+      "//x:div[@class='p']//x:a[@href='' and text()='link to notindex']",
+      "//x:div[@class='p']//x:a[@href='#h2' and text()='link to h2']",
       "//x:h2[@id='h2']",
     ],
   }
@@ -2869,14 +2877,14 @@ assert_error('unterminated insane inline code', '`\n', 1, 1);
 
 // cirodown executable tests.
 assert_executable(
-  'input from stdin produces output on stdout',
+  'executable: input from stdin produces output on stdout',
   {
     stdin: 'aabb',
     expect_stdout_xpath: ["//x:div[@class='p' and text()='aabb']"],
   }
 );
 assert_executable(
-  'input from file produces an output file',
+  'executable: input from file produces an output file',
   {
     args: ['notindex.ciro'],
     filesystem: {
@@ -2888,7 +2896,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'input from directory with cirodown.json produces several output files',
+  'executable: input from directory with cirodown.json produces several output files',
   {
     args: ['.'],
     filesystem: {
@@ -2898,13 +2906,15 @@ assert_executable(
 
 \\x[toplevel-scope/toplevel-scope-h2]
 
-\\x[subdir]
+\\x[subdir][link to subdir]
 
-\\x[subdir/subdir-index-h2]
+\\x[subdir/index-h2][link to subdir index h2]
 
-\\x[subdir/notindex]
+\\x[subdir/notindex][link to subdir notindex]
 
-\\x[subdir/subdir-notindex-h2]
+\\x[subdir/notindex-h2][link to subdir notindex h2]
+
+== h2
 `,
       'notindex.ciro': `= Notindex`,
       'toplevel-scope.ciro': `= Toplevel scope
@@ -2914,38 +2924,51 @@ assert_executable(
 `,
       'subdir/index.ciro': `= Subdir index
 
-== Subdir index h2
+\\x[index][link to toplevel]
+
+\\x[h2][link to toplevel subheader]
+
+== Index h2
 `,
       'subdir/notindex.ciro': `= Subdir notindex
 
-== Subdir notindex h2
+== Notindex h2
 `,
       'cirodown.json': `{}\n`,
     },
     expect_filesystem_xpath: {
-      'index.html': ["//x:h1[@id='index']"],
+      'index.html': [
+        "//x:h1[@id='index']",
+        "//x:a[@href='subdir/index.html' and text()='link to subdir']",
+        "//x:a[@href='subdir/index.html#h2' and text()='link to subdir index h2']",
+        "//x:a[@href='subdir/notindex.html' and text()='link to subdir notindex']",
+        "//x:a[@href='subdir/notindex.html#notindex-h2' and text()='link to subdir notindex h2']",
+      ],
       'notindex.html': [
-        "//x:h1[@id='notindex']"
+        "//x:h1[@id='notindex']",
       ],
       'subdir/index.html': [
         "//x:h1[@id='subdir']",
-        "//x:h2[@id='subdir-index-h2']",
+        "//x:h2[@id='index-h2']",
+        "//x:a[@href='../index.html' and text()='link to toplevel']",
+        "//x:a[@href='../index.html#h2' and text()='link to toplevel subheader']",
       ],
       'subdir/notindex.html': [
         "//x:h1[@id='notindex']",
-        "//x:h2[@id='subdir-notindex-h2']",
+        "//x:h2[@id='notindex-h2']",
       ]
     }
   }
 );
 assert_executable(
-  'convert subdirectory only with cirodown.json',
+  'executable: convert subdirectory only with cirodown.json',
   {
     args: ['subdir'],
     filesystem: {
       'README.ciro': `= Index`,
       'subdir/index.ciro': `= Subdir index`,
       'subdir/notindex.ciro': `= Subdir notindex`,
+      'cirodown.json': `{}\n`,
     },
     // Place out next to cirodown.json which should be the toplevel.
     expect_exists: ['out'],
@@ -2957,7 +2980,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'convert subdirectory only without cirodown.json',
+  'executable: convert subdirectory only without cirodown.json',
   {
     args: ['subdir'],
     filesystem: {
@@ -2969,13 +2992,16 @@ assert_executable(
     expect_exists: ['subdir/out'],
     expect_not_exists: ['out', 'index.html'],
     expect_filesystem_xpath: {
-      'subdir/index.html': ["//x:h1[@id='subdir']"],
+      // The id is not just "subdir" derived from parent because
+      // subdir is now the toplevel directory, so the ID is derived
+      // from the title.
+      'subdir/index.html': ["//x:h1[@id='subdir-index']"],
       'subdir/notindex.html': ["//x:h1[@id='notindex']"],
     }
   }
 );
 assert_executable(
-  'convert a subdirectory file only with cirodown.json',
+  'executable: convert a subdirectory file only with cirodown.json',
   {
     args: ['subdir/notindex.ciro'],
     filesystem: {
@@ -2993,7 +3019,7 @@ assert_executable(
   }
 );
 assert_executable(
-  'convert a subdirectory file only without cirodown.json',
+  'executable: convert a subdirectory file only without cirodown.json',
   {
     args: ['subdir/notindex.ciro'],
     filesystem: {

@@ -859,15 +859,20 @@ This is why IDs must be unique for elements across all pages.
 
 ==== Internal cross file references internals
 
-When running in Node.js, Cirodown dumps the IDs of all processed files to a `out/ids.sqlite3` file, and then reads from that file when IDs are needed.
+When running in Node.js, Cirodown dumps the IDs of all processed files to a `out/db.sqlite3` file, and then reads from that file when IDs are needed.
 
-When converting a directory, `out/ids.sqlite3` is placed inside the input directory. When converting individual files, `out/ids.sqlite3` is placed in the current working directory. The file is not created or used when handling input from stdin.
+When converting a directory, `out/db.sqlite3` is placed inside the input directory. When converting individual files, `out/db.sqlite3` is placed in the current working directory. The file is not created or used when handling input from stdin.
 
 When running in the browser, the same JavaScript API will send queries to the server instead of a local SQLite database.
 
 To inspect the ID database to debug it, you can use:
 ``
 sqlite3 out/db.sqlite3 .dump
+``
+
+It is often useful to dump a single table, e.g. to dump the `ids` table:
+``
+sqlite3 out/db.sqlite3 '.dump ids'
 ``
 
 You can force `cirodown` to not use the ID database with `--no-db`:
@@ -3412,7 +3417,27 @@ Cirodown configuration file that affects the behaviour of cirodown for all files
 
 `cirodown.json` not used for input from stdin, since we are mostly doing quick tests in that case.
 
-While `cirodown.json` is optional, it is used to determine the toplevel directory of a Cirodown project, which has some effects such as those mentioned at \x[the-toplevel-index-file]. Therefore, it is recommended that you always have a `cirodown.json` in your project's toplevel directory, even if it is going to be an empty JSON `{}`.
+While `cirodown.json` is optional, it is used to determine the toplevel directory of a Cirodown project, which has some effects such as those mentioned at \x[the-toplevel-index-file].
+
+Therefore, it is recommended that you always have a `cirodown.json` in your project's toplevel directory, even if it is going to be an empty JSON `{}`.
+
+For example, if you convert a file in a subdirectory such as:
+``
+cirodown subdir/notindex.ciro
+``
+then `cirodown` walks up the filesystem tree looking for `cirodown.json`, e.g.:
+* is there a `./subdir/cirodown.json`?
+* otherwise, is there a `./cirodown.json`?
+* otherwise, is there a `../cirodown.json`?
+and so on.
+
+Then, in that case:
+* if no `cirodown.json` file is found, we don't know any better output toplevel than `subdir`/ itself, and so:
+  * the first header of subdir/notindex.ciro will have ID `notindex`, instead of `subdir/notindex` as per \x[directory-based-scope]
+  * \x[the-out-directory] is located at `./subdir/out`
+* otherwise, if `./cirodown.json` file is found:
+  * the first header of subdir/notindex.ciro will have ID `subdir/notindex`. Cirodown understands that `subdir` is relative to the toplevel at `.`
+  * \x[the-out-directory] is located at `./out`
 
 = `media-providers`
 {parent=cirodown-json}
@@ -3795,6 +3820,12 @@ where `root_relpath` is explained under \x[template]{full}.
 === Formal grammar
 
 TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarchy and parsing complexity.
+
+=== The `out` directory
+
+Cirodown stores some metadata and outputs it generates/needs inside the `./out/` directory that it creates.
+
+This directory is created on the project toplevel, more details about its location are given at: \x[cirodown-json].
 
 === Release procedure
 

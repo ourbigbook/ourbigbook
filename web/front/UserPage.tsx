@@ -143,8 +143,8 @@ export default function UserPage({
             <ArticleIcon /> Top
           </CustomLink>
           <CustomLink
-            href={routes.userArticles(username,  { sort: 'createdAt' })}
-            className={`tab-item${what === 'user-articles' && order === 'createdAt' ? ' active' : ''}`}
+            href={routes.userArticles(username,  { sort: 'created' })}
+            className={`tab-item${what === 'user-articles' && order === 'created' ? ' active' : ''}`}
           >
             Latest
           </CustomLink>

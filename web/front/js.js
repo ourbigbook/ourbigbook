@@ -27,14 +27,20 @@ function getOrderAndPage(req, page, opts={}) {
 function getOrder(req, opts={}) {
   let sort = req.query.sort;
   const default_ = opts.defaultOrder || 'createdAt'
+  const urlToDbSort = opts.urlToDbSort || {}
   if (sort) {
     if (
-      sort === 'createdAt' ||
-      sort === 'score'
+      sort === 'created'
     ) {
+      return ['createdAt']
+    } else if (sort === 'score') {
       return [sort]
     } else {
-      return [default_, `Invalid sort value: '${sort}'`]
+      if (sort in urlToDbSort) {
+        return [urlToDbSort[sort]]
+      } else {
+        return [default_, `Invalid sort value: '${sort}'`]
+      }
     }
   } else {
     return [default_]

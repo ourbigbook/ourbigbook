@@ -3570,8 +3570,8 @@ assert_lib_ast('x: topic link: basic insane',
     a('P', [
       t('a '),
       a('x', undefined, {
-        href: [t('#Dogs')],
-        magic: [],
+        href: [t('Dogs')],
+        topic: [],
       }),
       t(' b'),
     ]),
@@ -3579,6 +3579,22 @@ assert_lib_ast('x: topic link: basic insane',
   {
     assert_xpath_stdout: [
       "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/dog' and text()='Dogs']",
+    ]
+  },
+)
+assert_lib_ast('x: topic link: at start of document does not blow up',
+  `#Dog\n`,
+  [
+    a('P', [
+      a('x', undefined, {
+        href: [t('Dog')],
+        topic: [],
+      }),
+    ]),
+  ],
+  {
+    assert_xpath_stdout: [
+      "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/dog' and text()='Dog']",
     ]
   },
 )
@@ -3596,28 +3612,22 @@ assert_lib('x: topic link: sane',
     filesystem: {
       'README.bigb': `= tmp
 
-\\x[#Without Magic]
+\\x[Sane Link]{topic}
 
-\\x[#With Magic]{magic}
+\\x[Sane Link With Content][My Content]{topic}
 
-\\x[#With Magic And Content][My Content]{magic}
+\\x[Many Dogs]{topic}
 
-\\x[#Many Dogs]{magic}
+\\x[Many Cats]{topic}{p=1}
 
-\\x[#Many Cats]{magic}{p=1}
-
-<#With Magic Insane>
-
-== Without Magic
-{id=\\#Without Magic}
+<#Insane Link>
 `
     },
     assert_xpath: {
       'index.html': [
-        "//x:div[@class='p']//x:a[@href='##Without Magic' and text()='without Magic']",
-        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/with-magic' and text()='With Magic']",
-        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/with-magic-and-content' and text()='My Content']",
-        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/with-magic-insane' and text()='With Magic Insane']",
+        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/sane-link' and text()='Sane Link']",
+        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/sane-link-with-content' and text()='My Content']",
+        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/insane-link' and text()='Insane Link']",
         "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/many-dog' and text()='Many Dogs']",
         "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/many-cats' and text()='Many Cats']",
       ],

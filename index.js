@@ -1831,8 +1831,13 @@ class Tokenizer {
         const open_char = this.cur_c;
         const open_length = this.tokenize_func(c => c === open_char).length;
         let close_char
+        let isTopic = false
         if (open_char === INSANE_X_START) {
           close_char = INSANE_X_END
+          if (this.cur_c === INSANE_TOPIC_CHAR) {
+            this.consume(INSANE_TOPIC_CHAR.length)
+            isTopic = true
+          }
         } else {
           close_char = open_char
         }
@@ -1849,7 +1854,7 @@ class Tokenizer {
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
         if (open_char === INSANE_X_START) {
           this.push_token(TokenType.NAMED_ARGUMENT_START, START_NAMED_ARGUMENT_CHAR, source_location);
-          this.push_token(TokenType.NAMED_ARGUMENT_NAME, 'magic', source_location);
+          this.push_token(TokenType.NAMED_ARGUMENT_NAME, isTopic ? 'topic' : 'magic', source_location);
           this.push_token(TokenType.NAMED_ARGUMENT_END, END_NAMED_ARGUMENT_CHAR, source_location);
         }
         this.consume_optional_newline_after_argument()
@@ -1912,16 +1917,11 @@ class Tokenizer {
 
         // Insane topic link.
         let is_insane_topic_link = false;
-        if (
-          this.cur_c === TOPIC_CHAR && !(
-            this.tokens[this.tokens.length - 1].type === TokenType.POSITIONAL_ARGUMENT_START &&
-            this.tokens[this.tokens.length - 2].type === TokenType.MACRO_NAME &&
-            this.tokens[this.tokens.length - 2].value === Macro.X_MACRO_NAME
-          )
-        ) {
+        if (this.cur_c === INSANE_TOPIC_CHAR) {
           const source_location = this.source_location.clone()
           this.push_token(TokenType.MACRO_NAME, Macro.X_MACRO_NAME, source_location)
           this.push_token(TokenType.POSITIONAL_ARGUMENT_START, START_POSITIONAL_ARGUMENT_CHAR, source_location)
+          this.consume(INSANE_TOPIC_CHAR.length)
           while (this.consume_plaintext_char()) {
             if (INSANE_LINK_END_CHARS.has(this.cur_c)) {
               break
@@ -1932,7 +1932,7 @@ class Tokenizer {
           }
           this.push_token(TokenType.POSITIONAL_ARGUMENT_END, END_POSITIONAL_ARGUMENT_CHAR, source_location)
           this.push_token(TokenType.NAMED_ARGUMENT_START, START_NAMED_ARGUMENT_CHAR, source_location)
-          this.push_token(TokenType.NAMED_ARGUMENT_NAME, 'magic', source_location)
+          this.push_token(TokenType.NAMED_ARGUMENT_NAME, 'topic', source_location)
           this.push_token(TokenType.NAMED_ARGUMENT_END, END_NAMED_ARGUMENT_CHAR, source_location)
           done = true
         }
@@ -5468,10 +5468,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         let target_id = convert_file_id_arg(ast, ast.args.href, context)
         if (
           // Otherwise the ref would be added to the DB and DB checks would fail.
-          !(
-            ast.validation_output.magic.boolean &&
-            target_id[0] === TOPIC_CHAR
-          )
+          !ast.validation_output.topic.boolean
         ) {
           const fetch_plural = ast.validation_output.magic.boolean
           if (fetch_plural) {
@@ -7116,8 +7113,8 @@ function x_get_target_ast(ast, context) {
 function x_get_href_content(ast, context) {
   const { href_arg, target_id, target_id_raw, target_ast } = x_get_target_ast(ast, context)
   const content_arg = ast.args.content;
-  if (ast.validation_output.magic.boolean && target_id_raw[0] === TOPIC_CHAR) {
-    let topicTitle = target_id_raw.substr(1)
+  if (ast.validation_output.topic.boolean) {
+    let topicTitle = target_id_raw
     let topicTitleSingular = topicTitle
     if (!ast.validation_output.p.boolean) {
       topicTitleSingular = pluralize_wrap(topicTitleSingular, 1)
@@ -7653,7 +7650,7 @@ const ANCESTORS_MAX = 6
 exports.ANCESTORS_MAX = ANCESTORS_MAX
 const AT_MENTION_CHAR = '@';
 exports.AT_MENTION_CHAR = AT_MENTION_CHAR;
-const TOPIC_CHAR = '#';
+const INSANE_TOPIC_CHAR = '#';
 const WEB_API_PATH = 'api';
 exports.WEB_API_PATH = WEB_API_PATH;
 const WEB_TOPIC_PATH = 'go/topic';
@@ -7803,7 +7800,7 @@ const MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS = [
   INSANE_X_START,
   INSANE_CODE_CHAR,
   INSANE_MATH_CHAR,
-  TOPIC_CHAR,
+  INSANE_TOPIC_CHAR,
 ].join('')
 const MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS_REGEX = new RegExp(`([${MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS}])`, 'g')
 const MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS = [
@@ -8637,6 +8634,10 @@ const DEFAULT_MACRO_LIST = [
         }),
         new MacroArgument({
           name: 'ref',
+          boolean: true,
+        }),
+        new MacroArgument({
+          name: 'topic',
           boolean: true,
         }),
       ],
@@ -10300,10 +10301,21 @@ OUTPUT_FORMATS_LIST.push(
         [Macro.TR_MACRO_NAME]: ourbigbook_ul,
         'Ul': ourbigbook_ul,
         [Macro.X_MACRO_NAME]: function(ast, context) {
+          let href = render_arg(ast.args.href, context)
+          if (ast.validation_output.topic.boolean) {
+            for (const c of href) {
+              if (INSANE_LINK_END_CHARS.has(c)) {
+                return `${INSANE_X_START}${INSANE_TOPIC_CHAR}${href}${INSANE_X_END}`
+              }
+            }
+            return `${INSANE_TOPIC_CHAR}${href}`
+          }
+          //if (AstType.PLAINTEXT === ast.args.href[0] === INSANE_TOPIC_CHAR) {
+          //  return `<${href}>`
+          //}
           // Remove any > from the ref. There's currently no way to escape them, would cut argument short.
           let { target_id, target_ast } = x_get_target_ast(ast, context)
           const magic = ast.validation_output.magic.boolean
-          let href = render_arg(ast.args.href, context)
           if (!magic && href !== magic_title_to_id(href, context)) {
             // Explicit IDs with weird characters weird cannot be converted to insane, e.g.
             //

@@ -34,6 +34,10 @@ Insane ref plural: <black cats>.
 
 Insane ref full: <black cats>{full}.
 
+Topic link with spaces: <#rare topic with spaces>.
+
+Topic link without spaces: #RareTopic
+
 Sane xref that cannot be converted to insane: \x[[$]]
 
 Insane ref with greater than: <greater than>

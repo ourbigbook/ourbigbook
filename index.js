@@ -324,35 +324,38 @@ class AstNode {
 
   /** Works with both actual this.header_graph_node and
    * this.header_graph_node_parent_id when coming from a database. */
-  get_header_parent_id(context) {
+  get_header_parent_ids(context) {
+    const ret = []
     if (
       this.header_graph_node !== undefined &&
       this.header_graph_node.parent_node !== undefined &&
       this.header_graph_node.parent_node.value !== undefined
     ) {
-      return this.header_graph_node.parent_node.value.id;
+      ret.push(this.header_graph_node.parent_node.value.id);
     } else if (this.header_graph_node_parent_id !== undefined) {
-      return this.header_graph_node_parent_id;
-    } else {
-      return Array.from(context.id_provider.get_refs_to_as_ids(REFS_TABLE_INCLUDE, this.id))[0];
+      ret.push(this.header_graph_node_parent_id);
     }
+    ret.push(...Array.from(context.id_provider.get_refs_to_as_ids(REFS_TABLE_INCLUDE, this.id)));
+    return ret
   }
 
-  /* Like get_header_parent_id, but returns the parent AST. */
-  get_header_parent(context) {
-    const header_parent_id = this.get_header_parent_id(context);
-    if (header_parent_id === undefined) {
-      return undefined;
-    } else {
-      return context.id_provider.get(header_parent_id, context);
+  /* Like get_header_parent_ids, but returns the parent AST. */
+  get_header_parents(context) {
+    const ret = []
+    const header_parent_ids = this.get_header_parent_ids(context);
+    for (const header_parent_id of header_parent_ids) {
+      if (header_parent_id !== undefined) {
+        ret.push(context.id_provider.get(header_parent_id, context));
+      }
     }
+    return ret
   }
 
   /* Return split_default, if not in a HEADER, inherit from the parent header. */
   get_split_default(context) {
     let ast;
     if (this.macro_name !== Macro.HEADER_MACRO_NAME) {
-      ast = this.get_header_parent(context)
+      ast = this.get_header_parents(context)[0]
     }
     if (ast === undefined) {
       ast = this;
@@ -364,7 +367,7 @@ class AstNode {
     let cur_ast = this;
     const other_id = other.id;
     while (true) {
-      cur_ast = cur_ast.get_header_parent(context);
+      cur_ast = cur_ast.get_header_parents(context)[0];
       if (cur_ast === undefined) {
         return false;
       }
@@ -3488,7 +3491,7 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     if (ast.macro_name === Macro.HEADER_MACRO_NAME) {
       header_ast = ast;
     } else {
-      header_ast = ast.get_header_parent(context);
+      header_ast = ast.get_header_parents(context)[0];
     }
     if (header_ast.is_first_header_in_input_file) {
       first_header_or_before = true;
@@ -4757,7 +4760,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         context,
         ast
       )
-      const parent_id = ast.get_header_parent_id(context);
+      const parent_id = ast.get_header_parent_ids(context)[0];
       if (
         // Happens on some special elements e.g. the ToC.
         parent_id !== undefined
@@ -5474,7 +5477,7 @@ function x_href_parts(target_id_ast, context) {
       // Split header link to image in current header.
       context.in_split_headers &&
       target_id_ast.macro_name !== Macro.HEADER_MACRO_NAME &&
-      target_id_ast.get_header_parent_id(context) === context.toplevel_id
+      target_id_ast.get_header_parent_ids(context)[0] === context.toplevel_id
     ) ||
     to_current_toplevel
   ) {
@@ -5550,7 +5553,7 @@ function x_href_parts(target_id_ast, context) {
     let toplevel_ast;
     if (to_split_headers) {
       // We know not a header target, as that would have been caught previously.
-      toplevel_ast = target_id_ast.get_header_parent(context);
+      toplevel_ast = target_id_ast.get_header_parents(context)[0];
     } else if (
       // The header was included inline into the current file.
       context.options.include_path_set.has(target_input_path) && !context.in_split_headers
@@ -6279,11 +6282,7 @@ const DEFAULT_MACRO_LIST = [
         }
 
         // Parent links.
-        let parent_asts = [];
-        const main_parent = ast.get_header_parent(context)
-        if (main_parent !== undefined) {
-          parent_asts.push(main_parent);
-        }
+        let parent_asts = ast.get_header_parents(context)
         parent_links = [];
         for (const parent_ast of parent_asts) {
           let parent_href = x_href_attr(parent_ast, context);
@@ -6892,7 +6891,7 @@ const DEFAULT_MACRO_LIST = [
         if (cur_context.options.split_headers) {
           ret += `${HEADER_MENU_ITEM_SEP}${link_to_split_opposite(target_id_ast, cur_context)}`;
         }
-        let parent_ast = target_id_ast.get_header_parent(cur_context);
+        let parent_ast = target_id_ast.get_header_parents(cur_context)[0];
         if (
           // Possible on broken h1 level.
           parent_ast !== undefined
@@ -6991,7 +6990,7 @@ const DEFAULT_MACRO_LIST = [
             const ancestors = [];
             let cur_ast = context.toplevel_ast;
             while (true) {
-              cur_ast = cur_ast.get_header_parent(context);
+              cur_ast = cur_ast.get_header_parents(context)[0];
               if (cur_ast === undefined) {
                 break
               }

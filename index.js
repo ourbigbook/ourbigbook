@@ -126,6 +126,9 @@ class AstNode {
     if (!('in_caption_number_visible' in context)) {
       context.in_caption_number_visible = false;
     }
+    if (!('in_title_no_id' in context)) {
+      context.in_title = false;
+    }
     if (!('katex_macros' in context)) {
       context.katex_macros = {};
     }
@@ -2326,9 +2329,23 @@ function parse(tokens, macros, options, context, extra_returns={}) {
             if (title_arg !== undefined) {
               // ID from title.
               // TODO correct unicode aware algorithm.
-              id_text += title_to_id(convert_arg_noescape(title_arg, context));
-              ast.id = id_text;
-            } else if (!macro.options.phrasing) {
+              context.extra_returns.x_no_content_in_title_no_id = false;
+              id_text += title_to_id(convert_arg_noescape(title_arg, clone_and_set(context, 'in_title_no_id', true)));
+              if (context.extra_returns.x_no_content_in_title_no_id) {
+                const message = `x cross reference to id "${context.extra_returns.x_no_content_in_title_no_id_target}" without content used inside a title without an id, see: https://cirosantilli.com/cirodown#x-within-title-restrictions`;
+                ast.args[Macro.TITLE_ARGUMENT_NAME].push(
+                  new PlaintextAstNode(
+                    context.extra_returns.x_no_content_in_title_no_id_line,
+                    context.extra_returns.x_no_content_in_title_no_id_column,
+                    ' ' + error_message_in_output(message)
+                  )
+                );
+                parse_error(state, message, context.extra_returns.x_no_content_in_title_no_id_line, context.extra_returns.x_no_content_in_title_no_id_column);
+              } else {
+                ast.id = id_text;
+              }
+            }
+            if (ast.id === undefined && !macro.options.phrasing) {
               // ID from element count.
               if (ast.macro_count !== undefined) {
                 id_text += ast.macro_count;
@@ -3496,14 +3513,30 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       const target_id = convert_arg_noescape(ast.args.href, context);
       const target_id_ast = context.id_provider.get(target_id);
+      let href;
       if (target_id_ast === undefined) {
-        let message = `cross reference to unknown id: "${target_id}"`;
-        render_error(context, message, ast.args.href.line, ast.args.href.column);
-        return error_message_in_output(message, context);
+        if (context.in_title_no_id) {
+          href = '';
+        } else {
+          let message = `cross reference to unknown id: "${target_id}"`;
+          render_error(context, message, ast.args.href.line, ast.args.href.column);
+          return error_message_in_output(message, context);
+        }
+      } else {
+        href = html_attr('href', x_href(target_id_ast, context));
       }
       const content_arg = ast.args.content;
       let content;
       if (content_arg === undefined) {
+        // No explicit content given, deduce content from target ID title.
+        if (context.in_title_no_id) {
+          // Inside a title that does not have an ID: not allowed.
+          context.extra_returns.x_no_content_in_title_no_id = true;
+          context.extra_returns.x_no_content_in_title_no_id_line = ast.line;
+          context.extra_returns.x_no_content_in_title_no_id_column = ast.column;
+          context.extra_returns.x_no_content_in_title_no_id_target = target_id;
+          return '';
+        }
         let x_text_options = {
           caption_prefix_span: false,
           quote: true,
@@ -3518,10 +3551,10 @@ const DEFAULT_MACRO_LIST = [
           return error_message_in_output(message, context);
         }
       } else {
+        // Explicit content given, just use it then.
         content = convert_arg(content_arg, context);
       }
       const attrs = html_convert_attrs_id(ast, context);
-      const href = html_attr('href', x_href(target_id_ast, context));
       return `<a${href}${attrs}>${content}</a>`;
     },
     {

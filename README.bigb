@@ -8218,7 +8218,7 @@ The source for OurBigBook Web, source code is fully contained under https://gith
 
 OurBigBook Web was originally forked from the following starter boilerplate: https://github.com/cirosantilli/node-express-sequelize-realworld-example-app[]. We are trying to keep tech synced as much as possible between both projects, since the boilerplate is useful as a tech demo to quickly try out new technologies in a more minimal setup, but it has started to lag a bit behind. The web stack of OurBigBook Web is described at: <OurBigBook Web tech stack>.
 
-It is highly recommended that you use the exact same Node.js and NPM versions as given under \a[package.json] `engines.js` entry. The best way to do that is likely to use NVM as explained at: https://stackoverflow.com/questions/16898001/how-to-install-a-specific-version-of-node-on-ubuntu/47376491#47376491
+It is highly recommended that you use the exact same Node.js and NPM versions as given under \a[package.json] `engines.js` entry. The best way to do that is likely to use NVM as explained at: https://stackoverflow.com/questions/16898001/how-to-install-a-specific-version-of-node-on-ubuntu/47376491#47376491 Using NVM also removes the need for `sudo` from global install commands such as `npm run link`.
 
 First time setup:
 ``

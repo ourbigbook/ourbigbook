@@ -5463,11 +5463,11 @@ Note however that this does not work for tests that run the `cirodown` executabl
 ``
 but not working, related: https://stackoverflow.com/questions/23612087/gulp-target-to-debug-mocha-tests So for now, we are just printing the command being run as in:
 ``
-cmd: cd /tmp/cirodowniyLn7v && cirodown --split-headers .
+cmd: cd /home/ciro/cirodown/out/test/iyLn7v && cirodown --split-headers .
 ``
 so you can just re-run it manually with `node inspect` as in:
 ``
-cd /tmp/cirodowniyLn7v && node inspect "$(which cirodown)" --split-headers .
+cd out/test/iyLn7v && node inspect "../../../cirodown" --split-headers .
 ``
 This works since the `tmp` directory is not deleted in case of failure.
 

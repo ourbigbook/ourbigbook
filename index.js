@@ -4277,7 +4277,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               // Happens on some special elements e.g. the ToC.
               parent_id !== undefined
             ) {
-              // TODO add tet and enable.
+              // TODO add test and enable this possible fix.
               //if (
               //  // We don't want the "This section is present in another page" to count as a link.
               //  !ast.from_include

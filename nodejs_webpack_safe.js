@@ -586,6 +586,8 @@ async function update_database_after_convert({
       'title',
       'body',
       'last_parse',
+      // https://github.com/cirosantilli/ourbigbook/issues/241
+      'toplevel_id',
     ]
     file_bulk_create_last_parse = Date.now()
     if (render) {

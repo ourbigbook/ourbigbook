@@ -489,15 +489,25 @@ function assert_cli(
       await ourbigbook_nodejs_webpack_safe.destroy_sequelize(sequelize)
     }
     for (const entry of options.pre_exec) {
+      if (entry.filesystem_update) {
+        update_filesystem(entry.filesystem_update, tmpdir)
+      }
+
+      let cmd, args, status = 0;
       if (Array.isArray(entry)) {
-        let [cmd, args] = entry
+        ;[cmd, args] = entry
+      } else if (entry.cmd) {
+        ;[cmd, args] = entry.cmd
+        if (entry.status !== undefined) {
+          status = entry.status
+        }
+      }
+      if (cmd !== undefined) {
         if (cmd === 'ourbigbook') {
           args = common_args.concat(args)
         }
         const out = child_process.spawnSync(cmd, args, {cwd: cwd});
-        assert.strictEqual(out.status, 0, exec_assert_message(out, cmd, args, cwd));
-      } else {
-        update_filesystem(entry.filesystem_update, tmpdir)
+        assert.strictEqual(out.status, status, exec_assert_message(out, cmd, args, cwd));
       }
     }
     const cmd = 'ourbigbook'
@@ -7784,5 +7794,50 @@ assert_cli('cli: cross reference to undefined ID fails without render',
 `,
     },
     expect_exit_status: 1,
+  }
+);
+assert_cli(
+  // https://github.com/cirosantilli/ourbigbook/issues/241
+  'cli: fixing a header parent bug on a file in the include chain does not blow up afterwards',
+  {
+    args: ['.'],
+    filesystem: {
+      'README.bigb': `= Index
+
+\\Include[notindex]
+`,
+      'notindex.bigb': `= Notindex
+
+= h2
+{parent=notindex}
+
+= h3
+{parent=notindex}
+
+= h4
+{parent=h2}
+`,
+    },
+    pre_exec: [
+      {
+        cmd: ['ourbigbook', ['.']],
+        status: 1,
+      },
+      {
+        filesystem_update: {
+          'notindex.bigb': `= Notindex
+
+= h2
+{parent=notindex}
+
+= h3
+{parent=notindex}
+
+= h4
+{parent=h3}
+`,
+        }
+      },
+    ],
   }
 );

@@ -841,7 +841,7 @@ Instead we should do the same handling as is currently done for `\a[]` and `\Ima
 
 Can start simple with either raw or contained, and then add both some day. GitHub copy.
 
-=== Benchmark and optimize disk usage
+=== Benchmark and optimize output size
 
 Test repo source code size during tests: 7.2 MiB
 
@@ -852,7 +852,7 @@ Full ToC removal with hack:
 ``
 Test repo output size: 166.6 MB -> 114.2 MB, so ToC was 31 %
 
-Let's check header knowckout with:
+Let's check header knockout with:
 ``
         [Macro.HEADER_MACRO_NAME]: function(ast, context, opts={}) {
           return ''

@@ -2562,6 +2562,9 @@ function convert_init_context(options={}, extra_returns={}) {
     options.h_parse_level_offset = 0;
   }
   if (!('id_provider' in options)) { options.id_provider = undefined; }
+  if (options.file_provider !== undefined) {
+    options.file_provider.id_provider = options.id_provider
+  }
   if (!('include_path_set' in options)) { options.include_path_set = new Set(); }
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('katex_macros' in options)) { options.katex_macros = {}; }
@@ -4744,7 +4747,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       }
     }
     if (prefetch_files.size) {
-      context.options.file_provider.get_path_entry_fetch(Array.from(prefetch_files))
+      await context.options.file_provider.get_path_entry_fetch(Array.from(prefetch_files))
     }
   }
 
@@ -5535,9 +5538,7 @@ function x_href_parts(target_id_ast, context) {
       toplevel_ast = target_id_ast.get_header_parent(context);
     } else if (
       // The header was included inline into the current file.
-      context.include_path_set.has(target_input_path) && !context.in_split_headers // ||
-      // The header is in the current file.
-      //target_input_path == context.options.input_path
+      context.include_path_set.has(target_input_path) && !context.in_split_headers
     ) {
       toplevel_ast = context.toplevel_ast;
     } else {

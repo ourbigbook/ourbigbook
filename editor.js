@@ -20,7 +20,10 @@ class OurbigbookEditor {
     }
     this.modifyEditorInput = options.modifyEditorInput
     if (!('onDidChangeModelContentCallback' in options)) {
-      options.onDidChangeModelContentCallback = (editor) => {}
+      options.onDidChangeModelContentCallback = (editor, event) => {}
+    }
+    if (!('scrollPreviewToSourceLineCallback' in options)) {
+      options.scrollPreviewToSourceLineCallback = (opts) => {}
     }
     this.options = options
 
@@ -158,7 +161,7 @@ class OurbigbookEditor {
       options.handleSubmit();
     })
     editor.onDidChangeModelContent(async (e) => {
-      options.onDidChangeModelContentCallback(editor)
+      options.onDidChangeModelContentCallback(editor, e)
       this.modified = true
       await this.convertInput()
     });
@@ -259,6 +262,7 @@ class OurbigbookEditor {
         }
       };
     }
+    this.options.scrollPreviewToSourceLineCallback({ ourbigbook_editor: this, line_number, line_number_orig })
   }
 
   async setModifyEditorInput(modifyEditorInput) {

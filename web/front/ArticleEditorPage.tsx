@@ -149,6 +149,7 @@ export default function ArticleEditorPageHoc({
     const [errors, setErrors] = React.useState([]);
     const [file, setFile] = React.useState(initialFileState);
     const ourbigbookEditorElem = useRef(null);
+    const ourbigbookHeaderElem = useRef(null);
     const maxReached = hasReachedMaxItemCount(loggedInUser, articleCountByLoggedInUser, pluralize(itemType))
     let editor
     useEffect(() => {
@@ -178,6 +179,29 @@ export default function ArticleEditorPageHoc({
               initialLine: initialArticle ? initialArticle.titleSourceLine : undefined,
               modifyEditorInput: (oldInput) => modifyEditorInput(file.titleSource, oldInput),
               production: isProduction,
+              scrollPreviewToSourceLineCallback: (opts={}) => {
+                const { ourbigbook_editor, line_number, line_number_orig } = opts
+                const editor = ourbigbook_editor.editor
+                const visibleRange = editor.getVisibleRanges()[0]
+                const target_line_number = visibleRange.startLineNumber
+                if (target_line_number === 1) {
+                  ourbigbookHeaderElem.current.classList.remove('hide')
+                } else {
+                  if (
+                    // TODO this is to prevent infinite loop/glitching:
+                    // - user left line 1, hide header
+                    // - editor becomes larger, but text is not much larger than the small viewport, so line 1 now visible again, show header
+                    // - loop
+                    // What we want is to find the correct number of lines without hardcoding that 10.
+                    // That 10 is a number of lines that is taller than what gets hidden,
+                    // which was about 5 lines high when this was hardcoded.
+                    // Maybe something smarter can be done with editor.onDidLayoutChange.
+                    editor.getModel().getLineCount() - (visibleRange.endLineNumber - visibleRange.startLineNumber) > 10
+                  ) {
+                    ourbigbookHeaderElem.current.classList.add('hide')
+                  }
+                }
+              },
             },
           )
           ourbigbookEditorElem.current.ourbigbookEditor = editor
@@ -274,7 +298,7 @@ export default function ArticleEditorPageHoc({
         { maxReached
           ? <p>{maxReached}</p>
           : <>
-              <div id="obb_header">
+              <div className="header" ref={ourbigbookHeaderElem}>
                 <h1>
                   {isNew
                     ? `New ${itemType}`

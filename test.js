@@ -3856,16 +3856,6 @@ assert_executable(
   }
 );
 assert_executable(
-  "executable: link: relative=0 marks link as non relative",
-  {
-    args: ['README.ciro'],
-    filesystem: {
-      'README.ciro': `\\a[/etc/fstab]{relative=0}
-`,
-    },
-  }
-);
-assert_executable(
   "executable: link: relative links are corrected for different output paths with scope and split-headers",
   {
     args: ['--split-headers', '.'],
@@ -3887,6 +3877,8 @@ assert_executable(
 
 \\a[../i-exist][subdir i-exist]
 
+\\a[/i-exist][subdir /i-exist]
+
 \\a[i-exist-subdir][subdir i-exist-subdir]
 
 == subdir h2
@@ -3895,6 +3887,8 @@ assert_executable(
 === subdir h3
 
 \\a[../i-exist][subdir h3 i-exist]
+
+\\a[/i-exist][subdir h3 /i-exist]
 
 \\a[i-exist-subdir][subdir h3 i-exist-subdir]
 `,
@@ -3919,10 +3913,12 @@ assert_executable(
       ],
       'subdir/index.html': [
         "//x:a[@href='../i-exist' and text()='subdir i-exist']",
+        "//x:a[@href='/i-exist' and text()='subdir /i-exist']",
         "//x:a[@href='i-exist-subdir' and text()='subdir i-exist-subdir']",
       ],
       'subdir/subdir-h2/subdir-h3.html': [
         "//x:a[@href='../../i-exist' and text()='subdir h3 i-exist']",
+        "//x:a[@href='/i-exist' and text()='subdir h3 /i-exist']",
         "//x:a[@href='../i-exist-subdir' and text()='subdir h3 i-exist-subdir']",
       ],
       'subdir/not-readme.html': [

@@ -336,9 +336,31 @@ paragraphs]
 = `\a` `check` argument
 {parent=link}
 
-If `{check=0}` is given, it disables the local file existence check that is done by default for \x[relative-link]{p}.
+If `{check=0}` is given, this disables the local file existence check that is done by default for \x[relative-link]{p}.
 
-For example, https://github.com/cirosantilli/cirosantilli.github.io/blob/da296c3c933704484d5cd1a42754f60ec00f672b/README.ciro was rendered at https://cirosantilli.com[], and contains links to https://cirosantilli.com/markdown-style-guide[], whose source lives in a separate non-Cirodown repository: https://github.com/cirosantilli/markdown-style-guide/
+If `check` is not given explicitly, Cirodown does the check by default if the link is not a \x[url-with-protocol] For example, the following are not checked:
+* `http://cirosantilli.com`
+* `https://cirosantilli.com`
+* `file:///etc/fstab`
+* `ftp://cirosantilli.com`
+and the following are:
+* `index.js`
+* `../index.js`
+* `path/to/index.js`
+* `/path/to/index.js`. Since it stats with a `/`, this path has to exist relative to \x[project-toplevel-directory], not relative to the current `.ciro` source.
+* `//example.com/path/to/index.js`. This gets treated the same as `/example.com/path/to/index.js`.
+
+For example, it is often the case in computer programming tutorials that we want to refer to source files in the current directory, so you could have in your `README.ciro`:
+``
+See this awesome source file: \a[index.js]
+``
+and then if `index.js` does not exist in the project, compilation leads to an error.
+
+This check is important because as you start documenting several source files, it is almost inevitable getting wrong paths due to renames or typos without this type of error checking
+
+The most common use case for disabling checks is as follows.
+
+https://github.com/cirosantilli/cirosantilli.github.io/blob/da296c3c933704484d5cd1a42754f60ec00f672b/README.ciro was rendered at https://cirosantilli.com[], and contains links to https://cirosantilli.com/markdown-style-guide[], whose source lives in a separate non-Cirodown repository: https://github.com/cirosantilli/markdown-style-guide/
 
 Therefore, if we did from `README.ciro`:
 ``
@@ -366,10 +388,7 @@ Trump said this and that.https://en.wikipedia.org/wiki/Donald_Trump_Access_Holly
 
 If given, this \x[boolean-named-argument] forces a given link to be a \x[relative-link] or not.
 
-Otherwise, the default is the algorithm described at: \x[relative-link]{full}.
-
-= Relative link
-{parent=link}
+Otherwise, the link is automatically guessed based on the address given as explained below.
 
 A relative link is a link that points to a resource that will be present a final URL relative to the input `.ciro` file.
 
@@ -388,11 +407,6 @@ This is great website: https://cirosantilli.com
 which points to an absolute URL.
 
 A link being relative has the following effects
-* Cirodown checks that the file actually exists in the local filesystem, and gives an error otherwise.
-
-  For example, in the programming tutorial use case, as you start documenting several source files, it is almost inevitable getting wrong paths due to renames or typos without this type of error checking
-
-  This check can be disabled with the \x[a-check-argument].
 * the correct relative path to the file is used when using nested \x[scope]{p} with \x[split-headers]. For example, if we have:
   ``
   = h1
@@ -410,28 +424,41 @@ A link being relative has the following effects
 
   Instead, Cirodown automatically converts it to the correct `href="../index.js"`
 
-Cirodown considers a link relative by default by if does not start with a protocol, that is if the regular expression `^[a-zA-Z]+://` does not match. For example, the following are not relative links:
+Cirodown considers a link relative by default if:
+* it is not a \x[url-with-protocol]
+* it does not start with a slash `/`
+
+Therefore, the following are not relative links by default:
 * `http://cirosantilli.com`
 * `https://cirosantilli.com`
 * `file:///etc/fstab`
 * `ftp://cirosantilli.com`
-And the following however are considered relative links by default:
+* `/path/to/index.js`
+* `//example.com/path/to/index.js`
+and the following are:
 * `index.js`
 * `../index.js`
 * `path/to/index.js`
-* `/path/to/index.js`. It might be a bit weird to consider this one as relative, but the rationale is that it would be complicated to cover path conversions of of different operating systems, so we are just taking the simpler protocol check approach to start with.
-
-  If you really want a link like this in your input, you should use:
-  ``
-  \x[/path/to/index.js]{relative=0}
-  ``
-  which will mark the link as non-relative, and therefore disable both the existence check and the scope split header path modifications, see also: \x[a-relative-argument]{full}.
-* `//path/to/index.js`. This one is tricky, Web browsers would consider this as a https://stackoverflow.com/questions/28446314/why-use-protocol-relative-urls-at-all[protocol-relative URL], which could be absolute or not depending on if you are viewing the file locally through `file://` or on a website `https://`.
-
-  To start with we are just going to keep it here, and let users use the same workarounds as for `/path/to/index.js` to make it do what they want.
-This automatic check can be overridden with the \x[a-relative-argument].
 
 Implemented at: https://github.com/cirosantilli/cirodown/issues/87[].
+
+= URL with protocol
+{parent=relative-link}
+
+A URL with protocol is a URL that matches the regular expression `^[a-zA-Z]+://`. The following are examples of URLs with protocol:
+* `http://cirosantilli.com`
+* `https://cirosantilli.com`
+* `file:///etc/fstab`
+* `ftp://cirosantilli.com`
+
+The following aren't:
+* `index.js`
+* `../index.js`
+* `path/to/index.js`
+* `/path/to/index.js`
+* `//example.com/path/to/index.js`. This one is a bit tricky. Web browsers would consider this as a https://stackoverflow.com/questions/28446314/why-use-protocol-relative-urls-at-all[protocol-relative URL], which technically implies a protocol, although that protocol would be different depending how you are viewing the file, e.g. locally through `file://` vs on a with website `https://`.
+
+  For simplicity's sake, we just consider it as a URL without protocol.
 
 = Insane link parsing rules
 {parent=link}

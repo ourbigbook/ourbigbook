@@ -1116,19 +1116,15 @@ $$\sqrt{1 + 1}$$
 
 === Math defines across blocks
 
-TODO superior `\newcommand` version pending upstream tag bump: https://github.com/KaTeX/KaTeX/pull/2091
-
 First here is an invisible block (with `{show=0}`) defining with a `\newcommand` definition after this paragraph:
-
 \cirodown_example[[
 $$
 \newcommand{\foo}[0]{bar}
 $${show=0}
 ]]
-
 We make it invisible because this block only contains KaTeX definitions, and should not render to anything.
 
-Then the second math block uses those definitions:
+Then the second math block uses those definitions TODO pending upstream tag bump: https://github.com/KaTeX/KaTeX/pull/2091
 ``
 $$
 \foo
@@ -1146,6 +1142,13 @@ and the second block using it:
 $$
 \foogdef
 $$
+]]
+
+And just to test check that `{show=1}` actually shows, although it is useless, and that `{show=0}` skips incrementing the equation count:
+\cirodown_example[[
+$$1 + 1$${show=1}
+$$2 + 2$${show=0}
+$$3 + 3$${show=1}
 ]]
 
 == Tables `\table`, `\tr`, `\th` and `\td`

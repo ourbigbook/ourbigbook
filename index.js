@@ -53,6 +53,8 @@ class AstNode {
     // of this type that appears in the document.
     this.macro_count_indexed = undefined;
     this.parent_node = options.parent_node;
+    this.validation_error = undefined;
+    this.validation_output = {};
 
     // For elements that are of AstType.PLAINTEXT.
     this.text = options.text
@@ -124,79 +126,11 @@ class AstNode {
     }
     const macro = context.macros[this.macro_name];
     let out;
-    // Make a shallow copy because we can set default argument values here.
-    let effective_this = Object.assign({}, this);
-    effective_this.args = Object.assign({}, this.args);
-
-    // Do some error checking. If no errors are found, convert normally. Save output on out.
-    {
-      let error_message = undefined;
-      const validation_output = {};
-      const name_to_arg = macro.name_to_arg;
-      // First pass sets defaults on missing arguments.
-      for (const argname in name_to_arg) {
-        validation_output[argname] = {};
-        const macro_arg = name_to_arg[argname];
-        if (argname in effective_this.args) {
-          validation_output[argname].given = true;
-        } else {
-          validation_output[argname].given = false;
-          if (macro_arg.mandatory) {
-            error_message = [
-              `missing mandatory argument ${argname} of ${effective_this.macro_name}`,
-              effective_this.line, this.column];
-            break;
-          }
-          if (macro_arg.default !== undefined) {
-            effective_this.args[argname] = new AstArgument([new PlaintextAstNode(this.line, this.column, macro_arg.default)]);
-          } else if (macro_arg.boolean) {
-            effective_this.args[argname] = new AstArgument([new PlaintextAstNode(this.line, this.column, '0')]);
-          }
-        }
-      }
-      // Second pass processes the values including defaults.
-      for (const argname in name_to_arg) {
-        const macro_arg = name_to_arg[argname];
-        if (argname in effective_this.args) {
-          const arg = effective_this.args[argname];
-          if (macro_arg.boolean) {
-            let arg_string;
-            if (arg.length > 0) {
-              arg_string = convert_arg_noescape(arg, context);
-            } else {
-              arg_string = '1';
-            }
-            if (arg_string === '0') {
-              validation_output[argname]['boolean'] = false;
-            } else if (arg_string === '1') {
-              validation_output[argname]['boolean'] = true;
-            } else {
-              validation_output[argname]['boolean'] = false;
-              error_message = [
-                `boolean argument "${argname}" of "${effective_this.macro_name}" has invalid value: "${arg_string}", only "0" and "1" are allowed`,
-                arg.line, arg.column];
-              break;
-            }
-          }
-          if (macro_arg.positive_nonzero_integer) {
-            const arg_string = convert_arg_noescape(arg, context);
-            const int_value = parseInt(arg_string);
-            validation_output[argname]['positive_nonzero_integer'] = int_value;
-            if (!Number.isInteger(int_value) || !(int_value > 0)) {
-              error_message = [
-                `argument "${argname}" of macro "${effective_this.macro_name}" must be a positive non-zero integer, got: "${arg_string}"`,
-                arg.line, arg.column];
-              break;
-            }
-          }
-        }
-      }
-      if (error_message === undefined) {
-        out = macro.convert(effective_this, context, validation_output);
-      } else {
-        render_error(context, error_message[0], error_message[1], error_message[2]);
-        out = error_message_in_output(error_message[0], context);
-      }
+    if (this.validation_error === undefined) {
+      out = macro.convert(this, context);
+    } else {
+      render_error(context, this.validation_error[0], this.validation_error[1], this.validation_error[2]);
+      out = error_message_in_output(this.validation_error[0], context);
     }
 
     // Add a div to all direct children of toplevel to implement
@@ -470,7 +404,7 @@ class Macro {
       options.id_prefix = title_to_id(name);
     }
     if (!('macro_counts_ignore' in options)) {
-      options.macro_counts_ignore = function(ast, context) {
+      options.macro_counts_ignore = function(ast) {
         return false;
       }
     }
@@ -1672,7 +1606,7 @@ function macro_image_video_block_convert_function(content_func, source_func) {
       return convert_arg(ast.args.source, context);
     }
   }
-  return function(ast, context, validation_output) {
+  return function(ast, context) {
     let rendered_attrs = html_convert_attrs(ast, context, ['height', 'width']);
     let figure_attrs = html_convert_attrs_id(ast, context);
     let ret = `<figure${figure_attrs}>\n`
@@ -1687,7 +1621,7 @@ function macro_image_video_block_convert_function(content_func, source_func) {
       description = '. ' + description;
     }
     let src = convert_arg(ast.args.src, context);
-    let source = source_func(ast, context, validation_output, src);
+    let source = source_func(ast, context, src);
     if (source !== '') {
       source = `<a ${html_attr('href', source)}>Source</a>.`;
       if (description === '') {
@@ -1713,7 +1647,7 @@ function macro_image_video_block_convert_function(content_func, source_func) {
     } else {
       alt = html_attr('alt', html_escape_attr(convert_arg(alt_arg, context)));;
     }
-    ret += content_func(ast, context, validation_output, src, rendered_attrs, alt);
+    ret += content_func(ast, context, src, rendered_attrs, alt);
     if (has_caption) {
       ret += `<figcaption>${Macro.x_text(ast, context, {href_prefix: href_prefix})}${description}${source}</figcaption>\n`;
     }
@@ -2116,8 +2050,71 @@ function parse(tokens, macros, options, extra_returns={}) {
       // This allows us to skip nodes, or push multiple nodes if needed.
       parent_arg.push(ast);
 
+      // Do some error checking. If no errors are found, convert normally. Save output on out.
+      {
+        const name_to_arg = macro.name_to_arg;
+        // First pass sets defaults on missing arguments.
+        for (const argname in name_to_arg) {
+          ast.validation_output[argname] = {};
+          const macro_arg = name_to_arg[argname];
+          if (argname in ast.args) {
+            ast.validation_output[argname].given = true;
+          } else {
+            ast.validation_output[argname].given = false;
+            if (macro_arg.mandatory) {
+              ast.validation_error = [
+                `missing mandatory argument ${argname} of ${ast.macro_name}`,
+                ast.line, ast.column];
+              break;
+            }
+            if (macro_arg.default !== undefined) {
+              ast.args[argname] = new AstArgument([new PlaintextAstNode(ast.line, ast.column, macro_arg.default)]);
+            } else if (macro_arg.boolean) {
+              ast.args[argname] = new AstArgument([new PlaintextAstNode(ast.line, ast.column, '0')]);
+            }
+          }
+        }
+        // Second pass processes the values including defaults.
+        for (const argname in name_to_arg) {
+          const macro_arg = name_to_arg[argname];
+          if (argname in ast.args) {
+            const arg = ast.args[argname];
+            if (macro_arg.boolean) {
+              let arg_string;
+              if (arg.length > 0) {
+                arg_string = convert_arg_noescape(arg, id_context);
+              } else {
+                arg_string = '1';
+              }
+              if (arg_string === '0') {
+                ast.validation_output[argname]['boolean'] = false;
+              } else if (arg_string === '1') {
+                ast.validation_output[argname]['boolean'] = true;
+              } else {
+                ast.validation_output[argname]['boolean'] = false;
+                ast.validation_error = [
+                  `boolean argument "${argname}" of "${ast.macro_name}" has invalid value: "${arg_string}", only "0" and "1" are allowed`,
+                  arg.line, arg.column];
+                break;
+              }
+            }
+            if (macro_arg.positive_nonzero_integer) {
+              const arg_string = convert_arg_noescape(arg, id_context);
+              const int_value = parseInt(arg_string);
+              ast.validation_output[argname]['positive_nonzero_integer'] = int_value;
+              if (!Number.isInteger(int_value) || !(int_value > 0)) {
+                ast.validation_error = [
+                  `argument "${argname}" of macro "${ast.macro_name}" must be a positive non-zero integer, got: "${arg_string}"`,
+                  arg.line, arg.column];
+                break;
+              }
+            }
+          }
+        }
+      }
+
       // Linear count of each macro type for macros that have IDs.
-      if (!macro.options.macro_counts_ignore(ast, id_context)) {
+      if (!macro.options.macro_counts_ignore(ast)) {
         if (!(macro_name in macro_counts)) {
           macro_counts[macro_name] = 0;
         }
@@ -2750,7 +2747,7 @@ const DEFAULT_MACRO_LIST = [
       throw new Error('programmer error, include must never render');
     },
     {
-      macro_counts_ignore: function(ast, context) { return true; }
+      macro_counts_ignore: function(ast) { return true; }
     }
   ),
   new Macro(
@@ -2764,7 +2761,7 @@ const DEFAULT_MACRO_LIST = [
       return '';
     },
     {
-      macro_counts_ignore: function(ast, context) { return true; }
+      macro_counts_ignore: function(ast) { return true; }
     }
   ),
   new Macro(
@@ -2865,7 +2862,7 @@ const DEFAULT_MACRO_LIST = [
       throw new Error('programmer error, include must never render');
     },
     {
-      macro_counts_ignore: function(ast, context) { return true; }
+      macro_counts_ignore: function(ast) { return true; }
     }
   ),
   new Macro(
@@ -2893,20 +2890,7 @@ const DEFAULT_MACRO_LIST = [
       let attrs = html_convert_attrs_id(ast, context);
       let katex_output = html_katex_convert(ast, context);
       let ret = ``;
-      let do_show;
-      let show_arg = ast.args.show;
-      if (show_arg === undefined) {
-        do_show = true;
-      } else {
-        let show = convert_arg_noescape(show_arg, context);
-        if (!(show === '0' || show === '1')) {
-          let message = `show must be 0 or 1: "${level}"`;
-          render_error(context, message, show_arg, show_arg.column);
-          return error_message_in_output(message, context);
-        }
-        do_show = (show === '1');
-      }
-      if (do_show) {
+      if (ast.validation_output.show.boolean) {
         let href = html_attr('href', '#' + html_escape_attr(ast.id));
         ret += `<div class="math-container"${attrs}>`;
         if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
@@ -2930,14 +2914,16 @@ const DEFAULT_MACRO_LIST = [
         // always get numbers even if not indexed.
         return ast.macro_count;
       },
-      macro_counts_ignore: function(ast, context) {
-        return 'show' in ast.args && convert_arg_noescape(ast.args.show, context) === '0';
+      macro_counts_ignore: function(ast) {
+        return !ast.validation_output.show.boolean;
       },
       named_args: [
         new MacroArgument({
           name: Macro.TITLE_ARGUMENT_NAME,
         }),
         new MacroArgument({
+          boolean: true,
+          default: '1',
           name: 'show',
         }),
       ],
@@ -2962,7 +2948,7 @@ const DEFAULT_MACRO_LIST = [
   new Macro(
     'Image',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
-    macro_image_video_block_convert_function(function (ast, context, validation_output, src, rendered_attrs, alt) {
+    macro_image_video_block_convert_function(function (ast, context, src, rendered_attrs, alt) {
       return `<a${html_attr('href', src)}><img${html_attr('src', src)}${rendered_attrs}${alt}></a>\n`;
     }),
     Object.assign(
@@ -3289,7 +3275,7 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    function(ast, context, validation_output) {
+    function(ast, context) {
       const target_id = convert_arg_noescape(ast.args.href, context);
       const target_id_ast = context.id_provider.get(target_id);
       if (target_id_ast === undefined) {
@@ -3304,8 +3290,8 @@ const DEFAULT_MACRO_LIST = [
           caption_prefix_span: false,
           quote: true,
         };
-        if (validation_output.full.given) {
-          x_text_options.style_full = validation_output.full.boolean;
+        if (ast.validation_output.full.given) {
+          x_text_options.style_full = ast.validation_output.full.boolean;
         }
         content = Macro.x_text(target_id_ast, context, x_text_options);
         if (content === ``) {
@@ -3334,11 +3320,11 @@ const DEFAULT_MACRO_LIST = [
     'Video',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
     macro_image_video_block_convert_function(
-      function (ast, context, validation_output, src, rendered_attrs, alt) {
-        if (validation_output.youtube.boolean) {
+      function (ast, context, src, rendered_attrs, alt) {
+        if (ast.validation_output.youtube.boolean) {
           let start;
           if ('start' in ast.args) {
-            start = `?start=${validation_output['start']['positive_nonzero_integer']}`;
+            start = `?start=${ast.validation_output.start.positive_nonzero_integer}`;
           } else {
             start = '';
           }
@@ -3349,14 +3335,14 @@ const DEFAULT_MACRO_LIST = [
           let start;
           if ('start' in ast.args) {
             // https://stackoverflow.com/questions/5981427/start-html5-video-at-a-particular-position-when-loading
-            start = `#t=${validation_output['start']['positive_nonzero_integer']}`;
+            start = `#t=${ast.validation_output.start.positive_nonzero_integer}`;
           } else {
             start = '';
           }
           return `<video${html_attr('src', src + start)}${rendered_attrs} controls>${alt}</video>\n`;
         }
       },
-      function (ast, context, validation_output, src) {
+      function (ast, context, src) {
         if ('source' in ast.args) {
           return convert_arg(ast.args.source, context);
         } else if ('youtube' in ast.args) {

@@ -11,6 +11,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const { DataTypes } = require('sequelize')
+
 const ourbigbook = require('./index');
 const ourbigbook_nodejs_front = require('./nodejs_front');
 const models = require('./models')
@@ -501,6 +503,25 @@ async function create_sequelize(db_options_arg, Sequelize, sync_opts={}) {
     sequelize = new Sequelize(db_options_arg)
   }
   models.addModels(sequelize)
+  sequelize.define(
+    'Web',
+    {
+      host: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+        unique: true,
+      },
+      token: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+    },
+    {
+      indexes: [
+        { fields: ['host'], },
+      ],
+    }
+  )
   if (
     db_options_arg.dialect !== 'sqlite' ||
     storage === ourbigbook.SQLITE_MAGIC_MEMORY_NAME ||

@@ -13,12 +13,14 @@ const path = require('path');
 // does not do some obvious basics.
 const commander = require('commander');
 const is_installed_globally = require('is-installed-globally');
+const readCb = require('read');
 const { Liquid } = require('liquidjs');
 const { Op, Sequelize } = require('sequelize')
 
 const ourbigbook = require('ourbigbook');
 const ourbigbook_nodejs = require('ourbigbook/nodejs');
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
+const { WebApi } = require('ourbigbook/web_api')
 
 const OURBIGBOOK_JSON_BASENAME = 'ourbigbook.json';
 const OURBIGBOOK_TEX_BASENAME = 'ourbigbook.tex';
@@ -48,6 +50,14 @@ exports.SQLITE_MAGIC_MEMORY_NAME = SQLITE_MAGIC_MEMORY_NAME
 class IdProviderDbAdapter {
   constructor(non_ourbigbook_options) {
   }
+}
+
+async function read(opts) {
+  return new Promise((resolve, reject) => {
+    readCb(opts, (err, line) => {
+      resolve([err, line])
+    })
+  })
 }
 
 // Reconcile the database with information that depends only on existence of Ourbigbook files, notably:
@@ -644,27 +654,30 @@ commander.option('--china', 'https://cirosantilli.com/ourbigbook#china', false);
 commander.option('--clear-db', 'clear the database before running', false);
 commander.option('--dry-run', "don't run most external commands https://github.com/cirosantilli/ourbigbook#dry-run", false);
 commander.option('--dry-run-push', "don't run git push commands https://github.com/cirosantilli/ourbigbook#dry-run-push", false);
-commander.option('--embed-includes', 'http://cirosantilli.com/ourbigbook#embed-include', false);
-commander.option('--embed-resources', 'http://cirosantilli.com/ourbigbook#embed-resources', false);
+commander.option('--embed-includes', 'https://cirosantilli.com/ourbigbook#embed-include', false);
+commander.option('--embed-resources', 'https://cirosantilli.com/ourbigbook#embed-resources', false);
 commander.option('--fakeroot <fakeroot>', 'Stop searching for ourbigbook.json at this directory rather than at the filesystem root');
-commander.option('--generate <name>', 'http://cirosantilli.com/ourbigbook#generate', false);
+commander.option('--generate <name>', 'https://cirosantilli.com/ourbigbook#generate', false);
 commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/ourbigbook#help-macros', false);
-commander.option('-l, --log <log...>', 'http://cirosantilli.com/ourbigbook#log');
-commander.option('--no-html-x-extension', 'http://cirosantilli.com/ourbigbook#no-html-x-extension');
+commander.option('-l, --log <log...>', 'https://cirosantilli.com/ourbigbook#log');
+commander.option('--no-html-x-extension', 'https://cirosantilli.com/ourbigbook#no-html-x-extension');
 commander.option('--no-db', 'ignore the ID database, mostly for testing https://cirosantilli.com/ourbigbook#internal-cross-file-references-internals');
 commander.option('--no-render', "only extract IDs, don't render: https://cirosantilli.com/ourbigbook#no-render");
 commander.option('-T, --no-render-timestamp', "don't skip render by timestamp: https://cirosantilli.com/ourbigbook#no-render-timestamp");
-commander.option('--outdir <outdir>', 'http://cirosantilli.com/ourbigbook#outdir');
-commander.option('-o, --outfile <outfile>', 'http://cirosantilli.com/ourbigbook#outfile');
+commander.option('--outdir <outdir>', 'https://cirosantilli.com/ourbigbook#outdir');
+commander.option('-o, --outfile <outfile>', 'https://cirosantilli.com/ourbigbook#outfile');
 commander.option('-O, --output-format <output-format>', 'https://cirosantilli.com/ourbigbook#output-format', 'html');
-commander.option('-p --publish', 'http://cirosantilli.com/ourbigbook#publish', false);
-commander.option('-P, --publish-commit <commit-message>', 'http://cirosantilli.com/ourbigbook#publish-commit');
-commander.option('-S, --split-headers', 'http://cirosantilli.com/ourbigbook#split-headers', false);
+commander.option('-p --publish', 'https://cirosantilli.com/ourbigbook#publish', false);
+commander.option('-P, --publish-commit <commit-message>', 'https://cirosantilli.com/ourbigbook#publish-commit');
+commander.option('-S, --split-headers', 'https://cirosantilli.com/ourbigbook#split-headers', false);
 commander.option('--stdout', 'print output to stdout instead of saving to a file', false);
-commander.option('--template <template>', 'http://cirosantilli.com/ourbigbook#template');
-commander.option('-w, --watch', 'http://cirosantilli.com/ourbigbook#watch', false);
+commander.option('--template <template>', 'https://cirosantilli.com/ourbigbook#template');
+commander.option('-w, --watch', 'https://cirosantilli.com/ourbigbook#watch', false);
 // Originally added for testing, this allows the test filesystems to be put under the repository iteslf,
 // otherwise they would pickup our toplevel ourbigbook.json.
+commander.option('-W, --web', 'Sync to ourbigbook web', false);
+commander.option('--web-url <url>', 'Set a custom sync URL for --web', false);
+commander.option('--web-email <email>', 'Set email from CLI', false);
 commander.option('--unsafe-ace', 'https://cirosantilli.com/ourbigbook#unsafe-ace', false);
 commander.option('--unsafe-xss', 'https://cirosantilli.com/ourbigbook#unsafe-xss');
 let inputPath;
@@ -691,7 +704,7 @@ if (commander.helpMacros) {
   let html_x_extension;
   let input_dir;
   if (inputPath === undefined) {
-    if (publish || commander.watch || commander.generate) {
+    if (commander.web || publish || commander.watch || commander.generate) {
       inputPath = '.';
     }
   } else {
@@ -956,6 +969,7 @@ if (commander.helpMacros) {
   let input_git_toplevel;
   let subdir_relpath;
   let publish_tmpdir;
+
   if (inputPath === undefined) {
     // Input from stdin.
     title = 'stdin';
@@ -1013,7 +1027,45 @@ if (commander.helpMacros) {
     } else {
       non_ourbigbook_options.db_options.storage = SQLITE_MAGIC_MEMORY_NAME
     }
-    if (commander.watch) {
+    if (commander.web) {
+      let token
+      const web_url = commander.webUrl ? commander.webUrl : ourbigbook.WEB_URL
+      const url = new URL(web_url)
+      const host = url.host
+      await create_db(ourbigbook_options, non_ourbigbook_options);
+      const host_row = await non_ourbigbook_options.sequelize.models.Web.findOne({ where: { host } })
+      if (host_row) {
+        token = host_row.token
+      } else {
+        let err, email, password
+        if (commander.webEmail) {
+          email = commander.webEmail
+        } else {
+          ;[err, email] = await read({ prompt: 'Email: ' })
+        }
+        ;[err, password] = await read({ prompt: 'Password: ', silent: true })
+        const webApi = new WebApi({
+          getToken: () => { token },
+          https: url.protocol === 'https',
+          port: url.port,
+          hostname: url.hostname,
+          validateStatus: () => true,
+        })
+        let data, status
+        try {
+          ;({ data, status } = await webApi.userLogin({ email, password }))
+        } catch(err) {
+          console.error(err.code);
+          if (err.code === 'ECONNREFUSED') {
+          }
+        }
+        if (status === 422) {
+          cli_error('invalid email or password');
+        }
+        token = data.user.token
+        await non_ourbigbook_options.sequelize.models.Web.create({ host, token })
+      }
+    } else if (commander.watch) {
       if (publish) {
         cli_error('--publish and --watch are incompatible');
       }

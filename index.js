@@ -2383,14 +2383,17 @@ function convert_init_context(options={}, extra_returns={}) {
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('katex_macros' in options)) { options.katex_macros = {}; }
   if (!('log' in options)) { options.log = {}; }
-  // Override the default calculated output file for the main input.
-  if (!('outfile' in options)) { options.outfile = undefined; }
+  if (!('outfile' in options)) {
+    // Override the default calculated output file for the main input.
+    options.outfile = undefined;
+  }
   if (!('output_format' in options)) { options.output_format = OUTPUT_FORMAT_HTML; }
   if (!('path_sep' in options)) { options.path_sep = undefined; }
   if (!('render' in options)) { options.render = true; }
   if (!('start_line' in options)) { options.start_line = 1; }
-  // A toplevel scope, to implement conversion of files in subdirectories.
-  if (!('split_headers' in options)) { options.split_headers = false; }
+  if (!('split_headers' in options)) {
+    options.split_headers = false;
+  }
   if (!('template' in options)) { options.template = undefined; }
   if (!('template_scripts_relative' in options)) {
     // Like template_styles_relative but for sripts.
@@ -2990,6 +2993,9 @@ function output_path_from_ast(ast, context) {
  *
  * Note that the links need to do additional processing to determine this.
  *
+ * Notably, this function does not determine if something is in the current file
+ * or not: it always assumes it is not.
+ *
  * Return an array [dirname, basename without extension] of the
  * path to where an AST gets rendered to. */
 function output_path_parts(input_path, id, context, split_suffix=undefined) {
@@ -3000,31 +3006,34 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
   const ast = context.id_provider.get(id, context);
   // We are the first header, or something that comes before it.
   let first_header_or_before = false;
+  let header_ast;
   if (ast === undefined) {
     return [dirname, renamed_basename_noext];
   } else {
     if (ast.macro_name === Macro.HEADER_MACRO_NAME) {
-      if (ast.is_first_header_in_input_file) {
-        first_header_or_before = true;
-      }
+      header_ast = ast;
     } else {
-      id = ast.get_header_parent_id();
+      header_ast = ast.get_header_parent(context);
     }
+    if (header_ast.is_first_header_in_input_file) {
+      first_header_or_before = true;
+    }
+    id = header_ast.id;
   }
   let dirname_ret;
   let basename_ret;
   const [id_dirname, id_basename] = path_split(id, URL_SEP);
-  const to_split_headers = is_to_split_headers(ast, context);
+  const to_split_headers = is_to_split_headers(header_ast, context);
   if (first_header_or_before) {
     // For toplevel elements in split header mode, we have
     // to take care of index and -split suffix.
     if (renamed_basename_noext === INDEX_BASENAME_NOEXT) {
       // basename_ret
-      if (to_split_headers === ast.split_default) {
+      if (to_split_headers === header_ast.split_default) {
         // The name is just index.html.
         basename_ret = renamed_basename_noext;
       } else {
-        // The name is split.html or nospilt.html.
+        // The name is split.html or nosplit.html.
         basename_ret = '';
       }
 
@@ -3060,9 +3069,9 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     )
   ) {
     if (split_suffix === undefined || split_suffix === '') {
-      if (to_split_headers && !ast.split_default) {
+      if (to_split_headers && !header_ast.split_default) {
         split_suffix = 'split';
-      } else if (!to_split_headers && ast.split_default) {
+      } else if (!to_split_headers && header_ast.split_default) {
         split_suffix = 'nosplit';
       }
     }
@@ -4561,6 +4570,10 @@ function is_to_split_headers(ast, context) {
 
 /** This is the centerpiece of x href calculation!
  *
+ * This code is crap. There are too many cases for my brain to handle.
+ * So I just write tests, and hack the code until the tests pass, but
+ * I'm not capable of factoring it nicely.
+ *
  * @param {AstNode} target_id_ast
  */
 function x_href_parts(target_id_ast, context) {
@@ -4589,12 +4602,20 @@ function x_href_parts(target_id_ast, context) {
     target_id_ast.source_location.path === undefined ||
     context.toplevel_output_path === undefined ||
     (
+      // Nosplit header link to a header that renders on the
+      // same page.
       !context.in_split_headers &&
       !(
         context.to_split_headers !== undefined &&
         context.to_split_headers
       ) &&
       context.include_path_set.has(target_input_path)
+    ) ||
+    (
+      // Split header link to image in current header.
+      context.in_split_headers &&
+      target_id_ast.macro_name !== Macro.HEADER_MACRO_NAME &&
+      target_id_ast.get_header_parent_id() === context.toplevel_id
     ) ||
     to_current_toplevel
   ) {
@@ -4610,6 +4631,7 @@ function x_href_parts(target_id_ast, context) {
       target_id_ast,
       context,
     );
+    // The target path is the same as the current path being output.
     if (full_output_path === context.toplevel_output_path) {
       href_path = ''
     } else {
@@ -4764,7 +4786,11 @@ function x_text(ast, context, options={}) {
         // are descendants of the toplevel header, thus matching the current ToC.
         // The numbers don't make much sense for other headers.
         ast.macro_name !== Macro.HEADER_MACRO_NAME ||
-        ast.is_header_descendant(context.toplevel_ast, context)
+        (
+          // Possible in case of broken header parent=.
+          context.toplevel_ast !== undefined &&
+          ast.is_header_descendant(context.toplevel_ast, context)
+        )
       )
     ) {
       number = macro.options.get_number(ast, context);

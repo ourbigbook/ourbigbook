@@ -1,0 +1,20 @@
+= subdir index
+{scope}
+
+This file is in a subdirectory.
+
+TODO
+
+<h2>
+
+Link to internal "ourbigbook" section: <ourbigbook>
+
+Link to toplevel "ourbigbook" section: </OurBigBook>
+
+\Include[included-by-index]
+
+== h2
+
+TODO
+
+== ourbigbook

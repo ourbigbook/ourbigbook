@@ -3614,38 +3614,35 @@ async function parse(tokens, options, context, extra_returns={}) {
   const macro_counts = {};
   const macro_counts_visible = {};
   let cur_header_graph_node;
-  // Prepare convert options for the child. Copy options so that the
-  // toplevel call won't change the input options, but children calls wlil.
-  const include_options = Object.assign({}, options);
-  include_options.include_path_set = context.include_path_set;
+  options.include_path_set = context.include_path_set;
   // Non-indexed-ids: auto-generated numeric ID's like p-1, p-2, etc.
   // It is not possible to link to them from inside the document, since links
   // break across versions.
-  if (include_options.non_indexed_ids === undefined) {
-    include_options.non_indexed_ids = {};
+  if (options.non_indexed_ids === undefined) {
+    options.non_indexed_ids = {};
   }
-  if (include_options.indexed_ids === undefined) {
-    include_options.indexed_ids = {};
+  if (options.indexed_ids === undefined) {
+    options.indexed_ids = {};
   }
-  extra_returns.ids = include_options.indexed_ids;
-  if (include_options.header_graph_stack === undefined) {
-    include_options.header_graph_stack = new Map();
+  extra_returns.ids = options.indexed_ids;
+  if (options.header_graph_stack === undefined) {
+    options.header_graph_stack = new Map();
   }
-  if (include_options.header_graph_id_stack === undefined) {
-    include_options.header_graph_id_stack = new Map();
+  if (options.header_graph_id_stack === undefined) {
+    options.header_graph_id_stack = new Map();
   }
   let is_first_header = true;
-  if (include_options.is_first_global_header === undefined) {
-    include_options.is_first_global_header = true;
+  if (options.is_first_global_header === undefined) {
+    options.is_first_global_header = true;
   }
-  if (include_options.add_refs_to_h === undefined) {
-    include_options.add_refs_to_h = [];
+  if (options.add_refs_to_h === undefined) {
+    options.add_refs_to_h = [];
   }
-  if (include_options.add_refs_to_x === undefined) {
-    include_options.add_refs_to_x = [];
+  if (options.add_refs_to_x === undefined) {
+    options.add_refs_to_x = [];
   }
-  if (include_options.include_hrefs === undefined) {
-    include_options.include_hrefs = {};
+  if (options.include_hrefs === undefined) {
+    options.include_hrefs = {};
   }
 
   // Format:
@@ -3656,7 +3653,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     true: {},
   };
   let local_id_provider = new DictIdProvider(
-    include_options.indexed_ids,
+    options.indexed_ids,
     context.refs_to,
   );
   let id_provider;
@@ -3692,7 +3689,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       let parent_id;
       validate_ast(ast, context);
       if (ast.validation_output.parent.given) {
-        [parent_id, parent_ast] = get_parent_argument_ast(ast, context, prev_header, include_options)
+        [parent_id, parent_ast] = get_parent_argument_ast(ast, context, prev_header, options)
         if (parent_ast === undefined) {
           const message = Macro.INCLUDE_MACRO_NAME + ' ' + HEADER_PARENT_ERROR_MESSAGE + parent_id;
           const error_ast = new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location);
@@ -3702,7 +3699,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
       }
       if (parent_ast === undefined) {
-        parent_ast = include_options.cur_header;
+        parent_ast = options.cur_header;
       }
       const parent_ast_header_graph_node = parent_ast.header_graph_node;
       const parent_ast_header_level = parent_ast_header_graph_node.get_level();
@@ -3733,7 +3730,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           if (options.embed_includes) {
             new_child_nodes = await parse_include(
               include_content,
-              include_options,
+              options,
               parent_ast_header_level,
               include_path,
               href,
@@ -3771,7 +3768,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                 level: parent_ast_header_level + 1,
               },
             );
-            include_options.include_hrefs[href] = header_ast
+            options.include_hrefs[href] = header_ast
             header_ast.header_graph_node = new HeaderTreeNode(header_ast, parent_ast_header_graph_node);
             parent_ast_header_graph_node.add_child(header_ast.header_graph_node);
             new_child_nodes = [
@@ -3857,7 +3854,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           {
             'content': await parse_include(
               render_arg_noescape(ast.args.content, context),
-              clone_and_set(include_options, 'from_cirodown_example', true),
+              clone_and_set(options, 'from_cirodown_example', true),
               0,
               options.input_path,
               undefined,
@@ -3884,12 +3881,12 @@ async function parse(tokens, options, context, extra_returns={}) {
         // splitDefault propagation to children.
         if (ast.validation_output.splitDefault.given) {
           ast.split_default = ast.validation_output.splitDefault.boolean;
-        } else if (include_options.cur_header !== undefined) {
-          ast.split_default = include_options.cur_header.split_default;
+        } else if (options.cur_header !== undefined) {
+          ast.split_default = options.cur_header.split_default;
         }
 
         if (is_synonym) {
-          if (include_options.cur_header === undefined) {
+          if (options.cur_header === undefined) {
             const message = `the first header of an input file cannot be a synonym`;
             parse_error(state, message, ast.args.level.source_location);
           }
@@ -3897,18 +3894,18 @@ async function parse(tokens, options, context, extra_returns={}) {
             const message = `synonym headers must be h1, got: ${header_level}`;
             parse_error(state, message, ast.args.level.source_location);
           }
-          ast.synonym = include_options.cur_header.id;
+          ast.synonym = options.cur_header.id;
           if (ast.args.title2 !== undefined) {
             if (ast.args.title2.length > 0) {
               const message = `the title2 of synonym headers must be empty`;
               parse_error(state, message, ast.args.level.source_location);
             }
-            include_options.cur_header.title2s.push(ast);
+            options.cur_header.title2s.push(ast);
           }
           context.synonym_headers.add(ast);
         } else {
-          prev_header = include_options.cur_header;
-          include_options.cur_header = ast;
+          prev_header = options.cur_header;
+          options.cur_header = ast;
           cur_header_level = header_level + options.h_parse_level_offset;
         }
 
@@ -3927,10 +3924,10 @@ async function parse(tokens, options, context, extra_returns={}) {
             );
             parse_error(state, message, ast.args.level.source_location);
           }
-          [parent_id, parent_ast] = get_parent_argument_ast(ast, context, prev_header, include_options);
+          [parent_id, parent_ast] = get_parent_argument_ast(ast, context, prev_header, options);
           let parent_tree_node;
           if (parent_ast !== undefined) {
-            parent_tree_node = include_options.header_graph_id_stack.get(parent_ast.id);
+            parent_tree_node = options.header_graph_id_stack.get(parent_ast.id);
           }
           if (parent_tree_node === undefined) {
             parent_tree_node_error = true;
@@ -4016,18 +4013,18 @@ async function parse(tokens, options, context, extra_returns={}) {
           is_first_header = false;
         }
 
-        if (include_options.is_first_global_header) {
+        if (options.is_first_global_header) {
           first_header = ast;
           first_header_level = cur_header_level;
           header_graph_last_level = cur_header_level - 1;
-          include_options.header_graph_stack.set(header_graph_last_level, context.header_graph);
-          include_options.is_first_global_header = false;
+          options.header_graph_stack.set(header_graph_last_level, context.header_graph);
+          options.is_first_global_header = false;
         }
         let header_level_skip_error;
         if (is_synonym) {
-          ast.scope = include_options.cur_header.scope;
+          ast.scope = options.cur_header.scope;
         } else {
-          cur_header_graph_node = new HeaderTreeNode(ast, include_options.header_graph_stack.get(cur_header_level - 1));
+          cur_header_graph_node = new HeaderTreeNode(ast, options.header_graph_stack.get(cur_header_level - 1));
           if (cur_header_level - header_graph_last_level > 1) {
             header_level_skip_error = header_graph_last_level;
           }
@@ -4038,7 +4035,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               ast.args.level.source_location,
             );
           }
-          const parent_tree_node = include_options.header_graph_stack.get(cur_header_level - 1);
+          const parent_tree_node = options.header_graph_stack.get(cur_header_level - 1);
           if (parent_tree_node !== undefined) {
             parent_tree_node.add_child(cur_header_graph_node);
             const parent_ast = parent_tree_node.value;
@@ -4057,8 +4054,8 @@ async function parse(tokens, options, context, extra_returns={}) {
               ast.scope = scope;
             }
           }
-          const old_graph_node = include_options.header_graph_stack.get(cur_header_level);
-          include_options.header_graph_stack.set(cur_header_level, cur_header_graph_node);
+          const old_graph_node = options.header_graph_stack.get(cur_header_level);
+          options.header_graph_stack.set(cur_header_level, cur_header_graph_node);
           if (
             // Possible on the first insert of a level.
             old_graph_node !== undefined
@@ -4067,7 +4064,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               // Possible if the level is not an integer.
               old_graph_node.value !== undefined
             ) {
-              include_options.header_graph_id_stack.delete(old_graph_node.value.id);
+              options.header_graph_id_stack.delete(old_graph_node.value.id);
             }
           }
           header_graph_last_level = cur_header_level;
@@ -4090,7 +4087,7 @@ async function parse(tokens, options, context, extra_returns={}) {
 
         // Must come after the header tree step is mostly done, because scopes influence ID,
         // and they also depend on the parent node.
-        ;({ macro_count_global } = calculate_id(ast, context, include_options.non_indexed_ids, include_options.indexed_ids,
+        ;({ macro_count_global } = calculate_id(ast, context, options.non_indexed_ids, options.indexed_ids,
           macro_counts, macro_count_global, macro_counts_visible, state, true, line_to_id_array));
 
         // Now stuff that must come after calculate_id.
@@ -4111,7 +4108,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location));
             parse_error(state, message, ast.args.level.source_location);
           }
-          include_options.header_graph_id_stack.set(cur_header_graph_node.value.id, cur_header_graph_node);
+          options.header_graph_id_stack.set(cur_header_graph_node.value.id, cur_header_graph_node);
         }
 
         // Handle the H file argument previews.
@@ -4200,17 +4197,17 @@ async function parse(tokens, options, context, extra_returns={}) {
         const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
         if (children !== undefined) {
           for (let child of children) {
-            include_options.add_refs_to_h.push({ ast, child: true, content: child.args.content, type: REFS_TABLE_X_CHILD })
+            options.add_refs_to_h.push({ ast, child: true, content: child.args.content, type: REFS_TABLE_X_CHILD })
           }
         }
         const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
         if (tags !== undefined) {
           for (let tag of tags) {
-            include_options.add_refs_to_h.push({ ast, child: false, content: tag.args.content, type: REFS_TABLE_X_CHILD })
+            options.add_refs_to_h.push({ ast, child: false, content: tag.args.content, type: REFS_TABLE_X_CHILD })
           }
         }
       } else if (macro_name === Macro.X_MACRO_NAME) {
-        include_options.add_refs_to_x.push({ ast })
+        options.add_refs_to_x.push({ ast })
       }
 
       // Push this node into the parent argument list.
@@ -4246,19 +4243,19 @@ async function parse(tokens, options, context, extra_returns={}) {
     let id_conflict_asts = []
     if (options.id_provider !== undefined) {
       const prefetch_ids = new Set()
-      for (const ref of include_options.add_refs_to_h) {
+      for (const ref of options.add_refs_to_h) {
         const id = render_arg_noescape(ref.content, context)
         ref.target_id = id
       }
       const prefetch_file_ids = new Set()
-      for (const ref of include_options.add_refs_to_x) {
+      for (const ref of options.add_refs_to_x) {
         const id = render_arg_noescape(ref.ast.args.href, context)
         // We need the target IDs of any x to render it.
         prefetch_ids.add(id)
         prefetch_file_ids.add(id)
         ref.target_id = id
       }
-      for (const id in include_options.include_hrefs) {
+      for (const id in options.include_hrefs) {
         // We need the target it to be able to render the dummy include title
         // with link to the real content.
         prefetch_ids.add(id)
@@ -4266,7 +4263,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       const prefetch_refs_ids = new Set()
 
       // Get IDs to check for ID conflicts.
-      const ids = Object.keys(include_options.indexed_ids)
+      const ids = Object.keys(options.indexed_ids)
       let id_conflict_asts_promise
       if (ids.length) {
         id_conflict_asts_promise = options.id_provider.get_noscopes_base_fetch(
@@ -4663,7 +4660,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
 
           // Header IDs already previously calculated for parent= so we don't redo it in that case.
-          let ret = calculate_id(ast, context, include_options.non_indexed_ids, include_options.indexed_ids, macro_counts,
+          let ret = calculate_id(ast, context, options.non_indexed_ids, options.indexed_ids, macro_counts,
             macro_count_global, macro_counts_visible, state, false, line_to_id_array);
           macro_count_global = ret.macro_count_global
         }
@@ -4683,8 +4680,8 @@ async function parse(tokens, options, context, extra_returns={}) {
 
     // Patch the ID of the include headers.
     // Deferred here after ID cache warming to group all DB queries.
-    for (const href in include_options.include_hrefs) {
-      const header_ast = include_options.include_hrefs[href]
+    for (const href in options.include_hrefs) {
+      const header_ast = options.include_hrefs[href]
       const target_id_ast = context.id_provider.get(href, context);
       let header_node_title;
       if (target_id_ast === undefined) {
@@ -4719,11 +4716,11 @@ async function parse(tokens, options, context, extra_returns={}) {
         other_ast.source_location.line,
         other_ast.source_location.column,
       )
-      parse_error(state, message, include_options.indexed_ids[other_ast.id].source_location);
+      parse_error(state, message, options.indexed_ids[other_ast.id].source_location);
     }
 
     // Setup refs DB.
-    for (const ref of include_options.add_refs_to_h) {
+    for (const ref of options.add_refs_to_h) {
       const target_id_effective = x_child_db_effective_id(
         ref.target_id,
         context,
@@ -4735,7 +4732,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         add_to_refs_to(ref.ast.id, context, target_id_effective, ref.type);
       }
     }
-    for (const ref of include_options.add_refs_to_x) {
+    for (const ref of options.add_refs_to_x) {
       const ast = ref.ast
       const target_id_effective = x_child_db_effective_id(
         ref.target_id,

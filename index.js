@@ -5796,9 +5796,9 @@ const DEFAULT_MACRO_LIST = [
       if (ast.validation_output.wiki.given) {
         let wiki = await convert_arg(ast.args.wiki, context);
         if (wiki === '') {
-          wiki = await convert_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context).replace(/ /g, '_');
+          wiki = (await convert_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context)).replace(/ /g, '_');
           if (ast.validation_output[Macro.DISAMBIGUATE_ARGUMENT_NAME].given) {
-            wiki += '_(' + await convert_arg(ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME], context).replace(/ /g, '_')  + ')'
+            wiki += '_(' + (await convert_arg(ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME], context)).replace(/ /g, '_')  + ')'
           }
         }
         wiki_link = `<a href="https://en.wikipedia.org/wiki/${html_escape_attr(wiki)}">Wikipedia</a>`;

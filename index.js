@@ -6727,49 +6727,55 @@ function create_link_list(context, ast, id, title, target_ids, body) {
     ret += `<div>${html_hide_hover_link('#' + id)}<h2 id="${id}"><a href="#${id}">${title}</a></h2></div>\n`;
     for (const target_id of Array.from(target_ids).sort()) {
       let target_ast = context.id_provider.get(target_id, context);
-      let counts_str;
-      if (target_ast.header_graph_node !== undefined) {
-        counts_str = get_descendant_count_html_sep(target_ast.header_graph_node, false);
-      } else {
-        counts_str = '';
+      if (
+        // Possible when user sets an invalid ID on \x with child \x[invalid]{child}.
+        // The error is caught elsewhere.
+        target_ast !== undefined
+      ) {
+        let counts_str;
+        if (target_ast.header_graph_node !== undefined) {
+          counts_str = get_descendant_count_html_sep(target_ast.header_graph_node, false);
+        } else {
+          counts_str = '';
+        }
+        target_id_asts.push(new AstNode(
+          AstType.MACRO,
+          Macro.LIST_MACRO_NAME,
+          {
+            'content': new AstArgument(
+              [
+                new AstNode(
+                  AstType.MACRO,
+                  Macro.X_MACRO_NAME,
+                  {
+                    'href': new AstArgument(
+                      [
+                        new PlaintextAstNode(target_id),
+                      ],
+                    ),
+                    'c': new AstArgument(),
+                  },
+                ),
+                new AstNode(
+                  AstType.MACRO,
+                  'passthrough',
+                  {
+                    'content': new AstArgument(
+                      [
+                        new PlaintextAstNode(counts_str),
+                      ],
+                    ),
+                  },
+                  undefined,
+                  {
+                    xss_safe: true,
+                  }
+                ),
+              ],
+            ),
+          },
+        ));
       }
-      target_id_asts.push(new AstNode(
-        AstType.MACRO,
-        Macro.LIST_MACRO_NAME,
-        {
-          'content': new AstArgument(
-            [
-              new AstNode(
-                AstType.MACRO,
-                Macro.X_MACRO_NAME,
-                {
-                  'href': new AstArgument(
-                    [
-                      new PlaintextAstNode(target_id),
-                    ],
-                  ),
-                  'c': new AstArgument(),
-                },
-              ),
-              new AstNode(
-                AstType.MACRO,
-                'passthrough',
-                {
-                  'content': new AstArgument(
-                    [
-                      new PlaintextAstNode(counts_str),
-                    ],
-                  ),
-                },
-                undefined,
-                {
-                  xss_safe: true,
-                }
-              ),
-            ],
-          ),
-        },
-      ));
     }
     let ulArgs = {
       'content': new AstArgument(target_id_asts)

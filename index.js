@@ -5848,13 +5848,15 @@ function render_error(context, message, source_location, severity=1) {
   }
 }
 
-function render_error_x_undefined(ast, context, target_id) {
+function render_error_x_undefined(ast, context, target_id, options={}) {
+  let { source_location } = options
   let message = `cross reference to unknown id: "${target_id}" at render time`;
-  let source_location
-  if (ast.args.href) {
-    source_location = ast.args.href.source_location
-  } else {
-    source_location = ast.source_location
+  if (source_location === undefined) {
+    if (ast.args.href) {
+      source_location = ast.args.href.source_location
+    } else {
+      source_location = ast.source_location
+    }
   }
   render_error(context, message, source_location, 2);
   return error_message_in_output(message, context)
@@ -8897,7 +8899,7 @@ function ourbigbook_convert_args(ast, context, options={}) {
       let { delim_repeat, has_newline, rendered_arg } = ourbigbook_prefer_literal(
         ast, context, ast_arg, arg, START_NAMED_ARGUMENT_CHAR, END_NAMED_ARGUMENT_CHAR)
       if (argname in modify_callbacks) {
-        rendered_arg = modify_callbacks[argname](ast, context, rendered_arg)
+        rendered_arg = modify_callbacks[argname](ast, context, ast_arg, rendered_arg)
       }
       let skip_val = false
       if (macro_arg.boolean) {
@@ -8979,7 +8981,7 @@ OUTPUT_FORMATS_LIST.push(
         'comment': ourbigbook_convert_simple_elem,
         [Macro.HEADER_MACRO_NAME]: function(ast, context) {
           const newline = ast.is_last_in_argument() ? '' : '\n\n'
-          function modify_callback(ast, context, rendered_arg) {
+          function modify_callback(ast, context, arg, rendered_arg) {
             const { target_ast, target_id } = x_get_target_ast_base({
               context,
               do_magic_title_to_id: true,
@@ -8987,6 +8989,9 @@ OUTPUT_FORMATS_LIST.push(
               scope: ast.scope,
               target_id: rendered_arg,
             })
+            if (!target_ast) {
+              return `${rendered_arg} ${render_error_x_undefined(ast, context, rendered_arg, { source_location: arg.source_location })}`
+            }
             const href = ourbigbook_get_x_href({
               ast,
               context,
@@ -9004,7 +9009,6 @@ OUTPUT_FORMATS_LIST.push(
             // to be always literal. But this would require changing the tokenizer somehow,
             // not sure it would be super easy.
             return href.replace(MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS_REGEX, ' ').replace(MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS_REGEX, '$1').replace(/ +/g, ' ').replace(/^ | $/g, '')
-
           }
           const args_string = ourbigbook_convert_args(
             ast,

@@ -8,6 +8,6 @@ router.get('/', function(req, res) {
 router.use('/', require('./users'))
 router.use('/articles', require('./articles'))
 router.use('/issues', require('./issues'))
-router.use(`/${minPath}`, require('./min'))
+//router.use(`/${minPath}`, require('./min'))
 
 module.exports = router

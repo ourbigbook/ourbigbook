@@ -3,6 +3,12 @@
 
 const ourbigbook = require('ourbigbook')
 
+// https://stackoverflow.com/questions/14382725/how-to-get-the-correct-ip-address-of-a-client-into-a-node-socket-io-app-hosted-o/14382990#14382990
+// Works on Heroku 2021.
+function getClientIp(req) {
+  return req.header('x-forwarded-for')
+}
+
 function getOrder(req) {
   let sort = req.query.sort;
   const default_ = 'createdAt'
@@ -17,13 +23,21 @@ function getOrder(req) {
   }
 }
 
-function getPage(req) {
-  const page = req.query.page
-  const pageNum = typeof page === 'undefined' ? 0 : parseInt(page, 10) - 1
-  if (isNaN(pageNum)) {
-    return [,'Invalid page number']
+/**
+ * @param {string|string[]} page - 1-based.
+ * @returns {[number, string|undefined]} 0-based return, error string if any.
+ */
+function getPage(page='1') {
+  const pageString = typeof page === 'string' ? page : page[0]
+  const [pageNum, ok] = typecastInteger(page)
+  if (ok) {
+    if (pageNum <= 0) {
+      return [0, 'The page must be postive']
+    } else {
+      return [pageNum - 1,]
+    }
   } else {
-    return [pageNum,]
+    return [0, 'Invalid page number']
   }
 }
 
@@ -49,8 +63,50 @@ function modifyEditorInput(title, body) {
   return { offset: 1 + offsetOffset, new: ret };
 }
 
+/**
+ * @param {string}
+ * @returns {[number, boolean]}
+ */
+function typecastInteger(s) {
+  const i = Number(s)
+  let ok = s !== '' && Number.isInteger(i)
+  return [i, ok]
+}
+
+function isNonNegativeInteger(i) {
+  return i >= 0
+}
+
+function isPositiveInteger(i) {
+  return i > 0
+}
+
+function isBoolean(tf) {
+  return typeof tf === 'boolean'
+}
+
+function isSmallerOrEqualTo(max) {
+  return (n) => n <= max
+}
+
+function isString(s) {
+  return typeof s === 'string'
+}
+
+function isTruthy(s) {
+  return !!s
+}
+
 module.exports = {
-  modifyEditorInput,
+  getClientIp,
   getOrder,
   getPage,
+  isBoolean,
+  isNonNegativeInteger,
+  isPositiveInteger,
+  isSmallerOrEqualTo,
+  isString,
+  isTruthy,
+  modifyEditorInput,
+  typecastInteger,
 }

@@ -28,8 +28,8 @@ router.get('/', auth.optional, async function(req, res, next) {
 function getIssueParams(req, res) {
   return {
     number: lib.validateParam(req.params, 'number', {
-      typecast: lib.typecastInteger,
-      validators: [lib.isPositiveInteger],
+      typecast: front.typecastInteger,
+      validators: [front.isPositiveInteger],
     }),
     slug: validateParam(req.query, 'id'),
   }
@@ -75,11 +75,11 @@ router.post('/', auth.required, async function(req, res, next) {
     const body = lib.validateParam(req, 'body')
     const issueData = lib.validateParam(body, 'issue')
     const bodySource = lib.validateParam(issueData, 'bodySource', {
-      validators: [ lib.isString ],
+      validators: [ front.isString ],
       defaultValue: ''
     })
     const titleSource = lib.validateParam(issueData, 'titleSource', {
-      validators: [lib.isString, lib.isTruthy]
+      validators: [front.isString, front.isTruthy]
     })
     const issue = await convertIssue({
       article,
@@ -110,11 +110,11 @@ router.put('/:number', auth.required, async function(req, res, next) {
     const body = lib.validateParam(req, 'body')
     const issueData = lib.validateParam(body, 'issue')
     const bodySource = lib.validateParam(issueData, 'bodySource', {
-      validators: [lib.isString],
+      validators: [front.isString],
       defaultValue: undefined,
     })
     const titleSource = lib.validateParam(issueData, 'titleSource', {
-      validators: [lib.isString, lib.isTruthy],
+      validators: [front.isString, front.isTruthy],
       defaultValue: undefined,
     })
     const newIssue = await convertIssue({
@@ -227,7 +227,7 @@ router.post('/:number/comments', auth.required, async function(req, res, next) {
     const body = lib.validateParam(req, 'body')
     const commentData = lib.validateParam(body, 'comment')
     const source = lib.validateParam(commentData, 'source', {
-      validators: [ lib.isString ],
+      validators: [front.isString],
     })
     const comment = await convertComment({
       issue,
@@ -248,12 +248,12 @@ router.delete('/:number/comments/:commentNumber', auth.required, async function(
   try {
     const sequelize = req.app.get('sequelize')
     const commentNumber = lib.validateParam(req.params, 'commentNumber', {
-      typecast: lib.typecastInteger,
-      validators: [lib.isPositiveInteger],
+      typecast: front.typecastInteger,
+      validators: [front.isPositiveInteger],
     })
     const issueNumber = lib.validateParam(req.params, 'issue', {
-      typecast: lib.typecastInteger,
-      validators: [lib.isPositiveInteger],
+      typecast: front.typecastInteger,
+      validators: [front.isPositiveInteger],
     })
     const [comment, loggedInUser] = await Promise.all([
       sequelize.models.Comment.findOne({

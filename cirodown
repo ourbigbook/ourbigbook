@@ -998,7 +998,6 @@ if (commander.helpMacros) {
     commander,
     db_options: {
       dialect: 'sqlite',
-      logging: convert_input_options_log.db,
       define: { timestamps: false },
     },
     encoding: cirodown_nodejs.ENCODING,
@@ -1010,6 +1009,10 @@ if (commander.helpMacros) {
     outdir,
     publish,
   };
+  if (!convert_input_options_log.db) {
+    // They do not like true, has to be false or function.
+    convert_input_options.db_options.logging = false
+  }
   let input_git_toplevel;
   let subdir_relpath;
   let publish_tmpdir;

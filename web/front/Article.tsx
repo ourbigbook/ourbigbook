@@ -172,6 +172,20 @@ const Article = ({
           );
         }
         ourbigbook_runtime(elem);
+        // Capture link clicks, use ID on current page if one is present.
+        // Only go to another page if the ID is not already present on the page.
+        for (const a of elem.getElementsByTagName('a')) {
+          a.addEventListener(`click`, e => {
+            // + 4 for the '../' and trailing `/`
+            const idNoprefix = e.target.getAttribute('href').slice(article.author.username.length + 4)
+            const targetElem = document.getElementById(idNoprefix)
+            if (targetElem) {
+              console.error({idNoprefix});
+              e.preventDefault()
+              window.location.hash = idNoprefix
+            }
+          });
+        }
       }
     },
     []

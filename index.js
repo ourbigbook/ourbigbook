@@ -440,6 +440,11 @@ class Macro {
    * "Table 123. My favorite table". Both are done in a single function
    * so that style=full references will show very siimlar to the caption
    * they refer to.
+   *
+   * @param {Object} options
+   *   @param {Object} href_prefix rendered string containing the href="..."
+   *   part of a link to self to be applied e.g. to <>Figure 1<>, of undefined
+   *   if this link should not be given.
    */
   static x_text(ast, context, options={}) {
     if (!('caption_prefix_span' in options)) {
@@ -447,6 +452,9 @@ class Macro {
     }
     if (!('quote' in options)) {
       options.quote = false;
+    }
+    if (!('href_prefix' in options)) {
+      options.href_prefix = undefined;
     }
     if (!('show_caption_prefix' in options)) {
       options.show_caption_prefix = true;
@@ -457,6 +465,9 @@ class Macro {
     let ret = ``;
     let number;
     if (options.style === XStyle.full) {
+      if (options.href_prefix !== undefined) {
+        ret += `<a${options.href_prefix}>`
+      }
       if (options.show_caption_prefix) {
         if (options.caption_prefix_span) {
           ret += `<span class="caption-prefix">`;
@@ -469,6 +480,9 @@ class Macro {
       }
       if (options.show_caption_prefix && options.caption_prefix_span) {
         ret += `</span>`;
+      }
+      if (options.href_prefix !== undefined) {
+        ret += `</a>`
       }
     }
     if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
@@ -495,8 +509,6 @@ Macro.HEADER_MACRO_NAME = 'h';
 Macro.ID_ARGUMENT_NAME = 'id';
 Macro.INCLUDE_MACRO_NAME = 'include';
 Macro.LINK_MACRO_NAME = 'a';
-Macro.LINK_SELF_SHORT = UNICODE_LINK;
-Macro.LINK_SELF = `(${Macro.LINK_SELF_SHORT} link)`;
 Macro.MATH_MACRO_NAME = 'm';
 Macro.PARAGRAPH_MACRO_NAME = 'p';
 Macro.PLAINTEXT_MACRO_NAME = 'plaintext';
@@ -1371,7 +1383,7 @@ function html_hide_hover_link(id) {
     return '';
   } else {
     let href = html_attr('href', '#' + html_escape_attr(id));
-    return `<span class="hide-hover"> <a${href}>${Macro.LINK_SELF_SHORT}</a></span>`;
+    return `<span class="hide-hover"> <a${href}>${UNICODE_LINK}</a></span>`;
   }
 }
 
@@ -2442,8 +2454,7 @@ const DEFAULT_MACRO_LIST = [
         ret += `<div class="math-container"${attrs}>`;
         if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
           ret += `<div class="math-caption-container">\n`;
-          ret += `<span class="math-caption">${Macro.x_text(ast, context)}</span>`;
-          ret += `<span> <a${href}>${Macro.LINK_SELF}</a></span>\n`;
+          ret += `<span class="math-caption">${Macro.x_text(ast, context, {href_prefix: href})}</span>`;
           ret += `</div>\n`;
         }
         ret += `<div class="math-equation">\n`
@@ -2496,19 +2507,20 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      let img_attrs = html_convert_attrs(ast,context, ['src', 'alt']);
+      let img_attrs = html_convert_attrs(ast, context, ['src', 'alt']);
       let figure_attrs = html_convert_attrs_id(ast, context);
       let ret = `<figure${figure_attrs}>\n`
+      let href_prefix;
       if (ast.id !== undefined) {
-        ret += `<a${this.self_link(ast)}>`
+        href_prefix = this.self_link(ast);
+      } else {
+        href_prefix = undefined;
       }
-      ret += `<img${img_attrs}>`;
+      let src = html_attr('href', convert_arg(ast.args.src, context));
+      ret += `<a${src}><img${img_attrs}>`;
+      ret += `</a>\n`;
       if (ast.id !== undefined) {
-        ret += `</a>`;
-      }
-      ret += `\n`;
-      if (ast.id !== undefined) {
-        ret += `<figcaption>${Macro.x_text(ast, context)}</figcaption>\n`;
+        ret += `<figcaption>${Macro.x_text(ast, context, {href_prefix: href_prefix})}</figcaption>\n`;
       }
       ret += '</figure>\n';
       return ret;
@@ -2630,8 +2642,7 @@ const DEFAULT_MACRO_LIST = [
         //Caption on top as per: https://tex.stackexchange.com/questions/3243/why-should-a-table-caption-be-placed-above-the-table */
         let href = html_attr('href', '#' + html_escape_attr(ast.id));
         ret += `<div class="table-caption-container">\n`;
-        ret += `<span class="table-caption">${Macro.x_text(ast, context)}</span>`;
-        ret += `<span> <a${href}>${Macro.LINK_SELF}</a></span>\n`;
+        ret += `<span class="table-caption">${Macro.x_text(ast, context, {href_prefix: href})}</span>`;
         ret += `</div>\n`;
       }
       ret += `<table>\n${content}</table>\n`;

@@ -133,12 +133,6 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: $paragraph_margin_bottom;
   .math-caption-container {
     margin-bottom: $caption_margin_bottom;
-    > :last-child {
-      @include hidden;
-    }
-    &:hover > :last-child {
-      @include visible;
-    }
   }
   .math-equation {
     align-items: center;
@@ -163,12 +157,6 @@ pre {
 .table-container {
   .table-caption-container {
     margin-bottom: $caption_margin_bottom;
-    > :last-child {
-      @include hidden;
-    }
-    &:hover > :last-child {
-      @include visible;
-    }
   }
   table {
     $table_border: 1px solid $color;

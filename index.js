@@ -290,10 +290,21 @@ class MacroArgument {
    * @param {String} name
    */
   constructor(options) {
+    if (!('elide_link_only' in options)) {
+      // If the only thing contained in this argument is a single
+      // Macro.LINK_MACRO_NAME macro, AST post processing instead extracts
+      // the href of that macro, and transforms it into a text node with that href.
+      //
+      // Goal: to allow the use to write both \a[http://example.com] and
+      // \p[http://example.com] and get what a sane person expects, see also:
+      // https://cirosantilli.com/cirodown#insane-link-parsing-rules
+      options.elide_link_only = false;
+    }
     if (!('remove_whitespace_children' in options)) {
       // https://cirosantilli.com/cirodown#remove_whitespace_children
       options.remove_whitespace_children = false;
     }
+    this.elide_link_only = options.elide_link_only;
     this.name = options.name
     this.remove_whitespace_children = options.remove_whitespace_children;
   }
@@ -812,6 +823,8 @@ class Tokenizer {
         if (
             this.chars[this.i - 1] === ' ' ||
             this.chars[this.i - 1] === '\n' ||
+            this.chars[this.i - 1] === START_POSITIONAL_ARGUMENT_CHAR ||
+            this.chars[this.i - 1] === START_NAMED_ARGUMENT_CHAR ||
             this.i === 0
           )
         {
@@ -1430,6 +1443,7 @@ function macro_list_to_macros() {
   }
   return macros;
 }
+exports.macro_list_to_macros = macro_list_to_macros;
 
 // https://stackoverflow.com/questions/44447847/enums-in-javascript-with-es6/49709701#49709701
 function make_enum(arr) {
@@ -1719,15 +1733,15 @@ function parse(tokens, macros, options, extra_returns={}) {
     const macro_counts_indexed = {};
     let header_graph_last_level;
     const header_graph_stack = new Map();
-    is_first_header = true;
+    let is_first_header = true;
     let first_header_level;
     let first_header;
     extra_returns.context.headers_with_include = [];
     extra_returns.context.id_provider = id_provider;
     extra_returns.context.header_graph = new TreeNode();
     extra_returns.context.has_toc = false;
-    toplevel_parent_arg = []
-    todo_visit = [[toplevel_parent_arg, ast_toplevel]];
+    let toplevel_parent_arg = []
+    const todo_visit = [[toplevel_parent_arg, ast_toplevel]];
     while (todo_visit.length > 0) {
       const [parent_arg, ast] = todo_visit.shift();
       const macro_name = ast.macro_name;
@@ -1866,112 +1880,137 @@ function parse(tokens, macros, options, extra_returns={}) {
       }
 
       // Loop over the child arguments. We do this rather than recurse into them
-      // to be able to easily remove or add nodes  to the tree during this AST
+      // to be able to easily remove or add nodes to the tree during this AST
       // post-processing.
       //
-      // Here we do operations that only need to look into direct children, such as:
+      // Here we do sibling-type transformations that need to loop over multiple
+      // direct children in one go, such as:
       //
       // - auto add ul to li
       // - remove whitespace only text children from ul
       for (const arg_name in ast.args) {
+        // The following passes consecutively update arg.
         let arg = ast.args[arg_name];
-        let new_arg = [];
-        for (let i = 0; i < arg.length; i++) {
-          let child_node = arg[i];
-          let new_child_nodes = [];
-          let new_child_nodes_set = false;
-          if (
-            (arg_name in macro.name_to_arg) &&
-            macro.name_to_arg[arg_name].remove_whitespace_children &&
-            html_is_whitespace_text_node(child_node)
-          ) {
-            new_child_nodes_set = true;
-          } else if (child_node.node_type === AstType.MACRO) {
-            let child_macro_name = child_node.macro_name;
-            let child_macro = state.macros[child_macro_name];
-            if (child_macro.auto_parent !== undefined) {
-              // Add ul and table implicit parents.
-              const auto_parent_name = child_macro.auto_parent;
-              const auto_parent_name_macro = state.macros[auto_parent_name];
-              if (
-                ast.macro_name !== auto_parent_name &&
-                !child_macro.auto_parent_skip.has(ast.macro_name)
-              ) {
-                let start_auto_child_node = child_node;
-                const new_arg = [];
-                while (i < arg.length) {
-                  const arg_i = arg[i];
-                  if (arg_i.node_type === AstType.MACRO) {
-                    if (state.macros[arg_i.macro_name].auto_parent === auto_parent_name) {
-                      new_arg.push(arg_i);
+        let macro_arg = macro.name_to_arg[arg_name];
+
+        // Handle elide_link_only.
+        if (
+          // Possible for error nodes.
+          macro_arg !== undefined &&
+          macro_arg.elide_link_only &&
+          arg.length === 1 &&
+          arg[0].macro_name === Macro.LINK_MACRO_NAME
+        ) {
+          const href_arg = arg[0].args.href;
+          href_arg.parent_node = ast;
+          arg = href_arg;
+        }
+
+        // Child loop that
+        // Adds ul and table implicit parents.
+        {
+          const new_arg = [];
+          for (let i = 0; i < arg.length; i++) {
+            let child_node = arg[i];
+            let new_child_nodes = [];
+            let new_child_nodes_set = false;
+            if (
+              (arg_name in macro.name_to_arg) &&
+              macro.name_to_arg[arg_name].remove_whitespace_children &&
+              html_is_whitespace_text_node(child_node)
+            ) {
+              new_child_nodes_set = true;
+            } else if (child_node.node_type === AstType.MACRO) {
+              let child_macro_name = child_node.macro_name;
+              let child_macro = state.macros[child_macro_name];
+              if (child_macro.auto_parent !== undefined) {
+                // Add ul and table implicit parents.
+                const auto_parent_name = child_macro.auto_parent;
+                const auto_parent_name_macro = state.macros[auto_parent_name];
+                if (
+                  ast.macro_name !== auto_parent_name &&
+                  !child_macro.auto_parent_skip.has(ast.macro_name)
+                ) {
+                  let start_auto_child_node = child_node;
+                  const new_arg_auto_parent = [];
+                  while (i < arg.length) {
+                    const arg_i = arg[i];
+                    if (arg_i.node_type === AstType.MACRO) {
+                      if (state.macros[arg_i.macro_name].auto_parent === auto_parent_name) {
+                        new_arg_auto_parent.push(arg_i);
+                      } else {
+                        break;
+                      }
+                    } else if (
+                      auto_parent_name_macro.name_to_arg['content'].remove_whitespace_children &&
+                      html_is_whitespace_text_node(arg_i)
+                    ) {
+                      // Ignore the whitespace node.
                     } else {
                       break;
                     }
-                  } else if (
-                    auto_parent_name_macro.name_to_arg['content'].remove_whitespace_children &&
-                    html_is_whitespace_text_node(arg_i)
-                  ) {
-                    // Ignore the whitespace node.
-                  } else {
-                    break;
+                    i++;
                   }
-                  i++;
+                  new_child_nodes_set = true;
+                  new_child_nodes = [new AstNode(
+                    AstType.MACRO,
+                    auto_parent_name,
+                    {
+                      'content': new_arg_auto_parent,
+                    },
+                    start_auto_child_node.line,
+                    start_auto_child_node.column,
+                  )];
+                  // Because the for loop will advance past it.
+                  i--;
                 }
-                new_child_nodes_set = true;
-                new_child_nodes = [new AstNode(
-                  AstType.MACRO,
-                  auto_parent_name,
-                  {
-                    'content': new_arg,
-                  },
-                  start_auto_child_node.line,
-                  start_auto_child_node.column,
-                )];
-                // Because the for loop will advance past it.
-                i--;
               }
             }
-          }
-          if (!new_child_nodes_set) {
-            new_child_nodes = [child_node];
-          }
-          new_arg.push(...new_child_nodes);
-        }
-        arg = new_arg;
-
-        // Add paragraphs.
-        let paragraph_indexes = [];
-        for (let i = 0; i < arg.length; i++) {
-          const child_node = arg[i];
-          if (child_node.node_type === AstType.PARAGRAPH) {
-            paragraph_indexes.push(i);
-          }
-        }
-        if (paragraph_indexes.length > 0) {
-          new_arg = [];
-          if (paragraph_indexes[0] > 0) {
-            parse_add_paragraph(state, ast, new_arg, arg, 0, paragraph_indexes[0]);
-          }
-          let paragraph_start = paragraph_indexes[0] + 1;
-          for (let i = 1; i < paragraph_indexes.length; i++) {
-            const paragraph_index = paragraph_indexes[i];
-            parse_add_paragraph(state, ast, new_arg, arg, paragraph_start, paragraph_index);
-            paragraph_start = paragraph_index + 1;
-          }
-          if (paragraph_start < arg.length) {
-            parse_add_paragraph(state, ast, new_arg, arg, paragraph_start, arg.length);
+            if (!new_child_nodes_set) {
+              new_child_nodes = [child_node];
+            }
+            new_arg.push(...new_child_nodes);
           }
           arg = new_arg;
         }
 
-        // Push children to continue the search.
-        // We make the new argument be empty so that children can decide if they want to push themselves or not.
-        new_arg = [];
-        for (const child_node of arg) {
-          todo_visit.push([new_arg, child_node]);
+        // Child loop that adds paragraphs.
+        {
+          let paragraph_indexes = [];
+          for (let i = 0; i < arg.length; i++) {
+            const child_node = arg[i];
+            if (child_node.node_type === AstType.PARAGRAPH) {
+              paragraph_indexes.push(i);
+            }
+          }
+          if (paragraph_indexes.length > 0) {
+            const new_arg = [];
+            if (paragraph_indexes[0] > 0) {
+              parse_add_paragraph(state, ast, new_arg, arg, 0, paragraph_indexes[0]);
+            }
+            let paragraph_start = paragraph_indexes[0] + 1;
+            for (let i = 1; i < paragraph_indexes.length; i++) {
+              const paragraph_index = paragraph_indexes[i];
+              parse_add_paragraph(state, ast, new_arg, arg, paragraph_start, paragraph_index);
+              paragraph_start = paragraph_index + 1;
+            }
+            if (paragraph_start < arg.length) {
+              parse_add_paragraph(state, ast, new_arg, arg, paragraph_start, arg.length);
+            }
+            arg = new_arg;
+          }
         }
-        // Update the argument.
-        ast.args[arg_name] = new_arg;
+
+        // Push children to continue the search. We make the new argument be empty
+        // so that children can decide if they want to push themselves or not.
+        {
+          const new_arg = [];
+          for (const child_node of arg) {
+            todo_visit.push([new_arg, child_node]);
+          }
+          // Update the argument.
+          ast.args[arg_name] = new_arg;
+        }
       }
     }
     extra_returns.ids = indexed_ids;
@@ -2257,6 +2296,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: 'href',
+        elide_link_only: true,
       }),
       new MacroArgument({
         name: 'content',

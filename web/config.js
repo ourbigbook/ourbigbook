@@ -14,6 +14,8 @@ module.exports = {
   API_PATH_COMPONENT,
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   ESCAPE_USERNAME,
+  /** @type {boolean | 'blocking'} */
+  fallback: 'blocking',
   googleAnalyticsId: 'UA-47867706-4',
   // Default isProduction check. Affetcs all aspects of the application unless
   // they are individually overridden, including:

@@ -53,14 +53,16 @@ export const TopicHoc = (tab) => {
   };
 };
 
+// Server-only code
+
 import { GetStaticProps, GetStaticPaths } from 'next'
 
-import { revalidate } from "config";
+import { fallback, revalidate } from "config";
 import sequelize from "lib/db";
 
 export const getStaticPathsTopic: GetStaticPaths = async () => {
   return {
-    fallback: true,
+    fallback,
     paths: [],
   }
 }

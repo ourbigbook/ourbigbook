@@ -2,7 +2,7 @@
 
 $color: black;
 $header-background-color: #AA0;
-$toplevel-padding: 20px;
+$toplevel-padding: 15px;
 body {
 background-color: $color;
 font-family: $font-family;
@@ -11,10 +11,12 @@ header, footer {
   background-color: $header-background-color;
 }
 header {
-  /* https://stackoverflow.com/questions/5078239/how-do-i-remove-the-space-between-inline-block-elements */
-  font-size: 0;
   align-items: center;
   display: flex;
+  /* https://stackoverflow.com/questions/5078239/how-do-i-remove-the-space-between-inline-block-elements */
+  font-size: 0;
+  overflow-x: hidden;
+  white-space: nowrap;
   a {
     /* Make buttons occupy the full height of the header bar.
      * https://stackoverflow.com/questions/28254332/how-to-vertically-center-the-contents-of-a-flexbox-item/28254903#28254903 */
@@ -49,6 +51,7 @@ header {
   }
 }
 footer {
+  word-wrap: break-word;
   a {
     $color: #00C;
     color: $color;

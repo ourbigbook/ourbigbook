@@ -32,11 +32,6 @@ The links by clicking on the header itself are correct and go to a dedicated pag
 {tag=Dynamic tree fetch}
 {tag=Web}
 
-=== Remove @ from toc IDs
-{tag=Web}
-
-E.g. currently have: http://localhost:3000/barack-obama#toc-@barack-obama/mitochondrion It works, but is ugly.
-
 === Statically render links to issues and topic under each header for better SEO
 {tag=Web}
 
@@ -54,6 +49,8 @@ Otherwise too confusing what is what when fields are pre-filled, e.g. when editi
 {tag=Web}
 
 Maybe some will be list by default, but some will definitely be article show by default. Notably topic has to show the rendered body by default.
+
+This is a superset of: https://github.com/cirosantilli/ourbigbook/issues/270
 
 === Allow creating new pages under scope
 {tag=Scope}
@@ -87,6 +84,8 @@ Newlines just add complexity to our codebase, and are not even getting removed f
 Happens on CLI and Web, though the web one is a bit artificial.
 
 E.g. https://cirosantilli.com/x86-paging#toc-x86-paging/sample-code should instead be just: https://cirosantilli.com/x86-paging#toc-sample-code[]. Links from headers to currently work however, 
+
+On web will require extra caution after we decided to initially stop culling scopes: <missing header metadata such as like button, same topic and issue link on headers under a scope>.
 
 === LIKE metadata on JOIN on
 
@@ -125,8 +124,43 @@ It seems that the third party library we are using is just a hack and doesn't pr
 
 == Closed issues
 
+=== Remove @ from toc IDs
+{tag=Web}
+
+E.g. currently have: http://localhost:3000/barack-obama#toc-@barack-obama/mitochondrion It works, but is ugly.
+
+=== Missing header metadata such as like button, same topic and issue link on headers under a scope
+{tag=Scope}
+
+=== Headers under scope don't have scope on ID leads to ID conflicts and a link misses on Web
+{tag=Scope}
+{tag=Web}
+
+E.g. in:
+``
+= x86
+
+== Sample code
+
+== x86 paging
+{scope}
+
+=== Sample code
+``
+
+both `Sample code` headers have `id="sample-code"`, which would lead to ID conflicts on the same page.
+
+Also, as a result, the toc link from `x86` intended to go to `x86-paging/sample-code` misses and opens on a separate page.
+
+I don't know how to solve this besides always including scopes on every ID... This does however lead to ugly local IDs on individual pages which is a bit of a shame... oh cruel life.
+
+We could also have two versions of every page, scoped and non scoped, but things likely go exponential when we start dealing with subscope.
+
+This could mean that a lot of toplevel scope removal work will go to the trash! :-( But what can you do, it is the inevitable outcome of dynamic page fetch?
+
 === Tags show up twice under scopes
 {tag=Web}
+{tag=Scope}
 
 === Each header tag shows up twice on web
 {synonym}

@@ -872,6 +872,14 @@ The distinction between inline `c` and block `C` code blocks is needed because i
 
 We could have chosen to do some magic to differentiate between them, e.g. checking if the block is the only element in a paragraph, but we decided not to do that to keep the language saner.
 
+And now a code block outside of \x[cirodown-example] to test how it looks directly under \x[toplevel]:
+
+``
+Hello
+Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello
+Hello
+``
+
 \Comment[[[[
 TODO implement.
 We can have cross references to code blocks as for other elements such as \x[images]:

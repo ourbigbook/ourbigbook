@@ -8,6 +8,9 @@
 
 The links don't show without JavaScript. The counts can be dynamic loaded, but the links we really want to do at compile time... any way?
 
+=== Add sibling/add child buttons next to toc entries of articles owned by the current user
+{tag=Web}
+
 === Add sibling/add child buttons next to self headers and toc
 {tag=Web}
 
@@ -146,6 +149,9 @@ We should likely not show it on link hover however, only headers, as doing so wo
 It seems that the third party library we are using is just a hack and doesn't properly provide the thing offline... OMG could it be so crap? https://stackoverflow.com/questions/59773190/monaco-editor-with-nextjs/68611592#68611592
 
 == Closed issues
+
+=== Add sibling/add child buttons next to headers owned by the current user
+{tag=Web}
 
 === Infinite navbar profile image refresh loop when there is no Internet
 {tag=Offline development}

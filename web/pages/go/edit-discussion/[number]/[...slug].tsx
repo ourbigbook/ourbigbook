@@ -1,4 +1,4 @@
 import { getServerSidePropsEditorHoc } from 'back/EditorPage'
 export const getServerSideProps = getServerSidePropsEditorHoc({ isIssue: true });
-import ArticleEditorPageHoc from 'front/ArticleEditorPage'
-export default ArticleEditorPageHoc({ isIssue: true });
+import EditorPageHoc from 'front/EditorPage'
+export default EditorPageHoc({ isIssue: true });

@@ -55,7 +55,7 @@
     "npm": "6.14.13"
   },
   "files": [
-    "web_api/*",
+    "web_api.js",
     "gitignore",
     "ourbigbook",
     "ourbigbook.common.scss",

@@ -4,7 +4,7 @@ import { mutate } from 'swr'
 
 import ourbigbook from 'ourbigbook/dist/ourbigbook.js';
 
-import { userApi } from 'front/api'
+import { webApi } from 'front/api'
 import routes from 'front/routes'
 
 export const AUTH_COOKIE_NAME = 'auth'
@@ -61,7 +61,7 @@ export function useCtrlEnterSubmit(handleSubmit) {
     return () => {
       document.removeEventListener('keydown', ctrlEnterListener);
     };
-  }, []);
+  }, [handleSubmit]);
 }
 
 export function useEEdit(canEdit, slug) {
@@ -133,7 +133,7 @@ export function deleteCookie(name, path = '/') {
 export async function setupUserLocalStorage(data, setErrors) {
   // We fetch from /profiles/:username again because the return from /users/login above
   // does not contain the image placeholder.
-  const { data: userData, status: userStatus } = await userApi.get(
+  const { data: userData, status: userStatus } = await webApi.userGet(
     data.user.username
   )
   if (userStatus !== 200) {

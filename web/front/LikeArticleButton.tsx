@@ -1,7 +1,7 @@
 import React from 'react'
 import Router from 'next/router'
 
-import { articleApi } from 'front/api'
+import { webApi } from 'front/api'
 import { buttonActiveClass } from 'front/config'
 import routes from 'front/routes'
 
@@ -36,9 +36,9 @@ const LikeArticleButton = ({
     setScore(score + (liked ? - 1 : 1))
     try {
       if (liked) {
-        await articleApi.unlike(article.slug)
+        await webApi.articleUnlike(article.slug)
       } else {
-        await articleApi.like(article.slug)
+        await webApi.articleLike(article.slug)
       }
     } catch (error) {
       setLiked(!liked)

@@ -1,12 +1,7 @@
-import ArticleApi from 'ourbigbook/web_api/article'
-import CommentApi from 'ourbigbook/web_api/comment'
-import UserApi from 'ourbigbook/web_api/user'
+import { WebApi } from 'ourbigbook/web_api'
 import { AUTH_COOKIE_NAME, getCookie } from 'front'
 
-const opts = {
+export const webApi = new WebApi({
   getToken: () => getCookie(AUTH_COOKIE_NAME),
   https: true,
-}
-export const articleApi = new ArticleApi(opts)
-export const commentApi = new CommentApi(opts)
-export const userApi = new UserApi(opts)
+})

@@ -183,6 +183,9 @@ class Macro {
     if (!('id_prefix' in options)) {
       options.id_prefix = title_to_id(name);
     }
+    if (!('caption_prefix' in options)) {
+      options.caption_prefix = capitalize_first_letter(name);
+    }
     this.name = name;
     this.positional_args = positional_args;
     {
@@ -195,6 +198,7 @@ class Macro {
     this.auto_parent = options.auto_parent;
     this.auto_parent_skip = options.auto_parent_skip;
     this.convert = convert;
+    this.options = options;
     this.id_prefix = options.id_prefix;
     this.properties = options.properties;
     if (!('phrasing' in this.properties)) {
@@ -574,6 +578,10 @@ function array_equals(arr1, arr2) {
   return true;
 }
 
+function capitalize_first_letter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 function char_is_alphanumeric(c) {
   let code = c.codePointAt(0);
   return (
@@ -885,9 +893,11 @@ function parse(tokens, macros, options, extra_returns={}) {
   // * automatic ul parent to li and table to tr
   // * extract all IDs into an ID index
   let todo_visit = [ast_toplevel];
+  let macro_counts = {};
   extra_returns.ids = {};
   while (todo_visit.length > 0) {
     const node = todo_visit.shift();
+    const macro_name = node.macro_name;
 
     // Calculate node ID and add it to the ID index.
     let id_context = {'macros': macros};
@@ -906,6 +916,14 @@ function parse(tokens, macros, options, extra_returns={}) {
     if (node.id !== undefined) {
       extra_returns.ids[node.id] = node;
     }
+
+    // Linear count of each macro type.
+    if (!(macro_name in macro_counts)) {
+      macro_counts[macro_name] = 0;
+    }
+    macro_count = macro_counts[macro_name] + 1;
+    macro_counts[macro_name] = macro_count;
+    node.macro_count = macro_count;
 
     // Loop over the child arguments.
     if (node.node_type === AstType.MACRO) {
@@ -1380,11 +1398,21 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       let img_attrs = html_convert_attrs(ast,context, ['src', 'alt']);
       let figure_attrs = html_convert_attrs_id(ast, context);
-      let ret = `<figure${figure_attrs}>\n<img${img_attrs}>\n`;
+      let ret = `<figure${figure_attrs}>\n`
+      if (ast.id !== undefined) {
+        ret += `<a href="#${html_escape_attr(ast.id)}">`
+      }
+      ret += `<img${img_attrs}>`;
+      if (ast.id !== undefined) {
+        ret += `</a>`;
+      }
+      ret += `\n`;
+      ret += `<figcaption>${this.options.caption_prefix} ${ast.macro_count})`;
       if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
         let figcaption_content = convert_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-        ret += `<figcaption>${figcaption_content}</figcaption>\n`;
+        ret += ` ${figcaption_content}`;
       }
+      ret += `</figcaption>\n`;
       ret += '</figure>\n';
       return ret;
     },
@@ -1464,10 +1492,12 @@ const DEFAULT_MACRO_LIST = [
       let attrs = html_convert_attrs_id(ast, context);
       let content = convert_arg(ast.args.content, context);
       let ret = `<table${attrs}>\n`;
+      ret += `<caption>${this.options.caption_prefix} ${ast.macro_count})`;
       if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
         let title = convert_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-        ret += `<caption>${title}</caption>\n`;
+        ret += ` ${title}`
       }
+      ret += `</caption>\n`;
       ret += `${content}</table>\n`;
       return ret;
     },
@@ -1529,23 +1559,19 @@ const DEFAULT_MACRO_LIST = [
   href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css"
   crossorigin="anonymous"
 >
-<style>
-.katex { font-size: 1.5em; }
-</style>
+<link href="https://netdna.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet"/>
 
 <style>
-code {
-  background-color: #EEEEEE;
-}
-pre {
-  background-color: #EEEEEE;
-}
-
 /* Minimal table styling. */
+body {
+  padding-left: 15px;
+  padding-right: 15px;
+}
 caption {
   caption-side: bottom;
   text-align: left;
 }
+.katex { font-size: 1.5em; }
 table {
   border-collapse: collapse;
 }
@@ -1621,7 +1647,7 @@ table, th, td {
           return error_message_in_output(message);
         }
         let attrs = html_convert_attrs_id(ast, context);
-        let href = html_attr('href', '#' + html_attr_value(ast.args.href, context));
+        let href = html_attr('href', '#' + html_escape_attr(target_id));
         return `<a${href}${attrs}>${content}</a>`;
       } else {
         let message = `cross reference to unknown id: "${target_id}"`;

@@ -1,6 +1,6 @@
 = Cirodown
 
-Markup language + static site generator to write complex structured wikis/books/blogs, that aims to be \x[saner] and \x[design-goals][more powerful] than Markdown and Asciidoctor, with reference implementation in JavaScript.
+Static wiki generator and lightweight markup language to write complex structured wikis/books/blogs with reference implementation in JavaScript.
 
 * https://cirosantilli.com[]: showcase demo document with interesting content. Primary inspiration for Cirodown development.
   * https://cirosantilli.com/oxford-nanopore-river-bacteria[]: a self-contained tutorial style part of the above. Note how internal links integrate seamlessly into the more global topic of biology, e.g. when talking about DNA we link to the global topic https://cirosantilli.com/dna[].
@@ -15,29 +15,237 @@ Markup language + static site generator to write complex structured wikis/books/
 = Features
 {parent=cirodown}
 
-* \x[internal-cross-reference][references] to \x[header]{p}, \x[image]{p}, etc. with amazing \x[error-reporting][error checking and reporting]: never break internal links without knoing again, and quickly find out what broke when you do
-* KaTeX server side \x[mathematics], works on browsers with JavaScript disabled
+* \x[internal-cross-reference][references] to any \x[header]{p} (including e.g. h2, h3, etc. in other files), \x[image]{p}, etc. with amazing \x[error-reporting][error checking and reporting]: never break internal links without knoing again, and quickly find out what broke when you do. E.g.:
+
+  README.ciro
+  ``
+  = My website
+
+  See: \x[not-readme], or \x[not-readme-h2].
+  ``
+  not-readme.ciro
+  ``
+  = Not readme
+
+  == Not readme h2
+  ``
+  `README.ciro` would render something like:
+  ``
+  See: <a href="not-readme.html">not readme</a>, or <a href="not-readme#h2">not readme</a>.
+  ``
+  The following would fail and point you out the file and line of the failure:
+  * nonexistent id:
+    ``
+    \x[id-that-does-not-exist]
+    ``
+  * duplicate IDs:
+    ``
+    = My h1
+
+    == My h2
+
+    == My h2
+    ``
+* https://katex.org/[KaTeX] server side \x[mathematics], works on browsers with JavaScript disabled:
+  ``
+  I like $\sqrt{2}$, but I adore this \x[equation-quadratic-equation]:
+
+  $$
+  x^2 + 2x + 1
+  $$
+  {title=Quadratic equation}
+  ``
 * multi-file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
   * \x[internal-cross-file-reference]{p}
-  * `inotifywait` watch rebuild server
   * single-source multi-format output based on \x[include]{p} and build options:
-    * one HTML per source with includes rendered as links between pages
-    * \x[embed-includes] single file output. Includes are parsed smartly, not just source copy pasted, e.g. included headers are shifted from `h1` to `h2` correctly
-    * \x[split-headers] option to output each header of an input file into a separate output file
-    * supports both local serverless rendering to HTML files for local viewing, and server oriented rendering such as GitHub pages, e.g. \x[internal-cross-reference]{p} automatically get `.html` extension and or not
-  * cross file configuration files to factor out common page parts like headers, footers and other metadata
+    * by default, one HTML per source with includes rendered as links between pages, e.g.:
+
+      README.ciro
+      ``
+      = My website
+
+      == h2
+
+      \Include[not-readme]
+      ``
+      not-readme.ciro
+      ``
+      = Not readme
+
+      == Not readme h2
+      ``
+      produces `index.html` and `not-readme.html`
+    * with the \x[split-headers] option, you can output each header of an input file into a separate output file. The previous filesystem would produce:
+      * `index.html`: which contains the full `README.ciro` output
+      * `split.html`: split version of the above containing only the `= My website` header and not `h2`
+      * `h2.html`: only contains the `h2` header
+      * `not-readme.html` contains the full output of `not-readme.ciro`
+      * `not-readme-split.html`: only contains the `= Not readme` header
+      * `not-readme-h2.html`: only contains the `= Not readme h2` header
+      Each of those pages automatically gets a \x[table-of-contents]
+    * \x[embed-includes] single file output from multiple input files. Includes are parsed smartly, not just source copy pasted, e.g. included headers are shifted from `h1` to `h2` correctly.
+
+      On the previous sample filesystem, it would produce a single output file `index.html` which would contain a header structure like:
+      ``
+      = My website
+
+      == h2
+
+      === Not readme
+
+      ==== Not readme h2
+      ``
+    * supports both local serverless rendering to HTML files for local viewing, and server oriented rendering such as GitHub pages, e.g. \x[internal-cross-reference]{p} automatically get `.html` extension and or not. E.g.:
+      * locally, a link `\x[not-readme]` would render as `<a href="not-readme.html">` and `not-readme.ciro` produces `not-readme.html`
+      * when publishing, `\x[not-readme]` would render as `<a  href="not-readme">` and `not-readme.ciro` also produces `not-readme.html`, which the server converts to just `http://my-website.com/not-readme`
+  * cross file configuration files to factor out common page parts like headers, footers and other metadata, e.g.:
+    * `main.liquid.html`: https://github.com/Shopify/liquid[Liquid template] used for all pages
+    * `main.scss`: CSS stylesheet generated from https://sass-lang.com/[SASS] input
+    * `cirodown.tex`: global LaTeX math definitions
+    * \x[cirodown-json]: per repository configuration options
   * \x[table-of-contents] that crosses input files (TODO https://github.com/cirosantilli/cirodown/issues/126[])
-  * check that local files and images linked to actually exist: \x[a-check-argument]
+  * check that local files and images linked to actually exist: \x[a-check-argument]. E.g.:
+    ``
+    \a[i-don-exist.txt]
+    ``
+    would lead to a build error.
+  * associate headers to files with the \x[h-file-argument] e.g.:
+    ``
+    Here's an example of a nice image: \x[file/path/to/my/image.png].
+
+    = path/to/my/image.png
+    {file}
+
+    This image was taken when I was on vacation!
+    ``
+    would automatically add a preview of the image on the output.
 * advanced header/ID related features:
-  * \x[scope]{p}
-  * \x[synonym]{p}
+  * \x[scope]{p} either with directories or with within a single file:
+    ``
+    See the important conclusion of my experiment: \x[report-of-my-experiment/conclusion]
+
+    = Report of my experiment
+    {scope}
+
+    == Introduction
+
+    == Middle
+
+    == Conclusion
+    ``
+  * \x[cross-reference-title-inflection] for capitalization and pluralization, e.g.;
+    ``
+    = Dog
+
+    == Snoopy
+    {c}
+
+    \x[dog]{c}{p} are fun. But the \x[dog] I like the most is \x[snoopy]!
+    ``
+    would render:
+    * `\x[dog]{c}{p}` as `Dogs`: capitalized because of `{c}` and pluralized because of `{p}`
+    * `\x[dog]` as `dogs`: auto lowercased because its header `= Dog` does not have `{c}`
+    * `\x[snoopy]` as `Snoopy`: title capitalization kept to upper case due to `{c}` on the header `== Snoopy`
+  * \x[synonym]{p}, e.g.:
+    ``
+    = User interface
+
+    = UI
+    {c}
+    {synonym}
+    {title2}
+
+    \x[user-interface]{c} is too long, I just say \x[ui].
+    ``
+    would render something like:
+    ``
+    <a href="#user-interface">User interface</a> is too long, I just say <a href="user-interface">UI</a>
+    ``
+    Furthermore, this also generates a output file:
+    ``
+    ui.html
+    ``
+    which redirects to the ain `user-interface.html`, so it serves as a way to have backward compatibility on page renames.
+
+    And the `title2` makes it appears on the main title under parenthesis, something like:
+    ``
+    <h1>User interface (UI)</h1>
+    ``
   * tags are regular headers: \x[h-child-argument], \x[x-child-argument]
-  * \x[unlimited-header-levels]
-  * \x[id-based-header-levels]
-* is written in JavaScript and therefore runs natively on the browser to allow live previews
+    ``
+    = Animal
+
+    == Dog
+    {tag=domestic}
+    {tag=cute}
+
+    == Cat
+    {tag=domestic}
+    {tag=cute}
+
+    == Bat
+    {tag=flying}
+
+    = Flying
+
+    = Cute
+
+    = Domestic
+    ``
+  * \x[unlimited-header-levels], levels higher than 6 are rendered in HTML as an appropriately styled `div`s with an ID:
+    ``
+    = h1
+
+    == h2
+
+    === h3
+
+    ==== h4
+
+    ===== h5
+
+    ====== h6
+
+    ======= h7
+
+    ======== h8
+    ``
+  * \x[id-based-header-levels]:
+    ``
+    = Animal
+
+    = Dog
+    {parent=animal}
+
+    = Husky
+    {parent=dog}
+    ``
+  * generate lists of \x[incoming-links] between internal headers: it shows every internal link coming into the current page
+* is written in JavaScript and therefore runs natively on the browser to allow live previews as shown at: https://cirosantilli.com/cirodown/editor[]
 * helps you with the publishing:
-  * `./cirodown --publish` helper for single command publishing to the configured target (default GitHub pages): \x[publish]
-  * Cirodown tries to deal with media such as images and video intelligently for you, see e.g.: \x[where-to-store-images]
+  * `cirodown --publish` publishes in a single command to the configured target (default GitHub pages): \x[publish]{full}
+  * Cirodown tries to deal with media such as images and video intelligently for you, e.g.: \x[where-to-store-images]{full}. E.g. you can keep media in a separate media repository, `my-media-repository`, and then by configuring on \x[cirodown-json]:
+    ``
+    "media-providers": {
+      "github": {
+        "default-for": ["image", "video"],
+        "path": "media",
+        "remote": "yourname/myproject-media"
+      }
+    }
+    ``
+    you can use images in that repository with:
+    ``
+    \Image[My_image_basename.jpg]
+    ``
+    instead of:
+    ``
+    \Image[https://raw.githubusercontent.com/cirosantilli/myproject--media/master/My_image_basename.jpg]
+    ``
+  * `inotifywait` watch and automatically rebuild with \x[watch]:
+    ``
+    cirodown --watch input-file.ciro
+    ``
 
 = Quick start
 {parent=cirodown}
@@ -180,6 +388,8 @@ Cirodown is designed entirely to allow writing complex professional HTML and PDF
 
 Cirodown aims to be the ultimate \x[latex-output-format][LaTeX] "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation).
 
+It aims to be \x[features][more powerful] and \x[saner] and than Markdown and Asciidoctor. 
+
 = Saner
 {parent=design-goals}
 
@@ -253,7 +463,10 @@ Another advantage over Asciidoctor is that the reference implementation of Cirod
 {parent=design-goals}
 
 Static wiki generators: this is perhaps the best way of classifying this project :-)
-* https://github.com/gollum/gollum[]: already has a local server editor! But no WYSIWYG nor live preview. Git integration by default, so when you save on the UI already generates a Git commit. We could achieve that with: https://github.com/isomorphic-git/isomorphic-git[], would be really nice.
+* https://github.com/gollum/gollum[]: already has a local server editor! But no WYSIWYG nor live preview. Git integration by default, so when you save on the UI already generates a Git commit. We could achieve that with: https://github.com/isomorphic-git/isomorphic-git[], would be really nice. Does not appear to have built-in static generation: 
+  * https://stackoverflow.com/questions/7210391/have-anyone-use-gollum-site-to-generete-markdown-wikis-and-host-it-on-heroku
+  * https://github.com/dreverri/gollum-site
+  Does not appear to check that any links are correct.
 * https://github.com/wcchin/markypydia
 * https://obsidian.md/ closed source, Markdown with \x[internal-cross-file-reference] + a SaaS. Appears to require payment for any publishing. 28k followers 2021: https://twitter.com/obsdmd[]. Founders are likely Canadians of Asian descent from Waterloo University: https://www.linkedin.com/in/lishid/ | https://www.linkedin.com/in/ericaxu/ also working in parallel on https://dynalist.io/ 2020 review at: https://www.youtube.com/watch?v=aK2fOQRNSxc Has offline editor with side-by-side preview. Compares with https://roamresearch.com/[Roam] and https://roamresearch.com/[Notion], but can't find any public publishing on those, seem to be enterprise only things.
 * https://www.gitbook.com/

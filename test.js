@@ -4527,6 +4527,8 @@ assert_executable(
 \\x[scope/scope-1]
 
 == h2
+{child=h2-3}
+{child=h2-4}
 
 \\x[index]
 
@@ -4537,6 +4539,10 @@ assert_executable(
 \\x[scope/scope-2]{child}
 
 == h2 2
+
+== h2 3
+
+== h2 4
 
 == No incoming
 
@@ -4580,6 +4586,8 @@ assert_executable(
         // https://github.com/cirosantilli/cirodown/issues/155
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='index.html#h2-2']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='index.html#h2-3']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='index.html#h2-4']`,
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='index.html#scope/scope-2']`,
       ],
       'h2-2.html': [

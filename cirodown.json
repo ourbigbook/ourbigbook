@@ -5,6 +5,7 @@
     "cirodown_runtime.js",
     "template",
     "tmp",
+    "tmp.ciro",
     "web"
   ],
   "media-providers": {

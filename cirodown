@@ -939,7 +939,7 @@ A link to another file: \\x[and-now-an-include]
     external_css_and_js: false,
     had_error: false,
     log: convert_input_options_log,
-    out_css_path: cirodown_nodejs.PACKAGE_OUT_CSS_LOCAL_PATH,
+    out_css_path: cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH,
     out_js_path: cirodown_nodejs.PACKAGE_OUT_JS_LOCAL_PATH,
     outdir: outdir,
     publish: publish,

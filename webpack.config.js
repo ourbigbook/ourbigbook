@@ -3,6 +3,7 @@ const path = require('path');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const NodePolyfillPlugin = require("node-polyfill-webpack-plugin")
+const TerserPlugin = require("terser-webpack-plugin");
 
 const distDir = path.resolve(__dirname, 'dist');
 const nodeModulesPath = path.resolve(__dirname, 'node_modules');
@@ -15,7 +16,7 @@ module.exports = {
     // https://github.com/KaTeX/KaTeX/discussions/3115
     // cirodown: ['./cirodown.scss'],
   },
-  mode: 'none',
+  mode: 'production',
   module: {
     rules: [
       // Separate .css attempt.
@@ -56,6 +57,7 @@ module.exports = {
   optimization: {
     minimizer: [
       new CssMinimizerPlugin(),
+      new TerserPlugin(),
     ],
     minimize: true,
   },

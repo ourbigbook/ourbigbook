@@ -37,11 +37,7 @@
   "files": [
     "gitignore",
     "cirodown",
-    "cirodown.js",
-    "cirodown.embed.min.css",
-    "cirodown.local.min.css",
-    "cirodown.min.css",
-    "cirodown.runtime.js",
+    "dist/**/*",
     "index.js",
     "main.liquid.html",
     "main.scss",

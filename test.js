@@ -193,6 +193,9 @@ function assert_convert_ast(
     ) {
       options.extra_convert_opts.split_headers = true;
     }
+    if (!('input_path_noext' in options) && options.extra_convert_opts.split_headers) {
+      options.input_path_noext = cirodown.INDEX_BASENAME_NOEXT;
+    }
 
     // Convenience parameter that sets both input_path_noext and toplevel_id.
     // options.input_path_noext
@@ -2442,6 +2445,105 @@ assert_error('non integer h1 header level a in a document with a toc does not th
 assert_error('header must be an integer empty', '\\H[][b]\n', 1, 3);
 assert_error('header must not be zero', '\\H[0][b]\n', 1, 3);
 assert_error('header skip level is an error', '\\H[1][a]\n\n\\H[3][b]\n', 3, 3);
+const header_numbered_input = `= tmp
+
+\\Q[
+\\x[tmp]{full}
+
+\\x[tmp-2]{full}
+
+\\x[tmp-3]{full}
+
+\\x[tmp-4]{full}
+
+\\x[tmp-5]{full}
+
+\\x[tmp-6]{full}
+
+\\x[tmp-7]{full}
+
+\\x[tmp-8]{full}
+]
+
+== tmp 2
+
+=== tmp 3
+{numbered=0}
+
+==== tmp 4
+
+===== tmp 5
+
+====== tmp 6
+{numbered}
+
+======= tmp 7
+
+======== tmp 8
+
+== tmp 2 2
+
+=== tmp 2 2 3
+`
+assert_convert_ast('header numbered argument',
+  header_numbered_input,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//x:blockquote//x:a[@href='#tmp-2' and text()='Section 1. \"tmp 2\"']",
+      "//x:blockquote//x:a[@href='#tmp-4' and text()='Section \"tmp 4\"']",
+      "//x:blockquote//x:a[@href='#tmp-8' and text()='Section 1.1. \"tmp 8\"']",
+      "//*[@id='toc']//x:a[@href='#tmp-2' and text()='1. tmp 2']",
+      "//*[@id='toc']//x:a[@href='#tmp-3' and text()='1.1. tmp 3']",
+      "//*[@id='toc']//x:a[@href='#tmp-4' and text()='tmp 4']",
+      "//*[@id='toc']//x:a[@href='#tmp-5' and text()='tmp 5']",
+      "//*[@id='toc']//x:a[@href='#tmp-6' and text()='tmp 6']",
+      "//*[@id='toc']//x:a[@href='#tmp-7' and text()='1. tmp 7']",
+      "//*[@id='toc']//x:a[@href='#tmp-8' and text()='1.1. tmp 8']",
+      "//*[@id='toc']//x:a[@href='#tmp-2-2' and text()='2. tmp 2 2']",
+      "//*[@id='toc']//x:a[@href='#tmp-2-2-3' and text()='2.1. tmp 2 2 3']",
+    ],
+    assert_xpath_split_headers: {
+      'tmp-6.html': [
+        "//*[@id='toc']//x:a[@href='tmp-7.html' and text()='1. tmp 7']",
+        "//*[@id='toc']//x:a[@href='tmp-8.html' and text()='1.1. tmp 8']",
+      ],
+      'tmp-7.html': [
+        "//*[@id='toc']//x:a[@href='tmp-8.html' and text()='1. tmp 8']",
+      ],
+    },
+  },
+);
+assert_convert_ast('header numbered cirodown.json',
+  header_numbered_input,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//x:blockquote//x:a[@href='#tmp-2' and text()='Section \"tmp 2\"']",
+      "//x:blockquote//x:a[@href='#tmp-4' and text()='Section \"tmp 4\"']",
+      "//x:blockquote//x:a[@href='#tmp-8' and text()='Section 1.1. \"tmp 8\"']",
+      "//*[@id='toc']//x:a[@href='#tmp-2' and text()='tmp 2']",
+      "//*[@id='toc']//x:a[@href='#tmp-3' and text()='tmp 3']",
+      "//*[@id='toc']//x:a[@href='#tmp-4' and text()='tmp 4']",
+      "//*[@id='toc']//x:a[@href='#tmp-5' and text()='tmp 5']",
+      "//*[@id='toc']//x:a[@href='#tmp-6' and text()='tmp 6']",
+      "//*[@id='toc']//x:a[@href='#tmp-7' and text()='1. tmp 7']",
+      "//*[@id='toc']//x:a[@href='#tmp-8' and text()='1.1. tmp 8']",
+      "//*[@id='toc']//x:a[@href='#tmp-2-2' and text()='tmp 2 2']",
+      "//*[@id='toc']//x:a[@href='#tmp-2-2-3' and text()='tmp 2 2 3']",
+    ],
+    assert_xpath_split_headers: {
+      'tmp-6.html': [
+        "//*[@id='toc']//x:a[@href='tmp-7.html' and text()='1. tmp 7']",
+        "//*[@id='toc']//x:a[@href='tmp-8.html' and text()='1.1. tmp 8']",
+      ],
+      'tmp-7.html': [
+        "//*[@id='toc']//x:a[@href='tmp-8.html' and text()='1. tmp 8']",
+      ],
+    },
+    extra_convert_opts: { cirodown_json: { numbered: false } }
+  },
+);
 
 // Code.
 assert_convert_ast('code inline sane',
@@ -2464,6 +2566,19 @@ assert_convert_ast('code inline insane simple',
     ]),
   ]
 );
+if (false) {
+  // TODO https://github.com/cirosantilli/cirodown/issues/171
+  assert_convert_ast('code inline insane with only a backslash',
+    'a `\\` d\n',
+    [
+      a('P', [
+        t('a '),
+        a('c', [t('\\')]),
+        t(' d'),
+      ]),
+    ]
+  );
+}
 assert_convert_ast('code inline insane escape backtick',
   'a \\`b c\n',
   [a('P', [t('a `b c')])]

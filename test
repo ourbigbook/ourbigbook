@@ -126,9 +126,29 @@ b
 </p>
 `
 )});
-it('literal agument escape trailing close', ()=>{assert_convert(
-  '\c[[]]]\n',
+it('literal agument escape leading open no escape', ()=>{assert_convert(
+  '\\c[[\\ab]]\n',
+  '<code>\\ab</code>\n'
+)});
+it('literal agument escape leading open one backslash', ()=>{assert_convert(
+  '\\c[[\\[ab]]\n',
+  '<code>[ab</code>\n'
+)});
+it('literal agument escape leading open two backslashes', ()=>{assert_convert(
+  '\\c[[\\\\[ab]]\n',
+  '<code>\\[ab</code>\n'
+)});
+it('literal agument escape trailing close no escape', ()=>{assert_convert(
+  '\\c[[\\]]\n',
+  '<code>\\</code>\n'
+)});
+it('literal agument escape trailing one backslash', ()=>{assert_convert(
+  '\\c[[\\]]]\n',
   '<code>]</code>\n'
+)});
+it('literal agument escape trailing two backslashes', ()=>{assert_convert(
+  '\\c[[\\\\]]]\n',
+  '<code>\\]</code>\n'
 )});
 
 // Links.
@@ -192,7 +212,11 @@ c
 // Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception.
 // TODO
+//it('backslash without macro', ()=>{assert_error('\\ a', 1, 1)});
 it('unknown macro', ()=>{assert_error('\\reserved_undefined', 1, 2)});
 it('too many positional arguments', ()=>{assert_error('\\p[ab][cd]', 1, 7)});
 it('unknown named macro argument', ()=>{assert_error('\\c{reserved_undefined=abc}[]', 1, 4)});
 it('named argument without =', ()=>{assert_error('\\p{id ab}[cd]', 1, 6)});
+//it('argument without close', ()=>{assert_error('\\p[', 1, 3)});
+//it('argument without open', ()=>{assert_error(']', 1, 1)});
+//it('unterminated literal argument', ()=>{assert_error('\\c[[ab]', 1, 3)});

@@ -572,7 +572,9 @@ const Article = ({
                 a.href = '#' + shortFrag
               } else {
                 goToTargetInPage = false
-                a.href = url.pathname + '#' + getShortFragFromLongForPath(url.hash.slice(1), url.pathname.slice(1))
+                const frag = getShortFragFromLongForPath(url.hash.slice(1), url.pathname.slice(1))
+                a.href = url.pathname + (frag ? ('#' + frag) : '')
+                console.log('a.href: ' + require('util').inspect(a.href));
               }
               //a.onclick =  e => {
               a.addEventListener('click', e => {

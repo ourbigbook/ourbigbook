@@ -64,7 +64,7 @@ export function EditArticleIcon(opts) {
 }
 
 export function NewArticleIcon(opts) {
-  return Icon("ion-compose", "New", opts)
+  return Icon("ion-plus", "New", opts)
 }
 
 export function SeeIcon(opts) {

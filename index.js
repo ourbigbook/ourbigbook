@@ -4457,11 +4457,21 @@ const DEFAULT_MACRO_LIST = [
           boolean: true,
         }),
         new MacroArgument({
+          // https://github.com/cirosantilli/cirodown/issues/92
+          name: 'child',
+          boolean: true,
+        }),
+        new MacroArgument({
           name: 'full',
           boolean: true,
         }),
         new MacroArgument({
           name: 'p',
+          boolean: true,
+        }),
+        new MacroArgument({
+          // https://github.com/cirosantilli/cirodown/issues/92
+          name: 'parent',
           boolean: true,
         }),
       ],

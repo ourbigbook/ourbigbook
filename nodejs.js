@@ -203,9 +203,16 @@ class SqliteIdProvider extends cirodown.IdProvider {
     const create_ids = []
     for (const id in ids) {
       const ast = ids[id];
+      const id_idx = ast.get_header_parent_ids_and_idxs(context)[0]
+      let parent_id, parent_idx
+      if (id_idx !== undefined) {
+        parent_id = id_idx.id
+        parent_idx = id_idx.idx
+      }
       create_ids.push({
         idid: id,
-        parent_id: ast.get_header_parent_ids(context)[0],
+        parent_id,
+        parent_idx,
         path: ast.source_location.path,
         ast_json: JSON.stringify(ast),
       })

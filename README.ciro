@@ -5656,7 +5656,7 @@ On Ubuntu 20.04 \a[https://cirosantilli.com/linux-kernel-module-cheat/#p51][Leno
 
 On P51:
 
-* `time cirodown --no-render . && time cirodown -S --debug-perf README.ciro` on  clean https://github.com/cirosantilli/cirosantilli.github.io/commit/14a14d394ae3c5da87b1c0b4ca5eddd9f5b6d9ca[]:
+* `time cirodown --no-render . && time cirodown -S --debug-perf README.ciro`:
 
   * cirodown 39e633f08b2abce10331b884c04d70dbe6d4565a before moving Cirodown to Sequelize: 14s
     ``

@@ -24,6 +24,8 @@ if (process.env.NODE_ENV === 'test') {
   databaseUrl = process.env.DATABASE_URL
 }
 
+const appDomain = 'ourbigbook.com'
+
 module.exports = {
   apiPath: '/' + ourbigbook.WEB_API_PATH,
   // Common convert options used by all frontend components: the backend and the editor.
@@ -41,7 +43,9 @@ module.exports = {
   },
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   escapeUsername,
-  aboutHref: "https://cirosantilli.com/ourbigbook-com",
+  appDomain,
+  docsUrl: `https://docs.${appDomain}`,
+  aboutUrl: "https://cirosantilli.com/ourbigbook-com",
   appName: `OurBigBook.com`,
   buttonActiveClass: 'active',
   defaultProfileImage: `https://static.productionready.io/images/smiley-cyrus.jpg`,

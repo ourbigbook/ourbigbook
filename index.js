@@ -5254,7 +5254,12 @@ const DEFAULT_MACRO_LIST = [
         } else {
           ret += `</li>\n`;
         }
-        let target_id_ast = tree_node.value;
+        let target_id_ast = context.id_provider.get(tree_node.value.id, context);
+        if (target_id_ast === undefined) {
+          // Can happen in error case 'cross reference from header title without ID to previous header is not allowed'
+          // Maybe there is a better solution, but can't be bothered right now, this prevents blowouts for now.
+          target_id_ast = tree_node.value;
+        }
         let content = x_text(target_id_ast, context, {style_full: true, show_caption_prefix: false});
         let href = x_href_attr(target_id_ast, context);
         const my_toc_id = toc_id(target_id_ast, context);
@@ -5271,7 +5276,7 @@ const DEFAULT_MACRO_LIST = [
         let toc_href = html_attr('href', '#' + my_toc_id);
         ret += ` | <a${toc_href}>${UNICODE_LINK} link</a>`;
 
-        let parent_ast = target_id_ast.header_graph_node.parent_node.value;
+        let parent_ast = target_id_ast.get_header_parent(context);
         if (
           // Possible on broken h1 level.
           parent_ast !== undefined

@@ -3,7 +3,7 @@ import sequelize from 'db'
 import { verify } from 'jsonwebtoken'
 import { secret } from 'front/config'
 
-export async function getLoggedInUser(req, loggedInUser) {
+export async function getLoggedInUser(req, loggedInUser?) {
   if (loggedInUser !== undefined) {
     return loggedInUser
   } else {

@@ -1,30 +1,6 @@
 = TODO
 {scope}
 
-== Tag
-
-=== Web
-
-==== Comment
-
-==== Develop without Internet
-
-==== Dynamic tree fetch
-
-==== Editor
-
-==== Issue
-
-=== CLI
-
-=== Lib
-
-=== Bug
-
-=== Scope
-
-=== ToC
-
 == Issues
 
 https://github.com/cirosantilli/ourbigbook/issues/277
@@ -41,6 +17,22 @@ This is a superset of: https://github.com/cirosantilli/ourbigbook/issues/270
 {tag=Editor}
 
 Otherwise too confusing what is what when fields are pre-filled, e.g. when editing existing, and in the future when clicking a "add here" button.
+
+=== Statically render links to issues and topic under each header for better SEO
+{tag=Web}
+
+The links don't show without JavaScript. The counts can be dynamic loaded, but the links we really want to do at compile time... any way?
+
+=== Add sibling/add child buttons next to self headers and toc
+{tag=Web}
+
+=== Allow creating new pages under scope on web
+{tag=Scope}
+{tag=Web}
+
+We likely just have to set the `path:` API argument based on the has scope status of the parent article.
+
+As of the commit that adds this line, it should likely be possible to do it on the backend. On the frontend however we convert `/` to `-` so it doesn't work on the existence checks. We need a more accurate ID conversion there.
 
 == Make rendered issue and comment fragments as short as possible
 {tag=Comment}
@@ -99,22 +91,6 @@ However if you refresh the page, it highlights! Mystery.
 === Comment h1 self link is empty and thus refreshes the page
 {tag=Comment}
 {tag=Web}
-
-=== Statically render links to issues and topic under each header for better SEO
-{tag=Web}
-
-The links don't show without JavaScript. The counts can be dynamic loaded, but the links we really want to do at compile time... any way?
-
-=== Add sibling/add child buttons next to self headers and toc
-{tag=Web}
-
-=== Allow creating new pages under scope on web
-{tag=Scope}
-{tag=Web}
-
-We likely just have to set the `path:` API argument based on the has scope status of the parent article.
-
-As of the commit that adds this line, it should likely be possible to do it on the backend. On the frontend however we convert `/` to `-` so it doesn't work on the existence checks. We need a more accurate ID conversion there.
 
 === Remove all unnecessary newlines from HTML output
 {tag=Lib}
@@ -362,3 +338,27 @@ Can be fixed later at: <word count on web>.
 {tag=Web}
 
 Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
+
+== Tag
+
+=== Web
+
+==== Comment
+
+==== Develop without Internet
+
+==== Dynamic tree fetch
+
+==== Editor
+
+==== Issue
+
+=== CLI
+
+=== Lib
+
+=== Bug
+
+=== Scope
+
+=== ToC

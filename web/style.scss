@@ -439,20 +439,24 @@ span.shortcut {
 .pagination {
   padding: 0;
   list-style-type: none;
-  .page-item {
-    &.active {
-      a {
-        color: $tab-bar-active-color;
+  margin-bottom: 10px;
+  .pages {
+    margin-right: 10px;
+    .page-item {
+      &.active {
+        a {
+          color: $tab-bar-active-color;
+        }
+        font-weight: bold;
       }
-      font-weight: bold;
-    }
-    &:hover {
-      a {
-        color: $tab-bar-active-color;
+      &:hover {
+        a {
+          color: $tab-bar-active-color;
+        }
       }
-    }
-    &.total {
-      margin-left: 10px;
+      &.total {
+        margin-left: 10px;
+      }
     }
   }
 }

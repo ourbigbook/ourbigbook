@@ -78,37 +78,41 @@ const Pagination = ({
   const pages = itemsCount > 0 ? getRange(firstPage, lastPage) : [];
   return (
     <nav>
-      <ul className="pagination">
-        <Maybe test={firstPage > 0}>
-          <PaginationItem href={urlFunc(0)}>{`<<`}</PaginationItem>
+      <div className="pagination">
+        <Maybe test={totalPages > 1}>
+          <span className="pages">
+            <Maybe test={firstPage > 0}>
+              <PaginationItem href={urlFunc(0)}>{`<<`}</PaginationItem>
+            </Maybe>
+            <Maybe test={currentPage > 0}>
+              <PaginationItem href={urlFunc(currentPage + 1)}>{`<`}</PaginationItem>
+            </Maybe>
+            {pages.map(page => {
+              const isCurrent = page === currentPage;
+              return (
+                <PaginationItem
+                  key={page.toString()}
+                  className={isCurrent && "active"}
+                  href={urlFunc(page + 1)}
+                >
+                  {page + 1}
+                </PaginationItem>
+              );
+            })}
+            <Maybe test={currentPage < totalPages - 1}>
+              <PaginationItem  href={urlFunc(currentPage + 2)}>{`>`}</PaginationItem>
+            </Maybe>
+            <Maybe test={lastPage < totalPages - 1}>
+              <PaginationItem href={urlFunc(totalPages)}>{`>>`}</PaginationItem>
+            </Maybe>
+          </span>
         </Maybe>
-        <Maybe test={currentPage > 0}>
-          <PaginationItem href={urlFunc(currentPage + 1)}>{`<`}</PaginationItem>
-        </Maybe>
-        {pages.map(page => {
-          const isCurrent = page === currentPage;
-          return (
-            <PaginationItem
-              key={page.toString()}
-              className={isCurrent && "active"}
-              href={urlFunc(page + 1)}
-            >
-              {page + 1}
-            </PaginationItem>
-          );
-        })}
-        <Maybe test={currentPage < totalPages - 1}>
-          <PaginationItem  href={urlFunc(currentPage + 2)}>{`>`}</PaginationItem>
-        </Maybe>
-        <Maybe test={lastPage < totalPages - 1}>
-          <PaginationItem href={urlFunc(totalPages)}>{`>>`}</PaginationItem>
-        </Maybe>
-        <span className="page-item total">
+        <span className="total">
           Total {what}: {itemsCount}
         </span>
-      </ul>
+      </div>
     </nav>
-  );
+  )
 };
 
 export default Pagination;

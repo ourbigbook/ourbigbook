@@ -1158,6 +1158,7 @@ if (commander.helpMacros) {
             // Mark the commit with the `published` branch to make it easier to find what was last published.
             cmd_get_stdout('git', ['-C', inputPath, 'checkout', '-B', 'published'], cmd_options);
             cmd_get_stdout('git', ['-C', inputPath, 'push', '--follow-tags'], cmd_options);
+            cmd_get_stdout('git', ['-C', inputPath, 'checkout', '-'], cmd_options);
           }
         }
       }

@@ -101,68 +101,6 @@ async function convertArticle({
     if (forceNew && await sequelize.models.File.findOne({ where: { path: input_path }, transaction })) {
       throw new ValidationError(`Article with this ID already exists: ${toplevelId}`)
     }
-    const oldRef = await sequelize.models.Ref.findOne({
-      where: {
-        to_id: toplevelId,
-        type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-      },
-      include: [
-        {
-          model: sequelize.models.Id,
-          as: 'to',
-          include: [
-            {
-              model: sequelize.models.File,
-              include: [
-                {
-                  model: sequelize.models.Article,
-                  as: 'file',
-                }
-              ],
-            }
-          ]
-        },
-        {
-          model: sequelize.models.Id,
-          as: 'from',
-          include: [
-            {
-              model: sequelize.models.File,
-              include: [
-                {
-                  model: sequelize.models.Article,
-                  as: 'file',
-                }
-              ],
-            }
-          ]
-        },
-      ],
-      transaction,
-    })
-    const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
-    let refWhere = { to_id: previousSiblingId }
-    if (parentId !== undefined) {
-      refWhere.from_id = parentId
-    }
-    if (toplevelId === idPrefix) {
-      // Index conversion.
-      if (parentId !== undefined) {
-        // As of writing, this will be caught and thrown on the ancestors part of conversion:
-        // as changing the Index to anything else always leads to infinite loop.
-        throw new ValidationError(`cannot give parentId for index conversion, received "${toplevelId}"`)
-      }
-    } else {
-      // Non-index conversion.
-      if (parentId === undefined) {
-        if (oldRef) {
-          // Happens when updating a page.
-          parentId = oldRef.from.idid
-        } else if (previousSiblingId === undefined) {
-          throw new ValidationError(`missing parentId argument is mandatory for new articles and article ID "${toplevelId}" does not exist yet so it is new`)
-        }
-      }
-    }
     await update_database_after_convert({
       authorId: author.id,
       bodySource,
@@ -174,13 +112,16 @@ async function convertArticle({
       titleSource,
       transaction,
     })
-    let parentIdRow, previousSiblingRef
-    ;[parentIdRow, previousSiblingRef] = await Promise.all([
-      parentId !== undefined
-        ? sequelize.models.Id.findOne({
-            where: {
-              idid: parentId
-            },
+    if (render) {
+      const oldRef = await sequelize.models.Ref.findOne({
+        where: {
+          to_id: toplevelId,
+          type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+        },
+        include: [
+          {
+            model: sequelize.models.Id,
+            as: 'to',
             include: [
               {
                 model: sequelize.models.File,
@@ -191,311 +132,370 @@ async function convertArticle({
                   }
                 ],
               }
-            ],
-            transaction
-          })
-        : null,
-      previousSiblingId === undefined
-        ? null
-        : sequelize.models.Ref.findOne({
-            where: refWhere,
+            ]
+          },
+          {
+            model: sequelize.models.Id,
+            as: 'from',
             include: [
               {
-                model: sequelize.models.Id,
-                as: 'to',
-                where: {
-                  macro_name: ourbigbook.Macro.HEADER_MACRO_NAME,
+                model: sequelize.models.File,
+                include: [
+                  {
+                    model: sequelize.models.Article,
+                    as: 'file',
+                  }
+                ],
+              }
+            ]
+          },
+        ],
+        transaction,
+      })
+      const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
+      let refWhere = { to_id: previousSiblingId }
+      if (parentId !== undefined) {
+        refWhere.from_id = parentId
+      }
+      if (toplevelId === idPrefix) {
+        // Index conversion.
+        if (parentId !== undefined) {
+          // As of writing, this will be caught and thrown on the ancestors part of conversion:
+          // as changing the Index to anything else always leads to infinite loop.
+          throw new ValidationError(`cannot give parentId for index conversion, received "${toplevelId}"`)
+        }
+      } else {
+        // Non-index conversion.
+        if (parentId === undefined) {
+          if (oldRef) {
+            // Happens when updating a page.
+            parentId = oldRef.from.idid
+          } else if (previousSiblingId === undefined) {
+            throw new ValidationError(`missing parentId argument is mandatory for new articles and article ID "${toplevelId}" does not exist yet so it is new`)
+          }
+        }
+      }
+      let parentIdRow, previousSiblingRef
+      ;[parentIdRow, previousSiblingRef] = await Promise.all([
+        parentId !== undefined
+          ? sequelize.models.Id.findOne({
+              where: {
+                idid: parentId
+              },
+              include: [
+                {
+                  model: sequelize.models.File,
+                  include: [
+                    {
+                      model: sequelize.models.Article,
+                      as: 'file',
+                    }
+                  ],
+                }
+              ],
+              transaction
+            })
+          : null,
+        previousSiblingId === undefined
+          ? null
+          : sequelize.models.Ref.findOne({
+              where: refWhere,
+              include: [
+                {
+                  model: sequelize.models.Id,
+                  as: 'to',
+                  where: {
+                    macro_name: ourbigbook.Macro.HEADER_MACRO_NAME,
+                  },
+                  include: [
+                    {
+                      model: sequelize.models.File,
+                      include: [
+                        {
+                          model: sequelize.models.Article,
+                          as: 'file',
+                        }
+                      ],
+                    }
+                  ],
                 },
-                include: [
-                  {
-                    model: sequelize.models.File,
-                    include: [
-                      {
-                        model: sequelize.models.Article,
-                        as: 'file',
-                      }
-                    ],
-                  }
-                ],
-              },
-              {
-                model: sequelize.models.Id,
-                as: 'from',
-                include: [
-                  {
-                    model: sequelize.models.File,
-                    include: [
-                      {
-                        model: sequelize.models.Article,
-                        as: 'file',
-                      }
-                    ],
-                  }
-                ],
-              },
-            ],
-            type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-            transaction,
-          })
-    ])
+                {
+                  model: sequelize.models.Id,
+                  as: 'from',
+                  include: [
+                    {
+                      model: sequelize.models.File,
+                      include: [
+                        {
+                          model: sequelize.models.Article,
+                          as: 'file',
+                        }
+                      ],
+                    }
+                  ],
+                },
+              ],
+              type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+              transaction,
+            })
+      ])
 
-    // For Nested Set calculations.
-    let oldArticle
-    let oldParentArticle
-    let parentArticle
-    let previousSiblingArticle
-    // Where we are going to place the article.
-    let nestedSetIndex = 0
-    let nestedSetNextSibling = 1
-    let oldDepth
-    let newDepth = 0
-    // By how much we are moving an existing article to its new position.
-    // We calculate it in terms of deltas because all descendants have to be moved by that as well.
-    let oldNestedSetIndex
-    let oldNestedSetNextSibling
-    let oldParentNestedSetIndex
-    let nestedSetSize
-    if (previousSiblingRef) {
-      previousSiblingArticle = previousSiblingRef.to.File.file[0]
-      nestedSetIndex = previousSiblingArticle.nestedSetNextSibling
-      // Deduce parent from given sibling.
-      parentIdRow = previousSiblingRef.from
-      parentId = parentIdRow.idid
-      parentArticle = parentIdRow.File.file[0]
-    }
-    if (parentIdRow) {
-      if (!previousSiblingRef) {
+      // For Nested Set calculations.
+      let oldArticle
+      let oldParentArticle
+      let parentArticle
+      let previousSiblingArticle
+      // Where we are going to place the article.
+      let nestedSetIndex = 0
+      let nestedSetNextSibling = 1
+      let oldDepth
+      let newDepth = 0
+      // By how much we are moving an existing article to its new position.
+      // We calculate it in terms of deltas because all descendants have to be moved by that as well.
+      let oldNestedSetIndex
+      let oldNestedSetNextSibling
+      let oldParentNestedSetIndex
+      let nestedSetSize
+      if (previousSiblingRef) {
+        previousSiblingArticle = previousSiblingRef.to.File.file[0]
+        nestedSetIndex = previousSiblingArticle.nestedSetNextSibling
+        // Deduce parent from given sibling.
+        parentIdRow = previousSiblingRef.from
+        parentId = parentIdRow.idid
         parentArticle = parentIdRow.File.file[0]
       }
-    }
-    if (parentArticle) {
-      newDepth = parentArticle.depth + 1
-      if (!previousSiblingRef) {
-        nestedSetIndex = parentArticle.nestedSetIndex + 1
-      }
-    }
-    if (oldRef) {
-      oldArticle = oldRef.to.File.file[0]
-      oldNestedSetIndex = oldArticle.nestedSetIndex
-      oldNestedSetNextSibling = oldArticle.nestedSetNextSibling
-      nestedSetSize = oldArticle.nestedSetNextSibling - oldArticle.nestedSetIndex
-      oldParentArticle = oldRef.from.File.file[0]
-      oldParentNestedSetIndex = oldParentArticle.nestedSetIndex
-      oldDepth = oldArticle.depth
-    } else {
-      nestedSetSize = 1
-    }
-    nestedSetNextSibling = nestedSetIndex + nestedSetSize
-
-    if (
-      oldNestedSetIndex !== undefined &&
-      nestedSetIndex > oldNestedSetIndex &&
-      nestedSetIndex < oldNestedSetNextSibling
-    ) {
-      throw new ValidationError(`the parent choice "${parentId}" would create an infinite loop`)
-    }
-    if (!previousSiblingRef && previousSiblingId) {
-      throw new ValidationError(`previousSiblingId "${previousSiblingId}" does not exist, is not a header or is not a child of parentId "${parentId}"`)
-    }
-
-    // Where to insert the new header.
-    let to_id_index
-    if (previousSiblingRef) {
-      to_id_index = previousSiblingRef.to_id_index + 1
-    } else {
-      to_id_index = 0
-    }
-
-    // Article exists and we are moving it to a new position.
-    const articleMoved = (
-      oldRef &&
-      (
-        oldRef.from_id !== parentId ||
-        oldRef.to_id_index !== to_id_index
-      )
-    )
-    //const whereAuthorInclude = {
-    //  model: sequelize.models.File,
-    //  as: 'file',
-    //  where: {
-    //    authorId: author.id,
-    //  },
-    //}
-    if (
-      // Fails only for the index page which has no parent.
-      parentId !== undefined
-    ) {
-      if (!parentIdRow) {
-        throw new ValidationError(`parentId does not exist: "${parentId}"`)
-      }
-      if (parentIdRow.macro_name !== ourbigbook.Macro.HEADER_MACRO_NAME) {
-        throw new ValidationError(`parentId is not a header: "${parentI}"`)
-      }
-      // Create space on the tree structure and insert the article there.
-      if (articleMoved) {
-        await Promise.all([
-          // Decrement sibling indexes after point we are removing from.
-          sequelize.models.Ref.decrement('to_id_index', {
-            where: {
-              from_id: oldRef.from_id,
-              to_id_index: { [sequelize.Sequelize.Op.gt]: oldRef.to_id_index },
-              type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-            },
-            transaction,
-          }),
-        ])
-      }
-      if (
-        articleMoved ||
-        !oldRef
-      ) {
-        let ancestorUpdateIndexWhere
-        //if (previousSiblingRef && parentArticle) {
-        //  ancestorUpdateIndexWhere = { [sequelize.Sequelize.Op.lte]: parentArticle.nestedSetIndex }
-        //} else {
-        //  ancestorUpdateIndexWhere = { [sequelize.Sequelize.Op.lt]: nestedSetIndex }
-        //}
-        if (previousSiblingRef && parentArticle) {
-          ancestorUpdateIndexWhere = `<= ${parentArticle.nestedSetIndex}`
-        } else {
-          ancestorUpdateIndexWhere = `< ${nestedSetIndex}`
-        }
-        // Create space to insert the article at.
-        await Promise.all([
-          // Increment sibling indexes after point we are inserting from.
-          sequelize.models.Ref.increment('to_id_index', {
-            where: {
-              from_id: parentId,
-              to_id_index: { [sequelize.Sequelize.Op.gte]: to_id_index },
-              type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-            },
-            transaction,
-          }),
-          // Increase nested set index and next sibling of all nodes that come after.
-          // We need a raw query because Sequelize does not support UPDATE with JOIN:
-          // https://github.com/sequelize/sequelize/issues/3957
-          await sequelize.query(`
-UPDATE "Article" SET
-  "nestedSetIndex" = "nestedSetIndex" + :nestedSetSize,
-  "nestedSetNextSibling" = "nestedSetNextSibling" + :nestedSetSize
-WHERE
-  "nestedSetIndex" >= :nestedSetIndex AND
-  "id" IN (
-    SELECT "Article"."id" from "Article"
-    INNER JOIN "File"
-      ON "Article"."fileId" = "File"."id"
-    INNER JOIN "User"
-      ON "File"."authorId" = "User"."id"
-    WHERE "User"."username" = :authorUsername
-  )
-`,
-            {
-              transaction,
-              replacements: {
-                authorUsername: author.username,
-                nestedSetIndex,
-                nestedSetSize,
-              },
-            },
-          ),
-          // This is the non raw version that works except for the user selection from the JOIN.
-          //sequelize.models.Article.update(
-          //  {
-          //    nestedSetIndex: sequelize.where(sequelize.col('nestedSetIndex'), '+', nestedSetSize),
-          //    nestedSetNextSibling: sequelize.where(sequelize.col('nestedSetNextSibling'), '+', nestedSetSize),
-          //  },
-          //  {
-          //    //where: {
-          //    //  nestedSetIndex: { [sequelize.Sequelize.Op.gte]: nestedSetIndex },
-          //    //},
-          //    subQuery: false,
-          //    include: [whereAuthorInclude],
-          //    sideEffects: false,
-          //    transaction,
-          //  }
-          //),
-
-          // Increase nested set next sibling of ancestors. Their index is unchanged.
-          //sequelize.models.Article.increment('nestedSetNextSibling', {
-          //  where: {
-          //    nestedSetIndex: ancestorUpdateIndexWhere,
-          //    nestedSetNextSibling: { [sequelize.Sequelize.Op.gte]: nestedSetIndex },
-          //  },
-          //  subQuery: false,
-          //  include: [whereAuthorInclude],
-          //  by: nestedSetSize,
-          //  transaction,
-          //}),
-          await sequelize.query(`
-UPDATE "Article" SET
-  "nestedSetNextSibling" = "nestedSetNextSibling" + :nestedSetSize
-WHERE
-  "nestedSetIndex" ${ancestorUpdateIndexWhere} AND
-  "nestedSetNextSibling" >= :nestedSetIndex AND
-  "id" IN (
-    SELECT "Article"."id" from "Article"
-    INNER JOIN "File"
-      ON "Article"."fileId" = "File"."id"
-    INNER JOIN "User"
-      ON "File"."authorId" = "User"."id"
-    WHERE "User"."username" = :authorUsername
-  )
-`,
-            {
-              transaction,
-              replacements: {
-                authorUsername: author.username,
-                nestedSetIndex,
-                nestedSetSize,
-              },
-            },
-          ),
-        ])
-        //{
-        //  console.error('post create space');
-        //  const articles = await sequelize.models.Article.findAll({ order: [['nestedSetIndex', 'ASC']] })
-        //  console.error(articles.map(a => [a.nestedSetIndex, a.nestedSetNextSibling, a.slug]));
-        //}
-        if (nestedSetIndex < oldNestedSetIndex) {
-          // We just opened up space behind the subtree that we are about to move.
-          // So the old tree have moved up.
-          oldNestedSetIndex += nestedSetSize
-          oldNestedSetNextSibling += nestedSetSize
-        }
-        if (nestedSetIndex <= oldParentNestedSetIndex) {
-          oldParentNestedSetIndex += nestedSetSize
+      if (parentIdRow) {
+        if (!previousSiblingRef) {
+          parentArticle = parentIdRow.File.file[0]
         }
       }
-
-      // Insert article in the space created above.
-      const newRefAttrs = {
-        type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-        to_id: toplevelId,
-        from_id: parentId,
-        inflected: false,
-        to_id_index,
+      if (parentArticle) {
+        newDepth = parentArticle.depth + 1
+        if (!previousSiblingRef) {
+          nestedSetIndex = parentArticle.nestedSetIndex + 1
+        }
       }
       if (oldRef) {
+        oldArticle = oldRef.to.File.file[0]
+        oldNestedSetIndex = oldArticle.nestedSetIndex
+        oldNestedSetNextSibling = oldArticle.nestedSetNextSibling
+        nestedSetSize = oldArticle.nestedSetNextSibling - oldArticle.nestedSetIndex
+        oldParentArticle = oldRef.from.File.file[0]
+        oldParentNestedSetIndex = oldParentArticle.nestedSetIndex
+        oldDepth = oldArticle.depth
+      } else {
+        nestedSetSize = 1
+      }
+      nestedSetNextSibling = nestedSetIndex + nestedSetSize
+
+      if (
+        oldNestedSetIndex !== undefined &&
+        nestedSetIndex > oldNestedSetIndex &&
+        nestedSetIndex < oldNestedSetNextSibling
+      ) {
+        throw new ValidationError(`the parent choice "${parentId}" would create an infinite loop`)
+      }
+      if (!previousSiblingRef && previousSiblingId) {
+        throw new ValidationError(`previousSiblingId "${previousSiblingId}" does not exist, is not a header or is not a child of parentId "${parentId}"`)
+      }
+
+      // Where to insert the new header.
+      let to_id_index
+      if (previousSiblingRef) {
+        to_id_index = previousSiblingRef.to_id_index + 1
+      } else {
+        to_id_index = 0
+      }
+
+      // Article exists and we are moving it to a new position.
+      const articleMoved = (
+        oldRef &&
+        (
+          oldRef.from_id !== parentId ||
+          oldRef.to_id_index !== to_id_index
+        )
+      )
+      //const whereAuthorInclude = {
+      //  model: sequelize.models.File,
+      //  as: 'file',
+      //  where: {
+      //    authorId: author.id,
+      //  },
+      //}
+      if (
+        // Fails only for the index page which has no parent.
+        parentId !== undefined
+      ) {
+        if (!parentIdRow) {
+          throw new ValidationError(`parentId does not exist: "${parentId}"`)
+        }
+        if (parentIdRow.macro_name !== ourbigbook.Macro.HEADER_MACRO_NAME) {
+          throw new ValidationError(`parentId is not a header: "${parentI}"`)
+        }
+        // Create space on the tree structure and insert the article there.
         if (articleMoved) {
-          await sequelize.models.Ref.update(
-            newRefAttrs,
-            {
+          await Promise.all([
+            // Decrement sibling indexes after point we are removing from.
+            sequelize.models.Ref.decrement('to_id_index', {
               where: {
-                to_id: toplevelId,
+                from_id: oldRef.from_id,
+                to_id_index: { [sequelize.Sequelize.Op.gt]: oldRef.to_id_index },
                 type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
               },
               transaction,
-            },
+            }),
+          ])
+        }
+        if (
+          articleMoved ||
+          !oldRef
+        ) {
+          let ancestorUpdateIndexWhere
+          //if (previousSiblingRef && parentArticle) {
+          //  ancestorUpdateIndexWhere = { [sequelize.Sequelize.Op.lte]: parentArticle.nestedSetIndex }
+          //} else {
+          //  ancestorUpdateIndexWhere = { [sequelize.Sequelize.Op.lt]: nestedSetIndex }
+          //}
+          if (previousSiblingRef && parentArticle) {
+            ancestorUpdateIndexWhere = `<= ${parentArticle.nestedSetIndex}`
+          } else {
+            ancestorUpdateIndexWhere = `< ${nestedSetIndex}`
+          }
+          // Create space to insert the article at.
+          await Promise.all([
+            // Increment sibling indexes after point we are inserting from.
+            sequelize.models.Ref.increment('to_id_index', {
+              where: {
+                from_id: parentId,
+                to_id_index: { [sequelize.Sequelize.Op.gte]: to_id_index },
+                type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+              },
+              transaction,
+            }),
+            // Increase nested set index and next sibling of all nodes that come after.
+            // We need a raw query because Sequelize does not support UPDATE with JOIN:
+            // https://github.com/sequelize/sequelize/issues/3957
+            await sequelize.query(`
+  UPDATE "Article" SET
+    "nestedSetIndex" = "nestedSetIndex" + :nestedSetSize,
+    "nestedSetNextSibling" = "nestedSetNextSibling" + :nestedSetSize
+  WHERE
+    "nestedSetIndex" >= :nestedSetIndex AND
+    "id" IN (
+      SELECT "Article"."id" from "Article"
+      INNER JOIN "File"
+        ON "Article"."fileId" = "File"."id"
+      INNER JOIN "User"
+        ON "File"."authorId" = "User"."id"
+      WHERE "User"."username" = :authorUsername
+    )
+  `,
+              {
+                transaction,
+                replacements: {
+                  authorUsername: author.username,
+                  nestedSetIndex,
+                  nestedSetSize,
+                },
+              },
+            ),
+            // This is the non raw version that works except for the user selection from the JOIN.
+            //sequelize.models.Article.update(
+            //  {
+            //    nestedSetIndex: sequelize.where(sequelize.col('nestedSetIndex'), '+', nestedSetSize),
+            //    nestedSetNextSibling: sequelize.where(sequelize.col('nestedSetNextSibling'), '+', nestedSetSize),
+            //  },
+            //  {
+            //    //where: {
+            //    //  nestedSetIndex: { [sequelize.Sequelize.Op.gte]: nestedSetIndex },
+            //    //},
+            //    subQuery: false,
+            //    include: [whereAuthorInclude],
+            //    sideEffects: false,
+            //    transaction,
+            //  }
+            //),
+
+            // Increase nested set next sibling of ancestors. Their index is unchanged.
+            //sequelize.models.Article.increment('nestedSetNextSibling', {
+            //  where: {
+            //    nestedSetIndex: ancestorUpdateIndexWhere,
+            //    nestedSetNextSibling: { [sequelize.Sequelize.Op.gte]: nestedSetIndex },
+            //  },
+            //  subQuery: false,
+            //  include: [whereAuthorInclude],
+            //  by: nestedSetSize,
+            //  transaction,
+            //}),
+            await sequelize.query(`
+  UPDATE "Article" SET
+    "nestedSetNextSibling" = "nestedSetNextSibling" + :nestedSetSize
+  WHERE
+    "nestedSetIndex" ${ancestorUpdateIndexWhere} AND
+    "nestedSetNextSibling" >= :nestedSetIndex AND
+    "id" IN (
+      SELECT "Article"."id" from "Article"
+      INNER JOIN "File"
+        ON "Article"."fileId" = "File"."id"
+      INNER JOIN "User"
+        ON "File"."authorId" = "User"."id"
+      WHERE "User"."username" = :authorUsername
+    )
+  `,
+              {
+                transaction,
+                replacements: {
+                  authorUsername: author.username,
+                  nestedSetIndex,
+                  nestedSetSize,
+                },
+              },
+            ),
+          ])
+          //{
+          //  console.error('post create space');
+          //  const articles = await sequelize.models.Article.findAll({ order: [['nestedSetIndex', 'ASC']] })
+          //  console.error(articles.map(a => [a.nestedSetIndex, a.nestedSetNextSibling, a.slug]));
+          //}
+          if (nestedSetIndex < oldNestedSetIndex) {
+            // We just opened up space behind the subtree that we are about to move.
+            // So the old tree have moved up.
+            oldNestedSetIndex += nestedSetSize
+            oldNestedSetNextSibling += nestedSetSize
+          }
+          if (nestedSetIndex <= oldParentNestedSetIndex) {
+            oldParentNestedSetIndex += nestedSetSize
+          }
+        }
+
+        // Insert article in the space created above.
+        const newRefAttrs = {
+          type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+          to_id: toplevelId,
+          from_id: parentId,
+          inflected: false,
+          to_id_index,
+        }
+        if (oldRef) {
+          if (articleMoved) {
+            await sequelize.models.Ref.update(
+              newRefAttrs,
+              {
+                where: {
+                  to_id: toplevelId,
+                  type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+                },
+                transaction,
+              },
+            )
+          }
+        } else {
+          await sequelize.models.Ref.create(
+            newRefAttrs,
+            { transaction }
           )
         }
-      } else {
-        await sequelize.models.Ref.create(
-          newRefAttrs,
-          { transaction }
-        )
       }
-    }
-    if (render) {
       const [check_db_errors, file] = await Promise.all([
         ourbigbook_nodejs_webpack_safe.check_db(
           sequelize,

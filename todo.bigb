@@ -3,6 +3,37 @@
 
 == Issues
 
+=== Missing fragment redirect not working on web
+{tag=Editor}
+{tag=Web}
+
+E.g. https://ourbigbook.com/barack-obama/mathematics#barack-obama/physics should redirect to https://ourbigbook.com/barack-obama/physics but it did not. Is working on the static website.
+
+=== WYSIWYG
+{tag=Editor}
+{tag=Web}
+
+=== Live error checking as ou type on editor if chosen previous sibling is not a child of the selected parent article
+{tag=Editor}
+{tag=Error checking}
+{tag=Web}
+
+Current failure behaviour if use submits anyways is: shows API error `previousSiblingId "@cirosantilli/physics" does not exist, is not a header or is not a child of parentId "@cirosantilli/test-article"` under title, and it only goes away if you edit title, which is confusing as it is not title related. Also, while title error is visible, the submit button is inactive so the user is left a bit stuck.
+
+=== Article create and update slow on web
+{tag=Performance}
+{tag=Web}
+
+https://ourbigbook.com/api/articles
+
+For user cirosantilli, just pushed cirosantilli.github.io at aa60ccb934bf9646d548e6b761489d31aec1a341, which has almost 7k articles.
+
+The PUT to https://ourbigbook.com/api/articles is taking about 4+s on ourbigbook.com "Waiting for server response".
+
+Locally on sqlite is only 800 ms. TODO test locally on psql.
+
+This was after dynamic article tree, one suspicion is that it might be linked to maintaining the nested set state on a large set of articles. I really hope that's not it, as it would be hard to fix.
+
 === Render ancestors, incoming links and tagged on web
 {tag=Web}
 
@@ -17,6 +48,7 @@ Just keep making viewport smaller an smaller, until it happen. Sample width that
 Removing `white-space: pre-wrap` solves it. But then the space between `(beta)` and `OurBigBook.com` gets removed.
 
 === Reach the same performance as static website with dynamic tree
+{tag=Performance}
 {tag=Web}
 
 The move to dynamic tree slowed things down a lot for large pages such as: https://ourbigbook.com/cirosantilli[], making it is just unacceptably slow, and actually blocks any other page loads as the server does work.
@@ -500,6 +532,8 @@ Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
 
 ==== Editor
 
+==== Error checking
+
 ==== Include
 
 ==== Issue
@@ -513,6 +547,8 @@ Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
 === Bug
 
 === Scope
+
+=== Performance
 
 === Refactor
 

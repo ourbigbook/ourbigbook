@@ -862,6 +862,7 @@ if (commander.helpMacros) {
     output_format,
     outfile: commander.outfile,
     path_sep: path.sep,
+    publish,
     read_include: read_include({
       exists: (inpath) => fs.existsSync(path.join(ourbigbook_json_dir, inpath)),
       read: (inpath) => fs.readFileSync(path.join(ourbigbook_json_dir, inpath), ourbigbook_nodejs_webpack_safe.ENCODING),
@@ -1024,6 +1025,7 @@ if (commander.helpMacros) {
     post_convert_callback: undefined,
     publish,
   };
+  ourbigbook_options.outdir = path.relative(outdir, ourbigbook_json_dir)
   if (!non_ourbigbook_options_log.db) {
     // They do not like true, has to be false or function.
     // And setting undefined is also considered true.

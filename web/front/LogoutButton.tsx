@@ -1,15 +1,11 @@
 import Router from 'next/router'
-import { mutate } from 'swr'
 
-import { AUTH_LOCAL_STORAGE_NAME, deleteCookie } from 'front'
-import { AUTH_COOKIE_NAME } from 'front/js'
+import { logout } from 'front'
 
 const LogoutButton = () => {
   const handleLogout = async (e) => {
-    e.preventDefault();
-    window.localStorage.removeItem(AUTH_LOCAL_STORAGE_NAME);
-    deleteCookie(AUTH_COOKIE_NAME)
-    mutate('user', null);
+    e.preventDefault()
+    logout()
     Router.push(`/`)
   };
   return (

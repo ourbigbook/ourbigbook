@@ -2,7 +2,7 @@ import Head from 'next/head'
 import React from 'react'
 import { useRouter } from 'next/router'
 
-import { AppContext, ArticleIcon, TopicIcon, slugFromArray} from 'front'
+import { AppContext, ArticleIcon, NewArticleIcon, TopicIcon, slugFromArray} from 'front'
 import ArticleList from 'front/ArticleList'
 import CustomLink from 'front/CustomLink'
 import LoadingSpinner from 'front/LoadingSpinner'
@@ -51,13 +51,19 @@ export const TopicPage = ({
               className={`tab-item${order === 'score' ? ' active' : ''}`}
               href={routes.topic(topicId, { sort: 'score' })}
             >
-              <ArticleIcon /> Top articles
+              <ArticleIcon /> Top Articles
             </CustomLink>
             <CustomLink
               className={`tab-item${order === 'createdAt' ? ' active' : ''}`}
               href={routes.topic(topicId, { sort: 'createdAt' })}
             >
-              Latest articles
+              Latest Articles
+            </CustomLink>
+            <CustomLink
+              className={`tab-item`}
+              href={routes.articleNew({ title: topic.titleSource })}
+            >
+              <NewArticleIcon /> New Article in Topic
             </CustomLink>
           </div>
           <ArticleList {...{

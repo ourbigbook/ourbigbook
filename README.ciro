@@ -38,10 +38,10 @@ You can now run the `cirodown` command from any directory in your computer. Furt
 
 To start a new project with a minimal sane template \x[generate][use `--generate`] and then \x[publish-to-github-pages][publish it to GitHub with `--publish`]:
 ``
-mkdir -p cirodown-test
-cd cirodown-test
+mkdir -p cirodown-generate
+cd cirodown-generate
 git init
-git remote add origin git@github.com:USERNAME/cirodown-test.git
+git remote add origin git@github.com:USERNAME/cirodown-generate.git
 cirodown --generate
 git add .
 git commit -m 'First commit'

@@ -113,7 +113,7 @@ const ArticleList = ({
                 </td>
                 <td className="expand title">
                   <CustomLink
-                    href={isIssue ? routes.issueView(issueArticle.slug, article.number) : routes.articleView(article.slug)}
+                    href={isIssue ? routes.issue(issueArticle.slug, article.number) : routes.article(article.slug)}
                   >
                     <div
                       className="comment-body ourbigbook-title"
@@ -129,7 +129,7 @@ const ArticleList = ({
                 {isIssue &&
                   <td className="shrink">
                     <CustomLink
-                      href={isIssue ? routes.issueView(issueArticle.slug, article.number) : routes.articleView(article.slug)}
+                      href={isIssue ? routes.issue(issueArticle.slug, article.number) : routes.article(article.slug)}
                     >
                       #{article.number}
                     </CustomLink>

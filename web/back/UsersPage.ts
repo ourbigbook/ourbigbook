@@ -23,9 +23,9 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
     (user) => { return user.toJson(loggedInUser) }))
   const props: IndexPageProps = {
     order,
+    page: pageNum,
     users,
     usersCount,
-    page: pageNum,
     what: 'users',
   }
   if (loggedInUser) {

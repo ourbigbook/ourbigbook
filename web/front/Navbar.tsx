@@ -19,9 +19,11 @@ interface NavLinkProps {
 const NavLink = ({ href, onClick, children, className }: NavLinkProps) => {
   const router = useRouter();
   const classes = ['nav-link']
-  if (encodeURIComponent(router.asPath) === encodeURIComponent(href)) {
-    classes.push('active')
-  }
+  // This would mark toplevel nav items as selected or not. But it doesn't make
+  // much sense on current toplevel nav configuration.
+  //if (encodeURIComponent(router.asPath) === encodeURIComponent(href)) {
+  //  classes.push('active')
+  //}
   if (className) {
     classes.push(...className.split(' '))
   }
@@ -53,7 +55,7 @@ const Navbar = () => {
             &nbsp;New
           </NavLink>
           <NavLink
-            href={routes.userView(loggedInUser?.username)}
+            href={routes.user(loggedInUser?.username)}
             className="profile"
           >
             <CustomImage

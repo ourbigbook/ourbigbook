@@ -137,12 +137,12 @@ export default function ArticleEditorPageHoc({
 
       let redirTarget
       if (isIssue) {
-        redirTarget = routes.issueView(slugString, data.issue.number)
+        redirTarget = routes.issue(slugString, data.issue.number)
       } else {
         if (isNew) {
-          redirTarget = routes.articleView(data.articles[0].slug)
+          redirTarget = routes.article(data.articles[0].slug)
         } else {
-          redirTarget = routes.articleView(slugString)
+          redirTarget = routes.article(slugString)
         }
       }
       Router.push(redirTarget, null, { scroll: true });
@@ -154,7 +154,7 @@ export default function ArticleEditorPageHoc({
       } else {
         // This is a hack for the useEffect cleanup callback issue.
         ourbigbookEditorElem.current.ourbigbookEditor.dispose()
-        Router.push(routes.articleView(initialArticle.slug));
+        Router.push(routes.article(initialArticle.slug));
       }
     }
     const { setTitle } = React.useContext(AppContext)

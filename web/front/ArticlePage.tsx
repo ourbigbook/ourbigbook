@@ -90,7 +90,7 @@ const ArticlePageHoc = (isIssue=false) => {
                             <i className="ion-edit" /> Create my own version
                           </CustomLink>
                         : <CustomLink
-                            href={routes.articleView(sameArticleByLoggedInUser)}
+                            href={routes.article(sameArticleByLoggedInUser)}
                           >
                             <i className="ion-eye" /> View mine
                           </CustomLink>

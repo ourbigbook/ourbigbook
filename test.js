@@ -690,20 +690,6 @@ assert_no_error('cross reference simple',
 //<p><a href="#my-header">My header</a></p>
 //`
 //);
-//assert_convert_ast('cross reference auto style full',
-//  `\\h[1][My header]
-//
-//\\x[my-header]{style=full}
-//`,
-//  `<h1 id="my-header"><a href="#my-header">1. My header</a></h1>
-//<p><a href="#my-header">Section 1. "My header"</a></p>
-//`
-//);
-assert_error('cross reference with unknown style',
-  `\\h[1][My header]
-
-\\x[my-header]{style=reserved_undefined}
-`, 3, 21);
 assert_no_error('cross reference full boolean style correct',
   `\\h[1][My header]
 
@@ -739,10 +725,10 @@ assert_error('cross reference full boolean style with value',
 //`
 //);
 assert_error('cross reference undefined', '\\x[ab]', 1, 4);
-assert_error('cross reference without content nor target title style short',
+assert_error('cross reference without content nor target title nor full style',
   `\\Image[ab]{id=cd}
 
-\\x[cd]{style=short}
+\\x[cd]
 `, 3, 1);
 
 //// Headers.

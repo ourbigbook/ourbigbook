@@ -4680,7 +4680,7 @@ printf 'ab\ncd\n' | ourbigbook --body-only
 ``
 
 = Index file
-{parent=ourbigbook-executable}
+{parent=ourbigbook-cli}
 
 The following basenames are considered "index files":
 * `README.bigb`
@@ -4754,11 +4754,14 @@ When there isn't a `ourbigbook.json`, everything happens as though there were an
 
 Internally, the general philosophy is that the JavaScript API in \a[index.js] works exclusively with paths relative to the \x[project-toplevel-directory]. It is then up to callers such as \a[ourbigbook] to ensure that filesystem specifics handle the relative paths correctly.
 
+= OurBigBook CLI options
+{parent=ourbigbook-cli}
+
 = `ourbigbook` executable options
-{parent=ourbigbook-executable}
+{synonym}
 
 = `--china`
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 This is the most important option of the software.
 
@@ -4773,7 +4776,7 @@ firefox china.html
 ``
 
 = `--dry-run`
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 The `--dry-run` option is a good way to debug \x[publish][`--publish` option], as it builds the publish output files without doing any git commands that would be annoying to revert. So after doing:
 ``
@@ -4796,7 +4799,7 @@ Similar to \x[dry-run], but it runs all git commands except for `git push`, whic
 ``
 
 = `--embed-includes`
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 Makes \x[include]{p} render the included content in the same output file as the include is located, instead of the default behaviour of creating links.
 
@@ -4814,7 +4817,7 @@ Otherwise, `include` only adds the headers of the other file to the table of con
 You may want to use this option together with \x[embed-resources] to produce fully self-contained individual HTML files for your project.
 
 = `--embed-resources`
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 Embed as many external resources such as images and CSS as possible into the HTML output files, rather than linking to external resources.
 
@@ -4851,7 +4854,7 @@ Keep in mind that certain things can never be embedded, e.g.:
 * YouTube videos, since YouTube does not offer any download API
 
 = `--generate`
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 Generate one of the template repositories locally:
 * `ourbigbook --generate default`: a good starter template that illustrates many key OurBigBook features
@@ -4876,7 +4879,7 @@ so maybe we should just get rid of that option and just ensure that we can provi
 For now we are keeping this as it is useful to automate the updating of templates during the \x[release-procedure].
 
 = `--help-macros`
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 You can get an overview of all macros in JSON format with:
 ``
@@ -4884,7 +4887,7 @@ ourbigbook --help-macros
 ``
 
 = `--log`
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 Give multiple times to enable a list of certain types of logs to stderr help debugging, e.g.:
 ``
@@ -4967,12 +4970,12 @@ and we would see the database requests made at each conversion phase.
 Note that `--log perf` currently does not take sub-converts into account, e.g. \x[include] and \x[ourbigbookexample] both call the toplevel conversion  function `convert`, and therefore go through all the conversion intervals, but we do not take those it account, and just dump them all into the same toplevel interval that they happen in, currently between `post_process_start` and `post_process_end`.
 
 = `--no-db`
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 Don't use the \x[id-database] during this run. This implies that the on-disk database is not read, and also not written to. Instead, a temporary clean in-memory database is used.
 
 = `--no-html-x-extension`
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 If not given, \x[internal-cross-reference]{p} render with the `.html` extension as in:
 ``
@@ -4993,12 +4996,12 @@ which is what is needed for servers such as GitHub Pages, which automatically re
 This option is automatically implied when publishing to targets that remove the `.html` extension such as GitHub pages.
 
 = `--no-render`
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 Only extract IDs to fill the \x[id-database], don't render. This saves time if you only want to render a single file which has references to other files without getting any errors.
 
 = `--no-render-timestamp`
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 OurBigBook stores the timestamp of the last sucessful:
 * \x[conversion-process-overview][ID extraction]
@@ -5076,7 +5079,7 @@ We could in principle solve this problem by figuring out exactly which files nee
 
 = `--outdir <outdir>`
 {id=outdir}
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 Set a custom output directory for the conversion
 
@@ -5109,7 +5112,7 @@ This means that the source tree remains completely clean, and every output and t
 
 = `--outfile <outfie>`
 {id=outfile}
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 Save the output to a given file instead of outputting to stdout:
 ``
@@ -5124,7 +5127,7 @@ because with `--outfile` we know where the output is going, and so we can genera
 
 = `-O --output-format <outformat>`
 {id=output-format}
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 Default: `html`.
 
@@ -5172,7 +5175,7 @@ One day, one day. Maybe.
 
 = `-p, --publish`
 {id=publish}
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 OurBigBook tooling is so amazing that we also take care of the HTML publishing for you!
 
@@ -5236,7 +5239,7 @@ You then will also want to set your default repository branch to `dev` in the se
 
 = `-P, --publish-commit <commit-message>`
 {id=publish-commit}
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 Like \x[publish], but also automatically:
 * `git add -u` to automatically add change to any files that have been previously git tracked
@@ -5250,7 +5253,7 @@ ourbigbook --publish-commit 'my amazing change' .
 With great power comes great responsibility of course, but who cares!
 
 = `--split-headers`
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 Split each header into its own separate HTML output file.
 
@@ -5310,7 +5313,7 @@ The same applies to \x[internal-cross-file-reference]{p} when there are multiple
 In order to make the split version be the default for some headers, you can use the \x[h-splitdefault-argument].
 
 = `--watch`
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 Don't quit `ourbigbook` immediately.
 
@@ -5339,7 +5342,7 @@ otherwise you will just get a bunch of undefined ID errors every time the input 
 TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with-live-preview/ to also dispense the browser refresh.
 
 = `--template`
-{parent=ourbigbook-executable-options}
+{parent=ourbigbook-cli-options}
 
 Select a custom https://github.com/harttle/liquidjs[Liquid template] file for the output.
 
@@ -5410,7 +5413,7 @@ Defined variables:
 We pick Liquid because it is server-side safe: if we ever some day offer a compilation service, Liquid is designed to prevent arbitrary code execution and infinite loops in templates.
 
 = `ourbigbook.json`
-{parent=ourbigbook-executable}
+{parent=ourbigbook-cli}
 {scope}
 
 OurBigBook configuration file that affects the behaviour of ourbigbook for all files in the directory.
@@ -5886,6 +5889,12 @@ or shortcut for the run:
 npm run dev-pg
 ``
 
+Note that doing `sync-db` also requires `NODE_ENV=production` as in:
+``
+NODE_ENV=production OURBIGBOOK_POSTGRES=true ./bin/sync-db.js
+``
+because we have to shell out to the ugly migration CLI, and that only understands `NODE_ENV`.
+
 = Heroku deployment
 {c}
 {parent=ourbigbook-web}
@@ -5904,6 +5913,7 @@ heroku addons:create -a ourbigbook heroku-postgresql:hobby-dev
 heroku config:set -a ourbigbook SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)"
 # Password of users generated with ./web/bin/generate-demo-data
 heroku config:set -a ourbigbook OURBIGBOOK_DEMO_USER_PASSWORD="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 20)"
+# You can get it later to login with the demo users from the Heroku web interface
 ``
 
 Additionally, you also need to setup the PostgreSQL test database for both OurBigBook CLI and OurBigBook Web as documented at: \x[test-system] and \x[local-run-as-identical-to-deployment-as-possible], because we will be running tests on PostgreSQL before pushing:
@@ -6059,7 +6069,7 @@ We also have a custom setup where, if the database is not initialized, we first:
 * manually fill in the `SequelizeMeta` migration tracking table with all available migrations to tell Sequelize that all migrations have been done up to this point
 This is something that should be merged into Sequelize itself, or at least asked on Stack Overflow, but lazy now.
 
-= Dynamic website directory structure
+= OurBigBook Web directory structure
 {parent=ourbigbook-web}
 
 * \a[web/app.js]: server executable entry point, can also be used programmatically from Node.js
@@ -6083,7 +6093,7 @@ As the website grows, we will likely need to do a lazy version of this that mark
 
 The functionality of this script should be called from a migration whenever such HTML changes are required. TODO link to an example. We had one at `web/migrations/20220321000000-output-update-ancestor.js` that seemed to work, but lost it. It was simple though. Just you have to instantiate your  own 
 
-= Dynamic website help
+= OurBigBook Web help
 {parent=ourbigbook-web}
 
 This section will eventually be moved into the website itself. We'll just likely paste it into the database under an account that is always created or something like that.

@@ -119,7 +119,7 @@ module.exports = (sequelize) => {
       extra_returns,
       id_provider,
       sequelize,
-      path: idid,
+      path: `${idid}${ourbigbook.OURBIGBOOK_EXT}`,
       render: true,
       transaction,
     })

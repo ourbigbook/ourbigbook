@@ -19,6 +19,7 @@ const cirodown_nodejs = require('cirodown/nodejs');
 
 const CIRODOWN_EXT = '.ciro';
 const CIRODOWN_JSON = 'cirodown.json';
+const HTML_EXT = '.html';
 const SASS_EXT = '.scss';
 const TMP_DIRNAME = 'out';
 const DEFAULT_IGNORE_BASENAMES = [
@@ -249,7 +250,7 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
     }
     let message = `${message_prefix} ${input_path}`;
     console.log(message);
-    const output_path = output_path_noext + '.html';
+    const output_path = output_path_noext + HTML_EXT;
     const new_convert_input_options = Object.assign({}, convert_input_options);
     new_convert_input_options.output_path = output_path;
     let t0 = performance.now();
@@ -301,12 +302,7 @@ function convert_path(base_path, input_path, options, convert_input_options) {
     toplevel_id = input_path_basename_noext;
   }
   new_options.toplevel_id = toplevel_id;
-  let input_path_basename_noext_renamed;
-  if (input_path_basename_noext in IO_RENAME_MAP) {
-    input_path_basename_noext_renamed = IO_RENAME_MAP[input_path_basename_noext];
-  } else {
-    input_path_basename_noext_renamed = input_path_basename_noext
-  }
+  let input_path_basename_noext_renamed = get_renamed_basename(input_path_basename_noext);
   let input_path_noext_renamed = path.join(input_path_parse.dir, input_path_basename_noext_renamed);
   new_convert_input_options.input_path_noext_renamed = input_path_noext_renamed;
   let output = convert_input(input, new_options, new_convert_input_options);
@@ -354,7 +350,7 @@ function generate_redirects(convert_input_options, cirodown_json, html_x_extensi
       }
     );
     // https://stackoverflow.com/questions/10178304/what-is-the-best-approach-for-redirection-of-old-pages-in-jekyll-and-github-page/36848440#36848440
-    fs.writeFileSync(path.join(outdir, redirect_src_id + '.html'),
+    fs.writeFileSync(path.join(outdir, redirect_src_id + HTML_EXT),
 `<!DOCTYPE html>
 <html>
 <head>
@@ -373,6 +369,13 @@ function generate_redirects(convert_input_options, cirodown_json, html_x_extensi
   }
 }
 
+function get_renamed_basename(original) {
+  if (original in IO_RENAME_MAP) {
+    return IO_RENAME_MAP[original];
+  } else {
+    return original;
+  }
+}
 
 /**
  * @return {String} full Git SHA of the source.
@@ -440,6 +443,7 @@ commander.option(
     'way easier.',
   false
 );
+commander.option('--stdout', 'print output to stdout instead of saving to a file', false);
 commander.option('--template <template>', 'http://cirosantilli.com/cirodown#template');
 commander.option('-w, --watch', 'http://cirosantilli.com/cirodown#watch', false);
 let inputPath;
@@ -500,10 +504,13 @@ if (commander.helpMacros) {
   } else {
     options.template = undefined;
   }
+  let input_path_is_file;
   if (inputPath === undefined) {
     input_dir = undefined;
+    input_path_is_file = false;
   } else {
-    if (fs.lstatSync(inputPath).isFile()) {
+    input_path_is_file = fs.lstatSync(inputPath).isFile();
+    if (input_path_is_file) {
       input_dir = path.dirname(inputPath);
     } else {
       input_dir = inputPath;
@@ -584,8 +591,22 @@ A link to another file: \\x[and-now-an-include]
     include_contains_external: false,
     out_css_path: cirodown_nodejs.PACKAGE_OUT_CSS_LOCAL_PATH,
   };
-  if (commander.outfile !== undefined) {
-    convert_input_options.output_path = commander.outfile;
+  let outfile;
+  if (commander.outfile === undefined) {
+    if (
+      !commander.stdout &&
+      inputPath !== undefined &&
+      input_path_is_file
+    ) {
+      input_path_parse = path.parse(inputPath);
+      outfile = path.join(input_path_parse.dir,
+        get_renamed_basename(input_path_parse.name) + HTML_EXT);
+    }
+  } else {
+    outfile = commander.outfile;
+  }
+  if (outfile !== undefined) {
+    convert_input_options.output_path = outfile;
   }
   if (inputPath === undefined) {
     title = 'stdin';
@@ -595,7 +616,6 @@ A link to another file: \\x[and-now-an-include]
     if (!fs.existsSync(inputPath)) {
       cli_error(`input_path does not exist: "${inputPath}"`);
     }
-    let input_path_is_file;
     let tmpdir;
     let publish_dir;
     let publish_out_dir;
@@ -603,7 +623,7 @@ A link to another file: \\x[and-now-an-include]
       dry_run: commander.dryRun,
       throw_on_error: true,
     }
-    if (fs.lstatSync(inputPath).isFile()) {
+    if (input_path_is_file) {
       input_path_is_file = true;
       tmpdir = TMP_DIRNAME;
     } else {
@@ -619,7 +639,7 @@ A link to another file: \\x[and-now-an-include]
         tmpdir = path.join(publish_dir, TMP_DIRNAME);
         publish_out_dir = path.join(publish_dir, TMP_DIRNAME);
       }
-      if (commander.outfile !== undefined) {
+      if (outfile !== undefined) {
         cli_error(`--outfile given but multiple output files must be generated, maybe you want --outdir?`);
       }
     }
@@ -792,10 +812,10 @@ A link to another file: \\x[and-now-an-include]
     }
   }
   if (output !== undefined) {
-    if (commander.outfile === undefined) {
+    if (outfile === undefined) {
       process.stdout.write(output);
     } else {
-      fs.writeFileSync(commander.outfile, output);
+      fs.writeFileSync(outfile, output);
     }
   }
   if (!commander.watch) {

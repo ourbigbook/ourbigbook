@@ -38,7 +38,7 @@ module.exports = {
   issueNew: (slug) => `/${escapeUsername}/issue-new/${slug}`,
   issue: (slug, number) => `/${escapeUsername}/issue/${number}/${slug}`,
   issues: (slug, opts={}) => `/${escapeUsername}/issues/${slug}${encodeGetParamsWithPage(opts)}`,
-  userEdit: () => `/${escapeUsername}/settings`,
+  userEdit: (uid) => `/${escapeUsername}/settings/${uid}`,
   userLogin: () => `/${escapeUsername}/login`,
   userNew: () => `/${escapeUsername}/register`,
   userVerify: (email) => `/${escapeUsername}/verify${encodeGetParams({ email })}`,

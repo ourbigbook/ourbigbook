@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken')
 const ourbigbook = require('ourbigbook')
 
 const convert = require('../convert')
+const { cant } = require('../front/cant')
 const config = require('../front/config')
 
 const { DataTypes, Op } = Sequelize
@@ -52,6 +53,7 @@ module.exports = (sequelize) => {
         }
       },
       ip: {
+        // IP user account was created from.
         type: DataTypes.STRING,
         allowNull: true,
       },
@@ -159,7 +161,8 @@ module.exports = (sequelize) => {
     if (loggedInUser) {
       ret.following = await loggedInUser.hasFollow(this.id)
       // Private data.
-      if (this.username === loggedInUser.username) {
+      if (!cant.viewUserSettings(loggedInUser, this)) {
+        ret.ip = this.ip
         ret.email = this.email
         if (loggedInUser.token) {
           ret.token = loggedInUser.token

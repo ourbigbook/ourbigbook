@@ -145,7 +145,7 @@ async function start(port, startNext, cb) {
   return new Promise((resolve, reject) => {
     const server = app.listen(port, async function () {
       try {
-        cb && (await cb(server))
+        cb && (await cb(server, sequelize))
       } catch (e) {
         reject(e)
         this.close()

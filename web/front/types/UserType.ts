@@ -6,7 +6,9 @@ export type UserType = {
   image: string;
   effectiveImage: string;
   following: boolean;
-  score: number,
-  followerCount: number,
-  createdAt: number,
+  score: number;
+  followerCount: number;
+  createdAt: number;
+  email?: string;
+  ip?: string;
 };

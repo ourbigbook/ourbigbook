@@ -1671,9 +1671,10 @@ function html_katex_convert(ast, context) {
     return katex.renderToString(
       convert_arg(ast.args.content, clone_and_set(context, 'html_escape', false)),
       {
-        macros: context.katex_macros,
-        throwOnError: true,
         globalGroup: true,
+        macros: context.katex_macros,
+        strict: 'error',
+        throwOnError: true,
       }
     );
   } catch(error) {

@@ -1,11 +1,12 @@
-import ContextProvider from "lib/context"
-import Head from "next/head";
-import { useRouter } from "next/router";
-import { useEffect } from "react";
+import Head from 'next/head';
+import { useRouter } from 'next/router';
+import React, { useEffect } from 'react';
 
-import { googleAnalyticsId, isProduction } from "config";
-import Footer from "components/Footer"
-import Navbar from "components/Navbar"
+import { googleAnalyticsId, isProduction } from 'config';
+import CustomLink from "components/CustomLink";
+import Navbar from 'components/Navbar'
+import { AppContext, AppContextProvider } from 'lib'
+import { APP_NAME } from "lib/utils/constant";
 
 // Css
 // migrating the local cirodown to webpack: https://github.com/cirosantilli/cirodown/issues/157
@@ -14,16 +15,31 @@ import 'cirodown/editor.scss'
 import 'ionicons/css/ionicons.min.css'
 import 'style.scss'
 
+function MyHead() {
+  const { title } = React.useContext(AppContext)
+  let realTitle = title === undefined ? '' : title + ' - '
+  return (
+    <Head>
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>{realTitle + APP_NAME}</title>
+    </Head>
+  )
+}
+
+function handleRouteChange(url) {
+  window.gtag('config', googleAnalyticsId, {
+    page_path: url,
+  })
+}
+
 const MyApp = ({ Component, pageProps }) => {
   if (isProduction) {
     // Google Analytics page switches:
     // https://stackoverflow.com/questions/60411351/how-to-use-google-analytics-with-next-js-app/62552263#62552263
     const router = useRouter();
-    const handleRouteChange = (url) => {
-      window.gtag('config', googleAnalyticsId, {
-        page_path: url,
-      });
-    };
     useEffect(() => {
       router.events.on('routeChangeComplete', handleRouteChange);
       return () => {
@@ -34,25 +50,23 @@ const MyApp = ({ Component, pageProps }) => {
 
   const isEditor = !!Component.isEditor
   return (
-    <>
-      <Head>
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1, maximum-scale=1"
-        />
-      </Head>
-      <ContextProvider>
-        <div className={`toplevel${isEditor ? ' editor' : ''}`}>
-          <Navbar />
-          <div className="main">
-            <Component {...pageProps} />
-          </div>
-          {!isEditor &&
-            <Footer />
-          }
+    <AppContextProvider>
+      <div className={`toplevel${isEditor ? ' editor' : ''}`}>
+        <Navbar />
+        <div className="main">
+          <Component {...pageProps} />
         </div>
-      </ContextProvider>
-    </>
+        {!isEditor &&
+          <footer>
+            <div className="container">
+              Content license <a href="https://cirosantilli.com/ourbigbook-com/content-license">CC BY-SA 4.0 unless noted</a>  |
+              {' '}<a href="https://github.com/cirosantilli/cirodown/tree/master/web">Website source code</a> |
+              {' '}<a href="https://github.com/cirosantilli/cirodown/issues">Contact, bugs, suggestions, abuse reports</a>
+            </div>
+          </footer>
+        }
+      </div>
+    </AppContextProvider>
   )
 }
 

@@ -105,6 +105,8 @@ function getSequelize(toplevelDir, toplevelBasename) {
   return sequelize;
 }
 
+// Do sequelize.sync, and then also populate SequelizeMeta with migrations
+// that might not be needed if we've just done a full sync.
 async function sync(sequelize, opts={}) {
   let dbExists
   try {

@@ -6772,7 +6772,7 @@ const DEFAULT_MACRO_LIST = [
 
       const header_has_meta = header_meta.length > 0 || header_meta2.length > 0
       if (header_has_meta) {
-        ret += `<div class="h-nav h-nav-toplevel">`;
+        ret += `<nav class="h-nav h-nav-toplevel">`;
       }
       for (const meta of [header_meta, header_meta2]) {
         if (meta.length > 0) {
@@ -6780,7 +6780,7 @@ const DEFAULT_MACRO_LIST = [
         }
       }
       if (header_has_meta) {
-        ret += `</div>\n`;
+        ret += `</nav>\n`;
       }
       if (children !== undefined) {
         ret += header_check_child_tag_exists(ast, context, children, 'child')

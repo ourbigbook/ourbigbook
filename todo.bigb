@@ -3,6 +3,12 @@
 
 == Issues
 
+=== Pass previousSiblingId on web upload
+{tag=Web}
+{tag=Web upload}
+
+Otherwise uploads become irreproducible if you stop half way. Unacceptable.
+
 === Reorder convert to move Article.destroySideEffect before File.destroy
 {id=4}
 {tag=web}
@@ -285,12 +291,6 @@ We could just return parent and previous sibling on the /sha256 endpoint.
 Or we need to add that information to the SHA.
 
 Ideally we should also have a way to change the tree without re-render, though we could start with re-render for simplicity.
-
-=== Pass previousSiblingId on web upload
-{tag=Web}
-{tag=Web upload}
-
-Otherwise uploads become irreproducible if you stop half way. Unacceptable.
 
 === ourbigbook.com --web uploads sometimes fail with ETIMEDOUT or ECONNRESET
 {tag=Bug}

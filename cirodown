@@ -170,8 +170,9 @@ const Macro = class {
    *        {boolean} phrasing - is this phrasing content?
    *                  (HTML5 elements that can go in paragraphs). This matters to determine
    *                  where `\n\n` paragraphs will split.
-   *        {boolean} phrasing_if_not_alone - the element is phrasing if it is not the only child
-   *                                          of a double paragraph.
+   *        {String} auto_parent - automatically surround consecutive sequences of macros with
+   *                 the same parent auto_parent into a node with auto_parent type. E.g.,
+   *                 to group list items into ul.
    */
   constructor(name, positional_args, convert, options={}) {
     if (!('named_args' in options)) {
@@ -180,9 +181,13 @@ const Macro = class {
     if (!('properties' in options)) {
       options.properties = {};
     }
+    if (!('auto_parent' in options)) {
+      options.auto_parent = undefined;
+    }
     this.name = name;
     this.positional_args = positional_args;
     this.named_args = options.named_args;
+    this.auto_parent = options.auto_parent;
     this.convert = convert;
     this.properties = options.properties;
     if (!('phrasing' in this.properties)) {
@@ -380,6 +385,9 @@ let macro_list = [
     function(ast, options, is_attr) {
       return `<li${html_convert_attrs(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</li>\n`;
     },
+    {
+      auto_parent: 'ul',
+    }
   ),
   new Macro(
     'p',
@@ -411,6 +419,28 @@ let macro_list = [
         phrasing: true,
       }
     }
+  ),
+  new Macro(
+    'table',
+    [
+      new MacroArgument({
+        name: 'content',
+      }),
+    ],
+    function(ast, options, is_attr) {
+      return `<table${html_convert_attrs(ast, options)}>\n${convert_arg(ast.args.content, options, is_attr)}</table>\n`;
+    },
+  ),
+  new Macro(
+    'td',
+    [
+      new MacroArgument({
+        name: 'content',
+      }),
+    ],
+    function(ast, options, is_attr) {
+      return `<td${html_convert_attrs(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</td>\n`;
+    },
   ),
   new Macro(
     'toplevel',
@@ -464,6 +494,31 @@ pre {
 `
       }
       return ret;
+    }
+  ),
+  new Macro(
+    'th',
+    [
+      new MacroArgument({
+        name: 'content',
+      }),
+    ],
+    function(ast, options, is_attr) {
+      return `<th${html_convert_attrs(ast, options)}>${convert_arg(ast.args.content, options, is_attr)}</th>\n`;
+    }
+  ),
+  new Macro(
+    'tr',
+    [
+      new MacroArgument({
+        name: 'content',
+      }),
+    ],
+    function(ast, options, is_attr) {
+      return `<tr${html_convert_attrs(ast, options)}>\n${convert_arg(ast.args.content, options, is_attr)}</tr>\n`;
+    },
+    {
+      auto_parent: 'table',
     }
   ),
   new Macro(
@@ -849,24 +904,37 @@ const parse = function(tokens, options, extra_returns={}) {
         for (let i = 0; i < arg.length; i++) {
           let child_node = arg[i];
           let new_child_node;
-          if (node.macro_name !== 'ul' && child_node.macro_name === 'l') {
-            let start_l_index = i;
-            let start_l_node = child_node;
-            i++;
-            while (i < arg.length && arg[i].macro_name === 'l') {
-              i++;
+          if (child_node.node_type === AstType.MACRO) {
+            let child_name = child_node.macro_name;
+            let child_macro = macros[child_name];
+            if (child_macro.auto_parent !== undefined ) {
+              let auto_parent_name = child_macro.auto_parent;
+              if (node.macro_name !== auto_parent_name) {
+                let start_auto_child_index = i;
+                let start_auto_child_node = child_node;
+                i++;
+                while (
+                  i < arg.length &&
+                  arg[i].node_type === AstType.MACRO &&
+                  macros[arg[i].macro_name].auto_parent === auto_parent_name
+                ) {
+                  i++;
+                }
+                new_child_node = new AstNode(
+                  AstType.MACRO,
+                  auto_parent_name,
+                  {
+                    'content': arg.slice(start_auto_child_index, i),
+                  },
+                  start_auto_child_node.line,
+                  start_auto_child_node.column,
+                )
+                // Because the for loop will advance past it.
+                i--;
+              }
             }
-            new_child_node = new AstNode(
-              AstType.MACRO,
-              'ul',
-              {
-                'content': arg.slice(start_l_index, i),
-              },
-              start_l_node.line,
-              start_l_node.column,
-            )
-            i--;
-          } else {
+          }
+          if (new_child_node === undefined) {
             new_child_node = child_node;
           }
           new_arg.push(new_child_node);

@@ -5216,7 +5216,28 @@ because with `--outfile` we know where the output is going, and so we can genera
 {id=output-format}
 {parent=ourbigbook-cli-options}
 
-Default: `html`.
+Default: <html output format>.
+
+= `html` output format
+{parent=unimplemented-output-formats}
+
+The default output format. Web pages!!!
+
+= `bigb` output format
+{parent=unimplemented-output-formats}
+
+Outputs as <OurBigBook Markup>, i.e. the same format as the input itself!
+
+While using `-O bigb` is not a common use case, the existence of this format has the following applications:
+* automatic source code formatting
+* manipulating source code on <ourbigbook web> to allow editing either individual sections separatelly, or multiple sections at once
+
+Can be tested interactively with:
+``
+ourbigbook --no-db -O bigb --stdout test_bigb_output.bigb
+``
+
+This was tracked at: https://github.com/cirosantilli/ourbigbook/issues/83
 
 = `id` output format
 {parent=output-format}
@@ -5333,11 +5354,6 @@ This can however be worked around with the <x magic argument> as in;
 
 = Unimplemented output formats
 {parent=id-output-format}
-
-= `ourbigbook` output format
-{parent=unimplemented-output-formats}
-
-TODO: https://github.com/cirosantilli/ourbigbook/issues/83
 
 = `latex` output format
 {parent=unimplemented-output-formats}

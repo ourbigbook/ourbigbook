@@ -730,6 +730,22 @@ b
     a('p', [t('b')]),
   ]
 );
+assert_convert_ast('link insane with custom body no newline',
+  'http://example.com[aa]',
+  [
+    a('p', [
+      a('a', [t('aa')], {'href': [t('http://example.com')]}),
+    ]),
+  ]
+);
+assert_convert_ast('link insane with custom body with newline',
+  'http://example.com\n[aa]',
+  [
+    a('p', [
+      a('a', [t('aa')], {'href': [t('http://example.com')]}),
+    ]),
+  ]
+);
 assert_convert_ast('link auto end in space',
   `a http://example.com b`,
   [

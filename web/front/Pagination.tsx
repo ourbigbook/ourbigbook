@@ -59,7 +59,7 @@ const Pagination = ({
         lastPage + (showPagesMax - (lastPage - firstPage))
       );
     } else {
-      firstPage = Math.max(1, firstPage - (showPagesMax - (lastPage - firstPage)));
+      firstPage = Math.max(0, firstPage - (showPagesMax - (lastPage - firstPage)));
     }
   }
   if (lastPage - firstPage + 1 > showPagesMax) {

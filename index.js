@@ -81,23 +81,23 @@ class AstNode {
     if (context === undefined) {
       context = {};
     }
-    if (!('macros' in context)) {
-      throw new Error('missing mandatory argument macros');
-    }
-    if (!('html_is_attr' in context)) {
-      context.html_is_attr = false;
+    if (!('errors' in context)) {
+      context.errors = [];
     }
     if (!('html_escape' in context)) {
       context.html_escape = true;
     }
+    if (!('html_is_attr' in context)) {
+      context.html_is_attr = false;
+    }
     if (!('ids' in context)) {
       context.ids = {};
     }
-    if (!('errors' in context)) {
-      context.errors = [];
-    }
     if (!('katex_macros' in context)) {
       context.katex_macros = {};
+    }
+    if (!('macros' in context)) {
+      throw new Error('missing mandatory argument macros');
     }
     return context.macros[this.macro_name].convert(this, context);
   }
@@ -156,7 +156,7 @@ class MacroArgument {
    * @param {String} name
    */
   constructor(options) {
-    this.name = options.name;
+    this.name = options.name
   }
 }
 
@@ -184,23 +184,28 @@ class Macro {
     if (!('auto_parent_skip' in options)) {
       options.auto_parent_skip = new Set([]);
     }
+    if (!('caption_prefix' in options)) {
+      options.caption_prefix = capitalize_first_letter(name);
+    }
+    if (!('get_number' in options)) {
+      options.get_number = function(ast, context) { return ast.macro_count; }
+    }
+    if (!('id_prefix' in options)) {
+      options.id_prefix = title_to_id(name);
+    }
+    if (!('macro_counts_ignore' in options)) {
+      options.macro_counts_ignore = function(ast, context) {
+        return false;
+      }
+    }
     if (!('named_args' in options)) {
       options.named_args = [];
     }
     if (!('properties' in options)) {
       options.properties = {};
     }
-    if (!('id_prefix' in options)) {
-      options.id_prefix = title_to_id(name);
-    }
-    if (!('caption_prefix' in options)) {
-      options.caption_prefix = capitalize_first_letter(name);
-    }
     if (!('x_style' in options)) {
       options.x_style = XStyle.full;
-    }
-    if (!('get_number' in options)) {
-      options.get_number = function(ast, context) { return ast.macro_count; }
     }
     this.name = name;
     this.positional_args = positional_args;
@@ -1043,53 +1048,55 @@ function parse(tokens, macros, options, extra_returns={}) {
   let header_graph_stack = {0: extra_returns.context.header_graph};
   extra_returns.context.has_toc = false;
   while (todo_visit.length > 0) {
-    const node = todo_visit.shift();
-    const macro_name = node.macro_name;
+    const ast = todo_visit.shift();
+    const id_context = {'macros': macros};
+    const macro_name = ast.macro_name;
 
     // Linear count of each macro type for macros that have IDs.
-    if (!(macro_name in macro_counts)) {
-      macro_counts[macro_name] = 0;
+    if (!ast.macro.options.macro_counts_ignore(ast, id_context)) {
+      if (!(macro_name in macro_counts)) {
+        macro_counts[macro_name] = 0;
+      }
+      macro_count = macro_counts[macro_name] + 1;
+      macro_counts[macro_name] = macro_count;
+      ast.macro_count = macro_count;
     }
-    macro_count = macro_counts[macro_name] + 1;
-    macro_counts[macro_name] = macro_count;
-    node.macro_count = macro_count;
 
     // Calculate node ID and add it to the ID index.
-    let id_context = {'macros': macros};
     let index_id = true;
-    if (node.arg_given(Macro.ID_ARGUMENT_NAME)) {
-      node.id = convert_arg_noescape(node.args[Macro.ID_ARGUMENT_NAME], id_context);
+    if (ast.arg_given(Macro.ID_ARGUMENT_NAME)) {
+      ast.id = convert_arg_noescape(ast.args[Macro.ID_ARGUMENT_NAME], id_context);
     } else {
       let id_text = '';
-      let id_prefix = macros[node.macro_name].id_prefix;
+      let id_prefix = macros[ast.macro_name].id_prefix;
       if (id_prefix !== '') {
         id_text += id_prefix + ID_SEPARATOR
       }
-      if (node.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
+      if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
         // TODO correct unicode aware algorithm.
-        id_text += title_to_id(convert_arg_noescape(node.args.title, id_context));
+        id_text += title_to_id(convert_arg_noescape(ast.args.title, id_context));
       } else {
-        id_text += node.macro_count;
+        id_text += ast.macro_count;
         index_id = false;
       }
-      node.id = id_text;
+      ast.id = id_text;
     }
     if (index_id) {
-      extra_returns.context.ids[node.id] = node;
+      extra_returns.context.ids[ast.id] = ast;
     }
 
     // Header tree.
     if (macro_name === Macro.HEADER_MACRO_NAME) {
-      let level = parseInt(convert_arg_noescape(node.args.level, id_context));
-      node.level = level;
-      let new_tree_node = new TreeNode(node, header_graph_stack[level - 1]);
-      node.header_tree_node = new_tree_node;
+      let level = parseInt(convert_arg_noescape(ast.args.level, id_context));
+      ast.level = level;
+      let new_tree_node = new TreeNode(ast, header_graph_stack[level - 1]);
+      ast.header_tree_node = new_tree_node;
       if (((level - header_graph_last_level) > 1) && (header_graph_last_level != 0)) {
         parse_error(
           state,
           `skipped a header level from ${header_graph_last_level} to ${level}`,
-          node.args.level[0].line,
-          node.args.level[0].column
+          ast.args.level[0].line,
+          ast.args.level[0].column
         );
       }
       let parent_tree_node = header_graph_stack[level - 1];
@@ -1105,9 +1112,9 @@ function parse(tokens, macros, options, extra_returns={}) {
     }
 
     // Loop over the child arguments.
-    if (node.node_type === AstType.MACRO) {
-      for (const arg_name in node.args) {
-        let arg = node.args[arg_name];
+    if (ast.node_type === AstType.MACRO) {
+      for (const arg_name in ast.args) {
+        let arg = ast.args[arg_name];
 
         // Add ul and table implicit parents.
         let new_arg = [];
@@ -1120,8 +1127,8 @@ function parse(tokens, macros, options, extra_returns={}) {
             if (child_macro.auto_parent !== undefined) {
               let auto_parent_name = child_macro.auto_parent;
               if (
-                node.macro_name !== auto_parent_name &&
-                !child_macro.auto_parent_skip.has(node.macro_name)
+                ast.macro_name !== auto_parent_name &&
+                !child_macro.auto_parent_skip.has(ast.macro_name)
               ) {
                 let start_auto_child_index = i;
                 let start_auto_child_node = child_node;
@@ -1180,7 +1187,7 @@ function parse(tokens, macros, options, extra_returns={}) {
         }
 
         // Update the argument.
-        node.args[arg_name] = arg;
+        ast.args[arg_name] = arg;
       }
     }
   }
@@ -1585,27 +1592,49 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       let attrs = html_convert_attrs_id(ast, context);
       let href = html_attr('href', '#' + html_escape_attr(ast.id));
+      let katex_output = this.katex_convert(ast, context);
       let ret = ``;
-      ret += `<div class="math-container"${attrs}>`;
-      if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
-        ret += `<div class="math-caption-container">\n`;
-        ret += `<span class="math-caption">${this.x_text(ast, context)}</span>`;
-        ret += `<span> <a${href}>${Macro.LINK_SELF}</a></span>\n`;
+      let do_show;
+      if (ast.arg_given('show')) {
+        let show_arg = ast.args.show;
+        let show = convert_arg_noescape(show_arg, context);
+        if (!(show === '0' || show === '1')) {
+          let message = `show must be 0 or 1: "${level}"`;
+          this.error(context, message, show_arg, show_arg[0].column);
+          return error_message_in_output(message);
+        }
+        do_show = (show === '1');
+      } else {
+        do_show = true;
+      }
+      if (do_show) {
+        ret += `<div class="math-container"${attrs}>`;
+        if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
+          ret += `<div class="math-caption-container">\n`;
+          ret += `<span class="math-caption">${this.x_text(ast, context)}</span>`;
+          ret += `<span> <a${href}>${Macro.LINK_SELF}</a></span>\n`;
+          ret += `</div>\n`;
+        }
+        ret += `<div class="math-equation">\n`
+        ret += `<div>${katex_output}</div>\n`;
+        ret += `<div><a${href}>(${ast.macro.options.get_number(ast, context)})</a></div>`;
+        ret += `</div>\n`
         ret += `</div>\n`;
       }
-      ret += `<div class="math-equation">\n`
-      ret += `<div>${this.katex_convert(ast, context)}</div>\n`;
-      ret += `<div><a${href}>(${ast.macro.options.get_number(ast, context)})</a></div>`;
-      ret += `</div>\n`
-      ret += `</div>\n`;
       return ret;
     },
     {
       caption_prefix: 'Equation',
+      macro_counts_ignore: function(ast, context) {
+        return ast.arg_given('show') && convert_arg_noescape(ast.args.show, context) === '0';
+      },
       id_prefix: 'eq',
       named_args: [
         new MacroArgument({
           name: Macro.TITLE_ARGUMENT_NAME,
+        }),
+        new MacroArgument({
+          name: 'show',
         }),
       ],
     }

@@ -89,13 +89,18 @@ const ArticlePreview = ({ article }) => {
           href="/profile/[pid]"
           as={`/profile/${preview.author.username}`}
         >
-        <CustomImage
-          src={preview.author.image}
-          alt="author's profile image"
-          style={{ height: "1.5em", verticalAlign: "middle" }}
-        />
-        &nbsp;
-        {preview.author.username}
+          <CustomImage
+            src={preview.author.image}
+            alt="author's profile image"
+            style={{ height: "1.5em", verticalAlign: "middle" }}
+          />
+        </CustomLink>
+        <CustomLink
+          href="/profile/[pid]"
+          as={`/profile/${preview.author.username}`}
+        >
+          &nbsp;
+          {preview.author.username}
         </CustomLink>
       </td>
       <td>

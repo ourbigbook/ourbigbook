@@ -1,4 +1,5 @@
-import styled from "@emotion/styled";
+/** @jsx jsx */
+import { css, jsx } from '@emotion/react'
 import { useRouter } from "next/router";
 import React, { useMemo, useEffect } from "react";
 import useSWR from "swr";
@@ -15,11 +16,6 @@ import {
 } from "lib/context/PageCountContext";
 import { SERVER_BASE_URL, DEFAULT_LIMIT } from "lib/utils/constant";
 import fetcher from "lib/utils/fetcher";
-
-const EmptyMessage = styled("div")`
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  padding: 1.5rem 0;
-`;
 
 const ArticleList = () => {
   const page = usePageState();
@@ -77,22 +73,29 @@ const ArticleList = () => {
   if (!data) return <LoadingSpinner />;
 
   if (articles?.length === 0) {
-    return <EmptyMessage>No articles are here... yet.</EmptyMessage>;
+    return <div
+        css={css`
+          border-top: 1px solid rgba(0, 0, 0, 0.1);
+          padding: 1.5rem 0;
+        `}
+      >No articles are here... yet</div>;
   }
 
   return (
     <>
       <table
-        style={{
-          verticalAlign: "baseline",
-        }}
+        css={css`
+          td > * {
+            vertical-align: middle;
+          }
+        `}
       >
         <thead>
           <tr>
             <th>Score</th>
             <th>Author</th>
             <th>Title</th>
-            <th>Date</th>
+            <th>Published</th>
           </tr>
         </thead>
         <tbody>

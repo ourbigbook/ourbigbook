@@ -1,6 +1,5 @@
-import styled from "@emotion/styled";
 import cirodown from 'cirodown';
-import 'cirodown/cirodown.runtime.js';
+import { cirodown_runtime } from 'cirodown/cirodown.runtime.js';
 import React from "react";
 import Head from "next/head";
 
@@ -10,33 +9,43 @@ import LoadingSpinner from "components/common/LoadingSpinner";
 import ArticleAPI from "lib/api/article";
 import { ArticleType } from "lib/types/articleType";
 
-interface ArticlePageProps {
+export default class ArticlePage extends React.Component {
   article: ArticleType;
   pid: string;
-}
 
-const ArticlePage = ({ article, pid }: ArticlePageProps) => {
-  if (!article) return <LoadingSpinner />;
-  const markup = {
-    __html: cirodown.convert('= ' + article.title + '\n\n' + article.body, {body_only: true}),
-  };
-  return (
-    <>
-      <Head>
-        <title>{article.title}</title>
-      </Head>
-      <div>
-        <ArticleMeta article={article} />
+  constructor(props) {
+    super(props);
+    this.renderRefCallback = this.renderRefCallback.bind(this);
+  }
+
+  render() {
+    if (!this.props.article) return <LoadingSpinner />;
+    const markup = {
+      __html: cirodown.convert('= ' + this.props.article.title + '\n\n' + this.props.article.body, {body_only: true}),
+    };
+    return (
+      <>
+        <Head>
+          <title>{this.props.article.title}</title>
+        </Head>
         <div>
-          <div
-            className="cirodown"
-            dangerouslySetInnerHTML={markup}
-          />
+          <ArticleMeta article={this.props.article} />
+          <div>
+            <div
+              className="cirodown"
+              dangerouslySetInnerHTML={markup}
+              ref={this.renderRefCallback}
+            />
+          </div>
         </div>
-      </div>
-    </>
-  );
-};
+      </>
+    );
+  }
+
+  renderRefCallback() {
+    cirodown_runtime(this.cirodownElem);
+  }
+}
 
 export async function getStaticPaths() {
   return { paths: [], fallback: true };
@@ -64,5 +73,3 @@ export async function getStaticProps({ params }) {
     };
   }
 }
-
-export default ArticlePage;

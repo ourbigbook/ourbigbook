@@ -1,0 +1,54 @@
+{
+  "name": "ourbigbook-vscode",
+  "displayName": "OurBigBook VS Code",
+  "description": "OurBigBook markup support",
+  "icon": "logo.png",
+  "repository": "https://docs.ourbigbook.com/_dir/vscode",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.81.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [{
+      "command": "bigb.helloWorld",
+      "title": "Hello World"
+    }],
+    "configurationDefaults": {
+			"[ourbigbook]": {
+				"editor.wordWrap": "on",
+				"editor.quickSuggestions": false
+			}
+		},
+    "languages": [{
+      "id": "ourbigbook",
+      "aliases": ["OurBigBook", "ourbigbook"],
+      "extensions": [".bigb"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "embeddedLanguages": {
+        "math.bigb": "latex"
+      },
+      "language": "ourbigbook",
+      "scopeName": "source.ourbigbook",
+      "path": "./syntaxes/ourbigbook.tmLanguage.json"
+    }]
+
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "node ./test/runTest.js"
+  },
+  "devDependencies": {
+    "eslint": "^8.39.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.2.0",
+    "@vscode/test-electron": "^2.3.0"
+  }
+}

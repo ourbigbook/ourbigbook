@@ -8875,6 +8875,25 @@ And from OurBigBook to anything, create new output formats inside OurBigBook to 
 = Editor support
 {parent=Tooling}
 
+= Visual Studio Code
+{parent=Editor support}
+
+= VS Code
+{synonym}
+{title2}
+
+VS Code is intended to be the best supported OurBigBook editor.
+
+Currently, it only supports syntax highlighting, but we want to support everything you would expect from proper programming language support, notably:
+* deployment as <static website> or to <OurBigBook Web>
+* build with click to line stdout error parsing
+* jump to ID definitions
+* HTML preview, maybe we should learn from the Asciidoc extension
+
+Historically, <Vim> support came first and was better developed. But that was just an ad-hoc path of least resistance, VS Code is the one we are going to actually support moving forward.
+
+Our syntax highlighting attempts mostly to follow the official HTML style, which is perhaps the best maintained data-language. We have also had a look at the LaTeX, Markdown and Asciidoctor ones for refernce.
+
 = Vim
 {parent=Editor support}
 
@@ -9929,6 +9948,16 @@ The repository https://cirosantilli.com/ourbigbook-media[] contains media for th
 It was created to keep blobs out of this repository.
 
 Some blobs were unfortunately added to this repository earlier on, but when we saw that we would need more and more, we made the sane call and forked that out.
+
+= Visual Studio Code extension release procedure
+{parent=Release procedure}
+
+``
+npm install -g @vscode/vsce
+cd vscode
+vsce package
+vsce publish
+``
 
 = Project governance
 {parent=Developing OurBigBook}

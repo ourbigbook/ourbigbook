@@ -7,8 +7,8 @@ if (!china_dictatorship.get_data().includes("Tiannmen Square protests")) throw 0
 const fs = require('fs');
 const path = require('path');
 const { PerformanceObserver, performance } = require('perf_hooks');
+const { Op } = require('sequelize')
 
-const better_sqlite3 = require('better-sqlite3');
 const chokidar = require('chokidar');
 // This library is terrible, too much magic, hard to understand interface,
 // does not do some obvious basics.
@@ -22,6 +22,7 @@ const sass = require('sass');
 
 const cirodown = require('cirodown');
 const cirodown_nodejs = require('cirodown/nodejs');
+const models = require('cirodown/models')
 
 // Enum stored in Sqlite DB to represent different types of links.
 const INCLUDES_TABLE_NAMES_TYPES = {
@@ -58,27 +59,21 @@ class IdProviderDbAdapter {
 }
 
 class SqliteIdProvider extends cirodown.IdProvider {
-  constructor(convert_input_options) {
+  constructor(sequelize) {
     super();
-    this.delete_ids_stmt = convert_input_options.db.prepare(
-      `DELETE FROM '${convert_input_options.ids_table_name}' WHERE path = ?`);
-    this.delete_includes_stmt = convert_input_options.db.prepare(
-      `DELETE FROM '${convert_input_options.includes_table_name}' WHERE from_path = ?`);
-    this.delete_prefix_ids_stmt = convert_input_options.db.prepare(
-      `DELETE FROM '${convert_input_options.ids_table_name}' WHERE path LIKE ?`);
-    this.delete_prefix_includes_stmt = convert_input_options.db.prepare(
-      `DELETE FROM '${convert_input_options.includes_table_name}' WHERE from_path LIKE ?`);
-    this.get_id_stmt = convert_input_options.db.prepare(
+    this.sequelize = sequelize
+
+    this.get_id_stmt = convert_input_options.sequelize.prepare(
       `SELECT path,ast_json FROM ${convert_input_options.ids_table_name} WHERE id = ?`);
-    this.get_includes_stmt = convert_input_options.db.prepare(
+    this.get_includes_stmt = convert_input_options.sequelize.prepare(
       `SELECT from_id FROM ${convert_input_options.includes_table_name} WHERE to_id = ? AND type = ?`);
-    this.get_includes_stmt_from = convert_input_options.db.prepare(
+    this.get_includes_stmt_from = convert_input_options.sequelize.prepare(
       `SELECT from_id FROM ${convert_input_options.includes_table_name} WHERE from_id = ? AND type = ?`);
   }
 
   clear(input_path) {
-    this.delete_ids_stmt.run(input_path);
-    this.delete_includes_stmt.run(input_path);
+    this.sequelize.models.Id.destroy({ where: { path: input_path } })
+    this.sequelize.models.Include.destroy({ where: { from_path: input_path } })
   }
 
   clear_prefix(prefix) {
@@ -89,8 +84,8 @@ class SqliteIdProvider extends cirodown.IdProvider {
       // Toplevel dir, delete all IDs.
       prefix_literal = '%'
     }
-    this.delete_prefix_ids_stmt.run(prefix_literal);
-    this.delete_prefix_includes_stmt.run(prefix_literal);
+    this.sequelize.models.Id.destroy({ where: { path: { Op.like: prefix_literal } } })
+    this.sequelize.models.Includes.destroy({ where: { from_path: { Op.like: prefix_literal } } })
   }
 
   get_noscope_entry(id) {
@@ -112,11 +107,12 @@ class SqliteIdProvider extends cirodown.IdProvider {
 }
 
 class SqliteFileProvider extends cirodown.FileProvider {
-  constructor(convert_input_options) {
+  constructor(sequelize) {
     super();
-    this.get_file_stmt = convert_input_options.db.prepare(
+    this.sequelize = sequelize
+    this.get_file_stmt = convert_input_options.sequelize.prepare(
       `SELECT * FROM ${convert_input_options.files_table_name} WHERE path = ?`);
-    this.get_file_by_id_stmt = convert_input_options.db.prepare(
+    this.get_file_by_id_stmt = convert_input_options.sequelize.prepare(
       `SELECT * FROM ${convert_input_options.files_table_name} WHERE toplevel_id = ?`);
   }
 
@@ -374,15 +370,15 @@ function convert_path(input_path, options, convert_input_options) {
   }
   if ('db' in convert_input_options) {
     const ids = new_convert_input_options.extra_returns.ids;
-    const insert_id_stmt = convert_input_options.db.prepare(
+    const insert_id_stmt = convert_input_options.sequelize.prepare(
       `INSERT INTO '${convert_input_options.ids_table_name}'
       (id, path, ast_json) VALUES (?, ?, ?);`
     );
-    const insert_include_stmt = convert_input_options.db.prepare(
+    const insert_include_stmt = convert_input_options.sequelize.prepare(
       `INSERT INTO '${convert_input_options.includes_table_name}'
       (from_id, from_path, to_id, type) VALUES (?, ?, ?, ?);`
     );
-    const insert_file_stmt = convert_input_options.db.prepare(
+    const insert_file_stmt = convert_input_options.sequelize.prepare(
       `INSERT OR REPLACE INTO '${convert_input_options.files_table_name}' ` +
       `(path, toplevel_id) VALUES (?, ?);`
     );
@@ -391,7 +387,7 @@ function convert_path(input_path, options, convert_input_options) {
     }
     // This was the 80% bottleneck at Cirodown f8fc9eacfa794b95c1d9982a04b62603e6d0bb83
     // before being converted to a single transaction!
-    convert_input_options.db.transaction(() => {
+    convert_input_options.sequelize.transaction(() => {
       for (const id in ids) {
         const ast = ids[id];
         insert_id_stmt.run(id, ast.source_location.path, JSON.stringify(ast));
@@ -531,63 +527,17 @@ function convert_path_to_file(input_path, options, convert_input_options={}) {
   return output;
 }
 
-function create_db(convert_input_options) {
-  const db_dir = path.dirname(convert_input_options.db_path);
+async function create_db(convert_input_options) {
+  const db_dir = path.dirname(convert_input_options.db_options.storage);
   if (!fs.existsSync(db_dir)) {
     fs.mkdirSync(db_dir, {recursive: true});
   }
-  const db = new better_sqlite3(convert_input_options.db_path, convert_input_options.db_options);
-  if (
-    db.prepare(`SELECT name
-    FROM sqlite_master
-    WHERE type='table' AND name='${convert_input_options.ids_table_name}'
-    `).get() === undefined
-  ) {
-    db.prepare(`
-      CREATE TABLE '${convert_input_options.ids_table_name}' (
-        id TEXT PRIMARY KEY,
-        path TEXT,
-        ast_json TEXT
-      )`
-    ).run();
-  }
-  if (
-    db.prepare(`SELECT name
-    FROM sqlite_master
-    WHERE type='table' AND name='${convert_input_options.includes_table_name}'
-    `).get() === undefined
-  ) {
-    db.prepare(`
-      CREATE TABLE '${convert_input_options.includes_table_name}' (
-        from_id TEXT,
-        from_path TEXT,
-        to_id TEXT,
-        type TINYINT
-      )`
-    ).run();
-    db.prepare(`CREATE INDEX ${convert_input_options.includes_table_name}_from_path
-      ON ${convert_input_options.includes_table_name}(from_path)`
-    ).run();
-    db.prepare(`CREATE INDEX ${convert_input_options.includes_table_name}_from_id_type
-      ON ${convert_input_options.includes_table_name}(from_id, type)`
-    ).run();
-  }
-  if (
-    db.prepare(`SELECT name
-    FROM sqlite_master
-    WHERE type='table' AND name='${convert_input_options.files_table_name}'
-    `).get() === undefined
-  ) {
-    db.prepare(`
-      CREATE TABLE '${convert_input_options.files_table_name}' (
-        path TEXT PRIMARY KEY,
-        toplevel_id TEXT UNIQUE
-      )`
-    ).run();
-  }
-  convert_input_options.db = db;
-  convert_input_options.file_provider = new SqliteFileProvider(convert_input_options);
-  convert_input_options.id_provider = new SqliteIdProvider(convert_input_options);
+  const sequelize = new Sequelize(convert_input_options.db_options)
+  models.addModels(sequelize)
+  await sequelize.sync()
+  convert_input_options.sequelize = sequelize;
+  convert_input_options.file_provider = new SqliteFileProvider(sequelize);
+  convert_input_options.id_provider = new SqliteIdProvider(sequelize);
 }
 
 function generate_redirect(options, redirect_src_id, redirect_target_id, outdir) {
@@ -784,6 +734,7 @@ commander.arguments(
 commander.parse(process.argv);
 
 // main action.
+(async () => {
 if (commander.helpMacros) {
   console.log(JSON.stringify(cirodown.macro_list(), null, 2));
 } else if (commander.china) {
@@ -1041,7 +992,10 @@ if (commander.helpMacros) {
   let convert_input_options = {
     cirodown_json_dir,
     commander,
-    db_options: {},
+    db_options: {
+      dialect: 'sqlite',
+      logging: convert_input_options_log.db,
+    },
     encoding: cirodown_nodejs.ENCODING,
     external_css_and_js: false,
     had_error: false,
@@ -1051,9 +1005,6 @@ if (commander.helpMacros) {
     outdir,
     publish,
   };
-  if (convert_input_options_log.db) {
-    convert_input_options.db_options.verbose = console.log;
-  }
   let input_git_toplevel;
   let subdir_relpath;
   let publish_tmpdir;
@@ -1113,11 +1064,9 @@ if (commander.helpMacros) {
 
     // Setup the ID database.
     if (commander.db) {
-      convert_input_options.db_path = path.join(publish_tmpdir, 'db.sqlite3');
-      convert_input_options.ids_table_name = 'ids';
-      convert_input_options.includes_table_name = 'includes';
-      convert_input_options.files_table_name = 'files';
-      convert_input_options.refs_table_name = 'refs';
+      convert_input_options.db_options.storage = path.join(publish_tmpdir, 'db.sqlite3');
+    } else {
+      convert_input_options.db_options.storage = ':memory:'
     }
     if (commander.generateRedirects) {
       generate_redirects(convert_input_options, cirodown_json, outdir);
@@ -1127,7 +1076,7 @@ if (commander.helpMacros) {
       if (publish) {
         cli_error('--publish and --watch are incompatible');
       }
-      create_db(convert_input_options);
+      await create_db(convert_input_options);
       if (!input_path_is_file) {
         convert_directory_extract_ids(inputPath, options, convert_input_options);
         generate_redirects(convert_input_options, cirodown_json, outdir);
@@ -1140,7 +1089,7 @@ if (commander.helpMacros) {
         if (publish) {
           cli_error('--publish must take a directory as input, not a file');
         }
-        create_db(convert_input_options);
+        await create_db(convert_input_options);
         output = convert_path_to_file(inputPath, options, convert_input_options);
       } else {
         let actual_input_dir;
@@ -1209,7 +1158,7 @@ if (commander.helpMacros) {
           publish_out_publish_dir = outdir;
         }
         convert_input_options.outdir = publish_out_publish_dir;
-        create_db(convert_input_options);
+        await create_db(convert_input_options);
 
         // Remove IDs and other metadata from files that might have been removed from disk.
         // https://github.com/cirosantilli/cirodown/issues/125
@@ -1300,3 +1249,4 @@ if (commander.helpMacros) {
     process.exit(convert_input_options.had_error);
   }
 }
+})()

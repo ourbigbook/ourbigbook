@@ -346,6 +346,12 @@ function assert_executable(
     if (!('expect_filesystem_xpath' in options)) {
       options.expect_filesystem_xpath = {};
     }
+    if (!('expect_exists' in options)) {
+      options.expect_exists = [];
+    }
+    if (!('expect_not_exists' in options)) {
+      options.expect_not_exists = [];
+    }
     const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'cirodown'));
     for (const relpath in options.filesystem) {
       const dirpath = path.join(tmpdir, path.parse(relpath).dir);
@@ -380,6 +386,14 @@ ${out.stderr.toString(cirodown_nodejs.ENCODING)}`;
       for (const xpath_expr of options.expect_filesystem_xpath[relpath]) {
         assert_xpath_matches(xpath_expr, html, {message: assert_msg_xpath});
       }
+    }
+    for (const relpath of options.expect_exists) {
+      const fullpath = path.join(tmpdir, relpath);
+      assert.ok(fs.existsSync(fullpath), relpath);
+    }
+    for (const relpath of options.expect_not_exists) {
+      const fullpath = path.join(tmpdir, relpath);
+      assert.ok(!fs.existsSync(fullpath), relpath);
     }
     fs.rmdirSync(tmpdir, {recursive: true});
   });
@@ -2050,6 +2064,24 @@ assert_convert_ast('cross reference to non-included file with toplevel scope',
     }
   }
 );
+assert_convert_ast('toplevel scope gets removed',
+  `= Notindex
+{scope}
+
+== h2
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('Notindex')]}),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('h2')]}),
+  ],
+  {
+    assert_xpath_matches: [
+      "//x:h1[@id='notindex']",
+      "//x:h2[@id='h2']",
+    ],
+  }
+);
 
 // Headers.
 assert_convert_ast('header simple',
@@ -2851,17 +2883,27 @@ assert_executable(
   }
 );
 assert_executable(
-  'input from directory produces several output files and cirodown.json',
+  'input from directory with cirodown.json produces several output files',
   {
     args: ['.'],
     filesystem: {
-      'README.ciro': `= Index\n`,
+      'README.ciro': `= Index
+
+\\x[toplevel-scope]
+
+\\x[toplevel-scope/toplevel-scope-h2]
+`,
       'notindex.ciro': `= Notindex\n`,
+      'toplevel-scope.ciro': `= Toplevel scope
+{scope}
+
+== Toplevel scope h2
+`,
       'subdir/index.ciro': `= Subdir index
 
 == Subdir index h2
 `,
-      //'subdir/notindex.ciro': `= Subdir notindex\n`,
+      'subdir/notindex.ciro': `= Subdir notindex\n`,
       'cirodown.json': `{}\n`,
     },
     expect_filesystem_xpath: {
@@ -2869,10 +2911,80 @@ assert_executable(
       'notindex.html': ["//x:h1[@id='notindex']"],
       'subdir/index.html': [
         "//x:h1[@id='subdir']",
-        // TODO
-        //"//x:h2[@id='subdir/subdir-index-h2']",
+        "//x:h2[@id='subdir/subdir-index-h2']",
       ],
-      //'subdir/notindex.html': "//x:h1[@id='notindex']",
+      'subdir/notindex.html': ["//x:h1[@id='notindex']"],
     }
+  }
+);
+assert_executable(
+  'convert subdirectory only with cirodown.json',
+  {
+    args: ['subdir'],
+    filesystem: {
+      'README.ciro': `= Index`,
+      'subdir/index.ciro': `= Subdir index`,
+      'subdir/notindex.ciro': `= Subdir notindex`,
+    },
+    // Place out next to cirodown.json which should be the toplevel.
+    expect_exists: ['out'],
+    expect_not_exists: ['subdir/out', 'index.html'],
+    expect_filesystem_xpath: {
+      'subdir/index.html': ["//x:h1[@id='subdir']"],
+      'subdir/notindex.html': ["//x:h1[@id='notindex']"],
+    }
+  }
+);
+assert_executable(
+  'convert subdirectory only without cirodown.json',
+  {
+    args: ['subdir'],
+    filesystem: {
+      'README.ciro': `= Index`,
+      'subdir/index.ciro': `= Subdir index`,
+      'subdir/notindex.ciro': `= Subdir notindex`,
+    },
+    // Don't know a better place to place out, so just put it int subdir.
+    expect_exists: ['subdir/out'],
+    expect_not_exists: ['out', 'index.html'],
+    expect_filesystem_xpath: {
+      'subdir/index.html': ["//x:h1[@id='subdir']"],
+      'subdir/notindex.html': ["//x:h1[@id='notindex']"],
+    }
+  }
+);
+assert_executable(
+  'convert a subdirectory file only with cirodown.json',
+  {
+    args: ['subdir/notindex.ciro'],
+    filesystem: {
+      'README.ciro': `= Index`,
+      'subdir/index.ciro': `= Subdir index`,
+      'subdir/notindex.ciro': `= Subdir notindex`,
+      'cirodown.json': `{}`,
+    },
+    // Place out next to cirodown.json which should be the toplevel.
+    expect_exists: ['out'],
+    expect_not_exists: ['subdir/out', 'index.html', 'subdir/index.html'],
+    expect_filesystem_xpath: {
+      'subdir/notindex.html': ["//x:h1[@id='notindex']"],
+    },
+  }
+);
+assert_executable(
+  'convert a subdirectory file only without cirodown.json',
+  {
+    args: ['subdir/notindex.ciro'],
+    filesystem: {
+      'README.ciro': `= Index`,
+      'subdir/index.ciro': `= Subdir index`,
+      'subdir/notindex.ciro': `= Subdir notindex`,
+    },
+    // Don't know a better place to place out, so just put it int subdir.
+    expect_exists: ['subdir/out'],
+    expect_not_exists: ['out', 'index.html', 'subdir/index.html'],
+    expect_filesystem_xpath: {
+      'subdir/notindex.html': ["//x:h1[@id='notindex']"],
+    },
   }
 );

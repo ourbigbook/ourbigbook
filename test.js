@@ -403,7 +403,7 @@ function assert_executable(
     fs.rmdirSync(testdir, { recursive: true});
     fs.mkdirSync(testdir);
     const tmpdir = fs.mkdtempSync(testdir + path.sep);
-    const cwd = path.join(tmpdir, options.cwd)
+    const cwd = path.relative(process.cwd(), path.join(tmpdir, options.cwd))
     if (!fs.existsSync(cwd)) {
       fs.mkdirSync(cwd);
     }
@@ -417,7 +417,7 @@ function assert_executable(
     process.env.PATH = process.cwd() + ':' + process.env.PATH
     for (const [cmd, args] of options.pre_exec) {
       const out = child_process.spawnSync(cmd, args, {cwd: cwd});
-      assert.strictEqual(out.status, 0, exec_assert_message(out, cmd, args, tmpdir));
+      assert.strictEqual(out.status, 0, exec_assert_message(out, cmd, args, cwd));
     }
     const cmd = 'cirodown'
     const args = ['--fakeroot', testdir].concat(options.args)
@@ -425,7 +425,7 @@ function assert_executable(
       cwd: cwd,
       input: options.stdin,
     });
-    const assert_msg = exec_assert_message(out, cmd, args, tmpdir);
+    const assert_msg = exec_assert_message(out, cmd, args, cwd);
     assert.strictEqual(out.status, options.expect_exit_status, assert_msg);
     for (const xpath_expr of options.expect_stdout_xpath) {
       assert_xpath_matches(
@@ -455,12 +455,12 @@ function assert_executable(
     for (const relpath of options.expect_exists) {
       const fullpath = path.join(tmpdir, relpath);
       assert.ok(fs.existsSync(fullpath), exec_assert_message(
-        out, cmd, args, tmpdir, 'path should exist: ' + relpath));
+        out, cmd, args, cwd, 'path should exist: ' + relpath));
     }
     for (const relpath of options.expect_not_exists) {
       const fullpath = path.join(tmpdir, relpath);
       assert.ok(!fs.existsSync(fullpath), exec_assert_message(
-        out, cmd, args, tmpdir, 'path should not exist: ' + relpath));
+        out, cmd, args, cwd, 'path should not exist: ' + relpath));
     }
   });
 }

@@ -33,8 +33,6 @@ export type ArticleListProps = {
 const ArticleList = ({
   articles,
   articlesCount,
-  comments,
-  commentsCount,
   followed=false,
   itemType='article',
   issueArticle,
@@ -217,7 +215,7 @@ const ArticleList = ({
                           <LikeArticleButton {...{
                             article,
                             isIssue,
-                            curIssueArticle,
+                            issueArticle: curIssueArticle,
                             loggedInUser,
                             showText: false,
                           }} />

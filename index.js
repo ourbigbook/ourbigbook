@@ -3127,6 +3127,19 @@ function html_hide_hover_link(id) {
   }
 }
 
+function html_img({ alt, ast, context, rendered_attrs, src }) {
+  let error
+  ;({ href: src, error } = check_and_update_local_link({
+    check: ast.validation_output.check.boolean,
+    context,
+    href: src,
+    source_location: ast.args.src.source_location,
+  }))
+  return `<img${html_attr('src',
+    html_escape_attr(src))
+  }${html_attr('loading', 'lazy')}${rendered_attrs}${alt}>${error}\n`;
+}
+
 function html_is_whitespace_text_node(ast) {
   return ast.node_type === AstType.PLAINTEXT && html_is_whitespace(ast.text);
 }
@@ -5748,16 +5761,10 @@ const TokenType = make_enum([
   'POSITIONAL_ARGUMENT_START',
 ]);
 const DEFAULT_MEDIA_HEIGHT = 315;
-const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [
-  new MacroArgument({
-    name: Macro.TITLE_ARGUMENT_NAME,
-  }),
+const IMAGE_INLINE_BLOCK_COMMON_NAMED_ARGUMENTS = [
   new MacroArgument({
     name: 'check',
     boolean: true,
-  }),
-  new MacroArgument({
-    name: 'description',
   }),
   new MacroArgument({
     name: 'height',
@@ -5768,6 +5775,18 @@ const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [
     name: 'provider',
   }),
   new MacroArgument({
+    name: 'width',
+    positive_nonzero_integer: true,
+  }),
+]
+const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = IMAGE_INLINE_BLOCK_COMMON_NAMED_ARGUMENTS.concat([
+  new MacroArgument({
+    name: Macro.TITLE_ARGUMENT_NAME,
+  }),
+  new MacroArgument({
+    name: 'description',
+  }),
+  new MacroArgument({
     name: 'source',
     elide_link_only: true,
   }),
@@ -5775,11 +5794,7 @@ const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [
     name: 'titleFromSrc',
     boolean: true,
   }),
-  new MacroArgument({
-    name: 'width',
-    positive_nonzero_integer: true,
-  }),
-];
+]);
 
 /**
  * Calculate a bunch of default parameters of the media from smart defaults if not given explicitly
@@ -5844,10 +5859,10 @@ async function macro_image_video_resolve_params(ast, context) {
   }
 
   return {
-    error_message: error_message,
+    error_message,
     media_provider_type: media_provider_type,
-    is_url: is_url,
-    src: src,
+    is_url,
+    src,
   }
 }
 
@@ -6489,17 +6504,8 @@ const DEFAULT_MACRO_LIST = [
       {
         caption_prefix: 'Figure',
         image_video_content_func: function (ast, context, src, rendered_attrs, alt, media_provider_type, is_url) {
-          let error
-          const check = ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined
-          ;({ href: src, error } = check_and_update_local_link({
-            check,
-            context,
-            href: src,
-            source_location: ast.args.src.source_location,
-          }))
-          return `<a${html_attr('href', src)}><img${html_attr('src',
-            html_escape_attr(src))
-          }${html_attr('loading', 'lazy')}${rendered_attrs}${alt}></a>${error}\n`;
+          const img_html = html_img({ alt, ast, context, rendered_attrs, src })
+          return `<a${html_attr('href', src)}>${img_html}</a>\n`;
         },
         named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS,
         source_func: async function (ast, context, src, media_provider_type, is_url) {
@@ -6526,16 +6532,7 @@ const DEFAULT_MACRO_LIST = [
   ),
   new Macro(
     'image',
-    [
-      new MacroArgument({
-        name: 'src',
-        elide_link_only: true,
-        mandatory: true,
-      }),
-      new MacroArgument({
-        name: 'alt',
-      }),
-    ],
+    MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
     async function(ast, context) {
       let alt_arg;
       if (ast.args.alt === undefined) {
@@ -6544,26 +6541,16 @@ const DEFAULT_MACRO_LIST = [
         alt_arg = ast.args.alt;
       }
       let alt = html_attr('alt', html_escape_attr(await render_arg(alt_arg, context)));
-      let img_attrs = await html_convert_attrs_id(ast, context, ['height', 'width']);
-      let {error_message, src} = await macro_image_video_resolve_params(ast, context);
-      src = html_attr('src', html_escape_attr(src));
-      return `<img${src}${html_attr('loading', 'lazy')}${img_attrs}${alt}>`;
+      let rendered_attrs = await html_convert_attrs_id(ast, context, ['height', 'width']);
+      let { error_message, src } = await macro_image_video_resolve_params(ast, context);
+      let ret = html_img({ alt, ast, context, rendered_attrs, src })
+      if (error_message) {
+        ret += error_message_in_output(error_message, context)
+      }
+      return ret
     },
     {
-      named_args: [
-        new MacroArgument({
-          name: 'height',
-          default: DEFAULT_MEDIA_HEIGHT.toString(),
-          positive_nonzero_integer: true,
-        }),
-        new MacroArgument({
-          name: 'provider',
-        }),
-        new MacroArgument({
-          name: 'width',
-          positive_nonzero_integer: true,
-        }),
-      ],
+      named_args: IMAGE_INLINE_BLOCK_COMMON_NAMED_ARGUMENTS,
       phrasing: true,
     }
   ),
@@ -7244,10 +7231,10 @@ const DEFAULT_MACRO_LIST = [
             return `<iframe width="560" height="${DEFAULT_MEDIA_HEIGHT}" loading="lazy" src="https://www.youtube.com/embed/${html_escape_attr(video_id)}${start}" ` +
                   `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
           } else {
-            let error
             const check = ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined
+            let error
             ;({ href: src, error } = check_and_update_local_link({
-              check,
+              check: ast.validation_output.check.boolean,
               context,
               href: src,
               source_location: ast.args.src.source_location,

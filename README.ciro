@@ -199,7 +199,9 @@ One major advantage of this, is that when writing documentation, you often want 
 
 \x[insane-macro-shortcuts][Insane] autolink (link text is the same as the link):
 \cirodown_example[[
-The website http://example.com is cool.
+The website http://example.com is cool. See also:
+
+\q[http://example.com/2]
 ]]
 Exact parsing rules described at: \x[insane-link-parsing-rules]{style=full}.
 
@@ -222,14 +224,21 @@ paragraphs]
 
 \h[3][Insane link parsing rules]
 
-\l[must be preceded by a space ` `, newline `\n` or the start of the document]
-\l[the recognized protocols are: `http` and `https`]
-\l[ends when either the end of the document or one of the following characters is found:
+Insane links must be preceded by either the start of the document or one of the following characters:
+\l[space ` `]
+\l[newline `\n`]
+\l[open square bracket `[`]
+\l[open curly bracket `{`]
+
+The recognized protocols are:
+\l[`http://`]
+\l[`https://`]
+
+Insane links end when either the end of the document or one of the following characters is found:
 \l[space ` `]
 \l[newline `\n`]
 \l[close square bracket `]`]
 \l[close curly bracket `}`]
-]
 
 As a consequence, of those rules, it is impossible to have an insane link followed immediately by a period, e.g.:
 \cirodown_example[[
@@ -245,15 +254,22 @@ If you want your link to include one of the terminating characters, e.g. `]`, al
 Hello http://example.com\]a\}b\\c\ d world.
 ]]
 
-Also note that the `http://example.com` inside `\a[http://example.com]` is not treated as an insane autolink itself because `h` is preceded by `[`. If you wrote it with a space as in: `\a[ http://example.com]` then it would be expanded, which is likely not what you want:
+Note that the `http://example.com` inside `\a[http://example.com]` only works because we do some post-processing magic that prevents its expansion, otherwise the link would expand twice:
 \cirodown_example[[
-\a[ http://example.com]
-]]
+\p[http://example.com]
 
-\Comment[[[
-TODO literal link mechanism:
+\a[http://example.com]
+]]
+This magic can be observed with \x[help-macros] by seeing that the `href` argument of the `a` macro has the property: 
+``
+"elide_link_only": true,
+``
+
+TODO it is currently impossible to prevent autolinks from expanding, we can either go with an empty macro solution, or with a literal text solution:
+\C[[[
 \cirodown_example[[
 Literal URL \empty[]http://example.com but why?
+Literal URL \text[[http://example.com]] but why?
 ]]
 ]]]
 
@@ -546,7 +562,6 @@ Here is an example of inclusion of the files `not-readme.ciro` and `not-readme-2
 \h[3][Skipping header levels]
 
 The very first header of a document can be of any level, although we highly recommend your document to start with a `\h[1]`, and to contain exactly just one `\h[1]`, as this has implications such as:
-
 \l[`\h[1]` is used for the document title: \x[html-document-title]]
 \l[`\h[1]` does not show on the \x[table-of-contents]]
 

@@ -594,6 +594,10 @@ assert_convert_ast('link auto insane start end document',
   'http://example.com',
   [a('p', [a('a', undefined, {'href': [t('http://example.com')]})])],
 );
+assert_convert_ast('link auto insane start end document square brackets',
+  '\\p[http://example.com]\n',
+  [a('p', [a('a', undefined, {'href': [t('http://example.com')]})])],
+);
 assert_convert_ast('link auto insane newline',
   `a
 

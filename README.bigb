@@ -172,7 +172,7 @@ Key links:
     == Cat
 
     \Image[My_cat.jpg]
-    {title=My cat.}
+    {title=My cat}
     ``
   * <scopes> either with directories or with within a single file:
     ``
@@ -927,7 +927,7 @@ ab
 cd
 ``
 {id=code-my-nice-code}
-{title=My nice code block.}
+{title=My nice code block}
 ]]
 
 = `\OurBigBookExample`
@@ -1259,10 +1259,10 @@ Besides disambiguating headers, the `disambiguate` argument has a second related
 \x[image-the-title-of-my-disambiguate-image-2]{full}
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title=The title of my disambiguate image.}
+{title=The title of my disambiguate image}
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title=The title of my disambiguate image.}
+{title=The title of my disambiguate image}
 {disambiguate=2}
 ]]
 Note that unlike for headers, `disambiguate` does not appear on the title of images at all. It serves only to create an unique ID that can be later referred to. Headers are actually the only case where `disambiguate` shows up on the visible rendered output. We intend on making this application obsolete however with:
@@ -1992,7 +1992,7 @@ So for example, the following automatic IDs would be generated: <table Examples 
 |
 | `love` is extracted from the italic tags `<i>love</i>` with <id output format> conversion.
 ]
-{title=Examples of automatically generated IDs.}
+{title=Examples of automatically generated IDs}
 
 For <the toplevel header>[the toplevel header], its ID is derived from the basename of the OurBigBook file without extension instead of from the `title` argument.
 
@@ -2272,7 +2272,7 @@ A block image with <block vs inline macros>[capital] 'i' `Image` showcasing most
 Have a look at this amazing image: \x[image-my-test-image].
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title=The title of my image.}
+{title=The title of my image}
 {id=image-my-test-image}
 {width=600}
 {height=200}
@@ -2280,7 +2280,7 @@ Have a look at this amazing image: \x[image-my-test-image].
 {description=The description of my image.}
 ]]
 This exemplifies the following parameters:
-* `title`: analogous to the <\H title argument>. Shows up preeminently, and sets a default ID if one is not given.
+* `title`: analogous to the <\H title argument>. Shows up preeminently, and sets a default ID if one is not given. It is recommended that you don't add a period `.` to it, as that would show in <cross references>
 * <image description argument>[`description`]: similar to `title`, but allow for further explanations without them appearing in <cross reference>[cross references] to the image
 * `source`: a standardized way to credit an image by linking to a URL that contains further image metadata
 For further discussion on the effects of ID see: <image ID>{full}.
@@ -2530,14 +2530,14 @@ Analogous to the <\a check argument> when checking if the <image src argument> e
 {parent=image-argument}
 {tag=named-argument}
 
-The `description` argument similar to the <image title argument> argument, but allows allowing longer explanations without them appearing in <cross reference>[cross references] to the image.
+The `description` argument similar to the <image title argument> argument, but allows allowing longer explanations without them appearing in <cross references> to the image.
 
 For example, consider:
 \OurBigBookExample[[
 See this image: \x[image-description-argument-test-1].
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title=Tank man standing in front of some tanks.}
+{title=Tank man standing in front of some tanks}
 {id=image-description-argument-test-1}
 {description=Note how the tanks are green.}
 {source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
@@ -2553,7 +2553,7 @@ If the description contains any element that would take its own separate line, l
 Stuff before the image.
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title=Tank man standing in front of some tanks.}
+{title=Tank man standing in front of some tanks}
 {id=image-description-argument-test-2}
 {source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
 {description=Note how the tanks are green.
@@ -2562,6 +2562,8 @@ But the shirt is white.}
 
 Stuff after the image description.
 ]]
+
+We recommend adding a period or other punctuation to the end of every description.
 
 = Image `src` argument
 {parent=image-argument}
@@ -2976,11 +2978,11 @@ Equation IDs and titles and linking to equations works identically to <images>, 
 $$
 \sqrt{1 + 1}
 $$
-{title=My first insane equation.}
+{title=My first insane equation}
 ]]
 and the sane equivalent <equation My first sane equation.>:
 \OurBigBookExample[[[
-\M{title=My first sane equation.}[[
+\M{title=My first sane equation}[[
 \sqrt{1 + 1}
 ]]
 ]]]
@@ -3163,7 +3165,7 @@ Any white space indentation inside an explicit `\Tr` can make the code more read
 To pass further arguments to an implicit table such as `title` or `id`, you need to use an explicit `table` macro as in: <table my table>.
 \OurBigBookExample[[
 \Table
-{title=My table title.}
+{title=My table title}
 {id=table-my-table}
 [
 || Header 1
@@ -3226,7 +3228,7 @@ And now a table outside of <\OurBigBookExample> to test how it looks directly un
 | 2 1
 | 2 2
 ]
-{title=My table title.}
+{title=My table title}
 
 And a fully insane one:
 
@@ -3345,14 +3347,14 @@ As a result, then https://commons.wikimedia.org[Wikimedia Commons] is one of the
 \OurBigBookExample[[
 \Video[https://upload.wikimedia.org/wikipedia/commons/8/85/Vacuum_pump_filter_cut_and_place_in_eppendorf.webm]
 {id=sample-video-in-wikimedia-commons}
-{title=Nice sample video stored in Wikimedia Commons.}
+{title=Nice sample video stored in Wikimedia Commons}
 {start=5}
 ]]
 We also handle more complex transcoded video URLs just fine:
 \OurBigBookExample[[
 \Video[https://upload.wikimedia.org/wikipedia/commons/transcoded/1/19/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv.480p.vp9.webm]
 {id=sample-video-in-wikimedia-commons-transcoded}
-{title=Nice sample video stored in Wikimedia Commons transcoded.}
+{title=Nice sample video stored in Wikimedia Commons transcoded}
 ]]
 Commons is better than YouTube if your content is on-topic there because:
 * they have no ads
@@ -3363,19 +3365,19 @@ If your video does not fit the above Wikimedia Commons requirements, YouTube cou
 \OurBigBookExample[[
 \Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
 {id=sample-video-from-youtube-implicit-youtube}
-{title=Nice sample video embedded from YouTube implicit from `youtube.com` URL.}
+{title=Nice sample video embedded from YouTube implicit from `youtube.com` URL}
 ]]
 The `youtu.be` domain hack URLs also work;
 \OurBigBookExample[[
 \Video[https://youtu.be/YeFzeNAHEhU?t=38]
 {id=sample-video-from-youtube-implicit-youtu-be}
-{title=Nice sample video embedded from YouTube implicit from `youtu.be` URL.}
+{title=Nice sample video embedded from YouTube implicit from `youtu.be` URL}
 ]]
 Alternatively, you can reach the same result in a more explicit and minimal way by setting `{provider=youtube}` and the <\Video start argument>[`start`] arguments:
 \OurBigBookExample[[
 \Video[YeFzeNAHEhU]{provider=youtube}
 {id=sample-video-from-youtube-explicit}
-{title=Nice sample video embedded from YouTube with explicit `youtube` argument.}
+{title=Nice sample video embedded from YouTube with explicit `youtube` argument}
 {start=38}
 ]]
 When the `youtube` provider is selected, the Video address should only to contain the YouTube video ID, which shows in the YouTube URL for the video as:
@@ -3393,7 +3395,7 @@ But you can also use raw video files from any location that can serve them of co
 \OurBigBookExample[[
 \Video[Tank_man_side_hopping_in_front_of_some_tanks.mp4]
 {id=sample-video-in-repository}
-{title=Nice sample video stored in this repository.}
+{title=Nice sample video stored in this repository}
 {source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
 {start=3}
 ]]
@@ -3667,7 +3669,7 @@ To prevent such problems, OurBigBook emits an error if you use an `\x` without c
   = h1
 
   \Image[myimg.jpg]
-  {title=my \x[h1].}
+  {title=my \x[h1]}
   ``
   This is allowed because OurBigBook calculates IDs in two stages: first for all headers, and only later non non-headers.
 
@@ -3675,29 +3677,29 @@ To prevent such problems, OurBigBook emits an error if you use an `\x` without c
   ``
   \Image[myimg.jpg]
   {id=myimage1}
-  {title=My image 1.}
+  {title=My image 1}
 
   \Image[myimg.jpg]
-  {title=my \x[h1].}
+  {title=my \x[h1]}
   ``
   and there the workaround are much the same as for headers: either explicitly set the cross reference content:
   ``
   \Image[myimg.jpg]
   {id=myimage1}
-  {title=My image 1.}
+  {title=My image 1}
 
   \Image[myimg.jpg]
-  {title=my \x[h1][My image 1].}
+  {title=my \x[h1][My image 1]}
   ``
   or explicitly set an ID:
   ``
   \Image[myimg.jpg]
   {id=myimage1}
-  {title=My image 1.}
+  {title=My image 1}
 
   \Image[myimg.jpg]
   {id=myimage2}
-  {title=my \x[h1].}
+  {title=my \x[h1]}
   ``
 
 While it is technically possible relax the above limitations and give an error only in case of loops, it would require a bit of extra work which we don't want to put in right now: https://github.com/cirosantilli/ourbigbook/issues/95[].
@@ -3708,32 +3710,32 @@ For example this would contain an infinite loop:
 ``
 \Image[myimg.jpg]
 {id=myimage1}
-{title=\x[myimage2].}
+{title=\x[myimage2]}
 
 \Image[myimg.jpg]
 {id=myimage2}
-{title=\x[myimage1].}
+{title=\x[myimage1]}
 ``
 
 This infinite recursion is fundamentally not technically solved: the user has to manually break the loop by providing an `x` content explicitly, e.g. in either:
 ``
 \Image[myimg.jpg]
 {id=myimage1}
-{title=\x[myimage2][my content 2].}
+{title=\x[myimage2][my content 2]}
 
 \Image[myimg.jpg]
 {id=myimage2}
-{title=\x[myimage1].}
+{title=\x[myimage1]}
 ``
 or:
 ``
 \Image[myimg.jpg]
 {id=myimage1}
-{title=\x[myimage2].}
+{title=\x[myimage2]}
 
 \Image[myimg.jpg]
 {id=myimage2}
-{title=\x[myimage1][my content 1].}
+{title=\x[myimage1][my content 1]}
 ``
 
 A closely related limitation is the simplistic approach to <\x id output format>.
@@ -7473,14 +7475,14 @@ Every OurBigBook document is implicitly put inside a `\Toplevel` document and:
 
 E.g., a OurBigBook document that contains:
 ``
-{title=My favorite title.}
+{title=My favorite title}
 
 And now, some content!
 ``
 
 is morally equivalent to:
 ``
-\Toplevel{title=My favorite title.}
+\Toplevel{title=My favorite title}
 [
 And now, some content!
 ]

@@ -1713,6 +1713,107 @@ assert_lib('link to image in other files that has title with two x to other head
     },
   }
 );
+assert_lib('image: dot added automatically between title and description if title does not end in punctuation',
+  {
+    convert_dir: true,
+    filesystem: {
+      'index.bigb': `\\Image[http://a]
+{title=My title 1}
+{description=My image 1.}
+
+\\Image[http://a]
+{title=My title 2.}
+{description=My image 2.}
+
+\\Image[http://a]
+{title=My title 3?}
+{description=My image 3.}
+
+\\Image[http://a]
+{title=My title 4!}
+{description=My image 4.}
+
+\\Image[http://a]
+{title=My title 5 (2000)}
+{description=My image 5.}
+
+\\Image[http://a]
+{title=My title with source 1}
+{description=My image with source 1.}
+{source=http://example.com}
+
+\\Image[http://a]
+{title=My title with source 2.}
+{description=My image with source 2.}
+{source=http://example.com}
+
+\\Video[http://a]
+{title=My title 1}
+{description=My video 1.}
+
+\\Video[http://a]
+{title=My title 2.}
+{description=My video 2.}
+
+\`\`
+f()
+\`\`
+{title=My title 1}
+{description=My code 1.}
+
+\`\`
+f()
+\`\`
+{title=My title 2.}
+{description=My code 2.}
+
+\\Table[
+| a
+| b
+]
+{title=My title 1}
+{description=My table 1.}
+
+\\Table[
+| a
+| b
+]
+{title=My title 2.}
+{description=My table 2.}
+
+\\Q[To be]
+{title=My title 1}
+{description=My quote 1.}
+
+\\Q[To be]
+{title=My title 2.}
+{description=My quote 2.}
+`
+    },
+    assert_xpath: {
+      'index.html': [
+        "//x:figcaption[text()='. My title 1. My image 1.']",
+        "//x:figcaption[text()='. My title 2. My image 2.']",
+        "//x:figcaption[text()='. My title 3? My image 3.']",
+        "//x:figcaption[text()='. My title 4! My image 4.']",
+        "//x:figcaption[text()='. My title 5 (2000) My image 5.']",
+        "//x:figcaption[text()='. My title 1. My video 1.']",
+        "//x:figcaption[text()='. My title 2. My video 2.']",
+        // TODO any way to test this properly? I would like something like:
+        //"//x:figcaption[text()='. My title with source 2. . My image with source 2.']",
+        // There are multiple text nodes because of the <a from source in the middle.
+        "//x:figcaption[text()='. My title with source 1. ']",
+        "//x:figcaption[text()='. My title with source 2. ']",
+        "//x:div[@class='caption' and text()='. My title 1. My code 1.']",
+        "//x:div[@class='caption' and text()='. My title 2. My code 2.']",
+        "//x:div[@class='caption' and text()='. My title 1. My table 1.']",
+        "//x:div[@class='caption' and text()='. My title 2. My table 2.']",
+        "//x:div[@class='caption' and text()='. My title 1. My quote 1.']",
+        "//x:div[@class='caption' and text()='. My title 2. My quote 2.']",
+      ],
+    },
+  }
+);
 
 // Escapes.
 assert_convert_ast('escape backslash',            'a\\\\b\n', [a('P', [t('a\\b')])]);

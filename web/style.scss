@@ -54,7 +54,7 @@ button, a.btn {
   padding: 2px 5px;
   text-decoration: none;
   vertical-align: middle;
-  &:not(.disabled):not(.disabled-hover) {
+  &:not(.disabled) {
     &, &:hover.active {
       background-color: #181818;
       color: $button-fg-color;
@@ -63,7 +63,7 @@ button, a.btn {
       }
     }
     &:hover, &.active {
-      background-color: $like-button-active-color;
+      background-color: #BB1070;
       color: $like-button-inactive-color;
       i.ion-heart {
         color: white;
@@ -71,12 +71,10 @@ button, a.btn {
       //border-color: $button-bg-color;
     }
   }
-  &.disabled, &.disabled-hover {
-    cursor: default;
-  }
   &.disabled {
-    background-color: #BBB;
-    color: black;
+    cursor: default;
+    background-color: #444;
+    color: white;
   }
   &.small {
     // A button that can be placed side-by-side with text taking up a comparable height.

@@ -48,9 +48,6 @@ router.post('/', auth.required, async function(req, res, next) {
   try {
     const article = await getArticle(req, res)
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-    if (!user) {
-      return res.sendStatus(401)
-    }
     validateParam(req.body.comment, 'body')
     const comment = await req.app.get('sequelize').models.Comment.create(
       Object.assign({}, req.body.comment, { articleId: article.id, authorId: user.id })

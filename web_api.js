@@ -67,7 +67,7 @@ class WebApi {
     return this.req('delete', `articles/like?id=${encodeURIComponent(slug)}`)
   }
 
-  async articleUpdate(article, slug) {
+  async articleCreateOrUpdate(article, slug) {
     return this.req('put',
       `articles?id=${encodeURIComponent(slug)}`,
       { body: { article } },

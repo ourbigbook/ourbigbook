@@ -3958,6 +3958,14 @@ function htmlClassAttr(classes) {
   return htmlAttr('class', classes.join(' '))
 }
 
+function htmlClassesAttr(classes) {
+  if (classes.length) {
+    return ` ${htmlClassAttr(classes)}`
+  } else {
+    return ''
+  }
+}
+
 function htmlCode(content, attrs) {
   return htmlElem('pre', htmlElem('code', content), attrs);
 }
@@ -4099,6 +4107,7 @@ function htmlEscapeContext(context, str) {
   }
 }
 
+/** Image handling common to both inline and block images. */
 function htmlImg({
   alt,
   ast,
@@ -4121,17 +4130,27 @@ function htmlImg({
     media_provider_type,
     source_location: ast.args.src.source_location,
   }))
+
+  const classes = []
   let border_attr
   if (ast.validation_output.border.boolean) {
-    border_attr = htmlAttr('class', 'border')
-  } else {
-    border_attr = ''
+    classes.push('border')
   }
+  if (inline) {
+    classes.push('inline')
+  }
+
   if (relpath_prefix !== undefined) {
     src = path.join(relpath_prefix, src)
   }
+  let cls
+  if (inline) {
+    cls = ' class="inline"'
+  } else {
+    cls = ''
+  }
   const href = ast.validation_output.link.given ? renderArg(ast.args.link, context) : src
-  let html = `<a${htmlAttr('href', href)}><img${htmlAttr('src', htmlEscapeAttr(src))}${htmlAttr('loading', 'lazy')}${rendered_attrs}${alt}${border_attr}></a>`;
+  let html = `<a${htmlAttr('href', href)}><img${htmlAttr('src', htmlEscapeAttr(src))}${htmlAttr('loading', 'lazy')}${rendered_attrs}${alt}${htmlClassesAttr(classes)}></a>`;
   if (!inline) {
     html = `<div class="float-wrap">${html}</div>`
   }

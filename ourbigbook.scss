@@ -376,9 +376,22 @@ nav.h-nav {
 }
 
 // https://docs.ourbigbook.com#background-color-of-transparent-images
+div.float-wrap {
+  img {
+    background-color: white;
+    @include responsive-img;
+  }
+}
 img {
-  background-color: white;
-  @include responsive-img;
+  &.inline {
+    max-width: 100%;
+    // This would have two good effects:
+    // 1) inline images have proportional height when crushed by viewport
+    // 2) allow width= to take effect.
+    // But it would also make height= not be obeyed for reasons we don't fully understand
+    // So let's just let them be crushed for now and keep height= working.
+    //height: 100%;
+  }
   &.border {
     @include img-border;
   }

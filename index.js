@@ -2863,6 +2863,7 @@ function output_path_from_ast(ast, context) {
  * path to where an AST gets rendered to. */
 function output_path_parts(input_path, id, context, split_suffix=undefined) {
   let ret = '';
+  let custom_split_suffix;
   const [dirname, basename] = path_split(input_path, context.options.path_sep);
   const renamed_basename_noext = rename_basename(noext(basename));
   if (is_to_split_headers(context)) {
@@ -2887,7 +2888,7 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
       // For toplevel elements in split header mode, we have
       // to take care of index and -split suffix.
       if (renamed_basename_noext === INDEX_BASENAME_NOEXT) {
-        basename_ret = INDEX_BASENAME_NOEXT;
+        basename_ret = '';
         if (id_dirname === '') {
           dirname_ret = dirname;
         } else {
@@ -2898,18 +2899,20 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
         dirname_ret = dirname;
         basename_ret = renamed_basename_noext;
       }
-      basename_ret += '-split';
     } else {
       // Non-toplevel elements in split header mode are simple,
       // the ID just gives the output path directly.
       dirname_ret = id_dirname;
       basename_ret = id_basename;
     }
-    if (split_suffix !== undefined) {
-      if (split_suffix === '') {
+    if (first_header_or_before || split_suffix !== undefined) {
+      if (split_suffix === undefined || split_suffix === '') {
         split_suffix = 'split';
       }
-      basename_ret += '-' + split_suffix;
+      if (basename_ret !== '') {
+        basename_ret += '-';
+      }
+      basename_ret += split_suffix;
     }
     return [dirname_ret, basename_ret];
   } else {

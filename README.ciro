@@ -1318,9 +1318,10 @@ Some quick interactive cross file link tests:
 * \x[not-readme-with-scope/image-my-image]
 
 = Header `splitSuffix` argument
+{id=splitsuffix}
 {parent=headers}
 
-If given, adds a custom suffix to the output filename of the header when using \x[split-headers].
+If given, add a custom suffix to the output filename of the header when using \x[split-headers].
 
 If the given suffix is empty, it defaults to `-split`.
 
@@ -1361,7 +1362,27 @@ For example, https://cirosantilli.com with source at https://github.com/cirosant
 
 Therefore, without a custom suffix, the split header version of that header would go to https://cirosantilli.com/cirodown[], which would collide with this documentation, that is present in a separate repository: https://github.com/cirosantilli/cirodown[].
 
-Therefore a `splitHeader` property is used, making the split header version fall under `/cirodown-split`, and leaving the nicer `/cirodown` for the more important project toplevel.
+Therefore a `splitSuffix` property is used, making the split header version fall under `/cirodown-split`, and leaving the nicer `/cirodown` for the more important project toplevel.
+
+If given on the \x[the-toplevel-header]{p}, which normally gets a suffix by default to differentiate from the non-split version, it replaces the default `-split` suffix with a custom one.
+
+For example if you had `notindex.ciro` as:
+``
+= Not index
+``
+then it would render to:
+``
+notindex-split.ciro
+``
+but if you used instead:
+``
+= Not index
+{splitSuffix=asdf}
+``
+then it would instead be:
+``
+notindex-asdf.ciro
+``
 
 === Header `wiki` argument
 
@@ -3424,6 +3445,7 @@ would produce the following output files:
 * `hello-split.html`: contains only the contents directly under `= h1`, but not under any of the subheaders, e.g.:
   * `h1 content.` appears in this rendered output
   * `h1-1-1` does not appear in this rendered output
+  The `-split` suffix can be customized with the \x[splitsuffix] option.
   The `-split` suffix is appended in order to differentiate the output path from `hello.html`
 * `h1-1.html`, `h1-1-1.html`, `h1-1-2.html`: contain only the contents direcly under their headers, analogously to `hello-split.html`, but now we don't need to worry about the input filename and collisiont, and just directly use the ID of each header
 

@@ -3,7 +3,6 @@ Error.stackTraceLimit = Infinity;
 
 const bodyParser = require('body-parser')
 const cors = require('cors')
-const errorhandler = require('errorhandler')
 const express = require('express')
 const http = require('http')
 const methods = require('methods')
@@ -81,19 +80,6 @@ function doStart(app) {
     }
     return next(err)
   })
-  if (config.isProduction) {
-    app.use(function(err, req, res, next) {
-      console.error(err.stack)
-      res.status(500).send('error: 500 Internal Server Error')
-    });
-  } else {
-    // Return errors with full stacks to caller.
-    app.use(function(err, req, res, next) {
-      console.error('error handler 1');
-      return next(err)
-    });
-    app.use(errorhandler())
-  }
 
   if (!module.parent) {
     (async () => {

@@ -131,8 +131,6 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
                 favorited, setFavorited, score, setScore
               }}>
                 <FavoriteArticleButton
-                  favorited={article.favorited}
-                  score={article.score}
                   slug={article.slug}
                   showText={false}
                 />

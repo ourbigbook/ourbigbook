@@ -2700,6 +2700,7 @@ function convert_init_context(options={}, extra_returns={}) {
     // an offset relative to where it is included from.
     options.h_parse_level_offset = 0;
   }
+  if (!('magic_leading_at' in options)) { options.magic_leading_at = true; }
   if (!('id_provider' in options)) { options.id_provider = undefined; }
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('katex_macros' in options)) { options.katex_macros = {}; }
@@ -2712,6 +2713,7 @@ function convert_init_context(options={}, extra_returns={}) {
   if (!('path_sep' in options)) { options.path_sep = undefined; }
   if (!('read_include' in options)) { options.read_include = () => undefined; }
   if (!('read_file' in options)) { options.read_file = () => undefined; }
+  if (!('remove_leading_at' in options)) { options.remove_leading_at = false; }
   if (!('render' in options)) { options.render = true; }
   if (!('start_line' in options)) { options.start_line = 1; }
   if (!('split_headers' in options)) {
@@ -5711,7 +5713,7 @@ function x_child_db_effective_id(target_id, context, ast) {
  */
 function x_get_href_content(ast, context) {
   const target_id = render_arg_noescape(ast.args.href, context);
-  if (target_id[0] === AT_MENTION_CHAR) {
+  if (context.options.magic_leading_at && target_id[0] === AT_MENTION_CHAR) {
     return [html_attr('href', WEBSITE_URL + target_id.substr(1)), target_id];
   }
   if (target_id[0] === HASHTAG_CHAR) {
@@ -5879,6 +5881,20 @@ function x_href_parts(target_id_ast, context) {
       target_id_ast,
       context,
     );
+    if (context.options.remove_leading_at) {
+      if (target_output_path_dirname) {
+        if (target_output_path_dirname[0] === AT_MENTION_CHAR) {
+          target_output_path_dirname = target_output_path_dirname.slice(1)
+        }
+      } else {
+        if (
+          target_output_path_basename &&
+          target_output_path_basename[0] === AT_MENTION_CHAR
+        ) {
+          target_output_path_basename = target_output_path_basename.slice(1)
+        }
+      }
+    }
     // The target path is the same as the current path being output.
     if (full_output_path === context.toplevel_output_path) {
       href_path = ''

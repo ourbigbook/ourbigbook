@@ -85,7 +85,7 @@ function doStart(app) {
         errorsForColumn.push(errItem.message)
       }
       return res.status(422).json({ errors })
-    } else if (err instanceof lib.ValidationError) {
+    } else if (err instanceof apilib.ValidationError) {
       return res.status(err.status).json({
         errors: err.errors,
       })

@@ -2511,7 +2511,7 @@ Have a look at this amazing image: \x[image-my-test-image].
 ]]
 This exemplifies the following parameters:
 * `title`: analogous to the <\H title argument>. Shows up preeminently, and sets a default ID if one is not given. It is recommended that you don't add a period `.` to it, as that would show in <cross references>
-* <image description argument>[`description`]: similar to `title`, but allow for further explanations without them appearing in <cross reference>[cross references] to the image
+* <image `description` argument>[`description`]: similar to `title`, but allow for further explanations without them appearing in <cross reference>[cross references] to the image
 * <image `source` argument>[`source`]: a standardized way to credit an image by linking to a URL that contains further image metadata
 For further discussion on the effects of ID see: <image ID>{full}.
 

@@ -121,15 +121,21 @@ class ErrorMessage {
     this.column = column;
   }
 
-  toString() {
+  toString(path) {
     let ret = 'error: ';
+    if (path !== undefined) {
+      ret += `${path}: `;
+    }
     let had_line_or_col = false;
     if (this.line !== undefined) {
-      ret += `line ${this.line} `;
+      ret += `line ${this.line}`;
       had_line_or_col = true;
     }
     if (this.column !== undefined) {
-      ret += `column ${this.column} `;
+      if (this.line !== undefined) {
+        ret += ` `;
+      }
+      ret += `column ${this.column}`;
       had_line_or_col = true;
     }
     if (had_line_or_col)

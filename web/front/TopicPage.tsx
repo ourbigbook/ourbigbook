@@ -2,7 +2,7 @@ import Head from 'next/head'
 import React from 'react'
 import { useRouter } from 'next/router'
 
-import { AppContext, ArticleIcon, NewArticleIcon, TopicIcon, slugFromArray} from 'front'
+import { AppContext, ArticleIcon, NewArticleIcon, TopicIcon, TopicsHelp, slugFromArray} from 'front'
 import ArticleList from 'front/ArticleList'
 import CustomLink from 'front/CustomLink'
 import LoadingSpinner from 'front/LoadingSpinner'
@@ -47,6 +47,7 @@ export const TopicPage = ({
         ? <>
             <div className="content-not-ourbigbook">
               <h1><a href=""><TopicIcon /> <span className="ourbigbook-title" dangerouslySetInnerHTML={{ __html: topic.titleRender }} /></a></h1>
+              <TopicsHelp />
               <div className="tab-list">
                 <CustomLink
                   className={`tab-item${order === 'score' ? ' active' : ''}`}
@@ -58,7 +59,7 @@ export const TopicPage = ({
                   className={`tab-item${order === 'createdAt' ? ' active' : ''}`}
                   href={routes.topic(topicId, { sort: 'created' })}
                 >
-                  Latest Articles
+                  <ArticleIcon /> Latest Articles
                 </CustomLink>
                 <CustomLink
                   className={`tab-item`}

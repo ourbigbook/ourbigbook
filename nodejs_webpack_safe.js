@@ -102,9 +102,9 @@ async function fetch_header_tree_ids(sequelize, starting_ids, opts={}) {
   if (starting_ids.length > 0) {
     const to_id_index_order = opts.to_id_index_order || 'ASC'
     let definedAtString
-    const definedAt = opts.definedAt
-    if (definedAt) {
-      definedAtString = ' AND "defined_at" = :definedAt'
+    const { definedAtFileId } = opts
+    if (definedAtFileId) {
+      definedAtString = ' AND "defined_at" = :definedAtFileId'
     } else {
       definedAtString = ''
     }
@@ -153,7 +153,7 @@ ORDER BY "RecRefs".level ASC, "RecRefs".from_id ASC, "RecRefs".to_id_index ${to_
         replacements: {
           starting_ids,
           type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-          definedAt,
+          definedAtFileId,
         },
         transaction: opts.transaction,
       }
@@ -173,7 +173,18 @@ class SqliteDbProvider extends web_api.DbProviderBase {
   async clear(input_paths, transaction) {
     return Promise.all([
       this.sequelize.models.Id.destroy({ where: { path: input_paths }, transaction }),
-      this.sequelize.models.Ref.destroy({ where: { defined_at: input_paths }, transaction }),
+      this.sequelize.models.Ref.findAll({
+        attributes: ['id'],
+        include: [
+          {
+            model: this.sequelize.models.File,
+            as: 'definedAt',
+            where: { path: input_paths },
+            attributes: [],
+          },
+        ],
+        transaction,
+      }).then(ids => this.sequelize.models.Ref.destroy({ where: { id: ids.map(id => id.id ) }, transaction })),
     ])
   }
 
@@ -187,7 +198,18 @@ class SqliteDbProvider extends web_api.DbProviderBase {
     }
     return Promise.all([
       this.sequelize.models.Id.destroy({ where: { path: { [this.sequelize.Sequelize.Op.like]: prefix_literal } } }),
-      this.sequelize.models.Ref.destroy({ where: { defined_at: { [this.sequelize.Sequelize.Op.like]: prefix_literal } } }),
+      this.sequelize.models.Ref.findAll({
+        attributes: ['id'],
+        include: [
+          {
+            model: this.sequelize.models.File,
+            as: 'definedAt',
+            where: { path: { [this.sequelize.Sequelize.Op.like]: prefix_literal } },
+            attributes: [],
+          },
+        ],
+        transaction,
+      }).then(ids => this.sequelize.models.Ref.destroy({ where: { id: ids.map(id => id.id ) }, transaction })),
     ])
   }
 
@@ -216,14 +238,39 @@ class SqliteDbProvider extends web_api.DbProviderBase {
         [to_id_key]: to_ids,
         type: types.map(type => this.sequelize.models.Ref.Types[type]),
       }
+      const include = [
+        {
+          model: this.sequelize.models.Id,
+          as: include_key,
+          // TODO for the love of God, adding this makes it return just a single Ref row
+          // on SQLite at least. I even ran the raw query manually, and that does return multiple rows
+          // I simply cannot understand how it is possible, it has to be a sequelize bug?
+          // Can't easily reproduce on a minimal example however...
+          // So for now, I'm just going to make a separate query afterwards to get the files...
+          // https://github.com/ourbigbook/ourbigbook/issues/240
+          //required: false,
+          //include: [
+          //  {
+          //    model: this.sequelize.models.File,
+          //    required: false,
+          //  },
+          //],
+        }
+      ]
       if (ignore_paths_set !== undefined) {
         const ignore_paths = Array.from(ignore_paths_set).filter(x => x !== undefined)
-        where.defined_at = {
-          [this.sequelize.Sequelize.Op.or]: [
-            { [this.sequelize.Sequelize.Op.not]: ignore_paths },
-            null
-          ]
-        }
+        include.push({
+          model: this.sequelize.models.File,
+          as: 'definedAt',
+          where: {
+            path: {
+              [this.sequelize.Sequelize.Op.or]: [
+                { [this.sequelize.Sequelize.Op.not]: ignore_paths },
+                null
+              ]
+            }
+          }
+        })
       }
       const rows = await this.sequelize.models.Ref.findAll({
         where,
@@ -233,25 +280,7 @@ class SqliteDbProvider extends web_api.DbProviderBase {
           to_id_key,
           'type',
         ],
-        include: [
-          {
-            model: this.sequelize.models.Id,
-            as: include_key,
-            // TODO for the love of God, adding this makes it return just a single Ref row
-            // on SQLite at least. I even ran the raw query manually, and that does return multiple rows
-            // I simply cannot understand how it is possible, it has to be a sequelize bug?
-            // Can't easily reproduce on a minimal example however...
-            // So for now, I'm just going to make a separate query afterwards to get the files...
-            // https://github.com/ourbigbook/ourbigbook/issues/240
-            //required: false,
-            //include: [
-            //  {
-            //    model: this.sequelize.models.File,
-            //    required: false,
-            //  },
-            //],
-          }
-        ]
+        include,
       })
       // Fetch files. In theory should be easily done on above query as JOIN,
       // but for some reason it is not working as mentioned on the TODO...
@@ -402,11 +431,12 @@ ORDER BY "RecRefs".level DESC
   }
 
   // Update the databases based on the output of the Ourbigbook conversion.
-  async update(ourbigbook_extra_returns, sequelize, transaction) {
+  async update(ourbigbook_extra_returns, sequelize, transaction, opts={}) {
+    const { newFile, synonymHeaderPaths } = opts
     const context = ourbigbook_extra_returns.context
     // Remove all IDs from the converted files to ensure that removed IDs won't be
     // left over hanging in the database.
-    await this.clear(Array.from(context.options.include_path_set), transaction);
+    await this.clear(Array.from(context.options.include_path_set).concat(synonymHeaderPaths), transaction);
 
     // Calculate create_ids
     const ids = ourbigbook_extra_returns.ids;
@@ -442,7 +472,7 @@ ORDER BY "RecRefs".level DESC
               for (const { line: defined_at_line, column: defined_at_col, inflected } of defined_ats[defined_at]) {
                 refs.push({
                   from_id,
-                  defined_at,
+                  defined_at: newFile.id,
                   defined_at_line,
                   defined_at_col,
                   to_id_index: ref_props.child_index,
@@ -526,6 +556,7 @@ async function update_database_after_convert({
   path,
   render, // boolean
   sequelize,
+  synonymHeaderPaths,
   sha256,
   transaction,
   titleSource,
@@ -568,25 +599,25 @@ async function update_database_after_convert({
   // Likely would not have been a bottleneck if we new more about databases/had more patience
   // and instead of doing INSERT one by one we would do a single insert with a bunch of data.
   // The move to Sequelize made that easier with bulkCreate. But keeping the transaction just in case
-  let idProviderUpdate, fileBulkCreate
+  let idProviderUpdate, newFile
   await sequelize.transaction({ transaction }, async (transaction) => {
     file_bulk_create_opts.transaction = transaction
-    const promises = [
-      sequelize.models.File.bulkCreate(
-        [
-          {
-            authorId,
-            bodySource,
-            last_parse: file_bulk_create_last_parse,
-            path,
-            sha256,
-            titleSource,
-            toplevel_id,
-          },
-        ],
-        file_bulk_create_opts,
-      ),
-    ]
+     await sequelize.models.File.bulkCreate(
+      [
+        {
+          authorId,
+          bodySource,
+          last_parse: file_bulk_create_last_parse,
+          path,
+          sha256,
+          titleSource,
+          toplevel_id,
+        },
+      ],
+      file_bulk_create_opts,
+    )
+    newFile = await sequelize.models.File.findOne({ where: { path }, transaction})
+    const promises = []
     if (
       // This is not just an optimization, but actually required, because otherwise the second database
       // update would override \x magic plural/singular check_db removal.
@@ -596,9 +627,13 @@ async function update_database_after_convert({
         extra_returns,
         sequelize,
         transaction,
+        {
+          newFile,
+          synonymHeaderPaths,
+        }
       ))
     }
-    ;[fileBulkCreate, idProviderUpdate] = await Promise.all(promises)
+    ;[idProviderUpdate] = await Promise.all(promises)
     // Re-find here until SQLite RETURNING gets used by sequelize.
     const file = await sequelize.models.File.findOne({ where: { path }, transaction })
     if (!render) {
@@ -628,7 +663,7 @@ async function update_database_after_convert({
     )
   });
   ourbigbook.perf_print(context, 'convert_path_post_sqlite_transaction')
-  return { file: fileBulkCreate[0] }
+  return { file: newFile }
 }
 
 // Do various post conversion checks to verify database integrity:
@@ -650,7 +685,6 @@ async function check_db(sequelize, paths_converted, transaction) {
   // * ensure that all \x targets exist
   const [new_refs, duplicate_rows, invalid_title_title_rows] = await Promise.all([
     await sequelize.models.Ref.findAll({
-      where: { defined_at: paths_converted },
       order: [
         ['defined_at', 'ASC'],
         ['defined_at_line', 'ASC'],
@@ -670,6 +704,11 @@ async function check_db(sequelize, paths_converted, transaction) {
           model: sequelize.models.Id,
           as: 'from',
           attributes: ['id'],
+        },
+        {
+          model: sequelize.models.File,
+          as: 'definedAt',
+          where: { path: paths_converted },
         },
       ],
       transaction,
@@ -740,7 +779,7 @@ async function check_db(sequelize, paths_converted, transaction) {
       new_ref_next = new_refs[i]
     } while (
       new_ref_next &&
-      new_ref.defined_at      === new_ref_next.defined_at &&
+      new_ref.definedAt.path  === new_ref_next.definedAt.path &&
       new_ref.defined_at_line === new_ref_next.defined_at_line &&
       new_ref.defined_at_col  === new_ref_next.defined_at_col &&
       new_ref.type            === new_ref_next.type
@@ -776,7 +815,7 @@ async function check_db(sequelize, paths_converted, transaction) {
         to = shortest_not_inflected_ref.to_id
       }
       error_messages.push(
-        `${new_ref.defined_at}:${new_ref.defined_at_line}:${new_ref.defined_at_col}: cross reference to unknown id: "${to}"`
+        `${new_ref.definedAt.path}:${new_ref.defined_at_line}:${new_ref.defined_at_col}: cross reference to unknown id: "${to}"`
       )
     }
   }

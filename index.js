@@ -3344,6 +3344,8 @@ function convert_init_context(options={}, extra_returns={}) {
     root_relpath_shift,
     perf_prev: 0,
     skipOutputEntry: false,
+    // Set of all the headers that have synonym set on them.
+    // Originally used to generate redirects to the heade they point to.
     synonym_headers: new Set(),
     toc_was_rendered: false,
     toplevel_id: options.toplevel_id,
@@ -4434,7 +4436,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   context.headers_with_include = [];
   context.header_tree = new HeaderTreeNode();
   perf_print(context, 'post_process_1')
-  let prev_header;
+  let prev_non_synonym_header_ast;
   let cur_header_level;
   let first_header_level;
   let first_header;
@@ -4848,8 +4850,8 @@ async function parse(tokens, options, context, extra_returns={}) {
             context.synonym_headers.add(ast);
           }
         }
-        if (!is_synonym){
-          prev_header = options.cur_header;
+        if (!is_synonym) {
+          prev_non_synonym_header_ast = ast;
           options.cur_header = ast;
           cur_header_level = header_level + options.h_parse_level_offset;
         }
@@ -5009,7 +5011,17 @@ async function parse(tokens, options, context, extra_returns={}) {
             new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location));
           parse_error(state, message, ast.args.parent.source_location);
         }
-        if (!is_synonym) {
+        if (is_synonym) {
+          add_to_refs_to(
+            prev_non_synonym_header_ast.id,
+            context,
+            ast.id,
+            REFS_TABLE_SYNONYM,
+            {
+              source_location: ast.source_location,
+            }
+          )
+        } else {
           if (header_level_skip_error !== undefined) {
             const message = `skipped a header level from ${header_level_skip_error} to ${cur_header_level}`;
             ast.args[Macro.TITLE_ARGUMENT_NAME].push(
@@ -7362,6 +7374,9 @@ exports.REFS_TABLE_X_CHILD = REFS_TABLE_X_CHILD;
 // https://github.com/ourbigbook/ourbigbook/issues/198
 const REFS_TABLE_X_TITLE_TITLE = 'X_TITLE_TITLE';
 exports.REFS_TABLE_X_TITLE_TITLE = REFS_TABLE_X_TITLE_TITLE;
+// Header is synonym of another one.
+const REFS_TABLE_SYNONYM = 'SYNONYM';
+exports.REFS_TABLE_SYNONYM = REFS_TABLE_SYNONYM;
 const END_NAMED_ARGUMENT_CHAR = '}';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';
 const ESCAPE_CHAR = '\\';

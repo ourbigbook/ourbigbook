@@ -3,6 +3,47 @@
 
 == Issues
 
+=== Move all header metadata from source to HTML in Web
+{tag=Web}
+{id=web-header-metadata-to-widgets}
+
+This is way more user friendly. We have currently done that for `parent=` which would be:
+``
+= Calculus
+{parent=Mathematics}
+``
+but now is just set on the Web UI.
+
+But we should likely do this for every other metadata, e.g.:
+* `synonym`
+* `id`
+* `scope`
+* `title2`
+* `c`
+and so on.
+
+=== Fix parentId and previousSiblingId on articles API
+{id=fix-parentid-and-previoussiblingid-on-articles-api}
+
+The underlying reason is that:
+``
+.getArticles({includeParentAndPreviousSibling: true
+``
+is broken. The singular version `getArticle` however is not.
+
+=== Id, Ref and File foreign normalization
+{id=ref-file-normalization}
+
+* Ref.from_id and to_id should point to Id
+* File should be removed when deleted: https://github.com/ourbigbook/ourbigbook/issues/216 Currently this can only happen locally.
+* Id.path should point to File
+
+We could then consider removing several `Ref.destroy` and `Id.destroy` `ON CASCADE` with `File` and `Id`, rather than manually.
+
+=== Allow creation of multiple headers in one go on web
+{tag=Web}
+{id=web-create-multiple-headers}
+
 === Option to add zip of local conversion to converted GitHub pages website
 {tag=Publish}
 

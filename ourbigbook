@@ -119,8 +119,17 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, non_o
     const [,,file_rows] = await Promise.all([
       sequelize.models.Id.destroy({
         where: { path: { [Op.not]: ourbigbook_paths_converted } } }),
-      sequelize.models.Ref.destroy({
-        where: { defined_at: { [Op.not]: ourbigbook_paths_converted } } }),
+      sequelize.models.Ref.findAll({
+        attributes: ['id'],
+        include: [
+          {
+            model: sequelize.models.File,
+            as: 'definedAt',
+            where: { path: { [Op.not]: ourbigbook_paths_converted } },
+            attributes: [],
+          },
+        ],
+      }).then(ids => sequelize.models.Ref.destroy({ where: { id: ids.map(id => id.id ) } })),
       sequelize.models.File.findAll({
         where: { path: ourbigbook_paths_converted },
         include: [{
@@ -495,7 +504,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
         ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML
       ) {
         for (const header_ast of extra_returns.context.synonym_headers) {
-          let new_options_redir = Object.assign({}, new_options);
+          const new_options_redir = Object.assign({}, new_options);
           new_options_redir.db_provider = extra_returns.context.db_provider;
           await generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, non_ourbigbook_options.outdir);
         }
@@ -1701,14 +1710,14 @@ if (cli.helpMacros) {
           }
         }
       }
-      let treeToplevelId
-      let treeDefinedAt
+      let treeToplevelId, treeToplevelFileId
       console.error('Prepare source');
       if (input_path_is_file) {
         await convert_path_to_file(inputPath, ourbigbook_options, non_ourbigbook_options);
-        treeToplevelId = (await non_ourbigbook_options.sequelize.models.File.findOne({
-          where: { path: inputPath } })).toplevel_id
-        treeDefinedAt = inputPath
+        treeToplevelFile = await non_ourbigbook_options.sequelize.models.File.findOne({
+          where: { path: inputPath } })
+        treeToplevelFileId = treeToplevelFile.id
+        treeToplevelId = treeToplevelFile.toplevel_id
       } else {
         // TODO non toplevel directory not supported yet.
         await convert_directory_extract_ids_and_render(
@@ -1748,7 +1757,7 @@ if (cli.helpMacros) {
             // TODO actually add siblings later on, as that will allow updating the page tree.
             // https://docs.ourbigbook.com/pass-previoussiblingid-on-web-upload
             to_id_index_order: 'DESC',
-            definedAt: treeDefinedAt,
+            definedAtFileId: treeToplevelFileId,
           }
         ))
       }

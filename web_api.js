@@ -138,8 +138,12 @@ class WebApi {
     return this.req('post', `articles/follow?id=${slug}`)
   }
 
-  async article(slug) {
-    const { data, status } = await this.articles({ id: slug })
+  async articleRedirects(opts={}) {
+    return this.req('get', `articles/redirects${encodeGetParamsWithOffset(opts)}`)
+  }
+
+  async article(slug, opts={}) {
+    const { data, status } = await this.articles(Object.assign({ id: slug }, opts))
     return { data: data.articles[0], status }
   }
 

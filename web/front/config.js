@@ -20,11 +20,13 @@ if (process.env.NODE_ENV === 'test') {
 
 module.exports = {
   apiPath: '/' + API_PATH_COMPONENT,
+  // Common convert options used by all frontend components: the backend and the editor.
   convertOptions: {
     body_only: true,
     html_x_extension: false,
     magic_leading_at: false,
     path_sep: '/',
+    split_headers: true,
   },
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   escapeUsername,

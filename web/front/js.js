@@ -1,4 +1,5 @@
-// Shared between front and backend.
+// Random stuff shared between front and backend.
+// Has to be .js until we port backend to TypeScript..
 
 const ourbigbook = require('ourbigbook')
 

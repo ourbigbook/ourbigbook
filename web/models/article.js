@@ -1,6 +1,9 @@
 const { DataTypes, Op } = require('sequelize')
 
 module.exports = (sequelize) => {
+  // Each Article contains rendered HTML output, analogous to a .html output file in OurBigBook CLI.
+  // The input source is stored in the File model. A single file can then generate
+  // multiple Article if it has multiple headers.
   const Article = sequelize.define(
     'Article',
     {
@@ -26,6 +29,7 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
+      // Rendered full article.
       render: {
         type: DataTypes.STRING(2**20),
         allowNull: false,
@@ -53,7 +57,7 @@ module.exports = (sequelize) => {
   }
 
   Article.prototype.toJson = async function(user) {
-    const authorPromise = this.author ? this.author : this.getAuthor()
+    const authorPromise = this.file && this.file.author ? this.file.author : this.getAuthor()
     const [liked, author] = await Promise.all([
       user ? user.hasLike(this.id) : false,
       (await authorPromise).toJson(user),
@@ -63,12 +67,13 @@ module.exports = (sequelize) => {
       slug: this.slug,
       topicId: this.topicId,
       title: this.title,
-      body: this.body,
       createdAt: this.createdAt.toISOString(),
       updatedAt: this.updatedAt.toISOString(),
       liked,
       score: this.score,
-      author,
+      file: {
+        author,
+      },
       render: this.render,
     }
   }
@@ -130,9 +135,11 @@ module.exports = (sequelize) => {
     if (opts.log === undefined) {
       opts.log = false
     }
-    for (const article of await sequelize.models.Article.findAll()) {
+    for (const article of await sequelize.models.Article.findAll({
+      include: [ { model: sequelize.models.File, as: 'file' } ],
+    })) {
       if (opts.log) {
-        console.error(`authorId=${article.authorId} title=${article.title}`);
+        console.error(`authorId=${article.file.authorId} title=${article.title}`);
       }
       await article.convert()
       await article.save()

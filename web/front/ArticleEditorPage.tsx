@@ -13,7 +13,7 @@ import ArticleAPI from 'front/api/article'
 import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
 import { AppContext, useCtrlEnterSubmit } from 'front'
-import { modifyEditorInput } from 'shared';
+import { modifyEditorInput } from 'front/js';
 
 export default function ArticleEditorPageHoc(options:any={}) {
   const isnew = options.isnew === undefined ? false : options.isnew

@@ -356,7 +356,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
           first_output_path = output_path
         }
         fs.mkdirSync(path.dirname(output_path), {recursive: true});
-        fs.writeFileSync(output_path, extra_returns.rendered_outputs[outpath]);
+        fs.writeFileSync(output_path, extra_returns.rendered_outputs[outpath].full);
       }
       if (new_options.split_headers) {
         for (const header_ast of extra_returns.context.synonym_headers) {

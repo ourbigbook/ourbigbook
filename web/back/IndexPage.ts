@@ -3,6 +3,7 @@ import { GetServerSideProps } from 'next'
 import { getLoggedInUser } from 'back'
 import sequelize from 'db'
 import { articleLimit, fallback } from 'front/config'
+import { IndexPageProps } from 'front/IndexPage'
 
 // TODO add type back, fails with:
 // Type error: Property 'params' does not exist on type 'IncomingMessage & { cookies: NextApiRequestCookies; }'.
@@ -57,7 +58,7 @@ export const getServerSidePropsIndexHoc = (what) => {
         (article) => {return article.toJson(loggedInUser) }))
       articlesCount = articlesAndCounts.count
     }
-    const props: any = {
+    const props: IndexPageProps = {
       articles,
       articlesCount,
       page,

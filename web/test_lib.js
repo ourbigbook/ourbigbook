@@ -463,7 +463,7 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     if (verbose) console.error('Article update');
     let i = 0
     for (const article of articles) {
-      if (verbose) console.error(`${i} authorId=${article.authorId} title=${article.title}`);
+      if (verbose) console.error(`${i} authorId=${article.file.authorId} title=${article.title}`);
       await article.save()
       i++
     }
@@ -478,7 +478,7 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
       for (let j = 0; j < nLikesPerUser; j++) {
         const article = articles[(i * j) % nArticles];
         if (
-          article.authorId !== user.id &&
+          article.file.authorId !== user.id &&
           !await user.hasLike(article)
         ) {
           await user.addLikeSideEffects(article)

@@ -9,7 +9,7 @@ const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 
 const { ValidationError } = require('./api/lib')
 const { convertOptions } = require('./front/config')
-const { modifyEditorInput } = require('./shared')
+const { modifyEditorInput } = require('./front/js')
 
 // This does the type of stuff that OurBigBook CLI does for CLI
 // around the conversion itself, i.e. setting up the database, saving output files
@@ -74,7 +74,7 @@ async function convert({
     title,
     transaction,
   })
-  const file = await sequelize.models.File.findOne({where: { path: filePath}})
+  const file = await sequelize.models.File.findOne({ where: { path: filePath } })
   const check_db_errors = await ourbigbook_nodejs_webpack_safe.check_db(
     sequelize,
     [input_path],
@@ -87,9 +87,9 @@ async function convert({
   for (const outpath in extra_returns.rendered_outputs) {
     articleArgs.push({
       fileId: file.id,
-      render: extra_returns.rendered_outputs[outpath],
-      slug: outpath.slice(ourbigbook.AT_MENTION_CHAR.length),
-      title: extra_returns.rendered_headers[outpath.slice(0, -ourbigbook.HTML_EXT.length - 1)],
+      render: extra_returns.rendered_outputs[outpath].full,
+      slug: outpath.slice(ourbigbook.AT_MENTION_CHAR.length, -ourbigbook.HTML_EXT.length - 1),
+      title: extra_returns.rendered_outputs[outpath].title,
       topicId: idid.slice(ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1),
     })
   }
@@ -99,7 +99,14 @@ async function convert({
   )
   // Find here because upsert not yet supported in SQLite.
   // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert
-  return sequelize.models.Article.findAll({ where: { slug: articleArgs.map(arg => arg.slug) } })
+  return sequelize.models.Article.findAll({
+    where: { slug: articleArgs.map(arg => arg.slug) },
+    include: {
+      model: sequelize.models.File,
+      as: 'file',
+    },
+    order: [['slug', 'ASC']],
+  })
 }
 
 module.exports = {

@@ -3,9 +3,9 @@
 import { useRouter } from 'next/router'
 import useSWR from 'swr'
 
-import fetcher from 'fetcher'
 import { apiPath } from 'front/config'
-import { minPath } from 'shared'
+import fetcher from 'front/fetcher'
+import { minPath } from 'front/js'
 import useLoggedInUser from 'front/useLoggedInUser'
 
 export default function useMin(query, assign) {

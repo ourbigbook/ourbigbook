@@ -2,7 +2,7 @@ const crypto = require('crypto')
 const Sequelize = require('sequelize')
 const jwt = require('jsonwebtoken')
 
-const cirodown = require('cirodown')
+const ourbigbook = require('ourbigbook')
 
 const config = require('../front/config')
 
@@ -91,7 +91,7 @@ module.exports = (sequelize) => {
         afterCreate: async (user, options) => {
           // Create the index page for the user.
           const article = new sequelize.models.Article({
-            title: cirodown.capitalize_first_letter(cirodown.INDEX_BASENAME_NOEXT),
+            title: ourbigbook.capitalize_first_letter(ourbigbook.INDEX_BASENAME_NOEXT),
             body: 'Welcome to my home page!',
             authorId: user.id,
           })

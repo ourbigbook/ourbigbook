@@ -1,12 +1,13 @@
 {
   "ignore": [
-    "cirodown.common.scss",
-    "cirodown.scss",
+    "ourbigbook.common.scss",
+    "ourbigbook.scss",
     "editor.scss",
-    "cirodown_runtime.js",
+    "my_node_modules",
+    "ourbigbook_runtime.js",
     "template",
     "tmp",
-    "tmp.ciro",
+    "tmp.bigb",
     "web"
   ],
   "media-providers": {

@@ -1,4 +1,4 @@
-@import '../cirodown.common.scss';
+@import '../ourbigbook.common.scss';
 
 $border-radius: 10px;
 $like-button-active-color: #FF1493;
@@ -173,7 +173,7 @@ div.editor-page {
         }
       }
     }
-    div.cirodown-editor {
+    div.ourbigbook-editor {
       //flex-grow: 1;
     }
   }
@@ -197,10 +197,10 @@ i.ion-heart {
   color: $like-button-active-color;
 }
 
-/* Cirodown has a complex per-element padding structure that we can't easily override.
+/* Ourbigbook has a complex per-element padding structure that we can't easily override.
  * So for now we are taking the approach of adding this class to every content (non-hav/footer)
- * to make them align nicely with rendered Cirodown. */
-.content-not-cirodown {
+ * to make them align nicely with rendered Ourbigbook. */
+.content-not-ourbigbook {
   padding-left: $toplevel-padding;
   padding-right: $toplevel-padding;
 }

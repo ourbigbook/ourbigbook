@@ -1,7 +1,7 @@
 {
-  "name": "cirodown-web",
+  "name": "ourbigbook-web",
   "version": "0.0.1",
-  "description": "cirodown web",
+  "description": "OurBigBook dynamic website",
   "main": "app.js",
   "scripts": {
     "back-test": "NODE_ENV=test npm run dev",
@@ -10,10 +10,11 @@
     "build-prod": "./prod.sh npm run build",
     "build-nodeps": "next build",
     "build-dev-nodeps": "NEXT_PUBLIC_NODE_ENV=development npm run build-nodeps",
-    "deploy": "git push -f heroku master && git push && git push origin HEAD:deploy",
+    "deploy-prod": "git push -f prod master && git push && git push origin HEAD:prod",
+    "deploy-staging": "git push -f staging master && git push && git push origin HEAD:staging",
     "dev": "NODE_OPTIONS='--unhandled-rejections=strict' nodemon -w . -w ../index.js -w ./app.js -w ../nodejs.js -w ../nodejs_webpack_safe.js",
     "devi": "NODE_OPTIONS='--unhandled-rejections=strict' node inspect ./app.js",
-    "dev-pg": "CIRODOWN_POSTGRES=true npm run dev",
+    "dev-pg": "OURBIGBOOK_POSTGRES=true npm run dev",
     "devs": "DEBUG='sequelize:sql:*' npm run dev",
     "postinstall": "cd .. && npm run link",
     "migrate": "sequelize-cli db:migrate --debug",
@@ -23,11 +24,11 @@
     "start-prod": "./prod.sh npm start",
     "test": "NODE_ENV=test mocha test --ignore-leaks test.js",
     "test-api": "./realworld/api/run-api-tests.sh",
-    "test-pg": "CIRODOWN_POSTGRES=true npm test --"
+    "test-pg": "OURBIGBOOK_POSTGRES=true npm test --"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cirosantilli/cirodown.git"
+    "url": "git+https://github.com/cirosantilli/ourbigbook.git"
   },
   "license": "AGPL-3.0",
   "dependencies": {
@@ -37,7 +38,6 @@
     "@types/react": "16.9.44",
     "axios": "0.19.2",
     "body-parser": "1.15.0",
-    "cirodown": "..",
     "commander": "6.2.1",
     "cors": "2.7.1",
     "express": "4.13.4",
@@ -50,6 +50,7 @@
     "monaco-editor": "0.26.1",
     "morgan": "1.7.0",
     "next": "11.0.1",
+    "ourbigbook": "..",
     "passport": "0.3.2",
     "passport-local": "1.0.0",
     "pg": "8.5.1",

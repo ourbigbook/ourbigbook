@@ -10,9 +10,9 @@ const nodeModulesPath = path.resolve(__dirname, 'node_modules');
 
 module.exports = {
   entry: {
-    cirodown: ['./index.js'],
-    cirodown_runtime: ['./cirodown_runtime.js'],
-    cirodown_css: ['./cirodown.scss'],
+    ourbigbook: ['./index.js'],
+    ourbigbook_runtime: ['./ourbigbook_runtime.js'],
+    ourbigbook_css: ['./ourbigbook.scss'],
     editor: ['./editor.scss'],
   },
   mode: 'production',
@@ -54,8 +54,8 @@ module.exports = {
     new MiniCssExtractPlugin({
       filename: (pathData) => {
         // https://stackoverflow.com/questions/70698775/how-to-make-webpack-generate-separate-css-and-js-with-the-same-name-index-e-g/70698776#70698776
-        if (pathData.chunk.name === 'cirodown_css') {
-          return 'cirodown.css'
+        if (pathData.chunk.name === 'ourbigbook_css') {
+          return 'ourbigbook.css'
         }
         return '[name].css'
       },

@@ -1,8 +1,8 @@
-// https://cirosantilli.com/cirodown#insane-link-parsing-rules
+// https://cirosantilli.com/ourbigbook#insane-link-parsing-rules
 
 // We got these to work perfectly at one point with webpack style-loader.
 // But we just want the separate .css.
-//import "./cirodown.scss";
+//import "./ourbigbook.scss";
 //import "katex/dist/katex.min.css";
 //import "normalize.css/normalize.css";
 
@@ -18,7 +18,7 @@ if (typeof window !== 'undefined') {
   require('tablesort/src/sorts/tablesort.number.js')
 }
 
-export function cirodown_runtime(toplevel) {
+export function ourbigbook_runtime(toplevel) {
   if (toplevel === undefined) {
     toplevel = document;
   }
@@ -29,7 +29,7 @@ export function cirodown_runtime(toplevel) {
   const toc_arrows = toplevel.querySelectorAll(`.${TOC_CONTAINER_CLASS} div.arrow`);
   for (const toc_arrow of toc_arrows) {
     toc_arrow.addEventListener('click', () => {
-      // https://cirosantilli.com/cirodown#table-of-contents-javascript-open-close-interaction
+      // https://cirosantilli.com/ourbigbook#table-of-contents-javascript-open-close-interaction
       const parent_li = toc_arrow.parentElement.parentElement;
       let all_children_closed = true;
       let all_children_open = true;
@@ -72,7 +72,7 @@ export function cirodown_runtime(toplevel) {
   }
 
   // Open ToC when jumping to it from header.
-  const h_to_tocs = toplevel.getElementsByClassName('cirodown-h-to-toc');
+  const h_to_tocs = toplevel.getElementsByClassName('ourbigbook-h-to-toc');
   for (const h_to_toc of h_to_tocs) {
     h_to_toc.addEventListener('click', () => {
       let cur_elem = toplevel.getElementById(h_to_toc.getAttribute('href').slice(1)).parentElement;
@@ -84,7 +84,7 @@ export function cirodown_runtime(toplevel) {
   }
 
   // Video click to play.
-  // https://github.com/cirosantilli/cirodown/issues/122
+  // https://github.com/cirosantilli/ourbigbook/issues/122
   const videos = toplevel.getElementsByTagName('video');
   for(const video of videos) {
     const parentNode = video.parentNode;
@@ -103,24 +103,24 @@ export function cirodown_runtime(toplevel) {
     new Tablesort(table);
   }
 
-  const cirodown_canvas_demo_elems = toplevel.getElementsByClassName('cirodown-js-canvas-demo');
-  const cirodown_canvas_demo_weakmap = new WeakMap();
-  for (const cirodown_canvas_demo_elem of cirodown_canvas_demo_elems) {
-    cirodown_canvas_demo_weakmap.set(cirodown_canvas_demo_elem, false);
+  const ourbigbook_canvas_demo_elems = toplevel.getElementsByClassName('ourbigbook-js-canvas-demo');
+  const ourbigbook_canvas_demo_weakmap = new WeakMap();
+  for (const ourbigbook_canvas_demo_elem of ourbigbook_canvas_demo_elems) {
+    ourbigbook_canvas_demo_weakmap.set(ourbigbook_canvas_demo_elem, false);
     const observer = new IntersectionObserver(
       (entries, observer) => {
         entries.forEach(entry => {
           if (entry.intersectionRatio > 0.0) {
-            if (!cirodown_canvas_demo_weakmap.get(cirodown_canvas_demo_elem)) {
-              cirodown_canvas_demo_weakmap.set(cirodown_canvas_demo_elem, true);
-              eval(cirodown_canvas_demo_elem.childNodes[0].textContent).do_init(cirodown_canvas_demo_elem);
+            if (!ourbigbook_canvas_demo_weakmap.get(ourbigbook_canvas_demo_elem)) {
+              ourbigbook_canvas_demo_weakmap.set(ourbigbook_canvas_demo_elem, true);
+              eval(ourbigbook_canvas_demo_elem.childNodes[0].textContent).do_init(ourbigbook_canvas_demo_elem);
             }
           }
         });
       },
       {}
     )
-    observer.observe(cirodown_canvas_demo_elem);
+    observer.observe(ourbigbook_canvas_demo_elem);
   }
 }
 
@@ -134,10 +134,10 @@ export function cirodown_runtime(toplevel) {
 //
 // Each script is loaded only once after it has finished loading for the first time,
 // even if this function is called multiple times.
-async function cirodown_load_scripts(script_urls) {
+async function ourbigbook_load_scripts(script_urls) {
   function load(script_url) {
     return new Promise(function(resolve, reject) {
-      if (cirodown_load_scripts.loaded.has(script_url)) {
+      if (ourbigbook_load_scripts.loaded.has(script_url)) {
         resolve();
       } else {
         var script = toplevel.createElement('script');
@@ -153,16 +153,16 @@ async function cirodown_load_scripts(script_urls) {
   }
   await Promise.all(promises);
   for (const script_url of script_urls) {
-    cirodown_load_scripts.loaded.add(script_url);
+    ourbigbook_load_scripts.loaded.add(script_url);
   }
 }
-cirodown_load_scripts.loaded = new Set();
+ourbigbook_load_scripts.loaded = new Set();
 
 // Create some nice controls for a canvas demo!
 // TODO currently disabled on HTML because it would cause reflows on lower IDs.
 // What we should do instead, is to only add the new elements on hover, this
 // keeps thing simple, but still works.
-class CirodownCanvasDemo {
+class OurbigbookCanvasDemo {
   addInputAfterEnable(label, attributes) {
     var input = document.createElement('input');
     for (var key in attributes) {
@@ -244,7 +244,7 @@ class CirodownCanvasDemo {
       if (!old_state) {
         this.enable_input.checked = true;
         if (!this.init_done) {
-          await cirodown_load_scripts(['https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js']);
+          await ourbigbook_load_scripts(['https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.min.js']);
           this.init_done = true;
         }
         console.log(`${this.myclass} starting: ${this.demo_id}`);

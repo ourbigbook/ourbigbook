@@ -75,7 +75,7 @@ export default function UserPage({
 
   if (router.isFallback) { return <LoadingSpinner />; }
   return (
-    <div className="profile-page content-not-cirodown">
+    <div className="profile-page content-not-ourbigbook">
       <div className="user-info">
         <h1>
           <DisplayAndUsername user={user}></DisplayAndUsername>

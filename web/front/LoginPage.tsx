@@ -14,7 +14,7 @@ const LoginPageHoc = ({ register = false }) => {
     const { setTitle } = React.useContext(AppContext)
     React.useEffect(() => setTitle(action), [action])
     return (
-      <div className="auth-page content-not-cirodown">
+      <div className="auth-page content-not-ourbigbook">
         <h1 className="text-xs-center">{action}</h1>
         <CustomLink href={register ? routes.userLogin() : routes.userNew()} >
           {`${register ? `Already have an account? ${LOGIN_ACTION} here.` : `Don't have an account? ${REGISTER_ACTION} here.` }`}

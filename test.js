@@ -7,11 +7,11 @@ const util = require('util');
 
 const { Sequelize } = require('sequelize')
 
-const cirodown = require('./index')
-const cirodown_nodejs_webpack_safe = require('./nodejs_webpack_safe');
+const ourbigbook = require('./index')
+const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe');
 const models = require('./models');
 
-const PATH_SEP = cirodown.Macro.HEADER_SCOPE_SEPARATOR
+const PATH_SEP = ourbigbook.Macro.HEADER_SCOPE_SEPARATOR
 
 // Common default convert options for the tests.
 const convert_opts = {
@@ -82,7 +82,7 @@ function assert_convert_ast(
       options.duplicate_ids = []
     }
     if (!('filesystem' in options)) {
-      // Passed to cirodown.convert.
+      // Passed to ourbigbook.convert.
       options.filesystem = default_filesystem;
     }
     if (!('has_error' in options)) {
@@ -98,14 +98,14 @@ function assert_convert_ast(
 
     // extra_convert_opts defaults.
     if (!('extra_convert_opts' in options)) {
-      // Passed to cirodown.convert.
+      // Passed to ourbigbook.convert.
       options.extra_convert_opts = {};
     }
     if (!('path_sep' in options.extra_convert_opts)) {
       options.extra_convert_opts.path_sep = PATH_SEP;
     }
     if (!('read_include' in options.extra_convert_opts)) {
-      options.extra_convert_opts.read_include = cirodown_nodejs_webpack_safe.read_include({
+      options.extra_convert_opts.read_include = ourbigbook_nodejs_webpack_safe.read_include({
         exists: (inpath) => inpath in options.filesystem,
         read: (inpath) => options.filesystem[inpath],
         path_sep: PATH_SEP,
@@ -113,9 +113,9 @@ function assert_convert_ast(
     }
     options.extra_convert_opts.fs_exists_sync = (my_path) => options.filesystem[my_path] !== undefined
     if (!('input_path_noext' in options) && options.extra_convert_opts.split_headers) {
-      options.input_path_noext = cirodown.INDEX_BASENAME_NOEXT;
+      options.input_path_noext = ourbigbook.INDEX_BASENAME_NOEXT;
     }
-    const main_input_path = options.input_path_noext + cirodown.CIRODOWN_EXT
+    const main_input_path = options.input_path_noext + ourbigbook.OURBIGBOOK_EXT
     assert(!(main_input_path in options.filesystem))
     const filesystem = Object.assign({}, options.filesystem)
     filesystem[main_input_path] = input_string
@@ -132,15 +132,15 @@ function assert_convert_ast(
     }
 
     // SqliteIdProvider with in-memory database.
-    const sequelize = await cirodown_nodejs_webpack_safe.create_sequelize({
+    const sequelize = await ourbigbook_nodejs_webpack_safe.create_sequelize({
         storage: ':memory:',
         logging: false,
       },
       Sequelize,
     )
-    const id_provider = new cirodown_nodejs_webpack_safe.SqliteIdProvider(sequelize);
+    const id_provider = new ourbigbook_nodejs_webpack_safe.SqliteIdProvider(sequelize);
     new_convert_opts.id_provider = id_provider
-    new_convert_opts.file_provider = new cirodown_nodejs_webpack_safe.SqliteFileProvider(
+    new_convert_opts.file_provider = new ourbigbook_nodejs_webpack_safe.SqliteFileProvider(
       sequelize, id_provider);
     const rendered_outputs = {}
     async function convert(input_path, render) {
@@ -152,10 +152,10 @@ function assert_convert_ast(
       dependency_convert_opts.input_path = input_path;
       dependency_convert_opts.toplevel_id = path.parse(input_path).ext;
       dependency_convert_opts.render = render;
-      await cirodown.convert(input_string, dependency_convert_opts, extra_returns);
+      await ourbigbook.convert(input_string, dependency_convert_opts, extra_returns);
       Object.assign(rendered_outputs, extra_returns.rendered_outputs)
       assert.strictEqual(extra_returns.errors.length, 0)
-      await cirodown_nodejs_webpack_safe.update_database_after_convert({
+      await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
         extra_returns,
         id_provider,
         sequelize,
@@ -171,14 +171,14 @@ function assert_convert_ast(
     }
     //console.error('main');
     if (options.input_path_noext !== undefined) {
-      new_convert_opts.input_path = options.input_path_noext + cirodown.CIRODOWN_EXT;
+      new_convert_opts.input_path = options.input_path_noext + ourbigbook.OURBIGBOOK_EXT;
       new_convert_opts.toplevel_id = options.input_path_noext;
     }
     const extra_returns = {};
-    const output = await cirodown.convert(input_string, new_convert_opts, extra_returns);
+    const output = await ourbigbook.convert(input_string, new_convert_opts, extra_returns);
     Object.assign(rendered_outputs, extra_returns.rendered_outputs)
     if (new_convert_opts.input_path !== undefined) {
-      await cirodown_nodejs_webpack_safe.update_database_after_convert({
+      await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
         extra_returns,
         id_provider,
         sequelize,
@@ -259,7 +259,7 @@ function assert_convert_ast(
       if (expect_error_precise) {
         assert.deepStrictEqual(
           error.source_location,
-          new cirodown.SourceLocation(
+          new ourbigbook.SourceLocation(
             options.error_line,
             options.error_column,
             options.error_path
@@ -300,7 +300,7 @@ function assert_db_checks(actual_rows, expects) {
   for (let i = 0; i < actual_rows.length; i++) {
     const actual_row = actual_rows[i]
     const expect = expects[i]
-    const ast = cirodown.AstNode.fromJSON(actual_row.ast_json)
+    const ast = ourbigbook.AstNode.fromJSON(actual_row.ast_json)
     const source_location = ast.source_location
     assert.strictEqual(actual_row.idid, expect[0])
     assert.strictEqual(actual_row.path, expect[1])
@@ -335,11 +335,11 @@ function assert_error(description, input, line, column, path, options={}) {
   );
 }
 
-const testdir = path.join(__dirname, cirodown_nodejs_webpack_safe.TMP_DIRNAME, 'test')
+const testdir = path.join(__dirname, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, 'test')
 fs.rmdirSync(testdir, { recursive: true});
 fs.mkdirSync(testdir);
 
-// Test the cirodown executable via a separate child process call.
+// Test the ourbigbook executable via a separate child process call.
 //
 // The test runs in a clean temporary directory. If the test fails,
 // the directory is cleaned up, so you can list the latest directory
@@ -404,7 +404,7 @@ function assert_executable(
     for (const entry of options.pre_exec) {
       if (Array.isArray(entry)) {
         let [cmd, args] = entry
-        if (cmd === 'cirodown') {
+        if (cmd === 'ourbigbook') {
           args = fakeroot_arg.concat(args)
         }
         const out = child_process.spawnSync(cmd, args, {cwd: cwd});
@@ -413,7 +413,7 @@ function assert_executable(
         update_filesystem(entry.filesystem_update, tmpdir)
       }
     }
-    const cmd = 'cirodown'
+    const cmd = 'ourbigbook'
     const args = fakeroot_arg.concat(options.args)
     const out = child_process.spawnSync(cmd, args, {
       cwd: cwd,
@@ -424,7 +424,7 @@ function assert_executable(
     for (const xpath_expr of options.assert_xpath_stdout) {
       assert_xpath_main(
         xpath_expr,
-        out.stdout.toString(cirodown_nodejs_webpack_safe.ENCODING),
+        out.stdout.toString(ourbigbook_nodejs_webpack_safe.ENCODING),
         {message: assert_msg},
       );
     }
@@ -432,7 +432,7 @@ function assert_executable(
       const assert_msg_xpath = `path should match xpath: ${relpath}\n\n` + assert_msg;
       const fullpath = path.join(tmpdir, relpath);
       assert.ok(fs.existsSync(fullpath), assert_msg_xpath);
-      const html = fs.readFileSync(fullpath).toString(cirodown_nodejs_webpack_safe.ENCODING);
+      const html = fs.readFileSync(fullpath).toString(ourbigbook_nodejs_webpack_safe.ENCODING);
       for (const xpath_expr of options.assert_xpath[relpath]) {
         assert_xpath_main(xpath_expr, html, {message: assert_msg_xpath});
       }
@@ -441,7 +441,7 @@ function assert_executable(
       const assert_msg_xpath = `path should not match xpath: ${relpath}\n\n` + assert_msg;
       const fullpath = path.join(tmpdir, relpath);
       assert.ok(fs.existsSync(fullpath), assert_msg_xpath);
-      const html = fs.readFileSync(fullpath).toString(cirodown_nodejs_webpack_safe.ENCODING);
+      const html = fs.readFileSync(fullpath).toString(ourbigbook_nodejs_webpack_safe.ENCODING);
       for (const xpath_expr of options.assert_not_xpath[relpath]) {
         assert_xpath_main(xpath_expr, html, {message: assert_msg_xpath, count: 0});
       }
@@ -560,15 +560,15 @@ function a(macro_name, content, extra_args={}, extra_props={}) {
 }
 
 const default_filesystem = {
-  'include-one-level-1.ciro': `= cc
+  'include-one-level-1.bigb': `= cc
 
 dd
 `,
-  'include-one-level-2.ciro': `= ee
+  'include-one-level-2.bigb': `= ee
 
 ff
 `,
-  'include-two-levels.ciro': `= ee
+  'include-two-levels.bigb': `= ee
 
 ff
 
@@ -576,7 +576,7 @@ ff
 
 hh
 `,
-  'include-two-levels-parent.ciro': `= Include two levels parent
+  'include-two-levels-parent.bigb': `= Include two levels parent
 
 h1 content
 
@@ -585,19 +585,19 @@ h1 content
 
 h2 content
 `,
-  'include-two-levels-subdir/index.ciro': `= Include two levels subdir h1
+  'include-two-levels-subdir/index.bigb': `= Include two levels subdir h1
 
 == Include two levels subdir h2
 `,
-  'include-with-error.ciro': `= bb
+  'include-with-error.bigb': `= bb
 
 \\reserved_undefined
 `,
-  'include-circular-1.ciro': `= bb
+  'include-circular-1.bigb': `= bb
 
 \\Include[include-circular-2]
 `,
-  'include-circular-2.ciro': `= cc
+  'include-circular-2.bigb': `= cc
 
 \\Include[include-circular-1]
 `,
@@ -610,10 +610,10 @@ function exec_assert_message(out, cmd, args, cwd, msg_extra) {
   }
   ret += `cmd: cd ${cwd} && ${cmd} ${args.join(' ')}
 stdout:
-${out.stdout.toString(cirodown_nodejs_webpack_safe.ENCODING)}
+${out.stdout.toString(ourbigbook_nodejs_webpack_safe.ENCODING)}
 
 stderr:
-${out.stderr.toString(cirodown_nodejs_webpack_safe.ENCODING)}`;
+${out.stderr.toString(ourbigbook_nodejs_webpack_safe.ENCODING)}`;
   return ret;
 }
 
@@ -897,7 +897,7 @@ assert_convert_ast('list with multiline paragraph insane',
     ]),
   ]
 );
-// https://github.com/cirosantilli/cirodown/issues/54
+// https://github.com/cirosantilli/ourbigbook/issues/54
 assert_convert_ast('insane list with literal no error',
   `* aa
 
@@ -943,7 +943,7 @@ assert_convert_ast('insane list with literal with double newline is not an error
     ]),
   ]
 );
-// https://github.com/cirosantilli/cirodown/issues/53
+// https://github.com/cirosantilli/ourbigbook/issues/53
 assert_convert_ast('insane list with element with newline separated arguments',
   `* aa
 
@@ -1014,7 +1014,7 @@ assert_convert_ast('escape insane list',
   '\\* a',
   [a('P', [t('* a')])],
 );
-// https://github.com/cirosantilli/cirodown/issues/81
+// https://github.com/cirosantilli/ourbigbook/issues/81
 assert_convert_ast('insane list immediately inside insane list',
   `* * aa
   * bb
@@ -1157,7 +1157,7 @@ assert_convert_ast('insane table inside insane list inside insane table',
     ]),
   ]
 );
-// https://github.com/cirosantilli/cirodown/issues/81
+// https://github.com/cirosantilli/ourbigbook/issues/81
 assert_convert_ast('insane table immediately inside insane list',
   `* | 00
   | 01
@@ -1525,9 +1525,9 @@ assert_convert_ast('image title with x to header in another file',
     a('Image', undefined, { src: [t('aa')], }, {}, { id: 'my-notindex-h1' }),
   ],
   {
-    convert_before: ['notindex.ciro'],
+    convert_before: ['notindex.bigb'],
     filesystem: {
-     'notindex.ciro': `= notindex h1
+     'notindex.bigb': `= notindex h1
 `,
     },
   }
@@ -1542,15 +1542,15 @@ assert_convert_ast('link to image in nother files that has title with x to heade
       "//x:a[@href='image.html#image-my-notindex' and text()='Figure \"My notindex h1\"']",
     ],
     convert_before: [
-      'notindex.ciro',
-      'image.ciro',
+      'notindex.bigb',
+      'image.bigb',
     ],
     filesystem: {
-     'image.ciro': `= image h1
+     'image.bigb': `= image h1
 
 \\Image[aa]{title=My \\x[notindex]}{check=0}
 `,
-     'notindex.ciro': `= notindex h1
+     'notindex.bigb': `= notindex h1
 `,
     },
     input_path_noext: 'index',
@@ -1576,13 +1576,13 @@ assert_convert_ast('p with id before', '\\P{id=ab}[cd]\n',
   [a('P', [t('cd')], {id: [t('ab')]})]);
 assert_convert_ast('p with id after', '\\P[cd]{id=ab}\n',
   [a('P', [t('cd')], {id: [t('ab')]})]);
-// https://github.com/cirosantilli/cirodown/issues/101
+// https://github.com/cirosantilli/ourbigbook/issues/101
 assert_error('named argument given multiple times',
   '\\P[ab]{id=cd}{id=ef}', 1, 14);
 assert_error(
   'non-empty named argument without = is an error',
   '\\P{id ab}[cd]',
-  1, 6, 'notindex.ciro',
+  1, 6, 'notindex.bigb',
   {
     input_path_noext: 'notindex',
   }
@@ -1989,7 +1989,7 @@ assert_convert_ast('cross reference full boolean style with value 1',
     ]),
   ]
 );
-// https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
+// https://cirosantilli.com/ourbigbook#the-id-of-the-first-header-is-derived-from-the-filename
 assert_convert_ast('id of first header comes from the file name if not index',
   `= abc
 
@@ -2040,7 +2040,7 @@ assert_convert_ast('id of first header comes from header title if index',
   ],
   {
     extra_convert_opts: {
-      input_path: cirodown.INDEX_BASENAME_NOEXT + cirodown.CIRODOWN_EXT
+      input_path: ourbigbook.INDEX_BASENAME_NOEXT + ourbigbook.OURBIGBOOK_EXT
     }
   },
 );
@@ -2070,7 +2070,7 @@ assert_error('cross reference with child to undefined id fails gracefully',
 
 \\x[ab]{child}
 `, 3, 3, undefined, {toplevel: true});
-// https://cirosantilli.com/cirodown#order-of-reported-errors
+// https://cirosantilli.com/ourbigbook#order-of-reported-errors
 assert_error('cross reference undefined errors show after other errors',
   `= a
 
@@ -2093,10 +2093,10 @@ assert_convert_ast('cross reference to non-included header in another file',
       "//x:a[@href='another-file.html' and text()='another file']",
     ],
     convert_before: [
-      'another-file.ciro',
+      'another-file.bigb',
     ],
     filesystem: {
-      'another-file.ciro': '= Another file'
+      'another-file.bigb': '= Another file'
     },
     input_path_noext: 'notindex',
   },
@@ -2118,10 +2118,10 @@ assert_convert_ast('cross reference to included header in another file',
       "//x:a[@href='another-file.html#another-file-h2' and text()='another file h2']",
     ],
     convert_before: [
-      'another-file.ciro',
+      'another-file.bigb',
     ],
     filesystem: {
-      'another-file.ciro': `= Another file
+      'another-file.bigb': `= Another file
 
 == Another file h2
 `
@@ -2165,7 +2165,7 @@ assert_convert_ast('cross reference to non-included ids in another file',
     // TODO: to enable this, we have to also update the test infrastructure to also pass:
     // new_options.toplevel_has_scope = true;
     // new_options.toplevel_parent_scope = undefined;
-    // like ./cirodown does from the CLI.
+    // like ./ourbigbook does from the CLI.
     //
     //\\x[include-two-levels-subdir]
     //
@@ -2193,25 +2193,25 @@ assert_convert_ast('cross reference to non-included ids in another file',
       "//x:div[@class='p']//x:a[@href='' and text()='notindex']",
       "//x:a[@href='#bb' and text()='bb']",
       "//x:blockquote//x:a[@href='#bb' and text()='Section 1. \"bb\"']",
-      // https://github.com/cirosantilli/cirodown/issues/94
+      // https://github.com/cirosantilli/ourbigbook/issues/94
       "//x:a[@href='include-two-levels.html' and text()='ee']",
       "//x:a[@href='include-two-levels.html#gg' and text()='gg']",
       "//x:a[@href='#bb' and text()='bb to bb']",
       "//x:a[@href='#image-bb' and text()='image bb 1']",
 
       // Links to the split versions.
-      xpath_header_split(1, 'notindex', 'notindex-split.html', cirodown.SPLIT_MARKER_TEXT),
-      xpath_header_split(2, 'bb', 'bb.html', cirodown.SPLIT_MARKER_TEXT),
+      xpath_header_split(1, 'notindex', 'notindex-split.html', ourbigbook.SPLIT_MARKER_TEXT),
+      xpath_header_split(2, 'bb', 'bb.html', ourbigbook.SPLIT_MARKER_TEXT),
     ],
     assert_xpath: {
       'notindex-split.html': [
         "//x:a[@href='include-two-levels.html' and text()='ee']",
         "//x:a[@href='include-two-levels.html#gg' and text()='gg']",
         "//x:a[@href='notindex.html#bb' and text()='bb']",
-        // https://github.com/cirosantilli/cirodown/issues/130
+        // https://github.com/cirosantilli/ourbigbook/issues/130
         "//x:blockquote//x:a[@href='notindex.html#bb' and text()='Section 1. \"bb\"']",
         // Link to the split version.
-        xpath_header_split(1, 'notindex', 'notindex.html', cirodown.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'notindex', 'notindex.html', ourbigbook.NOSPLIT_MARKER_TEXT),
         // Internal cross reference inside split header.
         "//x:a[@href='notindex.html#image-bb' and text()='image bb 1']",
       ],
@@ -2221,15 +2221,15 @@ assert_convert_ast('cross reference to non-included ids in another file',
         "//x:a[@href='notindex.html' and text()='bb to notindex']",
         "//x:a[@href='notindex.html#bb' and text()='bb to bb']",
         // Link to the split version.
-        xpath_header_split(1, 'bb', 'notindex.html#bb', cirodown.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'bb', 'notindex.html#bb', ourbigbook.NOSPLIT_MARKER_TEXT),
         // Internal cross reference inside split header.
         "//x:a[@href='#image-bb' and text()='bb to image bb']",
       ],
     },
     convert_before: [
-      'include-two-levels.ciro',
-      // https://github.com/cirosantilli/cirodown/issues/116
-      'include-two-levels-subdir/index.ciro',
+      'include-two-levels.bigb',
+      // https://github.com/cirosantilli/ourbigbook/issues/116
+      'include-two-levels-subdir/index.bigb',
     ],
     extra_convert_opts: { split_headers: true },
     filesystem: Object.assign({}, default_filesystem, {
@@ -2239,7 +2239,7 @@ assert_convert_ast('cross reference to non-included ids in another file',
   },
 );
 assert_convert_ast('cross reference to non-included image in another file',
-  // https://github.com/cirosantilli/cirodown/issues/199
+  // https://github.com/cirosantilli/ourbigbook/issues/199
   `= Notindex
 
 \\x[image-bb]
@@ -2250,10 +2250,10 @@ assert_convert_ast('cross reference to non-included image in another file',
       "//x:div[@class='p']//x:a[@href='notindex2.html#image-bb' and text()='Figure \"bb\"']",
     ],
     convert_before: [
-      'notindex2.ciro',
+      'notindex2.bigb',
     ],
     filesystem: {
-      'notindex2.ciro': `= Notindex2
+      'notindex2.bigb': `= Notindex2
 
 == Notindex2 2
 
@@ -2265,16 +2265,16 @@ assert_convert_ast('cross reference to non-included image in another file',
   },
 );
 assert_convert_ast('x to image in another file that has x title in another file',
-  // https://github.com/cirosantilli/cirodown/issues/198
+  // https://github.com/cirosantilli/ourbigbook/issues/198
   `= Tmp
 
 \\x[image-tmp2-2]
 `,
   undefined,
   {
-    convert_before: ['tmp2.ciro'],
+    convert_before: ['tmp2.bigb'],
     filesystem: {
-     'tmp2.ciro': `= Tmp2
+     'tmp2.bigb': `= Tmp2
 
 \\Image[a]{check=0}
 {title=\\x[tmp2-2]}
@@ -2293,24 +2293,24 @@ assert_convert_ast('x to image in another file that has x title in another file'
 //
 //  // Non-split headers.
 //  assert.deepStrictEqual(
-//    cirodown.output_path_parts(
-//      'notindex.ciro',
+//    ourbigbook.output_path_parts(
+//      'notindex.bigb',
 //      'notindex',
 //      context,
 //    ),
 //    ['', 'notindex']
 //  );
 //  assert.deepStrictEqual(
-//    cirodown.output_path_parts(
-//      'index.ciro',
+//    ourbigbook.output_path_parts(
+//      'index.bigb',
 //      'index',
 //      context,
 //    ),
 //    ['', 'index']
 //  );
 //  assert.deepStrictEqual(
-//    cirodown.output_path_parts(
-//      'README.ciro',
+//    ourbigbook.output_path_parts(
+//      'README.bigb',
 //      'index',
 //      context,
 //    ),
@@ -2319,7 +2319,7 @@ assert_convert_ast('x to image in another file that has x title in another file'
 //});
 
 // Infinite recursion.
-// failing https://github.com/cirosantilli/cirodown/issues/34
+// failing https://github.com/cirosantilli/ourbigbook/issues/34
 assert_error('cross reference from header title to following header is not allowed',
   `= \\x[h2] aa
 
@@ -2339,7 +2339,7 @@ assert_convert_ast('cross reference from image title to previous non-header is n
   {
     input_path_noext: 'tmp',
     invalid_title_titles: [
-      ['image-gh-image-cd', 'tmp.ciro', 3, 1],
+      ['image-gh-image-cd', 'tmp.bigb', 3, 1],
     ],
   }
 );
@@ -2352,7 +2352,7 @@ assert_convert_ast('cross reference from image title to following non-header is 
   {
     input_path_noext: 'tmp',
     invalid_title_titles: [
-      ['image-gh-image-cd', 'tmp.ciro', 1, 1],
+      ['image-gh-image-cd', 'tmp.bigb', 1, 1],
     ],
   }
 );
@@ -2361,7 +2361,7 @@ assert_executable('executable: cross reference from image title to previous non-
     args: ['.'],
     expect_exit_status: 1,
     filesystem: {
-      'README.ciro': `\\Image[ab]{title=cd}{check=0}
+      'README.bigb': `\\Image[ab]{title=cd}{check=0}
 
 \\Image[ef]{title=gh \\x[image-cd]}{check=0}
 `,
@@ -2377,7 +2377,7 @@ assert_error('cross reference infinite recursion with explicit IDs fails gracefu
 `, 1, 3);
 assert_error('cross reference infinite recursion to self IDs fails gracefully',
   `= \\x[tmp]
-`, 1, 3, 'tmp.ciro',
+`, 1, 3, 'tmp.bigb',
   {
     input_path_noext: 'tmp',
   }
@@ -2574,7 +2574,7 @@ assert_convert_ast('scope with parent breakout with no leading slash',
   a('H', undefined, {level: [t('3')], title: [t('h5')]}, {id: 'h5'}),
 ]
 );
-// https://github.com/cirosantilli/cirodown/issues/120
+// https://github.com/cirosantilli/ourbigbook/issues/120
 assert_convert_ast('nested scope with parent',
   `= h1
 {scope}
@@ -2634,7 +2634,7 @@ assert_convert_ast('nested scope internal cross references resolves progressivel
   a('P', [a('x', undefined, {href: [t('h1-1')]})]),
 ]
 );
-// https://github.com/cirosantilli/cirodown/issues/100
+// https://github.com/cirosantilli/ourbigbook/issues/100
 assert_error('broken parent still generates a header ID',
   `= h1
 
@@ -2681,7 +2681,7 @@ assert_convert_ast('cross reference to toplevel scoped split header',
   {
     assert_xpath_main: [
       // Not `#notindex/image-bb`.
-      // https://cirosantilli.com/cirodown#header-scope-argument-of-toplevel-headers
+      // https://cirosantilli.com/ourbigbook#header-scope-argument-of-toplevel-headers
       "//x:a[@href='#image-bb' and text()='bb to image bb']",
     ],
     assert_xpath: {
@@ -2698,7 +2698,7 @@ assert_convert_ast('cross reference to toplevel scoped split header',
     filesystem: { 'bb.png': '' },
   },
 );
-// https://github.com/cirosantilli/cirodown/issues/173
+// https://github.com/cirosantilli/ourbigbook/issues/173
 assert_convert_ast('cross reference to non-toplevel scoped split header',
   `= tmp
 
@@ -2734,7 +2734,7 @@ assert_convert_ast('cross reference to non-toplevel scoped split header',
     input_path_noext: 'tmp',
   },
 );
-// https://cirosantilli.com/cirodown#header-scope-argument-of-toplevel-headers
+// https://cirosantilli.com/ourbigbook#header-scope-argument-of-toplevel-headers
 assert_convert_ast('cross reference to non-included file with toplevel scope',
   `\\x[toplevel-scope]
 
@@ -2758,17 +2758,17 @@ assert_convert_ast('cross reference to non-included file with toplevel scope',
       "//x:div[@class='p']//x:a[@href='toplevel-scope.html#h2' and text()='h2']",
     ],
     assert_xpath: {
-      // TODO https://github.com/cirosantilli/cirodown/issues/139
+      // TODO https://github.com/cirosantilli/ourbigbook/issues/139
       //'notindex-split.html': [
       //  "//x:a[@href='toplevel-scope.html#image-h1' and text()='image h1']",
       //  "//x:a[@href='toplevel-scope/h2.html#image-h2' and text()='image h2']",
       //],
     },
-    convert_before: ['toplevel-scope.ciro'],
+    convert_before: ['toplevel-scope.bigb'],
     input_path_noext: 'notindex',
     extra_convert_opts: { split_headers: true },
     filesystem: {
-      'toplevel-scope.ciro': `= Toplevel scope
+      'toplevel-scope.bigb': `= Toplevel scope
 {scope}
 
 \\Image[h1.png]{title=h1}
@@ -2810,15 +2810,15 @@ assert_convert_ast('x leading slash to escape scopes works across files',
   `\\x[/notindex]`,
   undefined,
   {
-    convert_before: ['notindex.ciro'],
+    convert_before: ['notindex.bigb'],
     filesystem: {
-     'notindex.ciro': `= Notindex
+     'notindex.bigb': `= Notindex
 `,
     },
   }
 );
 // This test can only work after:
-// https://github.com/cirosantilli/cirodown/issues/188
+// https://github.com/cirosantilli/ourbigbook/issues/188
 // There is no other way to test this currently, as we can't have scopes
 // across source files, and since scope is a boolean, and therefore can only
 // match the header's ID itself. The functionality has in theory been implemented
@@ -2837,9 +2837,9 @@ assert_convert_ast('x leading slash to escape scopes works across files',
 //\\x[notindex-h2][index scope 2 to notindex h2]`,
 //  undefined,
 //  {
-//    convert_before: ['notindex.ciro'],
+//    convert_before: ['notindex.bigb'],
 //    filesystem: {
-//     'notindex.ciro': `= Notindex
+//     'notindex.bigb': `= Notindex
 //
 //== Notindex h2
 //`,
@@ -2861,10 +2861,10 @@ assert_convert_ast('scopes hierarchy resolution works across files with director
         "//x:div[@class='p']//x:a[@href='notindex2.html#notindex2-h2' and text()='index to notindex2 h2']",
       ]
     },
-    convert_before: ['subdir/notindex2.ciro'],
+    convert_before: ['subdir/notindex2.bigb'],
     extra_convert_opts: { split_headers: true },
     filesystem: {
-     'subdir/notindex2.ciro': `= Notindex2
+     'subdir/notindex2.bigb': `= Notindex2
 
 == Notindex2 h2
 `,
@@ -2955,7 +2955,7 @@ assert_convert_ast('header 7 sane',
 `,
   header_7_expect
 );
-// https://github.com/cirosantilli/cirodown/issues/32
+// https://github.com/cirosantilli/ourbigbook/issues/32
 assert_convert_ast('header 7 insane',
   `= 1
 
@@ -3060,7 +3060,7 @@ assert_error('header tag and synonym arguments are incompatible',
   5, 1
 );
 //// This would be the ideal behaviour, but I'm lazy now.
-//// https://github.com/cirosantilli/cirodown/issues/200
+//// https://github.com/cirosantilli/ourbigbook/issues/200
 //assert_convert_ast('full link to synonym renders the same as full link to the main header',
 //  `= 1
 //
@@ -3080,7 +3080,7 @@ assert_error('header tag and synonym arguments are incompatible',
 //);
 // This is not the ideal behaviour, the above test would be the ideal.
 // But it will be good enough for now.
-// https://github.com/cirosantilli/cirodown/issues/200
+// https://github.com/cirosantilli/ourbigbook/issues/200
 assert_convert_ast('full link to synonym with title2 does not get dummy empty parenthesis',
   `= 1
 
@@ -3210,7 +3210,7 @@ assert_convert_ast('header numbered argument',
     extra_convert_opts: { split_headers: true },
   },
 );
-assert_convert_ast('header numbered cirodown.json',
+assert_convert_ast('header numbered ourbigbook.json',
   header_numbered_input,
   undefined,
   {
@@ -3239,11 +3239,11 @@ assert_convert_ast('header numbered cirodown.json',
     },
     extra_convert_opts: {
       split_headers: true,
-      cirodown_json: { h: { numbered: false } }
+      ourbigbook_json: { h: { numbered: false } }
     }
   },
 );
-assert_convert_ast('header splitDefault on cirodown.json',
+assert_convert_ast('header splitDefault on ourbigbook.json',
   `= Index
 
 \\Include[notindex]
@@ -3261,13 +3261,13 @@ assert_convert_ast('header splitDefault on cirodown.json',
         "//*[@id='toc']//x:a[@href='notindex-h2.html' and text()='1. Notindex h2']",
       ],
     },
-    convert_before: ['notindex.ciro'],
+    convert_before: ['notindex.bigb'],
     extra_convert_opts: {
       split_headers: true,
-      cirodown_json: { h: { splitDefault: true } }
+      ourbigbook_json: { h: { splitDefault: true } }
     },
     filesystem: {
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 == Notindex h2
 `
@@ -3368,7 +3368,7 @@ assert_convert_ast('code inline insane simple',
     ]),
   ]
 );
-// https://github.com/cirosantilli/cirodown/issues/171
+// https://github.com/cirosantilli/ourbigbook/issues/171
 assert_convert_ast('code inline insane with only a backslash',
   'a `\\` d\n',
   [
@@ -3506,39 +3506,39 @@ cc
 )
 
 // lint h-parent
-assert_no_error('header parent works with cirodown.json lint h-parent equal parent and no includes',
+assert_no_error('header parent works with ourbigbook.json lint h-parent equal parent and no includes',
   `= 1
 
 = 2
 {parent=1}
 `,
-  { extra_convert_opts: { cirodown_json: { lint: { 'h-parent': 'parent', } } } }
+  { extra_convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'parent', } } } }
 );
-assert_error('header number fails with cirodown.json lint h-parent = parent',
+assert_error('header number fails with ourbigbook.json lint h-parent = parent',
   `= 1
 
 == 2
 `,
   3, 1, undefined,
-  { extra_convert_opts: { cirodown_json: { lint: { 'h-parent': 'parent', } } } }
+  { extra_convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'parent', } } } }
 );
-assert_no_error('header number works with cirodown.json lint h-parent = number',
+assert_no_error('header number works with ourbigbook.json lint h-parent = number',
   `= 1
 
 == 2
 `,
-  { extra_convert_opts: { cirodown_json: { lint: { 'h-parent': 'number', } } } }
+  { extra_convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'number', } } } }
 );
-assert_error('header parent fails with cirodown.json lint h-parent = number',
+assert_error('header parent fails with ourbigbook.json lint h-parent = number',
   `= 1
 
 = 2
 {parent=1}
 `,
   3, 1, undefined,
-  { extra_convert_opts: { cirodown_json: { lint: { 'h-parent': 'number', } } } }
+  { extra_convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'number', } } } }
 );
-assert_no_error('header parent works with cirodown.json lint h-parent equal parent and includes with parent',
+assert_no_error('header parent works with ourbigbook.json lint h-parent equal parent and includes with parent',
   `= 1
 
 = 2
@@ -3548,12 +3548,12 @@ assert_no_error('header parent works with cirodown.json lint h-parent equal pare
 `,
   {
     extra_convert_opts: {
-      cirodown_json: { lint: { 'h-parent': 'parent', } },
+      ourbigbook_json: { lint: { 'h-parent': 'parent', } },
       embed_includes: true,
     }
   }
 );
-assert_error('header parent fails with cirodown.json lint h-parent equal parent and includes with number',
+assert_error('header parent fails with ourbigbook.json lint h-parent equal parent and includes with number',
   `= 1
 
 = 2
@@ -3561,10 +3561,10 @@ assert_error('header parent fails with cirodown.json lint h-parent equal parent 
 
 \\Include[include-two-levels]
 `,
-  5, 1, 'include-two-levels.ciro',
+  5, 1, 'include-two-levels.bigb',
   {
     extra_convert_opts: {
-      cirodown_json: { lint: { 'h-parent': 'parent', } },
+      ourbigbook_json: { lint: { 'h-parent': 'parent', } },
       embed_includes: true,
     }
   }
@@ -3577,7 +3577,7 @@ assert_error('lint h-tag child failure',
 == 2
 `,
   2, 1, undefined,
-  { extra_convert_opts: { cirodown_json: { lint: { 'h-tag': 'child', } } } }
+  { extra_convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'child', } } } }
 );
 assert_no_error('lint h-tag child pass',
   `= 1
@@ -3585,7 +3585,7 @@ assert_no_error('lint h-tag child pass',
 
 == 2
 `,
-  { extra_convert_opts: { cirodown_json: { lint: { 'h-tag': 'child', } } } }
+  { extra_convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'child', } } } }
 );
 assert_error('lint h-tag tag failure',
   `= 1
@@ -3594,7 +3594,7 @@ assert_error('lint h-tag tag failure',
 == 2
 `,
   2, 1, undefined,
-  { extra_convert_opts: { cirodown_json: { lint: { 'h-tag': 'tag', } } } }
+  { extra_convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'tag', } } } }
 );
 assert_no_error('lint h-tag child pass',
   `= 1
@@ -3602,7 +3602,7 @@ assert_no_error('lint h-tag child pass',
 
 == 2
 `,
-  { extra_convert_opts: { cirodown_json: { lint: { 'h-tag': 'tag', } } } }
+  { extra_convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'tag', } } } }
 );
 
 // Word counts.
@@ -3669,9 +3669,9 @@ assert_convert_ast('word count descendant from include without embed includes',
       "//*[contains(@class, 'h-nav')]//*[contains(@class, 'word-count') and text()='3']",
       "//*[contains(@class, 'h-nav')]//*[contains(@class, 'word-count-descendant') and text()='5']",
     ],
-    convert_before: ['notindex.ciro'],
+    convert_before: ['notindex.bigb'],
     filesystem: {
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 44 55
 `
@@ -3731,7 +3731,7 @@ bb
     a('H', undefined, {level: [t('2')], title: [t('cc')]}),
 ]
 );
-// https://github.com/cirosantilli/cirodown/issues/143
+// https://github.com/cirosantilli/ourbigbook/issues/143
 assert_convert_ast('header with insane paragraph in the content does not blow up',
   `\\H[1][a
 
@@ -3894,12 +3894,12 @@ assert_convert_ast('table of contents contains included headers numbered without
       ],
     },
     convert_before: [
-      'notindex3.ciro',
-      'notindex2.ciro',
+      'notindex3.bigb',
+      'notindex2.bigb',
     ],
     extra_convert_opts: { split_headers: true },
     filesystem: {
-      'notindex2.ciro': `= Notindex2
+      'notindex2.bigb': `= Notindex2
 
 == Notindex2 h2
 
@@ -3907,7 +3907,7 @@ assert_convert_ast('table of contents contains included headers numbered without
 
 \\Include[notindex3]
 `,
-      'notindex3.ciro': `= Notindex3
+      'notindex3.bigb': `= Notindex3
 
 == Notindex3 h2
 
@@ -3932,10 +3932,10 @@ assert_convert_ast('table of contents respects numbered=0 of included headers',
       "//*[@id='toc']//x:a[@href='#notindex-h2' and text()='2. Notindex h2']",
     ],
     convert_before: [
-      'notindex2.ciro',
+      'notindex2.bigb',
     ],
     filesystem: {
-      'notindex2.ciro': `= Notindex2
+      'notindex2.bigb': `= Notindex2
 {numbered=0}
 
 == Notindex2 h2
@@ -3963,10 +3963,10 @@ assert_convert_ast('table of contents include placeholder header has no number w
       "//*[@id='toc']//x:a[@href='#notindex-h2' and text()='Notindex h2']",
     ],
     convert_before: [
-      'notindex2.ciro',
+      'notindex2.bigb',
     ],
     filesystem: {
-      'notindex2.ciro': `= Notindex2
+      'notindex2.bigb': `= Notindex2
 
 == Notindex2 h2
 `,
@@ -3990,10 +3990,10 @@ assert_convert_ast('table of contents does not show synonyms of included headers
       "//*[@id='toc']//x:a[contains(text(),'synonym')]",
     ],
     convert_before: [
-      'notindex2.ciro',
+      'notindex2.bigb',
     ],
     filesystem: {
-      'notindex2.ciro': `= Notindex2
+      'notindex2.bigb': `= Notindex2
 
 == Notindex2 h2
 
@@ -4006,7 +4006,7 @@ assert_convert_ast('table of contents does not show synonyms of included headers
     input_path_noext: 'notindex',
   },
 );
-assert_convert_ast('header numbered=0 in cirodown.json works across source files and on table of contents',
+assert_convert_ast('header numbered=0 in ourbigbook.json works across source files and on table of contents',
   `= Index
 
 \\Include[notindex]
@@ -4026,13 +4026,13 @@ assert_convert_ast('header numbered=0 in cirodown.json works across source files
       ],
     },
 
-    convert_before: ['notindex.ciro'],
+    convert_before: ['notindex.bigb'],
     extra_convert_opts: {
       split_headers: true,
-      cirodown_json: { h: { numbered: false } }
+      ourbigbook_json: { h: { numbered: false } }
     },
     filesystem: {
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 == Notindex h2
 `,
@@ -4052,13 +4052,13 @@ assert_convert_ast('split header with an include and no headers has a single tab
         "//*[@id='toc']",
       ],
     },
-    convert_before: ['notindex.ciro'],
+    convert_before: ['notindex.bigb'],
     extra_convert_opts: {
       split_headers: true,
-      cirodown_json: { h: { numbered: false } }
+      ourbigbook_json: { h: { numbered: false } }
     },
     filesystem: {
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 `,
     },
     input_path_noext: 'index',
@@ -4084,10 +4084,10 @@ assert_convert_ast('toplevel scope gets removed on table of contents of included
         "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and text()='1.1. Notindex h2']",
       ],
     },
-    convert_before: ['notindex.ciro'],
+    convert_before: ['notindex.bigb'],
     extra_convert_opts: { split_headers: true },
     filesystem: {
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 {scope}
 
 == Notindex h2
@@ -4100,11 +4100,11 @@ assert_executable('executable: toplevel scope gets removed on table of contents 
   {
     args: ['--split-headers', '.'],
     filesystem: {
-      'index.ciro': `= Index
+      'index.bigb': `= Index
 
 \\Include[notindex]
 `,
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 {scope}
 
 == Notindex h2
@@ -4150,50 +4150,50 @@ assert_convert_ast('ancestors list shows after toc on toplevel',
   undefined,
   {
     filesystem: {
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 \\Include[notindex2]
 `,
-      'notindex2.ciro': `= Notindex 2
+      'notindex2.bigb': `= Notindex 2
 
 \\Include[notindex3]
 `,
-      'notindex3.ciro': `= Notindex 2
+      'notindex3.bigb': `= Notindex 2
 `
     },
-    convert_before_norender: ['index.ciro', 'notindex.ciro', 'notindex2.ciro', 'notindex3.ciro'],
-    convert_before: ['notindex.ciro', 'notindex2.ciro', 'notindex3.ciro'],
+    convert_before_norender: ['index.bigb', 'notindex.bigb', 'notindex2.bigb', 'notindex3.bigb'],
+    convert_before: ['notindex.bigb', 'notindex2.bigb', 'notindex3.bigb'],
     input_path_noext: 'index',
     extra_convert_opts: { split_headers: true },
     assert_xpath: {
       'h2.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
       ],
       'h3.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html#h2']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html#h2']`,
       ],
       'h4.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html#h2']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html#h3']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html#h2']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html#h3']`,
       ],
       'notindex.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
       ],
       'notindex2.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
       ],
       'notindex3.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html']`,
       ],
     },
     assert_not_xpath: {
       'index.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']`,
       ],
     },
   }
@@ -4337,10 +4337,10 @@ bb
     ]),
   ],
   {
-    convert_before: ['include-two-levels.ciro'],
+    convert_before: ['include-two-levels.bigb'],
   },
 );
-// https://github.com/cirosantilli/cirodown/issues/74
+// https://github.com/cirosantilli/ourbigbook/issues/74
 assert_convert_ast('cross reference to embed include header',
   `= aa
 
@@ -4390,7 +4390,7 @@ bb
   ]),
   include_opts
 );
-// https://github.com/cirosantilli/cirodown/issues/35
+// https://github.com/cirosantilli/ourbigbook/issues/35
 assert_convert_ast('include simple no paragraph',
   `= aa
 
@@ -4429,7 +4429,7 @@ bb
   ]),
   include_opts
 );
-// https://github.com/cirosantilli/cirodown/issues/23
+// https://github.com/cirosantilli/ourbigbook/issues/23
 assert_error('include with error reports error on the include source',
   `= aa
 
@@ -4437,7 +4437,7 @@ bb
 
 \\Include[include-with-error]
 `,
-  3, 1, 'include-with-error.ciro',
+  3, 1, 'include-with-error.bigb',
   include_opts
 );
 const circular_entry = `= notindex
@@ -4448,7 +4448,7 @@ assert_error('include circular dependency 1 <-> 2',
   circular_entry,
   // TODO works from CLI call......... fuck, why.
   // Similar problem as in test below.
-  //3, 1, 'include-circular.ciro',
+  //3, 1, 'include-circular.bigb',
   undefined, undefined, undefined,
   {
     extra_convert_opts: {
@@ -4457,8 +4457,8 @@ assert_error('include circular dependency 1 <-> 2',
     },
     has_error: true,
     filesystem: {
-      'notindex.ciro': circular_entry,
-      'include-circular.ciro': `= include-circular
+      'notindex.bigb': circular_entry,
+      'include-circular.bigb': `= include-circular
 
 \\Include[notindex]
 `
@@ -4468,7 +4468,7 @@ assert_error('include circular dependency 1 <-> 2',
 // TODO error this is legitimately failing on CLI, bad error messages show
 // up on CLI reproduction.
 // The root problem is that include_path_set does not contain
-// include-circular-2.ciro, and that leads to several:
+// include-circular-2.bigb, and that leads to several:
 // ```
 // file not found on database: "${target_input_path}", needed for toplevel scope removal
 // on ToC conversion.
@@ -4477,12 +4477,12 @@ assert_error('include circular dependency 1 -> 2 <-> 3',
 
 \\Include[include-circular-1]
 `,
-  // 3, 1, 'include-circular-2.ciro',
+  // 3, 1, 'include-circular-2.bigb',
   undefined, undefined, undefined,
-  cirodown.clone_and_set(include_opts, 'has_error', true)
+  ourbigbook.clone_and_set(include_opts, 'has_error', true)
 );
 assert_convert_ast('include without parent header with embed includes',
-  // https://github.com/cirosantilli/cirodown/issues/73
+  // https://github.com/cirosantilli/ourbigbook/issues/73
   `\\Include[include-one-level-1]
 \\Include[include-one-level-2]
 `,
@@ -4506,7 +4506,7 @@ assert_convert_ast('include without parent header with embed includes',
   },
 );
 assert_convert_ast('include without parent header without embed includes',
-  // https://github.com/cirosantilli/cirodown/issues/73
+  // https://github.com/cirosantilli/ourbigbook/issues/73
   `aa
 
 \\Include[include-one-level-1]
@@ -4534,8 +4534,8 @@ assert_convert_ast('include without parent header without embed includes',
   ],
   {
     convert_before: [
-      'include-one-level-1.ciro',
-      'include-one-level-2.ciro',
+      'include-one-level-1.bigb',
+      'include-one-level-2.bigb',
     ],
     assert_xpath_main: [
       // TODO getting corrupt <hNaN>
@@ -4545,7 +4545,7 @@ assert_convert_ast('include without parent header without embed includes',
   },
 );
 assert_error('empty include in header title fails gracefully',
-  // https://github.com/cirosantilli/cirodown/issues/195
+  // https://github.com/cirosantilli/ourbigbook/issues/195
   `= tmp
 
 == \\Include
@@ -4562,25 +4562,25 @@ assert_error('empty x in header title fails gracefully',
 assert_error('header inside header fails gracefully',
   `= \\H[2]
 `,
-  1, 3, 'tmp.ciro',
+  1, 3, 'tmp.bigb',
   {
     input_path_noext: 'tmp',
   }
 );
 
 assert_error('include to file that exists in header title fails gracefully',
-  // https://github.com/cirosantilli/cirodown/issues/195
+  // https://github.com/cirosantilli/ourbigbook/issues/195
   `= tmp
 
 == \\Include[tmp2]
 `,
-  3, 4, 'tmp.ciro',
+  3, 4, 'tmp.bigb',
   {
     filesystem: {
-      'tmp2.ciro': `= Tmp2
+      'tmp2.bigb': `= Tmp2
 `
     },
-    convert_before: ['tmp2.ciro'],
+    convert_before: ['tmp2.bigb'],
     input_path_noext: 'tmp',
   }
 );
@@ -4598,9 +4598,9 @@ assert_error('include to file that does exists without embed includes before ext
 `,
   3, 1, undefined, {
     // No error with this.
-    //convert_before: ['asdf.ciro'],
+    //convert_before: ['asdf.bigb'],
     filesystem: {
-      'asdf.ciro': '= asdf'
+      'asdf.bigb': '= asdf'
     }
   }
 );
@@ -4611,24 +4611,24 @@ assert_convert_ast('relative include in subdirectory',
 `,
   undefined,
   {
-    convert_before: ['s1/notindex2.ciro', 's1/notindex.ciro'],
+    convert_before: ['s1/notindex2.bigb', 's1/notindex.bigb'],
     filesystem: {
-      's1/notindex.ciro': `= Notindex
+      's1/notindex.bigb': `= Notindex
 
 \\Include[notindex2]
 
 == Notindex h2`,
-      's1/notindex2.ciro': `= Notindex2
+      's1/notindex2.bigb': `= Notindex2
 `,
-      // https://github.com/cirosantilli/cirodown/issues/214
-      'top.ciro': `= Top
+      // https://github.com/cirosantilli/ourbigbook/issues/214
+      'top.bigb': `= Top
 `,
     },
     assert_xpath_main: [
       "//*[@id='toc']//x:a[@href='s1/notindex.html' and @data-test='0' and text()='1. Notindex']",
       "//*[@id='toc']//x:a[@href='s1/notindex2.html' and @data-test='1' and text()='1.1. Notindex2']",
       "//*[@id='toc']//x:a[@href='s1/notindex.html#notindex-h2' and @data-test='2' and text()='1.2. Notindex h2']",
-      // https://github.com/cirosantilli/cirodown/issues/214
+      // https://github.com/cirosantilli/ourbigbook/issues/214
       //"//*[@id='toc']//x:a[@href='../top.html' and @data-test='2' and text()='2. Top']",
     ],
     input_path_noext: 's1/index',
@@ -4646,13 +4646,13 @@ assert_convert_ast('include from parent to subdirectory',
 `,
   undefined,
   {
-    convert_before: ['subdir/index.ciro', 'subdir/notindex.ciro'],
+    convert_before: ['subdir/index.bigb', 'subdir/notindex.bigb'],
     filesystem: {
-      'subdir/index.ciro': `= Index
+      'subdir/index.bigb': `= Index
 
 == h2
 `,
-      'subdir/notindex.ciro': `= Notindex
+      'subdir/notindex.bigb': `= Notindex
 
 == Notindex h2
 `,
@@ -4666,7 +4666,7 @@ assert_convert_ast('include from parent to subdirectory',
     },
   }
 );
-assert_convert_ast('subdir index.ciro outputs to subdir without trailing slash with html_x_extension=true',
+assert_convert_ast('subdir index.bigb outputs to subdir without trailing slash with html_x_extension=true',
   `= Subdir
 
 \\x[subdir/notindex][link to subdir notindex]
@@ -4675,9 +4675,9 @@ assert_convert_ast('subdir index.ciro outputs to subdir without trailing slash w
 `,
   undefined,
   {
-    convert_before: ['subdir/notindex.ciro'],
+    convert_before: ['subdir/notindex.bigb'],
     filesystem: {
-      'subdir/notindex.ciro': `= Notindex
+      'subdir/notindex.bigb': `= Notindex
 
 == Notindex h2
 `,
@@ -4692,7 +4692,7 @@ assert_convert_ast('subdir index.ciro outputs to subdir without trailing slash w
     },
   }
 );
-assert_convert_ast('subdir index.ciro outputs to subdir without trailing slash with html_x_extension=false',
+assert_convert_ast('subdir index.bigb outputs to subdir without trailing slash with html_x_extension=false',
   `= Subdir
 
 \\x[subdir/notindex][link to subdir notindex]
@@ -4701,9 +4701,9 @@ assert_convert_ast('subdir index.ciro outputs to subdir without trailing slash w
 `,
   undefined,
   {
-    convert_before: ['subdir/notindex.ciro', 'subdir/index.ciro'],
+    convert_before: ['subdir/notindex.bigb', 'subdir/index.bigb'],
     filesystem: {
-      'subdir/notindex.ciro': `= Notindex
+      'subdir/notindex.bigb': `= Notindex
 
 == Notindex h2
 `,
@@ -4718,7 +4718,7 @@ assert_convert_ast('subdir index.ciro outputs to subdir without trailing slash w
     },
   }
 );
-assert_convert_ast('subdir index.ciro removes leading @ from links with the remove_leading_at option',
+assert_convert_ast('subdir index.bigb removes leading @ from links with the remove_leading_at option',
   `= Subdir
 
 \\x[notindex][link to subdir notindex]
@@ -4730,16 +4730,16 @@ assert_convert_ast('subdir index.ciro removes leading @ from links with the remo
   undefined,
   {
 
-    convert_before_norender: ['@subdir/index.ciro'],
-    convert_before: ['@subdir/notindex.ciro', '@subdir/@notindexat.ciro'],
+    convert_before_norender: ['@subdir/index.bigb'],
+    convert_before: ['@subdir/notindex.bigb', '@subdir/@notindexat.bigb'],
     filesystem: {
-      '@subdir/notindex.ciro': `= Notindex
+      '@subdir/notindex.bigb': `= Notindex
 
 \\x[@subdir][link to subdir]
 
 == Notindex h2
 `,
-      '@subdir/@notindexat.ciro': `= Notindexat
+      '@subdir/@notindexat.bigb': `= Notindexat
 
 == Notindexat h2
 `,
@@ -4762,9 +4762,9 @@ assert_convert_ast('subdir index.ciro removes leading @ from links with the remo
   }
 );
 
-// CirodownExample
-assert_convert_ast('CirodownExample basic',
-  `\\CirodownExample[[aa \\i[bb] cc]]`,
+// OurbigbookExample
+assert_convert_ast('OurbigbookExample basic',
+  `\\OurbigbookExample[[aa \\i[bb] cc]]`,
   [
     // TODO get rid of this paragaraph.
     a('P', [
@@ -4781,16 +4781,16 @@ assert_convert_ast('CirodownExample basic',
     ])
   ],
 );
-assert_convert_ast('CirodownExample that links to id in another file',
-  `\\CirodownExample[[\\x[notindex\\]]]`,
+assert_convert_ast('OurbigbookExample that links to id in another file',
+  `\\OurbigbookExample[[\\x[notindex\\]]]`,
   undefined,
   {
     assert_xpath_main: [
       "//x:a[@href='notindex.html' and text()='notindex h1']",
     ],
-    convert_before: ['notindex.ciro'],
+    convert_before: ['notindex.bigb'],
     filesystem: {
-     'notindex.ciro': `= notindex h1
+     'notindex.bigb': `= notindex h1
 `,
     },
     input_path_noext: 'abc',
@@ -4798,7 +4798,7 @@ assert_convert_ast('CirodownExample that links to id in another file',
 );
 
 // ID auto-generation.
-// https://cirosantilli.com/cirodown/automatic-id-from-title
+// https://cirosantilli.com/ourbigbook/automatic-id-from-title
 assert_convert_ast('id autogeneration without title',
   '\\P[aa]\n',
   [a('P', [t('aa')], {}, {id: '_1'})],
@@ -4815,7 +4815,7 @@ assert_error('id conflict with later autogenerated id',
 \\P[bb]`,
   3, 1
 );
-// https://github.com/cirosantilli/cirodown/issues/4
+// https://github.com/cirosantilli/ourbigbook/issues/4
 assert_convert_ast('id autogeneration nested',
   '\\Q[\\P[aa]]\n\n\\P[bb]\n',
   [
@@ -4851,7 +4851,7 @@ assert_convert_ast('id autogeneration unicode no normalize',
       a('x', undefined, {href: [t('0a-你éłœy-z')]})
     ])
   ],
-  { extra_convert_opts: { cirodown_json: { id: { normalize: { latin: false, punctuation: false } } } } }
+  { extra_convert_opts: { ourbigbook_json: { id: { normalize: { latin: false, punctuation: false } } } } }
 );
 assert_convert_ast('id autogeneration with disambiguate',
   `= ab
@@ -4869,7 +4869,7 @@ assert_convert_ast('id autogeneration with disambiguate',
 assert_error('id autogeneration with undefined reference in title fails gracefully',
   `= \\x[reserved_undefined]
 `, 1, 3);
-// https://github.com/cirosantilli/cirodown/issues/45
+// https://github.com/cirosantilli/ourbigbook/issues/45
 assert_convert_ast('id autogeneration with nested elements does an id conversion and works',
   `= ab \`cd\` ef
 
@@ -4904,27 +4904,27 @@ assert_error('id conflict with previous id on the same file',
 
 == tmp
 `,
-  4, 1, 'index.ciro',
+  4, 1, 'index.bigb',
   {
-    error_message: cirodown.duplicate_id_error_message('tmp', 'index.ciro', 1, 1),
+    error_message: ourbigbook.duplicate_id_error_message('tmp', 'index.bigb', 1, 1),
     input_path_noext: 'index',
   },
 );
 assert_convert_ast('id conflict with id on another file simple',
-  // https://github.com/cirosantilli/cirodown/issues/201
+  // https://github.com/cirosantilli/ourbigbook/issues/201
   `= index
 
 == notindex h2
 `,
   undefined,
   {
-    convert_before: ['notindex.ciro'],
+    convert_before: ['notindex.bigb'],
     duplicate_ids: [
-      ['notindex-h2', 'index.ciro', 3, 1],
-      ['notindex-h2', 'notindex.ciro', 3, 1],
+      ['notindex-h2', 'index.bigb', 3, 1],
+      ['notindex-h2', 'notindex.bigb', 3, 1],
     ],
     filesystem: {
-      'notindex.ciro': `= notindex
+      'notindex.bigb': `= notindex
 
 == notindex h2
 `,
@@ -4936,11 +4936,11 @@ assert_executable('executable: id conflict with id on another file simple',
   {
     args: ['.'],
     filesystem: {
-      'index.ciro': `= index
+      'index.bigb': `= index
 
 == notindex h2
 `,
-      'notindex.ciro': `= notindex
+      'notindex.bigb': `= notindex
 
 == notindex h2
 `,
@@ -4956,13 +4956,13 @@ assert_convert_ast('id conflict with id on another file where conflict header ha
 `,
   undefined,
   {
-    convert_before: ['tmp2.ciro'],
+    convert_before: ['tmp2.bigb'],
     duplicate_ids: [
-      ['aa', 'tmp.ciro', 3, 1],
-      ['aa', 'tmp2.ciro', 3, 1],
+      ['aa', 'tmp.bigb', 3, 1],
+      ['aa', 'tmp2.bigb', 3, 1],
     ],
     filesystem: {
-      'tmp2.ciro': `= tmp2
+      'tmp2.bigb': `= tmp2
 
 == aa
 
@@ -4974,8 +4974,8 @@ assert_convert_ast('id conflict with id on another file where conflict header ha
 );
 
 // title_to_id
-assert_equal('title_to_id with hyphen', cirodown.title_to_id('.0A. - z.a Z..'), '0a-z-a-z');
-assert_equal('title_to_id with unicode chars', cirodown.title_to_id('0A.你好z'), '0a-你好z');
+assert_equal('title_to_id with hyphen', ourbigbook.title_to_id('.0A. - z.a Z..'), '0a-z-a-z');
+assert_equal('title_to_id with unicode chars', ourbigbook.title_to_id('0A.你好z'), '0a-你好z');
 
 // Toplevel.
 assert_convert_ast('toplevel arguments',
@@ -4989,7 +4989,7 @@ bbb
 assert_error('toplevel explicit content',
   `[]`, 1, 1,
 );
-// https://github.com/cirosantilli/cirodown/issues/10
+// https://github.com/cirosantilli/ourbigbook/issues/10
 assert_error('explicit toplevel macro',
   `\\toplevel`, 1, 1,
 );
@@ -5027,7 +5027,7 @@ assert_error('unterminated insane inline code', '`\n', 1, 1);
 
 // API minimal tests.
 it(`api: x does not blow up without ID provider`, async function () {
-  const out = await cirodown.convert(`= h1
+  const out = await ourbigbook.convert(`= h1
 
 \\x[h2]
 
@@ -5035,7 +5035,7 @@ it(`api: x does not blow up without ID provider`, async function () {
 `, {'body_only': true})
 })
 
-// cirodown executable tests.
+// ourbigbook executable tests.
 assert_executable(
   'executable: input from stdin produces output on stdout',
   {
@@ -5057,9 +5057,9 @@ assert_executable(
 assert_executable(
   'executable: input from file produces an output file',
   {
-    args: ['notindex.ciro'],
+    args: ['notindex.bigb'],
     filesystem: {
-      'notindex.ciro': `= Notindex\n`,
+      'notindex.bigb': `= Notindex\n`,
     },
     assert_xpath: {
       'notindex.html': [xpath_header(1, 'notindex')],
@@ -5067,7 +5067,7 @@ assert_executable(
   }
 );
 const complex_filesystem = {
-  'README.ciro': `= Index
+  'README.bigb': `= Index
 
 \\x[notindex][link to notindex]
 
@@ -5095,8 +5095,8 @@ $$
 \\newcommand{\\mycmd}[0]{hello}
 $$
 
-\\CirodownExample[[
-\\Q[A Cirodown example!]
+\\OurbigbookExample[[
+\\Q[A Ourbigbook example!]
 ]]
 
 \\Include[included-by-index]
@@ -5140,7 +5140,7 @@ $$
 == Has split suffix
 {splitSuffix}
 `,
-  'notindex.ciro': `= Notindex
+  'notindex.bigb': `= Notindex
 
 \\x[index][link to index]
 
@@ -5148,7 +5148,7 @@ $$
 
 == notindex h2
 `,
-  'toplevel-scope.ciro': `= Toplevel scope
+  'toplevel-scope.bigb': `= Toplevel scope
 {scope}
 
 == Toplevel scope h2
@@ -5159,20 +5159,20 @@ $$
 === Nested scope 2
 {scope}
 `,
-  'included-by-index.ciro': `= Included by index
+  'included-by-index.bigb': `= Included by index
 
 == Included by index h2
 `,
-  'included-by-h2-in-index.ciro': `= Included by h2 in index
+  'included-by-h2-in-index.bigb': `= Included by h2 in index
 
 == Included by h2 in index h2
 `,
-  'notindex-splitsuffix.ciro': `= Notindex splitsuffix
+  'notindex-splitsuffix.bigb': `= Notindex splitsuffix
 {splitSuffix=asdf}
 `,
   'scss.scss': `body { color: red }`,
-  'cirodown.json': `{}\n`,
-  'subdir/index.ciro': `= Subdir index
+  'ourbigbook.json': `{}\n`,
+  'subdir/index.bigb': `= Subdir index
 
 \\x[index][link to toplevel]
 
@@ -5195,7 +5195,7 @@ $$
 
 == Index h2
 `,
-  'subdir/notindex.ciro': `= Subdir notindex
+  'subdir/notindex.bigb': `= Subdir notindex
 
 == Notindex h2
 
@@ -5204,7 +5204,7 @@ $$
 
 === h3
 `,
-  'subdir/included-by-subdir-index.ciro': `= Included by subdir index
+  'subdir/included-by-subdir-index.bigb': `= Included by subdir index
 
 == Included by subdir index h2
 `,
@@ -5214,7 +5214,7 @@ Goodbye world.
 `,
 };
 assert_executable(
-  'executable: input from directory with cirodown.json produces several output files',
+  'executable: input from directory with ourbigbook.json produces several output files',
   {
     args: ['--split-headers', '.'],
     filesystem: complex_filesystem,
@@ -5258,9 +5258,9 @@ assert_executable(
         "//*[@id='toc']//x:a[@href='included-by-index.html' and text()='1. Included by index']",
 
         xpath_header(2, 'included-by-index'),
-        "//x:blockquote[text()='A Cirodown example!']",
-        xpath_header_split(2, 'index-scope', 'index-scope.html', cirodown.SPLIT_MARKER_TEXT),
-        xpath_header_split(3, 'index-scope/index-scope-2', 'index-scope/index-scope-2.html', cirodown.SPLIT_MARKER_TEXT),
+        "//x:blockquote[text()='A Ourbigbook example!']",
+        xpath_header_split(2, 'index-scope', 'index-scope.html', ourbigbook.SPLIT_MARKER_TEXT),
+        xpath_header_split(3, 'index-scope/index-scope-2', 'index-scope/index-scope-2.html', ourbigbook.SPLIT_MARKER_TEXT),
       ],
       'included-by-index.html': [
         // Cross input file header.
@@ -5282,51 +5282,51 @@ assert_executable(
         // Full links between split header pages have correct numbering.
         "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='Section 2. \"h2\"']",
 
-        // CirodownExample renders in split header.
-        "//x:blockquote[text()='A Cirodown example!']",
+        // OurbigbookExample renders in split header.
+        "//x:blockquote[text()='A Ourbigbook example!']",
 
         // ToC entries point to the split version of articles.
         "//*[@id='toc']//x:a[@href='h2.html' and text()='2. h2']",
         // ToC entries of includes always point directly to the separate file.
         "//*[@id='toc']//x:a[@href='included-by-index.html' and text()='1. Included by index']",
-        // TODO This is more correct with the `1. `. Maybe wait for https://github.com/cirosantilli/cirodown/issues/126
+        // TODO This is more correct with the `1. `. Maybe wait for https://github.com/cirosantilli/ourbigbook/issues/126
         // to make sure we don't have to rewrite everything.
         //"//*[@id='toc']//x:a[@href='included-by-index-split.html' and text()='1. Included by index']",
       ],
       'subdir.html': [
         xpath_header(1),
-        xpath_header_split(1, '', 'subdir/split.html', cirodown.SPLIT_MARKER_TEXT),
+        xpath_header_split(1, '', 'subdir/split.html', ourbigbook.SPLIT_MARKER_TEXT),
         xpath_header(2, 'index-h2'),
-        xpath_header_split(2, 'index-h2', 'subdir/index-h2.html', cirodown.SPLIT_MARKER_TEXT),
+        xpath_header_split(2, 'index-h2', 'subdir/index-h2.html', ourbigbook.SPLIT_MARKER_TEXT),
         xpath_header(2, 'scope'),
-        xpath_header_split(2, 'scope', 'subdir/scope.html', cirodown.SPLIT_MARKER_TEXT),
+        xpath_header_split(2, 'scope', 'subdir/scope.html', ourbigbook.SPLIT_MARKER_TEXT),
         xpath_header(3, 'scope/h3'),
-        xpath_header_split(3, 'scope/h3', 'subdir/scope/h3.html', cirodown.SPLIT_MARKER_TEXT),
+        xpath_header_split(3, 'scope/h3', 'subdir/scope/h3.html', ourbigbook.SPLIT_MARKER_TEXT),
         "//x:a[@href='index.html' and text()='link to toplevel']",
         "//x:a[@href='index.html#h2' and text()='link to toplevel subheader']",
         "//x:a[@href='subdir/notindex.html' and text()='link to subdir notindex']",
       ],
       'subdir/split.html': [
         xpath_header(1, ''),
-        xpath_header_split(1, '', '../subdir.html', cirodown.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, '', '../subdir.html', ourbigbook.NOSPLIT_MARKER_TEXT),
         // Check that split suffix works. Should be has-split-suffix-split.html,
         // not has-split-suffix.html.
         "//x:div[@class='p']//x:a[@href='../index.html#has-split-suffix' and text()='link to has split suffix']",
       ],
       'subdir/scope/h3.html': [
         xpath_header(1, 'h3'),
-        xpath_header_split(1, 'h3', '../../subdir.html#scope/h3', cirodown.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'h3', '../../subdir.html#scope/h3', ourbigbook.NOSPLIT_MARKER_TEXT),
         "//x:div[@class='p']//x:a[@href='../../subdir.html#scope' and text()='scope/h3 to scope']",
         "//x:div[@class='p']//x:a[@href='../../subdir.html#scope/h3' and text()='scope/h3 to scope/h3']",
       ],
       'subdir/notindex.html': [
         xpath_header(1, 'notindex'),
         xpath_header(2, 'notindex-h2'),
-        xpath_header_split(2, 'notindex-h2', 'notindex-h2.html', cirodown.SPLIT_MARKER_TEXT),
+        xpath_header_split(2, 'notindex-h2', 'notindex-h2.html', ourbigbook.SPLIT_MARKER_TEXT),
       ],
       'subdir/notindex-scope/h3.html': [
         xpath_header(1, 'h3'),
-        xpath_header_split(1, 'h3', '../notindex.html#notindex-scope/h3', cirodown.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'h3', '../notindex.html#notindex-scope/h3', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'subdir/index-h2.html': [
         xpath_header(1, 'index-h2'),
@@ -5341,37 +5341,37 @@ assert_executable(
         xpath_header(1, 'notindex-h2'),
       ],
       'index-scope.html': [
-        xpath_header_split(1, 'index-scope', 'index.html#index-scope', cirodown.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'index-scope', 'index.html#index-scope', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'index-scope/index-scope-child.html': [
-        // https://github.com/cirosantilli/cirodown/issues/159
-        xpath_header_split(1, 'index-scope-child', '../index.html#index-scope/index-scope-child', cirodown.NOSPLIT_MARKER_TEXT),
+        // https://github.com/cirosantilli/ourbigbook/issues/159
+        xpath_header_split(1, 'index-scope-child', '../index.html#index-scope/index-scope-child', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'index-scope/index-scope-2.html': [
-        // https://github.com/cirosantilli/cirodown/issues/159
-        xpath_header_split(1, 'index-scope-2', '../index.html#index-scope/index-scope-2', cirodown.NOSPLIT_MARKER_TEXT),
+        // https://github.com/cirosantilli/ourbigbook/issues/159
+        xpath_header_split(1, 'index-scope-2', '../index.html#index-scope/index-scope-2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'toplevel-scope.html': [
-        xpath_header_split(2, 'nested-scope', 'toplevel-scope/nested-scope.html', cirodown.SPLIT_MARKER_TEXT),
-        xpath_header_split(3, 'nested-scope/nested-scope-2', 'toplevel-scope/nested-scope/nested-scope-2.html', cirodown.SPLIT_MARKER_TEXT),
+        xpath_header_split(2, 'nested-scope', 'toplevel-scope/nested-scope.html', ourbigbook.SPLIT_MARKER_TEXT),
+        xpath_header_split(3, 'nested-scope/nested-scope-2', 'toplevel-scope/nested-scope/nested-scope-2.html', ourbigbook.SPLIT_MARKER_TEXT),
       ],
       'toplevel-scope-split.html': [
-        xpath_header_split(1, 'toplevel-scope', 'toplevel-scope.html', cirodown.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'toplevel-scope', 'toplevel-scope.html', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'toplevel-scope/toplevel-scope-h2.html': [
-        xpath_header_split(1, 'toplevel-scope-h2', '../toplevel-scope.html#toplevel-scope-h2', cirodown.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'toplevel-scope-h2', '../toplevel-scope.html#toplevel-scope-h2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'toplevel-scope/nested-scope.html': [
-        xpath_header_split(1, 'nested-scope', '../toplevel-scope.html#nested-scope', cirodown.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'nested-scope', '../toplevel-scope.html#nested-scope', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'toplevel-scope/nested-scope/nested-scope-2.html': [
-        // https://github.com/cirosantilli/cirodown/issues/159
-        xpath_header_split(1, 'nested-scope-2', '../../toplevel-scope.html#nested-scope/nested-scope-2', cirodown.NOSPLIT_MARKER_TEXT),
+        // https://github.com/cirosantilli/ourbigbook/issues/159
+        xpath_header_split(1, 'nested-scope-2', '../../toplevel-scope.html#nested-scope/nested-scope-2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
 
       // Non converted paths.
       'scss.css': [],
-      'cirodown.json': [],
+      'ourbigbook.json': [],
     },
     assert_not_xpath: {
       'split.html': [
@@ -5387,12 +5387,12 @@ assert_executable(
   {
     args: ['.'],
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 
 \\x[subdir/index-h2][link to subdir index h2]
     `,
-      'cirodown.json': `{}\n`,
-      'subdir/index.ciro': `= Subdir index
+      'ourbigbook.json': `{}\n`,
+      'subdir/index.bigb': `= Subdir index
 
 == Index h2
 `,
@@ -5406,20 +5406,20 @@ assert_executable(
   }
 );
 assert_executable(
-  // https://github.com/cirosantilli/cirodown/issues/123
+  // https://github.com/cirosantilli/ourbigbook/issues/123
   'executable: includers should show as a parents of the includee',
   {
     args: ['.'],
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 
 \\Include[included-by-index]
 `,
-      'not-readme.ciro': `= Not readme
+      'not-readme.bigb': `= Not readme
 
 \\Include[included-by-index]
 `,
-  'included-by-index.ciro': `= Included by index
+  'included-by-index.bigb': `= Included by index
 `,
     },
     assert_xpath: {
@@ -5435,11 +5435,11 @@ assert_executable(
   {
     args: ['--split-headers', '.'],
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 
 \\Include[included-by-index]
 `,
-  'included-by-index.ciro': `= Included by index
+  'included-by-index.bigb': `= Included by index
 `,
     },
     assert_not_xpath: {
@@ -5460,13 +5460,13 @@ assert_executable(
       ['git', ['commit', '-m', '0']],
     ],
     expect_exists: [
-      'out/publish/out/publish/dist/cirodown.css',
+      'out/publish/out/publish/dist/ourbigbook.css',
     ],
     assert_xpath: {
       'out/publish/out/publish/index.html': [
         "//x:div[@class='p']//x:a[@href='notindex' and text()='link to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex#notindex-h2' and text()='link to notindex h2']",
-        "//x:style[contains(text(),'@import \"dist/cirodown.css\"')]",
+        "//x:style[contains(text(),'@import \"dist/ourbigbook.css\"')]",
       ],
       'out/publish/out/publish/notindex.html': [
         xpath_header(1, 'notindex'),
@@ -5474,33 +5474,33 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='.#h2' and text()='link to h2']",
       ],
       'out/publish/out/publish/toplevel-scope/toplevel-scope-h2.html': [
-        "//x:style[contains(text(),'@import \"../dist/cirodown.css\"')]",
+        "//x:style[contains(text(),'@import \"../dist/ourbigbook.css\"')]",
       ],
       'out/publish/out/publish/subdir.html': [
-        "//x:style[contains(text(),'@import \"dist/cirodown.css\"')]",
+        "//x:style[contains(text(),'@import \"dist/ourbigbook.css\"')]",
       ],
       // Non-converted files are copied over.
       'out/publish/out/publish/scss.css': [],
-      'out/publish/out/publish/cirodown.json': [],
+      'out/publish/out/publish/ourbigbook.json': [],
       'out/publish/out/publish/subdir/myfile.txt': [],
     },
   }
 );
 assert_executable(
-  'executable: convert subdirectory only with cirodown.json',
+  'executable: convert subdirectory only with ourbigbook.json',
   {
     args: ['subdir'],
     filesystem: {
-      'cirodown.json': `{}\n`,
-      'README.ciro': `= Index`,
-      'subdir/index.ciro': `= Subdir index`,
-      'subdir/notindex.ciro': `= Subdir notindex`,
+      'ourbigbook.json': `{}\n`,
+      'README.bigb': `= Index`,
+      'subdir/index.bigb': `= Subdir index`,
+      'subdir/notindex.bigb': `= Subdir notindex`,
       // A Sass file.
       'subdir/scss.scss': `body { color: red }`,
-      // A random non-cirodown file.
+      // A random non-ourbigbook file.
       'subdir/xml.xml': `<?xml version='1.0'?><a/>`,
     },
-    // Place out next to cirodown.json which should be the toplevel.
+    // Place out next to ourbigbook.json which should be the toplevel.
     expect_exists: [
       'out',
       'subdir/scss.css',
@@ -5519,13 +5519,13 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: convert subdirectory only without cirodown.json',
+  'executable: convert subdirectory only without ourbigbook.json',
   {
     args: ['subdir'],
     filesystem: {
-      'README.ciro': `= Index`,
-      'subdir/index.ciro': `= Subdir index`,
-      'subdir/notindex.ciro': `= Subdir notindex`,
+      'README.bigb': `= Index`,
+      'subdir/index.bigb': `= Subdir index`,
+      'subdir/notindex.bigb': `= Subdir notindex`,
       'subdir/scss.scss': `body { color: red }`,
       'subdir/xml.xml': `<?xml version='1.0'?><a/>`,
     },
@@ -5548,16 +5548,16 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: convert a subdirectory file only with cirodown.json',
+  'executable: convert a subdirectory file only with ourbigbook.json',
   {
-    args: ['subdir/notindex.ciro'],
+    args: ['subdir/notindex.bigb'],
     filesystem: {
-      'README.ciro': `= Index`,
-      'subdir/index.ciro': `= Subdir index`,
-      'subdir/notindex.ciro': `= Subdir notindex`,
-      'cirodown.json': `{}`,
+      'README.bigb': `= Index`,
+      'subdir/index.bigb': `= Subdir index`,
+      'subdir/notindex.bigb': `= Subdir notindex`,
+      'ourbigbook.json': `{}`,
     },
-    // Place out next to cirodown.json which should be the toplevel.
+    // Place out next to ourbigbook.json which should be the toplevel.
     expect_exists: ['out'],
     expect_not_exists: ['subdir/out', 'index.html', 'subdir.html'],
     assert_xpath: {
@@ -5566,13 +5566,13 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: convert a subdirectory file only without cirodown.json',
+  'executable: convert a subdirectory file only without ourbigbook.json',
   {
-    args: ['subdir/notindex.ciro'],
+    args: ['subdir/notindex.bigb'],
     filesystem: {
-      'README.ciro': `= Index`,
-      'subdir/index.ciro': `= Subdir index`,
-      'subdir/notindex.ciro': `= Subdir notindex`,
+      'README.bigb': `= Index`,
+      'subdir/index.bigb': `= Subdir index`,
+      'subdir/notindex.bigb': `= Subdir notindex`,
     },
     // Don't know a better place to place out, so just put it int subdir.
     expect_exists: ['out'],
@@ -5587,14 +5587,14 @@ assert_executable(
   {
     args: ['--outdir', 'my_outdir', '.'],
     filesystem: {
-      'README.ciro': `= Index`,
-      'subdir/index.ciro': `= Subdir index`,
-      'subdir/notindex.ciro': `= Subdir notindex`,
-      'cirodown.json': `{}\n`,
+      'README.bigb': `= Index`,
+      'subdir/index.bigb': `= Subdir index`,
+      'subdir/notindex.bigb': `= Subdir notindex`,
+      'ourbigbook.json': `{}\n`,
     },
     expect_exists: [
       'my_outdir/out',
-      'my_outdir/cirodown.json',
+      'my_outdir/ourbigbook.json',
     ],
     expect_not_exists: [
       'out',
@@ -5610,22 +5610,22 @@ assert_executable(
   }
 );
 assert_executable(
-  'executable: cirodown.tex does not blow up',
+  'executable: ourbigbook.tex does not blow up',
   {
-    args: ['README.ciro'],
+    args: ['README.bigb'],
     filesystem: {
-      'README.ciro': `$$\\mycmd$$`,
-      'cirodown.tex': `\\newcommand{\\mycmd}[0]{hello}`,
+      'README.bigb': `$$\\mycmd$$`,
+      'ourbigbook.tex': `\\newcommand{\\mycmd}[0]{hello}`,
     },
   }
 );
-// https://github.com/cirosantilli/cirodown/issues/114
+// https://github.com/cirosantilli/ourbigbook/issues/114
 assert_executable(
   'executable: synonym basic',
   {
     args: ['--split-headers', '.'],
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 
 == h2
 
@@ -5642,7 +5642,7 @@ assert_executable(
 = h3 parent
 {parent=h2}
 `,
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 == Notindex h2
 
@@ -5677,7 +5677,7 @@ assert_executable(
   {
     args: ['--outdir', 'asdf', '--split-headers', '.'],
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 
 == h2
 
@@ -5693,13 +5693,13 @@ assert_executable(
     }
   }
 );
- https://github.com/cirosantilli/cirodown/issues/131
+ https://github.com/cirosantilli/ourbigbook/issues/131
 assert_executable(
   'executable: splitDefault',
   {
     args: ['--split-headers', '.'],
     filesystem: {
-      'README.ciro': `= Toplevel
+      'README.bigb': `= Toplevel
 {splitDefault}
 
 \\x[toplevel][toplevel to toplevel]
@@ -5735,7 +5735,7 @@ assert_executable(
 == Split suffix
 {splitSuffix}
 `,
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 \\x[toplevel][notindex to toplevel]
 
@@ -5787,7 +5787,7 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='toplevel to my image h2']",
 
         // Split/nosplit.
-        xpath_header_split(1, 'toplevel', 'nosplit.html', cirodown.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'toplevel', 'nosplit.html', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'nosplit.html': [
         "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
@@ -5813,7 +5813,7 @@ assert_executable(
         xpath_header(2, 'h2', "x:a[@href='#h2' and text()='1. H2']"),
 
         // Spilt/nosplit.
-        xpath_header_split(1, 'toplevel', 'index.html', cirodown.SPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'toplevel', 'index.html', ourbigbook.SPLIT_MARKER_TEXT),
       ],
       'h2.html': [
         "//x:div[@class='p']//x:a[@href='index.html' and text()='h2 to toplevel']",
@@ -5829,7 +5829,7 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
 
         // Spilt/nosplit.
-        xpath_header_split(1, 'h2', 'nosplit.html#h2', cirodown.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'h2', 'nosplit.html#h2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'split-suffix-split.html': [
       ],
@@ -5855,7 +5855,7 @@ assert_executable(
         xpath_header(2, 'notindex-h2', "x:a[@href='#notindex-h2' and text()='1. Notindex h2']"),
 
         // Spilt/nosplit.
-        xpath_header_split(1, 'notindex', 'notindex-split.html', cirodown.SPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'notindex', 'notindex-split.html', ourbigbook.SPLIT_MARKER_TEXT),
       ],
       'notindex-split.html': [
         "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to toplevel']",
@@ -5873,7 +5873,7 @@ assert_executable(
         xpath_header(1, 'notindex', "x:a[@href='' and text()='Notindex']"),
 
         // Spilt/nosplit.
-        xpath_header_split(1, 'notindex', 'notindex.html', cirodown.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'notindex', 'notindex.html', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'notindex-h2.html': [
         "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to toplevel']",
@@ -5887,7 +5887,7 @@ assert_executable(
         xpath_header(1, 'notindex-h2', "x:a[@href='' and text()='Notindex h2']"),
 
         // Spilt/nosplit.
-        xpath_header_split(1, 'notindex-h2', 'notindex.html#notindex-h2', cirodown.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'notindex-h2', 'notindex.html#notindex-h2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
     }
   }
@@ -5897,11 +5897,11 @@ assert_executable(
   {
     args: ['.'],
     filesystem: {
-      'README.ciro': `= Toplevel
+      'README.bigb': `= Toplevel
 
 \\Image[img.jpg]{title=My image toplevel}
 `,
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 \\x[toplevel]
 
@@ -5916,7 +5916,7 @@ assert_executable(
   {
     args: ['.'],
     pre_exec: [
-      ['cirodown', ['--generate', 'min']],
+      ['ourbigbook', ['--generate', 'min']],
     ],
   }
 );
@@ -5925,17 +5925,17 @@ assert_executable(
   {
     args: ['.'],
     filesystem: {
-      'cirodown.json': `{}`
+      'ourbigbook.json': `{}`
     },
     cwd: 'subdir',
     pre_exec: [
-      ['cirodown', ['--generate', 'min']],
+      ['ourbigbook', ['--generate', 'min']],
     ],
     expect_exists: [
-      'subdir/README.ciro',
+      'subdir/README.bigb',
     ],
     expect_not_exists: [
-      'README.ciro',
+      'README.bigb',
     ],
   }
 );
@@ -5944,7 +5944,7 @@ assert_executable(
   {
     args: ['.'],
     pre_exec: [
-      ['cirodown', ['--generate', 'default']],
+      ['ourbigbook', ['--generate', 'default']],
       ['git', ['init']],
       ['git', ['add', '.']],
       ['git', ['commit', '-m', '0']],
@@ -5956,11 +5956,11 @@ assert_executable(
   {
     args: ['--dry-run', '--publish'],
     pre_exec: [
-      ['cirodown', ['--generate', 'min']],
+      ['ourbigbook', ['--generate', 'min']],
       ['git', ['init']],
       ['git', ['add', '.']],
       ['git', ['commit', '-m', '0']],
-      ['git', ['remote', 'add', 'origin', 'git@github.com:cirosantilli/cirodown-generate.git']],
+      ['git', ['remote', 'add', 'origin', 'git@github.com:cirosantilli/ourbigbook-generate.git']],
     ],
   }
 );
@@ -5969,11 +5969,11 @@ assert_executable(
   {
     args: ['--dry-run', '--publish'],
     pre_exec: [
-      ['cirodown', ['--generate', 'default']],
+      ['ourbigbook', ['--generate', 'default']],
       ['git', ['init']],
       ['git', ['add', '.']],
       ['git', ['commit', '-m', '0']],
-      ['git', ['remote', 'add', 'origin', 'git@github.com:cirosantilli/cirodown-generate.git']],
+      ['git', ['remote', 'add', 'origin', 'git@github.com:cirosantilli/ourbigbook-generate.git']],
     ],
   }
 );
@@ -5982,13 +5982,13 @@ assert_executable(
   {
     args: ['--embed-resources', '.'],
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 `,
     },
     assert_xpath: {
       'index.html': [
-        // The start of a minified CSS rule from cirodown.scss.
-        "//x:style[contains(text(),'.cirodown{')]",
+        // The start of a minified CSS rule from ourbigbook.scss.
+        "//x:style[contains(text(),'.ourbigbook{')]",
       ],
     },
     assert_not_xpath: {
@@ -6002,9 +6002,9 @@ assert_executable(
 assert_executable(
   'executable: reference to subdir with --embed-includes',
   {
-    args: ['--embed-includes', 'README.ciro'],
+    args: ['--embed-includes', 'README.bigb'],
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 
 \\x[subdir]
 
@@ -6018,11 +6018,11 @@ assert_executable(
 
 \\Include[subdir/notindex]
 `,
-      'subdir/index.ciro': `= Subdir
+      'subdir/index.bigb': `= Subdir
 
 == h2
 `,
-      'subdir/notindex.ciro': `= Notindex
+      'subdir/notindex.bigb': `= Notindex
 
 == Notindex h2
 `,
@@ -6034,9 +6034,9 @@ assert_executable(
 assert_executable(
   'executable: link: relative reference to nonexistent file leads to failure',
   {
-    args: ['README.ciro'],
+    args: ['README.bigb'],
     filesystem: {
-      'README.ciro': `\\a[i-dont-exist]
+      'README.bigb': `\\a[i-dont-exist]
 `,
     },
     expect_exit_status: 1,
@@ -6045,9 +6045,9 @@ assert_executable(
 assert_executable(
   "executable: link: relative reference to existent files do not lead to failure",
   {
-    args: ['README.ciro'],
+    args: ['README.bigb'],
     filesystem: {
-      'README.ciro': `\\a[i-exist]`,
+      'README.bigb': `\\a[i-exist]`,
       'i-exist': ``,
     },
   }
@@ -6055,9 +6055,9 @@ assert_executable(
 assert_executable(
   "executable: link: check=0 prevents existence checks",
   {
-    args: ['README.ciro'],
+    args: ['README.bigb'],
     filesystem: {
-      'README.ciro': `\\a[i-dont-exist]{check=0}
+      'README.bigb': `\\a[i-dont-exist]{check=0}
 `,
     },
   }
@@ -6067,7 +6067,7 @@ assert_executable(
   {
     args: ['--split-headers', '.'],
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 
 == h2
 {scope}
@@ -6084,7 +6084,7 @@ assert_executable(
 
 \\a[https://cirosantilli.com][h3 abs]
 `,
-      'subdir/README.ciro': `= Subdir
+      'subdir/README.bigb': `= Subdir
 
 \\a[../i-exist][subdir i-exist]
 
@@ -6103,7 +6103,7 @@ assert_executable(
 
 \\a[i-exist-subdir][subdir h3 i-exist-subdir]
 `,
-      'subdir/not-readme.ciro': `= Subdir Not Readme
+      'subdir/not-readme.bigb': `= Subdir Not Readme
 
 \\a[../i-exist][subdir not readme i-exist]
 
@@ -6146,11 +6146,11 @@ assert_executable(
 
 // executable cwd tests
 assert_executable(
-  "executable: cwd outside project directory given by cirodown.json",
+  "executable: cwd outside project directory given by ourbigbook.json",
   {
     args: ['myproject'],
     filesystem: {
-      'myproject/README.ciro': `= Index
+      'myproject/README.bigb': `= Index
 
 \\x[not-readme]
 
@@ -6162,20 +6162,20 @@ assert_executable(
 
 \\Include[subdir/notindex]
 `,
-      'myproject/not-readme.ciro': `= Not readme
+      'myproject/not-readme.bigb': `= Not readme
 `,
       'myproject/scss.scss': `body { color: red }`,
-      'myproject/cirodown.json': `{}
+      'myproject/ourbigbook.json': `{}
 `,
-      'myproject/subdir/index.ciro': `= Subdir
+      'myproject/subdir/index.bigb': `= Subdir
 `,
-      'myproject/subdir/notindex.ciro': `= Subdir Notindex
+      'myproject/subdir/notindex.bigb': `= Subdir Notindex
 `,
     },
     expect_exists: [
       'myproject/out',
       'myproject/scss.css',
-      'myproject/cirodown.json',
+      'myproject/ourbigbook.json',
     ],
     assert_xpath: {
       'myproject/index.html': [
@@ -6188,12 +6188,12 @@ assert_executable(
   }
 );
 assert_executable(
-  "executable: if there is no cirodown.json and the input is not under cwd then the project dir is the input dir",
+  "executable: if there is no ourbigbook.json and the input is not under cwd then the project dir is the input dir",
   {
     args: [path.join('..', 'myproject')],
     cwd: 'notmyproject',
     filesystem: {
-      'myproject/README.ciro': `= Index
+      'myproject/README.bigb': `= Index
 
 \\x[not-readme]
 
@@ -6205,12 +6205,12 @@ assert_executable(
 
 \\Include[subdir/notindex]
 `,
-      'myproject/not-readme.ciro': `= Not readme
+      'myproject/not-readme.bigb': `= Not readme
 `,
       'myproject/scss.scss': `body { color: red }`,
-      'myproject/subdir/index.ciro': `= Subdir
+      'myproject/subdir/index.bigb': `= Subdir
 `,
-      'myproject/subdir/notindex.ciro': `= Subdir Notindex
+      'myproject/subdir/notindex.bigb': `= Subdir Notindex
 `,
     },
     expect_exists: [
@@ -6233,18 +6233,18 @@ assert_executable(
   {
     args: ['-S', '.'],
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 
 == h2
 `,
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 == Notindex h2
 {scope}
 
 === h3
 `,
-      'cirodown.json': `{
+      'ourbigbook.json': `{
   "template": "main.liquid.html"
 }
 `,
@@ -6299,7 +6299,7 @@ assert_executable(
   {
     args: ['--add-test-instrumentation', '-S', '.'],
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 
 \\x[index]
 
@@ -6348,7 +6348,7 @@ assert_executable(
 
 === Scope 3
 `,
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 \\x[index]
 
@@ -6367,45 +6367,45 @@ assert_executable(
         // Would like to test like this, but it doesn't seem implemented in this crappy xpath implementation.
         // So we revert to instrumentation instead then.
         //`//x:h2[@id='incoming-links']/following:://x:a[@href='#h2']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='#h2']`,
-        // https://github.com/cirosantilli/cirodown/issues/155
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='#h2-2']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='#h2']`,
+        // https://github.com/cirosantilli/ourbigbook/issues/155
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='#h2-2']`,
       ],
       'h2.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
-        // https://github.com/cirosantilli/cirodown/issues/155
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-2']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-3']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-4']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-5']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#scope/scope-2']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#notindex-h2-2']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
+        // https://github.com/cirosantilli/ourbigbook/issues/155
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-2']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-3']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-4']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#h2-5']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#scope/scope-2']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#notindex-h2-2']`,
       ],
       'h2-2.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html#h2']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#notindex-h2']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html#h2']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#notindex-h2']`,
       ],
       'scope/scope-1.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html']`,
-        // https://github.com/cirosantilli/cirodown/issues/173
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html#scope/scope-2']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html']`,
+        // https://github.com/cirosantilli/ourbigbook/issues/173
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html#scope/scope-2']`,
       ],
       'scope/scope-2.html': [
-        // https://github.com/cirosantilli/cirodown/issues/173
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='../index.html#scope/scope-3']`,
+        // https://github.com/cirosantilli/ourbigbook/issues/173
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='../index.html#scope/scope-3']`,
       ],
       'notindex.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html#h2']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html#h2']`,
       ],
     },
     assert_not_xpath: {
       'no-incoming.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']`,
       ],
     },
   }
@@ -6415,13 +6415,13 @@ assert_executable(
   {
     args: ['--add-test-instrumentation', '.'],
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 
 \\x[notindex]{child}
 
 \\x[notindex]{child}
 `,
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 \\x[index]{parent}
 
@@ -6430,26 +6430,26 @@ assert_executable(
     },
     assert_xpath: {
       'index.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html']`,
       ],
     },
   }
 );
 
 assert_executable(
-  'executable: cirodown.json: outputOutOfTree',
+  'executable: ourbigbook.json: outputOutOfTree',
   {
     args: ['-S', '.'],
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 
 == h2
 `,
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 == Notindex h2
 `,
-      'cirodown.json': `{
+      'ourbigbook.json': `{
   "outputOutOfTree": true
 }
 `,
@@ -6475,27 +6475,27 @@ assert_executable(
 assert_executable(
   'executable: IDs are removed from the database after you removed them from the source file and convert the file',
   {
-    args: ['notindex.ciro'],
+    args: ['notindex.bigb'],
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 
 == h2
 `,
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 == h2
 `,
     },
     pre_exec: [
-      ['cirodown', ['README.ciro']],
-      // Remove h2 from README.ciro
+      ['ourbigbook', ['README.bigb']],
+      // Remove h2 from README.bigb
       {
         filesystem_update: {
-          'README.ciro': `= Index
+          'README.bigb': `= Index
 `,
         }
       },
-      ['cirodown', ['README.ciro']],
+      ['ourbigbook', ['README.bigb']],
     ],
   }
 );
@@ -6504,21 +6504,21 @@ assert_executable(
   {
     args: ['.'],
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 
 == h2
 `,
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 == h2
 `,
     },
     pre_exec: [
-      ['cirodown', ['README.ciro']],
-      // Remove h2 from README.ciro
+      ['ourbigbook', ['README.bigb']],
+      // Remove h2 from README.bigb
       {
         filesystem_update: {
-          'README.ciro': `= Index
+          'README.bigb': `= Index
 `,
         }
       },
@@ -6530,21 +6530,21 @@ assert_executable(
   {
     args: ['.'],
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 
 == h2
 `,
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 == h2
 `,
     },
     pre_exec: [
-      ['cirodown', ['notindex.ciro']],
-      // Remove h2 from README.ciro
+      ['ourbigbook', ['notindex.bigb']],
+      // Remove h2 from README.bigb
       {
         filesystem_update: {
-          'notindex.ciro': `= Index
+          'notindex.bigb': `= Index
 `,
         }
       },
@@ -6556,22 +6556,22 @@ assert_executable(
   {
     args: ['.'],
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 `,
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 == h2
 `,
     },
     pre_exec: [
-      ['cirodown', ['.']],
+      ['ourbigbook', ['.']],
       {
         filesystem_update: {
-          'README.ciro': `= Index
+          'README.bigb': `= Index
 
 == h2
 `,
-          'notindex.ciro': null,
+          'notindex.bigb': null,
         }
       },
     ],
@@ -6580,34 +6580,34 @@ assert_executable(
 assert_executable(
   'executable: when invoking with a single file timestamps are automatically ignored and render is forced',
   {
-    args: ['notindex.ciro'],
+    args: ['notindex.bigb'],
     assert_xpath: {
       'notindex.html': [
         `//x:a[@href='index.html#h2' and text()='h2 hacked']`,
       ],
     },
     filesystem: {
-      'README.ciro': `= Index
+      'README.bigb': `= Index
 
 == h2
 `,
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 \\x[h2]
 `,
     },
     pre_exec: [
-      ['cirodown', ['.']],
+      ['ourbigbook', ['.']],
       {
         filesystem_update: {
-          'README.ciro': `= Index
+          'README.bigb': `= Index
 
 == h2 hacked
 {id=h2}
 `,
         }
       },
-      ['cirodown', ['README.ciro']],
+      ['ourbigbook', ['README.bigb']],
     ],
   }
 );
@@ -6615,9 +6615,9 @@ assert_executable(
 assert_executable(
   "executable: toplevel index file without a header produces output to index.html",
   {
-    args: ['README.ciro'],
+    args: ['README.bigb'],
     filesystem: {
-      'README.ciro': `asdf
+      'README.bigb': `asdf
 `,
     },
     assert_xpath: {
@@ -6631,44 +6631,44 @@ assert_executable('executable: cross file ancestors work on single file conversi
   {
     // After we pre-convert everything, we convert just one file to ensure that the ancestors are coming
     // purely from the database, and not from a cache shared across several input files.
-    args: ['--add-test-instrumentation', 'notindex3.ciro'],
+    args: ['--add-test-instrumentation', 'notindex3.bigb'],
     filesystem: {
-      'index.ciro': `= Index
+      'index.bigb': `= Index
 
 \\Include[notindex]
 `,
-      'notindex.ciro': `= Notindex
+      'notindex.bigb': `= Notindex
 
 \\Include[notindex2]
 `,
-      'notindex2.ciro': `= Notindex 2
+      'notindex2.bigb': `= Notindex 2
 
 \\Include[notindex3]
 `,
-      'notindex3.ciro': `= Notindex 2
+      'notindex3.bigb': `= Notindex 2
 `
     },
     pre_exec: [
       // First we pre-convert everything.
-      ['cirodown', ['--add-test-instrumentation', '.']],
+      ['ourbigbook', ['--add-test-instrumentation', '.']],
     ],
     assert_xpath: {
       'notindex.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
       ],
       'notindex2.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
       ],
       'notindex3.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html']`,
       ],
     },
     assert_not_xpath: {
       'index.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']`,
       ],
     },
   }
@@ -6677,44 +6677,44 @@ assert_executable('executable: cross file ancestors work on single file conversi
   {
     // After we pre-convert everything, we convert just one file to ensure that the ancestors are coming
     // purely from the database, and not from a cache shared across several input files.
-    args: ['--add-test-instrumentation', 'subdir/notindex3.ciro'],
+    args: ['--add-test-instrumentation', 'subdir/notindex3.bigb'],
     filesystem: {
-      'subdir/index.ciro': `= Index
+      'subdir/index.bigb': `= Index
 
 \\Include[notindex]
 `,
-      'subdir/notindex.ciro': `= Notindex
+      'subdir/notindex.bigb': `= Notindex
 
 \\Include[notindex2]
 `,
-      'subdir/notindex2.ciro': `= Notindex 2
+      'subdir/notindex2.bigb': `= Notindex 2
 
 \\Include[notindex3]
 `,
-      'subdir/notindex3.ciro': `= Notindex 2
+      'subdir/notindex3.bigb': `= Notindex 2
 `
     },
     pre_exec: [
       // First we pre-convert everything.
-      ['cirodown', ['--add-test-instrumentation', '.']],
+      ['ourbigbook', ['--add-test-instrumentation', '.']],
     ],
     assert_xpath: {
       'subdir/notindex.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html']`,
       ],
       'subdir/notindex2.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
       ],
       'subdir/notindex3.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html']`,
       ],
     },
     assert_not_xpath: {
       'subdir.html': [
-        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']`,
       ],
     },
   }

@@ -1,10 +1,10 @@
 {
-  "name": "cirodown",
+  "name": "ourbigbook",
   "version": "0.7.15",
   "license": "AGPL-3.0",
-  "repository": "cirosantilli/cirodown",
+  "repository": "cirosantilli/ourbigbook",
   "bin": {
-    "cirodown": "cirodown"
+    "ourbigbook": "ourbigbook"
   },
   "cacheDirectories": [
     "node_modules",
@@ -53,8 +53,8 @@
   },
   "files": [
     "gitignore",
-    "cirodown",
-    "cirodown.common.scss",
+    "ourbigbook",
+    "ourbigbook.common.scss",
     "dist/*",
     "index.js",
     "main.liquid.html",
@@ -77,8 +77,8 @@
     "dev": "cd web && npm run dev",
     "devs": "cd web && npm run devs",
     "heroku-prebuild": "./heroku-prebuild",
-    "link": "npm link && npm link cirodown",
-    "publish": "cirodown --publish --unsafe-ace",
+    "link": "npm link && npm link ourbigbook",
+    "publish": "ourbigbook --publish --unsafe-ace",
     "start": "cd web && npm start",
     "start-dev": "cd web && npm run start-dev",
     "test": "NODE_OPTIONS='--unhandled-rejections=strict' mocha test --ignore-leaks",

@@ -1,6 +1,6 @@
 import React from 'react'
 
-import cirodown from 'cirodown/dist/cirodown.js';
+import ourbigbook from 'ourbigbook/dist/ourbigbook.js';
 
 export const AUTH_COOKIE_NAME = 'auth'
 export const AUTH_LOCAL_STORAGE_NAME = 'user'
@@ -16,7 +16,7 @@ export function decapitalize(s) {
 }
 
 export function slugFromArray(arr) {
-  return arr.join(cirodown.Macro.HEADER_SCOPE_SEPARATOR)
+  return arr.join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
 }
 
 export function slugFromRouter(router) {

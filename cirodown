@@ -496,7 +496,7 @@ async function convert_path_to_file(input_path, cirodown_options, non_cirodown_o
       }
     }
   }
-  if (non_cirodown_options.commander.debugPerf) {
+  if (cirodown_options.perf) {
     console.error(`perf convert_path_to_file_end ${performance.now()}`);
   }
   return output;

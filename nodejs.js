@@ -1,5 +1,6 @@
 // Contains exports that should only be visible from Node.js but not browser.
 
+const cirodown = require('cirodown');
 const path = require('path');
 
 const ENCODING = 'utf8';
@@ -31,3 +32,8 @@ const LOCAL_INCLUDES = [
   require.resolve(path.join('normalize.css', 'normalize.css')),
 ]
 exports.LOCAL_INCLUDES = LOCAL_INCLUDES;
+
+class ZeroFileProvider extends cirodown.FileProvider {
+  get(path) { return {toplevel_scope_cut_length: 0}; }
+}
+exports.ZeroFileProvider = ZeroFileProvider;

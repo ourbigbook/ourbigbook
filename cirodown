@@ -91,6 +91,24 @@ class SqliteIdProvider extends cirodown.IdProvider {
     }
     return ret;
   }
+
+}
+
+class SqliteFileProvider extends cirodown.FileProvider {
+  constructor(convert_input_options) {
+    super();
+    this.get_file_stmt = convert_input_options.db.prepare(
+      `SELECT * FROM ${convert_input_options.files_table_name} WHERE path = ?`);
+  }
+
+  get(path) {
+    let get_ret = this.get_file_stmt.get(path);
+    if (get_ret === undefined) {
+      return undefined;
+    } else {
+      return get_ret;
+    }
+  }
 }
 
 /** Report an error with the CLI usage and exit in error. */
@@ -167,6 +185,7 @@ function convert_input(input, options, convert_input_options={}) {
   }
   if ('db' in convert_input_options) {
     new_options.id_provider = new SqliteIdProvider(convert_input_options);
+    new_options.file_provider = new SqliteFileProvider(convert_input_options);
   }
   if ('title' in convert_input_options) {
     new_options.title = convert_input_options.title;
@@ -306,8 +325,11 @@ function convert_path(base_path, input_path, options, convert_input_options) {
   let input_path_noext_renamed = path.join(input_path_parse.dir, input_path_basename_noext_renamed);
   new_convert_input_options.input_path_noext_renamed = input_path_noext_renamed;
   let output = convert_input(input, new_options, new_convert_input_options);
+
+  // Update the Sqlite databse with results from the conversion.
   if ('db' in convert_input_options) {
     const ids = new_convert_input_options.extra_returns.ids;
+    const context = new_convert_input_options.extra_returns.context;
     const insert_id_stmt = convert_input_options.db.prepare(
       `INSERT INTO '${convert_input_options.ids_table_name}'
       (id, path, ast_json) VALUES (?, ?, ?);`
@@ -320,12 +342,22 @@ function convert_path(base_path, input_path, options, convert_input_options) {
       const ast = ids[id];
       insert_id_stmt.run(id, ast.input_path, JSON.stringify(ast));
     }
-    for (const header_ast of new_convert_input_options.extra_returns.context.headers_with_include) {
+    for (const header_ast of context.headers_with_include) {
       for (const include of header_ast.includes) {
         insert_include_stmt.run(header_ast.id, header_ast.input_path, include);
       }
     }
+    const insert_file_stmt = convert_input_options.db.prepare(
+      `INSERT OR REPLACE INTO '${convert_input_options.files_table_name}' ` +
+      `(path, toplevel_scope_cut_length, toplevel_id) VALUES (?, ?, ?);`
+    );
+    insert_file_stmt.run(
+      input_path_noext_renamed,
+      context.toplevel_scope_cut_length,
+      context.toplevel_id
+    );
   }
+
   if (new_convert_input_options.had_error) {
     convert_input_options.had_error = true;
   }
@@ -337,13 +369,15 @@ function generate_redirects(convert_input_options, cirodown_json, html_x_extensi
   for (let redirect_src_id in cirodown_json.redirects) {
     const redirect_target_id = cirodown_json.redirects[redirect_src_id];
     const redirect_href = cirodown.x_href(
-      id_provider.get(redirect_target_id), {
+      id_provider.get(redirect_target_id),
+      {
         // This will need changing when we do:
         // https://github.com/cirosantilli/cirodown/issues/44
         // The simple solution is to just make all redirects point
         // to the index in that case.
         include_path_set: new Set(),
         options: {
+          file_provider: new cirodown_nodejs.ZeroFileProvider(),
           input_path: redirect_src_id,
           html_x_extension: html_x_extension,
         }
@@ -650,6 +684,7 @@ A link to another file: \\x[and-now-an-include]
       const db_path = path.join(tmpdir, 'db.sqlite3');
       const ids_table_name = 'ids';
       const includes_table_name = 'includes';
+      const files_table_name = 'files';
       const db = new better_sqlite3(db_path);
       if (
         db.prepare(`SELECT name
@@ -679,9 +714,24 @@ A link to another file: \\x[and-now-an-include]
           )`
         ).run();
       }
+      if (
+        db.prepare(`SELECT name
+        FROM sqlite_master
+        WHERE type='table' AND name='${files_table_name}'
+        `).get() === undefined
+      ) {
+        db.prepare(`
+          CREATE TABLE '${files_table_name}' (
+            path TEXT PRIMARY KEY,
+            toplevel_scope_cut_length INT,
+            toplevel_id TEXT
+          )`
+        ).run();
+      }
       convert_input_options.db = db;
       convert_input_options.ids_table_name = ids_table_name;
       convert_input_options.includes_table_name = includes_table_name;
+      convert_input_options.files_table_name = files_table_name;
     }
     if (commander.watch) {
       if (publish) {

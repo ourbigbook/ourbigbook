@@ -56,7 +56,7 @@ const ProfileHoc = (tab) => {
                   as={`/profile/${encodeURIComponent(username)}`}
                   className={`nav-link${tab === 'my-posts' ? ' active' : ''}`}
                 >
-                  My Posts
+                  All Posts
                 </CustomLink>
               </li>
               <li className="nav-item">

@@ -6,7 +6,7 @@ import useLoggedInUser from 'front/useLoggedInUser'
 
 import { aboutUrl, appName, contactUrl, donateUrl, googleAnalyticsId, isProduction } from 'front/config';
 import Navbar from 'front/Navbar'
-import { AppContext, AppContextProvider } from 'front'
+import { AppContext, AppContextProvider, HelpIcon } from 'front'
 import { webApi } from 'front/api'
 
 // Css
@@ -79,14 +79,13 @@ const MyApp = ({ Component, pageProps }) => {
         </div>
         {!isEditor &&
           <footer>
-            <div className="container">
-              <a href={aboutUrl}>What is this website???</a>
-              {' '}| <a href={donateUrl}>Donate</a>
-              {' '}| Content license: <a href="https://cirosantilli.com/ourbigbook-com/content-license">CC BY-SA 4.0 unless noted</a>
-              {' '}| <a href="https://github.com/ourbigbook/ourbigbook/tree/master/web">Website source code</a>
-              {' '}| <a href={contactUrl}>Contact, bugs, suggestions, abuse reports</a>
-              {' '}| <a href="https://twitter.com/OurBigBook">Announcements: @OurBigBook</a>
-            </div>
+            <span><a href={aboutUrl}><HelpIcon /> About</a></span>
+            <span><a href={donateUrl}>$ Donate</a></span>
+            <span><i className="ion-document-text" /> Content license: <a href="https://cirosantilli.com/ourbigbook-com/content-license">CC BY-SA 4.0 unless noted</a></span>
+            <span><a href="https://github.com/ourbigbook/ourbigbook/tree/master/web"><i className="ion-social-github" /> Website source code</a></span>
+            <span><a href={contactUrl}><i className="ion-ios-chatbubble" /> Contact, bugs, suggestions, abuse reports</a></span>
+            <span><a href="https://twitter.com/OurBigBook"><i className="ion-social-twitter" /> @OurBigBook</a></span>
+            <span><a href="https://www.youtube.com/@OurBigBook"><i className="ion-social-youtube" /> @OurBigBook</a></span>
           </footer>
         }
       </div>

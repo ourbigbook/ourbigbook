@@ -54,10 +54,6 @@ At mentions ideally bring the side-effect of notifications, but then we have to 
 {tag=Web}
 {tag=Issue}
 
-=== Like comments
-{tag=Web}
-{tag=Issue}
-
 === Use same parent title if the current user has a matching article when clicking "Create my own version of article" 
 {tag=Web}
 {tag=Topic}
@@ -1258,7 +1254,7 @@ Can be fixed later at: <word count on web>.
 
 Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
 
-== Tag
+== Tags
 
 === Math
 

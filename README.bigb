@@ -208,7 +208,7 @@ The following sections cover different ways to use tools from the OurBigBook:
     \a[i-don-exist.txt]
     ``
     would lead to a build error.
-  * associate headers to files with the <\H file argument> e.g.:
+  * associate headers to files or directories with the <\H file argument> e.g.:
     ``
     Here's an example of a nice image: \x[path/to/my/image.png]{file}.
 
@@ -217,7 +217,7 @@ The following sections cover different ways to use tools from the OurBigBook:
 
     This image was taken when I was on vacation!
     ``
-    would automatically add a preview of the image on the output.
+    would automatically add a preview of the image on the output. Display files and their metadata nicely directly on your static website rather than relying exclusively on GitHub as a file browser.
 * advanced header/ID related features:
   * <ID-based header levels>:
     ``

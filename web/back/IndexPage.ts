@@ -1,25 +1,8 @@
 import { GetServerSideProps } from 'next'
-import { verify } from 'jsonwebtoken'
 
+import { getLoggedInUser } from 'back'
 import sequelize from 'db'
-import { articleLimit, fallback, secret } from 'front/config'
-import { getCookieFromReq } from 'front'
-
-export const getStaticPathsHome = () => {
-  return {
-    fallback,
-    paths: [],
-  }
-}
-
-function useLoggedInUser(req) {
-  const authCookie = getCookieFromReq(req, 'auth')
-  if (authCookie) {
-    return verify(authCookie, secret)
-  } else {
-    return null
-  }
-}
+import { articleLimit, fallback } from 'front/config'
 
 // TODO add type back, fails with:
 // Type error: Property 'params' does not exist on type 'IncomingMessage & { cookies: NextApiRequestCookies; }'.
@@ -27,7 +10,7 @@ function useLoggedInUser(req) {
 //export const makeGetServerSidePropsIndex = (what): GetServerSideProps => {
 export const makeGetServerSidePropsIndex = (what) => {
   return async ({ req }) => {
-    const loggedInUser = useLoggedInUser(req)
+    const loggedInUser = await getLoggedInUser(req)
     const page = req?.params?.page ? parseInt(req.params.page as string, 10) - 1: 0
     let order
     let loggedInQuery
@@ -60,12 +43,8 @@ export const makeGetServerSidePropsIndex = (what) => {
     }
     let articles
     let articlesCount
-    let user
-    if (loggedInUser) {
-      user = await sequelize.models.User.findByPk(loggedInUser.id)
-    }
     if (loggedInQuery) {
-      const articlesAndCounts = await user.findAndCountArticlesByFollowedToJson(0, articleLimit, order)
+      const articlesAndCounts = await loggedInUser.findAndCountArticlesByFollowedToJson(0, articleLimit, order)
       articles = articlesAndCounts.articles
       articlesCount = articlesAndCounts.articlesCount
     } else {
@@ -74,14 +53,14 @@ export const makeGetServerSidePropsIndex = (what) => {
         limit: articleLimit,
       })
       articles = await Promise.all(articlesAndCounts.rows.map(
-        (article) => {return article.toJson(user) }))
+        (article) => {return article.toJson(loggedInUser) }))
       articlesCount = articlesAndCounts.count
     }
     return {
       props: {
         articles,
         articlesCount,
-        loggedInUser,
+        loggedInUser: await loggedInUser.toJson(),
         page,
         what,
       },

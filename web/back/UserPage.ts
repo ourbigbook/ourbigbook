@@ -1,29 +1,23 @@
-import { GetStaticProps, GetStaticPaths } from 'next'
+import { GetStaticProps } from 'next'
 
 import cirodown from 'cirodown/dist/cirodown'
-import { fallback, revalidate } from 'front/config'
 import sequelize from 'db'
 import { articleLimit  } from 'front/config'
-import { getStaticPropsArticle } from 'back/ArticlePage'
+import { makeGetServerSidePropsArticle } from 'back/ArticlePage'
+import { getLoggedInUser } from 'back'
 
-export const getStaticPathsUser: GetStaticPaths = async () => {
-  return {
-    fallback,
-    paths: [],
-  }
-}
-
-export const makeGetStaticPropsUser = (what): GetStaticProps => {
-  return async (context) => {
+export const makeGetServerSidePropsUser = (what): GetStaticProps => {
+  return async ({ params, req }) => {
+    const loggedInUser = await getLoggedInUser(req)
     const user = await sequelize.models.User.findOne({
-      where: { username: context.params.uid },
+      where: { username: params.uid },
     })
     if (!user) {
       return {
         notFound: true
       }
     }
-    const page = context?.params?.page ? parseInt(context.params.page as string, 10) - 1: 0
+    const page = params?.page ? parseInt(params.page as string, 10) - 1: 0
     let order
     let author
     let likedBy
@@ -31,15 +25,15 @@ export const makeGetStaticPropsUser = (what): GetStaticProps => {
       switch (what) {
         case 'likes':
           order = 'createdAt'
-          likedBy = context.params.uid
+          likedBy = params.uid
           break
         case 'user-articles-top':
           order = 'score'
-          author = context.params.uid
+          author = params.uid
           break
         case 'user-articles-latest':
           order = 'createdAt'
-          author = context.params.uid
+          author = params.uid
           break
         default:
           throw new Error(`Unknown search: ${what}`)
@@ -60,7 +54,7 @@ export const makeGetStaticPropsUser = (what): GetStaticProps => {
       likedArticleCount
     ] = await Promise.all([
       articlesPromise,
-      user.toJson(),
+      user.toJson(loggedInUser),
       user.countAuthoredArticles(),
       user.countLikes(),
     ])
@@ -68,20 +62,20 @@ export const makeGetStaticPropsUser = (what): GetStaticProps => {
       user: userJson,
       authoredArticleCount,
       likedArticleCount,
+      loggedInUser: await loggedInUser.toJson(),
       page,
       what,
     }
     if (what === 'home') {
-      const articleProps = (await getStaticPropsArticle(true, true)({
-        params: { slug: [ context.params.uid ] } }))
+      const articleProps = (await makeGetServerSidePropsArticle(true, loggedInUser)({
+        params: { slug: [ params.uid ] } }))
       Object.assign(props, articleProps.props)
     } else {
-      props.articles = await Promise.all(articles.rows.map(article => article.toJson()))
+      props.articles = await Promise.all(articles.rows.map(article => article.toJson(loggedInUser)))
       props.articlesCount = articles.count
     }
     return {
       props,
-      revalidate,
     }
   }
 }

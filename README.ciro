@@ -81,6 +81,8 @@ If one of the input files starts getting too large, usually the toplevel `README
 npx cirodown README.ciro
 npx cirodown not-readme.ciro
 ``
+Note however that  when `README.ciro` has a \x[internal-cross-file-reference] to something defined in `not-readme.ciro`, e.g. via `\x[h2-in-not-the-README]`, then you must first do a first pass once with `npx cirodown .` to parse all files and extract all necessary IDs to the \x[id-database].
+
 When dealing with large files, you might also be interested in the following amazing options:
 * \x[split-headers]
 * \x[h-splitdefault-argument]
@@ -107,6 +109,11 @@ or to a file:
 printf 'ab\ncd\n' | cirodown > tmp.html
 ``
 You almost never want to do this except when \x[developing-cirodown], as it won't be clear what version of `cirodown` the document should be compiled with. Just be a good infant and use Cirodown \x[play-with-the-template][with the template] that contains a `package.json` via `npx`, OK?
+
+TODO mention `snap` confinement:
+* https://superuser.com/questions/1546550/chromium-81-wont-display-dotfiles-anymore
+* https://askubuntu.com/questions/1184357/why-cant-chromium-suddenly-access-any-partition-except-for-home
+* https://askubuntu.com/questions/1214346/as-a-user-is-there-any-way-to-change-the-confinement-of-a-snap-package
 
 To run master globally for development see: \x[run-cirodown-master]{full}.
 
@@ -2782,6 +2789,10 @@ This is why IDs must be unique for elements across all pages.
 {parent=internal-cross-file-reference}
 {title2=`db.sqlite3`}
 
+= ID database
+{c}
+{synonym}
+
 When running in Node.js, Cirodown dumps the IDs of all processed files to a `out/db.sqlite3` file in \x[the-out-directory], and then reads from that file when IDs are needed.
 
 When converting a directory, `out/db.sqlite3` is placed inside the input directory. When converting individual files, `out/db.sqlite3` is placed in the current working directory. The file is not created or used when handling input from stdin.
@@ -4564,12 +4575,15 @@ npm link
 npm link cirodown
 npm run build-assets
 ``
-You can now run the `cirodown` command from any directory in your computer, for example to convert the cirodown documentation itself:
+so you can now run the `cirodown` command from any directory in your computer, for example to convert the cirodown documentation itself:
 ``
 cirodown .
 ``
 
-`npm link` produces a symlink so that any changes made to the Git source tree will automatically be visible globally, see also: https://stackoverflow.com/questions/28440893/install-a-locally-developed-npm-package-globally
+`npm link` produces a symlink so that any changes made to the Git source tree will automatically be visible globally, see also: https://stackoverflow.com/questions/28440893/install-a-locally-developed-npm-package-globally The symlink structure looks like:
+``
+/home/ciro/cirodown/node_modules/cirodown -> /home/ciro/.nvm/versions/node/v14.17.0/lib/node_modules/cirodown -> /home/ciro/cirodown
+``
 
 As mentioned at \x[useless-knowledge], most users don't want global installations of Cirodown. But this can be handy during development, as you can immediately see how your changes to Cirodown source code affect your complex example of interest. For example, Ciro developed a lot of Cirodown by hacking https://github.com/cirosantilli/cirosantilli.github.io directly with Cirodown `master`.
 
@@ -4878,49 +4892,37 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 = Release procedure
 {parent=developing-cirodown}
 
-= Pre-release testing
-{parent=release-procedure}
-
-Make sure that \x[test-system][the tests] pass:
-``
-npm test
-``
-
-Check that this repository renders fine:
-``
-cirodown -S .
-xdg-open index.html
-``
-
 = Do the release
 {parent=release-procedure}
 
-Manually update the \a[package.json] version:
+Before the first time you release, you need to login to NPM with:
 ``
-vim package.json
-``
-
-Create a tag to match, push and release the package:
-``
-git add -u
-t=0.7.0
-git commit -m "$t"
-git tag -m "$t" "$t"
+npm login
 ``
 
-Update the templates:
-
+Then, every new release can be done automatically with the \a[release] script, e.g. to release a version 0.7.2:
 ``
-git push --follow-tags
-npm publish
+./release 0.7.2
 ``
+That script does the following actions, aborting immediately if any of them fails:
+* runs \x[test-system][the tests]
+* publishes this documentation
+* updates `version` in `package.json`
+* creates a release commit and a git tag for it
+* pushes the source code
+* publishes the NPM package
 
-After publishing a good sanity check is to see if you can render this documentation correctly:
+= Out-of-box testing
+{parent=release-procedure}
+
+After publishing, a good minimal sanity check is to ensure that you can render the template as mentioned in \x[play-with-the-template]:
 ``
 cd ~
-# Get rid of the npm link development version.
-npm uninstall -g cirodown
-npm install -g cirodown
-cd -
-cirodown -S .
+# Get rid of the global npm link development version just to make sure it is not being used.
+npm uninstall cirodown
+git clone https://github.com/cirosantilli/cirodown-template
+cd cirodown-template
+npm install
+npx cirodown .
+firefox index.html
 ``

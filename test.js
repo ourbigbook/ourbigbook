@@ -117,6 +117,9 @@ function assert_convert_ast(
       // one error message.
       options.has_error = false;
     }
+    if (!('invalid_title_titles' in options)) {
+      options.invalid_title_titles = []
+    }
 
     // extra_convert_opts defaults.
     if (!('extra_convert_opts' in options)) {
@@ -202,19 +205,13 @@ function assert_convert_ast(
       await new_convert_opts.file_provider.update(new_convert_opts.input_path, extra_returns)
     }
 
-    // Duplicate IDs checks.
-    const duplicate_rows = await sequelize.models.Id.findDuplicates()
-    for (let i = 0; i < duplicate_rows.length; i++) {
-      const duplicate_row = duplicate_rows[i]
-      const duplicate_id_expect = options.duplicate_ids[i]
-      const ast = cirodown.AstNode.fromJSON(duplicate_row.ast_json)
-      const source_location = ast.source_location
-      assert.strictEqual(duplicate_row.idid, duplicate_id_expect[0])
-      assert.strictEqual(duplicate_row.path, duplicate_id_expect[1])
-      assert.strictEqual(source_location.line, duplicate_id_expect[2])
-      assert.strictEqual(source_location.column, duplicate_id_expect[3])
-    }
-    assert.strictEqual(duplicate_rows.length, options.duplicate_ids.length)
+    // Post conversion checks.
+    const [duplicate_rows, invalid_title_title_rows] = await Promise.all([
+      await sequelize.models.Id.findDuplicates(),
+      await sequelize.models.Id.findInvalidTitleTitle(),
+    ])
+    assert_db_checks(duplicate_rows, options.duplicate_ids)
+    assert_db_checks(invalid_title_title_rows, options.invalid_title_titles)
 
     const has_subset_extra_returns = {fail_reason: ''};
     let is_subset;
@@ -318,6 +315,20 @@ function assert_convert_ast(
       }
     }
   });
+}
+
+function assert_db_checks(actual_rows, expects) {
+  for (let i = 0; i < actual_rows.length; i++) {
+    const actual_row = actual_rows[i]
+    const expect = expects[i]
+    const ast = cirodown.AstNode.fromJSON(actual_row.ast_json)
+    const source_location = ast.source_location
+    assert.strictEqual(actual_row.idid, expect[0])
+    assert.strictEqual(actual_row.path, expect[1])
+    assert.strictEqual(source_location.line, expect[2])
+    assert.strictEqual(source_location.column, expect[3])
+  }
+  assert.strictEqual(actual_rows.length, expects.length)
 }
 
 function assert_equal(description, output, expected_output) {
@@ -1537,6 +1548,30 @@ assert_convert_ast('image title with x to header in another file',
     },
   }
 );
+assert_convert_ast('link to image in nother files that has title with x to header in another file',
+  `= Index
+
+\\x[image-my-notindex]`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//x:a[@href='image.html#image-my-notindex' and text()='Figure \"My notindex h1\"']",
+    ],
+    convert_before: [
+      'notindex.ciro',
+      'image.ciro',
+    ],
+    filesystem: {
+     'image.ciro': `= image h1
+
+\\Image[aa]{title=My \\x[notindex]}{check=0}
+`,
+     'notindex.ciro': `= notindex h1
+`,
+    },
+    input_path_noext: 'index',
+  }
+);
 
 // Escapes.
 assert_convert_ast('escape backslash',            'a\\\\b\n', [a('P', [t('a\\b')])]);
@@ -2301,27 +2336,59 @@ assert_convert_ast('x to image in another file that has x title in another file'
 // Infinite recursion.
 // failing https://github.com/cirosantilli/cirodown/issues/34
 assert_error('cross reference from header title without ID to following header is not allowed',
-  `= \\x[myh2]
+  `= \\x[h2] aa
 
 == h2
-{id=myh2}
-`, 1, 5);
+`, 1, 3);
 assert_error('cross reference from header title without ID to previous header is not allowed',
   `= h1
-{id=myh1}
 
-== \\x[myh1]
-`, 4, 4);
-assert_error('cross reference from image title without ID to previous non-header is not allowed',
-  `\\Image[ab]{title=cd}
+== \\x[h1] aa
+`, 3, 4);
+assert_convert_ast('cross reference from image title without ID to previous non-header is not allowed',
+  `= tmp
 
-\\Image[ef]{title=gh \\x[image-cd]}
-`, 3, 21, undefined, { filesystem: { ab: '', ef: '' } });
-assert_error('cross reference from image title without ID to following non-header is not allowed',
-  `\\Image[ab]{title=cd \\x[image-gh]}
+\\Image[ab]{title=cd}{check=0}
 
-\\Image[ef]{title=gh}
-`, 1, 23, undefined, { filesystem: { ab: '', ef: '' } });
+\\Image[ef]{title=gh \\x[image-cd]}{check=0}
+`,
+  undefined,
+  {
+    input_path_noext: 'tmp',
+    invalid_title_titles: [
+      ['image-gh-image-cd', 'tmp.ciro', 5, 1],
+    ],
+  }
+);
+assert_convert_ast('cross reference from image title without ID to following non-header is not allowed',
+  `= tmp
+
+\\Image[ef]{title=gh \\x[image-cd]}{check=0}
+
+\\Image[ab]{title=cd}{check=0}
+`,
+  undefined,
+  {
+    input_path_noext: 'tmp',
+    invalid_title_titles: [
+      ['image-gh-image-cd', 'tmp.ciro', 3, 1],
+    ],
+  }
+);
+assert_executable('executable: cross reference from image title to previous non-header is not allowed',
+  {
+    args: ['.'],
+    expect_exit_status: 1,
+    filesystem: {
+      'README.ciro': `= Index
+
+\\Image[ab]{title=cd}{check=0}
+
+\\Image[ef]{title=gh \\x[image-cd]}{check=0}
+`,
+    }
+  }
+);
 assert_error('cross reference infinite recursion with explicit IDs fails gracefully',
   `= \\x[h2]
 {id=h1}
@@ -4525,7 +4592,7 @@ assert_convert_ast('id autogeneration with disambiguate',
 );
 assert_error('id autogeneration with undefined reference in title fails gracefully',
   `= \\x[reserved_undefined]
-`, 1, 5);
+`, 1, 3);
 // https://github.com/cirosantilli/cirodown/issues/45
 assert_convert_ast('id autogeneration with nested elements does an id conversion and works',
   `= ab \`cd\` ef

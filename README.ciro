@@ -3529,10 +3529,10 @@ Now for a live example for quick and dirty interactive testing.
 = `\x` within `title` restrictions
 {parent=internal-cross-reference}
 
-If you use `\x` within a `title`, which most commonly happens for \x[image][image titles], that can generate complex dependencies, which would either be harder to implement, or lead to infinite recursion.
+If you use `\x` within a `title`, which most commonly happens for \x[image][image titles], that can generate complex dependencies between IDs, which would either be harder to implement, or lead to infinite recursion.
 
-To prevent such problems, Cirodown emits an error if you use an `\x` without content in the `title` of one of the following elements without an explicit ID:
-* \x[header]. For example, the following gives an error:
+To prevent such problems, Cirodown emits an error if you use an `\x` without content in the `title` of one of the following elements:
+* any \x[header]. For example, the following gives an error:
   ``
   = h1
   {id=myh1}
@@ -5044,7 +5044,21 @@ It is an intermediate step in \x[automatic-id-from-title], that unlike HTML outp
 
 But we decided to expose it for fun, and to start generalizing Cirodown to multiple outputs, as this is a simple format.
 
-The conversion is very simplistic, it basically just pastes the `content` of most arguments.
+The conversion is very simplistic, it basically just pastes the `content` of most macros. Important exceptions to that include:
+* `\x` uses `href` if a content is not given. Previously, if `\x` didn't have a content, we were actually rendering the `\x` to calculate the ID. But then we noticed that doing so would require another parse pass, so we just went for this simpler approach. This is closely linked to \x[x-within-title-restrictions].
+
+So for example if we had:
+``
+= Title with more
+{id=title}
+
+\Image[my.png]{title=My \i[nice] \x[title]
+``
+then the image ID would be `image-my-nice-title`:
+* `image-` automatically added prefix
+* `my `: literal text
+* `nice`: extract the content of the \x[italic]
+* `title`: note how we use the `href` `title` instead of what is actually rendered, `Title with more`, because `\x` is treated somewhat specially for performance reasons
 
 Stuff that is primarily non-textual like \x[image]{p} is just completely removed. We could put effort in outputting their title correctly, but meh, not worth the effort.
 
@@ -6208,6 +6222,8 @@ Conversion follows the following steps:
   * \x[synonym] and \x[scope]
   * \x[cirodownexample] and \x[embed-includes]: they are stitched into the main AST
 * DB queries: every single database query must be done at this point, after pots processing and before render.
+
+  TODO this must come after all post processing. Parse + post processing must never depend on the database. Tracked at: https://github.com/cirosantilli/cirodown/issues/208
 
   Keeping all queries together is fundamental for performance reasons, especially of \x[browser-editor-with-preview] in the \x[dynamic-website]: imagine doing 100 scattered server queries:
   ``

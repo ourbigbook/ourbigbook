@@ -353,6 +353,7 @@ ON "Ids".idid = "RecRefs"."to_id"
         idid: id,
         path: ast.source_location.path,
         ast_json: JSON.stringify(ast),
+        macro_name: ast.macro_name,
       })
     }
 

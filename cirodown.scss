@@ -108,23 +108,29 @@ figure {
   }
 }
 
-h1, h2, h3, h4, h5, h6 {
+div.h {
   font-size: $header-font-size;
+  font-weight: bold;
   margin: 20px 0 8px;
-  > a:first-child {
-    color: $color;
-    &:visited {
+  h1, h2, h3, h4, h5, h6 {
+    > a:first-child {
       color: $color;
+      &:visited {
+        color: $color;
+      }
     }
+    display: inline-block;
+    font-size: $header-font-size;
+    margin: 0;
   }
-  a + span {
+  .hover-meta {
     @include hidden;
   }
-  &:hover a + span {
+  &:hover .hover-meta {
     @include visible;
   }
   // Clicked navigation expand button.
-  &:target a + span {
+  &:target .hover-meta {
     @include visible;
   }
 }

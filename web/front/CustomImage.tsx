@@ -7,7 +7,7 @@ const handleBrokenImage = e => {
 
 interface CustomImageProps {
   src: string;
-  alt: string;
+  alt?: string;
   className?: string;
 }
 

@@ -618,7 +618,7 @@ class IdProvider {
     let all_rets = await this.get_includes_entries(to_id);
     let ret = [];
     for (const all_ret of all_rets) {
-      const from_ast = this.get(all_ret.from_id, context);
+      const from_ast = await this.get(all_ret.from_id, context);
       if (from_ast === undefined) {
         throw 'parent ID of include not in database, not sure how this can happen so throwing';
       } else {
@@ -5056,12 +5056,12 @@ async function x_href_parts(target_id_ast, context) {
       toplevel_ast = context.toplevel_ast;
     } else {
       const file_provider_ret = await context.options.file_provider.get(target_input_path);
-      if (file_provider_ret === undefined) {
+      if (file_provider_ret) {
+        toplevel_ast = await context.id_provider.get(file_provider_ret.toplevel_id, context);
+      } else {
         // The only way this can happen is if we are in the current file, and it hasn't
         // been added to the file db yet.
         toplevel_ast = context.nosplit_toplevel_ast
-      } else {
-        toplevel_ast = await context.id_provider.get(file_provider_ret.toplevel_id, context);
       }
     }
     fragment = remove_toplevel_scope(target_id_ast.id, toplevel_ast, context);
@@ -5775,7 +5775,7 @@ const DEFAULT_MACRO_LIST = [
         ) {
           parent_asts.push(parent_tree_node.value);
         }
-        parent_asts.push(...await context.id_provider.get_includes(ast.id, context));
+        parent_asts.push(...(await context.id_provider.get_includes(ast.id, context)));
         parent_links = [];
         for (const parent_ast of parent_asts) {
           let parent_href = await x_href_attr(parent_ast, context);

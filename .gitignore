@@ -8,13 +8,14 @@
 # Custom ignores. Everything above this section, gets automatically parsed
 # and used by the default template generation!
 !/editor.html
-*.tmp
 cirodown.embed.min.css
 cirodown.js
 cirodown.local.min.css
 cirodown.min.css
 gitignore
+
+# Temporary files.
 tmp
 tmp.*
 *.tmp
-tmp2.ciro
+*.tmp.*

@@ -3280,11 +3280,17 @@ $$
 \\x[h2][link to h2]
 
 == notindex h2
+
+= notindex h2 synonym
+{synonym}
 `,
   'toplevel-scope.ciro': `= Toplevel scope
 {scope}
 
 == Toplevel scope h2
+
+= Toplevel scope h2 synonym
+{synonym}
 
 == Nested scope
 {scope}

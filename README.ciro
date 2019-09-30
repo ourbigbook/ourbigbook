@@ -31,9 +31,14 @@ To be saner than both Markdown and Asciidoctor, Cirodown has exactly three magic
 
 And double blank newlines for \x[paragraphs][paragraphs] if you are pedantic.
 
-This makes the end tail learning curve of the endless edge cases found in Markdown and Asciidoctor disappear.
+This produces a very regular syntax that is easy to learn, including doing:
 
-Furthermore, that language is designed to be philosophically isomorphic to HTML to
+\l[arbitrary nesting of elements]
+\l[adding arbitrary properties to elements]
+
+This sanity also makes the end tail learning curve of the endless edge cases found in Markdown and Asciidoctor disappear.
+
+The language is designed to be philosophically isomorphic to HTML to:
 
 \l[further reduce the learning curve]
 \l[ensure that most of HTML constructs can be reached, including arbitrary nesting]
@@ -41,21 +46,22 @@ Furthermore, that language is designed to be philosophically isomorphic to HTML 
 More precisely:
 
 \l[macro names map to tag names, e.g.: \c[\a] to \c[<a]]
-\l[one of the arguments of macros, maps to the content of the HTML element, and the others map to attributes.
+\l[
+  one of the arguments of macros, maps to the content of the HTML element, and the others map to attributes.
 
-E.g., in a link:
+  E.g., in a link:
 
-\c[[\a[http://example.com][Link text]]]
+  \c[[\a[http://example.com][Link text]]]
 
-the first macro argument:
+  the first macro argument:
 
-\c[http://example.com]
+  \c[http://example.com]
 
-maps to the \c[href] of \c[<a], and the second macro argument:
+  maps to the \c[href] of \c[<a], and the second macro argument:
 
-\c[Link text]
+  \c[Link text]
 
-maps to the internal content of \c[<a>Link text<>]
+  maps to the internal content of \c[<a>Link text<>]
 ]
 
 \h3[More powerful]
@@ -64,7 +70,7 @@ The \x[saner][high sanity of Cirodown], also makes creating new macro extensions
 
 All built-in language features use the exact same API as new extensions, which ensures that the extension API is sane forever.
 
-Markdown is clearly missing many key features such as block attributes and internal cross references, and has no standardized extension mechanism.
+Markdown is clearly missing many key features such as block attributes and \x[internal cross references][], and has no standardized extension mechanism.
 
 The "more powerful than Asciidoctor" part is only partially true, since Asciidoctor is very featureful can do basically anything through extensions.
 
@@ -98,30 +104,109 @@ Autolink with an empty link content: \a[http://example.com][].
 paragraphs]
 
 \h2
-[id=headers-and-references]
-[Headers and references \c[\h1], \c[\h2], etc. and \c[\x]]
+[id=internal-cross-references]
+[Internal cross references \c[\x]]]
 
-Cross reference (mnemonic \c[x] for "cross") to a header with implicit ID derived from title: \x[my-h3][reference to my h3].
+Every macro in Cirodown can have an optional \c[id] and a \c[title] property.
 
-Empty link title expands to the header title: \x[my-h3][].
+Those that have a \c[title] but no \c[id], get an auto-generated ID from the title: \x[automatic-id-from-title][].
 
-Or to get a full "Section X.Y My h3" we add the optional \c[\[style=full\]] param: \x[style=full][my-h3][].
+For macros that do have an ID, you can write a cross reference to it:
 
-Reference to a header with explicit ID: \x[my-h3-custom-id][].
+\c[[
+\h2[id=my-id][My title]
 
-\h3[My h3]
+Read this \x[my-id][amazing section].
+]]
 
-Content of my h3.
+Alternatively, if the ID is identical from the one that would be \c[Automatic ID from title][auto-generated form the title], you can use the title itself as the reference instead of the ID:
 
-\h3
-[id=my-h3-custom-id]
-[My h3 number 2]
+\c[[
+\h2[My title]
 
-Content of my h3 number 2.
+Read this \x[My title][amazing section].
+]]
 
-\h4[Unlimited header levels]
+which is equivalent to the more explicit:
+
+\c[[
+\h2[id=my-title][My title]
+
+Read this \x[my-title][amazing section].
+]]
+
+Empty internal cross reference titles expand to the header title, e.g.:
+
+\c[[
+\h2[id=my-id][My title]
+
+Read this \x[my-id][].
+]]
+
+is the same as:
+
+\c[[
+\h2[id=my-id][My title]
+
+Read this \x[my-id][My title].
+]]
+
+To also show the section auto-generated number as in"Section X.Y My title" we add the optional \c[\[style=full\]] param to the cross reference, for example:
+
+\c[[
+\h2[id=my-id][My title]
+
+Read this \x[style=full][my-id][].
+]]
+
+\h3[Internal cross file references]
+
+Reference to the first header of another file: \x[not-readme][]. That header gets its ID from the file name by default.
+
+Reference to an internal header of another file: \x[not-readme/h2-in-not-the-readme][]. By default, That header ID gets prefixed by the ID of the top header.
+
+\h3[Automatic ID from title]
+
+If a macro has the \c[title][] property is present but no explicit \c[id], an ID is created automatically from the \c[title], by applying the following transformations:
+
+\l[convert all of \c[A-Z] characters to lowercase]
+\l[convert consecutive sequences of all non \c[a-z0-9] ASCII characters to a single hyphen \c[-]]
+\l[strip leading or trailing hyphens]
+
+Note how those rules leave non ASCII Unicode characters untouched, as capitalization and determining if something "is a letter or not" in those cases can be tricky.
+
+So for example, the following automatic IDs would be generated:
+
+\tr[
+  \th[title]
+  \th[id]
+  \th[comments]
+]
+\tr[
+  \td[My favorite title]
+  \td[my-favorite-title]
+  \td[]
+]
+\tr[
+  \td[Ciro's markdown is awesome]
+  \td[ciro-s-markdown-is-awesome]
+  \td[]
+]
+\tr[
+  \td[The École Polytechnique]
+  \td[the-École-polytechnique]
+  \td[We leave the non ASCII uppercase \a[https://en.wikipedia.org/wiki/Acute_accent][acute accented] \c[e], \c[É], untouched by default]
+]
+
+\h2
+[id=headers]
+[Headers \c[\h1], \c[\h2], etc.]
+
+\h3[Unlimited header levels]
 
 There is no limit to how many levels we can have! HTML is limited to \c[h6], so Cirodown just renders \c[<div class="header">] instead.
+
+\h4[My h4]
 
 \h5[My h5]
 
@@ -140,12 +225,6 @@ There is no limit to how many levels we can have! HTML is limited to \c[h6], so 
 \h12[My h12]
 
 \h13[My h12]
-
-\h3[Cross file references]
-
-Reference to the first header of another file: \x[not-readme][]. That header gets its ID from the file name by default.
-
-Reference to an internal header of another file: \x[not-readme/h2-in-not-the-readme][]. By default, That header ID gets prefixed by the ID of the top header.
 
 \h3
 [id=table-of-contents]
@@ -172,17 +251,17 @@ References withing a single scope do not need the parent scope prefix.
 The \c[\include] macro achieves the following goals:
 
 \l[
-show a single header at multiple locations in the table of contents. This makes the TOC into a full blown graph rather than a tree.
+  show a single header at multiple locations in the table of contents. This makes the TOC into a full blown graph rather than a tree.
 
-This can be used to implement a tag entirely within the ToC!
+  This can be used to implement a tag entirely within the ToC!
 ]
 \l[
-determine where external files will be placed in \c[`--single-page` mode.
+  determine where external files will be placed in \c[`--single-page` mode.
 
-When compiling to HTML, we can choose to either:
+  When compiling to HTML, we can choose to either:
 
-\l[compile as multiple pages]: default, includes show on ToC and render as \x[headers-and-references][internal cross references]: \c[[\[x][]]
-\l[compile as a single page]: selected with the \c[cirodown --single-page] option
+  \l[compile as multiple pages]: default, includes show on ToC and render as \x[internal-cross-references][internal cross references to headers]: \c[[\[x][]]
+  \l[compile as a single page]: selected with the \c[cirodown --single-page] option
 ]
 
 If an external header would be included multiple times in a single output page, the ToC contents are duplicated, but the content itself cannot be because that would lead to ID conflicts and large pages.
@@ -194,7 +273,9 @@ Therefore, in this case you are forced to specify which include will actually ex
 [canonical=true]
 ]]
 
-\h2[Lists]
+\h2
+[id=lists]
+[Lists \c[\l]]
 
 With implicit container:
 
@@ -232,11 +313,11 @@ It is also required if you want ordered lists:
 Nested lists with implicit containers:
 
 \l[
-a
+  a
 
-\l[a1]
-\l[a2]
-\l[a2]
+  \l[a1]
+  \l[a2]
+  \l[a2]
 ]
 \l[b]
 \l[c]
@@ -245,14 +326,14 @@ List item with a paragraph inside of it:
 
 \l[a]
 \l[
-I have
+  I have
 
-Multiple paragraphs.
+  Multiple paragraphs.
 
-\l[And]
-\l[also]
-\l[a]
-\l[list]
+  \l[And]
+  \l[also]
+  \l[a]
+  \l[list]
 ]
 \l[c]
 
@@ -306,9 +387,9 @@ See this image \x[image-lotus-flower][]:
 [id=image-lotus-flower]
 [source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg]
 [description=
-We can have multiple paragraphs here.
+  We can have multiple paragraphs here.
 
-I'm not even kidding.
+  I'm not even kidding.
 ]
 
 \h2
@@ -351,45 +432,6 @@ Display math:
 
 \h2[Cirodown syntax]
 
-\h3[Escape characters]
-
-Each macro argument is of either of two types:
-
-\l[literal: the content will not be parsed further by Cirodown.
-
-You only need to escape the closing square bracket \c[\].
-]
-\l[non-literal: the content will be parsed further by Cirodown, and possibly expand in to further nested HTML.
-
-You need to escape all of:
-
-\l[\c[\\]]
-\l[\c[\[]]
-\l[\c[\]]]
-]
-
-For example, the content of \x[code] and \x[math] macro arguments is literal as you would expect, so we could escape it as:
-
-\c[Cirodown links look like this: \c[http://example.com\][Example.\]]
-
-Alternatively we can also use multiple open and close separators like a heredoc, e.g. with 2:
-
-\c[[Cirodown links look like this: \c[http://example.com][Example.]]]
-
-or similarly 3:
-
-\c[[[
-A line.
-[[
-Another one.
-]]
-And another one.
-]]]
-
-If the first character of a code block is a \[ however, then you do need to escape it to prevent ambiguity with the heredoc syntax, e.g.:
-
-\c[\[ first char was an open brace]
-
 \h3[Macro argument syntax]
 
 \h4[Optional vs mandatory arguments]
@@ -397,30 +439,30 @@ If the first character of a code block is a \[ however, then you do need to esca
 Every macro argument is of either two types:
 
 \l[
-optional.
+  optional.
 
-Gets prefixed by a key `name=`.
+  Gets prefixed by a key `name=`.
 
-Must come before the mandatory ones, but the order between the optional ones is arbitrary.
+  Must come before the mandatory ones, but the order between the optional ones is arbitrary.
 ]
 \l[
-mandatory
+  mandatory
 
-Not prefixed by keys.
+  Not prefixed by keys.
 
-Must always be present, and must come after the optional ones.
+  Must always be present, and must come after the optional ones.
 
-Mandatory arguments can however be empty which is indicated by an empty pair of square brackets:
+  Mandatory arguments can however be empty which is indicated by an empty pair of square brackets:
 
-\c[\[\]]
+  \c[\[\]]
 
-Macros can process this empty value magically or not as documented on their API.
+  Macros can process this empty value magically or not as documented on their API.
 
-For example, \x[links][] have two mandatory arguments: the URL and text, and the link API treats an empty text as a copy of the URL, which is a common use case:
+  For example, \x[links][] have two mandatory arguments: the URL and text, and the link API treats an empty text as a copy of the URL, which is a common use case:
 
-\c[[
-\a[http://example.com][]
-]]
+  \c[[
+  \a[http://example.com][]
+  ]]
 ]
 
 If a macro has no mandatory arguments, and if a given call has no optional arguments, then the macro does not need any square brackets, e.g. for \x[table-of-contents][]:
@@ -437,9 +479,9 @@ where args is a dict such that:
 
 \l[optional arguments have the key / value pairs explicitly given on the call]
 \l[
-mandatory arguments have a key documented by the API, and the value on the call.
+  mandatory arguments have a key documented by the API, and the value on the call.
 
-For example, the link API names its arguments \c[href] and \c[text].
+  For example, the link API names its arguments \c[href] and \c[text].
 ]
 
 \h4[Newlines between arguments]
@@ -466,6 +508,70 @@ and this non-recommended mixed style:
 ]]
 
 This allows to greatly improve the readability of long argument lists by having them one per line.
+
+\h4
+[id=literal]
+[Literal vs non-literal arguments]
+
+Each macro argument is of either of two types as documented by its API:
+
+\l[
+  literal: the content will not be parsed further by Cirodown, and it gets passed as a string to the \x[javascript-interface-for-arguments][].
+
+  For example, this is useful for macros such as \x[code][code blocks] or \x[math][].
+
+  Literal blocks are more constrained, but they allow you to \x[escape-characters][escape less characters], and are typically used for sub-languages nested within the document.
+]
+\l[
+  non-literal: the content is be parsed further by Cirodown, and the parsed subtree is passed to the \x[javascript-interface-for-arguments][]
+
+  This is the case for most "nested HTML content"-like arguments, such as the text of \x[links][] or \x[internal-cross-references][]
+]
+
+\h5[Escape characters]
+
+For non-literal macro arguments, the rule is simple, you must escape all of:
+
+\l[\c[\\]]
+\l[\c[\[]]
+\l[\c[\]]]
+
+For literal macro arguments there are two choices.
+
+For longer arguments, especially multiline, the best approach is usually to use the following heredoc-like syntax.
+
+By opening a macro argument with multiple square brackets \c[\[], only the same number of square brackets will be used for closing that opening.
+
+For example, a multiline code block with double open and double close square brackets can be enclosed in triple square brackets:
+
+\c[[[
+A line.
+[[
+Another one.
+]]
+And another one.
+]]]
+
+The same works for inline code: \c[[Cirodown links look like this: \c[http://example.com][Example.]]].
+
+Within literal blocks, you only need to escape constructs that would lead to ambiguity on where the block ends, namely:
+
+\l[
+  if a literal starts with open square brackets \c[\[]], then that must be escaped, otherwise it will get interpreted as a heredoc, e.g.:
+
+  \c[[
+  \c[\[ This code block starts with a literal open square bracket]
+  ]]
+
+  Note that this only ever happens for arguments that don't start with a newline considering \x[Argument leading and trailing newline removal][].
+]
+\l[
+  if a literal block ends
+
+  \c[\c[\]]
+]
+
+\c[\[ first char was an open brace]
 
 \h4[Argument leading and trailing newline removal]
 
@@ -511,6 +617,58 @@ a
 b
 
 ]
+]]
+
+\h4[Argument automatic indentation removal]
+
+Inside of a non-literal block, the very first non-whitespace character determines the indentation level of the content.
+
+This allows seamlessly indenting complex nested content to make it more readable.
+
+For example, a list with complex content could be written without indentation as:
+
+\c[[
+\l[a]
+\l[
+b
+
+\c[[
+And now some code
+]]
+
+And a paragraph.
+]
+\l[c]
+]]
+
+but it would be more readable as the equivalent:
+
+\c[[
+\l[a]
+\l[
+  b
+
+  \c[[
+  And now some code
+  ]]
+
+  And a paragraph.
+]
+\l[c]
+]]
+
+If a something tries to reduce the current indentation level, then that leads to an error:
+
+\c[[
+\l[a]
+\l[
+  b
+
+I'm bad because I have negative indentation.
+
+  Back to good.
+]
+\l[c]
 ]]
 
 \h2[Tooling]

@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-
 const fs = require('fs');
 const util = require('util');
 
@@ -20,13 +19,16 @@ const AstNode = class {
    *        If type is macro, the Object with child arguments.
    *        Otherwise, it ype is text, , the raw String.
    */
-  constructor(macro_name, args) {
+  constructor(macro_name, args, line, column) {
     this.macro_name = macro_name;
     this.args = args;
+    this.line = line;
+    this.column = column;
   }
 
-  inspect(depth, options) {
-    return JSON.stringify(this, null, 2);
+  convert(options) {
+    let macro = macros[this.macro_name];
+    return macro.convert(this.args, options);
   }
 }
 
@@ -43,21 +45,21 @@ const Token = class {
   /**
    * @param {String} type
    * @param {String} value - Default: undefined
-   * @param {number} start_line
-   * @param {number} start_column
+   * @param {number} line
+   * @param {number} column
    */
-  constructor(type, start_line, start_column, value) {
+  constructor(type, line, column, value) {
     this.type = type;
-    this.start_line = start_line;
-    this.start_column = start_column;
+    this.line = line;
+    this.column = column;
     this.value = value;
   }
 
   toJSON() {
     return {
       type:         this.type.toString(),
-      start_line:   this.start_line,
-      start_column: this.start_column,
+      line:   this.line,
+      column: this.column,
       value:        this.value
     }
   }
@@ -95,6 +97,14 @@ const Macro = class {
   }
 }
 
+const convert_arg = function(arg) {
+  let converted_arg = '';
+  for (const macro of arg) {
+    converted_arg += macro.convert()
+  }
+  return converted_arg;
+}
+
 let macros = {
   p: new Macro(
     [
@@ -102,8 +112,8 @@ let macros = {
         name: 'content',
       }),
     ],
-    function(args) {
-      return `<p>${args.content.convert()}</p>`
+    function(args, options) {
+      return `<p>${convert_arg(args.content)}</p>\n`
     }
   ),
   a: new Macro(
@@ -115,51 +125,64 @@ let macros = {
         name: 'content',
       }),
     ],
-    function(args) {
-      return `<a href="${args.href.convert()}">${args.content.convert()}</p>`
+    function(args, options) {
+      return `<a href="${convert_arg(args.href)}">${convert_arg(args.content)}</p>`
     }
   ),
   plaintext: new Macro(
     [
       new Argument({
         name: 'content',
-        required: true,
-        literal: true,
       }),
     ],
-    function(arg) {
-      return arg;
+    function(args, options) {
+      return args;
     }
   ),
   toplevel: new Macro(
     [
       new Argument({
         name: 'content',
-        required: true,
-        literal: false,
       }),
       new Argument({
         name: 'title',
-        required: false,
-        literal: false,
       }),
     ],
-    function(args) {
-      return `<!doctype html>
+    function(args, options) {
+      if (!'title' in args) {
+        if ('title' in options) {
+          title = options['title'];
+        } else {
+          title = IN_OUTPUT_ERROR_PREFIX + 'missing title';
+          if (!options.body_only) {
+            report_error_noline('HTML requires a non-empty title');
+            // TODO report error with exit status.
+          }
+        }
+        args.title = new AstNode('plaintext', title);
+      }
+      let ret = '';
+      if (!options.body_only) {
+        ret += `<!doctype html>
 <html lang=en>
 <head>
 <meta charset=utf-8>
-<title>${args.title.convert()}</title>
-</head>
+<title>${convert_arg(args.title)}</title>
 <body>
-${args.content.convert()}
-</body>
+`
+      }
+      ret += convert_arg(args.content);
+      if (!options.body_only) {
+        ret += `</body>
 </html>
 `
+      }
+      return ret;
     }
   ),
 }
 
+const IN_OUTPUT_ERROR_PREFIX = 'CIRODOWN_ERROR: ';
 const ESCAPE_CHAR = '\\';
 const START_POSITIONAL_ARGUMENT_CHAR = '{';
 const END_POSITIONAL_ARGUMENT_CHAR = '}';
@@ -200,7 +223,11 @@ const closing_token = function(token) {
 }
 
 const report_error = function(line, column, message) {
-  console.error(`error at line ${line} column ${column}: ${message}`);
+  report_error_noline(`line ${line} column ${column}: ${message}`);
+}
+
+const report_error_noline = function(message) {
+  console.error(`error: ${message}`);
 }
 
 /**
@@ -386,6 +413,8 @@ const parse_macro = function(tokens, state) {
   while (consume() !== undefined) {
     if (cur_token.type === TokenType.MACRO_NAME) {
       let macro_name = cur_token.value;
+      let macro_line = cur_token.line;
+      let macro_column = cur_token.column;
       let macro = macros[macro_name];
       let arg_count = 0;
       let args = {};
@@ -420,13 +449,18 @@ const parse_macro = function(tokens, state) {
         args[arg.name] = arg_children;
         arg_count += 1;
       }
-      return new AstNode(macro_name, args);
+      return new AstNode(macro_name, args, macro_line, macro_column);
       macro_node = {
         type: token.value,
         children: children
       }
     } else if (cur_token.type === TokenType.PLAINTEXT) {
-      let plaintext_node = new AstNode('plaintext', cur_token.value);
+      let plaintext_node = new AstNode(
+        'plaintext',
+        cur_token.value,
+        cur_token.line,
+        cur_token.column
+      );
       // Non-recursive case.
       consume();
       return plaintext_node;
@@ -435,14 +469,15 @@ const parse_macro = function(tokens, state) {
         state,
         `unexpected token ${cur_token.type.toString()}`
       );
-      return new AstNode();
+      return new AstNode(
+        'plaintext',
+        IN_OUTPUT_ERROR_PREFIX + 'unexpected token',
+        cur_token.line,
+        cur_token.column
+      );
     }
     state.i += 1;
   }
-}
-
-const ast_to_output = function(ast) {
-  return 'asdf';
 }
 
 /**
@@ -453,16 +488,17 @@ const ast_to_output = function(ast) {
 const convert = function(
   input_string,
   options,
-  extra_returns={}
+  extra_returns={},
 ) {
   if (options === undefined) {
     options = {};
   }
-  if (!'show_ast'    in options) { options.show_ast    = false; }
-  if (!'show_input'  in options) { options.show_input  = false; }
-  if (!'show_output' in options) { options.show_output = false; }
-  if (!'show_parse'  in options) { options.show_parse  = false; }
-  if (!'show_tokens' in options) { options.show_tokens = false; }
+  if (!'body_only'     in options) { options.body_only   = false; }
+  if (!'show_ast'      in options) { options.show_ast    = false; }
+  if (!'show_input'    in options) { options.show_input  = false; }
+  if (!'show_output'   in options) { options.show_output = false; }
+  if (!'show_parse'    in options) { options.show_parse  = false; }
+  if (!'show_tokens'   in options) { options.show_tokens = false; }
   if (options.show_input) {
     console.log('input:')
     console.log(util.inspect(input_string));
@@ -489,10 +525,10 @@ const convert = function(
   }
   if (options.show_ast) {
     console.log('ast:');
-    console.log(ast);
+    console.log(JSON.stringify(ast, null, 2));
     console.log();
   }
-  let output = ast_to_output(ast);
+  let output = ast.convert(options);
   if (options.show_output) {
     console.log('output: ');
     console.log(util.inspect(output));
@@ -506,18 +542,24 @@ exports.convert = convert;
 if (require.main === module) {
   let input;
   const encoding = 'utf8';
+  let title;
   if (process.argv.length > 2) {
-    input = fs.readFileSync(process.argv[2], encoding);
+    title = process.argv[2]
+    input = fs.readFileSync(title, encoding);
   } else {
+    title = 'stdin'
     input = fs.readFileSync(0, encoding);
   }
   let extra_returns = {};
   console.log(convert(
     input,
     {
+      body_only: true,
+      title: title,
       show_ast: true,
       show_input: true,
       show_output: true,
+      show_parse: true,
       show_tokens: true,
     },
     extra_returns

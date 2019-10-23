@@ -692,3 +692,13 @@ TODO
 \h3[Macro dump]
 
 The compiler executable will have a \c[--dump-macros] option that will dump all macros, describing all of their arguments and including help strings registered by the macro definition API.
+
+\h3[Internals API]
+
+Tokenized token stream and AST can be obtained as JSON from the API.
+
+Errors can be obtained as JSON from the API.
+
+Everything that you need to write Cirodown tooling, is present in the main API.
+
+All tooling will be merged into one singl repo.

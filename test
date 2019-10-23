@@ -11,20 +11,25 @@ var assert_convert = function(input_string, expected_output) {
     input_string,
     {
       body_only: true,
-      show_ast: true,
-      show_input: true,
-      show_output: true,
-      //show_parse: true,
-      show_tokens: true,
+      show_parse: true,
     },
     extra_returns
   );
-  if (output != expected_output) {
-    console.log('input ' + util.inspect(input_string));
-    console.log('output ' + util.inspect(output));
-    console.log('expect ' + util.inspect(expected_output));
+  if (output !== expected_output || extra_returns.errors.length !== 0) {
+    console.error('tokens:');
+    console.error(JSON.stringify(extra_returns.tokens, null, 2));
+    console.error();
+    console.error('ast:');
+    console.error(JSON.stringify(extra_returns.ast, null, 2));
+    console.error();
+    for (const error of extra_returns.errors) {
+      console.error(error.toString());
+    }
+    console.error('input ' + util.inspect(input_string));
+    console.error('output ' + util.inspect(output));
+    console.error('expect ' + util.inspect(expected_output));
     assert.strictEqual(output, expected_output);
-    assert.strictEqual(extra_returns.fail, false);
+    assert.strictEqual(extra_returns.errors.length, 0);
   }
 }
 

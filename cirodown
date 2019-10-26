@@ -60,6 +60,7 @@ const make_enum = function(arr) {
 const TokenType = make_enum([
   'PLAINTEXT',
   'MACRO_NAME',
+  'PARAGRAPH',
   'POSITIONAL_ARGUMENT_START',
   'POSITIONAL_ARGUMENT_END',
   'NAMED_ARGUMENT_START',
@@ -399,9 +400,7 @@ const tokenize = function(input_string, extra_returns={}) {
         // End of document, do nothing.
       } else if (cur_c === '\n') {
         // Double newline.
-        push_token(TokenType.POSITIONAL_ARGUMENT_END);
-        push_token(TokenType.MACRO_NAME, 'p');
-        push_token(TokenType.POSITIONAL_ARGUMENT_START);
+        push_token(TokenType.PARAGRAPH);
         done = true;
         consume();
       } else {
@@ -499,7 +498,7 @@ const parse_macro = function(state) {
     return new AstNode(macro_name, args, macro_line, macro_column);
   } else if (state.token.type === TokenType.PLAINTEXT) {
     // Non-recursive case.
-    let plaintext_node = new AstNode(
+    let node = new AstNode(
       'plaintext',
       state.token.value,
       state.token.line,
@@ -507,7 +506,17 @@ const parse_macro = function(state) {
     );
     // Consume the PLAINTEXT node out.
     parse_consume(state);
-    return plaintext_node;
+    return node;
+  } else if (state.token.type === TokenType.PARAGRAPH) {
+    let node = new AstNode(
+      'paragraph',
+      state.token.value,
+      state.token.line,
+      state.token.column
+    );
+    // Consume the PLAINTEXT node out.
+    parse_consume(state);
+    return node;
   } else {
     parse_report_error(
       state,
@@ -520,7 +529,7 @@ const parse_macro = function(state) {
       state.token.column
     );
     // Consume past whatever happened to avoid an infinite loop.
-    consume();
+    parse_consume(state);
     return node;
   }
   state.i += 1;
@@ -545,7 +554,10 @@ const convert = function(
     options = {};
   }
   if (!'body_only'   in options) { options.body_only   = false; }
+  // Parse internals.
   if (!'show_parse'  in options) { options.show_parse  = false; }
+  // Show tokens before parse, in case parse blows up.
+  // Tokens are also returned on exra_returns.
   if (!'show_tokens' in options) { options.show_tokens = false; }
   extra_returns.errors = [];
   let sub_extra_returns;

@@ -5,14 +5,14 @@ const util = require('util');
 
 const cirodown = require('./cirodown')
 
-var assert_convert = function(input_string, expected_output) {
+const assert_convert = function(input_string, expected_output) {
   let extra_returns = {fail: false};
   let output = cirodown.convert(
     input_string,
     {
       body_only: true,
-      show_tokens: true,
-      show_parse: true,
+      //show_tokens: true,
+      //show_parse: true,
     },
     extra_returns
   );
@@ -35,20 +35,26 @@ var assert_convert = function(input_string, expected_output) {
 }
 
 // Paragraphs.
-assert_convert('ab\n', '<p>ab</p>\n')
-assert_convert('p1\n\np2\n', '<p>p1</p>\n<p>p2</p>\n')
+it('one paragraph', ()=>{ assert_convert('ab\n', '<p>ab</p>\n'); });
+it('two paragraphs', ()=>{ assert_convert('p1\n\np2\n', '<p>p1</p>\n<p>p2</p>\n'); });
 
 // Escapes.
-assert_convert('a\\\\b\n', '<p>a\\b</p>\n')
-assert_convert('a\\[b\n', '<p>a[b</p>\n')
-assert_convert('a\\]b\n', '<p>a]b</p>\n')
-assert_convert('a\\{b\n', '<p>a{b</p>\n')
-assert_convert('a\\}b\n', '<p>a}b</p>\n')
+it('escape backslash', ()=>{ assert_convert('a\\\\b\n', '<p>a\\b</p>\n') });
+it('escape left square bracket', ()=>{ assert_convert('a\\[b\n', '<p>a[b</p>\n') });
+it('escape right square bracket', ()=>{ assert_convert('a\\]b\n', '<p>a]b</p>\n') });
+it('escape left curly brace', ()=>{ assert_convert('a\\{b\n', '<p>a{b</p>\n') });
+it('escape right curly brace', ()=>{ assert_convert('a\\}b\n', '<p>a}b</p>\n') });
 
 // Links.
-assert_convert('a \\a[http://example.com][example link] b\n', '<p>a <a href="http://example.com">example link</a> b</p>\n')
-assert_convert('a \\a[http://example.com][] b\n', '<p>a <a href="http://example.com">http://example.com</a> b</p>\n')
-assert_convert(
+it('link', ()=>{ assert_convert(
+  'a \\a[http://example.com][example link] b\n',
+  '<p>a <a href="http://example.com">example link</a> b</p>\n')
+});
+it('link auto', ()=>{ assert_convert(
+  'a \\a[http://example.com][] b\n',
+  '<p>a <a href="http://example.com">http://example.com</a> b</p>\n')
+});
+it('link with multiple paragraphs', ()=>{ assert_convert(
   '\\a[http://example.com][Multiple\n\nparagraphs]',
   '<p><a href="http://example.com"><p>Multiple</p>\n<p>paragraphs</p></a></p>\n'
-)
+)});

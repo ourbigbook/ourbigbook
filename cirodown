@@ -24,9 +24,11 @@ const AstNode = class {
     this.column = column;
   }
 
-  convert(options) {
-    let macro = macros[this.macro_name];
-    return macro.convert(this.args, options);
+  convert(options, extra_returns={}) {
+    if (!('errors' in extra_returns)) {
+      extra_returns.errors = [];
+    }
+    return macros[this.macro_name].convert(this.args, options);
   }
 
   toJSON() {
@@ -85,6 +87,7 @@ const TokenType = make_enum([
 ]);
 
 const AstType = make_enum([
+  'ERROR',
   'MACRO',
   'PLAINTEXT',
   'PARAGRAPH',
@@ -120,6 +123,7 @@ const Argument = class {
    */
   constructor(options) {
     this.name = options.name;
+    this.named_only = false;
   }
 }
 
@@ -159,16 +163,66 @@ const array_equals = function(arr1, arr2) {
   return true;
 }
 
-// Convert a list of arguments and join them up.
-const convert_arg = function(args) {
+/**
+ * Convert a list of arguments and join them up.
+ *
+ * @param {List[AstNode]} arg
+ */
+const convert_arg = function(arg) {
   let converted_arg = '';
-  for (const macro of args) {
-    converted_arg += macro.convert()
+  for (const ast_node of arg) {
+    converted_arg += ast_node.convert()
   }
   return converted_arg;
 }
 
 let macro_list = [
+  new Macro(
+    'a',
+    [
+      new Argument({
+        name: 'href',
+      }),
+      new Argument({
+        name: 'content',
+      }),
+    ],
+    function(args, options) {
+      if ((!('content' in args)) || array_equals(args.content, [])) {
+        content = args.href;
+      } else {
+        content = args.content;
+      }
+      return `<a href="${convert_arg(args.href)}">${convert_arg(content)}</a>`
+    }
+  ),
+  new Macro(
+    'h',
+    [
+      new Argument({
+        name: 'level',
+      }),
+      new Argument({
+        name: 'content',
+      }),
+      new Argument({
+        name: 'id',
+      }),
+    ],
+    function(args, options) {
+      let content = convert_arg(args.content);
+      let id;
+      if ('id' in args) {
+        id = convert_arg(args.id);
+      } else {
+        // TODO correct unicode aware algorithm.
+        //let content_chars = content
+        id = content.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
+      }
+      let level = convert_arg(args.level);
+      return `<h${level} id="${id}">${content}</h${level}>\n`
+    }
+  ),
   new Macro(
     'p',
     [
@@ -181,22 +235,15 @@ let macro_list = [
     }
   ),
   new Macro(
-    'a',
+    'p_implicit',
     [
-      new Argument({
-        name: 'href',
-      }),
       new Argument({
         name: 'content',
       }),
     ],
     function(args, options) {
-      if (array_equals(args.content, [])) {
-        content = args.href;
-      } else {
-        content = args.content;
-      }
-      return `<a href="${convert_arg(args.href)}">${convert_arg(content)}</a>`
+      //if (args.content[])
+      return `<p>${convert_arg(args.content)}</p>\n`
     }
   ),
   new Macro(
@@ -221,7 +268,7 @@ let macro_list = [
       }),
     ],
     function(args, options) {
-      if (!'title' in args) {
+      if (!('title' in args)) {
         if ('title' in options) {
           title = options['title'];
         } else {
@@ -350,7 +397,7 @@ const tokenize = function(input_string, extra_returns={}) {
   }
 
   const consume_optional_newline = function() {
-    if (!is_end() && cur_c === '\n') {
+    if (!is_end() && cur_c === '\n' && peek() !== '\n') {
       consume();
     }
   }
@@ -538,18 +585,31 @@ const parse_macro = function(state) {
     let macro_name = state.token.value;
     let macro_line = state.token.line;
     let macro_column = state.token.column;
-    let macro = macros[macro_name];
     let arg_count = 0;
     let args = {};
+    let macro;
+    let macro_type;
+    const unknown_macro_message = `unknown macro name: ${macro_name}\n`;
+    if (macro_name in macros) {
+      macro = macros[macro_name];
+      macro_type = AstType.MACRO;
+    } else {
+      macro_type = AstType.ERROR;
+      parse_report_error(state, unknown_macro_message);
+    }
     // Consume the MACRO_NAME token out.
     parse_consume(state);
     while (
       state.token.type === TokenType.POSITIONAL_ARGUMENT_START ||
       state.token.type === TokenType.NAMED_ARGUMENT_START
     ) {
-      let arg;
+      let arg_name;
       if (state.token.type === TokenType.POSITIONAL_ARGUMENT_START) {
-        arg = macro.index_to_arg[arg_count];
+        if (macro_type === AstType.ERROR) {
+          arg_name = arg_count.toString();
+        } else {
+          arg_name = macro.index_to_arg[arg_count].name;
+        }
       } else {
         //arg = macro.index_to_arg[parse_consume(state)];
       }
@@ -568,12 +628,22 @@ const parse_macro = function(state) {
         parse_report_error(state,
           `expected a closing ${END_POSITIONAL_ARGUMENT_CHAR} found ${state.token.type.toString()}`);
       }
-      args[arg.name] = arg_children;
+      args[arg_name] = arg_children;
       arg_count += 1;
       // Consume the *_ARGUMENT_END token out.
       parse_consume(state);
     }
-    return new AstNode(AstType.MACRO, macro_name, args, macro_line, macro_column);
+    if (macro_type === AstType.ERROR) {
+      return new AstNode(
+        macro_type,
+        'plaintext',
+        IN_OUTPUT_ERROR_PREFIX + unknown_macro_message,
+        state.token.line,
+        state.token.column
+      );
+    } else {
+      return new AstNode(macro_type, macro_name, args, macro_line, macro_column);
+    }
   } else if (state.token.type === TokenType.PLAINTEXT) {
     // Non-recursive case.
     let node = new AstNode(
@@ -605,7 +675,7 @@ const parse_macro = function(state) {
     let node = new AstNode(
       AstType.PLAINTEXT,
       'plaintext',
-      IN_OUTPUT_ERROR_PREFIX + 'unexpected token',
+      IN_OUTPUT_ERROR_PREFIX + 'unexpected token\n',
       state.token.line,
       state.token.column
     );
@@ -634,14 +704,14 @@ const convert = function(
   if (options === undefined) {
     options = {};
   }
-  if (!'body_only'   in options) { options.body_only   = false; }
+  if (!('body_only'   in options)) { options.body_only   = false; }
   // Analogous to show_tokens but for the AST.
-  if (!'show_ast' in options) { options.show_ast = false; }
+  if (!('show_ast'    in options)) { options.show_ast = false; }
   // Parse internals.
-  if (!'show_parse'  in options) { options.show_parse  = false; }
+  if (!('show_parse'  in options)) { options.show_parse  = false; }
   // Show tokens before parse, in case parse blows up.
   // Tokens are also returned on exra_returns.
-  if (!'show_tokens' in options) { options.show_tokens = false; }
+  if (!('show_tokens' in options)) { options.show_tokens = false; }
   extra_returns.errors = [];
   let sub_extra_returns;
   sub_extra_returns = {};
@@ -662,7 +732,9 @@ const convert = function(
   }
   extra_returns.ast = ast;
   extra_returns.errors.push(...sub_extra_returns.errors);
-  output = ast.convert(options)
+  sub_extra_returns = {};
+  output = ast.convert(options, sub_extra_returns);
+  extra_returns.errors.push(...sub_extra_returns.errors);
   if (output[output.length - 1] !== '\n') {
     output += '\n';
   }
@@ -693,12 +765,12 @@ if (require.main === module) {
     extra_returns
   );
   console.log(output);
-  if (true) {
+  if (false) {
     console.error('tokens:');
     console.error(JSON.stringify(extra_returns.tokens, null, 2));
     console.error();
   }
-  if (true) {
+  if (false) {
     console.error('ast:');
     console.error(JSON.stringify(extra_returns.ast, null, 2));
     console.error();

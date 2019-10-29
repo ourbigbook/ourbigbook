@@ -3,7 +3,7 @@
 const fs = require('fs');
 const util = require('util');
 
-const yargs = require('yargs')
+const yargs = require('commander')
 
 const AstNode = class {
   /**
@@ -286,7 +286,10 @@ let macro_list = [
       }),
     ],
     function(args, options) {
-      if (!('title' in args)) {
+      let title;
+      if ('title' in args) {
+        title = args.title;
+      } else {
         if ('title' in options) {
           title = options['title'];
         } else {
@@ -296,15 +299,16 @@ let macro_list = [
             // TODO report error with exit status.
           }
         }
-        args.title = new AstNode(AstType.PLAINTEXT, 'plaintext', title, 1, 1);
+        title = [new AstNode(AstType.PLAINTEXT, 'plaintext', title, 1, 1)];
       }
+      debugger;
       let ret = '';
       if (!options.body_only) {
         ret += `<!doctype html>
 <html lang=en>
 <head>
 <meta charset=utf-8>
-<title>${convert_arg(args.title)}</title>
+<title>${convert_arg(title)}</title>
 <body>
 `
       }
@@ -730,12 +734,8 @@ const convert = function(
     options = {};
   }
   if (!('body_only'   in options)) { options.body_only   = false; }
-  // Analogous to show_tokens but for the AST.
   if (!('show_ast'    in options)) { options.show_ast = false; }
-  // Parse internals.
   if (!('show_parse'  in options)) { options.show_parse  = false; }
-  // Show tokens before parse, in case parse blows up.
-  // Tokens are also returned on exra_returns.
   if (!('show_tokens' in options)) { options.show_tokens = false; }
   extra_returns.errors = [];
   let sub_extra_returns;
@@ -770,50 +770,61 @@ exports.convert = convert;
 
 if (require.main === module) {
   // CLI options.
-  yargs.option('show-ast', {
-    default: false,
-    type: 'boolean',
+  const program = require('commander');
+  program.option('--body-only', 'output only the content inside the HTLM body element', false);
+  program.option('--show-ast', 'print the AST to stderr');
+  program.option(
+    '--show-ast-inside',
+    'print the AST to stderr from inside convert before it returns. ' +
+      'Useful to debug the program if conversion blow up on the next stages.'
+  );
+  program.option('--show-parse', 'print parsing internals to stderr');
+  program.option('--show-tokens', 'print the token stream to stderr');
+  program.option(
+    '--show-tokens-inside',
+    'print the token stream to stderr from inside convert before it returns. ' +
+      'Useful to debug the program if conversion blow up on the next stages.'
+  );
+  let inputPath;
+  program.arguments(
+    '[input_path]',
+    undefined,
+    'Input path. If not given, read from stdin.',
+  ).action(function (input_path) {
+    inputPath = input_path;
   });
-  yargs.option('show-tokens', {
-    default: false,
-    type: 'boolean',
-  });
-  yargs.help('h');
-  yargs.alias('h', 'help');
-  yargs.positional('input_path', {
-    description: 'Input path. If not given, read from stdin.',
-    type: 'string'
-  });
-  argv = yargs.argv;
+  program.parse(process.argv);
 
   // Action.
   const encoding = 'utf8';
   let input;
   let title;
-  if (argv.input === undefined) {
+  if (inputPath === undefined) {
     title = 'stdin';
     input = fs.readFileSync(0, encoding);
   } else {
-    title = argv.input;
-    input = fs.readFileSync(argv.input_path, encoding);
+    title = inputPath;
+    input = fs.readFileSync(inputPath, encoding);
   }
   let extra_returns = {};
   let output = convert(
     input,
     {
-      //body_only: true,
+      body_only: program.bodyOnly,
+      show_ast: program.showAstInside,
+      show_parse: program.showParse,
+      show_tokens: program.showTokensInside,
       title: title,
-      //show_parse: true,
     },
     extra_returns
   );
   console.log(output);
-  if (argv.show_tokens) {
+  if (program.showTokens) {
     console.error('tokens:');
     console.error(JSON.stringify(extra_returns.tokens, null, 2));
     console.error();
   }
-  if (argv.show_ast) {
+  if (program.showAst) {
     console.error('ast:');
     console.error(JSON.stringify(extra_returns.ast, null, 2));
     console.error();

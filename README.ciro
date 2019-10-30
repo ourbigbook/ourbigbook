@@ -816,9 +816,11 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \h[3][TODO]
 
-\l[literal arguments]
+\l[HTML escapes]
 \l[named arguments]
-\l[output argument descrition with some CLI help flag]
+\l[math]
+\l[LaTeX output]
+\l[output argument description with some CLI help flag]
 \l[pass CLIs to test command to enable token and ast logging]
 
 \h[3][Related projects]

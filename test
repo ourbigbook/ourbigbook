@@ -47,6 +47,26 @@ it('escape right square bracket', ()=>{assert_convert('a\\]b\n',  'a]b\n')});
 it('escape left curly brace',     ()=>{assert_convert('a\\{b\n',  'a{b\n')});
 it('escape right curly brace',    ()=>{assert_convert('a\\}b\n',  'a}b\n')});
 
+// Literal arguments.
+it('literal argument code inline', ()=>{assert_convert('\\c[[\\ab[cd]{ef}]]\n', '<code>\\ab[cd]{ef}</code>\n')});
+it('literal argument code block', ()=>{assert_convert(
+  `a
+
+\\C[[
+\\[]{}
+\\[]{}
+]]
+
+d
+`,
+  `<p>a</p>
+<pre><code>\\[]{}
+\\[]{}
+</code></pre>
+<p>d</p>
+`
+)});
+
 // Links.
 it('link', ()=>{assert_convert(
   'a \\a[http://example.com][example link] b\n',
@@ -104,4 +124,9 @@ c
 <p>d</p>
 `
 )});
-//it('code not block', ()=>{assert_convert(
+
+// Errors. Check that they return gracefully
+// rather than blowing up an exception.
+// TODO
+//it('unknown macro', ()=>{assert_error('\\reserved_undefined')}
+//it('unknown macro argument', ()=>{assert_convert('\\c{reserved_undefined=abc}')}

@@ -52,7 +52,7 @@ The language is designed to be philosophically isomorphic to HTML to:
 
 More precisely:
 
-\l[macro names map to tag names, e.g.: \c[\a] to \c[<a]]
+\l[macro names map to tag names, e.g.: \c[[\a]] to \c[<a]]
 \l[
   one of the arguments of macros, maps to the content of the HTML element, and the others map to attributes.
 

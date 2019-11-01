@@ -5,18 +5,17 @@ const util = require('util');
 
 const cirodown = require('./cirodown')
 
+const convert_opts = {
+  body_only: true,
+  show_ast: true,
+  //show_parse: true,
+  //show_tokens: true,
+  //show_tokenize: true,
+};
+
 const assert_convert = function(input_string, expected_output) {
   let extra_returns = {fail: false};
-  let output = cirodown.convert(
-    input_string,
-    {
-      body_only: true,
-      //show_ast: true,
-      //show_tokens: true,
-      //show_parse: true,
-    },
-    extra_returns
-  );
+  let output = cirodown.convert(input_string, convert_opts, extra_returns);
   if (output !== expected_output || extra_returns.errors.length !== 0) {
     console.error('tokens:');
     console.error(JSON.stringify(extra_returns.tokens, null, 2));
@@ -35,6 +34,15 @@ const assert_convert = function(input_string, expected_output) {
   }
 }
 
+const assert_error = function(input_string, line, column) {
+  let extra_returns = {fail: false};
+  let output = cirodown.convert(input_string, convert_opts, extra_returns);
+  assert.ok(extra_returns.errors.length >= 1);
+  let error = extra_returns.errors.length[0];
+  assert.strictEqual(error.line, line);
+  assert.strictEqual(error.column, column);
+}
+
 // Paragraphs.
 it('one paragraph', ()=>{assert_convert('\\p[ab]\n', '<p>ab</p>\n');});
 it('two paragraphs', ()=>{assert_convert('p1\n\np2\n', '<p>p1</p>\n<p>p2</p>\n');});
@@ -46,6 +54,16 @@ it('escape left square bracket',  ()=>{assert_convert('a\\[b\n',  'a[b\n')});
 it('escape right square bracket', ()=>{assert_convert('a\\]b\n',  'a]b\n')});
 it('escape left curly brace',     ()=>{assert_convert('a\\{b\n',  'a{b\n')});
 it('escape right curly brace',    ()=>{assert_convert('a\\}b\n',  'a}b\n')});
+
+// HTML Escapes.
+it('html escapes', ()=>{assert_convert(
+  '\\a[ab&<>"\'cd][ef&<>"\'gh]\n',
+  '<a href="ab&amp;&lt;&gt;&quot;&#039;cd">ef&amp;&lt;&gt;"\'gh</a>\n'
+)});
+
+// Named arguments.
+it('p with id before', ()=>{assert_convert('\\p{id=ab}[cd]\n', '<p id="ab">cd</p>\n')});
+it('p with id after', ()=>{assert_convert('\\p[cd]{id=ab}\n', '<p id="ab">cd</p>\n')});
 
 // Literal arguments.
 it('literal argument code inline', ()=>{assert_convert('\\c[[\\ab[cd]{ef}]]\n', '<code>\\ab[cd]{ef}</code>\n')});
@@ -102,7 +120,7 @@ My paragraph 2.
 `
 )});
 
-// Code..
+// Code.
 it('code inline', ()=>{assert_convert(
   'a \\c[b c] d\n',
   'a <code>b c</code> d\n'
@@ -130,3 +148,4 @@ c
 // TODO
 //it('unknown macro', ()=>{assert_error('\\reserved_undefined')}
 //it('unknown macro argument', ()=>{assert_convert('\\c{reserved_undefined=abc}')}
+it('named argument without =', ()=>{assert_error('\\p{id ab}[cd]', 1, 6)});

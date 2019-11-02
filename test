@@ -70,7 +70,10 @@ it('p with id before', ()=>{assert_convert('\\p{id=ab}[cd]\n', '<p id="ab">cd</p
 it('p with id after', ()=>{assert_convert('\\p[cd]{id=ab}\n', '<p id="ab">cd</p>\n')});
 
 // Literal arguments.
-it('literal argument code inline', ()=>{assert_convert('\\c[[\\ab[cd]{ef}]]\n', '<code>\\ab[cd]{ef}</code>\n')});
+it('literal argument code inline', ()=>{assert_convert(
+  '\\c[[\\ab[cd]{ef}]]\n',
+  '<code>\\ab[cd]{ef}</code>\n'
+)});
 it('literal argument code block', ()=>{assert_convert(
   `a
 
@@ -87,6 +90,46 @@ d
 </code></pre>
 <p>d</p>
 `
+)});
+it("non-literal argument leading newline doesn't get removed", ()=>{assert_convert(
+  `\\p[
+a
+b
+]
+`,
+  `<p>
+a
+b
+</p>
+`
+)});
+it('literal argument leading newline gets removed', ()=>{assert_convert(
+  `\\p[[
+a
+b
+]]
+`,
+  `<p>a
+b
+</p>
+`
+)});
+it('literal argument leading newline gets removed but not second', ()=>{assert_convert(
+  `\\p[[
+
+a
+b
+]]
+`,
+  `<p>
+a
+b
+</p>
+`
+)});
+it('literal agument escape trailing close', ()=>{assert_convert(
+  '\c[[]]]\n',
+  '<code>]</code>\n'
 )});
 
 // Links.
@@ -129,13 +172,13 @@ it('code inline', ()=>{assert_convert(
   'a \\c[b c] d\n',
   'a <code>b c</code> d\n'
 )});
-it('code block', ()=>{assert_convert(
+it('code block simple', ()=>{assert_convert(
   `a
 
-\\C[
+\\C[[
 b
 c
-]
+]]
 
 d
 `,

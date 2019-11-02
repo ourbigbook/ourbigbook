@@ -104,7 +104,7 @@ it('link with multiple paragraphs', ()=>{assert_convert(
 )});
 
 // Headers.
-it('header', ()=>{assert_convert(
+it('header simple', ()=>{assert_convert(
   '\\h[1][My header]\n',
   '<h1 id="my-header">My header</h1>\n'
 )});

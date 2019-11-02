@@ -61,6 +61,10 @@ it('html escapes', ()=>{assert_convert(
   '<a href="ab&amp;&lt;&gt;&quot;&#039;cd">ef&amp;&lt;&gt;"\'gh</a>\n'
 )});
 
+// Positional arguments.
+it('p with no content argument', ()=>{assert_convert('\\p\n', '<p></p>\n')});
+it('p with empty content argument', ()=>{assert_convert('\\p[]\n', '<p></p>\n')});
+
 // Named arguments.
 it('p with id before', ()=>{assert_convert('\\p{id=ab}[cd]\n', '<p id="ab">cd</p>\n')});
 it('p with id after', ()=>{assert_convert('\\p[cd]{id=ab}\n', '<p id="ab">cd</p>\n')});
@@ -86,7 +90,7 @@ d
 )});
 
 // Links.
-it('link', ()=>{assert_convert(
+it('link simple', ()=>{assert_convert(
   'a \\a[http://example.com][example link] b\n',
   'a <a href="http://example.com">example link</a> b\n'
 )});
@@ -147,7 +151,6 @@ c
 // rather than blowing up an exception.
 // TODO
 it('unknown macro', ()=>{assert_error('\\reserved_undefined', 1, 2)});
-it('missing positional argument', ()=>{assert_convert('\\p')});
 it('too many positional arguments', ()=>{assert_error('\\p[ab][cd]', 1, 7)});
 it('unknown named macro argument', ()=>{assert_error('\\c{reserved_undefined=abc}[]', 1, 4)});
 it('named argument without =', ()=>{assert_error('\\p{id ab}[cd]', 1, 6)});

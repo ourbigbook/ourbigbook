@@ -800,14 +800,24 @@ const parse_macro = function(state) {
     ) {
       let arg_name;
       let open_type = state.token.type;
+      let open_argument_line = state.token.line;
+      let open_argument_column = state.token.column;
       // Consume the *_ARGUMENT_START token out.
       parse_consume(state);
       if (open_type === TokenType.POSITIONAL_ARGUMENT_START) {
         if (macro_type === AstType.ERROR) {
           arg_name = positional_arg_count.toString();
         } else {
-          // TODO check if argument exists, and handle error otherwise.
-          arg_name = macro.positional_args[positional_arg_count].name;
+          if (positional_arg_count >= macro.positional_args.length) {
+            parse_report_error(state,
+              `unknown named macro argument "${arg_name}" of macro "${macro_name}"\n`,
+              open_argument_line,
+              open_argument_column
+            );
+            arg_name = positional_arg_count.toString();
+          } else {
+            arg_name = macro.positional_args[positional_arg_count].name;
+          }
           positional_arg_count += 1;
         }
       } else {

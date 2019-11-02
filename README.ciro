@@ -101,29 +101,7 @@ Equivalently however, you can use an explicit \c[[\p]] macros as well, which is 
 
 Paragraphs are created automatically inside \x[macro-argument-syntax][macro argument] whenever a double newline appears.
 
-The paragraphs start at the beginning of the parent element of the double newlines, and end at the end of it.
-
-For example:
-
-\C[[
-\somemacro[a b c d][c
-
-d
-
-e]
-]]
-
-would parse as:
-
-\C[[
-\somemacro[a b c][
-\p[d]
-\p[e]
-\p[f]
-]
-]]
-
-Note how the second argument has had newlines added because it contains
+Due to their insane syntax, paragraphs have to do some magic to determine where they start and end. TODO: mention the rule that paragraphs wrap only phrasing content, link to: \x[help-macros].
 
 \h[2][Links \c[[\a]]]
 {id=links}
@@ -518,6 +496,31 @@ we have:
   The first one has name \c[id] and the mandatory separator \c[=], followed by the value \c[asdf qwer].
 ]
 
+You can determine if a macro is positional or named by using \x[help-macros]. Its output contains something like:
+
+\c[[
+  "h": {
+    "name": "h",
+    "positional_args": [
+      {
+        "name": "level"
+      },
+      {
+        "name": "content"
+      }
+    ],
+    "named_args": {
+      "id": {
+        "name": "id"
+      }
+      "id_scope": {
+        "name": "id_scope"
+      }
+    },
+]]
+
+and so we see that `level` and `content` are positional arguments, and `id` and `id_scope` are named arguments.
+
 Generally, positional arguments are few (otherwise it would be hard to know which is which is which), and are almost always used for a given element so tha they save us from typing the name too many times.
 
 The order of positional arguments must of course be fixed, but named arguments can go anywhere. We can even mix positional and named arguments however we want, although this is not advised for clarity.
@@ -735,6 +738,15 @@ I'm bad because I have negative indentation.
 
 \h[2][Tooling]
 
+\h[3][\c[--help-macros]]
+{id=help-macros}
+
+You can get an overview of all macros in JSON format with:
+
+\c[[
+./cirodown --help-macros
+]]
+
 \h[3][Multifile and server]
 
 In addition to being a single input single output file conversion tool, our implementation will completely overtake the functions currently done by of Jekyll or other static website generators.
@@ -829,7 +841,8 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \h[3][TODO]
 
-\l[output argument description with some CLI help flag]
+\l[toc]
+\l[xrefs]
 \l[math]
 \l[LaTeX output]
 \l[pass CLIs to test command to enable token and ast logging]

@@ -237,13 +237,6 @@ const array_equals = function(arr1, arr2) {
   return true;
 }
 
-// https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties/17781518#17781518
-const object_subset = function(source_object, keys) {
-  const new_object = {};
-  keys.forEach((obj, key) => { new_object[key] = source_object[key]; });
-  return new_object;
-}
-
 /**
  * Convert a list of arguments and join them up.
  *
@@ -439,7 +432,7 @@ let macro_list = [
           text_title = options['title'];
         } else {
           let message = 'missing title';
-          text_title = IN_OUTPUT_ERROR_PREFIX + message;
+          text_title = in_output_error(message);
           if (!options.body_only) {
             extra_returns.errors.push(new ErrorMessage(message, line, column));
           }
@@ -492,7 +485,6 @@ for (const macro of macro_list) {
   macros[macro.name] = macro;
 }
 
-const IN_OUTPUT_ERROR_PREFIX = 'CIRODOWN_ERROR: ';
 const ESCAPE_CHAR = '\\';
 const START_POSITIONAL_ARGUMENT_CHAR = '[';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';
@@ -517,6 +509,17 @@ const char_is_alphanumeric = function(c) {
     // a-z
     (code > 96 && code < 123)
   )
+}
+
+const in_output_error = function(msg) {
+  return `[CIRODOWN_ERROR: ${msg}]`
+}
+
+// https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties/17781518#17781518
+const object_subset = function(source_object, keys) {
+  const new_object = {};
+  keys.forEach((obj, key) => { new_object[key] = source_object[key]; });
+  return new_object;
 }
 
 // Valid macro name / argument characters.
@@ -926,7 +929,7 @@ const parse_macro = function(state) {
     let args = {};
     let macro;
     let macro_type;
-    const unknown_macro_message = `unknown macro name: ${macro_name}`;
+    const unknown_macro_message = `unknown macro name: "${macro_name}"`;
     if (macro_name in macros) {
       macro = macros[macro_name];
       macro_type = AstType.MACRO;
@@ -997,7 +1000,7 @@ const parse_macro = function(state) {
       return new AstNode(
         macro_type,
         'plaintext',
-        IN_OUTPUT_ERROR_PREFIX + unknown_macro_message,
+        in_output_error(unknown_macro_message),
         state.token.line,
         state.token.column
       );
@@ -1035,7 +1038,7 @@ const parse_macro = function(state) {
     let node = new AstNode(
       AstType.PLAINTEXT,
       'plaintext',
-      IN_OUTPUT_ERROR_PREFIX + 'unexpected token\n',
+      in_output_error('unexpected token'),
       state.token.line,
       state.token.column
     );

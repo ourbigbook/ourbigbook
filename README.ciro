@@ -445,7 +445,7 @@ of chars that you would need to escape:
 A paragraph.
 ]]]
 
-Note that the initial newline is skipped automatically in code blocks, just as for any other element, due to: \x[argument-leading-and-trailing-newline-removal], so you don't have to worry about it.
+Note that the initial newline is skipped automatically in code blocks, just as for any other element, due to: \x[argument-leading-newline-removal], so you don't have to worry about it.
 
 The capital vs lower case theme is also used in other elements, for example \x[math].
 
@@ -597,9 +597,54 @@ This allows to greatly improve the readability of long argument lists by having 
 
 TODO
 
-\h[5][Literal argument leading newline removal]
+\h[5][Escape characters]
 
-If the very first character of a literal argument is a newline, then that character is ignored.
+For non-literal macro arguments, the rule is simple, you must escape all of:
+
+\l[\c[\\]]
+\l[\c[\{]]
+\l[\c[\]]]
+
+For literal macro arguments there are two choices.
+
+For longer arguments, especially multiline, the best approach is usually to use the following heredoc-like syntax.
+
+By opening a macro argument with multiple square brackets \c[\{], only the same number of square brackets will be used for closing that opening.
+
+For example, a multiline code block with double open and double close square brackets can be enclosed in triple square brackets:
+
+\c[[[
+A line.
+[[
+Another one.
+]]
+And another one.
+]]]
+
+The same works for inline code: \c[[Cirodown links look like this: \c[http://example.com][Example.]]].
+
+Within literal blocks, you only need to escape constructs that would lead to ambiguity on where the block ends, namely:
+
+\l[
+  if a literal starts with open square brackets \c[\[]], then that must be escaped, otherwise it will get interpreted as a heredoc, e.g.:
+
+  \c[[
+  \c[\[ This code block starts with a literal open square bracket]
+  ]]
+
+  Note that this only ever happens for arguments that don't start with a newline considering \x[argument-leading-trailing-newline-removal].
+]
+\l[
+  if a literal block ends
+
+  \c[\c[\]]
+]
+
+\c[\[ first char was an open brace]
+
+\h[4][Argument leading newline removal]
+
+If the very first character of an argument is a newline, then that character is ignored.
 
 For example:
 
@@ -643,51 +688,6 @@ b
 
 ]]
 ]]]
-
-\h[5][Escape characters]
-
-For non-literal macro arguments, the rule is simple, you must escape all of:
-
-\l[\c[\\]]
-\l[\c[\{]]
-\l[\c[\]]]
-
-For literal macro arguments there are two choices.
-
-For longer arguments, especially multiline, the best approach is usually to use the following heredoc-like syntax.
-
-By opening a macro argument with multiple square brackets \c[\{], only the same number of square brackets will be used for closing that opening.
-
-For example, a multiline code block with double open and double close square brackets can be enclosed in triple square brackets:
-
-\c[[[
-A line.
-[[
-Another one.
-]]
-And another one.
-]]]
-
-The same works for inline code: \c[[Cirodown links look like this: \c[http://example.com][Example.]]].
-
-Within literal blocks, you only need to escape constructs that would lead to ambiguity on where the block ends, namely:
-
-\l[
-  if a literal starts with open square brackets \c[\[]], then that must be escaped, otherwise it will get interpreted as a heredoc, e.g.:
-
-  \c[[
-  \c[\[ This code block starts with a literal open square bracket]
-  ]]
-
-  Note that this only ever happens for arguments that don't start with a newline considering \x[Argument leading and trailing newline removal].
-]
-\l[
-  if a literal block ends
-
-  \c[\c[\]]
-]
-
-\c[\[ first char was an open brace]
 
 \h[4][Argument automatic indentation removal]
 

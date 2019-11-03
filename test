@@ -91,14 +91,13 @@ d
 <p>d</p>
 `
 )});
-it("non-literal argument leading newline doesn't get removed", ()=>{assert_convert(
+it("non-literal argument leading newline gets removed", ()=>{assert_convert(
   `\\p[
 a
 b
 ]
 `,
-  `<p>
-a
+  `<p>a
 b
 </p>
 `

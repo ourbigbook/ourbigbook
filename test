@@ -48,6 +48,23 @@ it('one paragraph', ()=>{assert_convert('\\p[ab]\n', '<p>ab</p>\n');});
 it('two paragraphs', ()=>{assert_convert('p1\n\np2\n', '<p>p1</p>\n<p>p2</p>\n');});
 it('three paragraphs', ()=>{assert_convert('p1\n\np2\n\np3\n', '<p>p1</p>\n<p>p2</p>\n<p>p3</p>\n');});
 
+// List.
+it('l with implicit ul', ()=>{assert_convert(
+  `ab
+
+\\l[cd]
+\\l[ef]
+
+gh`,
+  `<p>ab</p>
+<ul>
+<li>cd</li>
+<li>ef</li>
+</ul>
+<p>gh</p>
+`
+);});
+
 // Escapes.
 it('escape backslash',            ()=>{assert_convert('a\\\\b\n', 'a\\b\n')});
 it('escape left square bracket',  ()=>{assert_convert('a\\[b\n',  'a[b\n')});

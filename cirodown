@@ -8,8 +8,8 @@ const yargs = require('commander')
 const AstNode = class {
   /**
    * @param {AstType} node_type -
-   * @param {String} macro_name - if node_type == AstType.PLAINTEXT: fixed to 'plaintext'
-   *                              elif node_type == AstType.PARAGRAPH: fixed to undefined
+   * @param {String} macro_name - if node_type === AstType.PLAINTEXT: fixed to 'plaintext'
+   *                              elif node_type === AstType.PARAGRAPH: fixed to undefined
    *                              else: arbitrary regular macro
    * @param {Object[String, Array[AstNode]|String} args
    *        If type is macro, the Object with child args.
@@ -195,7 +195,7 @@ const Macro = class {
   }
 
   check_name(name) {
-    if (name == Macro.id_macro_name) {
+    if (name === Macro.id_macro_name) {
       throw new Error(`name "${Macro.id_macro_name}" is reserved and automatically added`);
     }
     if (name in this.name_to_arg) {
@@ -514,6 +514,87 @@ const Tokenizer = class {
     this.show_tokenize = show_tokenize;
   }
 
+  // Advance the current character and set cur_c to the next one.
+  //
+  // Maintain the newline count up to date for debug messages.
+  //
+  // The current index must only be incremented through this function
+  // and never directly.
+  consume() {
+    this.log_debug('consume');
+    this.log_debug('this.i: ' + this.i);
+    this.log_debug('this.cur_c: ' + this.cur_c);
+    this.log_debug();
+    if (this.chars[this.i] === '\n') {
+      this.line += 1;
+      this.column = 1;
+    } else {
+      this.column += 1;
+    }
+    this.i += 1;
+    if (this.i >= this.chars.length) {
+      this.cur_c = undefined;
+      return false;
+    }
+    this.cur_c = this.chars[this.i];
+    return true;
+  }
+
+  consume_plaintext_char() {
+    this.plaintext_append_or_create(this.cur_c);
+  }
+
+  consume_optional_newline(literal) {
+    if (
+      !this.is_end() &&
+      this.cur_c === '\n' &&
+      (literal || this.peek() !== '\n')
+    ) {
+      this.consume();
+    }
+  }
+
+  error(message) {
+    this.extra_returns.errors.push(
+      new ErrorMessage(message, this.line, this.column));
+  }
+
+  is_end() {
+    return this.i === this.chars.length;
+  }
+
+  log_debug(message='') {
+    if (this.show_tokenize) {
+      console.error('tokenize: ' + message);
+    }
+  }
+
+  peek() {
+    return this.chars[this.i + 1];
+  }
+
+  plaintext_append_or_create(s) {
+    let last_token = this.tokens[this.tokens.length - 1];
+    if (last_token.type === TokenType.PLAINTEXT) {
+      last_token.value += s;
+    } else {
+      this.push_token(TokenType.PLAINTEXT, s);
+    }
+    this.consume();
+  }
+
+  push_token(token, value, token_line, token_column) {
+    this.log_debug('push_token');
+    this.log_debug('token: ' + token.toString());
+    this.log_debug('value: ' + value);
+    this.log_debug();
+    if (token_line === undefined)
+      token_line = this.line;
+    if (token_column === undefined)
+      token_column = this.column;
+    this.tokens.push(new Token(token, token_line, token_column, value));
+  }
+
   /**
    * @returns {Array[Token]}
    */
@@ -530,9 +611,10 @@ const Tokenizer = class {
     this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
     while (!this.is_end()) {
       this.log_debug('tokenize loop');
+      this.log_debug('this.i: ' + this.i);
       this.log_debug('this.cur_c: ' + this.cur_c);
       this.log_debug();
-      if (this.cur_c === '\\') {
+      if (this.cur_c === ESCAPE_CHAR) {
         this.consume();
         let start_line = this.line;
         let start_column = this.column;
@@ -565,12 +647,13 @@ const Tokenizer = class {
         }
         // Consume the = sign.
         this.consume();
-        this.consume_optional_newline(true);
-        if (open_length > 1) {
+        if (open_length === 1) {
+          this.consume_optional_newline(true);
+        } else {
           // Literal argument.
           let close_string = closing_char(
             START_NAMED_ARGUMENT_CHAR).repeat(open_length);
-          this.tokenize_plaintext_until_string(close_string);
+          this.tokenize_literal(START_NAMED_ARGUMENT_CHAR, close_string);
           this.push_token(TokenType.NAMED_ARGUMENT_END);
         }
       } else if (this.cur_c === END_NAMED_ARGUMENT_CHAR) {
@@ -583,12 +666,13 @@ const Tokenizer = class {
         let open_length = this.tokenize_func(
           (c)=>{return c === START_POSITIONAL_ARGUMENT_CHAR}
         ).length;
-        this.consume_optional_newline(true);
-        if (open_length > 1) {
+        if (open_length === 1) {
+          this.consume_optional_newline(true);
+        } else {
           // Literal argument.
           let close_string = closing_char(
             START_POSITIONAL_ARGUMENT_CHAR).repeat(open_length);
-          this.tokenize_plaintext_until_string(close_string);
+          this.tokenize_literal(START_POSITIONAL_ARGUMENT_CHAR, close_string);
           this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
         }
       } else if (this.cur_c === END_POSITIONAL_ARGUMENT_CHAR) {
@@ -612,83 +696,13 @@ const Tokenizer = class {
     return this.tokens;
   }
 
-  // Advance the current character and set cur_c to the next one.
-  //
-  // Maintain the newline count up to date for debug messages.
-  //
-  // The current index must only be incremented through this function
-  // and never directly.
-  consume() {
-    if (this.chars[this.i] === '\n') {
-      this.line += 1;
-      this.column = 1;
-    } else {
-      this.column += 1;
-    }
-    this.i += 1;
-    if (this.i >= this.chars.length) {
-      return false;
-    }
-    this.cur_c = this.chars[this.i];
-    return true;
-  }
-
-  consume_plaintext_char() {
-    let last_token = this.tokens[this.tokens.length - 1];
-    if (last_token.type === TokenType.PLAINTEXT) {
-      last_token.value += this.cur_c;
-    } else {
-      this.push_token(TokenType.PLAINTEXT, this.cur_c);
-    }
-    this.consume();
-  }
-
-  consume_optional_newline(literal) {
-    if (
-      !this.is_end() &&
-      this.cur_c === '\n' &&
-      (literal || this.peek() !== '\n')
-    ) {
-      this.consume();
-    }
-  }
-
-  error(message) {
-    this.extra_returns.errors.push(
-      new ErrorMessage(message, this.line, this.column));
-  }
-
-  is_end() {
-    return this.i === this.chars.length;
-  }
-
-  log_debug(message='') {
-    if (this.show_tokenize) {
-      console.error('tokenize: ' + message);
-    }
-  }
-
-  peek() {
-    return this.chars[this.i + 1];
-  }
-
-  push_token(token, value, token_line, token_column) {
-    this.log_debug('push_token');
-    this.log_debug('token: ' + token.toString());
-    this.log_debug('value: ' + value);
-    this.log_debug();
-    if (token_line === undefined)
-      token_line = this.line;
-    if (token_column === undefined)
-      token_column = this.column;
-    this.tokens.push(new Token(token, token_line, token_column, value));
-  }
-
   // Create a token with all consecutive chars that are accepted
   // by the given function.
   tokenize_func(f) {
-    this.log_debug('tokenize func');
+    this.log_debug('tokenize_func');
+    this.log_debug('this.i: ' + this.i);
     this.log_debug('this.cur_c: ' + this.cur_c);
+    this.log_debug('');
     let value = '';
     while (f(this.cur_c)) {
       value += this.cur_c;
@@ -699,12 +713,61 @@ const Tokenizer = class {
     return value;
   }
 
-  tokenize_plaintext_until_string(close_string) {
-    while (this.chars.slice(this.i, this.i + close_string.length).join('') !== close_string) {
-      this.consume_plaintext_char();
+  /**
+   * Start inside the literal argument after the opening,
+   * and consume until its end.
+   *
+   * @returns {boolean} - true if OK, false if EOF unexpected EOF
+   */
+  tokenize_literal(open_char, close_string) {
+    // Remove leading escapes.
+    let i = this.i;
+    while (this.chars[i] === ESCAPE_CHAR) {
+      i++;
+      if (this.is_end())
+        return false;
     }
+    if (this.chars[i] === open_char) {
+      // Skip one of the escape chars if they are followed by an open.
+      this.consume();
+    } else {
+      this.consume_optional_newline(true);
+    }
+
+    // Now consume the following unescaped part.
+    let start_i = this.i;
+    while (
+      this.chars.slice(this.i, this.i + close_string.length).join('')
+      !== close_string
+    ) {
+      if (!this.consume())
+        return false;
+    }
+    // Handle trailing escape.
+    let append;
+    let end_i;
+    if (
+      this.chars[this.i - 1] === ESCAPE_CHAR &&
+      this.chars.slice(this.i + 1, this.i + close_string.length + 1).join('') === close_string
+    ) {
+      // Ignore the trailing backslash.
+      end_i = this.i - 1;
+      // Consume the escaped closing char.
+      this.consume();
+      append = closing_char(open_char);
+    } else {
+      end_i = this.i;
+      append = '';
+    }
+    this.push_token(
+      TokenType.PLAINTEXT,
+      this.chars.slice(start_i, end_i).join('') + append
+    );
+
+    // Skip over the closing string.
     for (let i = 0; i < close_string.length; i++)
       this.consume();
+    return true;
   }
 }
 

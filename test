@@ -68,7 +68,8 @@ assert_convert('l with explicit ul',
 \\l[ef]
 ]
 
-gh`,
+gh
+`,
   `<p>ab</p>
 <ul>
 <li>cd</li>
@@ -83,13 +84,104 @@ assert_convert('l with implicit ul',
 \\l[cd]
 \\l[ef]
 
-gh`,
+gh
+`,
   `<p>ab</p>
 <ul>
 <li>cd</li>
 <li>ef</li>
 </ul>
 <p>gh</p>
+`
+);
+
+// Table.
+assert_convert('tr with explicit table',
+  `ab
+
+\\table[
+\\tr[
+\\th[cd]
+\\th[ef]
+]
+\\tr[
+\\td[00]
+\\td[01]
+]
+\\tr[
+\\td[10]
+\\td[11]
+]
+]
+
+gh
+`,
+  `<p>ab</p>
+<table>
+<tr>
+<th>cd</th>
+<th>ef</th>
+</tr>
+<tr>
+<td>00</td>
+<td>01</td>
+</tr>
+<tr>
+<td>10</td>
+<td>11</td>
+</tr>
+</table>
+<p>gh</p>
+`
+);
+assert_convert('tr with implicit table',
+  `ab
+
+\\tr[
+\\th[cd]
+\\th[ef]
+]
+\\tr[
+\\td[00]
+\\td[01]
+]
+\\tr[
+\\td[10]
+\\td[11]
+]
+
+gh
+`,
+  `<p>ab</p>
+<table>
+<tr>
+<th>cd</th>
+<th>ef</th>
+</tr>
+<tr>
+<td>00</td>
+<td>01</td>
+</tr>
+<tr>
+<td>10</td>
+<td>11</td>
+</tr>
+</table>
+<p>gh</p>
+`
+);
+assert_convert('auto_parent consecutive implicit tr and l',
+  `\\tr[\\td[ab]]
+\\l[cd]
+`,
+  `<table>
+<tr>
+<td>ab</td>
+</tr>
+</table>
+<ul>
+<li>cd</li>
+</ul>
 `
 );
 

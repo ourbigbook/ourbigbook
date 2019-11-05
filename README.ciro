@@ -379,12 +379,12 @@ Explicit container to add further properties: \x[table-my-table].
 ]
 ]
 
-\h[2][Figures \c[[\img]]]
-{id=figures}
+\h[2][Images \c[[\image]]]
+{id=image}
 
 See this image \x[image-lotus-flower]:
 
-\img[https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Lotus_flower_%28978659%29.jpg/640px-Lotus_flower_%28978659%29.jpg]
+\image[https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Lotus_flower_%28978659%29.jpg/640px-Lotus_flower_%28978659%29.jpg]
 {title=A lotus flower}
 {id=image-lotus-flower}
 {source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
@@ -460,7 +460,7 @@ Via KaTeX server side, oh yes!
 
 Just like code, but LaTeX math goes in.
 
-My inline \m[[\sqrt[1 + 1]]] is awesome.
+My inline \m[[\sqrt[1 + 1\]]] is awesome.
 
 Escape the closing bracket with backslash: \m[1 - \[1 + 1\] = -1].
 
@@ -542,7 +542,9 @@ However, some positional arguments can have special effects if not given.
 
 For example, an anchor with the first positional argument present (the URL), but not the second positional argument (the link text) as in:
 
-\C[[\a[http://example.com]]]
+\C[[
+\a[http://example.com]
+]]
 
 has the special effect of generating automatic links as in:
 

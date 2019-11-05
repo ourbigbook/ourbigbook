@@ -173,6 +173,7 @@ const Macro = class {
    *        {String} auto_parent - automatically surround consecutive sequences of macros with
    *                 the same parent auto_parent into a node with auto_parent type. E.g.,
    *                 to group list items into ul.
+   *        {Set[String]} auto_parent_skip - don't do auto parent generation if the parent is one of these types.
    */
   constructor(name, positional_args, convert, options={}) {
     if (!('named_args' in options)) {
@@ -184,10 +185,14 @@ const Macro = class {
     if (!('auto_parent' in options)) {
       options.auto_parent = undefined;
     }
+    if (!('auto_parent_skip' in options)) {
+      options.auto_parent_skip = new Set([]);
+    }
     this.name = name;
     this.positional_args = positional_args;
     this.named_args = options.named_args;
     this.auto_parent = options.auto_parent;
+    this.auto_parent_skip = options.auto_parent_skip;
     this.convert = convert;
     this.properties = options.properties;
     if (!('phrasing' in this.properties)) {
@@ -387,6 +392,18 @@ let macro_list = [
     },
     {
       auto_parent: 'ul',
+      auto_parent_skip: new Set(['ol'])
+    }
+  ),
+  new Macro(
+    'ol',
+    [
+      new MacroArgument({
+        name: 'content',
+      }),
+    ],
+    function(ast, options, is_attr) {
+      return `<ol${html_convert_attrs(ast, options)}>\n${convert_arg(ast.args.content, options, is_attr)}</ol>\n`;
     }
   ),
   new Macro(
@@ -907,9 +924,12 @@ const parse = function(tokens, options, extra_returns={}) {
           if (child_node.node_type === AstType.MACRO) {
             let child_name = child_node.macro_name;
             let child_macro = macros[child_name];
-            if (child_macro.auto_parent !== undefined ) {
+            if (child_macro.auto_parent !== undefined) {
               let auto_parent_name = child_macro.auto_parent;
-              if (node.macro_name !== auto_parent_name) {
+              if (
+                node.macro_name !== auto_parent_name &&
+                !child_macro.auto_parent_skip.has(node.macro_name)
+              ) {
                 let start_auto_child_index = i;
                 let start_auto_child_node = child_node;
                 i++;

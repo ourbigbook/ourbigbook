@@ -344,6 +344,17 @@ assert_convert('link with multiple paragraphs',
   '<a href="http://example.com"><p>Multiple</p>\n<p>paragraphs</p>\n</a>\n'
 );
 
+// Cross references.
+assert_convert('cross reference simple',
+  `\\h[1][My header]
+
+\\x[my-header][link body]
+`,
+  `<h1 id="my-header">My header</h1>
+<p><a href="#my-header">link body</a></p>
+`
+);
+
 // Headers.
 assert_convert('header simple',
   '\\h[1][My header]\n',

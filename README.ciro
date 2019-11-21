@@ -481,6 +481,32 @@ HTML escaping happens as you would expect, e.g. < shows fine in:
 1 < 2
 ]]
 
+\h[2][Math defines across blocks]
+
+TODO pending upstream tag bump: \a[https://github.com/KaTeX/KaTeX/pull/2091] First block defining with \c[\\newcommand]:
+
+\M[[
+\newcommand{\foo}[0]{bar}
+]]
+
+Second block using:
+
+\M[[
+\foo
+]]
+
+First block defining with \c[\\def]:
+
+\M[[
+\gdef\foogdef{bar}
+]]
+
+Second block using:
+
+\M[[
+\foogdef
+]]
+
 \h[2][Cirodown syntax]
 
 \h[3][Macro argument syntax]

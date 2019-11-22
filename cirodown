@@ -4,7 +4,6 @@ const fs = require('fs');
 const util = require('util');
 
 const katex = require('katex')
-const katex_macros = {}
 
 class AstNode {
   /**
@@ -89,6 +88,7 @@ class AstNode {
     if (!('errors' in context)) {
       context.errors = [];
     }
+    context.katex_macros = {};
     return context.macros[this.macro_name].convert(this, context);
   }
 
@@ -204,15 +204,15 @@ class Macro {
       this.name_to_arg[name] = this.named_args[name];
     }
     // Add the ID argument.
-    this.named_args[Macro.id_argument_name] = new MacroArgument({
-      name: Macro.id_argument_name,
+    this.named_args[Macro.ID_ARGUMENT_NAME] = new MacroArgument({
+      name: Macro.ID_ARGUMENT_NAME,
     })
-    this.name_to_arg[Macro.id_argument_name] = this.named_args[Macro.id_argument_name];
+    this.name_to_arg[Macro.ID_ARGUMENT_NAME] = this.named_args[Macro.ID_ARGUMENT_NAME];
   }
 
   check_name(name) {
-    if (name === Macro.id_argument_name) {
-      throw new Error(`name "${Macro.id_argument_name}" is reserved and automatically added`);
+    if (name === Macro.ID_ARGUMENT_NAME) {
+      throw new Error(`name "${Macro.ID_ARGUMENT_NAME}" is reserved and automatically added`);
     }
     if (name in this.name_to_arg) {
       throw new Error('name already taken: ' + name);
@@ -228,8 +228,8 @@ class Macro {
     }
   }
 }
-Macro.id_argument_name = 'id'
-Macro.title_argument_name = 'title'
+Macro.ID_ARGUMENT_NAME = 'id'
+Macro.TITLE_ARGUMENT_NAME = 'title'
 
 class Token {
   /**
@@ -730,9 +730,9 @@ function title_to_id(title) {
 function html_convert_attrs_id(
   ast, context, arg_names=[], custom_args={}
 ) {
-  if (ast.arg_given(Macro.id_argument_name)) {
-    arg_names.push(Macro.id_argument_name);
-  } else if (ast.arg_given(Macro.title_argument_name)) {
+  if (ast.arg_given(Macro.ID_ARGUMENT_NAME)) {
+    arg_names.push(Macro.ID_ARGUMENT_NAME);
+  } else if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
     // TODO correct unicode aware algorithm.
     let id_text = '';
     let id_prefix = context.macros[ast.macro_name].id_prefix;
@@ -802,20 +802,22 @@ function katex_convert(ast, context) {
     return katex.renderToString(
       convert_arg(ast.args.content, clone_and_set(context, 'html_escape', false)),
       {
-        macros: katex_convert.macros,
+        macros: context.katex_macros,
         throwOnError: true,
         globalGroup: true,
       }
     );
   } catch(error) {
-    let message = error.toString();
+    // TODO get working remove the crap KaTeX adds to the end of the string.
+    // It uses Unicode char hacks to add underlines... and there are two trailing
+    // chars after the final newline, so the error message is taking up two lines
+    let message = error.toString().replace(/\n\xcc\xb2$/, '');
     context.errors.push(
       new ErrorMessage(message, ast.args.content[0].line, ast.args.content[0].column)
     );
     return in_output_error(message);
   }
 }
-katex_convert.macros = {};
 
 function macro_list_to_macros() {
   const macros = {};
@@ -1237,7 +1239,7 @@ const DEFAULT_MACRO_LIST = [
         name: 'level',
       }),
       new MacroArgument({
-        name: Macro.title_argument_name,
+        name: Macro.TITLE_ARGUMENT_NAME,
       }),
     ],
     function(ast, context) {
@@ -1310,8 +1312,8 @@ const DEFAULT_MACRO_LIST = [
       let img_attrs = html_convert_attrs(ast,context, ['src', 'alt']);
       let figure_attrs = html_convert_attrs_id(ast, context);
       let ret = `<figure${figure_attrs}>\n<img${img_attrs}>\n`;
-      if (ast.arg_given(Macro.title_argument_name)) {
-        let figcaption_content = convert_arg(ast.args[Macro.title_argument_name], context);
+      if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
+        let figcaption_content = convert_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context);
         ret += `<figcaption>${figcaption_content}</figcaption>\n`;
       }
       ret += '</figure>\n';
@@ -1320,7 +1322,7 @@ const DEFAULT_MACRO_LIST = [
     {
       named_args: [
         new MacroArgument({
-          name: Macro.title_argument_name,
+          name: Macro.TITLE_ARGUMENT_NAME,
         }),
         new MacroArgument({
           name: 'description',
@@ -1411,17 +1413,17 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
       new MacroArgument({
-        name: Macro.title_argument_name,
+        name: Macro.TITLE_ARGUMENT_NAME,
       }),
     ],
     function(ast, context) {
       let title;
-      if (ast.arg_given(Macro.title_argument_name)) {
+      if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
         title = ast.args.title;
       } else {
         let text_title;
-        if (Macro.title_argument_name in context.options) {
-          text_title = context.options[Macro.title_argument_name];
+        if (Macro.TITLE_ARGUMENT_NAME in context.options) {
+          text_title = context.options[Macro.TITLE_ARGUMENT_NAME];
         } else {
           let message = 'missing title';
           text_title = in_output_error(message);

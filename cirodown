@@ -219,6 +219,30 @@ class Macro {
     }
   }
 
+  error(context, message, line, column) {
+    context.errors.push(new ErrorMessage(message, line, column));
+  }
+
+  katex_convert(ast, context) {
+    try {
+      return katex.renderToString(
+        convert_arg(ast.args.content, clone_and_set(context, 'html_escape', false)),
+        {
+          macros: context.katex_macros,
+          throwOnError: true,
+          globalGroup: true,
+        }
+      );
+    } catch(error) {
+      // TODO get working remove the crap KaTeX adds to the end of the string.
+      // It uses Unicode char hacks to add underlines... and there are two trailing
+      // chars after the final newline, so the error message is taking up two lines
+      let message = error.toString().replace(/\n\xcc\xb2$/, '');
+      this.error(context, message, ast.args.content[0].line, ast.args.content[0].column);
+      return error_message_in_output(message);
+    }
+  }
+
   toJSON() {
     return {
       name: this.name,
@@ -659,6 +683,11 @@ function convert_arg(arg, context) {
   return converted_arg;
 }
 
+/** Error message to be rendered inside the generated output itself. */
+function error_message_in_output(msg) {
+  return `[CIRODOWN_ERROR: ${msg}]`
+}
+
 /** Convert a key value fully HTML escaped strings to an HTML attribute.
  *
  * @param {String} key
@@ -791,34 +820,6 @@ function html_convert_simple_elem(elem_name, options={}) {
   };
 }
 
-// Error message to be rendered in the output itself
-// to serve as clear indication to end users that something is bad.
-function in_output_error(msg) {
-  return `[CIRODOWN_ERROR: ${msg}]`
-}
-
-function katex_convert(ast, context) {
-  try {
-    return katex.renderToString(
-      convert_arg(ast.args.content, clone_and_set(context, 'html_escape', false)),
-      {
-        macros: context.katex_macros,
-        throwOnError: true,
-        globalGroup: true,
-      }
-    );
-  } catch(error) {
-    // TODO get working remove the crap KaTeX adds to the end of the string.
-    // It uses Unicode char hacks to add underlines... and there are two trailing
-    // chars after the final newline, so the error message is taking up two lines
-    let message = error.toString().replace(/\n\xcc\xb2$/, '');
-    context.errors.push(
-      new ErrorMessage(message, ast.args.content[0].line, ast.args.content[0].column)
-    );
-    return in_output_error(message);
-  }
-}
-
 function macro_list_to_macros() {
   const macros = {};
   for (const macro of DEFAULT_MACRO_LIST) {
@@ -858,7 +859,7 @@ function parse(tokens, macros, options, extra_returns={}) {
   // under that macro, so this will recursively parse everything.
   let ast = parse_macro(state);
   if (state.i < tokens.length) {
-    parse_report_error(state, `unexpected tokens at the end of input`);
+    parse_error(state, `unexpected tokens at the end of input`);
   }
 
   // Post process the AST breadth first to support:
@@ -1020,7 +1021,7 @@ function parse_macro(state) {
       macro_type = AstType.MACRO;
     } else {
       macro_type = AstType.ERROR;
-      parse_report_error(state, unknown_macro_message);
+      parse_error(state, unknown_macro_message);
     }
     // Consume the MACRO_NAME token out.
     parse_consume(state);
@@ -1039,7 +1040,7 @@ function parse_macro(state) {
           arg_name = positional_arg_count.toString();
         } else {
           if (positional_arg_count >= macro.positional_args.length) {
-            parse_report_error(state,
+            parse_error(state,
               `unknown named macro argument "${arg_name}" of macro "${macro_name}"`,
               open_argument_line,
               open_argument_column
@@ -1056,7 +1057,7 @@ function parse_macro(state) {
         let name_column = state.token.column;
         arg_name = state.token.value;
         if (macro_type !== AstType.ERROR && !(arg_name in macro.named_args)) {
-          parse_report_error(state,
+          parse_error(state,
             `unknown named macro argument "${arg_name}" of macro "${macro_name}"`,
             name_line,
             name_column
@@ -1074,7 +1075,7 @@ function parse_macro(state) {
         arg_children.push(parse_macro(state));
       }
       if (state.token.type !== closing_token(open_type)) {
-        parse_report_error(state,
+        parse_error(state,
           `expected a closing '${END_POSITIONAL_ARGUMENT_CHAR}' found '${state.token.type.toString()}'`);
       }
       args[arg_name] = arg_children;
@@ -1086,7 +1087,7 @@ function parse_macro(state) {
         macro_type,
         state.macros,
         'plaintext',
-        in_output_error(unknown_macro_message),
+        error_message_in_output(unknown_macro_message),
         state.token.line,
         state.token.column
       );
@@ -1119,7 +1120,7 @@ function parse_macro(state) {
     parse_consume(state);
     return node;
   } else {
-    parse_report_error(
+    parse_error(
       state,
       `unexpected token ${state.token.type.toString()}`
     );
@@ -1127,7 +1128,7 @@ function parse_macro(state) {
       AstType.PLAINTEXT,
       state.macros,
       'plaintext',
-      in_output_error('unexpected token'),
+      error_message_in_output('unexpected token'),
       state.token.line,
       state.token.column
     );
@@ -1138,7 +1139,7 @@ function parse_macro(state) {
   state.i += 1;
 }
 
-function parse_report_error(state, message, line, column) {
+function parse_error(state, message, line, column) {
   if (line === undefined)
     line = state.token.line;
   if (column === undefined)
@@ -1273,7 +1274,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      return `<div>${katex_convert(ast, context)}</div>\n`;
+      return `<div>${this.katex_convert(ast, context)}</div>\n`;
     }
   ),
   new Macro(
@@ -1284,7 +1285,8 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      return katex_convert(ast, context);
+      // KaTeX already adds a <span> for us.
+      return this.katex_convert(ast, context);
     },
     {
       properties: {
@@ -1426,7 +1428,7 @@ const DEFAULT_MACRO_LIST = [
           text_title = context.options[Macro.TITLE_ARGUMENT_NAME];
         } else {
           let message = 'missing title';
-          text_title = in_output_error(message);
+          text_title = error_message_in_output(message);
           if (!context.options.body_only) {
             context.errors.push(new ErrorMessage(message, line, column));
           }
@@ -1513,21 +1515,24 @@ pre {
     ],
     function(ast, context) {
       let content_arg;
-      if (ast.arg_given('content')) {
-        content_arg = ast.args.content;
+      // Convert href to text without escaping HTML.
+      let target_id = convert_arg(ast.args.href, clone_and_set(context, 'html_escape', false));
+      if (target_id in context.ids) {
+        target_id_attrs = context.ids[target_id];
+        let content;
+        if (ast.arg_given('content')) {
+          content = convert_arg(ast.args.content, context);
+        } else {
+          content = convert_arg(target_id_attrs.input, context);
+        }
+        let attrs = html_convert_attrs_id(ast, context);
+        let href = html_attr('href', '#' + html_attr_value(ast.args.href, context));
+        return `<a${href}${attrs}>${content}</a>`;
       } else {
-        content_arg = ast.args.href;
+        let message = `cross reference to unknown id: "${target_id}"`;
+        this.error(context, message, ast.args.href[0].line, ast.args.href[0].column);
+        return error_message_in_output(message);
       }
-
-      //context.options.extra_returns.errors.push(
-      //  new ErrorMessage(message, ast.args.content[0].line,
-      //  ast.args.content[0].column)
-      //);
-
-      let attrs = html_convert_attrs_id(ast, context);
-      let href = html_attr('href', '#' + html_attr_value(ast.args.href, context));
-      let content = convert_arg(content_arg, context);
-      return `<a${href}${attrs}>${content}</a>`;
     },
     {
       named_args: [

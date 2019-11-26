@@ -372,7 +372,24 @@ assert_convert('cross reference auto',
 <p><a href="#my-header">My header</a></p>
 `
 );
+assert_convert('cross reference to image',
+  `\\Image[ab]{id=cd}{title=ef}
+
+\\x[cd]
+`,
+  `<figure id="cd">
+<img src="ab">
+<figcaption>ef</figcaption>
+</figure>
+<p><a href="#cd">ef</a></p>
+`
+);
 assert_error('cross reference undefined', '\\x[ab]', 1, 4);
+assert_error('cross reference without content nor target title',
+  `\\Image[ab]{id=cd}
+
+\\x[cd]
+`, 3, 2);
 
 // Headers.
 assert_convert('header simple',

@@ -1436,8 +1436,21 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       let attrs = html_convert_attrs_id(ast, context);
       let content = convert_arg(ast.args.content, context);
-      return `<table${attrs}>\n${content}</table>\n`;
+      let ret = `<table${attrs}>\n`;
+      if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
+        let title = convert_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+        ret += `<caption>${title}</caption>\n`;
+      }
+      ret += `${content}</table>\n`;
+      return ret;
     },
+    {
+      named_args: [
+        new MacroArgument({
+          name: Macro.TITLE_ARGUMENT_NAME,
+        }),
+      ],
+    }
   ),
   new Macro(
     'td',
@@ -1499,6 +1512,12 @@ code {
 }
 pre {
   background-color: #EEEEEE;
+}
+
+/* Minimal table styling. */
+caption {
+  caption-side: bottom;
+  text-align: left;
 }
 table {
   border-collapse: collapse;

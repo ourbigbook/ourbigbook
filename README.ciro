@@ -4,6 +4,21 @@ A Markup language to write multipage or single page HTML / PDF books that is san
 
 \toc
 
+\h[2][Quick start]
+
+TODO: browser live test.
+
+The README is a good example for a local test:
+
+\C[[
+git clone https://github.com/cirosantilli/cirodown
+npm install
+./cirodown README.ciro > REAME.html
+xdg-open README.html
+]]
+
+TODO: create a multifile blog example folder and link from here.
+
 \h[2][Design goals]
 {id_scope=true}
 
@@ -977,6 +992,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[LaTeX output]
 \l[local downloads and single HTML page with image / script embeds]
 \l[verify integer argument type e.g. on header level]
+\l[TODO: browser live quick test]
 
 \h[3][Related projects]
 

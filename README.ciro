@@ -507,6 +507,25 @@ Second block using:
 \foogdef
 ]]
 
+\h[2][Comments]
+
+The \c[Comment] and \c[comment] macros are regular macros that does not produce any output. Capitalization is explained at: \x[macro-capitalization-for-block-vs-inline].
+
+You will therefore mostly want to use it with a \x[literal-arguments][literal argument], which will, as for any other macro, ignore any macros inside of it.
+
+\Comment[[
+One line and \m[1 + 1]
+
+\l[a]
+\l[b]
+
+Another line.
+]]
+
+And here is: \comment[[\m[1 + 1\]]] an inline one.
+
+\comment[[\m[1 + 1\]]] inline at the start.
+
 \h[2][Cirodown syntax]
 
 \h[3][Macro argument syntax]
@@ -807,6 +826,18 @@ I'm bad because I have negative indentation.
 ]
 \l[c]
 ]]
+
+\h[3][Macro capitalization for block vs inline]
+
+This is just a naming convention without any magic attached to it. It is currently used for macros such as:
+
+\l[\x[math]]
+\l[\x[code]]
+\l[\x[comments]]
+
+We haven't found a sane way of getting rid of that for now, so just for now just force users to explicitly select between them.
+
+The distinction is required because there are lots of things you cannot put inside paragraphs in HTML.
 
 \h[2][Tooling]
 

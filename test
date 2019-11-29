@@ -144,8 +144,8 @@ assert_convert('tr with explicit table',
 gh
 `,
   `<p>ab</p>
+<div class="table-container">
 <table>
-<caption>Table 1)</caption>
 <tr>
 <th>cd</th>
 <th>ef</th>
@@ -159,6 +159,7 @@ gh
 <td>11</td>
 </tr>
 </table>
+</div>
 <p>gh</p>
 `
 );
@@ -181,8 +182,8 @@ assert_convert('tr with implicit table',
 gh
 `,
   `<p>ab</p>
+<div class="table-container">
 <table>
-<caption>Table 1)</caption>
 <tr>
 <th>cd</th>
 <th>ef</th>
@@ -196,6 +197,7 @@ gh
 <td>11</td>
 </tr>
 </table>
+</div>
 <p>gh</p>
 `
 );
@@ -203,15 +205,35 @@ assert_convert('auto_parent consecutive implicit tr and l',
   `\\tr[\\td[ab]]
 \\l[cd]
 `,
-  `<table>
-<caption>Table 1)</caption>
+  `<div class="table-container">
+<table>
 <tr>
 <td>ab</td>
 </tr>
 </table>
+</div>
 <ul>
 <li>cd</li>
 </ul>
+`
+);
+assert_convert('table with id has caption',
+  `\\table{id=ab}[
+\\tr[
+\\td[00]
+\\td[01]
+]
+]
+`,
+  `<div class="table-container" id="ab">
+<div class="table-caption">Table 1</div>
+<table>
+<tr>
+<td>00</td>
+<td>01</td>
+</tr>
+</table>
+</div>
 `
 );
 
@@ -226,7 +248,6 @@ gh
   `<p>ab</p>
 <figure>
 <img src="cd">
-<figcaption>Image 1</figcaption>
 </figure>
 <p>gh</p>
 `
@@ -236,6 +257,19 @@ assert_convert('image title',
   `<figure id="image-c-d">
 <a href="#image-c-d"><img src="ab"></a>
 <figcaption>Image 1. c d</figcaption>
+</figure>
+`
+)
+assert_convert('image without id does not increment image count',
+  `\\Image[ab]
+\\Image[cd]{id=ef}
+`,
+  `<figure>
+<img src="ab">
+</figure>
+<figure id="ef">
+<a href="#ef"><img src="cd"></a>
+<figcaption>Image 1</figcaption>
 </figure>
 `
 )

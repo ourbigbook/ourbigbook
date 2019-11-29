@@ -192,8 +192,10 @@ If a macro has the \c[title] property is present but no explicit \c[id], an ID i
 
 Note how those rules leave non ASCII Unicode characters untouched, as capitalization and determining if something "is a letter or not" in those cases can be tricky.
 
-So for example, the following automatic IDs would be generated:
+So for example, the following automatic IDs would be generated: \x[table-examples-of-automatically-generated-ids].
 
+\table{title=Examples of automatically generated IDs}
+[
 \tr[
   \th[title]
   \th[id]
@@ -213,6 +215,7 @@ So for example, the following automatic IDs would be generated:
   \td[The École Polytechnique]
   \td[the-École-polytechnique]
   \td[We leave the non ASCII uppercase \a[https://en.wikipedia.org/wiki/Acute_accent][acute accented] \c[e], \c[É], untouched by default]
+]
 ]
 
 \h[2][Headers \c[[\h]]]
@@ -371,43 +374,6 @@ List item with a paragraph inside of it:
 ]
 \l[c]
 
-\h[2][Tables \c[[\table]], \c[[\tr]], \c[[\th]] and \c[[\td]]]
-{id=tables}
-
-Similar to lists. Implicit container with optional indentation to improve readability:
-
-\tr[
-  \th[Header 1]
-  \th[Header 2]
-]
-\tr[
-  \td[1 1]
-  \td[1 2]
-]
-\tr[
-  \td[2 1]
-  \td[2 2]
-]
-
-Explicit container to add further properties: \x[table-my-table].
-
-\table{title=My table title}
-{id=table-my-table}
-[
-\tr[
-  \th[Header 1]
-  \th[Header 2]
-]
-\tr[
-  \td[1 1]
-  \td[1 2]
-]
-\tr[
-  \td[2 1]
-  \td[2 2]
-]
-]
-
 \h[2][Images \c[[\image]]]
 {id=images}
 
@@ -523,7 +489,7 @@ HTML escaping happens as you would expect, e.g. < shows fine in:
 1 < 2
 ]]
 
-\h[2][Math defines across blocks]
+\h[3][Math defines across blocks]
 
 TODO pending upstream tag bump: \a[https://github.com/KaTeX/KaTeX/pull/2091] First block defining with \c[\\newcommand]:
 
@@ -548,6 +514,43 @@ Second block using:
 \M[[
 \foogdef
 ]]
+
+\h[2][Tables \c[[\table]], \c[[\tr]], \c[[\th]] and \c[[\td]]]
+{id=tables}
+
+Similar to lists. Implicit container with optional indentation to improve readability:
+
+\tr[
+  \th[Header 1]
+  \th[Header 2]
+]
+\tr[
+  \td[1 1]
+  \td[1 2]
+]
+\tr[
+  \td[2 1]
+  \td[2 2]
+]
+
+Explicit container to add further properties: \x[table-my-table].
+
+\table{title=My table title}
+{id=table-my-table}
+[
+\tr[
+  \th[Header 1]
+  \th[Header 2]
+]
+\tr[
+  \td[1 1]
+  \td[1 2]
+]
+\tr[
+  \td[2 1]
+  \td[2 2]
+]
+]
 
 \h[2][Comments]
 

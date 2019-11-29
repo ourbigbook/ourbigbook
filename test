@@ -226,7 +226,7 @@ gh
   `<p>ab</p>
 <figure>
 <img src="cd">
-<figcaption>Image 1)</figcaption>
+<figcaption>Image 1</figcaption>
 </figure>
 <p>gh</p>
 `
@@ -235,7 +235,7 @@ assert_convert('image title',
   `\\Image[ab]{title=c d}`,
   `<figure id="image-c-d">
 <a href="#image-c-d"><img src="ab"></a>
-<figcaption>Image 1) c d</figcaption>
+<figcaption>Image 1. c d</figcaption>
 </figure>
 `
 )
@@ -363,17 +363,26 @@ assert_convert('cross reference simple',
 
 \\x[my-header][link body]
 `,
-  `<h1 id="my-header">My header</h1>
+  `<h1 id="my-header"><a href="#my-header">1. My header</a></h1>
 <p><a href="#my-header">link body</a></p>
 `
 );
-assert_convert('cross reference auto',
+assert_convert('cross reference auto default',
   `\\h[1][My header]
 
 \\x[my-header]
 `,
-  `<h1 id="my-header">My header</h1>
+  `<h1 id="my-header"><a href="#my-header">1. My header</a></h1>
 <p><a href="#my-header">My header</a></p>
+`
+);
+assert_convert('cross reference auto full',
+  `\\h[1][My header]
+
+\\x[my-header]{style=full}
+`,
+  `<h1 id="my-header"><a href="#my-header">1. My header</a></h1>
+<p><a href="#my-header">Section 1. "My header"</a></p>
 `
 );
 assert_convert('cross reference to image',
@@ -383,22 +392,34 @@ assert_convert('cross reference to image',
 `,
   `<figure id="cd">
 <a href="#cd"><img src="ab"></a>
-<figcaption>Image 1) ef</figcaption>
+<figcaption>Image 1. ef</figcaption>
 </figure>
-<p><a href="#cd">ef</a></p>
+<p><a href="#cd">Image 1. "ef"</a></p>
 `
 );
-assert_error('cross reference undefined', '\\x[ab]', 1, 4);
-assert_error('cross reference without content nor target title',
+assert_convert('cross reference without content nor target title style full',
   `\\Image[ab]{id=cd}
 
 \\x[cd]
+`,
+  `<figure id="cd">
+<a href="#cd"><img src="ab"></a>
+<figcaption>Image 1</figcaption>
+</figure>
+<p><a href="#cd">Image 1</a></p>
+`
+);
+assert_error('cross reference undefined', '\\x[ab]', 1, 4);
+assert_error('cross reference without content nor target title style short',
+  `\\Image[ab]{id=cd}
+
+\\x[cd]{style=short}
 `, 3, 2);
 
 // Headers.
 assert_convert('header simple',
   '\\h[1][My header]\n',
-  '<h1 id="my-header">My header</h1>\n'
+  `<h1 id="my-header"><a href="#my-header">1. My header</a></h1>\n`
 );
 assert_convert('header and implicit paragraphs',
   `\\h[1][My header 1]
@@ -409,15 +430,15 @@ My paragraph 1.
 
 My paragraph 2.
 `,
-  `<h1 id="my-header-1">My header 1</h1>
+  `<h1 id="my-header-1"><a href="#my-header-1">1. My header 1</a></h1>
 <p>My paragraph 1.</p>
-<h2 id="my-header-2">My header 2</h2>
+<h2 id="my-header-2"><a href="#my-header-2">2. My header 2</a></h2>
 <p>My paragraph 2.</p>
 `
 );
 assert_convert('header 7',
   '\\h[7][My header]\n',
-  '<h6 data-level="7" id="my-header">My header</h6>\n'
+  '<h6 data-level="7" id="my-header"><a href="#my-header">1. My header</a></h6>\n'
 );
 
 // Code.

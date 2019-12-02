@@ -1,6 +1,6 @@
 \h[1][Cirodown]
 
-A Markup language to write multipage or single page HTML / PDF books that is saner and more powerful than Markdown and Asciidoctor, but still nicer to write than XML and JSON. Reference implementation in JavaScript. No implementation yet.
+A Markup language to write multipage or single page HTML / PDF books, blogs, etc. that is saner and more powerful than Markdown and Asciidoctor, but still nicer to write than XML and JSON, with reference implementation in JavaScript.
 
 \toc
 
@@ -8,16 +8,32 @@ A Markup language to write multipage or single page HTML / PDF books that is san
 
 TODO: browser live test.
 
-TODO: remote npm install test.
+Install NPM package and use it from the command line:
 
-The README is a good example for a local test:
+\C[[
+npm install cirodown
+printf 'ab\ncd\n' | cirodown --body-only
+]]
+
+Same with an API call in \a[api_hello.js]:
+
+\C[[
+npm install cirodown
+./api_hello.js
+]]
+
+Run the latest master on README.ciro and view it:
 
 \C[[
 git clone https://github.com/cirosantilli/cirodown
-npm install
+cd cirodown
+npm link
+npm link cirodown
 ./cirodown README.ciro > REAME.html
 xdg-open README.html
 ]]
+
+The \c[npm link] commands allow you to make changes to the code without re-installing the package all the time for development! Try hacking \a[cirodown] to see it.
 
 TODO: create a multifile blog example folder and link from here.
 
@@ -929,6 +945,8 @@ TODO
 
 The compiler executable will have a \c[--dump-macros] option that will dump all macros, describing all of their arguments and including help strings registered by the macro definition API.
 
+\h[2][Developing Cirodown]
+
 \h[3][Test system]
 
 Run all tests:
@@ -965,6 +983,13 @@ to where you want to break in the code, and then:
 node inspect ./node_modules/.bin/mocha test --ignore-leaks "-g" "p with id before"
 ]]
 
+\h[3][Overview of files in this repository]
+
+\l[\a[index.js]: main code. Must be able to run in the browser, so no Node.js specifics. Exposes the central \c[convert] function]
+\l[\a[cirodown]: CLI executable. Is basically just a CLI interface frontend to \c[convert]]
+\l[\a[test.js]: contains all the Mocha tests, see also: \x[test-system]]
+\l[\a[README.md]: minimal Markdown README until GitHub / NPM support Cirodown :-)]
+
 \h[3][Internals API]
 
 Tokenized token stream and AST can be obtained as JSON from the API.
@@ -973,7 +998,7 @@ Errors can be obtained as JSON from the API.
 
 Everything that you need to write Cirodown tooling, is present in the main API.
 
-All tooling will be merged into one singl repo.
+All tooling will be merged into one single repo.
 
 \h[3][The \c[[\toplevel]] implicit macro]
 {id=toplevel}
@@ -1024,7 +1049,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[verify x style in choices \c[short] or \c[full]]
 \l[LaTeX output]
 
-\h[3][Related projects]
+\h[2][Related projects]
 
 \l[\a[https://github.com/rstudio/bookdown], \a[https://bookdown.org/]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: \a[https://bookdown.org/yihui/bookdown/pandoc.html], thus will never run on browser without huge translation layers. But does have an obscene ammount of output formats however.]
 \l[\a[https://gohugo.io/][Hugo]. Pretty good, similar feature set to ours. But Go based, so hard on browser, and adds adhoc features on top of markdown once again]

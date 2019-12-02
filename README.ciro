@@ -35,6 +35,13 @@ xdg-open README.html
 
 The \c[npm link] commands allow you to make changes to the code without re-installing the package all the time for development! Try hacking \a[cirodown] to see it.
 
+The symlink business can be undone with:
+
+\C[[
+npm unlink
+rm node_modules/cirodown
+]]
+
 TODO: create a multifile blog example folder and link from here.
 
 \h[2][Design goals]

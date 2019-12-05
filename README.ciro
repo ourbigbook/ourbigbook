@@ -919,6 +919,16 @@ The distinction is required because there are lots of things you cannot put insi
 
 Unlike all languages which rely on ad-hoc tooling, we will support every single tool that is required and feasible to be in this repository in this repository, in a centralized manner.
 
+\h[3][\c[--watch]]
+
+Don't quit \c[cirodown] immediately.
+
+Instead, watch the selected file or directory for changes, and rebuild as they are made.
+
+Save the output to \c[.html] files automatically instead of outputting it to stdout as done without \c[--watch].
+
+Exit by entering Ctrl + C on the terminal.
+
 \h[3][\c[--help-macros]]
 {id=help-macros}
 

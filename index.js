@@ -736,6 +736,17 @@ function convert(
   };
   output = ast.convert(context);
   extra_returns.errors.push(...errors);
+  extra_returns.errors = extra_returns.errors.sort((a, b)=>{
+    if (a.line < b.line)
+      return -1;
+    if (a.line > b.line)
+      return 1;
+    if (a.column < b.column)
+      return -1;
+    if (a.column > b.column)
+      return 1;
+    return 0;
+  });
   if (output[output.length - 1] !== '\n') {
     output += '\n';
   }

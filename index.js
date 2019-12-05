@@ -302,6 +302,7 @@ class Macro {
 Macro.ID_ARGUMENT_NAME = 'id';
 Macro.HEADER_MACRO_NAME = 'h';
 Macro.TITLE_ARGUMENT_NAME = 'title';
+Macro.TOC_PREFIX = 'toc-'
 
 class Token {
   /**
@@ -1436,7 +1437,13 @@ const DEFAULT_MACRO_LIST = [
         custom_args = {};
       }
       let attrs = html_convert_attrs_id(ast, context, [], custom_args);
-      return `<h${level}${attrs}><a${this.self_link(ast)}>${this.x_text(ast, context, {show_caption_prefix: false})}</a></h${level}>\n`;
+      let ret = `<h${level}${attrs}><a${this.self_link(ast)} title="link to this element">`;
+      let toc_href = html_attr('href', '#' + Macro.TOC_PREFIX + ast.id);
+      ret += this.x_text(ast, context, {show_caption_prefix: false});
+      ret += `</a>`;
+      ret += `<span> <a${toc_href}>(toc \u2191)</a></span>\n`;
+      ret += `</h${level}>\n`;
+      return ret;
     },
     {
       caption_prefix: 'Section',
@@ -1662,8 +1669,10 @@ const DEFAULT_MACRO_LIST = [
         let target_ast = tree_node.value;
         let attrs = html_convert_attrs_id(ast, context);
         let content = this.x_text(target_ast, context, {show_caption_prefix: false});
-        let href = html_attr('href', '#' + html_escape_attr(target_ast.id));
-        ret += `<li><a${href}${attrs}>${content}</a>`;
+        let target_id = html_escape_attr(target_ast.id);
+        let href = html_attr('href', '#' + target_id);
+        let id_to_toc = html_attr('id', Macro.TOC_PREFIX + target_id);
+        ret += `<li><div${id_to_toc}><a${href}${attrs}>${content}</a></div>`;
         if (tree_node.children.length > 0) {
           for (let i = tree_node.children.length - 1; i >= 0; i--) {
             todo_visit.push([tree_node.children[i], level + 1]);
@@ -1716,6 +1725,9 @@ const DEFAULT_MACRO_LIST = [
 <link href="https://netdna.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet"/>
 <style>
 .katex { font-size: 1.5em; }
+:target {
+  background-color: #FFFFCC;
+}
 body {
   padding-left: 15px;
   padding-right: 15px;
@@ -1724,10 +1736,20 @@ body {
 h1 a:link, h2 a:link, h3 a:link, h4 a:link, h5 a:link, h6 a:link,
 h1 a:visited, h2 a:visited, h3 a:visited, h4 a:visited, h5 a:visited, h6 a:visited {
   color: black;
-  font-size: 24px;
 }
 h1, h2, h3, h4, h5, h6 {
+  font-size: 24px;
   margin-top: 20px;
+}
+h1 a + span, h2 a + span, h3 a + span, h4 a + span, h5 a + span, h6 a  + span {
+  display: none;
+}
+h1:hover a + span, h2:hover a + span, h3:hover a + span, h4:hover a + span, h5:hover a + span, h6:hover a  + span {
+  display: inline;
+}
+h1:hover span a:link, h2:hover span a:link, h3:hover span a:link, h4:hover span a:link, h5:hover span a:link, h6:hover span a:link,
+h1:hover span a:visited, h2:hover span a:visited, h3:hover span a:visited, h4:hover span a:visited, h5:hover span a:visited, h6:hover span a:visited {
+  color: blue;
 }
 /* Tables */
 /* Add borders! */

@@ -1043,8 +1043,6 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \h[3][TODO]
 
-\l[toc]
-\l[publis npm package]
 \l[browser live quick test]
 \l[publish webpage on cirosantilli.com]
 \l[header nested numbers]
@@ -1053,8 +1051,6 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[input indentation skip]
 \l[correct ID generation algorithm to be Unicode robust]
 \l[local downloads and single HTML page with image / script embeds]
-\l[verify integer argument type e.g. on header level]
-\l[verify x style in choices \c[short] or \c[full]]
 \l[LaTeX output]
 
 \h[2][Related projects]

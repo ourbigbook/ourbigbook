@@ -6,40 +6,105 @@ const path = require('path');
 const cirodown = require('cirodown');
 const chokidar = require('chokidar');
 
-function convert_input(input, options, extra_returns, title, program) {
-  var new_options = Object.assign({}, options);
-  new_options.title = title;
-  let output = cirodown.convert(input, options, extra_returns);
+const DEFAULT_IGNORE_BASENAMES = [
+  '.git',
+  'node_modules',
+];
+const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
+
+/** Report an error with the CLI usage and exit in error. */
+function cli_error(message) {
+  console.error(`error: ${message}`);
+  process.exit(1);
+}
+
+/** Convert input from a string to output and return the output as a string.
+ *
+ * Wraps cirodown.convert with CLI usage convenience.
+ *
+ * @param {String} input
+ * @return {String}
+ */
+function convert_input(input, options, convert_input_options={}) {
+  const new_options = Object.assign({}, options);
+  if ('title' in convert_input_options) {
+    new_options.title = convert_input_options.title;
+  }
+  new_options.extra_returns = {};
+  let output = cirodown.convert(input, new_options, new_options.extra_returns);
   if (program.showTokens) {
     console.error('tokens:');
-    console.error(JSON.stringify(extra_returns.tokens, null, 2));
+    console.error(JSON.stringify(new_options.extra_returns.tokens, null, 2));
     console.error();
   }
   if (program.showAst) {
     console.error('ast:');
-    console.error(JSON.stringify(extra_returns.ast, null, 2));
+    console.error(JSON.stringify(new_options.extra_returns.ast, null, 2));
     console.error();
   }
-  for (const error of extra_returns.errors) {
-    console.error(error.toString());
+  for (const error of new_options.extra_returns.errors) {
+    console.error(error.toString(convert_input_options.input_path));
+  }
+  if (new_options.extra_returns.errors.length > 0) {
+    convert_input_options.had_error = true;
   }
   return output;
 }
 
-function convert_path_to_file(input_path, options, extra_returns, encoding, program) {
+/** Convert .ciro to output format and save it to a file instead of returning as a string.
+ *
+ * The output file name is derived from the input file name with the output extension.
+ */
+function convert_path_to_file(input_path, options, convert_input_options={}) {
+  let convert_options = {};
   let input_path_parse = path.parse(input_path);
   if (input_path_parse.ext === '.ciro') {
-    console.error(`convert: ${input_path}`);
-    let input = fs.readFileSync(input_path, encoding);
-    let output = convert_input(input, options, extra_returns, input_path, program);
+    let output = convert_path(input_path, options, convert_input_options);
     let output_path = path.join(input_path_parse.dir, input_path_parse.name) + '.html'
     fs.writeFileSync(output_path, output);
   }
 }
 
-function convert_path(input_path, options, extra_returns, encoding, program) {
-  let input = fs.readFileSync(input_path, encoding);
-  return convert_input(input, options, extra_returns, input_path, program);
+/** Convert input from a path to output and return the output as a string.
+ *
+ * @return {String}
+ */
+function convert_path(input_path, options, convert_input_options) {
+  if (!('multifile' in convert_input_options)) {
+    convert_input_options.multifile = false;
+  }
+  let new_convert_input_options = Object.assign({}, convert_input_options);
+  if (convert_input_options.multifile) {
+    new_convert_input_options.input_path = input_path;
+  }
+  let input = fs.readFileSync(input_path, new_convert_input_options.encoding);
+  let output = convert_input(input, options, new_convert_input_options);
+  if (new_convert_input_options.had_error) {
+    convert_input_options.had_error = true;
+  }
+  return output;
+}
+
+/** https://stackoverflow.com/questions/5827612/node-js-fs-readdir-recursive-directory-search
+ *
+ * @param {Set} skip_basenames
+ */
+function* walk_files_recursively(file_or_dir, skip_basenames) {
+  if (fs.lstatSync(file_or_dir).isDirectory()) {
+    const dirents = fs.readdirSync(file_or_dir, {withFileTypes: true});
+    for (const dirent of dirents) {
+      if (!skip_basenames.has(dirent.name)) {
+        const res = dirent.name;
+        if (dirent.isDirectory()) {
+          yield* walk_files_recursively(res, skip_basenames);
+        } else {
+          yield res;
+        }
+      }
+    }
+  } else {
+    yield file_or_dir;
+  }
 }
 
 // CLI options.
@@ -69,7 +134,7 @@ let inputPath;
 program.arguments(
   '[input_path]',
   undefined,
-  'Input path. If not given, read from stdin.',
+  'http://cirosantilli.com/cirodown#cirodown-executable',
 ).action(function (input_path) {
   inputPath = input_path;
 });
@@ -90,29 +155,46 @@ if (program.helpMacros) {
     show_tokens: program.showTokensInside,
     show_tokenize: program.showTokenize,
   };
-  let extra_returns = {};
+  let convert_input_options = {
+    encoding: encoding,
+    had_error: false,
+    multifile: true,
+    program: program,
+  };
   if (inputPath === undefined) {
     if (program.watch) {
-      console.error('error: --watch is incompatible from input from stdin');
-      process.exit(1);
+      cli_error('--watch is incompatible from input from stdin');
     }
     title = 'stdin';
     input = fs.readFileSync(0, encoding);
-    output = convert_input(input, options, extra_returns, title);
+    convert_input_options.multifile = false;
+    output = convert_input(input, options, convert_input_options);
   } else {
+    if (!fs.existsSync(inputPath)) {
+      cli_error(`input_path does not exist: "${inputPath}"`);
+    }
     if (program.watch) {
-      let watcher = chokidar.watch(inputPath, {ignored: '.git', ignoreInitial: true});
+      let watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES, ignoreInitial: true});
       watcher.on('change', function(path) {
-        convert_path_to_file(path, options, extra_returns, encoding, program);
+        convert_path_to_file(path, options, convert_input_options);
       }).on('add',  function(path) {
-        convert_path_to_file(path, options, extra_returns, encoding, program);
+        convert_path_to_file(path, options, convert_input_options);
       });
     } else {
-      output = convert_path(inputPath, options, extra_returns, encoding, program);
+      if (fs.lstatSync(inputPath).isFile()) {
+        convert_input_options.multifile = false;
+        output = convert_path(inputPath, options, convert_input_options);
+      } else {
+        for (const path of walk_files_recursively(inputPath, DEFAULT_IGNORE_BASENAMES_SET)) {
+          convert_path_to_file(path, options, convert_input_options);
+        }
+      }
     }
   }
-  if (!program.watch) {
+  if (output !== undefined) {
     console.log(output);
-    process.exit(extra_returns.errors.length > 0);
+  }
+  if (!program.watch) {
+    process.exit(convert_input_options.had_error);
   }
 }

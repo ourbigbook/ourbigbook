@@ -101,8 +101,10 @@ if (program.helpMacros) {
     output = convert_input(input, options, extra_returns, title);
   } else {
     if (program.watch) {
-      let watcher = chokidar.watch(inputPath);
+      let watcher = chokidar.watch(inputPath, {ignored: '.git', ignoreInitial: true});
       watcher.on('change', function(path) {
+        convert_path_to_file(path, options, extra_returns, encoding, program);
+      }).on('add',  function(path) {
         convert_path_to_file(path, options, extra_returns, encoding, program);
       });
     } else {

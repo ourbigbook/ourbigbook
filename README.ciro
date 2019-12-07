@@ -1093,6 +1093,22 @@ cirodown --publish .
 
 The publishing only happens if the build has no errors.
 
+\h[5][\c[--publish-commit <commit-message>]]
+{id=publish-commit}
+
+Like \x[publish], but also automatically:
+
+\l[\c[git add -u] to automatically add change to any files that have been previously git tracked]
+\l[\c[git commit -m <commit-message>] to create a new commit with those changes
+
+This allows you to publish your changes live in a single command such as:
+
+\C[[
+cirodown --publish-commit 'my amazing change' .
+]]
+
+With great power comes great responsibility of course, but who cares!
+
 \h[5][\c[--help-macros]]
 {id=help-macros}
 

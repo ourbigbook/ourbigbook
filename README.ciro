@@ -29,11 +29,16 @@ git clone https://github.com/cirosantilli/cirodown
 cd cirodown
 npm link
 npm link cirodown
-./cirodown README.ciro > REAME.html
-xdg-open README.html
+./cirodown README.ciro > index.html
+xdg-open index.html
 ]]
 
-The \c[npm link] commands allow you to make changes to the code without re-installing the package all the time for development! Try hacking \a[cirodown] to see it.
+The \c[npm link] commands allow you to make changes to the code without re-installing the package all the time for development! Try hacking \a[cirodown] to see it. Just remember that if you add a new dependency, you must redo it (TODO any better way?):
+
+\C[[
+npm install <dependency>
+npm link
+]]
 
 The symlink business can be undone with:
 
@@ -45,7 +50,6 @@ rm node_modules/cirodown
 TODO: create a multifile blog example folder and link from here.
 
 \h[2][Design goals]
-{id_scope=true}
 
 Cirodown is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
 
@@ -201,9 +205,13 @@ Read this \x[my-id]{style=full}.
 
 \h[3][Internal cross file references]
 
+TODO
+
+\C[[
 Reference to the first header of another file: \x[not-readme]. That header gets its ID from the file name by default.
 
-Reference to an internal header of another file: \x[not-readme/h2-in-not-the-readme]. By default, That header ID gets prefixed by the ID of the top header.
+Reference to an internal header of another file: \x[h2-in-not-the-readme]. By default, That header ID gets prefixed by the ID of the top header.
+]]
 
 \h[3][Automatic ID from title]
 
@@ -358,7 +366,7 @@ Equivalent with explicit container:
 
 The explicit container is required if you want to add properties to the list, e.g. a title and an ID: \x[list-my-id]:
 
-\ul{title=My list title}
+\ul
 {id=list-my-id}
 [
 \l[a]
@@ -430,6 +438,71 @@ If the image has neither ID nor title, then it does not get a caption and it is 
 This kind of image is discouraged, because in paged output formats like PDF, it could float away from the text that refers to the image.
 
 And here is an \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg][Xi Chrysanthemum] inline one with lower case 'i'. Inline images can't have captions.
+
+\h[3][Where to store images]
+
+If you are making a limited repository that will not have a ton of images, then you can get away with simply git tracking your images in the main repository.
+
+With this setup, no further action is needed. For example, with a file structure of:
+
+\C[[
+./README.ciro
+./Image_with_a_descriptive_title.jpeg
+]]
+
+just use the image from \C[README.ciro] as:
+
+\C[[
+Here is a nice image:
+
+\Image[Image_with_a_descriptive_title.jpeg]
+]]
+
+However, if you are making a huge tutorial, which can have a huge undefined number of images (i.e. any scientific book), then you likely don't want to git track your images in the git repository.
+
+We recommend the following approach instead.
+
+Create a separate GitHub repository in addition to the main one containing the text, for example:
+
+\l[\c[./my-tutorial/]]
+\l[\c[./my-tutorial-media/]]
+
+The name \c[*-media] suffix is not mandatory, but if you use this default, \c[cirodown] will handle it for you without any further configuration.
+
+And then set the \x[media-source-type] option in your \x[cirodown-json]:
+
+\C[[
+{
+  media_source_type = "media_repo"
+}
+]]
+
+Now, simply drop your images into the \c[my-tutorial-media] repository and use them just as before, and everything will just work!
+
+\C[[
+\Image[Image_with_a_descriptive_title.jpeg]
+]]
+
+\c[cirodown] will even automatically add and push used images in the \c[my-tutorial-media] repository for you during publishing!
+
+You should then use the following rules inside \c[my-tutorial-media]:
+
+\l[give every file a very descriptive and unique name as a full English sentence]
+\l[never ever delete any files, nor change their content, unless it is an improvement in format that does change the information contained of the image TODO link to nice Wikimedia Commons guideline page]
+
+This way, even though the repositories are not fully in sync, anyone who clones the latest version of the \c[*-media] directory will be able to view any version of the main repository.
+
+Then, if one day the media repository ever blows up GitHub's limit, you can just migrate the images to another image server that allows arbitrary basenames, e.g. AWS, and just configure your project to use that new media base URL with the \x[media-base-url] option.
+
+The reason why images should be kept in a separate repository is that images are hundreds or thousands of times larger than hand written text.
+
+Therefore, images could easily fill up the maximum repository size you are allowed: https://webapps.stackexchange.com/questions/45254/file-size-and-storage-limits-on-github#84746 and then what will you do when GitHub comes asking you to reduce the repository size?
+
+\a[https://git-lfs.github.com/][Git LFS] is one approach to deal with this, but we feel that it adds too much development overhead.
+
+\h[3][Image generators]
+
+TODO implement: mechanism where you enter a textual description of the image inside the code body, and it then converts to an image, adds to the \c[-media] repo and pushes all automatically.
 
 \h[2][Code \c[[\c]] and \c[[\C]]]
 {id=code}
@@ -530,9 +603,11 @@ TODO pending upstream tag bump: \a[https://github.com/KaTeX/KaTeX/pull/2091] Fir
 
 Second block using:
 
+\C[[[
 \M[[
 \foo
 ]]
+]]]
 
 First block defining with \c[\\def]:
 
@@ -928,11 +1003,13 @@ Convert a \c[.ciro] file to HTML and output the HTML to stdout:
 cirodown README.ciro
 ]]
 
-Convert all \c[.ciro] files in a directory to HTML files next to each corresponding \c[.ciro] file:
+Convert all \c[.ciro] files in a directory to HTML files next to each corresponding \c[.ciro] file, e.g. \c[somefile.ciro] to \c[somefile.html]:
 
 \C[[
 cirodown .
 ]]
+
+\c[README.ciro] is treated magically and gets converted to \c[index.html] instead of \c[README.html], so that it will appear on both the root of the HTML output and on the GitHub home page once GitHub adds Cirodown support.
 
 Convert a \c[.ciro] file from stdin to HTML and output the contents of \c[<body>] to stdout:
 
@@ -940,7 +1017,11 @@ Convert a \c[.ciro] file from stdin to HTML and output the contents of \c[<body>
 printf 'ab\ncd\n' | cirodown --body-only
 ]]
 
-\h[4][\c[--watch]]
+\h[4][\c[cirodown] executable most important options]
+{id=cirodown-executable-most-important-options}
+
+\h[5][\c[--watch]]
+{id=watch}
 
 Don't quit \c[cirodown] immediately.
 
@@ -949,7 +1030,7 @@ Instead, watch the selected file or directory for changes, and rebuild individua
 Watch a single file:
 
 \C[[
-./cirodown --watch README.ciro
+cirodown --watch README.ciro
 ]]
 
 Now you can just edit \c[README.ciro], save the file in your editor, and refresh the webpage and your change should be visible, no need to run a \c[cirodown] command excplicitly every time.
@@ -959,47 +1040,93 @@ TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with
 Watch every \c[.ciro] file in an entire directory:
 
 \C[[
-./cirodown --watch .
+cirodown --watch .
 ]]
 
 Save the output to \c[.html] files automatically instead of outputting it to stdout as done without \c[--watch].
 
 Exit by entering Ctrl + C on the terminal.
 
-\h[4][\c[--help-macros]]
+\h[5][\c[--publish]]
+{id=publish}
+
+Cirodown tooling is so amazing that we also take care of the HTML publishing for you.
+
+\h[6][\c[Publish to GitHub Pages]]
+
+If you want to publish your root user page, which appears at `/` (e.g. \a[https://github.com/cirosantilli/cirosantilli.github.io] for the user \c[cirosantilli]), GitHub annoyingly forces you to use the \c[master] branch for the HTML output:
+
+\l[https://github.com/isaacs/github/issues/212]
+\l[https://stackoverflow.com/questions/31439951/how-can-i-use-a-branch-other-than-master-for-user-github-pages]
+
+Therefore, you must first place your \c[.ciro] source in a different branch and clear up the \c[master] branch for the HTML, and only then publish:
+
+\C[[
+git checkout -b dev
+git branch -D master
+git push --delete origin master
+
+git add README.ciro
+git commit --message 'some commit message'
+cirodown --publish .
+]]
+
+This will automatically \c[git push] both the \c[dev] branch for you, and create/update the \c[master] branch, which contains the desired HTML output.
+
+Only changes committed to Git are pushed.
+
+You then will also want to set your default repository branch to \c[dev] in the settings for that repository: https://help.github.com/en/github/administering-a-repository/setting-the-default-branch
+
+\c[cirodown] automatically detects that we are not on the \c[master] branch, and therefore guesses that you want to publish GitHub pages on the \c[master] branch.
+
+For any other non-root directory, \c[cirodown] sees that you are on the \c[master] branch, and automatically publishes on the \c[gh-pages] branch, so all you need is:
+
+\C[[
+git add README.ciro
+git commit --message 'some commit message'
+cirodown --publish .
+]]
+
+The publishing only happens if the build has no errors.
+
+\h[5][\c[--help-macros]]
 {id=help-macros}
 
 You can get an overview of all macros in JSON format with:
 
 \C[[
-./cirodown --help-macros
+cirodown --help-macros
 ]]
 
-\h[3][Multifile and server]
+\h[4][\c[cirodown.json]]
+{id=cirodown-json}
 
-In addition to being a single input single output file conversion tool, our implementation will completely overtake the functions currently done by of Jekyll or other static website generators.
+\h[5][\c[media_source_type]]
+{id=media-source-type}
 
-We believe that this is the only way to achieve a perfect unified development experience.
+\l[\c[local]: tracked in the current Git repository, no further magic is done]
+\l[
+  \c[media_repo]: tracked in a separate media repository, defaults to \c[../<project-name>-media/]
 
-Firstly, the same executable that does single file conversion, when pointed to a directory enter a multi-file mode that does the desired multi-file conversion, resolving for example \x[internal-cross-file-references].
+  When \x[publish][publishing], Cirodown searches for files that were used in the build but not added to the media directory, and automatically does a \c[git add], \c[commit] and \c[push] for you!
+]
 
-Furthermore, the exact same executable will have a server mode speed up interactive development with a off-the-shelf text editor (as opposed to a \x[editor-and-preview][the planned dedicated editor]).
+\h[5][\c[media_base_url]]
+{id=media-base-url}
 
-\h[3][Server and dependency resolution]
+TODO implement set the base URL where media will be served from.
 
-TODO xref dep resolution, on demand rebuild
+Default: for a GitHub repository called `my-tutorial`, append the `-media` suffix and use `my-tutorial-media`.
+
+Further rationale at: \x[where-to-store-images].
 
 \h[3][Editor and preview]
+
+TODO
 
 We must achieve an editor setup with synchronized live side-by-side preview.
 
 It would be amazing to have a WebKit interface that works both on browser for the and locally.
-
-TODO
-
-\h[3][Macro dump]
-
-The compiler executable will have a \c[--dump-macros] option that will dump all macros, describing all of their arguments and including help strings registered by the macro definition API.
 
 \h[2][Developing Cirodown]
 
@@ -1091,7 +1218,9 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \h[3][TODO]
 
 \l[publish webpage on cirosantilli.com]
+\l[custom header, footer and HEAD based on files like header.html, footer.html]
 \l[make h1 special: don't take up number count, don't show on toc, don't show number, use as default title]
+\l[\x[id-scope]]
 \l[header nested numbers]
 \l[browser live quick test]
 \l[list and code caption]
@@ -1099,6 +1228,8 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[input indentation skip]
 \l[correct ID generation algorithm to be Unicode robust]
 \l[local downloads and single HTML page with image / script embeds]
+\l[image management: upload to separate media directory]
+\l[handle ID calculation from title if title has HTML elements, e.g. headers with code]
 \l[LaTeX output]
 
 \h[2][Related projects]

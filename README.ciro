@@ -6,7 +6,7 @@ A Markup language to write multipage or single page HTML / PDF books, blogs, etc
 
 \h[2][Quick start]
 
-TODO: browser live test.
+TODO: browser live test
 
 Install NPM package and use it from the command line for a quick conversion:
 

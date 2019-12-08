@@ -351,6 +351,23 @@ Therefore, in this case you are forced to specify which include will actually ex
 \include[not-the-readme]{canonical=true}
 ]]
 
+\h[3][Skipping header levels]
+
+The very first header of a document can be of any level, although we highly recommend your document to start with a \c[[\h[1\]]], and to contain exactly just one \c[[\h[1\]]], as this has implications such as:
+
+\l[\c[[\h[1\]]] is used for the document title: \x[html-document-title]]
+\l[\c[[\h[1\]]] does not show on the \x[table-of-contents]]
+
+Aftter the initial header however, you must not skip a header level, e.g. the following would give an error because it skips level 3:
+
+\C[[
+\h[1][my 1]
+
+\h[2][my 1]
+
+\h[4][my 4]
+]]
+
 \h[2][Lists \c[[\l]]]
 {id=lists}
 
@@ -1246,7 +1263,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[actually, do number every equation, figure etc. and add dummy IDs to them, why not have references? Use side equation numbers like in real books]
 \l[publish webpage on cirosantilli.com]
 \l[custom header, footer and HEAD based on files like header.html, footer.html]
-\l[make h1 special: don't take up number count, don't show on toc]
+\l[make h1 special: don't take up number count]
 \l[\x[id-scope]]
 \l[header nested numbers]
 \l[browser live quick test]

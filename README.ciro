@@ -1231,6 +1231,12 @@ And now, some content!
 
 In terms of HTML, the \c[\\toplevel] element corresponds to the \c[<html>], \c[<head>], \c[<header>] and \c[<footer>] elements of a document.
 
+\h[4][HTML document title]
+
+\l[if the \c[title] argument of \c[toplevel] is given, use that]
+\l[otherwise, if the document has a \c[[\h[1\]]], use the title of the first such header]
+\l[otherwise use a dummy value]
+
 \h[3][Formal grammar]
 
 TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarchy and parsing complexity.
@@ -1240,7 +1246,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[actually, do number every equation, figure etc. and add dummy IDs to them, why not have references? Use side equation numbers like in real books]
 \l[publish webpage on cirosantilli.com]
 \l[custom header, footer and HEAD based on files like header.html, footer.html]
-\l[make h1 special: don't take up number count, don't show on toc, don't show number, use as default title]
+\l[make h1 special: don't take up number count, don't show on toc]
 \l[\x[id-scope]]
 \l[header nested numbers]
 \l[browser live quick test]
@@ -1250,7 +1256,8 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[correct ID generation algorithm to be Unicode robust]
 \l[local downloads and single HTML page with image / script embeds]
 \l[image management: upload to separate media directory]
-\l[handle ID calculation from title if title has HTML elements, e.g. headers with code]
+\l[handle ID calculation from title if title has HTML elements, e.g. headers with code. Use that for the title as well.]
+\l[multiple newlines blow up (5 or six), create test and decide best behaviour]
 \l[LaTeX output]
 
 \h[2][Related projects]

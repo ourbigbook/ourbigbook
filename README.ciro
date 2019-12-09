@@ -469,11 +469,11 @@ List item with a paragraph inside of it:
 \h[2][Images \c[[\image]]]
 {id=images}
 
-A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' \c[Image] can be seen at \x[image-my-xi-chrysanthemum]:
+A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' \c[Image] can be seen at \x[fig-my-xi-chrysanthemum]:
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg]
 {title=Xi Chrysanthemum is a very nice image}
-{id=image-my-xi-chrysanthemum}
+{id=fig-my-xi-chrysanthemum}
 {source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
 {description=
   We can have multiple paragraphs here, just for any other parameter argument.
@@ -481,16 +481,24 @@ A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' \c[
   I'm not even kidding.
 }
 
-Here is one without a description but with an ID so we can link to it: \x[image-my-xi-chrysanthemum-2]{style=full}.
+Here is one without a description but with an ID so we can link to it: \x[fig-my-xi-chrysanthemum-2]{style=full}.
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg]
-{id=image-my-xi-chrysanthemum-2}
+{id=fig-my-xi-chrysanthemum-2}
 
 We must use \x[cross-reference-style][\c[style=full]] here because otherwise the link text would be empty and not show at all.
 
-If the image has neither ID nor title, then it does not get a caption and it is not possible to link to it, and it does not take up an image number:
+If the image has neither ID nor title, then it just gets a generic caption, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg]
+
+The image does however get an automatically generated ID based on its image number so that readers can link to it on the rendered version, e.g. as:
+
+\C[[
+#fig-123
+]]
+
+This link is of course not stable across document revisions, since if an image is added before that one, the link will break.
 
 This kind of image is discouraged, because in paged output formats like PDF, it could float away from the text that refers to the image.
 
@@ -644,7 +652,7 @@ HTML escaping happens as you would expect, e.g. < shows fine in:
 1 < 2
 ]]
 
-Equation IDs and titles and linking to equations works identically to \x[images][images], see that section for full details. Here is one equation reference example: \x[equation-my-first-equation].
+Equation IDs and titles and linking to equations works identically to \x[images][images], see that section for full details. Here is one equation reference example: \x[eq-my-first-equation].
 
 \M{title=My first equation}[[
 1 + 1 = 2
@@ -1296,7 +1304,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \h[3][TODO]
 
-\l[actually, do number every equation, figure etc. and add dummy IDs to them, why not have references? Use side equation numbers like in real books]
+\l[expose a on over link to paragraphs, equations on right \c[(12)]. Consider exposing on code blocks like equations.]
 \l[publish webpage on cirosantilli.com]
 \l[custom header, footer and HEAD based on files like header.html, footer.html]
 \l[\x[id-scope]]

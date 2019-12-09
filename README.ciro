@@ -1160,7 +1160,7 @@ The publishing only happens if the build has no errors.
 Like \x[publish], but also automatically:
 
 \l[\c[git add -u] to automatically add change to any files that have been previously git tracked]
-\l[\c[git commit -m <commit-message>] to create a new commit with those changes
+\l[\c[git commit -m <commit-message>] to create a new commit with those changes]
 
 This allows you to publish your changes live in a single command such as:
 

@@ -536,3 +536,4 @@ assert_error('named argument without =', '\\p{id ab}[cd]', 1, 6);
 //assert_error('argument without close', '\\p[', 1, 3);
 //assert_error('argument without open', ']', 1, 1);
 //assert_error('unterminated literal argument', '\\c[[ab]', 1, 3;
+//assert_error('unterminated argument', '\\c[ab', 1, 3;

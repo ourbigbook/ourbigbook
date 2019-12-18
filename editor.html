@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Cirodown editor demo</title>
+<style>
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+#container {
+  align-items: center;
+  display: flex;
+  height: 100%;
+  padding: 10px;
+}
+#input {
+  border: 1px black solid;
+  flex-grow: 1;
+  height: 100%;
+  margin: 0 5px 0 0;
+  overflow: auto;
+  width: 50%;
+}
+#output {
+  border: 1px black solid;
+  flex-grow: 1;
+  height: 100%;
+  margin: 0 0 0 5px;
+  overflow: auto;
+  width: 50%;
+}
+</style>
+</head>
+<body>
+<div id="container">
+<div id="input" contenteditable="true"></div>
+<div id="output">
+<link
+  scoped
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css"
+  crossorigin="anonymous"
+>
+<link scoped rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css"/>
+<link scoped rel="stylesheet" href="out/main.css"/>
+</div>
+</div>
+</body>
+<script src="out/index.js"></script>
+<script>
+let input_elem = document.getElementById('input');
+let output_elem = document.getElementById('output');
+input_elem.addEventListener('input', function() {
+  output_elem.innerHTML = cirodown.convert(
+      input_elem.innerText, {'body_only': true});
+}, false);
+</script>
+</html>

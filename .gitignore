@@ -1,5 +1,6 @@
+.sass-cache
 /*.html
+!/editor.html
 /node_modules
 /out
 tmp.*
-!/editor.html

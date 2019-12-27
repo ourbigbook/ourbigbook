@@ -337,6 +337,7 @@ Macro.PARAGRAPH_MACRO_NAME = 'p';
 Macro.TITLE_ARGUMENT_NAME = 'title';
 Macro.TOC_MACRO_NAME = 'toc';
 Macro.TOC_PREFIX = 'toc-'
+Macro.TOPLEVEL_MACRO_NAME = 'toplevel';
 
 class Token {
   /**
@@ -471,7 +472,7 @@ class Tokenizer {
       this.chars.pop();
     }
     // Add the magic implicit toplevel element.
-    this.push_token(TokenType.MACRO_NAME, 'toplevel');
+    this.push_token(TokenType.MACRO_NAME, Macro.TOPLEVEL_MACRO_NAME);
     this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
     while (!this.is_end()) {
       this.log_debug('tokenize loop');
@@ -1401,7 +1402,6 @@ function parse_error(state, message, line, column) {
     message, line, column));
 }
 
-const ENCODING = 'utf8';
 const END_NAMED_ARGUMENT_CHAR = '}';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';
 const ESCAPE_CHAR = '\\';
@@ -1846,7 +1846,7 @@ const DEFAULT_MACRO_LIST = [
     },
   ),
   new Macro(
-    'toplevel',
+    Macro.TOPLEVEL_MACRO_NAME,
     [
       new MacroArgument({
         name: 'content',
@@ -1878,14 +1878,8 @@ const DEFAULT_MACRO_LIST = [
 <head>
 <meta charset=utf-8>
 <title>${convert_arg(title, context)}</title>
-<link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css"
-  crossorigin="anonymous"
->
-<link href="https://netdna.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel="stylesheet"/>
 <style>${context.options.css}</style>
-<body>
+<body class="cirodown">
 `;
       }
       ret += convert_arg(ast.args.content, context);

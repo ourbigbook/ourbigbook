@@ -1,15 +1,16 @@
 $paragraph_margin_bottom: #c6538c;
 
+.cirodown {
+
+padding-left: 15px;
+padding-right: 15px;
+
 // Hide by default, show if last child of hovered element.
 .hide-hover:last-child { display: none; }
 
 :hover > .hide-hover:last-child { display: inline; }
 :target {
   background-color: #FFFFCC;
-}
-body {
-  padding-left: 15px;
-  padding-right: 15px;
 }
 .caption-prefix {
   font-weight: bold;
@@ -93,4 +94,5 @@ th, td {
 .toc-container > ul {
   border-left: 0px solid black;
   padding-left: 0px;
+}
 }

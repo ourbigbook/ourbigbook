@@ -8,8 +8,6 @@ The source for this document is at: \a[https://github.com/cirosantilli/cirodown/
 
 \h[2][Quick start]
 
-TODO: browser live test
-
 Install NPM package and use it from the command line for a quick conversion:
 
 \C[[
@@ -1191,6 +1189,33 @@ You can get an overview of all macros in JSON format with:
 cirodown --help-macros
 ]]
 
+\h[5][\c[--html-embed]]
+{id=html-embed}
+
+Embed as many external resources as possible into a single HTML file.
+
+The use case for this option is to produce a single HTML file for an entire build that is fully self contained, and can therefore be given to consumers and viewed offline, much like a PDF.
+
+Examples of embeddings done:
+
+\l[CSS and JavaScript are copy pasted in place. The built-in CSS and JavaScript are currently all automatically downloaded as NPM package dependencies to cirodown]
+\l[
+  \x[images][images] are downloaded if needed and embedded as \c[data:] URLs.
+
+  Images that are managed by the project itself and already locally present, such as those inside the project itself or due to \x[media-source-type] usually don't require download.
+
+  For images linked directly from the web, we maintain a local download cache, and skip downloads if the image is already in the cache.
+
+  To re-download due to image updates, use either:
+
+  \l[\c[--asset-cache-update]: download all images such that the local disk timestamp is older than the HTTP modification date with \a[https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since][\c[If-Modified-Since]]]
+  \l[\c[--asset-cache-update-force]: forcefully redownload all assets]
+]
+
+Keep in mind that certain things can never be embedded, e.g.:
+
+\l[YouTube videos, since YouTube does not offer any download API]
+
 \h[4][\c[cirodown.json]]
 {id=cirodown-json}
 
@@ -1354,6 +1379,16 @@ In terms of HTML, the \c[\\toplevel] element corresponds to the \c[<html>], \c[<
 \l[if the \c[title] argument of \c[toplevel] is given, use that]
 \l[otherwise, if the document has a \c[[\h[1\]]], use the title of the first such header]
 \l[otherwise use a dummy value]
+
+\h[3][CSS]
+
+Our CSS is located at \a[main.scss] and gets processed through \a[https://sass-lang.com/][Sass].
+
+To generate the CSS during development after any changes to that file, you must run:
+
+\C[[
+npm sass
+]]
 
 \h[3][Formal grammar]
 

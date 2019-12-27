@@ -1042,12 +1042,14 @@ function parse(tokens, macros, options, extra_returns={}) {
   // * the insane but necessary paragraphs double newline syntax
   // * automatic ul parent to li and table to tr
   // * extract all IDs into an ID index
-  let todo_visit = [ast_toplevel];
-  let macro_counts = {};
+  const todo_visit = [ast_toplevel];
+  const macro_counts = {};
+  let header_graph_last_level;
+  const header_graph_stack = new Map();
+  let first_header = true;
+  let first_header_level;
   extra_returns.context.ids = {};
-  let header_graph_last_level = 0;
   extra_returns.context.header_graph = new TreeNode();
-  let header_graph_stack = {0: extra_returns.context.header_graph};
   extra_returns.context.has_toc = false;
   while (todo_visit.length > 0) {
     const ast = todo_visit.shift();
@@ -1091,12 +1093,26 @@ function parse(tokens, macros, options, extra_returns={}) {
     if (macro_name === Macro.HEADER_MACRO_NAME) {
       let level = parseInt(convert_arg_noescape(ast.args.level, id_context));
       ast.level = level;
+      if (first_header) {
+        first_header = false;
+        first_header_level = level;
+        header_graph_last_level = level - 1;
+        header_graph_stack[header_graph_last_level] = extra_returns.context.header_graph;
+      }
       let new_tree_node = new TreeNode(ast, header_graph_stack[level - 1]);
       ast.header_tree_node = new_tree_node;
-      if (((level - header_graph_last_level) > 1) && (header_graph_last_level != 0)) {
+      if (level - header_graph_last_level > 1) {
         parse_error(
           state,
           `skipped a header level from ${header_graph_last_level} to ${level}`,
+          ast.args.level[0].line,
+          ast.args.level[0].column
+        );
+      }
+      if (level < first_header_level) {
+        parse_error(
+          state,
+          `header level ${level} is smaller than the level of the first header of the document ${first_header_level}`,
           ast.args.level[0].line,
           ast.args.level[0].column
         );
@@ -1197,9 +1213,9 @@ function parse(tokens, macros, options, extra_returns={}) {
   // Calculate header_graph_top_level.
   let level0_header = extra_returns.context.header_graph;
   if (level0_header.children.length === 1) {
-    extra_returns.context.header_graph_top_level = level0_header.children[0].value.level;
+    extra_returns.context.header_graph_top_level = first_header_level;
   } else {
-    extra_returns.context.header_graph_top_level = 0;
+    extra_returns.context.header_graph_top_level = first_header_level - 1;
   }
 
   return ast_toplevel;

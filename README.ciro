@@ -194,6 +194,8 @@ For macros that do have an ID, you can write a cross reference to it:
 
 \h[3][x child argument]
 
+TODO implement.
+
 Setting \c[child=1] on a cross reference to a header as in:
 
 \C[[
@@ -283,17 +285,25 @@ Example: \x[cross-reference-style]{style=full}.
 
 \h[3][Internal cross file references]
 
-TODO
+Reference to the first header of another file: \x[not-readme].
+
+Remember that the \x[the-toplevel-header][ID of the toplevel header] is automatically derived from its file name, that's why we have to use:
 
 \C[[
-Reference to the first header of another file: \x[not-readme]. That header gets its ID from the file name by default.
+\x[not-readme]
+]]
+
+instead of:
+
+\C[[
+\x[not-the-readme]
+]]
 
 Reference to an internal header of another file: \x[h2-in-not-the-readme]. By default, That header ID gets prefixed by the ID of the top header.
-]]
 
 \h[3][Automatic ID from title]
 
-If a macro has the \c[title] property is present but no explicit \c[id], an ID is created automatically from the \c[title], by applying the following transformations:
+If a \x[the-toplevel-header][non-toplevel] macro has the \c[title] property is present but no explicit \c[id], an ID is created automatically from the \c[title], by applying the following transformations:
 
 \l[convert all of \c[A-Z] characters to lowercase]
 \l[convert consecutive sequences of all non \c[a-z0-9] ASCII characters to a single hyphen \c[-]. Note that this leaves non-ASCII character untouched.]
@@ -326,6 +336,8 @@ So for example, the following automatic IDs would be generated: \x[table-example
   \td[We leave the non ASCII uppercase \a[https://en.wikipedia.org/wiki/Acute_accent][acute accented] \c[e], \c[É], untouched by default]
 ]
 ]
+
+For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the Cirodown file without extension instead of from the \c[title] argument.
 
 \h[2][Headers \c[[\h]]]
 {id=headers}
@@ -392,34 +404,36 @@ Paragraph.
 
 rather than having explicit levels.
 
-But we chose not to do it like most markups available because it leads to too many nestiing levels, and hard to determine where you are without tooling.
+But we chose not to do it like most markups available because it leads to too many nesting levels, and hard to determine where you are without tooling.
 
 \h[3][Includes \c[[\include]]]
 {id=includes}
 
-The \c[[\include]] macro achieves the following goals:
+The \c[[\include]] macro allows including an external Cirodown headers into the current one.
 
-\l[
-  show a single header at multiple locations in the table of contents. This makes the TOC into a full blown graph rather than a tree.
+\c[[\include]] takes on mandatory argument, which is the ID of the header you want to include, which is analogous to how \x[internal-cross-references][\c[\\x]] works.
 
-  This can be used to implement a tag entirely within the ToC!
-]
-\l[
-  determine where external files will be placed in \c[--single-page] mode.
+Headers of the included document are automatically shifted to match the level of the child of the level where they are being included.
 
-  When compiling to HTML, we can choose to either:
-
-  \l[compile as multiple pages: default, includes show on ToC and render as \x[internal-cross-references][internal cross references to headers]]
-  \l[compile as a single page: selected with the \c[cirodown --single-page] option]
-]
-
-If an external header would be included multiple times in a single output page, the ToC contents are duplicated, but the content itself cannot be because that would lead to ID conflicts and large pages.
-
-Therefore, in this case you are forced to specify which include will actually expand to the \c[canonical] attribute:
+Remember that the \x[the-toplevel-header][ID of the toplevel header] is automatically derived from its file name, that's why we have to use:
 
 \C[[
-\include[not-the-readme]{canonical=true}
+\include[not-readme]
 ]]
+
+instead of:
+
+\C[[
+\include[not-the-readme]
+]]
+
+So to make things saner, you generally just want to have a single \x[the-toplevel-header][\c[h1] toplevel header] in such included headers.
+
+Wether the external page is actually embedded into the HTML directly, or just on the ToC depends on the \x[html-single-page] option.
+
+Here is an example of inclusion of the header \x[not-readme].
+
+\include[not-readme]
 
 \h[3][Skipping header levels]
 
@@ -450,7 +464,9 @@ If the document has only a single header of the highest level, e.g. like the fol
 \h[3][My 3 2]
 ]]
 
-then this has some magical effects, notably that header IDs won't show that level. For example, the headers would render like:
+then this has some magical effects
+
+One of those effects is that header IDs won't show that level. For example, the headers would render like:
 
 \C[[
 My 2
@@ -471,6 +487,16 @@ rather than:
 ]]
 
 This is because in this case, we guess that the \c[h2] is the toplevel
+
+Another effect is that if not explicitly given, the default ID of a toplevel header is derived from the basename of the Cirodown file rather than from the toplevel header title. This is specially relevant when \x[includes][including] other files.
+
+For example, in file named \c[my-file.ciro] which contains:
+
+\C[[
+\h[1][Awesome cirodown file]
+]]
+
+the ID of the header is \c[my-file] rather than \c[awesome-cirodown-file]. See also: \x[automatic-id-from-title].
 
 \h[2][Lists \c[[\l]]]
 {id=lists}
@@ -1187,7 +1213,7 @@ Exit by entering Ctrl + C on the terminal.
 
 Cirodown tooling is so amazing that we also take care of the HTML publishing for you.
 
-\h[6][\c[Publish to GitHub Pages]]
+\h[6][Publish to GitHub Pages]
 
 If you want to publish your root user page, which appears at `/` (e.g. \a[https://github.com/cirosantilli/cirosantilli.github.io] for the user \c[cirosantilli]), GitHub annoyingly forces you to use the \c[master] branch for the HTML output:
 
@@ -1283,6 +1309,15 @@ Keep in mind that certain things can never be embedded, e.g.:
 
 \l[YouTube videos, since YouTube does not offer any download API]
 
+\h[5][\c[--html-single-page]]
+{id=html-single-page}
+
+If given, the \x[includes][\c[include]] macro parses the target file to be included and includes it in-place.
+
+Otherwise, \c[include] only adds the headers of the other file to the table of contents of the current one, but not the body of the other file. The ToC entries then point to the headers of the included external files.
+
+You may want to use this option together with \x[html-embed] to produce fully self-contained individual HTML files for your project.
+
 \h[4][\c[cirodown.json]]
 {id=cirodown-json}
 
@@ -1328,6 +1363,7 @@ Possibilities we could reuse:
   \l[source: https://github.com/codex-team/editor.js]
   \l[WYSIWYG: no]
   \l[preview scroll sync: yes]
+]
 \l[
   StackEdit
 
@@ -1480,6 +1516,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[LaTeX output]
 \l[autolinks http]
 \l[paragraphs rendered as divs, can show anything inside e.g. lists, code blocks]
+\l[create mechanism to link to the GitHub blob view of in-tree source files that are not added to GitHub pages, e.g. \c[\\file]]
 
 \h[2][Related projects]
 

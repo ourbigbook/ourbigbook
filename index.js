@@ -754,12 +754,13 @@ function convert(
   if (options === undefined) {
     options = {};
   }
-  if (!('body_only'     in options)) { options.body_only     = false; }
-  if (!('css'           in options)) { options.css           = '';    }
-  if (!('show_ast'      in options)) { options.show_ast      = false; }
-  if (!('show_parse'    in options)) { options.show_parse    = false; }
-  if (!('show_tokenize' in options)) { options.show_tokenize = false; }
-  if (!('show_tokens'   in options)) { options.show_tokens   = false; }
+  if (!('body_only'        in options)) { options.body_only         = false; }
+  if (!('css'              in options)) { options.css               = '';    }
+  if (!('html_single_page' in options)) { options.html_single_page  = false; }
+  if (!('show_ast'         in options)) { options.show_ast          = false; }
+  if (!('show_parse'       in options)) { options.show_parse        = false; }
+  if (!('show_tokenize'    in options)) { options.show_tokenize     = false; }
+  if (!('show_tokens'      in options)) { options.show_tokens       = false; }
   macros = macro_list_to_macros();
   extra_returns.errors = [];
   let sub_extra_returns;
@@ -1597,6 +1598,15 @@ const DEFAULT_MACRO_LIST = [
       },
       x_style: XStyle.short,
     }
+  ),
+  new Macro(
+    'include',
+    [
+      new MacroArgument({
+        name: 'href',
+      }),
+    ],
+    function(ast, context) { return '' },
   ),
   new Macro(
     'l',

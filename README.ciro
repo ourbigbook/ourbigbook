@@ -287,6 +287,10 @@ Example: \x[cross-reference-style]{style=full}.
 
 Reference to the first header of another file: \x[not-readme].
 
+Reference to another header of another file, with \x[cross-reference-style] full: \x[h2-in-not-the-readme]{style=full}.
+
+Reference to an image in another file: \x[fig-not-readme-xi]{style=full}.
+
 Remember that the \x[the-toplevel-header][ID of the toplevel header] is automatically derived from its file name, that's why we have to use:
 
 \C[[
@@ -300,6 +304,14 @@ instead of:
 ]]
 
 Reference to an internal header of another file: \x[h2-in-not-the-readme]. By default, That header ID gets prefixed by the ID of the top header.
+
+\h[4][Internal cross file references internals]
+
+When running in Node.js, Cirodown dumps the IDs of all processed files to a \c[out/ids.sqlite3] file, and then reads from that file when IDs are needed.
+
+When converting a directory, \c[out/ids.sqlite3] is placed inside the input directory. When converting individual files, \c[out/ids.sqlite3] is placed in the current working directory. The file is not created or used when handling input from stdin.
+
+When running in the browser, the same JavaScript API will send queries to the server instead of a local SQLite database.
 
 \h[3][Automatic ID from title]
 
@@ -565,7 +577,7 @@ List item with a paragraph inside of it:
 
 A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' \c[Image] can be seen at \x[fig-my-xi-chrysanthemum]:
 
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg]
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {title=Xi Chrysanthemum is a very nice image}
 {id=fig-my-xi-chrysanthemum}
 {source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
@@ -577,14 +589,14 @@ A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' \c[
 
 Here is one without a description but with an ID so we can link to it: \x[fig-my-xi-chrysanthemum-2]{style=full}.
 
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg]
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {id=fig-my-xi-chrysanthemum-2}
 
 We must use \x[cross-reference-style][\c[style=full]] here because otherwise the link text would be empty and not show at all.
 
 If the image has neither ID nor title, then it just gets a generic caption, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
 
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg]
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 
 The image does however get an automatically generated ID based on its image number so that readers can link to it on the rendered version, e.g. as:
 
@@ -596,7 +608,7 @@ This link is of course not stable across document revisions, since if an image i
 
 This kind of image is discouraged, because in paged output formats like PDF, it could float away from the text that refers to the image.
 
-And here is an \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_liusi_added_by_Ciro_Santilli.jpeg][Xi Chrysanthemum] inline one with lower case 'i'. Inline images can't have captions.
+And here is an \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg][Xi Chrysanthemum] inline one with lower case 'i'. Inline images can't have captions.
 
 \h[3][Where to store images]
 

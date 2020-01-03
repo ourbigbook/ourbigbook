@@ -3,12 +3,12 @@
     "cirodown": "cirodown"
   },
   "dependencies": {
+    "better-sqlite3": "^5.4.3",
     "chokidar": "3.3.0",
     "commander": "3.0.2",
     "git-url-parse": "11.1.2",
     "katex": "0.11.1",
-    "normalize.css": "8.0.1",
-    "sqlite3": "4.1.1"
+    "normalize.css": "8.0.1"
   },
   "devDependencies": {
     "browserify": "16.5.0",

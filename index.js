@@ -10,8 +10,8 @@ class AstNode {
    *                              elif node_type === AstType.PARAGRAPH: fixed to undefined
    *                              else: arbitrary regular macro
    * @param {Object[String, Array[AstNode]|String]} args -
-   *        If type is macro, the Object with child args.
-   *        Otherwise, it type is text, the raw String.
+   *        If type is AstType.MACRO, and the type is `Object[String, Array[AstNode]`.
+   *        Otherwise, the type is Sring.
    * @param {Number} line - the best representation of where the macro is starts in the document
    *                        used primarily to present useful debug messages
    * @param {Number} column
@@ -110,6 +110,7 @@ class AstNode {
     if (this.node_type === AstType.MACRO) {
       args = object_subset(this.args, this.args_given);
     } else {
+      // Plaintext nodes 
       args = this.args;
     }
     return {
@@ -274,7 +275,7 @@ class Macro {
       // chars after the final newline, so the error message is taking up two lines
       let message = error.toString().replace(/\n\xcc\xb2$/, '');
       this.error(context, message, ast.args.content[0].line, ast.args.content[0].column);
-      return error_message_in_output(message);
+      return error_message_in_output(message, context);
     }
   }
 
@@ -291,6 +292,12 @@ class Macro {
     }
   }
 
+  /** Calculate the text of a cross reference, or the text
+   * that the caption text that cross references can refer to, e.g.
+   * "Table 123. My favorite table". Both are done in a single function
+   * so that style=full references will show very siimlar to the caption
+   * they refer to.
+   */
   x_text(ast, context, options={}) {
     if (!('caption_prefix_span' in options)) {
       options.caption_prefix_span = true;
@@ -783,6 +790,7 @@ function convert(
     console.error();
   }
   extra_returns.ast = ast;
+  extra_returns.context = sub_extra_returns.context;
   extra_returns.errors.push(...sub_extra_returns.errors);
   let errors = [];
   let context = Object.assign(
@@ -842,9 +850,18 @@ function convert_arg_noescape(arg, context={}) {
   return convert_arg(arg, clone_and_set(context, 'html_escape', false));
 }
 
-/** Error message to be rendered inside the generated output itself. */
-function error_message_in_output(msg) {
-  return `[CIRODOWN_ERROR: ${html_escape_attr(msg)}]`
+/** Error message to be rendered inside the generated output itself.
+ *
+ * If context is given, escape the message correctly for this context.
+ */
+function error_message_in_output(msg, context) {
+  let escaped_msg;
+  if (context === undefined) {
+    escaped_msg = msg;
+  } else {
+    escaped_msg = html_escape_context(context, msg);
+  }
+  return `[CIRODOWN_ERROR: ${escaped_msg}]`
 }
 
 /** Convert a key value fully HTML escaped strings to an HTML attribute.
@@ -940,6 +957,7 @@ function html_escape_content(str) {
   ;
 }
 
+/** Escape string depending on the current context. */
 function html_escape_context(context, str) {
   if (context.html_escape) {
     if (context.html_is_attr) {
@@ -1556,7 +1574,7 @@ const DEFAULT_MACRO_LIST = [
       if (!Number.isInteger(level_int) || !(level_int > 0)) {
         let message = `level must be a positive non-zero integer: "${level}"`;
         this.error(context, message, level_arg[0].line, level_arg[0].column);
-        return error_message_in_output(message);
+        return error_message_in_output(message, context);
       }
       if (level_int > 6) {
         custom_args = {'data-level': [new AstNode(AstType.PLAINTEXT,
@@ -1640,7 +1658,7 @@ const DEFAULT_MACRO_LIST = [
         if (!(show === '0' || show === '1')) {
           let message = `show must be 0 or 1: "${level}"`;
           this.error(context, message, show_arg, show_arg[0].column);
-          return error_message_in_output(message);
+          return error_message_in_output(message, context);
         }
         do_show = (show === '1');
       } else {
@@ -1997,7 +2015,7 @@ const DEFAULT_MACRO_LIST = [
             if (!(style_string in XStyle)) {
               let message = `unkown x style: "${style_string}"`;
               this.error(context, message, ast.args.style[0].line, ast.args.style[0].column);
-              return error_message_in_output(message);
+              return error_message_in_output(message, context);
             }
             x_text_options.style = XStyle[style_string];
           }
@@ -2005,7 +2023,7 @@ const DEFAULT_MACRO_LIST = [
           if (content === ``) {
             let message = `empty cross reference body: "${target_id}"`;
             this.error(context, message, ast.line, ast.column);
-            return error_message_in_output(message);
+            return error_message_in_output(message, context);
           }
         }
         let attrs = html_convert_attrs_id(ast, context);
@@ -2014,7 +2032,7 @@ const DEFAULT_MACRO_LIST = [
       } else {
         let message = `cross reference to unknown id: "${target_id}"`;
         this.error(context, message, ast.args.href[0].line, ast.args.href[0].column);
-        return error_message_in_output(message);
+        return error_message_in_output(message, context);
       }
     },
     {

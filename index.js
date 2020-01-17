@@ -110,7 +110,7 @@ class AstNode {
     if (this.node_type === AstType.MACRO) {
       args = object_subset(this.args, this.args_given);
     } else {
-      // Plaintext nodes 
+      // Plaintext nodes.
       args = this.args;
     }
     return {
@@ -172,14 +172,18 @@ class Macro {
    * @param {String} name
    * @param {Array[MacroArgument]} args
    * @param {Function} convert
-   * @param {Object}
+   * @param {Object} options
    *        {boolean} phrasing - is this phrasing content?
-   *                  (HTML5 elements that can go in paragraphs). This matters to determine
-   *                  where `\n\n` paragraphs will split.
+   *                  (HTML5 elements that can go in paragraphs). This matters to:
+   *                  - determine where `\n\n` paragraphs will split
+   *                  - phrasing content does not get IDs
    *        {String} auto_parent - automatically surround consecutive sequences of macros with
    *                 the same parent auto_parent into a node with auto_parent type. E.g.,
    *                 to group list items into ul.
    *        {Set[String]} auto_parent_skip - don't do auto parent generation if the parent is one of these types.
+   *        {Function[AstNode, Object]} -> Bool if true, then an ID should not be automatically given
+   *                 to this node. This is usually the case for nodes that are not visible in the final output,
+   *                 otherwise that would confuse readers.
    */
   constructor(name, positional_args, convert, options={}) {
     if (!('auto_parent' in options)) {
@@ -1093,6 +1097,7 @@ function parse(tokens, macros, options, extra_returns={}) {
 
     // Calculate node ID and add it to the ID index.
     let index_id = true;
+    let id_text = undefined;
     if (ast.arg_given(Macro.ID_ARGUMENT_NAME)) {
       ast.id = convert_arg_noescape(ast.args[Macro.ID_ARGUMENT_NAME], id_context);
     } else {
@@ -1102,26 +1107,33 @@ function parse(tokens, macros, options, extra_returns={}) {
         id_text += id_prefix + ID_SEPARATOR
       }
       if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
+        // ID from title.
         // TODO correct unicode aware algorithm.
         id_text += title_to_id(convert_arg_noescape(ast.args.title, id_context));
-      } else {
-        id_text += ast.macro_count;
-        index_id = false;
+        ast.id = id_text;
+      } else if (!ast.macro.properties.phrasing) {
+        // ID from element count.
+        if (ast.macro_count !== undefined) {
+          id_text += ast.macro_count;
+          index_id = false;
+          ast.id = id_text;
+        }
       }
-      ast.id = id_text;
     }
-    if (ast.id in all_ids) {
-      const previous_ast = all_ids[ast.id];
-      parse_error(
-        state,
-        `duplicate ID "${ast.id}", previous one defined at line ${previous_ast.line} colum ${previous_ast.column}`,
-        ast.args.level[0].line,
-        ast.args.level[0].column
-      );
-    } else {
-      all_ids[ast.id] = ast;
-      if (index_id) {
-        extra_returns.context.ids[ast.id] = ast;
+    if (ast.id !== undefined) {
+      if (ast.id in all_ids) {
+        const previous_ast = all_ids[ast.id];
+        parse_error(
+          state,
+          `duplicate ID "${ast.id}", previous one defined at line ${previous_ast.line} colum ${previous_ast.column}`,
+          ast.args.line,
+          ast.args.column
+        );
+      } else {
+        all_ids[ast.id] = ast;
+        if (index_id) {
+          extra_returns.context.ids[ast.id] = ast;
+        }
       }
     }
 
@@ -1552,6 +1564,9 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       return '';
+    },
+    {
+      macro_counts_ignore: function(ast, context) { return true; }
     }
   ),
   new Macro(
@@ -1662,7 +1677,6 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       let attrs = html_convert_attrs_id(ast, context);
-      let href = html_attr('href', '#' + html_escape_attr(ast.id));
       let katex_output = this.katex_convert(ast, context);
       let ret = ``;
       let do_show;
@@ -1679,6 +1693,7 @@ const DEFAULT_MACRO_LIST = [
         do_show = true;
       }
       if (do_show) {
+        let href = html_attr('href', '#' + html_escape_attr(ast.id));
         ret += `<div class="math-container"${attrs}>`;
         if (ast.arg_given(Macro.TITLE_ARGUMENT_NAME)) {
           ret += `<div class="math-caption-container">\n`;
@@ -1696,10 +1711,10 @@ const DEFAULT_MACRO_LIST = [
     },
     {
       caption_prefix: 'Equation',
+      id_prefix: 'eq',
       macro_counts_ignore: function(ast, context) {
         return ast.arg_given('show') && convert_arg_noescape(ast.args.show, context) === '0';
       },
-      id_prefix: 'eq',
       named_args: [
         new MacroArgument({
           name: Macro.TITLE_ARGUMENT_NAME,

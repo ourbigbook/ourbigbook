@@ -6,6 +6,8 @@ const path = require('path');
 
 const better_sqlite3 = require('better-sqlite3');
 const chokidar = require('chokidar');
+// This library is terrible, too much magic, hard to understand interface,
+// does not do some obvious basics.
 const commander = require('commander');
 const git_url_parse = require("git-url-parse");
 
@@ -35,8 +37,6 @@ class SqliteIdProvider extends cirodown.IdProvider {
     if (get_ret === undefined) {
       return undefined;
     } else {
-      //console.error(get_ret);
-      return undefined;
       const ast = cirodown.AstNode.fromJSON(get_ret.ast_json);
       return [get_ret.path, ast];
     }
@@ -156,16 +156,20 @@ function convert_path(input_path, options, convert_input_options) {
   let new_convert_input_options = Object.assign({}, convert_input_options);
   new_convert_input_options.input_path = input_path;
   let input = fs.readFileSync(input_path, new_convert_input_options.encoding);
-  let output = convert_input(input, options, new_convert_input_options);
+  let input_path_noext;
   if ('db' in convert_input_options) {
-    const ids = new_convert_input_options.extra_returns.ids;
-    input_path_parse = path.parse(input_path);
+    let input_path_parse = path.parse(input_path);
     input_path_noext = path.join(input_path_parse.dir, input_path_parse.name);
     // Remove all IDs from the path, so that they will be removed from the database
-    // if they were removed from the file.
+    // if they were removed from the file. Done before conversion, so that we won't
+    // find duplicates with the file itself.
     const delete_stmt = convert_input_options.db.prepare(
       `DELETE FROM '${convert_input_options.ids_table_name}' WHERE path = ?`
     ).run(input_path_noext);
+  }
+  let output = convert_input(input, options, new_convert_input_options);
+  if ('db' in convert_input_options) {
+    const ids = new_convert_input_options.extra_returns.ids;
     const insert_stmt = convert_input_options.db.prepare(
       `INSERT INTO '${convert_input_options.ids_table_name}'
       (id, path, ast_json) VALUES (?, ?, ?);`
@@ -209,27 +213,30 @@ commander.option('--dry-run', "don't run most external commands, see: https://gi
 commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown/#', false);
 commander.option('--html-embed', 'embed all external resources like images and linked CSS into a single HTML file', false);
 commander.option('--html-single-page', 'http://cirosantilli.com/cirodown#html-single-page', false);
+commander.option('--no-html-x-extension', 'http://cirosantilli.com/cirodown#no-html-x-extension');
 commander.option('--outdir <outdir>', 'if the output would be saved to a file e.g. when building a directory, use this directory as the root');
-commander.option('--output-format', 'output format');
-commander.option('--publish', 'http://cirosantilli.com/cirodown#publish');
+commander.option('--output-format <output-format>', 'output format');
+commander.option('--publish', 'http://cirosantilli.com/cirodown#publish', false);
 commander.option('-P, --publish-commit <commit-message>', 'http://cirosantilli.com/cirodown#publish-commit');
-commander.option('--show-ast', 'print the AST to stderr');
+commander.option('--show-ast', 'print the AST to stderr', false);
 commander.option(
   '--show-ast-inside',
   'print the AST to stderr from inside convert before it returns. ' +
-    'Useful to debug the program if conversion blow up on the next stages.'
+    'Useful to debug the program if conversion blow up on the next stages.',
+  false
 );
-commander.option('--show-parse', 'print parsing internals to stderr');
-commander.option('--show-tokenize', 'print tokenization internals to stderr');
-commander.option('--show-tokens', 'print the token stream to stderr');
+commander.option('--show-parse', 'print parsing internals to stderr', false);
+commander.option('--show-tokenize', 'print tokenization internals to stderr', false);
+commander.option('--show-tokens', 'print the token stream to stderr', false);
 commander.option(
   '--show-tokens-inside',
   'print the token stream to stderr from inside convert before it returns. ' +
     'Useful to debug the program if conversion blow up on the next stages. ' +
     'Also adds token index to the output, which makes debugging the parser ' +
-    'way easier.'
+    'way easier.',
+  false
 );
-commander.option('--watch', 'http://cirosantilli.com/cirodown#watch');
+commander.option('--watch', 'http://cirosantilli.com/cirodown#watch', false);
 let inputPath;
 commander.arguments(
   '[input_path]',
@@ -253,9 +260,19 @@ if (commander.helpMacros) {
   } else {
     css_path = cirodown_nodejs.PACKAGE_OUT_CSS_PATH;
   }
+  let publish = commander.publish || commander.publishCommit !== undefined;
+  let html_x_extension;
+  if (publish) {
+    // GitHub pages target is the only one for now.
+    html_x_extension = false;
+  } else {
+    html_x_extension = commander.htmlXExtension;
+  }
   let options = {
     body_only: commander.bodyOnly,
     css: fs.readFileSync(css_path, ENCODING),
+    html_embed: commander.htmlEmbed,
+    html_x_extension: html_x_extension,
     html_single_page: commander.htmlSinglePage,
     show_ast: commander.showAstInside,
     show_parse: commander.showParse,
@@ -268,7 +285,6 @@ if (commander.helpMacros) {
     had_error: false,
     multifile: true,
   };
-  let publish = commander.publish || commander.publishCommit !== undefined;
   if (inputPath === undefined && (publish || commander.watch)) {
     inputPath = '.';
   }

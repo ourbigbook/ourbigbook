@@ -1211,6 +1211,11 @@ Convert all \c[.ciro] files in a directory to HTML files next to each correspond
 cirodown .
 ]]
 
+In order to resolve \x[internal-cross-file-references], this actually does two passes:
+
+\l[first an ID extraction pass, which parses all inputs and dumps their IDs to the ID database]
+\l[then a second render pass, which uses the IDs in the ID database]
+
 Convert a \c[.ciro] file from stdin to HTML and output the contents of \c[<body>] to stdout:
 
 \C[[
@@ -1255,7 +1260,9 @@ Watch every \c[.ciro] file in an entire directory:
 cirodown --watch .
 ]]
 
-Save the output to \c[.html] files automatically instead of outputting it to stdout as done without \c[--watch].
+This automatically first does a first ID extractoin pass on all files to support \x[internal-cross-file-references].
+
+The output of conversion to \c[.html] files is saved automatically instead of outputting it to stdout as done without \c[--watch].
 
 Exit by entering Ctrl + C on the terminal.
 
@@ -1597,7 +1604,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[parse_error: add in document error message, currently only to stderr]
 \l[LaTeX output]
 \l[infinite xref header recursion: \a[https://github.com/asciidoctor/asciidoctor/issues/3543] Solution: forbid x in titles, pass down context from parent.]
-\l[ID extraction convert mode that skips HTML generation to save time and not get any xref errors, just to dump IDs to sqlite database]
+\l[parallel build across files on \c[./cirodown .]]
 
 \h[2][Related projects]
 

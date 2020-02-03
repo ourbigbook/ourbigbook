@@ -15,6 +15,7 @@ const git_url_parse = require("git-url-parse");
 const cirodown = require('cirodown');
 const cirodown_nodejs = require('cirodown/nodejs');
 
+const CIRODOWN_EXT = '.ciro';
 const OUT_DIRNAME = 'out';
 const DEFAULT_IGNORE_BASENAMES = [
   '.git',
@@ -149,7 +150,7 @@ function convert_input(input, options, convert_input_options={}) {
  */
 function convert_path_to_file(input_path, options, convert_input_options={}) {
   let input_path_parse = path.parse(input_path);
-  if (input_path_parse.ext === '.ciro') {
+  if (input_path_parse.ext === CIRODOWN_EXT) {
     let message_prefix;
     if (options.render) {
       message_prefix = 'convert';
@@ -323,6 +324,9 @@ if (commander.helpMacros) {
     html_embed: commander.htmlEmbed,
     html_x_extension: html_x_extension,
     html_single_page: commander.htmlSinglePage,
+    read_include: function(input_path) {
+      return fs.readFileSync(input_path + CIRODOWN_EXT, ENCODING);
+    },
     render: true,
     show_ast: commander.showAstInside,
     show_parse: commander.showParse,

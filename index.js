@@ -409,6 +409,7 @@ class Macro {
 // headers are used by the 'toc'.
 Macro.HEADER_MACRO_NAME = 'h';
 Macro.ID_ARGUMENT_NAME = 'id';
+Macro.INCLUDE_MACRO_NAME = 'include';
 Macro.LINK_SELF = `(${UNICODE_LINK} link)`;
 Macro.PARAGRAPH_MACRO_NAME = 'p';
 Macro.PLAINTEXT_MACRO_NAME = 'plaintext';
@@ -739,11 +740,6 @@ class TreeNode {
     this.children.push(child);
   }
 
-  add_child(child) {
-    child.index = this.children.length;
-    this.children.push(child);
-  }
-
   /**
    * E.g. get number 1.4.2.5 of a Section.
    *
@@ -830,6 +826,8 @@ function closing_token(token) {
  *
  * @options {Object}
  *          {IdProvider} external_ids
+ *          {Function[String] -> string} read_include(input_path) -> content
+ *          {Number} h_level_offset - add this offset to the levels of every header
  *          {boolean} render - if false, parse the input, but don't render it,
  *              and return undefined.
  *              The initial use case for this is to allow a faster and error-less
@@ -853,6 +851,7 @@ function convert(
   if (!('html_embed' in options)) { options.html_embed = false; }
   if (!('html_single_page' in options)) { options.html_single_page = false; }
   if (!('html_x_extension' in options)) { options.html_x_extension = true; }
+  if (!('h_level_offset' in options)) { options.h_level_offset = 0; }
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('render' in options)) { options.render = true; }
   if (!('show_ast' in options)) { options.show_ast = false; }
@@ -1183,6 +1182,8 @@ function parse(tokens, macros, options, extra_returns={}) {
   // IDs that are indexed: you can link to those.
   let id_provider;
   let local_id_provider = new DictIdProvider(options.input_path, indexed_ids);
+  let cur_header_level;
+  let cur_header_tree_node;
   if (options.id_provider !== undefined) {
     id_provider = new ChainedIdProvider(
       local_id_provider,
@@ -1210,20 +1211,20 @@ function parse(tokens, macros, options, extra_returns={}) {
       ast.macro_count = macro_count;
     }
 
-    // Header tree.
     if (macro_name === Macro.HEADER_MACRO_NAME) {
-      let level = parseInt(convert_arg_noescape(ast.args.level, id_context));
-      ast.level = level;
+			// Create the header tree.
+      cur_header_level = parseInt(convert_arg_noescape(ast.args.level, id_context)) + options.h_level_offset;
+      ast.level = cur_header_level;
       if (is_first_header) {
         first_header = ast;
         is_first_header = false;
-        first_header_level = level;
-        header_graph_last_level = level - 1;
+        first_header_level = cur_header_level;
+        header_graph_last_level = cur_header_level - 1;
         header_graph_stack[header_graph_last_level] = extra_returns.context.header_graph;
       }
-      let new_tree_node = new TreeNode(ast, header_graph_stack[level - 1]);
-      ast.header_tree_node = new_tree_node;
-      if (level - header_graph_last_level > 1) {
+      cur_header_tree_node = new TreeNode(ast, header_graph_stack[cur_header_level - 1]);
+      ast.header_tree_node = cur_header_tree_node;
+      if (cur_header_level - header_graph_last_level > 1) {
         parse_error(
           state,
           `skipped a header level from ${header_graph_last_level} to ${level}`,
@@ -1231,24 +1232,70 @@ function parse(tokens, macros, options, extra_returns={}) {
           ast.args.level[0].column
         );
       }
-      if (level < first_header_level) {
+      if (cur_header_level < first_header_level) {
         parse_error(
           state,
-          `header level ${level} is smaller than the level of the first header of the document ${first_header_level}`,
+          `header level ${cur_header_level} is smaller than the level of the first header of the document ${first_header_level}`,
           ast.args.level[0].line,
           ast.args.level[0].column
         );
       }
-      let parent_tree_node = header_graph_stack[level - 1];
+      let parent_tree_node = header_graph_stack[cur_header_level - 1];
       if (parent_tree_node !== undefined) {
-        parent_tree_node.add_child(new_tree_node);
+        parent_tree_node.add_child(cur_header_tree_node);
       }
-      header_graph_stack[level] = new_tree_node;
-      header_graph_last_level = level;
-    }
-    if (macro_name === Macro.TOC_MACRO_NAME) {
+      header_graph_stack[cur_header_level] = cur_header_tree_node;
+      header_graph_last_level = cur_header_level;
+    } else if (macro_name === Macro.TOC_MACRO_NAME) {
       extra_returns.context.has_toc = true;
-    }
+    } else if (macro_name === Macro.INCLUDE_MACRO_NAME) {
+			const include_options = Object.assign({}, options);
+			include_options.render = false;
+			include_options.h_level_offset = cur_header_level;
+			const include_extra_returns = {};
+			const href = convert_arg_noescape(child_node.args.href, id_context);
+			convert(
+				options.read_include(href),
+				include_options,
+				include_extra_returns,
+			);
+			console.error(href);
+			console.error(child_node.line);
+			console.error(child_node.column);
+			// Attach the included header graph into the current one.
+			for (const child of include_extra_returns.context.header_graph.children) {
+				cur_header_tree_node.add_child(child);
+			}
+			if (options.html_single_page) {
+				// inject the parsed AST tree.
+				new_child_nodes = include_extra_returns.ast.args.content;
+				// TODO attach the included header IDs into the current one.
+			} else {
+				// Don't merge into a single file, render as an xref link instead.
+				new_child_nodes = [
+					new PlaintextAstNode(
+						child_node.line,
+						child_node.column,
+						'Included header: '
+					),
+					new AstNode(
+						AstType.MACRO,
+						'x',
+						{
+							'href': [
+								new PlaintextAstNode(
+									child_node.line,
+									child_node.column,
+									href
+								)
+							]
+						},
+						child_node.line,
+						child_node.column,
+					),
+				];
+			}
+		}
 
     // Calculate node ID and add it to the ID index.
     let index_id = true;
@@ -1309,19 +1356,20 @@ function parse(tokens, macros, options, extra_returns={}) {
       }
     }
 
-    // Loop over the child arguments.
+    // Loop over the child arguments. We do this rather than recurse into them
+    // to be able to easily remove or add nodes  to the tree during this AST
+    // post-processing.
     for (const arg_name in ast.args) {
       let arg = ast.args[arg_name];
-
-      // Add ul and table implicit parents.
       let new_arg = [];
       for (let i = 0; i < arg.length; i++) {
         let child_node = arg[i];
-        let new_child_node;
+        let new_child_nodes;
         if (child_node.node_type === AstType.MACRO) {
-          let child_name = child_node.macro_name;
-          let child_macro = state.macros[child_name];
+          let child_macro_name = child_node.macro_name;
+          let child_macro = state.macros[child_macro_name];
           if (child_macro.auto_parent !== undefined) {
+						// Add ul and table implicit parents.
             let auto_parent_name = child_macro.auto_parent;
             if (
               ast.macro_name !== auto_parent_name &&
@@ -1337,7 +1385,7 @@ function parse(tokens, macros, options, extra_returns={}) {
               ) {
                 i++;
               }
-              new_child_node = new AstNode(
+              new_child_nodes = [new AstNode(
                 AstType.MACRO,
                 auto_parent_name,
                 {
@@ -1345,16 +1393,16 @@ function parse(tokens, macros, options, extra_returns={}) {
                 },
                 start_auto_child_node.line,
                 start_auto_child_node.column,
-              )
+              )];
               // Because the for loop will advance past it.
               i--;
             }
           }
         }
-        if (new_child_node === undefined) {
-          new_child_node = child_node;
+        if (new_child_nodes === undefined) {
+          new_child_nodes = [child_node];
         }
-        new_arg.push(new_child_node);
+        new_arg.push(...new_child_nodes);
       }
       arg = new_arg;
 
@@ -1782,13 +1830,15 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'include',
+    Macro.INCLUDE_MACRO_NAME,
     [
       new MacroArgument({
         name: 'href',
       }),
     ],
-    function(ast, context) { return '' },
+    function(ast, context) {
+      throw new Error('programmer error, include must never render');
+    },
   ),
   new Macro(
     'l',

@@ -432,7 +432,9 @@ It exists to allow optional single page HTML output while still retaining the ab
 \l[split up large input files into multiple files to make renders faster during document development]
 \l[suggest an optional custom output split with one HTML output per Cirodown input, in order to avoid extremely large HTML pages which could be slow to load]
 
-\c[[\include]] takes on mandatory argument, which is the ID of the header you want to include, which is analogous to how \x[internal-cross-references][\c[\\x]] works.
+\c[[\include]] takes one mandatory argument, which is the ID of the header you want to include, which is analogous to how \x[internal-cross-references][\c[\\x]] works.
+
+The most common use case by far is to include \x[the-toplevel-header] of other files into the current Cirodown source.
 
 Headers of the included document are automatically shifted to match the level of the child of the level where they are being included.
 
@@ -454,7 +456,9 @@ Wether the external page is actually embedded into the HTML directly, or just on
 
 Here is an example of inclusion of the header \x[not-readme].
 
+\Comment[[
 \include[not-readme]
+]]
 
 \h[3][Skipping header levels]
 

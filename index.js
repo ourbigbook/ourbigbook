@@ -1167,7 +1167,8 @@ function parse(tokens, macros, options, extra_returns={}) {
   // * the insane but necessary paragraphs double newline syntax
   // * automatic ul parent to li and table to tr
   // * extract all IDs into an ID index
-  const todo_visit = [ast_toplevel];
+  const toplevel_parent_arg = []
+  const todo_visit = [[toplevel_parent_arg, ast_toplevel]];
   const macro_counts = {};
   let header_graph_last_level;
   const header_graph_stack = new Map();
@@ -1196,7 +1197,8 @@ function parse(tokens, macros, options, extra_returns={}) {
   extra_returns.context.header_graph = new TreeNode();
   extra_returns.context.has_toc = false;
   while (todo_visit.length > 0) {
-    const ast = todo_visit.shift();
+    const [parent_arg, ast] = todo_visit.shift();
+    parent_arg.push(ast);
     const id_context = {'macros': macros};
     const macro_name = ast.macro_name;
     const macro = macros[macro_name]
@@ -1426,12 +1428,13 @@ function parse(tokens, macros, options, extra_returns={}) {
       }
 
       // Push children to continue the search.
+      new_arg = [];
       for (const child_node of arg) {
-        todo_visit.push(child_node);
+        todo_visit.push([new_arg, child_node]);
       }
 
       // Update the argument.
-      ast.args[arg_name] = arg;
+      ast.args[arg_name] = new_arg;
     }
   }
   extra_returns.ids = indexed_ids;
@@ -1460,7 +1463,8 @@ function parse_add_paragraph(
   const macro = state.macros[arg[paragraph_start].macro_name];
   if (macro.properties.phrasing) {
     // If the first element after the double newline is phrasing content,
-    // create a paragraph and put all elements inside the paragraph.
+    // create a paragraph and put all elements until the next paragraph inside
+    // that paragraph.
     new_arg.push(
       new AstNode(
         AstType.MACRO,

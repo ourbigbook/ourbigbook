@@ -35,6 +35,7 @@ class AstNode {
     this.level = undefined;
     // {TreeNode}
     this.header_tree_node = undefined;
+    this.is_first_header = false;
   }
 
   /**
@@ -853,6 +854,7 @@ function convert(
   if (!('html_x_extension' in options)) { options.html_x_extension = true; }
   if (!('h_level_offset' in options)) { options.h_level_offset = 0; }
   if (!('input_path' in options)) { options.input_path = undefined; }
+  if (!('macro_counts' in options)) { options.macro_counts = {}; }
   if (!('render' in options)) { options.render = true; }
   if (!('show_ast' in options)) { options.show_ast = false; }
   if (!('show_parse' in options)) { options.show_parse = false; }
@@ -1169,7 +1171,6 @@ function parse(tokens, macros, options, extra_returns={}) {
   // * extract all IDs into an ID index
   const toplevel_parent_arg = []
   const todo_visit = [[toplevel_parent_arg, ast_toplevel]];
-  const macro_counts = {};
   let header_graph_last_level;
   const header_graph_stack = new Map();
   let is_first_header = true;
@@ -1198,27 +1199,22 @@ function parse(tokens, macros, options, extra_returns={}) {
   extra_returns.context.has_toc = false;
   while (todo_visit.length > 0) {
     const [parent_arg, ast] = todo_visit.shift();
-    parent_arg.push(ast);
     const id_context = {'macros': macros};
     const macro_name = ast.macro_name;
     const macro = macros[macro_name]
 
-    // Linear count of each macro type for macros that have IDs.
-    if (!macro.options.macro_counts_ignore(ast, id_context)) {
-      if (!(macro_name in macro_counts)) {
-        macro_counts[macro_name] = 0;
-      }
-      macro_count = macro_counts[macro_name] + 1;
-      macro_counts[macro_name] = macro_count;
-      ast.macro_count = macro_count;
-    }
-
     if (macro_name === Macro.HEADER_MACRO_NAME) {
-			// Create the header tree.
-      cur_header_level = parseInt(convert_arg_noescape(ast.args.level, id_context)) + options.h_level_offset;
-      ast.level = cur_header_level;
+      // Create the header tree.
+      if (ast.level === undefined) {
+        cur_header_level = parseInt(convert_arg_noescape(ast.args.level, id_context)) + options.h_level_offset;
+        ast.level = cur_header_level;
+      } else {
+        // Possible for included headers.
+        cur_header_level = ast.level;
+      }
       if (is_first_header) {
         first_header = ast;
+        ast.is_first_header = true;
         is_first_header = false;
         first_header_level = cur_header_level;
         header_graph_last_level = cur_header_level - 1;
@@ -1251,85 +1247,117 @@ function parse(tokens, macros, options, extra_returns={}) {
     } else if (macro_name === Macro.TOC_MACRO_NAME) {
       extra_returns.context.has_toc = true;
     } else if (macro_name === Macro.INCLUDE_MACRO_NAME) {
-			const include_options = Object.assign({}, options);
-			include_options.render = false;
-			include_options.h_level_offset = cur_header_level;
-			const include_extra_returns = {};
-			const href = convert_arg_noescape(child_node.args.href, id_context);
-			convert(
-				options.read_include(href),
-				include_options,
-				include_extra_returns,
-			);
-			console.error(href);
-			console.error(child_node.line);
-			console.error(child_node.column);
-			// Attach the included header graph into the current one.
-			for (const child of include_extra_returns.context.header_graph.children) {
-				cur_header_tree_node.add_child(child);
-			}
-			if (options.html_single_page) {
-				// inject the parsed AST tree.
-				new_child_nodes = include_extra_returns.ast.args.content;
-				// TODO attach the included header IDs into the current one.
-			} else {
-				// Don't merge into a single file, render as an xref link instead.
-				new_child_nodes = [
-					new PlaintextAstNode(
-						child_node.line,
-						child_node.column,
-						'Included header: '
-					),
-					new AstNode(
-						AstType.MACRO,
-						'x',
-						{
-							'href': [
-								new PlaintextAstNode(
-									child_node.line,
-									child_node.column,
-									href
-								)
-							]
-						},
-						child_node.line,
-						child_node.column,
-					),
-				];
-			}
-		}
+      const include_options = Object.assign({}, options);
+      const href = convert_arg_noescape(ast.args.href, id_context);
+      include_options.render = false;
+      include_options.h_level_offset = cur_header_level;
+      include_options.macro_counts = options.macro_counts;
+      include_options.toplevel_id = href;
+      const include_extra_returns = {};
+      convert(
+        options.read_include(href),
+        include_options,
+        include_extra_returns,
+      );
+      if (options.html_single_page) {
+        // inject the parsed AST tree.
+        new_child_nodes = include_extra_returns.ast.args.content;
+      } else {
+        // Attach the included header graph into the current one, notably so as to show
+        // the ToC of the included file into the includer document.
+        // TODO attach the included header IDs into the current one.
+        for (const child of include_extra_returns.context.header_graph.children) {
+          cur_header_tree_node.add_child(child);
+          child.parent_node = cur_header_tree_node;
+        }
+        // Don't merge into a single file, render as an xref link instead.
+        new_child_nodes = [
+          new PlaintextAstNode(
+            ast.line,
+            ast.column,
+            'Included header: '
+          ),
+          new AstNode(
+            AstType.MACRO,
+            'x',
+            {
+              'href': [
+                new PlaintextAstNode(
+                  ast.line,
+                  ast.column,
+                  href
+                )
+              ]
+            },
+            ast.line,
+            ast.column,
+          ),
+        ];
+      }
+      // Include is pretty magic: we just prepend add all included nodes to the todo loop,
+      // and then go back to the todo loop directly. This skips adding the include to the 
+      // todo, so that the include node is removed in this prepocessing step.
+      //
+      // The pushed nodes will then be processed immediately after the include.
+      // This process all included nodes exactly like native nodes, so that we don't have
+      // to duplicate any code.
+      let new_child_nodes_with_parent_arg = [];
+      for (const child_node of new_child_nodes) {
+        new_child_nodes_with_parent_arg.push([parent_arg, child_node]);
+      }
+      todo_visit.unshift(...new_child_nodes_with_parent_arg);
+      continue;
+    }
+
+    // Push this node into the parent argument list.
+    // This allows us to skip nodes, or push multiple nodes if needed.
+    parent_arg.push(ast);
+
+    // Linear count of each macro type for macros that have IDs.
+    if (!macro.options.macro_counts_ignore(ast, id_context)) {
+      if (!(macro_name in options.macro_counts)) {
+        options.macro_counts[macro_name] = 0;
+      }
+      macro_count = options.macro_counts[macro_name] + 1;
+      options.macro_counts[macro_name] = macro_count;
+      ast.macro_count = macro_count;
+    }
 
     // Calculate node ID and add it to the ID index.
     let index_id = true;
+    // This condition can be false for included headers, and this is notably important
+    // for the toplevel header which gets its ID from the filename.
     let id_text = undefined;
     let macro_id_arg = ast.args[Macro.ID_ARGUMENT_NAME];
-    if (macro_id_arg === undefined) {
-      if (ast === first_header && options.toplevel_id !== undefined) {
-        // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
-        ast.id = options.toplevel_id;
-      } else {
-        let id_text = '';
-        let id_prefix = macros[ast.macro_name].id_prefix;
-        if (id_prefix !== '') {
-          id_text += id_prefix + ID_SEPARATOR
-        }
-        let title_arg = ast.args[Macro.TITLE_ARGUMENT_NAME];
-        if (title_arg !== undefined) {
-          // ID from title.
-          // TODO correct unicode aware algorithm.
-          id_text += title_to_id(convert_arg_noescape(title_arg, id_context));
-          ast.id = id_text;
-        } else if (!macro.properties.phrasing) {
-          // ID from element count.
-          if (ast.macro_count !== undefined) {
-            id_text += ast.macro_count;
-            index_id = false;
+    if (!ast.is_first_header || ast.id === undefined) {
+      if (macro_id_arg === undefined) {
+        if (ast === first_header && options.toplevel_id !== undefined) {
+          // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
+          ast.id = options.toplevel_id;
+        } else {
+          let id_text = '';
+          let id_prefix = macros[ast.macro_name].id_prefix;
+          if (id_prefix !== '') {
+            id_text += id_prefix + ID_SEPARATOR
+          }
+          let title_arg = ast.args[Macro.TITLE_ARGUMENT_NAME];
+          if (title_arg !== undefined) {
+            // ID from title.
+            // TODO correct unicode aware algorithm.
+            id_text += title_to_id(convert_arg_noescape(title_arg, id_context));
             ast.id = id_text;
+          } else if (!macro.properties.phrasing) {
+            // ID from element count.
+            if (ast.macro_count !== undefined) {
+              id_text += ast.macro_count;
+              index_id = false;
+              ast.id = id_text;
+            }
           }
         }
+      } else {
+        ast.id = convert_arg_noescape(macro_id_arg, id_context);
       }
-    } else {
-      ast.id = convert_arg_noescape(macro_id_arg, id_context);
     }
     if (ast.id !== undefined) {
       const id_provider_get = id_provider.get(ast.id);
@@ -1371,7 +1399,7 @@ function parse(tokens, macros, options, extra_returns={}) {
           let child_macro_name = child_node.macro_name;
           let child_macro = state.macros[child_macro_name];
           if (child_macro.auto_parent !== undefined) {
-						// Add ul and table implicit parents.
+            // Add ul and table implicit parents.
             let auto_parent_name = child_macro.auto_parent;
             if (
               ast.macro_name !== auto_parent_name &&
@@ -1428,11 +1456,11 @@ function parse(tokens, macros, options, extra_returns={}) {
       }
 
       // Push children to continue the search.
+      // We make the new argument be empty so that children can decide if they want to push themselves or not.
       new_arg = [];
       for (const child_node of arg) {
         todo_visit.push([new_arg, child_node]);
       }
-
       // Update the argument.
       ast.args[arg_name] = new_arg;
     }
@@ -1843,6 +1871,9 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       throw new Error('programmer error, include must never render');
     },
+    {
+      macro_counts_ignore: function(ast, context) { return true; }
+    }
   ),
   new Macro(
     'l',

@@ -1,0 +1,9 @@
+\h[1][Includes not README]
+
+This file, surprisingly, includes \c[not-readme.ciro].
+
+It is meant a more minimal interactive test of \x[includes] than the full blown \c[README.ciro].
+
+\h[2][Includes not README h2]
+
+\include[not-readme]

@@ -380,7 +380,9 @@ if (commander.helpMacros) {
         )`
       ).run();
     }
-    convert_input_options.db = db;
+    if (!options.html_single_page) {
+      convert_input_options.db = db;
+    }
     convert_input_options.ids_table_name = ids_table_name;
 
     if (commander.watch) {

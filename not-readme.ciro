@@ -11,3 +11,7 @@
 Toplevel: \x[cirodown].
 
 Non-toplevel: \x[internal-cross-references].
+
+\h[2][Not the README another include]
+
+\include[included-by-not-readme]

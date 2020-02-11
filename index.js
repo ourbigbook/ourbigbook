@@ -36,6 +36,7 @@ class AstNode {
     // {TreeNode}
     this.header_tree_node = undefined;
     this.is_first_header = false;
+    this.header_is_include = false;
   }
 
   /**
@@ -360,7 +361,7 @@ class Macro {
    * so that style=full references will show very siimlar to the caption
    * they refer to.
    */
-  x_text(ast, context, options={}) {
+  static x_text(ast, context, options={}) {
     if (!('caption_prefix_span' in options)) {
       options.caption_prefix_span = true;
     }
@@ -1247,36 +1248,60 @@ function parse(tokens, macros, options, extra_returns={}) {
     } else if (macro_name === Macro.TOC_MACRO_NAME) {
       extra_returns.context.has_toc = true;
     } else if (macro_name === Macro.INCLUDE_MACRO_NAME) {
-      const include_options = Object.assign({}, options);
       const href = convert_arg_noescape(ast.args.href, id_context);
-      include_options.render = false;
-      include_options.h_level_offset = cur_header_level;
-      include_options.macro_counts = options.macro_counts;
-      include_options.toplevel_id = href;
-      const include_extra_returns = {};
-      convert(
-        options.read_include(href),
-        include_options,
-        include_extra_returns,
-      );
       if (options.html_single_page) {
-        // inject the parsed AST tree.
+        const include_options = Object.assign({}, options);
+        include_options.render = false;
+        include_options.h_level_offset = cur_header_level;
+        include_options.macro_counts = options.macro_counts;
+        include_options.toplevel_id = href;
+        const include_extra_returns = {};
+        convert(
+          options.read_include(href),
+          include_options,
+          include_extra_returns,
+        );
         new_child_nodes = include_extra_returns.ast.args.content;
       } else {
-        // Attach the included header graph into the current one, notably so as to show
-        // the ToC of the included file into the includer document.
-        // TODO attach the included header IDs into the current one.
-        for (const child of include_extra_returns.context.header_graph.children) {
-          cur_header_tree_node.add_child(child);
-          child.parent_node = cur_header_tree_node;
+        const id_provider_get = id_provider.get(href);
+        let header_node_title;
+        if (id_provider_get === undefined) {
+          header_node_title = href;
+          parse_error(state, `ID in include not found on database did you convert all files`, ast.line, ast.column);
+        } else {
+          [target_input_path, target_id_ast] = id_provider_get;
+          const x_text_options = {
+            show_caption_prefix: false,
+            style: XStyle.short,
+          };
+          header_node_title = Macro.x_text(target_id_ast, id_context, x_text_options);
         }
         // Don't merge into a single file, render as an xref link instead.
+        const header_node = new AstNode(
+          AstType.MACRO,
+          Macro.HEADER_MACRO_NAME,
+          {
+            'level': [
+              new PlaintextAstNode(
+                ast.line,
+                ast.column,
+                (cur_header_level + 1).toString(),
+              )
+            ],
+            [Macro.TITLE_ARGUMENT_NAME]: [
+              new PlaintextAstNode(
+                ast.line,
+                ast.column,
+                header_node_title
+              )
+            ]
+          },
+          ast.line,
+          ast.column,
+        );
+        header_node.header_is_include = true;
         new_child_nodes = [
-          new PlaintextAstNode(
-            ast.line,
-            ast.column,
-            'Included header: '
-          ),
+          header_node,
           new AstNode(
             AstType.MACRO,
             'x',
@@ -1287,7 +1312,14 @@ function parse(tokens, macros, options, extra_returns={}) {
                   ast.column,
                   href
                 )
-              ]
+              ],
+              'content': [
+                new PlaintextAstNode(
+                  ast.line,
+                  ast.column,
+                  'This section is present in another file, follow this link to view it.'
+                )
+              ],
             },
             ast.line,
             ast.column,
@@ -1329,6 +1361,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     // for the toplevel header which gets its ID from the filename.
     let id_text = undefined;
     let macro_id_arg = ast.args[Macro.ID_ARGUMENT_NAME];
+    // ast.id is not undefined for includes.
     if (!ast.is_first_header || ast.id === undefined) {
       if (macro_id_arg === undefined) {
         if (ast === first_header && options.toplevel_id !== undefined) {
@@ -1359,7 +1392,7 @@ function parse(tokens, macros, options, extra_returns={}) {
         ast.id = convert_arg_noescape(macro_id_arg, id_context);
       }
     }
-    if (ast.id !== undefined) {
+    if (ast.id !== undefined && !ast.header_is_include) {
       const id_provider_get = id_provider.get(ast.id);
       let previous_ast = undefined;
       if (id_provider_get === undefined) {
@@ -1826,7 +1859,7 @@ const DEFAULT_MACRO_LIST = [
       if (level_int === context.header_graph_top_level) {
         x_text_options.style = XStyle.short;
       }
-      ret += this.x_text(ast, context, x_text_options);
+      ret += Macro.x_text(ast, context, x_text_options);
       ret += `</a>`;
       if (level_int !== context.header_graph_top_level) {
         ret += `<span> `;
@@ -1917,7 +1950,7 @@ const DEFAULT_MACRO_LIST = [
         ret += `<div class="math-container"${attrs}>`;
         if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
           ret += `<div class="math-caption-container">\n`;
-          ret += `<span class="math-caption">${this.x_text(ast, context)}</span>`;
+          ret += `<span class="math-caption">${Macro.x_text(ast, context)}</span>`;
           ret += `<span> <a${href}>${Macro.LINK_SELF}</a></span>\n`;
           ret += `</div>\n`;
         }
@@ -1982,7 +2015,7 @@ const DEFAULT_MACRO_LIST = [
       }
       ret += `\n`;
       if (ast.id !== undefined) {
-        ret += `<figcaption>${this.x_text(ast, context)}</figcaption>\n`;
+        ret += `<figcaption>${Macro.x_text(ast, context)}</figcaption>\n`;
       }
       ret += '</figure>\n';
       return ret;
@@ -2081,7 +2114,7 @@ const DEFAULT_MACRO_LIST = [
         //Caption on top as per: https://tex.stackexchange.com/questions/3243/why-should-a-table-caption-be-placed-above-the-table */
         let href = html_attr('href', '#' + html_escape_attr(ast.id));
         ret += `<div class="table-caption-container">\n`;
-        ret += `<span class="table-caption">${this.x_text(ast, context)}</span>`;
+        ret += `<span class="table-caption">${Macro.x_text(ast, context)}</span>`;
         ret += `<span> <a${href}>${Macro.LINK_SELF}</a></span>\n`;
         ret += `</div>\n`;
       }
@@ -2131,7 +2164,7 @@ const DEFAULT_MACRO_LIST = [
         }
         let target_ast = tree_node.value;
         let attrs = html_convert_attrs_id(ast, context);
-        let content = this.x_text(target_ast, context, {show_caption_prefix: false});
+        let content = Macro.x_text(target_ast, context, {show_caption_prefix: false});
         let target_id = html_escape_attr(target_ast.id);
         let href = html_attr('href', '#' + target_id);
         let id_to_toc = html_attr('id', Macro.TOC_PREFIX + target_id);
@@ -2243,57 +2276,55 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     function(ast, context) {
-      let content_arg;
-      let target_id = convert_arg_noescape(ast.args.href, context);
-      let id_provider_get = context.id_provider.get(target_id);
-      if (id_provider_get !== undefined) {
-        [target_input_path, target_id_ast] = id_provider_get;
-        let content_arg = ast.args.content;
-        if (content_arg === undefined) {
-          let x_text_options = {
-            caption_prefix_span: false,
-            style: context.macros[target_id_ast.macro_name].options.x_style,
-            quote: true,
-          };
-          let style = ast.args.style;
-          if (style !== undefined) {
-            let style_string = convert_arg_noescape(style, context);
-            if (!(style_string in XStyle)) {
-              let message = `unkown x style: "${style_string}"`;
-              this.error(context, message, ast.args.style[0].line, ast.args.style[0].column);
-              return error_message_in_output(message, context);
-            }
-            x_text_options.style = XStyle[style_string];
-          }
-          content = this.x_text(target_id_ast, context, x_text_options);
-          if (content === ``) {
-            let message = `empty cross reference body: "${target_id}"`;
-            this.error(context, message, ast.line, ast.column);
-            return error_message_in_output(message, context);
-          }
-        } else {
-          content = convert_arg(content_arg, context);
-        }
-        let attrs = html_convert_attrs_id(ast, context);
-        let href_path;
-        if (
-          context.options.html_single_page ||
-          (target_input_path == context.options.input_path)
-        ) {
-          href_path = '';
-        } else {
-          href_path = target_input_path;
-          if (context.options.html_x_extension) {
-            href_path += '.html';
-          }
-        }
-        let href = html_attr('href', href_path + '#' + html_escape_attr(target_id));
-        return `<a${href}${attrs}>${content}</a>`;
-      } else {
+      const target_id = convert_arg_noescape(ast.args.href, context);
+      const id_provider_get = context.id_provider.get(target_id);
+      if (id_provider_get === undefined) {
         let message = `cross reference to unknown id: "${target_id}"`;
         this.error(context, message, ast.args.href[0].line, ast.args.href[0].column);
         return error_message_in_output(message, context);
       }
+      [target_input_path, target_id_ast] = id_provider_get;
+      const content_arg = ast.args.content;
+      if (content_arg === undefined) {
+        let x_text_options = {
+          caption_prefix_span: false,
+          style: context.macros[target_id_ast.macro_name].options.x_style,
+          quote: true,
+        };
+        let style = ast.args.style;
+        if (style !== undefined) {
+          let style_string = convert_arg_noescape(style, context);
+          if (!(style_string in XStyle)) {
+            let message = `unkown x style: "${style_string}"`;
+            this.error(context, message, ast.args.style[0].line, ast.args.style[0].column);
+            return error_message_in_output(message, context);
+          }
+          x_text_options.style = XStyle[style_string];
+        }
+        content = Macro.x_text(target_id_ast, context, x_text_options);
+        if (content === ``) {
+          let message = `empty cross reference body: "${target_id}"`;
+          this.error(context, message, ast.line, ast.column);
+          return error_message_in_output(message, context);
+        }
+      } else {
+        content = convert_arg(content_arg, context);
+      }
+      let attrs = html_convert_attrs_id(ast, context);
+      let href_path;
+      if (
+        context.options.html_single_page ||
+        (target_input_path == context.options.input_path)
+      ) {
+        href_path = '';
+      } else {
+        href_path = target_input_path;
+        if (context.options.html_x_extension) {
+          href_path += '.html';
+        }
+      }
+      let href = html_attr('href', href_path + '#' + html_escape_attr(target_id));
+      return `<a${href}${attrs}>${content}</a>`;
     },
     {
       named_args: [

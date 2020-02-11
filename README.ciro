@@ -785,6 +785,14 @@ Display math is done with upper case \c[M]:
 
 HTML escaping happens as you would expect, e.g. < shows fine in:
 
+\C[[[
+\M[[
+1 < 2
+]]
+]]]
+
+which renders as:
+
 \M[[
 1 < 2
 ]]
@@ -1351,7 +1359,15 @@ The use case for this option is to produce a single HTML file for an entire buil
 
 Examples of embeddings done:
 
-\l[CSS and JavaScript are copy pasted in place. The built-in CSS and JavaScript are currently all automatically downloaded as NPM package dependencies to cirodown]
+\l[
+  CSS and JavaScript are copy pasted in place into the HTML.
+
+  The default built-in CSS and JavaScript files used by Cirodown (e.g. the KaTeX CSS \x[math][used for mathematics]) are currently all automatically downloaded as NPM package dependencies to cirodown
+
+  Without \c[--html-embed], those CSS and JavaScript use their main cloud CDN URLs, and therefore require Internet connection to view the generated documents.
+
+  The embeded version of the document can be viewed offline however.
+]
 \l[
   \x[images][images] are downloaded if needed and embedded as \c[data:] URLs.
 

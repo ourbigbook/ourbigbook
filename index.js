@@ -1249,14 +1249,18 @@ function parse(tokens, macros, options, extra_returns={}) {
           const id_provider_get = id_provider.get(href);
           let header_node_title;
           if (id_provider_get === undefined) {
-            let message = `ID in include not found on database: "${href}". Did you forget to convert all files beforehand?`;
+            let message = `ID in include not found on database: "${href}", needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
             header_node_title = error_message_in_output(message);
-            parse_error(
-              state,
-              message,
-              ast.line,
-              ast.column
-            );
+            // Don't do an error if we are not going to render, because this is how
+            // we extract IDs on the first pass of ./cirodown .
+            if (options.render) {
+              parse_error(
+                state,
+                message,
+                ast.line,
+                ast.column
+              );
+            }
           } else {
             [target_input_path, target_id_ast] = id_provider_get;
             const x_text_options = {

@@ -340,6 +340,12 @@ When converting a directory, \c[out/ids.sqlite3] is placed inside the input dire
 
 When running in the browser, the same JavaScript API will send queries to the server instead of a local SQLite database.
 
+To inspect the the ID database to debug it, you can use:
+
+\C[[
+sqlite3 out/db.sqlite3 .dump
+]]
+
 \h[3][Automatic ID from title]
 
 If a \x[the-toplevel-header][non-toplevel] macro has the \c[title] property is present but no explicit \c[id], an ID is created automatically from the \c[title], by applying the following transformations:

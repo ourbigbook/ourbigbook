@@ -40,14 +40,21 @@ cd cirodown-template
 cirodown .
 ]]
 
-Run the latest master on README.ciro and view it:
+Convert the master README.ciro and \x[includes][includes] into a single HTML page and view it:
 
 \C[[
 git clone https://github.com/cirosantilli/cirodown
 cd cirodown
 npm link
 npm link cirodown
-./cirodown README.ciro > index.html
+./cirodown --html-single-page README.ciro > index.html
+xdg-open index.html
+]]
+
+or render instead as one separate HTML pages per include:
+
+\C[[
+./cirodown .
 xdg-open index.html
 ]]
 
@@ -472,6 +479,7 @@ Otherwise, the following effects happen:
 Here is an example of inclusion of the files \c[not-readme.ciro] and \c[not-readme-2.ciro].
 
 \include[not-readme]
+
 \include[not-readme-2]
 
 \h[3][Skipping header levels]
@@ -1650,6 +1658,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[infinite xref header recursion: \a[https://github.com/asciidoctor/asciidoctor/issues/3543] Solution: forbid x in titles, pass down context from parent.]
 \l[on the AST, put contents of headers inside headers]
 \l[parallel build across files on \c[./cirodown .]]
+\l[includes without double newline between them]
 
 \h[2][Related projects]
 

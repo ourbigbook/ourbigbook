@@ -1,9 +1,23 @@
 \h[1][Includes not README]
 
+\toc
+
 This file, surprisingly, includes \c[not-readme.ciro].
 
 It is meant a more minimal interactive test of \x[includes] than the full blown \c[README.ciro].
 
+Here are some internal cross references to the includes: \x[not-readme], \x[not-readme-2], \x[h2-in-not-the-readme].
+
+And an internal cross reference to this file itself just in case: \x[includes-not-readme-h2].
+
 \h[2][Includes not README h2]
 
+The includes follow here:
+
 \include[not-readme]
+
+\include[not-readme-2]
+
+\h[3][Includes not README h3]
+
+A header after the includes.

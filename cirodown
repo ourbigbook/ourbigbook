@@ -36,24 +36,42 @@ for (let i of INDEX_FILE_BASENAMES_NOEXT) {
 }
 
 class SqliteIdProvider extends cirodown.IdProvider {
-  constructor(db, ids_table_name) {
+  constructor(convert_input_options) {
     super();
-    this.delete_stmt = db.prepare(`DELETE FROM '${ids_table_name}' WHERE path = ?`);
-    this.get_stmt = db.prepare(`SELECT path,ast_json FROM ${ids_table_name} WHERE id = ?`);
+    this.delete_ids_stmt = convert_input_options.db.prepare(
+      `DELETE FROM '${convert_input_options.ids_table_name}' WHERE path = ?`);
+    this.delete_includes_stmt = convert_input_options.db.prepare(
+      `DELETE FROM '${convert_input_options.includes_table_name}' WHERE from_path = ?`);
+    this.get_id_stmt = convert_input_options.db.prepare(
+      `SELECT path,ast_json FROM ${convert_input_options.ids_table_name} WHERE id = ?`);
+    this.get_includes_stmt = convert_input_options.db.prepare(
+      `SELECT from_id FROM ${convert_input_options.includes_table_name} WHERE to_id = ?`);
   }
 
   clear(input_path_noext_renamed) {
-    this.delete_stmt.run(input_path_noext_renamed);
+    this.delete_ids_stmt.run(input_path_noext_renamed);
+    this.delete_includes_stmt.run(input_path_noext_renamed);
   }
 
   get(id) {
-    let get_ret = this.get_stmt.get(id);
+    let get_ret = this.get_id_stmt.get(id);
     if (get_ret === undefined) {
       return undefined;
     } else {
       const ast = cirodown.AstNode.fromJSON(get_ret.ast_json);
       return [get_ret.path, ast];
     }
+  }
+
+  get_includes(to_id) {
+    let get_ret = this.get_includes_stmt.get(to_id);
+    // TODO return array.
+    //if (get_ret === undefined) {
+    //  return undefined;
+    //} else {
+    //  const ast = cirodown.AstNode.fromJSON(get_ret.ast_json);
+    //  return [get_ret.path, ast];
+    //}
   }
 }
 
@@ -120,10 +138,7 @@ function convert_input(input, options, convert_input_options={}) {
     new_options.input_path = convert_input_options.input_path_noext_renamed;
   }
   if ('db' in convert_input_options) {
-    new_options.id_provider = new SqliteIdProvider(
-      convert_input_options.db,
-      convert_input_options.ids_table_name
-    );
+    new_options.id_provider = new SqliteIdProvider(convert_input_options);
   }
   if ('title' in convert_input_options) {
     new_options.title = convert_input_options.title;
@@ -216,13 +231,22 @@ function convert_path(input_path, options, convert_input_options) {
   let output = convert_input(input, new_options, new_convert_input_options);
   if ('db' in convert_input_options) {
     const ids = new_convert_input_options.extra_returns.ids;
-    const insert_stmt = convert_input_options.db.prepare(
+    const insert_id_stmt = convert_input_options.db.prepare(
       `INSERT INTO '${convert_input_options.ids_table_name}'
       (id, path, ast_json) VALUES (?, ?, ?);`
     );
+    const insert_include_stmt = convert_input_options.db.prepare(
+      `INSERT INTO '${convert_input_options.includes_table_name}'
+      (from_id, from_path, to_id) VALUES (?, ?, ?);`
+    );
     for (const id in ids) {
       const ast = ids[id];
-      insert_stmt.run(id, ast.input_path, JSON.stringify(ast));
+      insert_id_stmt.run(id, ast.input_path, JSON.stringify(ast));
+    }
+    for (const header_ast of new_convert_input_options.extra_returns.context.headers_with_include) {
+      for (const include of header_ast.includes) {
+        insert_include_stmt.run(header_ast.id, header_ast.input_path, include);
+      }
     }
   }
   if (new_convert_input_options.had_error) {
@@ -361,6 +385,7 @@ if (commander.helpMacros) {
     fs.mkdirSync(outdir, {recursive: true});
     const db_path = path.join(outdir, 'db.sqlite3');
     const ids_table_name = 'ids';
+    const includes_table_name = 'includes';
     const db = new better_sqlite3(db_path);
     if (
       db.prepare(`SELECT name
@@ -376,8 +401,23 @@ if (commander.helpMacros) {
         )`
       ).run();
     }
+    if (
+      db.prepare(`SELECT name
+      FROM sqlite_master
+      WHERE type='table' AND name='${includes_table_name}'
+      `).get() === undefined
+    ) {
+      db.prepare(`
+        CREATE TABLE '${includes_table_name}' (
+          from_id TEXT,
+          from_path TEXT,
+          to_id TEXT
+        )`
+      ).run();
+    }
     convert_input_options.db = db;
     convert_input_options.ids_table_name = ids_table_name;
+    convert_input_options.includes_table_name = includes_table_name;
 
     if (commander.watch) {
       if (publish) {

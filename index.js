@@ -60,6 +60,8 @@ class AstNode {
     this.level = undefined;
     // {TreeNode}
     this.header_tree_node = undefined;
+    // Includes under this header.
+    this.includes = [];
   }
 
   /**
@@ -1206,6 +1208,7 @@ function parse(tokens, macros, options, extra_returns={}) {
   //
   // Another possibility would be to do it in the middle of the initial parse,
   // but let's not complicate that further either, shall we?
+  let cur_header;
   let cur_header_level;
   let toplevel_parent_arg = []
   let todo_visit = [[toplevel_parent_arg, ast_toplevel]];
@@ -1239,6 +1242,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     ast.input_path = options.input_path;
     if (macro_name === Macro.INCLUDE_MACRO_NAME) {
       const href = convert_arg_noescape(ast.args.href, id_context);
+      cur_header.includes.push(href);
       if (options.include_path_set.has(href)) {
         let message = `circular include detected to: "${href}"`;
         parse_error(
@@ -1365,6 +1369,7 @@ function parse(tokens, macros, options, extra_returns={}) {
           ast.id = options.toplevel_id;
           is_first_header = false;
         }
+        cur_header = ast;
         cur_header_level = parseInt(
           convert_arg_noescape(ast.args.level, id_context)
         ) + options.h_level_offset;
@@ -1403,6 +1408,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     is_first_header = true;
     let first_header_level;
     let first_header;
+    extra_returns.context.headers_with_include = [];
     extra_returns.context.id_provider = id_provider;
     extra_returns.context.header_graph = new TreeNode();
     extra_returns.context.has_toc = false;
@@ -1453,6 +1459,9 @@ function parse(tokens, macros, options, extra_returns={}) {
         }
         header_graph_stack[cur_header_level] = cur_header_tree_node;
         header_graph_last_level = cur_header_level;
+        if (ast.includes.length > 0) {
+          extra_returns.context.headers_with_include.push(ast);
+        }
       } else if (macro_name === Macro.TOC_MACRO_NAME) {
         if (ast.from_include) {
           continue;

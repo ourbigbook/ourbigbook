@@ -156,10 +156,22 @@ function convert_input(input, options, convert_input_options={}) {
     new_options.css = fs.readFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH, ENCODING);
   } else {
     let css_path = convert_input_options.out_css_path;
+    let includes = cirodown_nodejs.LOCAL_INCLUDES;
     if (convert_input_options.output_path !== undefined) {
       css_path = path.relative(path.dirname(convert_input_options.output_path), css_path);
+      new_includes = [];
+      for (const include of includes) {
+        new_includes.push(path.relative(path.dirname(convert_input_options.output_path), include));
+      }
+      includes = new_includes;
     }
-    new_options.css = `@import "${css_path}"`;
+    let includes_str = ``;
+    for (const include of includes) {
+      includes_str += `@import "${include}";\n`;
+    }
+    new_options.css = `
+${includes_str}@import "${css_path}";
+`;
   }
   let output = cirodown.convert(input, new_options, new_options.extra_returns);
   if (convert_input_options.commander.showTokens) {
@@ -371,7 +383,7 @@ if (commander.helpMacros) {
     encoding: ENCODING,
     had_error: false,
     multifile: true,
-    out_css_path: cirodown_nodejs.PACKAGE_OUT_CSS_PATH,
+    out_css_path: cirodown_nodejs.PACKAGE_OUT_CSS_LOCAL_PATH,
   };
   if (inputPath === undefined && (publish || commander.watch)) {
     inputPath = '.';

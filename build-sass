@@ -12,10 +12,10 @@ const cirodown_nodejs = require('cirodown/nodejs');
 const package_json = fs.readFileSync(cirodown_nodejs.PACKAGE_PACKAGE_JSON_PATH).toString();
 const package_json_json = JSON.parse(package_json);
 
-const embed_includes = `
-@use "${path.join(cirodown_nodejs.PACKAGE_NODE_MODULES_PATH, 'katex', 'dist', 'katex.min.css')}";
-@use "${path.join(cirodown_nodejs.PACKAGE_NODE_MODULES_PATH, 'normalize.css', 'normalize.css')}";
-`;
+let embed_includes = ``;
+for (const local_include of cirodown_nodejs.LOCAL_INCLUDES) {
+  embed_includes += `@use "${local_include}";`
+}
 
 const external_includes = `
 @import "https://cdn.jsdelivr.net/npm/katex@${katex.version}/dist/katex.min.css";
@@ -26,13 +26,21 @@ fs.mkdirSync(cirodown_nodejs.PACKAGE_OUT_PATH, {recursive: true})
 
 const scss_input = fs.readFileSync(path.join(__dirname, 'main.scss')).toString();
 let result;
+
 result = sass.renderSync({
   data: embed_includes + scss_input,
   outputStyle: 'compressed',
 });
 fs.writeFileSync(path.join(cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH), result.css);
+
 result = sass.renderSync({
   data: external_includes + scss_input,
   outputStyle: 'compressed',
 });
 fs.writeFileSync(path.join(cirodown_nodejs.PACKAGE_OUT_CSS_PATH), result.css);
+
+result = sass.renderSync({
+  data: scss_input,
+  outputStyle: 'compressed',
+});
+fs.writeFileSync(path.join(cirodown_nodejs.PACKAGE_OUT_CSS_LOCAL_PATH), result.css);

@@ -1,6 +1,6 @@
 \h[1][Not the README]
 
-This file is, surprisingly, not the README. It is used for multifile tests.
+This file is, surprisingly, not the README. It is used for multifile tests. It is also smaller and therefore compiles faster.
 
 \toc
 

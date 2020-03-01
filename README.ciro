@@ -1365,6 +1365,23 @@ When \c[--publish] is given, stdin input is not accepted, and so the current dir
 ./cirodown --publish .
 ]]
 
+\h[6][\c[--dry-run]]
+{id=dry-run}
+
+The \c[--dry-run] option is a good way to debug \c[--publish], as it builds the publish output files without doing any git commands that would be annoying to revert.
+
+So after doing:
+
+\C[[
+./cirodown --dry-run --publish .
+]]
+
+you can just go and inspect the generated HTML to see what would get pushed at:
+
+\C[[
+cd out/publish/out/publish/
+]]
+
 \h[5][\c[--publish-commit <commit-message>]]
 {id=publish-commit}
 

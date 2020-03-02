@@ -1003,6 +1003,8 @@ function convert_arg_noescape(arg, context={}) {
 /** Error message to be rendered inside the generated output itself.
  *
  * If context is given, escape the message correctly for this context.
+ *
+ * @return {String}
  */
 function error_message_in_output(msg, context) {
   let escaped_msg;
@@ -1453,12 +1455,10 @@ function parse(tokens, macros, options, extra_returns={}) {
         cur_header_tree_node = new TreeNode(ast, header_graph_stack[cur_header_level - 1]);
         ast.header_tree_node = cur_header_tree_node;
         if (cur_header_level - header_graph_last_level > 1) {
-          parse_error(
-            state,
-            `skipped a header level from ${header_graph_last_level} to ${ast.level}`,
-            ast.args.level[0].line,
-            ast.args.level[0].column
-          );
+          const message = `skipped a header level from ${header_graph_last_level} to ${ast.level}`;
+          ast.args[Macro.TITLE_ARGUMENT_NAME].push(
+            new PlaintextAstNode(ast.line, ast.column, ' ' + error_message_in_output(message)));
+          parse_error(state, message, ast.args.level[0].line, ast.args.level[0].column);
         }
         if (cur_header_level < first_header_level) {
           parse_error(
@@ -2028,10 +2028,13 @@ const DEFAULT_MACRO_LIST = [
         }
       }
       let parent_asts = [];
-      let parent_tree_node_ast = ast.header_tree_node.parent_node.value;
-      // May fail if there was a header skip error previously.
-      if (parent_tree_node_ast !== undefined) {
-        parent_asts.push(parent_tree_node_ast);
+      let parent_tree_node = ast.header_tree_node.parent_node;
+      // Undefined on toplevel.
+      if (parent_tree_node !== undefined) {
+        // May fail if there was a header skip error previously.
+        if (parent_tree_node.value !== undefined) {
+          parent_asts.push(parent_tree_node.value);
+        }
       }
       parent_asts.push(...context.id_provider.get_includes(ast.id));
       for (const parent_ast of parent_asts) {

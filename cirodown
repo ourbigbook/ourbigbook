@@ -11,6 +11,7 @@ const chokidar = require('chokidar');
 // does not do some obvious basics.
 const commander = require('commander');
 const git_url_parse = require("git-url-parse");
+const is_installed_globally = require('is-installed-globally');
 
 const cirodown = require('cirodown');
 const cirodown_nodejs = require('cirodown/nodejs');
@@ -157,7 +158,7 @@ function convert_input(input, options, convert_input_options={}) {
   } else {
     let css_path = convert_input_options.out_css_path;
     let includes = cirodown_nodejs.LOCAL_INCLUDES;
-    if (convert_input_options.output_path !== undefined) {
+    if (convert_input_options.output_path !== undefined && !is_installed_globally) {
       css_path = path.relative(path.dirname(convert_input_options.output_path), css_path);
       new_includes = [];
       for (const include of includes) {

@@ -215,8 +215,8 @@ function convert_path_to_file(input_path, options, convert_input_options={}) {
       name = IO_RENAME_MAP[name];
     }
     const new_convert_input_options = Object.assign({}, convert_input_options);
+    let output_path = path.join(input_path_parse.dir, name) + '.html';
     if (new_convert_input_options.output_path === undefined) {
-      let output_path = path.join(input_path_parse.dir, name) + '.html';
       if (new_convert_input_options.outdir) {
         output_path = path.join(new_convert_input_options.outdir, output_path);
       }

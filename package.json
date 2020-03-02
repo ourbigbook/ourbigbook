@@ -23,6 +23,7 @@
     "nodejs.js",
     "out/index.js",
     "out/main.embed.min.css",
+    "out/main.local.min.css",
     "out/main.min.css"
   ],
   "keywords": [

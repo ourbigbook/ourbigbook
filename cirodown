@@ -157,22 +157,22 @@ function convert_input(input, options, convert_input_options={}) {
     new_options.css = fs.readFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH, ENCODING);
   } else {
     let css_path = convert_input_options.out_css_path;
-    let includes = cirodown_nodejs.LOCAL_INCLUDES;
+    let includes_str = ``;
+    let includes = [css_path];
+    if (!convert_input_options.include_contains_external) {
+      includes.push(...cirodown_nodejs.LOCAL_INCLUDES);
+    }
     if (convert_input_options.output_path !== undefined && !is_installed_globally) {
-      css_path = path.relative(path.dirname(convert_input_options.output_path), css_path);
       new_includes = [];
       for (const include of includes) {
         new_includes.push(path.relative(path.dirname(convert_input_options.output_path), include));
       }
       includes = new_includes;
     }
-    let includes_str = ``;
     for (const include of includes) {
       includes_str += `@import "${include}";\n`;
     }
-    new_options.css = `
-${includes_str}@import "${css_path}";
-`;
+    new_options.css = `\n${includes_str}`;
   }
   let output = cirodown.convert(input, new_options, new_options.extra_returns);
   if (convert_input_options.commander.showTokens) {
@@ -385,6 +385,7 @@ if (commander.helpMacros) {
     commander: commander,
     encoding: ENCODING,
     had_error: false,
+    include_contains_external: false,
     out_css_path: cirodown_nodejs.PACKAGE_OUT_CSS_LOCAL_PATH,
   };
   if (inputPath === undefined && (publish || commander.watch)) {
@@ -523,6 +524,7 @@ if (commander.helpMacros) {
           actual_input = publish_dir;
           convert_input_options.outdir = path.join(publish_dir, OUT_DIRNAME, 'publish');
           convert_input_options.out_css_path = path.join(convert_input_options.outdir, cirodown_nodejs.PACKAGE_OUT_CSS_BASENAME);
+          convert_input_options.include_contains_external = true;
           fs.copyFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_PATH, convert_input_options.out_css_path)
         } else {
           actual_input = inputPath;

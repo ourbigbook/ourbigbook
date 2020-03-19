@@ -864,12 +864,10 @@ which renders as:
 
 Or alternatively, you can use the equivalent multiple dollar sign (\c[[$$]]) \x[insane-macro-shortcuts][insane macro shortcut]:
 
-\C[[[
 $$
 \sqrt{1 + 1} \\
 \sqrt{1 + 1}
 $$
-]]]
 
 HTML escaping happens as you would expect, e.g. < shows fine in:
 
@@ -881,9 +879,11 @@ HTML escaping happens as you would expect, e.g. < shows fine in:
 
 which renders as:
 
+\q[
 \M[[
 1 < 2
 ]]
+]
 
 Equation IDs and titles and linking to equations works identically to \x[images][images], see that section for full details. Here is one equation reference example: \x[eq-my-first-equation].
 
@@ -958,6 +958,37 @@ Explicit container to add further properties: \x[table-my-table].
 ]
 ]
 
+\h[2][Quotations \c[\\q]]
+{id=quotations}
+
+With \c[q]:
+
+\C[[
+And so he said:
+
+\q[
+Something very smart
+
+And with multiple paragraphs.
+]
+
+and it was great.
+]]
+
+which renders as:
+
+\q[
+And so he said:
+
+\q[
+Something very smart
+
+And with multiple paragraphs.
+]
+
+and it was great.
+]
+
 \h[2][Comments]
 
 The \c[Comment] and \c[comment] macros are regular macros that does not produce any output. Capitalization is explained at: \x[macro-capitalization-for-block-vs-inline].
@@ -1005,11 +1036,11 @@ is equivalent to the sane:
 
 \C[[[
 a \c[[b c]] d
-]]
+]]]
 
 and both render as:
 
-a `b c` d
+\q[a `b c` d]
 
 the insane block code:
 
@@ -1037,6 +1068,7 @@ d
 
 and both render as:
 
+\q[
 a
 
 ``
@@ -1044,62 +1076,40 @@ b c
 ``
 
 d
+]
 
 Similarly for math:
 
 \C[[
-$a b$
+My inline $\sqrt{1 + 1}$ formula.
 
-$$c d$$
+$$
+\sqrt{1 + 1} \\
+\sqrt{1 + 1}
+$$
 ]]
 
 is equivalent to the sane:
 
 \C[[[
-\m[[a c]]
+My inline \m[[\sqrt{1 + 1}]] formula.
 
-\M[[c d]]
+\M[[
+\sqrt{1 + 1} \\
+\sqrt{1 + 1}
+]]
 ]]]
 
-Literal backticks and dollar signs can be produced witha backslash escape as in:
+and renders as:
 
-\C[[
-a \` \$ b
+\q[
+My inline \m[[\sqrt{1 + 1}]] formula.
+
+\M[[
+\sqrt{1 + 1} \\
+\sqrt{1 + 1}
 ]]
-
-which renders as:
-
-a \` \$ b
-
-It is not possible to escape backticks (\c[[`]]) inside an insane inline code, or dollar signs (\c[[$]]) in insane math.
-
-The design reason for that is because multiple backticks produce block code.
-
-The upside is that then you don't have to escape anything else, e.g. backslashes (\c[\\]) are rendered literally.
-
-The only way to do it is to use the sane syntax instead
-
-\C[[[
-a \c[[b ` c]] d
-
-a \m[[\sqrt{$4}]] d
-]]]
-
-which renders as:
-
-a \c[[b ` c]] d
-
-a \m[[\sqrt{\$4}]] d
-
-Within block code and math, you can just add more separators:
-
-\C[[
-```
-code with two backticks
-``
-nice
-```
-]]
+]
 
 \h[4][Insane macro shortcut extra arguments]
 
@@ -1132,35 +1142,45 @@ This restriction things easy to parse for humans and machines alike.
 
 \h[4][Escapes in insane macro shortcuts]
 
-Escaping in insane macro shortcuts is similar to \x[escape-characters][that of regular arguments].
-
-For the inline versions, the only choice is to use backslashes, e.g., an inline code block with a backtick (\c[[`]]) can be written as:
+Literal backticks and dollar signs can be produced witha backslash escape as in:
 
 \C[[
-`a \` b`
+a \` \$ b
 ]]
 
-which is equivalent to the sane:
+which renders as:
 
-\C[[
-\c[a ` b]
-]]
+\q[
+a \` \$ b
+]
 
-It is not possible to use multiple backticks because that means the block version.
+It is not possible to escape backticks (\c[[`]]) inside an insane inline code, or dollar signs (\c[[$]]) in insane math.
 
-For the block version, you can wither use backslashes as well, e.g.:
+The design reason for that is because multiple backticks produce block code.
 
-\C[[
-``
-a \`` b
-``
-]]
+The upside is that then you don't have to escape anything else, e.g. backslashes (\c[\\]) are rendered literally.
 
-or just increase the number of opening chars:
+The only way to do it is to use the sane syntax instead
+
+\C[[[
+a \c[[b ` c]] d
+
+a \m[[\sqrt{$4}]] d
+]]]
+
+which renders as:
+
+a \c[[b ` c]] d
+
+a \m[[\sqrt{\$4}]] d
+
+Within block code and math, you can just add more separators:
 
 \C[[
 ```
-a `` b
+code with two backticks
+``
+nice
 ```
 ]]
 

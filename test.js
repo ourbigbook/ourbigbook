@@ -630,13 +630,17 @@ assert_convert_ast('code inline sane',
     t(' d'),
   ]
 );
-assert_convert_ast('code inline insane',
+assert_convert_ast('code inline insane simple',
   'a `b c` d\n',
   [
     t('a '),
     a('c', [t('b c')]),
     t(' d'),
   ]
+);
+assert_convert_ast('code inline insane escape backtick',
+  'a \\`b c\n',
+  [t('a `b c')]
 );
 assert_convert_ast('code block sane',
   `a
@@ -676,9 +680,13 @@ assert_convert_ast('math inline sane',
   '\\m[[\\sqrt{1 + 1}]]\n',
   [a('m', [t('\\sqrt{1 + 1}')])],
 );
-assert_convert_ast('math inline insane',
+assert_convert_ast('math inline insane simple',
   '$\\sqrt{1 + 1}$\n',
   [a('m', [t('\\sqrt{1 + 1}')])],
+);
+assert_convert_ast('math inline escape dollar',
+  'a \\$b c\n',
+  [t('a $b c')],
 );
 assert_no_error('math block sane',
   '\\M[[\\sqrt{1 + 1}]]',

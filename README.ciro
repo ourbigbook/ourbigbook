@@ -1007,7 +1007,11 @@ is equivalent to the sane:
 a \c[[b c]] d
 ]]
 
-And the insane block code:
+and both render as:
+
+a `b c` d
+
+the insane block code:
 
 \C[[
 a
@@ -1030,6 +1034,16 @@ b c
 
 d
 ]]]
+
+and both render as:
+
+a
+
+``
+b c
+``
+
+d
 
 Similarly for math:
 

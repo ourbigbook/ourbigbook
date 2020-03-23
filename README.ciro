@@ -8,78 +8,64 @@ The source for this document is at: \a[https://github.com/cirosantilli/cirodown/
 
 \h[2][Quick start]
 
-Install NPM package and use it from the command line for a quick conversion:
-
-\C[[
+Install the NPM package and use it from the command line for a quick conversion:
+``
 npm install cirodown
 printf 'ab\ncd\n' | cirodown --body-only
-]]
+``
 
 Same with an API call in \a[api_hello.js]:
-
-\C[[
+``
 npm install cirodown
 ./api_hello.js
-]]
+``
 
 Play with it in a still crappy \x[editor-with-preview][live browser editor] (currently only works from a clone):
-
-\C[[
+``
 git clone https://github.com/cirosantilli/cirodown-template
 cd cirodown-template
 npm install
 ./build
 xdg-open editor.html
-]]
+``
 
-For a minimal but convenient project template with a \c[.gitignore] and \c[package.json], consider:
-
-\C[[
+For a minimal but convenient project template with a `.gitignore` and `package.json`, consider:
+``
 git clone https://github.com/cirosantilli/cirodown-template
 cd cirodown-template
 cirodown .
-]]
+``
 
-Render all \c[.ciro] files form the master of this project to separate files:
-
-\C[[
+Render all `.ciro` files form the master of this project to separate files:
+``
 git clone https://github.com/cirosantilli/cirodown
 cd cirodown
 npm link
 npm link cirodown
 ./cirodown --html-single-page README.ciro > index.html
 xdg-open index.html
-]]
-
+``
 or render README.ciro and all includes \x[includes][includes] into a single HTML page and view it:
-
-\C[[
+``
 ./cirodown .
 xdg-open index.html
-]]
-
+``
 or render instead as one fully offline standalone HTML file that can be given directly to readers with \x[html-embed]:
-
-\C[[
+``
 ./cirodown --html-single-page README.ciro > index.html
-]]
+``
 
 The \c[npm link] commands allow you to make changes to the code without re-installing the package all the time for development! Try hacking \a[cirodown] to see it. Just remember that if you add a new dependency, you must redo the symlinking business:
-
-\C[[
+``
 npm install <dependency>
 npm link
 npm link browserify-hello-world
-]]
-
-Asked if there is a better way at: \a[https://stackoverflow.com/questions/59389027/how-to-interactively-test-the-executable-of-an-npm-node-js-package-during-develo].
-
-The symlink business can be undone with:
-
-\C[[
+``
+Asked if there is a better way at: \a[https://stackoverflow.com/questions/59389027/how-to-interactively-test-the-executable-of-an-npm-node-js-package-during-develo]. The symlink business can be undone with:
+``
 npm unlink
 rm node_modules/cirodown
-]]
+``
 
 TODO: create a multifile blog example folder and link from here.
 
@@ -88,7 +74,6 @@ TODO: create a multifile blog example folder and link from here.
 Cirodown is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
 
 Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation), supporting out of the box feature such as:
-
 \l[\x[internal-cross-references][references] to \x[headers][headers], \x[images][images], etc. with error checking: never break internal links gain]
 \l[KaTeX server side \x[math][Mathematics]]
 \l[multi file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
@@ -99,23 +84,21 @@ Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally pu
   \l[cross file configuration files to factor out common page parts like headers and footers]
 ]
 
-Originally, Cirodown It is meant to be both saner and more powerful than Markdown and Asciidoctor.
+Originally, Cirodown was is meant to be both saner and more powerful than Markdown and Asciidoctor.
 
-But alas, as Ciro started implementing and using it, it degraded slightly into a language slightly saner than Asciidoctor but with an amazing Node.js implementation that makes it better for book writing and website publishing.
+But alas, as Ciro started implementing and using it, he started to bring some Markdown \x[insane-macro-shortcuts][insanity he missed back in], 
 
-The tradeoff for those features is that the language is slightly heavier to read and write.
+And so this "degraded" slightly into a language slightly saner than Asciidoctor but with an amazing Node.js implementation that makes it better for book writing and website publishing.
 
-Initially things were very sane, but Ciro started to bring some Markdown insanity he missed back in. But hopefully starting from a saner point will still produce a saner end result.
+But hopefully, haveing starting from a saner point will still produce a saner end result, e.g. there are sane constructs for every insane one.
 
 It is intended that this will be an acceptable downside as Cirodown will be used primarily large complex content such as books rather than forum posts, and will therefore primarily written either:
-
 \l[in text editors locally, where users have more features than in random browser textareas]
 \l[in a dedicated website that will revolutionize education, and therefore have a good JavaScript editing interface: \a[https://github.com/cirosantilli/write-free-science-books-to-get-famous-website]]
 
 \h[3][Saner]
 
 To be saner than both Markdown and Asciidoctor, Cirodown has exactly five magic characters, with similar functions as in LaTeX:
-
 \l[\c[\\] backslash to start a macro, like LaTeX]
 \l[\c[\{] and \c[\}]: left and right square brackets to delimit optional macro arguments]
 \l[\c[\[] and \c[\]]: left and right curly braces bracket to start an optional arguments]
@@ -125,36 +108,27 @@ And double blank newlines for \x[paragraphs][paragraphs] if you are pedantic.
 We would like to have only square brackets for both optional and mandatory to have even less magic characters, but that would make the language difficult to parse for computer and humans. LaTeX was right for once!
 
 This produces a very regular syntax that is easy to learn, including doing:
-
 \l[arbitrary nesting of elements]
 \l[adding arbitrary properties to elements]
 
 This sanity also makes the end tail learning curve of the endless edge cases found in Markdown and Asciidoctor disappear.
 
 The language is designed to be philosophically isomorphic to HTML to:
-
 \l[further reduce the learning curve]
 \l[ensure that most of HTML constructs can be reached, including arbitrary nesting]
 
 More precisely:
-
 \l[macro names map to tag names, e.g.: \c[\\a] to \c[<a]]
 \l[
   one of the arguments of macros, maps to the content of the HTML element, and the others map to attributes.
 
   E.g., in a link:
-
-  \C[[\a[http://example.com][Link text\]]]
-
+  ``\a[http://example.com][Link text\]``
   the first macro argument:
-
-  \C[http://example.com]
-
+  ``http://example.com``
   maps to the \c[href] of \c[<a], and the second macro argument:
-
-  \C[Link text]
-
-  maps to the internal content of \c[<a>Link text<>]
+  ``Link text``
+  maps to the internal content of `<a>Link text<>`.
 ]
 
 \h[3][More powerful]
@@ -168,14 +142,13 @@ Markdown is clearly missing many key features such as block attributes and \x[in
 The "more powerful than Asciidoctor" part is only partially true, since Asciidoctor is very featureful can do basically anything through extensions.
 
 The difference is mostly that Cirodown is completely and entirely focused on making amazing scientific books, and so will have key features for that application out-of-the box, notably:
-
 \l[amazing header/ToC/ID features including proper error reports: never have a internal broken link or duplicate ID again]
 \l[\x[math]]
 \l[\x[publish]: we take care of website publishing for you out-of-the-bos, no need for extra stuff like Jekyll mess]
 
 Another advantage over Asciidoctor is that the reference implementation of Cirodown is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with \a[https://github.com/opal/opal][Opal], but who wants to deal with that layer of complexity?
 
-\h[2][Paragraphs \c[[\p]]]
+\h[2][Paragraphs `\p`]
 {id=paragraphs}
 
 OK, this is too common, so we opted for some insanity here: double newline is a paragraph!
@@ -185,9 +158,15 @@ Paragraph 1.
 Paragraph 2.
 
 Equivalently however, you can use an explicit \c[[\p]] macros as well, which is required for example to add properties to a paragraph, e.g.:
-
+``
 \p{id=paragraph-1}[Paragraph 1]
 \p{id=paragraph-2}[Paragraph 2]
+``
+which renders as:
+\q[
+\p{id=paragraph-1}[Paragraph 1]
+\p{id=paragraph-2}[Paragraph 2]
+]
 
 Paragraphs are created automatically inside \x[macro-argument-syntax][macro argument] whenever a double newline appears.
 
@@ -218,10 +197,9 @@ For macros that do have an ID, you can write a cross reference to it:
 TODO implement.
 
 Setting \c[child=1] on a cross reference to a header as in:
-
-\C[[
+``
 \xref[my-header]{child=1}
-]]
+``
 
 has the following effects:
 
@@ -742,7 +720,7 @@ Then, if one day the media repository ever blows up GitHub's limit, you can just
 
 The reason why images should be kept in a separate repository is that images are hundreds or thousands of times larger than hand written text.
 
-Therefore, images could easily fill up the maximum repository size you are allowed: https://webapps.stackexchange.com/questions/45254/file-size-and-storage-limits-on-github#84746 and then what will you do when GitHub comes asking you to reduce the repository size?
+Therefore, images could easily fill up the maximum repository size you are allowed: \a[https://webapps.stackexchange.com/questions/45254/file-size-and-storage-limits-on-github#84746] and then what will you do when GitHub comes asking you to reduce the repository size?
 
 \a[https://git-lfs.github.com/][Git LFS] is one approach to deal with this, but we feel that it adds too much development overhead.
 
@@ -863,14 +841,12 @@ which renders as:
 ]]
 
 Or alternatively, you can use the equivalent multiple dollar sign (\c[[$$]]) \x[insane-macro-shortcuts][insane macro shortcut]:
-
 $$
 \sqrt{1 + 1} \\
 \sqrt{1 + 1}
 $$
 
 HTML escaping happens as you would expect, e.g. < shows fine in:
-
 \C[[[
 \M[[
 1 < 2
@@ -1013,7 +989,6 @@ And here is: \comment[[\m[1 + 1\]]] an inline one.
 \h[3][Insane macro shortcuts]
 
 Certain commonly used macros have insane macro shortcuts that do not start with backslash (\c[\\]):
-
 \l[\x[paragraphs]: \c[[\n\n]] (double newline)]
 \l[\x[math]: \c[[$]], described at: \x[insane-code-and-math-shortcuts]]
 \l[\x[code]: \c[[`]], described at: \x[insane-code-and-math-shortcuts]]
@@ -1021,6 +996,8 @@ Certain commonly used macros have insane macro shortcuts that do not start with 
 Originally, \x[design-goals][Ciro wanted to avoid those], but they just feel too good to avoid.
 
 Every insane syntax does however have an equivalent sane syntax.
+
+The style recommendation is: use the insane version which is shorter, unless you have a specific reason to use the sane version.
 
 \h[4][Insane code and math shortcuts]
 

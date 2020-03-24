@@ -706,10 +706,9 @@ assert_error('too many positional arguments', '\\p[ab][cd]', 1, 7);
 assert_error('unknown named macro argument', '\\c{reserved_undefined=abc}[]', 1, 4);
 assert_error('named argument without =', '\\p{id ab}[cd]', 1, 6);
 // TODO
-//assert_error('argument without close', '\\p[', 1, 3);
+//assert_error('argument without close', '\\c[', 1, 3);
+//assert_error('unterminated argument', '\\c[ab', 1, 3);
 //assert_error('argument without open', ']', 1, 1);
 assert_error('unterminated literal positional argument', '\\c[[\n', 1, 3);
 assert_error('unterminated literal named argument', '\\c{{id=\n', 1, 3);
 assert_error('unterminated insane inline code', '`\n', 1, 1);
-
-//assert_error('unterminated argument', '\\c[ab', 1, 3);

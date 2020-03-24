@@ -103,7 +103,7 @@ class AstNode {
       context.katex_macros = {};
     }
     if (!('macros' in context)) {
-      throw new Error('missing mandatory argument macros');
+      throw new Error('contenxt does not have a mandatory .macros property');
     }
     return context.macros[this.macro_name].convert(this, context);
   }
@@ -456,6 +456,7 @@ class Macro {
 }
 // Macro names defined here are those that have magic properties, e.g.
 // headers are used by the 'toc'.
+Macro.CIRODOWN_EXAMPLE_MACRO_NAME = 'cirodown_example';
 Macro.CODE_MACRO_NAME = 'c';
 Macro.HEADER_MACRO_NAME = 'h';
 Macro.ID_ARGUMENT_NAME = 'id';
@@ -506,14 +507,14 @@ class Tokenizer {
   /**
    * @param {String} input_string
    */
-  constructor(input_string, extra_returns={}, show_tokenize=false) {
+  constructor(input_string, extra_returns={}, show_tokenize=false, start_line=1) {
     this.chars = Array.from(input_string);
     this.cur_c = this.chars[0];
     this.column = 1;
     this.extra_returns = extra_returns;
     this.extra_returns.errors = [];
     this.i = 0;
-    this.line = 1;
+    this.line = start_line;
     this.tokens = [];
     this.show_tokenize = show_tokenize;
     this.log_debug('Tokenizer');
@@ -964,6 +965,7 @@ function convert(
   if (!('h_level_offset' in options)) { options.h_level_offset = 0; }
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('render' in options)) { options.render = true; }
+  if (!('start_line' in options)) { options.start_line = 1; }
   if (!('show_ast' in options)) { options.show_ast = false; }
   if (!('show_parse' in options)) { options.show_parse = false; }
   if (!('show_tokenize' in options)) { options.show_tokenize = false; }
@@ -975,7 +977,7 @@ function convert(
   let sub_extra_returns;
   sub_extra_returns = {};
   let tokens = (new Tokenizer(input_string, sub_extra_returns,
-    options.show_tokenize)).tokenize();
+    options.show_tokenize, options.start_line)).tokenize();
   if (options.show_tokens) {
     console.error('tokens:');
     for (let i = 0; i < tokens.length; i++) {
@@ -1057,6 +1059,26 @@ function convert_arg(arg, context) {
  */
 function convert_arg_noescape(arg, context={}) {
   return convert_arg(arg, clone_and_set(context, 'html_escape', false));
+}
+
+/** @return {Array[AstNode]} */
+function convert_include(input_string, options, cur_header_level, href, start_line) {
+  const include_options = Object.assign({}, options);
+  include_options.from_include = true;
+  include_options.h_level_offset = cur_header_level;
+  include_options.input_path = href;
+  include_options.render = false;
+  include_options.toplevel_id = href;
+  if (start_line !== undefined) {
+    include_options.start_line = start_line;
+  }
+  const include_extra_returns = {};
+  convert(
+    input_string,
+    include_options,
+    include_extra_returns,
+  );
+  return include_extra_returns.ast.args.content;
 }
 
 /** Error message to be rendered inside the generated output itself.
@@ -1254,8 +1276,12 @@ function html_escape_context(context, str) {
 }
 
 function html_hide_hover_link(id) {
-  let href = html_attr('href', '#' + html_escape_attr(id));
-  return `<span class="hide-hover"> <a${href}>${Macro.LINK_SELF_SHORT}</a></span>`;
+  if (id === undefined) {
+    return '';
+  } else {
+    let href = html_attr('href', '#' + html_escape_attr(id));
+    return `<span class="hide-hover"> <a${href}>${Macro.LINK_SELF_SHORT}</a></span>`;
+  }
 }
 
 function html_wrap(content, tag) {
@@ -1368,20 +1394,12 @@ function parse(tokens, macros, options, extra_returns={}) {
       } else {
         let new_child_nodes;
         if (options.html_single_page) {
-          const include_options = Object.assign({}, options);
-          include_options.from_include = true;
-          include_options.h_level_offset = cur_header_level;
-          include_options.input_path = href;
-          include_options.render = false;
-          include_options.toplevel_id = href;
-          include_options.input_path
-          const include_extra_returns = {};
-          convert(
+          new_child_nodes = convert_include(
             options.read_include(href),
-            include_options,
-            include_extra_returns,
+            options,
+            cur_header_level,
+            href
           );
-          new_child_nodes = include_extra_returns.ast.args.content;
         } else {
           const target_id_ast = id_provider.get(href);
           let header_node_title;
@@ -1476,6 +1494,45 @@ function parse(tokens, macros, options, extra_returns={}) {
         //   calls won't nest into one another
         parent_arg.push(...new_child_nodes);
       }
+    } else if (macro_name === Macro.CIRODOWN_EXAMPLE_MACRO_NAME) {
+      parent_arg.push(...[
+        new AstNode(
+          AstType.MACRO,
+          Macro.CODE_MACRO_NAME.toUpperCase(),
+          {'content': ast.args.content},
+          ast.line,
+          ast.column,
+        ),
+        new AstNode(
+          AstType.MACRO,
+          Macro.PARAGRAPH_MACRO_NAME,
+          {
+            'content': [
+              new PlaintextAstNode(
+                ast.line,
+                ast.column,
+                'which renders as:',
+              )
+            ],
+          },
+          ast.line,
+          ast.column,
+        ),
+        new AstNode(
+          AstType.MACRO,
+          'q',
+          {'content': convert_include(
+              convert_arg_noescape(ast.args.content, id_context),
+              options,
+              0,
+              options.input_path,
+              ast.line + 1
+            )
+          },
+          ast.line,
+          ast.column,
+        ),
+      ]);
     } else {
       if (macro_name === Macro.HEADER_MACRO_NAME) {
         if (is_first_header) {
@@ -1507,7 +1564,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     }
   }
 
-  // Post process the AST breadth first after inclusions are resolved to support:
+  // Post process the AST breadth first after inclusions are resolved to support things like:
   //
   // - the insane but necessary paragraphs double newline syntax
   // - automatic ul parent to li and table to tr
@@ -1575,6 +1632,7 @@ function parse(tokens, macros, options, extra_returns={}) {
         }
       } else if (macro_name === Macro.TOC_MACRO_NAME) {
         if (ast.from_include) {
+          // Skip.
           continue;
         }
         extra_returns.context.has_toc = true;
@@ -1628,6 +1686,7 @@ function parse(tokens, macros, options, extra_returns={}) {
       }
       if (ast.id !== undefined && !ast.force_no_index) {
         const previous_ast = id_provider.get(ast.id);
+        let input_path;
         if (previous_ast === undefined) {
           let non_indexed_id = non_indexed_ids[ast.id];
           if (non_indexed_id !== undefined) {
@@ -2056,6 +2115,20 @@ const DEFAULT_MACRO_LIST = [
       properties: {
         phrasing: true,
       }
+    }
+  ),
+  new Macro(
+    Macro.CIRODOWN_EXAMPLE_MACRO_NAME,
+    [
+      new MacroArgument({
+        name: 'content',
+      }),
+    ],
+    function(ast, context) {
+      throw new Error('programmer error, include must never render');
+    },
+    {
+      macro_counts_ignore: function(ast, context) { return true; }
     }
   ),
   new Macro(

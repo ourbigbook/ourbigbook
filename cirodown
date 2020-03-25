@@ -12,17 +12,20 @@ const chokidar = require('chokidar');
 const commander = require('commander');
 const git_url_parse = require("git-url-parse");
 const is_installed_globally = require('is-installed-globally');
+const sass = require('sass');
 
 const cirodown = require('cirodown');
 const cirodown_nodejs = require('cirodown/nodejs');
 
 const CIRODOWN_EXT = '.ciro';
+const SASS_EXT = '.scss';
 const OUT_DIRNAME = 'out';
 const DEFAULT_IGNORE_BASENAMES = [
   '.git',
   '.sass-cache',
   'node_modules',
   OUT_DIRNAME,
+  cirodown_nodejs.PACKAGE_SASS_BASENAME,
 ];
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
 const ENCODING = 'utf8';
@@ -113,7 +116,7 @@ function cmd_get_stdout(cmd, args=[], options={}) {
 
 function convert_files_in_directory(input_path, options, convert_input_options) {
   for (const one_path of walk_files_recursively(input_path, DEFAULT_IGNORE_BASENAMES_SET)) {
-    convert_path_to_file(one_path, options, convert_input_options);
+    convert_path_to_file(input_path, one_path, options, convert_input_options);
   }
 }
 
@@ -195,12 +198,30 @@ function convert_input(input, options, convert_input_options={}) {
   return output;
 }
 
-/** Convert .ciro to output format and save it to a file instead of returning as a string.
+/** Convert filetypes that cirodown knows how to convert, and just copy those that we don't, e.g.:
+ *
+ * * .ciro to .html
+ * * .scss to .css
+ *
+ * @param {string} input_path - path relative to the base_path
  *
  * The output file name is derived from the input file name with the output extension.
  */
-function convert_path_to_file(input_path, options, convert_input_options={}) {
+function convert_path_to_file(base_path, input_path, options, convert_input_options={}) {
   let input_path_parse = path.parse(input_path);
+  let output_name = input_path_parse.name;
+  if (input_path_parse.ext === CIRODOWN_EXT && output_name in IO_RENAME_MAP) {
+    output_name = IO_RENAME_MAP[output_name];
+  }
+  let output_path_noext = path.join(input_path_parse.dir, output_name);
+  if (convert_input_options.output_path === undefined) {
+    if (convert_input_options.outdir) {
+      output_path_noext = path.join(convert_input_options.outdir, output_path_noext);
+    }
+  } else {
+    output_path_noext = convert_input_options.output_path;
+  }
+  fs.mkdirSync(path.dirname(output_path_noext), {recursive: true});
   if (input_path_parse.ext === CIRODOWN_EXT) {
     let message_prefix;
     if (options.render) {
@@ -210,45 +231,53 @@ function convert_path_to_file(input_path, options, convert_input_options={}) {
     }
     let message = `${message_prefix} ${input_path}`;
     console.log(message);
-    let name = input_path_parse.name;
-    if (input_path_parse.name in IO_RENAME_MAP) {
-      name = IO_RENAME_MAP[name];
-    }
+    const output_path = output_path_noext + '.html';
     const new_convert_input_options = Object.assign({}, convert_input_options);
-    let output_path = path.join(input_path_parse.dir, name) + '.html';
-    if (new_convert_input_options.output_path === undefined) {
-      if (new_convert_input_options.outdir) {
-        output_path = path.join(new_convert_input_options.outdir, output_path);
-      }
-    } else {
-      output_path = new_convert_input_options.output_path;
-    }
     new_convert_input_options.output_path = output_path;
-    fs.mkdirSync(path.dirname(output_path), {recursive: true});
     let t0 = performance.now();
-    let output = convert_path(input_path, options, new_convert_input_options);
+    let output = convert_path(base_path, input_path, options, new_convert_input_options);
     let t1 = performance.now();
     console.log(`${message} finished in ${t1 - t0} ms`);
 
     fs.writeFileSync(output_path, output);
+  } else {
+    if (options.render) {
+      if (input_path_parse.ext === SASS_EXT) {
+        console.log(`sass ${input_path}`);
+        fs.writeFileSync(
+          output_path_noext + '.css',
+          sass.renderSync({
+            data: fs.readFileSync(input_path, convert_input_options.encoding),
+            outputStyle: 'compressed',
+          })
+        );
+      } else {
+        // Otherwise, just copy the file over if needed.
+        const output_path = output_path_noext + input_path_parse.ext;
+        if (output_path !== input_path) {
+          console.log(`copy ${input_path}`);
+          fs.copyFileSync(input_path, output_path);
+        }
+      }
+    }
   }
 }
 
-/** Convert input from a path to string output and return the output as a string.
+/** Convert cirodown input from a path to string output and return the output as a string.
  *
  * @return {String}
  */
-function convert_path(input_path, options, convert_input_options) {
+function convert_path(base_path, input_path, options, convert_input_options) {
+  let full_path = path.join(base_path, input_path);
   let new_options = Object.assign({}, options);
   let new_convert_input_options = Object.assign({}, convert_input_options);
-  let input = fs.readFileSync(input_path, new_convert_input_options.encoding);
+  let input = fs.readFileSync(full_path, new_convert_input_options.encoding);
   let input_path_parse = path.parse(input_path);
   let input_path_basename_noext = input_path_parse.name;
-  let input_path_noext_renamed;
 
-  // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
   let toplevel_id;
   if (INDEX_FILE_BASENAMES_NOEXT.has(input_path_basename_noext)) {
+    // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
     toplevel_id = path.basename(path.dirname(path.resolve(input_path)));
   } else {
     toplevel_id = input_path_basename_noext;
@@ -260,7 +289,7 @@ function convert_path(input_path, options, convert_input_options) {
   } else {
     input_path_basename_noext_renamed = input_path_basename_noext
   }
-  input_path_noext_renamed = path.join(input_path_parse.dir, input_path_basename_noext_renamed);
+  let input_path_noext_renamed = path.join(input_path_parse.dir, input_path_basename_noext_renamed);
   new_convert_input_options.input_path_noext_renamed = input_path_noext_renamed;
   let output = convert_input(input, new_options, new_convert_input_options);
   if ('db' in convert_input_options) {
@@ -404,12 +433,27 @@ if (commander.helpMacros) {
     }
     let input_path_is_file;
     let outdir;
+    let publish_dir;
+    let publish_out_dir;
+    let cmd_options = {
+      dry_run: commander.dryRun,
+    }
     if (fs.lstatSync(inputPath).isFile()) {
       input_path_is_file = true;
       outdir = OUT_DIRNAME;
     } else {
       input_path_is_file = false;
       outdir = path.join(inputPath, OUT_DIRNAME);
+      if (publish) {
+        publish_dir = path.join(outdir, 'publish');
+        publish_git_dir = path.join(publish_dir, '.git');
+        if (fs.existsSync(publish_git_dir)) {
+          // This cleanup has to be done before the database initialization.
+          cmd_get_stdout('git', ['-C', publish_dir, 'clean', '-x', '-d', '-f'], cmd_options);
+        }
+        outdir = path.join(publish_dir, OUT_DIRNAME);
+        publish_out_dir = path.join(publish_dir, OUT_DIRNAME);
+      }
       if (commander.outfile !== undefined) {
         cli_error(`--outfile given but multiple output files must be generated, maybe you want --outdir?`);
       }
@@ -462,25 +506,21 @@ if (commander.helpMacros) {
       }
       let watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES});
       watcher.on('change', function(path) {
-        convert_path_to_file(path, options, convert_input_options);
+        convert_path_to_file(inputPath, path, options, convert_input_options);
       }).on('add', function(path) {
-        convert_path_to_file(path, options, convert_input_options);
+        convert_path_to_file(inputPath, path, options, convert_input_options);
       });
     } else {
       if (input_path_is_file) {
         if (publish) {
           cli_error('--publish must take a directory as input, not a file');
         }
-        output = convert_path(inputPath, options, convert_input_options);
+        output = convert_path(path.dirname(inputPath), inputPath, options, convert_input_options);
       } else {
         let actual_input;
         let publish_branch;
-        let publish_dir = path.join(outdir, 'publish');
         let remote_url;
         let src_branch;
-        let cmd_options = {
-          dry_run: commander.dryRun,
-        }
 
         if (publish) {
           // Clone the source to ensure that only git tracked changes get built and published.
@@ -511,21 +551,19 @@ if (commander.helpMacros) {
             cmd_get_stdout('git', ['-C', inputPath, 'add', '-u'], cmd_options);
             cmd_get_stdout('git', ['-C', inputPath, 'commit', '-m', commander.publishCommit], cmd_options);
           }
-          if (!fs.existsSync(path.join(publish_dir, '.git'))) {
-            cmd_get_stdout('git', ['clone', '--recursive', inputPath, publish_dir], cmd_options);
-          } else {
+          if (fs.existsSync(publish_git_dir)) {
             cmd_get_stdout('git', ['-C', publish_dir, 'checkout', '--', '.'], cmd_options);
-            cmd_get_stdout('git', ['-C', publish_dir, 'clean', '-x', '-d', '-f'], cmd_options);
             cmd_get_stdout('git', ['-C', publish_dir, 'pull'], cmd_options);
             cmd_get_stdout('git', ['-C', publish_dir, 'submodule', 'update', '--init'], cmd_options);
+          } else {
+            cmd_get_stdout('git', ['clone', '--recursive', inputPath, publish_dir], cmd_options);
           }
 
           // Set some variables especially for publishing.
           actual_input = publish_dir;
-          convert_input_options.outdir = path.join(publish_dir, OUT_DIRNAME, 'publish');
+          convert_input_options.outdir = path.join(publish_out_dir, 'publish');
           convert_input_options.out_css_path = path.join(convert_input_options.outdir, cirodown_nodejs.PACKAGE_OUT_CSS_BASENAME);
           convert_input_options.include_contains_external = true;
-          fs.copyFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_PATH, convert_input_options.out_css_path)
         } else {
           actual_input = inputPath;
           convert_input_options.outdir = commander.outdir;
@@ -539,20 +577,24 @@ if (commander.helpMacros) {
         if (publish && !convert_input_options.had_error) {
           // Push the original source.
           cmd_get_stdout('git', ['-C', inputPath, 'push'], cmd_options);
-          if (!fs.existsSync(path.join(convert_input_options.outdir, '.git'))) {
-            cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'init'], cmd_options);
-            if (publish_branch !== 'master') {
-              // https://stackoverflow.com/questions/42871542/how-to-create-a-git-repository-with-the-default-branch-name-other-than-master
-              cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'checkout', '-b', publish_branch], cmd_options);
-            }
-            cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'remote', 'add', 'origin', remote_url], cmd_options);
-            cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'fetch', 'origin'], cmd_options);
-            cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'reset', `origin/${publish_branch}`], cmd_options);
+          cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'init'], cmd_options);
+          if (publish_branch !== 'master') {
+            // https://stackoverflow.com/questions/42871542/how-to-create-a-git-repository-with-the-default-branch-name-other-than-master
+            cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'checkout', '-b', publish_branch], cmd_options);
           }
+          cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'remote', 'add', 'origin', remote_url], cmd_options);
+          // Ensure that we are up-to-date with the upstream gh-pages if one exists.
+          // TODO may fail on initial one, do a check for that.
+          cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'fetch', 'origin'], cmd_options);
+          cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'reset', `origin/${publish_branch}`], cmd_options);
+
+          // Generate special files needed for GitHub pages.
+          // TODO regenerate to ensure it is up-to-date. And regenerate with the one in out/publish.
+          fs.copyFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_PATH, convert_input_options.out_css_path)
           gemfile_content = "gem 'github-pages', group: :jekyll_plugins\n";
-          if (!commander.dryRun) {
-            fs.writeFileSync(path.join(convert_input_options.outdir, 'Gemfile'), gemfile_content);
-          }
+          fs.writeFileSync(path.join(convert_input_options.outdir, 'Gemfile'), gemfile_content);
+
+          // Commit and push.
           cmd_get_stdout('git', ['-C', convert_input_options.outdir, 'add', '.'], cmd_options);
           source_commit = cmd_get_stdout('git', ['-C', inputPath, 'log', '-n1', '--pretty=%H', src_branch], cmd_options).slice(0, -1);
           if (commander.dryRun) {

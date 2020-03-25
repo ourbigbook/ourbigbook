@@ -26,7 +26,7 @@ const external_includes = `
 
 fs.mkdirSync(cirodown_nodejs.PACKAGE_OUT_PATH, {recursive: true})
 
-const scss_input = fs.readFileSync(path.join(__dirname, cirodown_nodejs.PACKAGE_NAME + '.scss')).toString();
+const scss_input = fs.readFileSync(path.join(__dirname, cirodown_nodejs.PACKAGE_SASS_BASENAME)).toString();
 let result;
 
 result = sass.renderSync({

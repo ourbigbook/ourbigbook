@@ -19,7 +19,7 @@ npm install -g cirodown
 printf 'ab\ncd\n' | npx cirodown --body-only
 ``
 
-Play with it in a still crappy \x[editor-with-preview][live browser editor] (TODO currently only works from a clone):
+Play with it in a still crappy \x[editor-with-preview][live browser editor] at \a[https://cirosantilli.com/cirodown/editor] (TODO online version broken) or by cloning locally with:
 ``
 git clone https://github.com/cirosantilli/cirodown-template
 cd cirodown-template

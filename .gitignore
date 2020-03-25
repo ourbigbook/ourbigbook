@@ -1,3 +1,4 @@
+*.css
 *.html
 .sass-cache
 /node_modules

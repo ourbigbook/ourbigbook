@@ -1723,7 +1723,7 @@ Generated files:
 \h[4][`build-sass`]
 {id=build-sass}
 
-Takes as input the \a[cirodown.scss] \a[https://sass-lang.com/][SASS] scss file, and generates various `.css` versions from it required to properly view generated Cirodown HTML:
+The \a[build-sass] script takes as input the \a[cirodown.scss] \a[https://sass-lang.com/][SASS] scss file, and generates various `.css` versions from it required to properly view generated Cirodown HTML:
 
 \l[`cirodown.min.css`: contains the converted `cirodown.scss` plus online `@import` requests for stuff like \x[math][KaTeX]]
 \l[`cirodown.embed.min.css`: like `cirodown.min.css` but embeds all external CSS in-place without any `@import`. Used to distribute standalone pages: \x[html-embed]]

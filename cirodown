@@ -25,6 +25,8 @@ const DEFAULT_IGNORE_BASENAMES = [
   '.gitignore',
   '.sass-cache',
   'node_modules',
+  'package-lock.json',
+  'package.json',
   OUT_DIRNAME,
   cirodown_nodejs.PACKAGE_SASS_BASENAME,
 ];

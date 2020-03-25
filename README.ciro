@@ -1795,7 +1795,6 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[local downloads and single HTML page with image / script embeds]
 \l[image management: upload to separate media directory]
 \l[handle ID calculation from title if title has HTML elements, e.g. headers with code. Use that for the title as well. This has to be done with a context argument that makes implementing macros output just the text without tags]
-\l[multiple newlines blow up (5 or six), create test and decide best behaviour]
 \l[autolinks http]
 \l[paragraphs rendered as divs, can show anything inside e.g. lists, code blocks]
 \l[create mechanism to link to the GitHub blob view of in-tree source files that are not added to GitHub pages, e.g. `\file`]

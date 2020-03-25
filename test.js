@@ -691,6 +691,29 @@ d
 ]
 );
 
+
+// Phrasing related.
+assert_convert_ast('text after block element',
+  `a
+
+\\C[[
+b
+c
+]]
+d
+
+e
+`,
+[
+  a('p', [t('a')]),
+  a('p', [
+    a('C', [t('b\nc\n')]),
+    t('\nd'),
+  ]),
+  a('p', [t('e')]),
+]
+);
+
 // Math. Minimal testing since this is mostly factored out with code tests.
 assert_convert_ast('math inline sane',
   '\\m[[\\sqrt{1 + 1}]]\n',

@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// See: https://cirosantilli.com/cirodown#build-sass
+
 const fs = require('fs');
 const path = require('path');
 
@@ -24,23 +26,23 @@ const external_includes = `
 
 fs.mkdirSync(cirodown_nodejs.PACKAGE_OUT_PATH, {recursive: true})
 
-const scss_input = fs.readFileSync(path.join(__dirname, 'main.scss')).toString();
+const scss_input = fs.readFileSync(path.join(__dirname, cirodown_nodejs.PACKAGE_NAME + '.scss')).toString();
 let result;
 
 result = sass.renderSync({
   data: embed_includes + scss_input,
   outputStyle: 'compressed',
 });
-fs.writeFileSync(path.join(cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH), result.css);
+fs.writeFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH, result.css);
 
 result = sass.renderSync({
   data: external_includes + scss_input,
   outputStyle: 'compressed',
 });
-fs.writeFileSync(path.join(cirodown_nodejs.PACKAGE_OUT_CSS_PATH), result.css);
+fs.writeFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_PATH, result.css);
 
 result = sass.renderSync({
   data: scss_input,
   outputStyle: 'compressed',
 });
-fs.writeFileSync(path.join(cirodown_nodejs.PACKAGE_OUT_CSS_LOCAL_PATH), result.css);
+fs.writeFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_LOCAL_PATH, result.css);

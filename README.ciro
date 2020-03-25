@@ -29,12 +29,16 @@ npm install
 xdg-open editor.html
 ``
 
-For a minimal but convenient project template with a `.gitignore` and `package.json`, consider:
+To start a new project with a minimal and convenient template and publish it to GitHub use TODO implement https://github.com/cirosantilli/cirodown/issues/7
 ``
-git clone https://github.com/cirosantilli/cirodown-template
-cd cirodown-template
-cirodown .
+mkdir -p cirodown-test
+cd cirodown-test
+git init
+git remot add origin git@github.com:USERNAME/cirodown-test.git
+cirodown --generate
+cirodown --publish
 ``
+See: \x[publish][style=full] for more details.
 
 Render all `.ciro` files form the master of this project to separate files:
 ``
@@ -1389,47 +1393,67 @@ Exit by entering Ctrl + C on the terminal.
 \h[5][`--publish`]
 {id=publish}
 
-Cirodown tooling is so amazing that we also take care of the HTML publishing for you.
+Cirodown tooling is so amazing that we also take care of the HTML publishing for you!
 
-\h[6][Publish to GitHub Pages]
-
-If you want to publish your root user page, which appears at `/` (e.g. \a[https://github.com/cirosantilli/cirosantilli.github.io] for the user `cirosantilli`), GitHub annoyingly forces you to use the `master` branch for the HTML output:
-\l[https://github.com/isaacs/github/issues/212]
-\l[https://stackoverflow.com/questions/31439951/how-can-i-use-a-branch-other-than-master-for-user-github-pages]
-
-Therefore, you must first place your `.ciro` source in a different branch and clear up the `master` branch for the HTML, and only then publish:
+Once publish target is properly setup, all you have to do is run:
 ``
-git checkout -b dev
-git branch -D master
-git push --delete origin master
-
 git add README.ciro
-git commit --message 'some commit message'
+git commit -m 'more content!'
 cirodown --publish
 ``
+and your changes will be published to the  default target specified in \x[cirodown-json].
 
-This will automatically `git push` both the `dev` branch for you, and create/update the `master` branch, which contains the desired HTML output.
+If not specified, the default target is \x[publish-to-github-pages].
 
 Only changes committed to Git are pushed.
 
-You then will also want to set your default repository branch to `dev` in the settings for that repository: https://help.github.com/en/github/administering-a-repository/setting-the-default-branch
-
-`cirodown` automatically detects that we are not on the `master` branch, and therefore guesses that you want to publish GitHub pages on the `master` branch.
-
-For any other non-root directory, `cirodown` sees that you are on the `master` branch, and automatically publishes on the `gh-pages` branch, so all you need is:
-``
-git add README.ciro
-git commit --message 'some commit message'
-cirodown --publish .
-]]
-``
-
-The publishing only happens if the build has no errors.
+Files that `cirodown` knows how to process get processed and only their outputs are added to the published repo, those file types are:
+\l[`.ciro` files are converted to `.html`]
+\l[`.scss` files are converted to `.css`]
+Every other Git-tracked file is pushed as is.
 
 When `--publish` is given, stdin input is not accepted, and so the current directory is built by default, i.e. the following two are equivalent:
 ``
 ./cirodown --publish
 ./cirodown --publish .
+``
+
+Publishing only happens if the build has no errors.
+
+\h[6][Publish to GitHub Pages]
+
+\a[https://pages.github.com/][GitHub pages] is the default Cirodown publish target.
+
+The first step is of course to create the GitHub repository that will contain your GitHub pages as usual.
+
+Then, if you want to publish your root user page, which appears at `/` (e.g. \a[https://github.com/cirosantilli/cirosantilli.github.io] for the user `cirosantilli`), GitHub annoyingly forces you to use the `master` branch for the HTML output:
+\l[https://github.com/isaacs/github/issues/212]
+\l[https://stackoverflow.com/questions/31439951/how-can-i-use-a-branch-other-than-master-for-user-github-pages]
+
+This means that you must place your `.ciro` input files in a branch other than `master` to clear up `master` for the generated HTML.
+
+`cirodown` automatically detects if your repository ois a root repository or not by parsing `git remote` output, but you must setup the branches correctly yourself.
+
+So on a new repository, you must \a[https://stackoverflow.com/questions/42871542/how-to-create-a-git-repository-with-the-default-branch-name-other-than-master][first checkout to a different branch] as in:
+``
+git init
+git checkout -b dev
+``
+or to move an an existing repository to a non-master branch:
+``
+git checkout -b dev
+git push origin dev:dev
+git branch -D master
+git push --delete origin master
+``
+
+You then will also want to set your default repository branch to `dev` in the settings for that repository: \a[https://help.github.com/en/github/administering-a-repository/setting-the-default-branch]
+
+For non-root GitHub pages, no special setup is needed, `cirodown` automatically populates the `gh-pages` branch for you:
+``
+git add README.ciro
+git commit --message 'some commit message'
+cirodown --publish .
 ``
 
 \h[6][`--dry-run`]
@@ -1559,6 +1583,8 @@ This option is automatically implied when publishing to targets that remove the 
 \h[4][`cirodown.json`]
 {id=cirodown-json}
 
+TODO implement
+
 \h[5][`media_source_type`]
 {id=media-source-type}
 
@@ -1664,10 +1690,25 @@ node inspect ./node_modules/.bin/mocha test --ignore-leaks -g 'p with id before'
 
 \h[3][Overview of files in this repository]
 
+Source files:
+
 \l[\a[index.js]: main code. Must be able to run in the browser, so no Node.js specifics. Exposes the central `convert` function]
 \l[\a[cirodown]: CLI executable. Is basically just a CLI interface frontend to `convert`]
 \l[\a[test.js]: contains all the Mocha tests, see also: \x[test-system]]
 \l[\a[README.md]: minimal Markdown README until GitHub / NPM support Cirodown :-)]
+
+Generated files:
+
+\l[`cirodown.js` packaged \a[http://browserify.org/][browserify] JavaScript for browser usage, generated with `npm run browserify`]
+
+\h[4][`build-sass`]
+{id=build-sass}
+
+Takes as input the \a[cirodown.scss] \a[https://sass-lang.com/][SASS] scss file, and generates various `.css` versions from it required to properly view generated Cirodown HTML:
+
+\l[cirodown.embed.min.css`: version of the CSS that embeds all external CSS in-place without any `@import`, e.g. \x[math][KaTeX]. Used to distribute standalone pages.]
+\l[cirodown.local.min.css`: ]
+\l[cirodown.min.css`: ]
 
 \h[3][Internals API]
 
@@ -1729,7 +1770,6 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[cirodown : google analytics]
 \l[custom header, footer and HEAD based on files like header.html, footer.html]
 \l[\x[id-scope]]
-\l[publish browser live quick test, Can be done by: hack convert_path_to_file to forward not just cirodown HTML output but also tracked HTML, CSS, JS, PNG, JPG, files, and then add an explicit include in the cirodown.json to force inclusion of out/index.js and out/main.min.css]
 \l[list and code caption]
 \l[image description and source]
 \l[input indentation skip]

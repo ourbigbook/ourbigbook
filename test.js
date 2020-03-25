@@ -194,6 +194,22 @@ assert_convert_ast('three paragraphs',
     a('p', [t('p3')]),
   ]
 );
+assert_convert_ast('paragraph three newlines',
+  'p1\n\n\np2\n',
+  [
+    a('p', [t('p1')]),
+    a('p', [t('\np2')]),
+  ]
+);
+// TODO raising.
+//assert_convert_ast('paragraph four newlines',
+//  'p1\n\n\n\np3\n',
+//  [
+//    a('p', [t('p1')]),
+//    a('p', [t('')]),
+//    a('p', [t('p3')]),
+//  ]
+//);
 
 // List.
 const l_with_explicit_ul_expect = [

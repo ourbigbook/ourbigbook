@@ -171,11 +171,7 @@ function t(text) { return {'macro_name': 'plaintext', 'text': text}; }
 
 // Paragraphs.
 assert_convert_ast('one paragraph implicit', 'ab\n',
-  [
-    // TODO actually, this would be better.
-    //a('p', [t('ab')]),
-    t('ab'),
-  ],
+  [a('p', [t('ab')])],
 );
 assert_convert_ast('one paragraph explicit', '\\p[ab]\n',
   [a('p', [t('ab')])],
@@ -328,13 +324,15 @@ assert_convert_ast('auto_parent consecutive implicit tr and l',
 \\l[cd]
 `,
 [
-  a('table', [
-    a('tr', [
-      a('td', [t('ab')]),
+  a('p', [
+    a('table', [
+      a('tr', [
+        a('td', [t('ab')]),
+      ]),
     ]),
-  ]),
-  a('ul', [
-    a('l', [t('cd')]),
+    a('ul', [
+      a('l', [t('cd')]),
+    ]),
   ]),
 ]
 );
@@ -398,11 +396,11 @@ assert_convert_ast('image title',
 //)
 
 // Escapes.
-assert_convert_ast('escape backslash',            'a\\\\b\n', [t('a\\b')]);
-assert_convert_ast('escape left square bracket',  'a\\[b\n',  [t('a[b')]);
-assert_convert_ast('escape right square bracket', 'a\\]b\n',  [t('a]b')]);
-assert_convert_ast('escape left curly brace',     'a\\{b\n',  [t('a{b')]);
-assert_convert_ast('escape right curly brace',    'a\\}b\n',  [t('a}b')]);
+assert_convert_ast('escape backslash',            'a\\\\b\n', [a('p', [t('a\\b')])]);
+assert_convert_ast('escape left square bracket',  'a\\[b\n',  [a('p', [t('a[b')])]);
+assert_convert_ast('escape right square bracket', 'a\\]b\n',  [a('p', [t('a]b')])]);
+assert_convert_ast('escape left curly brace',     'a\\{b\n',  [a('p', [t('a{b')])]);
+assert_convert_ast('escape right curly brace',    'a\\}b\n',  [a('p', [t('a}b')])]);
 
 //// HTML Escapes.
 // TODO html or subfunction test
@@ -426,7 +424,7 @@ assert_convert_ast('p with id after', '\\p[cd]{id=ab}\n',
 // Literal arguments.
 assert_convert_ast('literal argument code inline',
   '\\c[[\\ab[cd]{ef}]]\n',
-  [a('c', [t('\\ab[cd]{ef}')])],
+  [a('p', [a('c', [t('\\ab[cd]{ef}')])])],
 );
 assert_convert_ast('literal argument code block',
   `a
@@ -471,57 +469,63 @@ b
 );
 assert_convert_ast('literal agument escape leading open no escape',
   '\\c[[\\ab]]\n',
-  [a('c', [t('\\ab')])],
+  [a('p', [a('c', [t('\\ab')])])],
 );
 assert_convert_ast('literal agument escape leading open one backslash',
   '\\c[[\\[ab]]\n',
-  [a('c', [t('[ab')])],
+  [a('p', [a('c', [t('[ab')])])],
 );
 assert_convert_ast('literal agument escape leading open two backslashes',
   '\\c[[\\\\[ab]]\n',
-  [a('c', [t('\\[ab')])],
+  [a('p', [a('c', [t('\\[ab')])])],
 );
 assert_convert_ast('literal agument escape trailing close no escape',
   '\\c[[\\]]\n',
-  [a('c', [t('\\')])],
+  [a('p', [a('c', [t('\\')])])],
 );
 assert_convert_ast('literal agument escape trailing one backslash',
   '\\c[[\\]]]\n',
-  [a('c', [t(']')])],
+  [a('p', [a('c', [t(']')])])],
 );
 assert_convert_ast('literal agument escape trailing two backslashes',
   '\\c[[\\\\]]]\n',
-  [a('c', [t('\\]')])],
+  [a('p', [a('c', [t('\\]')])])],
 );
 
 // Links.
 assert_convert_ast('link simple',
   'a \\a[http://example.com][example link] b\n',
   [
-    t('a '),
-    a('a', [t('example link')], {'href': [t('http://example.com')]}),
-    t(' b'),
+    a('p', [
+      t('a '),
+      a('a', [t('example link')], {'href': [t('http://example.com')]}),
+      t(' b'),
+    ]),
   ]
 );
 assert_convert_ast('link auto',
   'a \\a[http://example.com] b\n',
   [
-    t('a '),
-    a('a', undefined, {'href': [t('http://example.com')]}),
-    t(' b'),
+    a('p', [
+      t('a '),
+      a('a', undefined, {'href': [t('http://example.com')]}),
+      t(' b'),
+    ]),
   ]
 );
 assert_convert_ast('link with multiple paragraphs',
-  '\\a[http://example.com][Multiple\n\nparagraphs]\n',
+  '\\a[http://example.com][aaa\n\nbbb]\n',
   [
-    a(
-      'a',
-      [
-        a('p', [t('Multiple')]),
-        a('p', [t('paragraphs')]),
-      ],
-      {'href': [t('http://example.com')]},
-    ),
+    a('p', [
+      a(
+        'a',
+        [
+          a('p', [t('aaa')]),
+          a('p', [t('bbb')]),
+        ],
+        {'href': [t('http://example.com')]},
+      ),
+    ]),
   ]
 );
 
@@ -616,11 +620,17 @@ My paragraph 2.
 );
 assert_convert_ast('header 7',
   `\\h[1][1]
+
 \\h[2][2]
+
 \\h[3][3]
+
 \\h[4][4]
+
 \\h[5][5]
+
 \\h[6][6]
+
 \\h[7][7]
 `,
 [
@@ -641,22 +651,26 @@ assert_error('header skip level is an error', '\\h[1][a]\n\\h[3][b]\n', 2, 4);
 assert_convert_ast('code inline sane',
   'a \\c[b c] d\n',
   [
-    t('a '),
-    a('c', [t('b c')]),
-    t(' d'),
-  ]
+    a('p', [
+      t('a '),
+      a('c', [t('b c')]),
+      t(' d'),
+    ]),
+  ],
 );
 assert_convert_ast('code inline insane simple',
   'a `b c` d\n',
   [
-    t('a '),
-    a('c', [t('b c')]),
-    t(' d'),
+    a('p', [
+      t('a '),
+      a('c', [t('b c')]),
+      t(' d'),
+    ]),
   ]
 );
 assert_convert_ast('code inline insane escape backtick',
   'a \\`b c\n',
-  [t('a `b c')]
+  [a('p', [t('a `b c')])]
 );
 assert_convert_ast('code block sane',
   `a
@@ -717,15 +731,15 @@ e
 // Math. Minimal testing since this is mostly factored out with code tests.
 assert_convert_ast('math inline sane',
   '\\m[[\\sqrt{1 + 1}]]\n',
-  [a('m', [t('\\sqrt{1 + 1}')])],
+  [a('p', [a('m', [t('\\sqrt{1 + 1}')])])],
 );
 assert_convert_ast('math inline insane simple',
   '$\\sqrt{1 + 1}$\n',
-  [a('m', [t('\\sqrt{1 + 1}')])],
+  [a('p', [a('m', [t('\\sqrt{1 + 1}')])])],
 );
 assert_convert_ast('math inline escape dollar',
   'a \\$b c\n',
-  [t('a $b c')],
+  [a('p', [t('a $b c')])],
 );
 assert_no_error('math block sane',
   '\\M[[\\sqrt{1 + 1}]]',

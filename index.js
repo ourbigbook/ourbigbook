@@ -629,6 +629,7 @@ class Tokenizer {
     // Add the magic implicit toplevel element.
     this.push_token(TokenType.MACRO_NAME, Macro.TOPLEVEL_MACRO_NAME);
     this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
+    this.push_token(TokenType.PARAGRAPH);
     let unterminated_literal = false;
     let start_line;
     let start_column;
@@ -741,6 +742,7 @@ class Tokenizer {
       this.error(`unterminated literal argument`, start_line, start_column);
     }
     // Close the opening of toplevel.
+    this.push_token(TokenType.PARAGRAPH);
     this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
     return this.tokens;
   }
@@ -1778,12 +1780,18 @@ function parse(tokens, macros, options, extra_returns={}) {
         }
         if (paragraph_indexes.length > 0) {
           new_arg = [];
-          let paragraph_start = 0;
-          for (const paragraph_index of paragraph_indexes) {
+          if (paragraph_indexes[0] > 0) {
+            parse_add_paragraph(state, new_arg, arg, 0, paragraph_indexes[0]);
+          }
+          let paragraph_start = paragraph_indexes[0] + 1;
+          for (let i = 1; i < paragraph_indexes.length; i++) {
+            const paragraph_index = paragraph_indexes[i];
             parse_add_paragraph(state, new_arg, arg, paragraph_start, paragraph_index);
             paragraph_start = paragraph_index + 1;
           }
-          parse_add_paragraph(state, new_arg, arg, paragraph_start, arg.length);
+          if (paragraph_start < arg.length) {
+            parse_add_paragraph(state, new_arg, arg, paragraph_start, arg.length);
+          }
           arg = new_arg;
         }
 
@@ -1820,8 +1828,8 @@ function parse_add_paragraph(
   parse_log_debug(state, 'paragraph_start: ' + paragraph_start);
   parse_log_debug(state, 'paragraph_end: ' + paragraph_end);
   parse_log_debug(state);
-  const slice = arg.slice(paragraph_start, paragraph_end);
   const macro = state.macros[arg[paragraph_start].macro_name];
+  const slice = arg.slice(paragraph_start, paragraph_end);
   if (macro.properties.phrasing || slice.length > 1) {
     // If the first element after the double newline is phrasing content,
     // create a paragraph and put all elements until the next paragraph inside

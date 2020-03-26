@@ -731,6 +731,9 @@ class Tokenizer {
           this.push_token(TokenType.PARAGRAPH);
           this.consume();
           this.consume();
+          if (this.cur_c === '\n') {
+            this.error('paragraph with more than two newlines, use just two');
+          }
         } else {
           this.consume_plaintext_char();
         }
@@ -1828,26 +1831,28 @@ function parse_add_paragraph(
   parse_log_debug(state, 'paragraph_start: ' + paragraph_start);
   parse_log_debug(state, 'paragraph_end: ' + paragraph_end);
   parse_log_debug(state);
-  const macro = state.macros[arg[paragraph_start].macro_name];
-  const slice = arg.slice(paragraph_start, paragraph_end);
-  if (macro.properties.phrasing || slice.length > 1) {
-    // If the first element after the double newline is phrasing content,
-    // create a paragraph and put all elements until the next paragraph inside
-    // that paragraph.
-    new_arg.push(
-      new AstNode(
-        AstType.MACRO,
-        Macro.PARAGRAPH_MACRO_NAME,
-        {
-          'content': slice
-        },
-        arg[paragraph_start].line,
-        arg[paragraph_start].column,
-      )
-    );
-  } else {
-    // Otherwise, don't create the paragraph, and keep all elements as they were.
-    new_arg.push(...slice);
+  if (paragraph_start < paragraph_end) {
+    const macro = state.macros[arg[paragraph_start].macro_name];
+    const slice = arg.slice(paragraph_start, paragraph_end);
+    if (macro.properties.phrasing || slice.length > 1) {
+      // If the first element after the double newline is phrasing content,
+      // create a paragraph and put all elements until the next paragraph inside
+      // that paragraph.
+      new_arg.push(
+        new AstNode(
+          AstType.MACRO,
+          Macro.PARAGRAPH_MACRO_NAME,
+          {
+            'content': slice
+          },
+          arg[paragraph_start].line,
+          arg[paragraph_start].column,
+        )
+      );
+    } else {
+      // Otherwise, don't create the paragraph, and keep all elements as they were.
+      new_arg.push(...slice);
+    }
   }
 }
 

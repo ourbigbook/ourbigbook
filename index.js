@@ -1320,7 +1320,7 @@ function html_is_whitespace_text_node(ast) {
 // https://stackoverflow.com/questions/2161337/can-we-use-any-other-tag-inside-ul-along-with-li/60885802#60885802
 function html_is_whitespace(string) {
   for (const c of string) {
-    if (!HTML_WHITESPACE.has(c))
+    if (!HTML_ASCII_WHITESPACE.has(c))
       return false;
   }
   return true;
@@ -2099,7 +2099,7 @@ function x_href(target_id_ast, context) {
 const END_NAMED_ARGUMENT_CHAR = '}';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';
 const ESCAPE_CHAR = '\\';
-const HTML_WHITESPACE = new Set([' ', '\r', '\n', '\f', '\t']);
+const HTML_ASCII_WHITESPACE = new Set([' ', '\r', '\n', '\f', '\t']);
 const ID_SEPARATOR = '-';
 const MAGIC_CHAR_ARGS = {
   '$': Macro.MATH_MACRO_NAME,

@@ -568,7 +568,7 @@ rather than:
 \h[2][Lists `\l`]
 {id=lists}
 
-With \x[auto_parent][implicit container]:
+With \x[auto-parent][implicit container]:
 \cirodown_example[[
 \l[a]
 \l[b]
@@ -890,7 +890,7 @@ $$
 
 Similar to lists.
 
-\x[auto_parent][Implicit container] with optional indentation to improve readability:
+\x[auto-parent][Implicit container] with optional indentation to improve readability:
 \cirodown_example[[
 \tr[
   \th[Header 1]
@@ -1290,7 +1290,7 @@ The escape rules for literal arguments are described at: \x[literal-arguments]{s
 This is good for short arguments of regular text, but for longer blocks of \x[code] or \x[math], you may want to use \x[literal-arguments]
 
 \h[4][`auto_parent` macro property]
-{id=auto_parent}
+{id=auto-parent}
 
 Some sequences of macros such as `l` from \x[lists] and `tr` from \x[tables] automatically generate implicit parents, e.g.:
 ``
@@ -1310,7 +1310,7 @@ The children are always added as arguments of the `content` argument of the impl
 If present, the `auto_parent` macro property determines which auto-parent gets added to those macros.
 
 \h[4][`remove_whitespace_children` macro argument property]
-{id=remove_whitespace_children}
+{id=remove-whitespace-children}
 
 In HTML, certain elements such as `<ul>` cannot have any `text` nodes in them, and any whitespace is ignored, see \a[https://stackoverflow.com/questions/2161337/can-we-use-any-other-tag-inside-ul-along-with-li/60885802#60885802].
 
@@ -1331,12 +1331,14 @@ but rather as:
 ``
 because the `content` argument of `ul` is marked with `remove_whitespace_children` and automatically removes any whitespace children (such as a newline) as a result.
 
-This also applies to consecutive sequences of \x[auto_parent] macros, e.g.:
+This also applies to consecutive sequences of \x[auto-parent] macros, e.g.:
 ``
 \li[aa]
 \li[bb]
 ``
 also does not include the newline between the list items.
+
+The definition of whitespace is the same as the ASCII whitespace definition of HTML5: ` \r\n\f\t`.
 
 \h[4][Argument automatic indentation removal]
 
@@ -1674,10 +1676,27 @@ Exit by entering Ctrl + C on the terminal.
 \h[4][`cirodown.json`]
 {id=cirodown-json}
 
-TODO implement
+\h[5][`prepublish`]
+{id=prepublish}
+
+Path of a script that gets executed before running \x[publish][`cirodown --publish`].
+
+The script arguments are:
+
+\l[the publish output directory.
+
+That directory is guaranteed to exist when `prepublish` is called.
+
+For `git`-based publish targets, all files are almost ready in there, just waiting for a `git add .` that follows `prepublish`.
+
+This means that you can use this script to place or remove files from the final publish output.]
+
+If the `prepublish` script returns with a non-zero exit value, the publish is aborted.
 
 \h[5][`media_source_type`]
 {id=media-source-type}
+
+TODO implement
 
 \l[`local`: tracked in the current Git repository, no further magic is done]
 \l[

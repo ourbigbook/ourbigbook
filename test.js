@@ -535,7 +535,8 @@ assert_convert_ast('literal agument escape trailing two backslashes',
 assert_convert_ast('not literal argument with argument after newline',
   `\\C[
 ab
-]{id=cd}
+]
+{id=cd}
 `,
 [
   a('C', [t('ab\n')], {id: [t('cd')]}),

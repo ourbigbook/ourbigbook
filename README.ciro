@@ -108,7 +108,7 @@ It is intended that this will be an acceptable downside as Cirodown will be used
 
 For example, originally Cirodown had exactly five magic characters, with similar functions as in LaTeX:
 \l[`\` backslash to start a macro, like LaTeX]
-\l[`{` and `}`: left and right square brackets to delimit optional macro arguments]
+\l[`{` and `}`: left and right square brackets to delimit \x[positional-vs-named-arguments][optional macro arguments]]
 \l[`[` and `]`: left and right curly braces bracket to start an optional arguments]
 and double blank newlines for \x[paragraphs][paragraphs] if you are pedantic, but this later degrated into many more with \x[insane-macro-shortcuts].
 

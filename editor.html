@@ -13,7 +13,9 @@ html, body {
 #container {
   align-items: center;
   display: flex;
-  height: 100%;
+  /* https://stackoverflow.com/questions/12989931/body-height-100-displaying-vertical-scrollbar/46847795#46847795
+   * 20 == 2x 10px padding (top + bottom). */
+  height: calc(100% - 20px);
   padding: 10px;
 }
 #input {
@@ -36,7 +38,7 @@ html, body {
 </head>
 <body>
 <div id="container">
-<div id="input" contenteditable="true" style="white-space:pre">\h[1][Cirodown hello world]
+<div id="input" contenteditable="true" style="white-space:pre-wrap">\h[1][Cirodown hello world]
 
 Welcome to Cirodown! Here's the table of contents:
 

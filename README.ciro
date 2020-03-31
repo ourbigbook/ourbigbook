@@ -2,7 +2,7 @@
 
 A Markup language to write multipage or single page HTML / PDF books, blogs, etc. that is \x[saner][saner] and more powerful than Markdown and Asciidoctor, but still nicer to write than XML and JSON, with reference implementation in JavaScript.
 
-The source for this document is at: \a[https://github.com/cirosantilli/cirodown/blob/master/README.ciro] and a rendered version can be seen at: \a[https://cirosantilli.com/cirodown] and a live demo at: \a[https://cirosantilli.com/cirodown/editor].
+The source for this document is at: \a[https://github.com/cirosantilli/cirodown/blob/master/README.ciro] and a rendered version can be seen at: \a[https://cirosantilli.com/cirodown] and a live in-browser demo at: \a[https://cirosantilli.com/cirodown/editor].
 
 \toc
 
@@ -151,8 +151,8 @@ The "more powerful than Asciidoctor" part is only partially true, since Asciidoc
 
 The difference is mostly that Cirodown is completely and entirely focused on making amazing scientific books, and so will have key features for that application out-of-the box, notably:
 \l[amazing header/ToC/ID features including proper error reports: never have a internal broken link or duplicate ID again]
-\l[\x[math]]
-\l[\x[publish]: we take care of website publishing for you out-of-the-bos, no need for extra stuff like Jekyll mess]
+\l[\x[math][server side pre-rendered maths with KaTeX]: all divs and spans are ready, browser only applies CSS, no JavaScript gets executed]
+\l[\x[publish]: we take care of website publishing for you out-of-the-box, no need to integrate into an external project like Jekyll]
 
 Another advantage over Asciidoctor is that the reference implementation of Cirodown is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with \a[https://github.com/opal/opal][Opal], but who wants to deal with that layer of complexity?
 

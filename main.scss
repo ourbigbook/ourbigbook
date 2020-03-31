@@ -1,0 +1,14 @@
+$color: black;
+header, footer {
+  background-color: blue;
+  color: $color;
+  font-size: 32px;
+}
+header {
+  a {
+    text-decoration: none;
+    &:visited {
+      color: $color;
+    }
+  }
+}

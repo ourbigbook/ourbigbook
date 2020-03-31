@@ -68,7 +68,7 @@ The `npm link` commands allow you to make changes to the code without re-install
 ``
 npm install <dependency>
 npm link
-npm link browserify-hello-world
+npm link cirodown
 ``
 Asked if there is a better way at: \a[https://stackoverflow.com/questions/59389027/how-to-interactively-test-the-executable-of-an-npm-node-js-package-during-develo]. The symlink business can be undone with:
 ``
@@ -1673,6 +1673,36 @@ This automatically first does a first ID extraction pass on all files to support
 The output of conversion to `.html` files is saved automatically instead of outputting it to stdout as done without `--watch`.
 
 Exit by entering Ctrl + C on the terminal.
+
+\h[5][`--template`]
+{id=template}
+
+Select a custom \a[https://github.com/harttle/liquidjs][Liquid template] file for the output.
+
+The recommended file name for this file is `main.liquid.html`, which is already ignored by default from the published output.
+
+If not given, the default template at one point was:
+``
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>{{ title }}</title>
+<style>{{ style }}</style>
+<body class="cirodown">
+{{ body }}
+</body>
+</html>
+``
+This will get out of sync sooner or later with the code, but this should still serve as a good base example for this documentation.
+
+Defined variables:
+\l[`body`: the rendered body]
+\l[`git_sha`: SHA of the latest git commit of the source code if in a git repository]
+\l[`style`: default Cirodown stylesheets]
+\l[`title`]
+
+We pick Liquid because it is server-side safe: if we ever some day offer a compilation service, Liquid is designed to prevent arbitrary code execution and infinite loops in templates.
 
 \h[4][`cirodown.json`]
 {id=cirodown-json}

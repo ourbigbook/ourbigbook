@@ -1,5 +1,6 @@
 *.css
 *.html
+!/main.liquid.html
 .sass-cache
 /node_modules
 /out

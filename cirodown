@@ -25,6 +25,7 @@ const DEFAULT_IGNORE_BASENAMES = [
   '.git',
   '.gitignore',
   '.sass-cache',
+  'main.liquid.html',
   'node_modules',
   'package-lock.json',
   'package.json',
@@ -380,6 +381,7 @@ commander.option(
     'way easier.',
   false
 );
+commander.option('--template <template>', 'http://cirosantilli.com/cirodown#template');
 commander.option('--watch', 'http://cirosantilli.com/cirodown#watch', false);
 let inputPath;
 commander.arguments(
@@ -424,6 +426,13 @@ if (commander.helpMacros) {
     show_tokens: commander.showTokensInside,
     show_tokenize: commander.showTokenize,
   };
+  if (commander.template !== undefined) {
+    options.template = fs.readFileSync(commander.template).toString();
+  } else if ('template' in cirodown_json) {
+    options.template = fs.readFileSync(cirodown_json.template).toString();
+  } else {
+    options.template = undefined;
+  }
   if (commander.generate) {
     // Generate package.json.
     const package_json = JSON.parse(fs.readFileSync(cirodown_nodejs.PACKAGE_PACKAGE_JSON_PATH).toString());

@@ -167,7 +167,7 @@ function convert_input(input, options, convert_input_options={}) {
   // the user did not explicitly request full embedding, inline all CSS.
   // Otherwise, include and external CSS to make each page lighter.
   if (convert_input_options.commander.htmlEmbed) {
-    new_options.css = fs.readFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH, ENCODING);
+    new_options.template_vars.style = fs.readFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH, ENCODING);
   } else {
     let css_path = convert_input_options.out_css_path;
     let includes_str = ``;
@@ -185,7 +185,7 @@ function convert_input(input, options, convert_input_options={}) {
     for (const include of includes) {
       includes_str += `@import "${include}";\n`;
     }
-    new_options.css = `\n${includes_str}`;
+    new_options.template_vars.style = `\n${includes_str}`;
   }
   let output = cirodown.convert(input, new_options, new_options.extra_returns);
   if (convert_input_options.commander.showTokens) {
@@ -426,6 +426,7 @@ if (commander.helpMacros) {
     show_parse: commander.showParse,
     show_tokens: commander.showTokensInside,
     show_tokenize: commander.showTokenize,
+    template_vars: {},
   };
   if (commander.template !== undefined) {
     options.template = fs.readFileSync(commander.template).toString();

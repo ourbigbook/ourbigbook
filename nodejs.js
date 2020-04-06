@@ -27,7 +27,7 @@ exports.GITIGNORE_PATH = GITIGNORE_PATH;
 const PACKAGE_SASS_BASENAME = PACKAGE_NAME + '.scss';
 exports.PACKAGE_SASS_BASENAME = PACKAGE_SASS_BASENAME;
 const LOCAL_INCLUDES = [
-  path.join(PACKAGE_NODE_MODULES_PATH, 'katex', 'dist', 'katex.min.css'),
-  path.join(PACKAGE_NODE_MODULES_PATH, 'normalize.css', 'normalize.css'),
+  require.resolve(path.join('katex', 'dist', 'katex.min.css')),
+  require.resolve(path.join('normalize.css', 'normalize.css')),
 ]
 exports.LOCAL_INCLUDES = LOCAL_INCLUDES;

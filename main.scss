@@ -53,7 +53,7 @@ footer {
     }
   }
   padding: 10px $toplevel-padding;
-  div {
-    margin-bottom: 5px;
+  div + div {
+    margin-top: 5px;
   }
 }

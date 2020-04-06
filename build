@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
 set -eu
+# I call bullshit.
+# https://stackoverflow.com/questions/24976950/how-do-i-include-a-gitignore-file-as-part-of-my-npm-module
+cp .gitignore gitignore
 npm run browserify
 npm run sass

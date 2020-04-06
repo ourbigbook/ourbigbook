@@ -19,7 +19,7 @@
     "mocha-list-tests": "1.0.2"
   },
   "files": [
-    ".gitignore",
+    "gitignore",
     "cirodown",
     "cirodown.js",
     "cirodown.embed.min.css",
@@ -46,5 +46,5 @@
     "sass": "./build-sass",
     "test": "mocha test --ignore-leaks"
   },
-  "version": "0.3.1"
+  "version": "0.3.2"
 }

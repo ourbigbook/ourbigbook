@@ -435,6 +435,14 @@ if (commander.helpMacros) {
     options.template = undefined;
   }
   if (commander.generate || commander.generateMultifile) {
+    let outdir;
+    if (commander.outdir !== undefined) {
+      outdir = commander.outdir;
+    } else {
+      outdir = '.';
+    }
+    fs.mkdirSync(outdir, {recursive: true});
+
     // Generate package.json.
     const package_json = JSON.parse(fs.readFileSync(cirodown_nodejs.PACKAGE_PACKAGE_JSON_PATH).toString());
     const package_json_str = `{
@@ -443,7 +451,7 @@ if (commander.helpMacros) {
   }
 }
 `;
-    fs.writeFileSync(path.join('package.json'), package_json_str);
+    fs.writeFileSync(path.join(outdir, 'package.json'), package_json_str);
 
     const new_cirodown_json = {};
 
@@ -456,7 +464,7 @@ if (commander.helpMacros) {
       }
       gitignore_new += line + '\n';
     }
-    fs.writeFileSync('.gitignore', gitignore_new);
+    fs.writeFileSync(path.join(outdir, '.gitignore'), gitignore_new);
 
     // Generate README.ciro and other .ciro files.
     let readme_cirodown_str = `\\h[1][Cirodown hello world]
@@ -475,17 +483,17 @@ Hello!
 
 A link to another file: \\x[and-now-an-include]
 `
-      fs.writeFileSync(path.join('not-readme.ciro'), not_readme_str);
+      fs.writeFileSync(path.join(outdir, 'not-readme.ciro'), not_readme_str);
     }
-    fs.writeFileSync(path.join('README.ciro'), readme_cirodown_str);
+    fs.writeFileSync(path.join(outdir, 'README.ciro'), readme_cirodown_str);
     if (commander.generateMultifile) {
-      fs.copyFileSync(path.join(cirodown_nodejs.PACKAGE_PATH, 'main.liquid.html'), 'main.liquid.html');
-      fs.copyFileSync(path.join(cirodown_nodejs.PACKAGE_PATH, 'main.scss'), 'main.scss');
+      fs.copyFileSync(path.join(cirodown_nodejs.PACKAGE_PATH, 'main.liquid.html'), path.join(outdir, 'main.liquid.html'));
+      fs.copyFileSync(path.join(cirodown_nodejs.PACKAGE_PATH, 'main.scss'), path.join(outdir, 'main.scss'));
       new_cirodown_json.template = 'main.liquid.html';
     }
 
     if (new_cirodown_json !== {}) {
-      fs.writeFileSync(CIRODOWN_JSON, JSON.stringify(new_cirodown_json, null, 2) + '\n');
+      fs.writeFileSync(path.join(outdir, CIRODOWN_JSON), JSON.stringify(new_cirodown_json, null, 2) + '\n');
     }
     process.exit(0);
   }

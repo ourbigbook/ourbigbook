@@ -468,6 +468,7 @@ Macro.CODE_MACRO_NAME = 'c';
 Macro.HEADER_MACRO_NAME = 'h';
 Macro.ID_ARGUMENT_NAME = 'id';
 Macro.INCLUDE_MACRO_NAME = 'include';
+Macro.LINK_MACRO_NAME = 'a';
 Macro.LINK_SELF_SHORT = UNICODE_LINK;
 Macro.LINK_SELF = `(${Macro.LINK_SELF_SHORT} link)`;
 Macro.MATH_MACRO_NAME = 'm';
@@ -560,7 +561,7 @@ class Tokenizer {
   }
 
   consume_plaintext_char() {
-    this.plaintext_append_or_create(this.cur_c);
+    return this.plaintext_append_or_create(this.cur_c);
   }
 
   /**
@@ -622,7 +623,7 @@ class Tokenizer {
     } else {
       this.push_token(TokenType.PLAINTEXT, s);
     }
-    this.consume();
+    return this.consume();
   }
 
   push_token(token, value, token_line, token_column) {
@@ -763,7 +764,29 @@ class Tokenizer {
           this.consume_plaintext_char();
         }
       } else {
-        this.consume_plaintext_char();
+        let done = false;
+        if (
+            this.chars[this.i - 1] === ' ' ||
+            this.chars[this.i - 1] === '\n' ||
+            this.i === 0
+          )
+        {
+          if (
+            array_contains_array_at(this.chars, this.i, 'http://') ||
+            array_contains_array_at(this.chars, this.i, 'https://')
+          ) {
+            // Insane autolink.
+            this.push_token(TokenType.MACRO_NAME, Macro.LINK_MACRO_NAME, this.line, this.column);
+            this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
+            while (this.consume_plaintext_char() && !(this.cur_c == ' ' || this.cur_c == '\n')) {}
+            this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
+            done = true;
+          }
+        }
+        if (!done) {
+          // Character is nothing else, so finally it is a regular plaintext character.
+          this.consume_plaintext_char();
+        }
       }
     }
     if (unterminated_literal) {
@@ -899,6 +922,21 @@ class TreeNode {
     }
     return indexes.reverse().slice(1 + offset).join('.');
   }
+}
+
+/**
+ * Determine if big_array contains small_array starting at index position
+ * inside the big array.
+ *
+ * @return {boolean} true iff if the big array contains the small one
+ */
+function array_contains_array_at(big_array, position, small_array) {
+  for (let i = 0; i < small_array.length; i++) {
+    if (big_array[position + i] !== small_array[i]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // https://stackoverflow.com/questions/7837456/how-to-compare-arrays-in-javascript
@@ -2149,7 +2187,7 @@ const TokenType = make_enum([
 ]);
 const DEFAULT_MACRO_LIST = [
   new Macro(
-    'a',
+    Macro.LINK_MACRO_NAME,
     [
       new MacroArgument({
         name: 'href',

@@ -412,7 +412,7 @@ commander.parse(process.argv);
 
 // Action.
 if (commander.helpMacros) {
-  console.log(JSON.stringify(macro_list_to_macros(), null, 2));
+  console.log(JSON.stringify(cirodown.macro_list_to_macros(), null, 2));
 } else {
   let input;
   let title;

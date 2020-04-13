@@ -880,7 +880,6 @@ and the sane equivalent \x[eq-my-first-sane-equation]:
 ]]]
 
 Here is a raw one just to test the formatting outside of a `cirodown_comment`:
-
 $$\sqrt{1 + 1}$$
 
 \h[3][Math defines across blocks]
@@ -898,7 +897,6 @@ $${show=0}
 We make it invisible because this block only contains KaTeX definitions, and should not render to anything.
 
 Then the second math block uses those definitions:
-
 ``
 $$
 \foo
@@ -1799,14 +1797,14 @@ It would be amazing to have a WebKit interface that works both on browser for th
 Possibilities we could reuse:
 
 \l[
-  Editor.js
+Editor.js
 
-  Returns JSON AST!
+Returns JSON AST!
 
-  \l[website: https://editorjs.io/ json output]
-  \l[source: https://github.com/codex-team/editor.js]
-  \l[WYSIWYG: no]
-  \l[preview scroll sync: yes]
+\l[website: https://editorjs.io/ json output]
+\l[source: https://github.com/codex-team/editor.js]
+\l[WYSIWYG: no]
+\l[preview scroll sync: yes]
 ]
 \l[
   StackEdit

@@ -580,7 +580,7 @@ assert_convert_ast('link auto sane',
     ]),
   ]
 );
-assert_convert_ast('link auto insane space',
+assert_convert_ast('link auto insane space start and end',
   'a http://example.com b\n',
   [
     a('p', [
@@ -590,8 +590,8 @@ assert_convert_ast('link auto insane space',
     ]),
   ]
 );
-assert_convert_ast('link auto insane start',
-  'http://example.com\n',
+assert_convert_ast('link auto insane start end document',
+  'http://example.com',
   [a('p', [a('a', undefined, {'href': [t('http://example.com')]})])],
 );
 assert_convert_ast('link auto insane newline',

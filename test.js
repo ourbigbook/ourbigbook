@@ -607,6 +607,34 @@ b
     a('p', [t('b')]),
   ]
 );
+assert_convert_ast('link auto end in space',
+  `a http://example.com b`,
+  [
+    a('p', [
+      t('a '),
+      a('a', undefined, {'href': [t('http://example.com')]}),
+      t(' b'),
+    ])
+  ]
+);
+assert_convert_ast('link auto end in square bracket',
+  `\\p[a http://example.com]`,
+  [
+    a('p', [
+      t('a '),
+      a('a', undefined, {'href': [t('http://example.com')]}),
+    ])
+  ]
+);
+assert_convert_ast('link auto containing escapes',
+  `\\p[a http://example.com\\]a\\}b\\\\c\\ d]`,
+  [
+    a('p', [
+      t('a '),
+      a('a', undefined, {'href': [t('http://example.com]a}b\\c d')]}),
+    ])
+  ]
+);
 assert_convert_ast('link with multiple paragraphs',
   '\\a[http://example.com][aaa\n\nbbb]\n',
   [

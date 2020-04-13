@@ -788,7 +788,7 @@ The sane version of inline code is a lower case `c`:
 \cirodown_example[[[
 My inline \c[[x = 'hello\n']] is awesome.
 ]]]
-and the sane version of block math is with an upper case `M`:
+and the sane version of block math is with an upper case `C`:
 \cirodown_example[[[
 \C[[
 f() {
@@ -1424,14 +1424,15 @@ I'm bad because I have negative indentation.
 \h[3][Macro capitalization for block vs inline]
 
 This is just a naming convention without any magic attached to it. It is currently used for macros such as:
-
 \l[\x[math]]
 \l[\x[code]]
 \l[\x[comments]]
 
-We haven't found a sane way of getting rid of that for now, so just for now just force users to explicitly select between them.
+The naming convention is as follows:
+\l[if there is both an inline and block version of something, use the capitalization to distinguish between them]
+\l[otherwise, just name it lowercase, even if it is block]
 
-The distinction is required because there are lots of things you cannot put inside paragraphs in HTML.
+Maybe it would be saner to go "block if and only if uppercase", and automate that in the code. But it means more shift pressing...
 
 \h[2][Tooling]
 

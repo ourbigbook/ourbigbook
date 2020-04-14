@@ -224,11 +224,11 @@ paragraphs]
 
 \h[3][Insane link parsing rules]
 
-Insane links must be preceded by either the start of the document or one of the following characters:
-\l[space ` `]
-\l[newline `\n`]
-\l[open square bracket `[`]
-\l[open curly bracket `{`]
+Insane links must be preceded by either:
+\l[the start of the document]
+\l[the start of a \x[positional-vs-named-arguments][positional or named argument] (e.g. `\p[http://example.com]` or `Image[xi.png]{description=http://example.com}`) that not marked with `elide_link_only` (which is the case for example for `href` of `a`)]
+\l[space ` ` char]
+\l[newline `\n` char]
 
 The recognized protocols are:
 \l[`http://`]

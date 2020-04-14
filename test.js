@@ -594,9 +594,27 @@ assert_convert_ast('link auto insane start end document',
   'http://example.com',
   [a('p', [a('a', undefined, {'href': [t('http://example.com')]})])],
 );
-assert_convert_ast('link auto insane start end document square brackets',
+assert_convert_ast('link auto insane start end square brackets',
   '\\p[http://example.com]\n',
   [a('p', [a('a', undefined, {'href': [t('http://example.com')]})])],
+);
+assert_convert_ast('link auto insane start end literal square brackets',
+  '\\[http://example.com\\]\n',
+  [a('p', [t('[http://example.com]')])],
+);
+assert_convert_ast('link auto insane start end named argument',
+  '\\Image[aaa.jpg]{description=http://example.com}\n',
+  [a('Image', undefined, {
+    description: [a('a', undefined, {'href': [t('http://example.com')]})],
+    src: [t('aaa.jpg')],
+  })],
+);
+assert_convert_ast('link auto insane start end named argument',
+  '\\Image[aaa.jpg]{source=http://example.com}\n',
+  [a('Image', undefined, {
+    source: [t('http://example.com')],
+    src: [t('aaa.jpg')],
+  })],
 );
 assert_convert_ast('link auto insane newline',
   `a

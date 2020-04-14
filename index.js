@@ -821,13 +821,12 @@ class Tokenizer {
       } else {
         let done = false;
         if (
-            this.chars[this.i - 1] === ' ' ||
-            this.chars[this.i - 1] === '\n' ||
-            this.chars[this.i - 1] === START_POSITIONAL_ARGUMENT_CHAR ||
-            this.chars[this.i - 1] === START_NAMED_ARGUMENT_CHAR ||
-            this.i === 0
-          )
-        {
+          this.i === 0 ||
+          this.chars[this.i - 1] === ' ' ||
+          this.chars[this.i - 1] === '\n' ||
+          this.tokens[this.tokens.length - 1].type === TokenType.POSITIONAL_ARGUMENT_START ||
+          this.tokens[this.tokens.length - 1].type === TokenType.NAMED_ARGUMENT_NAME
+        ) {
           if (
             array_contains_array_at(this.chars, this.i, 'http://') ||
             array_contains_array_at(this.chars, this.i, 'https://')
@@ -2628,6 +2627,7 @@ const DEFAULT_MACRO_LIST = [
         }),
         new MacroArgument({
           name: 'source',
+          elide_link_only: true,
         }),
       ],
     }

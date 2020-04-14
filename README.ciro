@@ -700,26 +700,22 @@ List item with a paragraph inside of it:
 {id=images}
 
 A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' `Image` can be seen at \x[fig-my-xi-chrysanthemum].
-
 \cirodown_example[[
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {title=Xi Chrysanthemum is a very nice image}
 {id=fig-my-xi-chrysanthemum}
-{source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
-{description=
-  We can have multiple paragraphs here, just for any other parameter argument.
-
-  I'm not even kidding.
-}
+{source=https://github.com/cirosantilli/media/blob/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg}
+{description=This image is amazing because it highlight's Xi's beauty and honesty.}
 ]]
+This exemplifies the following parameters:
+\l[`description`: similar to `title`, but allow for further explanations without them appearing in \x[internal-cross-references][cross references] to the image]
+\l[`source`: a standardized way to credit an image by linking to a URL that contains further image metadata]
 
 Here is one without a description but with an ID so we can link to it: \x[fig-my-xi-chrysanthemum-2]{style=full}.
-
 \cirodown_example[[
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {id=fig-my-xi-chrysanthemum-2}
 ]]
-
 We must use \x[cross-reference-style][`style=full`] here because otherwise the link text would be empty and not show at all.
 
 If the image has neither ID nor title, then it does not get a caption at all, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
@@ -743,6 +739,21 @@ And this is how you make an inline image inline one with lower case `i`:
 My inline \image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg][Xi Chrysanthemum] is awesome.
 ]]
 Inline images can't have captions.
+
+The `description` can have multiple paragraphs just like any other element, but we don't recommend this style because it makes it hard for readers to see what is part of the image caption and what is part of the next paragraph.
+\cirodown_example[[
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+{id=fig-my-xi-chrysanthemum-description-paragraphs}
+{title=Title of the figure}
+{source=https://github.com/cirosantilli/media/blob/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg}
+{description=Description paragraph 1.
+
+Description paragraph 2.
+}
+
+Paragraph after.
+]]
+Maybe we could improve this with some CSS styling, but generally when you want multiple paragraphs inside the image, you might instead be better off making an \x[internal-cross-file-references][internal cross reference] to the the image and adding your extended explanation outside.
 
 \h[3][Where to store images]
 
@@ -2008,7 +2019,6 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 \l[cirodown: google analytics]
 \l[list and code caption]
-\l[image description and source]
 \l[input indentation skip]
 \l[\x[id-scope]]
 \l[correct ID generation algorithm to be Unicode robust]

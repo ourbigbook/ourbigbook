@@ -1200,7 +1200,8 @@ nice
 
 \h[3][Macro argument syntax]
 
-\h[4][Positional vs named arguments]
+\h[4][Positional vs named arguments (`[...]` vs `{key=...}`)]
+{id=positional-vs-named-arguments}
 
 Every argument in Cirodown is either positional or named.
 
@@ -1255,9 +1256,7 @@ Just like named arguments, positional arguments are never mandatory.
 
 \h[5][Positional argument default values]
 
-All positional arguments have a default and don't blow up if not given.
-
-Most positional arguments will default to an empty string.
+Most positional arguments will default to an empty string if not given.
 
 However, some positional arguments can have special effects if not given.
 
@@ -1272,6 +1271,14 @@ has the special effect of generating automatic links as in:
 
 See also: \x[links].
 
+\h[6][`mandatory` positional argument]
+
+Some positional arguments are required, and if not given cirodown reports an error and does not render the node.
+
+This is for example the `level` of a \x[headers][header].
+
+These arguments marked with the `mandatory: true` \x[help-macros] argument property.
+
 \h[4][JavaScript interface for arguments]
 
 The JavaScript interface sees arguments as follows:
@@ -1279,14 +1286,15 @@ The JavaScript interface sees arguments as follows:
 function macro_name(args)
 ``
 where args is a dict such that:
-\l[optional arguments have the key / value pairs explicitly given on the call]
+\l[optional arguments have the key/value pairs explicitly given on the call]
 \l[
   mandatory arguments have a key documented by the API, and the value on the call.
 
   For example, the link API names its arguments `href` and `text`.
 ]
 
-\h[4][Literal arguments]
+\h[4][Literal arguments (`[[...]]` and `{{key=...}}`)]
+{id=literal-arguments}
 
 Arguments that are opened with more than one square brackets `[` or curly braces `{` are literal arguments.
 

@@ -420,6 +420,12 @@ if (commander.helpMacros) {
   let publish = commander.publish || commander.publishCommit !== undefined;
   let html_x_extension;
   let cirodown_json = {};
+  let input_dir;
+  if (inputPath === undefined) {
+    if (publish || commander.watch) {
+      inputPath = '.';
+    }
+  }
   if (inputPath !== undefined && fs.existsSync(CIRODOWN_JSON)) {
     Object.assign(cirodown_json, JSON.parse(fs.readFileSync(CIRODOWN_JSON)));
   }
@@ -451,11 +457,7 @@ if (commander.helpMacros) {
   } else {
     options.template = undefined;
   }
-  let input_dir;
   if (inputPath === undefined) {
-    if (publish || commander.watch) {
-      inputPath = '.';
-    }
     input_dir = undefined;
   } else {
     if (fs.lstatSync(inputPath).isFile()) {

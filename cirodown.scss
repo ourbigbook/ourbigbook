@@ -62,7 +62,6 @@ padding-right: 15px;
 
 // Scroolbar behaviour.
 overflow-x: visible;
-overflow-y: hidden;
 scrollbar-width: none;
 ::-webkit-scrollbar {
     display: none;
@@ -88,6 +87,7 @@ a {
 blockquote {
   border-left: 2px solid $color;
   margin-left: 10px;
+  margin-right: 0;
   padding-left: 10px;
 }
 

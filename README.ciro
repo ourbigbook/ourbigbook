@@ -360,6 +360,8 @@ To also show the section auto-generated number as in "Section X.Y My title" we a
 \x[cross-reference-style]{full}.
 ]]
 
+`{full}` is not needed for cross references to most macros besides headers, which use `full` by default as seen by the `default_x_style_full` macro property in \x[help-macros]. This is for example the case for \x[images]. TODO create a mechanism to turn `full` off for those elements, e.g. `{nofull}`, currently impossible.
+
 \h[3][Internal cross file references]
 
 Reference to the first header of another file:
@@ -705,8 +707,10 @@ And now a list outside of \x[cirodown-example] to test how it looks directly und
 \h[2][Images (`\Image` and `\image`)]
 {id=images}
 
-A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' `Image` can be seen at \x[fig-my-test-image].
+A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' `Image`: \x[fig-my-test-image].
 \cirodown_example[[
+Have a look at this amazing image: \x[fig-my-test-image].
+
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {title=My test image is a very nice image}
 {id=fig-my-test-image}
@@ -717,12 +721,14 @@ This exemplifies the following parameters:
 \l[`description`: similar to `title`, but allow for further explanations without them appearing in \x[internal-cross-references][cross references] to the image]
 \l[`source`: a standardized way to credit an image by linking to a URL that contains further image metadata]
 
-Here is one without a description but with an ID so we can link to it: \x[fig-my-test-image-2]{full}.
+Here is one without a description but with an ID so we can link to it: \x[fig-my-test-image-2].
 \cirodown_example[[
+Have a look at this amazing image: \x[fig-my-test-image-2].
+
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {id=fig-my-test-image-2}
 ]]
-We must use \x[cross-reference-style][`full`] here because otherwise the link text would be empty and not show at all.
+This works because \x[cross-reference-style][`full` is the default cross referene style for `Image`], otherwise the link text would be empty since there is no `title`, and cirodown would raise an error.
 
 If the image has neither ID nor title, then it does not get a caption at all, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
 \cirodown_example[[

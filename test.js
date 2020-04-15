@@ -681,15 +681,11 @@ assert_no_error('cross reference simple',
 \\x[my-header][link body]
 `
 );
-//assert_convert_ast('cross reference auto default',
-//  `\\h[1][My header]
-//
-//\\x[my-header]
-//`,
-//  `<h1 id="my-header"><a href="#my-header">1. My header</a></h1>
-//<p><a href="#my-header">My header</a></p>
-//`
-//);
+assert_no_error('cross reference auto default',
+  `\\h[1][My header]
+
+\\x[my-header]
+`);
 assert_no_error('cross reference full boolean style correct',
   `\\h[1][My header]
 
@@ -700,36 +696,17 @@ assert_error('cross reference full boolean style with value',
 
 \\x[my-header]{full=true}
 `, 3, 1);
-//assert_convert_ast('cross reference to image',
-//  `\\Image[ab]{id=cd}{title=ef}
-//
-//\\x[cd]
-//`,
-//  `<figure id="cd">
-//<a href="#cd"><img src="ab"></a>
-//<figcaption>Image 1. ef</figcaption>
-//</figure>
-//<p><a href="#cd">Image 1. "ef"</a></p>
-//`
-//);
-//assert_convert_ast('cross reference without content nor target title style full',
-//  `\\Image[ab]{id=cd}
-//
-//\\x[cd]
-//`,
-//  `<figure id="cd">
-//<a href="#cd"><img src="ab"></a>
-//<figcaption>Image 1</figcaption>
-//</figure>
-//<p><a href="#cd">Image 1</a></p>
-//`
-//);
-assert_error('cross reference undefined', '\\x[ab]', 1, 4);
-assert_error('cross reference without content nor target title nor full style',
+assert_no_error('cross reference to image',
+  `\\Image[ab]{id=cd}{title=ef}
+
+\\x[cd]
+`);
+assert_no_error('cross reference without content nor target title style full',
   `\\Image[ab]{id=cd}
 
 \\x[cd]
-`, 3, 1);
+`);
+assert_error('cross reference undefined', '\\x[ab]', 1, 4);
 
 //// Headers.
 // TODO inner property test

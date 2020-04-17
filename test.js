@@ -755,9 +755,9 @@ assert_convert_ast('header 7',
   a('h', undefined, {level: [t('7')], title: [t('7')]}),
 ]
 );
-// TODO https://github.com/cirosantilli/cirodown/issues/30
+// TODO https://github.com/cirosantilli/cirodown/issues/30 wrong column.
 assert_error('header must be an integer letters', '\\h[a][b]\n', 1, 1);
-assert_error('header must be an integer toc',
+assert_error('header h2 must be an integer toc',
   `\\h[1][h1]
 
 \\toc
@@ -766,6 +766,12 @@ assert_error('header must be an integer toc',
 
 \\h[2][h2 2]
 `, 5, 1);
+// TODO failing
+//assert_error('header h1 must be an integer toc',
+//  `\\h[][h1]
+//
+//\\toc
+//`, 1, 1);
 assert_error('header must be an integer empty', '\\h[][b]\n', 1, 1);
 assert_error('header must not be zero', '\\h[0][b]\n', 1, 1);
 assert_error('header skip level is an error', '\\h[1][a]\n\\h[3][b]\n', 2, 4);
@@ -858,10 +864,9 @@ assert_error('unknown macro', '\\reserved_undefined', 1, 1);
 assert_error('too many positional arguments', '\\p[ab][cd]', 1, 7);
 assert_error('unknown named macro argument', '\\c{reserved_undefined=abc}[]', 1, 4);
 assert_error('named argument without =', '\\p{id ab}[cd]', 1, 6);
-// TODO https://github.com/cirosantilli/cirodown/issues/5
 assert_error('missing mandatory positional argument href of a', '\\a', 1, 1);
 assert_error('missing mandatory positional argument level of h', '\\h', 1, 1);
-// TODO
+// TODO failing
 //assert_error('argument without close', '\\c[', 1, 3);
 //assert_error('unterminated argument', '\\c[ab', 1, 3);
 //assert_error('argument without open', ']', 1, 1);

@@ -695,7 +695,7 @@ assert_error('cross reference full boolean style with value',
   `\\h[1][My header]
 
 \\x[my-header]{full=true}
-`, 3, 1);
+`, 3, 20);
 assert_no_error('cross reference to image',
   `\\Image[ab]{id=cd}{title=ef}
 
@@ -709,7 +709,7 @@ assert_no_error('cross reference without content nor target title style full',
 assert_error('cross reference undefined', '\\x[ab]', 1, 4);
 
 //// Headers.
-// TODO inner property test
+// TODO inner ID property test
 //assert_convert_ast('header simple',
 //  '\\h[1][My header]\n',
 //  `<h1 id="my-header"><a href="#my-header">1. My header</a></h1>\n`
@@ -755,8 +755,19 @@ assert_convert_ast('header 7',
   a('h', undefined, {level: [t('7')], title: [t('7')]}),
 ]
 );
-assert_error('header must be an integer', '\\h[a][b]\n', 1, 4);
-assert_error('header must not be zero', '\\h[0][b]\n', 1, 4);
+// TODO https://github.com/cirosantilli/cirodown/issues/30
+assert_error('header must be an integer letters', '\\h[a][b]\n', 1, 1);
+assert_error('header must be an integer toc',
+  `\\h[1][h1]
+
+\\toc
+
+\\h[][h2 1]
+
+\\h[2][h2 2]
+`, 5, 1);
+assert_error('header must be an integer empty', '\\h[][b]\n', 1, 1);
+assert_error('header must not be zero', '\\h[0][b]\n', 1, 1);
 assert_error('header skip level is an error', '\\h[1][a]\n\\h[3][b]\n', 2, 4);
 
 // Code.

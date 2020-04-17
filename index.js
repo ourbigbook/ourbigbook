@@ -124,6 +124,9 @@ class AstNode {
     }
     const macro = context.macros[this.macro_name];
     let out;
+    // Make a shallow copy because we can set default argument values here.
+    let effective_this = Object.assign({}, this);
+    effective_this.args = Object.assign({}, this.args);
 
     // Do some error checking. If no errors are found, convert normally. Save output on out.
     {
@@ -131,38 +134,47 @@ class AstNode {
       const name_to_arg = macro.name_to_arg;
       const validation_output = {};
       for (const argname in name_to_arg) {
-        validation_output[argname] = {};
         const macro_arg = name_to_arg[argname];
-        if (macro_arg.mandatory && !(argname in this.args)) {
-          error_message = [
-            `missing mandatory argument ${argname} of ${this.macro_name}`,
-            this.line, this.column];
-          break;
-        }
-        if (macro_arg.boolean && (argname in this.args)) {
-          const arg = this.args[argname];
-          if (arg.length > 0) {
+        if (!(argname in effective_this.args)) {
+          if (macro_arg.mandatory) {
             error_message = [
-              `boolean arguments like "${argname}" of "${this.macro_name}" cannot have values, use just "{${argname}}" instead`,
-              arg.line, arg.column];
+              `missing mandatory argument ${argname} of ${effective_this.macro_name}`,
+              effective_this.line, this.column];
             break;
           }
+          if (macro_arg.default !== undefined) {
+            effective_this.args[argname] = new AstArgument([new PlaintextAstNode(this.line, this.column, macro_arg.default)]);
+          }
         }
-        if (macro_arg.positive_nonzero_integer) {
-          const arg = this.args[argname];
-          const arg_string = convert_arg_noescape(arg, context);
-          const int_value = parseInt(arg_string);
-          validation_output[argname]['positive_nonzero_integer'] = int_value;
-          if (!Number.isInteger(int_value) || !(int_value > 0)) {
-            error_message = [
-              `argument "${argname}" of macro "${this.macro_name}" must be a positive non-zero integer, got: "${arg_string}"`,
-              arg.line, arg.column];
-            break;
+      }
+      for (const argname in name_to_arg) {
+        validation_output[argname] = {};
+        const macro_arg = name_to_arg[argname];
+        if (argname in effective_this.args) {
+          const arg = effective_this.args[argname];
+          if (macro_arg.boolean) {
+            if (arg.length > 0) {
+              error_message = [
+                `boolean arguments like "${argname}" of "${effective_this.macro_name}" cannot have values, use just "{${argname}}" instead`,
+                arg.line, arg.column];
+              break;
+            }
+          }
+          if (macro_arg.positive_nonzero_integer) {
+            const arg_string = convert_arg_noescape(arg, context);
+            const int_value = parseInt(arg_string);
+            validation_output[argname]['positive_nonzero_integer'] = int_value;
+            if (!Number.isInteger(int_value) || !(int_value > 0)) {
+              error_message = [
+                `argument "${argname}" of macro "${effective_this.macro_name}" must be a positive non-zero integer, got: "${arg_string}"`,
+                arg.line, arg.column];
+              break;
+            }
           }
         }
       }
       if (error_message === undefined) {
-        out = macro.convert(this, context, validation_output);
+        out = macro.convert(effective_this, context, validation_output);
       } else {
         macro.error(context, error_message[0], error_message[1], error_message[2]);
         out = error_message_in_output(error_message[0], context);
@@ -369,6 +381,10 @@ class MacroArgument {
       // https://cirosantilli.com/cirodown#boolean-named-arguments
       options.boolean = false;
     }
+    if (!('default' in options)) {
+      // https://cirosantilli.com/cirodown#boolean-named-arguments
+      options.default = undefined;
+    }
     if (!('mandatory' in options)) {
       // https://cirosantilli.com/cirodown#mandatory-positional-arguments
       options.mandatory = false;
@@ -381,6 +397,7 @@ class MacroArgument {
       options.remove_whitespace_children = false;
     }
     this.boolean = options.boolean;
+    this.default = options.default;
     this.elide_link_only = options.elide_link_only;
     this.mandatory = options.mandatory;
     this.name = options.name;
@@ -1526,14 +1543,14 @@ function macro_list() {
 }
 exports.macro_list = macro_list;
 
-function macro_image_video_convert_function(content_func, source_func) {
+function macro_image_video_block_convert_function(content_func, source_func) {
   if (source_func === undefined) {
     source_func = function(ast, context, src) {
       return convert_arg(ast.args.source, context);
     }
   }
   return function(ast, context) {
-    let rendered_attrs = html_convert_attrs(ast, context, ['src']);
+    let rendered_attrs = html_convert_attrs(ast, context, ['src', 'height', 'width']);
     let figure_attrs = html_convert_attrs_id(ast, context);
     let ret = `<figure${figure_attrs}>\n`
     let href_prefix;
@@ -2089,7 +2106,7 @@ function parse(tokens, macros, options, extra_returns={}) {
                     i++;
                   }
                   new_child_nodes_set = true;
-                  new_child_nodes = [new AstNode(
+                  new_child_nodes = new AstArgument([new AstNode(
                     AstType.MACRO,
                     auto_parent_name,
                     {
@@ -2097,7 +2114,7 @@ function parse(tokens, macros, options, extra_returns={}) {
                     },
                     start_auto_child_node.line,
                     start_auto_child_node.column,
-                  )];
+                  )], child_node.line, child_node.column);
                   // Because the for loop will advance past it.
                   i--;
                 }
@@ -2423,6 +2440,7 @@ const TokenType = make_enum([
   'NAMED_ARGUMENT_END',
   'NAMED_ARGUMENT_NAME',
 ]);
+const DEFAULT_MEDIA_HEIGHT = 315;
 const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [
   new MacroArgument({
     name: Macro.TITLE_ARGUMENT_NAME,
@@ -2431,8 +2449,17 @@ const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [
     name: 'description',
   }),
   new MacroArgument({
+    name: 'height',
+    default: DEFAULT_MEDIA_HEIGHT.toString(),
+    positive_nonzero_integer: true,
+  }),
+  new MacroArgument({
     name: 'source',
     elide_link_only: true,
+  }),
+  new MacroArgument({
+    name: 'width',
+    positive_nonzero_integer: true,
   }),
 ];
 const MACRO_IMAGE_VIDEO_OPTIONS = {}
@@ -2559,8 +2586,8 @@ const DEFAULT_MACRO_LIST = [
       let level = convert_arg_noescape(level_arg, context);
       let level_int = ast.level;
       if (level_int > 6) {
-        custom_args = {'data-level': [new PlaintextAstNode(
-          ast.line, ast.column, level)]};
+        custom_args = {'data-level': new AstArgument([new PlaintextAstNode(
+          ast.line, ast.column, level)], ast.line, ast.column)};
         level = '6';
       } else {
         custom_args = {};
@@ -2722,7 +2749,7 @@ const DEFAULT_MACRO_LIST = [
   new Macro(
     'Image',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
-    macro_image_video_convert_function(function (ast, context, src, rendered_attrs, alt) {
+    macro_image_video_block_convert_function(function (ast, context, src, rendered_attrs, alt) {
       return `<a${html_attr('href', src)}><img${rendered_attrs}${alt}></a>\n`;
     }),
     Object.assign(
@@ -2754,10 +2781,21 @@ const DEFAULT_MACRO_LIST = [
         alt_arg = ast.args.alt;
       }
       let alt = html_attr('alt', html_escape_attr(convert_arg(alt_arg, context)));
-      let img_attrs = html_convert_attrs_id(ast, context, ['src']);
+      let img_attrs = html_convert_attrs_id(ast, context, ['src', 'height', 'width']);
       return `<img${img_attrs}${alt}>`;
     },
     {
+      named_args: [
+        new MacroArgument({
+          name: 'height',
+          default: DEFAULT_MEDIA_HEIGHT.toString(),
+          positive_nonzero_integer: true,
+        }),
+        new MacroArgument({
+          name: 'width',
+          positive_nonzero_integer: true,
+        }),
+      ],
       phrasing: true,
     }
   ),
@@ -2944,7 +2982,7 @@ const DEFAULT_MACRO_LIST = [
         } else {
           text_title = 'dummy title because title is mandatory in HTML';
         }
-        title = [new PlaintextAstNode(ast.line, ast.column, text_title)];
+        title = new AstArgument([new PlaintextAstNode(ast.line, ast.column, text_title)], ast.column, text_title);
       }
       let ret;
       const body = convert_arg(ast.args.content, context);
@@ -3075,10 +3113,10 @@ const DEFAULT_MACRO_LIST = [
   new Macro(
     'Video',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
-    macro_image_video_convert_function(
+    macro_image_video_block_convert_function(
       function (ast, context, src, rendered_attrs, alt) {
         if ('youtube' in ast.args) {
-          return `<iframe width="560" height="315" src="https://www.youtube.com/embed/${src}" ` +
+          return `<iframe width="560" height="${DEFAULT_MEDIA_HEIGHT}" src="https://www.youtube.com/embed/${src}" ` +
                 `frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; ` +
                 `picture-in-picture" allowfullscreen></iframe>`;
         } else {

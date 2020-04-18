@@ -1682,7 +1682,7 @@ function parse(tokens, macros, options, extra_returns={}) {
   include_options.include_path_set = extra_returns.include_path_set;
   extra_returns.include_path_set.add(options.input_path);
   while (todo_visit.length > 0) {
-    const [parent_arg, ast] = todo_visit.shift();
+    const [parent_arg, ast] = todo_visit.pop();
     const macro_name = ast.macro_name;
     ast.from_include = options.from_include;
     ast.input_path = options.input_path;
@@ -1879,8 +1879,8 @@ function parse(tokens, macros, options, extra_returns={}) {
         // We make the new argument be empty so that children can
         // decide if they want to push themselves or not.
         const new_arg = new AstArgument([], arg.line, arg.column);
-        for (const child_node of arg) {
-          todo_visit.push([new_arg, child_node]);
+        for (let i = arg.length - 1; i >= 0; i--) {
+          todo_visit.push([new_arg, arg[i]]);
         }
         // Update the argument.
         ast.args[arg_name] = new_arg;
@@ -1911,7 +1911,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     let toplevel_parent_arg = new AstArgument([], 1, 1);
     const todo_visit = [[toplevel_parent_arg, ast_toplevel]];
     while (todo_visit.length > 0) {
-      const [parent_arg, ast] = todo_visit.shift();
+      const [parent_arg, ast] = todo_visit.pop();
       const macro_name = ast.macro_name;
       const macro = macros[macro_name];
 
@@ -2173,8 +2173,8 @@ function parse(tokens, macros, options, extra_returns={}) {
         // so that children can decide if they want to push themselves or not.
         {
           const new_arg = new AstArgument([], arg.line, arg.column);
-          for (const child_node of arg) {
-            todo_visit.push([new_arg, child_node]);
+          for (let i = arg.length - 1; i >= 0; i--) {
+            todo_visit.push([new_arg, arg[i]]);
           }
           // Update the argument.
           ast.args[arg_name] = new_arg;

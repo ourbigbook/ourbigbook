@@ -1732,20 +1732,20 @@ function parse(tokens, macros, options, extra_returns={}) {
               AstType.MACRO,
               Macro.HEADER_MACRO_NAME,
               {
-                'level': [
+                'level': new AstArgument([
                   new PlaintextAstNode(
                     ast.line,
                     ast.column,
                     (cur_header_level + 1).toString(),
                   )
-                ],
-                [Macro.TITLE_ARGUMENT_NAME]: [
+                ], ast.line, ast.column),
+                [Macro.TITLE_ARGUMENT_NAME]: new AstArgument([
                   new PlaintextAstNode(
                     ast.line,
                     ast.column,
                     header_node_title
                   )
-                ]
+                ], ast.line, ast.column),
               },
               ast.line,
               ast.column,
@@ -1766,31 +1766,31 @@ function parse(tokens, macros, options, extra_returns={}) {
               AstType.MACRO,
               Macro.PARAGRAPH_MACRO_NAME,
               {
-                'content': [
+                'content': new AstArgument([
                   new AstNode(
                     AstType.MACRO,
                     'x',
                     {
-                      'href': [
+                      'href': new AstArgument([
                         new PlaintextAstNode(
                           ast.line,
                           ast.column,
                           href
                         )
-                      ],
-                      'content': [
+                      ], ast.line, ast.column),
+                      'content': new AstArgument([
                         new PlaintextAstNode(
                           ast.line,
                           ast.column,
                           'This section is present in another page, follow this link to view it.'
                         )
-                      ],
+                      ], ast.line, ast.column),
                     },
                     ast.line,
                     ast.column,
                     {from_include: true},
                   ),
-                ],
+                ], ast.line, ast.column),
               },
               ast.line,
               ast.column,
@@ -1802,6 +1802,9 @@ function parse(tokens, macros, options, extra_returns={}) {
         // - all child includes will be resolved on the sub-render call
         // - the current header level must not move, so that consecutive \include
         //   calls won't nest into one another
+        for (const new_child_node of new_child_nodes) {
+          new_child_node.parent_node = ast.parent_node;
+        }
         parent_arg.push(...new_child_nodes);
       }
     } else if (macro_name === Macro.CIRODOWN_EXAMPLE_MACRO_NAME) {
@@ -1817,13 +1820,13 @@ function parse(tokens, macros, options, extra_returns={}) {
           AstType.MACRO,
           Macro.PARAGRAPH_MACRO_NAME,
           {
-            'content': [
+            'content': new AstArgument([
               new PlaintextAstNode(
                 ast.line,
                 ast.column,
                 'which renders as:',
               )
-            ],
+            ], ast.line, ast.column),
           },
           ast.line,
           ast.column,
@@ -1831,7 +1834,8 @@ function parse(tokens, macros, options, extra_returns={}) {
         new AstNode(
           AstType.MACRO,
           'q',
-          {'content': convert_include(
+          {
+            'content': convert_include(
               convert_arg_noescape(ast.args.content, id_context),
               options,
               0,

@@ -1240,6 +1240,7 @@ function convert(
   }
   extra_returns.ast = ast;
   extra_returns.context = sub_extra_returns.context;
+  extra_returns.context.include_path_set = sub_extra_returns.include_path_set;
   extra_returns.ids = sub_extra_returns.ids;
   extra_returns.errors.push(...sub_extra_returns.errors);
   let output;
@@ -1626,6 +1627,7 @@ function object_subset(source_object, keys) {
 function parse(tokens, macros, options, extra_returns={}) {
   extra_returns.context = {};
   extra_returns.errors = [];
+  extra_returns.include_path_set = new Set(options.include_path_set);
   let state = {
     extra_returns: extra_returns,
     i: 0,
@@ -1676,7 +1678,9 @@ function parse(tokens, macros, options, extra_returns={}) {
   } else {
     id_provider = local_id_provider;
   }
-  options.include_path_set.add(options.input_path);
+  const include_options = Object.assign({}, options);
+  include_options.include_path_set = extra_returns.include_path_set;
+  extra_returns.include_path_set.add(options.input_path);
   while (todo_visit.length > 0) {
     const [parent_arg, ast] = todo_visit.shift();
     const macro_name = ast.macro_name;
@@ -1685,7 +1689,7 @@ function parse(tokens, macros, options, extra_returns={}) {
     if (macro_name === Macro.INCLUDE_MACRO_NAME) {
       const href = convert_arg_noescape(ast.args.href, id_context);
       cur_header.includes.push(href);
-      if (options.include_path_set.has(href)) {
+      if (extra_returns.include_path_set.has(href)) {
         let message = `circular include detected to: "${href}"`;
         parse_error(
           state,
@@ -1699,7 +1703,7 @@ function parse(tokens, macros, options, extra_returns={}) {
         if (options.html_single_page) {
           new_child_nodes = convert_include(
             options.read_include(href),
-            options,
+            include_options,
             cur_header_level,
             href
           );
@@ -1858,6 +1862,12 @@ function parse(tokens, macros, options, extra_returns={}) {
           convert_arg_noescape(ast.args.level, id_context)
         ) + options.h_level_offset;
         ast.level = cur_header_level;
+        if ('level' in ast.args) {
+          // Hack the level argument of the final AST to match for consistency.
+          ast.args.level = new AstArgument([
+            new PlaintextAstNode(ast.args.level.line, ast.args.level.column, ast.level.toString())],
+            ast.args.level.line, ast.args.level.column);
+        }
       }
       // Push this node into the parent argument list.
       // This allows us to skip nodes, or push multiple nodes if needed.
@@ -2387,7 +2397,9 @@ function x_href(target_id_ast, context) {
   let href_path;
   const target_input_path = target_id_ast.input_path;
   if (
-    context.options.include_path_set.has(target_input_path) ||
+    // The header was included inline into the current file.
+    context.include_path_set.has(target_input_path) ||
+    // The header is in the current file.
     (target_input_path == context.options.input_path)
   ) {
     href_path = '';
@@ -2586,18 +2598,18 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       let custom_args;
-      let level_arg = ast.args.level;
-      let level = convert_arg_noescape(level_arg, context);
       let level_int = ast.level;
+      let level_int_capped;
       if (level_int > 6) {
         custom_args = {'data-level': new AstArgument([new PlaintextAstNode(
-          ast.line, ast.column, level)], ast.line, ast.column)};
-        level = '6';
+          ast.line, ast.column, level_int.toString())], ast.line, ast.column)};
+        level_int_capped = 6;
       } else {
         custom_args = {};
+        level_int_capped = level_int;
       }
       let attrs = html_convert_attrs_id(ast, context, [], custom_args);
-      let ret = `<h${level}${attrs}><a${this.self_link(ast)} title="link to this element">`;
+      let ret = `<h${level_int_capped}${attrs}><a${this.self_link(ast)} title="link to this element">`;
       let x_text_options = {
         show_caption_prefix: false,
       };
@@ -2627,7 +2639,7 @@ const DEFAULT_MACRO_LIST = [
         ret += ` | <a${parent_href}>\u2191 parent "${parent_body}"</a>`;
       }
       ret += `</span>`;
-      ret += `</h${level}>\n`;
+      ret += `</h${level_int_capped}>\n`;
       return ret;
     },
     {

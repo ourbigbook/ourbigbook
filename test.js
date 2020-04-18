@@ -11,9 +11,11 @@ const convert_opts = {
   //show_tokenize: true,
 };
 
-function assert_convert_ast_func(input_string, expected_ast_output_subset) {
+function assert_convert_ast_func(input_string, expected_ast_output_subset, extra_convert_opts={}) {
   const extra_returns = {};
-  cirodown.convert(input_string, convert_opts, extra_returns);
+  const new_convert_opts = Object.assign({}, convert_opts);
+  Object.assign(new_convert_opts, extra_convert_opts);
+  cirodown.convert(input_string, extra_convert_opts, extra_returns);
   const toplevel_content = extra_returns.ast.args.content;
   const ast_arg_has_subset_extra_returns = {fail_reason: ''};
   const is_subset = ast_arg_has_subset(toplevel_content, expected_ast_output_subset, ast_arg_has_subset_extra_returns);
@@ -79,8 +81,8 @@ function assert_error_func(input_string, line, column) {
  * This function automaticlaly only considers the content argument of the
  * toplevel node for further convenience.
  */
-function assert_convert_ast(description, input_string, expected_ast_output_subset) {
-  it(description, ()=>{assert_convert_ast_func(input_string, expected_ast_output_subset);});
+function assert_convert_ast(description, input_string, expected_ast_output_subset, extra_convert_opts) {
+  it(description, ()=>{assert_convert_ast_func(input_string, expected_ast_output_subset, extra_convert_opts);});
 }
 
 function assert_convert(description, input, output) {
@@ -674,7 +676,7 @@ assert_convert_ast('link with multiple paragraphs',
   ]
 );
 
-//// Cross references \x
+// Cross references \x
 assert_no_error('cross reference simple',
   `\\h[1][My header]
 
@@ -707,6 +709,13 @@ assert_no_error('cross reference without content nor target title style full',
 \\x[cd]
 `);
 assert_error('cross reference undefined', '\\x[ab]', 1, 3);
+// TODO failing https://github.com/cirosantilli/cirodown/issues/34
+//assert_error('cross reference infinite recursion',
+//  `\\h[1][\\x[h2]]{id=h1}
+//
+//\\h[2][\\x[h1]]{id=h2}
+//`, 1, 1
+//);
 
 //// Headers.
 // TODO inner ID property test
@@ -855,6 +864,114 @@ assert_no_error('math block insane',
   [a('M', [t('\\sqrt{1 + 1}')])],
 );
 assert_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 3);
+
+// Include.
+const include_opts = {
+  html_single_page: true,
+  read_include: function(input_path) {
+    if (input_path === 'include-one-level-1') {
+      return `\\h[1][cc]
+
+dd
+`
+    } else if (input_path === 'include-one-level-2') {
+      return `\\h[1][ee]
+
+ff
+`
+    } else if (input_path === 'include-two-levels') {
+      return `\\h[1][ee]
+
+ff
+
+\\h[2][gg]
+
+hh
+`
+    } else {
+      throw new Error(`unknown lnclude path: ${input_path}`);
+    }
+  },
+};
+assert_convert_ast('include simple with paragraph',
+  `\\h[1][aa]
+
+bb
+
+\\include[include-one-level-1]
+
+\\include[include-one-level-2]
+`,
+  [
+    a('h', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('p', [t('bb')]),
+    a('h', undefined, {level: [t('2')], title: [t('cc')]}),
+    a('p', [t('dd')]),
+    a('h', undefined, {level: [t('2')], title: [t('ee')]}),
+    a('p', [t('ff')]),
+  ],
+  include_opts
+);
+assert_convert_ast('include multilevel with paragraph',
+  `\\h[1][aa]
+
+bb
+
+\\include[include-two-levels]
+
+\\include[include-one-level-1]
+`,
+  [
+    a('h', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('p', [t('bb')]),
+    a('h', undefined, {level: [t('2')], title: [t('ee')]}),
+    a('p', [t('ff')]),
+    a('h', undefined, {level: [t('3')], title: [t('gg')]}),
+    a('p', [t('hh')]),
+    a('h', undefined, {level: [t('2')], title: [t('cc')]}),
+    a('p', [t('dd')]),
+  ],
+  include_opts
+);
+// TODO failing https://github.com/cirosantilli/cirodown/issues/35
+//assert_convert_ast('include simple no paragraph',
+//  `\\h[1][aa]
+//
+//bb
+//
+//\\include[include-one-level-1]
+//\\include[include-one-level-2]
+//`,
+//  [
+//    a('h', undefined, {level: [t('1')], title: [t('aa')]}),
+//    a('p', [t('bb')]),
+//    a('h', undefined, {level: [t('2')], title: [t('cc')]}),
+//    a('p', [t('dd')]),
+//    a('h', undefined, {level: [t('2')], title: [t('ee')]}),
+//    a('p', [t('ff')]),
+//  ],
+//  include_opts
+//);
+//assert_convert_ast('include multilevel no paragraph',
+//  `\\h[1][aa]
+//
+//bb
+//
+//\\include[include-two-levels]
+//\\include[include-one-level-1]
+//`,
+//  [
+//    a('h', undefined, {level: [t('1')], title: [t('aa')]}),
+//    a('p', [t('bb')]),
+//    a('h', undefined, {level: [t('2')], title: [t('ee')]}),
+//    a('p', [t('ff')]),
+//    a('h', undefined, {level: [t('3')], title: [t('gg')]}),
+//    a('p', [t('hh')]),
+//    a('h', undefined, {level: [t('2')], title: [t('cc')]}),
+//    a('p', [t('dd')]),
+//  ],
+//  include_opts
+//);
 
 // Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception, or worse, not blowing up at all!

@@ -2137,7 +2137,6 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \l[create mechanism to link to the GitHub blob view of in-tree source files that are not added to GitHub pages, e.g. `\file`]
 \l[parse_error: add in document error message, currently only to stderr]
 \l[LaTeX output]
-\l[infinite xref header recursion: https://github.com/asciidoctor/asciidoctor/issues/3543 Solution: forbid x in titles, pass down context from parent.]
 \l[on the AST, put contents of headers inside headers]
 \l[parallel build across files on `./cirodown .`]
 \l[includes without double newline between them]

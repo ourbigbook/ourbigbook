@@ -60,13 +60,6 @@ padding-right: 15px;
   left: 0;
 }
 
-// Scroolbar behaviour.
-overflow-x: visible;
-scrollbar-width: none;
-::-webkit-scrollbar {
-    display: none;
-}
-
 // Highlight the element referred by the current hash
 // so that the user can easily know which one it is.
 :target {

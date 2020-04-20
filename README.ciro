@@ -92,16 +92,15 @@ TODO: create a multifile blog example folder and link from here.
 Cirodown is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
 
 Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation), supporting out of the box feature such as:
-\l[\x[internal-cross-references][references] to \x[headers][headers], \x[images][images], etc. with amazing error checking and reporting: never break internal links gain]
-\l[KaTeX server side \x[math][Mathematics]]
-\l[multi file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
-  \l[\x[internal-cross-file-references]]
-  \l[\x[table-of-contents][table of contents] that crosses input files]
-  \l[`inotifywait` watch rebuild server]
-  \l[cross file includes that work as links on multi output file mode, and true includes in single output file mode]
-  \l[cross file configuration files to factor out common page parts like headers and footers]
-]
-\l[runs on the browser to allow live previews, and therefore is written in JavaScript]
+* \x[internal-cross-references][references] to \x[headers][headers], \x[images][images], etc. with amazing error checking and reporting: never break internal links gain
+* KaTeX server side \x[math][Mathematics]
+* multi file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
+  * \x[internal-cross-file-references]
+  * \x[table-of-contents][table of contents] that crosses input files
+  * `inotifywait` watch rebuild server
+  * cross file includes that work as links on multi output file mode, and true includes in single output file mode
+  * cross file configuration files to factor out common page parts like headers and footers
+* runs on the browser to allow live previews, and therefore is written in JavaScript
 
 \h[3][Saner]
 

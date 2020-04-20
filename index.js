@@ -806,7 +806,7 @@ class Tokenizer {
     if (this.chars[this.chars.length - 1] === '\n') {
       this.chars.pop();
     }
-    // Add the magic implicit toplevel element.
+    // Add the magic implicit toplevel element. TODO remove.
     this.push_token(TokenType.MACRO_NAME, Macro.TOPLEVEL_MACRO_NAME);
     this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
     this.push_token(TokenType.PARAGRAPH);
@@ -966,8 +966,8 @@ class Tokenizer {
     if (unterminated_literal) {
       this.error(`unterminated literal argument`, start_line, start_column);
     }
-    // Close the opening of toplevel.
     this.push_token(TokenType.PARAGRAPH);
+    // TODO remove.
     this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
     this.push_token(TokenType.INPUT_END);
     return this.tokens;
@@ -1637,12 +1637,22 @@ function parse(tokens, macros, options, extra_returns={}) {
     token: tokens[0],
     tokens: tokens,
   };
-  // Call parse_macro on the toplevel macro. The entire document is
-  // under that macro, so this will recursively parse everything.
-  let ast_toplevel = parse_macro(state);
-  if (state.token.type !== TokenType.INPUT_END) {
-    parse_error(state, `unexpected tokens at the end of input`);
-  }
+  const ast_toplevel = parse_macro(state);
+  //const ast_toplevel_args = parse_argument_list(state);
+  //if ('content' in ast_toplevel_args) {
+  //  parse_error(state, `the toplevel arguments cannot contain an explicit content argument`, 1, 1);
+  //}
+  //const ast_toplevel_content_arg = parse_argument(state);
+  //const ast_toplevel = new AstNode(
+  //  AstType.MACRO,
+  //  Macro.TOPLEVEL_MACRO_NAME,
+  //  Object.assign(ast_toplevel_args, {'content': ast_toplevel_content_arg}),
+  //  1,
+  //  1,
+  //);
+  //if (state.token.type !== TokenType.INPUT_END) {
+  //  parse_error(state, `unexpected tokens at the end of input`);
+  //}
 
   // Post process the AST breadth first minimally to support includes.
   //
@@ -2253,6 +2263,92 @@ function parse_log_debug(state, msg='') {
   }
 }
 
+// Input: e.g. in `\Image[img.jpg]{height=123}` this parses the `[img.jpg]{height=123}`.
+// Return value: dict with arguments.
+function parse_argument_list(state, macro_name, macro_type) {
+  const args = {};
+  const macro = state.macros[macro_name];
+  let positional_arg_count = 0;
+  while (
+    // End of stream.
+    state.token.type !== TokenType.INPUT_END &&
+    (
+      state.token.type === TokenType.POSITIONAL_ARGUMENT_START ||
+      state.token.type === TokenType.NAMED_ARGUMENT_START
+    )
+  ) {
+    let arg_name;
+    let open_type = state.token.type;
+    let open_argument_line = state.token.line;
+    let open_argument_column = state.token.column;
+    // Consume the *_ARGUMENT_START token out.
+    parse_consume(state);
+    if (open_type === TokenType.POSITIONAL_ARGUMENT_START) {
+      if (macro_type === AstType.ERROR) {
+        arg_name = positional_arg_count.toString();
+      } else {
+        if (positional_arg_count >= macro.positional_args.length) {
+          parse_error(state,
+            `unknown named macro argument "${arg_name}" of macro "${macro_name}"`,
+            open_argument_line,
+            open_argument_column
+          );
+          arg_name = positional_arg_count.toString();
+        } else {
+          arg_name = macro.positional_args[positional_arg_count].name;
+        }
+        positional_arg_count += 1;
+      }
+    } else {
+      // Named argument.
+      let name_line = state.token.line;
+      let name_column = state.token.column;
+      arg_name = state.token.value;
+      if (macro_type !== AstType.ERROR && !(arg_name in macro.named_args)) {
+        parse_error(state,
+          `unknown named macro argument "${arg_name}" of macro "${macro_name}"`,
+          name_line,
+          name_column
+        );
+      }
+      // Parse the argument name out.
+      parse_consume(state);
+    }
+    const arg_children = parse_argument(state, open_argument_line, open_argument_column);
+    if (state.token.type !== closing_token(open_type)) {
+      let expect_description;
+      if (state.token.type === TokenType.INPUT_END) {
+        expect_description = 'the end of the document';
+      } else {
+        expect_description = `'${state.token.type.toString()}'`;
+      }
+      parse_error(state, `expected a closing '${END_POSITIONAL_ARGUMENT_CHAR}' found ${expect_description}`);
+    }
+    args[arg_name] = arg_children;
+    if (state.token.type !== TokenType.INPUT_END) {
+      // Consume the *_ARGUMENT_END token out.
+      parse_consume(state);
+    }
+  }
+  return args;
+}
+
+/**
+ * @return AstArgument
+ */
+function parse_argument(state, open_argument_line, open_argument_column) {
+  const arg_children = new AstArgument([], open_argument_line, open_argument_column);
+  while (
+    state.token.type !== TokenType.INPUT_END &&
+    state.token.type !== TokenType.POSITIONAL_ARGUMENT_END &&
+    state.token.type !== TokenType.NAMED_ARGUMENT_END
+  ) {
+    // The recursive case: the argument is a lists of macros, go into all of them.
+    arg_children.push(parse_macro(state));
+  }
+return arg_children;
+}
+
 // Parse one macro. This is the centerpiece of the parsing!
 function parse_macro(state) {
   parse_log_debug(state, 'function: parse_macro');
@@ -2262,13 +2358,9 @@ function parse_macro(state) {
     const macro_name = state.token.value;
     const macro_line = state.token.line;
     const macro_column = state.token.column;
-    let positional_arg_count = 0;
-    const args = {};
-    let macro;
     let macro_type;
     const unknown_macro_message = `unknown macro name: "${macro_name}"`;
     if (macro_name in state.macros) {
-      macro = state.macros[macro_name];
       macro_type = AstType.MACRO;
     } else {
       macro_type = AstType.ERROR;
@@ -2276,75 +2368,7 @@ function parse_macro(state) {
     }
     // Consume the MACRO_NAME token out.
     parse_consume(state);
-    while (
-      // End of stream.
-      state.token.type !== TokenType.INPUT_END &&
-      (
-        state.token.type === TokenType.POSITIONAL_ARGUMENT_START ||
-        state.token.type === TokenType.NAMED_ARGUMENT_START
-      )
-    ) {
-      let arg_name;
-      let open_type = state.token.type;
-      let open_argument_line = state.token.line;
-      let open_argument_column = state.token.column;
-      // Consume the *_ARGUMENT_START token out.
-      parse_consume(state);
-      if (open_type === TokenType.POSITIONAL_ARGUMENT_START) {
-        if (macro_type === AstType.ERROR) {
-          arg_name = positional_arg_count.toString();
-        } else {
-          if (positional_arg_count >= macro.positional_args.length) {
-            parse_error(state,
-              `unknown named macro argument "${arg_name}" of macro "${macro_name}"`,
-              open_argument_line,
-              open_argument_column
-            );
-            arg_name = positional_arg_count.toString();
-          } else {
-            arg_name = macro.positional_args[positional_arg_count].name;
-          }
-          positional_arg_count += 1;
-        }
-      } else {
-        // Named argument.
-        let name_line = state.token.line;
-        let name_column = state.token.column;
-        arg_name = state.token.value;
-        if (macro_type !== AstType.ERROR && !(arg_name in macro.named_args)) {
-          parse_error(state,
-            `unknown named macro argument "${arg_name}" of macro "${macro_name}"`,
-            name_line,
-            name_column
-          );
-        }
-        // Parse the argument name out.
-        parse_consume(state);
-      }
-      let arg_children = new AstArgument([], open_argument_line, open_argument_column);
-      while (
-        state.token.type !== TokenType.INPUT_END &&
-        state.token.type !== TokenType.POSITIONAL_ARGUMENT_END &&
-        state.token.type !== TokenType.NAMED_ARGUMENT_END
-      ) {
-        // The recursive case: the argument is a lists of macros, go into all of them.
-        arg_children.push(parse_macro(state));
-      }
-      if (state.token.type !== closing_token(open_type)) {
-        let expect_description;
-        if (state.token.type === TokenType.INPUT_END) {
-          expect_description = 'the end of the document';
-        } else {
-          expect_description = `'${state.token.type.toString()}'`;
-        }
-        parse_error(state, `expected a closing '${END_POSITIONAL_ARGUMENT_CHAR}' found ${expect_description}`);
-      }
-      args[arg_name] = arg_children;
-      if (state.token.type !== TokenType.INPUT_END) {
-        // Consume the *_ARGUMENT_END token out.
-        parse_consume(state);
-      }
-    }
+    const args = parse_argument_list(state, macro_name, macro_type);
     if (macro_type === AstType.ERROR) {
       return new AstNode(
         macro_type,

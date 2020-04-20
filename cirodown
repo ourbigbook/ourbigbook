@@ -628,9 +628,9 @@ A link to another file: \\x[and-now-an-include]
       }
       let watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES});
       watcher.on('change', function(path) {
-        convert_path_to_file(inputPath, path, options, convert_input_options);
+        convert_path_to_file(input_dir, path, options, convert_input_options);
       }).on('add', function(path) {
-        convert_path_to_file(inputPath, path, options, convert_input_options);
+        convert_path_to_file(input_dir, path, options, convert_input_options);
       });
     } else {
       if (input_path_is_file) {

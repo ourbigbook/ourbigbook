@@ -228,11 +228,21 @@ gh
 `,
   l_with_explicit_ul_expect
 );
-assert_convert_ast('l with implicit ul',
+assert_convert_ast('l with implicit ul sane',
   `ab
 
 \\l[cd]
 \\l[ef]
+
+gh
+`,
+  l_with_explicit_ul_expect
+);
+assert_convert_ast('l with implicit ul insane',
+  `ab
+
+* cd
+* ef
 
 gh
 `,
@@ -270,6 +280,58 @@ gh
   a('p', [t('gh')]),
 ]
 );
+const list_with_paragraph_expect = [
+  a('ul', [
+    a('l', [
+      a('p', [t('aa')]),
+      a('p', [t('bb\n')]),
+    ]),
+  ]),
+];
+assert_convert_ast('nested list sane',
+  `\\l[
+aa
+
+bb
+]
+`,
+  list_with_paragraph_expect
+)
+assert_convert_ast('nested list insane',
+  `* aa
+
+  bb
+`,
+  list_with_paragraph_expect
+)
+const nested_list_sane_expect = [
+  a('ul', [
+    a('l', [
+      t('aa\n'),
+      a('ul', [
+        a('l', [
+          t('bb\n')
+        ]),
+      ]),
+    ]),
+  ]),
+];
+assert_convert_ast('nested list sane',
+  `\\l[
+aa
+\\l[
+bb
+]
+]
+`,
+  nested_list_sane_expect
+)
+assert_convert_ast('nested list insane',
+  `* aa
+  * bb
+`,
+  nested_list_sane_expect
+)
 
 // Table.
 const tr_with_explicit_table_expect = [

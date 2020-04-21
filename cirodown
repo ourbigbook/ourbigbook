@@ -399,7 +399,7 @@ commander.option(
   false
 );
 commander.option('--template <template>', 'http://cirosantilli.com/cirodown#template');
-commander.option('--watch', 'http://cirosantilli.com/cirodown#watch', false);
+commander.option('-w, --watch', 'http://cirosantilli.com/cirodown#watch', false);
 let inputPath;
 commander.arguments(
   '[input_path]',

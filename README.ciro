@@ -25,7 +25,7 @@ Install the NPM package globally and use it from the command line for a quick co
 npm install -g cirodown
 printf 'ab\ncd\n' | cirodown --body-only
 ``
-or \a[https://stackoverflow.com/questions/9679932/how-to-use-package-installed-locally-in-node-modules][install in a single directory and run locally from it]:
+or https://stackoverflow.com/questions/9679932/how-to-use-package-installed-locally-in-node-modules[install in a single directory and run locally from it]:
 ``
 printf '{}\n' > package.json
 npm install --save cirodown
@@ -161,7 +161,7 @@ The difference is mostly that Cirodown is completely and entirely focused on mak
 * \x[math][server side pre-rendered maths with KaTeX]: all divs and spans are ready, browser only applies CSS, no JavaScript gets executed
 * \x[publish]: we take care of website publishing for you out-of-the-box, no need to integrate into an external project like Jekyll
 
-Another advantage over Asciidoctor is that the reference implementation of Cirodown is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with \a[https://github.com/opal/opal][Opal], but who wants to deal with that layer of complexity?
+Another advantage over Asciidoctor is that the reference implementation of Cirodown is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with https://github.com/opal/opal[Opal], but who wants to deal with that layer of complexity?
 
 \h[2][Paragraphs `\p`]
 {id=paragraphs}
@@ -206,11 +206,17 @@ The website http://example.com is cool. See also:
 Exact parsing rules described at: \x[insane-link-parsing-rules]{full}.
 
 Equivalent sane version:
-\cirodown_example[[
+\cirodown_example[[[
 The website \a[http://example.com] is cool.
-]]
 
-Custom text:
+\q[\a[http://example.com/2]]
+]]]
+
+Insane link with custom text:
+\cirodown_example[[
+The website http://example.com[example.com] is cool.
+]]
+Equivalent sane version:
 \cirodown_example[[
 The website \a[http://example.com][example.com] is cool.
 ]]
@@ -237,8 +243,8 @@ The recognized protocols are:
 Insane links end when either the end of the document or one of the following characters is found:
 * space ` `
 * newline `\n`
-* close square bracket `]`
-* close curly bracket `}`
+* open or close square bracket `[` or `]`
+* open or close curly braces `{` or `}`
 
 As a consequence, of those rules, it is impossible to have an insane link followed immediately by a period, e.g.:
 \cirodown_example[[
@@ -450,7 +456,7 @@ So for example, the following automatic IDs would be generated: \x[table-example
 \tr[
   \td[The École Polytechnique]
   \td[the-École-polytechnique]
-  \td[We leave the non ASCII uppercase \a[https://en.wikipedia.org/wiki/Acute_accent][acute accented] `e`, `É`, untouched by default]
+  \td[We leave the non ASCII uppercase https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, untouched by default]
 ]
 ]
 
@@ -651,7 +657,7 @@ Equivalent fully sane with explicit container:
 ]
 ]]
 
-The explicit container is required if you want to add properties to the list, e.g. a title and an ID: \x[list-my-id]{full}:
+The explicit container is required if you want to pass extra arguments properties to the `ul` list macro, e.g. a title and an ID: \x[list-my-id]{full}:
 \cirodown_example[[
 \ul
 {id=list-my-id}
@@ -661,6 +667,7 @@ The explicit container is required if you want to add properties to the list, e.
 \l[c]
 ]
 ]]
+This is the case because without the explicit container in an implicit `ul` list, the arguments would stick to the last list item instead of the list itself.
 
 It is also required if you want ordered lists:
 \cirodown_example[[
@@ -722,6 +729,11 @@ Multiple paragraphs.
 \l[list]
 ]
 \l[c]
+]]
+
+Insane lists may be escaped with a backslash as usual:
+\cirodown_example[[
+\* paragraph starting with an asterisk.
 ]]
 
 And now a list outside of \x[cirodown-example] to test how it looks directly under \x[toplevel]:
@@ -860,7 +872,7 @@ The reason why images should be kept in a separate repository is that images are
 
 Therefore, images could easily fill up the maximum repository size you are allowed: https://webapps.stackexchange.com/questions/45254/file-size-and-storage-limits-on-github#84746 and then what will you do when GitHub comes asking you to reduce the repository size?
 
-\a[https://git-lfs.github.com/][Git LFS] is one approach to deal with this, but we feel that it adds too much development overhead.
+https://git-lfs.github.com/[Git LFS] is one approach to deal with this, but we feel that it adds too much development overhead.
 
 \h[3][Image generators]
 
@@ -891,7 +903,7 @@ But you can also use raw video files from any location that can serve them of co
 {source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
 ]]
 
-And here is an external video from \a[https://commons.wikimedia.org][Wikimedia Commons], which is a trustworthy free server for educational content:
+And here is an external video from https://commons.wikimedia.org[Wikimedia Commons], which is a trustworthy free server for educational content:
 \cirodown_example[[
 \Video[https://upload.wikimedia.org/wikipedia/commons/8/85/Vacuum_pump_filter_cut_and_place_in_eppendorf.webm]
 {id=sample-video-in-wikimedia-commons}
@@ -952,7 +964,7 @@ A paragraph.
 ]]]]
 Note that the initial newline is skipped automatically in code blocks, just as for any other element, due to: \x[argument-leading-newline-removal], so you don't have to worry about it.
 
-The distinction between inline `c` and block `C` code blocks is needed because in HTML, \a[https://stackoverflow.com/questions/5371787/can-i-have-a-pre-tag-inside-a-p-tag-in-tumblr/58603596#58603596][`pre` cannot go inside `p`].
+The distinction between inline `c` and block `C` code blocks is needed because in HTML, https://stackoverflow.com/questions/5371787/can-i-have-a-pre-tag-inside-a-p-tag-in-tumblr/58603596#58603596[`pre` cannot go inside `p`].
 
 We could have chosen to do some magic to differentiate between them, e.g. checking if the block is the only element in a paragraph, but we decided not to do that to keep the language saner.
 
@@ -980,7 +992,7 @@ cd
 \h[2][Mathematics `$`, `$$`, `\m` and `\M`]
 {id=math}
 
-Via \a[https://katex.org/][KaTeX] server side, oh yes!
+Via https://katex.org/[KaTeX] server side, oh yes!
 
 Inline math is done with the dollar sign (`$`) \x[insane-macro-shortcuts][insane macro shortcut]:
 \cirodown_example[[
@@ -1197,6 +1209,7 @@ Certain commonly used macros have insane macro shortcuts that do not start with 
 * \x[links]: `a http://exmaple.com b` (space followed by `http://`)
 * \x[math]: `$`, described at: \x[insane-code-and-math-shortcuts]
 * \x[code]: \c[[`]], described at: \x[insane-code-and-math-shortcuts]
+* \x[lists]: `* ` and `  ` indentation, described at: \x[lists]
 
 Originally, \x[design-goals][Ciro wanted to avoid those], but they just feel too good to avoid.
 
@@ -1253,8 +1266,9 @@ because that is the same as:
 \cirodown_example[[
 a \c[b c]{id=ef} g
 ]]
+So we see that the `b c` argument is the very first argument of `\c`.
 
-Extra arguments must however come after the insane opening, e.g. the following does not work:
+Extra arguments must come after the insane opening, e.g. the following does not work:
 \cirodown_example[[
 a {id=ef}`b c` g
 ]]
@@ -1696,7 +1710,7 @@ Examples of embeddings done:
 
   To re-download due to image updates, use either:
 
-  * `--asset-cache-update`: download all images such that the local disk timestamp is older than the HTTP modification date with \a[https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since][`If-Modified-Since`]
+  * `--asset-cache-update`: download all images such that the local disk timestamp is older than the HTTP modification date with https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since[`If-Modified-Since`]
   * `--asset-cache-update-force`: forcefully redownload all assets
 
 Keep in mind that certain things can never be embedded, e.g.:
@@ -1787,7 +1801,7 @@ Publishing only happens if the build has no errors.
 
 \h[6][Publish to GitHub Pages]
 
-\a[https://pages.github.com/][GitHub pages] is the default Cirodown publish target.
+https://pages.github.com/[GitHub pages] is the default Cirodown publish target.
 
 The first step is of course to create the GitHub repository that will contain your GitHub pages as usual.
 
@@ -1799,7 +1813,7 @@ This means that you must place your `.ciro` input files in a branch other than `
 
 `cirodown` automatically detects if your repository ois a root repository or not by parsing `git remote` output, but you must setup the branches correctly yourself.
 
-So on a new repository, you must \a[https://stackoverflow.com/questions/42871542/how-to-create-a-git-repository-with-the-default-branch-name-other-than-master][first checkout to a different branch] as in:
+So on a new repository, you must https://stackoverflow.com/questions/42871542/how-to-create-a-git-repository-with-the-default-branch-name-other-than-master[first checkout to a different branch] as in:
 ``
 git init
 git checkout -b dev
@@ -1868,7 +1882,7 @@ Exit by entering Ctrl + C on the terminal.
 \h[5][`--template`]
 {id=template}
 
-Select a custom \a[https://github.com/harttle/liquidjs][Liquid template] file for the output.
+Select a custom https://github.com/harttle/liquidjs[Liquid template] file for the output.
 
 The recommended file name for this file is `main.liquid.html`, which is already ignored by default from the published output.
 
@@ -2031,16 +2045,16 @@ Source files:
 
 Generated files:
 
-* `cirodown.js` packaged \a[http://browserify.org/][browserify] JavaScript for browser usage, generated with `npm run browserify`
+* `cirodown.js` packaged http://browserify.org[browserify] JavaScript for browser usage, generated with `npm run browserify`
 
 \h[4][`build-sass`]
 {id=build-sass}
 
-The \a[build-sass] script takes as input the \a[cirodown.scss] \a[https://sass-lang.com/][SASS] scss file, and generates various `.css` versions from it required to properly view generated Cirodown HTML:
+The \a[build-sass] script takes as input the \a[cirodown.scss] https://sass-lang.com[SASS] scss file, and generates various `.css` versions from it required to properly view generated Cirodown HTML:
 
 * `cirodown.min.css`: contains the converted `cirodown.scss` plus online `@import` requests for stuff like \x[math][KaTeX]
 * `cirodown.embed.min.css`: like `cirodown.min.css` but embeds all external CSS in-place without any `@import`. Used to distribute standalone pages: \x[html-embed]
-* `cirodown.local.min.css`: only includes style generated from `cirodown.scss`, not external styles. Used when the external styles are present locally, e.g. via `node_modules`. I think this was done because \a[https://stackoverflow.com/questions/34139675/css-import-not-working-for-local-file-file-path-is-correct][`@import`] was not working with local flies?
+* `cirodown.local.min.css`: only includes style generated from `cirodown.scss`, not external styles. Used when the external styles are present locally, e.g. via `node_modules`. I think this was done because https://stackoverflow.com/questions/34139675/css-import-not-working-for-local-file-file-path-is-correct[`@import`] was not working with local flies?
 
 \h[3][Internals API]
 
@@ -2085,7 +2099,7 @@ Trying to use the `\toplevel` macro explicitly in a document leads to an error.
 
 \h[3][CSS]
 
-Our CSS is located at \a[main.scss] and gets processed through \a[https://sass-lang.com/][Sass].
+Our CSS is located at \a[main.scss] and gets processed through https://sass-lang.com[Sass].
 
 To generate the CSS during development after any changes to that file, you must run:
 ``
@@ -2113,7 +2127,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 \h[2][Related projects]
 
 * \a[https://github.com/rstudio/bookdown], \a[https://bookdown.org/]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: \a[https://bookdown.org/yihui/bookdown/pandoc.html], thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.
-* \a[https://gohugo.io/][Hugo]. Pretty good, similar feature set to ours. But Go based, so hard on browser, and adds adhoc features on top of markdown once again
+* https://gohugo.io/[Hugo]. Pretty good, similar feature set to ours. But Go based, so hard on browser, and adds adhoc features on top of markdown once again
 
 Less related but of interest:
 * http://www.uprtcl.io/

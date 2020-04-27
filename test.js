@@ -823,13 +823,30 @@ assert_no_error('cross reference without content nor target title style full',
 \\x[cd]
 `);
 assert_error('cross reference undefined', '\\x[ab]', 1, 3);
-// TODO failing https://github.com/cirosantilli/cirodown/issues/34
-//assert_error('cross reference infinite recursion',
+//// TODO failing https://github.com/cirosantilli/cirodown/issues/34
+//assert_error('cross reference circular loop infinite recursion implicit body',
 //  `\\h[1][\\x[h2]]{id=h1}
 //
 //\\h[2][\\x[h1]]{id=h2}
-//`, 1, 1
-//);
+//`, 1, 1);
+// This is fine because the content is explicitly given.
+assert_convert_ast('cross reference circular loop infinite recursion explicit body',
+  `\\h[1][\\x[h2][myh2]]{id=h1}
+
+\\h[2][\\x[h1][myh1]]{id=h2}
+`,
+  // TODO
+  [
+    a('h', undefined, {
+      level: [t('1')],
+      title: [a('x', [t('myh2')], {'href': [t('h2')]})],
+    }),
+    a('h', undefined, {
+      level: [t('2')],
+      title: [a('x', [t('myh1')], {'href': [t('h1')]})],
+    }),
+  ]
+);
 
 //// Headers.
 // TODO inner ID property test

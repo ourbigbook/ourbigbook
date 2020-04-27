@@ -915,7 +915,7 @@ Create a separate GitHub repository in addition to the main one containing the t
 * `./my-tutorial-media/`
 The name `*-media` suffix is not mandatory, but if you use this default, `cirodown` will handle it for you without any further configuration.
 
-TODO And then set the \x[media-source-type] option in your \x[cirodown-json]:
+TODO https://github.com/cirosantilli/cirodown/issues/40 and then set the \x[media-source-type] option in your \x[cirodown-json]:
 ``
 {
   media_source_type = "media_repo"
@@ -926,8 +926,7 @@ Now, simply drop your images into the `my-tutorial-media` repository and use the
 ``
 \Image[Image_with_a_descriptive_title.jpeg]
 ``
-
-`cirodown` will even automatically add and push used images in the `my-tutorial-media` repository for you during publishing!
+`cirodown` will even automatically add and push used images in the `my-tutorial-media` repository for you \x[publish][during publishing]!
 
 You should then use the following rules inside `my-tutorial-media`:
 * give every file a very descriptive and unique name as a full English sentence

@@ -49,9 +49,12 @@ class AstNode {
     this.column = column;
     // This is the Nth macro of this type that appears in the document.
     this.macro_count = undefined;
-    // This is the Nth indexed macro (one that can be linked to)
-    // of this type that appears in the document.
-    this.macro_count_indexed = undefined;
+    // This is the Nth macro of this type that is visible,
+    // and therefore increments counts such as Figure 1), Figure 2), etc.
+    // All indexed IDs (those that can be linked to) are also visible, but
+    // it is possible to force non-indexed IDs to count as well with
+    // caption_number_visible.
+    this.macro_count_visible = undefined;
     this.parent_node = options.parent_node;
     this.validation_error = undefined;
     this.validation_output = {};
@@ -391,6 +394,9 @@ class Macro {
     if (!('auto_parent_skip' in options)) {
       options.auto_parent_skip = new Set([]);
     }
+    if (!('caption_number_visible' in options)) {
+      options.caption_number_visible = function(ast) { return false; }
+    }
     if (!('caption_prefix' in options)) {
       options.caption_prefix = capitalize_first_letter(name);
     }
@@ -398,7 +404,7 @@ class Macro {
       options.default_x_style_full = true;
     }
     if (!('get_number' in options)) {
-      options.get_number = function(ast, context) { return ast.macro_count_indexed; }
+      options.get_number = function(ast, context) { return ast.macro_count_visible; }
     }
     if (!('id_prefix' in options)) {
       options.id_prefix = title_to_id(name);
@@ -1631,7 +1637,10 @@ function macro_image_video_block_convert_function(content_func, source_func) {
       }
     }
     let alt_arg;
-    const has_caption = ast.id !== undefined && ast.index_id;
+    const has_caption = ast.id !== undefined && (
+      ast.index_id ||
+      context.macros[ast.macro_name].options.caption_number_visible(ast)
+    );
     if (ast.args.alt === undefined) {
       if (has_caption) {
         alt_arg = undefined;
@@ -1973,7 +1982,7 @@ function parse(tokens, macros, options, extra_returns={}) {
   // Normally only the toplevel includer will enter this code section.
   if (!options.from_include) {
     const macro_counts = {};
-    const macro_counts_indexed = {};
+    const macro_counts_visible = {};
     let header_graph_last_level;
     const header_graph_stack = new Map();
     let is_first_header = true;
@@ -2181,14 +2190,13 @@ function parse(tokens, macros, options, extra_returns={}) {
           message += `line ${previous_ast.line} colum ${previous_ast.column}`;
           parse_error(state, message, ast.line, ast.column);
         }
-
-        if (index_id) {
-          if (!(macro_name in macro_counts_indexed)) {
-            macro_counts_indexed[macro_name] = 0;
+        if (index_id || macro.options.caption_number_visible(ast)) {
+          if (!(macro_name in macro_counts_visible)) {
+            macro_counts_visible[macro_name] = 0;
           }
-          const macro_count = macro_counts_indexed[macro_name] + 1;
-          macro_counts_indexed[macro_name] = macro_count;
-          ast.macro_count_indexed = macro_count;
+          const macro_count = macro_counts_visible[macro_name] + 1;
+          macro_counts_visible[macro_name] = macro_count;
+          ast.macro_count_visible = macro_count;
         }
       }
 
@@ -2672,7 +2680,11 @@ const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [
     positive_nonzero_integer: true,
   }),
 ];
-const MACRO_IMAGE_VIDEO_OPTIONS = {}
+const MACRO_IMAGE_VIDEO_OPTIONS = {
+  caption_number_visible: function (ast) {
+    return 'source' in ast.args || 'description' in ast.args;
+  }
+}
 const MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS = [
   new MacroArgument({
     name: 'src',

@@ -802,12 +802,66 @@ assert_no_error('cross reference auto default',
 
 \\x[my-header]
 `);
-assert_no_error('cross reference full boolean style correct',
+assert_no_error('cross reference full boolean style without value',
   `\\h[1][My header]
 
 \\x[my-header]{full}
-`, 3, 21);
-assert_error('cross reference full boolean style with value',
+`,
+  [
+    a('h', undefined, {
+      level: [t('1')],
+      title: [t('abc')],
+    }),
+    a('p', [
+      a('x', undefined, {
+        full: [],
+        href: [t('abc')],
+      }),
+    ]),
+  ]
+);
+assert_convert_ast('cross reference full boolean style with value 0',
+  `\\h[1][abc]
+
+\\x[abc]{full=0}
+`,
+  [
+    a('h', undefined, {
+      level: [t('1')],
+      title: [t('abc')],
+    }),
+    a('p', [
+      a('x', undefined, {
+        full: [t('0')],
+        href: [t('abc')],
+      }),
+    ]),
+  ]
+);
+assert_convert_ast('cross reference full boolean style with value 1',
+  `\\h[1][abc]
+
+\\x[abc]{full=1}
+`,
+  [
+    a('h', undefined, {
+      level: [t('1')],
+      title: [t('abc')],
+    }),
+    a('p', [
+      a('x', undefined, {
+        full: [t('1')],
+        href: [t('abc')],
+      }),
+    ]),
+  ]
+);
+assert_error('cross reference full boolean style with invalid value 2',
+  `\\h[1][abc]
+
+\\x[abc]{full=2}
+`, 3, 8);
+assert_error('cross reference full boolean style with invalid value true',
   `\\h[1][abc]
 
 \\x[abc]{full=true}

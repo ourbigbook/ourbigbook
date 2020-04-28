@@ -31,7 +31,7 @@ header {
   a {
     /* Make buttons occupy the full height of the header bar.
      * https://stackoverflow.com/questions/28254332/how-to-vertically-center-the-contents-of-a-flexbox-item/28254903#28254903 */
-    align-items:center;
+    align-items: center;
     align-self: stretch;
     display: flex;
 

@@ -45,15 +45,47 @@ padding-right: 15px;
 }
 
 > * {
-  padding-left: 20px;
+  align-items: stretch;
+  display: flex;
+  > :first-child {
+    // self link a
+    align-items: stretch;
+    display: flex;
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: 20px;
+    margin-right: 10px;
+    text-align: center;
+    user-select: none;
+    visibility: hidden;
+    > :first-child {
+      // span
+      align-self: center;
+      justify-content: center;
+      display: flex;
+      flex-grow: 1;
+    }
+  }
+  &:hover > :first-child {
+    background-color: $target-background-color;
+    visibility: visible;
+  }
+  > :last-child {
+    // div with actual content
+    flex-grow: 1;
+    > :first-child {
+      margin-top: $p-margin-vert / 2;
+    }
+    > :last-child {
+      margin-bottom: $p-margin-vert / 2;
+    }
+  }
 }
 
 // Hide by default, show if first child of hovered element.
 .hide-hover:first-child {
-  @include hidden;
 }
 > :hover > .hide-hover:first-child {
-  @include visible;
 }
 .hide-hover {
   position: absolute;

@@ -143,10 +143,15 @@ class AstNode {
       if (
         parent_node !== undefined &&
         parent_node.macro_name === Macro.TOPLEVEL_MACRO_NAME &&
-        this.id !== undefined &&
-        macro.toplevel_link
+        this.id !== undefined
       ) {
-        out = `<div>${html_hide_hover_link(this.id)}${out}</div>`;
+        let pref;
+        if (macro.toplevel_link) {
+          pref = `${html_hide_hover_link(this.id)}`;
+        } else {
+          pref = `<span><span></span></span>`;
+        }
+        out = `<div>${pref}<div>${out}</div></div>`;
       }
     }
 
@@ -1548,7 +1553,7 @@ function html_hide_hover_link(id) {
     return '';
   } else {
     let href = html_attr('href', '#' + html_escape_attr(id));
-    return `<span class="hide-hover"><a${href}>${UNICODE_LINK}</a></span>`;
+    return `<a${href}><span>${UNICODE_LINK}</span></a>`;
   }
 }
 

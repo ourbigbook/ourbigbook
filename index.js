@@ -1606,9 +1606,18 @@ function macro_list() {
 }
 exports.macro_list = macro_list;
 
+
+const macro_image_video_block_convert_function_source_types = make_enum([
+  'UNKNOWN',
+  'WIKIMEDIA',
+  'YOUTUBE',
+]);
+const macro_image_video_block_convert_function_source_types_wikimedia_re = new RegExp('^https?://upload.wikimedia.org/wikipedia/commons/');
+const macro_image_video_block_convert_function_source_types_youtube_re = new RegExp('^https?://(youtube.com|youtu.be)/');
+
 function macro_image_video_block_convert_function(content_func, source_func) {
   if (source_func === undefined) {
-    source_func = function(ast, context, src) {
+    source_func = function(ast, context, src, source_type) {
       return convert_arg(ast.args.source, context);
     }
   }
@@ -1626,8 +1635,16 @@ function macro_image_video_block_convert_function(content_func, source_func) {
     if (description !== '') {
       description = '. ' + description;
     }
-    let src = convert_arg(ast.args.src, context);
-    let source = source_func(ast, context, src);
+    let src = convert_arg_noescape(ast.args.src, context);
+    let source_type;
+    if (src.match(macro_image_video_block_convert_function_source_types_wikimedia_re)) {
+      source_type = macro_image_video_block_convert_function_source_types.WIKIMEDIA;
+    } else if (src.match(macro_image_video_block_convert_function_source_types_youtube_re)) {
+      source_type = macro_image_video_block_convert_function_source_types.YOUTUBE;
+    } else {
+      source_type = macro_image_video_block_convert_function_source_types.UNKNOWN;
+    }
+    let source = source_func(ast, context, src, source_type);
     if (source !== '') {
       source = `<a ${html_attr('href', source)}>Source</a>.`;
       if (description === '') {
@@ -1656,7 +1673,7 @@ function macro_image_video_block_convert_function(content_func, source_func) {
     } else {
       alt = html_attr('alt', html_escape_attr(convert_arg(alt_arg, context)));;
     }
-    ret += content_func(ast, context, src, rendered_attrs, alt);
+    ret += content_func(ast, context, src, rendered_attrs, alt, source_type);
     if (has_caption) {
       ret += `<figcaption>${Macro.x_text(ast, context, {href_prefix: href_prefix})}${description}${source}</figcaption>\n`;
     }
@@ -2987,7 +3004,7 @@ const DEFAULT_MACRO_LIST = [
   new Macro(
     'Image',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
-    macro_image_video_block_convert_function(function (ast, context, src, rendered_attrs, alt) {
+    macro_image_video_block_convert_function(function (ast, context, src, rendered_attrs, alt, source_type) {
       return `<a${html_attr('href', src)}><img${html_attr('src', src)}${html_attr('loading', 'lazy')}${rendered_attrs}${alt}></a>\n`;
     }),
     Object.assign(
@@ -3359,16 +3376,50 @@ const DEFAULT_MACRO_LIST = [
     'Video',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
     macro_image_video_block_convert_function(
-      function (ast, context, src, rendered_attrs, alt) {
-        if (ast.validation_output.youtube.boolean) {
-          let start;
+      function (ast, context, src, rendered_attrs, alt, source_type) {
+        if (
+          ast.validation_output.youtube.boolean ||
+          (
+            source_type === macro_image_video_block_convert_function_source_types.YOUTUBE &&
+            !ast.validation_output.youtube.given
+          )
+        ) {
+          let url_start_time;
+          let video_id;
+          if (ast.validation_output.youtube.boolean) {
+            video_id = src;
+          } else {
+            const url = new URL(src);
+            const url_params = url.searchParams;
+            if (url_params.has('t')) {
+              url_start_time = url_params.get('t');
+            }
+            if (url.hostname === 'youtube.com') {
+              if (url_params.has('v')) {
+                video_id = url_params.get('v')
+              } else {
+                let message = `youtube URL without video ID "${src}"`;
+                render_error(context, message, ast.line, ast.column);
+                return error_message_in_output(message, context);
+              }
+            } else {
+              video_id = url.pathname.substr(1);
+            }
+          }
+          let start_time;
           if ('start' in ast.args) {
-            start = `?start=${ast.validation_output.start.positive_nonzero_integer}`;
+            start_time = ast.validation_output.start.positive_nonzero_integer;
+          } else if (url_start_time !== undefined) {
+            start_time = url_start_time;
+          }
+          let start;
+          if (start_time !== undefined) {
+            start = `?start=${start_time}`;
           } else {
             start = '';
           }
-          return `<iframe width="560" height="${DEFAULT_MEDIA_HEIGHT}" src="https://www.youtube.com/embed/${src}${start}" ` +
-                `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+          return `<iframe width="560" height="${DEFAULT_MEDIA_HEIGHT}" src="https://www.youtube.com/embed/${html_escape_attr(video_id)}${start}" ` +
+                 `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
         } else {
           let start;
           if ('start' in ast.args) {
@@ -3380,11 +3431,18 @@ const DEFAULT_MACRO_LIST = [
           return `<video${html_attr('src', src + start)}${rendered_attrs} controls>${alt}</video>\n`;
         }
       },
-      function (ast, context, src) {
+      function (ast, context, src, source_type) {
         if ('source' in ast.args) {
           return convert_arg(ast.args.source, context);
-        } else if ('youtube' in ast.args) {
+        } else if (ast.validation_output.youtube.boolean) {
           return `https://youtube.com/watch?v=${src}`;
+        } else if (source_type == macro_image_video_block_convert_function.WIKIMEDIA) {
+          // TODO
+        } else if (
+          source_type == macro_image_video_block_convert_function_source_types.YOUTUBE &&
+          !ast.validation_output.youtube.given
+        ) {
+          return src;
         } else {
           return '';
         }

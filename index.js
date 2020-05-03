@@ -2770,12 +2770,13 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       let content_arg = ast.args.content;
-      if (content_arg === undefined) {
-        content_arg = ast.args.href;
+      let href = convert_arg(ast.args.href, context)
+      let content = convert_arg(ast.args.content, context);
+      if (content === '') {
+        content = href;
       }
-      let attrs = html_convert_attrs_id(ast, context, ['href']);
-      let content = convert_arg(content_arg, context);
-      return `<a${attrs}>${content}</a>`;
+      let attrs = html_convert_attrs_id(ast, context);
+      return `<a${html_attr('href',  href)}${attrs}>${content}</a>`;
     },
     {
       phrasing: true,

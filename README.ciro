@@ -1800,6 +1800,14 @@ For example, when the \x[internal-cross-references][ID of a node is derived from
 In this example, see how the contents of the code block \c[`with code`] were rendered as plaintext and used for the ID.
 ``
 
+=== Security
+
+Cirodown is designed to be XSS safe by default. If we add any non-XSS safe constructs, these should be enabled with a non-default flag.
+
+Of course, we are walking on eggs, and this is hard to assert, so the best thing to do later on will be to parse the output e.g. with https://developer.mozilla.org/en-US/docs/Web/API/DOMParser[`DOMParser`] to ensure that it is valid and does not contain any `script` tags, but it is not as simple as that: https://stackoverflow.com/questions/37435077/execute-javascript-for-xss-without-script-tags/61588322#61588322
+
+About server safety, we have to think about it. E.g. stuff like \x[prepublish] already allows ACE.
+
 == Tooling
 
 Unlike all languages which rely on ad-hoc tooling, we will support every single tool that is required and feasible to be in this repository in this repository, in a centralized manner.
@@ -2104,6 +2112,26 @@ Cirodown configuration file that affects the behaviour of cirodown for all files
 
 `cirodown.json` not used for input from stdin, since we are mostly doing quick tests in that case.
 
+===== `media_base_url`
+{id=media-base-url}
+
+TODO implement set the base URL where media will be served from.
+
+Default: for a GitHub repository called `my-tutorial`, append the `-media` suffix and use `my-tutorial-media`.
+
+Further rationale at: \x[where-to-store-images].
+
+===== `media_source_type`
+{id=media-source-type}
+
+TODO implement:
+* `local`: tracked in the current Git repository, no further magic is done
+\l[
+  `media_repo`: tracked in a separate media repository, defaults to `../<project-name>-media/`
+
+  When \x[publish][publishing], Cirodown searches for files that were used in the build but not added to the media directory, and automatically does a `git add`, `commit` and `push` for you!
+]
+
 ===== `prepublish`
 {id=prepublish}
 
@@ -2120,25 +2148,23 @@ This means that you can use this script to place or remove files from the final 
 
 If the `prepublish` script returns with a non-zero exit value, the publish is aborted.
 
-===== `media_source_type`
-{id=media-source-type}
+===== `redirects`
+{id=redirects}
 
-TODO implement:
-* `local`: tracked in the current Git repository, no further magic is done
-\l[
-  `media_repo`: tracked in a separate media repository, defaults to `../<project-name>-media/`
+Create HTML redirects from \x[the-toplevel-header][toplevel headers] to arbitrary IDs, for example:
+``
+"redirects": {
+  "a-toplevel-directory": "not-readme",
+  "quick-start-redirect-test": "quick-start"
+},
+``
+The HTML files are generated whenever a directory compilation is required, e.g. as in `cirodown .`.
 
-  When \x[publish][publishing], Cirodown searches for files that were used in the build but not added to the media directory, and automatically does a `git add`, `commit` and `push` for you!
-]
+The sources must be toplevel headers for now, because it is harder to implement redirections from `#someid` as that would require JavaScript: https://github.com/cirosantilli/cirodown/issues/48[].
 
-===== `media_base_url`
-{id=media-base-url}
-
-TODO implement set the base URL where media will be served from.
-
-Default: for a GitHub repository called `my-tutorial`, append the `-media` suffix and use `my-tutorial-media`.
-
-Further rationale at: \x[where-to-store-images].
+This feature can be seen live on this document by visiting our tests:
+* \a[not-readme-redirect-test]: redirects to \x[not-readme]
+* \a[quick-start-redirect-test]: redirects to \x[quick-start]
 
 === Editor with preview
 

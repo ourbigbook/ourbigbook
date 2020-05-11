@@ -1107,7 +1107,7 @@ function array_equals(arr1, arr2) {
 }
 
 function basename(str) {
-    return str.substr(str.lastIndexOf('/') + 1);
+    return str.substr(str.lastIndexOf(URL_SEP) + 1);
 }
 
 function capitalize_first_letter(string) {
@@ -1181,17 +1181,27 @@ function convert(
     options = {};
   }
   if (!('body_only' in options)) { options.body_only = false; }
-  if (!('template_vars' in options)) { options.template_vars = {}; }
-  if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
+  if (!('cirodown_json' in options)) { options.cirodown_json = {}; }
+    const cirodown_json = options.cirodown_json;
+    {
+      if (!('media-providers' in cirodown_json)) { cirodown_json['media-providers'] = {}; }
+      {
+        const media_providers = cirodown_json['media-providers'];
+        if (!('local' in media_providers)) { media_providers.local = {}; }
+        if (!('path' in media_providers.local)) { media_providers.local.path = ''; }
+        if (!('github' in media_providers)) { media_providers.github = {}; }
+        if (!('remote' in media_providers.github)) { media_providers.github.remote = 'TODO determine from git remote origin if any'; }
+      }
+    }
   if (!('from_include' in options)) { options.from_include = false; }
-  if (!('include_path_set' in options)) { options.include_path_set = new Set(); }
-  if (!('id_provider' in options)) {
-    options.id_provider = undefined;
-  }
   if (!('html_embed' in options)) { options.html_embed = false; }
   if (!('html_single_page' in options)) { options.html_single_page = false; }
   if (!('html_x_extension' in options)) { options.html_x_extension = true; }
   if (!('h_level_offset' in options)) { options.h_level_offset = 0; }
+  if (!('id_provider' in options)) {
+    options.id_provider = undefined;
+  }
+  if (!('include_path_set' in options)) { options.include_path_set = new Set(); }
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('render' in options)) { options.render = true; }
   if (!('start_line' in options)) { options.start_line = 1; }
@@ -1200,6 +1210,8 @@ function convert(
   if (!('show_tokenize' in options)) { options.show_tokenize = false; }
   if (!('show_tokens' in options)) { options.show_tokens = false; }
   if (!('template' in options)) { options.template = undefined; }
+  if (!('template_vars' in options)) { options.template_vars = {}; }
+    if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
   // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
   if (!('toplevel_id' in options)) { options.toplevel_id = undefined; }
   const macros = macro_list_to_macros();
@@ -1571,7 +1583,10 @@ function macro_image_video_block_convert_function(ast, context) {
   if (description !== '') {
     description = '. ' + description;
   }
-  let {src, source, source_type} = macro_image_video_source(ast, context);
+  let {error_message, src, source, source_type} = macro_image_video_source(ast, context);
+  if (error_message !== undefined) {
+    return error_message;
+  }
   if (source !== '') {
     source = `<a ${html_attr('href', source)}>Source</a>.`;
     if (description === '') {
@@ -1687,7 +1702,11 @@ function parse(tokens, macros, options, extra_returns={}) {
   // Some AST postprocessing decisions need information from the render step,
   // so we define a minimal context here. This is ugly and will case problems
   // one day, but it is also simple.
-  const id_context = {'macros': macros};
+  const id_context = {
+    errors: [],
+    macros: macros,
+    options: options,
+  };
   // IDs that are indexed: you can link to those.
   let indexed_ids = {};
   // Non-indexed-ids: auto-generated numeric ID's like p-1, p-2, etc.
@@ -2718,6 +2737,9 @@ const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [
     positive_nonzero_integer: true,
   }),
   new MacroArgument({
+    name: 'provider',
+  }),
+  new MacroArgument({
     name: 'source',
     elide_link_only: true,
   }),
@@ -2728,6 +2750,24 @@ const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [
 ];
 function macro_image_video_source(ast, context) {
   let src = convert_arg_noescape(ast.args.src, context);
+  let error_message;
+  let provider;
+  if ('provider' in ast.args) {
+    provider = convert_arg_noescape(ast.args.provider, context);
+  } else {
+    provider = 'local';
+  }
+  if (provider === 'local') {
+    const path = context.options.cirodown_json['media-providers'].local.path;
+    if (path !== '') {
+      src = path + URL_SEP + src;
+    }
+  } else if (provider === 'github') {
+    src = `https://raw.githubusercontent.com/${context.options.cirodown_json['media-providers'].github.remote}/master/${src}`;
+  } else {
+    error_message = `unknown media provider: "${html_escape_attr(provider)}"`;
+    render_error(context, error_message, ast.args.provider.line, ast.args.provider.column);
+  }
   let source_type;
   if (src.match(macro_image_video_block_convert_function_source_types_wikimedia_re)) {
     source_type = macro_image_video_block_convert_function_source_types.WIKIMEDIA;
@@ -2737,6 +2777,7 @@ function macro_image_video_source(ast, context) {
     source_type = macro_image_video_block_convert_function_source_types.UNKNOWN;
   }
   return {
+    error_message: error_message,
     source: context.macros[ast.macro_name].options.source_func(ast, context, src, source_type),
     src: src,
     type: source_type,
@@ -2757,6 +2798,7 @@ const MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS = [
     name: 'alt',
   }),
 ];
+const URL_SEP = '/';
 const DEFAULT_MACRO_LIST = [
   new Macro(
     Macro.LINK_MACRO_NAME,

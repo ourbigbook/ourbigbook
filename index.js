@@ -1045,10 +1045,12 @@ class Tokenizer {
       let i = start_i;
       while (true) {
         if (this.chars[i - 1] === '\n') {
-          if (!array_contains_array_at(this.chars, i, INSANE_LIST_INDENT.repeat(this.list_level))) {
+          if (this.chars[i] === '\n') {
+          } else if (array_contains_array_at(this.chars, i, INSANE_LIST_INDENT.repeat(this.list_level))) {
+            i += INSANE_LIST_INDENT.length * this.list_level;
+          } else {
             this.error(`literal argument with indent smaller than current insane list`, start_line, start_column);
           }
-          i += INSANE_LIST_INDENT.length * this.list_level;
         }
         if (i < end_i) {
           plaintext += this.chars[i];

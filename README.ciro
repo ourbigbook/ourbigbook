@@ -1147,6 +1147,16 @@ cd
 ]]]
 ]]]]
 
+Block code can have a title, e.g. see this one: \x[my-nice-code]{full}:
+\cirodown_example[[
+``
+ab
+cd
+``
+{id=my-nice-code}
+{title=My nice code block}
+]]
+
 == Mathematics `$`, `$$`, `\m` and `\M`
 {id=math}
 

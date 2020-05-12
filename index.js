@@ -564,25 +564,28 @@ class Tokenizer {
    * The current index must only be incremented through this function
    * and never directly.
    *
+   * @param {Number} how many to consume
    * @return {boolean} true iff we are not reading past the end of the input
    */
-  consume() {
-    this.log_debug('consume');
-    this.log_debug('this.i: ' + this.i);
-    this.log_debug('this.cur_c: ' + this.cur_c);
-    this.log_debug();
-    if (this.chars[this.i] === '\n') {
-      this.line += 1;
-      this.column = 1;
-    } else {
-      this.column += 1;
+  consume(n=1) {
+    for (let done = 0; done < n; done++) {
+      this.log_debug('consume');
+      this.log_debug('this.i: ' + this.i);
+      this.log_debug('this.cur_c: ' + this.cur_c);
+      this.log_debug();
+      if (this.chars[this.i] === '\n') {
+        this.line += 1;
+        this.column = 1;
+      } else {
+        this.column += 1;
+      }
+      this.i += 1;
+      if (this.i >= this.chars.length) {
+        this.cur_c = undefined;
+        return false;
+      }
+      this.cur_c = this.chars[this.i];
     }
-    this.i += 1;
-    if (this.i >= this.chars.length) {
-      this.cur_c = undefined;
-      return false;
-    }
-    this.cur_c = this.chars[this.i];
     return true;
   }
 
@@ -629,12 +632,12 @@ class Tokenizer {
       this.cur_c === '\n' &&
       !this.in_insane_header
     ) {
-      const peek = this.peek();
+      const full_indent = INSANE_LIST_INDENT.repeat(this.list_level);
       if (
-        peek === START_POSITIONAL_ARGUMENT_CHAR ||
-        peek === START_NAMED_ARGUMENT_CHAR
+        array_contains_array_at(this.chars, this.i + 1, full_indent + START_POSITIONAL_ARGUMENT_CHAR) ||
+        array_contains_array_at(this.chars, this.i + 1, full_indent + START_NAMED_ARGUMENT_CHAR)
       ) {
-        this.consume();
+        this.consume(full_indent.length + 1);
       }
     }
   }

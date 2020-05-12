@@ -1221,12 +1221,10 @@ $${show=0}
 ]]
 We make it invisible because this block only contains KaTeX definitions, and should not render to anything.
 
-Then the second math block uses those definitions TODO pending upstream tag bump: https://github.com/KaTeX/KaTeX/pull/2091 or us forking: https://github.com/cirosantilli/cirodown/issues/67
-``
+Then the second math block uses those definitions:
 $$
 \foo
 $$
-``
 
 Analogously with `\def`, definition:
 \cirodown_example[[

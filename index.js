@@ -1264,6 +1264,7 @@ function convert(
   let context = {
       errors: [],
       extra_returns: extra_returns,
+      include_path_set: new Set(options.include_path_set),
       macros: macros,
       options: options,
   };
@@ -1309,7 +1310,6 @@ function convert(
   }
   extra_returns.ast = ast;
   extra_returns.context = context;
-  extra_returns.context.include_path_set = sub_extra_returns.include_path_set;
   extra_returns.ids = sub_extra_returns.ids;
   extra_returns.errors.push(...sub_extra_returns.errors);
   let output;
@@ -1712,7 +1712,6 @@ function object_subset(source_object, keys) {
  */
 function parse(tokens, macros, options, context, extra_returns={}) {
   extra_returns.errors = [];
-  extra_returns.include_path_set = new Set(options.include_path_set);
   let state = {
     extra_returns: extra_returns,
     i: 0,
@@ -1782,8 +1781,8 @@ function parse(tokens, macros, options, context, extra_returns={}) {
     id_provider = local_id_provider;
   }
   const include_options = Object.assign({}, options);
-  include_options.include_path_set = extra_returns.include_path_set;
-  extra_returns.include_path_set.add(options.input_path);
+  include_options.include_path_set = context.include_path_set;
+  context.include_path_set.add(options.input_path);
   while (todo_visit.length > 0) {
     const [parent_arg, ast] = todo_visit.pop();
     const macro_name = ast.macro_name;
@@ -1792,7 +1791,7 @@ function parse(tokens, macros, options, context, extra_returns={}) {
     if (macro_name === Macro.INCLUDE_MACRO_NAME) {
       const href = convert_arg_noescape(ast.args.href, context);
       cur_header.includes.push(href);
-      if (extra_returns.include_path_set.has(href)) {
+      if (context.include_path_set.has(href)) {
         let message = `circular include detected to: "${href}"`;
         parse_error(
           state,
@@ -2040,6 +2039,69 @@ function parse(tokens, macros, options, context, extra_returns={}) {
         // This allows us to skip nodes, or push multiple nodes if needed.
         parent_arg.push(ast);
 
+        // Do some error checking. If no errors are found, convert normally. Save output on out.
+        {
+          const name_to_arg = macro.name_to_arg;
+          // First pass sets defaults on missing arguments.
+          for (const argname in name_to_arg) {
+            ast.validation_output[argname] = {};
+            const macro_arg = name_to_arg[argname];
+            if (argname in ast.args) {
+              ast.validation_output[argname].given = true;
+            } else {
+              ast.validation_output[argname].given = false;
+              if (macro_arg.mandatory) {
+                ast.validation_error = [
+                  `missing mandatory argument ${argname} of ${ast.macro_name}`,
+                  ast.line, ast.column];
+                break;
+              }
+              if (macro_arg.default !== undefined) {
+                ast.args[argname] = new AstArgument([new PlaintextAstNode(ast.line, ast.column, macro_arg.default)]);
+              } else if (macro_arg.boolean) {
+                ast.args[argname] = new AstArgument([new PlaintextAstNode(ast.line, ast.column, '0')]);
+              }
+            }
+          }
+          // Second pass processes the values including defaults.
+          for (const argname in name_to_arg) {
+            const macro_arg = name_to_arg[argname];
+            if (argname in ast.args) {
+              const arg = ast.args[argname];
+              if (macro_arg.boolean) {
+                let arg_string;
+                if (arg.length > 0) {
+                  arg_string = convert_arg_noescape(arg, context);
+                } else {
+                  arg_string = '1';
+                }
+                if (arg_string === '0') {
+                  ast.validation_output[argname]['boolean'] = false;
+                } else if (arg_string === '1') {
+                  ast.validation_output[argname]['boolean'] = true;
+                } else {
+                  ast.validation_output[argname]['boolean'] = false;
+                  ast.validation_error = [
+                    `boolean argument "${argname}" of "${ast.macro_name}" has invalid value: "${arg_string}", only "0" and "1" are allowed`,
+                    arg.line, arg.column];
+                  break;
+                }
+              }
+              if (macro_arg.positive_nonzero_integer) {
+                const arg_string = convert_arg_noescape(arg, context);
+                const int_value = parseInt(arg_string);
+                ast.validation_output[argname]['positive_nonzero_integer'] = int_value;
+                if (!Number.isInteger(int_value) || !(int_value > 0)) {
+                  ast.validation_error = [
+                    `argument "${argname}" of macro "${ast.macro_name}" must be a positive non-zero integer, got: "${arg_string}"`,
+                    arg.line, arg.column];
+                  break;
+                }
+              }
+            }
+          }
+        }
+
         // Loop over the child arguments. We do this rather than recurse into them
         // to be able to easily remove or add nodes to the tree during this AST
         // post-processing.
@@ -2226,69 +2288,6 @@ function parse(tokens, macros, options, context, extra_returns={}) {
           header_graph_last_level = cur_header_level;
           if (ast.includes.length > 0) {
             context.headers_with_include.push(ast);
-          }
-        }
-
-        // Do some error checking. If no errors are found, convert normally. Save output on out.
-        {
-          const name_to_arg = macro.name_to_arg;
-          // First pass sets defaults on missing arguments.
-          for (const argname in name_to_arg) {
-            ast.validation_output[argname] = {};
-            const macro_arg = name_to_arg[argname];
-            if (argname in ast.args) {
-              ast.validation_output[argname].given = true;
-            } else {
-              ast.validation_output[argname].given = false;
-              if (macro_arg.mandatory) {
-                ast.validation_error = [
-                  `missing mandatory argument ${argname} of ${ast.macro_name}`,
-                  ast.line, ast.column];
-                break;
-              }
-              if (macro_arg.default !== undefined) {
-                ast.args[argname] = new AstArgument([new PlaintextAstNode(ast.line, ast.column, macro_arg.default)]);
-              } else if (macro_arg.boolean) {
-                ast.args[argname] = new AstArgument([new PlaintextAstNode(ast.line, ast.column, '0')]);
-              }
-            }
-          }
-          // Second pass processes the values including defaults.
-          for (const argname in name_to_arg) {
-            const macro_arg = name_to_arg[argname];
-            if (argname in ast.args) {
-              const arg = ast.args[argname];
-              if (macro_arg.boolean) {
-                let arg_string;
-                if (arg.length > 0) {
-                  arg_string = convert_arg_noescape(arg, context);
-                } else {
-                  arg_string = '1';
-                }
-                if (arg_string === '0') {
-                  ast.validation_output[argname]['boolean'] = false;
-                } else if (arg_string === '1') {
-                  ast.validation_output[argname]['boolean'] = true;
-                } else {
-                  ast.validation_output[argname]['boolean'] = false;
-                  ast.validation_error = [
-                    `boolean argument "${argname}" of "${ast.macro_name}" has invalid value: "${arg_string}", only "0" and "1" are allowed`,
-                    arg.line, arg.column];
-                  break;
-                }
-              }
-              if (macro_arg.positive_nonzero_integer) {
-                const arg_string = convert_arg_noescape(arg, context);
-                const int_value = parseInt(arg_string);
-                ast.validation_output[argname]['positive_nonzero_integer'] = int_value;
-                if (!Number.isInteger(int_value) || !(int_value > 0)) {
-                  ast.validation_error = [
-                    `argument "${argname}" of macro "${ast.macro_name}" must be a positive non-zero integer, got: "${arg_string}"`,
-                    arg.line, arg.column];
-                  break;
-                }
-              }
-            }
           }
         }
 

@@ -438,6 +438,11 @@ To inspect the the ID database to debug it, you can use:
 sqlite3 out/db.sqlite3 .dump
 ``
 
+You can force `cirodown` to not use the ID database with `--no-db`:
+``
+./cirodown --no-db .
+``
+
 === Automatic ID from title
 
 If a \x[the-toplevel-header][non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:

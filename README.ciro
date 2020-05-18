@@ -377,7 +377,7 @@ To also show the section auto-generated number as in "Section X.Y My title" we a
 Compare \x[fig-my-test-image]{full=0} vs \x[fig-my-test-image]{full=1}.
 ]]
 
-=== Restrictions of using `\x` within `title
+=== `\x` within `title` restrictions
 {id=x-within-title-restrictions}
 
 If you use `\x` within a `title`, which most commonly happens for \x[images][image titles], that can generate complex dependencies, which would either be harder to implement, or lead to infinite recursion: https://github.com/cirosantilli/cirodown/issues/34
@@ -403,7 +403,7 @@ Wee see therefore a complex ID dependency emerge:
 While it is technically possible to implement this, it would require a bit of extra work which we don't want to put in right now, and it would be very confusing for end users reading the source anyways.
 
 As a result, the above example currently gives errors, and you could make an equivalent explicit version that has no errors either by giving explicit titles to each image that has an `x` in it (this is normally the saner approach):
-\cirodown_example[[
+``
 \Image[image.jpg]
 {id=that-this-my-id3}
 {title=That \x[this-my-id3]}
@@ -413,10 +413,9 @@ As a result, the above example currently gives errors, and you could make an equ
 \Image[image.jpg]
 {id=this-my-id3}
 {title=This \x[my-id3]}
-]]
+``
 or by setting explicit content to every `x` inside a `title` for which an ID wasn't given as in:
 ``
-\cirodown_example[[
 \Image[image.jpg]
 {title=That \x[this-my-id3][This My id3]}
 
@@ -425,7 +424,7 @@ or by setting explicit content to every `x` inside a `title` for which an ID was
 \Image[image.jpg]
 {id=this-my-id3}
 {title=This \x[my-id3][My id3]}
-]]
+``
 
 And for an example of infinite recursion, consider:
 ``
@@ -2432,7 +2431,7 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 === TODO
 
-* \x[id_scope]
+* \x[id-scope]
 * correct ID generation algorithm to be Unicode robust
 * local downloads and single HTML page with image / script embeds
 * image management: upload to separate media directory

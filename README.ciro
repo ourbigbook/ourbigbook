@@ -388,17 +388,17 @@ To prevent such problems, Cirodown emits an error if:
 
 For example, consider the code:
 ``
-\Image[image.jpg]{title=That \x[this-my-id3]}
+\Image[image.jpg]{title=That \x[this-my-id3].}
 
-\Image[image.jpg]{title=My id3}
+\Image[image.jpg]{title=My id3.}
 
-\Image[image.jpg]{title=This \x[my-id3]}
+\Image[image.jpg]{title=This \x[my-id3].}
 ``
 
 Wee see therefore a complex ID dependency emerge:
-* `\Image[image.jpg]{title=My id3}` has `my-id3`
-* `\Image[image.jpg]{title=This \x[my-id3]}` renders the title as `This My Id3`, and so would have ID `this-my-id3`
-* `\Image[image.jpg]{title=That \x[this-my-id3]}` can finally render the title as `That This My Id3` and get ID `that-this-my-id3`
+* `\Image[image.jpg]{title=My id3.}` has `my-id3`
+* `\Image[image.jpg]{title=This \x[my-id3].}` renders the title as `This My Id3`, and so would have ID `this-my-id3`
+* `\Image[image.jpg]{title=That \x[this-my-id3].}` can finally render the title as `That This My Id3` and get ID `that-this-my-id3`
 
 While it is technically possible to implement this, it would require a bit of extra work which we don't want to put in right now, and it would be very confusing for end users reading the source anyways.
 
@@ -406,24 +406,24 @@ As a result, the above example currently gives errors, and you could make an equ
 ``
 \Image[image.jpg]
 {id=that-this-my-id3}
-{title=That \x[this-my-id3]}
+{title=That \x[this-my-id3].}
 
-\Image[image.jpg]{title=My id3}
+\Image[image.jpg]{title=My id3.}
 
 \Image[image.jpg]
 {id=this-my-id3}
-{title=This \x[my-id3]}
+{title=This \x[my-id3].}
 ``
 or by setting explicit content to every `x` inside a `title` for which an ID wasn't given as in:
 ``
 \Image[image.jpg]
-{title=That \x[this-my-id3][This My id3]}
+{title=That \x[this-my-id3][This My id3].}
 
-\Image[image.jpg]{title=My id3}
+\Image[image.jpg]{title=My id3.}
 
 \Image[image.jpg]
 {id=this-my-id3}
-{title=This \x[my-id3][My id3]}
+{title=This \x[my-id3][My id3].}
 ``
 
 And for an example of infinite recursion, consider:
@@ -530,7 +530,7 @@ Note how those rules leave non ASCII Unicode characters untouched, as capitaliza
 
 So for example, the following automatic IDs would be generated: \x[table-examples-of-automatically-generated-ids].
 
-\table{title=Examples of automatically generated IDs}
+\table{title=Examples of automatically generated IDs.}
 [
 \tr[
   \th[title]
@@ -892,7 +892,7 @@ A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' `Im
 Have a look at this amazing image: \x[fig-my-test-image].
 
 \Image[image.jpg]
-{title=The title of my image}
+{title=The title of my image.}
 {id=fig-my-test-image}
 {width=600}
 {height=200}
@@ -914,7 +914,7 @@ The `description` can have multiple paragraphs just like any other element, but 
 \cirodown_example[[
 \Image[image.jpg]
 {id=fig-my-test-image-description-paragraphs}
-{title=The title of my image}
+{title=The title of my image.}
 {source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
 {description=Description paragraph 1.
 
@@ -1093,14 +1093,14 @@ As a result, then https://commons.wikimedia.org[Wikimedia Commons] is one of the
 \cirodown_example[[
 \Video[https://upload.wikimedia.org/wikipedia/commons/8/85/Vacuum_pump_filter_cut_and_place_in_eppendorf.webm]
 {id=sample-video-in-wikimedia-commons}
-{title=Nice sample video stored in Wikimedia Commons}
+{title=Nice sample video stored in Wikimedia Commons.}
 {start=5}
 ]]
 We also handle more complex transcoded video URLs just fine:
 \cirodown_example[[
 \Video[https://upload.wikimedia.org/wikipedia/commons/transcoded/1/19/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv.480p.vp9.webm]
 {id=sample-video-in-wikimedia-commons-transcoded}
-{title=Nice sample video stored in Wikimedia Commons transcoded}
+{title=Nice sample video stored in Wikimedia Commons transcoded.}
 ]]
 Commons is better than YouTube if your content is on-topic there because:
 * they have no ads
@@ -1111,19 +1111,19 @@ If your video does not fit the above Wikimedia Commons requirements, YouTube cou
 \cirodown_example[[
 \Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
 {id=sample-video-from-youtube-implicit-youtube}
-{title=Nice sample video embedded from YouTube implicit from `youtube.com` URL}
+{title=Nice sample video embedded from YouTube implicit from `youtube.com` URL.}
 ]]
 The `youtu.be` domain hack URLs also work;
 \cirodown_example[[
 \Video[https://youtu.be/YeFzeNAHEhU?t=38]
 {id=sample-video-from-youtube-implicit-youtu-be}
-{title=Nice sample video embedded from YouTube implicit from `youtu.be` URL}
+{title=Nice sample video embedded from YouTube implicit from `youtu.be` URL.}
 ]]
 Alternatively, you can reach the same result in a more explicit and minimal way with the `youtube` and `start` \x[boolean-named-arguments][boolean named argument]:
 \cirodown_example[[
 \Video[YeFzeNAHEhU]{youtube}
 {id=sample-video-from-youtube-explicit}
-{title=Nice sample video embedded from YouTube with explicit `youtube` argument}
+{title=Nice sample video embedded from YouTube with explicit `youtube` argument.}
 {start=38}
 ]]
 When this argument is given, the Video address should only to contain the YouTube video ID, which shows in the YouTube URL for the video as:
@@ -1135,7 +1135,7 @@ But you can also use raw video files from any location that can serve them of co
 \cirodown_example[[
 \Video[video.mp4]
 {id=sample-video-in-repository}
-{title=Nice sample video stored in this repository}
+{title=Nice sample video stored in this repository.}
 {source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
 ]]
 
@@ -1234,7 +1234,7 @@ ab
 cd
 ``
 {id=my-nice-code}
-{title=My nice code block}
+{title=My nice code block.}
 ]]
 
 == Mathematics `$`, `$$`, `\m` and `\M`
@@ -1289,11 +1289,11 @@ Equation IDs and titles and linking to equations works identically to \x[images]
 $$
 \sqrt{1 + 1}
 $$
-{title=My first insane equation}
+{title=My first insane equation.}
 ]]
 and the sane equivalent \x[eq-my-first-sane-equation]:
 \cirodown_example[[[
-\M{title=My first sane equation}[[
+\M{title=My first sane equation.}[[
 \sqrt{1 + 1}
 ]]
 ]]]
@@ -1360,7 +1360,7 @@ The indentation space is removed automatically due to \x[remove-whitespace-child
 
 Explicit container to add further properties: \x[table-my-table].
 \cirodown_example[[
-\table{title=My table title}
+\table{title=My table title.}
 {id=table-my-table}
 [
 \tr[
@@ -1381,7 +1381,7 @@ The rules of when the caption shows up or not are the same as described for \x[i
 
 And now a table outside of \x[cirodown-example] to test how it looks directly under \x[toplevel]:
 
-\table{title=My table title}
+\table{title=My table title.}
 [
 \tr[
   \th[Header 1]
@@ -1891,7 +1891,7 @@ For example, when the \x[internal-cross-references][ID of a node is derived from
 \x[title-with-code]
 
 \Image[image.jpg]
-{title=title `with code`}
+{title=title `with code`.}
 ]]
 In this example, see how the contents of the code block \c[`with code`] were rendered as plaintext and used for the ID.
 ``
@@ -2394,14 +2394,14 @@ Every Cirodown document is implicitly put inside a `\toplevel` document and:
 
 E.g., a Cirodown document that contains:
 ``
-{title=My favorite title}
+{title=My favorite title.}
 
 And now, some content!
 ``
 
 is morally equivalent to:
 ``
-\toplevel{title=My favorite title}
+\toplevel{title=My favorite title.}
 [
 And now, some content!
 ]

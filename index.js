@@ -1285,23 +1285,29 @@ function convert(
   {
     const media_providers = cirodown_json['media-providers'];
     context.media_provider_default = {};
-    for (const media_provider_macro_name in media_providers) {
-      const media_provider = media_providers[media_provider_macro_name];
+    for (const media_provider_name in media_providers) {
+      const media_provider = media_providers[media_provider_name];
       if ('default-for' in media_provider) {
         for (const default_for of media_provider['default-for']) {
-          if (default_for === 'all') {
-            for (const macro_name of MACRO_WITH_MEDIA_PROVIDER) {
-              context.media_provider_default[default_for] === media_provider_macro_name;
-            }
+          if (default_for[0] == default_for[0].toUpperCase()) {
+            context.errors.push(new ErrorMessage(`default-for names must start with a lower case letter`, 1, 1));
           } else {
-            if (MACRO_WITH_MEDIA_PROVIDER.has(default_for)) {
-              if (context.media_provider_default[default_for] === undefined) {
-                context.media_provider_default[default_for] = media_provider_macro_name;
-              } else {
-                context.errors.push(new ErrorMessage(`multiple media providers set for macro "${default_for}"`, 1, 1));
+            if (default_for === 'all') {
+              for (const macro_name of MACRO_WITH_MEDIA_PROVIDER) {
+                context.media_provider_default[default_for] = media_provider_name;
+                context.media_provider_default[capitalize_first_letter(default_for)] = media_provider_name;
               }
             } else {
-              context.errors.push(new ErrorMessage(`macro "${default_for}" does not accept media providers`, 1, 1));
+              if (MACRO_WITH_MEDIA_PROVIDER.has(default_for)) {
+                if (context.media_provider_default[default_for] === undefined) {
+                  context.media_provider_default[default_for] = media_provider_name;
+                  context.media_provider_default[capitalize_first_letter(default_for)] = media_provider_name;
+                } else {
+                  context.errors.push(new ErrorMessage(`multiple media providers set for macro "${default_for}"`, 1, 1));
+                }
+              } else {
+                context.errors.push(new ErrorMessage(`macro "${default_for}" does not accept media providers`, 1, 1));
+              }
             }
           }
         }
@@ -1310,6 +1316,7 @@ function convert(
     for (const macro_name of MACRO_WITH_MEDIA_PROVIDER) {
       if (context.media_provider_default[macro_name] === undefined) {
         context.media_provider_default[macro_name] = 'local';
+        context.media_provider_default[capitalize_first_letter(macro_name)] = 'local';
       }
     }
   }
@@ -2830,7 +2837,7 @@ const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [
     positive_nonzero_integer: true,
   }),
 ];
-function macro_image_video_source(ast, context) {
+function macro_image_video_src(ast, context) {
   let src = convert_arg_noescape(ast.args.src, context);
   let error_message;
   let protocol_is_known = false;
@@ -2859,6 +2866,14 @@ function macro_image_video_source(ast, context) {
       render_error(context, error_message, ast.args.provider.line, ast.args.provider.column);
     }
   }
+  return {
+    error_message: error_message,
+    src: src,
+  }
+}
+function macro_image_video_source(ast, context) {
+  let {error_message, src} = macro_image_video_src(ast, context);
+  let protocol_is_known = false;
   let source_type;
   if (src.match(macro_image_video_block_convert_function_source_types_wikimedia_re)) {
     source_type = macro_image_video_block_convert_function_source_types.WIKIMEDIA;
@@ -2892,7 +2907,7 @@ const MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS = [
 // https://cirosantilli.com/cirodown#known-url-protocols
 const KNOWN_URL_PROTOCOLS = new Set(['http://', 'https://']);
 const URL_SEP = '/';
-const MACRO_WITH_MEDIA_PROVIDER = new Set(['Image', 'Video']);
+const MACRO_WITH_MEDIA_PROVIDER = new Set(['image', 'video']);
 const DEFAULT_MACRO_LIST = [
   new Macro(
     Macro.LINK_MACRO_NAME,
@@ -3221,8 +3236,10 @@ const DEFAULT_MACRO_LIST = [
         alt_arg = ast.args.alt;
       }
       let alt = html_attr('alt', html_escape_attr(convert_arg(alt_arg, context)));
-      let img_attrs = html_convert_attrs_id(ast, context, ['src', 'height', 'width']);
-      return `<img${img_attrs}${alt}>`;
+      let img_attrs = html_convert_attrs_id(ast, context, ['height', 'width']);
+      let {error_message, src} = macro_image_video_src(ast, context);
+      src = html_attr('src', html_escape_attr(src));
+      return `<img${src}${img_attrs}${alt}>`;
     },
     {
       named_args: [
@@ -3230,6 +3247,9 @@ const DEFAULT_MACRO_LIST = [
           name: 'height',
           default: DEFAULT_MEDIA_HEIGHT.toString(),
           positive_nonzero_integer: true,
+        }),
+        new MacroArgument({
+          name: 'provider',
         }),
         new MacroArgument({
           name: 'width',

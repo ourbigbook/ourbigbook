@@ -100,7 +100,7 @@ Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally pu
   * `inotifywait` watch rebuild server
   * cross file includes that work as links on multi output file mode, and true includes in single output file mode
   * cross file configuration files to factor out common page parts like headers and footers
-* runs on the browser to allow live previews, and therefore is written in JavaScript
+* is written in JavaScript and therefore runs natively on the browser to allow live previews
 * helps you with the publishing:
   * `./cirodown --publish` helper for single command publishing to the configured target (default GitHub pages): \x[publish]
   * Cirodown tries to deal with media such as images and video intelligently for you, see e.g.: \x[where-to-store-images]

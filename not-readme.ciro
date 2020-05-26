@@ -8,7 +8,7 @@ This file is, surprisingly, not the README. It is used for multifile tests. It i
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {title=Figure in not the README}
-{id=fig-not-readme-xi}
+{id=image-not-readme-xi}
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {title=Figure in not the README without explicit id}

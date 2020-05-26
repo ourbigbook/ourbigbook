@@ -101,6 +101,9 @@ Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally pu
   * cross file includes that work as links on multi output file mode, and true includes in single output file mode
   * cross file configuration files to factor out common page parts like headers and footers
 * runs on the browser to allow live previews, and therefore is written in JavaScript
+* helps you with the publishing:
+  * `./cirodown --publish` helper for single command publishing to the configured target (default GitHub pages): \x[publish]
+  * Cirodown tries to deal with media such as images and video intelligently for you, see e.g.: \x[where-to-store-images]
 
 === Saner
 
@@ -374,7 +377,7 @@ To also show the section auto-generated number as in "Section X.Y My title" we a
 
 `{full}` is not needed for cross references to most macros besides \x[headers][headers], which use `full` by default as seen by the `default_x_style_full` macro property in \x[help-macros]. This is for example the case for \x[images]. You can force this to be disabled with `{full=0}`:
 \cirodown_example[[
-Compare \x[fig-my-test-image]{full=0} vs \x[fig-my-test-image]{full=1}.
+Compare \x[image-my-test-image]{full=0} vs \x[image-my-test-image]{full=1}.
 ]]
 
 === `\x` within `title` restrictions
@@ -388,40 +391,40 @@ To prevent such problems, Cirodown emits an error if:
 
 For example, consider the code:
 ``
-\Image[image.jpg]{title=That \x[this-my-id3].}
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=That \x[this-my-id3].}
 
-\Image[image.jpg]{title=My id3.}
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=My id3.}
 
-\Image[image.jpg]{title=This \x[my-id3].}
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=This \x[my-id3].}
 ``
 
 Wee see therefore a complex ID dependency emerge:
-* `\Image[image.jpg]{title=My id3.}` has `my-id3`
-* `\Image[image.jpg]{title=This \x[my-id3].}` renders the title as `This My Id3`, and so would have ID `this-my-id3`
-* `\Image[image.jpg]{title=That \x[this-my-id3].}` can finally render the title as `That This My Id3` and get ID `that-this-my-id3`
+* `\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=My id3.}` has `my-id3`
+* `\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=This \x[my-id3].}` renders the title as `This My Id3`, and so would have ID `this-my-id3`
+* `\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=That \x[this-my-id3].}` can finally render the title as `That This My Id3` and get ID `that-this-my-id3`
 
 While it is technically possible to implement this, it would require a bit of extra work which we don't want to put in right now, and it would be very confusing for end users reading the source anyways.
 
 As a result, the above example currently gives errors, and you could make an equivalent explicit version that has no errors either by giving explicit titles to each image that has an `x` in it (this is normally the saner approach):
 ``
-\Image[image.jpg]
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {id=that-this-my-id3}
 {title=That \x[this-my-id3].}
 
-\Image[image.jpg]{title=My id3.}
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=My id3.}
 
-\Image[image.jpg]
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {id=this-my-id3}
 {title=This \x[my-id3].}
 ``
 or by setting explicit content to every `x` inside a `title` for which an ID wasn't given as in:
 ``
-\Image[image.jpg]
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {title=That \x[this-my-id3][This My id3].}
 
-\Image[image.jpg]{title=My id3.}
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{title=My id3.}
 
-\Image[image.jpg]
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {id=this-my-id3}
 {title=This \x[my-id3][My id3].}
 ``
@@ -473,12 +476,12 @@ Reference to another header of another file, with \x[cross-reference-full-argume
 
 Reference to an image in another file:
 \cirodown_example[[
-\x[fig-not-readme-xi]{full}.
+\x[image-not-readme-xi]{full}.
 ]]
 
 Reference to an image in another file:
 \cirodown_example[[
-\x[fig-figure-in-not-the-readme-without-explicit-id]{full}.
+\x[image-figure-in-not-the-readme-without-explicit-id]{full}.
 ]]
 
 Remember that the \x[the-toplevel-header][ID of the toplevel header] is automatically derived from its file name, that's why we have to use:
@@ -883,13 +886,13 @@ And now a list outside of \x[cirodown-example] to test how it looks directly und
 == Images (`\Image` and `\image`)
 {id=images}
 
-A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' `Image` showcasing most of the image properties \x[fig-my-test-image].
+A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' `Image` showcasing most of the image properties \x[image-my-test-image].
 \cirodown_example[[
-Have a look at this amazing image: \x[fig-my-test-image].
+Have a look at this amazing image: \x[image-my-test-image].
 
-\Image[image.jpg]
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {title=The title of my image.}
-{id=fig-my-test-image}
+{id=image-my-test-image}
 {width=600}
 {height=200}
 {source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
@@ -902,14 +905,14 @@ For further discussion on the effects of ID see: \x[image-id][full].
 
 And this is how you make an inline image inline one with lower case `i`:
 \cirodown_example[[
-My inline \image[image.jpg][test image] is awesome.
+My inline \image[Tank_man_standing_in_front_of_some_tanks.jpg][test image] is awesome.
 ]]
 Inline images can't have captions.
 
 The `description` can have multiple paragraphs just like any other element, but we don't recommend this style because it makes it hard for readers to see what is part of the image caption and what is part of the next paragraph.
 \cirodown_example[[
-\Image[image.jpg]
-{id=fig-my-test-image-description-paragraphs}
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{id=image-my-test-image-description-paragraphs}
 {title=The title of my image.}
 {source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
 {description=Description paragraph 1.
@@ -923,8 +926,8 @@ Maybe we could improve this with some CSS styling, but generally when you want m
 
 And now an image outside of \x[cirodown-example] to test how it looks directly under \x[toplevel]:
 
-\Image[image.jpg]
-{id=fig-my-test-image-toplevel}
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{id=image-my-test-image-toplevel}
 
 === Image height
 
@@ -935,36 +938,44 @@ By default, we fix image heights to `height=315`, and let the `width` be calcula
 === Image IDs and captions
 {id=image-id}
 
-Here is an image without a description but with an ID so we can link to it: \x[fig-my-test-image-2].
+Here is an image without a description but with an ID so we can link to it: \x[image-my-test-image-2].
 \cirodown_example[[
-Have a look at this amazing image: \x[fig-my-test-image-2].
+Have a look at this amazing image: \x[image-my-test-image-2].
 
-\Image[image.jpg]
-{id=fig-my-test-image-2}
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{id=image-my-test-image-2}
 ]]
 This works because \x[cross-reference-full-argument][`full` is the default cross referene style for `Image`], otherwise the link text would be empty since there is no `title`, and cirodown would raise an error.
 
+Cirodown can optionally deduce the title from the basename of the `src` argument if the `title_from_src` \x[boolean-named-arguments][boolean named argument] is given, or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
+\cirodown_example[[
+Have a look at this amazing image: \x[image-tank-man-standing-in-front-of-some-tanks].
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title_from_src}
+]]
+
 If the image has neither ID nor title, then it does not get a caption at all, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
 \cirodown_example[[
-\Image[image.jpg]
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 ]]
 The image does however get an automatically generated ID based on its image number, and it is possible for readers to link to that ID on the rendered version, e.g. as:
 ``
-#fig-123
+#image-123
 ``
 This link is of course not stable across document revisions however, since if an image is added before that one, the link will break. This kind of image is discouraged, because in paged output formats like PDF, it could float away from the text that refers to the image.
 
 We can also see that such an image does not increment the Figure count:
 \cirodown_example[[
-\Image[image.jpg]{id=fig-my-test-image-count-before}
-\Image[image.jpg]
-\Image[image.jpg]{id=fig-my-test-image-count-after}
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{id=image-my-test-image-count-before}
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{id=image-my-test-image-count-after}
 ]]
 
 If the image has any visible metadata such as `source` or `description` however, then the caption does show and the Figure count gets incremented:
 \cirodown_example[[
-\Image[image.jpg]{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
-\Image[image.jpg]{description=This is the description of my image.}
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{description=This is the description of my image.}
 ]]
 
 === Where to store images
@@ -976,11 +987,11 @@ If you are making a limited repository that will not have a ton of images, then 
 With this setup, no further action is needed. For example, with a file structure of:
 ``
 ./README.ciro
-./image.jpg
+./Tank_man_standing_in_front_of_some_tanks.jpg
 ``
 just use the image from \C[README.ciro] as:
 \cirodown_example[[
-\Image[image.jpg]
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 ]]
 
 However, if you are making a huge tutorial, which can have a huge undefined number of images (i.e. any scientific book), then you likely don't want to git track your images in the git repository.
@@ -1008,11 +1019,11 @@ This particular documentation repository does have a different setup as can be s
 ]]
 In this example, we also needed to set `{provider=github}` explicitly since it was not set as the default image provider in our `cirodown.json`. In most projects however, all of your images will be in the default repository, so this won't be needed.
 
-Note that `provider` is ignored if a full URL is given (detected by starting with one of the \x[known-url-protocols]), e.g.:
-\cirodown_example[[
+`provider` must not be given when a full URL is given because we automatically detect providers from URLs, e.g.:
+``
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]{provider=github}
-]]
-still works rather than appending the GitHub media prefix to that full URL. This is important to that setting a default provider will still work as expected with random external URLs you might want to add.
+``
+is an error.
 
 TODO implement: `cirodown` will even automatically add and push used images in the `my-tutorial-media` repository for you \x[publish][during publishing]!
 
@@ -1042,6 +1053,12 @@ Cirodown likes Wikimedia Commons so much that we automatically parse the image U
 \Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
 ]]
 
+And like for non-Wikimedia images, you can automatically generate a `title` from the `src` by setting the `title_from_src` \x[boolean-named-arguments][boolean named argument] or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
+\cirodown_example[[
+\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
+{title_from_src}
+]]
+
 And a quick test for a more complex thumb resized URL:
 \cirodown_example[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
@@ -1054,7 +1071,7 @@ If you really absolutely want to turn off the `source`, you can explicitly set:
 ]]
 but you don't want to do that for the most commonly Wikimedia Commons used license of CC-BY+ , do you? :-)
 
-Upsides:
+Upsides of using Wikimedia Commons for your images:
 * makes it easier for other writers to find and reuse your images
 * automatically generates resized versions of the uploaded images into several common dimensions so you can pick the smallest one that fits your desired \x[image-height] to reduce bandwidth usage
 * if you have so many images that they would blow even the size of a \x[store-images-in-a-separate-media-repository][separate media repository], this will still work
@@ -1115,23 +1132,37 @@ The `youtu.be` domain hack URLs also work;
 {id=sample-video-from-youtube-implicit-youtu-be}
 {title=Nice sample video embedded from YouTube implicit from `youtu.be` URL.}
 ]]
-Alternatively, you can reach the same result in a more explicit and minimal way with the `youtube` and `start` \x[boolean-named-arguments][boolean named argument]:
+Alternatively, you can reach the same result in a more explicit and minimal way by setting `{provider=youtube}` and the `start` arguments:
 \cirodown_example[[
-\Video[YeFzeNAHEhU]{youtube}
+\Video[YeFzeNAHEhU]{provider=youtube}
 {id=sample-video-from-youtube-explicit}
 {title=Nice sample video embedded from YouTube with explicit `youtube` argument.}
 {start=38}
 ]]
-When this argument is given, the Video address should only to contain the YouTube video ID, which shows in the YouTube URL for the video as:
+When the `youtube` provider is selected, the Video address should only to contain the YouTube video ID, which shows in the YouTube URL for the video as:
 ``
 https://www.youtube.com/watch?v=<video-id>
+``
+Remember that you can also enable the `youtube` provider by default on your \x[cirodown-json] with:
+``
+"media-provider" {
+  "youtube": {"default-for": "video"}
+}
 ``
 
 But you can also use raw video files from any location that can serve them of course, e.g. here is one stored in this repository: \x[sample-video-in-repository].
 \cirodown_example[[
-\Video[video.mp4]
+\Video[Tank_man_side_hopping_in_front_of_some_tanks.mp4]
 {id=sample-video-in-repository}
 {title=Nice sample video stored in this repository.}
+{source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
+{start=3}
+]]
+
+And as for images, setting `title_from_src` automatically calculates a title for you:
+\cirodown_example[[
+\Video[Tank_man_side_hopping_in_front_of_some_tanks.mp4]
+{title_from_src}
 {source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
 ]]
 
@@ -1566,7 +1597,7 @@ we have:
 
   The first one has name `id` and the mandatory separator `=`, followed by the value `asdf qwer`.
 
-  The `scope` one does not need `=` because it is a \x[boolean-named-arguments]
+  The `scope` one does not need `=` because it is a \x[boolean-named-arguments].
 
 You can determine if a macro is positional or named by using \x[help-macros]. Its output contains something like:
 ``
@@ -1886,7 +1917,7 @@ For example, when the \x[internal-cross-references][ID of a node is derived from
 \cirodown_example[[
 \x[title-with-code]
 
-\Image[image.jpg]
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {title=title `with code`.}
 ]]
 In this example, see how the contents of the code block \c[`with code`] were rendered as plaintext and used for the ID.
@@ -2218,15 +2249,38 @@ Cirodown configuration file that affects the behaviour of cirodown for all files
 ===== `media-providers`
 {id=media-providers}
 
-TODO implement set the base URL where media will be served from.
+The `media-providers` entry of `cirodown.json` specifies properties of how media such as \x[images][images] and \x[videos][videos] are retrieved and rendered.
 
-TODO correct:
-* `local`: tracked in the current Git repository, no further magic is done
-* `path`: tracked in a separate media repository, defaults to `data/<project-name>-media/`
+The general format of `media-providers` looks like:
+``
+"media-providers": {
+  "github": {
+    "default-for": ["image"], // "all" to default for both image, video and anything else
+    "path": "data/media/",    // data is gitignored, but should not be nuked like out/
+    "remote": "cirosantilli/cirodown-media",
+  },
+  "local": {
+    "default-for": ["video"],
+    "path": "media/",
+  },
+  "youtube": {}
+}
+``
 
-  When \x[publish][publishing], Cirodown searches for files that were used in the build but not added to the media directory, and automatically does a `git add`, `commit` and `push` for you!
+Direct children of media-providers and subproperties that are valid only for them specifically:
+* `local`: tracked in the current Git repository as mentioned at \x[store-images-inside-the-repository-itself]{full}
+  * `path`: location of the cloned local repository relative to the root the main repository
+* `github`: tracked in a separate Git repository as mentioned at \x[store-images-in-a-separate-media-repository]{full}
+  * `path`: same as for `local`
+  * `remote`: `<github-username>/<repo-name>`
+* `youtube`: YouTube \x[videos][videos]
 
-Further rationale at: \x[where-to-store-images].
+Properties that are valid for every provider:
+* `default-for`: use this provider as the default for the given types of listed macros.
+
+  The first character of the macros are case insensitive and must be given as lower case. Therefore e.g.:
+  * `image` applies to both `image` and `Image`
+  * giving `Image` is an error because that starts with an upper case character
 
 See also: https://github.com/cirosantilli/cirodown/issues/40
 

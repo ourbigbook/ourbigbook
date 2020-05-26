@@ -3060,6 +3060,7 @@ const DEFAULT_MACRO_LIST = [
     },
     {
       caption_prefix: 'Code',
+      id_prefix: 'code',
       named_args: [
         new MacroArgument({
           name: Macro.TITLE_ARGUMENT_NAME,
@@ -3296,7 +3297,6 @@ const DEFAULT_MACRO_LIST = [
     Object.assign(
       {
         caption_prefix: 'Figure',
-        id_prefix: 'image',
         image_video_content_func: function (ast, context, src, rendered_attrs, alt, media_provider_type, is_url) {
           return `<a${html_attr('href', src)}><img${html_attr('src',
             html_escape_attr(src))}${html_attr('loading', 'lazy')}${rendered_attrs}${alt}></a>\n`;
@@ -3708,7 +3708,6 @@ const DEFAULT_MACRO_LIST = [
     Object.assign(
       {
         caption_prefix: 'Video',
-        id_prefix: 'video',
         image_video_basename: function(src) {
           return basename(html_escape_attr(src)).replace(
             macro_image_video_block_convert_function_wikimedia_source_video_re, '$1');

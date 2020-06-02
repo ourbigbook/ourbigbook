@@ -859,9 +859,9 @@ Note how:
 
   So in the example above, `\x[/introduction]` refers to the ID `introduction`, and not `full-and-unique-experiment-name/introduction`.
 
-==== Header `scope` argument of toplevel headers in multi-file output mode
+==== Header `scope` argument of toplevel headers
 
-When \x[the-toplevel-header] is given the `scope` property, and if \x[html-single-page] is not being used, Cirodown automatically uses the file path for the scope and heaves fragments untouched.
+When \x[the-toplevel-header] is given the `scope` property Cirodown automatically uses the file path for the scope and heaves fragments untouched.
 
 For example, suppose that file `full-and-unique-experiment-name` contains:
 ``
@@ -879,6 +879,11 @@ In this case, multi-file output will generate a file called `full-and-unique-exp
 instead of
 * `full-and-unique-experiment-name.html#full-and-unique-experiment-name/introduction`
 * `full-and-unique-experiment-name.html#full-and-unique-experiment-name/materials`
+
+Some quick interactive cross file link tests:
+* \x[not-readme-with-scope]
+* \x[not-readme-with-scope/h2]
+* \x[not-readme-with-scope/image-my-image]
 
 === Header explicit levels vs nesting design choice
 
@@ -926,6 +931,8 @@ Here is an example of inclusion of the files `not-readme.ciro` and `not-readme-2
 \include[not-readme]
 
 \include[not-readme-2]
+
+\include[not-readme-with-scope]
 
 === Skipping header levels
 

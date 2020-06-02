@@ -56,10 +56,11 @@ class AstNode {
     // caption_number_visible.
     this.macro_count_visible = undefined;
     this.parent_node = options.parent_node;
-    // {TreeNode}:
-    // * for a header, the tree node points to the header
-    // * for non-header elements, the tree node points to
-    //   the deepest header that contains the element
+    // {TreeNode} that points to the element.
+    // This is used for both headers and non headers:
+    // the only difference is that non-headers are not connected as
+    // children of their parent. But they still know who the parent is.
+    // This was originally required for header scope resolution.
     this.header_tree_node = undefined;
     this.validation_error = undefined;
     this.validation_output = {};
@@ -242,6 +243,11 @@ class ErrorMessage {
   }
 }
 
+class FileProvider {
+  get(path) { throw new Error('unimplemented'); }
+}
+exports.FileProvider = FileProvider;
+
 /** Interface to retrieving the nodes of IDs defined in external files.
  *
  * We need the abstraction because IDs will come from widely different locations
@@ -285,14 +291,14 @@ class IdProvider {
   }
 
   /** Like get, but do not resolve scope. */
-  get_noscope(id, context) { throw 'unimplemented'; }
+  get_noscope(id, context) { throw new Error('unimplemented'); }
 
   /**
    * @param {String} id
    * @return {Array[AstNode]}: all header nodes that have the given ID
    *                           as a parent includer.
    */
-  get_includes(id, context) { throw 'unimplemented'; }
+  get_includes(id, context) { throw new Error('unimplemented'); }
 }
 exports.IdProvider = IdProvider;
 
@@ -1279,14 +1285,13 @@ function convert(
         }
       }
     }
+  if (!('file_provider' in options)) { options.file_provider = undefined; }
   if (!('from_include' in options)) { options.from_include = false; }
   if (!('html_embed' in options)) { options.html_embed = false; }
   if (!('html_single_page' in options)) { options.html_single_page = false; }
   if (!('html_x_extension' in options)) { options.html_x_extension = true; }
   if (!('h_level_offset' in options)) { options.h_level_offset = 0; }
-  if (!('id_provider' in options)) {
-    options.id_provider = undefined;
-  }
+  if (!('id_provider' in options)) { options.id_provider = undefined; }
   if (!('include_path_set' in options)) { options.include_path_set = new Set(); }
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('render' in options)) { options.render = true; }
@@ -1546,15 +1551,14 @@ function html_convert_attrs(
 /**
  * Same interface as html_convert_attrs, but automatically add the ID to the list
  * of arguments.
- *
- * If the ID argument is not explicitly given, derive it from the title argument.
  */
 function html_convert_attrs_id(
   ast, context, arg_names=[], custom_args={}
 ) {
   if (ast.id !== undefined) {
     custom_args[Macro.ID_ARGUMENT_NAME] = [
-        new PlaintextAstNode(ast.line, ast.column, ast.id)];
+        new PlaintextAstNode(ast.line, ast.column,
+          remove_toplevel_scope(ast, context))];
   }
   return html_convert_attrs(ast, context, arg_names, custom_args);
 }
@@ -1682,8 +1686,8 @@ function html_katex_convert(ast, context) {
   }
 }
 
-function html_self_link(ast) {
-  return ` href="#${html_escape_attr(ast.id)}"`;
+function html_self_link(ast, context) {
+  return ` ${x_href_attr(ast, context)}`;
 }
 
 /**
@@ -1722,7 +1726,7 @@ function macro_image_video_block_convert_function(ast, context) {
   let ret = `<figure${figure_attrs}>\n`
   let href_prefix;
   if (ast.id !== undefined) {
-    href_prefix = html_self_link(ast);
+    href_prefix = html_self_link(ast, context);
   } else {
     href_prefix = undefined;
   }
@@ -1891,6 +1895,7 @@ function parse(tokens, options, context, extra_returns={}) {
             cur_header_level,
             href
           );
+          context.include_path_set.add(href);
         } else {
           const target_id_ast = id_provider.get(href, context);
           let header_node_title;
@@ -1942,6 +1947,7 @@ function parse(tokens, options, context, extra_returns={}) {
                 force_no_index: true,
                 from_include: true,
                 id: href,
+                input_path: ast.input_path,
               },
             ),
             new AstNode(
@@ -1983,7 +1989,10 @@ function parse(tokens, options, context, extra_returns={}) {
               },
               ast.line,
               ast.column,
-              {from_include: true},
+              {
+                from_include: true,
+                input_path: ast.input_path,
+              },
             ),
           ];
         }
@@ -2310,8 +2319,10 @@ function parse(tokens, options, context, extra_returns={}) {
           if (ast.includes.length > 0) {
             context.headers_with_include.push(ast);
           }
+          ast.header_tree_node = cur_header_tree_node;
+        } else {
+          ast.header_tree_node = new TreeNode(ast, cur_header_tree_node);;
         }
-        ast.header_tree_node = cur_header_tree_node;
 
         // Linear count of each macro type for macros that have IDs.
         if (!macro.options.macro_counts_ignore(ast)) {
@@ -2380,7 +2391,7 @@ function parse(tokens, options, context, extra_returns={}) {
         }
         ast.index_id = index_id;
         if (ast.id !== undefined && !ast.force_no_index) {
-          const previous_ast = id_provider.get(ast.id, context);
+          const previous_ast = id_provider.get(ast.id, context, ast.header_tree_node);
           let input_path;
           if (previous_ast === undefined) {
             let non_indexed_id = non_indexed_ids[ast.id];
@@ -2427,11 +2438,19 @@ function parse(tokens, options, context, extra_returns={}) {
     extra_returns.ids = indexed_ids;
 
     // Calculate header_graph_top_level.
-    let level0_header = context.header_graph;
-    if (level0_header.children.length === 1) {
+    if (context.header_graph.children.length === 1) {
       context.header_graph_top_level = first_header_level;
+      const toplevel_header_ast = context.header_graph.children[0].value;
+      context.toplevel_id = toplevel_header_ast.id;
+      if (toplevel_header_ast.validation_output.scope.boolean) {
+        context.toplevel_scope_cut_length = toplevel_header_ast.id.length + 1;
+      } else {
+        context.toplevel_scope_cut_length = 0;
+      }
     } else {
       context.header_graph_top_level = first_header_level - 1;
+      context.toplevel_scope_cut_length = 0;
+      context.toplevel_id = undefined;
     }
   }
 
@@ -2673,6 +2692,21 @@ function protocol_is_known(src) {
   return false;
 }
 
+// https://cirosantilli.com/cirodown#scope
+function remove_toplevel_scope(ast, context) {
+  let id = ast.id;
+  if (
+    // Besdies being a minor optimization, this also prevents the case
+    // without any headers from blowing up.
+    context.toplevel_scope_cut_length > 0 &&
+    // Don't remove if we are the toplevel element, otherwise empty ID.
+    context.header_graph.children[0].value !== ast
+  ) {
+    id = id.substr(context.toplevel_scope_cut_length);
+  }
+  return id;
+}
+
 function render_error(context, message, line, column) {
   context.errors.push(new ErrorMessage(message, line, column));
 }
@@ -2708,8 +2742,8 @@ function validate_ast(ast, context) {
       if (macro_arg.mandatory) {
         ast.validation_error = [
           `missing mandatory argument ${argname} of ${ast.macro_name}`,
-          ast.line, ast.column];
-        break;
+          ast.line, ast.column
+        ];
       }
       if (macro_arg.default !== undefined) {
         ast.args[argname] = new AstArgument([new PlaintextAstNode(ast.line, ast.column, macro_arg.default)]);
@@ -2731,11 +2765,11 @@ function validate_ast(ast, context) {
           arg_string = '1';
         }
         if (arg_string === '0') {
-          ast.validation_output[argname]['boolean'] = false;
+          ast.validation_output[argname].boolean = false;
         } else if (arg_string === '1') {
-          ast.validation_output[argname]['boolean'] = true;
+          ast.validation_output[argname].boolean = true;
         } else {
-          ast.validation_output[argname]['boolean'] = false;
+          ast.validation_output[argname].boolean = false;
           ast.validation_error = [
             `boolean argument "${argname}" of "${ast.macro_name}" has invalid value: "${arg_string}", only "0" and "1" are allowed`,
             arg.line, arg.column];
@@ -2765,6 +2799,7 @@ exports.validate_ast = validate_ast;
 function x_href(target_id_ast, context) {
   let href_path;
   const target_input_path = target_id_ast.input_path;
+  let fragment;
   if (
     // The header was included inline into the current file.
     context.include_path_set.has(target_input_path) ||
@@ -2772,15 +2807,32 @@ function x_href(target_id_ast, context) {
     (target_input_path == context.options.input_path)
   ) {
     href_path = '';
+    fragment = remove_toplevel_scope(target_id_ast, context);
   } else {
     href_path = target_input_path;
     if (context.options.html_x_extension) {
       href_path += '.html';
     }
+    const file_provider_ret = context.options.file_provider.get(target_input_path);
+    if (file_provider_ret === undefined) {
+      let message = `file not found on database: "${target_input_path}", needed for topelvel scope removal`;
+      render_error(context, message, target_id_ast.line, target_id_ast.column);
+      return error_message_in_output(message, context);
+    } else {
+      if (file_provider_ret.toplevel_id === target_id_ast.id) {
+        fragment = target_id_ast.id;
+      } else {
+        fragment = target_id_ast.id.substr(file_provider_ret.toplevel_scope_cut_length);
+      }
+    }
   }
-  return html_escape_attr(href_path) + '#' + html_escape_attr(target_id_ast.id);
+  return html_escape_attr(href_path) + '#' + html_escape_attr(fragment);
 }
 exports.x_href = x_href;
+
+function x_href_attr(target_id_ast, context) {
+  return html_attr('href', x_href(target_id_ast, context));
+}
 
 /**
  * Calculate the text of a cross reference, or the text
@@ -3136,7 +3188,7 @@ const DEFAULT_MACRO_LIST = [
       let content = convert_arg(ast.args.content, context);
       let ret = `<div class="code-caption-container"${attrs}>\n`;
       if (ast.validation_output[Macro.TITLE_ARGUMENT_NAME].given) {
-        ret += `\n<div class="caption">${x_text(ast, context, {href_prefix: html_self_link(ast)})}</div>\n`;
+        ret += `\n<div class="caption">${x_text(ast, context, {href_prefix: html_self_link(ast, context)})}</div>\n`;
       }
       ret += `<pre><code>${content}</code></pre>`;
       ret += `</div>`;
@@ -3232,7 +3284,7 @@ const DEFAULT_MACRO_LIST = [
         level_int_capped = level_int;
       }
       let attrs = html_convert_attrs_id(ast, context, [], custom_args);
-      let ret = `<h${level_int_capped}${attrs}><a${html_self_link(ast)} title="link to this element">`;
+      let ret = `<h${level_int_capped}${attrs}><a${html_self_link(ast, context)} title="link to this element">`;
       let x_text_options = {
         show_caption_prefix: false,
       };
@@ -3257,7 +3309,7 @@ const DEFAULT_MACRO_LIST = [
       }
       parent_asts.push(...context.id_provider.get_includes(ast.id, context));
       for (const parent_ast of parent_asts) {
-        let parent_href = html_attr('href', x_href(parent_ast, context));
+        let parent_href = x_href_attr(parent_ast, context);
         let parent_body = convert_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
         ret += ` | <a${parent_href}>\u2191 parent "${parent_body}"</a>`;
       }
@@ -3751,7 +3803,7 @@ const DEFAULT_MACRO_LIST = [
           return error_message_in_output(message, context);
         }
       } else {
-        href = html_attr('href', x_href(target_id_ast, context));
+        href = x_href_attr(target_id_ast, context);
       }
       const content_arg = ast.args.content;
       let content;

@@ -2583,6 +2583,12 @@ This feature can be seen live on this document by visiting our tests:
 * \a[not-readme-redirect-test]: redirects to \x[not-readme]
 * \a[quick-start-redirect-test]: redirects to \x[quick-start]
 
+To quickly test bugs in redirect generation, you may use the `--generate-redirects` flag as:
+``
+cirodown --generate-redirects .
+``
+which generates the redirects while skipping everything else.
+
 === Editor with preview
 
 TODO
@@ -2623,6 +2629,14 @@ Possibilities we could reuse:
   * markdown output: no https://github.com/quilljs/quill/issues/74
 * https://ui.toast.com/tui-editor/
 * https://www.froala.com/wysiwyg-editor
+
+=== Conversion to/from other formats
+
+The only thing we have for now is the quick and dirty \a[adoc-to-ciro].
+
+The better approach would be to implement a converter in Haskell from anything to Cirodown.
+
+And from Cirodown to anything, create new output formats inside Cirodown to those other formats.
 
 == Developing Cirodown
 
@@ -2744,8 +2758,9 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 * https://github.com/rstudio/bookdown[], https://bookdown.org/[]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: https://bookdown.org/yihui/bookdown/pandoc.html[], thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.
 * https://gohugo.io/[Hugo]. Pretty good, similar feature set to ours. But Go based, so hard on browser, and adds adhoc features on top of markdown once again
 
-Less related but of interest:
+Less related but of interest, similar philosophy to what Ciro wants, but no explicitly reusable system:
 * http://www.uprtcl.io/
 * https://libretexts.org
 * https://physics.info/
 * https://hypertextbook.com/
+* https://tutorial.math.lamar.edu/

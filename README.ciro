@@ -57,7 +57,7 @@ npm link cirodown
 ./cirodown --html-single-page README.ciro
 xdg-open index.html
 ``
-or render README.ciro and all includes \x[includes][includes] into a single HTML page and view it:
+or render README.ciro and all \x[includes] into a single HTML page and view it:
 ``
 ./cirodown .
 xdg-open index.html
@@ -92,11 +92,11 @@ TODO: create a multifile blog example folder and link from here.
 Cirodown is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
 
 Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation), supporting out of the box feature such as:
-* \x[internal-cross-references][references] to \x[headers][headers], \x[images][images], etc. with amazing error checking and reporting: never break internal links gain
-* KaTeX server side \x[math][Mathematics]
+* \x[internal-cross-references][references] to \x[headers], \x[images], etc. with amazing error checking and reporting: never break internal links gain
+* KaTeX server side \x[mathematics]
 * multi file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
   * \x[internal-cross-file-references]
-  * \x[table-of-contents][table of contents] that crosses input files
+  * \x[table-of-contents] that crosses input files
   * `inotifywait` watch rebuild server
   * cross file includes that work as links on multi output file mode, and true includes in single output file mode
   * cross file configuration files to factor out common page parts like headers and footers
@@ -161,13 +161,13 @@ The "more powerful than Asciidoctor" part is only partially true, since Asciidoc
 
 The difference is mostly that Cirodown is completely and entirely focused on making amazing scientific books, and so will have key features for that application out-of-the box, notably:
 * amazing header/ToC/ID features including proper error reports: never have a internal broken link or duplicate ID again
-* \x[math][server side pre-rendered maths with KaTeX]: all divs and spans are ready, browser only applies CSS, no JavaScript gets executed
+* \x[mathematics][server side pre-rendered maths with KaTeX]: all divs and spans are ready, browser only applies CSS, no JavaScript gets executed
 * \x[publish]: we take care of website publishing for you out-of-the-box, no need to integrate into an external project like Jekyll
 
 Another advantage over Asciidoctor is that the reference implementation of Cirodown is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with https://github.com/opal/opal[Opal], but who wants to deal with that layer of complexity?
 
-== Paragraphs `\p`
-{id=paragraphs}
+== Paragraphs
+{title2=`\p`}
 
 OK, this is too common, so we opted for some \x[insane-macro-shortcuts][insanity] here: double newline is a paragraph!
 \cirodown_example[[
@@ -197,8 +197,8 @@ which renders as a single paragraph.
 
 One major advantage of this, is that when writing documentation, you often want to keep lists or code blocks inside a given paragraph, so that it is easy to reference the entire paragraph with an ID. Think for example of paragraphs in the C++ standard.
 
-== Links `\a`
-{id=links}
+== Links
+{title2=`\a`}
 
 \x[insane-macro-shortcuts][Insane] autolink (link text is the same as the link):
 \cirodown_example[[
@@ -285,8 +285,8 @@ Literal URL \text[[http://example.com]] but why?
 ]]
 ]]]
 
-== Internal cross references `\x`
-{id=internal-cross-references}
+== Internal cross references
+{title2=`\x`}
 
 Every macro in Cirodown can have an optional `id` and many also have a reserved `title` property.
 
@@ -375,7 +375,7 @@ To also show the section auto-generated number as in "Section X.Y My title" we a
 \x[cross-reference-full-argument]{full}.
 ]]
 
-`{full}` is not needed for cross references to most macros besides \x[headers][headers], which use `full` by default as seen by the `default_x_style_full` macro property in \x[help-macros]. This is for example the case for \x[images]. You can force this to be disabled with `{full=0}`:
+`{full}` is not needed for cross references to most macros besides \x[headers], which use `full` by default as seen by the `default_x_style_full` macro property in \x[help-macros]. This is for example the case for \x[images]. You can force this to be disabled with `{full=0}`:
 \cirodown_example[[
 Compare \x[image-my-test-image]{full=0} vs \x[image-my-test-image]{full=1}.
 ]]
@@ -521,6 +521,50 @@ Now for a live example for quick and dirty interactive testing.
 
 ====== inflection example proper lower
 {c}
+
+=== The `title2` argument
+
+The `title2` argument can be given to any element that has the `title` argument.
+
+Its usage is a bit like the `description=` argument of \x[images], allowing you to add some extra content to the header without affecting its ID.
+
+Unlike `description=` however, `title2` shows up on all \x[cross-reference-full-argument][`full`] references, including appearances in the \x[table-of-contents].
+
+For example, given the Cirodown input:
+``
+The toc:
+
+\toc
+
+== Quotation
+{description=`\q`}
+
+== Orthogonal group
+{description=$O(n)$}
+
+\x[quotation]{p}
+
+\x[orthogonal-group]
+
+\x[orthogonal-group]{full}
+``
+the rendered output looks like:
+``
+The toc:
+
+* Quotation \q
+* Orthogonal group $O(n)$
+
+== Quotation `\q`
+
+== Orthogonal group $O(n)$
+
+quotations
+
+orthogonal group
+
+Section 2. "Orthogonal group $O(n)$"
+``
 
 === `\x` within `title` restrictions
 {id=x-within-title-restrictions}
@@ -702,8 +746,8 @@ So for example, the following automatic IDs would be generated: \x[table-example
 
 For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the Cirodown file without extension instead of from the `title` argument.
 
-== Headers `\h`
-{id=headers}
+== Headers
+{title2=`\h`}
 
 \x[insane-macro-shortcuts][Insane] with `= ` (equal sign space):
 ``
@@ -784,8 +828,8 @@ but it just didn't feel as good, and is a bit harder to type than just smashing 
 
 \h[13][My h13]
 
-=== Table of contents `\toc`
-{id=table-of-contents}
+=== Table of contents
+{title2=`\toc`}
 
 Only one ToC shows per document.
 
@@ -793,7 +837,7 @@ Any ToC besides the first one is ignored. TODO make it into an error instead?
 
 The ToC ignores `\h[1]` by default, as we encourage that header level to appear only once and represent the main title under which the entire document goes.
 
-`\toc` from \x[includes][includes] are ignored.
+`\toc` from \x[includes] are ignored.
 
 === Header `scope` argument
 {id=scope}
@@ -904,8 +948,8 @@ rather than having explicit levels.
 
 But we chose not to do it like most markups available because it leads to too many nesting levels, and hard to determine where you are without tooling.
 
-=== Includes `\include`
-{id=includes}
+=== Includes
+{title2=`\include`}
 
 The `\include` macro allows including an external Cirodown headers under the current header.
 
@@ -922,7 +966,7 @@ Headers of the included document are automatically shifted to match the level of
 If \x[html-single-page] is given, the external document is rendered embedded into the current document directly, essentially as if the source had been copy pasted (except for small corrections such as the header offsets).
 
 Otherwise, the following effects happen:
-* The headers of the included tree appear in the \x[table-of-contents][table of contents] of the document as links to the corresponding external files.
+* The headers of the included tree appear in the \x[table-of-contents] of the document as links to the corresponding external files.
 
   This is implemented simply by reading a previously generated database file much like \x[internal-cross-file-references-internals], which avoids the slowdown of parsing all included files every time.
 
@@ -1007,8 +1051,8 @@ would be:
 rather than:
 ``#README.ciro``
 
-== Lists `\l`
-{id=lists}
+== Lists
+{title2=`\l`}
 
 \x[insane-macro-shortcuts][Insane] with `* ` (asterisk space):
 \cirodown_example[[
@@ -1118,8 +1162,8 @@ And now a list outside of \x[cirodown-example] to test how it looks directly und
 \l[b]
 \l[c]
 
-== Images (`\Image` and `\image`)
-{id=images}
+== Images
+{title2=(`\Image` and `\image`)}
 
 A block image with \x[macro-capitalization-for-block-vs-inline][capital] 'i' `Image` showcasing most of the image properties \x[image-my-test-image].
 \cirodown_example[[
@@ -1499,8 +1543,8 @@ cd
 {title=My nice code block.}
 ]]
 
-== Mathematics `$`, `$$`, `\m` and `\M`
-{id=math}
+== Mathematics
+{title2=(`$`, `$$`, `\m` and `\M`)}
 
 Via https://katex.org/[KaTeX] server side, oh yes!
 
@@ -1546,7 +1590,7 @@ $$
 $$
 ]]
 
-Equation IDs and titles and linking to equations works identically to \x[images][images], see that section for full details. Here is one equation reference example that links to the following insane syntax equation: \x[eq-my-first-insane-equation]:
+Equation IDs and titles and linking to equations works identically to \x[images], see that section for full details. Here is one equation reference example that links to the following insane syntax equation: \x[eq-my-first-insane-equation]:
 \cirodown_example[[
 $$
 \sqrt{1 + 1}
@@ -1598,10 +1642,10 @@ $$2 + 2$${show=0}
 $$3 + 3$${show=1}
 ]]
 
-== Tables `\table`, `\tr`, `\th` and `\td`
-{id=tables}
+== Tables
+{title2=(`\table`, `\tr`, `\th` and `\td`)}
 
-Similar to \x[lists][lists].
+Similar to \x[lists].
 
 \x[auto-parent][Implicit container] with optional indentation to improve readability:
 \cirodown_example[[
@@ -1659,8 +1703,8 @@ And now a table outside of \x[cirodown-example] to test how it looks directly un
 ]
 ]
 
-== Quotations `\q`
-{id=quotations}
+== Quotations
+{title2=`\q`}
 
 With `q`:
 \cirodown_example[[
@@ -1675,15 +1719,15 @@ And with multiple paragraphs.
 and it was great.
 ]]
 
-== Bold `\b`
-{id=bold}
+== Bold
+{title2=`\b`}
 
 \cirodown_example[[
 Some \b[bold] text.
 ]]
 
-== Italic `\i`
-{id=italic}
+== Italic
+{title2=`\i`}
 
 \cirodown_example[[
 Some \i[italic] text.
@@ -1732,7 +1776,7 @@ This macro is used extensively in the Cirodown documentation.
 Certain commonly used macros have insane macro shortcuts that do not start with backslash (`\`):
 * \x[paragraphs]: `\n\n` (double newline)
 * \x[links]: `a http://exmaple.com b` (space followed by `http://`)
-* \x[math]: `$`, described at: \x[insane-code-and-math-shortcuts]
+* \x[mathematics]: `$`, described at: \x[insane-code-and-math-shortcuts]
 * \x[code]: \c[[`]], described at: \x[insane-code-and-math-shortcuts]
 * \x[lists]: `* ` and `  ` indentation, described at: \x[lists]
 
@@ -1927,7 +1971,7 @@ without the `=` sign, or equivalently:
 \cirodown_example[[
 \x[boolean-named-arguments]{full=1}
 ]]
-The `full=0` version is useful in the case of reference targets that unlike \x[headers][headers] expand the title on the cross reference by default, e.g. \x[images][images]:
+The `full=0` version is useful in the case of reference targets that unlike \x[headers] expand the title on the cross reference by default, e.g. \x[images]:
 \cirodown_example[[
 \x[boolean-named-arguments]{full=1}
 ]]
@@ -1953,7 +1997,7 @@ Arguments that are opened with more than one square brackets `[` or curly braces
 
 In literal arguments, Cirodown is not parsed, and the entire argument is considered as text until a corresponding close with the same number of characters.
 
-Therefore, you cannot have nested content, but it makes it extremely convenient to write \x[code] or \x[math].
+Therefore, you cannot have nested content, but it makes it extremely convenient to write \x[code] or \x[mathematics].
 
 For example, a multiline code block with double open and double close square brackets inside can be enclosed in triple square brackets:
 \cirodown_example[[[
@@ -2085,12 +2129,12 @@ For \x[literal-arguments][non-literal macro arguments], you have to use a backsl
 * `\`: backslashes start macros
 * `\` and `\`: open and close \x[positional-vs-named-arguments][positional macro arguments]
 * `\` and `\`: open and close \x[positional-vs-named-arguments][optional macro arguments]
-* `$` (dollar sign)]: \x[insane-macro-shortcuts][insane macro shortcut] for \x[math][Math
-* \c[[`]] (backtick)]: \x[insane-macro-shortcuts][insane macro shortcut] for \x[code][code
+* `$` (dollar sign): \x[insane-macro-shortcuts][insane macro shortcut] for \x[mathematics]
+* \c[[`]] (backtick): \x[insane-macro-shortcuts][insane macro shortcut] for \x[code]
 
 The escape rules for literal arguments are described at: \x[literal-arguments]{full}.
 
-This is good for short arguments of regular text, but for longer blocks of \x[code] or \x[math], you may want to use \x[literal-arguments]
+This is good for short arguments of regular text, but for longer blocks of \x[code] or \x[mathematics], you may want to use \x[literal-arguments]
 
 ==== `auto_parent` macro property
 {id=auto-parent}
@@ -2146,7 +2190,7 @@ The definition of whitespace is the same as the ASCII whitespace definition of H
 === Macro capitalization for block vs inline
 
 This is just a naming convention without any magic attached to it. It is currently used for macros such as:
-* \x[math]
+* \x[mathematics]
 * \x[code]
 * \x[comments]
 
@@ -2291,12 +2335,12 @@ The use case for this option is to produce a single HTML file for an entire buil
 Examples of embeddings done:
 * CSS and JavaScript are copy pasted in place into the HTML.
 
-  The default built-in CSS and JavaScript files used by Cirodown (e.g. the KaTeX CSS \x[math][used for mathematics]) are currently all automatically downloaded as NPM package dependencies to cirodown
+  The default built-in CSS and JavaScript files used by Cirodown (e.g. the KaTeX CSS \x[mathematics][used for mathematics]) are currently all automatically downloaded as NPM package dependencies to cirodown
 
   Without `--html-embed`, those CSS and JavaScript use their main cloud CDN URLs, and therefore require Internet connection to view the generated documents.
 
   The embedded version of the document can be viewed offline however.
-* \x[images][images] are downloaded if needed and embedded as `data:` URLs.
+* \x[images] are downloaded if needed and embedded as `data:` URLs.
 
   Images that are managed by the project itself and already locally present, such as those inside the project itself or due to \x[media-providers] usually don't require download.
 
@@ -2514,7 +2558,7 @@ Cirodown configuration file that affects the behaviour of cirodown for all files
 ===== `media-providers`
 {id=media-providers}
 
-The `media-providers` entry of `cirodown.json` specifies properties of how media such as \x[images][images] and \x[videos][videos] are retrieved and rendered.
+The `media-providers` entry of `cirodown.json` specifies properties of how media such as \x[images] and \x[videos][videos] are retrieved and rendered.
 
 The general format of `media-providers` looks like:
 ``
@@ -2686,7 +2730,7 @@ Generated files:
 
 The \a[build-sass] script takes as input the \a[cirodown.scss] https://sass-lang.com[SASS] scss file, and generates various `.css` versions from it required to properly view generated Cirodown HTML:
 
-* `cirodown.min.css`: contains the converted `cirodown.scss` plus online `@import` requests for stuff like \x[math][KaTeX]
+* `cirodown.min.css`: contains the converted `cirodown.scss` plus online `@import` requests for stuff like \x[mathematics][KaTeX]
 * `cirodown.embed.min.css`: like `cirodown.min.css` but embeds all external CSS in-place without any `@import`. Used to distribute standalone pages: \x[html-embed]
 * `cirodown.local.min.css`: only includes style generated from `cirodown.scss`, not external styles. Used when the external styles are present locally, e.g. via `node_modules`. I think this was done because https://stackoverflow.com/questions/34139675/css-import-not-working-for-local-file-file-path-is-correct[`@import`] was not working with local flies?
 

@@ -559,10 +559,10 @@ The toc:
 \toc
 
 == Quotation
-{description=`\q`}
+{title2=`\q`}
 
 == Orthogonal group
-{description=$O(n)$}
+{title2=$O(n)$}
 
 \x[quotation]{p}
 

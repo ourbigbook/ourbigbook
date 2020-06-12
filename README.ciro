@@ -399,7 +399,7 @@ This is because the number "Section 1.2" might already have been used in the cur
 
 ==== Cross reference title inflection
 
-A common usage pattern is that we want to use \x[headers][header] titles in \x[cross-reference-full-argument][non-full] \x[internal-cross-references] as the definition of a concept without repeating the title, for example:
+A common usage pattern is that we want to use \x[headers]{p=0} titles in \x[cross-reference-full-argument][non-full] \x[internal-cross-references] as the definition of a concept without repeating the title, for example:
 ``
 == Dog
 
@@ -436,7 +436,11 @@ For capitalization, both headers and cross reference macros have the `c` \x[bool
 
   Using this option is required when you are starting a sentence with a non-proper noun.
 
-For pluralization, cross reference macros have the `p` \x[boolean-named-arguments][boolean named argument] which stands for "pluralize". If given, this automatically pluralizes the last word of the target title by using the https://github.com/blakeembrey/pluralize library. If the pluralization is any more complex than to modify the last word of the title, you must do it manually however.
+For pluralization, cross reference macros have the `p` \x[boolean-named-arguments][boolean named argument] which stands for "pluralize":
+* if given and true, this automatically pluralizes the last word of the target title by using the https://github.com/blakeembrey/pluralize library
+* if given and false, automatically singularize
+* if not given, don't change the number of elements
+If your desired pluralization is any more complex than modifying the last word of the title, you must do it manually however.
 
 With those rules in mind, the previous Cirodown example can be written with less repetition as:
 ``
@@ -509,6 +513,22 @@ Now for a live example for quick and dirty interactive testing.
 ]]
 
 \cirodown_example[[
+\x[inflection-plural-examples]
+]]
+
+\cirodown_example[[
+\x[inflection-plural-examples]{p}
+]]
+
+\cirodown_example[[
+\x[inflection-plural-examples]{p=0}
+]]
+
+\cirodown_example[[
+\x[inflection-plural-examples]{p=1}
+]]
+
+\cirodown_example[[
 \x[not-the-readme-header-with-fixed-case]
 ]]
 
@@ -521,6 +541,8 @@ Now for a live example for quick and dirty interactive testing.
 
 ====== inflection example proper lower
 {c}
+
+====== Inflection plural examples
 
 === The `title2` argument
 
@@ -1880,7 +1902,7 @@ nice
 
 Every argument in Cirodown is either positional or named.
 
-For example, in a \x[headers][header] definition with an ID:
+For example, in a \x[headers]{p=0} definition with an ID:
 ``
 = My asdf{id=asdf qwer}{scope}
 ``
@@ -1952,7 +1974,7 @@ See also: \x[links].
 
 Some positional arguments are required, and if not given cirodown reports an error and does not render the node.
 
-This is for example the `level` of a \x[headers][header].
+This is for example the `level` of a \x[headers]{p=0}.
 
 These arguments marked with the `mandatory: true` \x[help-macros] argument property.
 

@@ -1665,12 +1665,23 @@ $$3 + 3$${show=1}
 ]]
 
 == Tables
-{title2=(`\table`, `\tr`, `\th` and `\td`)}
+{title2=(`|| `, `| `, `\table`, `\tr`, `\th` and `\td`)}
 
-Similar to \x[lists].
-
-\x[auto-parent][Implicit container] with optional indentation to improve readability:
+The \x[insane-code-and-math-shortcuts][insane] syntax markds headers with `|| `, regular cells with `| ` and separates rows with double newline:
 \cirodown_example[[
+|| Header 1
+|| Header 2
+
+| 1 1
+| 1 2
+
+| 2 1
+| 2 2
+]]
+
+Equivalent fully explicit version:
+\cirodown_example[[
+\table[
 \tr[
   \th[Header 1]
   \th[Header 2]
@@ -1682,30 +1693,64 @@ Similar to \x[lists].
 \tr[
   \td[2 1]
   \td[2 2]
+]
 ]
 ]]
-The indentation space is removed automatically due to \x[remove-whitespace-children] which is set for `\table`.
+Any white space indentation inside an explicit `\tr` can make the code more readable, and is automatically removed from final output due to \x[remove-whitespace-children] which is set for `\table`.
 
-Explicit container to add further properties: \x[table-my-table].
+To pass further arguments to an implicit table such as `title` or `id`, you need to use an explicit `table` macro as in: \x[table-my-table].
 \cirodown_example[[
-\table{title=My table title.}
+\table
+{title=My table title.}
 {id=table-my-table}
 [
-\tr[
-  \th[Header 1]
-  \th[Header 2]
-]
-\tr[
-  \td[1 1]
-  \td[1 2]
-]
-\tr[
-  \td[2 1]
-  \td[2 2]
-]
+|| Header 1
+|| Header 2
+
+| 1 1
+| 1 2
+
+| 2 1
+| 2 2
 ]
 ]]
 The rules of when the caption shows up or not are the same as described for \x[images].
+
+Multiple source lines, including paragraphs, can be added to a single cell with insane syntax by indenting the cell with exactly two spaces just as for \x[lists], e.g.:
+\cirodown_example[[
+|| h1
+|| h2
+|| h3
+
+  h3 2
+
+| 11
+| 12
+
+  12 2
+| 13
+
+| 21
+| 22
+| 23
+]]
+Arbitrarily complex nested constructs may be used, e.g. a table inside a list inside table:
+\cirodown_example[[
+| 00
+| 01
+
+  * l1
+  * l2
+
+    | 20
+    | 21
+
+    | 30
+    | 31
+
+| 10
+| 11
+]]
 
 And now a table outside of \x[cirodown-example] to test how it looks directly under \x[toplevel]:
 
@@ -2080,7 +2125,7 @@ and close examples:
 
 ==== Argument leading newline removal
 
-If the very first character of an argument is a newline, then that character is ignored.
+If the very first character of an argument is a newline, then that character is ignored if it would be part of a regular plaintext node.
 
 For example:
 ``
@@ -2105,19 +2150,16 @@ a
 b
 </code></pre>
 ``
-
 This is extremely convenient to improve the readability of code blocks and similar constructs.
 
-If you absolutely need an opening newline, just add a second leading or trailing newline to the macro argument, e.g.:
-``
-\C[[
-
-a
-
-b
-
+The newline is however considered if it would be part of some \x[insane-macro-shortcuts]{p=0}. For example, we can start an \x[lists][insane list] inside a \x[quotations]{p=0} as in:
+\cirodown_example[[
+\q[
+* a
+* b
+]
 ]]
-``
+where the insane list requires a leading newline `\n* ` to work. That newline is not ignored, even though it comes immediately after the `\q[` opening.
 
 ==== Argument newlines between arguments removal
 
@@ -2823,6 +2865,8 @@ TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarc
 
 * https://github.com/rstudio/bookdown[], https://bookdown.org/[]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: https://bookdown.org/yihui/bookdown/pandoc.html[], thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.
 * https://gohugo.io/[Hugo]. Pretty good, similar feature set to ours. But Go based, so hard on browser, and adds adhoc features on top of markdown once again
+* https://en.wikipedia.org/wiki/Personal_wiki
+** https://github.com/vimwiki/vimwiki
 
 Less related but of interest, similar philosophy to what Ciro wants, but no explicitly reusable system:
 * http://www.uprtcl.io/

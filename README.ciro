@@ -1682,6 +1682,16 @@ For example:
 | 2 1
 | 2 2
 ]]
+Empty cells are allowed without the trailing space however:
+\cirodown_example[[
+| 1 1
+|
+| 1 3
+
+| 2 1
+|
+| 2 3
+]]
 
 Equivalent fully explicit version:
 \cirodown_example[[

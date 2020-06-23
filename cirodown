@@ -196,7 +196,12 @@ function convert_input(input, options, convert_input_options={}) {
   // Otherwise, include and external CSS to make each page lighter.
   if (convert_input_options.commander.htmlEmbed) {
     new_options.template_vars.style = fs.readFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH, ENCODING);
-    new_options.template_vars.post_body = `<script>${fs.readFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH, ENCODING)}</script>\n`;
+    let scripts_str = '';
+    for (const script_path of cirodown_nodejs.JS_LOCAL_INCLUDES) {
+      scripts_str += `<script>${fs.readFileSync(script_path)}</script>\n`
+    }
+    scripts_str += `<script>${fs.readFileSync(cirodown_nodejs.PACKAGE_OUT_JS_LOCAL_PATH, ENCODING)}</script>\n`;
+    new_options.template_vars.post_body = scripts_str;
   } else {
     let includes_str = ``;
     let scripts_str = ``;
@@ -204,28 +209,41 @@ function convert_input(input, options, convert_input_options={}) {
     let includes = [];
     let scripts = [];
 
-    if (!convert_input_options.include_contains_external) {
-      includes.push(...cirodown_nodejs.CSS_LOCAL_INCLUDES);
-      scripts.push(...cirodown_nodejs.JS_LOCAL_INCLUDES);
+    if (convert_input_options.external_css_and_js) {
+      scripts.push(
+        'https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/tablesort.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/sorts/tablesort.date.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/sorts/tablesort.dotsep.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/sorts/tablesort.filesize.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/sorts/tablesort.monthname.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/sorts/tablesort.number.min.js',
+      );
     }
-    includes.push(convert_input_options.out_css_path);
-    scripts.push(convert_input_options.out_js_path);
+
+    let includes_local = [];
+    let scripts_local = [];
+
+    if (!convert_input_options.external_css_and_js) {
+      includes_local.push(...cirodown_nodejs.CSS_LOCAL_INCLUDES);
+      scripts_local.push(...cirodown_nodejs.JS_LOCAL_INCLUDES);
+    }
+
+    includes_local.push(convert_input_options.out_css_path);
+    scripts_local.push(convert_input_options.out_js_path);
 
     if (
       convert_input_options.output_path !== undefined &&
       !is_installed_globally
     ) {
-      new_includes = [];
-      for (const include of includes) {
-        new_includes.push(path.relative(path.dirname(convert_input_options.output_path), include));
+      for (const include of includes_local) {
+        includes.push(path.relative(path.dirname(convert_input_options.output_path), include));
       }
-      includes = new_includes;
-
-      new_scripts = [];
-      for (const script of scripts) {
-        new_scripts.push(path.relative(path.dirname(convert_input_options.output_path), script));
+      for (const script of scripts_local) {
+        scripts.push(path.relative(path.dirname(convert_input_options.output_path), script));
       }
-      scripts = new_scripts;
+    } else {
+      includes.push(...includes_local);
+      scripts.push(...scripts_local);
     }
 
     for (const include of includes) {
@@ -649,8 +667,8 @@ A link to another file: \\x[and-now-an-include]
   let convert_input_options = {
     commander: commander,
     encoding: ENCODING,
+    external_css_and_js: false,
     had_error: false,
-    include_contains_external: false,
     out_css_path: cirodown_nodejs.PACKAGE_OUT_CSS_LOCAL_PATH,
     out_js_path: cirodown_nodejs.PACKAGE_OUT_JS_LOCAL_PATH,
   };
@@ -835,7 +853,7 @@ A link to another file: \\x[and-now-an-include]
           publish_outdir = path.join(publish_out_dir, 'publish');
           convert_input_options.out_css_path = path.join(publish_outdir, cirodown_nodejs.PACKAGE_OUT_CSS_BASENAME);
           convert_input_options.out_js_path = path.join(publish_outdir, cirodown_nodejs.PACKAGE_OUT_JS_BASENAME);
-          convert_input_options.include_contains_external = true;
+          convert_input_options.external_css_and_js = true;
           // Remove all files from the gh-pages repository in case some were removed from the original source.
           if (fs.existsSync(path.join(publish_out_dir, '.git'))) {
             cmd_get_stdout('git', ['-C', publish_outdir, 'rm', '-r', '-f', '.'], cmd_options);

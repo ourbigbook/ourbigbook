@@ -898,7 +898,7 @@ A link to another file: \\x[and-now-an-include]
               cli_error(`${CIRODOWN_JSON} prepublish file not found: ${prepublish_path}`);
             }
             try {
-              cmd_get_stdout(path.resolve(prepublish_path), [publish_outdir, cmd_options]);
+              cmd_get_stdout(path.resolve(prepublish_path), [publish_outdir]);
             } catch(error) {
               cli_error(`${CIRODOWN_JSON} prepublish command exited non-zero, aborting`);
             }

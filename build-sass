@@ -15,7 +15,7 @@ const package_json = fs.readFileSync(cirodown_nodejs.PACKAGE_PACKAGE_JSON_PATH).
 const package_json_json = JSON.parse(package_json);
 
 let embed_includes = ``;
-for (const local_include of cirodown_nodejs.LOCAL_INCLUDES) {
+for (const local_include of cirodown_nodejs.CSS_LOCAL_INCLUDES) {
   embed_includes += `@use "${local_include}";`
 }
 
@@ -26,7 +26,8 @@ const external_includes = `
 
 fs.mkdirSync(cirodown_nodejs.PACKAGE_OUT_PATH, {recursive: true})
 
-const scss_input = fs.readFileSync(path.join(__dirname, cirodown_nodejs.PACKAGE_SASS_BASENAME)).toString();
+const scss_input = fs.readFileSync(path.join(
+  __dirname, cirodown_nodejs.PACKAGE_SASS_BASENAME)).toString();
 let result;
 
 result = sass.renderSync({

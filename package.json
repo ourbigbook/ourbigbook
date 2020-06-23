@@ -12,7 +12,8 @@
     "liquidjs": "9.11.7",
     "normalize.css": "8.0.1",
     "pluralize": "^8.0.0",
-    "sass": "1.23.7"
+    "sass": "1.23.7",
+    "tablesort": "5.2.1"
   },
   "devDependencies": {
     "browserify": "16.5.0",

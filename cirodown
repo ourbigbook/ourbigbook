@@ -196,24 +196,47 @@ function convert_input(input, options, convert_input_options={}) {
   // Otherwise, include and external CSS to make each page lighter.
   if (convert_input_options.commander.htmlEmbed) {
     new_options.template_vars.style = fs.readFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH, ENCODING);
+    new_options.template_vars.post_body = `<script>${fs.readFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH, ENCODING)}</script>\n`;
   } else {
-    let css_path = convert_input_options.out_css_path;
     let includes_str = ``;
-    let includes = [css_path];
+    let scripts_str = ``;
+
+    let includes = [];
+    let scripts = [];
+
     if (!convert_input_options.include_contains_external) {
-      includes.push(...cirodown_nodejs.LOCAL_INCLUDES);
+      includes.push(...cirodown_nodejs.CSS_LOCAL_INCLUDES);
+      scripts.push(...cirodown_nodejs.JS_LOCAL_INCLUDES);
     }
-    if (convert_input_options.output_path !== undefined && !is_installed_globally) {
+    includes.push(convert_input_options.out_css_path);
+    scripts.push(convert_input_options.out_js_path);
+
+    if (
+      convert_input_options.output_path !== undefined &&
+      !is_installed_globally
+    ) {
       new_includes = [];
       for (const include of includes) {
         new_includes.push(path.relative(path.dirname(convert_input_options.output_path), include));
       }
       includes = new_includes;
+
+      new_scripts = [];
+      for (const script of scripts) {
+        new_scripts.push(path.relative(path.dirname(convert_input_options.output_path), script));
+      }
+      scripts = new_scripts;
     }
+
     for (const include of includes) {
       includes_str += `@import "${include}";\n`;
     }
+    for (const script of scripts) {
+      scripts_str += `<script src="${script}"></script>\n`;
+    }
+
     new_options.template_vars.style = `\n${includes_str}`;
+    new_options.template_vars.post_body = `${scripts_str}`;
   }
   let output = cirodown.convert(input, new_options, new_options.extra_returns);
   if (convert_input_options.commander.showTokens) {
@@ -629,6 +652,7 @@ A link to another file: \\x[and-now-an-include]
     had_error: false,
     include_contains_external: false,
     out_css_path: cirodown_nodejs.PACKAGE_OUT_CSS_LOCAL_PATH,
+    out_js_path: cirodown_nodejs.PACKAGE_OUT_JS_LOCAL_PATH,
   };
   let outfile;
   if (commander.outfile === undefined) {
@@ -810,6 +834,7 @@ A link to another file: \\x[and-now-an-include]
           actual_input = publish_dir;
           publish_outdir = path.join(publish_out_dir, 'publish');
           convert_input_options.out_css_path = path.join(publish_outdir, cirodown_nodejs.PACKAGE_OUT_CSS_BASENAME);
+          convert_input_options.out_js_path = path.join(publish_outdir, cirodown_nodejs.PACKAGE_OUT_JS_BASENAME);
           convert_input_options.include_contains_external = true;
           // Remove all files from the gh-pages repository in case some were removed from the original source.
           if (fs.existsSync(path.join(publish_out_dir, '.git'))) {
@@ -861,7 +886,8 @@ A link to another file: \\x[and-now-an-include]
             }
           }
           // Copy the CSS into the repository.
-          fs.copyFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_PATH, convert_input_options.out_css_path)
+          fs.copyFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_PATH, convert_input_options.out_css_path);
+          fs.copyFileSync(cirodown_nodejs.PACKAGE_OUT_JS_LOCAL_PATH, convert_input_options.out_js_path);
           cmd_get_stdout('git', ['-C', publish_outdir, 'add', '.'], cmd_options);
           source_commit = git_sha(inputPath, src_branch);
           cmd_get_stdout('git', ['-C', publish_outdir, 'commit', '-m', source_commit], cmd_options);

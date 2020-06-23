@@ -2542,7 +2542,13 @@ https://pages.github.com/[GitHub pages] is the default Cirodown publish target.
 
 The first step is of course to create the GitHub repository that will contain your GitHub pages as usual.
 
-Then, if you want to publish your root user page, which appears at `/` (e.g. https://github.com/cirosantilli/cirosantilli.github.io for the user `cirosantilli`), GitHub annoyingly forces you to use the `master` branch for the HTML output:
+Then, if you want to publish to the GitHub pages root page, you need to setup the branches correctly as shown at: \x[publish-to-github-pages-root-page].
+
+Finally, for both root and non-root pages, follow the steps at: \x[publish-to-github-common-steps].
+
+======= Publish to GitHub pages root page
+
+If you want to publish your root user page, which appears at `/` (e.g. https://github.com/cirosantilli/cirosantilli.github.io for the user `cirosantilli`), GitHub annoyingly forces you to use the `master` branch for the HTML output:
 * https://github.com/isaacs/github/issues/212
 * https://stackoverflow.com/questions/31439951/how-can-i-use-a-branch-other-than-master-for-user-github-pages
 
@@ -2564,6 +2570,8 @@ git push --delete origin master
 ``
 
 You then will also want to set your default repository branch to `dev` in the settings for that repository: https://help.github.com/en/github/administering-a-repository/setting-the-default-branch
+
+======= Publish to GitHub common steps
 
 For non-root GitHub pages, no special setup is needed, `cirodown` automatically populates the `gh-pages` branch for you.
 

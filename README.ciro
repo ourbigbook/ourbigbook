@@ -1389,6 +1389,16 @@ We do this by default because Cirodown is meant to allow producing huge single p
 
 TODO: maybe create a mechanism to disable this for the entire build with \x[cirodown-json].
 
+=== Background color of transparent images
+
+For the love of God, there is no standardized for SVG to set its background color without a rectangle? https://stackoverflow.com/questions/11293026/default-background-color-of-svg-root-element `viewport-fill` was just left in limbo?
+
+And as a result, many many many SVG online images that you might want to reuse just rely on white pages and don't add that background rectangle.
+
+Therefore for now we just force white background on \x[overview-of-files-in-this-repository][our default CSS], which is what most SVGs will work with. Otherwise, you can lose the entire image to our default black background.
+
+Then if someone ever has an SVG that needs another background color, we can add an image attribute to set that color as a local style.
+
 === Image generators
 
 TODO implement: mechanism where you enter a textual description of the image inside the code body, and it then converts to an image, adds to the `-media` repo and pushes all automatically. Start with dot.

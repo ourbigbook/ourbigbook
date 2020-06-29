@@ -192,52 +192,52 @@ function t(text) { return {'macro_name': 'plaintext', 'text': text}; }
 
 // Paragraphs.
 assert_convert_ast('one paragraph implicit', 'ab\n',
-  [a('p', [t('ab')])],
+  [a('P', [t('ab')])],
 );
-assert_convert_ast('one paragraph explicit', '\\p[ab]\n',
-  [a('p', [t('ab')])],
+assert_convert_ast('one paragraph explicit', '\\P[ab]\n',
+  [a('P', [t('ab')])],
 );
 assert_convert_ast('two paragraphs', 'p1\n\np2\n',
   [
-    a('p', [t('p1')]),
-    a('p', [t('p2')]),
+    a('P', [t('p1')]),
+    a('P', [t('p2')]),
   ]
 );
 assert_convert_ast('three paragraphs',
   'p1\n\np2\n\np3\n',
   [
-    a('p', [t('p1')]),
-    a('p', [t('p2')]),
-    a('p', [t('p3')]),
+    a('P', [t('p1')]),
+    a('P', [t('p2')]),
+    a('P', [t('p3')]),
   ]
 );
 assert_convert_ast('insane paragraph at start of sane quote',
-  '\\q[\n\naa]\n',
+  '\\Q[\n\naa]\n',
   [
-    a('q', [
-      a('p', [t('aa')])]
+    a('Q', [
+      a('P', [t('aa')])]
     ),
   ]
 );
 assert_convert_ast('sane quote without inner paragraph',
-  '\\q[aa]\n',
-  [a('q', [t('aa')])],
+  '\\Q[aa]\n',
+  [a('Q', [t('aa')])],
 );
 assert_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
 
 // List.
 const l_with_explicit_ul_expect = [
-  a('p', [t('ab')]),
-  a('ul', [
-    a('l', [t('cd')]),
-    a('l', [t('ef')]),
+  a('P', [t('ab')]),
+  a('Ul', [
+    a('L', [t('cd')]),
+    a('L', [t('ef')]),
   ]),
-  a('p', [t('gh')]),
+  a('P', [t('gh')]),
 ];
 assert_convert_ast('l with explicit ul and no extra spaces',
   `ab
 
-\\ul[\\l[cd]\\l[ef]]
+\\Ul[\\L[cd]\\L[ef]]
 
 gh
 `,
@@ -246,8 +246,8 @@ gh
 assert_convert_ast('l with implicit ul sane',
   `ab
 
-\\l[cd]
-\\l[ef]
+\\L[cd]
+\\L[ef]
 
 gh
 `,
@@ -269,20 +269,20 @@ assert_convert_ast('empty insane list item without a space',
 * cd
 `,
   [
-  a('ul', [
-    a('l', [t('ab')]),
-    a('l', []),
-    a('l', [t('cd')]),
+  a('Ul', [
+    a('L', [t('ab')]),
+    a('L', []),
+    a('L', [t('cd')]),
   ]),
 ]
 );
 assert_convert_ast('l with explicit ul and extra spaces',
   `ab
 
-\\ul[
-\\l[cd]\u0020
+\\Ul[
+\\L[cd]\u0020
 \u0020\t\u0020
-\\l[ef]
+\\L[ef]
 ]
 
 gh
@@ -292,34 +292,34 @@ gh
 assert_convert_ast('ordered list',
   `ab
 
-\\ol[
-\\l[cd]
-\\l[ef]
+\\Ol[
+\\L[cd]
+\\L[ef]
 ]
 
 gh
 `,
 [
-  a('p', [t('ab')]),
-  a('ol', [
-    a('l', [t('cd')]),
-    a('l', [t('ef')]),
+  a('P', [t('ab')]),
+  a('Ol', [
+    a('L', [t('cd')]),
+    a('L', [t('ef')]),
   ]),
-  a('p', [t('gh')]),
+  a('P', [t('gh')]),
 ]
 );
 assert_convert_ast('list with paragraph sane',
-  `\\l[
+  `\\L[
 aa
 
 bb
 ]
 `,
   [
-    a('ul', [
-      a('l', [
-        a('p', [t('aa')]),
-        a('p', [t('bb\n')]),
+    a('Ul', [
+      a('L', [
+        a('P', [t('aa')]),
+        a('P', [t('bb\n')]),
       ]),
     ]),
   ]
@@ -330,10 +330,10 @@ assert_convert_ast('list with paragraph insane',
   bb
 `,
   [
-    a('ul', [
-      a('l', [
-        a('p', [t('aa')]),
-        a('p', [t('bb')]),
+    a('Ul', [
+      a('L', [
+        a('P', [t('aa')]),
+        a('P', [t('bb')]),
       ]),
     ]),
   ]
@@ -345,10 +345,10 @@ assert_convert_ast('list with multiline paragraph insane',
   cc
 `,
   [
-    a('ul', [
-      a('l', [
-        a('p', [t('aa')]),
-        a('p', [t('bb\ncc')]),
+    a('Ul', [
+      a('L', [
+        a('P', [t('aa')]),
+        a('P', [t('bb\ncc')]),
       ]),
     ]),
   ]
@@ -363,9 +363,9 @@ assert_convert_ast('insane list with literal no error',
   \`\`
 `,
   [
-    a('ul', [
-      a('l', [
-        a('p', [t('aa')]),
+    a('Ul', [
+      a('L', [
+        a('P', [t('aa')]),
         a('C', [t('bb\ncc\n')]),
       ]),
     ]),
@@ -391,9 +391,9 @@ assert_convert_ast('insane list with literal with double newline is not an error
   \`\`
 `,
   [
-    a('ul', [
-      a('l', [
-        a('p', [t('aa')]),
+    a('Ul', [
+      a('L', [
+        a('P', [t('aa')]),
         a('C', [t('bb\n\ncc\n')]),
       ]),
     ]),
@@ -409,9 +409,9 @@ assert_convert_ast('insane list with element with newline separated arguments',
   {id=cc}
 `,
   [
-    a('ul', [
-      a('l', [
-        a('p', [t('aa')]),
+    a('Ul', [
+      a('L', [
+        a('P', [t('aa')]),
         a('C', [t('bb\n')], {'id': [t('cc')]}),
       ]),
     ]),
@@ -424,27 +424,27 @@ assert_convert_ast('insane list inside paragraph',
 dd
 `,
   [
-    a('p', [
+    a('P', [
       t('aa'),
-      a('ul', [
-        a('l', [t('bb')]),
-        a('l', [t('cc\n')]),
+      a('Ul', [
+        a('L', [t('bb')]),
+        a('L', [t('cc\n')]),
       ]),
       t('dd'),
     ]),
   ]
 );
 assert_convert_ast('insane list at start of sane quote',
-  `\\q[
+  `\\Q[
 * bb
 * cc
 ]
 `,
   [
-    a('q', [
-      a('ul', [
-        a('l', [t('bb')]),
-        a('l', [t('cc\n')]),
+    a('Q', [
+      a('Ul', [
+        a('L', [t('bb')]),
+        a('L', [t('cc\n')]),
       ]),
     ]),
   ]
@@ -454,11 +454,11 @@ assert_convert_ast('nested list insane',
   * bb
 `,
   [
-    a('ul', [
-      a('l', [
+    a('Ul', [
+      a('L', [
         t('aa'),
-        a('ul', [
-          a('l', [
+        a('Ul', [
+          a('L', [
             t('bb')
           ]),
         ]),
@@ -468,43 +468,43 @@ assert_convert_ast('nested list insane',
 );
 assert_convert_ast('escape insane list',
   '\\* a',
-  [a('p', [t('* a')])],
+  [a('P', [t('* a')])],
 );
 
 // Table.
 const tr_with_explicit_table_expect = [
-  a('p', [t('ab')]),
-  a('table', [
-    a('tr', [
-      a('th', [t('cd')]),
-      a('th', [t('ef')]),
+  a('P', [t('ab')]),
+  a('Table', [
+    a('Tr', [
+      a('Th', [t('cd')]),
+      a('Th', [t('ef')]),
     ]),
-    a('tr', [
-      a('td', [t('00')]),
-      a('td', [t('01')]),
+    a('Tr', [
+      a('Td', [t('00')]),
+      a('Td', [t('01')]),
     ]),
-    a('tr', [
-      a('td', [t('10')]),
-      a('td', [t('11')]),
+    a('Tr', [
+      a('Td', [t('10')]),
+      a('Td', [t('11')]),
     ]),
   ]),
-  a('p', [t('gh')]),
+  a('P', [t('gh')]),
 ];
 assert_convert_ast('tr with explicit table',
   `ab
 
-\\table[
-\\tr[
-\\th[cd]
-\\th[ef]
+\\Table[
+\\Tr[
+\\Th[cd]
+\\Th[ef]
 ]
-\\tr[
-\\td[00]
-\\td[01]
+\\Tr[
+\\Td[00]
+\\Td[01]
 ]
-\\tr[
-\\td[10]
-\\td[11]
+\\Tr[
+\\Td[10]
+\\Td[11]
 ]
 ]
 
@@ -515,17 +515,17 @@ gh
 assert_convert_ast('tr with implicit table',
   `ab
 
-\\tr[
-\\th[cd]
-\\th[ef]
+\\Tr[
+\\Th[cd]
+\\Th[ef]
 ]
-\\tr[
-\\td[00]
-\\td[01]
+\\Tr[
+\\Td[00]
+\\Td[01]
 ]
-\\tr[
-\\td[10]
-\\td[11]
+\\Tr[
+\\Td[10]
+\\Td[11]
 ]
 
 gh
@@ -565,32 +565,32 @@ assert_convert_ast('insane table inside insane list inside insane table',
 | 11
 `,
   [
-    a('table', [
-      a('tr', [
-        a('td', [t('00')]),
-        a('td', [
-          a('p', [t('01')]),
-          a('ul', [
-            a('l', [t('l1')]),
-            a('l', [
-              a('p', [t('l2')]),
-              a('table', [
-                a('tr', [
-                  a('td', [t('20')]),
-                  a('td', [t('21')]),
+    a('Table', [
+      a('Tr', [
+        a('Td', [t('00')]),
+        a('Td', [
+          a('P', [t('01')]),
+          a('Ul', [
+            a('L', [t('l1')]),
+            a('L', [
+              a('P', [t('l2')]),
+              a('Table', [
+                a('Tr', [
+                  a('Td', [t('20')]),
+                  a('Td', [t('21')]),
                 ]),
-                a('tr', [
-                  a('td', [t('30')]),
-                  a('td', [t('31')]),
+                a('Tr', [
+                  a('Td', [t('30')]),
+                  a('Td', [t('31')]),
                 ]),
               ]),
             ]),
           ]),
         ]),
       ]),
-      a('tr', [
-        a('td', [t('10')]),
-        a('td', [t('11')]),
+      a('Tr', [
+        a('Td', [t('10')]),
+        a('Td', [t('11')]),
       ]),
     ]),
   ]
@@ -600,11 +600,11 @@ assert_convert_ast('insane table body with empty cell and no space',
 |
 | 02
 `, [
-  a('table', [
-    a('tr', [
-      a('td', [t('00')]),
-      a('td', []),
-      a('td', [t('02')]),
+  a('Table', [
+    a('Tr', [
+      a('Td', [t('00')]),
+      a('Td', []),
+      a('Td', [t('02')]),
     ]),
   ]),
 ],
@@ -614,44 +614,44 @@ assert_convert_ast('insane table head with empty cell and no space',
 ||
 || 02
 `, [
-  a('table', [
-    a('tr', [
-      a('th', [t('00')]),
-      a('th', []),
-      a('th', [t('02')]),
+  a('Table', [
+    a('Tr', [
+      a('Th', [t('00')]),
+      a('Th', []),
+      a('Th', [t('02')]),
     ]),
   ]),
 ],
 );
 assert_convert_ast('implicit table escape', '\\| a\n',
-  [a('p', [t('| a')])],
+  [a('P', [t('| a')])],
 );
 assert_convert_ast("pipe space in middle of line don't need escape", 'a | b\n',
-  [a('p', [t('a | b')])],
+  [a('P', [t('a | b')])],
 );
 assert_convert_ast('auto_parent consecutive implicit tr and l',
-  `\\tr[\\td[ab]]
-\\l[cd]
+  `\\Tr[\\Td[ab]]
+\\L[cd]
 `,
 [
-  a('p', [
-    a('table', [
-      a('tr', [
-        a('td', [t('ab')]),
+  a('P', [
+    a('Table', [
+      a('Tr', [
+        a('Td', [t('ab')]),
       ]),
     ]),
-    a('ul', [
-      a('l', [t('cd')]),
+    a('Ul', [
+      a('L', [t('cd')]),
     ]),
   ]),
 ]
 );
 // TODO html test
 //assert_convert('table with id has caption',
-//  `\\table{id=ab}[
-//\\tr[
-//\\td[00]
-//\\td[01]
+//  `\\Table{id=ab}[
+//\\Tr[
+//\\Td[00]
+//\\Td[01]
 //]
 //]
 //`,
@@ -676,9 +676,9 @@ assert_convert_ast('image simple',
 gh
 `,
 [
-  a('p', [t('ab')]),
+  a('P', [t('ab')]),
   a('Image', undefined, {src: [t('cd')]}),
-  a('p', [t('gh')]),
+  a('P', [t('gh')]),
 ]
 );
 assert_convert_ast('image title',
@@ -718,11 +718,11 @@ assert_no_error('image provider that does match actual source',
 //)
 
 // Escapes.
-assert_convert_ast('escape backslash',            'a\\\\b\n', [a('p', [t('a\\b')])]);
-assert_convert_ast('escape left square bracket',  'a\\[b\n',  [a('p', [t('a[b')])]);
-assert_convert_ast('escape right square bracket', 'a\\]b\n',  [a('p', [t('a]b')])]);
-assert_convert_ast('escape left curly brace',     'a\\{b\n',  [a('p', [t('a{b')])]);
-assert_convert_ast('escape right curly brace',    'a\\}b\n',  [a('p', [t('a}b')])]);
+assert_convert_ast('escape backslash',            'a\\\\b\n', [a('P', [t('a\\b')])]);
+assert_convert_ast('escape left square bracket',  'a\\[b\n',  [a('P', [t('a[b')])]);
+assert_convert_ast('escape right square bracket', 'a\\]b\n',  [a('P', [t('a]b')])]);
+assert_convert_ast('escape left curly brace',     'a\\{b\n',  [a('P', [t('a{b')])]);
+assert_convert_ast('escape right curly brace',    'a\\}b\n',  [a('P', [t('a}b')])]);
 
 //// HTML Escapes.
 // TODO html or subfunction test
@@ -733,16 +733,16 @@ assert_convert_ast('escape right curly brace',    'a\\}b\n',  [a('p', [t('a}b')]
 
 // Positional arguments.
 // Has no content argument.
-assert_convert_ast('p with no content argument', '\\p\n', [a('p')]);
-assert_convert_ast('table with no content argument', '\\table\n', [a('table')]);
+assert_convert_ast('p with no content argument', '\\P\n', [a('P')]);
+assert_convert_ast('table with no content argument', '\\Table\n', [a('Table')]);
 // Has empty content argument.
-assert_convert_ast('p with empty content argument', '\\p[]\n', [a('p', [])]);
+assert_convert_ast('p with empty content argument', '\\P[]\n', [a('P', [])]);
 
 // Named arguments.
-assert_convert_ast('p with id before', '\\p{id=ab}[cd]\n',
-  [a('p', [t('cd')], {'id': [t('ab')]})]);
-assert_convert_ast('p with id after', '\\p[cd]{id=ab}\n',
-  [a('p', [t('cd')], {'id': [t('ab')]})]);
+assert_convert_ast('p with id before', '\\P{id=ab}[cd]\n',
+  [a('P', [t('cd')], {'id': [t('ab')]})]);
+assert_convert_ast('p with id after', '\\P[cd]{id=ab}\n',
+  [a('P', [t('cd')], {'id': [t('ab')]})]);
 
 // Newline after close.
 assert_convert_ast('text after block element',
@@ -757,12 +757,12 @@ d
 e
 `,
 [
-  a('p', [t('a')]),
-  a('p', [
+  a('P', [t('a')]),
+  a('P', [
     a('C', [t('b\nc\n')]),
     t('\nd'),
   ]),
-  a('p', [t('e')]),
+  a('P', [t('e')]),
 ]
 );
 assert_convert_ast('macro after block element',
@@ -777,20 +777,20 @@ c
 e
 `,
 [
-  a('p', [t('a')]),
-  a('p', [
+  a('P', [t('a')]),
+  a('P', [
     a('C', [t('b\nc\n')]),
     t('\n'),
     a('c', [t('d')]),
   ]),
-  a('p', [t('e')]),
+  a('P', [t('e')]),
 ]
 );
 
 // Literal arguments.
 assert_convert_ast('literal argument code inline',
   '\\c[[\\ab[cd]{ef}]]\n',
-  [a('p', [a('c', [t('\\ab[cd]{ef}')])])],
+  [a('P', [a('c', [t('\\ab[cd]{ef}')])])],
 );
 assert_convert_ast('literal argument code block',
   `a
@@ -803,59 +803,59 @@ assert_convert_ast('literal argument code block',
 d
 `,
 [
-  a('p', [t('a')]),
+  a('P', [t('a')]),
   a('C', [t('\\[]{}\n\\[]{}\n')]),
-  a('p', [t('d')]),
+  a('P', [t('d')]),
 ],
 );
 assert_convert_ast('non-literal argument leading newline gets removed',
-  `\\p[
+  `\\P[
 a
 b
 ]
 `,
-  [a('p', [t('a\nb\n')])],
+  [a('P', [t('a\nb\n')])],
 );
 assert_convert_ast('literal argument leading newline gets removed',
-  `\\p[[
+  `\\P[[
 a
 b
 ]]
 `,
-  [a('p', [t('a\nb\n')])],
+  [a('P', [t('a\nb\n')])],
 );
 assert_convert_ast('literal argument leading newline gets removed but not the second one',
-  `\\p[[
+  `\\P[[
 
 a
 b
 ]]
 `,
-  [a('p', [t('\na\nb\n')])],
+  [a('P', [t('\na\nb\n')])],
 );
 assert_convert_ast('literal agument escape leading open no escape',
   '\\c[[\\ab]]\n',
-  [a('p', [a('c', [t('\\ab')])])],
+  [a('P', [a('c', [t('\\ab')])])],
 );
 assert_convert_ast('literal agument escape leading open one backslash',
   '\\c[[\\[ab]]\n',
-  [a('p', [a('c', [t('[ab')])])],
+  [a('P', [a('c', [t('[ab')])])],
 );
 assert_convert_ast('literal agument escape leading open two backslashes',
   '\\c[[\\\\[ab]]\n',
-  [a('p', [a('c', [t('\\[ab')])])],
+  [a('P', [a('c', [t('\\[ab')])])],
 );
 assert_convert_ast('literal agument escape trailing close no escape',
   '\\c[[\\]]\n',
-  [a('p', [a('c', [t('\\')])])],
+  [a('P', [a('c', [t('\\')])])],
 );
 assert_convert_ast('literal agument escape trailing one backslash',
   '\\c[[\\]]]\n',
-  [a('p', [a('c', [t(']')])])],
+  [a('P', [a('c', [t(']')])])],
 );
 assert_convert_ast('literal agument escape trailing two backslashes',
   '\\c[[\\\\]]]\n',
-  [a('p', [a('c', [t('\\]')])])],
+  [a('P', [a('c', [t('\\]')])])],
 );
 
 // Newline between arguments.
@@ -891,7 +891,7 @@ ab
 assert_convert_ast('link simple',
   'a \\a[http://example.com][example link] b\n',
   [
-    a('p', [
+    a('P', [
       t('a '),
       a('a', [t('example link')], {'href': [t('http://example.com')]}),
       t(' b'),
@@ -901,7 +901,7 @@ assert_convert_ast('link simple',
 assert_convert_ast('link auto sane',
   'a \\a[http://example.com] b\n',
   [
-    a('p', [
+    a('P', [
       t('a '),
       a('a', undefined, {'href': [t('http://example.com')]}),
       t(' b'),
@@ -911,7 +911,7 @@ assert_convert_ast('link auto sane',
 assert_convert_ast('link auto insane space start and end',
   'a http://example.com b\n',
   [
-    a('p', [
+    a('P', [
       t('a '),
       a('a', undefined, {'href': [t('http://example.com')]}),
       t(' b'),
@@ -920,15 +920,15 @@ assert_convert_ast('link auto insane space start and end',
 );
 assert_convert_ast('link auto insane start end document',
   'http://example.com',
-  [a('p', [a('a', undefined, {'href': [t('http://example.com')]})])],
+  [a('P', [a('a', undefined, {'href': [t('http://example.com')]})])],
 );
 assert_convert_ast('link auto insane start end square brackets',
-  '\\p[http://example.com]\n',
-  [a('p', [a('a', undefined, {'href': [t('http://example.com')]})])],
+  '\\P[http://example.com]\n',
+  [a('P', [a('a', undefined, {'href': [t('http://example.com')]})])],
 );
 assert_convert_ast('link auto insane start end literal square brackets',
   '\\[http://example.com\\]\n',
-  [a('p', [t('[http://example.com]')])],
+  [a('P', [t('[http://example.com]')])],
 );
 assert_convert_ast('link auto insane start end named argument',
   '\\Image[aaa.jpg]{description=http://example.com}\n',
@@ -952,15 +952,15 @@ http://example.com
 b
 `,
   [
-    a('p', [t('a')]),
-    a('p', [a('a', undefined, {'href': [t('http://example.com')]})]),
-    a('p', [t('b')]),
+    a('P', [t('a')]),
+    a('P', [a('a', undefined, {'href': [t('http://example.com')]})]),
+    a('P', [t('b')]),
   ]
 );
 assert_convert_ast('link insane with custom body no newline',
   'http://example.com[aa]',
   [
-    a('p', [
+    a('P', [
       a('a', [t('aa')], {'href': [t('http://example.com')]}),
     ]),
   ]
@@ -968,7 +968,7 @@ assert_convert_ast('link insane with custom body no newline',
 assert_convert_ast('link insane with custom body with newline',
   'http://example.com\n[aa]',
   [
-    a('p', [
+    a('P', [
       a('a', [t('aa')], {'href': [t('http://example.com')]}),
     ]),
   ]
@@ -976,7 +976,7 @@ assert_convert_ast('link insane with custom body with newline',
 assert_convert_ast('link auto end in space',
   `a http://example.com b`,
   [
-    a('p', [
+    a('P', [
       t('a '),
       a('a', undefined, {'href': [t('http://example.com')]}),
       t(' b'),
@@ -984,18 +984,18 @@ assert_convert_ast('link auto end in space',
   ]
 );
 assert_convert_ast('link auto end in square bracket',
-  `\\p[a http://example.com]`,
+  `\\P[a http://example.com]`,
   [
-    a('p', [
+    a('P', [
       t('a '),
       a('a', undefined, {'href': [t('http://example.com')]}),
     ])
   ]
 );
 assert_convert_ast('link auto containing escapes',
-  `\\p[a http://example.com\\]a\\}b\\\\c\\ d]`,
+  `\\P[a http://example.com\\]a\\}b\\\\c\\ d]`,
   [
-    a('p', [
+    a('P', [
       t('a '),
       a('a', undefined, {'href': [t('http://example.com]a}b\\c d')]}),
     ])
@@ -1004,12 +1004,12 @@ assert_convert_ast('link auto containing escapes',
 assert_convert_ast('link with multiple paragraphs',
   '\\a[http://example.com][aaa\n\nbbb]\n',
   [
-    a('p', [
+    a('P', [
       a(
         'a',
         [
-          a('p', [t('aaa')]),
-          a('p', [t('bbb')]),
+          a('P', [t('aaa')]),
+          a('P', [t('bbb')]),
         ],
         {'href': [t('http://example.com')]},
       ),
@@ -1019,27 +1019,27 @@ assert_convert_ast('link with multiple paragraphs',
 
 // Cross references \x
 assert_no_error('cross reference simple',
-  `\\h[1][My header]
+  `\\H[1][My header]
 
 \\x[my-header][link body]
 `
 );
 assert_no_error('cross reference auto default',
-  `\\h[1][My header]
+  `\\H[1][My header]
 
 \\x[my-header]
 `);
 assert_no_error('cross reference full boolean style without value',
-  `\\h[1][My header]
+  `\\H[1][My header]
 
 \\x[my-header]{full}
 `,
   [
-    a('h', undefined, {
+    a('H', undefined, {
       level: [t('1')],
       title: [t('abc')],
     }),
-    a('p', [
+    a('P', [
       a('x', undefined, {
         full: [],
         href: [t('abc')],
@@ -1048,16 +1048,16 @@ assert_no_error('cross reference full boolean style without value',
   ]
 );
 assert_convert_ast('cross reference full boolean style with value 0',
-  `\\h[1][abc]
+  `\\H[1][abc]
 
 \\x[abc]{full=0}
 `,
   [
-    a('h', undefined, {
+    a('H', undefined, {
       level: [t('1')],
       title: [t('abc')],
     }),
-    a('p', [
+    a('P', [
       a('x', undefined, {
         full: [t('0')],
         href: [t('abc')],
@@ -1066,16 +1066,16 @@ assert_convert_ast('cross reference full boolean style with value 0',
   ]
 );
 assert_convert_ast('cross reference full boolean style with value 1',
-  `\\h[1][abc]
+  `\\H[1][abc]
 
 \\x[abc]{full=1}
 `,
   [
-    a('h', undefined, {
+    a('H', undefined, {
       level: [t('1')],
       title: [t('abc')],
     }),
-    a('p', [
+    a('P', [
       a('x', undefined, {
         full: [t('1')],
         href: [t('abc')],
@@ -1084,12 +1084,12 @@ assert_convert_ast('cross reference full boolean style with value 1',
   ]
 );
 assert_error('cross reference full boolean style with invalid value 2',
-  `\\h[1][abc]
+  `\\H[1][abc]
 
 \\x[abc]{full=2}
 `, 3, 8);
 assert_error('cross reference full boolean style with invalid value true',
-  `\\h[1][abc]
+  `\\H[1][abc]
 
 \\x[abc]{full=true}
 `, 3, 8);
@@ -1106,23 +1106,23 @@ assert_no_error('cross reference without content nor target title style full',
 assert_error('cross reference undefined', '\\x[ab]', 1, 3);
 //// TODO failing https://github.com/cirosantilli/cirodown/issues/34
 //assert_error('cross reference circular loop infinite recursion implicit body',
-//  `\\h[1][\\x[h2]]{id=h1}
+//  `\\H[1][\\x[h2]]{id=h1}
 //
-//\\h[2][\\x[h1]]{id=h2}
+//\\H[2][\\x[h1]]{id=h2}
 //`, 1, 1);
 // This is fine because the content is explicitly given.
 assert_convert_ast('cross reference circular loop infinite recursion explicit body',
-  `\\h[1][\\x[h2][myh2]]{id=h1}
+  `\\H[1][\\x[h2][myh2]]{id=h1}
 
-\\h[2][\\x[h1][myh1]]{id=h2}
+\\H[2][\\x[h1][myh1]]{id=h2}
 `,
   // TODO
   [
-    a('h', undefined, {
+    a('H', undefined, {
       level: [t('1')],
       title: [a('x', [t('myh2')], {'href': [t('h2')]})],
     }),
-    a('h', undefined, {
+    a('H', undefined, {
       level: [t('2')],
       title: [a('x', [t('myh1')], {'href': [t('h1')]})],
     }),
@@ -1134,7 +1134,7 @@ assert_convert_ast('cross reference from image title before with x content witho
 \\Image[cd]{title=\\x[ab][cd]}
 `,
   [
-    a('h', undefined, {
+    a('H', undefined, {
       level: [t('1')],
       title: [t('ab')],
     }),
@@ -1150,7 +1150,7 @@ assert_convert_ast('cross reference from image title before without x content wi
 \\Image[cd]{title=\\x[ab]}{id=cd}
 `,
   [
-    a('h', undefined, {
+    a('H', undefined, {
       level: [t('1')],
       title: [t('ab')],
     }),
@@ -1177,7 +1177,7 @@ assert_convert_ast('cross reference from image title after with x content withou
 == ef
 `,
   [
-    a('h', undefined, {
+    a('H', undefined, {
       level: [t('1')],
       title: [t('ab')],
     }),
@@ -1185,7 +1185,7 @@ assert_convert_ast('cross reference from image title after with x content withou
       src: [t('cd')],
       title: [a('x', [t('gh')], {'href': [t('ef')]})],
     }),
-    a('h', undefined, {
+    a('H', undefined, {
       level: [t('2')],
       title: [t('ef')],
     }),
@@ -1199,7 +1199,7 @@ assert_convert_ast('cross reference from image title after without x content wit
 == ef
 `,
   [
-    a('h', undefined, {
+    a('H', undefined, {
       level: [t('1')],
       title: [t('ab')],
     }),
@@ -1208,7 +1208,7 @@ assert_convert_ast('cross reference from image title after without x content wit
       src: [t('cd')],
       title: [a('x', undefined, {'href': [t('ef')]})],
     }),
-    a('h', undefined, {
+    a('H', undefined, {
       level: [t('2')],
       title: [t('ef')],
     }),
@@ -1257,13 +1257,13 @@ assert_no_error("internal cross references work with header scope and don't thro
 );
 //// https://github.com/cirosantilli/cirodown/issues/45
 //assert_convert_ast('cross reference to plaintext id calculated from title',
-//  `\\h[1][aa \`bb\` cc]
+//  `\\H[1][aa \`bb\` cc]
 //
 //\\x[aa-bb-cc]
 //`,
 //  // TODO
 //  [
-//    a('h', undefined, {
+//    a('H', undefined, {
 //      level: [t('1')],
 //      title: [
 //        t('aa '),
@@ -1271,7 +1271,7 @@ assert_no_error("internal cross references work with header scope and don't thro
 //        t(' cc'),
 //      ],
 //    }),
-//    a('p', [
+//    a('P', [
 //      a('x', undefined, { href: [t('aa-bb-cc')]}),
 //    ]),
 //  ]
@@ -1280,48 +1280,48 @@ assert_no_error("internal cross references work with header scope and don't thro
 //// Headers.
 // TODO inner ID property test
 //assert_convert_ast('header simple',
-//  '\\h[1][My header]\n',
+//  '\\H[1][My header]\n',
 //  `<h1 id="my-header"><a href="#my-header">1. My header</a></h1>\n`
 //);
 assert_convert_ast('header and implicit paragraphs',
-  `\\h[1][My header 1]
+  `\\H[1][My header 1]
 
 My paragraph 1.
 
-\\h[2][My header 2]
+\\H[2][My header 2]
 
 My paragraph 2.
 `,
   [
-    a('h', undefined, {level: [t('1')], title: [t('My header 1')]}),
-    a('p', [t('My paragraph 1.')]),
-    a('h', undefined, {level: [t('2')], title: [t('My header 2')]}),
-    a('p', [t('My paragraph 2.')]),
+    a('H', undefined, {level: [t('1')], title: [t('My header 1')]}),
+    a('P', [t('My paragraph 1.')]),
+    a('H', undefined, {level: [t('2')], title: [t('My header 2')]}),
+    a('P', [t('My paragraph 2.')]),
   ]
 );
 const header_7_expect = [
-  a('h', undefined, {level: [t('1')], title: [t('1')]}),
-  a('h', undefined, {level: [t('2')], title: [t('2')]}),
-  a('h', undefined, {level: [t('3')], title: [t('3')]}),
-  a('h', undefined, {level: [t('4')], title: [t('4')]}),
-  a('h', undefined, {level: [t('5')], title: [t('5')]}),
-  a('h', undefined, {level: [t('6')], title: [t('6')]}),
-  a('h', undefined, {level: [t('7')], title: [t('7')]}),
+  a('H', undefined, {level: [t('1')], title: [t('1')]}),
+  a('H', undefined, {level: [t('2')], title: [t('2')]}),
+  a('H', undefined, {level: [t('3')], title: [t('3')]}),
+  a('H', undefined, {level: [t('4')], title: [t('4')]}),
+  a('H', undefined, {level: [t('5')], title: [t('5')]}),
+  a('H', undefined, {level: [t('6')], title: [t('6')]}),
+  a('H', undefined, {level: [t('7')], title: [t('7')]}),
 ];
 assert_convert_ast('header 7 sane',
-  `\\h[1][1]
+  `\\H[1][1]
 
-\\h[2][2]
+\\H[2][2]
 
-\\h[3][3]
+\\H[3][3]
 
-\\h[4][4]
+\\H[4][4]
 
-\\h[5][5]
+\\H[5][5]
 
-\\h[6][6]
+\\H[6][6]
 
-\\h[7][7]
+\\H[7][7]
 `,
   header_7_expect
 );
@@ -1344,9 +1344,9 @@ assert_convert_ast('header 7 insane',
   header_7_expect
 );
 const header_id_new_line_expect =
-  [a('h', undefined, {level: [t('1')], title: [t('aa')], id: [t('bb')]})];
+  [a('H', undefined, {level: [t('1')], title: [t('aa')], id: [t('bb')]})];
 assert_convert_ast('header id new line sane',
-  '\\h[1][aa]\n{id=bb}',
+  '\\H[1][aa]\n{id=bb}',
   header_id_new_line_expect,
 );
 assert_convert_ast('header id new line insane no trailing elment',
@@ -1356,7 +1356,7 @@ assert_convert_ast('header id new line insane no trailing elment',
 // TODO id goes to code.
 assert_convert_ast('header id new line insane trailing element',
   '= aa \\c[bb]\n{id=cc}',
-  [a('h', undefined, {
+  [a('H', undefined, {
       level: [t('1')],
       title: [
         t('aa '),
@@ -1365,32 +1365,32 @@ assert_convert_ast('header id new line insane trailing element',
       id: [t('cc')],
   })],
 );
-assert_error('header must be an integer letters', '\\h[a][b]\n', 1, 3);
+assert_error('header must be an integer letters', '\\H[a][b]\n', 1, 3);
 assert_error('non integer h2 header level in a document with a toc does not throw',
-  `\\h[1][h1]
+  `\\H[1][h1]
 
-\\toc
+\\Toc
 
-\\h[][h2 1]
+\\H[][h2 1]
 
-\\h[2][h2 2]
+\\H[2][h2 2]
 
-\\h[][h2 3]
+\\H[][h2 3]
 `, 5, 3);
 assert_error('non integer h1 header level a in a document with a toc does not throw',
-  `\\h[][h1]
+  `\\H[][h1]
 
-\\toc
+\\Toc
 `, 1, 3);
-assert_error('header must be an integer empty', '\\h[][b]\n', 1, 3);
-assert_error('header must not be zero', '\\h[0][b]\n', 1, 3);
-assert_error('header skip level is an error', '\\h[1][a]\n\n\\h[3][b]\n', 3, 3);
+assert_error('header must be an integer empty', '\\H[][b]\n', 1, 3);
+assert_error('header must not be zero', '\\H[0][b]\n', 1, 3);
+assert_error('header skip level is an error', '\\H[1][a]\n\n\\H[3][b]\n', 3, 3);
 
 // Code.
 assert_convert_ast('code inline sane',
   'a \\c[b c] d\n',
   [
-    a('p', [
+    a('P', [
       t('a '),
       a('c', [t('b c')]),
       t(' d'),
@@ -1400,7 +1400,7 @@ assert_convert_ast('code inline sane',
 assert_convert_ast('code inline insane simple',
   'a `b c` d\n',
   [
-    a('p', [
+    a('P', [
       t('a '),
       a('c', [t('b c')]),
       t(' d'),
@@ -1409,7 +1409,7 @@ assert_convert_ast('code inline insane simple',
 );
 assert_convert_ast('code inline insane escape backtick',
   'a \\`b c\n',
-  [a('p', [t('a `b c')])]
+  [a('P', [t('a `b c')])]
 );
 assert_convert_ast('code block sane',
   `a
@@ -1422,9 +1422,9 @@ c
 d
 `,
 [
-  a('p', [t('a')]),
+  a('P', [t('a')]),
   a('C', [t('b\nc\n')]),
-  a('p', [t('d')]),
+  a('P', [t('d')]),
 ]
 );
 assert_convert_ast('code block insane',
@@ -1438,24 +1438,24 @@ c
 d
 `,
 [
-  a('p', [t('a')]),
+  a('P', [t('a')]),
   a('C', [t('b\nc\n')]),
-  a('p', [t('d')]),
+  a('P', [t('d')]),
 ]
 );
 
 // Math. Minimal testing since this is mostly factored out with code tests.
 assert_convert_ast('math inline sane',
   '\\m[[\\sqrt{1 + 1}]]\n',
-  [a('p', [a('m', [t('\\sqrt{1 + 1}')])])],
+  [a('P', [a('m', [t('\\sqrt{1 + 1}')])])],
 );
 assert_convert_ast('math inline insane simple',
   '$\\sqrt{1 + 1}$\n',
-  [a('p', [a('m', [t('\\sqrt{1 + 1}')])])],
+  [a('P', [a('m', [t('\\sqrt{1 + 1}')])])],
 );
 assert_convert_ast('math inline escape dollar',
   'a \\$b c\n',
-  [a('p', [t('a $b c')])],
+  [a('P', [t('a $b c')])],
 );
 assert_no_error('math block sane',
   '\\M[[\\sqrt{1 + 1}]]',
@@ -1473,21 +1473,21 @@ const include_opts = {extra_convert_opts: {
   html_single_page: true,
   read_include: function(input_path) {
     if (input_path === 'include-one-level-1') {
-      return `\\h[1][cc]
+      return `\\H[1][cc]
 
 dd
 `
     } else if (input_path === 'include-one-level-2') {
-      return `\\h[1][ee]
+      return `\\H[1][ee]
 
 ff
 `
     } else if (input_path === 'include-two-levels') {
-      return `\\h[1][ee]
+      return `\\H[1][ee]
 
 ff
 
-\\h[2][gg]
+\\H[2][gg]
 
 hh
 `
@@ -1497,99 +1497,99 @@ hh
   },
 }};
 assert_convert_ast('include simple with paragraph',
-  `\\h[1][aa]
+  `\\H[1][aa]
 
 bb
 
-\\include[include-one-level-1]
+\\Include[include-one-level-1]
 
-\\include[include-one-level-2]
+\\Include[include-one-level-2]
 `,
   [
-    a('h', undefined, {level: [t('1')], title: [t('aa')]}),
-    a('p', [t('bb')]),
-    a('h', undefined, {level: [t('2')], title: [t('cc')]}),
-    a('p', [t('dd')]),
-    a('h', undefined, {level: [t('2')], title: [t('ee')]}),
-    a('p', [t('ff')]),
+    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('P', [t('bb')]),
+    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
+    a('P', [t('dd')]),
+    a('H', undefined, {level: [t('2')], title: [t('ee')]}),
+    a('P', [t('ff')]),
   ],
   include_opts
 );
 assert_convert_ast('include multilevel with paragraph',
-  `\\h[1][aa]
+  `\\H[1][aa]
 
 bb
 
-\\include[include-two-levels]
+\\Include[include-two-levels]
 
-\\include[include-one-level-1]
+\\Include[include-one-level-1]
 `,
   [
-    a('h', undefined, {level: [t('1')], title: [t('aa')]}),
-    a('p', [t('bb')]),
-    a('h', undefined, {level: [t('2')], title: [t('ee')]}),
-    a('p', [t('ff')]),
-    a('h', undefined, {level: [t('3')], title: [t('gg')]}),
-    a('p', [t('hh')]),
-    a('h', undefined, {level: [t('2')], title: [t('cc')]}),
-    a('p', [t('dd')]),
+    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('P', [t('bb')]),
+    a('H', undefined, {level: [t('2')], title: [t('ee')]}),
+    a('P', [t('ff')]),
+    a('H', undefined, {level: [t('3')], title: [t('gg')]}),
+    a('P', [t('hh')]),
+    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
+    a('P', [t('dd')]),
   ],
   include_opts
 );
 // TODO failing https://github.com/cirosantilli/cirodown/issues/35
 //assert_convert_ast('include simple no paragraph',
-//  `\\h[1][aa]
+//  `\\H[1][aa]
 //
 //bb
 //
-//\\include[include-one-level-1]
-//\\include[include-one-level-2]
+//\\Include[include-one-level-1]
+//\\Include[include-one-level-2]
 //`,
 //  [
-//    a('h', undefined, {level: [t('1')], title: [t('aa')]}),
-//    a('p', [t('bb')]),
-//    a('h', undefined, {level: [t('2')], title: [t('cc')]}),
-//    a('p', [t('dd')]),
-//    a('h', undefined, {level: [t('2')], title: [t('ee')]}),
-//    a('p', [t('ff')]),
+//    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+//    a('P', [t('bb')]),
+//    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
+//    a('P', [t('dd')]),
+//    a('H', undefined, {level: [t('2')], title: [t('ee')]}),
+//    a('P', [t('ff')]),
 //  ],
 //  include_opts
 //);
 //assert_convert_ast('include multilevel no paragraph',
-//  `\\h[1][aa]
+//  `\\H[1][aa]
 //
 //bb
 //
-//\\include[include-two-levels]
-//\\include[include-one-level-1]
+//\\Include[include-two-levels]
+//\\Include[include-one-level-1]
 //`,
 //  [
-//    a('h', undefined, {level: [t('1')], title: [t('aa')]}),
-//    a('p', [t('bb')]),
-//    a('h', undefined, {level: [t('2')], title: [t('ee')]}),
-//    a('p', [t('ff')]),
-//    a('h', undefined, {level: [t('3')], title: [t('gg')]}),
-//    a('p', [t('hh')]),
-//    a('h', undefined, {level: [t('2')], title: [t('cc')]}),
-//    a('p', [t('dd')]),
+//    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+//    a('P', [t('bb')]),
+//    a('H', undefined, {level: [t('2')], title: [t('ee')]}),
+//    a('P', [t('ff')]),
+//    a('H', undefined, {level: [t('3')], title: [t('gg')]}),
+//    a('P', [t('hh')]),
+//    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
+//    a('P', [t('dd')]),
 //  ],
 //  include_opts
 //);
 
 // ID auto-gneration and macro counts.
 assert_convert_ast('id autogeneration simple',
-  '\\p[aa]\n',
-  [a('p', [t('aa')], {}, {id: 'p-1'})],
+  '\\P[aa]\n',
+  [a('P', [t('aa')], {}, {id: 'p-1'})],
 );
 // https://github.com/cirosantilli/cirodown/issues/4
 assert_convert_ast('id autogeneration nested',
-  '\\q[\\p[aa]]\n\n\\p[bb]\n',
+  '\\Q[\\P[aa]]\n\n\\P[bb]\n',
   [
-    a('q',[
-      a('p', [t('aa')], {}, {id: 'p-1'})
+    a('Q',[
+      a('P', [t('aa')], {}, {id: 'p-1'})
       ], {}, {id: 'q-1'}
     ),
-    a('p', [t('bb')], {}, {id: 'p-2'}),
+    a('P', [t('bb')], {}, {id: 'p-2'}),
   ],
 );
 
@@ -1599,7 +1599,7 @@ assert_convert_ast('toplevel arguments',
 
 bbb
 `,
-  a('toplevel', [a('p', [t('bbb')])], {'title': [t('aaa')]}),
+  a('Toplevel', [a('P', [t('bbb')])], {'title': [t('aaa')]}),
   {toplevel: true}
 );
 assert_error('toplevel explicit content',
@@ -1614,11 +1614,11 @@ assert_error('explicit toplevel macro',
 // rather than blowing up an exception, or worse, not blowing up at all!
 assert_error('backslash without macro', '\\ a', 1, 1);
 assert_error('unknown macro', '\\reserved_undefined', 1, 1);
-assert_error('too many positional arguments', '\\p[ab][cd]', 1, 7);
+assert_error('too many positional arguments', '\\P[ab][cd]', 1, 7);
 assert_error('unknown named macro argument', '\\c{reserved_undefined=abc}[]', 1, 4);
-assert_error('named argument without =', '\\p{id ab}[cd]', 1, 6);
+assert_error('named argument without =', '\\P{id ab}[cd]', 1, 6);
 assert_error('missing mandatory positional argument href of a', '\\a', 1, 1);
-assert_error('missing mandatory positional argument level of h', '\\h', 1, 1);
+assert_error('missing mandatory positional argument level of h', '\\H', 1, 1);
 assert_error('stray open positional argument start', 'a[b\n', 1, 2);
 assert_error('stray open named argument start', 'a{b\n', 1, 2);
 assert_error('argument without close empty', '\\c[\n', 1, 3);

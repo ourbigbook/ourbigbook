@@ -2,7 +2,7 @@
 
 This file is, surprisingly, not the README. It is used for multifile tests. It is also smaller and therefore compiles faster.
 
-\toc
+\Toc
 
 == h2 in not the README
 
@@ -35,4 +35,4 @@ Non-toplevel: \x[internal-cross-references].
 
 Here we include another file from this file to see if recursive includes work from the toplevel:
 
-\include[included-by-not-readme]
+\Include[included-by-not-readme]

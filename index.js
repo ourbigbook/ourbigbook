@@ -549,26 +549,26 @@ class Macro {
 }
 // Macro names defined here are those that have magic properties, e.g.
 // headers are used by the 'toc'.
-Macro.CIRODOWN_EXAMPLE_MACRO_NAME = 'cirodown_example';
+Macro.CIRODOWN_EXAMPLE_MACRO_NAME = 'CirodownExample';
 Macro.CODE_MACRO_NAME = 'c';
-Macro.HEADER_MACRO_NAME = 'h';
+Macro.HEADER_MACRO_NAME = 'H';
 Macro.HEADER_SCOPE_SEPARATOR = '/';
 Macro.ID_ARGUMENT_NAME = 'id';
-Macro.INCLUDE_MACRO_NAME = 'include';
+Macro.INCLUDE_MACRO_NAME = 'Include';
 Macro.LINK_MACRO_NAME = 'a';
-Macro.LIST_MACRO_NAME = 'l';
+Macro.LIST_MACRO_NAME = 'L';
 Macro.MATH_MACRO_NAME = 'm';
-Macro.PARAGRAPH_MACRO_NAME = 'p';
+Macro.PARAGRAPH_MACRO_NAME = 'P';
 Macro.PLAINTEXT_MACRO_NAME = 'plaintext';
-Macro.TATBLE_MACRO_NAME = 'table';
-Macro.TD_MACRO_NAME = 'td';
-Macro.TH_MACRO_NAME = 'th';
-Macro.TR_MACRO_NAME = 'tr';
+Macro.TATBLE_MACRO_NAME = 'Table';
+Macro.TD_MACRO_NAME = 'Td';
+Macro.TH_MACRO_NAME = 'Th';
+Macro.TR_MACRO_NAME = 'Tr';
 Macro.TITLE_ARGUMENT_NAME = 'title';
 Macro.TITLE2_ARGUMENT_NAME = 'title2';
-Macro.TOC_MACRO_NAME = 'toc';
+Macro.TOC_MACRO_NAME = 'Toc';
 Macro.TOC_PREFIX = 'toc-'
-Macro.TOPLEVEL_MACRO_NAME = 'toplevel';
+Macro.TOPLEVEL_MACRO_NAME = 'Toplevel';
 
 /** Helper to create plaintext nodes, since so many of the fields are fixed in that case. */
 class PlaintextAstNode extends AstNode {
@@ -2082,7 +2082,7 @@ function parse(tokens, options, context, extra_returns={}) {
         }
         // Push all included nodes, but don't recurse because:
         // - all child includes will be resolved on the sub-render call
-        // - the current header level must not move, so that consecutive \include
+        // - the current header level must not move, so that consecutive \Include
         //   calls won't nest into one another
         for (const new_child_node of new_child_nodes) {
           new_child_node.parent_node = ast.parent_node;
@@ -2115,7 +2115,7 @@ function parse(tokens, options, context, extra_returns={}) {
         ),
         new AstNode(
           AstType.MACRO,
-          'q',
+          'Q',
           {
             'content': convert_include(
               convert_arg_noescape(ast.args.content, context),
@@ -3590,8 +3590,8 @@ const DEFAULT_MACRO_LIST = [
     ],
     html_convert_simple_elem('li', {newline_after_close: true}),
     {
-      auto_parent: 'ul',
-      auto_parent_skip: new Set(['ol']),
+      auto_parent: 'Ul',
+      auto_parent_skip: new Set(['Ol']),
     }
   ),
   new Macro(
@@ -3756,7 +3756,7 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'ol',
+    'Ol',
     [
       new MacroArgument({
         name: 'content',
@@ -3810,7 +3810,7 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'q',
+    'Q',
     [
       new MacroArgument({
         name: 'content',
@@ -4068,7 +4068,7 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'ul',
+    'Ul',
     [
       new MacroArgument({
         name: 'content',

@@ -1846,6 +1846,20 @@ Some \b[bold] text.
 Some \i[italic] text.
 ]]
 
+== Passthrough
+{title2=`\Passthrough`}
+
+Dumps its contents directly into the rendered output.
+
+This construct is not XSS safe, see: \x[xss-unsafe]{full}.
+
+Here for example we define a paragraph in raw HTML:
+\cirodown_example[[[
+\Passthrough[[
+<p>Hello <b>raw</b> HTML!</p>
+]]
+]]]
+
 == Comments
 
 The `Comment` and `comment` macros are regular macros that does not produce any output. Capitalization is explained at: \x[macro-capitalization-for-block-vs-inline].
@@ -2340,11 +2354,22 @@ Effects of known protocols include:
 
 === Security
 
-Cirodown is designed to be XSS safe by default. If we add any non-XSS safe constructs, these should be enabled with a non-default flag.
+Cirodown HTML output is designed to be XSS safe by default, any non-XSS safe constructs must be enabled with a non-default flag or setting, see: \x[xss-unsafe].
 
 Of course, we are walking on eggs, and this is hard to assert, so the best thing to do later on will be to parse the output e.g. with https://developer.mozilla.org/en-US/docs/Web/API/DOMParser[`DOMParser`] to ensure that it is valid and does not contain any `script` tags, but it is not as simple as that: https://stackoverflow.com/questions/37435077/execute-javascript-for-xss-without-script-tags/61588322#61588322
 
 About server safety, we have to think about it. E.g. stuff like \x[prepublish] already allows ACE.
+
+==== xss-unsafe
+
+XSS unsafe constructs lead to errors by default. XSS unsafe constructs can be allowed \x[cirodown-executable][from the command] line with:
+``
+./cirodown --xss-unsafe
+``
+or from the \x[cirodown-json] file with an entry of form:
+``
+"xss-unsafe": true
+``
 
 == Tooling
 

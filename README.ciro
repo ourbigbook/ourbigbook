@@ -3036,6 +3036,20 @@ npm sass
 
 TODO. Describe Cirodown's formal grammar, and classify it in the grammar hierarchy and parsing complexity.
 
+=== Release procedure
+
+Manually update the \a[package.json] version:
+``
+vim package.json
+``
+Create a tag to match and push:
+``
+git add -u
+git commit -m 0.3.1
+git tag -m 0.3.1
+git push --follow-tags
+``
+
 === TODO
 
 * correct ID generation algorithm to be Unicode robust

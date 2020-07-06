@@ -48,24 +48,26 @@ Or to start with a more complex template suitable for multifile projects use \x[
 cirodown --generate-multifile
 ``
 
-Render all `.ciro` files form the master of this project to separate files:
+Render all `.ciro` files from the master of this project to separate files:
 ``
 git clone https://github.com/cirosantilli/cirodown
 cd cirodown
 npm link
 npm link cirodown
-./cirodown --html-single-page README.ciro
+./cirodown README.ciro
 xdg-open index.html
+xdg-open not-readme.html
 ``
-or render README.ciro and all \x[includes] into a single HTML page and view it:
+or render README.ciro and all \x[includes] into a single HTML page with \x[html-single-page] and view it:
 ``
 ./cirodown .
 xdg-open index.html
 ``
-or render instead as one fully offline standalone HTML file that can be given directly to readers with \x[html-embed]:
+or render instead as one fully offline standalone HTML file that can be given directly to readers by adding \x[html-embed] as well:
 ``
-./cirodown --html-single-page README.ciro
+./cirodown --html-embed --html-single-page README.ciro
 ``
+and give `index.html` to the reader.
 
 Try out the JavaScript API with \a[api_hello.js]:
 ``
@@ -3042,12 +3044,14 @@ Manually update the \a[package.json] version:
 ``
 vim package.json
 ``
-Create a tag to match and push:
+Create a tag to match, push and release the package:
 ``
 git add -u
-git commit -m 0.3.1
-git tag -m 0.3.1
+t=0.3.1
+git commit -m "$t"
+git tag -m "$t" "$t"
 git push --follow-tags
+npm publish
 ``
 
 === TODO

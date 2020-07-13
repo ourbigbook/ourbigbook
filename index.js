@@ -3036,6 +3036,7 @@ function x_href_parts(target_id_ast, context) {
   return [html_escape_attr(href_path), html_escape_attr(fragment)];
 }
 
+/* href="" that links to a given node. */
 function x_href_attr(target_id_ast, context) {
   return html_attr('href', x_href(target_id_ast, context));
 }
@@ -3185,6 +3186,8 @@ const INSANE_TD_START = '| ';
 const INSANE_TH_START = '|| ';
 const INSANE_LIST_INDENT = '  ';
 const INSANE_HEADER_CHAR = '=';
+const TOC_ARROW_HTML = '<div class="arrow"><div></div></div>';
+const TOC_HAS_CHILD_HTML = ' class="has-child"';
 const MAGIC_CHAR_ARGS = {
   '$': Macro.MATH_MACRO_NAME,
   '`': Macro.CODE_MACRO_NAME,
@@ -3555,7 +3558,7 @@ const DEFAULT_MACRO_LIST = [
       if (level_int !== context.header_graph_top_level) {
         if (context.has_toc) {
           let toc_href = html_attr('href', '#' + toc_id(ast, context));
-          ret += ` | <a${toc_href}>\u21d1 toc</a>`;
+          ret += ` | <a ${toc_href} class="cirodown-h-to-toc">\u21d1 toc</a>`;
         }
       }
       let parent_asts = [];
@@ -3940,7 +3943,8 @@ const DEFAULT_MACRO_LIST = [
     [],
     function(ast, context) {
       let attrs = html_convert_attrs_id(ast, context);
-      let ret = `<div class="toc-container"${attrs}>\n`;
+      let ret = `<div class="toc-container"${attrs}>\n<ul>\n<li${TOC_HAS_CHILD_HTML}><div class="title-div">`;
+      ret += `${TOC_ARROW_HTML}<a${x_href_attr(ast, context)}class="title">Table of contents</a></div>\n`;
       let todo_visit = [];
       let top_level = context.header_graph_top_level - 1;
       let root_node = context.header_graph;
@@ -3964,7 +3968,14 @@ const DEFAULT_MACRO_LIST = [
         let href = x_href_attr(target_id_ast, context);
         const my_toc_id = toc_id(target_id_ast, context);
         let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, my_toc_id);
-        ret += `<li><div${id_to_toc}><a${href}>${content}</a><span>`;
+        ret += '<li';
+        if (tree_node.children.length > 0) {
+          ret += TOC_HAS_CHILD_HTML;
+        }
+        // The inner <div></div> inside arrow is so that:
+        // - outter div: takes up space to make clicking easy
+        // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
+        ret += `><div${id_to_toc}>${TOC_ARROW_HTML}<a${href}>${content}</a><span>`;
 
         let toc_href = html_attr('href', '#' + my_toc_id);
         ret += ` | <a${toc_href}>${UNICODE_LINK} link</a>`;
@@ -3995,12 +4006,11 @@ const DEFAULT_MACRO_LIST = [
         top_level = level;
       }
       ret += `</li>\n</ul>\n`.repeat(top_level);
+      // Close the table of contents list.
+      ret += `</li>\n</ul>\n`;
       ret += `</div>\n`
       return ret;
     },
-    {
-      toplevel_link: false,
-    }
   ),
   new Macro(
     Macro.TOPLEVEL_MACRO_NAME,

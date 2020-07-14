@@ -256,7 +256,8 @@ function convert_input(input, options, convert_input_options={}) {
     new_options.template_vars.style = `\n${includes_str}`;
     new_options.template_vars.post_body = `${scripts_str}`;
   }
-  let output = cirodown.convert(input, new_options, new_options.extra_returns);
+  // Finally, do the conversion!
+  const output = cirodown.convert(input, new_options, new_options.extra_returns);
   if (convert_input_options.commander.showTokens) {
     console.error('tokens:');
     console.error(JSON.stringify(new_options.extra_returns.tokens, null, 2));
@@ -267,12 +268,26 @@ function convert_input(input, options, convert_input_options={}) {
     console.error(JSON.stringify(new_options.extra_returns.ast, null, 2));
     console.error();
   }
+  if (convert_input_options.commander.debugPerf) {
+    console.error(`perf start: ${new_options.extra_returns.debug_perf.start}`);
+    console.error(`perf tokenize_pre: ${new_options.extra_returns.debug_perf.tokenize_pre}`);
+    console.error(`perf tokenize_post: ${new_options.extra_returns.debug_perf.tokenize_post}`);
+    console.error(`perf parse_start: ${new_options.extra_returns.debug_perf.parse_start}`);
+    console.error(`perf post_process_start: ${new_options.extra_returns.debug_perf.post_process_start}`);
+    console.error(`perf post_process_end: ${new_options.extra_returns.debug_perf.post_process_end}`);
+    console.error(`perf render_pre: ${new_options.extra_returns.debug_perf.render_pre}`);
+    console.error(`perf render_post: ${new_options.extra_returns.debug_perf.render_post}`);
+    console.error(`perf end: ${new_options.extra_returns.debug_perf.end}`);
+  }
   for (const error of new_options.extra_returns.errors) {
     console.error(error.toString(convert_input_options.input_path));
   }
   convert_input_options.extra_returns = new_options.extra_returns;
   if (new_options.extra_returns.errors.length > 0) {
     convert_input_options.had_error = true;
+  }
+  if (convert_input_options.commander.debugPerf) {
+    console.error(`perf convert_input_end ${performance.now()}`);
   }
   return output;
 }
@@ -340,6 +355,9 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
       }
     }
   }
+  if (convert_input_options.commander.debugPerf) {
+    console.error(`perf convert_path_to_file_end ${performance.now()}`);
+  }
 }
 
 /** Convert cirodown input from a path to string output and return the output as a string.
@@ -368,6 +386,9 @@ function convert_path(base_path, input_path, options, convert_input_options) {
   let output = convert_input(input, new_options, new_convert_input_options);
 
   // Update the Sqlite databse with results from the conversion.
+  if (convert_input_options.commander.debugPerf) {
+    console.error(`perf convert_path_pre_sqlite ${performance.now()}`);
+  }
   if ('db' in convert_input_options) {
     const ids = new_convert_input_options.extra_returns.ids;
     const context = new_convert_input_options.extra_returns.context;
@@ -379,28 +400,41 @@ function convert_path(base_path, input_path, options, convert_input_options) {
       `INSERT INTO '${convert_input_options.includes_table_name}'
       (from_id, from_path, to_id) VALUES (?, ?, ?);`
     );
-    for (const id in ids) {
-      const ast = ids[id];
-      insert_id_stmt.run(id, ast.input_path, JSON.stringify(ast));
-    }
-    for (const header_ast of context.headers_with_include) {
-      for (const include of header_ast.includes) {
-        insert_include_stmt.run(header_ast.id, header_ast.input_path, include);
-      }
-    }
     const insert_file_stmt = convert_input_options.db.prepare(
       `INSERT OR REPLACE INTO '${convert_input_options.files_table_name}' ` +
       `(path, toplevel_scope_cut_length, toplevel_id) VALUES (?, ?, ?);`
     );
-    insert_file_stmt.run(
-      input_path_noext_renamed,
-      context.toplevel_scope_cut_length,
-      context.toplevel_id
-    );
+    if (convert_input_options.commander.debugPerf) {
+      console.error(`perf convert_path_pre_sqlite_transaction ${performance.now()}`);
+    }
+    // This was the 80% bottleneck at Cirodown f8fc9eacfa794b95c1d9982a04b62603e6d0bb83
+    // before being converted to a single transaction!
+    convert_input_options.db.transaction(() => {
+      for (const id in ids) {
+        const ast = ids[id];
+        insert_id_stmt.run(id, ast.input_path, JSON.stringify(ast));
+      }
+      for (const header_ast of context.headers_with_include) {
+        for (const include of header_ast.includes) {
+          insert_include_stmt.run(header_ast.id, header_ast.input_path, include);
+        }
+      }
+      insert_file_stmt.run(
+        input_path_noext_renamed,
+        context.toplevel_scope_cut_length,
+        context.toplevel_id
+      );
+    })();
+    if (convert_input_options.commander.debugPerf) {
+      console.error(`perf convert_path_post_sqlite_transaction ${performance.now()}`);
+    }
   }
 
   if (new_convert_input_options.had_error) {
     convert_input_options.had_error = true;
+  }
+  if (convert_input_options.commander.debugPerf) {
+    console.error(`perf convert_path_end ${performance.now()}`);
   }
   return output;
 }
@@ -491,6 +525,7 @@ function* walk_files_recursively(file_or_dir, skip_basenames) {
 
 // CLI options.
 commander.option('--body-only', 'output only the content inside the HTLM body element', false);
+commander.option('--debug-perf', 'https://cirosantilli.com/linux-kernel-module-cheat#debug-perf', false);
 commander.option('--dry-run', "don't run most external commands, see: https://github.com/cirosantilli/linux-kernel-module-cheat/tree/6d0a900f4c3c15e65d850f9d29d63315a6f976bf#dry-run-to-get-commands-for-your-project", false);
 commander.option('--generate', 'http://cirosantilli.com/cirodown#generate', false);
 commander.option('--generate-redirects', 'http://cirosantilli.com/cirodown#redirects', false);

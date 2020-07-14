@@ -3142,6 +3142,16 @@ On Ubuntu 20.04 \a[https://cirosantilli.com/linux-kernel-module-cheat/#p51][Leno
   sys     0m0.021s
   ``
   Holy cow, it is 200x faster than Asciidoctor!
+* `cat` just to find the absolute floor:
+  ``
+  time cat tmp.ciro > tmp.tmp
+  ``
+  outputs:
+  ``
+  real    0m0.006s
+  user    0m0.006s
+  sys     0m0.000s
+  ``
 
 === Internals API
 

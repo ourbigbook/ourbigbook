@@ -865,6 +865,8 @@ The ToC ignores `\H[1]` by default, as we encourage that header level to appear 
 
 `\Toc` from \x[includes] are ignored.
 
+For when you want a quick outline of the header tree on the terminal, also consider: `--show-headers`.
+
 ==== Table of contents JavaScript open close interaction
 
 To the left of table of content entries you can click on an open/close icon to toggle the visibility of different levels of the table of contents.
@@ -2768,6 +2770,24 @@ cirodown --publish-commit 'my amazing change' .
 ``
 
 With great power comes great responsibility of course, but who cares!
+
+===== `--show-headers`
+{id=show-headers}
+
+This is a nifty option to quicly see on the terminal what the header graph looks like!
+
+It is a bit like a \x[table-of-contents] in your terminal, for when you are not in the mood to open a browser or use the \x[editor-with-preview].
+
+Sample output:
+``
+= h1  cirodown
+== h2 1 quick-start
+== h2 2 design-goals
+=== h3 2.1 saner
+=== h3 2.2 more-powerful
+== h2 3 paragraphs
+== h2 4 links
+``
 
 ===== `--watch`
 {id=watch}

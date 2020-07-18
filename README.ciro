@@ -372,7 +372,6 @@ Read this \x[my-id][My title].
 ``
 
 === Cross reference `full` argument
-{id=cross-reference-full-argument}
 
 To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` \x[boolean-named-arguments][boolean named argument] to the cross reference, for example:
 \CirodownExample[[
@@ -385,7 +384,6 @@ Compare \x[image-my-test-image]{full=0} vs \x[image-my-test-image]{full=1}.
 ]]
 
 ==== Cross reference `full` argument Internal cross file references
-{id=cross-reference-full-argument-internal-cross-file-references}
 
 For example in the following \x[internal-cross-file-references][internal cross file reference]:
 \CirodownExample[[
@@ -595,7 +593,6 @@ Section 2. "Orthogonal group (O(n))"
 Parenthesis are added automatically around all rendered `title2`.
 
 === `\x` within `title` restrictions
-{id=x-within-title-restrictions}
 
 If you use `\x` within a `title`, which most commonly happens for \x[images][image titles], that can generate complex dependencies, which would either be harder to implement, or lead to infinite recursion: https://github.com/cirosantilli/cirodown/issues/34
 
@@ -741,6 +738,7 @@ You can force `cirodown` to not use the ID database with `--no-db`:
 === Automatic ID from title
 
 If a \x[the-toplevel-header][non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:
+* do a \x[id-output-format] conversion on the title to remove for example any HTML tags that would be present in the conversion output
 * convert all of `A-Z` characters to lowercase
 * convert consecutive sequences of all non `a-z0-9` ASCII characters to a single hyphen `-`. Note that this leaves non-ASCII character untouched.
 * strip leading or trailing hyphens
@@ -860,6 +858,8 @@ Note that when the `parent=` argument is given, the header level must be `1`, ot
 {parent=my-h1}
 ``
 because the second header has level `2` instead of the required `= My h2`.
+
+See also: \x[header-explicit-levels-vs-nesting-design-choice]{full} for further rationale.
 
 === Unlimited header levels
 
@@ -1042,9 +1042,11 @@ Paragraph.
 \H[My h2][]
 ]
 ``
-rather than having explicit levels.
+rather than having explicit levels as in `\H[1][My h1]` and so on.
 
 But we chose not to do it like most markups available because it leads to too many nesting levels, and hard to determine where you are without tooling.
+
+Ciro later "invented" (?) \x[id-based-header-levels], which he feels reaches the perfect balance between the advantages of those two options.
 
 === Includes
 {title2=`\Include`}
@@ -1254,7 +1256,7 @@ Insane lists may be escaped with a backslash as usual:
 \* paragraph starting with an asterisk.
 ]]
 
-And now a list outside of \x[cirodown-example] to test how it looks directly under \x[toplevel]:
+And now a list outside of \x[cirodownexample] to test how it looks directly under \x[toplevel]:
 
 \L[a]
 \L[b]
@@ -1301,7 +1303,7 @@ Paragraph after.
 ]]
 Maybe we could improve this with some CSS styling, but generally when you want multiple paragraphs inside the image, you might instead be better off making an \x[internal-cross-file-references][internal cross reference] to the the image and adding your extended explanation outside.
 
-And now an image outside of \x[cirodown-example] to test how it looks directly under \x[toplevel]:
+And now an image outside of \x[cirodownexample] to test how it looks directly under \x[toplevel]:
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {id=image-my-test-image-toplevel}
@@ -1481,8 +1483,8 @@ TODO implement: mechanism where you enter a textual description of the image ins
 
 https://github.com/cirosantilli/cirodown/issues/40
 
-== Videos (`\Video` and `\video`)
-{id=videos}
+== Videos
+{title2=`\Video` and `\video`}
 
 Very analogous to \x[images], only differences will be documented here.
 
@@ -1569,8 +1571,8 @@ Both of this cases could be worked around with JavaScript:
   But this breaks page semantics however, we don't know how to work around that
 * `youtube` videos: same as above for the `iframe`, but this should be less problematic since YouTube videos are not viewable without JavaScript anyways, and who cares about `iframe` semantics?
 
-== Code (\c[[`]], \c[[``]], `\c` and `\C`)
-{id=code}
+== Code
+{title2=\c[[`]], \c[[``]], `\c` and `\C`}
 
 Inline code (code that should appear in the middle of a paragraph rather than on its own line) is done with a single backtick (\c[[`]]) \x[insane-macro-shortcuts][insane macro shortcut]:
 \CirodownExample[[
@@ -1620,7 +1622,7 @@ The distinction between inline `\c` and block `\C` code blocks is needed because
 
 We could have chosen to do some magic to differentiate between them, e.g. checking if the block is the only element in a paragraph, but we decided not to do that to keep the language saner.
 
-And now a code block outside of \x[cirodown-example] to test how it looks directly under \x[toplevel]:
+And now a code block outside of \x[cirodownexample] to test how it looks directly under \x[toplevel]:
 
 ``
 Hello
@@ -1852,7 +1854,7 @@ Arbitrarily complex nested constructs may be used, e.g. a table inside a list in
 | 11
 ]]
 
-And now a table outside of \x[cirodown-example] to test how it looks directly under \x[toplevel]:
+And now a table outside of \x[cirodownexample] to test how it looks directly under \x[toplevel]:
 
 \Table{title=My table title.}
 [
@@ -1970,7 +1972,6 @@ My inline \comment[[inside comment]] is awesome.
 ]]]
 
 == `JsCanvasDemo`
-{id=jscanvasdemo}
 
 The `JsCanvasDemo` macro allows you to create interactive HTML/JavaScript https://en.wikipedia.org/wiki/Canvas_element[canvas] demos easily.
 
@@ -2071,7 +2072,6 @@ void main() {
 ]]
 
 == `CirodownExample`
-{id=cirodown-example}
 
 Shows both the Cirodown code and its rendered output, e.g.:
 \CirodownExample[[[
@@ -2190,8 +2190,8 @@ nice
 
 === Macro argument syntax
 
-==== Positional vs named arguments (`[...]` vs `{key=...}`)
-{id=positional-vs-named-arguments}
+==== Positional vs named arguments
+{title2=`[...]` vs `{key=...}`}
 
 Every argument in Cirodown is either positional or named.
 
@@ -2305,8 +2305,8 @@ where args is a dict such that:
 
   For example, the link API names its arguments `href` and `text`.
 
-==== Literal arguments (`[[...]]` and `{{key=...}}`)
-{id=literal-arguments}
+==== Literal arguments
+{title2=`[[...]]` and `{{key=...}}`}
 
 Arguments that are opened with more than one square brackets `[` or curly braces `{` are literal arguments.
 
@@ -2514,22 +2514,6 @@ Some macros have both a block and an inline version, and like any other macro, t
 * \x[code]
 * \x[comments]
 
-=== Plaintext conversion
-
-In some cases, we want to extract plaintext versions of complex nested elements.
-
-TODO implement:
-``
-For example, when the \x[internal-cross-references][ID of a node is derived from its title], we don't want the default element to have complex HTML tags on it:
-\CirodownExample[[
-\x[title-with-code]
-
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title=title `with code`.}
-]]
-In this example, see how the contents of the code block \c[`with code`] were rendered as plaintext and used for the ID.
-``
-
 === Known URL protocols
 
 Certain common URL protocols are treated as "known" by Cirodown, and when found they have special effects in some parts of the conversion.
@@ -2567,7 +2551,6 @@ or from the \x[cirodown-json] file with an entry of form:
 Unlike all languages which rely on ad-hoc tooling, we will support every single tool that is required and feasible to be in this repository in this repository, in a centralized manner.
 
 === `cirodown` executable
-{id=cirodown-executable}
 
 Convert a `.ciro` file to HTML and output the HTML to a file with the same basename without extension, e.g.:
 ``
@@ -2613,10 +2596,8 @@ Those basenames have the following magic properties:
 * the default \x[the-toplevel-header][toplevel header] ID of an index files is derived from the parent directory basename rather than from the source file basename
 
 ==== `cirodown` executable options
-{id=cirodown-executable-options}
 
 ===== `--dry-run`
-{id=dry-run}
 
 The `--dry-run` option is a good way to debug \x[publish][`--publish` option], as it builds the publish output files without doing any git commands that would be annoying to revert. So after doing:
 ``
@@ -2628,7 +2609,6 @@ cd out/publish/out/publish/
 ``
 
 ===== `--generate`
-{id=generate}
 
 Generate a simple repository template for a new project.
 
@@ -2639,12 +2619,10 @@ This includes common files that almost all projects will want to have, e.g.:
 The output provides a hello world setup that is immediately ready to be published e.g. \x[publish-to-github-pages][to GitHub pages].
 
 ===== `--generate-multifile`
-{id=generate-multifile}
 
 Like \x[generate][`--generate`], but generate a more complex template that serves as a good starting point for a multifile website.
 
 ===== `--help-macros`
-{id=help-macros}
 
 You can get an overview of all macros in JSON format with:
 ``
@@ -2652,7 +2630,6 @@ cirodown --help-macros
 ``
 
 ===== `--html-embed`
-{id=html-embed}
 
 Embed as many external resources as possible into a single HTML file.
 
@@ -2681,7 +2658,6 @@ Keep in mind that certain things can never be embedded, e.g.:
 * YouTube videos, since YouTube does not offer any download API
 
 ===== `--html-single-page`
-{id=html-single-page}
 
 If given:
 * the \x[includes][`include`] macro parses the target file to be included and includes it in-place
@@ -2698,7 +2674,6 @@ Otherwise, `include` only adds the headers of the other file to the table of con
 You may want to use this option together with \x[html-embed] to produce fully self-contained individual HTML files for your project.
 
 ===== `--no-html-x-extension`
-{id=html-x-no-extension}
 
 If not given, \x[internal-cross-references] render with the `.html` extension as in:
 ``
@@ -2732,8 +2707,36 @@ The generated output is slightly different than that of:
 ``
 because with `--outfile` we know where the output is going, and so we can generate relative includes to default CSS/JavaScript files.
 
+===== `-O --output-format <outformat>`
+{id=output-format}
+
+Default: `html`.
+
+====== `id` output format
+
+This output format is mostly a joke.
+
+It is an intermediate step in \x[automatic-id-from-title], that unlike HTML output does not have any tags.
+
+But we decided to expose it for fun, and to start generalizing Cirodown to multiple outputs, as this is a simple format.
+
+The conversion is very simplistic, it basically just pastes the `content` of most arguments.
+
+Stuff that is primarily non-textual like \x[images] is just completely removed. We could put effort in outputting their title correctly, but meh, not worth the effort.
+
+====== Unimplemented output formats
+
+======= `cirodown` output format
+
+TODO: https://github.com/cirosantilli/cirodown/issues/83
+
+======= `latex` output format
+
+TODO: https://github.com/cirosantilli/cirodown/issues/38
+
+One day, one day. Maybe.
+
 ===== `--publish`
-{id=publish}
 
 Cirodown tooling is so amazing that we also take care of the HTML publishing for you!
 
@@ -2824,7 +2827,6 @@ cirodown --publish-commit 'my amazing change' .
 With great power comes great responsibility of course, but who cares!
 
 ===== `--show-headers`
-{id=show-headers}
 
 This nifty little option outputs to stderr what the header graph looks like!
 
@@ -2844,7 +2846,6 @@ Sample output excerpt for this document:
 This option can also serve as a debug tool for header tree related features (confession: that was its original motivation!).
 
 ===== `--watch`
-{id=watch}
 
 Don't quit `cirodown` immediately.
 
@@ -2873,7 +2874,6 @@ otherwise you will just get a bunch of undefined ID errors every time the input 
 TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with-live-preview/ to also dispense the browser refresh.
 
 ===== `--template`
-{id=template}
 
 Select a custom https://github.com/harttle/liquidjs[Liquid template] file for the output.
 
@@ -2904,14 +2904,12 @@ Defined variables:
 We pick Liquid because it is server-side safe: if we ever some day offer a compilation service, Liquid is designed to prevent arbitrary code execution and infinite loops in templates.
 
 ==== `cirodown.json`
-{id=cirodown-json}
 
 Cirodown configuration file that affects the behaviour of cirodown for all files in the directory.
 
 `cirodown.json` not used for input from stdin, since we are mostly doing quick tests in that case.
 
 ===== `media-providers`
-{id=media-providers}
 
 The `media-providers` entry of `cirodown.json` specifies properties of how media such as \x[images] and \x[videos][videos] are retrieved and rendered.
 
@@ -2949,7 +2947,6 @@ Properties that are valid for every provider:
 See also: https://github.com/cirosantilli/cirodown/issues/40
 
 ===== `prepublish`
-{id=prepublish}
 
 Path of a script that gets executed before running \x[publish][`cirodown --publish`].
 
@@ -2965,7 +2962,6 @@ The script arguments are:
 If the `prepublish` script returns with a non-zero exit value, the publish is aborted.
 
 ===== `redirects`
-{id=redirects}
 
 Create HTML redirects from \x[the-toplevel-header][toplevel headers] to arbitrary IDs, for example:
 ``
@@ -3080,7 +3076,6 @@ Generated files:
 * `cirodown.js` packaged http://browserify.org[browserify] JavaScript for browser usage, generated with `npm run browserify`
 
 ==== `build-sass`
-{id=build-sass}
 
 The \a[build-sass] script takes as input the \a[cirodown.scss] https://sass-lang.com[SASS] scss file, and generates various `.css` versions from it required to properly view generated Cirodown HTML:
 * `cirodown.min.css`: contains the converted `cirodown.scss` plus online `@import` requests for stuff like \x[mathematics][KaTeX]
@@ -3131,7 +3126,6 @@ Output:
 === Performance
 
 ==== `--debug-perf`
-{id=debug-perf}
 
 print performance statistics to stderr, for example
 ``

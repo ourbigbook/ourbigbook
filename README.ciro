@@ -301,8 +301,34 @@ See this \x[internal-cross-references] awesome section.
 
 An explicit link body can be given just as for regular HTTP \x[links] as:
 \CirodownExample[[
-See this \x[internal-cross-references][ awesome section].
+See this \x[internal-cross-references][awesome section].
 ]]
+
+If the target `title` argument contains a link from either another \x[internal-cross-references] or a regular \x[links][external hyperlink], Cirodown automatically prevents that link from rendering as a link when no explicit bod yis given.
+
+This is done because https://stackoverflow.com/questions/9882916/are-you-allowed-to-nest-a-link-inside-of-a-link[nested links are illegain in HTML], and the result would be confusing.
+
+This use case is most common when dealing with media such as \x[images]. For example in:
+``
+= afds
+
+\x[image-aa-zxcv-lolol-bb]
+
+== qwer
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=aa \x[zxcv][zxcv] \a[http://example.com][lolol] bb}
+
+== zxcv
+``
+the `\x[image-aa-zxcv-lolol-bb]` renders something like:
+``
+<a href="#image-aa-zxcv-lolol-bb">aa zxcv lolol bb</a>
+``
+and not:
+``
+<a href="#image-aa-zxcv-lolol-bb">aa <a href="zxcv">zxcv</a> <a href="http://example.com">lolol</a> bb</a>
+``
 
 === x `child` argument
 
@@ -381,7 +407,7 @@ To also show the section auto-generated number as in "Section X.Y My title" we a
 Compare \x[image-my-test-image]{full=0} vs \x[image-my-test-image]{full=1}.
 ]]
 
-==== Cross reference `full` argument Internal cross file references
+==== Cross reference `full` argument in internal cross file references
 
 For example in the following \x[internal-cross-file-references][internal cross file reference]:
 \CirodownExample[[
@@ -397,7 +423,7 @@ Section 1.2 "h2 in not the readme"
 ``
 This is because the number "Section 1.2" might already have been used in the current page, leading to confusion.
 
-==== Cross reference title inflection
+=== Cross reference title inflection
 
 A common usage pattern is that we want to use \x[headers]{p=0} titles in \x[cross-reference-full-argument][non-full] \x[internal-cross-references] as the definition of a concept without repeating the title, for example:
 ``
@@ -466,7 +492,7 @@ Felix is not really a \x[cats][cat], just a carton character.
 
 Now for a live example for quick and dirty interactive testing.
 
-===== Cross reference title inflection example
+==== Cross reference title inflection example
 
 \CirodownExample[[
 \x[inflection-example-not-proper]
@@ -532,17 +558,17 @@ Now for a live example for quick and dirty interactive testing.
 \x[not-the-readme-header-with-fixed-case]
 ]]
 
-====== Inflection example not-proper
+===== Inflection example not-proper
 
-====== Inflection example proper
+===== Inflection example proper
 {c}
 
-====== inflection example not-proper lower
+===== inflection example not-proper lower
 
-====== inflection example proper lower
+===== inflection example proper lower
 {c}
 
-====== Inflection plural examples
+===== Inflection plural examples
 
 === The `title2` argument
 
@@ -682,7 +708,7 @@ Reference to another header of another file, with \x[cross-reference-full-argume
 \CirodownExample[[
 \x[h2-in-not-the-readme]{full}.
 ]]
-Note that when `full` is used with references in another file in \x[html-single-page][multi page mode], the number is not rendered as explained at: \x[cross-reference-full-argument-internal-cross-file-references]{full}.
+Note that when `full` is used with references in another file in \x[html-single-page][multi page mode], the number is not rendered as explained at: \x[cross-reference-full-argument-in-internal-cross-file-references]{full}.
 
 Reference to an image in another file:
 \CirodownExample[[

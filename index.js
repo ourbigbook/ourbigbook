@@ -44,6 +44,9 @@ class AstNode {
     if (!('input_path' in options)) {
       options.input_path = undefined;
     }
+    if (!('level' in options)) {
+      options.level = undefined;
+    }
     if (!('parent_node' in options)) {
       options.parent_node = undefined;
     }
@@ -91,7 +94,7 @@ class AstNode {
 
     // Header only fields.
     // {Number}
-    this.level = undefined;
+    this.level = options.level;
     // Includes under this header.
     this.includes = [];
 
@@ -2217,36 +2220,44 @@ function parse(tokens, options, context, extra_returns={}) {
             header_node_title = x_text(target_id_ast, context, x_text_options);
           }
           // Don't merge into a single file, render as a dummy header and an xref link instead.
+          const header_ast = new AstNode(
+            AstType.MACRO,
+            Macro.HEADER_MACRO_NAME,
+            {
+              'level': new AstArgument([
+                new PlaintextAstNode(
+                  ast.line,
+                  ast.column,
+                  (cur_header_level + 1).toString(),
+                )
+              ], ast.line, ast.column),
+              [Macro.TITLE_ARGUMENT_NAME]: new AstArgument([
+                new PlaintextAstNode(
+                  ast.line,
+                  ast.column,
+                  header_node_title
+                )
+              ], ast.line, ast.column),
+            },
+            ast.line,
+            ast.column,
+            {
+              force_no_index: true,
+              from_include: true,
+              id: href,
+              input_path: ast.input_path,
+              level: cur_header_level + 1,
+            },
+          );
+          // This is a bit nasty and duplicates the below header processing code,
+          // but it is a bit hard to factor them out since this is a magic include header,
+          // and all includes and headers must be parsed concurrently since includes get
+          // injected under the last header.
+          validate_ast(header_ast, context);
+          header_ast.header_graph_node = new TreeNode(header_ast, cur_header_graph_node);
+          cur_header_graph_node.add_child(header_ast.header_graph_node);
           new_child_nodes = [
-            new AstNode(
-              AstType.MACRO,
-              Macro.HEADER_MACRO_NAME,
-              {
-                'level': new AstArgument([
-                  new PlaintextAstNode(
-                    ast.line,
-                    ast.column,
-                    (cur_header_level + 1).toString(),
-                  )
-                ], ast.line, ast.column),
-                [Macro.TITLE_ARGUMENT_NAME]: new AstArgument([
-                  new PlaintextAstNode(
-                    ast.line,
-                    ast.column,
-                    header_node_title
-                  )
-                ], ast.line, ast.column),
-              },
-              ast.line,
-              ast.column,
-              {
-                force_no_index: true,
-                from_include: true,
-                header_graph_node: cur_header_graph_node,
-                id: href,
-                input_path: ast.input_path,
-              },
-            ),
+            header_ast,
             new AstNode(
               AstType.PARAGRAPH,
               undefined,
@@ -3775,6 +3786,9 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       let custom_args;
       let level_int = ast.level;
+      if (typeof level_int !== 'number') {
+        throw new Error('header level is not an integer after validation');
+      }
       let level_int_capped;
       if (level_int > 6) {
         custom_args = {'data-level': new AstArgument([new PlaintextAstNode(

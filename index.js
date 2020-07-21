@@ -119,6 +119,7 @@ class AstNode {
    *                 - 'prefix': prefix to add for a  full reference, e.g. `Figure 1`, `Section 2`, etc.
    *                 - {AstArgument} 'title': the title of the element linked to
    *        - {bool} in_caption_number_visible
+   *        - {Set[AstNode]} x_parents: set of all parent x elements.
    * @param {Object} context
    */
   convert(context) {
@@ -137,11 +138,8 @@ class AstNode {
     if (!('id_provider' in context)) {
       context.id_provider = {};
     }
-    if (!('in_title_no_id' in context)) {
-      context.in_title = false;
-    }
-    if (!('in_x_content' in context)) {
-      context.in_x_content = false;
+    if (!('id_conversion' in context)) {
+      context.id_conversion = false;
     }
     if (!('katex_macros' in context)) {
       context.katex_macros = {};
@@ -149,11 +147,14 @@ class AstNode {
     if (!('macros' in context)) {
       throw new Error('context does not have a mandatory .macros property');
     }
+    if (!('x_parents' in context)) {
+      context.x_parents = new Set();
+    }
     const macro = context.macros[this.macro_name];
     let out;
     if (this.validation_error === undefined) {
       let output_format;
-      if (context.in_title_no_id) {
+      if (context.id_conversion) {
         output_format = OUTPUT_FORMAT_ID;
       } else {
         output_format = context.options.output_format;
@@ -1303,11 +1304,22 @@ function basename(str) {
 }
 
 /** Calculate node ID and add it to the ID index. */
-function calculate_id(ast, context, id_provider, non_indexed_ids,
-  indexed_ids, macro_counts_visible, state
+function calculate_id(ast, context, non_indexed_ids,
+  indexed_ids, macro_counts, macro_counts_visible, state, is_header
 ) {
   const macro_name = ast.macro_name;
   const macro = context.macros[macro_name];
+
+  // Linear count of each macro type for macros that have IDs.
+  if (!macro.options.macro_counts_ignore(ast)) {
+    if (!(macro_name in macro_counts)) {
+      macro_counts[macro_name] = 0;
+    }
+    const macro_count = macro_counts[macro_name] + 1;
+    macro_counts[macro_name] = macro_count;
+    ast.macro_count = macro_count;
+  }
+
   let index_id = true;
   if (
     // This can happen be false for included headers, and this is notably important
@@ -1317,31 +1329,40 @@ function calculate_id(ast, context, id_provider, non_indexed_ids,
     const macro_id_arg = ast.args[Macro.ID_ARGUMENT_NAME];
     if (macro_id_arg === undefined) {
       let id_text = '';
-      let id_prefix = context.macros[ast.macro_name].id_prefix;
+      const id_prefix = context.macros[ast.macro_name].id_prefix;
       if (id_prefix !== '') {
         id_text += id_prefix + ID_SEPARATOR
       }
-      let title_arg = macro.options.get_title_arg(ast, context);
+      const title_arg = macro.options.get_title_arg(ast, context);
       if (title_arg !== undefined) {
-        context.extra_returns.x_no_content_in_title_no_id = false;
-        id_text += title_to_id(convert_arg_noescape(title_arg, clone_and_set(context, 'in_title_no_id', true)));
-        if (context.extra_returns.x_no_content_in_title_no_id) {
-          const message = `x cross reference to id "${context.extra_returns.x_no_content_in_title_no_id_target}" ` +
-                          `without content used inside a title without an id, see: https://cirosantilli.com/cirodown#x-within-title-restrictions`;
+        const new_context = clone_and_set(context, 'id_conversion', true);
+        new_context.id_conversion_for_header = is_header;
+        new_context.extra_returns.id_conversion_header_title_no_id_xref = false;
+        new_context.extra_returns.id_conversion_non_header_no_id_xref_non_header = false;
+        id_text += title_to_id(convert_arg_noescape(title_arg, new_context));
+        let message;
+        if (new_context.extra_returns.id_conversion_header_title_no_id_xref) {
+          message = 'x without content inside title of a header that does not have an ID: https://cirosantilli.com/cirodown#x-within-title-restrictions';
+        }
+        if (new_context.extra_returns.id_conversion_non_header_no_id_xref_non_header) {
+          message = 'x without content inside title of a non-header that does not have an ID linking to a non-header: https://cirosantilli.com/cirodown#x-within-title-restrictions';
+        }
+        if (message !== undefined) {
           title_arg.push(
             new PlaintextAstNode(
-              context.extra_returns.x_no_content_in_title_no_id_line,
-              context.extra_returns.x_no_content_in_title_no_id_column,
-              ' ' + error_message_in_output(message)
+              new_context.extra_returns.id_conversion_xref_error_line,
+              new_context.extra_returns.id_conversion_xref_error_column,
+              ' ' + error_message_in_output(message, new_context)
             )
           );
           parse_error(state, message,
-            context.extra_returns.x_no_content_in_title_no_id_line,
-            context.extra_returns.x_no_content_in_title_no_id_column);
+            new_context.extra_returns.id_conversion_xref_error_line,
+            new_context.extra_returns.id_conversion_xref_error_column)
         } else {
           ast.id = id_text;
         }
       }
+
       if (ast.id === undefined && !macro.options.phrasing) {
         // ID from element count.
         if (ast.macro_count !== undefined) {
@@ -1354,7 +1375,7 @@ function calculate_id(ast, context, id_provider, non_indexed_ids,
       ast.id = convert_arg_noescape(macro_id_arg, context);
     }
     if (ast.id !== undefined && ast.header_graph_node) {
-      let parent_scope_id = get_parent_scope_id(ast.header_graph_node);
+      const parent_scope_id = get_parent_scope_id(ast.header_graph_node);
       if (parent_scope_id !== undefined) {
         ast.id = parent_scope_id + Macro.HEADER_SCOPE_SEPARATOR + ast.id
       }
@@ -1362,7 +1383,7 @@ function calculate_id(ast, context, id_provider, non_indexed_ids,
   }
   ast.index_id = index_id;
   if (ast.id !== undefined && !ast.force_no_index) {
-    const previous_ast = id_provider.get(ast.id, context, ast.header_graph_node);
+    const previous_ast = context.id_provider.get(ast.id, context, ast.header_graph_node);
     let input_path;
     if (previous_ast === undefined) {
       let non_indexed_id = non_indexed_ids[ast.id];
@@ -1383,7 +1404,7 @@ function calculate_id(ast, context, id_provider, non_indexed_ids,
       if (input_path !== undefined) {
         message += `file ${input_path} `;
       }
-      message += `line ${previous_ast.line} colum ${previous_ast.column}`;
+      message += `line ${previous_ast.line} column ${previous_ast.column}`;
       parse_error(state, message, ast.line, ast.column);
     }
     if (caption_number_visible(ast, context)) {
@@ -2117,6 +2138,7 @@ function parse(tokens, options, context, extra_returns={}) {
   let todo_visit = [[toplevel_parent_arg, ast_toplevel]];
   // IDs that are indexed: you can link to those.
   let indexed_ids = {};
+  const macro_counts = {};
   const macro_counts_visible = {};
   // Non-indexed-ids: auto-generated numeric ID's like p-1, p-2, etc.
   // It is not possible to link to them from inside the document, since links
@@ -2139,6 +2161,7 @@ function parse(tokens, options, context, extra_returns={}) {
   } else {
     id_provider = local_id_provider;
   }
+  context.id_provider = id_provider;
   const include_options = Object.assign({}, options);
   include_options.include_path_set = context.include_path_set;
   context.include_path_set.add(options.input_path);
@@ -2170,7 +2193,7 @@ function parse(tokens, options, context, extra_returns={}) {
           );
           context.include_path_set.add(href);
         } else {
-          const target_id_ast = id_provider.get(href, context);
+          const target_id_ast = context.id_provider.get(href, context);
           let header_node_title;
           if (target_id_ast === undefined) {
             let message = `ID in include not found on database: "${href}", ` +
@@ -2419,7 +2442,7 @@ function parse(tokens, options, context, extra_returns={}) {
 
         // Must come after the header tree step is mostly done, because scopes influence ID,
         // and they also depend on the parent node.
-        calculate_id(ast, context, id_provider, non_indexed_ids, indexed_ids, macro_counts_visible, state);
+        calculate_id(ast, context, non_indexed_ids, indexed_ids, macro_counts, macro_counts_visible, state, true);
 
         // Must come after calculate_id.
         header_graph_id_stack.set(cur_header_graph_node.value.id, cur_header_graph_node);
@@ -2452,8 +2475,6 @@ function parse(tokens, options, context, extra_returns={}) {
   //
   // Normally only the toplevel includer will enter this code section.
   if (!options.from_include) {
-    const macro_counts = {};
-    context.id_provider = id_provider;
     context.has_toc = false;
     let toplevel_parent_arg = new AstArgument([], 1, 1);
 
@@ -2729,20 +2750,11 @@ function parse(tokens, options, context, extra_returns={}) {
           ast.header_graph_node = new TreeNode(ast, cur_header_graph_node);
         }
 
-        // Linear count of each macro type for macros that have IDs.
-        if (!macro.options.macro_counts_ignore(ast)) {
-          if (!(macro_name in macro_counts)) {
-            macro_counts[macro_name] = 0;
-          }
-          const macro_count = macro_counts[macro_name] + 1;
-          macro_counts[macro_name] = macro_count;
-          ast.macro_count = macro_count;
-        }
         if (
           // Header IDs already previously calculated for parent=.
           macro_name !== Macro.HEADER_MACRO_NAME
         ) {
-          calculate_id(ast, context, id_provider, non_indexed_ids, indexed_ids, macro_counts_visible, state);
+          calculate_id(ast, context, non_indexed_ids, indexed_ids, macro_counts, macro_counts_visible, state, false);
         }
 
         // Push children to continue the search. We make the new argument be empty
@@ -3155,18 +3167,17 @@ function validate_ast(ast, context) {
 }
 exports.validate_ast = validate_ast;
 
+/**
+ * @return {[String, String]} [href, content] pair for the x node.
+ */
 function x_get_href_content(ast, context) {
   const target_id = convert_arg_noescape(ast.args.href, context);
   const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);
   let href;
   if (target_id_ast === undefined) {
-    if (context.in_title_no_id) {
-      href = '';
-    } else {
-      let message = `cross reference to unknown id: "${target_id}"`;
-      render_error(context, message, ast.args.href.line, ast.args.href.column);
-      return error_message_in_output(message, context);
-    }
+    let message = `cross reference to unknown id: "${target_id}"`;
+    render_error(context, message, ast.args.href.line, ast.args.href.column);
+    return [href, error_message_in_output(message, context)];
   } else {
     href = x_href_attr(target_id_ast, context);
   }
@@ -3174,13 +3185,27 @@ function x_get_href_content(ast, context) {
   let content;
   if (content_arg === undefined) {
     // No explicit content given, deduce content from target ID title.
-    if (context.in_title_no_id) {
-      // Inside a title that does not have an ID: not allowed.
-      context.extra_returns.x_no_content_in_title_no_id = true;
-      context.extra_returns.x_no_content_in_title_no_id_line = ast.line;
-      context.extra_returns.x_no_content_in_title_no_id_column = ast.column;
-      context.extra_returns.x_no_content_in_title_no_id_target = target_id;
-      return '';
+    if (context.id_conversion) {
+      if (context.id_conversion_for_header) {
+        // Inside a header title that does not have an ID.
+        context.extra_returns.id_conversion_header_title_no_id_xref = true;
+        context.extra_returns.id_conversion_xref_error_line = ast.line;
+        context.extra_returns.id_conversion_xref_error_column = ast.column;
+        return '';
+      }
+      if (target_id_ast.macro_name !== Macro.HEADER_MACRO_NAME) {
+        // Inside a non-header title that does not have an ID and links to a non-header.
+        context.extra_returns.id_conversion_non_header_no_id_xref_non_header = true;
+        context.extra_returns.id_conversion_xref_error_line = ast.line;
+        context.extra_returns.id_conversion_xref_error_column = ast.column;
+        return '';
+      }
+    }
+    if (context.x_parents.has(ast)) {
+      // Prevent render infinite loops.
+      let message = `x with infinite recursion`;
+      render_error(context, message, ast.line, ast.column);
+      return [href, error_message_in_output(message, context)];
     }
     let x_text_options = {
       caption_prefix_span: false,
@@ -3192,7 +3217,9 @@ function x_get_href_content(ast, context) {
     if (ast.validation_output.full.given) {
       x_text_options.style_full = ast.validation_output.full.boolean;
     }
-    content = x_text(target_id_ast, clone_and_set(context, 'in_x_content', true), x_text_options);
+    const x_parents_new = new Set(context.x_parents);
+    x_parents_new.add(ast);
+    content = x_text(target_id_ast, clone_and_set(context, 'x_parents', x_parents_new), x_text_options);
     if (content === ``) {
       let message = `empty cross reference body: "${target_id}"`;
       render_error(context, message, ast.line, ast.column);
@@ -3623,11 +3650,11 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       const [href, content] = link_get_href_content(ast, context);
-      if (context.in_x_content) {
-        return content;
-      } else {
+      if (context.x_parents.size == 0) {
         const attrs = html_convert_attrs_id(ast, context);
         return `<a${html_attr('href',  href)}${attrs}>${content}</a>`;
+      } else {
+        return content;
       }
     },
     {
@@ -4379,11 +4406,11 @@ const DEFAULT_MACRO_LIST = [
     ],
     function(ast, context) {
       const [href, content] = x_get_href_content(ast, context);
-      if (context.in_x_content) {
-        return content;
-      } else {
+      if (context.x_parents.size == 0) {
         const attrs = html_convert_attrs_id(ast, context);
         return `<a${href}${attrs}>${content}</a>`;
+      } else {
+        return content;
       }
     },
     {

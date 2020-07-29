@@ -3347,6 +3347,9 @@ function x_text(ast, context, options={}) {
   if (!('show_caption_prefix' in options)) {
     options.show_caption_prefix = true;
   }
+  if (!('show_number' in options)) {
+    options.show_number = true;
+  }
   const macro = context.macros[ast.macro_name];
   let style_full;
   if ('style_full' in options) {
@@ -3366,9 +3369,11 @@ function x_text(ast, context, options={}) {
       }
       ret += `${macro.options.caption_prefix} `;
     }
-    number = macro.options.get_number(ast, context);
-    if (number !== undefined) {
-      ret += number;
+    if (options.show_number) {
+      number = macro.options.get_number(ast, context);
+      if (number !== undefined) {
+        ret += number;
+      }
     }
     if (options.show_caption_prefix && options.caption_prefix_span) {
       ret += `</span>`;
@@ -3819,8 +3824,9 @@ const DEFAULT_MACRO_LIST = [
       let ret = `<h${level_int_capped}${attrs}><a${html_self_link(ast, context)} title="link to this element">`;
       let x_text_options = {
         show_caption_prefix: false,
+        show_number: level_int !== context.header_graph_top_level,
+        style_full: true,
       };
-      x_text_options.style_full = level_int !== context.header_graph_top_level;
       ret += x_text(ast, context, x_text_options);
       ret += `</a>`;
       ret += `<span> `;

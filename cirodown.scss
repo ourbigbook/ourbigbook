@@ -30,6 +30,8 @@ $target-background-color: #442222;
   // to it is even less acceptable.
   //
   // So instead we fix the header height for now.
+  //
+  // https://github.com/cirosantilli/cirodown/issues/98
   //visibility: hidden;
 }
 @mixin visible {

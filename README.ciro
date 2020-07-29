@@ -771,6 +771,8 @@ If a \x[the-toplevel-header][non-toplevel] macro has the `title` property is pre
 * strip leading or trailing hyphens
 Note how those rules leave non ASCII Unicode characters untouched, as capitalization and determining if something "is a letter or not" in those cases can be tricky.
 
+For toplevel headers, see: \x[the-id-of-the-first-header-is-derived-from-the-filename].
+
 So for example, the following automatic IDs would be generated: \x[table-examples-of-automatically-generated-ids].
 
 \Table{title=Examples of automatically generated IDs.}
@@ -1201,12 +1203,18 @@ For example, in file named `my-file.ciro` which contains:
 ``
 the ID of the header is `my-file` rather than `awesome-cirodown-file`. See also: \x[automatic-id-from-title].
 
-If the file is an \x[index-files][index file], then the basename of the parent directory is used instead, e.g. the toplevel ID of a file:
+If the file is an \x[index-files][index file] other than \x[the-toplevel-index-file], then the basename of the parent directory is used instead, e.g. the toplevel ID of a file:
 ``my-subdir/README.ciro``
 would be:
 ``#my-subdir``
 rather than:
 ``#README.ciro``
+
+For the toplevel index file however, the ID is just taken from the header itself as usual. This is done because you often can't general control the directory name of a project.
+
+For example, a \x[publish-to-github-pages][GitHub pages] root directory must be named as `<username>.github.io`. And users may need to rename directories to avoid naming conflicts.
+
+As a consequence of this, the toplevel index file cannot \x[includes][be included in other files].
 
 == Lists
 {title2=`* `, `\L`, `\Ul`, `\Ol`}
@@ -2666,6 +2674,17 @@ Those basenames have the following magic properties:
 * the default output file name for an index file in HTML output is always `index.html`, including that of `README.ciro`. This way it will appear on both the root of the HTML output and on the GitHub home page once GitHub adds Cirodown support.
 * the default \x[the-toplevel-header][toplevel header] ID of an index files is derived from the parent directory basename rather than from the source file basename
 
+===== The toplevel index file
+
+The toplevel index file is the index file that is present on the root directory of a Cirodown project.
+
+This directory is determined by checking the presence of a \x[cirodown-json] file.
+
+We were tempted to not require the `cirodown.json` check and just use the input directory instead, but this would lead to subdir builds having different toplevel IDs, which is not desirable. So for this reason users should basically always add a `cirodown.json` to their projects.
+
+Being the toplevel index file has the following implications:
+* its ID is derived fromthe header itself, not the directory, see also: \x[the-id-of-the-first-header-is-derived-from-the-filename]
+
 ==== `cirodown` executable options
 
 ===== `--dry-run`
@@ -2979,6 +2998,8 @@ We pick Liquid because it is server-side safe: if we ever some day offer a compi
 Cirodown configuration file that affects the behaviour of cirodown for all files in the directory.
 
 `cirodown.json` not used for input from stdin, since we are mostly doing quick tests in that case.
+
+While `cirodown.json` is optional, it is used to determine the toplevel directory of a Cirodown project, which has some effects such as those mentioned at \x[the-toplevel-index-file]. Therefore, it is recommended that you always have a `cirodown.json` in your project's toplevel directory, even if it is going to be an empty JSON `{}`.
 
 ===== `media-providers`
 

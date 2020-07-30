@@ -1,6 +1,5 @@
 // https://cirosantilli.com/cirodown#insane-link-parsing-rules
 
-// tablesort
 window.onload = function() {
   // ToC interaction.
   const CLOSE_CLASS = 'close';
@@ -70,6 +69,7 @@ window.onload = function() {
     });
   }
 
+  // tablesort
   const tables = document.getElementsByTagName('table');
   for(const table of tables) {
     new Tablesort(table);

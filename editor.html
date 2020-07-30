@@ -9,6 +9,7 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
+  background-color: black;
 }
 #container {
   align-items: center;
@@ -23,7 +24,6 @@ html, body {
   flex-grow: 1;
   height: 100%;
   margin: 0 5px 0 0;
-  overflow: auto;
   width: 50%;
 }
 #output {
@@ -38,39 +38,67 @@ html, body {
 </head>
 <body>
 <div id="container">
-<div id="input" contenteditable="true" style="white-space:pre-wrap">= Cirodown hello world
+<div id="input"></div>
+<div id="output" class="cirodown">
+</div>
+</div>
+<script src="cirodown.js"></script>
+<script>
+// Otherwise the monaco-editor loader messes up with browserify and cirodown is not visible...
+const my_cirodown = cirodown;
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/loader.min.js"></script>
+<script>
+const input_elem = document.getElementById('input');
+const output_elem = document.getElementById('output');
+
+require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs' }});
+window.MonacoEnvironment = { getWorkerUrl: () => proxy };
+const proxy = URL.createObjectURL(new Blob([`
+    self.MonacoEnvironment = {
+        baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min'
+    };
+    importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/base/worker/workerMain.min.js');
+`], { type: 'text/javascript' }));
+require(["vs/editor/editor.main"], function () {
+    const editor = monaco.editor.create(
+        input_elem,
+        {
+            minimap: {enabled: false},
+            theme: 'vs-dark',
+            value: `= Cirodown hello world
 
 Welcome to Cirodown! Here's the table of contents:
 
-\Toc
+\\Toc
 
 == Paragraphs, code, math
 
 My first paragraph is amazing!
 
-And the second one with inline code `f(){}` and inline server-side rendered maths with KaTeX: $\sqrt{1+1}$.
+And the second one with inline code \`f(){}\` and inline server-side rendered maths with KaTeX: $\\sqrt{1+1}$.
 
 But if we want block code here it is:
-``
+\`\`
 f() {
   return 1;
 }
-``
+\`\`
 and here is some block maths:
 $$
-\sqrt{1+1} \\
-\sqrt{1+1}
+\\sqrt{1+1} \\\\
+\\sqrt{1+1}
 $$
 
-Ciro loves maths, and so equations can have titles, and references to math equations just work! See e.g.: \x[my-favorite-equation]
+Ciro loves maths, and so equations can have titles, and references to math equations just work! See e.g.: \\x[my-favorite-equation]
 $$
-\newcommand{\va}[1]{\overrightarrow{#1}}
-\newcommand{\B}[0]{\va{\mathbf{B}}}
-\newcommand{\E}[0]{\va{\mathbf{E}}}
-\newcommand{\divergence}[1]{\nabla \cdot #1}
-\newcommand{\vacuumPermittivity}[0]{\varepsilon_0}
-\divergence{\E} = \frac{\rho}{\vacuumPermittivity} \\
-\divergence{\B} = 0
+\\newcommand{\\va}[1]{\\overrightarrow{#1}}
+\\newcommand{\\B}[0]{\\va{\\mathbf{B}}}
+\\newcommand{\\E}[0]{\\va{\\mathbf{E}}}
+\\newcommand{\\divergence}[1]{\\nabla \\cdot #1}
+\\newcommand{\\vacuumPermittivity}[0]{\\varepsilon_0}
+\\divergence{\\E} = \\frac{\\rho}{\\vacuumPermittivity} \\\\
+\\divergence{\\B} = 0
 $$
 {title=This is my favorite equation in the entire world!!!}
 {id=my-favorite-equation}
@@ -83,14 +111,14 @@ Meh, the usual. Insane list:
   * some nesting
   * and some more
 * third item
-Sane list with explicit `Ul`:
-\Ul[
-\L[first item]
-\L[second item]
+Sane list with explicit \`Ul\`:
+\\Ul[
+\\L[first item]
+\\L[second item]
 ]
 
-And now for tables, see this one \x[table-my-table].
-\Table
+And now for tables, see this one \\x[table-my-table].
+\\Table
 {title=My table title}
 {id=table-my-table}
 [
@@ -105,7 +133,7 @@ And now for tables, see this one \x[table-my-table].
 ]
 
 And a quotation:
-\Q[To be or not to be!
+\\Q[To be or not to be!
 
 Cirodown is the answer.]
 
@@ -113,11 +141,11 @@ Cirodown is the answer.]
 
 Ciro loves headers and headers!
 
-Reference to a header: \x[paragraphs-code-math]. Or if you want to show the section id: \x[paragraphs-code-math]{style=full}.
+Reference to a header: \\x[paragraphs-code-math]. Or if you want to show the section id: \\x[paragraphs-code-math]{style=full}.
 
-Reference to the following image: \x[image-my-xi-chrysanthemum].
+Reference to the following image: \\x[image-my-xi-chrysanthemum].
 
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+\\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {title=Xi Chrysanthemum is a very nice image}
 {id=image-my-xi-chrysanthemum}
 {source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
@@ -130,34 +158,40 @@ Reference to the following image: \x[image-my-xi-chrysanthemum].
 
 ====== My h6
 
-\H[7][My h7]
+\\H[7][My h7]
 
-\H[8][My h8]
+\\H[8][My h8]
 
-\H[9][My h9]
+\\H[9][My h9]
 
-\H[10][My h10]
+\\H[10][My h10]
 
-\H[11][My h11]
+\\H[11][My h11]
 
-\H[12][My h12]
+\\H[12][My h12]
 
-\H[13][My h13]
-</div>
-<div id="output" class="cirodown">
-</div>
-</div>
-</body>
-<script src="cirodown.js"></script>
-<script src="cirodown.runtime.js"></script>
-<script>
-let input_elem = document.getElementById('input');
-let output_elem = document.getElementById('output');
-function convert_input() {
-  output_elem.innerHTML = cirodown.convert(
-      input_elem.innerText, {'body_only': true});
-}
-input_elem.addEventListener('input', convert_input, false);
-convert_input();
+\\H[13][My h13]
+`,
+        }
+    );
+    editor.onKeyUp(function (e) {
+        convert_input()
+    });
+    function convert_input() {
+        output_elem.innerHTML = my_cirodown.convert(
+            editor.getValue(), {'body_only': true});
+    }
+    convert_input();
+});
 </script>
+<!-- TODO this duplicates with code in ./cirodown but I'm lazy to solve it better right now -->
+<script src="node_modules/tablesort/src/tablesort.js"></script>
+<script src="node_modules/tablesort/src/sorts/tablesort.date.js"></script>
+<script src="node_modules/tablesort/src/sorts/tablesort.dotsep.js"></script>
+<script src="node_modules/tablesort/src/sorts/tablesort.filesize.js"></script>
+<script src="node_modules/tablesort/src/sorts/tablesort.monthname.js"></script>
+<script src="node_modules/tablesort/src/sorts/tablesort.number.js"></script>
+
+<script src="cirodown.runtime.js"></script>
+</body>
 </html>

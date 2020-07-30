@@ -2938,7 +2938,16 @@ function parse_argument_list(state, macro_name, macro_type) {
     if (state.token.type !== closing_token(open_token.type)) {
       parse_error(state, `unclosed argument "${open_token.value}"`, open_token.line, open_token.column);
     }
-    args[arg_name] = arg_children;
+    if (arg_name in args) {
+      // https://github.com/cirosantilli/cirodown/issues/101
+      parse_error(state,
+        `named argument ${arg_name} given multiple times`,
+        open_token.line,
+        open_token.column
+      );
+    } else {
+      args[arg_name] = arg_children;
+    }
     if (state.token.type !== TokenType.INPUT_END) {
       // Consume the *_ARGUMENT_END token out.
       parse_consume(state);

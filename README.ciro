@@ -10,16 +10,6 @@ The source for this document is at: https://github.com/cirosantilli/cirodown/blo
 
 Live in-browser demo: https://cirosantilli.com/cirodown/editor
 
-Alternatively, you can clone and run it locally with:
-``
-git clone https://github.com/cirosantilli/cirodown-template
-cd cirodown-template
-npm install
-./build
-xdg-open editor.html
-``
-We want to make that editor amazing later on: \x[editor-with-preview][live browser editor].
-
 Install the NPM package globally and use it from the command line for a quick conversion:
 ``
 npm install -g cirodown

@@ -19,6 +19,9 @@ html, body {
   height: calc(100% - 20px);
   padding: 10px;
 }
+#example {
+  display: none;
+}
 #input {
   border: 1px black solid;
   flex-grow: 1;
@@ -39,71 +42,54 @@ html, body {
 <body>
 <div id="container">
 <div id="input"></div>
-<div id="output" class="cirodown">
-</div>
-</div>
-<script src="cirodown.js"></script>
-<script>
-// Otherwise the monaco-editor loader messes up with browserify and cirodown is not visible...
-const my_cirodown = cirodown;
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/loader.min.js"></script>
-<script>
-const input_elem = document.getElementById('input');
-const output_elem = document.getElementById('output');
-
-require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs' }});
-window.MonacoEnvironment = { getWorkerUrl: () => proxy };
-const proxy = URL.createObjectURL(new Blob([`
-    self.MonacoEnvironment = {
-        baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min'
-    };
-    importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/base/worker/workerMain.min.js');
-`], { type: 'text/javascript' }));
-require(["vs/editor/editor.main"], function () {
-    const editor = monaco.editor.create(
-        input_elem,
-        {
-            folding: false,
-            minimap: {enabled: false},
-            theme: 'vs-dark',
-            wordWrap: 'on',
-            value: `= Cirodown hello world
+<div id="output" class="cirodown"></div>
+<div id="example">= Cirodown hello world
 
 Welcome to Cirodown! Here's the table of contents:
 
-\\Toc
+\Toc
 
 == Paragraphs, code, math
 
 My first paragraph is amazing!
 
-And the second one with inline code \`f(){}\` and inline server-side rendered maths with KaTeX: $\\sqrt{1+1}$.
+And the second one with inline code `f(){}` and inline server-side rendered maths with KaTeX: $\sqrt{1+1}$.
 
 But if we want block code here it is:
-\`\`
+``
 f() {
   return 1;
 }
-\`\`
+``
 and here is some block maths:
 $$
-\\sqrt{1+1} \\\\
-\\sqrt{1+1}
+\sqrt{1+1} \
+\sqrt{1+1}
 $$
 
-Ciro loves maths, and so equations can have titles, and references to math equations just work! See e.g.: \\x[my-favorite-equation]
+Ciro loves maths, and so equations can have titles, and references to math equations just work! See e.g.: \x[my-favorite-equation]
 $$
-\\newcommand{\\va}[1]{\\overrightarrow{#1}}
-\\newcommand{\\B}[0]{\\va{\\mathbf{B}}}
-\\newcommand{\\E}[0]{\\va{\\mathbf{E}}}
-\\newcommand{\\divergence}[1]{\\nabla \\cdot #1}
-\\newcommand{\\vacuumPermittivity}[0]{\\varepsilon_0}
-\\divergence{\\E} = \\frac{\\rho}{\\vacuumPermittivity} \\\\
-\\divergence{\\B} = 0
+\newcommand{\va}[1]{\overrightarrow{#1}}
+\newcommand{\B}[0]{\va{\mathbf{B}}}
+\newcommand{\E}[0]{\va{\mathbf{E}}}
+\newcommand{\divergence}[1]{\nabla \cdot #1}
+\newcommand{\vacuumPermittivity}[0]{\varepsilon_0}
+\divergence{\E} = \frac{\rho}{\vacuumPermittivity} \\
+\divergence{\B} = 0
 $$
 {title=This is my favorite equation in the entire world!!!}
 {id=my-favorite-equation}
+
+We try to make anything escapable with a backslash, e.g.:
+* literal backslash \\notmacro
+* code and math: \` and \$
+
+If you want more than three backticks in your insane code block, you can add more to the open:
+````
+Here  are three backticks:
+```
+Nice!
+````
 
 == Lists, tables, quotation
 
@@ -113,14 +99,14 @@ Meh, the usual. Insane list:
   * some nesting
   * and some more
 * third item
-Sane list with explicit \`Ul\`:
-\\Ul[
-\\L[first item]
-\\L[second item]
+Sane list with explicit `Ul`:
+\Ul[
+\L[first item]
+\L[second item]
 ]
 
-And now for tables, see this one \\x[table-my-table].
-\\Table
+And now for tables, see this one \x[table-my-table].
+\Table
 {title=My table title}
 {id=table-my-table}
 [
@@ -135,7 +121,7 @@ And now for tables, see this one \\x[table-my-table].
 ]
 
 And a quotation:
-\\Q[To be or not to be!
+\Q[To be or not to be!
 
 Cirodown is the answer.]
 
@@ -143,11 +129,11 @@ Cirodown is the answer.]
 
 Ciro loves headers and headers!
 
-Reference to a header: \\x[paragraphs-code-math]. Or if you want to show the section id: \\x[paragraphs-code-math]{style=full}.
+Reference to a header: \x[paragraphs-code-math]. Or if you want to show the section id: \x[paragraphs-code-math]{style=full}.
 
-Reference to the following image: \\x[image-my-xi-chrysanthemum].
+Reference to the following image: \x[image-my-xi-chrysanthemum].
 
-\\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {title=Xi Chrysanthemum is a very nice image}
 {id=image-my-xi-chrysanthemum}
 {source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
@@ -160,21 +146,107 @@ Reference to the following image: \\x[image-my-xi-chrysanthemum].
 
 ====== My h6
 
-\\H[7][My h7]
+\H[7][My h7]
 
-\\H[8][My h8]
+\H[8][My h8]
 
-\\H[9][My h9]
+\H[9][My h9]
 
-\\H[10][My h10]
+\H[10][My h10]
 
-\\H[11][My h11]
+\H[11][My h11]
 
-\\H[12][My h12]
+\H[12][My h12]
 
-\\H[13][My h13]
-`,
-        }
+\H[13][My h13]
+</div>
+</div>
+<script src="cirodown.js"></script>
+<script>
+// Otherwise the monaco-editor loader messes up with browserify and cirodown is not visible...
+const my_cirodown = cirodown;
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/loader.min.js"></script>
+<script>
+const example_elem = document.getElementById('example');
+const input_elem = document.getElementById('input');
+const output_elem = document.getElementById('output');
+
+require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs' }});
+window.MonacoEnvironment = { getWorkerUrl: () => proxy };
+const proxy = URL.createObjectURL(new Blob([`
+    self.MonacoEnvironment = {
+        baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min'
+    };
+    importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/base/worker/workerMain.min.js');
+`], { type: 'text/javascript' }));
+require(["vs/editor/editor.main"], function () {
+    monaco.languages.register({
+        id: 'cirodown'
+    });
+  // TODO replace with our own tokenizer output:
+  // https://github.com/cirosantilli/cirodown/issues/106
+  monaco.languages.setMonarchTokensProvider('cirodown', {
+     macroName: /[a-zA-Z0-9_]+/,
+     tokenizer: {
+       root: [
+         [/\\@macroName/, 'macro'],
+         [/\\./, 'escape'],
+
+         [/[[\]}]/, 'argumentDelim'],
+
+         [/{/, 'argumentDelim', 'argumentName'],
+
+         [/\$\$/, 'literalStart', 'insaneMath'],
+         [/\$.*?\$/, 'literalStart'],
+
+         [/``/, 'literalStart', 'insaneCode'],
+         [/`.*?`/, 'literalStart'],
+
+         [/^=+ .*/, 'insaneHeader'],
+
+         [/^.*\*/, 'insaneList'],
+       ],
+
+       insaneMath: [
+         [/\$\$/, 'literalStart', '@pop'],
+         [/./, 'literalInside'],
+       ],
+
+       insaneCode: [
+           [/``/, 'literalStart', '@pop'],
+           [/./, 'literalInside'],
+       ],
+
+       argumentName: [
+           [/@macroName/, 'argumentName'],
+           [/=/, 'argumentDelim', '@pop'],
+       ],
+     }
+    });
+    monaco.editor.defineTheme('vs-dark-cirodown', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'argumentDelim', foreground: 'FFFFFF', fontStyle: 'bold' },
+        { token: 'argumentName', foreground: 'FFAAFF', fontStyle: 'bold'},
+        { token: 'insaneHeader', foreground: 'FFFF00', fontStyle: 'bold' },
+        { token: 'insaneList', foreground: 'FFFFFF', fontStyle: 'bold' },
+        { token: 'literalStart', foreground: 'FFFF00', fontStyle: 'bold' },
+        { token: 'literalInside', foreground: 'FFFF88' },
+        { token: 'macro', foreground: 'FF8800', fontStyle: 'bold' },
+      ]
+    });
+    const editor = monaco.editor.create(
+      input_elem,
+      {
+        folding: false,
+        language: 'cirodown',
+        minimap: {enabled: false},
+        theme: 'vs-dark-cirodown',
+        wordWrap: 'on',
+        value: example_elem.textContent,
+      }
     );
     editor.onKeyUp(function (e) {
         convert_input()

@@ -97,7 +97,7 @@ Here  are three backticks:
 Nice!
 ]]
 
-== Lists, tables, quotation
+== Lists, tables, quotations
 
 Meh, the usual. Insane list:
 * first item
@@ -148,6 +148,15 @@ Reference to the following image: \x[image-my-xi-chrysanthemum].
 {title=Xi Chrysanthemum is a very nice image}
 {id=image-my-xi-chrysanthemum}
 {source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
+
+Reference to a fixed-uppercase header: \x[ciro-is-awesome].
+
+Force non-fixed case header to be uppercase and plural: \x[dog]{c}{p}.
+
+=== Ciro is awesome
+{c}
+
+=== Dog
 
 === Unlimited header levels?!
 
@@ -242,6 +251,7 @@ require(["vs/editor/editor.main"], function () {
       argumentName: [
         [/@macroName/, 'argumentName'],
         [/=/, 'argumentDelim', '@pop'],
+        [/}/, 'argumentDelim', '@pop'],
       ],
       insaneCode: [
         [/`/, 'literalStart', '@pop'],
@@ -296,12 +306,12 @@ require(["vs/editor/editor.main"], function () {
       value: example_elem.textContent,
     }
   );
-  editor.onKeyUp(function (e) {
-      convert_input()
+  editor.onDidChangeModelContent(function (e) {
+    convert_input();
   });
   function convert_input() {
-      output_elem.innerHTML = my_cirodown.convert(
-          editor.getValue(), {'body_only': true});
+    output_elem.innerHTML = my_cirodown.convert(
+      editor.getValue(), {'body_only': true});
   }
   convert_input();
 });

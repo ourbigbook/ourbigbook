@@ -1981,6 +1981,11 @@ function html_katex_convert(ast, context) {
       {
         globalGroup: true,
         macros: context.katex_macros,
+        // The default is to also add MathML output for blind people.
+        // However, it adds it with absolute positioning for some reason.
+        // And as a result, if you add a math formula to the bottom of the editor,
+        // it generates a toplevel scrollbar on Chromium 84 but not Firefox 79.
+        output: 'html',
         strict: 'error',
         throwOnError: true,
       }

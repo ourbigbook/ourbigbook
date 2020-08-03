@@ -352,14 +352,19 @@ require(["vs/editor/editor.main"], function () {
       block = 'center';
     }
     const id = line_to_id(line_number);
-    // TODO this would be awesome to make the element being targeted red,
-    // but it loses editor focus  on new paragraphs (e.g. double newline,
-    // making it unusable.
-    // window.location.hash = id;
-    document.getElementById(id).scrollIntoView({
-      behavior: 'smooth',
-      block: block,
-    });
+    if (
+      // Possible on empty document.
+      id !== undefined
+    ) {
+      // TODO this would be awesome to make the element being targeted red,
+      // but it loses editor focus  on new paragraphs (e.g. double newline,
+      // making it unusable.
+      // window.location.hash = id;
+      document.getElementById(id).scrollIntoView({
+        behavior: 'smooth',
+        block: block,
+      });
+    };
   }
   convert_input();
 });

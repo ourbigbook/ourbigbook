@@ -3933,6 +3933,13 @@ const DEFAULT_MACRO_LIST = [
       }
       ret += `</span>`;
       ret += `</h${level_int_capped}>\n`;
+      if (ast.validation_output.wiki.given) {
+        let wiki = convert_arg(ast.args.wiki, context);
+        if (wiki === '') {
+          wiki = convert_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context).replace(/ /g, '_');
+        }
+        ret += `<div class="h-nav"><span class="nav"></span> <a href="https://en.wikipedia.org/wiki/${html_escape_attr(wiki)}">Wikipedia</a></div>\n`;
+      }
       return ret;
     },
     {
@@ -3961,6 +3968,9 @@ const DEFAULT_MACRO_LIST = [
         }),
         new MacroArgument({
           name: Macro.TITLE2_ARGUMENT_NAME,
+        }),
+        new MacroArgument({
+          name: 'wiki',
         }),
       ],
     }

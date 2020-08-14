@@ -3639,7 +3639,7 @@ const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = [
     elide_link_only: true,
   }),
   new MacroArgument({
-    name: 'title_from_src',
+    name: 'titleFromSrc',
     boolean: true,
   }),
   new MacroArgument({
@@ -3739,9 +3739,9 @@ const MACRO_IMAGE_VIDEO_OPTIONS = {
     // Title from src.
     const media_provider_type = macro_image_video_resolve_params(ast, context).media_provider_type;
     if (
-      ast.validation_output.title_from_src.boolean ||
+      ast.validation_output.titleFromSrc.boolean ||
       (
-        !ast.validation_output.title_from_src.given &&
+        !ast.validation_output.titleFromSrc.given &&
         context.options.cirodown_json['media-providers'][media_provider_type]['title-from-src']
       )
     ) {

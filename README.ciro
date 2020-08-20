@@ -2964,7 +2964,8 @@ TODO: https://github.com/cirosantilli/cirodown/issues/38
 
 One day, one day. Maybe.
 
-===== `--publish`
+===== `-p, --publish`
+{id=publish}
 
 Cirodown tooling is so amazing that we also take care of the HTML publishing for you!
 
@@ -3040,7 +3041,7 @@ git commit --message 'initial commit from template'
 cirodown --publish .
 ``
 
-===== `--publish-commit <commit-message>`
+===== `-P, --publish-commit <commit-message>`
 {id=publish-commit}
 
 Like \x[publish], but also automatically:

@@ -3525,6 +3525,13 @@ git push --follow-tags
 npm publish
 ``
 
+= Website release procedure
+{parent=release-procedure}
+
+``
+sudo snap install --classic heroku
+``
+
 === TODO
 
 * correct ID generation algorithm to be Unicode robust

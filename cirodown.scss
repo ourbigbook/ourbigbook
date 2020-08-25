@@ -18,6 +18,7 @@ $a-color-visited: #FFAAFF;
 $background-color: black;
 $code-background-color: #333333;
 $color: #00FF00;
+$color-discreet: #00BB00;
 $target-background-color: #442222;
 
 @mixin hidden {
@@ -206,13 +207,16 @@ ol, ul {
   ul {
     list-style-type: none;
     li {
+      .descendant-count {
+        color: $color-discreet;
+      }
       // https://github.com/cirosantilli/cirodown/issues/68
       margin-bottom: 4px;
       margin-top: 4px;
-      div:hover a + span {
+      div:hover span.hover-metadata {
         @include visible;
       }
-      div:target a + span {
+      div:target span.hover-metadata {
         @include visible;
       }
 
@@ -238,7 +242,7 @@ ol, ul {
         }
       }
       div {
-        a + span {
+        span.hover-metadata {
           @include hidden;
         }
         // Take up space on LIs that don't have an arrow.

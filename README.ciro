@@ -1258,12 +1258,26 @@ Otherwise, the following effects happen:
 * the include itself renders as a link to the included document
 * \x[html-single-page]
 
-Here is an example of inclusion of the files `not-readme.ciro` and `not-readme-2.ciro`.
-
+Here is an example of inclusion of the files `not-readme.ciro` and `not-readme-2.ciro`:
+``
+\Include[not-readme]
+\Include[not-readme-2]
+\Include[not-readme-with-scope]
+``
+The above is the recommended and slightly \x[insane-macro-shortcuts][insaner] version of:
+``
 \Include[not-readme]
 
 \Include[not-readme-2]
 
+\Include[not-readme-with-scope]
+``
+The insaner version is a bit insaner because the `\Include` magically discards the following newline node that follows it if it just a plaintext node containing exactly a newline. With a double newline, the newline would already have been previously taken out on the lexing stage as part of a paragraph.
+
+This is what they actually render as:
+
+\Include[not-readme]
+\Include[not-readme-2]
 \Include[not-readme-with-scope]
 
 === Skipping header levels

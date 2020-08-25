@@ -1765,6 +1765,8 @@ function convert_include(input_string, options, cur_header_level, href, start_li
   include_options.input_path = href;
   include_options.render = false;
   include_options.toplevel_id = href;
+  include_options.header_graph_stack = new Map(include_options.header_graph_stack);
+  include_options.header_graph_id_stack = new Map(include_options.header_graph_id_stack);
   if (start_line !== undefined) {
     include_options.start_line = start_line;
   }
@@ -2208,7 +2210,6 @@ function parse(tokens, options, context, extra_returns={}) {
   context.header_graph = new TreeNode();
   extra_returns.debug_perf.post_process_start = globals.performance.now();
   let prev_header;
-  let cur_header;
   let cur_header_level;
   let first_header_level;
   let first_header;
@@ -2219,11 +2220,8 @@ function parse(tokens, options, context, extra_returns={}) {
   const line_to_id_array = [];
   const macro_counts = {};
   const macro_counts_visible = {};
-  const header_graph_stack = new Map();
-  const header_graph_id_stack = new Map();
   let id_provider;
   let cur_header_graph_node;
-  let is_first_header = true;
   // Prepare convert options for the child. Copy options so that the
   // toplevel call won't change the input options, but children calls wlil.
   const include_options = Object.assign({}, options);
@@ -2236,6 +2234,16 @@ function parse(tokens, options, context, extra_returns={}) {
   }
   if (include_options.indexed_ids === undefined) {
     include_options.indexed_ids = {};
+  }
+  if (include_options.header_graph_stack === undefined) {
+    include_options.header_graph_stack = new Map();
+  }
+  if (include_options.header_graph_id_stack === undefined) {
+    include_options.header_graph_id_stack = new Map();
+  }
+  let is_first_header = true;
+  if (include_options.is_first_global_header === undefined) {
+    include_options.is_first_global_header = true;
   }
   let local_id_provider = new DictIdProvider(include_options.indexed_ids);
   if (options.id_provider !== undefined) {
@@ -2258,7 +2266,7 @@ function parse(tokens, options, context, extra_returns={}) {
     ast.input_path = options.input_path;
     if (macro_name === Macro.INCLUDE_MACRO_NAME) {
       const href = convert_arg_noescape(ast.args.href, context);
-      cur_header.includes.push(href);
+      include_options.cur_header.includes.push(href);
       if (context.include_path_set.has(href)) {
         let message = `circular include detected to: "${href}"`;
         parse_error(
@@ -2450,8 +2458,8 @@ function parse(tokens, options, context, extra_returns={}) {
         // Required by calculate_id.
         validate_ast(ast, context);
 
-        prev_header = cur_header;
-        cur_header = ast;
+        prev_header = include_options.cur_header;
+        include_options.cur_header = ast;
         cur_header_level = parseInt(
           convert_arg_noescape(ast.args.level, context)
         ) + options.h_level_offset;
@@ -2473,7 +2481,7 @@ function parse(tokens, options, context, extra_returns={}) {
             const parent_ast = context.id_provider.get(
               parent_id, context, prev_header.header_graph_node);
             if (parent_ast !== undefined) {
-              parent_tree_node = header_graph_id_stack.get(parent_ast.id);
+              parent_tree_node = include_options.header_graph_id_stack.get(parent_ast.id);
             }
           }
           if (parent_tree_node === undefined) {
@@ -2491,22 +2499,18 @@ function parse(tokens, options, context, extra_returns={}) {
         }
 
         // Create the header tree.
-        if (ast.level === undefined) {
-          cur_header_level = parseInt(convert_arg_noescape(ast.args.level, context)) + options.h_level_offset;
-          ast.level = cur_header_level;
-        } else {
-          // Possible for included headers.
-          cur_header_level = ast.level;
-        }
         if (is_first_header) {
           ast.id = options.toplevel_id;
+          is_first_header = false;
+        }
+        if (include_options.is_first_global_header) {
           first_header = ast;
           first_header_level = cur_header_level;
           header_graph_last_level = cur_header_level - 1;
-          header_graph_stack.set(header_graph_last_level, context.header_graph);
-          is_first_header = false;
+          include_options.header_graph_stack.set(header_graph_last_level, context.header_graph);
+          include_options.is_first_global_header = false;
         }
-        cur_header_graph_node = new TreeNode(ast, header_graph_stack.get(cur_header_level - 1));
+        cur_header_graph_node = new TreeNode(ast, include_options.header_graph_stack.get(cur_header_level - 1));
         let header_level_skip_error;
         if (cur_header_level - header_graph_last_level > 1) {
           header_level_skip_error = header_graph_last_level;
@@ -2519,12 +2523,12 @@ function parse(tokens, options, context, extra_returns={}) {
             ast.args.level.column
           );
         }
-        const parent_tree_node = header_graph_stack.get(cur_header_level - 1);
+        const parent_tree_node = include_options.header_graph_stack.get(cur_header_level - 1);
         if (parent_tree_node !== undefined) {
           parent_tree_node.add_child(cur_header_graph_node);
         }
-        const old_graph_node = header_graph_stack.get(cur_header_level);
-        header_graph_stack.set(cur_header_level, cur_header_graph_node);
+        const old_graph_node = include_options.header_graph_stack.get(cur_header_level);
+        include_options.header_graph_stack.set(cur_header_level, cur_header_graph_node);
         if (
           // Possible on the first insert of a level.
           old_graph_node !== undefined
@@ -2533,7 +2537,7 @@ function parse(tokens, options, context, extra_returns={}) {
             // Possible if the level is not an integer.
             old_graph_node.value !== undefined
           ) {
-            header_graph_id_stack.delete(old_graph_node.value.id);
+            include_options.header_graph_id_stack.delete(old_graph_node.value.id);
           }
         }
         header_graph_last_level = cur_header_level;
@@ -2563,7 +2567,7 @@ function parse(tokens, options, context, extra_returns={}) {
           parse_error(state, message, ast.args.level.line, ast.args.level.column);
         }
 
-        header_graph_id_stack.set(cur_header_graph_node.value.id, cur_header_graph_node);
+        include_options.header_graph_id_stack.set(cur_header_graph_node.value.id, cur_header_graph_node);
       }
       // Push this node into the parent argument list.
       // This allows us to skip nodes, or push multiple nodes if needed.

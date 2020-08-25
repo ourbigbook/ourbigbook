@@ -90,7 +90,9 @@ Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally pu
   * \x[internal-cross-file-references]
   * \x[table-of-contents] that crosses input files
   * `inotifywait` watch rebuild server
-  * cross file includes that work as links on multi output file mode, and true includes in single output file mode
+  * single-source multi-format output based on \x[includes] and build options:
+    * one HTML per source with includes rendered as links between pages
+    * \x[html-single-page] single file output
   * cross file configuration files to factor out common page parts like headers and footers
 * advanced header/ID related features:
   * \x[scope]

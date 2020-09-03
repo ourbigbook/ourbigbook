@@ -4104,7 +4104,7 @@ const DEFAULT_MACRO_LIST = [
     },
     {
       caption_prefix: 'Equation',
-      id_prefix: 'eq',
+      id_prefix: 'equation',
       get_number: function(ast, context) {
         // Override because unlike other elements such as images, equations
         // always get numbers even if not indexed.

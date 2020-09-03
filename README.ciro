@@ -1904,14 +1904,14 @@ $$
 $$
 ]]
 
-Equation IDs and titles and linking to equations works identically to \x[images], see that section for full details. Here is one equation reference example that links to the following insane syntax equation: \x[eq-my-first-insane-equation]:
+Equation IDs and titles and linking to equations works identically to \x[images], see that section for full details. Here is one equation reference example that links to the following insane syntax equation: \x[equation-my-first-insane-equation]:
 \CirodownExample[[
 $$
 \sqrt{1 + 1}
 $$
 {title=My first insane equation.}
 ]]
-and the sane equivalent \x[eq-my-first-sane-equation]:
+and the sane equivalent \x[equation-my-first-sane-equation]:
 \CirodownExample[[[
 \M{title=My first sane equation.}[[
 \sqrt{1 + 1}

@@ -1,7 +1,5 @@
 = Includes not README
 
-\Toc
-
 This file, surprisingly, includes \c[not-readme.ciro].
 
 It is meant a more minimal interactive test of \x[includes] than the full blown \c[README.ciro].

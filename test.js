@@ -1243,6 +1243,7 @@ assert_convert_ast('cross reference from image to following header without x con
         id: 'image-ef-gh'
       }
     ),
+    a('Toc'),
     a('H', undefined, {
       level: [t('2')],
       title: [t('gh')],
@@ -1302,6 +1303,7 @@ assert_convert_ast('scope with parent leading slash conflict resolution',
 {parent=/h2}
 `, [
   a('H', undefined, {level: [t('1')], title: [t('h1')]}, {id: 'h1'}),
+  a('Toc'),
   a('H', undefined, {level: [t('2')], title: [t('h2')]}, {id: 'h2'}),
   a('H', undefined, {level: [t('3')], title: [t('h3')]}, {id: 'h3'}),
   a('H', undefined, {level: [t('4')], title: [t('h2')]}, {id: 'h3/h2'}),
@@ -1326,6 +1328,7 @@ assert_convert_ast('scope with parent breakout with no leading slash',
 {parent=h2}
 `, [
   a('H', undefined, {level: [t('1')], title: [t('h1')]}, {id: 'h1'}),
+  a('Toc'),
   a('H', undefined, {level: [t('2')], title: [t('h2')]}, {id: 'h2'}),
   a('H', undefined, {level: [t('3')], title: [t('h3')]}, {id: 'h3'}),
   a('H', undefined, {level: [t('4')], title: [t('h4')]}, {id: 'h3/h4'}),
@@ -1362,12 +1365,14 @@ My paragraph 2.
   [
     a('H', undefined, {level: [t('1')], title: [t('My header 1')]}),
     a('P', [t('My paragraph 1.')]),
+    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('My header 2')]}),
     a('P', [t('My paragraph 2.')]),
   ]
 );
 const header_7_expect = [
   a('H', undefined, {level: [t('1')], title: [t('1')]}),
+  a('Toc'),
   a('H', undefined, {level: [t('2')], title: [t('2')]}),
   a('H', undefined, {level: [t('3')], title: [t('3')]}),
   a('H', undefined, {level: [t('4')], title: [t('4')]}),
@@ -1553,6 +1558,59 @@ d
 ]
 );
 
+// Toc
+assert_convert_ast('second explicit toc is removed',
+  `a
+
+\\Toc
+
+b
+
+\\Toc
+`,
+[
+  a('P', [t('a')]),
+  a('Toc'),
+  a('P', [t('b')]),
+]
+);
+assert_convert_ast('implicit toc after explcit toc is removed',
+  `= aa
+
+bb
+
+\\Toc
+
+cc
+
+== dd
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('P', [t('bb')]),
+    a('Toc'),
+    a('P', [t('cc')]),
+    a('H', undefined, {level: [t('2')], title: [t('dd')]}),
+]
+);
+assert_convert_ast('explicit toc after implicit toc is removed',
+  `= aa
+
+bb
+
+== cc
+
+\\Toc
+
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('P', [t('bb')]),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
+]
+);
+
 // Math. Minimal testing since this is mostly factored out with code tests.
 assert_convert_ast('math inline sane',
   '\\m[[\\sqrt{1 + 1}]]\n',
@@ -1623,6 +1681,7 @@ bb
   [
     a('H', undefined, {level: [t('1')], title: [t('aa')]}),
     a('P', [t('bb')]),
+    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('cc')]}),
     a('P', [t('dd')]),
     a('H', undefined, {level: [t('2')], title: [t('ee')]}),
@@ -1647,6 +1706,7 @@ assert_convert_ast('x reference to include header',
     a('P', [
       a('x', undefined, {href: [t('gg')]}),
     ]),
+    a('Toc'),
   ].concat(include_two_levels_ast_args),
   include_opts
 );
@@ -1662,6 +1722,7 @@ bb
   [
     a('H', undefined, {level: [t('1')], title: [t('aa')]}),
     a('P', [t('bb')]),
+    a('Toc'),
   ].concat(include_two_levels_ast_args)
   .concat([
     a('H', undefined, {level: [t('2')], title: [t('cc')]}),
@@ -1681,6 +1742,7 @@ bb
   [
     a('H', undefined, {level: [t('1')], title: [t('aa')]}),
     a('P', [t('bb')]),
+    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('cc')]}),
     a('P', [t('dd')]),
     a('H', undefined, {level: [t('2')], title: [t('ee')]}),
@@ -1699,6 +1761,7 @@ bb
   [
     a('H', undefined, {level: [t('1')], title: [t('aa')]}),
     a('P', [t('bb')]),
+    a('Toc'),
   ].concat(include_two_levels_ast_args)
   .concat([
     a('H', undefined, {level: [t('2')], title: [t('cc')]}),

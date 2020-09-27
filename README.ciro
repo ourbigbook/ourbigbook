@@ -777,6 +777,24 @@ Reference to the first header of another file:
 \x[not-readme]
 ]]
 
+Reference to a non-first header of another file:
+\CirodownExample[[
+\x[h2-in-not-the-readme]
+]]
+
+To make toplevel links cleaner,if target header is the very first element of the other page, then the link does not get a fragment, e.g.: `\x[not-readme]` rendered as:
+``
+<a href="not-readme"
+``
+and not:
+``
+<a href="not-readme#not-readme"
+``
+while `\x[h2-in-not-the-readme]` is rendered with the fragment:
+``
+<a href="not-readme#h2-in-not-the-readme"
+``
+
 Reference to the first header of another file that is a second inclusion:
 \CirodownExample[[
 \x[included-by-not-readme]

@@ -44,9 +44,6 @@ class AstNode {
     if (!(Macro.ID_ARGUMENT_NAME in options)) {
       options.id = undefined;
     }
-    if (!('input_path' in options)) {
-      options.input_path = undefined;
-    }
     if (!('level' in options)) {
       options.level = undefined;
     }
@@ -70,7 +67,6 @@ class AstNode {
     this.source_location = source_location;
 
     this.args = args;
-    this.input_path = options.input_path;
     this.first_toplevel_child = options.first_toplevel_child;
     // This is the Nth macro of this type that appears in the document.
     this.macro_count = undefined;
@@ -307,15 +303,18 @@ class ErrorMessage {
       ret += `${path}: `;
     }
     let had_line_or_col = false;
+    if (this.source_location.path) {
+      ret += `${this.source_location.path}:`;
+    }
     if (this.source_location.line !== undefined) {
-      ret += `line ${this.source_location.line}`;
+      ret += `${this.source_location.line}`;
       had_line_or_col = true;
     }
     if (this.source_location.column !== undefined) {
       if (this.source_location.line !== undefined) {
-        ret += ` `;
+        ret += `:`;
       }
-      ret += `column ${this.source_location.column}`;
+      ret += `${this.source_location.column}`;
       had_line_or_col = true;
     }
     if (had_line_or_col)
@@ -1498,7 +1497,7 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
         previous_ast = non_indexed_id;
       }
     } else {
-      input_path = previous_ast.input_path;
+      input_path = previous_ast.source_location.path;
     }
     if (previous_ast === undefined) {
       non_indexed_ids[ast.id] = ast;
@@ -2259,8 +2258,7 @@ function parse(tokens, options, context, extra_returns={}) {
   }
 
   // Inject a maybe paragraph token after those arguments.
-  const paragraph_token = new Token(TokenType.PARAGRAPH,
-    undefined, state.token.source_location);
+  const paragraph_token = new Token(TokenType.PARAGRAPH, state.token.source_location);
   tokens.splice(state.i, 0, paragraph_token);
   state.token = paragraph_token;
 
@@ -2346,7 +2344,7 @@ function parse(tokens, options, context, extra_returns={}) {
     const [parent_arg, ast] = todo_visit.pop();
     const macro_name = ast.macro_name;
     ast.from_include = options.from_include;
-    ast.input_path = options.input_path;
+    ast.source_location.path = options.input_path;
     if (macro_name === Macro.INCLUDE_MACRO_NAME) {
       let peek_ast = todo_visit[todo_visit.length - 1][1];
       if (peek_ast.node_type === AstType.PLAINTEXT && peek_ast.text == '\n') {
@@ -2424,7 +2422,6 @@ function parse(tokens, options, context, extra_returns={}) {
               force_no_index: true,
               from_include: true,
               id: href,
-              input_path: ast.input_path,
               level: cur_header_level + 1,
             },
           );
@@ -2482,7 +2479,6 @@ function parse(tokens, options, context, extra_returns={}) {
               ast.source_location,
               {
                 from_include: true,
-                input_path: ast.input_path,
               },
             ),
             new AstNode(
@@ -2509,9 +2505,6 @@ function parse(tokens, options, context, extra_returns={}) {
           Macro.CODE_MACRO_NAME.toUpperCase(),
           {'content': ast.args.content},
           ast.source_location,
-          {
-            input_path: options.input_path,
-          }
         ),
         new AstNode(
           AstType.MACRO,
@@ -2528,9 +2521,6 @@ function parse(tokens, options, context, extra_returns={}) {
             ),
           },
           ast.source_location,
-          {
-            input_path: options.input_path,
-          }
         ),
         new AstNode(
           AstType.MACRO,
@@ -2545,9 +2535,6 @@ function parse(tokens, options, context, extra_returns={}) {
             )
           },
           ast.source_location,
-          {
-            input_path: options.input_path,
-          }
         ),
       ]);
     } else {
@@ -2754,7 +2741,6 @@ function parse(tokens, options, context, extra_returns={}) {
               {},
               ast.source_location,
               {
-                input_path: ast.input_path,
                 parent_node: ast.parent_node
               }
             ));
@@ -2860,7 +2846,6 @@ function parse(tokens, options, context, extra_returns={}) {
                       },
                       start_auto_child_node.source_location,
                       {
-                        input_path: options.input_path,
                         parent_node: child_node.parent_node
                       }
                     )], child_node.source_location);
@@ -2930,7 +2915,6 @@ function parse(tokens, options, context, extra_returns={}) {
                       },
                       start_auto_child_node.source_location,
                       {
-                        input_path: options.input_path,
                         parent_node: child_node.parent_node
                       }
                     )], child_node.source_location);
@@ -3072,7 +3056,6 @@ function parse_add_paragraph(
           },
           arg[paragraph_start].source_location,
           {
-            input_path: options.input_path,
             parent_node: ast,
           }
         )
@@ -3515,7 +3498,7 @@ exports.x_href = x_href;
 
 function x_href_parts(target_id_ast, context) {
   let href_path;
-  const target_input_path = target_id_ast.input_path;
+  const target_input_path = target_id_ast.source_location.path;
   let fragment;
   if (
     // The header was included inline into the current file.

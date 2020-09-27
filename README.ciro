@@ -2915,6 +2915,10 @@ Otherwise, `include` only adds the headers of the other file to the table of con
 
 You may want to use this option together with \x[html-embed] to produce fully self-contained individual HTML files for your project.
 
+===== `--html-split-header`
+
+Split each header into its own separate HTML file.
+
 ===== `--no-html-x-extension`
 
 If not given, \x[internal-cross-references] render with the `.html` extension as in:

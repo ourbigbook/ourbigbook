@@ -258,6 +258,13 @@ function convert_input(input, options, convert_input_options={}) {
   }
   // Finally, do the conversion!
   const output = cirodown.convert(input, new_options, new_options.extra_returns);
+  if (convert_input_options.commander.htmlSplitHeader) {
+    for (const id in new_options.extra_returns.html_split_header) {
+      const output_path = path.join(convert_input_options.outdir, id + HTML_EXT);
+      fs.mkdirSync(path.dirname(output_path), {recursive: true});
+      fs.writeFileSync(output_path, new_options.extra_returns.html_split_header[id]);
+    }
+  }
   if (convert_input_options.commander.showTokens) {
     console.error('tokens:');
     console.error(JSON.stringify(new_options.extra_returns.tokens, null, 2));
@@ -309,9 +316,7 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
   }
   let output_path_noext = path.join(input_path_parse.dir, output_name);
   if (convert_input_options.output_path === undefined) {
-    if (convert_input_options.outdir) {
-      output_path_noext = path.join(convert_input_options.outdir, output_path_noext);
-    }
+    output_path_noext = path.join(convert_input_options.outdir, output_path_noext);
   } else {
     output_path_noext = convert_input_options.output_path;
   }
@@ -543,6 +548,7 @@ commander.option('--generate-multifile', 'http://cirosantilli.com/cirodown#gener
 commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown/#', false);
 commander.option('--html-embed', 'http://cirosantilli.com/cirodown#html-embed', false);
 commander.option('--html-single-page', 'http://cirosantilli.com/cirodown#html-single-page', false);
+commander.option('--html-split-header', 'http://cirosantilli.com/cirodown#html-split-header', false);
 commander.option('--no-html-x-extension', 'http://cirosantilli.com/cirodown#no-html-x-extension');
 commander.option('--no-db', 'ignore the ID database, mostly for testing https://cirosantilli.com/cirosantilli#internal-cross-file-references-internals');
 commander.option('--outdir <outdir>', 'if the output would be saved to a file e.g. when building a directory, use this directory as the root');
@@ -614,6 +620,7 @@ if (commander.helpMacros) {
     html_embed: commander.htmlEmbed,
     html_x_extension: html_x_extension,
     html_single_page: commander.htmlSinglePage,
+    html_split_header: commander.htmlSplitHeader,
     output_format: commander.outputFormat,
     read_include: function(input_path) {
       return fs.readFileSync(input_path + CIRODOWN_EXT, ENCODING);
@@ -660,7 +667,8 @@ if (commander.helpMacros) {
     fs.mkdirSync(outdir, {recursive: true});
 
     // Generate package.json.
-    const package_json = JSON.parse(fs.readFileSync(cirodown_nodejs.PACKAGE_PACKAGE_JSON_PATH).toString());
+    const package_json = JSON.parse(fs.readFileSync(
+      cirodown_nodejs.PACKAGE_PACKAGE_JSON_PATH).toString());
     const package_json_str = `{
   "dependencies": {
     "cirodown": "${package_json.version}"
@@ -703,13 +711,16 @@ A link to another file: \\x[and-now-an-include]
     }
     fs.writeFileSync(path.join(outdir, 'README.ciro'), readme_cirodown_str);
     if (commander.generateMultifile) {
-      fs.copyFileSync(path.join(cirodown_nodejs.PACKAGE_PATH, 'main.liquid.html'), path.join(outdir, 'main.liquid.html'));
-      fs.copyFileSync(path.join(cirodown_nodejs.PACKAGE_PATH, 'main.scss'), path.join(outdir, 'main.scss'));
+      fs.copyFileSync(path.join(cirodown_nodejs.PACKAGE_PATH, 'main.liquid.html'),
+        path.join(outdir, 'main.liquid.html'));
+      fs.copyFileSync(path.join(cirodown_nodejs.PACKAGE_PATH, 'main.scss'),
+        path.join(outdir, 'main.scss'));
       new_cirodown_json.template = 'main.liquid.html';
     }
 
     if (new_cirodown_json !== {}) {
-      fs.writeFileSync(path.join(outdir, CIRODOWN_JSON), JSON.stringify(new_cirodown_json, null, 2) + '\n');
+      fs.writeFileSync(path.join(outdir, CIRODOWN_JSON),
+        JSON.stringify(new_cirodown_json, null, 2) + '\n');
     }
     process.exit(0);
   }
@@ -720,6 +731,7 @@ A link to another file: \\x[and-now-an-include]
     had_error: false,
     out_css_path: cirodown_nodejs.PACKAGE_OUT_CSS_LOCAL_PATH,
     out_js_path: cirodown_nodejs.PACKAGE_OUT_JS_LOCAL_PATH,
+    outdir: outdir,
   };
   let outfile;
   if (commander.outfile === undefined) {

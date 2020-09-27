@@ -86,8 +86,7 @@ function assert_error_func(input_string, line, column) {
   let output = cirodown.convert(input_string, convert_opts, extra_returns);
   assert.ok(extra_returns.errors.length >= 1);
   let error = extra_returns.errors[0];
-  assert.strictEqual(error.line, line);
-  assert.strictEqual(error.column, column);
+  assert.deepStrictEqual(error.source_location, new cirodown.SourceLocation(line, column));
 }
 
 /** For stuff that is hard to predict the exact output of, which is most of the HTML,
@@ -1441,7 +1440,7 @@ assert_convert_ast('header 7 parent',
 `,
   header_7_expect
 );
-assert_error('header parent with level not 1 is an error',
+assert_error('header with parent argument must have level equal 1',
   `= 1
 
 == 2

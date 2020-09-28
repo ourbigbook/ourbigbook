@@ -1372,8 +1372,8 @@ function array_equals(arr1, arr2) {
   return true;
 }
 
-function basename(str) {
-  return str.substr(str.lastIndexOf(URL_SEP) + 1);
+function basename(str, sep) {
+  return path_split(str, sep)[1];
 }
 
 /// https://stackoverflow.com/questions/22697936/binary-search-in-javascript/29018745#29018745
@@ -1582,7 +1582,7 @@ function closing_token(token) {
  *
  * @options {Object}
  *          {IdProvider} external_ids
- *          {Function[String] -> string} read_include(id) -> content
+ *          {Function[String] -> [string,string]} read_include(id) -> [file_name, content]
  *          {Number} h_level_offset - add this offset to the levels of every header
  *          {boolean} render - if false, parse the input, but don't render it,
  *              and return undefined.
@@ -1643,6 +1643,7 @@ function convert(
   if (!('include_path_set' in options)) { options.include_path_set = new Set(); }
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('output_format' in options)) { options.output_format = OUTPUT_FORMAT_HTML; }
+  if (!('path_sep' in options)) { options.path_sep = undefined; }
   if (!('render' in options)) { options.render = true; }
   if (!('start_line' in options)) { options.start_line = 1; }
   // A toplevel scope, to implement conversion of files in subdirectories.
@@ -1789,6 +1790,11 @@ function convert(
   // Sort errors that might have been produced on different conversion
   // stages by line.
   extra_returns.errors = extra_returns.errors.sort((a, b)=>{
+    if (a.source_location.path !== undefined && b.source_location.path !== undefined) {
+      let ret = a.source_location.path.localeCompare(b.source_location.path);
+      if (ret !== 0)
+        return ret;
+    }
     if (a.source_location.line < b.source_location.line)
       return -1;
     if (a.source_location.line > b.source_location.line)
@@ -1839,26 +1845,42 @@ function convert_arg_noescape(arg, context={}) {
   return convert_arg(arg, clone_and_set(context, 'html_escape', false));
 }
 
-/** @return {AstArgument} */
-function convert_include(input_string, options, cur_header_level, href, start_line) {
-  const include_options = Object.assign({}, options);
-  include_options.from_include = true;
-  include_options.h_level_offset = cur_header_level;
-  include_options.input_path = href;
-  include_options.render = false;
-  include_options.toplevel_id = href;
-  include_options.header_graph_stack = new Map(include_options.header_graph_stack);
-  include_options.header_graph_id_stack = new Map(include_options.header_graph_id_stack);
-  if (start_line !== undefined) {
-    include_options.start_line = start_line;
+/**
+ * @param {Object} options:
+ *        - {Number} start_line
+ *        - {Array} errors
+ * @return {AstArgument}*/
+function convert_include(input_string, convert_options, cur_header_level, input_path, href, options) {
+  convert_options = Object.assign({}, convert_options);
+  convert_options.from_include = true;
+  convert_options.h_level_offset = cur_header_level;
+  convert_options.input_path = input_path;
+  convert_options.render = false;
+  convert_options.toplevel_id = href;
+  convert_options.header_graph_stack = new Map(convert_options.header_graph_stack);
+  convert_options.header_graph_id_stack = new Map(convert_options.header_graph_id_stack);
+  if (options.start_line !== undefined) {
+    convert_options.start_line = options.start_line;
   }
-  const include_extra_returns = {};
+  const convert_extra_returns = {};
   convert(
     input_string,
-    include_options,
-    include_extra_returns,
+    convert_options,
+    convert_extra_returns,
   );
-  return include_extra_returns.ast.args.content;
+  // Forward the include_path_set back. This is needed because convert
+  // clones that input by default to prevent inputs from being modified.
+  for (let include_path of convert_extra_returns.context.include_path_set) {
+    convert_options.include_path_set.add(include_path);
+  }
+  if (options.errors !== undefined) {
+    options.errors.push(...convert_extra_returns.errors);
+  }
+  return convert_extra_returns.ast.args.content;
+}
+
+function dirname(str, sep) {
+  return path_split(str, sep)[0];
 }
 
 /** Error message to be rendered inside the generated output itself.
@@ -2125,6 +2147,21 @@ function html_self_link(ast, context) {
   return ` ${x_href_attr(ast, context)}`;
 }
 
+function id_convert_simple_elem() {
+  return function(ast, context) {
+    let ret = convert_arg(ast.args.content, context);
+    if (!context.macros[ast.macro_name].options.phrasing) {
+      ret += '\n';
+    }
+    return ret;
+  };
+}
+
+/** https://stackoverflow.com/questions/14313183/javascript-regex-how-do-i-check-if-the-string-is-ascii-only/14313213#14313213 */
+function is_ascii(str) {
+  return /^[\x00-\x7F]*$/.test(str);
+}
+
 function link_get_href_content(ast, context) {
   const href = convert_arg(ast.args.href, context)
   let content = convert_arg(ast.args.content, context);
@@ -2228,12 +2265,31 @@ function make_enum(arr) {
   return Object.freeze(obj);
 }
 
+function noext(str) {
+  return str.substring(0, str.lastIndexOf('.'));
+}
+
 // https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties/17781518#17781518
 function object_subset(source_object, keys) {
   const new_object = {};
   keys.forEach((obj, key) => { new_object[key] = source_object[key]; });
   return new_object;
 }
+
+/** Get the output path from the input path, e.g. my/README.ciro to my/index.html */
+function output_path(input_path, outext, path_sep, html_x_extension=true) {
+  const [dirname, basename] = path_split(input_path, path_sep);
+  let ret = dirname;
+  if (dirname !== '') {
+    ret += path_sep;
+  }
+  ret += rename_basename(noext(basename));
+  if (html_x_extension) {
+    ret += '.' + outext;
+  }
+  return ret;
+}
+exports.output_path = output_path;
 
 /** Parse tokens into the AST tree.
  *
@@ -2357,8 +2413,9 @@ function parse(tokens, options, context, extra_returns={}) {
       }
       const href = convert_arg_noescape(ast.args.href, context);
       include_options.cur_header.includes.push(href);
-      if (context.include_path_set.has(href)) {
-        let message = `circular include detected to: "${href}"`;
+      const read_include_ret = options.read_include(href);
+      if (read_include_ret === undefined) {
+        let message = `could not find include: "${href}"`;
         parse_error(
           state,
           message,
@@ -2366,142 +2423,157 @@ function parse(tokens, options, context, extra_returns={}) {
         );
         parent_arg.push(new PlaintextAstNode(ast.source_location, message));
       } else {
-        let new_child_nodes;
-        if (options.html_single_page) {
-          new_child_nodes = convert_include(
-            options.read_include(href),
-            include_options,
-            cur_header_level,
-            href
-          );
-          context.include_path_set.add(href);
-        } else {
-          const target_id_ast = context.id_provider.get(href, context);
-          let header_node_title;
-          if (target_id_ast === undefined) {
-            let message = `ID in include not found on database: "${href}", ` +
-              `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
-            header_node_title = error_message_in_output(message);
-            // Don't do an error if we are not going to render, because this is how
-            // we extract IDs on the first pass of ./cirodown .
-            if (options.render) {
-              parse_error(
-                state,
-                message,
-                ast.source_location,
-              );
-            }
-          } else {
-            const x_text_options = {
-              show_caption_prefix: false,
-              style_full: false,
-            };
-            header_node_title = x_text(target_id_ast, context, x_text_options);
-          }
-          // Don't merge into a single file, render as a dummy header and an xref link instead.
-          const header_ast = new AstNode(
-            AstType.MACRO,
-            Macro.HEADER_MACRO_NAME,
-            {
-              'level': new AstArgument(
-                [
-                  new PlaintextAstNode(
-                    ast.source_location,
-                    (cur_header_level + 1).toString(),
-                  )
-                ],
-                ast.source_location
-              ),
-              [Macro.TITLE_ARGUMENT_NAME]: new AstArgument(
-                [
-                  new PlaintextAstNode(
-                    ast.source_location,
-                    header_node_title
-                  )
-                ],
-                ast.source_location
-              ),
-            },
+        const [include_path, include_content] = read_include_ret;
+        if (context.include_path_set.has(include_path)) {
+          let message = `circular include detected to: "${include_path}"`;
+          parse_error(
+            state,
+            message,
             ast.source_location,
-            {
-              force_no_index: true,
-              from_include: true,
-              id: href,
-              level: cur_header_level + 1,
-            },
           );
-          // This is a bit nasty and duplicates the below header processing code,
-          // but it is a bit hard to factor them out since this is a magic include header,
-          // and all includes and headers must be parsed concurrently since includes get
-          // injected under the last header.
-          validate_ast(header_ast, context);
-          header_ast.header_graph_node = new TreeNode(header_ast, cur_header_graph_node);
-          cur_header_graph_node.add_child(header_ast.header_graph_node);
-          new_child_nodes = [
-            header_ast,
-            new AstNode(
-              AstType.PARAGRAPH,
-              undefined,
-              undefined,
-              ast.source_location,
-            ),
-            new AstNode(
-              AstType.MACRO,
-              Macro.PARAGRAPH_MACRO_NAME,
+          parent_arg.push(new PlaintextAstNode(ast.source_location, message));
+        } else {
+          let new_child_nodes;
+          if (options.html_single_page) {
+            new_child_nodes = convert_include(
+              include_content,
+              include_options,
+              cur_header_level,
+              include_path,
+              href,
               {
-                'content': new AstArgument(
+                errors: extra_returns.errors,
+              }
+            );
+            context.include_path_set.add(include_path);
+          } else {
+            const target_id_ast = context.id_provider.get(href, context);
+            let header_node_title;
+            if (target_id_ast === undefined) {
+              let message = `ID in include not found on database: "${href}", ` +
+                `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
+              header_node_title = error_message_in_output(message);
+              // Don't do an error if we are not going to render, because this is how
+              // we extract IDs on the first pass of ./cirodown .
+              if (options.render) {
+                parse_error(
+                  state,
+                  message,
+                  ast.source_location,
+                );
+              }
+            } else {
+              const x_text_options = {
+                show_caption_prefix: false,
+                style_full: false,
+              };
+              header_node_title = x_text(target_id_ast, context, x_text_options);
+            }
+            // Don't merge into a single file, render as a dummy header and an xref link instead.
+            const header_ast = new AstNode(
+              AstType.MACRO,
+              Macro.HEADER_MACRO_NAME,
+              {
+                'level': new AstArgument(
                   [
-                    new AstNode(
-                      AstType.MACRO,
-                      'x',
-                      {
-                        'href': new AstArgument(
-                          [
-                            new PlaintextAstNode(
-                              ast.source_location,
-                              href
-                            )
-                          ],
-                          ast.source_location
-                        ),
-                        'content': new AstArgument(
-                          [
-                            new PlaintextAstNode(
-                              ast.source_location,
-                              'This section is present in another page, follow this link to view it.'
-                            )
-                          ],
-                          ast.source_location
-                        ),
-                      },
+                    new PlaintextAstNode(
                       ast.source_location,
-                      {from_include: true},
-                    ),
+                      (cur_header_level + 1).toString(),
+                    )
+                  ],
+                  ast.source_location
+                ),
+                [Macro.TITLE_ARGUMENT_NAME]: new AstArgument(
+                  [
+                    new PlaintextAstNode(
+                      ast.source_location,
+                      header_node_title
+                    )
                   ],
                   ast.source_location
                 ),
               },
               ast.source_location,
               {
+                force_no_index: true,
                 from_include: true,
+                id: href,
+                level: cur_header_level + 1,
               },
-            ),
-            new AstNode(
-              AstType.PARAGRAPH,
-              undefined,
-              undefined,
-              ast.source_location,
-            ),
-          ];
+            );
+            // This is a bit nasty and duplicates the below header processing code,
+            // but it is a bit hard to factor them out since this is a magic include header,
+            // and all includes and headers must be parsed concurrently since includes get
+            // injected under the last header.
+            validate_ast(header_ast, context);
+            header_ast.header_graph_node = new TreeNode(header_ast, cur_header_graph_node);
+            cur_header_graph_node.add_child(header_ast.header_graph_node);
+            new_child_nodes = [
+              header_ast,
+              new AstNode(
+                AstType.PARAGRAPH,
+                undefined,
+                undefined,
+                ast.source_location,
+              ),
+              new AstNode(
+                AstType.MACRO,
+                Macro.PARAGRAPH_MACRO_NAME,
+                {
+                  'content': new AstArgument(
+                    [
+                      new AstNode(
+                        AstType.MACRO,
+                        'x',
+                        {
+                          'href': new AstArgument(
+                            [
+                              new PlaintextAstNode(
+                                ast.source_location,
+                                href
+                              )
+                            ],
+                            ast.source_location
+                          ),
+                          'content': new AstArgument(
+                            [
+                              new PlaintextAstNode(
+                                ast.source_location,
+                                'This section is present in another page, follow this link to view it.'
+                              )
+                            ],
+                            ast.source_location
+                          ),
+                        },
+                        ast.source_location,
+                        {from_include: true},
+                      ),
+                    ],
+                    ast.source_location
+                  ),
+                },
+                ast.source_location,
+                {
+                  from_include: true,
+                },
+              ),
+              new AstNode(
+                AstType.PARAGRAPH,
+                undefined,
+                undefined,
+                ast.source_location,
+              ),
+            ];
+          }
+          // Push all included nodes, but don't recurse because:
+          // - all child includes will be resolved on the sub-render call
+          // - the current header level must not move, so that consecutive \Include
+          //   calls won't nest into one another
+          for (const new_child_node of new_child_nodes) {
+            new_child_node.parent_node = ast.parent_node;
+          }
+          parent_arg.push(...new_child_nodes);
         }
-        // Push all included nodes, but don't recurse because:
-        // - all child includes will be resolved on the sub-render call
-        // - the current header level must not move, so that consecutive \Include
-        //   calls won't nest into one another
-        for (const new_child_node of new_child_nodes) {
-          new_child_node.parent_node = ast.parent_node;
-        }
-        parent_arg.push(...new_child_nodes);
       }
     } else if (macro_name === Macro.CIRODOWN_EXAMPLE_MACRO_NAME) {
       parent_arg.push(...[
@@ -2536,7 +2608,11 @@ function parse(tokens, options, context, extra_returns={}) {
               options,
               0,
               options.input_path,
-              ast.source_location.line + 1
+              undefined,
+              {
+                start_line: ast.source_location.line + 1,
+                errors: extra_returns.errors,
+              }
             )
           },
           ast.source_location,
@@ -3268,14 +3344,9 @@ function parse_error(state, message, source_location) {
     message, new_source_location));
 }
 
-function id_convert_simple_elem() {
-  return function(ast, context) {
-    let ret = convert_arg(ast.args.content, context);
-    if (!context.macros[ast.macro_name].options.phrasing) {
-      ret += '\n';
-    }
-    return ret;
-  };
+function path_split(str, sep) {
+  const dir_sep_index = str.lastIndexOf(sep)
+  return [str.substring(0, dir_sep_index), str.substr(dir_sep_index + 1)];
 }
 
 function protocol_is_known(src) {
@@ -3302,6 +3373,27 @@ function remove_toplevel_scope(ast, context) {
   return id;
 }
 
+// https://cirosantilli.com/cirodown#index-files
+const INDEX_BASENAME_NOEXT = 'index';
+exports.INDEX_BASENAME_NOEXT = INDEX_BASENAME_NOEXT;
+const INDEX_FILE_BASENAMES_NOEXT = new Set([
+  'README',
+  INDEX_BASENAME_NOEXT,
+]);
+exports.INDEX_FILE_BASENAMES_NOEXT = INDEX_FILE_BASENAMES_NOEXT;
+const IO_RENAME_MAP = {};
+for (let i of INDEX_FILE_BASENAMES_NOEXT) {
+  IO_RENAME_MAP[i] = INDEX_BASENAME_NOEXT;
+}
+exports.IO_RENAME_MAP = IO_RENAME_MAP;
+function rename_basename(original) {
+  if (original in IO_RENAME_MAP) {
+    return IO_RENAME_MAP[original];
+  } else {
+    return original;
+  }
+}
+
 function render_error(context, message, source_location) {
   context.errors.push(new ErrorMessage(message, source_location));
 }
@@ -3310,11 +3402,6 @@ function render_error(context, message, source_location) {
 // https://stackoverflow.com/questions/30301728/get-the-description-of-a-es6-symbol
 function symbol_to_string(symbol) {
   return symbol.toString().slice(7, -1);
-}
-
-/** https://stackoverflow.com/questions/14313183/javascript-regex-how-do-i-check-if-the-string-is-ascii-only/14313213#14313213 */
-function is_ascii(str) {
-  return /^[\x00-\x7F]*$/.test(str);
 }
 
 /** TODO correct unicode aware algorithm. */
@@ -3349,6 +3436,10 @@ function unconvertible() {
   return function(ast, context) {
     throw new Error(`programmer error, macro "${ast.macro_name}" must never render`);
   };
+}
+
+function url_basename(str) {
+  return basename(str, URL_SEP);
 }
 
 // Do some error checking. If no errors are found, convert normally. Save output on out.
@@ -3489,10 +3580,14 @@ function x_get_href_content(ast, context) {
   return [href, content];
 }
 
-/**
-  * @param {AstNode} target_id_ast
-  * @return {String} the value of href (no quotes) that an \x cross reference to the given target_id_ast
-  */
+/** Calculate the href value to a given target AstNode.
+ *
+ * This takes into account e.g. if the target node is in a different source file:
+ * https://cirosantilli.com/cirodown#internal-cross-file-references
+ *
+ * @param {AstNode} target_id_ast
+ * @return {String} the value of href (no quotes) that an \x cross reference to the given target_id_ast
+ */
 function x_href(target_id_ast, context) {
   const [href_path, fragment] = x_href_parts(target_id_ast, context);
   let ret = href_path;
@@ -3515,13 +3610,10 @@ function x_href_parts(target_id_ast, context) {
     href_path = '';
     fragment = remove_toplevel_scope(target_id_ast, context);
   } else {
-    href_path = target_input_path;
-    if (context.options.html_x_extension) {
-      href_path += '.html';
-    }
+    href_path = output_path(target_input_path, HTML_EXT, context.options.path_sep, context.options.html_x_extension);
     const file_provider_ret = context.options.file_provider.get(target_input_path);
     if (file_provider_ret === undefined) {
-      let message = `file not found on database: "${target_input_path}", needed for topelvel scope removal`;
+      let message = `file not found on database: "${target_input_path}", needed for toplevel scope removal`;
       render_error(context, message, target_id_ast.source_location);
       return error_message_in_output(message, context);
     } else {
@@ -3701,6 +3793,8 @@ const END_NAMED_ARGUMENT_CHAR = '}';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';
 const ESCAPE_CHAR = '\\';
 const HTML_ASCII_WHITESPACE = new Set([' ', '\r', '\n', '\f', '\t']);
+const HTML_EXT = 'html';
+exports.HTML_EXT = HTML_EXT;
 const ID_SEPARATOR = '-';
 const INSANE_LIST_START = '* ';
 const INSANE_TD_START = '| ';
@@ -3889,7 +3983,7 @@ const MACRO_IMAGE_VIDEO_OPTIONS = {
       let basename_str;
       let src = convert_arg(ast.args.src, context);
       if (media_provider_type === 'local') {
-        basename_str = basename(src);
+        basename_str = url_basename(src);
       } else if (media_provider_type === 'wikimedia') {
         basename_str = context.macros[ast.macro_name].options.image_video_basename(src);
       } else {
@@ -4285,7 +4379,7 @@ const DEFAULT_MACRO_LIST = [
       Object.assign(
         {
           image_video_basename: function(src) {
-            return basename(html_escape_attr(src)).replace(
+            return url_basename(html_escape_attr(src)).replace(
               macro_image_video_block_convert_function_wikimedia_source_image_re, '');
           },
         },
@@ -4751,7 +4845,7 @@ const DEFAULT_MACRO_LIST = [
       {
         caption_prefix: 'Video',
         image_video_basename: function(src) {
-          return basename(html_escape_attr(src)).replace(
+          return url_basename(html_escape_attr(src)).replace(
             macro_image_video_block_convert_function_wikimedia_source_video_re, '$1');
         },
         image_video_content_func: function (ast, context, src, rendered_attrs, alt, media_provider_type, is_url) {

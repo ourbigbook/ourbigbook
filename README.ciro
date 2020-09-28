@@ -50,7 +50,7 @@ xdg-open not-readme.html
 ``
 or render README.ciro and all \x[includes] into a single HTML page with \x[html-single-page] and view it:
 ``
-./cirodown .
+./cirodown --html-single-page .
 xdg-open index.html
 ``
 or render instead as one fully offline standalone HTML file that can be given directly to readers by adding \x[html-embed] as well:
@@ -1276,9 +1276,9 @@ It exists to allow optional single page HTML output while still retaining the ab
 * split up large input files into multiple files to make renders faster during document development
 * suggest an optional custom output split with one HTML output per Cirodown input, in order to avoid extremely large HTML pages which could be slow to load
 
-`\Include` takes one mandatory argument, which is the relative path without extension to the `.ciro` file that you want to include.
+`\Include` takes one mandatory argument: the ID of the section to be included, much like \x[internal-cross-references].
 
-Things would have been a bit more clean if the argument would take the ID of the header you want to include rather than the filename, which is analogous to how \x[internal-cross-references][`\x`] works, but that would mean that a single page build would require an initial parse to determine IDs, so we are just going with the easier option of pointing out the file name directly.
+There is however one restriction: only \x[the-toplevel-header]{p} can be pointed to. This restriction allows us to easily find the included file in the filesystem, and dispenses the need to do a first `./cirodown` run to generate the \x[internal-cross-file-references-internals][ID database]. This works because \x[the-id-of-the-first-header-is-derived-from-the-filename].
 
 Headers of the included document are automatically shifted to match the level of the child of the level where they are being included.
 
@@ -2399,9 +2399,9 @@ a \c[b c]{id=ef} g
 So we see that the `b c` argument is the very first argument of `\c`.
 
 Extra arguments must come after the insane opening, e.g. the following does not work:
-\CirodownExample[[
+``
 a {id=ef}`b c` g
-]]
+``
 
 This restriction things easy to parse for humans and machines alike.
 
@@ -2952,8 +2952,9 @@ Keep in mind that certain things can never be embedded, e.g.:
 
 ===== `--html-single-page`
 
-If given:
-* the \x[includes][`include`] macro parses the target file to be included and includes it in-place
+Makes \x[includes] render the included content in the same output file as the include is located, instead of the default behaviour of creating links.
+
+In addition to this:
 * \x[internal-cross-file-references] are disabled, and the cross file ID database does not get updated.
 
   It should be possible to work around this, but we are starting with the simplest implementation that forbids it.

@@ -825,6 +825,18 @@ instead of:
 \x[not-the-readme]
 ``
 
+Reference to a subdirectory:
+\CirodownExample[[
+\x[subdir]
+]]
+
+TODO https://github.com/cirosantilli/cirodown/issues/116
+
+``
+\x[subdir/h2]
+\x[subdir/notindex]
+``
+
 Reference to an internal header of another file: \x[h2-in-not-the-readme]. By default, That header ID gets prefixed by the ID of the top header.
 
 When using \x[html-single-page] mode, the cross file references end up pointing to an ID inside the current HTML element, e.g.:
@@ -1157,6 +1169,13 @@ Note how:
 
   So in the example above, `\x[/introduction]` refers to the ID `introduction`, and not `full-and-unique-experiment-name/introduction`.
 
+= Directory-based `scope`
+{parent=scope}
+
+Putting files in subdirectories of the build has the same effect as adding a \x[scope] to their top level header.
+
+The toplevel directory is determined as described at: \x[the-toplevel-index-file].
+
 ==== Header `scope` argument of toplevel headers
 
 When \x[the-toplevel-header] is given the `scope` property Cirodown automatically uses the file path for the scope and heaves fragments untouched.
@@ -1295,6 +1314,13 @@ This is what they actually render as:
 \Include[not-readme]
 \Include[not-readme-2]
 \Include[not-readme-with-scope]
+\Include[subdir]
+
+TODO https://github.com/cirosantilli/cirodown/issues/116
+
+``
+\Include[subdir/notindex]
+``
 
 === Skipping header levels
 
@@ -2850,7 +2876,14 @@ The toplevel index file is the index file that is present on the root directory 
 
 This directory is determined by checking the presence of a \x[cirodown-json] file.
 
-We were tempted to not require the `cirodown.json` check and just use the input directory instead, but this would lead to subdir builds having different toplevel IDs, which is not desirable. So for this reason users should basically always add a `cirodown.json` to their projects.
+We were tempted to not require the `cirodown.json` check and just use the input directory instead, but this would lead to subdir builds having different toplevel IDs, which is not desirable. For example, if we have a file structure:
+
+* `cirodown.json`
+* `subdir/myfile.ciro`
+
+then all IDs under `myfile.ciro` are prefixed with `subdir` (note that this could also be achieved with \x[scope]).
+
+So for this reason users should basically always add a `cirodown.json` to their projects.
 
 Being the toplevel index file has the following implications:
 * its ID is derived fromthe header itself, not the directory, see also: \x[the-id-of-the-first-header-is-derived-from-the-filename]

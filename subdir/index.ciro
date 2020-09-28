@@ -2,4 +2,20 @@
 
 This file is in a subdirectory.
 
+TODO
+
+``
+\x[subdir-h2]
+
+Link to internal "cirodown" section: \x[cirodown]
+
+Link to toplevel "cirodown" section: \x[/cirodown]
+``
+
 == subdir h2
+
+TODO
+
+``
+== cirodown
+``

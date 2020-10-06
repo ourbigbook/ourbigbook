@@ -48,14 +48,14 @@ npm link cirodown
 xdg-open index.html
 xdg-open not-readme.html
 ``
-or render README.ciro and all \x[includes] into a single HTML page with \x[html-single-page] and view it:
+or render README.ciro and all \x[includes] into a single HTML page with \x[embed-includes] and view it:
 ``
-./cirodown --html-single-page .
+./cirodown --embed-includes .
 xdg-open index.html
 ``
-or render instead as one fully offline standalone HTML file that can be given directly to readers by adding \x[html-embed] as well:
+or render instead as one fully offline standalone HTML file that can be given directly to readers by adding \x[embed-resources] as well:
 ``
-./cirodown --html-embed --html-single-page README.ciro
+./cirodown --embed-resources --embed-includes README.ciro
 ``
 and give `index.html` to the reader.
 
@@ -90,7 +90,7 @@ Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally pu
   * `inotifywait` watch rebuild server
   * single-source multi-format output based on \x[includes] and build options:
     * one HTML per source with includes rendered as links between pages
-    * \x[html-single-page] single file output
+    * \x[embed-includes] single file output
   * cross file configuration files to factor out common page parts like headers and footers
 * advanced header/ID related features:
   * \x[scope]
@@ -804,7 +804,7 @@ Reference to another header of another file, with \x[cross-reference-full-argume
 \CirodownExample[[
 \x[h2-in-not-the-readme]{full}.
 ]]
-Note that when `full` is used with references in another file in \x[html-single-page][multi page mode], the number is not rendered as explained at: \x[cross-reference-full-argument-in-internal-cross-file-references]{full}.
+Note that when `full` is used with references in another file in \x[embed-includes][multi page mode], the number is not rendered as explained at: \x[cross-reference-full-argument-in-internal-cross-file-references]{full}.
 
 Reference to an image in another file:
 \CirodownExample[[
@@ -839,7 +839,7 @@ TODO https://github.com/cirosantilli/cirodown/issues/116
 
 Reference to an internal header of another file: \x[h2-in-not-the-readme]. By default, That header ID gets prefixed by the ID of the top header.
 
-When using \x[html-single-page] mode, the cross file references end up pointing to an ID inside the current HTML element, e.g.:
+When using \x[embed-includes] mode, the cross file references end up pointing to an ID inside the current HTML element, e.g.:
 ``
 <a href="#not-readme">
 ``
@@ -1128,7 +1128,7 @@ Cirodown automatically adds a ToC at the end of the first \x[the-toplevel-header
 
 You may customize ToC placement with `\Toc` macro, but just don't do it, it will just go against common convention and confuse readers.
 
-Only one ToC is rendered per document. Any ToC besides the first one is ignored. In particular, this means that \x[includes] with \x[html-single-page] work seamlessly and render a single table of contents, even if multiple `\Toc` macros are present in the included pages.
+Only one ToC is rendered per document. Any ToC besides the first one is ignored. In particular, this means that \x[includes] with \x[embed-includes] work seamlessly and render a single table of contents, even if multiple `\Toc` macros are present in the included pages.
 
 The ToC ignores \x[the-toplevel-header] if you have one.
 
@@ -1354,7 +1354,7 @@ There is however one restriction: only \x[the-toplevel-header]{p} can be pointed
 
 Headers of the included document are automatically shifted to match the level of the child of the level where they are being included.
 
-If \x[html-single-page] is given, the external document is rendered embedded into the current document directly, essentially as if the source had been copy pasted (except for small corrections such as the header offsets).
+If \x[embed-includes] is given, the external document is rendered embedded into the current document directly, essentially as if the source had been copy pasted (except for small corrections such as the header offsets).
 
 Otherwise, the following effects happen:
 * The headers of the included tree appear in the \x[table-of-contents] of the document as links to the corresponding external files.
@@ -1363,7 +1363,7 @@ Otherwise, the following effects happen:
 
   As a result, you have to do an initial parse of all files in the project to extract their headers however, just as you would need to do when linking to those headers.
 * the include itself renders as a link to the included document
-* \x[html-single-page]
+* \x[embed-includes]
 
 Here is an example of inclusion of the files `not-readme.ciro` and `not-readme-2.ciro`:
 ``
@@ -2973,30 +2973,28 @@ you can just go and inspect the generated HTML to see what would get pushed at:
 cd out/publish/out/publish/
 ``
 
-===== `--generate`
+= `--embed-includes`
+{parent=cirodown-executable-options}
 
-Generate a simple repository template for a new project.
+Makes \x[includes] render the included content in the same output file as the include is located, instead of the default behaviour of creating links.
 
-This includes common files that almost all projects will want to have, e.g.:
-* `package.json` specifying the Cirodown version
-* `.gitignore` to prevent output from being committed accidentally
+In addition to this:
+* \x[internal-cross-file-references] are disabled, and the cross file ID database does not get updated.
 
-The output provides a hello world setup that is immediately ready to be published e.g. \x[publish-to-github-pages][to GitHub pages].
+  It should be possible to work around this, but we are starting with the simplest implementation that forbids it.
 
-===== `--generate-multifile`
+  The problem those cause is that the IDs of included headers show as duplicate IDs of those in the ID database.
 
-Like \x[generate][`--generate`], but generate a more complex template that serves as a good starting point for a multifile website.
+  This should be OK to start with because the more common use case with `--html-sinle-page` is that of including all headers in a single document.
 
-===== `--help-macros`
+Otherwise, `include` only adds the headers of the other file to the table of contents of the current one, but not the body of the other file. The ToC entries then point to the headers of the included external files.
 
-You can get an overview of all macros in JSON format with:
-``
-cirodown --help-macros
-``
+You may want to use this option together with \x[embed-resources] to produce fully self-contained individual HTML files for your project.
 
-===== `--html-embed`
+= `--embed-resources`
+{parent=cirodown-executable-options}
 
-Embed as many external resources as possible into a single HTML file.
+Embed as many external resources such as images and CSS as possible into the HTML output files, rather than linking to external resources.
 
 The use case for this option is to produce a single HTML file for an entire build that is fully self contained, and can therefore be given to consumers and viewed offline, much like a PDF.
 
@@ -3005,7 +3003,7 @@ Examples of embeddings done:
 
   The default built-in CSS and JavaScript files used by Cirodown (e.g. the KaTeX CSS \x[mathematics][used for mathematics]) are currently all automatically downloaded as NPM package dependencies to cirodown
 
-  Without `--html-embed`, those CSS and JavaScript use their main cloud CDN URLs, and therefore require Internet connection to view the generated documents.
+  Without `--embed-resources`, those CSS and JavaScript use their main cloud CDN URLs, and therefore require Internet connection to view the generated documents.
 
   The embedded version of the document can be viewed offline however.
 * \x[images] are downloaded if needed and embedded as `data:` URLs.
@@ -3022,28 +3020,32 @@ Examples of embeddings done:
 Keep in mind that certain things can never be embedded, e.g.:
 * YouTube videos, since YouTube does not offer any download API
 
-===== `--html-single-page`
+= `--generate`
+{parent=cirodown-executable-options}
 
-Makes \x[includes] render the included content in the same output file as the include is located, instead of the default behaviour of creating links.
+Generate a simple repository template for a new project.
 
-In addition to this:
-* \x[internal-cross-file-references] are disabled, and the cross file ID database does not get updated.
+This includes common files that almost all projects will want to have, e.g.:
+* `package.json` specifying the Cirodown version
+* `.gitignore` to prevent output from being committed accidentally
 
-  It should be possible to work around this, but we are starting with the simplest implementation that forbids it.
+The output provides a hello world setup that is immediately ready to be published e.g. \x[publish-to-github-pages][to GitHub pages].
 
-  The problem those cause is that the IDs of included headers show as duplicate IDs of those in the ID database.
+= `--generate-multifile`
+{parent=cirodown-executable-options}
 
-  This should be OK to start with because the more common use case with `--html-sinle-page` is that of including all headers in a single document.
+Like \x[generate][`--generate`], but generate a more complex template that serves as a good starting point for a multifile website.
 
-Otherwise, `include` only adds the headers of the other file to the table of contents of the current one, but not the body of the other file. The ToC entries then point to the headers of the included external files.
+= `--help-macros`
+{parent=cirodown-executable-options}
 
-You may want to use this option together with \x[html-embed] to produce fully self-contained individual HTML files for your project.
+You can get an overview of all macros in JSON format with:
+``
+cirodown --help-macros
+``
 
-===== `--html-split-header`
-
-Split each header into its own separate HTML file.
-
-===== `--no-html-x-extension`
+= `--no-html-x-extension`
+{parent=cirodown-executable-options}
 
 If not given, \x[internal-cross-references] render with the `.html` extension as in:
 ``
@@ -3063,8 +3065,9 @@ which is what is needed for servers such as GitHub Pages, which automatically re
 
 This option is automatically implied when publishing to targets that remove the `.html` extension such as GitHub pages.
 
-===== `--outfile <outfie>`
+= `--outfile <outfie>`
 {id=outfile}
+{parent=cirodown-executable-options}
 
 Save the output to a given file instead of outputting to stdout:
 ``
@@ -3077,12 +3080,14 @@ The generated output is slightly different than that of:
 ``
 because with `--outfile` we know where the output is going, and so we can generate relative includes to default CSS/JavaScript files.
 
-===== `-O --output-format <outformat>`
+= `-O --output-format <outformat>`
 {id=output-format}
+{parent=cirodown-executable-options}
 
 Default: `html`.
 
-====== `id` output format
+= `id` output format
+{parent=output-format}
 
 This output format is mostly a joke.
 
@@ -3094,20 +3099,24 @@ The conversion is very simplistic, it basically just pastes the `content` of mos
 
 Stuff that is primarily non-textual like \x[images] is just completely removed. We could put effort in outputting their title correctly, but meh, not worth the effort.
 
-====== Unimplemented output formats
+= Unimplemented output formats
+{parent=id-output-format}
 
-======= `cirodown` output format
+= `cirodown` output format
+{parent=unimplemented-output-formats}
 
 TODO: https://github.com/cirosantilli/cirodown/issues/83
 
-======= `latex` output format
+= `latex` output format
+{parent=unimplemented-output-formats}
 
 TODO: https://github.com/cirosantilli/cirodown/issues/38
 
 One day, one day. Maybe.
 
-===== `-p, --publish`
+= `-p, --publish`
 {id=publish}
+{parent=cirodown-executable-options}
 
 Cirodown tooling is so amazing that we also take care of the HTML publishing for you!
 
@@ -3135,6 +3144,11 @@ When `--publish` is given, stdin input is not accepted, and so the current direc
 ``
 
 Publishing only happens if the build has no errors.
+
+= `--split-header`
+{parent=cirodown-executable-options}
+
+Split each header into its own separate HTML output file.
 
 ====== Publish to GitHub Pages
 
@@ -3465,7 +3479,7 @@ Generated files:
 
 The \a[build-sass] script takes as input the \a[cirodown.scss] https://sass-lang.com[SASS] scss file, and generates various `.css` versions from it required to properly view generated Cirodown HTML:
 * `cirodown.min.css`: contains the converted `cirodown.scss` plus online `@import` requests for stuff like \x[mathematics][KaTeX]
-* `cirodown.embed.min.css`: like `cirodown.min.css` but embeds all external CSS in-place without any `@import`. Used to distribute standalone pages: \x[html-embed]
+* `cirodown.embed.min.css`: like `cirodown.min.css` but embeds all external CSS in-place without any `@import`. Used to distribute standalone pages: \x[embed-resources]
 * `cirodown.local.min.css`: only includes style generated from `cirodown.scss`, not external styles. Used when the external styles are present locally, e.g. via `node_modules`. I think this was done because https://stackoverflow.com/questions/34139675/css-import-not-working-for-local-file-file-path-is-correct[`@import`] was not working with local flies?
 
 ==== Autogenerated tests

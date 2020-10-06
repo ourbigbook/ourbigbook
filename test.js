@@ -1703,8 +1703,8 @@ assert_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 3);
 
 // Include.
 const include_opts = {extra_convert_opts: {
+  embed_includes: true,
   file_provider: new cirodown_nodejs.ZeroFileProvider(),
-  html_single_page: true,
   read_include: function(input_path) {
     let ret;
     if (input_path === 'include-one-level-1') {

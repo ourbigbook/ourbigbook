@@ -228,14 +228,14 @@ function convert_input(input, options, convert_input_options={}) {
     scripts_local.push(convert_input_options.out_js_path);
 
     if (
-      convert_input_options.output_path !== undefined &&
+      options.outfile !== undefined &&
       !is_installed_globally
     ) {
       for (const include of includes_local) {
-        includes.push(path.relative(path.dirname(convert_input_options.output_path), include));
+        includes.push(path.relative(path.dirname(options.outfile), include));
       }
       for (const script of scripts_local) {
-        scripts.push(path.relative(path.dirname(convert_input_options.output_path), script));
+        scripts.push(path.relative(path.dirname(options.outfile), script));
       }
     } else {
       includes.push(...includes_local);
@@ -254,12 +254,10 @@ function convert_input(input, options, convert_input_options={}) {
   }
   // Finally, do the conversion!
   const output = cirodown.convert(input, new_options, new_options.extra_returns);
-  if (convert_input_options.commander.htmlSplitHeader) {
-    for (const id in new_options.extra_returns.html_split_header) {
-      const output_path = path.join(convert_input_options.outdir, id);
-      fs.mkdirSync(path.dirname(output_path), {recursive: true});
-      fs.writeFileSync(output_path, new_options.extra_returns.html_split_header[id]);
-    }
+  for (const id in new_options.extra_returns.rendered_outputs) {
+    const output_path = path.join(convert_input_options.outdir, id);
+    fs.mkdirSync(path.dirname(output_path), {recursive: true});
+    fs.writeFileSync(output_path, new_options.extra_returns.rendered_outputs[id]);
   }
   if (convert_input_options.commander.showTokens) {
     console.error('tokens:');
@@ -306,17 +304,6 @@ function convert_input(input, options, convert_input_options={}) {
  */
 function convert_path_to_file(base_path, input_path, options, convert_input_options={}) {
   let input_path_parse = path.parse(input_path);
-  let output_name = input_path_parse.name;
-  if (input_path_parse.ext === CIRODOWN_EXT && output_name in cirodown.IO_RENAME_MAP) {
-    output_name = cirodown.IO_RENAME_MAP[output_name];
-  }
-  let output_path_noext = path.join(input_path_parse.dir, output_name);
-  if (convert_input_options.output_path === undefined) {
-    output_path_noext = path.join(convert_input_options.outdir, output_path_noext);
-  } else {
-    output_path_noext = convert_input_options.output_path;
-  }
-  fs.mkdirSync(path.dirname(output_path_noext), {recursive: true});
   if (input_path_parse.ext === CIRODOWN_EXT) {
     let message_prefix;
     if (options.render) {
@@ -326,18 +313,23 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
     }
     let message = `${message_prefix} ${input_path}`;
     console.log(message);
-    const output_path = output_path_noext + '.' + options.output_format;
     const new_convert_input_options = Object.assign({}, convert_input_options);
-    new_convert_input_options.output_path = output_path;
     let t0 = performance.now();
-    let output = convert_path(base_path, input_path, options, new_convert_input_options);
+    convert_path(base_path, input_path, options, new_convert_input_options);
     let t1 = performance.now();
     console.log(`${message} finished in ${t1 - t0} ms`);
-    fs.writeFileSync(output_path, output);
     if (new_convert_input_options.had_error) {
       convert_input_options.had_error = true;
     }
   } else {
+    let output_name = input_path_parse.name;
+    let output_path_noext = path.join(input_path_parse.dir, output_name);
+    if (options.outfile === undefined) {
+      output_path_noext = path.join(convert_input_options.outdir, output_path_noext);
+    } else {
+      output_path_noext = options.outfile;
+    }
+    fs.mkdirSync(path.dirname(output_path_noext), {recursive: true});
     if (options.render) {
       if (input_path_parse.ext === SASS_EXT) {
         console.log(`sass ${input_path}`);
@@ -609,6 +601,7 @@ if (commander.helpMacros) {
     html_single_page: commander.htmlSinglePage,
     html_split_header: commander.htmlSplitHeader,
     output_format: commander.outputFormat,
+    outfile: commander.outfile,
     path_sep: path.sep,
     read_include: function(id) {
       let found = undefined;
@@ -749,21 +742,6 @@ A link to another file: \\x[and-now-an-include]
     out_js_path: cirodown_nodejs.PACKAGE_OUT_JS_LOCAL_PATH,
     outdir: outdir,
   };
-  let outfile;
-  if (commander.outfile === undefined) {
-    if (
-      !commander.stdout &&
-      inputPath !== undefined &&
-      input_path_is_file
-    ) {
-      outfile = cirodown.output_path(inputPath, undefined);
-    }
-  } else {
-    outfile = commander.outfile;
-  }
-  if (outfile !== undefined) {
-    convert_input_options.output_path = outfile;
-  }
   if (inputPath === undefined) {
     title = 'stdin';
     input = fs.readFileSync(0, ENCODING);
@@ -783,6 +761,9 @@ A link to another file: \\x[and-now-an-include]
       input_path_is_file = true;
       tmpdir = TMP_DIRNAME;
     } else {
+      if (commander.outfile !== undefined) {
+        cli_error(`--outfile given but multiple output files must be generated, maybe you want --outdir?`);
+      }
       input_path_is_file = false;
       tmpdir = path.join(inputPath, TMP_DIRNAME);
       if (publish) {
@@ -795,10 +776,6 @@ A link to another file: \\x[and-now-an-include]
         tmpdir = path.join(publish_dir, TMP_DIRNAME);
         publish_out_dir = path.join(publish_dir, TMP_DIRNAME);
       }
-    }
-    let multiple_output_files = !input_path_is_file || commander.htmlSplitHeader;
-    if (multiple_output_files && outfile !== undefined) {
-      cli_error(`--outfile given but multiple output files wil be generated, maybe you want --outdir?`);
     }
 
     // Setup the ID database.
@@ -991,12 +968,8 @@ A link to another file: \\x[and-now-an-include]
       }
     }
   }
-  if (output !== undefined) {
-    if (outfile === undefined) {
-      process.stdout.write(output);
-    } else {
-      fs.writeFileSync(outfile, output);
-    }
+  if (output !== undefined && commander.stdout) {
+    process.stdout.write(output);
   }
   if (!commander.watch) {
     process.exit(convert_input_options.had_error);

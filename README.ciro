@@ -3145,7 +3145,7 @@ When `--publish` is given, stdin input is not accepted, and so the current direc
 
 Publishing only happens if the build has no errors.
 
-= `--split-header`
+= `--split-headers`
 {parent=cirodown-executable-options}
 
 Split each header into its own separate HTML output file.

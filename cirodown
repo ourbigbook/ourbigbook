@@ -636,7 +636,7 @@ if (commander.helpMacros) {
     show_parse: commander.showParse,
     show_tokens: commander.showTokensInside,
     show_tokenize: commander.showTokenize,
-    split_header: commander.splitHeader,
+    split_headers: commander.splitHeaders,
     template_vars: {},
     xss_unsafe: commander.xssUnsafe,
   };

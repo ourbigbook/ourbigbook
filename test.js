@@ -1342,6 +1342,46 @@ assert_convert_ast('scope with parent breakout with no leading slash',
   a('H', undefined, {level: [t('3')], title: [t('h5')]}, {id: 'h5'}),
 ]
 );
+// https://github.com/cirosantilli/cirodown/issues/120
+assert_convert_ast('nested scope with parent',
+  `= h1
+{scope}
+
+= h1 1
+{parent=h1}
+{scope}
+
+= h1 1 1
+{parent=h1-1}
+
+= h1 1 2
+{parent=h1-1}
+
+= h1 1 3
+{parent=h1/h1-1}
+
+= h1 2
+{parent=h1}
+{scope}
+
+= h1 2 1
+{parent=h1-2}
+{scope}
+
+= h1 2 1 1
+{parent=h1-2/h1-2-1}
+`, [
+  a('H', undefined, {level: [t('1')], title: [t('h1')]}, {id: 'h1'}),
+  a('Toc'),
+  a('H', undefined, {level: [t('2')], title: [t('h1 1')]}, {id: 'h1/h1-1'}),
+  a('H', undefined, {level: [t('3')], title: [t('h1 1 1')]}, {id: 'h1/h1-1/h1-1-1'}),
+  a('H', undefined, {level: [t('3')], title: [t('h1 1 2')]}, {id: 'h1/h1-1/h1-1-2'}),
+  a('H', undefined, {level: [t('3')], title: [t('h1 1 3')]}, {id: 'h1/h1-1/h1-1-3'}),
+  a('H', undefined, {level: [t('2')], title: [t('h1 2')]}, {id: 'h1/h1-2'}),
+  a('H', undefined, {level: [t('3')], title: [t('h1 2 1')]}, {id: 'h1/h1-2/h1-2-1'}),
+  a('H', undefined, {level: [t('4')], title: [t('h1 2 1 1')]}, {id: 'h1/h1-2/h1-2-1/h1-2-1-1'}),
+]
+);
 // https://github.com/cirosantilli/cirodown/issues/100
 assert_error('broken parent still generates a header ID',
   `= h1

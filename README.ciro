@@ -980,7 +980,8 @@ Sane equivalent:
 \H[3][My h3]{id=h3}
 ``
 
-=== ID-based header levels
+= ID-based header levels
+{parent=headers}
 {title2=`{parent=<parent-id>}`}
 
 In addition to the basic way of specifying header levels with an explicit level number, as mentioned at \x[headers]{full}, Cirodown also supports a more indirect ID-based mechanism.
@@ -1027,6 +1028,57 @@ because the second header has level `2` instead of the required `= My h2`.
 When \x[scope][scopes] are involved, the rules are the same as those of internal reference resolution, including the leading `/` to break out of the scope in case of conflicts.
 
 See also: \x[header-explicit-levels-vs-nesting-design-choice]{full} for further rationale.
+
+= ID-based header levels and scope resolution
+{parent=id-based-header-levels}
+
+When mixing both \x[id-based-header-levels] and \x[scope], things get a bit complicated, because when writing or parsing, we have to first determine the parent header before resolving scopes.
+
+As a result, the follow simple rules are used:
+* start from the last header of the highest level
+* check if the `{parent=XXX}` is a suffix of its ID
+* if not, proceed to the next smaller level, and so on, until a suffix is found
+
+Following those rules for example, a file `tmp.ciro`:
+``
+= h1
+{scope}
+
+= h1 1
+{parent=h1}
+{scope}
+
+= h1 1 1
+{parent=h1-1}
+
+= h1 1 2
+{parent=h1-1}
+
+= h1 1 3
+{parent=h1/h1-1}
+
+= h1 2
+{parent=h1}
+{scope}
+
+= h1 2 1
+{parent=h1-2}
+{scope}
+
+= h1 2 1 1
+{parent=h1-2/h1-2-1}
+``
+will lead to the following header tree with \x[show-headers]:
+``
+= h1  tmp
+== h2 1 tmp/h1-1
+=== h3 1.1 tmp/h1-1/h1-1-1
+=== h3 1.2 tmp/h1-1/h1-1-2
+=== h3 1.3 tmp/h1-1/h1-1-3
+== h2 2 tmp/h1-2
+=== h3 2.1 tmp/h1-2/h1-2-1
+==== h4 2.1.1 tmp/h1-2/h1-2-1/h1-2-1-1
+``
 
 === Unlimited header levels
 

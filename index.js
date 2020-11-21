@@ -364,6 +364,15 @@ class IdProvider {
           if (resolved_scope_id !== undefined) {
             return resolved_scope_id;
           }
+          for (let i = parent_scope_id.length - 1; i > 0; i--) {
+            if (parent_scope_id[i] === Macro.HEADER_SCOPE_SEPARATOR) {
+              let resolved_scope_id = this.get_noscope(
+                parent_scope_id.substring(0, i + 1) + id, context);
+              if (resolved_scope_id !== undefined) {
+                return resolved_scope_id;
+              }
+            }
+          }
         }
       }
       // Not found with ID resolution, so just try to get the exact ID.
@@ -1913,7 +1922,7 @@ function get_descendant_count(tree_node) {
 function get_parent_scope_id(header_graph_node, context) {
   let cur_header_graph_node = header_graph_node.parent_node;
   while (
-    // Possible in case of mal-formed document e.g. with
+    // Possible in case of malformed document e.g. with
     // non-integer header level.
     cur_header_graph_node !== undefined &&
     cur_header_graph_node.value !== undefined
@@ -1931,7 +1940,7 @@ function get_parent_scope_id(header_graph_node, context) {
 }
 
 /** Convert a key value already fully HTML escaped strings
- * to an HTML attribute. The callers MUST escape any untrested chars.
+ * to an HTML attribute. The callers MUST escape any untrusted chars.
   e.g. with html_attr_value.
  *
  * @param {String} key
@@ -2145,6 +2154,11 @@ function html_self_link(ast, context) {
   return ` ${x_href_attr(ast, context)}`;
 }
 
+/** https://stackoverflow.com/questions/14313183/javascript-regex-how-do-i-check-if-the-string-is-ascii-only/14313213#14313213 */
+function is_ascii(str) {
+  return /^[\x00-\x7F]*$/.test(str);
+}
+
 function id_convert_simple_elem() {
   return function(ast, context) {
     let ret = convert_arg(ast.args.content, context);
@@ -2155,9 +2169,23 @@ function id_convert_simple_elem() {
   };
 }
 
-/** https://stackoverflow.com/questions/14313183/javascript-regex-how-do-i-check-if-the-string-is-ascii-only/14313213#14313213 */
-function is_ascii(str) {
-  return /^[\x00-\x7F]*$/.test(str);
+/** bb,      aaa/bbb -> false
+ *  bbb,     aaa/bbb -> true
+ *  aaa/bbb, aaa/bbb -> true
+ */
+function id_is_suffix(suffix, full) {
+  let full_len = full.length;
+  let suffix_len = suffix.length;
+  return (
+    full.endsWith(suffix) &&
+    (
+      full_len == suffix_len ||
+      (
+        full_len > suffix_len &&
+        full[full_len - suffix_len - 1] === Macro.HEADER_SCOPE_SEPARATOR
+      )
+    )
+  );
 }
 
 function link_get_href_content(ast, context) {
@@ -2652,18 +2680,7 @@ function parse(tokens, options, context, extra_returns={}) {
               let largest_level = sorted_keys[sorted_keys.length - 1];
               for (let level = largest_level; level > 0; level--) {
                 let ast = include_options.header_graph_stack.get(level).value;
-                let ast_id_len = ast.id.length;
-                let parent_id_len = parent_id.length;
-                if (
-                  ast.id.endsWith(parent_id) &&
-                  (
-                    ast_id_len == parent_id_len ||
-                    (
-                      ast_id_len > parent_id_len &&
-                      ast.id[ast_id_len - parent_id_len - 1] === Macro.HEADER_SCOPE_SEPARATOR
-                    )
-                  )
-                ) {
+                if (id_is_suffix(parent_id, ast.id)) {
                   parent_ast = ast;
                   break;
                 }

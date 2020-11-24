@@ -4949,7 +4949,7 @@ const DEFAULT_MACRO_LIST = [
             } else {
               start = '';
             }
-            return `<video${html_attr('src', src + start)}${rendered_attrs} controls>${alt}</video>\n`;
+            return `<video${html_attr('src', src + start)}${rendered_attrs} preload="none" controls>${alt}</video>\n`;
           }
         },
         named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS.concat(

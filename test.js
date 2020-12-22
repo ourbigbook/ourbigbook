@@ -1,4 +1,5 @@
 const assert = require('assert');
+const child_process = require('child_process');
 const fs = require('fs');
 const util = require('util');
 
@@ -19,105 +20,6 @@ const convert_opts = {
   //show_tokenize: true,
 };
 
-function assert_convert_ast_func(
-  input_string, expected_ast_output_subset, options={}
-) {
-  options = Object.assign({}, options);
-  if (!('assert_xpath_matches' in options)) {
-    // Not ideal, but sometimes there's no other easy way
-    // to test rendered stuff.
-    options.assert_xpath_matches = undefined;
-  }
-  if (!('extra_convert_opts' in options)) {
-    options.extra_convert_opts = {};
-  }
-  if (!('toplevel' in options)) {
-    options.toplevel = false;
-  }
-  const extra_returns = {};
-  const new_convert_opts = Object.assign({}, convert_opts);
-  Object.assign(new_convert_opts, options.extra_convert_opts);
-  if (options.toplevel) {
-    new_convert_opts.body_only = false;
-  }
-  const output = cirodown.convert(input_string, new_convert_opts, extra_returns);
-  const has_subset_extra_returns = {fail_reason: ''};
-  let is_subset;
-  let content;
-  if (options.toplevel) {
-    content = extra_returns.ast;
-    is_subset = ast_has_subset(content, expected_ast_output_subset, has_subset_extra_returns);
-  } else {
-    content = extra_returns.ast.args.content;
-    is_subset = ast_arg_has_subset(content, expected_ast_output_subset, has_subset_extra_returns);
-  }
-  if (!is_subset || extra_returns.errors.length !== 0) {
-    console.error('tokens:');
-    console.error(JSON.stringify(extra_returns.tokens, null, 2));
-    console.error();
-    console.error('ast output:');
-    console.error(JSON.stringify(content, null, 2));
-    console.error();
-    console.error('ast expect:');
-    console.error(JSON.stringify(expected_ast_output_subset, null, 2));
-    console.error();
-    if (!is_subset) {
-      console.error('failure reason:');
-      console.error(has_subset_extra_returns.fail_reason);
-      console.error();
-    }
-    for (const error of extra_returns.errors) {
-      console.error(error.toString());
-    }
-    console.error('input ' + util.inspect(input_string));
-    assert.strictEqual(extra_returns.errors.length, 0);
-    assert.ok(is_subset);
-  }
-  if (options.assert_xpath_matches) {
-    const xpath_matches = xpath.fromPageSource(output).findElements(options.assert_xpath_matches);
-    if (xpath_matches.length !== 1) {
-      console.error('xpath: ' + options.assert_xpath_matches);
-      console.error('output:');
-      console.error(output);
-      assert.strictEqual(xpath_matches.length, 1);
-    }
-  }
-}
-
-function assert_convert_func(input_string, expected_output) {
-  const extra_returns = {};
-  const output = cirodown.convert(input_string, convert_opts, extra_returns);
-  if (output !== expected_output || extra_returns.errors.length !== 0) {
-    console.error('tokens:');
-    console.error(JSON.stringify(extra_returns.tokens, null, 2));
-    console.error();
-    console.error('ast:');
-    console.error(JSON.stringify(extra_returns.ast, null, 2));
-    console.error();
-    for (const error of extra_returns.errors) {
-      console.error(error.toString());
-    }
-    console.error('input ' + util.inspect(input_string));
-    console.error('output ' + util.inspect(output));
-    console.error('expect ' + util.inspect(expected_output));
-    assert.strictEqual(extra_returns.errors.length, 0);
-    assert.strictEqual(output, expected_output);
-  }
-}
-
-function assert_error_func(input_string, line, column, path, options={}) {
-  if (!('extra_convert_opts' in options)) {
-    options.extra_convert_opts = {};
-  }
-  const new_convert_opts = Object.assign({}, convert_opts);
-  Object.assign(new_convert_opts, options.extra_convert_opts);
-  const extra_returns = {};
-  const output = cirodown.convert(input_string, new_convert_opts, extra_returns);
-  assert.ok(extra_returns.errors.length >= 1);
-  const error = extra_returns.errors[0];
-  assert.deepStrictEqual(error.source_location, new cirodown.SourceLocation(line, column, path));
-}
-
 /** For stuff that is hard to predict the exact output of, which is most of the HTML,
  * we can check just that a certain key subset of the AST is present.
  *
@@ -126,18 +28,136 @@ function assert_error_func(input_string, line, column, path, options={}) {
  * This function automatically only considers the content argument of the
  * toplevel node for further convenience.
  */
-function assert_convert_ast(description, input_string, expected_ast_output_subset, extra_convert_opts) {
-  it(description, ()=>{assert_convert_ast_func(input_string, expected_ast_output_subset, extra_convert_opts);});
+function assert_convert_ast(
+  description,
+  input_string,
+  expected_ast_output_subset,
+  options={}
+) {
+  it(description, ()=>{
+    options = Object.assign({}, options);
+    if (!('assert_xpath_matches' in options)) {
+      // Not ideal, but sometimes there's no other easy way
+      // to test rendered stuff.
+      options.assert_xpath_matches = undefined;
+    }
+    if (!('extra_convert_opts' in options)) {
+      options.extra_convert_opts = {};
+    }
+    if (!('toplevel' in options)) {
+      options.toplevel = false;
+    }
+    const extra_returns = {};
+    const new_convert_opts = Object.assign({}, convert_opts);
+    Object.assign(new_convert_opts, options.extra_convert_opts);
+    if (options.toplevel) {
+      new_convert_opts.body_only = false;
+    }
+    const output = cirodown.convert(input_string, new_convert_opts, extra_returns);
+    const has_subset_extra_returns = {fail_reason: ''};
+    let is_subset;
+    let content;
+    if (options.toplevel) {
+      content = extra_returns.ast;
+      is_subset = ast_has_subset(content, expected_ast_output_subset, has_subset_extra_returns);
+    } else {
+      content = extra_returns.ast.args.content;
+      is_subset = ast_arg_has_subset(content, expected_ast_output_subset, has_subset_extra_returns);
+    }
+    if (!is_subset || extra_returns.errors.length !== 0) {
+      console.error('tokens:');
+      console.error(JSON.stringify(extra_returns.tokens, null, 2));
+      console.error();
+      console.error('ast output:');
+      console.error(JSON.stringify(content, null, 2));
+      console.error();
+      console.error('ast expect:');
+      console.error(JSON.stringify(expected_ast_output_subset, null, 2));
+      console.error();
+      if (!is_subset) {
+        console.error('failure reason:');
+        console.error(has_subset_extra_returns.fail_reason);
+        console.error();
+      }
+      for (const error of extra_returns.errors) {
+        console.error(error.toString());
+      }
+      console.error('input ' + util.inspect(input_string));
+      assert.strictEqual(extra_returns.errors.length, 0);
+      assert.ok(is_subset);
+    }
+    assert_xpath_matches(options.assert_xpath_matches, output);
+  });
 }
 
+// Assert exact HTML output.
 function assert_convert(description, input, output) {
-  it(description, ()=>{assert_convert_func(input, output);});
+  it(description, ()=>{
+    const extra_returns = {};
+    const output = cirodown.convert(input_string, convert_opts, extra_returns);
+    if (output !== expected_output || extra_returns.errors.length !== 0) {
+      console.error('tokens:');
+      console.error(JSON.stringify(extra_returns.tokens, null, 2));
+      console.error();
+      console.error('ast:');
+      console.error(JSON.stringify(extra_returns.ast, null, 2));
+      console.error();
+      for (const error of extra_returns.errors) {
+        console.error(error.toString());
+      }
+      console.error('input ' + util.inspect(input_string));
+      console.error('output ' + util.inspect(output));
+      console.error('expect ' + util.inspect(expected_output));
+      assert.strictEqual(extra_returns.errors.length, 0);
+      assert.strictEqual(output, expected_output);
+    }
+  });
+}
+
+function assert_equal(description, output, expected_output) {
+  it(description, ()=>{assert.strictEqual(output, expected_output);});
 }
 
 /** Assert that the conversion fails in a controlled way, giving correct
  * error line and column, and without throwing an exception. */
-function assert_error(description, input, line, column, path, extra_convert_opts) {
-  it(description, ()=>{assert_error_func(input, line, column, path, extra_convert_opts);});
+function assert_error(description, input, line, column, path, options={}) {
+  it(description, ()=>{
+    if (!('extra_convert_opts' in options)) {
+      options.extra_convert_opts = {};
+    }
+    const new_convert_opts = Object.assign({}, convert_opts);
+    Object.assign(new_convert_opts, options.extra_convert_opts);
+    const extra_returns = {};
+    const output = cirodown.convert(input, new_convert_opts, extra_returns);
+    assert.ok(extra_returns.errors.length >= 1);
+    const error = extra_returns.errors[0];
+    assert.deepStrictEqual(error.source_location, new cirodown.SourceLocation(line, column, path));
+  });
+}
+
+// Test the cirodown executable itself.
+function assert_executable(
+  description,
+  options={}
+) {
+  it(description, ()=>{
+    options = Object.assign({}, options);
+    if (!('args' in options)) {
+      options.args = [];
+    }
+    options.args.push('--body-only');
+    let stdin;
+    if ('stdin' in options) {
+      stdin = options.stdin;
+    }
+    { input : 'one two three' }
+    const out = child_process.spawnSync('./cirodown', options.args, {input: stdin});
+    assert.strictEqual(out.status, 0);
+    assert_xpath_matches(
+      options.expect_stdout_xpath,
+      out.stdout.toString(cirodown_nodejs.ENCODING),
+    );
+  });
 }
 
 /** For stuff that is hard to predict the exact output of, just check the
@@ -153,8 +173,16 @@ function assert_no_error(description, input) {
   });
 }
 
-function assert_equal(description, output, expected_output) {
-  it(description, ()=>{assert.strictEqual(output, expected_output);});
+function assert_xpath_matches(xpath_expr, string) {
+  if (xpath_expr !== undefined) {
+    const xpath_matches = xpath.fromPageSource(string).findElements(xpath_expr);
+    if (xpath_matches.length !== 1) {
+      console.error('xpath: ' + xpath_expr);
+      console.error('string:');
+      console.error(string);
+      assert.strictEqual(xpath_matches.length, 1);
+    }
+  }
 }
 
 /** Determine if a given Ast argument has a subset.
@@ -2020,3 +2048,12 @@ assert_error('stray named argument end}', 'a}b', 1, 2);
 assert_error('unterminated literal positional argument', '\\c[[\n', 1, 3);
 assert_error('unterminated literal named argument', '\\c{{id=\n', 1, 3);
 assert_error('unterminated insane inline code', '`\n', 1, 1);
+
+// Executable tests.
+assert_executable(
+  'input from stdin produces output on stdout',
+  {
+    stdin: 'aabb',
+    expect_stdout_xpath: "//div[@class='p' and text()='aabb']",
+  }
+);

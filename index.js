@@ -1812,7 +1812,6 @@ function convert(
           options.toplevel_id = header_ast.id;
           context.in_split_headers = true;
           const output_path = output_path_from_ast(header_ast, context);
-          console.error(output_path);
           context.toplevel_output_path = output_path;
           context.extra_returns.rendered_outputs[output_path] =
             ast_toplevel.convert(context);

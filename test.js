@@ -128,15 +128,17 @@ function assert_convert_ast(
       // to test rendered stuff.
       options.assert_xpath_matches = undefined;
     }
-    if (!('extra_convert_opts' in options)) {
-      // Passed to cirodown.convert.
-      options.extra_convert_opts = {};
-    }
     if (!('convert_before' in options)) {
       // List of strings. Convert files at these paths from default_file_reader
       // before the main conversion to build up the cross-file reference database.
       options.convert_before = [];
     }
+    if (!('extra_convert_opts' in options)) {
+      // Passed to cirodown.convert.
+      options.extra_convert_opts = {};
+    }
+    // Convenience parameter that sets both input_path_noext and toplevel_id.
+    // options.input_path_noext
     if (!('toplevel' in options)) {
       options.toplevel = false;
     }
@@ -157,6 +159,10 @@ function assert_convert_ast(
       cirodown.convert(input_string, dependency_convert_opts, extra_returns);
       new_convert_opts.id_provider.update(extra_returns);
       new_convert_opts.file_provider.update(input_path, extra_returns);
+    }
+    if (options.input_path_noext !== undefined) {
+      new_convert_opts.input_path = options.input_path_noext + cirodown.CIRODOWN_EXT;
+      new_convert_opts.toplevel_id = options.input_path_noext;
     }
     const extra_returns = {};
     const output = cirodown.convert(input_string, new_convert_opts, extra_returns);
@@ -408,7 +414,7 @@ function t(text) { return {'macro_name': 'plaintext', 'text': text}; }
 assert_convert_ast('empty document', '', []);
 
 // Paragraphs.
-assert_convert_ast('one paragraph implicit', 'ab\n',
+assert_convert_ast('one paragraph implicit no split headers', 'ab\n',
   [a('P', [t('ab')])],
 );
 assert_convert_ast('one paragraph explicit', '\\P[ab]\n',
@@ -1308,6 +1314,61 @@ assert_convert_ast('cross reference full boolean style with value 1',
     ]),
   ]
 );
+// https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
+assert_convert_ast('id of first header comes from the file name if not index',
+  `= abc
+
+\\x[notindex]
+`,
+  [
+    a('H', undefined,
+      {
+        level: [t('1')],
+        title: [t('abc')],
+      },
+      {
+        id: 'notindex',
+      }
+    ),
+    a('P', [
+      a('x', undefined, {
+        full: [t('0')],
+        href: [t('notindex')],
+      }),
+    ]),
+  ],
+  {
+    input_path_noext: 'notindex'
+  },
+);
+assert_convert_ast('id of first header comes from header title if index',
+  `= abc
+
+\\x[abc]
+`,
+  [
+    a('H', undefined,
+      {
+        level: [t('1')],
+        title: [t('abc')],
+      },
+      {
+        id: 'abc',
+      }
+    ),
+    a('P', [
+      a('x', undefined, {
+        full: [t('0')],
+        href: [t('abc')],
+      }),
+    ]),
+  ],
+  {
+    extra_convert_opts: {
+      input_path: cirodown.INDEX_BASENAME_NOEXT + cirodown.CIRODOWN_EXT
+    }
+  },
+);
 assert_error('cross reference full boolean style with invalid value 2',
   `= abc
 
@@ -2161,6 +2222,17 @@ assert_error('toplevel explicit content',
 // https://github.com/cirosantilli/cirodown/issues/10
 assert_error('explicit toplevel macro',
   `\\toplevel`, 1, 1,
+);
+
+// split_headers
+// A split headers hello world.
+assert_convert_ast('one paragraph implicit split headers',
+  'ab\n',
+  [a('P', [t('ab')])],
+  {
+    extra_convert_opts: {split_headers: true},
+    input_path_noext: 'notindex',
+  }
 );
 
 // Errors. Check that they return gracefully with the error line number,

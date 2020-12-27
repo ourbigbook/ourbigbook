@@ -20,6 +20,93 @@ const convert_opts = {
   //show_tokenize: true,
 };
 
+class MockIdProvider extends cirodown.IdProvider {
+  constructor(convert_input_options) {
+    super();
+    this.ids_table = {};
+    this.includes_table = {};
+  }
+
+  clear(input_path) {
+    for (let key in this.ids_table) {
+      if (this.ids_table[key].path === input_path) {
+        delete this.ids_table[key];
+      }
+    }
+    for (let key in this.includes_table) {
+      if (this.includes_table[key].from_path === input_path) {
+        delete this.includes_table[key];
+      }
+    }
+    this.includes_table = {};
+  }
+
+  get_includes_entries(to_id) {
+    const ret = this.includes_table[to_id];
+    if (ret === undefined) {
+      return [];
+    } else {
+      return ret;
+    }
+  }
+
+  get_noscope_entry(id) {
+    return this.ids_table[id];
+  }
+
+  update(extra_returns) {
+    const ids = extra_returns.ids;
+    for (const id in ids) {
+      const ast = ids[id];
+      this.ids_table[id] = {
+        id: id,
+        path: ast.source_location.path,
+        ast_json: JSON.stringify(ast)
+      };
+    }
+    const context = extra_returns.context;
+    for (const header_ast of context.headers_with_include) {
+      for (const include of header_ast.includes) {
+        if (this.includes_table[to_id] === undefined) {
+          this.includes_table[to_id] = [];
+        }
+        this.includes_table[to_id].push({
+          from_id: header_ast.id,
+          from_path: header_ast.source_location.path,
+          to_id: include,
+        });
+      }
+    }
+  }
+}
+
+class MockFileProvider extends cirodown.FileProvider {
+  constructor() {
+    super();
+    this.path_index = {};
+    this.id_index = {};
+  }
+
+  get_id(id) {
+    return this.id_index[id];
+  }
+
+  get_path_entry(path) {
+    return this.path_index[path];
+  }
+
+  update(input_path, extra_returns) {
+    const context = extra_returns.context;
+    const entry = {
+      path: input_path,
+      toplevel_scope_cut_length: context.toplevel_scope_cut_length,
+      toplevel_id: context.toplevel_id,
+    };
+    this.path_index[input_path] = entry;
+    this.id_index[context.toplevel_id] = entry;
+  }
+}
+
 /** For stuff that is hard to predict the exact output of, which is most of the HTML,
  * we can check just that a certain key subset of the AST is present.
  *
@@ -42,17 +129,36 @@ function assert_convert_ast(
       options.assert_xpath_matches = undefined;
     }
     if (!('extra_convert_opts' in options)) {
+      // Passed to cirodown.convert.
       options.extra_convert_opts = {};
+    }
+    if (!('convert_before' in options)) {
+      // List of strings. Convert files at these paths from default_file_reader
+      // before the main conversion to build up the cross-file reference database.
+      options.convert_before = [];
     }
     if (!('toplevel' in options)) {
       options.toplevel = false;
     }
-    const extra_returns = {};
     const new_convert_opts = Object.assign({}, convert_opts);
     Object.assign(new_convert_opts, options.extra_convert_opts);
     if (options.toplevel) {
       new_convert_opts.body_only = false;
     }
+    new_convert_opts.id_provider = new MockIdProvider();
+    new_convert_opts.file_provider = new MockFileProvider();
+    for (let input_path_noext of options.convert_before) {
+      const extra_returns = {};
+      const [input_path, input_string] = default_file_reader(input_path_noext);
+      options.convert_before = [];
+      let dependency_convert_opts = Object.assign({}, new_convert_opts);
+      dependency_convert_opts.input_path = input_path;
+      dependency_convert_opts.toplevel_id = input_path_noext;
+      cirodown.convert(input_string, dependency_convert_opts, extra_returns);
+      new_convert_opts.id_provider.update(extra_returns);
+      new_convert_opts.file_provider.update(input_path, extra_returns);
+    }
+    const extra_returns = {};
     const output = cirodown.convert(input_string, new_convert_opts, extra_returns);
     const has_subset_extra_returns = {fail_reason: ''};
     let is_subset;
@@ -251,6 +357,48 @@ function a(macro_name, content, extra_args={}, extra_props={}) {
     },
     extra_props
   );
+}
+
+function default_file_reader(input_path) {
+  let ret;
+  if (input_path === 'include-one-level-1') {
+    ret = `= cc
+
+dd
+`;
+  } else if (input_path === 'include-one-level-2') {
+    ret = `= ee
+
+ff
+`;
+  } else if (input_path === 'include-two-levels') {
+    ret = `= ee
+
+ff
+
+== gg
+
+hh
+`;
+  } else if (input_path === 'include-with-error') {
+    ret = `= bb
+
+\\reserved_undefined
+`
+  } else if (input_path === 'include-circular-1') {
+    ret = `= bb
+
+\\Include[include-circular-2]
+`
+  } else if (input_path === 'include-circular-2') {
+    ret = `= cc
+
+\\Include[include-circular-1]
+`
+  } else {
+    throw new Error(`unknown lnclude path: ${input_path}`);
+  }
+  return [input_path + '.ciro', ret];
 }
 
 /** Shortcut to create plaintext nodes for ast_arg_has_subset, we have too many of those. */
@@ -1181,6 +1329,30 @@ assert_no_error('cross reference without content nor target title style full',
 \\x[cd]
 `);
 assert_error('cross reference undefined', '\\x[ab]', 1, 3);
+assert_convert_ast('cross reference to non-included header in another file',
+  `= aa
+
+\\x[include-two-levels]
+
+\\x[gg]
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('P', [
+      a('x', undefined, {href: [t('include-two-levels')]}),
+    ]),
+    a('P', [
+      a('x', undefined, {href: [t('gg')]}),
+    ]),
+  ],
+  {
+    convert_before: ['include-two-levels'],
+    extra_convert_opts: {
+      assert_xpath_matches: "//a[@href='#include-two-levels' and text()='ee']",
+      file_provider: new cirodown_nodejs.ZeroFileProvider(),
+    },
+  },
+);
 
 // Infinite recursion.
 // failing https://github.com/cirosantilli/cirodown/issues/34
@@ -1757,47 +1929,7 @@ assert_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 3);
 const include_opts = {extra_convert_opts: {
   embed_includes: true,
   file_provider: new cirodown_nodejs.ZeroFileProvider(),
-  read_include: function(input_path) {
-    let ret;
-    if (input_path === 'include-one-level-1') {
-      ret = `= cc
-
-dd
-`;
-    } else if (input_path === 'include-one-level-2') {
-      ret = `= ee
-
-ff
-`;
-    } else if (input_path === 'include-two-levels') {
-      ret = `= ee
-
-ff
-
-== gg
-
-hh
-`;
-    } else if (input_path === 'include-with-error') {
-      ret = `= bb
-
-\\reserved_undefined
-`
-    } else if (input_path === 'include-circular-1') {
-      ret = `= bb
-
-\\Include[include-circular-2]
-`
-    } else if (input_path === 'include-circular-2') {
-      ret = `= cc
-
-\\Include[include-circular-1]
-`
-    } else {
-      throw new Error(`unknown lnclude path: ${input_path}`);
-    }
-    return [input_path + '.ciro', ret];
-  },
+  read_include: default_file_reader,
 }};
 const include_two_levels_ast_args = [
   a('H', undefined, {level: [t('2')], title: [t('ee')]}),
@@ -1825,7 +1957,7 @@ bb
   ],
   include_opts
 );
-assert_convert_ast('x reference to include header',
+assert_convert_ast('cross reference to embed include header',
   `= aa
 
 \\x[include-two-levels]

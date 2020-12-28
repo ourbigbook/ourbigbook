@@ -3051,32 +3051,23 @@ cirodown --help-macros
 = `--log`
 {parent=cirodown-executable-options}
 
-Give multiple times to enable a list of certain types of logs to help debugging, e.g.:
+Give multiple times to enable a list of certain types of logs to stderr help debugging, e.g.:
 ``
-./cirodown --log tokens --log ast
+./cirodown --log ast tokens -- README.ciro
 ``
+Note that this follows https://github.com/tj/commander.js/tree/e0e723810357e915210af38ccf5098ffe1fb8e65#variadic-option[commander.js' insane variadic arguments], and thus the `--` is required above.
 
-```
-commander.option('--show-ast', 'print the AST to stderr', false);
-commander.option(
-  '--show-ast-inside',
-  'print the AST to stderr from inside convert before it returns. ' +
-    'Useful to debug the program if conversion blow up on the next stages.',
-  false
-);
-commander.option('--show-headers', 'https://cirosantilli.com/cirodown#show-headers', false);
-commander.option('--show-parse', 'print parsing internals to stderr', false);
-commander.option('--show-tokenize', 'print tokenization internals to stderr', false);
-commander.option('--show-tokens', 'print the token stream to stderr', false);
-commander.option(
-  '--show-tokens-inside',
-  'print the token stream to stderr from inside convert before it returns. ' +
-    'Useful to debug the program if conversion blow up on the next stages. ' +
-    'Also adds token index to the output, which makes debugging the parser ' +
-    'way easier.',
-  false
-);
-```
+Values not documented in other sections:
+* `ast`: the final parsed AST
+* `ast-inside`: print the AST from inside the `cirodown.convert` call before it returns.
+
+  This is useful to debug the program if `cirodown.convert` blows up on the next stages before returning.
+* `parse`: parsing steps
+* `tokenize`: tokenization steps
+* `tokens`: final parsed token stream
+* `tokens-inside`: like `ast-inside` but for tokens.
+
+  Also adds token index to the output, which makes debugging the parser way easier.
 
 = `--log headers`
 {parent=log}

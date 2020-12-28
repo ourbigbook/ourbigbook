@@ -45,6 +45,9 @@ class AstNode {
     if (!(Macro.ID_ARGUMENT_NAME in options)) {
       options.id = undefined;
     }
+    if (!('is_first_header_in_input_file' in options)) {
+      options.is_first_header_in_input_file = false;
+    }
     if (!('parent_node' in options)) {
       options.parent_node = undefined;
     }
@@ -66,7 +69,7 @@ class AstNode {
 
     this.args = args;
     this.first_toplevel_child = options.first_toplevel_child;
-    this.is_first_header_in_input_file = false;
+    this.is_first_header_in_input_file = options.is_first_header_in_input_file;
     // This is the Nth macro of this type that appears in the document.
     this.macro_count = undefined;
     // This is the Nth macro of this type that is visible,
@@ -245,6 +248,7 @@ class AstNode {
       text:       this.text,
       args:       this.args,
       first_toplevel_child: this.first_toplevel_child,
+      is_first_header_in_input_file: this.is_first_header_in_input_file,
     }
   }
 }
@@ -1718,6 +1722,7 @@ function convert(
   if (!('id_provider' in options)) { options.id_provider = undefined; }
   if (!('include_path_set' in options)) { options.include_path_set = new Set(); }
   if (!('input_path' in options)) { options.input_path = undefined; }
+  if (!('log' in options)) { options.log = {}; }
   // Override the default calculated output file for the main input.
   if (!('outfile' in options)) { options.outfile = undefined; }
   if (!('output_format' in options)) { options.output_format = OUTPUT_FORMAT_HTML; }
@@ -1726,16 +1731,14 @@ function convert(
   if (!('start_line' in options)) { options.start_line = 1; }
   // A toplevel scope, to implement conversion of files in subdirectories.
   if (!('scope' in options)) { options.scope = undefined; }
-  if (!('show_ast' in options)) { options.show_ast = false; }
-  if (!('show_parse' in options)) { options.show_parse = false; }
-  if (!('show_tokenize' in options)) { options.show_tokenize = false; }
-  if (!('show_tokens' in options)) { options.show_tokens = false; }
   if (!('split_headers' in options)) { options.split_headers = false; }
   if (!('template' in options)) { options.template = undefined; }
   if (!('template_vars' in options)) { options.template_vars = {}; }
     if (!('head' in options.template_vars)) { options.template_vars.head = ''; }
     if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
     if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
+  // If given, force the toplevel header to have this ID.
+  // Otherwise, derive the ID from the title.
   // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
   if (!('toplevel_id' in options)) { options.toplevel_id = undefined; }
   if (options.xss_unsafe === undefined) {
@@ -1754,12 +1757,12 @@ function convert(
   let tokens = (new Tokenizer(
     input_string,
     sub_extra_returns,
-    options.show_tokenize,
+    options.log.tokenize,
     options.start_line,
     options.input_path,
   )).tokenize();
   extra_returns.debug_perf.tokenize_post = globals.performance.now();
-  if (options.show_tokens) {
+  if (options.log.['tokens-inside']) {
     console.error('tokens:');
     for (let i = 0; i < tokens.length; i++) {
       console.error(`${i}: ${JSON.stringify(tokens[i], null, 2)}`);
@@ -1818,7 +1821,7 @@ function convert(
   }
 
   let ast = parse(tokens, options, context, sub_extra_returns);
-  if (options.show_ast) {
+  if (options.log.['ast-inside']) {
     console.error('ast:');
     console.error(JSON.stringify(ast, null, 2));
     console.error();
@@ -1847,9 +1850,12 @@ function convert(
         cur_arg_list.push(child_ast);
       }
       convert_header(cur_arg_list, context);
+      // Because the following conversion would redefine them.
       context.katex_macros = {};
     }
-    // Because the following conversion would redefine them.
+    if (options.log.split_headers) {
+      console.error('split_headers non-split: ' + options.input_path);
+    }
     // Non-split header toplevel conversion.
     let outpath;
     if (options.outfile !== undefined) {
@@ -1937,6 +1943,9 @@ function convert_header(cur_arg_list, context) {
     context.options = options;
     const first_ast = cur_arg_list[0];
     const header_graph_node = first_ast.header_graph_node;
+    if (options.log.split_headers) {
+      console.error('split_headers: ' + first_ast.id);
+    }
     const header_graph_node_old_parent = header_graph_node.parent_node;
     // Add a new toplevel parent.
     header_graph_node.parent_node = new HeaderTreeNode();
@@ -2477,6 +2486,8 @@ function output_path_parts(input_path, id, context) {
       if (renamed_basename === INDEX_BASENAME_NOEXT) {
         basename_ret = INDEX_BASENAME_NOEXT;
         if (id_dirname === '') {
+          dirname_ret = id_dirname;
+        } else {
           // not a https://cirosantilli.com/cirodown#the-toplevel-index-file
           dirname_ret = path_join(id_dirname, id_basename, context.options.path_sep);
         }
@@ -3384,8 +3395,8 @@ function parse_consume(state) {
 }
 
 function parse_log_debug(state, msg='') {
-  if (state.options.show_parse) {
-    console.error('show_parse: ' + msg);
+  if (state.options.log.parse) {
+    console.error('parse: ' + msg);
   }
 }
 
@@ -4069,6 +4080,12 @@ const INSANE_TD_START = '| ';
 const INSANE_TH_START = '|| ';
 const INSANE_LIST_INDENT = '  ';
 const INSANE_HEADER_CHAR = '=';
+const LOG_OPTIONS = new Set([
+  'ast-inside',
+  'parse',
+  'tokens-inside',
+  'tokenize',
+]);
 const OUTPUT_FORMAT_CIRODOWN = 'cirodown';
 const OUTPUT_FORMAT_HTML = 'html';
 const OUTPUT_FORMAT_ID = 'id';
@@ -4895,6 +4912,8 @@ const DEFAULT_MACRO_LIST = [
         // The inner <div></div> inside arrow is so that:
         // - outter div: takes up space to make clicking easy
         // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
+        console.error(content);
+        console.error(href);
         ret += `><div${id_to_toc}>${TOC_ARROW_HTML}<a${href}>${content}</a>${get_descendant_count(tree_node)}<span class="hover-metadata">`;
 
         let toc_href = html_attr('href', '#' + my_toc_id);

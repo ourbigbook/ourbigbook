@@ -710,8 +710,8 @@ A link to another file: \\x[and-now-an-include]
     }
     process.exit(0);
   }
-  /* Options that are not directly passed to cirodown.convert,
-   * but rather used only by this cirodown executable. */
+  // Options that are not directly passed to cirodown.convert
+  // but rather used only by this cirodown executable.
   let convert_input_options = {
     commander: commander,
     encoding: cirodown_nodejs.ENCODING,

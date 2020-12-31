@@ -3904,14 +3904,18 @@ function x_href_parts(target_id_ast, context) {
   // Fragment
   let fragment;
   if (
-    // Linking to the toplevel of the current output path.
-    target_id_ast.id === context.options.toplevel_id ||
     // Linking to the toplevel ID of another output path.
     target_id_ast.first_toplevel_child ||
     // Linking towards a split header.
     (
       (context.to_split_headers === undefined && context.in_split_headers) ||
       (context.to_split_headers !== undefined && context.to_split_headers)
+    ) ||
+    // Linking to the toplevel of the current output path.
+    (
+      target_id_ast.id === context.options.toplevel_id &&
+      // Linking from a split header to the corresponding nonsplit one.
+      !(context.to_split_headers !== undefined && !context.to_split_headers)
     )
   ) {
     fragment = '';

@@ -447,6 +447,12 @@ hh
 
 \\Include[include-circular-1]
 `
+  } else if (input_path === 'toplevel-scope') {
+    return `= Toplevel scope
+{scope}
+
+== h2
+`
   } else {
     throw new Error(`unknown lnclude path: ${input_path}`);
   }
@@ -1484,19 +1490,47 @@ assert_convert_ast('cross reference to non-included header in another file',
       "//x:a[@href='include-two-levels.html' and text()='ee']",
       "//x:a[@href='include-two-levels.html#gg' and text()='gg']",
       "//x:a[@href='#bb' and text()='bb2']",
+
+      // Links to the non-split versions.
+      "//x:h1[@id='notindex']//x:a[@href='notindex-split.html' and text()='split']",
+      "//x:h2[@id='bb']//x:a[@href='bb.html' and text()='split']",
     ],
     assert_xpath_split_headers: {
       'notindex-split.html': [
         "//x:a[@href='include-two-levels-split.html' and text()='ee']",
         "//x:a[@href='gg.html' and text()='gg']",
         "//x:a[@href='bb.html' and text()='bb']",
+        // Link to the split version.
+        "//x:h1[@id='notindex']//x:a[@href='notindex.html' and text()='nosplit']",
       ],
       'bb.html': [
         "//x:a[@href='notindex-split.html' and text()='notindex2']",
         "//x:a[@href='' and text()='bb2']",
+        // Link to the split version.
+        "//x:h1[@id='bb']//x:a[@href='notindex.html#bb' and text()='nosplit']",
       ],
     },
     convert_before: ['include-two-levels'],
+    input_path_noext: 'notindex',
+  },
+);
+// https://cirosantilli.com/cirodown#header-scope-argument-of-toplevel-headers
+assert_convert_ast('cross reference to non-included file with toplevel scope',
+  `\\x[toplevel-scope]
+
+\\x[toplevel-scope/h2]
+`,
+  [
+    a('P', [a('x', undefined, {href: [t('toplevel-scope')]})]),
+    a('P', [a('x', undefined, {href: [t('toplevel-scope/h2')]})]),
+  ],
+  {
+    assert_xpath_matches: [
+      "//x:div[@class='p']//x:a[@href='toplevel-scope.html' and text()='toplevel scope']",
+      "//x:div[@class='p']//x:a[@href='toplevel-scope.html#h2' and text()='h2']",
+    ],
+    convert_before: ['toplevel-scope'],
+    // TODO should not be needed.
     input_path_noext: 'notindex',
   },
 );
@@ -2253,6 +2287,7 @@ assert_error('include circular dependency 1 <-> 2',
 // up on CLI reproduction.
 // The root problem is that include_path_set does not contain
 // include-circular-2.ciro, and that leads to several:
+// ```
 // file not found on database: "${target_input_path}", needed for toplevel scope removal
 // on ToC conversion.
 assert_error('include circular dependency 1 -> 2 <-> 3',

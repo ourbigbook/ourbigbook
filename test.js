@@ -142,6 +142,10 @@ function assert_convert_ast(
       // Automatically set split_headers if not explicitly disabled.
       options.assert_xpath_split_headers = {};
     }
+    if (!('assert_not_xpath_split_headers' in options)) {
+      // Like assert_xpath_split_headers but assert it does not match.
+      options.assert_not_xpath_split_headers = {};
+    }
     if (!('convert_before' in options)) {
       // List of strings. Convert files at these paths from default_file_reader
       // before the main conversion to build up the cross-file reference database.
@@ -174,7 +178,10 @@ function assert_convert_ast(
       };
     }
     if (
-      Object.keys(options.assert_xpath_split_headers).length > 0 &&
+      (
+        Object.keys(options.assert_xpath_split_headers).length > 0 ||
+        Object.keys(options.assert_not_xpath_split_headers).length > 0
+      ) &&
       !('split_headers' in options.extra_convert_opts)
     ) {
       options.extra_convert_opts.split_headers = true;
@@ -278,7 +285,17 @@ function assert_convert_ast(
       const output = extra_returns.rendered_outputs[key];
       assert.notStrictEqual(output, undefined);
       for (const xpath_expr of options.assert_xpath_split_headers[key]) {
-        assert_xpath_matches(xpath_expr, output, key);
+        assert_xpath_matches(xpath_expr, output, {message: key});
+      }
+    }
+    for (const key in options.assert_not_xpath_split_headers) {
+      const output = extra_returns.rendered_outputs[key];
+      assert.notStrictEqual(output, undefined);
+      for (const xpath_expr of options.assert_not_xpath_split_headers[key]) {
+        assert_xpath_matches(xpath_expr, output, {
+          count: 0,
+          message: key,
+        });
       }
     }
   });
@@ -334,16 +351,20 @@ function assert_no_error(description, input, options) {
   assert_convert_ast(description, input, undefined, options)
 }
 
-function assert_xpath_matches(xpath_expr, string, message) {
+function assert_xpath_matches(xpath_expr, string, options={}) {
   const xpath_matches = xpath_html(string, xpath_expr);
-  if (message === undefined)
-    message = '';
-  if (xpath_matches.length !== 1) {
-    console.error('assert_xpath_matches: ' + message);
+  if (!('count' in options)) {
+    options.count = 1;
+  }
+  if (!('message' in options)) {
+    options.message = '';
+  }
+  if (xpath_matches.length !== options.count) {
+    console.error('assert_xpath_matches: ' + options.message);
     console.error('xpath: ' + xpath_expr);
     console.error('string:');
     console.error(string);
-    assert.strictEqual(xpath_matches.length, 1);
+    assert.strictEqual(xpath_matches.length, options.count);
   }
 }
 
@@ -1466,11 +1487,17 @@ assert_convert_ast('cross reference to non-included header in another file',
 
 \\x[gg]
 
+\\x[image-bb][image bb 1]
+
 == bb
 
 \\x[notindex][notindex2]
 
 \\x[bb][bb2]
+
+\\x[image-bb][image bb 2]
+
+\\Image[bb.png]{title=bb}
 `,
   [
     a('H', undefined, {level: [t('1')], title: [t('aa')]}),
@@ -1478,10 +1505,20 @@ assert_convert_ast('cross reference to non-included header in another file',
     a('P', [a('x', undefined, {href: [t('bb')]})]),
     a('P', [a('x', undefined, {href: [t('include-two-levels')]})]),
     a('P', [a('x', undefined, {href: [t('gg')]})]),
+    a('P', [a('x', [t('image bb 1')], {href: [t('image-bb')]})]),
     a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('bb')]}),
     a('P', [a('x', [t('notindex2')], {href: [t('notindex')]})]),
     a('P', [a('x', [t('bb2')], {href: [t('bb')]})]),
+    a('P', [a('x', [t('image bb 2')], {href: [t('image-bb')]})]),
+    a(
+      'Image',
+      undefined,
+      {
+        src: [t('bb.png')],
+        title: [t('bb')],
+      },
+    ),
   ],
   {
     assert_xpath_matches: [
@@ -1493,8 +1530,9 @@ assert_convert_ast('cross reference to non-included header in another file',
       "//x:a[@href='include-two-levels.html' and text()='ee']",
       "//x:a[@href='include-two-levels.html#gg' and text()='gg']",
       "//x:a[@href='#bb' and text()='bb2']",
+      "//x:a[@href='#image-bb' and text()='image bb 1']",
 
-      // Links to the non-split versions.
+      // Links to the split versions.
       "//x:h1[@id='notindex']//x:a[@href='notindex-split.html' and text()='split']",
       "//x:h2[@id='bb']//x:a[@href='bb.html' and text()='split']",
     ],
@@ -1505,18 +1543,65 @@ assert_convert_ast('cross reference to non-included header in another file',
         "//x:a[@href='bb.html' and text()='bb']",
         // Link to the split version.
         "//x:h1[@id='notindex']//x:a[@href='notindex.html' and text()='nosplit']",
+        // Internal cross reference inside split header.
+        // TODO
+        //"//x:a[@href='bb.html#image-bb' and text()='image bb 1']",
       ],
       'bb.html': [
         "//x:a[@href='notindex-split.html' and text()='notindex2']",
         "//x:a[@href='' and text()='bb2']",
         // Link to the split version.
         "//x:h1[@id='bb']//x:a[@href='notindex.html#bb' and text()='nosplit']",
+        // TODO
+        // Internal cross reference inside split header.
+        //"//x:a[@href='image-bb' and text()='image bb 2']",
       ],
     },
     convert_before: ['include-two-levels'],
     input_path_noext: 'notindex',
   },
 );
+it('output_path_parts', ()=>{
+  const context = {options: {path_sep: '/'}};
+
+  // Non-split headers.
+  assert.deepStrictEqual(
+    cirodown.output_path_parts(
+      'notindex.ciro',
+      'notindex',
+      context,
+    ),
+    ['', 'notindex']
+  );
+  assert.deepStrictEqual(
+    cirodown.output_path_parts(
+      'index.ciro',
+      'index',
+      context,
+    ),
+    ['', 'index']
+  );
+  assert.deepStrictEqual(
+    cirodown.output_path_parts(
+      'README.ciro',
+      'index',
+      context,
+    ),
+    ['', 'index']
+  );
+
+  // Split-headers.
+  // TODO.
+  //context.options.in_split_header = true;
+  //assert.deepStrictEqual(
+  //  cirodown.output_path_parts(
+  //    'notindex.ciro',
+  //    'notindex',
+  //    context,
+  //  ),
+  //  ['', 'notindex-split']
+  //);
+});
 assert_convert_ast('cross reference to scoped split header',
   `= aa
 {scope}
@@ -1539,6 +1624,44 @@ assert_convert_ast('cross reference to scoped split header',
       'notindex/bb.html': [
         "//x:a[@href='cc.html' and text()='cc2']",
       ],
+    },
+    input_path_noext: 'notindex',
+  },
+);
+assert_convert_ast('split headers have correct table of contents',
+  `= h1
+
+== h1-1
+
+== h1-2
+
+=== h1-2-1
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('h1')]}),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('h1-1')]}),
+    a('H', undefined, {level: [t('2')], title: [t('h1-2')]}),
+    a('H', undefined, {level: [t('3')], title: [t('h1-2-1')]}),
+  ],
+  {
+    assert_xpath_split_headers: {
+      // TODO
+      // The split output files get their own ToCs.
+      //'notindex-split.html': ["//x:a[@href='toc-1' and text()='Table of contents']"],
+      'h1-2.html': [
+        // TODO
+        // The split output files get their own ToCs.
+        //"//x:a[@href='toc-1' and text()='Table of contents']",
+        // The Toc entries of split output headers automatically cull out a level
+        // of the full number tree. E.g this entry is `2.1` on the toplevel ToC,
+        // but on this sub-ToC it is just `1.`.
+        //"//x:a[@href='h1-2-1.html' and text()='1. h1-2-1']",
+      ],
+    },
+    assert_not_xpath_split_headers: {
+      // Leaf node does not have a ToC.
+      'h1-2-1.html': ["//*[text()='Table of contents']"],
     },
     input_path_noext: 'notindex',
   },

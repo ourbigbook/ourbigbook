@@ -1743,6 +1743,7 @@ function convert(
   if (!('template' in options)) { options.template = undefined; }
   if (!('template_vars' in options)) { options.template_vars = {}; }
     if (!('head' in options.template_vars)) { options.template_vars.head = ''; }
+    if (!('root_relpath' in options.template_vars)) { options.template_vars.root_relpath = ''; }
     if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
     if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
   // If given, force the toplevel header to have this ID.
@@ -1987,6 +1988,18 @@ function convert_header(cur_arg_list, context, has_toc) {
     context.header_graph = first_ast.header_graph_node;
     const output_path = output_path_from_ast(first_ast, context);
     context.toplevel_output_path = output_path;
+
+    // root_relpath
+    const [output_path_dirname, output_path_basename] =
+      path_split(output_path, context.options.path_sep);
+    options.template_vars = Object.assign({}, options.template_vars);
+    options.template_vars.root_relpath = path.relative(
+      output_path_dirname, '.');
+    if (options.template_vars.root_relpath !== '') {
+        options.template_vars.root_relpath += context.options.path_sep;
+    }
+    console.error(options.template_vars.root_relpath);
+
     context.extra_returns.rendered_outputs[output_path] =
       ast_toplevel.convert(context);
   }
@@ -2486,13 +2499,15 @@ function output_path_from_ast(ast, context) {
   return output_path(ast.source_location.path, ast.id, context)[0];
 }
 
+/* Return dirname and basename without extension of the
+ * path to where an AST gets rendered to. */
 function output_path_parts(input_path, id, context) {
   let ret = '';
   const [dirname, basename] = path_split(input_path, context.options.path_sep);
-  const renamed_basename = rename_basename(noext(basename));
+  const renamed_basename_noext = rename_basename(noext(basename));
   if (
     // to_split_headers is set explicitly when making
-    // links across splitnon-split versions of the output.
+    // links across split/non-split versions of the output.
     // Otherwise, link to the same type of output as the current one
     // as given in in_split_headers.
     (context.to_split_headers === undefined && context.in_split_headers) ||
@@ -2517,7 +2532,7 @@ function output_path_parts(input_path, id, context) {
       before_first_header ||
       ast.is_first_header_in_input_file
     ) {
-      if (renamed_basename === INDEX_BASENAME_NOEXT) {
+      if (renamed_basename_noext === INDEX_BASENAME_NOEXT) {
         basename_ret = INDEX_BASENAME_NOEXT;
         if (id_dirname === '') {
           dirname_ret = id_dirname;
@@ -2526,7 +2541,7 @@ function output_path_parts(input_path, id, context) {
           dirname_ret = path_join(id_dirname, id_basename, context.options.path_sep);
         }
       } else {
-        [dirname_ret, basename_ret] = path_split(noext(input_path), URL_SEP);
+        [dirname_ret, basename_ret] = [dirname, renamed_basename_noext];
       }
     } else {
       dirname_ret = id_dirname;
@@ -2537,9 +2552,10 @@ function output_path_parts(input_path, id, context) {
     }
     return [dirname_ret, basename_ret];
   } else {
-    return [dirname, renamed_basename];
+    return [dirname, renamed_basename_noext];
   }
 }
+exports.output_path_parts = output_path_parts;
 
 /** Parse tokens into the AST tree.
  *
@@ -3645,6 +3661,8 @@ function remove_toplevel_scope(ast, context) {
     // Besides being a minor optimization, this also prevents the case
     // without any headers from blowing up.
     context.toplevel_scope_cut_length > 0 &&
+    // Can happen in split headers.
+    context.header_graph.children.length > 0 &&
     // Don't remove if we are the toplevel element, otherwise empty ID.
     context.header_graph.children[0].value !== ast
   ) {

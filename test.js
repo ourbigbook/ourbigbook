@@ -1660,7 +1660,8 @@ assert_convert_ast('split headers have correct table of contents',
       ],
     },
     assert_not_xpath_split_headers: {
-      // Leaf node does not have a ToC.
+      // A node without no children headers has no ToC,
+      // as it would just be empty and waste space.
       'h1-2-1.html': ["//*[text()='Table of contents']"],
     },
     input_path_noext: 'notindex',

@@ -471,12 +471,6 @@ hh
 
 \\Include[include-circular-1]
 `
-  } else if (input_path === 'toplevel-scope') {
-    return `= Toplevel scope
-{scope}
-
-== h2
-`
   } else {
     throw new Error(`unknown lnclude path: ${input_path}`);
   }
@@ -1544,17 +1538,15 @@ assert_convert_ast('cross reference to non-included header in another file',
         // Link to the split version.
         "//x:h1[@id='notindex']//x:a[@href='notindex.html' and text()='nosplit']",
         // Internal cross reference inside split header.
-        // TODO
-        //"//x:a[@href='bb.html#image-bb' and text()='image bb 1']",
+        "//x:a[@href='bb.html#image-bb' and text()='image bb 1']",
       ],
       'bb.html': [
         "//x:a[@href='notindex-split.html' and text()='notindex2']",
         "//x:a[@href='' and text()='bb2']",
         // Link to the split version.
         "//x:h1[@id='bb']//x:a[@href='notindex.html#bb' and text()='nosplit']",
-        // TODO
         // Internal cross reference inside split header.
-        //"//x:a[@href='image-bb' and text()='image bb 2']",
+        "//x:a[@href='#image-bb' and text()='image bb 2']",
       ],
     },
     convert_before: ['include-two-levels'],
@@ -1589,18 +1581,6 @@ it('output_path_parts', ()=>{
     ),
     ['', 'index']
   );
-
-  // Split-headers.
-  // TODO.
-  //context.options.in_split_header = true;
-  //assert.deepStrictEqual(
-  //  cirodown.output_path_parts(
-  //    'notindex.ciro',
-  //    'notindex',
-  //    context,
-  //  ),
-  //  ['', 'notindex-split']
-  //);
 });
 assert_convert_ast('cross reference to scoped split header',
   `= aa
@@ -1610,19 +1590,46 @@ assert_convert_ast('cross reference to scoped split header',
 
 \\x[cc][cc2]
 
+\\x[image-bb][image bb 1]
+
+\\Image[bb.png]{title=bb}
+
 == cc
+
+\\x[image-bb][image bb 2]
 `,
   [
     a('H', undefined, {level: [t('1')], title: [t('aa')]}),
     a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('bb')]}),
     a('P', [a('x', [t('cc2')], {href: [t('cc')]})]),
+    a('P', [a('x', [t('image bb 1')], {href: [t('image-bb')]})]),
+    a(
+      'Image',
+      undefined,
+      {
+        src: [t('bb.png')],
+        title: [t('bb')],
+      },
+    ),
     a('H', undefined, {level: [t('2')], title: [t('cc')]}),
+    a('P', [a('x', [t('image bb 2')], {href: [t('image-bb')]})]),
   ],
   {
+    assert_xpath_matches: [
+      // Not `#notindex/image-bb`.
+      // https://cirosantilli.com/cirodown#header-scope-argument-of-toplevel-headers
+      "//x:a[@href='#image-bb' and text()='image bb 1']",
+    ],
     assert_xpath_split_headers: {
       'notindex/bb.html': [
         "//x:a[@href='cc.html' and text()='cc2']",
+        // TODO
+        "//x:a[@href='#image-bb' and text()='image bb 1']",
+      ],
+      'notindex/cc.html': [
+        // TODO
+        "//x:a[@href='bb.html#image-bb' and text()='image bb 1']",
       ],
     },
     input_path_noext: 'notindex',
@@ -1652,11 +1659,11 @@ assert_convert_ast('split headers have correct table of contents',
       'h1-2.html': [
         // TODO
         // The split output files get their own ToCs.
-        //"//x:a[@href='toc-1' and text()='Table of contents']",
+        "//x:a[@href='#toc-1' and text()='Table of contents']",
         // The Toc entries of split output headers automatically cull out a level
         // of the full number tree. E.g this entry is `2.1` on the toplevel ToC,
         // but on this sub-ToC it is just `1.`.
-        //"//x:a[@href='h1-2-1.html' and text()='1. h1-2-1']",
+        "//x:a[@href='h1-2-1.html' and text()='1. h1-2-1']",
       ],
     },
     assert_not_xpath_split_headers: {
@@ -1672,20 +1679,46 @@ assert_convert_ast('cross reference to non-included file with toplevel scope',
   `\\x[toplevel-scope]
 
 \\x[toplevel-scope/h2]
+
+\\x[toplevel-scope/image-h1][image h1]
+
+\\x[toplevel-scope/image-h2][image h2]
 `,
   [
     a('P', [a('x', undefined, {href: [t('toplevel-scope')]})]),
     a('P', [a('x', undefined, {href: [t('toplevel-scope/h2')]})]),
+    a('P', [a('x', undefined, {href: [t('toplevel-scope/image-h1')]})]),
+    a('P', [a('x', undefined, {href: [t('toplevel-scope/image-h2')]})]),
   ],
   {
     assert_xpath_matches: [
+      // Not `toplevel-scope.html#toplevel-scope`.
       "//x:div[@class='p']//x:a[@href='toplevel-scope.html' and text()='toplevel scope']",
+      // Not `toplevel-scope.html#toplevel-scope/h2`.
       "//x:div[@class='p']//x:a[@href='toplevel-scope.html#h2' and text()='h2']",
     ],
+    assert_xpath_split_headers: {
+      'notindex-split.html': [
+        "//x:a[@href='toplevel-scope.html#image-h1' and text()='image h1']",
+        "//x:a[@href='toplevel-scope.html/h2.html#image-h2' and text()='image h2']",
+      ],
+    },
     convert_before: ['toplevel-scope'],
-    // TODO should not be needed.
     input_path_noext: 'notindex',
-  },
+    file_reader: (path)=> {
+      if (path === 'toplevel-scope') {
+        return `= Toplevel scope
+{scope}
+
+\\Image[h1.png]{title=h1}
+
+== h2
+
+\\Image[h2.png]{title=h2}
+`;
+      }
+    }
+  }
 );
 assert_convert_ast('include simple with paragraph with no embed',
   `= aa

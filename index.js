@@ -2506,13 +2506,19 @@ function output_path_parts(input_path, id, context) {
   const [dirname, basename] = path_split(input_path, context.options.path_sep);
   const renamed_basename_noext = rename_basename(noext(basename));
   if (
+    // Get the path to the split header version
+    //
     // to_split_headers is set explicitly when making
     // links across split/non-split versions of the output.
+    //
     // Otherwise, link to the same type of output as the current one
     // as given in in_split_headers.
-    (context.to_split_headers === undefined && context.in_split_headers) ||
-    (context.to_split_headers !== undefined && context.to_split_headers)
-  ) {
+    //
+    // This way, to_split_hedears in particular forces the link to be
+    // to the non-split mode, even if we are in split mode.
+    //
+    // Some desired sample outcomes:
+    //
     // id='cirodown'             -> ['',       'index-split']
     // id='quick-start'          -> ['',       'quick-start']
     // id='not-readme'           -> ['',       'not-readme-split']
@@ -2521,37 +2527,60 @@ function output_path_parts(input_path, id, context) {
     // id='subdir/subdir-h2'     -> ['subdir', 'subdir-h2']
     // id='subdir/notindex'      -> ['subdir', 'notindex']
     // id='subdir/notindex-h2'   -> ['subdir', 'notindex-h2']
-    const [id_dirname, id_basename] = path_split(id, URL_SEP);
+    (context.to_split_headers === undefined && context.in_split_headers) ||
+    (context.to_split_headers !== undefined && context.to_split_headers)
+  ) {
     const ast = context.id_provider.get(id, context);
-    // The input file does not start with a header.
-    const before_first_header = ast === undefined ||
-      ast.macro_name !== Macro.HEADER_MACRO_NAME;
+    // We are the first header, or something that comes before it.
+    let first_header_or_before = false;
+    if (ast === undefined) {
+      first_header_or_before = true;
+    } else {
+      if (ast.macro_name === Macro.HEADER_MACRO_NAME) {
+        if (ast.is_first_header_in_input_file) {
+          first_header_or_before = true;
+        }
+      } else {
+        const parent_node = ast.header_graph_node.parent_node;
+        if (parent_node === undefined) {
+          // The document does not start with a header. Naughty.
+          first_header_or_before = true;
+        } else {
+          // This ast is not a header, e.g. an image. Therefore
+          // it will be placed in the file determined by its parent header.
+          id = parent_node.value.id;
+        }
+      }
+    }
     let dirname_ret;
     let basename_ret;
-    if (
-      before_first_header ||
-      ast.is_first_header_in_input_file
-    ) {
+    const [id_dirname, id_basename] = path_split(id, URL_SEP);
+    if (first_header_or_before) {
+      // For toplevel elements in split header mode, we have
+      // to take care of index and -split suffix.
       if (renamed_basename_noext === INDEX_BASENAME_NOEXT) {
         basename_ret = INDEX_BASENAME_NOEXT;
         if (id_dirname === '') {
           dirname_ret = id_dirname;
         } else {
-          // not a https://cirosantilli.com/cirodown#the-toplevel-index-file
+          // Not a https://cirosantilli.com/cirodown#the-toplevel-index-file
           dirname_ret = path_join(id_dirname, id_basename, context.options.path_sep);
         }
       } else {
-        [dirname_ret, basename_ret] = [dirname, renamed_basename_noext];
+        dirname_ret = dirname;
+        basename_ret = renamed_basename_noext;
       }
+      basename_ret += '-split';
     } else {
+      // Non-toplevel elements in split header mode are simple,
+      // the ID just gives the output path directly.
       dirname_ret = id_dirname;
       basename_ret = id_basename;
     }
-    if (before_first_header || ast.is_first_header_in_input_file) {
-      basename_ret += '-split';
-    }
     return [dirname_ret, basename_ret];
   } else {
+    // Non-split headers, so things are simple, the output path is
+    // easily determined from the input path.
     return [dirname, renamed_basename_noext];
   }
 }
@@ -3940,12 +3969,15 @@ function x_href_parts(target_id_ast, context) {
   // Fragment
   let fragment;
   if (
-    // Linking to the toplevel ID of another output path.
+    // Linking to a toplevel ID.
     target_id_ast.first_toplevel_child ||
     // Linking towards a split header.
     (
-      (context.to_split_headers === undefined && context.in_split_headers) ||
-      (context.to_split_headers !== undefined && context.to_split_headers)
+      target_id_ast.macro_name === Macro.HEADER_MACRO_NAME &&
+      (
+        (context.to_split_headers === undefined && context.in_split_headers) ||
+        (context.to_split_headers !== undefined && context.to_split_headers)
+      )
     ) ||
     // Linking to the toplevel of the current output path.
     (

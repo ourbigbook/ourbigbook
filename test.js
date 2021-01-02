@@ -1629,7 +1629,7 @@ assert_convert_ast('cross reference to scoped split header',
       ],
       'notindex/cc.html': [
         // TODO
-        "//x:a[@href='bb.html#image-bb' and text()='image bb 1']",
+        "//x:a[@href='bb.html#image-bb' and text()='image bb 2']",
       ],
     },
     input_path_noext: 'notindex',

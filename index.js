@@ -709,6 +709,17 @@ Macro.TR_MACRO_NAME = 'Tr';
 Macro.TITLE_ARGUMENT_NAME = 'title';
 Macro.TITLE2_ARGUMENT_NAME = 'title2';
 Macro.TOC_MACRO_NAME = 'Toc';
+// We set a fixed magic ID to the ToC because:
+// - when doing --split-headers, the easy approach is to add the ToC node
+//   after normal ID indexing has happened, which means that we can't link
+//   to the ToC as other normal links. And if we could, we would have to worry
+//   about how to avoid ID duplication
+// - only a single ToC ever renders per document. So we can just have a fixed
+//   magic one.
+Macro.TOC_ID = 'toc';
+Macro.RESERVED_IDS = new Set([
+  Macro.TOC_ID,
+]);
 Macro.TOC_PREFIX = 'toc-'
 Macro.TOPLEVEL_MACRO_NAME = 'Toplevel';
 
@@ -1390,20 +1401,30 @@ class HeaderTreeNode {
    *
    * @return {String}
    */
-  get_nested_number(header_graph_top_level) {
+  get_nested_number(header_graph_top_level, toplevel_node) {
     let indexes = [];
     let cur_node = this;
-    while (cur_node !== undefined) {
+    while (
+      cur_node !== undefined &&
+      (
+        toplevel_node === undefined ||
+        toplevel_node !== cur_node
+      )
+    ) {
       indexes.push(cur_node.index + 1);
       cur_node = cur_node.parent_node;
     }
     let offset;
-    if (header_graph_top_level === 0) {
+    if (toplevel_node !== undefined) {
       offset = 0;
-    } else {
+    } else if (
+      header_graph_top_level === 0
+    ) {
       offset = 1;
+    } else {
+      offset = 2;
     }
-    return indexes.reverse().slice(1 + offset).join('.');
+    return indexes.reverse().slice(offset).join('.');
   }
 
   toString() {
@@ -1490,6 +1511,10 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
   macro_counts, macro_counts_visible, state, is_header, line_to_id_array
 ) {
   const macro_name = ast.macro_name;
+  if (macro_name === Macro.TOC_MACRO_NAME) {
+    ast.id = Macro.TOC_ID;
+    return;
+  }
   const macro = context.macros[macro_name];
 
   // Linear count of each macro type for macros that have IDs.
@@ -1557,6 +1582,10 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
       }
     } else {
       ast.id = convert_arg_noescape(macro_id_arg, context);
+    }
+    if (Macro.RESERVED_IDS.has(ast.id)) {
+      let message = `reserved ID "${ast.id}"`;
+      parse_error(state, message, ast.source_location);
     }
     if (ast.id !== undefined && ast.header_graph_node) {
       const parent_scope_id = get_parent_scope_id(ast.header_graph_node, context);
@@ -1988,7 +2017,7 @@ function convert_header(cur_arg_list, context, has_toc) {
         Macro.TOC_MACRO_NAME,
         {},
         first_ast.source_location,
-        {id: 'toc-1'}
+        {id: Macro.TOC_ID}
       ));
     }
     const ast_toplevel = new AstNode(
@@ -2001,8 +2030,8 @@ function convert_header(cur_arg_list, context, has_toc) {
     );
     options.toplevel_id = first_ast.id;
     context.in_split_headers = true;
-    context.header_graph_top_level = 1;
     context.header_graph = first_ast.header_graph_node;
+    context.header_graph_top_level = 1;
     const output_path = output_path_from_ast(first_ast, context);
     context.toplevel_output_path = output_path;
     context.toplevel_scope_cut_length = calculate_scope_length(first_ast);
@@ -3943,6 +3972,12 @@ function x_href(target_id_ast, context) {
 exports.x_href = x_href;
 
 function x_href_parts(target_id_ast, context) {
+  if (target_id_ast.macro_name === Macro.TOC_MACRO_NAME) {
+    // Otherwise, split header ToCs would link to the toplevel source ToC,
+    // since split header ToCs are not really properly registered.
+    return ['', Macro.TOC_ID];
+  }
+
   // href_path
   let href_path;
   const target_input_path = target_id_ast.source_location.path;
@@ -4646,7 +4681,12 @@ const DEFAULT_MACRO_LIST = [
         if (header_graph_node === undefined) {
           return undefined;
         } else {
-          return header_graph_node.get_nested_number(context.header_graph_top_level);
+          let toplevel_node;
+          if (context.in_toc && context.in_split_headers) {
+            toplevel_node = context.header_graph;
+          }
+          return header_graph_node.get_nested_number(
+            context.header_graph_top_level, toplevel_node);
         }
       },
       show_disambiguate: true,
@@ -5026,6 +5066,7 @@ const DEFAULT_MACRO_LIST = [
     Macro.TOC_MACRO_NAME,
     [],
     function(ast, context) {
+      context = clone_and_set(context, 'in_toc', true);
       let attrs = html_convert_attrs_id(ast, context);
       let todo_visit = [];
       let top_level = context.header_graph_top_level - 1;
@@ -5075,14 +5116,14 @@ const DEFAULT_MACRO_LIST = [
         ) {
           let parent_href_target;
           if (
-            parent_ast.header_graph !== undefined &&
-            parent_ast.header_graph.get_level() === context.header_graph_top_level
+            parent_ast.header_graph_node !== undefined &&
+            parent_ast.header_graph_node.get_level() === context.header_graph_top_level
           ) {
-            parent_href_target = x_href(parent_ast, context);
+            parent_href_target = Macro.TOC_ID;
           } else {
-            parent_href_target = '#' + toc_id(parent_ast, context);
+            parent_href_target = toc_id(parent_ast, context);
           }
-          let parent_href = html_attr('href', parent_href_target);
+          let parent_href = html_attr('href', '#' + parent_href_target);
           let parent_body = convert_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
           ret += ` | <a${parent_href}>\u2191 parent "${parent_body}"</a>`;
         }

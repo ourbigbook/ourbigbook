@@ -48,13 +48,19 @@ class AstNode {
     if (!(Macro.ID_ARGUMENT_NAME in options)) {
       options.id = undefined;
     }
+    if (!('header_graph_node_parent_id' in options)) {
+      options.header_graph_node_parent_id = undefined;
+    }
     if (!('is_first_header_in_input_file' in options)) {
       options.is_first_header_in_input_file = false;
     }
     if (!('parent_node' in options)) {
-      // AstNode. TODO get rid of this and always use
-      // header_graph_node.parent_node.value instead, to reduce the duplication
-      // of information.
+      // AstNode. This is different from header_graph_node because
+      // it points to the parent ast node, i.e. the ast_node that
+      // contains this inside one of its arguments.
+      //
+      // header_graph_node on the other hand points to the header tree.
+      // The header tree is currently not even connected via arguments.
       options.parent_node = undefined;
     }
     if (!('text' in options)) {
@@ -93,6 +99,10 @@ class AstNode {
     // children of their parent. But they still know who the parent is.
     // This was originally required for header scope resolution.
     this.header_graph_node = options.header_graph_node;
+    // When fetching Nodes from the database, we only serialize the ID.
+    // Then to get the actual parent node, further DB querries are done
+    // as needed.
+    this.header_graph_node_parent_id = options.header_graph_node_parent_id;
     this.validation_error = undefined;
     this.validation_output = {};
 
@@ -203,6 +213,20 @@ class AstNode {
     return out;
   }
 
+  /** Works with both actual this.header_graph_node and
+   * this.header_graph_node_parent_id when coming from a database. */
+  get_parent_id() {
+    if (
+      this.header_graph_node !== undefined &&
+      this.header_graph_node.parent_node !== undefined &&
+      this.header_graph_node.parent_node.value !== undefined
+    ) {
+      return this.header_graph_node.parent_node.value.id;
+    } else {
+      return this.header_graph_node_parent_id;
+    }
+  }
+
   /** Manual implementation. There must be a better way, but I can't find it... */
   static fromJSON(json_string) {
     let json = JSON.parse(json_string);
@@ -215,6 +239,7 @@ class AstNode {
         text: json.text,
         first_toplevel_child: json.first_toplevel_child,
         is_first_header_in_input_file: json.is_first_header_in_input_file,
+        header_graph_node_parent_id: json.header_graph_node_parent_id,
       }
     );
     let nodes = [toplevel_ast];
@@ -245,7 +270,7 @@ class AstNode {
   }
 
   toJSON() {
-    return {
+    const ret = {
       macro_name: this.macro_name,
       node_type:  symbol_to_string(this.node_type),
       source_location: this.source_location,
@@ -254,6 +279,14 @@ class AstNode {
       first_toplevel_child: this.first_toplevel_child,
       is_first_header_in_input_file: this.is_first_header_in_input_file,
     }
+    if (
+      this.header_graph_node !== undefined &&
+      this.header_graph_node.parent_node !== undefined &&
+      this.header_graph_node.parent_node.value !== undefined
+    ) {
+      ret.header_graph_node_parent_id = this.header_graph_node.parent_node.value.id;
+    }
+    return ret;
   }
 }
 exports.AstNode = AstNode;
@@ -330,7 +363,7 @@ class ErrorMessage {
 class FileProvider {
   /* Get entry by path.
    * @return Object
-   *        - path {String}
+   *        - path {String}: source path
    *        - toplevel_scope_cut_length {number},
    *        - toplevel_id {String}
    */
@@ -1622,7 +1655,6 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
   }
 }
 
-/**/
 function calculate_scope_length(ast) {
   let cur_node = ast.header_graph_node;
   while (cur_node !== undefined) {
@@ -1997,9 +2029,6 @@ function convert_header(cur_arg_list, context, has_toc) {
     const options = Object.assign({}, context.options);
     context.options = options;
     const first_ast = cur_arg_list[0];
-    if (options.log['split-headers']) {
-      console.error('split-headers: ' + first_ast.id);
-    }
     if (!has_toc && first_ast.macro_name === Macro.HEADER_MACRO_NAME) {
       cur_arg_list.push(new AstNode(
         AstType.MACRO,
@@ -2028,8 +2057,11 @@ function convert_header(cur_arg_list, context, has_toc) {
     context.header_graph.add_child(first_ast.header_graph_node);
     context.header_graph_top_level = first_ast.header_graph_node.get_level();
     const output_path = output_path_from_ast(first_ast, context);
+    if (options.log['split-headers']) {
+      console.error('split-headers: ' + output_path);
+    }
     context.toplevel_output_path = output_path;
-    context.toplevel_scope_cut_length = calculate_scope_length(first_ast);
+    //context.toplevel_scope_cut_length = calculate_scope_length(first_ast);
 
     // root_relpath
     const [output_path_dirname, output_path_basename] =
@@ -2587,15 +2619,7 @@ function output_path_parts(input_path, id, context) {
           first_header_or_before = true;
         }
       } else {
-        const parent_node = ast.header_graph_node.parent_node;
-        if (parent_node === undefined) {
-          // The document does not start with a header. Naughty.
-          first_header_or_before = true;
-        } else {
-          // This ast is not a header, e.g. an image. Therefore
-          // it will be placed in the file determined by its parent header.
-          id = parent_node.value.id;
-        }
+        id = ast.get_parent_id();
       }
     }
     let dirname_ret;
@@ -4042,6 +4066,7 @@ function x_href_parts(target_id_ast, context) {
       )
     )
   ) {
+    // An empty href means the beginning of the page.
     fragment = '';
   } else {
     if (

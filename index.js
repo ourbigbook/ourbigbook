@@ -215,7 +215,7 @@ class AstNode {
 
   /** Works with both actual this.header_graph_node and
    * this.header_graph_node_parent_id when coming from a database. */
-  get_parent_id() {
+  get_header_parent_id() {
     if (
       this.header_graph_node !== undefined &&
       this.header_graph_node.parent_node !== undefined &&
@@ -224,6 +224,16 @@ class AstNode {
       return this.header_graph_node.parent_node.value.id;
     } else {
       return this.header_graph_node_parent_id;
+    }
+  }
+
+  /* Like get_header_parent_id, but returns the parent AST. */
+  get_header_parent(context) {
+    const header_parent_id = this.get_header_parent_id();
+    if (header_parent_id === undefined) {
+      return undefined;
+    } else {
+      return context.id_provider.get(header_parent_id, context);
     }
   }
 
@@ -364,7 +374,6 @@ class FileProvider {
   /* Get entry by path.
    * @return Object
    *        - path {String}: source path
-   *        - toplevel_scope_cut_length {number},
    *        - toplevel_id {String}
    */
   get(path) {
@@ -1655,17 +1664,16 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
   }
 }
 
-function calculate_scope_length(ast) {
-  let cur_node = ast.header_graph_node;
-  while (cur_node !== undefined) {
+/* Walk up to the first parent header that has a scope in it. */
+function calculate_scope_length(toplevel_ast, context) {
+  while (toplevel_ast !== undefined) {
     if (
-      cur_node.value !== undefined &&
-      cur_node.value.validation_output.scope !== undefined &&
-      cur_node.value.validation_output.scope.boolean
+      toplevel_ast.validation_output.scope !== undefined &&
+      toplevel_ast.validation_output.scope.boolean
     ) {
-      return cur_node.value.id.length + 1;
+      return toplevel_ast.id.length + 1
     }
-    cur_node = cur_node.parent_node;
+    toplevel_ast = toplevel_ast.get_header_parent(context);
   }
   return 0;
 }
@@ -2061,7 +2069,7 @@ function convert_header(cur_arg_list, context, has_toc) {
       console.error('split-headers: ' + output_path);
     }
     context.toplevel_output_path = output_path;
-    //context.toplevel_scope_cut_length = calculate_scope_length(first_ast);
+    context.toplevel_ast = first_ast;
 
     // root_relpath
     const [output_path_dirname, output_path_basename] =
@@ -2246,7 +2254,7 @@ function html_convert_attrs_id(
     custom_args[Macro.ID_ARGUMENT_NAME] = [
         new PlaintextAstNode(
           ast.source_location,
-          remove_toplevel_scope(ast, context)
+          remove_toplevel_scope(ast.id, context.toplevel_ast, context)
         )
     ];
   }
@@ -2619,7 +2627,7 @@ function output_path_parts(input_path, id, context) {
           first_header_or_before = true;
         }
       } else {
-        id = ast.get_parent_id();
+        id = ast.get_header_parent_id();
       }
     }
     let dirname_ret;
@@ -3154,16 +3162,10 @@ function parse(tokens, options, context, extra_returns={}) {
       if (toplevel_header_node.children.length > 0) {
         toplevel_header_node.children[0].value.toc_header = true;
       }
-      context.toplevel_id = toplevel_header_ast.id;
-      if (toplevel_header_ast.validation_output.scope.boolean) {
-        context.toplevel_scope_cut_length = toplevel_header_ast.id.length + 1;
-      } else {
-        context.toplevel_scope_cut_length = 0;
-      }
+      context.toplevel_ast = toplevel_header_ast;
     } else {
       context.header_graph_top_level = first_header_level - 1;
-      context.toplevel_scope_cut_length = 0;
-      context.toplevel_id = undefined;
+      context.toplevel_ast = undefined;
       if (context.header_graph.children.length > 0) {
         context.header_graph.children[0].value.toc_header = true;
       }
@@ -3759,16 +3761,8 @@ function protocol_is_known(src) {
 }
 
 // https://cirosantilli.com/cirodown#scope
-function remove_toplevel_scope(ast, context) {
-  let id = ast.id;
-  if (
-    // Besides being a minor optimization, this also prevents the case
-    // without any headers from blowing up.
-    context.toplevel_scope_cut_length > 0
-  ) {
-    id = id.substr(context.toplevel_scope_cut_length);
-  }
-  return id;
+function remove_toplevel_scope(id, toplevel_ast, context) {
+  return id.substr(calculate_scope_length(toplevel_ast, context));
 }
 
 // https://cirosantilli.com/cirodown#index-files
@@ -4069,14 +4063,17 @@ function x_href_parts(target_id_ast, context) {
     // An empty href means the beginning of the page.
     fragment = '';
   } else {
-    if (
+    let toplevel_ast;
+    if (to_split_headers) {
+      // We know not a header target, as that would have been caught previously.
+      toplevel_ast = target_id_ast.get_header_parent(context);
+    } else if (
       // The header was included inline into the current file.
-      context.include_path_set.has(target_input_path) ||
+      context.include_path_set.has(target_input_path) // ||
       // The header is in the current file.
-      target_input_path == context.options.input_path ||
-      to_split_headers
+      //target_input_path == context.options.input_path
     ) {
-      fragment = remove_toplevel_scope(target_id_ast, context);
+      toplevel_ast = context.toplevel_ast;
     } else {
       const file_provider_ret = context.options.file_provider.get(target_input_path);
       if (file_provider_ret === undefined) {
@@ -4084,13 +4081,32 @@ function x_href_parts(target_id_ast, context) {
         render_error(context, message, target_id_ast.source_location);
         return error_message_in_output(message, context);
       } else {
-        if (file_provider_ret.toplevel_id === target_id_ast.id) {
-          fragment = target_id_ast.id;
-        } else {
-          fragment = target_id_ast.id.substr(file_provider_ret.toplevel_scope_cut_length);
-        }
+        toplevel_ast = context.id_provider.get(file_provider_ret.toplevel_id, context);
       }
     }
+    fragment = remove_toplevel_scope(target_id_ast.id, toplevel_ast, context);
+    //if (
+    //  // The header was included inline into the current file.
+    //  context.include_path_set.has(target_input_path) ||
+    //  // The header is in the current file.
+    //  target_input_path == context.options.input_path ||
+    //  to_split_headers
+    //) {
+    //  fragment = remove_toplevel_scope(target_id_ast, context);
+    //} else {
+    //  const file_provider_ret = context.options.file_provider.get(target_input_path);
+    //  if (file_provider_ret === undefined) {
+    //    let message = `file not found on database: "${target_input_path}", needed for toplevel scope removal`;
+    //    render_error(context, message, target_id_ast.source_location);
+    //    return error_message_in_output(message, context);
+    //  } else {
+    //    if (file_provider_ret.toplevel_id === target_id_ast.id) {
+    //      fragment = target_id_ast.id;
+    //    } else {
+    //      fragment = target_id_ast.id.substr(file_provider_ret.toplevel_scope_cut_length);
+    //    }
+    //  }
+    //}
   }
 
   // return

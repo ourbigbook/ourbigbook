@@ -3844,6 +3844,7 @@ Static book generators:
 * https://en.wikipedia.org/wiki/Personal_wiki
   * https://github.com/vimwiki/vimwiki
 * https://github.com/hplgit/doconce
+* https://www.gwern.net/About#source is pretty interesting, uses https://github.com/jaspervdj/Hakyll/ + some custom stuff.
 
 Less related but of interest, similar philosophy to what Ciro wants, but no explicitly reusable system:
 * http://www.uprtcl.io/

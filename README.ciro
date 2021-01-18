@@ -836,13 +836,10 @@ instead of:
 Reference to a subdirectory:
 \CirodownExample[[
 \x[subdir]
-]]
-
-TODO https://github.com/cirosantilli/cirodown/issues/116
-``
 \x[subdir/h2]
 \x[subdir/notindex]
-``
+]]
+Implemented at: https://github.com/cirosantilli/cirodown/issues/116
 
 Reference to an internal header of another file: \x[h2-in-not-the-readme]. By default, That header ID gets prefixed by the ID of the top header.
 

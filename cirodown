@@ -304,7 +304,7 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
     console.log(message);
     const new_convert_input_options = Object.assign({}, convert_input_options);
     let t0 = performance.now();
-    convert_path(base_path, input_path, options, new_convert_input_options);
+    convert_path(path.join(base_path, input_path), options, new_convert_input_options);
     let t1 = performance.now();
     console.log(`${message} finished in ${t1 - t0} ms`);
     if (new_convert_input_options.had_error) {
@@ -348,8 +348,8 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
  *
  * @return {String}
  */
-function convert_path(base_path, input_path, options, convert_input_options) {
-  let full_path = path.resolve(path.join(base_path, input_path));
+function convert_path(input_path, options, convert_input_options) {
+  let full_path = path.resolve(input_path);
   let new_options = Object.assign({}, options);
   let new_convert_input_options = Object.assign({}, convert_input_options);
   let input = fs.readFileSync(full_path, new_convert_input_options.encoding);
@@ -371,7 +371,11 @@ function convert_path(base_path, input_path, options, convert_input_options) {
     }
   } else {
     toplevel_id = input_path_basename_noext;
-    new_options.toplevel_parent_scope = path_relative_to_cirodown_json;
+    if (path_relative_to_cirodown_json === '') {
+      new_options.toplevel_parent_scope = undefined;
+    } else {
+      new_options.toplevel_parent_scope = path_relative_to_cirodown_json;
+    }
   }
   new_options.toplevel_id = toplevel_id;
   new_convert_input_options.input_path = input_path;
@@ -419,7 +423,7 @@ function convert_path(base_path, input_path, options, convert_input_options) {
         toplevel_id = context.toplevel_ast.id;
       }
       insert_file_stmt.run(
-        path_relative_to_cirodown_json,
+        path.join(path_relative_to_cirodown_json, input_path_parse.base),
         toplevel_id
       );
     })();
@@ -560,8 +564,8 @@ if (commander.helpMacros) {
     let initial_dir;
     if (fs.lstatSync(inputPath).isFile()) {
       curdir = path.dirname(curdir)
-      initial_dir = curdir;
     }
+    initial_dir = curdir;
     while (true) {
       const cirodown_json_path = path.join(curdir, CIRODOWN_JSON_BASENAME);
       if (fs.existsSync(cirodown_json_path)) {
@@ -760,7 +764,7 @@ A link to another file: \\x[and-now-an-include]
     if (!fs.existsSync(inputPath)) {
       cli_error(`input_path does not exist: "${inputPath}"`);
     }
-    let tmpdir;
+    let tmpdir = path.join(cirodown_json_dir, TMP_DIRNAME);
     let publish_dir;
     let publish_out_dir;
     let cmd_options = {
@@ -769,13 +773,11 @@ A link to another file: \\x[and-now-an-include]
     }
     if (input_path_is_file) {
       input_path_is_file = true;
-      tmpdir = TMP_DIRNAME;
     } else {
       if (commander.outfile !== undefined) {
         cli_error(`--outfile given but multiple output files must be generated, maybe you want --outdir?`);
       }
       input_path_is_file = false;
-      tmpdir = path.join(inputPath, TMP_DIRNAME);
       if (publish) {
         publish_dir = path.join(tmpdir, 'publish');
         publish_git_dir = path.join(publish_dir, '.git');
@@ -867,7 +869,7 @@ A link to another file: \\x[and-now-an-include]
         if (publish) {
           cli_error('--publish must take a directory as input, not a file');
         }
-        output = convert_path(path.dirname(inputPath), inputPath, options, convert_input_options);
+        output = convert_path(inputPath, options, convert_input_options);
       } else {
         let actual_input;
         let publish_branch;

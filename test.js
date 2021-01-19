@@ -328,6 +328,14 @@ function assert_error(description, input, line, column, path, options={}) {
 }
 
 // Test the cirodown executable via a separate child process call.
+//
+// The test runs in a clean temporary directory. If the test fails,
+// the directory is cleaned up, so you can list the latest directory
+// with:
+//
+// ls -crtl /tmp
+//
+// and then inspect it interactively to debug.
 function assert_executable(
   description,
   options={}
@@ -2940,7 +2948,7 @@ assert_executable(
       'index.html': [
         "//x:h1[@id='index']",
         "//x:a[@href='subdir/index.html' and text()='link to subdir']",
-        "//x:a[@href='subdir/index.html#h2' and text()='link to subdir index h2']",
+        "//x:a[@href='subdir/index.html#index-h2' and text()='link to subdir index h2']",
         "//x:a[@href='subdir/notindex.html' and text()='link to subdir notindex']",
         "//x:a[@href='subdir/notindex.html#notindex-h2' and text()='link to subdir notindex h2']",
       ],

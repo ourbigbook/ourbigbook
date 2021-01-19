@@ -77,8 +77,9 @@ class AstNode {
     // the information. // But it will require a large hard refactor... lazy.
     this.id = options.id;
 
-    // Current running scope. This is inherited from the scope of the parent element.
-    // An element with {scope} set does not get this option set, only its children do.
+    // Current running scope. This is inherited from the scope of the ancestor headers.
+    // An element with {scope} set does not get this option set (except if due to ancestors),
+    // only its children do.
     this.scope = options.scope;
 
     // For elements that are of AstType.PLAINTEXT.
@@ -2158,7 +2159,8 @@ function convert_init_context(options={}, extra_returns={}) {
   // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
   if (!('toplevel_id' in options)) { options.toplevel_id = undefined; }
   if (!('toplevel_has_scope' in options)) {
-    // Set for files in subdirectories. Means that the toplevel header has {scope} set.
+    // Set for index files in subdirectories. Is equivalent to
+    // adding a {scope} to the toplevel header.
     options.toplevel_has_scope = false;
   }
   if (!('toplevel_parent_scope' in options)) {
@@ -2312,17 +2314,9 @@ function html_convert_attrs_id(
 ) {
   let id = ast.id;
   if (id !== undefined) {
-    if (context.toplevel_ast !== undefined) {
-      if (ast.id === context.toplevel_ast.id) {
-        if (ast.scope !== undefined) {
-          id = id.substr(ast.scope.length + 1);
-        }
-      } else {
-        id = remove_toplevel_scope(id, context.toplevel_ast, context);
-      }
-    }
     custom_args[Macro.ID_ARGUMENT_NAME] = [
-        new PlaintextAstNode(ast.source_location, id),
+        new PlaintextAstNode(ast.source_location,
+          remove_toplevel_scope(id, context.toplevel_ast, context)),
     ];
   }
   return html_convert_attrs(ast, context, arg_names, custom_args);
@@ -3121,7 +3115,7 @@ function parse(tokens, options, context, extra_returns={}) {
         if (is_first_header) {
           ast.id = options.toplevel_id;
           if (options.toplevel_has_scope) {
-            ast.validation_output.scope.boolean = true
+            ast.validation_output.scope.boolean = true;
           }
           if (options.toplevel_parent_scope !== undefined) {
             ast.scope = options.toplevel_parent_scope;
@@ -3844,7 +3838,17 @@ function protocol_is_known(src) {
 
 // https://cirosantilli.com/cirodown#scope
 function remove_toplevel_scope(id, toplevel_ast, context) {
-  return id.substr(calculate_scope_length(toplevel_ast, context));
+  if (
+    toplevel_ast !== undefined &&
+    id === toplevel_ast.id
+  ) {
+    if (toplevel_ast.scope !== undefined) {
+      return id.substr(toplevel_ast.scope.length + 1);
+    }
+    return id;
+  } else {
+    return id.substr(calculate_scope_length(toplevel_ast, context));
+  }
 }
 
 // https://cirosantilli.com/cirodown#index-files
@@ -4068,6 +4072,7 @@ function x_href(target_id_ast, context) {
   return ret;
 }
 
+/* This is the centerpiece of x href calculation! */
 function x_href_parts(target_id_ast, context) {
   if (target_id_ast.macro_name === Macro.TOC_MACRO_NAME) {
     // Otherwise, split header ToCs would link to the toplevel source ToC,

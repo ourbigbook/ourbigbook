@@ -836,8 +836,12 @@ instead of:
 Reference to a subdirectory:
 \CirodownExample[[
 \x[subdir]
+
 \x[subdir/h2]
+
 \x[subdir/notindex]
+
+\x[subdir/notindex-h2]
 ]]
 Implemented at: https://github.com/cirosantilli/cirodown/issues/116
 
@@ -1257,6 +1261,8 @@ Here Cirodown:
 
 Putting files in subdirectories of the build has the same effect as adding a \x[scope] to their top level header.
 
+Notably, all headers inside that directory get the directory prepended to their IDs.
+
 The toplevel directory is determined as described at: \x[the-toplevel-index-file].
 
 ==== Header `scope` argument of toplevel headers
@@ -1398,12 +1404,7 @@ This is what they actually render as:
 \Include[not-readme-2]
 \Include[not-readme-with-scope]
 \Include[subdir]
-
-TODO https://github.com/cirosantilli/cirodown/issues/116
-
-``
 \Include[subdir/notindex]
-``
 
 === Skipping header levels
 

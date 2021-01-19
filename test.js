@@ -1564,13 +1564,18 @@ assert_convert_ast('cross reference to non-included header in another file',
     a('P', [a('x', undefined, {href: [t('notindex')]})]),
     a('P', [a('x', undefined, {href: [t('bb')]})]),
     a('P', [a('x', undefined, {href: [t('include-two-levels')]})]),
+    a('P', [a('x', undefined, {href: [t('gg')]})]),
+    a('P', [a('x', [t('image bb 1')], {href: [t('image-bb')]})]),
+    // TODO: to enable this, we have to also update the test infrastructure to also pass:
+    // new_options.toplevel_has_scope = true;
+    // new_options.toplevel_parent_scope = undefined;
+    // like ./cirodown does from the CLI.
+    //
     //\\x[include-two-levels-subdir]
     //
     //\\x[include-two-levels-subdir/h2]
     //a('P', [a('x', undefined, {href: [t('include-two-levels-subdir')]})]),
     //a('P', [a('x', undefined, {href: [t('include-two-levels-subdir/h2')]})]),
-    a('P', [a('x', undefined, {href: [t('gg')]})]),
-    a('P', [a('x', [t('image bb 1')], {href: [t('image-bb')]})]),
     a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('bb')]}),
     a('P', [a('x', [t('notindex2')], {href: [t('notindex')]})]),
@@ -2892,8 +2897,16 @@ assert_executable(
 \\x[toplevel-scope]
 
 \\x[toplevel-scope/toplevel-scope-h2]
+
+\\x[subdir]
+
+\\x[subdir/subdir-index-h2]
+
+\\x[subdir/notindex]
+
+\\x[subdir/subdir-notindex-h2]
 `,
-      'notindex.ciro': `= Notindex\n`,
+      'notindex.ciro': `= Notindex`,
       'toplevel-scope.ciro': `= Toplevel scope
 {scope}
 
@@ -2903,17 +2916,25 @@ assert_executable(
 
 == Subdir index h2
 `,
-      'subdir/notindex.ciro': `= Subdir notindex\n`,
+      'subdir/notindex.ciro': `= Subdir notindex
+
+== Subdir notindex h2
+`,
       'cirodown.json': `{}\n`,
     },
     expect_filesystem_xpath: {
       'index.html': ["//x:h1[@id='index']"],
-      'notindex.html': ["//x:h1[@id='notindex']"],
+      'notindex.html': [
+        "//x:h1[@id='notindex']"
+      ],
       'subdir/index.html': [
         "//x:h1[@id='subdir']",
-        "//x:h2[@id='subdir/subdir-index-h2']",
+        "//x:h2[@id='subdir-index-h2']",
       ],
-      'subdir/notindex.html': ["//x:h1[@id='notindex']"],
+      'subdir/notindex.html': [
+        "//x:h1[@id='notindex']",
+        "//x:h2[@id='subdir-notindex-h2']",
+      ]
     }
   }
 );

@@ -438,7 +438,7 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
       } else {
         // Otherwise, just copy the file over if needed.
         const output_path = output_path_noext + input_path_parse.ext;
-        if (output_path !== input_path) {
+        if (output_path !== path.resolve(input_path)) {
           console.log(`copy ${input_path}`);
           fs.copyFileSync(input_path, output_path);
         }

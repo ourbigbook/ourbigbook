@@ -293,8 +293,10 @@ function convert_path(input_path, options, convert_input_options) {
   let input_path_parse = path.parse(full_path);
   let input_path_basename_noext = input_path_parse.name;
   let path_relative_to_cirodown_json;
+  let input_path_relative_to_cirodown_json;
   if (options.cirodown_json_dir !== undefined) {
     path_relative_to_cirodown_json = path.relative(options.cirodown_json_dir, input_path_parse.dir);
+    input_path_relative_to_cirodown_json = path.join(path_relative_to_cirodown_json, input_path_parse.base);
   }
   let toplevel_id;
   if (cirodown.INDEX_FILE_BASENAMES_NOEXT.has(input_path_basename_noext)) {
@@ -322,7 +324,7 @@ function convert_path(input_path, options, convert_input_options) {
     new_options.template_vars.root_relpath = root_relpath;
   }
   new_options.toplevel_id = toplevel_id;
-  new_convert_input_options.input_path = input_path;
+  new_convert_input_options.input_path = input_path_relative_to_cirodown_json;
   let output = convert_input(input, new_options, new_convert_input_options);
   const context = new_convert_input_options.extra_returns.context;
   if (convert_input_options.log.headers) {
@@ -367,7 +369,7 @@ function convert_path(input_path, options, convert_input_options) {
         toplevel_id = context.toplevel_ast.id;
       }
       insert_file_stmt.run(
-        path.join(path_relative_to_cirodown_json, input_path_parse.base),
+        input_path_relative_to_cirodown_json,
         toplevel_id
       );
     })();

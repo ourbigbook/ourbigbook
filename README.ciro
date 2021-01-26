@@ -3359,6 +3359,8 @@ would produce the following output files:
 * in `hello-split.html`, it points to the section the separate split `h1-1.html` output file
 The same applies to \x[internal-cross-file-references] when there are multiple input files.
 
+`--split-headers` is implied by \x[publish]: the published website will automatically get the split pages. There is no way to turn it off currently. A pull request would be accepted, especially if it offers a \x[cirodown-json] way to do it. Maybe it would be nice to have a more generalized way of setting any CLI option equivalent from the `cirodown.json`, and an option `cli` vs `cli-publish` so that `cli-publish` is publish only. Just lazy for now/not enough pressing use case met.
+
 = `--watch`
 {parent=cirodown-executable-options}
 

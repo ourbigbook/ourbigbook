@@ -17,6 +17,10 @@ const pluralize = require('pluralize');
 
 // consts used by classes.
 const UNICODE_LINK = String.fromCodePoint(0x1F517);
+const NOSPLIT_MARKER = '\u{1F5D6} nosplit';
+exports.NOSPLIT_MARKER = NOSPLIT_MARKER;
+const SPLIT_MARKER = '\u{1F5D7} split';
+exports.SPLIT_MARKER = SPLIT_MARKER;
 
 class AstNode {
   /**
@@ -4827,9 +4831,9 @@ const DEFAULT_MACRO_LIST = [
         // Link to the other split/non-split version.
         let content;
         if (context.in_split_headers) {
-          content = 'nosplit';
+          content = NOSPLIT_MARKER;
         } else {
-          content = 'split';
+          content = SPLIT_MARKER;
         }
         let other_context = clone_and_set(context, 'to_split_headers', !context.in_split_headers);
         let other_href = x_href_attr(ast, other_context);

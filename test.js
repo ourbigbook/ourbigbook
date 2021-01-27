@@ -2951,6 +2951,8 @@ const complex_filesystem = {
 
 \\x[subdir/notindex-h2][link to subdir notindex h2]
 
+\\x[included-by-index][link to included by index]
+
 $$
 \\newcommand{\\mycmd}[0]{hello}
 $$
@@ -3027,7 +3029,8 @@ assert_executable(
 
         // ToC entries of includes point directly to the separate file, not to the plceholder header.
         // e.g. `included-by-index.html` instead of `#included-by-index`.
-        //"//*[@id='toc']//x:a[@href='included-by-index.html' and text()='h1 2']",
+        "//x:a[@href='included-by-index.html' and text()='link to included by index']",
+        "//*[@id='toc']//x:a[@href='included-by-index.html' and text()='Included by index']",
 
         "//x:h2[@id='included-by-index']",
         "//x:h2[@id='index-scope']//x:a[@href='index-scope.html' and text()='split']",
@@ -3035,7 +3038,10 @@ assert_executable(
       ],
       'index-split.html': [
         // ToC entries of includes point directly to the separate file.
-        //"//*[@id='toc']//x:a[@href='included-by-index.html' and text()='h1 2']",
+        "//*[@id='toc']//x:a[@href='included-by-index-split.html' and text()='Included by index']",
+        // TODO This is more correct with the `1. `. Maybe wait for https://github.com/cirosantilli/cirodown/issues/126
+        // to make sure we don't have to rewrite everything.
+        //"//*[@id='toc']//x:a[@href='included-by-index-split.html' and text()='1. Included by index']",
       ],
       'notindex.html': [
         "//x:h1[@id='notindex']",

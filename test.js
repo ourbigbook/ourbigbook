@@ -2935,6 +2935,8 @@ const complex_filesystem = {
 
 \\x[notindex][link to notindex]
 
+\\x[h2]{full}
+
 \\x[notindex-h2][link to notindex h2]
 
 \\x[has-split-suffix][link to has split suffix]
@@ -2968,6 +2970,26 @@ $$
 $$
 \\mycmd
 $$
+
+== h2 2
+
+\\x[h2]{full}
+
+\\x[h4-3-2-1]{full}
+
+=== h3 2 1
+
+\\x[h4-3-2-1]{full}
+
+== h2 3
+
+\\x[h4-3-2-1]{full}
+
+=== h3 3 1
+
+=== h3 3 2
+
+==== h4 3 2 1
 
 == Index scope
 {scope}
@@ -3042,14 +3064,31 @@ assert_executable(
         `//x:h3[@id='index-scope/index-scope-2']//x:a[@href='index-scope/index-scope-2.html' and text()='${cirodown.SPLIT_MARKER}']`,
       ],
       'index-split.html': [
+        // Full links between split header pages have correct numbering.
+        "//x:div[@class='p']//x:a[@href='h2.html' and text()='Section 2. \"h2\"']",
+
+        // CirodownExample renders in split header.
+        "//x:blockquote[text()='A Cirodown example!']",
+
         // ToC entries of includes point directly to the separate file.
         "//*[@id='toc']//x:a[@href='included-by-index-split.html' and text()='Included by index']",
         // TODO This is more correct with the `1. `. Maybe wait for https://github.com/cirosantilli/cirodown/issues/126
         // to make sure we don't have to rewrite everything.
         //"//*[@id='toc']//x:a[@href='included-by-index-split.html' and text()='1. Included by index']",
-
-        // CirodownExample renders in split header.
-        "//x:blockquote[text()='A Cirodown example!']",
+      ],
+      'h2-2.html': [
+        // These headers are not children of the current toplevel header.
+        // Therefore, they do not get a number like "Section 2.".
+        "//x:div[@class='p']//x:a[@href='h2.html' and text()='Section \"h2\"']",
+        "//x:div[@class='p']//x:a[@href='h4-3-2-1.html' and text()='Section \"h4 3 2 1\"']",
+      ],
+      'h3-2-1.html': [
+        // Not a child of the current toplevel either.
+        "//x:div[@class='p']//x:a[@href='h4-3-2-1.html' and text()='Section \"h4 3 2 1\"']",
+      ],
+      'h2-3.html': [
+        // This one is under the current tree, so it shows fully.
+        "//x:div[@class='p']//x:a[@href='h4-3-2-1.html' and text()='Section 2.1. \"h4 3 2 1\"']",
       ],
       'notindex.html': [
         "//x:h1[@id='notindex']",

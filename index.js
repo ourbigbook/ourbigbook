@@ -879,6 +879,7 @@ class Tokenizer {
     this.extra_returns.errors = [];
     this.i = 0;
     this.in_insane_header = false;
+    this.in_escape_insane_link = false;
     this.list_level = 0;
     this.tokens = [];
     this.show_tokenize = show_tokenize;
@@ -1083,13 +1084,22 @@ class Tokenizer {
         } else if (ESCAPABLE_CHARS.has(this.cur_c)) {
           this.consume_plaintext_char();
         } else {
-          let macro_name = this.tokenize_func(char_is_identifier);
-          this.consume_optional_newline();
-          this.push_token(
-            TokenType.MACRO_NAME,
-            macro_name,
-            start_source_location,
-          );
+          // Insane link.
+          for (const known_url_protocol of KNOWN_URL_PROTOCOLS) {
+            if (array_contains_array_at(this.chars, this.i, known_url_protocol)) {
+              this.in_escape_insane_link = true;
+              break;
+            }
+          }
+          if (!this.in_escape_insane_link) {
+            let macro_name = this.tokenize_func(char_is_identifier);
+            this.consume_optional_newline();
+            this.push_token(
+              TokenType.MACRO_NAME,
+              macro_name,
+              start_source_location,
+            );
+          }
         }
       } else if (this.cur_c === START_NAMED_ARGUMENT_CHAR) {
         let source_location = this.source_location.clone();
@@ -1190,42 +1200,52 @@ class Tokenizer {
         let done = false;
 
         // Insane link.
-        let protocol_is_known = false;
-        for (const known_url_protocol of KNOWN_URL_PROTOCOLS) {
-          if (array_contains_array_at(this.chars, this.i, known_url_protocol)) {
-            protocol_is_known = true;
-            break;
-          }
-        }
-        if (protocol_is_known) {
-          this.push_token(TokenType.MACRO_NAME, Macro.LINK_MACRO_NAME);
-          this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
-          let link_text = '';
-          while (this.consume_plaintext_char()) {
+        if (this.in_escape_insane_link) {
+          this.in_escape_insane_link = false;
+        } else {
+          let is_insane_link = false;
+          for (const known_url_protocol of KNOWN_URL_PROTOCOLS) {
             if (
-              this.cur_c == ' ' ||
-              this.cur_c == '\n' ||
-              this.cur_c == START_POSITIONAL_ARGUMENT_CHAR ||
-              this.cur_c == START_NAMED_ARGUMENT_CHAR ||
-              this.cur_c == END_POSITIONAL_ARGUMENT_CHAR ||
-              this.cur_c == END_NAMED_ARGUMENT_CHAR
+              array_contains_array_at(this.chars, this.i, known_url_protocol)
             ) {
-              break;
-            }
-            if (this.cur_c === ESCAPE_CHAR) {
-              this.consume();
+              const pos_char_after = this.i + known_url_protocol.length;
+              if (
+                pos_char_after < this.chars.length &&
+                !INSANE_LINK_END_CHARS.has(this.chars[pos_char_after])
+              ) {
+                is_insane_link = true;
+                break;
+              }
             }
           }
-          this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
-          this.consume_optional_newline_after_argument();
-          done = true;
+          if (is_insane_link) {
+            this.push_token(TokenType.MACRO_NAME, Macro.LINK_MACRO_NAME);
+            this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
+            let link_text = '';
+            while (this.consume_plaintext_char()) {
+              if (INSANE_LINK_END_CHARS.has(this.cur_c)) {
+                break;
+              }
+              if (this.cur_c === ESCAPE_CHAR) {
+                this.consume();
+              }
+            }
+            this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
+            this.consume_optional_newline_after_argument();
+            done = true;
+          }
         }
 
         // Insane lists and tables.
-        if (!done && (
-          this.i === 0 ||
-          this.cur_c === '\n' ||
-          this.tokens[this.tokens.length - 1].type === TokenType.PARAGRAPH)
+        if (
+          !done && (
+            this.i === 0 ||
+            this.cur_c === '\n' ||
+            (
+              this.tokens.length > 0 &&
+              this.tokens[this.tokens.length - 1].type === TokenType.PARAGRAPH
+            )
+          )
         ) {
           let i = this.i;
           if (this.cur_c === '\n') {
@@ -4446,6 +4466,8 @@ function x_text(ast, context, options={}) {
   return ret;
 }
 
+// consts
+
 // Dynamic website stuff.
 const AT_MENTION_CHAR = '@';
 const HASHTAG_CHAR = '#';
@@ -4491,6 +4513,14 @@ const ESCAPABLE_CHARS = new Set([
   END_NAMED_ARGUMENT_CHAR,
   INSANE_LIST_START[0],
   INSANE_TD_START[0],
+]);
+const INSANE_LINK_END_CHARS = new Set([
+  ' ',
+  '\n',
+  START_POSITIONAL_ARGUMENT_CHAR,
+  START_NAMED_ARGUMENT_CHAR,
+  END_POSITIONAL_ARGUMENT_CHAR,
+  END_NAMED_ARGUMENT_CHAR,
 ]);
 const INSANE_STARTS_TO_MACRO_NAME = {
   [INSANE_LIST_START]:  Macro.LIST_MACRO_NAME,
@@ -4679,7 +4709,12 @@ const MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS = [
   }),
 ];
 // https://cirosantilli.com/cirodown#known-url-protocols
-const KNOWN_URL_PROTOCOLS = new Set(['http://', 'https://']);
+const KNOWN_URL_PROTOCOL_NAMES = ['http', 'https'];
+
+const KNOWN_URL_PROTOCOLS = new Set()
+for (const name of KNOWN_URL_PROTOCOL_NAMES) {
+  KNOWN_URL_PROTOCOLS.add(name + '://');
+}
 const URL_SEP = '/';
 exports.URL_SEP = URL_SEP;
 const MACRO_WITH_MEDIA_PROVIDER = new Set(['image', 'video']);

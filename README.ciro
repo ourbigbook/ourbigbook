@@ -1,6 +1,6 @@
 = Cirodown
 
-A Markup language to write complex structured statically generated HTML wikis/books that is \x[saner] and more powerful than Markdown and Asciidoctor, with reference implementation in JavaScript.
+A Markup language to write complex structured statically generated HTML wikis/books that is \x[saner] and more \x[design-goals][powerful] than Markdown and Asciidoctor, with reference implementation in JavaScript.
 
 * \x[design-goals]{full}: feature overview
 * https://github.com/cirosantilli/cirodown[]: Cirodown source code
@@ -100,6 +100,7 @@ Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally pu
   * cross file configuration files to factor out common page parts like headers and footers
 * advanced header/ID related features:
   * \x[scope]
+  * tags are regular headers: \x[x-child-argument]
 * is written in JavaScript and therefore runs natively on the browser to allow live previews
 * helps you with the publishing:
   * `./cirodown --publish` helper for single command publishing to the configured target (default GitHub pages): \x[publish]
@@ -1417,7 +1418,39 @@ then it would instead be:
 notindex-asdf.ciro
 ``
 
-=== Header `wiki` argument
+= Header `synonym` argument
+{id=synonym}
+{parent=headers}
+
+TODO implement: https://github.com/cirosantilli/cirodown/issues/114
+
+This option is similar to \x[the-title2-argument] but it additionally:
+* creates a new ID that you can refer to, and renders it with the alternate chosen title
+* the rendered ID on \x[internal-cross-references] is the same as what it is a synonym for
+* the synonym header is not rendered at all, including in the \x[table-of-contents]
+
+Example:
+``
+= Parent
+
+== GNU Debugger
+{c}
+
+= GDB
+{c}
+{synonym}
+
+I like to say \x[gdb] because it is shorter than \x[gnu-debugger].
+``
+renders something like:
+``
+= GNU Debugger
+
+I like to say \a[#gnu-debugger][GDB] because it is shorter than \x[#gnu-debugger][GNU Debugger].
+``
+
+= Header `wiki` argument
+{parent=headers}
 
 If given, show a link to the Wikipedia article that corresponds to the header.
 
@@ -3794,6 +3827,14 @@ Source files:
 
 Generated files:
 * `cirodown.js` packaged http://browserify.org[browserify] JavaScript for browser usage, generated with `npm run browserify`
+
+=== Conversion process overview
+
+Conversion follows the following steps:
+* tokenizer
+* parser
+* post processing: takes parser output, and modifies the parse tree to achieve several functionalities
+* render (AKA conversion). Currently has to be done multiple times to support tags via \x[x-child-argument] which only gets indexed at render time
 
 ==== `build-sass`
 

@@ -1440,6 +1440,7 @@ This option is similar to \x[the-title2-argument] but it additionally:
 * creates a new ID that you can refer to, and renders it with the alternate chosen title
 * the rendered ID on \x[internal-cross-references] is the same as what it is a synonym for
 * the synonym header is not rendered at all, including in the \x[table-of-contents]
+* when using \x[split-headers], a redirect output file is generated from the synonym to the main ID. This is generally a superior redirection alternative to using \x[redirects] from \x[cirodown-json]
 
 Example:
 ``
@@ -1460,6 +1461,11 @@ renders something like:
 
 I like to say \a[#gnu-debugger][GDB] because it is shorter than \x[#gnu-debugger][GNU Debugger].
 ``
+Furthermore, if `--split-headers` is used, a nother file is generated:
+``
+gdb.html
+``
+which contains a redirection from `gdb.html` to `gnu-debugger.html`.
 
 = The `title2` argument of a synonym header
 {parent=synonym}
@@ -3737,6 +3743,8 @@ If the `prepublish` script returns with a non-zero exit value, the publish is ab
 
 = `redirects`
 {parent=cirodown-json}
+
+You are generally better using the newer \x[synonym] feature instead of `redirects`, as that concentrates more header specific data in the .ciro files it belongs.
 
 Create HTML redirects from \x[the-toplevel-header][toplevel headers] to arbitrary IDs, for example:
 ``

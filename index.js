@@ -146,6 +146,9 @@ class AstNode {
     // Includes under this header.
     this.includes = [];
 
+    // Array of AstNode of synonym headers of this one that have title2 set.
+    this.title2s = []
+
     if (this.node_type === AstType.PLAINTEXT) {
       this.word_count = this.text.split(/\s+/).filter(i => i).length;
     } else {
@@ -3321,6 +3324,13 @@ function parse(tokens, options, context, extra_returns={}) {
             parse_error(state, message, ast.args.level.source_location);
           }
           ast.synonym = include_options.cur_header.id;
+          if (ast.args.title2 !== undefined) {
+            if (ast.args.title2.length > 0) {
+              const message = `the title2 of synonym headers must be empty`;
+              parse_error(state, message, ast.args.level.source_location);
+            }
+            include_options.cur_header.title2s.push(ast);
+          }
         } else {
           prev_header = include_options.cur_header;
           include_options.cur_header = ast;
@@ -4694,17 +4704,23 @@ function x_text(ast, context, options={}) {
       const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
       const title2_arg = ast.args[Macro.TITLE2_ARGUMENT_NAME];
       const show_disambiguate = (disambiguate_arg !== undefined) && macro.options.show_disambiguate;
-      if (show_disambiguate || title2_arg !== undefined) {
+      if (
+        show_disambiguate ||
+        title2_arg !== undefined ||
+        ast.title2s.length > 0
+      ) {
         ret += ' (';
-        if (title2_arg !== undefined) {
-          ret += convert_arg(title2_arg, context);
-        }
+        const title2_renders = [];
         if (show_disambiguate) {
-          if (title2_arg !== undefined) {
-            ret += ', ';
-          }
-          ret += convert_arg(disambiguate_arg, context);
+          title2_renders.push(convert_arg(disambiguate_arg, context));
         }
+        if (title2_arg !== undefined) {
+          title2_renders.push(convert_arg(title2_arg, context));
+        }
+        for (const title2ast of ast.title2s) {
+          title2_renders.push(convert_arg(title2ast.args.title, context));
+        }
+        ret += title2_renders.join(', ');
         ret += ')';
       }
       if (options.quote) {

@@ -1365,6 +1365,31 @@ Some quick interactive cross file link tests:
 * \x[not-readme-with-scope/h2]
 * \x[not-readme-with-scope/image-my-image]
 
+= Header `splitDefault` argument
+{id=splitdefault}
+{parent=header}
+
+By default, when using \x[split-headers], Cirodown:
+* renders `README.ciro` as `index.html` and `split.html`
+* \x[internal-cross-references] from split headers always go to split headers, and those from non-split headers always go to split headers
+
+One big problem that this was causing however is that Ciro likes to have a humongous README.ciro with a lot of random small stuff, and only split very important tutorials out.
+
+This would lead the root page of the website to be annoyingly slow, even in browsers that support `iframe loading="lazy"` to not load a million YouTube videos at once.
+
+`splitDefault` was introduced to improve this. For example, if you set `splitDefault=split` on \x[the-toplevel-header] of `README.ciro` as in:
+``
+= My toplevel header
+{splitDefault=split}
+``
+now the split version of the page will be the default one. This means that:
+* `index.html` now contains the split page
+* `nosplit.html` containst he non-split page
+* internal cross references check if the target header ID defaults to split or non-split:
+  * if the header defaults to split, the internal cross reference always links to the split version
+
+This feature was implemented at: https://github.com/cirosantilli/cirodown/issues/131
+
 = Header `splitSuffix` argument
 {id=splitsuffix}
 {parent=header}

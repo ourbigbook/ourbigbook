@@ -73,6 +73,9 @@ class AstNode {
       // The header tree is currently not even connected via arguments.
       options.parent_node = undefined;
     }
+    if (!('split_default' in options)) {
+      options.split_default = false;
+    }
     if (!('synonym' in options)) {
       options.synonym = undefined;
     }
@@ -113,6 +116,7 @@ class AstNode {
     this.parent_node = options.parent_node;
     // AstArgument
     this.parent_argument = undefined;
+    this.split_default = options.split_default;
     // {HeaderTreeNode} that points to the element.
     // This is used for both headers and non headers:
     // the only difference is that non-headers are not connected as
@@ -342,6 +346,7 @@ class AstNode {
         is_first_header_in_input_file: json.is_first_header_in_input_file,
         header_graph_node_parent_id: json.header_graph_node_parent_id,
         scope: json.scope,
+        split_default: json.split_default,
         synonym: json.synonym,
         word_count: json.word_count,
       }
@@ -380,11 +385,12 @@ class AstNode {
       scope:      this.scope,
       source_location: this.source_location,
       text:       this.text,
-      args:       this.args,
       first_toplevel_child: this.first_toplevel_child,
       is_first_header_in_input_file: this.is_first_header_in_input_file,
+      split_default: this.split_default,
       synonym:    this.synonym,
       word_count: this.word_count,
+      args:       this.args,
     }
     if (
       this.header_graph_node !== undefined &&
@@ -2056,6 +2062,21 @@ function convert(
     if (context.options.log['split-headers']) {
       console.error('split-headers non-split: ' + context.options.input_path);
     }
+
+    // For non-split header toplevel conversion.
+    let outpath;
+    if (context.options.outfile !== undefined) {
+      outpath = context.options.outfile;
+    } else if (context.options.input_path !== undefined) {
+      outpath = output_path(
+        context.options.input_path,
+        context.options.toplevel_id,
+        context
+      )[0];
+    }
+    context.toplevel_output_path = outpath;
+
+    // First render.
     context.extra_returns.rendered_outputs = {};
     extra_returns.debug_perf.render_pre = globals.performance.now();
     output = ast.convert(context);
@@ -2393,14 +2414,6 @@ function convert_init_context(options={}, extra_returns={}) {
     synonym_headers: new Set(),
   };
 
-  // Non-split header toplevel conversion.
-  let outpath;
-  if (context.options.outfile !== undefined) {
-    outpath = context.options.outfile;
-  } else if (context.options.input_path !== undefined) {
-    outpath = output_path(context.options.input_path, context.options.toplevel_id, context)[0];
-  }
-  context.toplevel_output_path = outpath;
   return context;
 }
 
@@ -2931,14 +2944,25 @@ function output_path_from_ast(ast, context) {
   return output_path(ast.source_location.path, ast.id, context, split_suffix);
 }
 
-/* Return dirname and basename without extension of the
+/* This is the centerpiece of path calculation. It determines where a given header
+ * will land considering notably:.
+ *
+ * * README.ciro -> index.ciro renaming
+ * * split header stuff
+ *
+ * Note that the links need to do additional processing to determine this.
+ *
+ * Return an array [dirname, basename without extension] of the
  * path to where an AST gets rendered to. */
 function output_path_parts(input_path, id, context, split_suffix=undefined) {
   let ret = '';
   let custom_split_suffix;
   const [dirname, basename] = path_split(input_path, context.options.path_sep);
   const renamed_basename_noext = rename_basename(noext(basename));
-  if (is_to_split_headers(context)) {
+  if (id === undefined) {
+    // Possible on toplevel.
+    return [dirname, renamed_basename_noext];
+  } else {
     const ast = context.id_provider.get(id, context);
     // We are the first header, or something that comes before it.
     let first_header_or_before = false;
@@ -2979,7 +3003,11 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     }
     if (first_header_or_before || split_suffix !== undefined) {
       if (split_suffix === undefined || split_suffix === '') {
-        split_suffix = 'split';
+        if (ast.split_default) {
+          split_suffix = 'split';
+        } else {
+          split_suffix = 'nosplit';
+        }
       }
       if (basename_ret !== '') {
         basename_ret += '-';
@@ -2987,10 +3015,6 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
       basename_ret += split_suffix;
     }
     return [dirname_ret, basename_ret];
-  } else {
-    // Non-split headers, so things are simple, the output path is
-    // easily determined from the input path.
-    return [dirname, renamed_basename_noext];
   }
 }
 exports.output_path_parts = output_path_parts;
@@ -3359,6 +3383,15 @@ function parse(tokens, options, context, extra_returns={}) {
           prev_header = include_options.cur_header;
           include_options.cur_header = ast;
           cur_header_level = header_level + options.h_parse_level_offset;;
+        }
+
+        // splitDefault propagation to children.
+        if (ast.validation_output.synonym.given.splitDefault) {
+          ast.split_default = ast.validation_output.synonym.boolean.splitDefault;
+        } else if (is_first_header) {
+          ast.split_default = true;
+        } else {
+          ast.split_default = include_options.cur_header.split_default;
         }
         let parent_tree_node_error = false;
         let parent_id;
@@ -4461,8 +4494,8 @@ function x_href(target_id_ast, context) {
 // id='subdir/subdir-h2'     -> ['subdir', 'subdir-h2']
 // id='subdir/notindex'      -> ['subdir', 'notindex']
 // id='subdir/notindex-h2'   -> ['subdir', 'notindex-h2']
-function is_to_split_headers(context) {
-  return (context.to_split_headers === undefined && context.in_split_headers) ||
+function is_to_split_headers(ast, context) {
+  return (context.to_split_headers === undefined && ast.split_default) ||
          (context.to_split_headers !== undefined && context.to_split_headers);
 }
 
@@ -4532,7 +4565,7 @@ function x_href_parts(target_id_ast, context) {
   }
 
   // Fragment
-  const to_split_headers = is_to_split_headers(context);
+  const to_split_headers = is_to_split_headers(target_id_ast, context);
   let fragment;
   if (
     // Linking to a toplevel ID.
@@ -4656,7 +4689,7 @@ function x_text(ast, context, options={}) {
         // When in split headers, numbers are only added to headers that
         // are descendants of the toplevel header, thus matching the current ToC.
         // The numbers don't make much sense for other headers.
-        !is_to_split_headers(context) ||
+        !is_to_split_headers(ast, context) ||
         ast.macro_name !== Macro.HEADER_MACRO_NAME ||
         ast.is_header_descendant(context.toplevel_ast, context)
       )
@@ -5322,6 +5355,10 @@ const DEFAULT_MACRO_LIST = [
         }),
         new MacroArgument({
           name: 'scope',
+          boolean: true,
+        }),
+        new MacroArgument({
+          name: 'splitDefault',
           boolean: true,
         }),
         new MacroArgument({

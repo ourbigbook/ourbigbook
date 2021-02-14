@@ -3453,6 +3453,8 @@ assert_executable(
 
 \\x[notindex-h2][toplevel to notindex h2]
 
+\\x[my-image-h2][toplevel to my image h2]
+
 == h2
 
 \\x[toplevel][h2 to toplevel]
@@ -3462,6 +3464,10 @@ assert_executable(
 \\x[notindex][h2 to notindex]
 
 \\x[notindex-h2][h2 to notindex h2]
+
+\\x[my-image-h2][h2 to my image h2]
+
+\\Image[img.jpg]{tltle=My image h2}
 `,
       'notindex.ciro': `= Notindex
 
@@ -3473,6 +3479,8 @@ assert_executable(
 
 \\x[notindex-h2][notindex to notindex h2]
 
+\\x[my-image-h2][notindex to my image h2]
+
 == Notindex h2
 
 \\x[toplevel][notindex h2 to toplevel]
@@ -3482,6 +3490,8 @@ assert_executable(
 \\x[notindex][notindex h2 to notindex]
 
 \\x[notindex-h2][notindex h2 to notindex h2]
+
+\\x[my-image-h2][notindex to my image h2]
 `,
     },
     expect_filesystem_xpath: {
@@ -3493,6 +3503,7 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='toplevel to notindex']",
         // A child of a nosplit also becomes nosplit by default.
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='toplevel to notindex h2']",
+        "//x:div[@class='p']//x:a[@href='h2#image-my-image-h2' and text()='toplevel to my image h2']",
       ],
       'nosplit.html': [
         "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
@@ -3501,12 +3512,22 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='#h2' and text()='toplevel to h2']",
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='toplevel to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='toplevel to notindex h2']",
+
+        "//x:div[@class='p']//x:a[@href='' and text()='h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='#h2' and text()='h2 to h2']",
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='h2 to notindex']",
+        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
+
+        // Images.
+        "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='toplevel to my image h2']",
+        "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
       ],
       'h2.html': [
         "//x:div[@class='p']//x:a[@href='index.html' and text()='h2 to toplevel']",
         "//x:div[@class='p']//x:a[@href='' and text()='h2 to h2']",
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='h2 to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
+        "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
       ],
       'notindex.html': [
         // Link so the split one of index because that's the default of that page.
@@ -3520,6 +3541,10 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex h2 to h2']",
         "//x:div[@class='p']//x:a[@href='' and text()='notindex h2 to notindex']",
         "//x:div[@class='p']//x:a[@href='#notindex-h2' and text()='notindex h2 to notindex h2']",
+
+        // Images.
+        "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='notindex to my image h2']",
+        "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='notindex h2 to my image h2']",
       ],
       'notindex-split.html': [
         "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to toplevel']",

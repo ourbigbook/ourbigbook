@@ -114,6 +114,8 @@ But alas, as Ciro started implementing and using it, he started to bring some Ma
 
 And so this "degraded" slightly into a language slightly saner than Asciidoctor but with an amazing Node.js implementation that makes it better for book writing and website publishing.
 
+Notably, we hope that our escaping will be a bit saner backslash escapes everything instead of Asciidoctors "different escapes for every case" approach: https://github.com/asciidoctor/asciidoctor/issues/901
+
 But hopefully, having starting from a saner point will still produce a saner end result, e.g. there are sane constructs for every insane one.
 
 It is intended that this will be an acceptable downside as Cirodown will be used primarily large complex content such as books rather than forum posts, and will therefore primarily written either:

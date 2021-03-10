@@ -4174,7 +4174,7 @@ Create a tag to match, push and release the package:
 ``
 git add -u
 t=0.3.1
-git commit -m "$t"
+git commit -m "Version $t"
 git tag -m "$t" "$t"
 git push --follow-tags
 npm publish

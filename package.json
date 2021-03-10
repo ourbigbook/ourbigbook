@@ -4,6 +4,7 @@
   },
   "dependencies": {
     "better-sqlite3": "5.4.3",
+    "china-dictatorship": "0.0.68",
     "chokidar": "3.3.0",
     "commander": "6.2.1",
     "git-url-parse": "11.1.2",

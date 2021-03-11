@@ -2080,7 +2080,7 @@ function convert(
       let outpath;
       if (context.options.input_path !== undefined) {
         let id;
-        if (context.options.toplevel_id === undefined) {
+        if (context.toplevel_id === undefined) {
           const toplevel_header_node = context.header_graph.children[0];
           if (toplevel_header_node === undefined) {
             id = undefined
@@ -2088,8 +2088,9 @@ function convert(
             const toplevel_header_ast = toplevel_header_node.value;
             id = toplevel_header_ast.id;
           }
+          context.toplevel_id = id;
         } else {
-          id = context.options.toplevel_id;
+          id = context.toplevel_id;
         }
         if (id !== undefined) {
           outpath = output_path(
@@ -2247,7 +2248,7 @@ function convert_header(cur_arg_list, context, has_toc) {
       },
       first_ast.source_location,
     );
-    options.toplevel_id = first_ast.id;
+    context.toplevel_id = first_ast.id;
     context.in_split_headers = true;
     // When not in simple header mode, we always have a value-less node, with
     // children with values. Now things are a bit more complicated, because we
@@ -2444,6 +2445,7 @@ function convert_init_context(options={}, extra_returns={}) {
     macros: macro_list_to_macros(),
     options: options,
     synonym_headers: new Set(),
+    toplevel_id: options.toplevel_id,
     toplevel_output_path: options.outfile,
   };
 
@@ -2762,7 +2764,10 @@ function html_katex_convert(ast, context) {
 }
 
 function html_self_link(ast, context) {
-  return x_href_attr(ast, context);
+  return x_href_attr(
+    ast,
+    clone_and_set(context, 'to_split_headers', context.in_split_headers)
+  );
 }
 
 /** https://stackoverflow.com/questions/14313183/javascript-regex-how-do-i-check-if-the-string-is-ascii-only/14313213#14313213 */
@@ -3504,7 +3509,7 @@ function parse(tokens, options, context, extra_returns={}) {
 
         // Create the header tree.
         if (is_first_header) {
-          ast.id = options.toplevel_id;
+          ast.id = context.toplevel_id;
           if (options.toplevel_has_scope) {
             // TODO why isn't the fake argument below enough?
             ast.validation_output.scope.boolean = true;
@@ -4571,7 +4576,7 @@ function x_href_parts(target_id_ast, context) {
   // Linking to the toplevel of the current output path.
   let to_current_toplevel =
       // Linkting to the current output file.
-      target_id_ast.id === context.options.toplevel_id &&
+      target_id_ast.id === context.toplevel_id &&
       // Also requires outputting to the same type of split/nonsplit
       // as the current one.
       context.in_split_headers === to_split_headers
@@ -4585,7 +4590,10 @@ function x_href_parts(target_id_ast, context) {
     context.toplevel_output_path === undefined ||
     (
       !context.in_split_headers &&
-      context.to_split_headers === undefined &&
+      !(
+        context.to_split_headers !== undefined &&
+        context.to_split_headers
+      ) &&
       context.include_path_set.has(target_input_path)
     ) ||
     to_current_toplevel
@@ -4756,10 +4764,7 @@ function x_text(ast, context, options={}) {
         // are descendants of the toplevel header, thus matching the current ToC.
         // The numbers don't make much sense for other headers.
         ast.macro_name !== Macro.HEADER_MACRO_NAME ||
-        (
-          context.in_split_headers &&
-          ast.is_header_descendant(context.toplevel_ast, context)
-        )
+        ast.is_header_descendant(context.toplevel_ast, context)
       )
     ) {
       number = macro.options.get_number(ast, context);

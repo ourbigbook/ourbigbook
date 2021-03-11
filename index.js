@@ -4568,6 +4568,15 @@ function x_href_parts(target_id_ast, context) {
   if (target_id_ast.synonym !== undefined) {
     target_id_ast = context.id_provider.get(target_id_ast.synonym, context);
   }
+  let to_split_headers = is_to_split_headers(target_id_ast, context);
+  // Linking to the toplevel of the current output path.
+  let to_current_toplevel =
+      // Linkting to the current output file.
+      target_id_ast.id === context.options.toplevel_id &&
+      // Also requires outputting to the same type of split/nonsplit
+      // as the current one.
+      context.in_split_headers === to_split_headers
+  ;
 
   // href_path
   let href_path;
@@ -4580,7 +4589,7 @@ function x_href_parts(target_id_ast, context) {
       context.to_split_headers === undefined &&
       context.include_path_set.has(target_input_path)
     ) ||
-    target_id_ast.id === context.options.toplevel_id
+    to_current_toplevel
   ) {
     href_path = '';
   } else {
@@ -4622,13 +4631,12 @@ function x_href_parts(target_id_ast, context) {
   }
 
   // Fragment
-  let to_split_headers = is_to_split_headers(target_id_ast, context);
   if (
     !context.in_split_headers &&
     context.include_path_set.has(target_input_path) &&
     !(context.to_split_headers !== undefined && context.to_split_headers)
   ) {
-    // We are not split headears, and the output is in the current file.
+    // We are not in split headears, and the output is in the current file.
     // Therefore, don't use the split header target no matter what its
     // splitDefault is, use the non-split one.
     to_split_headers = false;
@@ -4642,15 +4650,7 @@ function x_href_parts(target_id_ast, context) {
       target_id_ast.macro_name === Macro.HEADER_MACRO_NAME &&
       to_split_headers
     ) ||
-    // Linking to the toplevel of the current output path.
-    (
-      target_id_ast.id === context.options.toplevel_id &&
-      // Linking from a split header to the corresponding nonsplit one.
-      !(
-        context.to_split_headers !== undefined &&
-        !context.to_split_headers
-      )
-    )
+    to_current_toplevel
   ) {
     // An empty href means the beginning of the page.
     fragment = '';

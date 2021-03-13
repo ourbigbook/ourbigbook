@@ -389,13 +389,13 @@ function assert_executable(
     process.env.PATH = process.cwd() + ':' + process.env.PATH
     for (const [cmd, args] of options.pre_exec) {
       const out = child_process.spawnSync(cmd, args, {cwd: tmpdir});
-      assert.strictEqual(out.status, 0, exec_assert_message(out));
+      assert.strictEqual(out.status, 0, exec_assert_message(out, cmd, args, cwd));
     }
     const out = child_process.spawnSync('cirodown', options.args, {
       cwd: tmpdir,
       input: options.stdin,
     });
-    const assert_msg = exec_assert_message(out);
+    const assert_msg = exec_assert_message(out, 'cirodown', options.args, tmpdir);
     assert.strictEqual(out.status, 0, assert_msg);
     for (const xpath_expr of options.expect_stdout_xpath) {
       assert_xpath_matches(
@@ -570,8 +570,9 @@ hh
   }
 }
 
-function exec_assert_message(out) {
-  return `stdout:
+function exec_assert_message(out, cmd, args, cwd) {
+  return `cmd: cd ${cwd} && ${cmd} ${args.join(' ')}
+stdout:
 ${out.stdout.toString(cirodown_nodejs.ENCODING)}
 
 stderr:
@@ -3576,7 +3577,7 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
 
         // Spilt/nosplit. TODO
-        //`//x:h1[@id='h2']//x:a[@href='nosplit.html#h2' and text()='${cirodown.NOSPLIT_MARKER}']`,
+        `//x:h1[@id='h2']//x:a[@href='nosplit.html#h2' and text()='${cirodown.NOSPLIT_MARKER}']`,
       ],
       'notindex.html': [
         // Link so the split one of index because that's the default of that page.

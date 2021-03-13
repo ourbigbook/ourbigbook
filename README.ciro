@@ -200,8 +200,12 @@ which renders as a single paragraph.
 
 One major advantage of this, is that when writing documentation, you often want to keep lists or code blocks inside a given paragraph, so that it is easy to reference the entire paragraph with an ID. Think for example of paragraphs in the C++ standard.
 
-== Links
-{title2=`\a`}
+= Links
+{parent=cirodown}
+
+= `\a`
+{synonym}
+{title2}
 
 \x[insane-macro-shortcuts][Insane] autolink (link text is the same as the link):
 \CirodownExample[[
@@ -239,7 +243,16 @@ Link with multiple paragraphs inside it:
 paragraphs]
 ]]
 
-=== Insane link parsing rules
+= `\a` `ref` argument
+{parent=links}
+
+Analogous to the \x[x-ref-argument], e.g.:
+\CirodownExample[[
+Trump said this and that.https://en.wikipedia.org/wiki/Donald_Trump_Access_Hollywood_tape#Trump's_responses{ref}https://web.archive.org/web/20161007210105/https://www.donaldjtrump.com/press-releases/statement-from-donald-j.-trump{ref}
+]]
+
+= Insane link parsing rules
+{parent=links}
 
 Insane start at any of the recognized protocols are the ones shown at: \x[known-url-protocols]{full}.
 * `http://`
@@ -297,7 +310,10 @@ This magic can be observed with \x[help-macros] by seeing that the `href` argume
 ``
 
 == Internal cross references
-{title2=`\x`}
+
+= `\x`
+{synonym}
+{title2}
 
 Every macro in Cirodown can have an optional `id` and many also have a reserved `title` property.
 
@@ -313,7 +329,7 @@ An explicit link body can be given just as for regular HTTP \x[links] as:
 See this \x[internal-cross-references][awesome section].
 ]]
 
-= x `child` argument
+= `\x` `child` argument
 {parent=internal-cross-references}
 
 Setting the `child` \x[boolean-named-argument] on a cross reference to a header as in:
@@ -383,7 +399,7 @@ Read this \x[my-id][My title].
 
 A live demo can be seen at: \x[x-child-argument-demo].
 
-= x `child` argument demo
+= `\x` `child` argument demo
 {parent=x-child-argument}
 {scope}
 
@@ -406,7 +422,7 @@ Cute animal:
 * \x[dog]{child}
 * \x[cat]
 
-= x `parent` argument
+= `\x` `parent` argument
 {parent=x-child-argument}
 
 The `parent` argument is exactly like the \x[x-child-argument], but it reverses the direction of the parent/child relation.
@@ -828,6 +844,28 @@ or:
 {id=myimage2}
 {title=\x[myimage1][my content 1].}
 ``
+
+= `\x` `ref` argument
+{parent=internal-cross-references}
+
+The `ref` argument of `\x` marks the link as reference, e.g.:
+``
+Trump said this and that.\x[donald-trump-access-hollywood-tape]{ref}
+
+= Donald Trump Access Hollywood tape
+``
+renders something like:
+``
+Trump said this and that.<a href="donald-trump-access-hollywood-tape">*</a>
+``
+
+This could currently be replicated without `ref` by just using:
+``
+Trump said this and that.\x[donald-trump-access-hollywood-tape][*]
+``
+but later on we might add more precise reference fields like the page of a book or date fetched as Wikipedia supports.
+
+Implemented at: https://github.com/cirosantilli/cirodown/issues/137
 
 = Internal cross file references
 {parent=internal-cross-references}
@@ -2115,7 +2153,7 @@ And as for images, setting `titleFromSrc` automatically calculates a title for y
 {source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
 ]]
 
-=== Video `start` argument
+=== `\Video` `start` argument
 
 The time to start playing the video at in seconds. Works for both `youtube` and non-Youtube videos.
 

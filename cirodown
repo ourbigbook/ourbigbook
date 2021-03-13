@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-debugger;
 
 const child_process = require('child_process');
 const china_dictatorship = require('china-dictatorship');

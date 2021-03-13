@@ -3024,7 +3024,13 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
   let basename_ret;
   const [id_dirname, id_basename] = path_split(id, URL_SEP);
   const to_split_headers = is_to_split_headers(header_ast, context);
-  if (first_header_or_before) {
+  if (
+    first_header_or_before ||
+    (
+      context.to_split_headers !== undefined &&
+      !context.to_split_headers
+    )
+  ) {
     // For toplevel elements in split header mode, we have
     // to take care of index and -split suffix.
     if (renamed_basename_noext === INDEX_BASENAME_NOEXT) {
@@ -3066,6 +3072,10 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     (
       to_split_headers &&
       split_suffix !== undefined
+    ) ||
+    (
+      context.to_split_headers !== undefined &&
+      !context.to_split_headers
     )
   ) {
     if (split_suffix === undefined || split_suffix === '') {
@@ -3081,9 +3091,6 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
       }
       basename_ret += split_suffix;
     }
-  }
-  if (basename_ret === 'undefined-split.html') {
-    asdf
   }
 
   return [dirname_ret, basename_ret];

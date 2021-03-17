@@ -1,6 +1,6 @@
 = Cirodown
 
-A Markup language + static site generator to write complex structured wikis/books/blogs, that is \x[saner] and \x[design-goals][more powerful] than Markdown and Asciidoctor, with reference implementation in JavaScript.
+Markup language + static site generator to write complex structured wikis/books/blogs, that is \x[saner] and \x[design-goals][more powerful] than Markdown and Asciidoctor, with reference implementation in JavaScript.
 
 * \x[design-goals]{full}: feature overview
 * https://github.com/cirosantilli/cirodown[]: Cirodown source code

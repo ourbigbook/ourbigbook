@@ -1,6 +1,6 @@
 = Cirodown
 
-A Markup language to write complex structured statically generated HTML wikis/books that is \x[saner] and more \x[design-goals][powerful] than Markdown and Asciidoctor, with reference implementation in JavaScript.
+A Markup language to write complex structured statically generated HTML wikis/books that is \x[saner] and \x[design-goals][more powerful] than Markdown and Asciidoctor, with reference implementation in JavaScript.
 
 * \x[design-goals]{full}: feature overview
 * https://github.com/cirosantilli/cirodown[]: Cirodown source code
@@ -10,7 +10,8 @@ A Markup language to write complex structured statically generated HTML wikis/bo
 * https://cirosantilli.com[]: showcase demo document with more interesting content, and primary inspiration for Cirodown development
 * https://github.com/cirosantilli/cirosantilli.github.io[]: source of the above showcase document
 
-== Quick start
+= Quick start
+{parent=cirodown}
 
 Live in-browser demo: https://cirosantilli.com/cirodown/editor
 
@@ -81,32 +82,41 @@ npm unlink
 rm node_modules/cirodown
 ``
 
-== Design goals
+= Design goals
+{parent=cirodown}
 
 Cirodown is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
 
-Cirodown aims to be the ultimate LaTeX "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation), supporting out of the box feature such as:
-* \x[internal-cross-references][references] to \x[header]{p}, \x[image]{p}, etc. with amazing \x[error-reporting][error checking and reporting]: never break internal links without knoing again, and quickly find out what broke when you do
+Cirodown aims to be the ultimate \x[latex-output-format][LaTeX] "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation).
+
+= Features
+{parent=design-goals}
+
+* \x[internal-cross-reference][references] to \x[header]{p}, \x[image]{p}, etc. with amazing \x[error-reporting][error checking and reporting]: never break internal links without knoing again, and quickly find out what broke when you do
 * KaTeX server side \x[mathematics]
-* multi file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
-  * \x[internal-cross-file-references]
+* multi-file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
+  * \x[internal-cross-file-reference]{p}
   * \x[table-of-contents] that crosses input files
   * `inotifywait` watch rebuild server
   * single-source multi-format output based on \x[include]{p} and build options:
     * one HTML per source with includes rendered as links between pages
     * \x[embed-includes] single file output. Includes are parsed smartly, not just source copy pasted, e.g. included headers are shifted from `h1` to `h2` correctly
     * \x[split-headers] option to output each header of an input file into a separate output file
-    * supports both local serverless rendering to HTML files for local viewing, and server oriented rendering such as GitHub pages, e.g. \x[internal-cross-references] automatically get `.html` extension and or not
+    * supports both local serverless rendering to HTML files for local viewing, and server oriented rendering such as GitHub pages, e.g. \x[internal-cross-reference]{p} automatically get `.html` extension and or not
   * cross file configuration files to factor out common page parts like headers and footers
 * advanced header/ID related features:
-  * \x[scope]
+  * \x[scope]{p}
+  * \x[synonym]{p}
   * tags are regular headers: \x[x-child-argument]
+  * \x[unlimited-header-levels]
+  * \x[id-based-header-levels]
 * is written in JavaScript and therefore runs natively on the browser to allow live previews
 * helps you with the publishing:
   * `./cirodown --publish` helper for single command publishing to the configured target (default GitHub pages): \x[publish]
   * Cirodown tries to deal with media such as images and video intelligently for you, see e.g.: \x[where-to-store-images]
 
-=== Saner
+= Saner
+{parent=design-goals}
 
 Originally, Cirodown was is meant to be both saner and more powerful than Markdown and Asciidoctor.
 
@@ -114,7 +124,7 @@ But alas, as Ciro started implementing and using it, he started to bring some Ma
 
 And so this "degraded" slightly into a language slightly saner than Asciidoctor but with an amazing Node.js implementation that makes it better for book writing and website publishing.
 
-Notably, we hope that our escaping will be a bit saner backslash escapes everything instead of Asciidoctors "different escapes for every case" approach: https://github.com/asciidoctor/asciidoctor/issues/901
+Notably, we hope that our escaping will be a bit saner backslash escapes everything instead of Asciidoctor's "different escapes for every case" approach: https://github.com/asciidoctor/asciidoctor/issues/901
 
 But hopefully, having starting from a saner point will still produce a saner end result, e.g. there are sane constructs for every insane one.
 
@@ -126,7 +136,7 @@ For example, originally Cirodown had exactly five magic characters, with similar
 * `\` backslash to start a macro, like LaTeX
 * `{` and `}`: left and right square brackets to delimit \x[positional-vs-named-arguments][optional macro arguments]
 * `[` and `]`: left and right curly braces bracket to start an optional arguments
-and double blank newlines for \x[paragraphs][paragraphs] if you are pedantic, but this later degrated into many more with \x[insane-macro-shortcuts].
+and double blank newlines for \x[paragraph]{p} if you are pedantic, but this later degenerated into many more with \x[insane-macro-shortcuts].
 
 We would like to have only square brackets for both optional and mandatory to have even less magic characters, but that would make the language difficult to parse for computer and humans. LaTeX was right for once!
 
@@ -152,13 +162,14 @@ More precisely:
   ``Link text``
   maps to the internal content of `<a>Link text<>`.
 
-=== More powerful
+= More powerful
+{parent=design-goals}
 
 The \x[saner][high sanity of Cirodown], also makes creating new macro extensions extremely easy and intuitive.
 
 All built-in language features use the exact same API as new extensions, which ensures that the extension API is sane forever.
 
-Markdown is clearly missing many key features such as block attributes and \x[internal-cross-references], and has no standardized extension mechanism.
+Markdown is clearly missing many key features such as block attributes and \x[internal-cross-reference]{p}, and has no standardized extension mechanism.
 
 The "more powerful than Asciidoctor" part is only partially true, since Asciidoctor is very featureful can do basically anything through extensions.
 
@@ -166,42 +177,41 @@ The difference is mostly that Cirodown is completely and entirely focused on mak
 * amazing header/ToC/ID features including proper error reports: never have a internal broken link or duplicate ID again
 * \x[mathematics][server side pre-rendered maths with KaTeX]: all divs and spans are ready, browser only applies CSS, no JavaScript gets executed
 * \x[publish]: we take care of website publishing for you out-of-the-box, no need to integrate into an external project like Jekyll
+and we feel that some of those features have required specialized code that could not be easily implemented as a standalone macro.
 
 Another advantage over Asciidoctor is that the reference implementation of Cirodown is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with https://github.com/opal/opal[Opal], but who wants to deal with that layer of complexity?
 
-== Paragraphs
-{title2=`\P`}
+= Related projects
+{parent=design-goals}
 
-OK, this is too common, so we opted for some \x[insane-macro-shortcuts][insanity] here: double newline is a paragraph!
-\CirodownExample[[
-Paragraph 1.
+Static wiki generators: this is perhaps the best way of classifying this project :-)
+* https://github.com/gollum/gollum[]: already has a local server editor! But no WYSIWYG nor live preview. Git integration by default, so when you save on the UI already generates a Git commit. We could achieve that with: https://github.com/isomorphic-git/isomorphic-git[], would be really nice.
+* https://github.com/wcchin/markypydia
 
-Paragraph 2.
-]]
+Static book generators:
+* https://github.com/rstudio/bookdown[], https://bookdown.org/[]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: https://bookdown.org/yihui/bookdown/pandoc.html[], thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.
+* https://gohugo.io/[Hugo]. Pretty good, similar feature set to ours. But Go based, so hard on browser, and adds adhoc features on top of markdown once again
+* https://en.wikipedia.org/wiki/Personal_wiki
+  * https://github.com/vimwiki/vimwiki
+* https://github.com/hplgit/doconce
+* https://www.gwern.net/About#source is pretty interesting, uses https://github.com/jaspervdj/Hakyll/ + some custom stuff.
 
-Equivalently however, you can use an explicit `\P` macros as well, which is required for example to add properties to a paragraph, e.g.:
-\CirodownExample[[
-\P{id=paragraph-1}[Paragraph 1]
-\P{id=paragraph-2}[Paragraph 2]
-]]
+Less related but of interest, similar philosophy to what Ciro wants, but no explicitly reusable system:
+* http://www.uprtcl.io/
+* https://libretexts.org
+* https://physics.info/
+* https://hypertextbook.com/
+* https://tutorial.math.lamar.edu/
 
-Paragraphs are created automatically inside \x[macro-argument-syntax][macro argument] whenever a double newline appears.
-
-Note that Cirodown paragraphs render in HTML as `div` with `class="p"` and not as `p`. This means that you can add basically anything inside them, e.g. a list:
-``
-My favorite list is:
-\Ul[
-\li[aa]
-\li[bb]
-]
-because it is simple.
-``
-which renders as a single paragraph.
-
-One major advantage of this, is that when writing documentation, you often want to keep lists or code blocks inside a given paragraph, so that it is easy to reference the entire paragraph with an ID. Think for example of paragraphs in the C++ standard.
-
-= Links
+= Macro
 {parent=cirodown}
+
+This section documents all Cirodown macros.
+
+The general macro syntax is described at \x[cirodown-syntax]{full}.
+
+= Link
+{parent=macro}
 
 = `\a`
 {synonym}
@@ -244,7 +254,7 @@ paragraphs]
 ]]
 
 = `\a` `ref` argument
-{parent=links}
+{parent=link}
 
 Analogous to the \x[x-ref-argument], e.g.:
 \CirodownExample[[
@@ -252,7 +262,7 @@ Trump said this and that.https://en.wikipedia.org/wiki/Donald_Trump_Access_Holly
 ]]
 
 = Insane link parsing rules
-{parent=links}
+{parent=link}
 
 Insane start at any of the recognized protocols are the ones shown at: \x[known-url-protocols]{full}.
 * `http://`
@@ -309,361 +319,358 @@ This magic can be observed with \x[help-macros] by seeing that the `href` argume
 "elide_link_only": true,
 ``
 
-== Internal cross references
-
-= `\x`
-{synonym}
-{title2}
-
-Every macro in Cirodown can have an optional `id` and many also have a reserved `title` property.
-
-When a macro in the document has a `title` argument but no `id` argument given, get an auto-generated ID from the title: \x[automatic-id-from-title].
-
-For macros that do have an ID, derived from `title` or not, you can write a cross reference to it, e.g.:
-\CirodownExample[[
-See this \x[internal-cross-references] awesome section.
-]]
-
-An explicit link body can be given just as for regular HTTP \x[links] as:
-\CirodownExample[[
-See this \x[internal-cross-references][awesome section].
-]]
-
-= `\x` `child` argument
-{parent=internal-cross-references}
-
-Setting the `child` \x[boolean-named-argument] on a cross reference to a header as in:
-``
-\x[my-header]{child}
-``
-makes that header show up on the list of extra parents of the child.
-
-This allows a section to have multiple parents, e.g. to include it into multiple categories. For example:
-``
-= Animal
-
-== Mammal
-
-=== Dog
-
-=== Cat
-
-== Cute animal
-
-These animals are cute:
-* \x[dog]{child} because they play with you
-
-These animals aren't cute however:
-* \x[cat]
-``
-would render something like:
-``
-h1 Animal
-
-h2 Mammal
-
-h3 Dog (parent section: Mammal)
-(other parent sections: Cute animal)
-
-h3 Cat (parent section: Mammal)
-
-== Cute animal
-
-These animals are cute:
-* \x[dog]
-
-These animals aren't cute however:
-* \x[cat]
-``
-so note how "Dog" has a list of extra parents including "Cute animal", but Cat does not, due to the `child`.
-
-This property does not affect how the \x[table-of-contents][`\Toc`] is rendered. We could insert elements sections there multiple times, but it has the downside that browser Ctrl + F searches would hit the same thing multiple times on the table of contents, which might make finding things harder.
-``
-== My title{id=my-id}
-
-Read this \x[my-id][amazing section].
-``
-
-If the second argument, the `content`, is not present, it expand to the header title, e.g.:
-``
-== My title{id=my-id}
-
-Read this \x[my-id].
-``
-is the same as:
-``
-== My title{id=my-id}
-
-Read this \x[my-id][My title].
-``
-
-A live demo can be seen at: \x[x-child-argument-demo].
-
-= `\x` `child` argument demo
-{parent=x-child-argument}
-{scope}
-
-= Animal
-{parent=x-child-argument-demo}
-
-= Mammal
-{parent=animal}
-
-= Dog
-{parent=mammal}
-
-= Cat
-{parent=mammal}
-
-= Cute animal
-{parent=animal}
-
-Cute animal:
-* \x[dog]{child}
-* \x[cat]
-
-= `\x` `parent` argument
-{parent=x-child-argument}
-
-The `parent` argument is exactly like the \x[x-child-argument], but it reverses the direction of the parent/child relation.
-
-=== Cross reference `full` argument
-
-To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` \x[boolean-named-argument] to the cross reference, for example:
-\CirodownExample[[
-\x[cross-reference-full-argument]{full}.
-]]
-
-`{full}` is not needed for cross references to most macros besides \x[header]{p}, which use `full` by default as seen by the `default_x_style_full` macro property in \x[help-macros]. This is for example the case for \x[image]{p}. You can force this to be disabled with `{full=0}`:
-\CirodownExample[[
-Compare \x[image-my-test-image]{full=0} vs \x[image-my-test-image]{full=1}.
-]]
-
-==== Cross reference `full` argument in internal cross file references
-
-For example in the following \x[internal-cross-file-references][internal cross file reference]:
-\CirodownExample[[
-\x[h2-in-not-the-readme]{full}.
-]]
-we get just something like:
-``
-Section "h2 in not the readme"
-``
-instead of:
-``
-Section 1.2 "h2 in not the readme"
-``
-This is because the number "Section 1.2" might already have been used in the current page, leading to confusion.
-
-=== Cross reference title inflection
-
-A common usage pattern is that we want to use \x[header] titles in \x[cross-reference-full-argument][non-full] \x[internal-cross-references] as the definition of a concept without repeating the title, for example:
-``
-== Dog
-
-Cute animal.
-
-\x[cats][Cats] are its natural enemies.
-
-== Cats
-
-This is the natural enemy of a \x[dog][dog].
-
-\x[dog][Dogs] are cute, but they are still the enemy.
-
-One example of a cat is \x[felix-the-cat].
-
-=== Felix the Cat
-
-Felix is not really a \x[cats][cat], just a carton character.
-``
-
-However, word https://en.wikipedia.org/wiki/Inflection[inflection] makes it much harder to avoid retyping the definition again.
-
-For example, in the previous example, without any further intelligent behaviour we would be forced to re-type `\x[dog][dog]` instead of the desired `\x[dog]`.
-
-Cirodown can take care of some inflection cases for you.
-
-For capitalization, both headers and cross reference macros have the `c` \x[boolean-named-argument] which stands for "capitalized":
-* for headers, `c` means that the header title has fixed capitalization as given in the title, i.e.
-  * if the title has a capital first character, it will always show as a capital, as is the case for most https://en.wikipedia.org/wiki/Proper_noun[proper noun]
-  * if it is lower case, it will also always remain lower case, as is the case for some rare proper nouns, notably https://en.wikipedia.org/wiki/Arm_Holdings[the name of certain companies]
-
-  This means that for such headers, `c` in the `x` has no effect. Maybe we should give an error in that case. But lazy now, send PR.
-* for cross reference macros, `c` means that the first letter of the title should be capitalized.
-
-  Using this option is required when you are starting a sentence with a non-proper noun.
-Capitalization is handled by a \x[javascript-case-conversion].
-
-For pluralization, cross reference macros have the `p` \x[boolean-named-argument] which stands for "pluralize":
-* if given and true, this automatically pluralizes the last word of the target title by using the https://github.com/blakeembrey/pluralize library
-* if given and false, automatically singularize
-* if not given, don't change the number of elements
-If your desired pluralization is any more complex than modifying the last word of the title, you must do it manually however.
-
-With those rules in mind, the previous Cirodown example can be written with less repetition as:
-``
-== Dog
-
-Cute animal.
-
-\x[cats]{c} are its natural enemies.
-
-== Cats
-
-This is the natural enemy of a \x[dog].
-
-\x[dog]{p} are cute, but they are still the enemy.
-
-One example of a cat is \x[Felix the Cat].
-
-=== Felix the Cat
-{c}
-
-Felix is not really a \x[cats][cat], just a carton character.
-``
-
-If plural and capitalization don't handle your common desired inflections, you can also just create custom ones with the \x[synonym].
-
-Now for a live example for quick and dirty interactive testing.
-
-==== Cross reference title inflection example
+= Bold
+{parent=macro}
+{title2=`\b`}
 
 \CirodownExample[[
-\x[inflection-example-not-proper]
+Some \b[bold] text.
 ]]
 
+= Code block
+{parent=macro}
+{title2=\c[[``]], \c[[`]], `\C`, `\c`}
+
+Inline code (code that should appear in the middle of a paragraph rather than on its own line) is done with a single backtick (\c[[`]]) \x[insane-macro-shortcuts][insane macro shortcut]:
 \CirodownExample[[
-\x[inflection-example-not-proper]{c}
+My inline `x = 'hello\n'` is awesome.
 ]]
-
+and block code (code that should appear on their own line) is done with two or more backticks (\c[[``]]):
 \CirodownExample[[
-\x[inflection-example-not-proper]{full}
-]]
-
-\CirodownExample[[
-\x[inflection-example-proper]
-]]
-
-\CirodownExample[[
-\x[inflection-example-proper]{c}
-]]
-
-\CirodownExample[[
-\x[inflection-example-not-proper-lower]
-]]
-
-\CirodownExample[[
-\x[inflection-example-not-proper-lower]{c}
-]]
-
-\CirodownExample[[
-\x[inflection-example-proper-lower]
-]]
-
-\CirodownExample[[
-\x[not-readme]
-]]
-
-\CirodownExample[[
-\x[not-readme]{c}
-]]
-
-\CirodownExample[[
-\x[inflection-example-not-proper]{p}
-]]
-
-\CirodownExample[[
-\x[inflection-plural-examples]
-]]
-
-\CirodownExample[[
-\x[inflection-plural-examples]{p}
-]]
-
-\CirodownExample[[
-\x[inflection-plural-examples]{p=0}
-]]
-
-\CirodownExample[[
-\x[inflection-plural-examples]{p=1}
-]]
-
-\CirodownExample[[
-\x[not-the-readme-header-with-fixed-case]
-]]
-
-===== Inflection example not-proper
-
-===== Inflection example proper
-{c}
-
-===== inflection example not-proper lower
-
-===== inflection example proper lower
-{c}
-
-===== Inflection plural examples
-
-= The `title2` argument
-{parent=internal-cross-references}
-
-The `title2` argument can be given to any element that has the `title` argument.
-
-Its usage is a bit like the `description=` argument of \x[image]{p}, allowing you to add some extra content to the header without affecting its ID.
-
-Therefore, its primary use cases are:
-* give acronyms, or other short names names of fuller titles such as mathematical/programming notation
-
-  One primary reason to not use the acronyms is to avoid possible ID ambiguities with other acronyms.
-* give the header in different languages
-
-When you do want to affect the ID to remove ambiguities, use \x[the-disambiguate-argument] instead of `title2`.
-
-Unlike `description=` however, `title2` shows up on all \x[cross-reference-full-argument][`full`] references, including appearances in the \x[table-of-contents].
-
-For example, given the Cirodown input:
 ``
-The toc:
-
-\Toc
-
-== Quotation
-{title2=`\Q`}
-
-== Orthogonal group
-{title2=$O(n)$}
-
-\x[quotation]{p}
-
-\x[orthogonal-group]
-
-\x[orthogonal-group]{full}
+f() {
+  return 'hello\n';
+}
 ``
-the rendered output looks like:
+]]
+
+The sane version of inline code is a lower case `c`:
+\CirodownExample[[[
+My inline \c[[x = 'hello\n']] is awesome.
+]]]
+and the sane version of block math is with an upper case `C`:
+\CirodownExample[[[
+\C[[
+f() {
+  return 'hello\n';
+}
+]]
+]]]
+
+The capital vs lower case theme is also used in other elements, see: \x[block-vs-inline-macros].
+
+If the content of the sane code block has many characters that you would need to \x[escape-characters][escape], you will often want to use \x[literal-arguments], which work just like the do for any other argument. For example:
+\CirodownExample[[[[
+\C[[[
+A paragraph.
+
+\C[[
+And now, some long, long code, with lots
+of chars that you would need to escape:
+\ [  ] {  }
+]]
+
+A paragraph.
+]]]
+]]]]
+Note that the initial newline is skipped automatically in code blocks, just as for any other element, due to: \x[argument-leading-newline-removal], so you don't have to worry about it.
+
+The distinction between inline `\c` and block `\C` code blocks is needed because in HTML, https://stackoverflow.com/questions/5371787/can-i-have-a-pre-tag-inside-a-p-tag-in-tumblr/58603596#58603596[`pre` cannot go inside `P`].
+
+We could have chosen to do some magic to differentiate between them, e.g. checking if the block is the only element in a paragraph, but we decided not to do that to keep the language saner.
+
+And now a code block outside of \x[cirodownexample] to test how it looks directly under \x[toplevel]:
+
 ``
-The toc:
-
-* Quotation (\Q)
-* Orthogonal group (O(n))
-
-== Quotation (\Q)
-
-== Orthogonal group (O(n))
-
-quotations
-
-orthogonal group
-
-Section 2. "Orthogonal group (O(n))"
+Hello
+Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello
+Hello
 ``
 
-Parenthesis are added automatically around all rendered `title2`.
+\Comment[[[[
+TODO implement.
+We can have cross references to code blocks as for other elements such as \x[image]{p}:
+\CirodownExample[[[
+See this awesome code \x[my-code]:
+``
+ab
+cd
+``
+{id=my-code}
+]]]
+]]]]
 
-The `title2` argument has a special meaning when applied to a \x[header] with the \x[synonym], see \x[the-title2-argument-of-a-synonym-header].
+Block code can have a title, e.g. see this one: \x[code-my-nice-code]{full}:
+\CirodownExample[[
+``
+ab
+cd
+``
+{id=code-my-nice-code}
+{title=My nice code block.}
+]]
 
-= The `disambiguate` argument
-{parent=internal-cross-references}
+= `\CirodownExample`
+{parent=macro}
+
+Shows both the Cirodown code and its rendered output, e.g.:
+\CirodownExample[[[
+\CirodownExample[[
+Some `ineline` code.
+]]
+]]]
+
+Its input should be thought of as a literal code string, and it then injects the rendered output in the document.
+
+This macro is used extensively in the Cirodown documentation.
+
+= Comment
+{parent=macro}
+{title2=`\Comment`}
+
+The `Comment` and `comment` macros are regular macros that does not produce any output. Capitalization is explained at: \x[block-vs-inline-macros]{full}.
+
+You will therefore mostly want to use it with a \x[literal-arguments][literal argument], which will, as for any other macro, ignore any macros inside of it.
+\CirodownExample[[[
+Before comment.
+
+\Comment[[
+Inside comment.
+]]
+
+After comment.
+]]]
+
+And an inline one:
+\CirodownExample[[[
+My inline \comment[[inside comment]] is awesome.
+
+\comment[[inside comment]] inline at the start.
+]]]
+
+= Header
+{parent=macro}
+{title2=`\H`}
+
+\x[insane-macro-shortcuts][Insane] with `= ` (equal sign space):
+``
+= My h1
+
+== My h2
+
+=== My h3
+``
+Insane headers end at the first newline found. They cannot therefore contain raw newline tokens.
+
+Equivalent sane:
+``
+\H[1][My h1]
+
+\H[2][My h2]
+
+\H[3][My h3]
+``
+
+Custom ID for \x[internal-cross-reference]{p} on insane headers:
+``
+= My h1
+{id=h1}
+
+== My h2
+{id=h2}
+
+=== My h3
+{id=h3}
+``
+
+Sane equivalent:
+``
+\H[1][My h1]{id=h1}
+
+\H[2][My h2]{id=h2}
+
+\H[3][My h3]{id=h3}
+``
+
+= Automatic ID from title
+{parent=header}
+
+If a \x[the-toplevel-header][non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:
+* do a \x[id-output-format] conversion on the title to remove for example any HTML tags that would be present in the conversion output
+* convert all characters to lowercase. This uses \x[javascript-case-conversion].
+* convert consecutive sequences of all non `a-z0-9` ASCII characters and hyphens `-` to a single hyphen `-`. Note that this leaves non-ASCII character untouched.
+* strip leading or trailing hyphens
+Note how those rules leave non ASCII Unicode characters untouched, as capitalization and determining if something "is a letter or not" in those cases can be tricky.
+
+For toplevel headers, see: \x[the-id-of-the-first-header-is-derived-from-the-filename].
+
+So for example, the following automatic IDs would be generated: \x[table-examples-of-automatically-generated-ids].
+
+\Table{title=Examples of automatically generated IDs.}
+[
+|| title
+|| id
+|| comments
+
+| My favorite title
+| my-favorite-title
+|
+
+| Ciro's markdown is awesome
+| ciro-s-markdown-is-awesome
+|
+
+| É你
+| é你
+| The Latin https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, is converted to its lower case form `é` as per the \x[javascript-case-conversion]. The Chinese `你` is left untouched as Chinese characters have no case.
+]
+
+For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the Cirodown file without extension instead of from the `title` argument.
+
+= Unlimited header levels
+{parent=header}
+
+There is no limit to how many levels we can have, for either sane or insane headers!
+
+HTML is randomly limited to `h6`, so Cirodown just renders higher levels as an `h6` with a `data-level` attribute to indicate the actual level for possible CSS styling:
+``
+<h6 data-level="7">My title</h6>
+``
+
+The recommended style is to use insane headers up to `h6`, and then move to sane one for higher levels though, otherwise it becomes very hard to count the `=` signs.
+
+To avoid this, we considered making the insane syntax be instead:
+``
+= 1 My h1
+= 2 My h2
+= 3 My h3
+``
+but it just didn't feel as good, and is a bit harder to type than just smashing `=` n times for lower levels, which is the most common use case. So we just copied markdown.
+
+= My h3
+{parent=unlimited-header-levels}
+
+= My h4
+{parent=my-h3}
+
+= My h5
+{parent=my-h4}
+
+= My h6
+{parent=my-h5}
+
+= My h7
+{parent=my-h6}
+
+= My h8
+{parent=my-h7}
+
+= My h9
+{parent=my-h8}
+
+= My h10
+{parent=my-h9}
+
+= My h11
+{parent=my-h10}
+
+= My h12
+{parent=my-h11}
+
+= My h13
+{parent=my-h12}
+
+= Skipping header levels
+{parent=header}
+
+The very first header of a document can be of any level, although we highly recommend your document to start with a `\H[1]`, and to contain exactly just one `\H[1]`, as this has implications such as:
+* `\H[1]` is used for the document title: \x[html-document-title]
+* `\H[1]` does not show on the \x[table-of-contents]
+
+After the initial header however, you must not skip a header level, e.g. the following would give an error because it skips level 3:
+``
+= my 1
+
+== my 1
+
+==== my 4
+``
+
+= The toplevel header
+{parent=header}
+
+If the document has only a single header of the highest level, e.g. like the following has only a single `h2`:
+``
+== My 2
+
+=== My 3 1
+
+=== My 3 2
+``
+then this has some magical effects.
+
+= The toplevel header IDs don't show
+{parent=the-toplevel-header}
+
+Header IDs won't show for the toplevel level. For example, the headers would render like:
+``
+My 2
+
+1. My 3 1
+
+2. My 3 2
+``
+rather than:
+``
+1. My 2
+
+1.2. My 3 1
+
+1.2. My 3 2
+``
+This is because in this case, we guess that the `h2` is the toplevel.
+
+= The ID of the first header is derived from the filename
+{parent=the-toplevel-header}
+
+TODO: we kind of wanted this to be the ID of the toplevel header instead of the first header, but this would require an extra postprocessing pass (to determine if the first header is toplevel or not), which might affect performance, so we are not doing it right now.
+
+When the Cirodown input comes from a file (and not e.g. stdin), the default ID of the first header in the document is derived from the basename of the Cirodown input source file rather than from its title.
+
+This is specially relevant when \x[include][including] other files.
+
+For example, in file named `my-file.ciro` which contains:
+``
+= Awesome cirodown file
+]]
+``
+the ID of the header is `my-file` rather than `awesome-cirodown-file`. See also: \x[automatic-id-from-title].
+
+If the file is an \x[index-files][index file] other than \x[the-toplevel-index-file], then the basename of the parent directory is used instead, e.g. the toplevel ID of a file:
+``my-subdir/README.ciro``
+would be:
+``#my-subdir``
+rather than:
+``#README.ciro``
+
+For the toplevel index file however, the ID is just taken from the header itself as usual. This is done because you often can't general control the directory name of a project.
+
+For example, a \x[publish-to-github-pages][GitHub pages] root directory must be named as `<username>.github.io`. And users may need to rename directories to avoid naming conflicts.
+
+As a consequence of this, the toplevel index file cannot \x[include][be included in other files].
+
+= `\H` arguments
+{parent=header}
+
+= `\H` `c` argument
+{parent=h-arguments}
+
+If given, makes the header capitalized by default on \x[internal-cross-file-reference]{p}.
+
+More details at: \x[cross-reference-title-inflection]{full}.
+
+= `\H` `disambiguate` argument
+{parent=h-arguments}
 
 Sometimes the short version of a name is ambiguous, and you need to add some extra text to make both its title and ID unique.
 
@@ -704,20 +711,20 @@ My favorite programming language is \x[python-programming-language]!
 
 = Python
 {disambiguate=genus}
-{parent=the-disambiguate-argument}
+{parent=h-disambiguate-argument}
 
 = Python
 {c}
 {disambiguate=programming language}
-{parent=the-disambiguate-argument}
+{parent=h-disambiguate-argument}
 {title2=.py}
 {wiki}
 ]
 from which we observe how `disambiguate`:
 * gets added to the ID after conversion following the same rules as \x[automatic-id-from-title]
-* shows up on the header between parenthesis, much like Wikipedia, as well as in \x[cross-reference-full-argument][`full` cross references]
+* shows up on the header between parenthesis, much like Wikipedia, as well as in \x[x-full-argument][`full` cross references]
 * does not show up on non-`full` references. This makes it much more likely that you will be able to reuse the title automatically on a cross reference without `content`: we wouldn't want to say "My favorite programming language is Python (programming language)" all the time, would we?
-* gets added to the default \x[header-wiki-argument] inside parenthesis, following Wikipedia convention, therefore increasing the likelihood that you will be able to go with the default Wikipedia value
+* gets added to the default \x[h-wiki-argument] inside parenthesis, following Wikipedia convention, therefore increasing the likelihood that you will be able to go with the default Wikipedia value
 
 Besides disambiguating headers, the `disambiguate` argument has a second related application: disambiguating IDs of images. For example:
 \CirodownExample[[
@@ -740,357 +747,18 @@ Note that unlike for headers, `disambiguate` does not appear on the title of ima
 
 This use case is even more useful when `title-from-src` is enable by default for the \x[media-providers] entry, so you don't have to repeat titles several times over and over.
 
-= `\x` within `title` restrictions
-{parent=internal-cross-references}
-
-If you use `\x` within a `title`, which most commonly happens for \x[image][image titles], that can generate complex dependencies, which would either be harder to implement, or lead to infinite recursion.
-
-To prevent such problems, Cirodown emits an error if you use an `\x` without content in the `title` of one of the following elements without an explicit ID:
-* \x[header]. For example, the following gives an error:
-  ``
-  = h1
-  {id=myh1}
-
-  == \x[myh1]
-  ``
-
-  This could be solved by either adding a content to the reference:
-  ``
-  = h1
-  {id=myh1}
-
-  == \x[myh1][mycontent]
-  ``
-  or by adding an explicit ID to the header:
-  ``
-  = h1
-  {id=myh1}
-
-  == \x[myh1]
-  {id=myh2}
-  ``
-* non-header (e.g. an \x[image]) that links to the title of another non-header
-
-  For non-headers, things are a bit more relaxed, and we can link to headers, e.g.:
-  ``
-  = h1
-
-  \Image[myimg.jpg]
-  {title=my \x[h1].}
-  ``
-  This is allowed because Cirodown calculates IDs in two stages: first for all headers, and only later non non-headers.
-
-  What you cannot do is link to another image e.g.:
-  ``
-  \Image[myimg.jpg]
-  {id=myimage1}
-  {title=My image 1.}
-
-  \Image[myimg.jpg]
-  {title=my \x[h1].}
-  ``
-  and there the workaround are much the same as for headers: either explicitly set the cross reference content:
-  ``
-  \Image[myimg.jpg]
-  {id=myimage1}
-  {title=My image 1.}
-
-  \Image[myimg.jpg]
-  {title=my \x[h1][My image 1].}
-  ``
-  or explicitly set an ID:
-  ``
-  \Image[myimg.jpg]
-  {id=myimage1}
-  {title=My image 1.}
-
-  \Image[myimg.jpg]
-  {id=myimage2}
-  {title=my \x[h1].}
-  ``
-
-While it is technically possible implement the above limitations, it would require a bit of extra work which we don't want to put in right now: https://github.com/cirosantilli/cirodown/issues/95[].
-
-Furthermore, the above rules do not exclude infinite rendering loops, but Cirodown detects such loops and gives a nice error message, this has been fixed at: https://github.com/cirosantilli/cirodown/issues/34 
-
-For example this would contain an infinite loop:
-``
-\Image[myimg.jpg]
-{id=myimage1}
-{title=\x[myimage2].}
-
-\Image[myimg.jpg]
-{id=myimage2}
-{title=\x[myimage1].}
-``
-
-This infinite recursion is fundamentally not technically solved: the user has to manually break the loop by providing an `x` content explicitly, e.g. in either:
-``
-\Image[myimg.jpg]
-{id=myimage1}
-{title=\x[myimage2][my content 2].}
-
-\Image[myimg.jpg]
-{id=myimage2}
-{title=\x[myimage1].}
-``
-or:
-``
-\Image[myimg.jpg]
-{id=myimage1}
-{title=\x[myimage2].}
-
-\Image[myimg.jpg]
-{id=myimage2}
-{title=\x[myimage1][my content 1].}
-``
-
-= `\x` `ref` argument
-{parent=internal-cross-references}
-
-The `ref` argument of `\x` marks the link as reference, e.g.:
-``
-Trump said this and that.\x[donald-trump-access-hollywood-tape]{ref}
-
-= Donald Trump Access Hollywood tape
-``
-renders something like:
-``
-Trump said this and that.<a href="donald-trump-access-hollywood-tape">*</a>
-``
-
-This could currently be replicated without `ref` by just using:
-``
-Trump said this and that.\x[donald-trump-access-hollywood-tape][*]
-``
-but later on we might add more precise reference fields like the page of a book or date fetched as Wikipedia supports.
-
-Implemented at: https://github.com/cirosantilli/cirodown/issues/137
-
-= Internal cross file references
-{parent=internal-cross-references}
-
-Reference to the first header of another file:
-\CirodownExample[[
-\x[not-readme]
-]]
-
-Reference to a non-first header of another file:
-\CirodownExample[[
-\x[h2-in-not-the-readme]
-]]
-
-To make toplevel links cleaner,if target header is the very first element of the other page, then the link does not get a fragment, e.g.: `\x[not-readme]` rendered as:
-``
-<a href="not-readme"
-``
-and not:
-``
-<a href="not-readme#not-readme"
-``
-while `\x[h2-in-not-the-readme]` is rendered with the fragment:
-``
-<a href="not-readme#h2-in-not-the-readme"
-``
-
-Reference to the first header of another file that is a second inclusion:
-\CirodownExample[[
-\x[included-by-not-readme]
-]]
-
-Reference to another header of another file, with \x[cross-reference-full-argument][`full`]:
-\CirodownExample[[
-\x[h2-in-not-the-readme]{full}.
-]]
-Note that when `full` is used with references in another file in \x[embed-includes][multi page mode], the number is not rendered as explained at: \x[cross-reference-full-argument-in-internal-cross-file-references]{full}.
-
-Reference to an image in another file:
-\CirodownExample[[
-\x[image-not-readme-xi]{full}.
-]]
-
-Reference to an image in another file:
-\CirodownExample[[
-\x[image-figure-in-not-the-readme-without-explicit-id]{full}.
-]]
-
-Remember that the \x[the-toplevel-header][ID of the toplevel header] is automatically derived from its file name, that's why we have to use:
-\CirodownExample[[
-\x[not-readme]
-]]
-instead of:
-``
-\x[not-the-readme]
-``
-
-Reference to a subdirectory:
-\CirodownExample[[
-\x[subdir]
-
-\x[subdir/h2]
-
-\x[subdir/notindex]
-
-\x[subdir/notindex-h2]
-]]
-Implemented at: https://github.com/cirosantilli/cirodown/issues/116
-
-Reference to an internal header of another file: \x[h2-in-not-the-readme]. By default, That header ID gets prefixed by the ID of the top header.
-
-When using \x[embed-includes] mode, the cross file references end up pointing to an ID inside the current HTML element, e.g.:
-``
-<a href="#not-readme">
-``
-rather than:
-``
-<a href="not-readme.html/#not-readme">
-``
-This is why IDs must be unique for elements across all pages.
-
-==== Internal cross file references internals
-
-When running in Node.js, Cirodown dumps the IDs of all processed files to a `out/db.sqlite3` file, and then reads from that file when IDs are needed.
-
-When converting a directory, `out/db.sqlite3` is placed inside the input directory. When converting individual files, `out/db.sqlite3` is placed in the current working directory. The file is not created or used when handling input from stdin.
-
-When running in the browser, the same JavaScript API will send queries to the server instead of a local SQLite database.
-
-To inspect the ID database to debug it, you can use:
-``
-sqlite3 out/db.sqlite3 .dump
-``
-
-It is often useful to dump a single table, e.g. to dump the `ids` table:
-``
-sqlite3 out/db.sqlite3 '.dump ids'
-``
-
-You can force `cirodown` to not use the ID database with `--no-db`:
-``
-./cirodown --no-db .
-``
-
-= Automatic ID from title
-{parent=internal-cross-references}
-
-If a \x[the-toplevel-header][non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:
-* do a \x[id-output-format] conversion on the title to remove for example any HTML tags that would be present in the conversion output
-* convert all characters to lowercase. This uses \x[javascript-case-conversion].
-* convert consecutive sequences of all non `a-z0-9` ASCII characters and hyphens `-` to a single hyphen `-`. Note that this leaves non-ASCII character untouched.
-* strip leading or trailing hyphens
-Note how those rules leave non ASCII Unicode characters untouched, as capitalization and determining if something "is a letter or not" in those cases can be tricky.
-
-For toplevel headers, see: \x[the-id-of-the-first-header-is-derived-from-the-filename].
-
-So for example, the following automatic IDs would be generated: \x[table-examples-of-automatically-generated-ids].
-
-\Table{title=Examples of automatically generated IDs.}
-[
-|| title
-|| id
-|| comments
-
-| My favorite title
-| my-favorite-title
-|
-
-| Ciro's markdown is awesome
-| ciro-s-markdown-is-awesome
-|
-
-| É你
-| é你
-| The Latin https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, is converted to its lower case form `é` as per the \x[javascript-case-conversion]. The Chinese `你` is left untouched as Chinese characters have no case.
-]
-
-For \x[the-toplevel-header][the toplevel header], its ID is derived from the basename of the Cirodown file without extension instead of from the `title` argument.
-
-= Internal cross reference title link removal
-{parent=internal-cross-references}
-
-If the target `title` argument contains a link from either another \x[internal-cross-references] or a regular \x[links][external hyperlink], Cirodown automatically prevents that link from rendering as a link when no explicit body is given.
-
-This is done because https://stackoverflow.com/questions/9882916/are-you-allowed-to-nest-a-link-inside-of-a-link[nested links are illegal in HTML], and the result would be confusing.
-
-This use case is most common when dealing with media such as \x[image]{p}. For example in:
-``
-= afds
-
-\x[image-aa-zxcv-lolol-bb]
-
-== qwer
-
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title=aa \x[zxcv][zxcv] \a[http://example.com][lolol] bb}
-
-== zxcv
-``
-the `\x[image-aa-zxcv-lolol-bb]` renders something like:
-``
-<a href="#image-aa-zxcv-lolol-bb">aa zxcv lolol bb</a>
-``
-and not:
-``
-<a href="#image-aa-zxcv-lolol-bb">aa <a href="zxcv">zxcv</a> <a href="http://example.com">lolol</a> bb</a>
-``
-
-Live example:
-\CirodownExample[[
-This is a nice image: \x[image-aa-zxcv-lolol-bb].
-
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title=aa \x[internal-cross-reference-title-link-removal][zxcv] \a[http://example.com][lolol] bb}
-]]
-
-== Header
-{title2=`\H`}
-
-\x[insane-macro-shortcuts][Insane] with `= ` (equal sign space):
-``
-= My h1
-
-== My h2
-
-=== My h3
-``
-Insane headers end at the first newline found. They cannot therefore contain raw newline tokens.
-
-Equivalent sane:
-``
-\H[1][My h1]
-
-\H[2][My h2]
-
-\H[3][My h3]
-``
-
-Custom ID for \x[internal-cross-references] on insane headers:
-``
-= My h1
-{id=h1}
-
-== My h2
-{id=h2}
-
-=== My h3
-{id=h3}
-``
-
-Sane equivalent:
-``
-\H[1][My h1]{id=h1}
-
-\H[2][My h2]{id=h2}
-
-\H[3][My h3]{id=h3}
-``
+= `\H` `parent` argument
+{c}
+{parent=h-arguments}
 
 = ID-based header levels
 {c}
-{parent=header}
-{title2=`{parent=<parent-id>}`}
+{synonym}
+{title2}
 
-In addition to the basic way of specifying header levels with an explicit level number, as mentioned at \x[header]{full}, Cirodown also supports a more indirect ID-based mechanism.
+In addition to the basic way of specifying header levels with an explicit level number as mentioned at \x[header]{full}, Cirodown also supports a more indirect ID-based mechanism with the `parent` argument of the `\H` element.
+
+We hightly recommend using `parent` for all but the most trivial documents.
 
 For example, the following fixed level syntax:
 ``
@@ -1131,15 +799,15 @@ Note that when the `parent=` argument is given, the header level must be `1`, ot
 ``
 because the second header has level `2` instead of the required `= My h2`.
 
-When \x[scope][scopes] are involved, the rules are the same as those of internal reference resolution, including the leading `/` to break out of the scope in case of conflicts.
+When \x[scope]{p} are involved, the rules are the same as those of internal reference resolution, including the leading `/` to break out of the scope in case of conflicts.
 
 See also: \x[header-explicit-levels-vs-nesting-design-choice]{full} for further rationale.
 
 = ID-based header levels and scope resolution
 {c}
-{parent=id-based-header-levels}
+{parent=h-parent-argument}
 
-When mixing both \x[id-based-header-levels] and \x[scope], things get a bit complicated, because when writing or parsing, we have to first determine the parent header before resolving scopes.
+When mixing both \x[h-parent-argument] and \x[scope]{p}, things get a bit complicated, because when writing or parsing, we have to first determine the parent header before resolving scopes.
 
 As a result, the follow simple rules are used:
 * start from the last header of the highest level
@@ -1187,90 +855,29 @@ will lead to the following header tree with \x[log-headers]:
 ==== h4 2.1.1 tmp/h1-2/h1-2-1/h1-2-1-1
 ``
 
-=== Unlimited header levels
+= Header explicit levels vs nesting design choice
+{parent=h-parent-argument}
 
-There is no limit to how many levels we can have, for either sane or insane headers!
-
-HTML is randomly limited to `h6`, so Cirodown just renders higher levels as an `h6` with a `data-level` attribute to indicate the actual level for possible CSS styling:
+Arguably, the language would be even saner if we did:
 ``
-<h6 data-level="7">My title</h6>
+\H[My h1][
+
+Paragraph.
+
+\H[My h2][]
+]
 ``
+rather than having explicit levels as in `\H[1][My h1]` and so on.
 
-The recommended style is to use insane headers up to `h6`, and then move to sane one for higher levels though, otherwise it becomes very hard to count the `=` signs.
+But we chose not to do it like most markups available because it leads to too many nesting levels, and hard to determine where you are without tooling.
 
-To avoid this, we sondiered making the insane syntax be instead:
-``
-= 1 My h1
-= 2 My h2
-= 3 My h3
-``
-but it just didn't feel as good, and is a bit harder to type than just smashing `=` n times for lower levels, which is the most common use case. So we just copied markdown.
+Ciro later "invented" (?) \x[h-parent-argument], which he feels reaches the perfect balance between the advantages of those two options.
 
-==== My h4
+= `\H` `scope` argument
+{parent=h-arguments}
 
-===== My h5
-
-====== My h6
-
-======= My h7
-
-\H[8][My h8]
-
-\H[9][My h9]
-
-\H[10][My h10]
-
-\H[11][My h11]
-
-\H[12][My h12]
-
-\H[13][My h13]
-
-= Table of contents
-{parent=header}
-{title2=`\Toc`}
-
-Cirodown automatically adds a ToC at the end of the first \x[the-toplevel-header][non-toplevel header] of every document.
-
-You may customize ToC placement with `\Toc` macro, but just don't do it, it will just go against common convention and confuse readers.
-
-This is especially important when considering \x[split-headers], where you almost always want an automatically generated ToC for every split header, otherwise you would need to add them all manually.
-
-Only one ToC is rendered per document. Any ToC besides the first one is ignored. In particular, this means that \x[include]{p} with \x[embed-includes] work seamlessly and render a single table of contents, even if multiple `\Toc` macros are present in the included pages.
-
-The \x[internal-cross-references][ID] of the ToC is always fixed to `#toc`. If you try to use that for another element, you will get the following error:
-``
-error: tmp.ciro:3:1: reserved ID "toc"
-``
-
-The ToC ignores \x[the-toplevel-header] if you have one.
-
-For when you want a quick outline of the header tree on the terminal, also consider the \x[log-headers] option.
-
-= Table of contents JavaScript open close interaction
-{parent=table-of-contents}
-
-To the left of table of content entries you can click on an open/close icon to toggle the visibility of different levels of the table of contents.
-
-The expansion algorithm is optimized so that when you first click on the arrow of a node it will give you an overview of that node, showing only its direct children.
-
-At the start, all nodes are showing, to facilitate Ctrl + F queries, and so when you first click on a node, it collapses the children of children, so you can see only the direct children the node of interest, without getting a gazillion of sub descendants shown first.
-
-The exact behaviour is:
-* if a node is open:
-  * if all children are closed, close the element, This can improve the view of its siblings. The toplevel "Table of Contents" node never closes however, since we never want to close that one.
-  * otherwise, close all children. This Gives a good overview of the children, without any children of children getting in the way.
-* if a node is closed (not showing children), open it and show all children and their descendants.
-
-As a result of the above rules, clicking on a node three times goes through a loop of basically all useful states:
-* node open and children open (initial state
-* node open and children closed
-* node closed
-
-Clicking on the link from a \x[header] up to the table of contents also automatically opens up the node for you in case it had been previously closed manually.
-
-=== Header `scope` argument
-{id=scope}
+= Scope
+{synonym}
 
 In some use cases, the sections under a section describe inseparable parts of something.
 
@@ -1337,7 +944,7 @@ Note how:
 
   So in the example above, `\x[/introduction]` refers to the ID `introduction`, and not `full-and-unique-experiment-name/introduction`.
 
-When nested scopes are involved, \x[internal-cross-references] resolution peels off the scopes one by one trying to find the closes match, e.g. the following works as expected:
+When nested scopes are involved, \x[internal-cross-reference]{p} resolution peels off the scopes one by one trying to find the closes match, e.g. the following works as expected:
 ``
 = h1
 {scope}
@@ -1356,7 +963,7 @@ Here Cirodown:
 * then it removes the `h2`, leading to `h1/h2`, and that one is found, and therefore is taken
 
 = Directory-based `scope`
-{parent=scope}
+{parent=h-scope-argument}
 
 Putting files in subdirectories of the build has the same effect as adding a \x[scope] to their top level header.
 
@@ -1365,7 +972,7 @@ Notably, all headers inside that directory get the directory prepended to their 
 The toplevel directory is determined as described at: \x[the-toplevel-index-file].
 
 = Test scope 1
-{parent=scope}
+{parent=h-scope-argument}
 {scope}
 
 For fun and profit.
@@ -1377,7 +984,8 @@ For fun and profit.
 = Not scoped
 {parent=test-scope-2}
 
-==== Header `scope` argument of toplevel headers
+= `\H` `scope` argument of toplevel headers
+{parent=h-scope-argument}
 
 When \x[the-toplevel-header] is given the `scope` property Cirodown automatically uses the file path for the scope and heaves fragments untouched.
 
@@ -1403,11 +1011,10 @@ Some quick interactive cross file link tests:
 * \x[not-readme-with-scope/h2]
 * \x[not-readme-with-scope/image-my-image]
 
-= Header `splitDefault` argument
-{id=splitdefault}
-{parent=header}
+= `\H` `splitDefault` argument
+{parent=h-arguments}
 
-When using \x[split-headers], \x[internal-cross-references] always point to non-split pages as mentioned at \x[internal-cross-reference-targets-in-split-headers].
+When using \x[split-headers], \x[internal-cross-reference]{p} always point to non-split pages as mentioned at \x[internal-cross-reference-targets-in-split-headers].
 
 If the `splitDefault` \x[boolean-named-argument] is given however:
 * the split header becomes the default, e.g. `index.html` is now the split one, and `nosplit.html` is the non-split one
@@ -1469,9 +1076,8 @@ And any links from the tutorial, back to the main massive README will link back 
 
 This feature was implemented at: https://github.com/cirosantilli/cirodown/issues/131
 
-= Header `splitSuffix` argument
-{id=splitsuffix}
-{parent=header}
+= `\H` `splitSuffix` argument
+{parent=h-arguments}
 
 If given, add a custom suffix to the output filename of the header when using \x[split-headers].
 
@@ -1536,15 +1142,17 @@ then it would instead be:
 notindex-asdf.ciro
 ``
 
-= Header `synonym` argument
-{id=synonym}
-{parent=header}
+= `\H` `synonym` argument
+{parent=h-arguments}
+
+= Synonym
+{synonym}
 
 TODO implement: https://github.com/cirosantilli/cirodown/issues/114
 
-This option is similar to \x[the-title2-argument] but it additionally:
+This option is similar to \x[h-title2-argument] but it additionally:
 * creates a new ID that you can refer to, and renders it with the alternate chosen title
-* the rendered ID on \x[internal-cross-references] is the same as what it is a synonym for
+* the rendered ID on \x[internal-cross-reference]{p} is the same as what it is a synonym for
 * the synonym header is not rendered at all, including in the \x[table-of-contents]
 * when using \x[split-headers], a redirect output file is generated from the synonym to the main ID. This is generally a superior redirection alternative to using \x[redirects] from \x[cirodown-json]
 
@@ -1573,10 +1181,10 @@ gdb.html
 ``
 which contains a redirection from `gdb.html` to `gnu-debugger.html`.
 
-= The `title2` argument of a synonym header
-{parent=synonym}
+= `\H` `title2` argument of a synonym header
+{parent=h-synonym-argument}
 
-Unlike \x[the-title2-argument], the synonym does not show up by default next to the title. This is because we sometimes want that, and sometimes not. To make the title appear, you can simply add an empty `title2` argument to the synonym header as in:
+Unlike \x[h-title2-argument], the synonym does not show up by default next to the title. This is because we sometimes want that, and sometimes not. To make the title appear, you can simply add an empty `title2` argument to the synonym header as in:
 ``
 = GNU Debugger
 {c}
@@ -1599,8 +1207,60 @@ which renders something like:
 ``
 Note how we added the synonym to the title only when it is not just a simple flexion variant, since `Quantum computing (Quantum computer)` would be kind of useless would be kind of useless.
 
-= Header `wiki` argument
-{parent=header}
+= `\H` `title2` argument
+{parent=h-arguments}
+
+The `title2` argument can be given to any element that has the `title` argument.
+
+Its usage is a bit like the `description=` argument of \x[image]{p}, allowing you to add some extra content to the header without affecting its ID.
+
+Unlike `description=` however, `title2` shows up on all \x[x-full-argument][`full`] references, including appearances in the \x[table-of-contents], which make it more searchable.
+
+Its primary use cases are:
+* give acronyms, or other short names names of fuller titles such as mathematical/programming notation
+
+  One primary reason to not use the acronyms as the main section name is to avoid possible ID ambiguities with other acronyms.
+* give the header in different languages
+
+For example, given the Cirodown input:
+``
+= Toplevel
+
+The Toc follows:
+
+== North Atlantic Treaty Organization
+{c}
+{title2=NATO}
+
+\x[north-atlantic-treaty-organization]
+
+\x[north-atlantic-treaty-organization]{full}
+``
+the rendered output looks like:
+``
+= Toplevel
+
+The ToC follows:
+
+* North Atlantic Treaty Organization (NATO)
+
+== North Atlantic Treaty Organization (NATO)
+
+North Atlantic Treaty Organization
+
+Section 1. "North Atlantic Treaty Organization (NATO)"
+``
+
+Related alternatives to `title2` include:
+* \x[h-disambiguate-argument] when you do want to affect the ID to remove ambiguities
+* \x[h-synonym-argument]
+
+Parenthesis are added automatically around all rendered `title2`.
+
+The `title2` argument has a special meaning when applied to a \x[header] with the \x[h-synonym-argument], see \x[h-title2-argument-of-a-synonym-header].
+
+= `\H` `wiki` argument
+{parent=h-arguments}
 
 If given, show a link to the Wikipedia article that corresponds to the header.
 
@@ -1617,7 +1277,7 @@ which looks like:
 
 = Tiananmen Square
 {id=wiki-explicit}
-{parent=header-wiki-argument}
+{parent=h-wiki-argument}
 {wiki=Tiananmen_Square}
 
 or equivalently with the value deduced from the title:
@@ -1631,7 +1291,7 @@ which looks like:
 
 = Tiananmen Square
 {id=wiki-implicit}
-{parent=header-wiki-argument}
+{parent=h-wiki-argument}
 {wiki}
 
 You can only link to subsections of wiki pages with explicit links as in:
@@ -1645,28 +1305,243 @@ which looks like:
 
 = History or Tiananmen Square
 {id=wiki-explicit-subsection}
-{parent=header-wiki-argument}
+{parent=h-wiki-argument}
 {wiki=Tiananmen_Square#History}
 
-=== Header explicit levels vs nesting design choice
+= Image
+{parent=macro}
+{title2=`\Image` and `\image`}
 
-Arguably, the language would be even saner if we did:
+A block image with \x[block-vs-inline-macros][capital] 'i' `Image` showcasing most of the image properties \x[image-my-test-image].
+\CirodownExample[[
+Have a look at this amazing image: \x[image-my-test-image].
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=The title of my image.}
+{id=image-my-test-image}
+{width=600}
+{height=200}
+{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
+{description=The description of my image.}
+]]
+This exemplifies the following parameters:
+* `description`: similar to `title`, but allow for further explanations without them appearing in \x[internal-cross-reference][cross references] to the image
+* `source`: a standardized way to credit an image by linking to a URL that contains further image metadata
+For further discussion on the effects of ID see: \x[image-id][full].
+
+And this is how you make an inline image inline one with lower case `i`:
+\CirodownExample[[
+My inline \image[Tank_man_standing_in_front_of_some_tanks.jpg][test image] is awesome.
+]]
+Inline images can't have captions.
+
+The `description` can have multiple paragraphs just like any other element, but we don't recommend this style because it makes it hard for readers to see what is part of the image caption and what is part of the next paragraph.
+\CirodownExample[[
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{id=image-my-test-image-description-paragraphs}
+{title=The title of my image.}
+{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
+{description=Description paragraph 1.
+
+Description paragraph 2.
+}
+
+Paragraph after.
+]]
+Maybe we could improve this with some CSS styling, but generally when you want multiple paragraphs inside the image, you might instead be better off making an \x[internal-cross-file-reference]{p} to the image and adding your extended explanation outside.
+
+And now an image outside of \x[cirodownexample] to test how it looks directly under \x[toplevel]:
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{id=image-my-test-image-toplevel}
+
+= Image height
+{parent=image}
+
+By default, we fix image heights to `height=315`, and let the `width` be calculated proportionally once the image loads. We therefore ignore the actual image size. This is done to:
+* prevent reflows as the page loads images and can determine their actual sizes, especially is the user opens the page at a given ID in the middle of the page
+* create a more uniform media experience by default, unless a custom image size is actually needed e.g. if the image needs to be larger
+
+= Image IDs and captions
+{id=image-id}
+{parent=image}
+
+Here is an image without a description but with an ID so we can link to it: \x[image-my-test-image-2].
+\CirodownExample[[
+Have a look at this amazing image: \x[image-my-test-image-2].
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{id=image-my-test-image-2}
+]]
+This works because \x[x-full-argument][`full` is the default cross reference style for `Image`], otherwise the link text would be empty since there is no `title`, and cirodown would raise an error.
+
+Cirodown can optionally deduce the title from the basename of the `src` argument if the `titleFromSrc` \x[boolean-named-argument] is given, or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
+\CirodownExample[[
+Have a look at this amazing image: \x[image-tank-man-standing-in-front-of-some-tanks].
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{titleFromSrc}
+]]
+
+If the image has neither ID nor title, then it does not get a caption at all, and it is not possible to link to it with an \x[internal-cross-reference], e.g.:
+\CirodownExample[[
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+]]
+The image does however get an automatically generated ID based on its image number, and it is possible for readers to link to that ID on the rendered version, e.g. as:
 ``
-\H[My h1][
-
-Paragraph.
-
-\H[My h2][]
-]
+#image-123
 ``
-rather than having explicit levels as in `\H[1][My h1]` and so on.
+This link is of course not stable across document revisions however, since if an image is added before that one, the link will break. This kind of image is discouraged, because in paged output formats like PDF, it could float away from the text that refers to the image.
 
-But we chose not to do it like most markups available because it leads to too many nesting levels, and hard to determine where you are without tooling.
+We can also see that such an image does not increment the Figure count:
+\CirodownExample[[
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{id=image-my-test-image-count-before}
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{id=image-my-test-image-count-after}
+]]
 
-Ciro later "invented" (?) \x[id-based-header-levels], which he feels reaches the perfect balance between the advantages of those two options.
+If the image has any visible metadata such as `source` or `description` however, then the caption does show and the Figure count gets incremented:
+\CirodownExample[[
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{description=This is the description of my image.}
+]]
 
-=== Include
+= Where to store images
+{parent=image}
+
+= Store images inside the repository itself
+{parent=where-to-store-images}
+
+If you are making a limited repository that will not have a ton of images, then you can get away with simply git tracking your images in the main repository.
+
+With this setup, no further action is needed. For example, with a file structure of:
+``
+./README.ciro
+./Tank_man_standing_in_front_of_some_tanks.jpg
+``
+just use the image from \C[README.ciro] as:
+\CirodownExample[[
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+]]
+
+However, if you are making a huge tutorial, which can have a huge undefined number of images (i.e. any scientific book), then you likely don't want to git track your images in the git repository.
+
+= Store images in a separate media repository
+{parent=where-to-store-images}
+
+In this approach, you create a separate GitHub repository in addition to the main one containing the text to contain only media such as images.
+
+This approach is more suitable than \x[store-images-inside-the-repository-itself] if you are going to have a lot of images.
+
+When using this approach, you could of course just point directly to the final image URL, e.g. as in:
+\CirodownExample[[
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+]]
+but Cirodown allows you use configurations that allow you to enter just the image basename: `Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg` which we will cover next.
+
+In order to get this to work, the recommended repository setup is:
+* `./main-repo/.git`: main repository at https://github.com/username/main-repo
+* `./main-repo/data/media/.git/`: media repository at https://github.com/username/main-repo-media[], and where `data/` is gitignored.
+The directory and repository names are not mandatory, but if you place media in `data/media` and name its repository by adding the `*-media` suffix, then `cirodown` will handle everything for you without any further configuration in \x[media-providers].
+
+This particular documentation repository does have a different setup as can be seen from its \a[cirodown.json]. Then, when everything is setup correctly, we can refer to images simply as:
+\CirodownExample[[
+\Image[Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]{provider=github}
+]]
+In this example, we also needed to set `{provider=github}` explicitly since it was not set as the default image provider in our `cirodown.json`. In most projects however, all of your images will be in the default repository, so this won't be needed.
+
+`provider` must not be given when a full URL is given because we automatically detect providers from URLs, e.g.:
+``
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]{provider=github}
+``
+is an error.
+
+TODO implement: `cirodown` will even automatically add and push used images in the `my-tutorial-media` repository for you \x[publish][during publishing]!
+
+You should then use the following rules inside `my-tutorial-media`:
+* give every file a very descriptive and unique name as a full English sentence
+* never ever delete any files, nor change their content, unless it is an improvement in format that does change the information contained of the image TODO link to nice Wikimedia Commons guideline page
+This way, even though the repositories are not fully in sync, anyone who clones the latest version of the `*-media` directory will be able to view any version of the main repository.
+
+Then, if one day the media repository ever blows up GitHub's limit, you can just migrate the images to another image server that allows arbitrary basenames, e.g. AWS, and just configure your project to use that new media base URL with the \x[media-providers] option.
+
+The reason why images should be kept in a separate repository is that images are hundreds or thousands of times larger than hand written text.
+
+Therefore, images could easily fill up the maximum repository size you are allowed: https://webapps.stackexchange.com/questions/45254/file-size-and-storage-limits-on-github#84746 and then what will you do when GitHub comes asking you to reduce the repository size?
+
+https://git-lfs.github.com/[Git LFS] is one approach to deal with this, but we feel that it adds too much development overhead.
+
+= Store images in Wikimedia Commons
+{parent=where-to-store-images}
+
+Wikimedia Commons is another great possibility to upload your images to:
+\CirodownExample[[
+\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
+{source=https://commons.wikimedia.org/wiki/File:Gel_electrophoresis_insert_comb.jpg}
+]]
+
+Cirodown likes Wikimedia Commons so much that we automatically parse the image URL and if it is from Wikimedia Commons, automatically deduce the `source` for you. So the above image renders the same without the `source` argument:
+\CirodownExample[[
+\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
+]]
+
+And like for non-Wikimedia images, you can automatically generate a `title` from the `src` by setting the `titleFromSrc` \x[boolean-named-argument] or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
+\CirodownExample[[
+\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
+{titleFromSrc}
+]]
+
+And a quick test for a more complex thumb resized URL:
+\CirodownExample[[
+\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
+]]
+
+If you really absolutely want to turn off the `source`, you can explicitly set:
+\CirodownExample[[
+\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
+{source=}
+]]
+but you don't want to do that for the most commonly Wikimedia Commons used license of CC-BY+ , do you? :-)
+
+Upsides of using Wikimedia Commons for your images:
+* makes it easier for other writers to find and reuse your images
+* automatically generates resized versions of the uploaded images into several common dimensions so you can pick the smallest one that fits your desired \x[image-height] to reduce bandwidth usage
+* if you have so many images that they would blow even the size of a \x[store-images-in-a-separate-media-repository][separate media repository], this will still work
+Downsides:
+* forces you to use the Creative Commons license
+* requires the content to be educational in nature
+* uploading a bunch of images to Wikimedia Commons does feel a bit more laborious than it should because you have to write down so much repeated metadata for them
+
+= Image lazy loading
+{parent=image}
+
+We do this by default because Cirodown is meant to allow producing huge single page documents like Ciro likes it, and in this way:
+* images that the user is looking at will load first
+* we save a lot of bandwidth for the user who only wants to browse one section
+
+TODO: maybe create a mechanism to disable this for the entire build with \x[cirodown-json].
+
+= Background color of transparent images
+{parent=image}
+
+For the love of God, there is no standardized for SVG to set its background color without a rectangle? https://stackoverflow.com/questions/11293026/default-background-color-of-svg-root-element `viewport-fill` was just left in limbo?
+
+And as a result, many many many SVG online images that you might want to reuse just rely on white pages and don't add that background rectangle.
+
+Therefore for now we just force white background on \x[overview-of-files-in-this-repository][our default CSS], which is what most SVGs will work with. Otherwise, you can lose the entire image to our default black background.
+
+Then if someone ever has an SVG that needs another background color, we can add an image attribute to set that color as a local style.
+
+= Image generators
+{parent=image}
+
+TODO implement: mechanism where you enter a textual description of the image inside the code body, and it then converts to an image, adds to the `-media` repo and pushes all automatically. Start with dot.
+
+https://github.com/cirosantilli/cirodown/issues/40
+
+= Include
 {title2=`\Include`}
+{parent=macro}
 
 The `\Include` macro allows including an external Cirodown headers under the current header.
 
@@ -1674,9 +1549,9 @@ It exists to allow optional single page HTML output while still retaining the ab
 * split up large input files into multiple files to make renders faster during document development
 * suggest an optional custom output split with one HTML output per Cirodown input, in order to avoid extremely large HTML pages which could be slow to load
 
-`\Include` takes one mandatory argument: the ID of the section to be included, much like \x[internal-cross-references].
+`\Include` takes one mandatory argument: the ID of the section to be included, much like \x[internal-cross-reference]{p}.
 
-There is however one restriction: only \x[the-toplevel-header]{p} can be pointed to. This restriction allows us to easily find the included file in the filesystem, and dispenses the need to do a first `./cirodown` run to generate the \x[internal-cross-file-references-internals][ID database]. This works because \x[the-id-of-the-first-header-is-derived-from-the-filename].
+There is however one restriction: only \x[the-toplevel-header]{p} can be pointed to. This restriction allows us to easily find the included file in the filesystem, and dispenses the need to do a first `./cirodown` run to generate the \x[internal-cross-file-reference-internals][ID database]. This works because \x[the-id-of-the-first-header-is-derived-from-the-filename].
 
 Headers of the included document are automatically shifted to match the level of the child of the level where they are being included.
 
@@ -1685,7 +1560,7 @@ If \x[embed-includes] is given, the external document is rendered embedded into 
 Otherwise, the following effects happen:
 * The headers of the included tree appear in the \x[table-of-contents] of the document as links to the corresponding external files.
 
-  This is implemented simply by reading a previously generated database file much like \x[internal-cross-file-references-internals], which avoids the slowdown of parsing all included files every time.
+  This is implemented simply by reading a previously generated database file much like \x[internal-cross-file-reference-internals], which avoids the slowdown of parsing all included files every time.
 
   As a result, you have to do an initial parse of all files in the project to extract their headers however, just as you would need to do when linking to those headers.
 * the include itself renders as a link to the included document
@@ -1707,18 +1582,12 @@ The above is the recommended and slightly \x[insane-macro-shortcuts][insaner] ve
 ``
 The insaner version is a bit insaner because the `\Include` magically discards the following newline node that follows it if it just a plaintext node containing exactly a newline. With a double newline, the newline would already have been previously taken out on the lexing stage as part of a paragraph.
 
-This is what they actually render as:
-
-\Include[not-readme]
-\Include[not-readme-2]
-\Include[not-readme-with-scope]
-\Include[subdir]
-\Include[subdir/notindex]
+\x[include-example]{full} shows what those actually render like.
 
 = `\Include` `parent` argument
 {parent=include}
 
-This option is analogous to \x[id-based-header-levels], but for includes.
+This option is analogous to \x[h-parent-argument], but for \x[include]{p}.
 
 For example, consider you have:
 ``
@@ -1758,82 +1627,128 @@ and now Cat will be a child of Animal as desired.
 
 Implemented at: https://github.com/cirosantilli/cirodown/issues/127
 
-=== Skipping header levels
+= `\Include` example
+{parent=include}
 
-The very first header of a document can be of any level, although we highly recommend your document to start with a `\H[1]`, and to contain exactly just one `\H[1]`, as this has implications such as:
-* `\H[1]` is used for the document title: \x[html-document-title]
-* `\H[1]` does not show on the \x[table-of-contents]
+This shows what includes render as.
 
-After the initial header however, you must not skip a header level, e.g. the following would give an error because it skips level 3:
-``
-= my 1
+\Include[not-readme]
+\Include[not-readme-2]
+\Include[not-readme-with-scope]
+\Include[subdir]
+\Include[subdir/notindex]
 
-== my 1
+= Italic
+{parent=macro}
+{title2=`\i`}
 
-==== my 4
-``
-
-=== The toplevel header
-
-If the document has only a single header of the highest level, e.g. like the following has only a single `h2`:
-``
-== My 2
-
-=== My 3 1
-
-=== My 3 2
-``
-then this has some magical effects.
-
-==== The toplevel header IDs don't show
-
-Header IDs won't show for the toplevel level. For example, the headers would render like:
-``
-My 2
-
-1. My 3 1
-
-2. My 3 2
-``
-rather than:
-``
-1. My 2
-
-1.2. My 3 1
-
-1.2. My 3 2
-``
-This is because in this case, we guess that the `h2` is the toplevel.
-
-==== The ID of the first header is derived from the filename
-
-TODO: we kind of wanted this to be the ID of the toplevel header instead of the first header, but this would require an extra postprocessing pass (to determine if the first header is toplevel or not), which might affect performance, so we are not doing it right now.
-
-When the Cirodown input comes from a file (and not e.g. stdin), the default ID of the first header in the document is derived from the basename of the Cirodown input source file rather than from its title.
-
-This is specially relevant when \x[include][including] other files.
-
-For example, in file named `my-file.ciro` which contains:
-``
-= Awesome cirodown file
+\CirodownExample[[
+Some \i[italic] text.
 ]]
-``
-the ID of the header is `my-file` rather than `awesome-cirodown-file`. See also: \x[automatic-id-from-title].
 
-If the file is an \x[index-files][index file] other than \x[the-toplevel-index-file], then the basename of the parent directory is used instead, e.g. the toplevel ID of a file:
-``my-subdir/README.ciro``
-would be:
-``#my-subdir``
-rather than:
-``#README.ciro``
+= `\JsCanvasDemo`
+{parent=macro}
 
-For the toplevel index file however, the ID is just taken from the header itself as usual. This is done because you often can't general control the directory name of a project.
+The `JsCanvasDemo` macro allows you to create interactive HTML/JavaScript https://en.wikipedia.org/wiki/Canvas_element[canvas] demos easily.
 
-For example, a \x[publish-to-github-pages][GitHub pages] root directory must be named as `<username>.github.io`. And users may need to rename directories to avoid naming conflicts.
+These demos:
+* only start running when the user scrolls over them for the first time
+* stop automatically when they leave the viewport
+so you can stuff as many of them as you want on a page, and they won't cause the reader's CPU to fry an egg.
 
-As a consequence of this, the toplevel index file cannot \x[include][be included in other files].
+\CirodownExample[[[
+\JsCanvasDemo[[
+new class extends CirodownCanvasDemo {
+  init() {
+    super.init('hello');
+    this.pixel_size_input = this.addInputAfterEnable(
+      'Pixel size',
+      {
+        'min': 1,
+        'type': 'number',
+        'value': 1,
+      }
+    );
+  }
+  draw() {
+    var pixel_size = parseInt(this.pixel_size_input.value);
+    for (var x = 0; x < this.width; x += pixel_size) {
+      for (var y = 0; y < this.height; y += pixel_size) {
+        var b = ((1.0 + Math.sin(this.time * Math.PI / 16)) / 2.0);
+        this.ctx.fillStyle =
+          'rgba(' +
+          (x / this.width) * 255 + ',' +
+          (y / this.height) * 255 + ',' +
+          b * 255 +
+          ',255)'
+        ;
+        this.ctx.fillRect(x, y, pixel_size, pixel_size);
+      }
+    }
+  }
+}
+]]
+]]]
 
-== Lists
+And another one showing off some https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API[WebGL]:
+
+\JsCanvasDemo[[
+new class extends CirodownCanvasDemo {
+  init() {
+    super.init('webgl', {context_type: 'webgl'});
+    this.ctx.viewport(0, 0, this.ctx.drawingBufferWidth, this.ctx.drawingBufferHeight);
+    this.ctx.clearColor(0.0, 0.0, 0.0, 1.0);
+    this.vertexShaderSource = `
+#version 100
+precision highp float;
+attribute float position;
+void main() {
+  gl_Position = vec4(position, 0.0, 0.0, 1.0);
+  gl_PointSize = 64.0;
+}
+`;
+
+    this.fragmentShaderSource = `
+#version 100
+precision mediump float;
+void main() {
+  gl_FragColor = vec4(0.18, 0.0, 0.34, 1.0);
+}
+`;
+    this.vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
+    this.ctx.shaderSource(this.vertexShader, this.vertexShaderSource);
+    this.ctx.compileShader(this.vertexShader);
+    this.fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);
+    this.ctx.shaderSource(this.fragmentShader, this.fragmentShaderSource);
+    this.ctx.compileShader(this.fragmentShader);
+    this.program = this.ctx.createProgram();
+    this.ctx.attachShader(this.program, this.vertexShader);
+    this.ctx.attachShader(this.program, this.fragmentShader);
+    this.ctx.linkProgram(this.program);
+    this.ctx.detachShader(this.program, this.vertexShader);
+    this.ctx.detachShader(this.program, this.fragmentShader);
+    this.ctx.deleteShader(this.vertexShader);
+    this.ctx.deleteShader(this.fragmentShader);
+    if (!this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)) {
+      console.log('error ' + this.ctx.getProgramInfoLog(this.program));
+      return;
+    }
+    this.ctx.enableVertexAttribArray(0);
+    var buffer = this.ctx.createBuffer();
+    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, buffer);
+    this.ctx.vertexAttribPointer(0, 1, this.ctx.FLOAT, false, 0, 0);
+    this.ctx.useProgram(this.program);
+  }
+  draw() {
+    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT);
+    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([Math.sin(this.time / 60.0)]), this.ctx.STATIC_DRAW);
+    this.ctx.drawArrays(this.ctx.POINTS, 0, 1);
+  }
+}
+]]
+
+= List
+{parent=macro}
 {title2=`* `, `\L`, `\Ul`, `\Ol`}
 
 \x[insane-macro-shortcuts][Insane] with `* ` (asterisk space):
@@ -1944,399 +1859,9 @@ And now a list outside of \x[cirodownexample] to test how it looks directly unde
 \L[b]
 \L[c]
 
-== Image
-{title2=`\Image` and `\image`}
-
-A block image with \x[block-vs-inline-macros][capital] 'i' `Image` showcasing most of the image properties \x[image-my-test-image].
-\CirodownExample[[
-Have a look at this amazing image: \x[image-my-test-image].
-
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title=The title of my image.}
-{id=image-my-test-image}
-{width=600}
-{height=200}
-{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
-{description=The description of my image.}
-]]
-This exemplifies the following parameters:
-* `description`: similar to `title`, but allow for further explanations without them appearing in \x[internal-cross-references][cross references] to the image
-* `source`: a standardized way to credit an image by linking to a URL that contains further image metadata
-For further discussion on the effects of ID see: \x[image-id][full].
-
-And this is how you make an inline image inline one with lower case `i`:
-\CirodownExample[[
-My inline \image[Tank_man_standing_in_front_of_some_tanks.jpg][test image] is awesome.
-]]
-Inline images can't have captions.
-
-The `description` can have multiple paragraphs just like any other element, but we don't recommend this style because it makes it hard for readers to see what is part of the image caption and what is part of the next paragraph.
-\CirodownExample[[
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{id=image-my-test-image-description-paragraphs}
-{title=The title of my image.}
-{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
-{description=Description paragraph 1.
-
-Description paragraph 2.
-}
-
-Paragraph after.
-]]
-Maybe we could improve this with some CSS styling, but generally when you want multiple paragraphs inside the image, you might instead be better off making an \x[internal-cross-file-references][internal cross reference] to the the image and adding your extended explanation outside.
-
-And now an image outside of \x[cirodownexample] to test how it looks directly under \x[toplevel]:
-
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{id=image-my-test-image-toplevel}
-
-=== Image height
-
-By default, we fix image heights to `height=315`, and let the `width` be calculated proportionally once the image loads. We therefore ignore the actual image size. This is done to:
-* prevent reflows as the page loads images and can determine their actual sizes, especially is the user opens the page at a given ID in the middle of the page
-* create a more uniform media experience by default, unless a custom image size is actually needed e.g. if the image needs to be larger
-
-=== Image IDs and captions
-{id=image-id}
-
-Here is an image without a description but with an ID so we can link to it: \x[image-my-test-image-2].
-\CirodownExample[[
-Have a look at this amazing image: \x[image-my-test-image-2].
-
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{id=image-my-test-image-2}
-]]
-This works because \x[cross-reference-full-argument][`full` is the default cross reference style for `Image`], otherwise the link text would be empty since there is no `title`, and cirodown would raise an error.
-
-Cirodown can optionally deduce the title from the basename of the `src` argument if the `titleFromSrc` \x[boolean-named-argument] is given, or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
-\CirodownExample[[
-Have a look at this amazing image: \x[image-tank-man-standing-in-front-of-some-tanks].
-
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{titleFromSrc}
-]]
-
-If the image has neither ID nor title, then it does not get a caption at all, and it is not possible to link to it with an \x[internal-cross-references][internal cross reference], e.g.:
-\CirodownExample[[
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-]]
-The image does however get an automatically generated ID based on its image number, and it is possible for readers to link to that ID on the rendered version, e.g. as:
-``
-#image-123
-``
-This link is of course not stable across document revisions however, since if an image is added before that one, the link will break. This kind of image is discouraged, because in paged output formats like PDF, it could float away from the text that refers to the image.
-
-We can also see that such an image does not increment the Figure count:
-\CirodownExample[[
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{id=image-my-test-image-count-before}
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{id=image-my-test-image-count-after}
-]]
-
-If the image has any visible metadata such as `source` or `description` however, then the caption does show and the Figure count gets incremented:
-\CirodownExample[[
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]{description=This is the description of my image.}
-]]
-
-=== Where to store images
-
-==== Store images inside the repository itself
-
-If you are making a limited repository that will not have a ton of images, then you can get away with simply git tracking your images in the main repository.
-
-With this setup, no further action is needed. For example, with a file structure of:
-``
-./README.ciro
-./Tank_man_standing_in_front_of_some_tanks.jpg
-``
-just use the image from \C[README.ciro] as:
-\CirodownExample[[
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-]]
-
-However, if you are making a huge tutorial, which can have a huge undefined number of images (i.e. any scientific book), then you likely don't want to git track your images in the git repository.
-
-==== Store images in a separate media repository
-
-In this approach, you create a separate GitHub repository in addition to the main one containing the text to contain only media such as images.
-
-This approach is more suitable than \x[store-images-inside-the-repository-itself] if you are going to have a lot of images.
-
-When using this approach, you could of course just point directly to the final image URL, e.g. as in:
-\CirodownExample[[
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-]]
-but Cirodown allows you use configurations that allow you to enter just the image basename: `Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg` which we will cover next.
-
-In order to get this to work, the recommended repository setup is:
-* `./main-repo/.git`: main repository at https://github.com/username/main-repo
-* `./main-repo/data/media/.git/`: media repository at https://github.com/username/main-repo-media[], and where `data/` is gitignored.
-The directory and repository names are not mandatory, but if you place media in `data/media` and name its repository by adding the `*-media` suffix, then `cirodown` will handle everything for you without any further configuration in \x[media-providers].
-
-This particular documentation repository does have a different setup as can be seen from its \a[cirodown.json]. Then, when everything is setup correctly, we can refer to images simply as:
-\CirodownExample[[
-\Image[Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]{provider=github}
-]]
-In this example, we also needed to set `{provider=github}` explicitly since it was not set as the default image provider in our `cirodown.json`. In most projects however, all of your images will be in the default repository, so this won't be needed.
-
-`provider` must not be given when a full URL is given because we automatically detect providers from URLs, e.g.:
-``
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]{provider=github}
-``
-is an error.
-
-TODO implement: `cirodown` will even automatically add and push used images in the `my-tutorial-media` repository for you \x[publish][during publishing]!
-
-You should then use the following rules inside `my-tutorial-media`:
-* give every file a very descriptive and unique name as a full English sentence
-* never ever delete any files, nor change their content, unless it is an improvement in format that does change the information contained of the image TODO link to nice Wikimedia Commons guideline page
-This way, even though the repositories are not fully in sync, anyone who clones the latest version of the `*-media` directory will be able to view any version of the main repository.
-
-Then, if one day the media repository ever blows up GitHub's limit, you can just migrate the images to another image server that allows arbitrary basenames, e.g. AWS, and just configure your project to use that new media base URL with the \x[media-providers] option.
-
-The reason why images should be kept in a separate repository is that images are hundreds or thousands of times larger than hand written text.
-
-Therefore, images could easily fill up the maximum repository size you are allowed: https://webapps.stackexchange.com/questions/45254/file-size-and-storage-limits-on-github#84746 and then what will you do when GitHub comes asking you to reduce the repository size?
-
-https://git-lfs.github.com/[Git LFS] is one approach to deal with this, but we feel that it adds too much development overhead.
-
-==== Store images in Wikimedia Commons
-
-Wikimedia Commons is another great possibility to upload your images to:
-\CirodownExample[[
-\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
-{source=https://commons.wikimedia.org/wiki/File:Gel_electrophoresis_insert_comb.jpg}
-]]
-
-Cirodown likes Wikimedia Commons so much that we automatically parse the image URL and if it is from Wikimedia Commons, automatically deduce the `source` for you. So the above image renders the same without the `source` argument:
-\CirodownExample[[
-\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
-]]
-
-And like for non-Wikimedia images, you can automatically generate a `title` from the `src` by setting the `titleFromSrc` \x[boolean-named-argument] or if `title-from-src` is set as the default \x[media-providers][media provider] for the media type: 
-\CirodownExample[[
-\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
-{titleFromSrc}
-]]
-
-And a quick test for a more complex thumb resized URL:
-\CirodownExample[[
-\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
-]]
-
-If you really absolutely want to turn off the `source`, you can explicitly set:
-\CirodownExample[[
-\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
-{source=}
-]]
-but you don't want to do that for the most commonly Wikimedia Commons used license of CC-BY+ , do you? :-)
-
-Upsides of using Wikimedia Commons for your images:
-* makes it easier for other writers to find and reuse your images
-* automatically generates resized versions of the uploaded images into several common dimensions so you can pick the smallest one that fits your desired \x[image-height] to reduce bandwidth usage
-* if you have so many images that they would blow even the size of a \x[store-images-in-a-separate-media-repository][separate media repository], this will still work
-Downsides:
-* forces you to use the Creative Commons license
-* requires the content to be educational in nature
-* uploading a bunch of images to Wikimedia Commons does feel a bit more laborious than it should because you have to write down so much repeated metadata for them
-
-=== Image lazy loading
-
-We do this by default because Cirodown is meant to allow producing huge single page documents like Ciro likes it, and in this way:
-* images that the user is looking at will load first
-* we save a lot of bandwidth for the user who only wants to browse one section
-
-TODO: maybe create a mechanism to disable this for the entire build with \x[cirodown-json].
-
-=== Background color of transparent images
-
-For the love of God, there is no standardized for SVG to set its background color without a rectangle? https://stackoverflow.com/questions/11293026/default-background-color-of-svg-root-element `viewport-fill` was just left in limbo?
-
-And as a result, many many many SVG online images that you might want to reuse just rely on white pages and don't add that background rectangle.
-
-Therefore for now we just force white background on \x[overview-of-files-in-this-repository][our default CSS], which is what most SVGs will work with. Otherwise, you can lose the entire image to our default black background.
-
-Then if someone ever has an SVG that needs another background color, we can add an image attribute to set that color as a local style.
-
-=== Image generators
-
-TODO implement: mechanism where you enter a textual description of the image inside the code body, and it then converts to an image, adds to the `-media` repo and pushes all automatically. Start with dot.
-
-https://github.com/cirosantilli/cirodown/issues/40
-
-== Video
-{title2=`\Video` and `\video`}
-
-Very analogous to \x[image]{p}, only differences will be documented here.
-
-In the case of videos, \x[where-to-store-images] becomes even more critical since videos are even larger than images, such that the following storage approaches are impractical off the bat:
-* \x[store-images-inside-the-repository-itself]
-* \x[store-images-in-a-separate-media-repository]
-As a result, then https://commons.wikimedia.org[Wikimedia Commons] is one of the best options \x[store-images-in-wikimedia-commons][much like for images]:
-\CirodownExample[[
-\Video[https://upload.wikimedia.org/wikipedia/commons/8/85/Vacuum_pump_filter_cut_and_place_in_eppendorf.webm]
-{id=sample-video-in-wikimedia-commons}
-{title=Nice sample video stored in Wikimedia Commons.}
-{start=5}
-]]
-We also handle more complex transcoded video URLs just fine:
-\CirodownExample[[
-\Video[https://upload.wikimedia.org/wikipedia/commons/transcoded/1/19/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv.480p.vp9.webm]
-{id=sample-video-in-wikimedia-commons-transcoded}
-{title=Nice sample video stored in Wikimedia Commons transcoded.}
-]]
-Commons is better than YouTube if your content is on-topic there because:
-* they have no ads
-* it allows download of the videos: https://www.quora.com/Can-I-download-Creative-Commons-licensed-YouTube-videos-to-edit-them-and-use-them[].
-* it makes it easier for other users to find and re-use your videos
-
-If your video does not fit the above Wikimedia Commons requirements, YouTube could be a good bet. Cirodown https://github.com/cirosantilli/cirodown/issues/50[automatically detects YouTube URLs] for you, so the following should just work:
-\CirodownExample[[
-\Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
-{id=sample-video-from-youtube-implicit-youtube}
-{title=Nice sample video embedded from YouTube implicit from `youtube.com` URL.}
-]]
-The `youtu.be` domain hack URLs also work;
-\CirodownExample[[
-\Video[https://youtu.be/YeFzeNAHEhU?t=38]
-{id=sample-video-from-youtube-implicit-youtu-be}
-{title=Nice sample video embedded from YouTube implicit from `youtu.be` URL.}
-]]
-Alternatively, you can reach the same result in a more explicit and minimal way by setting `{provider=youtube}` and the `start` arguments:
-\CirodownExample[[
-\Video[YeFzeNAHEhU]{provider=youtube}
-{id=sample-video-from-youtube-explicit}
-{title=Nice sample video embedded from YouTube with explicit `youtube` argument.}
-{start=38}
-]]
-When the `youtube` provider is selected, the Video address should only to contain the YouTube video ID, which shows in the YouTube URL for the video as:
-``
-https://www.youtube.com/watch?v=<video-id>
-``
-Remember that you can also enable the `youtube` provider by default on your \x[cirodown-json] with:
-``
-"media-provider" {
-  "youtube": {"default-for": "video"}
-}
-``
-
-But you can also use raw video files from any location that can serve them of course, e.g. here is one stored in this repository: \x[sample-video-in-repository].
-\CirodownExample[[
-\Video[Tank_man_side_hopping_in_front_of_some_tanks.mp4]
-{id=sample-video-in-repository}
-{title=Nice sample video stored in this repository.}
-{source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
-{start=3}
-]]
-
-And as for images, setting `titleFromSrc` automatically calculates a title for you:
-\CirodownExample[[
-\Video[Tank_man_side_hopping_in_front_of_some_tanks.mp4]
-{titleFromSrc}
-{source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
-]]
-
-=== `\Video` `start` argument
-
-The time to start playing the video at in seconds. Works for both `youtube` and non-Youtube videos.
-
-=== Video lazy loading
-
-Unlike \x[image-lazy-loading], we don't support video lazy loading yet because:
-* non-`youtube` videos use the `video` tag which has no `loading` property yet
-* `youtube` videos are embedded with `iframe` and `iframe` has no `loading` property yet
-
-Both of this cases could be worked around with JavaScript:
-* non-`youtube`: set `src` from JavaScript as shown for images: https://stackoverflow.com/questions/2321907/how-do-you-make-images-load-lazily-only-when-they-are-in-the-viewport/57389607#57389607[].
-
-  But this breaks page semantics however, we don't know how to work around that
-* `youtube` videos: same as above for the `iframe`, but this should be less problematic since YouTube videos are not viewable without JavaScript anyways, and who cares about `iframe` semantics?
-
-== Code
-{title2=\c[[`]], \c[[``]], `\c` and `\C`}
-
-Inline code (code that should appear in the middle of a paragraph rather than on its own line) is done with a single backtick (\c[[`]]) \x[insane-macro-shortcuts][insane macro shortcut]:
-\CirodownExample[[
-My inline `x = 'hello\n'` is awesome.
-]]
-and block code (code that should appear on their own line) is done with two or more backticks (\c[[``]]):
-\CirodownExample[[
-``
-f() {
-  return 'hello\n';
-}
-``
-]]
-
-The sane version of inline code is a lower case `c`:
-\CirodownExample[[[
-My inline \c[[x = 'hello\n']] is awesome.
-]]]
-and the sane version of block math is with an upper case `C`:
-\CirodownExample[[[
-\C[[
-f() {
-  return 'hello\n';
-}
-]]
-]]]
-
-The capital vs lower case theme is also used in other elements, see: \x[block-vs-inline-macros].
-
-If the content of the sane code block has many characters that you would need to \x[escape-characters][escape], you will often want to use \x[literal-arguments], which work just like the do for any other argument. For example:
-\CirodownExample[[[[
-\C[[[
-A paragraph.
-
-\C[[
-And now, some long, long code, with lots
-of chars that you would need to escape:
-\ [  ] {  }
-]]
-
-A paragraph.
-]]]
-]]]]
-Note that the initial newline is skipped automatically in code blocks, just as for any other element, due to: \x[argument-leading-newline-removal], so you don't have to worry about it.
-
-The distinction between inline `\c` and block `\C` code blocks is needed because in HTML, https://stackoverflow.com/questions/5371787/can-i-have-a-pre-tag-inside-a-p-tag-in-tumblr/58603596#58603596[`pre` cannot go inside `P`].
-
-We could have chosen to do some magic to differentiate between them, e.g. checking if the block is the only element in a paragraph, but we decided not to do that to keep the language saner.
-
-And now a code block outside of \x[cirodownexample] to test how it looks directly under \x[toplevel]:
-
-``
-Hello
-Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello
-Hello
-``
-
-\Comment[[[[
-TODO implement.
-We can have cross references to code blocks as for other elements such as \x[image]{p}:
-\CirodownExample[[[
-See this awesome code \x[my-code]:
-``
-ab
-cd
-``
-{id=my-code}
-]]]
-]]]]
-
-Block code can have a title, e.g. see this one: \x[code-my-nice-code]{full}:
-\CirodownExample[[
-``
-ab
-cd
-``
-{id=code-my-nice-code}
-{title=My nice code block.}
-]]
-
-== Mathematics
-{title2=`$`, `$$`, `\m` and `\M`}
+= Mathematics
+{parent=macro}
+{title2=`$$`, `$`, `\M`, `\m`}
 
 Via https://katex.org/[KaTeX] server side, oh yes!
 
@@ -2453,7 +1978,72 @@ $$
 $$
 ``
 
-== Tables
+= Paragraph
+{title2=`\P`}
+{parent=macro}
+
+OK, this is too common, so we opted for some \x[insane-macro-shortcuts][insanity] here: double newline is a paragraph!
+\CirodownExample[[
+Paragraph 1.
+
+Paragraph 2.
+]]
+
+Equivalently however, you can use an explicit `\P` macros as well, which is required for example to add properties to a paragraph, e.g.:
+\CirodownExample[[
+\P{id=paragraph-1}[Paragraph 1]
+\P{id=paragraph-2}[Paragraph 2]
+]]
+
+Paragraphs are created automatically inside \x[macro-argument-syntax][macro argument] whenever a double newline appears.
+
+Note that Cirodown paragraphs render in HTML as `div` with `class="p"` and not as `p`. This means that you can add basically anything inside them, e.g. a list:
+``
+My favorite list is:
+\Ul[
+\li[aa]
+\li[bb]
+]
+because it is simple.
+``
+which renders as a single paragraph.
+
+One major advantage of this, is that when writing documentation, you often want to keep lists or code blocks inside a given paragraph, so that it is easy to reference the entire paragraph with an ID. Think for example of paragraphs in the C++ standard.
+
+= Passthrough
+{parent=macro}
+{title2=`\Passthrough`}
+
+Dumps its contents directly into the rendered output.
+
+This construct is not XSS safe, see: \x[xss-unsafe]{full}.
+
+Here for example we define a paragraph in raw HTML:
+\CirodownExample[[[
+\Passthrough[[
+<p>Hello <b>raw</b> HTML!</p>
+]]
+]]]
+
+= Quotation
+{parent=macro}
+{title2=`\Q`}
+
+With `q`:
+\CirodownExample[[
+And so he said:
+
+\Q[
+Something very smart
+
+And with multiple paragraphs.
+]
+
+and it was great.
+]]
+
+= Table
+{parent=macro}
 {title2=`|| `, `| `, `\Table`, `\Tr`, `\Th` and `\Td`}
 
 The \x[insane-code-and-math-shortcuts][insane] syntax marks:
@@ -2519,7 +2109,7 @@ To pass further arguments to an implicit table such as `title` or `id`, you need
 ]]
 The rules of when the caption shows up or not are the same as described for \x[image]{p}.
 
-Multiple source lines, including paragraphs, can be added to a single cell with insane syntax by indenting the cell with exactly two spaces just as for \x[lists], e.g.:
+Multiple source lines, including paragraphs, can be added to a single cell with insane syntax by indenting the cell with exactly two spaces just as for \x[list]{p}, e.g.:
 \CirodownExample[[
 || h1
 || h2
@@ -2584,7 +2174,8 @@ And a fully insane one:
 | 2 1
 | 2 2
 
-=== Table sorting
+= Table sorting
+{parent=table}
 
 JavaScript interactive on-click table sorting is enabled by default, try it out by clicking on the header row:
 \CirodownExample[[
@@ -2606,264 +2197,774 @@ JavaScript interactive on-click table sorting is enabled by default, try it out 
 ]]
 Powered by: https://github.com/tristen/tablesort
 
-== Quotations
-{title2=`\Q`}
+= Table of contents
+{parent=macro}
+{title2=`\Toc`}
 
-With `q`:
+Cirodown automatically adds a ToC at the end of the first \x[the-toplevel-header][non-toplevel header] of every document.
+
+For example, on a standard document with a single toplevel header:
+``
+= Animal
+
+Animals are cute!
+
+== Dog
+
+== Cat
+``
+the ToC is rendered like:
+``
+= Animal
+
+Animals are cute!
+
+Table of Contents
+* Dog
+* Cat
+
+== Dog
+
+== Cat
+``
+
+You may customize ToC placement with `\Toc` macro, but just don't do it, it will just go against common convention and confuse readers.
+
+This is especially important when considering \x[split-headers], where you almost always want an automatically generated ToC for every split header, otherwise you would need to add them all manually.
+
+Only one ToC is rendered per document. Any ToC besides the first one is ignored. In particular, this means that \x[include]{p} with \x[embed-includes] work seamlessly and render a single table of contents, even if multiple `\Toc` macros are present in the included pages.
+
+The \x[internal-cross-reference][ID] of the ToC is always fixed to `#toc`. If you try to use that for another element, you will get the following error:
+``
+error: tmp.ciro:3:1: reserved ID "toc"
+``
+
+The ToC ignores \x[the-toplevel-header] if you have one.
+
+For when you want a quick outline of the header tree on the terminal, also consider the \x[log-headers] option.
+
+= Table of contents JavaScript open close interaction
+{parent=table-of-contents}
+
+To the left of table of content entries you can click on an open/close icon to toggle the visibility of different levels of the table of contents.
+
+The expansion algorithm is optimized so that when you first click on the arrow of a node it will give you an overview of that node, showing only its direct children.
+
+At the start, all nodes are showing, to facilitate Ctrl + F queries, and so when you first click on a node, it collapses the children of children, so you can see only the direct children the node of interest, without getting a gazillion of sub descendants shown first.
+
+The exact behaviour is:
+* if a node is open:
+  * if all children are closed, close the element, This can improve the view of its siblings. The toplevel "Table of Contents" node never closes however, since we never want to close that one.
+  * otherwise, close all children. This Gives a good overview of the children, without any children of children getting in the way.
+* if a node is closed (not showing children), open it and show all children and their descendants.
+
+As a result of the above rules, clicking on a node three times goes through a loop of basically all useful states:
+* node open and children open (initial state
+* node open and children closed
+* node closed
+
+Clicking on the link from a \x[header] up to the table of contents also automatically opens up the node for you in case it had been previously closed manually.
+
+= Video
+{parent=macro}
+{title2=`\Video` and `\video`}
+
+Very analogous to \x[image]{p}, only differences will be documented here.
+
+In the case of videos, \x[where-to-store-images] becomes even more critical since videos are even larger than images, such that the following storage approaches are impractical off the bat:
+* \x[store-images-inside-the-repository-itself]
+* \x[store-images-in-a-separate-media-repository]
+As a result, then https://commons.wikimedia.org[Wikimedia Commons] is one of the best options \x[store-images-in-wikimedia-commons][much like for images]:
 \CirodownExample[[
-And so he said:
+\Video[https://upload.wikimedia.org/wikipedia/commons/8/85/Vacuum_pump_filter_cut_and_place_in_eppendorf.webm]
+{id=sample-video-in-wikimedia-commons}
+{title=Nice sample video stored in Wikimedia Commons.}
+{start=5}
+]]
+We also handle more complex transcoded video URLs just fine:
+\CirodownExample[[
+\Video[https://upload.wikimedia.org/wikipedia/commons/transcoded/1/19/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv/Scientific_Industries_Inc_Vortex-Genie_2_running.ogv.480p.vp9.webm]
+{id=sample-video-in-wikimedia-commons-transcoded}
+{title=Nice sample video stored in Wikimedia Commons transcoded.}
+]]
+Commons is better than YouTube if your content is on-topic there because:
+* they have no ads
+* it allows download of the videos: https://www.quora.com/Can-I-download-Creative-Commons-licensed-YouTube-videos-to-edit-them-and-use-them[].
+* it makes it easier for other users to find and re-use your videos
 
-\Q[
-Something very smart
+If your video does not fit the above Wikimedia Commons requirements, YouTube could be a good bet. Cirodown https://github.com/cirosantilli/cirodown/issues/50[automatically detects YouTube URLs] for you, so the following should just work:
+\CirodownExample[[
+\Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
+{id=sample-video-from-youtube-implicit-youtube}
+{title=Nice sample video embedded from YouTube implicit from `youtube.com` URL.}
+]]
+The `youtu.be` domain hack URLs also work;
+\CirodownExample[[
+\Video[https://youtu.be/YeFzeNAHEhU?t=38]
+{id=sample-video-from-youtube-implicit-youtu-be}
+{title=Nice sample video embedded from YouTube implicit from `youtu.be` URL.}
+]]
+Alternatively, you can reach the same result in a more explicit and minimal way by setting `{provider=youtube}` and the \x[video-start-argument][`start`] arguments:
+\CirodownExample[[
+\Video[YeFzeNAHEhU]{provider=youtube}
+{id=sample-video-from-youtube-explicit}
+{title=Nice sample video embedded from YouTube with explicit `youtube` argument.}
+{start=38}
+]]
+When the `youtube` provider is selected, the Video address should only to contain the YouTube video ID, which shows in the YouTube URL for the video as:
+``
+https://www.youtube.com/watch?v=<video-id>
+``
+Remember that you can also enable the `youtube` provider by default on your \x[cirodown-json] with:
+``
+"media-provider" {
+  "youtube": {"default-for": "video"}
+}
+``
 
-And with multiple paragraphs.
-]
-
-and it was great.
+But you can also use raw video files from any location that can serve them of course, e.g. here is one stored in this repository: \x[sample-video-in-repository].
+\CirodownExample[[
+\Video[Tank_man_side_hopping_in_front_of_some_tanks.mp4]
+{id=sample-video-in-repository}
+{title=Nice sample video stored in this repository.}
+{source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
+{start=3}
 ]]
 
-== Bold
-{title2=`\b`}
+And as for images, setting `titleFromSrc` automatically calculates a title for you:
+\CirodownExample[[
+\Video[Tank_man_side_hopping_in_front_of_some_tanks.mp4]
+{titleFromSrc}
+{source=https://www.youtube.com/watch?v=YeFzeNAHEhU}
+]]
+
+= Video lazy loading
+{parent=video}
+
+Unlike \x[image-lazy-loading], we don't support video lazy loading yet because:
+* non-`youtube` videos use the `video` tag which has no `loading` property yet
+* `youtube` videos are embedded with `iframe` and `iframe` has no `loading` property yet
+
+Both of this cases could be worked around with JavaScript:
+* non-`youtube`: set `src` from JavaScript as shown for images: https://stackoverflow.com/questions/2321907/how-do-you-make-images-load-lazily-only-when-they-are-in-the-viewport/57389607#57389607[].
+
+  But this breaks page semantics however, we don't know how to work around that
+* `youtube` videos: same as above for the `iframe`, but this should be less problematic since YouTube videos are not viewable without JavaScript anyways, and who cares about `iframe` semantics?
+
+= `\Video` `start` argument
+{parent=video}
+
+The time to start playing the video at in seconds. Works for both `youtube` and non-YouTube videos.
+
+= Internal cross reference
+{parent=macro}
+{title2=`\x`}
+
+Every macro in Cirodown can have an optional `id` and many also have a reserved `title` property.
+
+When a macro in the document has a `title` argument but no `id` argument given, get an auto-generated ID from the title: \x[automatic-id-from-title].
+
+For macros that do have an ID, derived from `title` or not, you can write a cross reference to it, e.g.:
+\CirodownExample[[
+See this \x[internal-cross-reference]{p} awesome section.
+]]
+
+An explicit link body can be given just as for regular HTTP \x[link]{p} as:
+\CirodownExample[[
+See this \x[internal-cross-reference]{p}[awesome section].
+]]
+
+= Cross reference title inflection
+{parent=internal-cross-reference}
+
+A common usage pattern is that we want to use \x[header] titles in \x[x-full-argument][non-full] \x[internal-cross-reference]{p} as the definition of a concept without repeating the title, for example:
+``
+== Dog
+
+Cute animal.
+
+\x[cats][Cats] are its natural enemies.
+
+== Cats
+
+This is the natural enemy of a \x[dog][dog].
+
+\x[dog][Dogs] are cute, but they are still the enemy.
+
+One example of a cat is \x[felix-the-cat].
+
+=== Felix the Cat
+
+Felix is not really a \x[cats][cat], just a carton character.
+``
+
+However, word https://en.wikipedia.org/wiki/Inflection[inflection] makes it much harder to avoid retyping the definition again.
+
+For example, in the previous example, without any further intelligent behaviour we would be forced to re-type `\x[dog][dog]` instead of the desired `\x[dog]`.
+
+Cirodown can take care of some inflection cases for you.
+
+For capitalization, both headers and cross reference macros have the `c` \x[boolean-named-argument] which stands for "capitalized":
+* for headers, `c` means that the header title has fixed capitalization as given in the title, i.e.
+  * if the title has a capital first character, it will always show as a capital, as is the case for most https://en.wikipedia.org/wiki/Proper_noun[proper noun]
+  * if it is lower case, it will also always remain lower case, as is the case for some rare proper nouns, notably https://en.wikipedia.org/wiki/Arm_Holdings[the name of certain companies]
+
+  This means that for such headers, `c` in the `x` has no effect. Maybe we should give an error in that case. But lazy now, send PR.
+* for cross reference macros, `c` means that the first letter of the title should be capitalized.
+
+  Using this option is required when you are starting a sentence with a non-proper noun.
+Capitalization is handled by a \x[javascript-case-conversion].
+
+For pluralization, cross reference macros have the `p` \x[boolean-named-argument] which stands for "pluralize":
+* if given and true, this automatically pluralizes the last word of the target title by using the https://github.com/blakeembrey/pluralize library
+* if given and false, automatically singularize
+* if not given, don't change the number of elements
+If your desired pluralization is any more complex than modifying the last word of the title, you must do it manually however.
+
+With those rules in mind, the previous Cirodown example can be written with less repetition as:
+``
+== Dog
+
+Cute animal.
+
+\x[cats]{c} are its natural enemies.
+
+== Cats
+
+This is the natural enemy of a \x[dog].
+
+\x[dog]{p} are cute, but they are still the enemy.
+
+One example of a cat is \x[Felix the Cat].
+
+=== Felix the Cat
+{c}
+
+Felix is not really a \x[cats][cat], just a carton character.
+``
+
+If plural and capitalization don't handle your common desired inflections, you can also just create custom ones with the \x[h-synonym-argument].
+
+Now for a live example for quick and dirty interactive testing.
+
+= Cross reference title inflection example
+{parent=cross-reference-title-inflection}
 
 \CirodownExample[[
-Some \b[bold] text.
+\x[inflection-example-not-proper]
 ]]
-
-== Italic
-{title2=`\i`}
 
 \CirodownExample[[
-Some \i[italic] text.
+\x[inflection-example-not-proper]{c}
 ]]
 
-== Passthrough
-{title2=`\Passthrough`}
-
-Dumps its contents directly into the rendered output.
-
-This construct is not XSS safe, see: \x[xss-unsafe]{full}.
-
-Here for example we define a paragraph in raw HTML:
-\CirodownExample[[[
-\Passthrough[[
-<p>Hello <b>raw</b> HTML!</p>
-]]
-]]]
-
-== Comments
-
-The `Comment` and `comment` macros are regular macros that does not produce any output. Capitalization is explained at: \x[block-vs-inline-macros]{full}.
-
-You will therefore mostly want to use it with a \x[literal-arguments][literal argument], which will, as for any other macro, ignore any macros inside of it.
-\CirodownExample[[[
-Before comment.
-
-\Comment[[
-Inside comment.
-]]
-
-After comment.
-]]]
-
-And an inline one:
-\CirodownExample[[[
-My inline \comment[[inside comment]] is awesome.
-
-\comment[[inside comment]] inline at the start.
-]]]
-
-== `JsCanvasDemo`
-
-The `JsCanvasDemo` macro allows you to create interactive HTML/JavaScript https://en.wikipedia.org/wiki/Canvas_element[canvas] demos easily.
-
-These demos:
-* only start running when the user scrolls over them for the first time
-* stop automatically when they leave the viewport
-so you can stuff as many of them as you want on a page, and they won't cause the reader's CPU to fry an egg.
-
-\CirodownExample[[[
-\JsCanvasDemo[[
-new class extends CirodownCanvasDemo {
-  init() {
-    super.init('hello');
-    this.pixel_size_input = this.addInputAfterEnable(
-      'Pixel size',
-      {
-        'min': 1,
-        'type': 'number',
-        'value': 1,
-      }
-    );
-  }
-  draw() {
-    var pixel_size = parseInt(this.pixel_size_input.value);
-    for (var x = 0; x < this.width; x += pixel_size) {
-      for (var y = 0; y < this.height; y += pixel_size) {
-        var b = ((1.0 + Math.sin(this.time * Math.PI / 16)) / 2.0);
-        this.ctx.fillStyle =
-          'rgba(' +
-          (x / this.width) * 255 + ',' +
-          (y / this.height) * 255 + ',' +
-          b * 255 +
-          ',255)'
-        ;
-        this.ctx.fillRect(x, y, pixel_size, pixel_size);
-      }
-    }
-  }
-}
-]]
-]]]
-
-And another one showing off some https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API[WebGL]:
-
-\JsCanvasDemo[[
-new class extends CirodownCanvasDemo {
-  init() {
-    super.init('webgl', {context_type: 'webgl'});
-    this.ctx.viewport(0, 0, this.ctx.drawingBufferWidth, this.ctx.drawingBufferHeight);
-    this.ctx.clearColor(0.0, 0.0, 0.0, 1.0);
-    this.vertexShaderSource = `
-#version 100
-precision highp float;
-attribute float position;
-void main() {
-  gl_Position = vec4(position, 0.0, 0.0, 1.0);
-  gl_PointSize = 64.0;
-}
-`;
-
-    this.fragmentShaderSource = `
-#version 100
-precision mediump float;
-void main() {
-  gl_FragColor = vec4(0.18, 0.0, 0.34, 1.0);
-}
-`;
-    this.vertexShader = this.ctx.createShader(this.ctx.VERTEX_SHADER);
-    this.ctx.shaderSource(this.vertexShader, this.vertexShaderSource);
-    this.ctx.compileShader(this.vertexShader);
-    this.fragmentShader = this.ctx.createShader(this.ctx.FRAGMENT_SHADER);
-    this.ctx.shaderSource(this.fragmentShader, this.fragmentShaderSource);
-    this.ctx.compileShader(this.fragmentShader);
-    this.program = this.ctx.createProgram();
-    this.ctx.attachShader(this.program, this.vertexShader);
-    this.ctx.attachShader(this.program, this.fragmentShader);
-    this.ctx.linkProgram(this.program);
-    this.ctx.detachShader(this.program, this.vertexShader);
-    this.ctx.detachShader(this.program, this.fragmentShader);
-    this.ctx.deleteShader(this.vertexShader);
-    this.ctx.deleteShader(this.fragmentShader);
-    if (!this.ctx.getProgramParameter(this.program, this.ctx.LINK_STATUS)) {
-      console.log('error ' + this.ctx.getProgramInfoLog(this.program));
-      return;
-    }
-    this.ctx.enableVertexAttribArray(0);
-    var buffer = this.ctx.createBuffer();
-    this.ctx.bindBuffer(this.ctx.ARRAY_BUFFER, buffer);
-    this.ctx.vertexAttribPointer(0, 1, this.ctx.FLOAT, false, 0, 0);
-    this.ctx.useProgram(this.program);
-  }
-  draw() {
-    this.ctx.clear(this.ctx.COLOR_BUFFER_BIT);
-    this.ctx.bufferData(this.ctx.ARRAY_BUFFER, new Float32Array([Math.sin(this.time / 60.0)]), this.ctx.STATIC_DRAW);
-    this.ctx.drawArrays(this.ctx.POINTS, 0, 1);
-  }
-}
-]]
-
-== `CirodownExample`
-
-Shows both the Cirodown code and its rendered output, e.g.:
-\CirodownExample[[[
 \CirodownExample[[
-Some `ineline` code.
+\x[inflection-example-not-proper]{full}
 ]]
-]]]
 
-Its input should be thought of as a literal code string, and it then injects the rendered output in the document.
+\CirodownExample[[
+\x[inflection-example-proper]
+]]
 
-This macro is used extensively in the Cirodown documentation.
+\CirodownExample[[
+\x[inflection-example-proper]{c}
+]]
 
-= Error reporting
-{parent=cirodown}
+\CirodownExample[[
+\x[inflection-example-not-proper-lower]
+]]
 
-A lot of effort has been put into making error reporting as good as possible in Cirodown, to allow authors to quickly find what is wrong with their source code.
+\CirodownExample[[
+\x[inflection-example-not-proper-lower]{c}
+]]
 
-Error reporting is for example tested with `assert_error` tests in \a[test.js].
+\CirodownExample[[
+\x[inflection-example-proper-lower]
+]]
 
-Please report any error reporting bug you find, as it will be seriously tracked under the: https://github.com/cirosantilli/cirodown/issues?q=label%3Aerror-reporting+[`error-reporting` label].
+\CirodownExample[[
+\x[not-readme]
+]]
 
-Notably, Cirodown should never throw an exception due to a syntax error, as that prevents error messages from being output at all.
+\CirodownExample[[
+\x[not-readme]{c}
+]]
 
-= Order of reported errors
-{parent=error-reporting}
+\CirodownExample[[
+\x[inflection-example-not-proper]{p}
+]]
 
-One important philosophy of the error reporting is that the very first message should be the root cause of the problem whenever possible: users should not be forced to search a hundred messages to find the root cause. In this way, the procedure:
-* solve the first error
-* reconvert
-* solving the new first error
-* reconvert
-* etc.
-should always deterministically lead to a resolution of all problems.
+\CirodownExample[[
+\x[inflection-plural-examples]
+]]
 
-Error messages are normally sorted by file, line and column, regardless of which conversion stage they happened (e.g. a tokeniser error first gets reported before a parser error).
+\CirodownExample[[
+\x[inflection-plural-examples]{p}
+]]
 
-There is however one important exception to that: broken internal cross references are always reported last.
+\CirodownExample[[
+\x[inflection-plural-examples]{p=0}
+]]
 
-For example, consider the following syntactically wrong document:
-```
-= a
+\CirodownExample[[
+\x[inflection-plural-examples]{p=1}
+]]
 
-\x[b]
+\CirodownExample[[
+\x[not-the-readme-header-with-fixed-case]
+]]
 
+= Inflection example not-proper
+{parent=cross-reference-title-inflection-example}
+
+= Inflection example proper
+{c}
+{parent=cross-reference-title-inflection-example}
+
+= inflection example not-proper lower
+{parent=cross-reference-title-inflection-example}
+
+= inflection example proper lower
+{c}
+{parent=cross-reference-title-inflection-example}
+
+= Inflection plural examples
+{parent=cross-reference-title-inflection-example}
+
+= `\x` within `title` restrictions
+{parent=internal-cross-reference}
+
+If you use `\x` within a `title`, which most commonly happens for \x[image][image titles], that can generate complex dependencies, which would either be harder to implement, or lead to infinite recursion.
+
+To prevent such problems, Cirodown emits an error if you use an `\x` without content in the `title` of one of the following elements without an explicit ID:
+* \x[header]. For example, the following gives an error:
+  ``
+  = h1
+  {id=myh1}
+
+  == \x[myh1]
+  ``
+
+  This could be solved by either adding a content to the reference:
+  ``
+  = h1
+  {id=myh1}
+
+  == \x[myh1][mycontent]
+  ``
+  or by adding an explicit ID to the header:
+  ``
+  = h1
+  {id=myh1}
+
+  == \x[myh1]
+  {id=myh2}
+  ``
+* non-header (e.g. an \x[image]) that links to the title of another non-header
+
+  For non-headers, things are a bit more relaxed, and we can link to headers, e.g.:
+  ``
+  = h1
+
+  \Image[myimg.jpg]
+  {title=my \x[h1].}
+  ``
+  This is allowed because Cirodown calculates IDs in two stages: first for all headers, and only later non non-headers.
+
+  What you cannot do is link to another image e.g.:
+  ``
+  \Image[myimg.jpg]
+  {id=myimage1}
+  {title=My image 1.}
+
+  \Image[myimg.jpg]
+  {title=my \x[h1].}
+  ``
+  and there the workaround are much the same as for headers: either explicitly set the cross reference content:
+  ``
+  \Image[myimg.jpg]
+  {id=myimage1}
+  {title=My image 1.}
+
+  \Image[myimg.jpg]
+  {title=my \x[h1][My image 1].}
+  ``
+  or explicitly set an ID:
+  ``
+  \Image[myimg.jpg]
+  {id=myimage1}
+  {title=My image 1.}
+
+  \Image[myimg.jpg]
+  {id=myimage2}
+  {title=my \x[h1].}
+  ``
+
+While it is technically possible implement the above limitations, it would require a bit of extra work which we don't want to put in right now: https://github.com/cirosantilli/cirodown/issues/95[].
+
+Furthermore, the above rules do not exclude infinite rendering loops, but Cirodown detects such loops and gives a nice error message, this has been fixed at: https://github.com/cirosantilli/cirodown/issues/34 
+
+For example this would contain an infinite loop:
 ``
-== b
-```
-Here we have an unterminated code block at line 5.
+\Image[myimg.jpg]
+{id=myimage1}
+{title=\x[myimage2].}
 
-However, this unterminated code block leads the header `b` not to be seen, and therefore the reference `\x[b]` on line 3 to fail.
-
-Therefore, if we sorted naively by line, the broken reference would shoe up first:
-``
-error: tmp.ciro:3:3: cross reference to unknown id: "b"
-error: tmp.ciro:5:1: unterminated literal argument
+\Image[myimg.jpg]
+{id=myimage2}
+{title=\x[myimage1].}
 ``
 
-But in a big document, this case could lead to hundreds of undefined references to show up before the actual root unterminated literal problem.:
+This infinite recursion is fundamentally not technically solved: the user has to manually break the loop by providing an `x` content explicitly, e.g. in either:
 ``
-error: tmp.ciro:3:3: cross reference to unknown id: "b"
-error: tmp.ciro:4:3: cross reference to unknown id: "b"
-error: tmp.ciro:5:3: cross reference to unknown id: "b"
-...
-error: tmp.ciro:1000:1: unterminated literal argument
+\Image[myimg.jpg]
+{id=myimage1}
+{title=\x[myimage2][my content 2].}
+
+\Image[myimg.jpg]
+{id=myimage2}
+{title=\x[myimage1].}
+``
+or:
+``
+\Image[myimg.jpg]
+{id=myimage1}
+{title=\x[myimage2].}
+
+\Image[myimg.jpg]
+{id=myimage2}
+{title=\x[myimage1][my content 1].}
 ``
 
-Therefore, we force undefined references to show up last to prevent this common problem:
+= Internal cross file reference
+{parent=internal-cross-reference}
+
+Reference to the first header of another file:
+\CirodownExample[[
+\x[not-readme]
+]]
+
+Reference to a non-first header of another file:
+\CirodownExample[[
+\x[h2-in-not-the-readme]
+]]
+
+To make toplevel links cleaner,if target header is the very first element of the other page, then the link does not get a fragment, e.g.: `\x[not-readme]` rendered as:
 ``
-error: tmp.ciro:1000:1: unterminated literal argument
-error: tmp.ciro:3:3: cross reference to unknown id: "b"
-error: tmp.ciro:4:3: cross reference to unknown id: "b"
-error: tmp.ciro:5:3: cross reference to unknown id: "b"
-...
+<a href="not-readme"
 ``
+and not:
+``
+<a href="not-readme#not-readme"
+``
+while `\x[h2-in-not-the-readme]` is rendered with the fragment:
+``
+<a href="not-readme#h2-in-not-the-readme"
+``
+
+Reference to the first header of another file that is a second inclusion:
+\CirodownExample[[
+\x[included-by-not-readme]
+]]
+
+Reference to another header of another file, with \x[x-full-argument][`full`]:
+\CirodownExample[[
+\x[h2-in-not-the-readme]{full}.
+]]
+Note that when `full` is used with references in another file in \x[embed-includes][multi page mode], the number is not rendered as explained at: \x[x-full-argument-in-internal-cross-file-references]{full}.
+
+Reference to an image in another file:
+\CirodownExample[[
+\x[image-not-readme-xi]{full}.
+]]
+
+Reference to an image in another file:
+\CirodownExample[[
+\x[image-figure-in-not-the-readme-without-explicit-id]{full}.
+]]
+
+Remember that the \x[the-toplevel-header][ID of the toplevel header] is automatically derived from its file name, that's why we have to use:
+\CirodownExample[[
+\x[not-readme]
+]]
+instead of:
+``
+\x[not-the-readme]
+``
+
+Reference to a subdirectory:
+\CirodownExample[[
+\x[subdir]
+
+\x[subdir/h2]
+
+\x[subdir/notindex]
+
+\x[subdir/notindex-h2]
+]]
+Implemented at: https://github.com/cirosantilli/cirodown/issues/116
+
+Reference to an internal header of another file: \x[h2-in-not-the-readme]. By default, That header ID gets prefixed by the ID of the top header.
+
+When using \x[embed-includes] mode, the cross file references end up pointing to an ID inside the current HTML element, e.g.:
+``
+<a href="#not-readme">
+``
+rather than:
+``
+<a href="not-readme.html/#not-readme">
+``
+This is why IDs must be unique for elements across all pages.
+
+= Internal cross file reference internals
+{parent=internal-cross-file-reference}
+
+When running in Node.js, Cirodown dumps the IDs of all processed files to a `out/db.sqlite3` file, and then reads from that file when IDs are needed.
+
+When converting a directory, `out/db.sqlite3` is placed inside the input directory. When converting individual files, `out/db.sqlite3` is placed in the current working directory. The file is not created or used when handling input from stdin.
+
+When running in the browser, the same JavaScript API will send queries to the server instead of a local SQLite database.
+
+To inspect the ID database to debug it, you can use:
+``
+sqlite3 out/db.sqlite3 .dump
+``
+
+It is often useful to dump a single table, e.g. to dump the `ids` table:
+``
+sqlite3 out/db.sqlite3 '.dump ids'
+``
+
+You can force `cirodown` to not use the ID database with `--no-db`:
+``
+./cirodown --no-db .
+``
+
+= Internal cross reference title link removal
+{parent=internal-cross-file-reference}
+
+If the target `title` argument contains a link from either another \x[internal-cross-reference]{p} or a regular \x[link][external hyperlink], Cirodown automatically prevents that link from rendering as a link when no explicit body is given.
+
+This is done because https://stackoverflow.com/questions/9882916/are-you-allowed-to-nest-a-link-inside-of-a-link[nested links are illegal in HTML], and the result would be confusing.
+
+This use case is most common when dealing with media such as \x[image]{p}. For example in:
+``
+= afds
+
+\x[image-aa-zxcv-lolol-bb]
+
+== qwer
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=aa \x[zxcv][zxcv] \a[http://example.com][lolol] bb}
+
+== zxcv
+``
+the `\x[image-aa-zxcv-lolol-bb]` renders something like:
+``
+<a href="#image-aa-zxcv-lolol-bb">aa zxcv lolol bb</a>
+``
+and not:
+``
+<a href="#image-aa-zxcv-lolol-bb">aa <a href="zxcv">zxcv</a> <a href="http://example.com">lolol</a> bb</a>
+``
+
+Live example:
+\CirodownExample[[
+This is a nice image: \x[image-aa-zxcv-lolol-bb].
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=aa \x[internal-cross-reference-title-link-removal][zxcv] \a[http://example.com][lolol] bb}
+]]
+
+= `\x` arguments
+{parent=internal-cross-reference}
+
+= `\x` `c` argument
+{parent=x-arguments}
+
+Capitalizes the first letter of the target title.
+
+For more details, see: \x[cross-reference-title-inflection]{full}.
+
+= `\x` `child` argument
+{parent=x-arguments}
+
+Setting the `child` \x[boolean-named-argument] on a cross reference to a header as in:
+``
+\x[my-header]{child}
+``
+makes that header show up on the list of extra parents of the child.
+
+This allows a section to have multiple parents, e.g. to include it into multiple categories. For example:
+``
+= Animal
+
+== Mammal
+
+=== Dog
+
+=== Cat
+
+== Cute animal
+
+These animals are cute:
+* \x[dog]{child} because they play with you
+
+These animals aren't cute however:
+* \x[cat]
+``
+would render something like:
+``
+h1 Animal
+
+h2 Mammal
+
+h3 Dog (parent section: Mammal)
+(other parent sections: Cute animal)
+
+h3 Cat (parent section: Mammal)
+
+== Cute animal
+
+These animals are cute:
+* \x[dog]
+
+These animals aren't cute however:
+* \x[cat]
+``
+so note how "Dog" has a list of extra parents including "Cute animal", but Cat does not, due to the `child`.
+
+This property does not affect how the \x[table-of-contents][`\Toc`] is rendered. We could insert elements sections there multiple times, but it has the downside that browser Ctrl + F searches would hit the same thing multiple times on the table of contents, which might make finding things harder.
+``
+== My title{id=my-id}
+
+Read this \x[my-id][amazing section].
+``
+
+If the second argument, the `content`, is not present, it expand to the header title, e.g.:
+``
+== My title{id=my-id}
+
+Read this \x[my-id].
+``
+is the same as:
+``
+== My title{id=my-id}
+
+Read this \x[my-id][My title].
+``
+
+A live demo can be seen at: \x[x-child-argument-demo].
+
+= `\x` `child` argument demo
+{parent=x-child-argument}
+{scope}
+
+= Animal
+{parent=x-child-argument-demo}
+
+= Mammal
+{parent=animal}
+
+= Dog
+{parent=mammal}
+
+= Cat
+{parent=mammal}
+
+= Cute animal
+{parent=animal}
+
+Cute animal:
+* \x[dog]{child}
+* \x[cat]
+
+= `\x` `parent` argument
+{parent=x-child-argument}
+
+The `parent` argument is exactly like the \x[x-child-argument], but it reverses the direction of the parent/child relation.
+
+= `\x` `full` argument
+{parent=x-arguments}
+
+To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` \x[boolean-named-argument] to the cross reference, for example:
+\CirodownExample[[
+\x[x-full-argument]{full}.
+]]
+
+`{full}` is not needed for cross references to most macros besides \x[header]{p}, which use `full` by default as seen by the `default_x_style_full` macro property in \x[help-macros]. This is for example the case for \x[image]{p}. You can force this to be disabled with `{full=0}`:
+\CirodownExample[[
+Compare \x[image-my-test-image]{full=0} vs \x[image-my-test-image]{full=1}.
+]]
+
+= `\x` `full` argument in internal cross file references
+{parent=x-full-argument}
+
+For example in the following \x[internal-cross-file-reference]:
+\CirodownExample[[
+\x[h2-in-not-the-readme]{full}.
+]]
+we get just something like:
+``
+Section "h2 in not the readme"
+``
+instead of:
+``
+Section 1.2 "h2 in not the readme"
+``
+This is because the number "Section 1.2" might already have been used in the current page, leading to confusion.
+
+= `\x` `p` argument
+{parent=x-arguments}
+
+Pluralizes or singularizes the last word of the target title.
+
+For more details, see: \x[cross-reference-title-inflection]{full}.
+
+= `\x` `ref` argument
+{parent=x-arguments}
+
+The `ref` argument of `\x` marks the link as reference, e.g.:
+``
+Trump said this and that.\x[donald-trump-access-hollywood-tape]{ref}
+
+= Donald Trump Access Hollywood tape
+``
+renders something like:
+``
+Trump said this and that.<a href="donald-trump-access-hollywood-tape">*</a>
+``
+
+This could currently be replicated without `ref` by just using:
+``
+Trump said this and that.\x[donald-trump-access-hollywood-tape][*]
+``
+but later on we might add more precise reference fields like the page of a book or date fetched as Wikipedia supports.
+
+Implemented at: https://github.com/cirosantilli/cirodown/issues/137
 
 == Cirodown syntax
 
 === Insane macro shortcuts
 
-Certain commonly used macros have insane macro shortcuts that do not start with backslash (`\`):
-* \x[paragraphs]: `\n\n` (double newline)
-* \x[links]: `a http://exmaple.com b` (space followed by `http://`)
-* \x[mathematics]: `$`, described at: \x[insane-code-and-math-shortcuts]
-* \x[code]: \c[[`]], described at: \x[insane-code-and-math-shortcuts]
-* \x[lists]: `* ` and `  ` indentation, described at: \x[lists]
+Certain commonly used macros have insane macro shortcuts that do not start with backslash (`\`).
 
 Originally, \x[design-goals][Ciro wanted to avoid those], but they just feel too good to avoid.
 
 Every insane syntax does however have an equivalent sane syntax.
 
 The style recommendation is: use the insane version which is shorter, unless you have a specific reason to use the sane version.
+
+= Macros with insane shortcut
+{parent=insane-macro-shortcuts}
+
+* \x[paragraph]{child}{full}: `\n\n` (double newline)
+* \x[link]{child}{full}: `a http://example.com b` (space followed by `http://`)
+* \x[mathematics]{child}{full}: `$`, described at: \x[insane-code-and-math-shortcuts]
+* \x[code-block]{child}{full}: \c[[`]], described at: \x[insane-code-and-math-shortcuts]
+* \x[list]{child}{full}: `* ` and indentation
+* \x[table]{child}{full}: `|| `, `| ` and indentation
 
 ==== Insane code and math shortcuts
 
@@ -3038,13 +3139,13 @@ has the special effect of generating automatic links as in:
 \a[http://example.com][http://example.com]
 ``
 
-This can be contrasted with named aguments, for which there is always a default value, notably for \x[boolean-named-argument]{p}.
+This can be contrasted with named arguments, for which there is always a default value, notably for \x[boolean-named-argument]{p}.
 
-See also: \x[links].
+See also: \x[link]{full}.
 
 ====== mandatory positional arguments
 
-Some positional arguments are required, and if not given cirodown reports an error and does not render the node.
+Some positional arguments are required, and if not given Cirodown reports an error and does not render the node.
 
 This is for example the `level` of a \x[header].
 
@@ -3057,7 +3158,7 @@ Name arguments marked in \x[help-macros] as `boolean: true` must either:
 * take value exactly `0` or `1`
 * not be given, in which case the default value is the `default` from \x[help-macros], or `0` if such default is not given
 
-For example, \x[cross-reference-full-argument][the `full` argument] of \x[internal-cross-references] is correctly written as:
+For example, \x[x-full-argument][the `full` argument] of \x[internal-cross-reference]{p} is correctly written as:
 \CirodownExample[[
 \x[boolean-named-argument]{full}
 ]]
@@ -3092,7 +3193,7 @@ Arguments that are opened with more than one square brackets `[` or curly braces
 
 In literal arguments, Cirodown is not parsed, and the entire argument is considered as text until a corresponding close with the same number of characters.
 
-Therefore, you cannot have nested content, but it makes it extremely convenient to write \x[code] or \x[mathematics].
+Therefore, you cannot have nested content, but it makes it extremely convenient to write \x[code-block]{p} or \x[mathematics].
 
 For example, a multiline code block with double open and double close square brackets inside can be enclosed in triple square brackets:
 \CirodownExample[[[
@@ -3180,7 +3281,7 @@ b
 ``
 This is extremely convenient to improve the readability of code blocks and similar constructs.
 
-The newline is however considered if it would be part of some \x[insane-macro-shortcuts]{p=0}. For example, we can start an \x[lists][insane list] inside a \x[quotations]{p=0} as in:
+The newline is however considered if it would be part of some \x[insane-macro-shortcuts]{p=0}. For example, we can start an \x[list][insane list] inside a \x[quotation]{p} as in:
 \CirodownExample[[
 \Q[
 * a
@@ -3222,16 +3323,16 @@ For \x[literal-arguments][non-literal macro arguments], you have to use a backsl
 * `\` and `\`: open and close \x[positional-vs-named-arguments][positional macro arguments]
 * `\` and `\`: open and close \x[positional-vs-named-arguments][optional macro arguments]
 * `$` (dollar sign): \x[insane-macro-shortcuts][insane macro shortcut] for \x[mathematics]
-* \c[[`]] (backtick): \x[insane-macro-shortcuts][insane macro shortcut] for \x[code]
+* \c[[`]] (backtick): \x[insane-macro-shortcuts][insane macro shortcut] for \x[code-block]{p}
 
 The escape rules for literal arguments are described at: \x[literal-arguments]{full}.
 
-This is good for short arguments of regular text, but for longer blocks of \x[code] or \x[mathematics], you may want to use \x[literal-arguments]
+This is good for short arguments of regular text, but for longer blocks like \x[code-block]{p} or \x[mathematics], you may want to use \x[literal-arguments]
 
 ==== `auto_parent` macro property
 {id=auto-parent}
 
-Some sequences of macros such as `l` from \x[lists] and `tr` from \x[tables] automatically generate implicit parents, e.g.:
+Some sequences of macros such as `l` from \x[list]{p} and `tr` from \x[table]{p} automatically generate implicit parents, e.g.:
 ``
 \Ul[
 \L[aa]
@@ -3287,12 +3388,12 @@ Every Cirodown macro is either block or inline:
   All block macros start with a capital letter, e.g. `\H` for \x[header]{p}.
 * and an inline macro is one that goes inside of a line.
 
-  Every inline macro starts with a lowercase letter e.g. `\a` for \x[links].
+  Every inline macro starts with a lowercase letter e.g. `\a` for \x[link]{p}.
 
 Some macros have both a block and an inline version, and like any other macro, those are differentiated by capitalization:
 * \x[mathematics]
-* \x[code]
-* \x[comments]
+* \x[code-block]{p}
+* \x[comment]{p}
 
 === Known URL protocols
 
@@ -3370,7 +3471,7 @@ Output to stdout instead of saving it to a file:
 cirodown --stdout README.ciro
 ``
 
-In order to resolve \x[internal-cross-file-references], this actually does two passes:
+In order to resolve \x[internal-cross-file-reference]{p}, this actually does two passes:
 * first an ID extraction pass, which parses all inputs and dumps their IDs to the ID database
 * then a second render pass, which uses the IDs in the ID database
 
@@ -3398,11 +3499,9 @@ The toplevel index file is the index file that is present on the root directory 
 This directory is determined by checking the presence of a \x[cirodown-json] file.
 
 We were tempted to not require the `cirodown.json` check and just use the input directory instead, but this would lead to subdir builds having different toplevel IDs, which is not desirable. For example, if we have a file structure:
-
 * `cirodown.json`
 * `subdir/myfile.ciro`
-
-then all IDs under `myfile.ciro` are prefixed with `subdir` (note that this could also be achieved with \x[scope]).
+then all IDs under `myfile.ciro` are prefixed with `subdir`. note that this could also be achieved with \x[scope]{p}.
 
 So for this reason users should basically always add a `cirodown.json` to their projects.
 
@@ -3447,7 +3546,7 @@ Inspiration: https://github.com/cirosantilli/linux-kernel-module-cheat/tree/6d0a
 Makes \x[include]{p} render the included content in the same output file as the include is located, instead of the default behaviour of creating links.
 
 In addition to this:
-* \x[internal-cross-file-references] are disabled, and the cross file ID database does not get updated.
+* \x[internal-cross-file-reference]{p} are disabled, and the cross file ID database does not get updated.
 
   It should be possible to work around this, but we are starting with the simplest implementation that forbids it.
 
@@ -3558,7 +3657,7 @@ TODO
 = `--no-html-x-extension`
 {parent=cirodown-executable-options}
 
-If not given, \x[internal-cross-references] render with the `.html` extension as in:
+If not given, \x[internal-cross-reference]{p} render with the `.html` extension as in:
 ``
 <a href=not-readme.html#h2-in-not-the-readme>
 ``
@@ -3782,7 +3881,7 @@ would produce the following output files:
 * `hello-split.html`: contains only the contents directly under `= h1`, but not under any of the subheaders, e.g.:
   * `h1 content.` appears in this rendered output
   * `h1-1-1` does not appear in this rendered output
-  The `-split` suffix can be customized with the \x[splitsuffix] option.
+  The `-split` suffix can be customized with the \x[h-splitsuffix-argument] option.
   The `-split` suffix is appended in order to differentiate the output path from `hello.html`
 * `h1-1.html`, `h1-1-1.html`, `h1-1-2.html`: contain only the contents direcly under their headers, analogously to `hello-split.html`, but now we don't need to worry about the input filename and collisiont, and just directly use the ID of each header
 
@@ -3795,12 +3894,12 @@ By defeault, all internal cross references point to the non-split version of hea
 
 The rationale for this is that it gives readers the most context around the header by simply scrolling.
 
-For example, considering the example document at \x[split-headers], \x[internal-cross-references] such as `\x[h1-1]` would point:
+For example, considering the example document at \x[split-headers], \x[internal-cross-reference]{p} such as `\x[h1-1]` would point:
 * from the non-split `hello.html` to the section in the current non-split file `#h1-1`
 * from split `hello-split.html` to the same section in non-split file with `hello.html#h1-1`
-The same applies to \x[internal-cross-file-references] when there are multiple input files.
+The same applies to \x[internal-cross-file-reference]{p} when there are multiple input files.
 
-In order to make the split version be the default for some headers, you can use the \x[splitdefault].
+In order to make the split version be the default for some headers, you can use the \x[h-splitdefault-argument].
 
 = `--watch`
 {parent=cirodown-executable-options}
@@ -3813,7 +3912,7 @@ Watch every `.ciro` file in an entire directory:
 ``
 cirodown --watch .
 ``
-When a directory is given as the input path, this automatically first does an ID extraction pass on all files to support \x[internal-cross-file-references].
+When a directory is given as the input path, this automatically first does an ID extraction pass on all files to support \x[internal-cross-file-reference]{p}.
 
 Now you can just edit any Cirodown file such has `README.ciro`, save the file in your editor, and refresh the webpage and your change should be visible, no need to run a `cirodown` command explicitly every time.
 
@@ -3991,7 +4090,7 @@ If the `prepublish` script returns with a non-zero exit value, the publish is ab
 = `redirects`
 {parent=cirodown-json}
 
-You are generally better using the newer \x[synonym] feature instead of `redirects`, as that concentrates more header specific data in the .ciro files it belongs.
+You are generally better using the newer \x[h-synonym-argument] feature instead of `redirects`, as that concentrates more header specific data in the .ciro files it belongs.
 
 Create HTML redirects from \x[the-toplevel-header][toplevel headers] to arbitrary IDs, for example:
 ``
@@ -4018,9 +4117,19 @@ cirodown .
 ``
 is required to generate the ID database.
 
-=== Editor with preview
+= Conversion to/from other formats
+{parent=tooling}
 
-TODO
+The only thing we have for now is the quick and dirty \a[adoc-to-ciro].
+
+The better approach would be to implement a converter in Haskell from anything to Cirodown.
+
+And from Cirodown to anything, create new output formats inside Cirodown to those other formats.
+
+= Editor with preview
+{parent=tooling}
+
+TODO make amazing. Being tracked under: https://github.com/cirosantilli/cirodown/labels/editor
 
 We must achieve an editor setup with synchronized live side-by-side preview.
 
@@ -4071,13 +4180,68 @@ Possibilities we could reuse:
 * https://ui.toast.com/tui-editor/
 * https://www.froala.com/wysiwyg-editor
 
-=== Conversion to/from other formats
+= Error reporting
+{parent=tooling}
 
-The only thing we have for now is the quick and dirty \a[adoc-to-ciro].
+A lot of effort has been put into making error reporting as good as possible in Cirodown, to allow authors to quickly find what is wrong with their source code.
 
-The better approach would be to implement a converter in Haskell from anything to Cirodown.
+Error reporting is for example tested with `assert_error` tests in \a[test.js].
 
-And from Cirodown to anything, create new output formats inside Cirodown to those other formats.
+Please report any error reporting bug you find, as it will be seriously tracked under the: https://github.com/cirosantilli/cirodown/issues?q=label%3Aerror-reporting+[`error-reporting` label].
+
+Notably, Cirodown should never throw an exception due to a syntax error, as that prevents error messages from being output at all.
+
+= Order of reported errors
+{parent=error-reporting}
+
+One important philosophy of the error reporting is that the very first message should be the root cause of the problem whenever possible: users should not be forced to search a hundred messages to find the root cause. In this way, the procedure:
+* solve the first error
+* reconvert
+* solving the new first error
+* reconvert
+* etc.
+should always deterministically lead to a resolution of all problems.
+
+Error messages are normally sorted by file, line and column, regardless of which conversion stage they happened (e.g. a tokeniser error first gets reported before a parser error).
+
+There is however one important exception to that: broken internal cross references are always reported last.
+
+For example, consider the following syntactically wrong document:
+```
+= a
+
+\x[b]
+
+``
+== b
+```
+Here we have an unterminated code block at line 5.
+
+However, this unterminated code block leads the header `b` not to be seen, and therefore the reference `\x[b]` on line 3 to fail.
+
+Therefore, if we sorted naively by line, the broken reference would shoe up first:
+``
+error: tmp.ciro:3:3: cross reference to unknown id: "b"
+error: tmp.ciro:5:1: unterminated literal argument
+``
+
+But in a big document, this case could lead to hundreds of undefined references to show up before the actual root unterminated literal problem.:
+``
+error: tmp.ciro:3:3: cross reference to unknown id: "b"
+error: tmp.ciro:4:3: cross reference to unknown id: "b"
+error: tmp.ciro:5:3: cross reference to unknown id: "b"
+...
+error: tmp.ciro:1000:1: unterminated literal argument
+``
+
+Therefore, we force undefined references to show up last to prevent this common problem:
+``
+error: tmp.ciro:1000:1: unterminated literal argument
+error: tmp.ciro:3:3: cross reference to unknown id: "b"
+error: tmp.ciro:4:3: cross reference to unknown id: "b"
+error: tmp.ciro:5:3: cross reference to unknown id: "b"
+...
+``
 
 == Developing Cirodown
 
@@ -4376,25 +4540,3 @@ npm publish
 ``
 sudo snap install --classic heroku
 ``
-
-= Related projects
-{parent=cirodown}
-
-Static wiki generators: this is perhaps the best way of classifying this project :-)
-* https://github.com/gollum/gollum[]: already has a local server editor! But no WYSIWYG nor live preview. Git integration by default, so when you save on the UI already generates a Git commit. We could achieve that with: https://github.com/isomorphic-git/isomorphic-git[], would be really nice.
-* https://github.com/wcchin/markypydia
-
-Static book generators:
-* https://github.com/rstudio/bookdown[], https://bookdown.org/[]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: https://bookdown.org/yihui/bookdown/pandoc.html[], thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.
-* https://gohugo.io/[Hugo]. Pretty good, similar feature set to ours. But Go based, so hard on browser, and adds adhoc features on top of markdown once again
-* https://en.wikipedia.org/wiki/Personal_wiki
-  * https://github.com/vimwiki/vimwiki
-* https://github.com/hplgit/doconce
-* https://www.gwern.net/About#source is pretty interesting, uses https://github.com/jaspervdj/Hakyll/ + some custom stuff.
-
-Less related but of interest, similar philosophy to what Ciro wants, but no explicitly reusable system:
-* http://www.uprtcl.io/
-* https://libretexts.org
-* https://physics.info/
-* https://hypertextbook.com/
-* https://tutorial.math.lamar.edu/

@@ -209,14 +209,16 @@ ol, ul {
   }
 }
 
+// Shows on ToC and on metadata at the end like the ancestor list.
+.metrics {
+  color: $color-discreet;
+}
+
 // Table of contents.
 .toc-container {
   ul {
     list-style-type: none;
     li {
-      .metrics {
-        color: $color-discreet;
-      }
       // https://github.com/cirosantilli/cirodown/issues/68
       margin-bottom: 4px;
       margin-top: 4px;

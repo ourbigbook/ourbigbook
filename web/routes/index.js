@@ -1,4 +1,6 @@
+const config = require('../config')
 const router = require('express').Router()
+
 let indexCache
-router.use('/api', require('./api'))
+router.use(config.apiPath, require('./api'))
 module.exports = router

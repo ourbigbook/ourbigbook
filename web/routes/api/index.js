@@ -1,7 +1,6 @@
 const router = require('express').Router()
 const Sequelize = require('sequelize')
 
-// heroku bootstrap
 router.get('/', function(req, res) {
   res.json({message: 'backend is up'})
 });

@@ -5,7 +5,7 @@ $enable-flex:               true;
 $enable-grid-classes:       true;
 
 // CONDUIT STYLES //
-$font-family-logo:       'Titillium Web', sans-serif;
+$font-family-logo: 'Titillium Web', sans-serif;
 .logo-font {
   font-family: $font-family-logo;
 }
@@ -16,6 +16,16 @@ $font-family-sans-serif: 'Source Sans Pro', sans-serif;
 $brand-primary: #5CB85C;
 $brand-danger:  #B85C5C;
 
+$color: black;
+$header-background-color: #AA0;
+$toplevel-padding: 20px;
+$a-color: #88CCFF;
+$a-color-visited: #FFAAFF;
+$background-color: black;
+$code-background-color: #333333;
+$color: #00FF00;
+$color-discreet: #00BB00;
+$target-background-color: #442222;
 
 // this allows us to have the flush footer that extends with viewport
 html {
@@ -28,6 +38,81 @@ min-height: 100vh;
 padding-bottom: 100px;
 background-color: $background-color;
 color: $color;
+
+a {
+  color: $a-color;
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+header, footer {
+  background-color: $header-background-color;
+}
+header {
+  $color: black;
+  $header-height: 40px;
+  /* https://stackoverflow.com/questions/5078239/how-do-i-remove-the-space-between-inline-block-elements */
+  font-size: 0;
+  align-items: center;
+  display: flex;
+  height: $header-height;
+  a {
+    /* Make buttons occupy the full height of the header bar.
+     * https://stackoverflow.com/questions/28254332/how-to-vertically-center-the-contents-of-a-flexbox-item/28254903#28254903 */
+    align-items: center;
+    align-self: stretch;
+    display: flex;
+
+    color: $color;
+    font-size: 32px;
+    font-weight: bold;
+    height: $header-height;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 10px;
+    padding-right: 10px;
+    text-decoration: none;
+    &:visited {
+      color: $color;
+    }
+    &:hover {
+      color: $header-background-color;
+      background-color: $color;
+    }
+    &.font-awesome-container {
+      font-size: 28px;
+      font-weight: normal;
+      padding-left: 5px;
+      padding-right: 5px;
+    }
+  }
+  div {
+    display: flex;
+    margin-left: auto;
+    img {
+      height: $header-height;
+    }
+  }
+}
+footer {
+  a {
+    $color: #00C;
+    color: $color;
+    text-decoration: none;
+    &:visited {
+      color: $color;
+    }
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+  padding: 10px $toplevel-padding;
+  div + div {
+    margin-top: 5px;
+  }
+}
 
 // Set the navbar's logo to the conduit logo font & large size
 .navbar-brand {
@@ -63,45 +148,10 @@ $navbar-padding-x: 0rem !important;
   }
 }
 
-a {
-  text-decoration: none;
-}
-
-footer {
-  margin-top:3rem;
-  padding:1rem 0;
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-
-
-  .attribution {
-    vertical-align: top;
-    margin-left:10px;
-    font-size: 0.8rem;
-    color:#bbb;
-    font-weight:300;
-  }
-}
-
 // general error handling style
 .error-messages {
   color: $brand-danger !important;
   font-weight:bold;
-}
-
-// This is used on homepage & post page
-// Basically a pretty wrapper for H1 at top
-.banner {
-  color:#fff;
-  background: #333;
-  padding:2rem;
-  margin-bottom:2rem;
-
-  h1 {
-    text-shadow: 0px 1px 3px rgba(0,0,0,0.3);
-    margin-bottom:0px;
-  }
 }
 
 // Auto offset from top for pages
@@ -190,7 +240,6 @@ footer {
 
 
 // Import all of our SCSS files
-@import 'home.scss';
 @import 'post.scss';
 @import 'profile.scss';
 @import 'editor.scss';

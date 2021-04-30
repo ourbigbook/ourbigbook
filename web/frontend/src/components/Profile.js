@@ -5,23 +5,11 @@ import agent from '../agent';
 import { connect } from 'react-redux';
 import {
   FOLLOW_USER,
-  UNFOLLOW_USER,
+  LOGOUT,
   PROFILE_PAGE_LOADED,
-  PROFILE_PAGE_UNLOADED
+  PROFILE_PAGE_UNLOADED,
+  UNFOLLOW_USER,
 } from '../constants/actionTypes';
-
-const EditProfileSettings = props => {
-  if (props.isUser) {
-    return (
-      <Link
-        to="/settings"
-        className="btn btn-sm btn-outline-secondary action-btn">
-        <i className="ion-gear-a"></i> Edit Profile Settings
-      </Link>
-    );
-  }
-  return null;
-};
 
 const FollowUserButton = props => {
   if (props.isUser) {
@@ -67,6 +55,7 @@ const mapDispatchToProps = dispatch => ({
     payload: agent.Profile.follow(username)
   }),
   onLoad: payload => dispatch({ type: PROFILE_PAGE_LOADED, payload }),
+  onClickLogout: () => dispatch({ type: LOGOUT }),
   onUnfollow: username => dispatch({
     type: UNFOLLOW_USER,
     payload: agent.Profile.unfollow(username)
@@ -93,7 +82,7 @@ class Profile extends React.Component {
           <Link
             className="nav-link active"
             to={`/@${this.props.profile.username}`}>
-            My Articles
+            Articles
           </Link>
         </li>
 
@@ -113,54 +102,51 @@ class Profile extends React.Component {
     if (!profile) {
       return null;
     }
-
     const isUser = this.props.currentUser &&
       this.props.profile.username === this.props.currentUser.username;
-
     return (
       <div className="profile-page">
-
-        <div className="user-info">
-          <div className="container">
-            <div className="row">
-              <div className="col-xs-12 col-md-10 offset-md-1">
-
-                <img src={profile.image} className="user-img" alt={profile.username} />
-                <h4>{profile.username}</h4>
-                <p>{profile.bio}</p>
-
-                <EditProfileSettings isUser={isUser} />
-                <FollowUserButton
-                  isUser={isUser}
-                  user={profile}
-                  follow={this.props.onFollow}
-                  unfollow={this.props.onUnfollow}
-                  />
-
-              </div>
-            </div>
-          </div>
+        <div className="col-xs-12 col-md-10 offset-md-1">
+          {isUser && [
+            <div>
+              <Link
+                to="/settings"
+                className="btn btn-sm btn-outline-secondary action-btn">
+                <i className="ion-gear-a"></i>&nbsp;Edit Profile Settings
+              </Link>
+            </div>,
+            <div>
+              <Link
+                to=""
+                onClick={this.props.onClickLogout}>
+                <i className="ion-log-out"></i>&nbsp;Logout
+              </Link>
+            </div>,
+          ]}
+          <h1>@{profile.username}</h1>
+          <img src={profile.image} className="user-img" alt={profile.username} />
+          <p>{profile.bio}</p>
+          <FollowUserButton
+            isUser={isUser}
+            user={profile}
+            follow={this.props.onFollow}
+            unfollow={this.props.onUnfollow}
+            />
         </div>
-
         <div className="container">
           <div className="row">
-
             <div className="col-xs-12 col-md-10 offset-md-1">
-
               <div className="articles-toggle">
                 {this.renderTabs()}
               </div>
-
               <ArticleList
                 pager={this.props.pager}
                 articles={this.props.articles}
                 articlesCount={this.props.articlesCount}
                 state={this.props.currentPage} />
             </div>
-
           </div>
         </div>
-
       </div>
     );
   }

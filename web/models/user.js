@@ -53,7 +53,10 @@ module.exports = (sequelize) => {
         }
       },
       bio: DataTypes.STRING,
-      image: DataTypes.STRING,
+      image: {
+        type: DataTypes.STRING,
+        defaultValue: 'https://static.productionready.io/images/smiley-cyrus.jpg'
+      },
       favorites: {
         type: DataTypes.STRING,
         set(v) {
@@ -125,7 +128,7 @@ module.exports = (sequelize) => {
     let data = {
       username: this.username,
       bio: this.bio === undefined ? '' : this.bio,
-      image: this.image || 'https://static.productionready.io/images/smiley-cyrus.jpg',
+      image: this.image,
       following: user ? user.isFollowing(this.id) : false
     }
     return data

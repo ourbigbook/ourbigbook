@@ -16,16 +16,17 @@ $font-family-sans-serif: 'Source Sans Pro', sans-serif;
 $brand-primary: #5CB85C;
 $brand-danger:  #B85C5C;
 
-$color: black;
-$header-background-color: #AA0;
-$toplevel-padding: 20px;
-$a-color: #88CCFF;
 $a-color-visited: #FFAAFF;
+$a-color: #88CCFF;
 $background-color: black;
 $code-background-color: #333333;
-$color: #00FF00;
 $color-discreet: #00BB00;
+$color: #00FF00;
+$color: black;
+$header-background-color: #AA0;
+$header-height: 40px;
 $target-background-color: #442222;
+$toplevel-padding: 20px;
 
 // this allows us to have the flush footer that extends with viewport
 html {
@@ -52,7 +53,6 @@ header, footer {
 }
 header {
   $color: black;
-  $header-height: 40px;
   /* https://stackoverflow.com/questions/5078239/how-do-i-remove-the-space-between-inline-block-elements */
   font-size: 0;
   align-items: center;
@@ -234,6 +234,16 @@ $navbar-padding-x: 0rem !important;
 // Counter for buttons
 .btn .counter {
   font-size:0.8rem !important;
+}
+
+.article-preview {
+  border-bottom: 1px solid $color;
+}
+.article-meta {
+  .user-img {
+    height: $header-height;
+    width: $header-height;
+  }
 }
 }
 }

@@ -120,8 +120,13 @@ div.h {
       }
     }
     display: inline-block;
-    font-size: $header-font-size;
     margin: 0;
+  }
+  h1 {
+    font-size: $header-font-size * 2;
+  }
+  h2, h3, h4, h5, h6 {
+    font-size: $header-font-size;
   }
   .hover-meta {
     @include hidden;

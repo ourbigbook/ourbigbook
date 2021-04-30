@@ -160,7 +160,7 @@ function cmd_get_stdout(cmd, args=[], options={}) {
  * @param {String} path to a directory to convert files in
  */
 function convert_directory(input_path, options, convert_input_options) {
-  for (const one_path of walk_files_recursively(input_path, DEFAULT_IGNORE_BASENAMES_SET)) {
+  for (const one_path of walk_files_recursively(input_path, DEFAULT_IGNORE_BASENAMES_SET, options.ignore_paths)) {
     convert_path_to_file(input_path, path.relative(input_path, one_path), options, convert_input_options);
     if (convert_input_options.had_error) {
       break;
@@ -665,15 +665,19 @@ function remove_duplicates_sorted_array(arr) {
 /** https://stackoverflow.com/questions/5827612/node-js-fs-readdir-recursive-directory-search
  *
  * @param {Set} skip_basenames
+ * @param {Set} ignore_paths
  */
-function* walk_files_recursively(file_or_dir, skip_basenames) {
+function* walk_files_recursively(file_or_dir, skip_basenames, ignore_paths) {
   if (fs.lstatSync(file_or_dir).isDirectory()) {
     const dirents = fs.readdirSync(file_or_dir, {withFileTypes: true});
     for (const dirent of dirents) {
-      if (!skip_basenames.has(dirent.name)) {
-        const res = path.join(file_or_dir, dirent.name);
+      const res = path.join(file_or_dir, dirent.name);
+      if (
+        !skip_basenames.has(dirent.name) &&
+        !ignore_paths.has(res)
+      ) {
         if (dirent.isDirectory()) {
-          yield* walk_files_recursively(res, skip_basenames);
+          yield* walk_files_recursively(res, skip_basenames, ignore_paths);
         } else {
           yield res;
         }
@@ -817,6 +821,16 @@ if (commander.helpMacros) {
     template_vars: {},
     xss_unsafe: commander.xssUnsafe,
   };
+
+  // ignore
+  let ignore;
+  if ('ignore' in cirodown_json) {
+    ignore = cirodown_json.ignore;
+  } else {
+    ignore = [];
+  }
+  options.ignore_paths = new Set(ignore);
+
   options.log = {};
   let convert_input_options_log = {};
   if (commander.log !== undefined) {

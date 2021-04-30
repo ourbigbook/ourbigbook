@@ -1,10 +1,12 @@
+import React from 'react';
+import { connect } from 'react-redux';
+
+import cirodown from 'cirodown';
+import 'cirodown/cirodown.runtime.js';
+
 import ArticleMeta from './ArticleMeta';
 import CommentContainer from './CommentContainer';
-import React from 'react';
 import agent from '../../agent';
-import { connect } from 'react-redux';
-import cirodown from 'cirodown';
-import marked from 'marked';
 import { ARTICLE_PAGE_LOADED, ARTICLE_PAGE_UNLOADED } from '../../constants/actionTypes';
 
 const mapStateToProps = state => ({
@@ -20,6 +22,11 @@ const mapDispatchToProps = dispatch => ({
 });
 
 class Article extends React.Component {
+  constructor(props) {
+    super(props);
+    this.renderRefCallback = this.renderRefCallback.bind(this);
+  }
+
   componentWillMount() {
     this.props.onLoad(Promise.all([
       agent.Articles.get(this.props.match.params.id),
@@ -35,63 +42,32 @@ class Article extends React.Component {
     if (!this.props.article) {
       return null;
     }
-
-    const markup = { __html: marked(this.props.article.body, { sanitize: true }) };
+    const markup = { __html: cirodown.convert('= ' + this.props.article.title + '\n\n' + this.props.article.body, {body_only: true}) };
     const canModify = this.props.currentUser &&
       this.props.currentUser.username === this.props.article.author.username;
     return (
       <div className="article-page">
-
-        <div className="banner">
-          <div className="container">
-
-            <h1>{this.props.article.title}</h1>
-            <ArticleMeta
-              article={this.props.article}
-              canModify={canModify} />
-
-          </div>
+        <div className="container">
+          <ArticleMeta
+            article={this.props.article}
+            canModify={canModify} />
         </div>
-
-        <div className="container page">
-
-          <div className="row article-content">
-            <div className="col-xs-12">
-
-              <div dangerouslySetInnerHTML={markup}></div>
-
-              <ul className="tag-list">
-                {
-                  this.props.article.tagList.map(tag => {
-                    return (
-                      <li
-                        className="tag-default tag-pill tag-outline"
-                        key={tag}>
-                        {tag}
-                      </li>
-                    );
-                  })
-                }
-              </ul>
-
-            </div>
-          </div>
-
-          <hr />
-
-          <div className="article-actions">
-          </div>
-
-          <div className="row">
-            <CommentContainer
-              comments={this.props.comments || []}
-              errors={this.props.commentErrors}
-              slug={this.props.match.params.id}
-              currentUser={this.props.currentUser} />
-          </div>
-        </div>
+        <div
+          className="cirodown"
+          dangerouslySetInnerHTML={markup}
+          ref={this.renderRefCallback}
+        ></div>
+        <CommentContainer
+          comments={this.props.comments || []}
+          errors={this.props.commentErrors}
+          slug={this.props.match.params.id}
+          currentUser={this.props.currentUser} />
       </div>
     );
+  }
+
+  renderRefCallback() {
+    cirodown_runtime(this.cirodownElem);
   }
 }
 

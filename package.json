@@ -34,6 +34,7 @@
     "cirodown.embed.min.css",
     "cirodown.local.min.css",
     "cirodown.min.css",
+    "cirodown.runtime.js",
     "index.js",
     "main.liquid.html",
     "main.scss",
@@ -50,10 +51,15 @@
   "repository": "cirosantilli/cirodown",
   "scripts": {
     "browserify": "npx browserify --outfile cirodown.js --standalone cirodown index.js",
+    "build": "cd web && npm run build",
+    "dev": "cd web && npm run dev",
+    "heroku-prebuild": "cd web && npm install",
     "prepublishOnly": "./prepublishOnly",
     "readme": "./cirodown -o index.html README.ciro",
     "sass": "./build-sass",
+    "start": "cd web && npm start",
     "test": "mocha test --ignore-leaks"
   },
-  "version": "0.6.0"
+  "version": "0.6.0",
+  "cacheDirectories": ["node_modules", "web/node_modules", "web/frontend/node_modules"]
 }

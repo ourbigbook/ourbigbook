@@ -5,7 +5,6 @@
   "dependencies": {
     "cirodown": "../..",
     "history": "^4.6.3",
-    "marked": "^0.3.6",
     "prop-types": "^15.5.10",
     "react": "^16.3.0",
     "react-dom": "^16.3.0",

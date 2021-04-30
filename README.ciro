@@ -4185,6 +4185,96 @@ Possibilities we could reuse:
 * https://ui.toast.com/tui-editor/
 * https://www.froala.com/wysiwyg-editor
 
+= Dynamic website
+{parent=tooling}
+
+The dynamic website is located under \a[web/].
+
+Its was originally forked from the following starter boilerplate: https://github.com/cirosantilli/node-express-sequelize-realworld-example-app
+
+= Local development server
+{parent=dynamic-website}
+
+``
+cd web/
+npm install
+npm run dev
+``
+
+We also offer shortcuts on toplevel:
+``
+npm install
+npm run dev
+``
+
+The browser automatically pops the development front-end server at http://localhost:4101[] which makes requests to the backend server that runs at http://localhost:3000[].
+
+= Local optimized frontend
+{parent=dynamic-website}
+
+``
+cd web
+npm install
+npm run build
+npm start
+``
+
+The website can now be seen at: http://localhost:3000
+
+This setup does not start the front-end development server at http://localhost:4101[], but rather compiles the front-end files statically, and serves them on the public folder of the backend server.
+
+This is the type of setup that will run in production, with a single server. Running it locally might help debug some front-end deployment issues. But otherwise you will just normally use the \x[local-run-as-identical-to-deployment-as-possible] setup instead for devlopment.
+
+= Local run as identical to deployment as possible
+{parent=dynamic-website}
+
+Here we use PostgreSQL instead of SQLite with the prebuilt static frontend.
+
+For when you really need to debug some deployment stuff locally
+
+Setup:
+
+``
+createdb node_express_sequelize_realworld
+psql -c "CREATE ROLE node_express_sequelize_realworld_user with login password 'a'"
+psql -c 'GRANT ALL PRIVILEGES ON DATABASE node_express_sequelize_realworld TO node_express_sequelize_realworld_user'
+echo "SECRET=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)" >> .env
+npm run build
+``
+
+Run:
+
+``
+env $(cat .env | xargs) \
+NODE_ENV=production \
+DATABASE_URL='postgres://node_express_sequelize_realworld_user:a@localhost:5432/node_express_sequelize_realworld' \
+npm start
+``
+
+then visit the running website at: http://localhost:3000/
+
+= Heroku deployment
+{c}
+{parent=dynamic-website}
+
+Got it running perfectly at as of April 2021 https://cirosantilli-realworld-express.herokuapp.com/ with the following steps:
+
+``
+heroku git:remote -a cirodown
+# Automatically sets DATABASE_URL.
+heroku addons:create heroku-postgresql:hobby-dev
+# Otherwise the react build picks up the .eslint from this directory,
+# which specifies a plugin that is not installed because it is in the
+# devDependencies of this package.json... For the love of God, this is
+# a deployment, not a CI.
+# https://stackoverflow.com/questions/55821078/disable-eslint-that-create-react-app-provides
+heroku config:set DISABLE_ESLINT_PLUGIN=true
+# Notably to skip ultra-slow sqlite native build.
+heroku config:set NPM_CONFIG_PRODUCTION=true YARN_PRODUCTION=true
+heroku config:set SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)"
+git push heroku master
+``
+
 = Error reporting
 {parent=tooling}
 
@@ -4305,7 +4395,7 @@ Source files:
 * \a[cirodown.runtime.js]: JavaScript functionality to be included in the final documents to enable interactive document features
 
 Generated files:
-* `cirodown.js` packaged http://browserify.org[browserify] JavaScript for browser usage, generated with `npm run browserify`
+* `cirodown.js` http://browserify.org[browserify]-packaged JavaScript of the converter for browser usage (notably live-preview), generated with `npm run browserify`
 
 === Conversion process overview
 

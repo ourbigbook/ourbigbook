@@ -291,7 +291,7 @@ router.post('/:article/comments', auth.required, function(req, res, next) {
         return res.sendStatus(401)
       }
       return Comment.create(
-        Object.assign({}, req.body.comment, { article_id: req.article.id, AuthorId: user.id })
+        Object.assign({}, req.body.comment, { ArticleId: req.article.id, AuthorId: user.id })
       ).then(function(comment) {
         res.json({ comment: comment.toJSONFor(user, user) })
       })

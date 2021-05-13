@@ -14,9 +14,16 @@ module.exports = (sequelize) => {
 
   Comment.associate = function() {
     Comment.belongsTo(sequelize.models.User, {
-      as: 'Author'
-    })
-    Comment.belongsTo(sequelize.models.Article)
+      as: 'Author',
+      foreignKey: {
+        allowNull: false
+      },
+    });
+    Comment.belongsTo(sequelize.models.Article, {
+      foreignKey: {
+        allowNull: false
+      },
+    });
   }
 
   Comment.prototype.toJSONFor = function(author, user) {

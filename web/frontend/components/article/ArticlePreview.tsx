@@ -10,6 +10,7 @@ import { usePageDispatch } from "../../lib/context/PageContext";
 import checkLogin from "../../lib/utils/checkLogin";
 import { SERVER_BASE_URL } from "../../lib/utils/constant";
 import storage from "../../lib/utils/storage";
+import { formatDate } from "lib/utils";
 
 const FAVORITED_CLASS = "btn btn-sm btn-primary";
 const NOT_FAVORITED_CLASS = "btn btn-sm btn-outline-primary";
@@ -91,7 +92,7 @@ const ArticlePreview = ({ article }) => {
         <CustomImage
           src={preview.author.image}
           alt="author's profile image"
-          style={{ height: "1.5em", ['vertical-align']: "middle" }}
+          style={{ height: "1.5em", verticalAlign: "middle" }}
         />
         &nbsp;
         {preview.author.username}
@@ -108,7 +109,7 @@ const ArticlePreview = ({ article }) => {
       </td>
       <td>
         <span className="date">
-          {new Date(preview.createdAt).toDateString()}
+          {formatDate(preview.createdAt)}
         </span>
       </td>
     </tr>

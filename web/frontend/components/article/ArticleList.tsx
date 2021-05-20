@@ -82,12 +82,25 @@ const ArticleList = () => {
 
   return (
     <>
-      <table>
-      {articles?.map((article) => (
-        <ArticlePreview key={article.slug} article={article} />
-      ))}
+      <table
+        style={{
+          verticalAlign: "baseline",
+        }}
+      >
+        <thead>
+          <tr>
+            <th>Score</th>
+            <th>Author</th>
+            <th>Title</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {articles?.map((article) => (
+            <ArticlePreview key={article.slug} article={article} />
+          ))}
+        </tbody>
       </table>
-
       <Maybe test={articlesCount && articlesCount > 20}>
         <Pagination
           total={pageCount}

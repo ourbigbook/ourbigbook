@@ -17,7 +17,6 @@ module.exports = (sequelize) => {
         }
       },
       title: DataTypes.STRING,
-      description: DataTypes.STRING,
       body: DataTypes.STRING,
       favoritesCount: {
         type: DataTypes.INTEGER,
@@ -74,7 +73,6 @@ module.exports = (sequelize) => {
     return {
       slug: this.slug,
       title: this.title,
-      description: this.description,
       body: this.body,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,

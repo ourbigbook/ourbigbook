@@ -10,7 +10,6 @@ export type ArticleType = {
   tagList: string[];
   createdAt: number;
   author: Author;
-  description: string;
   title: string;
   body: string;
   slug: string;

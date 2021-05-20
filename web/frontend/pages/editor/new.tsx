@@ -11,7 +11,6 @@ import editorReducer from "../../lib/utils/editorReducer";
 const PublishArticleEditor = () => {
   const initialState = {
     title: "",
-    description: "",
     body: "",
     tagList: [],
   };
@@ -23,8 +22,6 @@ const PublishArticleEditor = () => {
 
   const handleTitle = (e) =>
     dispatch({ type: "SET_TITLE", text: e.target.value });
-  const handleDescription = (e) =>
-    dispatch({ type: "SET_DESCRIPTION", text: e.target.value });
   const handleBody = (e) =>
     dispatch({ type: "SET_BODY", text: e.target.value });
   const addTag = (tag) => dispatch({ type: "ADD_TAG", tag: tag });
@@ -63,16 +60,6 @@ const PublishArticleEditor = () => {
                     placeholder="Article Title"
                     value={posting.title}
                     onChange={handleTitle}
-                  />
-                </fieldset>
-
-                <fieldset className="form-group">
-                  <input
-                    className="form-control"
-                    type="text"
-                    placeholder="What's this article about?"
-                    value={posting.description}
-                    onChange={handleDescription}
                   />
                 </fieldset>
 

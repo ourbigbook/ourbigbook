@@ -18,7 +18,6 @@ class MyDocument extends Document<IProps> {
 
   render() {
     const { ids }: any = this.props;
-
     return (
       <html lang="en">
         <Head>

@@ -21,7 +21,7 @@ export default class ArticlePage extends React.Component {
   render() {
     if (!this.props.article) return <LoadingSpinner />;
     const markup = {
-      __html: cirodown.convert('= ' + this.props.article.title + '\n\n' + this.props.article.body, {body_only: true}),
+      __html: this.props.article.render,
     };
     return (
       <>

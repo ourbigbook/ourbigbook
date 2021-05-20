@@ -8,6 +8,7 @@
     "build": "cd frontend && npm run build",
     "dev": "concurrently --kill-others 'npm run front --' 'npm run back --'",
     "front": "cd frontend && npm run dev",
+    "postinstall": "cd .. && npm link cirodown",
     "preinstall": "cd frontend && npm install",
     "start": "node --unhandled-rejections=strict ./app.js"
   },
@@ -18,6 +19,7 @@
   "license": "ISC",
   "dependencies": {
     "body-parser": "1.15.0",
+    "cirodown": "..",
     "cors": "2.7.1",
     "errorhandler": "1.4.3",
     "express": "4.13.4",

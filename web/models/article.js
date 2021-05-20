@@ -1,3 +1,4 @@
+const cirodown = require('cirodown')
 const slug = require('slug')
 const { DataTypes, Op } = require('sequelize')
 
@@ -80,8 +81,10 @@ module.exports = (sequelize) => {
       tagList: this.tagList,
       favorited: user ? user.isFavorite(this.id) : false,
       favoritesCount: this.favoritesCount,
-      author: author.toProfileJSONFor(user)
+      author: author.toProfileJSONFor(user),
+      render: cirodown.convert('= ' + this.title + '\n\n' + this.body, {body_only: true}),
     }
   }
+
   return Article
 }

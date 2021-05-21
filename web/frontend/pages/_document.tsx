@@ -1,5 +1,5 @@
 import { extractCritical } from "emotion-server";
-import Document, { Head, Main, NextScript } from "next/document";
+import Document, { Html, Head, Main, NextScript } from "next/document";
 import React from "react";
 import flush from "styled-jsx/server";
 
@@ -19,7 +19,7 @@ class MyDocument extends Document<IProps> {
   render() {
     const { ids }: any = this.props;
     return (
-      <html lang="en">
+      <Html lang="en">
         <Head>
           <link
             rel="stylesheet"
@@ -38,7 +38,7 @@ class MyDocument extends Document<IProps> {
           <Main />
           <NextScript />
         </body>
-      </html>
+      </Html>
     );
   }
 }

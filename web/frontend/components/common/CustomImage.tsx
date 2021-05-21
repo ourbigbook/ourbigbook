@@ -5,10 +5,9 @@ interface CustomImageProps {
   src: string;
   alt: string;
   className?: string;
-  style?: {string: string};
 }
 
-const CustomImage = ({ src, alt, className, style }: CustomImageProps) => (
+const CustomImage = ({ src, alt, className }: CustomImageProps) => (
   <img
     data-sizes="auto"
     data-src={src}
@@ -16,7 +15,6 @@ const CustomImage = ({ src, alt, className, style }: CustomImageProps) => (
     alt={alt}
     className={className ? `${className} lazyload` : `lazyload`}
     onError={handleBrokenImage}
-    style={style}
   />
 );
 

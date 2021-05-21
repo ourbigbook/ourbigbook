@@ -1,10 +1,9 @@
 const router = require('express').Router()
-const { Article } = require('../../models')
 const _ = require('underscore')
 
 // return a list of tags
 router.get('/', function(req, res, next) {
-  Article.findAll({
+  req.app.get('sequelize').models.Article.findAll({
     attributes: ['tagList']
   })
     .then(function(articles) {

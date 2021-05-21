@@ -1,10 +1,9 @@
 const router = require('express').Router()
 const passport = require('passport')
-const { User } = require('../../models')
 const auth = require('../auth')
 
 router.get('/user', auth.required, function(req, res, next) {
-  User.findByPk(req.payload.id)
+  req.app.get('sequelize').models.User.findByPk(req.payload.id)
     .then(function(user) {
       if (!user) {
         return res.sendStatus(401)
@@ -16,7 +15,7 @@ router.get('/user', auth.required, function(req, res, next) {
 })
 
 router.put('/user', auth.required, function(req, res, next) {
-  User.findByPk(req.payload.id)
+  req.app.get('sequelize').models.User.findByPk(req.payload.id)
     .then(function(user) {
       if (!user) {
         return res.sendStatus(401)
@@ -70,7 +69,7 @@ router.post('/users/login', function(req, res, next) {
 })
 
 router.post('/users', function(req, res, next) {
-  let user = new User()
+  let user = new req.app.get('sequelize').models.User()
 
   user.username = req.body.user.username
   user.email = req.body.user.email

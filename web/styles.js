@@ -8,5 +8,5 @@
 //  background-color: #AA0;
 //  color: black;
 //`;
-//
-//export const marginLeft = '10px';
+
+export const marginLeft = '10px';

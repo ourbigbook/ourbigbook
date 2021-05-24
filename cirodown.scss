@@ -1,5 +1,9 @@
 // https://cirosantilli.com/cirodown#insane-link-parsing-rules#overview-of-files-in-this-repository
 
+@use "sass:math";
+
+// CIRODOWN_ADD_IMPORTS_HERE
+
 $caption-margin-bottom: 5px;
 $header-font-size: 24px;
 $p-margin-vert: 14px;
@@ -143,7 +147,7 @@ div.h-nav {
   margin-bottom: $p-margin-vert;
   div.nav {
     font-weight: bold;
-		margin-bottom: $p-margin-vert/2;
+		margin-bottom: math.div($p-margin-vert, 2);
     &:before {
       content: "\21b3";
     }

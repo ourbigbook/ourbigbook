@@ -12,7 +12,6 @@ import storage from "lib/utils/storage";
 import * as styles from "../../styles";
 
 const NavbarContainer = styled("nav")`
-  ${styles.nav};
   &::after {
     content: "";
     display: table;

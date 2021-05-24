@@ -7,6 +7,7 @@ import CustomImage from "components/common/CustomImage";
 import Maybe from "components/common/Maybe";
 import DeleteButton from "components/comment/DeleteButton";
 import checkLogin from "lib/utils/checkLogin";
+import { formatDate } from "lib/utils";
 import storage from "lib/utils/storage";
 
 const CommentContainer = styled("div")`

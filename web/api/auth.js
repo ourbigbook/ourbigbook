@@ -8,22 +8,21 @@ function getTokenFromHeader(req) {
   ) {
     return req.headers.authorization.split(' ')[1]
   }
-
   return null
 }
 
-const auth = {
-  required: jwt({
-    secret: secret,
-    userProperty: 'payload',
-    getToken: getTokenFromHeader
-  }),
-  optional: jwt({
-    secret: secret,
-    userProperty: 'payload',
-    credentialsRequired: false,
-    getToken: getTokenFromHeader
-  })
-}
+const base = {
+  secret: secret,
+  userProperty: 'payload',
+  getToken: getTokenFromHeader,
+};
 
-module.exports = auth
+module.exports = {
+  required: jwt(base),
+  optional: jwt(Object.assign(
+    {
+      credentialsRequired: false,
+    },
+    base
+  ))
+}

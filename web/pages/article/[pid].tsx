@@ -87,7 +87,9 @@ export default class ArticlePage extends React.Component<Props, {}> {
   }
 
   renderRefCallback(elem) {
-    cirodown_runtime(elem);
+    if (elem) {
+      cirodown_runtime(elem);
+    }
   }
 }
 

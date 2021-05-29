@@ -6,10 +6,9 @@
   "scripts": {
     "build": "next build",
     "build-dev": "NODE_ENV_OVERRIDE=development npm run build",
-    "dev": "nodemon --unhandled-rejections=strict ./app.js",
-    "dev2": "nodemon --unhandled-rejections=strict --exec 'ts-node ./app.js'",
+    "dev": "nodemon --unhandled-rejections=strict --exec 'ts-node app.js'",
     "postinstall": "cd .. && npm link cirodown",
-    "start": "node --unhandled-rejections=strict ./app.js"
+    "start": "NODE_OPTIONS='--unhandled-rejections=strict' ts-node app.js"
   },
   "repository": {
     "type": "git",
@@ -46,6 +45,7 @@
     "sequelize": "6.5.1",
     "slug": "0.9.1",
     "swr": "0.3.0",
+    "ts-node": "^10.0.0",
     "underscore": "1.8.3"
   },
   "prettier": {

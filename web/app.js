@@ -47,8 +47,6 @@ nextApp.prepare().then(() => {
   app.use(bodyParser.urlencoded({ extended: false }))
   app.use(bodyParser.json())
   app.use(require('method-override')())
-  const buildDir = path.join(__dirname, 'frontend', 'build');
-  app.use(express.static(buildDir));
 
   // Next handles anythiung outside of /api.
   app.get(new RegExp('^(?!' + config.apiPath + '(/|$))'), function (req, res) {

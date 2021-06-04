@@ -26,6 +26,14 @@ printf '{}\n' > package.json
 npm install --save cirodown
 printf 'ab\ncd\n' | npx cirodown --body-only
 ``
+or install the latest master globally on your machine:
+``
+git clone https://github.com/cirosantilli/cirodown
+cd cirodown
+npm link
+npm link cirodown
+``
+You can now run the `cirodown` command from any directory in your computer. Furthermore, this produces a symlink so that any changes made to the Git source tree will automaticlly be used, see also: https://stackoverflow.com/questions/28440893/install-a-locally-developed-npm-package-globally
 
 To start a new project with a minimal sane template \x[generate][use `--generate`] and then \x[publish-to-github-pages][publish it to GitHub with `--publish`]:
 ``
@@ -43,17 +51,13 @@ Or to start with a more complex template suitable for multifile projects use \x[
 cirodown --generate-multifile
 ``
 
-Render all `.ciro` files from the master of this project to separate files:
+Render all `.ciro` files from the master of this project to separate files, e.g. `README.ciro` to `index.html`, `not-readme.ciro` to `not-readme.html` and so on:
 ``
-git clone https://github.com/cirosantilli/cirodown
-cd cirodown
-npm link
-npm link cirodown
-./cirodown README.ciro
+./cirodown .
 xdg-open index.html
 xdg-open not-readme.html
 ``
-or render README.ciro and all \x[include]{p} into a single HTML page with \x[embed-includes] and view it:
+or render README.ciro and all \x[include]{p} into a single HTML page with \x[embed-includes] and view it (e.g. both `README.ciro` and `not-readme.ciro` will be included in `index.html`):
 ``
 ./cirodown --embed-includes .
 xdg-open index.html

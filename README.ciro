@@ -32,6 +32,7 @@ git clone https://github.com/cirosantilli/cirodown
 cd cirodown
 npm link
 npm link cirodown
+./build-sass
 ``
 You can now run the `cirodown` command from any directory in your computer. Furthermore, this produces a symlink so that any changes made to the Git source tree will automaticlly be used, see also: https://stackoverflow.com/questions/28440893/install-a-locally-developed-npm-package-globally
 

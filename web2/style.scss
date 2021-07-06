@@ -1,0 +1,42 @@
+.loading-spinner {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  margin: 90px auto;
+  border-radius: 50%;
+  border-top: 3px solid rgba(0, 0, 0, 0.1);
+  border-right: 3px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 3px solid rgba(0, 0, 0, 0.1);
+  border-left: 3px solid #818a91;
+  transform: translateZ(0);
+  animation: spin 0.5s infinite linear;
+  /* TODO the spinner appears broken, might be because of this typo that existed in the original.
+   * We noticed it when migrating to SASS which does a compile check ;-). */
+  /*
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+  */
+}
+
+.error-message {
+  display: flex;
+  justify-content: center;
+  .error-message-presenter {
+    display: inline-block;
+    margin: 20px auto;
+    padding: 8px 15px;
+    border-radius: 4px;
+    color: #f02d2d;
+    font-weight: 600;
+    background: rgba(240, 45, 45, 0.1);
+  }
+}
+
+/* https://github.com/gothinkster/angular-realworld-example-app/blob/9e8c49514ee874e5e0bbfe53ffdba7d2fd0af36f/src/app/shared/article-helpers/article-list.component.css#L1 */
+.page-link {
+  cursor: pointer;
+}

@@ -1,5 +1,9 @@
 // https://cirosantilli.com/cirodown#insane-link-parsing-rules
 
+if (typeof exports !== 'undefined') {
+  Tablesort = require('tablesort')
+}
+
 function cirodown_runtime(toplevel) {
   if (toplevel === undefined) {
     toplevel = document;

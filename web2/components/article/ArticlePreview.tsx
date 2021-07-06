@@ -50,7 +50,6 @@ const ArticlePreview = ({ article }) => {
         className="preview-link"
       >
         <h1>{preview.title}</h1>
-        <p>{preview.description}</p>
         <span>Read more...</span>
         <ul className="tag-list">
           {preview.tagList.map((tag, index) => {

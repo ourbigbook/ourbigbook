@@ -1,7 +1,7 @@
 {
-  "name": "conduit-node",
-  "version": "1.0.0",
-  "description": "conduit on node",
+  "name": "cirodown-web",
+  "version": "0.0.1",
+  "description": "cirodown web",
   "main": "app.js",
   "scripts": {
     "back-test": "NODE_ENV=test npm run dev",
@@ -9,6 +9,7 @@
     "build-dev": "./bin/sync-db.js && NODE_ENV_OVERRIDE=development npm run build",
     "deploy": "git push heroku-next next:master",
     "dev": "nodemon ./app.js",
+    "postinstall": "cd .. && npm link cirodown",
     "start": "node --unhandled-rejections=strict ./app.js",
     "start-dev": "NODE_ENV_OVERRIDE=development NODE_ENV_NEXT=production node --unhandled-rejections=strict ./app.js",
     "start-prod": "env $(cat .env | xargs) NODE_ENV=production DATABASE_URL='postgres://node_express_sequelize_realworld_user:a@localhost:5432/node_express_sequelize_realworld' npm start",
@@ -17,14 +18,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gothinkster/productionready-node-api.git"
+    "url": "git+https://github.com/cirosantilli/cirodown.git"
   },
-  "license": "ISC",
+  "license": "AGPL",
   "dependencies": {
     "@types/node": "^14.0.27",
     "@types/react": "^16.9.44",
     "axios": "^0.19.2",
     "body-parser": "1.15.0",
+    "cirodown": "..",
     "commander": "6.2.1",
     "cors": "2.7.1",
     "errorhandler": "1.4.3",

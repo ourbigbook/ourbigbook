@@ -14,11 +14,6 @@ function editorReducer(state, action) {
         ...state,
         title: action.text
       };
-    case "SET_DESCRIPTION":
-      return {
-        ...state,
-        description: action.text
-      };
     case "SET_BODY":
       return {
         ...state,
@@ -45,14 +40,12 @@ export default function makeArticleEditor(isnew: boolean = false) {
     if (initialArticle) {
       initialState = {
         title: initialArticle.title,
-        description: initialArticle.description,
         body: initialArticle.body,
         tagList: initialArticle.tagList,
       }
     } else {
       initialState = {
         title: "",
-        description: "",
         body: "",
         tagList: [],
       }
@@ -67,8 +60,6 @@ export default function makeArticleEditor(isnew: boolean = false) {
     } = router;
     const handleTitle = (e) =>
       dispatch({ type: "SET_TITLE", text: e.target.value });
-    const handleDescription = (e) =>
-      dispatch({ type: "SET_DESCRIPTION", text: e.target.value });
     const handleBody = (e) =>
       dispatch({ type: "SET_BODY", text: e.target.value });
     const addTag = (tag) => dispatch({ type: "ADD_TAG", tag: tag });
@@ -110,15 +101,6 @@ export default function makeArticleEditor(isnew: boolean = false) {
                       placeholder="Article Title"
                       value={posting.title}
                       onChange={handleTitle}
-                    />
-                  </fieldset>
-                  <fieldset className="form-group">
-                    <input
-                      className="form-control"
-                      type="text"
-                      placeholder="What's this article about?"
-                      value={posting.description}
-                      onChange={handleDescription}
                     />
                   </fieldset>
                   <fieldset className="form-group">

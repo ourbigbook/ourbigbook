@@ -1,3 +1,101 @@
+$color: black;
+$nav-background-color: #AA0;
+$toplevel-padding: 20px;
+
+body {
+margin: 0;
+background-color: $color;
+color: green;
+
+a {
+  color: blue;
+}
+
+/* Scrollbar behaviour.
+ * We would like to get rid of the X scrollbar and keep only the Y one.
+ * The below would remove both on Chromium 81 and neither on Firefox 75.
+ * So for now we just keep both.
+ * https://stackoverflow.com/questions/3296644/hiding-the-scroll-bar-on-an-html-page
+ * https://stackoverflow.com/questions/20997183/how-to-hide-scrollbar-in-firefox
+ * https://stackoverflow.com/questions/20713769/horizontal-only-webkit-scrollbar-style-css
+ */
+/*
+overflow-x: visible;
+scrollbar-width: none;
+&::-webkit-scrollbar {
+  display: none;
+}
+*/
+
+nav.navbar, footer {
+  background-color: $nav-background-color;
+  color: $color;
+  a {
+    color: $color;
+  }
+}
+nav.navbar {
+  $font-size: 24px;
+  /* https://stackoverflow.com/questions/5078239/how-do-i-remove-the-space-between-inline-block-elements */
+  font-size: 0;
+  display: flex;
+  height: $font-size * 1.2;
+  .navbar-list {
+    display: flex;
+    margin-left: auto;
+  }
+  a {
+    /* Make buttons occupy the full height of the header bar.
+    * https://stackoverflow.com/questions/28254332/how-to-vertically-center-the-contents-of-a-flexbox-item/28254903#28254903 */
+    align-items: center;
+    align-self: stretch;
+
+    color: $color;
+    display: flex;
+    font-size: 24px;
+    font-weight: bold;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 10px;
+    padding-right: 10px;
+    text-decoration: none;
+    &:visited {
+      color: $color;
+    }
+    &:hover, &.active {
+      color: $nav-background-color;
+      background-color: $color;
+    }
+    &.profile {
+      padding-left: 0px;
+    }
+    img.profile-thumb {
+      height: 100%;
+      padding-right: 5px;
+    }
+  }
+  &>:first-child {
+    padding-left: $toplevel-padding;
+  }
+}
+footer {
+  a {
+    $color: #00C;
+    color: $color;
+    text-decoration: none;
+    &:visited {
+      color: $color;
+    }
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+  padding: 10px $toplevel-padding;
+  div + div {
+    margin-top: 5px;
+  }
+}
+
 .loading-spinner {
   position: relative;
   width: 40px;
@@ -39,4 +137,9 @@
 /* https://github.com/gothinkster/angular-realworld-example-app/blob/9e8c49514ee874e5e0bbfe53ffdba7d2fd0af36f/src/app/shared/article-helpers/article-list.component.css#L1 */
 .page-link {
   cursor: pointer;
+}
+
+.profile-thumb {
+  height: 26px;
+}
 }

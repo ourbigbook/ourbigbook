@@ -2,6 +2,14 @@
 
 if (typeof exports !== 'undefined') {
   Tablesort = require('tablesort')
+  // TODO with import gave Uncaught ReferenceError:
+  // Tablesort is not defined
+  //https://github.com/tristen/tablesort/issues/165
+  //require('tablesort/src/sorts/tablesort.date.js')
+  //require('tablesort/src/sorts/tablesort.dotsep.js')
+  //require('tablesort/src/sorts/tablesort.filesize.js')
+  //require('tablesort/src/sorts/tablesort.monthname.js')
+  //require('tablesort/src/sorts/tablesort.number.js')
 }
 
 function cirodown_runtime(toplevel) {

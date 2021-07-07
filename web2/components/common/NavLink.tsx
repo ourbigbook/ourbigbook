@@ -6,18 +6,24 @@ interface NavLinkProps {
   as: string;
   onClick?: () => void;
   children: React.ReactNode;
+  className?: string;
 }
 
-const NavLink = ({ href, as, onClick, children }: NavLinkProps) => {
+const NavLink = ({ href, as, onClick, children, className }: NavLinkProps) => {
   const router = useRouter();
   const { asPath } = router;
+  const classes = ['nav-link']
+  if (encodeURIComponent(asPath) === encodeURIComponent(as)) {
+    classes.push('active')
+  }
+  if (className) {
+    classes.push(...className.split(' '))
+  }
   return (
     <Link href={href} as={as} passHref>
       <a
         onClick={onClick}
-        className={`${
-          encodeURIComponent(asPath) === encodeURIComponent(as) && 'active ' || ''
-        }nav-link`}
+        className={classes.join(' ')}
       >
         {children}
       </a>

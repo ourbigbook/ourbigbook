@@ -74,9 +74,8 @@ const CommentInput = () => {
           </div>
           <div className="card-footer">
             <CustomImage
-              className="comment-author-img"
-              src={loggedInUser.effectiveImage}
               className="profile-thumb"
+              src={loggedInUser.effectiveImage}
               alt="author profile image"
             />
             <button className="btn btn-sm btn-primary" type="submit">

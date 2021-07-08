@@ -16,6 +16,7 @@ $code-background-color: #eeeeee;
 $color: black;
 $target-background-color: #FFFFCC;
 
+// TODO move to cirodown.common.scss
 // Dark
 $a-color: #88CCFF;
 $a-color-visited: #FFAAFF;
@@ -46,8 +47,26 @@ $target-background-color: #442222;
 
 .cirodown {
 
+// TODO move to cirodown.common.scss
 background-color: $background-color;
 color: $color;
+a {
+  color: $a-color;
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
+  &:visited {
+    color: $a-color-visited;
+  }
+}
+
+a {
+  &:visited {
+    color: $a-color-visited;
+  }
+}
+
 padding-left: 0;
 padding-right: 15px;
 .caption-prefix {
@@ -74,17 +93,6 @@ padding-right: 15px;
 // so that the user can easily know which one it is.
 :target {
   background-color: $target-background-color;
-}
-
-a {
-  color: $a-color;
-  text-decoration: none;
-  &:hover {
-    text-decoration: underline;
-  }
-  &:visited {
-    color: $a-color-visited;
-  }
 }
 
 blockquote {

@@ -1,6 +1,7 @@
 {
   "ignore": [
-    "web"
+    "web",
+    "web2"
   ],
   "media-providers": {
     "github": {

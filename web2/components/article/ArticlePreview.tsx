@@ -2,10 +2,10 @@ import Link from "next/link";
 import React from "react";
 
 import CustomLink from "components/common/CustomLink";
-import CustomImage from "components/common/CustomImage";
 import FavoriteArticleButton from "components/common/FavoriteArticleButton";
 import { usePageDispatch } from "lib/context/PageContext";
 import { formatDate } from "lib/utils/date";
+import UserLinkWithImage from "components/common/UserLinkWithImage";
 
 const ArticlePreview = ({ article }) => {
   const setPage = usePageDispatch();
@@ -15,27 +15,16 @@ const ArticlePreview = ({ article }) => {
   if (!article) return;
   return (
     <tr>
-      <td>
+      <td className="shrink">
+        <UserLinkWithImage user={preview.author} />
+      </td>
+      <td className="shrink">
         <FavoriteArticleButton
           favorited={preview.favorited}
           favoritesCount={preview.favoritesCount}
           slug={preview.slug} />
       </td>
-      <td>
-        <CustomLink
-          href="/profile/[pid]"
-          as={`/profile/${preview.author.username}`}
-        >
-          <CustomImage
-            src={preview.author.image}
-            className="profile-thumb"
-            alt="author profile image"
-          />
-          {' '}
-          {preview.author.username}
-        </CustomLink>
-      </td>
-      <td>
+      <td className="expand title">
         <CustomLink
           href="/article/[pid]"
           as={`/article/${preview.slug}`}
@@ -44,8 +33,8 @@ const ArticlePreview = ({ article }) => {
           {preview.title}
         </CustomLink>
       </td>
-      <td>{formatDate(preview.createdAt)}</td>
-      <td>{formatDate(preview.updatedAt)}</td>
+      <td className="shrink">{formatDate(preview.createdAt)}</td>
+      <td className="shrink">{formatDate(preview.updatedAt)}</td>
     </tr>
   );
 };

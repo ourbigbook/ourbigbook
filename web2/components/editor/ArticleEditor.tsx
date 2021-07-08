@@ -112,11 +112,6 @@ export default function makeArticleEditor(isnew: boolean = false) {
                       onChange={handleBody}
                     />
                   </fieldset>
-                  <TagInput
-                    tagList={posting.tagList}
-                    addTag={addTag}
-                    removeTag={removeTag}
-                  />
                   <button
                     className="btn btn-lg pull-xs-right btn-primary"
                     type="button"

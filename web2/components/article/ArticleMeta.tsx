@@ -7,8 +7,6 @@ import { formatDate } from "lib/utils/date";
 
 const ArticleMeta = ({ article }) => {
   if (!article) return;
-  console.error(article.createdAt);
-  console.error(article.updatedAt);
   return (
     <div className="article-meta">
       <div className="article-info">

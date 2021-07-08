@@ -189,6 +189,17 @@ div.article-list-container {
   }
 }
 
+div.article-meta {
+  div.article-info {
+    margin-bottom: 10px;
+  }
+  div.article-actions {
+    button, a.btn {
+      margin-right: 3px;
+    }
+  }
+}
+
 /* https://github.com/gothinkster/angular-realworld-example-app/blob/9e8c49514ee874e5e0bbfe53ffdba7d2fd0af36f/src/app/shared/article-helpers/article-list.component.css#L1 */
 .page-link {
   cursor: pointer;

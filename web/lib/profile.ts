@@ -5,17 +5,7 @@ const configShared = require('../config/shared')
 export const getStaticPathsProfile: GetStaticPaths = async () => {
   return {
     fallback: true,
-    paths: (await sequelize.models.User.findAll({
-      order: [['username', 'ASC']],
-    })).map(
-      user => {
-        return {
-          params: {
-            pid: user.username,
-          }
-        }
-      }
-    ),
+    paths: [],
   }
 }
 

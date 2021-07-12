@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Hax.
+# https://github.com/cirosantilli/cirodown/issues/156
+set -eux
+sed -i '/"better-sqlite"/d' package.json
+sed -i '/"postinstall"/d' web/package.json
+cd web && npm install

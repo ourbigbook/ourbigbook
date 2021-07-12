@@ -3,6 +3,7 @@ import React from "react";
 import { mutate } from "swr";
 
 import ListErrors from "components/common/ListErrors";
+import Label from "components/common/Label";
 import UserAPI from "lib/api/user";
 
 const LoginForm = () => {
@@ -10,7 +11,6 @@ const LoginForm = () => {
   const [errors, setErrors] = React.useState([]);
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
-
   const handleEmailChange = React.useCallback(
     (e) => setEmail(e.target.value),
     []
@@ -19,7 +19,6 @@ const LoginForm = () => {
     (e) => setPassword(e.target.value),
     []
   );
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -44,41 +43,35 @@ const LoginForm = () => {
       setLoading(false);
     }
   };
-
   return (
     <>
       <ListErrors errors={errors} />
-
       <form onSubmit={handleSubmit}>
-        <fieldset>
-          <fieldset className="form-group">
-            <input
-              className="form-control form-control-lg"
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={handleEmailChange}
-            />
-          </fieldset>
-
-          <fieldset className="form-group">
-            <input
-              className="form-control form-control-lg"
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={handlePasswordChange}
-            />
-          </fieldset>
-
-          <button
-            className="btn btn-lg btn-primary pull-xs-right"
-            type="submit"
-            disabled={isLoading}
-          >
-            Sign in
-          </button>
-        </fieldset>
+        <Label label="Email">
+          <input
+            className="form-control form-control-lg"
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={handleEmailChange}
+          />
+        </Label>
+        <Label label="Email">
+          <input
+            className="form-control form-control-lg"
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={handlePasswordChange}
+          />
+        </Label>
+        <button
+          className="btn btn-lg btn-primary pull-xs-right"
+          type="submit"
+          disabled={isLoading}
+        >
+          Sign in
+        </button>
       </form>
     </>
   );

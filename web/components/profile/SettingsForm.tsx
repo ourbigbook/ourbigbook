@@ -3,6 +3,7 @@ import Router from "next/router";
 import React from "react";
 import { mutate } from "swr";
 
+import Label from "components/common/Label";
 import ListErrors from "components/common/ListErrors";
 import { SERVER_BASE_URL } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
@@ -61,8 +62,7 @@ const SettingsForm = () => {
     <React.Fragment>
       <ListErrors errors={errors} />
       <form onSubmit={submitForm}>
-        <label>
-          <div className="label">Profile picture</div>
+        <Label label="Profile picture">
           <input
             className="form-control"
             type="text"
@@ -70,9 +70,8 @@ const SettingsForm = () => {
             value={userInfo.image}
             onChange={updateState("image")}
           />
-        </label>
-        <label>
-          <div className="label">Username</div>
+        </Label>
+        <Label label="Username">
           <input
             className="form-control form-control-lg"
             type="text"
@@ -80,9 +79,8 @@ const SettingsForm = () => {
             value={userInfo.username}
             onChange={updateState("username")}
           />
-        </label>
-        <label>
-          <div className="label">Bio</div>
+        </Label>
+        <Label label="Bio">
           <textarea
             className="form-control form-control-lg"
             rows={8}
@@ -90,9 +88,8 @@ const SettingsForm = () => {
             value={userInfo.bio}
             onChange={updateState("bio")}
           />
-        </label>
-        <label>
-          <div className="label">Email</div>
+        </Label>
+        <Label label="Email">
           <input
             className="form-control form-control-lg"
             type="email"
@@ -100,9 +97,8 @@ const SettingsForm = () => {
             value={userInfo.email}
             onChange={updateState("email")}
           />
-        </label>
-        <label>
-          <div className="label">Password</div>
+        </Label>
+        <Label label="Password">
           <input
             className="form-control form-control-lg"
             type="password"
@@ -110,9 +106,9 @@ const SettingsForm = () => {
             value={userInfo.password}
             onChange={updateState("password")}
           />
-        </label>
+        </Label>
         <button
-          className="btn btn-lg btn-primary pull-xs-right"
+          className="btn"
           type="submit"
           disabled={isLoading}
         >

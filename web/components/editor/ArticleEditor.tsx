@@ -87,44 +87,32 @@ export default function makeArticleEditor(isnew: boolean = false) {
       Router.push(`/article/${data.article.slug}`);
     };
     return (
-      <div className="editor-page">
-        <div className="container page">
-          <div className="row">
-            <div className="col-md-10 offset-md-1 col-xs-12">
-              <ListErrors errors={errors} />
-              <form>
-                <fieldset>
-                  <fieldset className="form-group">
-                    <input
-                      className="form-control form-control-lg"
-                      type="text"
-                      placeholder="Article Title"
-                      value={posting.title}
-                      onChange={handleTitle}
-                    />
-                  </fieldset>
-                  <fieldset className="form-group">
-                    <textarea
-                      className="form-control"
-                      rows={8}
-                      placeholder="Write your article in Cirodown"
-                      value={posting.body}
-                      onChange={handleBody}
-                    />
-                  </fieldset>
-                  <button
-                    className="btn btn-lg pull-xs-right btn-primary"
-                    type="button"
-                    disabled={isLoading}
-                    onClick={handleSubmit}
-                  >
-                    {isnew ? 'Publish' : 'Update'} Article
-                  </button>
-                </fieldset>
-              </form>
-            </div>
-          </div>
-        </div>
+      <div className="editor-page content-not-cirodown">
+        <ListErrors errors={errors} />
+        <form>
+          <input
+            className="form-control form-control-lg"
+            type="text"
+            placeholder="Article Title"
+            value={posting.title}
+            onChange={handleTitle}
+          />
+          <textarea
+            className="form-control"
+            rows={8}
+            placeholder="Write your article in Cirodown"
+            value={posting.body}
+            onChange={handleBody}
+          />
+          <button
+            className="btn btn-lg pull-xs-right btn-primary"
+            type="button"
+            disabled={isLoading}
+            onClick={handleSubmit}
+          >
+            {isnew ? 'Publish' : 'Update'} Article
+          </button>
+        </form>
       </div>
     );
   };

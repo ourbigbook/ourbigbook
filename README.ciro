@@ -4272,7 +4272,7 @@ then visit the running website at: http://localhost:3000/
 {c}
 {parent=dynamic-website}
 
-Got it running perfectly at as of April 2021 https://cirosantilli-realworld-express.herokuapp.com/ with the following steps.
+Got it running perfectly at as of April 2021 https://cirodown.herokuapp.com/ with the following steps.
 
 Initial setup:
 ``
@@ -4280,20 +4280,21 @@ sudo snap install --classic heroku
 heroku git:remote -a cirodown
 # Automatically sets DATABASE_URL.
 heroku addons:create heroku-postgresql:hobby-dev
-# Otherwise the react build picks up the .eslint from this directory,
-# which specifies a plugin that is not installed because it is in the
-# devDependencies of this package.json... For the love of God, this is
-# a deployment, not a CI.
-# https://stackoverflow.com/questions/55821078/disable-eslint-that-create-react-app-provides
-heroku config:set DISABLE_ESLINT_PLUGIN=true
-# Notably to skip ultra-slow sqlite native build.
+# To skip ultra-slow sqlite native build from web/.
+# But TODO: the one from toplevel cirodown/ remains:
+# https://github.com/cirosantilli/cirodown/issues/156
 heroku config:set NPM_CONFIG_PRODUCTION=true YARN_PRODUCTION=true
 heroku config:set SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)"
 ``
 
 Every deployment:
 ``
-git push heroku master
+npm run deploy
+``
+
+Nuke the database and generate a demo database:
+``
+# heroku run web/bin/generate-demo-data.js --force-production
 ``
 
 = Dynamic website tech stack

@@ -71,8 +71,27 @@ footer {
 footer, nav.navbar {
   background-color: $nav-background-color;
   color: $background-color;
-  a {
-    color: $background-color;
+}
+
+form {
+  input, textarea {
+    background-color: $background-color;
+    border: 1px solid gray;
+    border-radius: 3px;
+    color: white;
+    margin-bottom: 10px;
+    width: 100%;
+    &::placeholder {
+      color: #AAA;
+    }
+    // Unable to make it work for password fields.
+    // https://stackoverflow.com/questions/55131944/how-to-remove-blue-background-on-chrome-autocomplete
+  }
+  label {
+    font-weight: bold;
+    div.label {
+      margin-bottom: 5px;
+    }
   }
 }
 
@@ -122,16 +141,6 @@ nav.navbar {
   }
 }
 
-textarea {
-  background-color: $background-color;
-  color: white;
-  border: none;
-  width: 100%;
-}
-textarea::placeholder {
-  color: white;
-}
-
 /* Cirodown has a complex per-element padding structure that we can't easily override.
  * So for now we are taking the approach of adding this class to every content (non-hav/footer)
  * to make them align nicely with rendered Cirodown. */
@@ -162,7 +171,7 @@ textarea::placeholder {
   margin-right: $toplevel-padding;
   .comment-form-textarea {
     border-bottom: 1px solid $color;
-    padding: 10px;
+    padding: 5px 10px 2px 5px;
   }
   .comment-form-submit {
     padding: 10px;

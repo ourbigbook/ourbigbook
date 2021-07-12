@@ -22,19 +22,10 @@ const Settings = () => {
     Router.push(`/`).then(() => trigger("user"));
   };
   return (
-    <div className="settings-page">
-      <div className="container page">
-        <div className="row">
-          <div className="col-md-6 offset-md-3 col-xs-12">
-            <h1 className="text-xs-center">Your Settings</h1>
-            <SettingsForm />
-            <hr />
-            <button className="btn btn-outline-danger" onClick={handleLogout}>
-              Or click here to logout.
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="settings-page content-not-cirodown">
+      <h1>Your Settings</h1>
+      <button className="btn btn-outline-danger" onClick={handleLogout}>Logout</button>
+      <SettingsForm />
     </div>
   );
 };

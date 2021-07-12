@@ -1,113 +1,30 @@
-/** @jsxImportSource @emotion/react */
-import { css, jsx } from '@emotion/react'
-import axios from "axios";
-import Router from "next/router";
+import Link from "next/link";
 import React from "react";
-import useSWR from "swr";
 
-import CustomLink from "../common/CustomLink";
-import CustomImage from "../common/CustomImage";
-import { usePageDispatch } from "../../lib/context/PageContext";
-import checkLogin from "../../lib/utils/checkLogin";
-import { SERVER_BASE_URL } from "../../lib/utils/constant";
-import storage from "../../lib/utils/storage";
-import { formatDate } from "lib/utils";
-
-const FAVORITED_CLASS = "btn btn-sm btn-primary";
-const NOT_FAVORITED_CLASS = "btn btn-sm btn-outline-primary";
+import CustomLink from "components/common/CustomLink";
+import FavoriteArticleButton from "components/common/FavoriteArticleButton";
+import { usePageDispatch } from "lib/context/PageContext";
+import { formatDate } from "lib/utils/date";
+import UserLinkWithImage from "components/common/UserLinkWithImage";
 
 const ArticlePreview = ({ article }) => {
   const setPage = usePageDispatch();
-
-  const [preview, setPreview] = React.useState(article);
+  const preview = article;
   const [hover, setHover] = React.useState(false);
   const [currentIndex, setCurrentIndex] = React.useState(-1);
-
-  const { data: currentUser } = useSWR("user", storage);
-  const isLoggedIn = checkLogin(currentUser);
-
-  const handleClickFavorite = async (slug) => {
-    if (!isLoggedIn) {
-      Router.push(`/user/login`);
-      return;
-    }
-
-    setPreview({
-      ...preview,
-      favorited: !preview.favorited,
-      favoritesCount: preview.favorited
-        ? preview.favoritesCount - 1
-        : preview.favoritesCount + 1,
-    });
-
-    try {
-      if (preview.favorited) {
-        await axios.delete(`${SERVER_BASE_URL}/articles/${slug}/favorite`, {
-          headers: {
-            Authorization: `Token ${currentUser?.token}`,
-          },
-        });
-      } else {
-        await axios.post(
-          `${SERVER_BASE_URL}/articles/${slug}/favorite`,
-          {},
-          {
-            headers: {
-              Authorization: `Token ${currentUser?.token}`,
-            },
-          }
-        );
-      }
-    } catch (error) {
-      setPreview({
-        ...preview,
-        favorited: !preview.favorited,
-        favoritesCount: preview.favorited
-          ? preview.favoritesCount - 1
-          : preview.favoritesCount + 1,
-      });
-    }
-  };
-
   if (!article) return;
-
   return (
     <tr>
-      <td>
-        <span className="pull-xs-right">
-          <button
-            className={
-              preview.favorited ? FAVORITED_CLASS : NOT_FAVORITED_CLASS
-            }
-            onClick={() => handleClickFavorite(preview.slug)}
-          >
-            <i className="ion-heart" /> {preview.favoritesCount}
-          </button>
-        </span>
+      <td className="shrink">
+        <UserLinkWithImage user={preview.author} />
       </td>
-      <td>
-        <CustomLink
-          href="/profile/[pid]"
-          as={`/profile/${preview.author.username}`}
-        >
-          <CustomImage
-            src={preview.author.image}
-            alt="author's profile image"
-            css={css`
-              height: 1.5em;
-              vertical-align: middle;
-            `}
-          />
-        </CustomLink>
-        <CustomLink
-          href="/profile/[pid]"
-          as={`/profile/${preview.author.username}`}
-        >
-          &nbsp;
-          {preview.author.username}
-        </CustomLink>
+      <td className="shrink">
+        <FavoriteArticleButton
+          favorited={preview.favorited}
+          favoritesCount={preview.favoritesCount}
+          slug={preview.slug} />
       </td>
-      <td>
+      <td className="expand title">
         <CustomLink
           href="/article/[pid]"
           as={`/article/${preview.slug}`}
@@ -116,16 +33,8 @@ const ArticlePreview = ({ article }) => {
           {preview.title}
         </CustomLink>
       </td>
-      <td>
-        <span className="date">
-          {formatDate(preview.createdAt)}
-        </span>
-      </td>
-      <td>
-        <span className="date">
-          {formatDate(preview.updatedAt)}
-        </span>
-      </td>
+      <td className="shrink">{formatDate(preview.createdAt)}</td>
+      <td className="shrink">{formatDate(preview.updatedAt)}</td>
     </tr>
   );
 };

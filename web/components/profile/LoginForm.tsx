@@ -2,8 +2,8 @@ import Router from "next/router";
 import React from "react";
 import { mutate } from "swr";
 
-import ListErrors from "../common/ListErrors";
-import UserAPI from "../../lib/api/user";
+import ListErrors from "components/common/ListErrors";
+import UserAPI from "lib/api/user";
 
 const LoginForm = () => {
   const [isLoading, setLoading] = React.useState(false);
@@ -23,14 +23,17 @@ const LoginForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const { data, status } = await UserAPI.login(email, password);
       if (status !== 200) {
         setErrors(data.errors);
       }
-
       if (data?.user) {
+        const { data: profileData, status: profileStatus } = await UserAPI.get(data.user.username);
+        if (profileStatus !== 200) {
+          setErrors(profileData.errors);
+        }
+        data.user.effectiveImage = profileData.profile.image;
         window.localStorage.setItem("user", JSON.stringify(data.user));
         mutate("user", data?.user);
         Router.push("/");

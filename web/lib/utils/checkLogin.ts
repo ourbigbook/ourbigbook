@@ -1,6 +1,6 @@
-const checkLogin = (currentUser) =>
-  !!currentUser &&
-  currentUser?.constructor === Object &&
-  Object.keys(currentUser).length !== 0;
+const checkLogin = (loggedInUser) =>
+  !!loggedInUser &&
+  loggedInUser?.constructor === Object &&
+  Object.keys(loggedInUser).length !== 0;
 
 export default checkLogin;

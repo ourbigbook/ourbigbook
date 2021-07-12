@@ -1,8 +1,8 @@
 import Head from "next/head";
 import React from "react";
 
-import CustomLink from "../../components/common/CustomLink";
-import LoginForm from "../../components/profile/LoginForm";
+import CustomLink from "components/common/CustomLink";
+import LoginForm from "components/profile/LoginForm";
 
 const Login = () => (
   <>

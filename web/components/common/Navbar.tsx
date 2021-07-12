@@ -1,61 +1,48 @@
-import styled from "@emotion/styled";
 import React from "react";
-import useSWR from "swr";
+import Link from "next/link";
 
-import CustomLink from "./CustomLink";
-import Maybe from "./Maybe";
-import NavLink from "./NavLink";
-import { usePageDispatch } from "lib/context/PageContext";
-import checkLogin from "lib/utils/checkLogin";
+import CustomImage from "components/common/CustomImage";
+import CustomLink from "components/common/CustomLink";
+import Maybe from "components/common/Maybe";
+import NavLink from "components/common/NavLink";
 import { APP_NAME } from "lib/utils/constant";
-import storage from "lib/utils/storage";
-import * as styles from "../../styles";
-
-const NavbarContainer = styled("nav")`
-  &::after {
-    content: "";
-    display: table;
-    clear: both;
-  }
-`;
-
-const Logo = styled(CustomLink)`
-`;
-
-const NavbarList = styled("div")`
-  float: right;
-  list-style: none;
-`;
+import { usePageDispatch } from "lib/context/PageContext";
+import getLoggedInUser from "lib/utils/getLoggedInUser";
 
 const Navbar = () => {
   const setPage = usePageDispatch();
-  const { data: currentUser } = useSWR("user", storage);
-  const isLoggedIn = checkLogin(currentUser);
+  const loggedInUser = getLoggedInUser()
   const handleClick = React.useCallback(() => setPage(0), []);
   return (
-    <NavbarContainer>
-      <Logo href="/" as="/" onClick={handleClick}>
+    <nav className="navbar navbar-light">
+      <CustomLink href="/" as="/" onClick={handleClick} className="navbar-brand">
         {APP_NAME}
-      </Logo>
-      <NavbarList>
-        <Maybe test={isLoggedIn}>
-          <NavLink href="/editor/new" as="/editor/new">
+      </CustomLink>
+      <div className="navbar-list">
+        <Maybe test={loggedInUser}>
+          <NavLink href="/editor" as="/editor">
             <i className="ion-compose" />
-            &nbsp;New Post
+            &nbsp;New Article
           </NavLink>
-          <NavLink href="/user/settings" as="/user/settings">
+          <NavLink href="/settings" as="/settings">
             <i className="ion-gear-a" />
             &nbsp;Settings
           </NavLink>
           <NavLink
-            href={`/profile/${currentUser?.username}`}
-            as={`/profile/${currentUser?.username}`}
+            href={`/profile/${loggedInUser?.username}`}
+            as={`/profile/${loggedInUser?.username}`}
             onClick={handleClick}
+            className="profile"
           >
-            {currentUser?.username}
+            <CustomImage
+              className="profile-thumb"
+              src={loggedInUser?.effectiveImage}
+              alt="your profile image"
+            />
+            {loggedInUser?.username}
           </NavLink>
         </Maybe>
-        <Maybe test={!isLoggedIn}>
+        <Maybe test={!loggedInUser}>
           <NavLink href="/user/login" as="/user/login">
             Sign in
           </NavLink>
@@ -63,8 +50,8 @@ const Navbar = () => {
             Sign up
           </NavLink>
         </Maybe>
-      </NavbarList>
-    </NavbarContainer>
+      </div>
+    </nav>
   );
 };
 

@@ -48,27 +48,21 @@ const ProfileHoc = (tab) => {
               <FollowUserButton profile={profile} />
             </FollowUserButtonContext.Provider>
           </div>
-          <div className="articles-toggle">
-            <ul className="nav nav-pills outline-active">
-              <li className="nav-item">
-                <CustomLink
-                  href="/profile/[pid]"
-                  as={`/profile/${encodeURIComponent(username)}`}
-                  className={`nav-link${tab === 'my-posts' ? ' active' : ''}`}
-                >
-                  All Posts
-                </CustomLink>
-              </li>
-              <li className="nav-item">
-                <CustomLink
-                  href="/profile/[pid]/favorites"
-                  as={`/profile/${encodeURIComponent(username)}/favorites`}
-                  className={`nav-link${tab === 'favorites' ? ' active' : ''}`}
-                >
-                  Favorited Posts
-                </CustomLink>
-              </li>
-            </ul>
+          <div className="tab-list">
+              <CustomLink
+                href="/profile/[pid]"
+                as={`/profile/${encodeURIComponent(username)}`}
+                className={`tab-item${tab === 'my-posts' ? ' active' : ''}`}
+              >
+                All Articles
+              </CustomLink>
+              <CustomLink
+                href="/profile/[pid]/favorites"
+                as={`/profile/${encodeURIComponent(username)}/favorites`}
+                className={`tab-item${tab === 'favorites' ? ' active' : ''}`}
+              >
+                Favorited Articles
+              </CustomLink>
           </div>
           <ArticleList what={tab} />
         </div>

@@ -141,6 +141,50 @@ nav.navbar {
   }
 }
 
+div.article-list-container {
+  table.article-list {
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    width: 100%;
+    tr {
+      td, th {
+        border: 1px solid $color;
+        padding: 5px 10px;
+        &.shrink {
+          white-space: nowrap
+        }
+        &.expand {
+          width: 100%
+        }
+        &.title {
+          font-weight: bold;
+        }
+      }
+    }
+  }
+}
+
+div.article-meta {
+  div.article-info {
+    margin-bottom: 10px;
+  }
+  div.article-actions {
+    button, a.btn {
+      margin-right: 3px;
+    }
+  }
+}
+
+div.tab-list {
+  margin: 20px;
+  a.tab-item {
+    padding-right: 10px;
+    &.active {
+      font-weight: bold;
+    }
+  }
+}
+
 /* Cirodown has a complex per-element padding structure that we can't easily override.
  * So for now we are taking the approach of adding this class to every content (non-hav/footer)
  * to make them align nicely with rendered Cirodown. */
@@ -213,39 +257,6 @@ nav.navbar {
     transform: rotate(360deg);
   }
   */
-}
-div.article-list-container {
-  table.article-list {
-    border-collapse: collapse;
-    margin-bottom: 20px;
-    width: 100%;
-    tr {
-      td, th {
-        border: 1px solid $color;
-        padding: 5px 10px;
-        &.shrink {
-          white-space: nowrap
-        }
-        &.expand {
-          width: 100%
-        }
-        &.title {
-          font-weight: bold;
-        }
-      }
-    }
-  }
-}
-
-div.article-meta {
-  div.article-info {
-    margin-bottom: 10px;
-  }
-  div.article-actions {
-    button, a.btn {
-      margin-right: 3px;
-    }
-  }
 }
 
 /* https://github.com/gothinkster/angular-realworld-example-app/blob/9e8c49514ee874e5e0bbfe53ffdba7d2fd0af36f/src/app/shared/article-helpers/article-list.component.css#L1 */

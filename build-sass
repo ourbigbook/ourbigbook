@@ -1,55 +1,19 @@
 #!/usr/bin/env node
 
-// See: https://cirosantilli.com/cirodown#build-sass
+// https://cirosantilli.com/cirodown#build-sass
 
 const fs = require('fs');
 const path = require('path');
 
-const katex = require('katex');
-// Can't easily require this, its main is the css...
-//const normalize_css = require('normalize.css');
 const sass = require('sass');
 
 const cirodown_nodejs = require('cirodown/nodejs');
-const package_json = fs.readFileSync(cirodown_nodejs.PACKAGE_PACKAGE_JSON_PATH).toString();
-const package_json_json = JSON.parse(package_json);
-
-let embed_includes = ``;
-for (const local_include of cirodown_nodejs.CSS_LOCAL_INCLUDES) {
-  embed_includes += `@use "${local_include}";`
-}
-
-const external_includes = `
-@import "https://cdn.jsdelivr.net/npm/katex@${katex.version}/dist/katex.min.css";
-@import "https://cdnjs.cloudflare.com/ajax/libs/normalize/${package_json_json['dependencies']['normalize.css']}/normalize.min.css";
-`;
-
-fs.mkdirSync(cirodown_nodejs.PACKAGE_OUT_PATH, {recursive: true})
-
+fs.mkdirSync(cirodown_nodejs.DIST_PATH, {recursive: true})
 const scss_input = fs.readFileSync(path.join(
   __dirname, cirodown_nodejs.PACKAGE_SASS_BASENAME)).toString();
 let result;
-
-// We need to inject here to prevent
-// Error: @use rules must be written before any other rules.
-// because our sass has a `@use "sass:math";`, which is also
-// needed for the web/ webpack build.
-const MAGIC_IMPORT_MARKER = '// CIRODOWN_ADD_IMPORTS_HERE\n'
-
-result = sass.renderSync({
-  data: scss_input.replace(MAGIC_IMPORT_MARKER, embed_includes),
-  outputStyle: 'compressed',
-});
-fs.writeFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH, result.css);
-
-result = sass.renderSync({
-  data: scss_input.replace(MAGIC_IMPORT_MARKER, external_includes),
-  outputStyle: 'compressed',
-});
-fs.writeFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_PATH, result.css);
-
 result = sass.renderSync({
   data: scss_input,
   outputStyle: 'compressed',
 });
-fs.writeFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_LOCAL_PATH, result.css);
+fs.writeFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH, result.css);

@@ -1,17 +1,22 @@
 // https://cirosantilli.com/cirodown#insane-link-parsing-rules
 
-if (typeof exports !== 'undefined') {
-  // With import gave Uncaught ReferenceError: Tablesort is not defined
-  // but this worked https://github.com/tristen/tablesort/issues/165
-  Tablesort = require('tablesort')
-  require('tablesort/src/sorts/tablesort.date.js')
-  require('tablesort/src/sorts/tablesort.dotsep.js')
-  require('tablesort/src/sorts/tablesort.filesize.js')
-  require('tablesort/src/sorts/tablesort.monthname.js')
-  require('tablesort/src/sorts/tablesort.number.js')
-}
+// We got these to work perfectly at one point with webpack style-loader.
+// But we just want the separate .css.
+//import "./cirodown.scss";
+//import "katex/dist/katex.min.css";
+//import "normalize.css/normalize.css";
 
-function cirodown_runtime(toplevel) {
+// With import gave Uncaught ReferenceError: Tablesort is not defined
+// but this worked https://github.com/tristen/tablesort/issues/165
+const Tablesort = require('tablesort')
+window.Tablesort = Tablesort
+require('tablesort/src/sorts/tablesort.date.js')
+require('tablesort/src/sorts/tablesort.dotsep.js')
+require('tablesort/src/sorts/tablesort.filesize.js')
+require('tablesort/src/sorts/tablesort.monthname.js')
+require('tablesort/src/sorts/tablesort.number.js')
+
+export function cirodown_runtime(toplevel) {
   if (toplevel === undefined) {
     toplevel = document;
   }
@@ -393,18 +398,4 @@ class CirodownCanvasDemo {
     this.height = canvas_width
   }
 }
-
-// We want to do two things:
-// - allow it being ran locally without a server. ES6 modules (ESM) don't work on file://
-//   https://stackoverflow.com/questions/46992463/es6-module-support-in-chrome-62-chrome-canary-64-does-not-work-locally-cors-er
-// - let webpack pick it up. Globals are not picked up by default.
-//   https://stackoverflow.com/questions/37656592/define-global-variable-with-webpack
-// Global.
-//window.cirodown_runtime = cirodown_runtime;
-// ESM.
-//export { cirodown_runtime }
-// CJS. We are able to ignore this undefined variable on the browser,
-// and webpack does pick it up.
-if (typeof exports !== 'undefined') {
-  exports.cirodown_runtime = cirodown_runtime;
-}
+export default cirodown_runtime

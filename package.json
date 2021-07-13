@@ -7,14 +7,22 @@
     "china-dictatorship": "0.0.68",
     "chokidar": "3.3.0",
     "commander": "6.2.1",
+    "css-minimizer-webpack-plugin": "3.0.2",
     "git-url-parse": "11.1.2",
     "is-installed-globally": "0.3.1",
     "katex": "cirosantilli/KaTeX#branch-7e359f0f8d2dffeb2edec8a20aba283c074bee6f",
     "liquidjs": "9.11.7",
     "lodash": "4.17.20",
+    "mini-css-extract-plugin": "2.1.0",
     "normalize.css": "8.0.1",
     "pluralize": "8.0.0",
-    "tablesort": "5.2.1"
+    "tablesort": "5.2.1",
+    "css-loader": "5.2.4",
+    "sass-loader": "11.0.1",
+    "style-loader": "2.0.0",
+    "webpack": "5.36.1",
+    "webpack-cli": "4.6.0",
+    "webpack-dev-server": "3.11.2"
   },
   "devDependencies": {
     "browserify": "16.5.0",
@@ -60,7 +68,8 @@
     "readme": "./cirodown -o index.html README.ciro",
     "sass": "./build-sass",
     "start": "cd web && npm start",
-    "test": "mocha test --ignore-leaks"
+    "test": "mocha test --ignore-leaks",
+    "webpack": "webpack"
   },
   "version": "0.6.0",
   "cacheDirectories": [

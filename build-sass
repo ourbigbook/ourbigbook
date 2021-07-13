@@ -18,6 +18,7 @@ let embed_includes = ``;
 for (const local_include of cirodown_nodejs.CSS_LOCAL_INCLUDES) {
   embed_includes += `@use "${local_include}";`
 }
+console.error(embed_includes);
 
 const external_includes = `
 @import "https://cdn.jsdelivr.net/npm/katex@${katex.version}/dist/katex.min.css";

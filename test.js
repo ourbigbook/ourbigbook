@@ -599,8 +599,13 @@ function xpath_html(html, xpathStr) {
 }
 
 // xpath to match the parent div of a given header.
-function xpath_header(n, id) {
-  return `//x:div[@class='h' and .//x:h${n}[@id='${id}']]`;
+function xpath_header(n, id, insideH) {
+  if (insideH) {
+    insideH = '//' + insideH
+  } else {
+    insideH = ''
+  }
+  return `//x:div[@class='h' and @id='${id}' and .//x:h${n}${insideH}]`;
 }
 
 // xpath to match the split/nosplit link inside of a header.
@@ -2170,10 +2175,10 @@ assert_convert_ast('toplevel scope gets removed from IDs in the file',
   ],
   {
     assert_xpath_matches: [
-      "//x:h1[@id='notindex']",
+      xpath_header(1, 'notindex'),
       "//x:div[@class='p']//x:a[@href='' and text()='link to notindex']",
       "//x:div[@class='p']//x:a[@href='#h2' and text()='link to h2']",
-      "//x:h2[@id='h2']",
+      xpath_header(2, 'h2'),
     ],
   }
 );
@@ -2199,17 +2204,17 @@ assert_convert_ast('header simple',
     assert_xpath_matches: [
       // The toplevel header does not have any numerical prefix, e.g. "1. My header",
       // it is just "My header".
-      "//x:h1[@id='notindex']//x:a[@href='' and text()='My header']",
-      "//x:h2[@id='my-header-2']//x:a[@href='#my-header-2' and text()='1. My header 2']",
+      xpath_header(1, 'notindex', "x:a[@href='' and text()='My header']"),
+      xpath_header(2, 'my-header-2', "x:a[@href='#my-header-2' and text()='1. My header 2']"),
     ],
     assert_xpath_split_headers: {
       'my-header-2.html': [
         // The toplevel split header does not get a numerical prefix.
-        "//x:h1[@id='my-header-2']//x:a[@href='' and text()='My header 2']",
+        xpath_header(1, 'my-header-2', "x:a[@href='' and text()='My header 2']"),
       ],
       'my-header-3.html': [
         // The toplevel split header does not get a numerical prefix.
-        "//x:h1[@id='my-header-3']//x:a[@href='' and text()='My header 3']",
+        xpath_header(1, 'my-header-3', "x:a[@href='' and text()='My header 3']"),
       ],
     },
     input_path_noext: 'notindex',
@@ -3046,7 +3051,7 @@ assert_executable(
       'notindex.ciro': `= Notindex\n`,
     },
     expect_filesystem_xpath: {
-      'notindex.html': ["//x:h1[@id='notindex']"],
+      'notindex.html': [xpath_header(1, 'notindex')],
     }
   }
 );
@@ -3174,7 +3179,7 @@ assert_executable(
     expect_filesystem_xpath: {
       'index.html': [
         "//x:header//x:a[@href='']",
-        "//x:h1[@id='index']",
+        xpath_header(1, 'index'),
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='link to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='link to notindex h2']",
         "//x:div[@class='p']//x:a[@href='#has-split-suffix' and text()='link to has split suffix']",
@@ -3188,7 +3193,7 @@ assert_executable(
         "//x:a[@href='included-by-index.html' and text()='link to included by index']",
         "//*[@id='toc']//x:a[@href='included-by-index.html' and text()='Included by index']",
 
-        "//x:h2[@id='included-by-index']",
+        xpath_header(2, 'included-by-index'),
         "//x:blockquote[text()='A Cirodown example!']",
         xpath_header_split(2, 'index-scope', 'index-scope.html', cirodown.SPLIT_MARKER),
         xpath_header_split(3, 'index-scope/index-scope-2', 'index-scope/index-scope-2.html', cirodown.SPLIT_MARKER),
@@ -3239,49 +3244,49 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='index.html#h4-3-2-1' and text()='Section 2.1. \"h4 3 2 1\"']",
       ],
       'notindex.html': [
-        "//x:h1[@id='notindex']",
+        xpath_header(1, 'notindex'),
         "//x:div[@class='p']//x:a[@href='index.html' and text()='link to index']",
         "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='link to h2']",
       ],
       'has-split-suffix-split.html': [
-        "//x:h1[@id='has-split-suffix']",
+        xpath_header(1, 'has-split-suffix'),
       ],
       // Custom splitSuffix `-asdf` instead of the default `-split`.
       'notindex-splitsuffix-asdf.html': [
       ],
       'subdir/index.html': [
         "//x:header//x:a[@href='../index.html']",
-        "//x:h1[@id='subdir']",
-        "//x:h2[@id='index-h2']",
+        xpath_header(1, 'subdir'),
+        xpath_header(2, 'index-h2'),
         "//x:a[@href='../index.html' and text()='link to toplevel']",
         "//x:a[@href='../index.html#h2' and text()='link to toplevel subheader']",
       ],
       'subdir/split.html': [
         "//x:header//x:a[@href='../index.html']",
-        "//x:h1[@id='index']",
+        xpath_header(1, 'index'),
         // Check that split suffix works. Should be has-split-suffix-split.html,
         // not has-split-suffix.html.
         "//x:div[@class='p']//x:a[@href='has-split-suffix-split.html' and text()='link to has split suffix']",
       ],
       'subdir/notindex.html': [
         "//x:header//x:a[@href='../index.html']",
-        "//x:h1[@id='notindex']",
-        "//x:h2[@id='notindex-h2']",
+        xpath_header(1, 'notindex'),
+        xpath_header(2, 'notindex-h2'),
       ],
       'subdir/split.html': [
-        "//x:h1[@id='subdir']",
+        xpath_header(1, 'subdir'),
       ],
       'subdir/index-h2.html': [
-        "//x:h1[@id='index-h2']",
+        xpath_header(1, 'index-h2'),
       ],
       'subdir/notindex-h2.html': [
-        "//x:h1[@id='notindex-h2']",
+        xpath_header(1, 'notindex-h2'),
       ],
       'subdir/notindex-split.html': [
-        "//x:h1[@id='notindex']",
+        xpath_header(1, 'notindex'),
       ],
       'subdir/notindex-h2.html': [
-        "//x:h1[@id='notindex-h2']",
+        xpath_header(1, 'notindex-h2'),
       ],
       'index-scope.html': [
         "//x:header//x:a[@href='index.html']",
@@ -3313,8 +3318,8 @@ assert_executable(
     expect_filesystem_not_xpath: {
       'split.html': [
         // Included header placeholders are removed from split headers.
-        "//x:h1[@id='included-by-index']",
-        "//x:h2[@id='included-by-index']",
+        xpath_header(1, 'included-by-index'),
+        xpath_header(2, 'included-by-index'),
       ],
     },
   }
@@ -3336,7 +3341,7 @@ assert_executable(
         "//x:style[contains(text(),'@import \"cirodown.min.css\"')]",
       ],
       'out/publish/out/publish/notindex.html': [
-        "//x:h1[@id='notindex']",
+        xpath_header(1, 'notindex'),
         "//x:div[@class='p']//x:a[@href='.' and text()='link to index']",
         "//x:div[@class='p']//x:a[@href='.#h2' and text()='link to h2']",
       ],
@@ -3363,8 +3368,8 @@ assert_executable(
     expect_exists: ['out'],
     expect_not_exists: ['subdir/out', 'index.html'],
     expect_filesystem_xpath: {
-      'subdir/index.html': ["//x:h1[@id='subdir']"],
-      'subdir/notindex.html': ["//x:h1[@id='notindex']"],
+      'subdir/index.html': [xpath_header(1, 'subdir')],
+      'subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
 );
@@ -3384,8 +3389,8 @@ assert_executable(
       // The id is not just "subdir" derived from parent because
       // subdir is now the toplevel directory, so the ID is derived
       // from the title.
-      'subdir/index.html': ["//x:h1[@id='subdir-index']"],
-      'subdir/notindex.html': ["//x:h1[@id='notindex']"],
+      'subdir/index.html': [xpath_header(1, 'subdir-index')],
+      'subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
 );
@@ -3403,7 +3408,7 @@ assert_executable(
     expect_exists: ['out'],
     expect_not_exists: ['subdir/out', 'index.html', 'subdir/index.html'],
     expect_filesystem_xpath: {
-      'subdir/notindex.html': ["//x:h1[@id='notindex']"],
+      'subdir/notindex.html': [xpath_header(1, 'notindex')],
     },
   }
 );
@@ -3420,7 +3425,7 @@ assert_executable(
     expect_exists: ['subdir/out'],
     expect_not_exists: ['out', 'index.html', 'subdir/index.html'],
     expect_filesystem_xpath: {
-      'subdir/notindex.html': ["//x:h1[@id='notindex']"],
+      'subdir/notindex.html': [xpath_header(1, 'notindex')],
     },
   }
 );
@@ -3442,9 +3447,9 @@ assert_executable(
       'subdir/notindex.html',
     ],
     expect_filesystem_xpath: {
-      'my_outdir/index.html': ["//x:h1[@id='index']"],
-      'my_outdir/subdir/index.html': ["//x:h1[@id='subdir']"],
-      'my_outdir/subdir/notindex.html': ["//x:h1[@id='notindex']"],
+      'my_outdir/index.html': [xpath_header(1, 'index')],
+      'my_outdir/subdir/index.html': [xpath_header(1, 'subdir')],
+      'my_outdir/subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
 );
@@ -3593,7 +3598,7 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='toplevel to notindex h2']",
 
         // The toplevel split header does not get a numerical prefix.
-        "//x:h1[@id='toplevel']//x:a[@href='' and text()='Toplevel']",
+        xpath_header(1, 'toplevel', "x:a[@href='' and text()='Toplevel']"),
 
         // Images.
         "//x:div[@class='p']//x:a[@href='#image-my-image-toplevel' and text()='toplevel to my image toplevel']",
@@ -3622,8 +3627,8 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
 
         // Headers.
-        "//x:h1[@id='toplevel']//x:a[@href='' and text()='Toplevel']",
-        "//x:h2[@id='h2']//x:a[@href='#h2' and text()='1. H2']",
+        xpath_header(1, 'toplevel', "x:a[@href='' and text()='Toplevel']"),
+        xpath_header(2, 'h2', "x:a[@href='#h2' and text()='1. H2']"),
 
         // Spilt/nosplit.
         xpath_header_split(1, 'toplevel', 'index.html', cirodown.SPLIT_MARKER),
@@ -3635,7 +3640,7 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
 
         // The toplevel split header does not get a numerical prefix.
-        "//x:h1[@id='h2']//x:a[@href='' and text()='H2']",
+        xpath_header(1, 'h2', "x:a[@href='' and text()='H2']"),
 
         // Images.
         "//x:div[@class='p']//x:a[@href='index.html#image-my-image-toplevel' and text()='h2 to my image toplevel']",
@@ -3664,8 +3669,8 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='notindex h2 to my image h2']",
 
         // Headers.
-        "//x:h1[@id='notindex']//x:a[@href='' and text()='Notindex']",
-        "//x:h2[@id='notindex-h2']//x:a[@href='#notindex-h2' and text()='1. Notindex h2']",
+        xpath_header(1, 'notindex', "x:a[@href='' and text()='Notindex']"),
+        xpath_header(2, 'notindex-h2', "x:a[@href='#notindex-h2' and text()='1. Notindex h2']"),
 
         // Spilt/nosplit.
         xpath_header_split(1, 'notindex', 'notindex-split.html', cirodown.SPLIT_MARKER),
@@ -3683,7 +3688,7 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='notindex to notindex h2']",
 
         // The toplevel split header does not get a numerical prefix.
-        "//x:h1[@id='notindex']//x:a[@href='' and text()='Notindex']",
+        xpath_header(1, 'notindex', "x:a[@href='' and text()='Notindex']"),
 
         // Spilt/nosplit.
         xpath_header_split(1, 'notindex', 'notindex.html', cirodown.NOSPLIT_MARKER),
@@ -3697,7 +3702,7 @@ assert_executable(
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='notindex h2 to notindex']",
 
         // The toplevel split header does not get a numerical prefix.
-        "//x:h1[@id='notindex-h2']//x:a[@href='' and text()='Notindex h2']",
+        xpath_header(1, 'notindex-h2', "x:a[@href='' and text()='Notindex h2']"),
 
         // Spilt/nosplit.
         xpath_header_split(1, 'notindex-h2', 'notindex.html#notindex-h2', cirodown.NOSPLIT_MARKER),

@@ -4380,7 +4380,7 @@ There are two versions of this editor:
   git clone https://github.com/cirosantilli/cirodown
   cd cirodown
   npm install
-  npm run build
+  npm run build-assets
   chrome editor.html
   ``
 
@@ -4558,11 +4558,12 @@ Source files:
 * \a[test.js]: contains all the Mocha tests, see also: \x[test-system]
 * \a[README.md]: minimal Markdown README until GitHub / NPM support Cirodown :-)
 * \a[cirodown.runtime.js]: JavaScript functionality to be included in the final documents to enable interactive document features such as the \x[table-of-contents]. You should use the packaged `dist/cirodown_runtime.js` instead of this file directly however.
+* \a[main.scss] this file simply contains the customized CSS for https://cirosantilli.com/cirodown/[] and does not get otherwise distributed with Cirodown, see: \x[css]
 
 Generated files:
 * `dist/cirodown.js`: Webpack output JavaScript of the converter for browser usage. Generated with `npm run webpack`. The source entrypoint for it is located at \a[index.js]. Contains the code of every single dependency used from `node_modules`. This is notably used for the live-preview of a \x[browser-editor-with-preview].
 * `dist/cirodown_runtime.js`: similar `dist/cirodown.js`, but contains the converted output of \a[cirodown.runtime.js]. You should include this in every Cirodown HTML output.
-* `dist/cirodown.css`: minimized CSS needed to view Cirodown output as intended. Embeds all Cirodown CSS dependencies, notably the KaTeX CSS without which \x[mathematics] displays as garbage. This file is built with \a[build-sass], and the Sass entry point is \a[cirodown.scss].
+* `dist/cirodown.css`: minimized CSS needed to view Cirodown output as intended. Embeds all Cirodown CSS dependencies, notably the KaTeX CSS without which \x[mathematics] displays as garbage. This file is built with \a[build-sass], and the Sass entry point is \a[cirodown.scss]. Ideally, we would also use Webpack for this file, but we weren't able to get it working yet due to KaTeX font issues: https://github.com/KaTeX/KaTeX/discussions/3115
 
 === Conversion process overview
 

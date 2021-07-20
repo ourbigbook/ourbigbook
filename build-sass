@@ -14,17 +14,13 @@ const fonts_dist_dir = path.join(cirodown_nodejs.DIST_PATH, 'fonts')
 fs.mkdirSync(cirodown_nodejs.DIST_PATH, {recursive: true})
 fs.mkdirSync(fonts_dist_dir, {recursive: true})
 
-// Copy woff2 fonts over. There are other formats, but let's keep just these
-// to start with, 96% browser support already.
 const dir = fs.opendirSync(katex_fonts_src_dir)
 let dirent
 while ((dirent = dir.readSync()) !== null) {
-  if (path.extname(dirent.name) === '.woff2') {
-    fs.copyFileSync(
-      path.join(katex_fonts_src_dir, dirent.name),
-      path.join(fonts_dist_dir, dirent.name)
-    )
-  }
+  fs.copyFileSync(
+    path.join(katex_fonts_src_dir, dirent.name),
+    path.join(fonts_dist_dir, dirent.name)
+  )
 }
 dir.closeSync()
 

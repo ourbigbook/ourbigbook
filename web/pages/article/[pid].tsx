@@ -34,17 +34,16 @@ function renderRefCallback(elem) {
 
 const ArticlePage = ({ article, comments }: ArticlePageProps) => {
   const router = useRouter();
-  if (router.isFallback) { return <LoadingSpinner />; }
 
   // Fetch user-specific data.
   // Article determines if the curent user favorited the article or not
-  const { data: articleApi, error } = useSWR(`${SERVER_BASE_URL}/articles/${article.slug}`, fetcher);
+  const { data: articleApi, error } = useSWR(`${SERVER_BASE_URL}/articles/${article?.slug}`, fetcher(router.isFallback));
   if (articleApi !== undefined) {
     article = articleApi.article
   }
   // We fetch comments so that the new posted comment will appear immediately after posted.
   // Note that we cannot calculate the exact new coment element because we need the server datetime.
-  const { data: commentApi, error: commentError } = useSWR(`${SERVER_BASE_URL}/articles/${article.slug}/comments`, fetcher);
+  const { data: commentApi, error: commentError } = useSWR(`${SERVER_BASE_URL}/articles/${article?.slug}/comments`, fetcher(router.isFallback));
   if (commentApi !== undefined) {
     comments = commentApi.comments
   }
@@ -55,14 +54,16 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
   // API data, so useSWR is not a clean.
   const [following, setFollowing] = React.useState(false)
   React.useEffect(() => {
-    setFollowing(article.author.following)
-  }, [article.author.following])
+    setFollowing(article?.author.following)
+  }, [article?.author.following])
   const [favorited, setFavorited] = React.useState(false);
-  const [favoritesCount, setFavoritesCount] = React.useState(article.favoritesCount);
+  const [favoritesCount, setFavoritesCount] = React.useState(article?.favoritesCount);
   React.useEffect(() => {
-    setFavorited(article.favorited);
-  }, [article.favorited])
+    setFavorited(article?.favorited);
+    setFavoritesCount(article?.favoritesCount)
+  }, [article?.favorited, article?.favoritesCount])
 
+  if (router.isFallback) { return <LoadingSpinner />; }
   const markup = { __html: article.render };
   return (
     <>

@@ -517,6 +517,7 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
           sass.renderSync({
             data: fs.readFileSync(path.join(base_path, input_path), convert_input_options.encoding),
             outputStyle: 'compressed',
+            includePaths: [cirodown_nodejs.PACKAGE_NODE_MODULES_PATH],
           }).css
         );
       } else {

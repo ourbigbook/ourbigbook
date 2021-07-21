@@ -68,7 +68,7 @@
     "test": "mocha test --ignore-leaks",
     "webpack": "webpack"
   },
-  "version": "0.6.0",
+  "version": "0.7.0",
   "cacheDirectories": [
     "node_modules",
     "web/node_modules"

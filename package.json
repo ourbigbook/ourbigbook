@@ -39,7 +39,8 @@
     "gitignore",
     "cirodown",
     "cirodown.common.scss",
-    "dist/**/*",
+    "dist/*",
+    "dist/fonts/*.woff2",
     "index.js",
     "main.liquid.html",
     "main.scss",
@@ -68,7 +69,7 @@
     "test": "mocha test --ignore-leaks",
     "webpack": "webpack"
   },
-  "version": "0.6.0",
+  "version": "0.7.0",
   "cacheDirectories": [
     "node_modules",
     "web/node_modules"

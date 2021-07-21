@@ -482,6 +482,7 @@ function convert_path(input_path, options, convert_input_options) {
  * The output file name is derived from the input file name with the output extension.
  */
 function convert_path_to_file(base_path, input_path, options, convert_input_options={}) {
+  let output;
   let input_path_parse = path.parse(input_path);
   if (input_path_parse.ext === cirodown.CIRODOWN_EXT) {
     let message_prefix;
@@ -494,7 +495,7 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
     console.log(message);
     const new_convert_input_options = Object.assign({}, convert_input_options);
     let t0 = performance.now();
-    convert_path(path.join(base_path, input_path), options, new_convert_input_options);
+    output = convert_path(path.join(base_path, input_path), options, new_convert_input_options);
     let t1 = performance.now();
     console.log(`${message} finished in ${t1 - t0} ms`);
     if (new_convert_input_options.had_error) {
@@ -533,6 +534,7 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
   if (convert_input_options.commander.debugPerf) {
     console.error(`perf convert_path_to_file_end ${performance.now()}`);
   }
+  return output;
 }
 
 function create_db(convert_input_options) {
@@ -1029,7 +1031,8 @@ A link to another file: \\x[and-now-an-include]
           cli_error('--publish must take a directory as input, not a file');
         }
         create_db(convert_input_options);
-        output = convert_path(inputPath, options, convert_input_options);
+        const inputPathParse = path.parse(inputPath);
+        output = convert_path_to_file(inputPathParse.dir, inputPathParse.base, options, convert_input_options);
       } else {
         let actual_input_dir;
         let publish_branch;

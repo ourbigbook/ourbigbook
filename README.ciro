@@ -4844,10 +4844,12 @@ git push --follow-tags
 npm publish
 ``
 
-After publishing:
+After publishing a good sanity check is to see if you can render this documentation correctly:
 ``
 cd ~
 # Get rid of the npm link development version.
 npm uninstall -g cirodown
 npm install -g cirodown
+cd -
+cirodown -S .
 ``

@@ -3,6 +3,7 @@
 const child_process = require('child_process');
 const china_dictatorship = require('china-dictatorship');
 if (!china_dictatorship.get_data().includes("Tiannmen Square protests")) throw 0;
+
 const fs = require('fs');
 const path = require('path');
 const { PerformanceObserver, performance } = require('perf_hooks');
@@ -12,6 +13,7 @@ const chokidar = require('chokidar');
 // This library is terrible, too much magic, hard to understand interface,
 // does not do some obvious basics.
 const commander = require('commander');
+const fs_extra = require('fs-extra');
 const git_url_parse = require("git-url-parse");
 const is_installed_globally = require('is-installed-globally');
 const katex = require('katex');
@@ -215,16 +217,12 @@ function convert_input(input, options, convert_input_options={}) {
   // Otherwise, include and external CSS to make each page lighter.
   if (convert_input_options.commander.htmlEmbed) {
     new_options.template_vars.style = fs.readFileSync(
-      cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH,
+      cirodown_nodejs.DIST_CSS_PATH,
       cirodown_nodejs.ENCODING
     );
-    let scripts_str = '';
-    for (const script_path of cirodown_nodejs.JS_LOCAL_INCLUDES) {
-      scripts_str += `<script>${fs.readFileSync(script_path)}</script>\n`
-    }
-    scripts_str += `<script>${fs.readFileSync(
-      cirodown_nodejs.PACKAGE_OUT_JS_LOCAL_PATH, cirodown_nodejs.ENCODING)}</script>\n`;
-    new_options.template_vars.post_body = scripts_str;
+    new_options.template_vars.post_body = `<script>${fs.readFileSync(
+      cirodown_nodejs.DIST_JS_PATH, cirodown_nodejs.ENCODING)}</script>\n`;
+     ;
   } else {
     let includes_str = ``;
     let scripts_str = ``;
@@ -681,6 +679,7 @@ commander.option('--body-only', 'output only the content inside the HTLM body el
 commander.option('--china', 'https://cirosantilli.com/cirodown#debug-perf', false);
 commander.option('--debug-perf', 'https://cirosantilli.com/cirodown#debug-perf', false);
 commander.option('--dry-run', "don't run most external commands https://github.com/cirosantilli/cirodown#dry-run", false);
+commander.option('--dry-run-push', "don't run git push commands https://github.com/cirosantilli/cirodown#dry-run-push", false);
 commander.option('--embed-includes', 'http://cirosantilli.com/cirodown#embed-include', false);
 commander.option('--embed-resources', 'http://cirosantilli.com/cirodown#embed-resources', false);
 commander.option('--generate', 'http://cirosantilli.com/cirodown#generate', false);
@@ -939,8 +938,8 @@ A link to another file: \\x[and-now-an-include]
     external_css_and_js: false,
     had_error: false,
     log: convert_input_options_log,
-    out_css_path: cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH,
-    out_js_path: cirodown_nodejs.PACKAGE_OUT_JS_LOCAL_PATH,
+    out_css_path: cirodown_nodejs.DIST_CSS_PATH,
+    out_js_path: cirodown_nodejs.DIST_JS_PATH,
     outdir: outdir,
     publish: publish,
   };
@@ -1033,7 +1032,7 @@ A link to another file: \\x[and-now-an-include]
       } else {
         let actual_input_dir;
         let publish_branch;
-        let publish_outdir;
+        let publish_out_publish_dir;
         let remote_url;
         let src_branch;
 
@@ -1078,19 +1077,19 @@ A link to another file: \\x[and-now-an-include]
           // Set some variables especially for publishing.
           actual_input_dir = publish_dir;
           convert_input_options.cirodown_json_dir = actual_input_dir;
-          publish_outdir = path.join(publish_out_dir, 'publish');
-          convert_input_options.out_css_path = path.join(publish_outdir, cirodown_nodejs.PACKAGE_OUT_CSS_BASENAME);
-          convert_input_options.out_js_path = path.join(publish_outdir, cirodown_nodejs.PACKAGE_OUT_JS_BASENAME);
+          publish_out_publish_dir = path.join(publish_out_dir, 'publish');
+          convert_input_options.out_css_path = path.join(publish_out_publish_dir, cirodown_nodejs.DIST_CSS_BASENAME);
+          convert_input_options.out_js_path = path.join(publish_out_publish_dir, cirodown_nodejs.DIST_JS_BASENAME);
           convert_input_options.external_css_and_js = true;
           // Remove all files from the gh-pages repository in case some were removed from the original source.
-          if (fs.existsSync(path.join(publish_out_dir, '.git'))) {
-            cmd_get_stdout('git', ['-C', publish_outdir, 'rm', '-r', '-f', '.'], cmd_options);
+          if (fs.existsSync(path.join(publish_out_publish_dir, '.git'))) {
+            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'rm', '-r', '-f', '.'], cmd_options);
           }
         } else {
           actual_input_dir = inputPath;
-          publish_outdir = outdir;
+          publish_out_publish_dir = outdir;
         }
-        convert_input_options.outdir = publish_outdir;
+        convert_input_options.outdir = publish_out_publish_dir;
         create_db(convert_input_options);
 
         // Remove IDs and other metadata from files that might have been removed from disk.
@@ -1101,29 +1100,31 @@ A link to another file: \\x[and-now-an-include]
         // Do the actual conversion.
         convert_directory_extract_ids(actual_input_dir, options, convert_input_options);
         convert_directory(actual_input_dir, options, convert_input_options);
-        generate_redirects(convert_input_options, cirodown_json, publish_outdir);
+        generate_redirects(convert_input_options, cirodown_json, publish_out_publish_dir);
 
         // Publish the converted output if build succeeded.
         if (publish && !convert_input_options.had_error) {
           // Push the original source.
-          cmd_get_stdout('git', ['-C', inputPath, 'push'], cmd_options);
-          cmd_get_stdout('git', ['-C', publish_outdir, 'init'], cmd_options);
+          if (!commander.dryRunPush) {
+            cmd_get_stdout('git', ['-C', inputPath, 'push'], cmd_options);
+          }
+          cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'init'], cmd_options);
           // https://stackoverflow.com/questions/42871542/how-to-create-a-git-repository-with-the-default-branch-name-other-than-master
-          cmd_get_stdout('git', ['-C', publish_outdir, 'checkout', '-B', publish_branch], cmd_options);
+          cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'checkout', '-B', publish_branch], cmd_options);
           try {
             // Fails if remote already exists.
-            cmd_get_stdout('git', ['-C', publish_outdir, 'remote', 'add', 'origin', remote_url], cmd_options);
+            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'remote', 'add', 'origin', remote_url], cmd_options);
           } catch(error) {
-            cmd_get_stdout('git', ['-C', publish_outdir, 'remote', 'set-url', 'origin', remote_url], cmd_options);
+            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'remote', 'set-url', 'origin', remote_url], cmd_options);
           }
           // Ensure that we are up-to-date with the upstream gh-pages if one exists.
           // TODO may fail on initial one, do a check for that.
-          cmd_get_stdout('git', ['-C', publish_outdir, 'fetch', 'origin'], cmd_options);
-          cmd_get_stdout('git', ['-C', publish_outdir, 'reset', `origin/${publish_branch}`], cmd_options);
+          cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'fetch', 'origin'], cmd_options);
+          cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'reset', `origin/${publish_branch}`], cmd_options);
 
           // Generate special files needed for GitHub pages.
           gemfile_content = "gem 'github-pages', group: :jekyll_plugins\n";
-          fs.writeFileSync(path.join(publish_outdir, 'Gemfile'), gemfile_content);
+          fs.writeFileSync(path.join(publish_out_publish_dir, 'Gemfile'), gemfile_content);
 
           // Commit and push.
           if ('prepublish' in cirodown_json) {
@@ -1132,18 +1133,29 @@ A link to another file: \\x[and-now-an-include]
               cli_error(`${CIRODOWN_JSON_BASENAME} prepublish file not found: ${prepublish_path}`);
             }
             try {
-              cmd_get_stdout(path.resolve(prepublish_path), [publish_outdir]);
+              cmd_get_stdout(path.resolve(prepublish_path), [publish_out_publish_dir]);
             } catch(error) {
               cli_error(`${CIRODOWN_JSON_BASENAME} prepublish command exited non-zero, aborting`);
             }
           }
-          // Copy the CSS into the repository.
-          fs.copyFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_PATH, convert_input_options.out_css_path);
-          fs.copyFileSync(cirodown_nodejs.PACKAGE_OUT_JS_LOCAL_PATH, convert_input_options.out_js_path);
-          cmd_get_stdout('git', ['-C', publish_outdir, 'add', '.'], cmd_options);
+
+          // Copy runtime assets from dist/ into the output repository.
+          const dir = fs.opendirSync(cirodown_nodejs.DIST_PATH)
+          let dirent
+          while ((dirent = dir.readSync()) !== null) {
+            fs_extra.copySync(
+              path.join(cirodown_nodejs.DIST_PATH, dirent.name),
+              path.join(publish_out_publish_dir, dirent.name)
+            )
+          }
+          dir.closeSync()
+
+          cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'add', '.'], cmd_options);
           source_commit = git_sha(inputPath, src_branch);
-          cmd_get_stdout('git', ['-C', publish_outdir, 'commit', '-m', source_commit], cmd_options);
-          cmd_get_stdout('git', ['-C', publish_outdir, 'push', 'origin', `${publish_branch}:${publish_branch}`], cmd_options);
+          cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'commit', '-m', source_commit], cmd_options);
+          if (!commander.dryRunPush) {
+            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'push', 'origin', `${publish_branch}:${publish_branch}`], cmd_options);
+          }
         }
       }
     }

@@ -8,10 +8,7 @@ node_modules
 # Custom ignores. Everything above this section, gets automatically parsed
 # and used by the default template generation!
 !/editor.html
-cirodown.embed.min.css
-cirodown.js
-cirodown.local.min.css
-cirodown.min.css
+/dist
 gitignore
 
 # Temporary files.
@@ -32,6 +29,3 @@ tmp.*
 /web/out/
 /web/.now/
 /web/.now
-
-# Webpack.
-/dist

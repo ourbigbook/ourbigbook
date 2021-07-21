@@ -36,4 +36,4 @@ result = sass.renderSync({
   outputStyle: 'compressed',
   includePaths: [cirodown_nodejs.PACKAGE_NODE_MODULES_PATH],
 });
-fs.writeFileSync(cirodown_nodejs.PACKAGE_OUT_CSS_EMBED_PATH, result.css);
+fs.writeFileSync(cirodown_nodejs.DIST_CSS_PATH, result.css);

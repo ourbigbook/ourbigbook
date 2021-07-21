@@ -3840,9 +3840,11 @@ https://pages.github.com/[GitHub pages] is the default Cirodown publish target.
 
 The first step is of course to create the GitHub repository that will contain your GitHub pages as usual.
 
-Then, if you want to publish to the GitHub pages root page, you need to setup the branches correctly as shown at: \x[publish-to-github-pages-root-page].
+Then, if you want to publish to the GitHub pages root page (e.g. https://cirosantilli.github.io/ for the user `cirosantilli`) you need to setup the branches correctly as shown at: \x[publish-to-github-pages-root-page].
 
-Finally, for both root and non-root pages, follow the steps at: \x[publish-to-github-common-steps].
+Finally, for both root and non-root pages, just follow the steps at: \x[publish-to-github-common-steps].
+
+Cirodown generates a single commit on the published branch, normally `gh-pages`, and then just amends the commit every time you publis to reduce server usage in case large files are removed.
 
 = Publish to GitHub pages root page
 {parent=publish-to-github-pages}
@@ -3853,7 +3855,7 @@ If you want to publish your root user page, which appears at `/` (e.g. https://g
 
 This means that you must place your `.ciro` input files in a branch other than `master` to clear up `master` for the generated HTML.
 
-`cirodown` automatically detects if your repository ois a root repository or not by parsing `git remote` output, but you must setup the branches correctly yourself.
+`cirodown` automatically detects if your repository is a root repository or not by parsing `git remote` output, but you must setup the branches correctly yourself.
 
 So on a new repository, you must https://stackoverflow.com/questions/42871542/how-to-create-a-git-repository-with-the-default-branch-name-other-than-master[first checkout to a different branch] as in:
 ``

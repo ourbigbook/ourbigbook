@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eu
 publish_out_dir="$1"
-./build
+npm run build-assets
 
 # Hack the editor resources to work on the deployment.
 #

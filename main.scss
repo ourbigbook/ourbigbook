@@ -7,22 +7,6 @@ body {
 background-color: $color;
 font-family: $font-family;
 
-/* Scrollbar behaviour.
- * We would like to get rid of the X scrollbar and keep only the Y one.
- * The below would remove both on Chromium 81 and neither on Firefox 75.
- * So for now we just keep both.
- * https://stackoverflow.com/questions/3296644/hiding-the-scroll-bar-on-an-html-page
- * https://stackoverflow.com/questions/20997183/how-to-hide-scrollbar-in-firefox
- * https://stackoverflow.com/questions/20713769/horizontal-only-webkit-scrollbar-style-css
- */
-/*
-overflow-x: visible;
-scrollbar-width: none;
-&::-webkit-scrollbar {
-    display: none;
-}
-*/
-
 header, footer {
   background-color: $header-background-color;
 }

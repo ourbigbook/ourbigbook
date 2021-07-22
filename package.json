@@ -66,6 +66,7 @@
     "deploy": "git push -f heroku master",
     "dev": "cd web && npm run dev",
     "heroku-prebuild": "./heroku-prebuild",
+    "link": "npm link && npm link cirodown",
     "sass": "./build-sass",
     "start": "cd web && npm start",
     "test": "mocha test --ignore-leaks",

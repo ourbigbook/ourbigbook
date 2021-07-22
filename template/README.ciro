@@ -1,0 +1,168 @@
+= {{ title }}
+
+Welcome to Cirodown! Here's the table of contents:
+
+{{ title }}
+
+== Paragraphs, code, math
+
+My first paragraph is amazing!
+
+And the second one with inline code `f(){}` and inline server-side rendered maths with KaTeX: $\sqrt{1+1}$.
+
+But if we want block code here it is:
+``
+f() {
+  return 1;
+}
+``
+and here is some block maths:
+$$
+\sqrt{1+1} \\
+\sqrt{1+1}
+$$
+
+Ciro loves maths, and so equations can have titles, and references to math equations just work! See e.g.: \x[my-favorite-equation]
+$$
+\newcommand{\va}[1]{\overrightarrow{#1}}
+\newcommand{\B}[0]{\va{\mathbf{B}}}
+\newcommand{\E}[0]{\va{\mathbf{E}}}
+\newcommand{\divergence}[1]{\nabla \cdot #1}
+\newcommand{\vacuumPermittivity}[0]{\varepsilon_0}
+\divergence{\E} = \frac{\rho}{\vacuumPermittivity} \\
+\divergence{\B} = 0
+$$
+{title=This is my favorite equation in the entire world!!!}
+{id=my-favorite-equation}
+
+We try to make anything escapable with a backslash, e.g.:
+* literal backslash \\notmacro
+* code and math: \` and \$
+
+If you want more than three backticks in your insane code block, you can add more to the open:
+````
+Here  are three backticks:
+```
+Nice!
+````
+or you can also use the equivalent sane literals:
+\C[[
+Here  are three backticks:
+```
+Nice!
+]]
+
+== Lists, tables, quotations
+
+Meh, the usual. Insane list:
+* first item
+* second item
+  * some nesting
+  * and some more
+* third item
+Sane list with explicit `Ul`:
+\Ul[
+\L[first item]
+\L[second item]
+]
+
+And now for tables, see this one: \x[table-my-table]. Try clicking next to the headers sort the columns!
+\Table
+{title=My table title}
+[
+|| String col
+|| Integer col
+|| Float col
+
+| ab
+| 2
+| 10.1
+
+| a
+| 10
+| 10.2
+
+| c
+| 2
+| 3.4
+
+| c
+| 3
+| 3.3
+]
+
+And a quotation:
+\Q[To be or not to be!
+
+Cirodown is the answer.]
+
+== References, headers, images
+
+Ciro loves headers and headers!
+
+Reference to a header: \x[paragraphs-code-math].
+
+Make it show the section number as well with `{full}`: \x[paragraphs-code-math]{full}.
+
+The following header is set to be uppercase by default due to the `{c}` (upperCase): \x[ciro-is-awesome]
+
+This one isn't however: \x[dog]. But we can change:
+* it to uppercase with `{c}`: \x[dog]{c}
+* to plural with `{p}`: \x[dog]{p}
+
+Reference to the following image: \x[image-my-xi-chrysanthemum].
+
+\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+{title=Xi Chrysanthemum is a very nice image}
+{id=image-my-xi-chrysanthemum}
+{source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
+
+=== Ciro is awesome
+{c}
+
+=== Dog
+
+=== Unlimited header levels?!
+
+==== My h4
+
+===== My h5
+
+====== My h6
+
+\H[7][My h7]
+
+\H[8][My h8]
+
+\H[9][My h9]
+
+\H[10][My h10]
+
+\H[11][My h11]
+
+\H[12][My h12]
+
+\H[13][My h13]
+
+= Parent determined by ID!!!
+{parent=my-h9}
+
+The parent of this header is determined by specifying it's ID with:
+``
+{parent=my-h9}
+``
+rather than by the number of `=` signs of this header.
+
+This means that you don't need to worry about counting header anymore!
+
+And it is much easier to move large chunks of headers around! You only need to change the `{parent=}` of the toplevel one.
+
+This is why when creating large documents, you should use `parent` exclusively.
+
+== Mostly testing now I confess
+
+Literal named argument:
+``
+my nice code
+``
+{{title=Nice code}}

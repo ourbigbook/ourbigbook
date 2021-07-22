@@ -9,7 +9,7 @@ Markup language + static site generator to write complex structured wikis/books/
 * https://github.com/cirosantilli/cirodown/blob/master/README.ciro[]: source for this document
 * https://cirosantilli.com/cirodown[]: rendered version of this document
 * https://cirosantilli.com/cirodown/editor[]: live in-browser demo
-* https://cirosantilli.com/cirodown-template[]: good template to get started, see \x[getting-started]{full}
+* https://cirosantilli.com/cirodown-template[]: good template to get started, see \x[quick-start]{full}
 
 = Quick start
 {parent=cirodown}
@@ -19,7 +19,7 @@ Markup language + static site generator to write complex structured wikis/books/
 
 Learn the syntax basics in 5 minutes: https://cirosantilli.com/cirodown/editor[].
 
-Play with a Cirodown template locally:
+Play with https://github.com/cirosantilli/cirodown-template[a Cirodown template] locally:
 ``
 git clone https://github.com/cirosantilli/cirodown-template
 cd cirodown-template
@@ -27,14 +27,25 @@ npm install
 npx cirodown .
 firefox index.html
 ``
-That template can be seen live at: http://cirosantilli.com/cirodown-generate-multifile/
+That template can be seen rendered live at: http://cirosantilli.com/cirodown-generate-multifile/
 
-To deploy it on your own you can just fork the repository https://github.com/cirosantilli/cirodown-template to your own https://github.com/johndoe/cirodown-template and then:
+To \x[publish-to-github-pages] on your repository you can just fork the repository https://github.com/cirosantilli/cirodown-template to your own https://github.com/johndoe/cirodown-template and then:
 ``
 git remote set-url origin git@github.com:johndoe/cirodown-template.git
 npx cirodown --publish
 ``
 and it should now be visible at: https://johndoe.github.io/cirodown-template
+
+Then, everytime you make a change you can publish the new version with:
+``
+git add .
+git commit --message 'hacked stuff'
+cirodown --publish .
+``
+or equivalently with the \x[publish-commit] shortcut:
+``
+cirodown --publish-commit 'hacked stuff'
+``
 
 If you want to publish to your root page https://johndoe.github.io instead of https://johndoe.github.io/cirodown-template you need to rename the `master` branch to `dev` as mentioned at \x[publish-to-github-pages-root-page]:
 ``
@@ -50,11 +61,11 @@ npx cirodown --publish
 ``
 
 The following files of the template control the global style of the output, and you are free to edit them:
-* `main.liquid.html`: global HTML template. Documented at \x[template], and set in that repository with 
+* `main.liquid.html`: global HTML template in https://shopify.github.io/liquid/[Liquid format]. Available variables are documented at \x[template], and it is being selected in that repository with :
   ``
   "template": "main.liquid.html"
   ``
-  in `cirodown.json`
+  in the \x[cirodown-json] configuration file.
 * `main.scss`: https://sass-lang.com/[Sass] file that gets converted to raw CSS `main.css` by `npx cirodown .`.
 
   Sass is just much more convenient to write than raw CSS.
@@ -3678,7 +3689,9 @@ Keep in mind that certain things can never be embedded, e.g.:
 = `--generate`
 {parent=cirodown-executable-options}
 
-Generate the repository template present at: https://github.com/cirosantilli/cirodown-template-simple
+Generate template repositories locally:
+* `cirodown --generate default`: https://github.com/cirosantilli/cirodown-template
+* `cirodown --generate simple`: https://github.com/cirosantilli/cirodown-template-simple
 
 End users almost never want this, because it means that to have a sane setup you need to:
 * install Cirodown globally with `npm install -g cirodown`
@@ -3686,12 +3699,7 @@ End users almost never want this, because it means that to have a sane setup you
 * then install Cirodown locally again with `npm install`
 so maybe we should just get rid of that option and just ensure that we can provide an up-to-date working template for the latest relase.
 
-= `--generate-multifile`
-{parent=cirodown-executable-options}
-
-Generate the repository template present at: https://github.com/cirosantilli/cirodown-template
-
-Like \x[generate], but generate a more complex template that serves as a good starting point for a multifile website.
+For now we are keeping this as it is useful to automate the updating of templates during the \x[release-procedure].
 
 = `--help-macros`
 {parent=cirodown-executable-options}
@@ -3871,13 +3879,7 @@ Publishing only happens if the build has no errors.
 
 https://pages.github.com/[GitHub pages] is the default Cirodown publish target.
 
-The first step is of course to create the GitHub repository that will contain your GitHub pages as usual.
-
-Then, if you want to publish to the GitHub pages root page (e.g. https://cirosantilli.github.io/ for the user `cirosantilli`) you need to setup the branches correctly as shown at: \x[publish-to-github-pages-root-page].
-
-Finally, for both root and non-root pages, just follow the steps at: \x[publish-to-github-common-steps].
-
-Cirodown generates a single commit on the published branch, normally `gh-pages`, and then just amends the commit every time you publis to reduce server usage in case large files are removed.
+Since that procedure is so important, it is documented directly at: \x[play-with-the-template].
 
 = Publish to GitHub pages root page
 {parent=publish-to-github-pages}
@@ -3904,19 +3906,6 @@ git push --delete origin master
 ``
 
 You then will also want to set your default repository branch to `dev` in the settings for that repository: https://help.github.com/en/github/administering-a-repository/setting-the-default-branch
-
-= Publish to GitHub common steps
-{parent=publish-to-github-pages}
-
-For non-root GitHub pages, no special setup is needed, `cirodown` automatically populates the `gh-pages` branch for you.
-
-Once the repository branch is setup, we can just \x[generate][generate the repository template with `--generate`], make a commit, and immediately publish!
-``
-cirodown --generate
-git add .
-git commit --message 'initial commit from template'
-cirodown --publish .
-``
 
 = `-P, --publish-commit <commit-message>`
 {id=publish-commit}
@@ -4565,7 +4554,7 @@ error: tmp.ciro:5:3: cross reference to unknown id: "b"
 {parent=cirodown}
 
 = Run Cirodown master
-{parent=cirodown}
+{parent=developing-cirodown}
 
 Install master globally on your machine:
 ``
@@ -4579,8 +4568,12 @@ so you can now run the `cirodown` command from any directory in your computer, f
 ``
 cirodown .
 ``
+We also have a shortcut for `npm link` and `npm link cirodown`:
+``
+npm run link
+``
 
-`npm link` produces a symlink so that any changes made to the Git source tree will automatically be visible globally, see also: https://stackoverflow.com/questions/28440893/install-a-locally-developed-npm-package-globally The symlink structure looks like:
+`npm link link` produces symlinks so that any changes made to the Git source tree will automatically be visible globally, see also: https://stackoverflow.com/questions/28440893/install-a-locally-developed-npm-package-globally The symlink structure looks like:
 ``
 /home/ciro/cirodown/node_modules/cirodown -> /home/ciro/.nvm/versions/node/v14.17.0/lib/node_modules/cirodown -> /home/ciro/cirodown
 ``
@@ -4590,8 +4583,7 @@ As mentioned at \x[useless-knowledge], most users don't want global installation
 Just remember that if you add a new dependency, you must redo the symlinking business:
 ``
 npm install <dependency>
-npm link
-npm link cirodown
+npm run link
 ``
 Asked if there is a better way at: https://stackoverflow.com/questions/59389027/how-to-interactively-test-the-executable-of-an-npm-node-js-package-during-develo[]. The symlink business can be undone with:
 ``

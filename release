@@ -14,8 +14,6 @@ cp .gitignore gitignore
 # This also does npm run build-assets
 cirodown --publish
 sed -i "s/  \"version\":.*/  \"version\": \"${version}\",/" package.json
-# To make sure package.json is up-to-date.
-npm run link
 git add -u
 git commit -m "version $version"
 git tag -m "$version" "$version"

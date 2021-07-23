@@ -2811,7 +2811,13 @@ This is why IDs must be unique for elements across all pages.
 
 When running in Node.js, Cirodown dumps the IDs of all processed files to a `out/db.sqlite3` file in \x[the-out-directory], and then reads from that file when IDs are needed.
 
-When converting a directory, `out/db.sqlite3` is placed inside the input directory. When converting individual files, `out/db.sqlite3` is placed in the current working directory. The file is not created or used when handling input from stdin.
+When converting under a directory that contains \x[cirodown-json], `out/db.sqlite3` is placed inside the same directory as the `cirodown.json` file.
+
+If there is no `cirodown.json` in parent directories, then `out/db.sqlite3` is placed in the current working directory.
+
+These follows the principles described at: \x[cirodown-json/the-current-working-directory-does-not-matter-when-there-is-a-cirodown-json].
+
+`db.sqlite3` is not created or used when handling input from stdin.
 
 When running in the browser, the same JavaScript API will send queries to the server instead of a local SQLite database.
 
@@ -4137,6 +4143,29 @@ Then, in that case:
   * the first header of subdir/notindex.ciro will have ID `subdir/notindex`. Cirodown understands that `subdir` is relative to the toplevel at `.`
   * \x[the-out-directory] is located at `./out`
 If given, the \x[outdir] option forces \x[the-out-directory] to be placed in `--outdir` however.
+
+= The current working directory does not matter when there is a `cirodown.json`
+{parent=cirodown-json}
+
+When the file or directory being converted has an ancestor directory with a `cirodown.json` file, then your current working directory does not have any effect on Cirodown output. For example if we have:
+``
+/project/cirodown.json
+/project/README.ciro
+/project/subdir/README.ciro
+``
+then all of the following conversions produce the same output:
+* directory conversion:
+  * `cd /project && cirodown .`
+  * `cd / && cirodown project`
+  * `cd project/subdir && cirodown ..`
+* file conversion:
+  * `cd /project && cirodown README.ciro`
+  * `cd / && cirodown project/README.ciro`
+  * `cd project/subdir && cirodown ../README.ciro`
+
+When there isn't a `cirodown.json`, everything happens as though there were an empty `cirodown.json` file in the current working directory. So for example:
+* outputs that would be placed relative to inputs are still placed in that place, e.g. `README.ciro -> index.html` always stay together
+* outputs that would be placed next to the `cirodown.json` are put in the current working directory, e.g. \x[the-out-directory]
 
 = `cirodown.json` schema
 {parent=cirodown-json}

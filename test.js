@@ -3786,13 +3786,25 @@ assert_executable(
     filesystem: {
       'README.ciro': `= Index
 
+\\x[subdir]
+
 \\x[subdir/h2]
 
+\\x[subdir/notindex]
+
+\\x[subdir/notindex-h2]
+
 \\Include[subdir]
+
+\\Include[subdir/notindex]
 `,
       'subdir/index.ciro': `= Subdir
 
 == h2
+`,
+      'subdir/notindex.ciro': `= Notindex
+
+== Notindex h2
 `,
     },
   }

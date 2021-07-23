@@ -127,7 +127,7 @@ Furthermore, the default install of Chromium on Ubuntu 21.04 uses Snap and block
 * https://superuser.com/questions/1546550/chromium-81-wont-display-dotfiles-anymore
 * https://askubuntu.com/questions/1184357/why-cant-chromium-suddenly-access-any-partition-except-for-home
 * https://askubuntu.com/questions/1214346/as-a-user-is-there-any-way-to-change-the-confinement-of-a-snap-package
-One workaround is to use \x[embed-resouces], but this of course generates larger outputs.
+One workaround is to use \x[embed-resources], but this of course generates larger outputs.
 
 To run master globally for development see: \x[run-cirodown-master]{full}. This one actually works despite the dotfile thing since your development path is normally outside of dotfiles.
 
@@ -3510,7 +3510,7 @@ These conversions are also specified in the Unicode standard.
 
 === Security
 
-== `--unsafe-ace`
+= `--unsafe-ace`
 {parent=security}
 
 Cirodown is designed to not allow arbitrary code execution by default on any Cirodown command.
@@ -3520,7 +3520,7 @@ This means that it it should be safe to just download any Cirodown repository, a
 This option enables actions that would allow such code execution, so you should only pass it if you trust the repository author:
 * \x[cirodown-json/prepublish]
 
-== unsafe-xss
+= unsafe-xss
 {title2=`--unsafe-xss`}
 {parent=security}
 

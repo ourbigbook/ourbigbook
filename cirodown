@@ -742,7 +742,7 @@ commander.arguments(
 });
 commander.parse(process.argv);
 
-// Action.
+// main action.
 if (commander.helpMacros) {
   console.log(JSON.stringify(cirodown.macro_list(), null, 2));
 } else if (commander.china) {
@@ -802,6 +802,7 @@ if (commander.helpMacros) {
     body_only: commander.bodyOnly,
     cirodown_json: cirodown_json,
     embed_includes: commander.embedIncludes,
+    fs_exists_sync: fs.existsSync,
     html_x_extension: html_x_extension,
     output_format: commander.outputFormat,
     outfile: commander.outfile,

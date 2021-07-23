@@ -18,7 +18,7 @@ tmp.*
 *.tmp
 *.tmp.*
 
-# Web.
+# web/
 /!web/**/*.css
 /!web/**/*.html
 /web/build

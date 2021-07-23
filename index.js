@@ -2477,12 +2477,12 @@ function convert_init_context(options={}, extra_returns={}) {
     options.toplevel_id = toplevel_id;
   }
 
-  if (options.xss_unsafe === undefined) {
-    const xss_unsafe = cirodown_json['xss-unsafe'];
-    if (xss_unsafe !== undefined) {
-      options.xss_unsafe = xss_unsafe;
+  if (options.unsafe_xss === undefined) {
+    const unsafe_xss = cirodown_json['unsafe-xss'];
+    if (unsafe_xss !== undefined) {
+      options.unsafe_xss = unsafe_xss;
     } else {
-      options.xss_unsafe = false;
+      options.unsafe_xss = false;
     }
   }
   extra_returns.errors = [];
@@ -4536,9 +4536,9 @@ function validate_ast(ast, context) {
       }
     }
   }
-  if (!macro.options.xss_safe && !context.options.xss_unsafe && !ast.xss_safe) {
+  if (!macro.options.xss_safe && !context.options.unsafe_xss && !ast.xss_safe) {
     ast.validation_error = [
-      `XSS unsafe macro "${macro_name}" used in safe mode: https://cirosantilli.com/cirodown#xss-unsafe`,
+      `XSS unsafe macro "${macro_name}" used in safe mode: https://cirosantilli.com/cirodown#unsafe-xss`,
       ast.source_location
     ];
   }

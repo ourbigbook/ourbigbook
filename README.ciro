@@ -358,6 +358,13 @@ Analogous to the \x[x-ref-argument], e.g.:
 Trump said this and that.https://en.wikipedia.org/wiki/Donald_Trump_Access_Hollywood_tape#Trump's_responses{ref}https://web.archive.org/web/20161007210105/https://www.donaldjtrump.com/press-releases/statement-from-donald-j.-trump{ref}
 ]]
 
+= `\a` `relative` argument
+{parent=link}
+
+If given, this \x[boolean-named-argument] forces a given link to be a \x[relative-link] or not.
+
+Otherwise, the default is the algorithm described at: \x[relative-link]{full}.
+
 = Relative link
 {parent=link}
 
@@ -410,9 +417,16 @@ And the following however are considered relative links by default:
 * `../index.js`
 * `path/to/index.js`
 * `/path/to/index.js`. It might be a bit weird to consider this one as relative, but the rationale is that it would be complicated to cover path conversions of of different operating systems, so we are just taking the simpler protocol check approach to start with.
+
+  If you really want a link like this in your input, you should use:
+  ``
+  \x[/path/to/index.js]{relative=0}
+  ``
+  which will mark the link as non-relative, and therefore disable both the existence check and the scope split header path modifications, see also: \x[a-relative-argument]{full}.
 * `//path/to/index.js`. This one is tricky, Web browsers would consider this as a https://stackoverflow.com/questions/28446314/why-use-protocol-relative-urls-at-all[protocol-relative URL], which could be absolute or not depending on if you are viewing the file locally through `file://` or on a website `https://`.
 
   To start with we are just going to keep it here, and let users use the same workarounds as for `/path/to/index.js` to make it do what they want.
+This automatic check can be overridden with the \x[a-relative-argument].
 
 Implemented at: https://github.com/cirosantilli/cirodown/issues/87[].
 

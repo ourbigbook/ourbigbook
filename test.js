@@ -3817,7 +3817,7 @@ assert_executable(
 assert_executable(
   'executable: link: relative reference to nonexistent file leads to failure',
   {
-    args: ['--embed-includes', 'README.ciro'],
+    args: ['README.ciro'],
     filesystem: {
       'README.ciro': `\\a[i-dont-exist]
 `,
@@ -3828,7 +3828,7 @@ assert_executable(
 assert_executable(
   "executable: link: relative reference to existent files do not lead to failure",
   {
-    args: ['--embed-includes', 'README.ciro'],
+    args: ['README.ciro'],
     filesystem: {
       'README.ciro': `\\a[i-exist]`,
       'i-exist': ``,
@@ -3838,9 +3838,19 @@ assert_executable(
 assert_executable(
   "executable: link: check=0 prevents existence checks",
   {
-    args: ['--embed-includes', 'README.ciro'],
+    args: ['README.ciro'],
     filesystem: {
       'README.ciro': `\\a[i-dont-exist]{check=0}
+`,
+    },
+  }
+);
+assert_executable(
+  "executable: link: relative=0 marks link as non relative",
+  {
+    args: ['README.ciro'],
+    filesystem: {
+      'README.ciro': `\\a[/etc/fstab]{relative=0}
 `,
     },
   }

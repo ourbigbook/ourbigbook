@@ -3342,7 +3342,8 @@ function parse(tokens, options, context, extra_returns={}) {
       const parent_ast_header_level = parent_ast_header_graph_node.get_level();
 
       parent_ast.includes.push(href);
-      const read_include_ret = options.read_include(href);
+      const [input_dir, input_basename] = path_split(include_options.input_path, include_options.path_sep)
+      const read_include_ret = options.read_include(href, input_dir);
       if (read_include_ret === undefined) {
         let message = `could not find include: "${href}"`;
         parse_error(

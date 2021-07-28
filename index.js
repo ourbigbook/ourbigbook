@@ -5293,23 +5293,42 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       let [href, content] = link_get_href_content(ast, context);
 
-      // Handle relative links:
-      // * check existence
-      // * modify paths to account for scope + --split-headers
-      const is_relative_link =
-        (ast.validation_output.relative.given && ast.validation_output.relative.boolean) || 
-        (!ast.validation_output.relative.given && !protocol_is_given(href))
-      if (is_relative_link) {
-        if (
-          ast.validation_output.check.boolean &&
-          !context.options.fs_exists_sync(
-            path.join(dirname(context.options.input_path, context.options.path_sep), href)
-          )
-        ) {
-          const message = `link to inexistent local file: ${href}`;
-          render_error(context, message, ast.source_location);
-          content = error_message_in_output(message, context) + content;
+      const was_protocol_given = protocol_is_given(href)
+
+      // Check existence.
+      if (
+        (ast.validation_output.check.given && ast.validation_output.check.boolean) ||
+        (!ast.validation_output.check.given && !was_protocol_given)
+      ) {
+        if (href.length !== 0) {
+          let check_path;
+          if (href[0] === URL_SEP) {
+            check_path = href.slice(1)
+          } else {
+            check_path = path.join(dirname(context.options.input_path, context.options.path_sep), href)
+          }
+          if (!context.options.fs_exists_sync(check_path)) {
+            const message = `link to inexistent local file: ${href}`;
+            render_error(context, message, ast.source_location);
+            content = error_message_in_output(message, context) + content;
+          }
         }
+      }
+
+      // Modify relative paths to account for scope + --split-headers
+      if (
+        (ast.validation_output.relative.given && ast.validation_output.relative.boolean) || 
+        (
+          !ast.validation_output.relative.given
+          && (
+            !was_protocol_given &&
+            (
+              href.length === 0 ||
+              href[0] !== URL_SEP
+            )
+          )
+        )
+      ) {
         href = path.join(context.root_relpath_scope_shift, href);
       }
       if (ast.validation_output.ref.boolean) {

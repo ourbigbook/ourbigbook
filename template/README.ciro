@@ -161,7 +161,7 @@ The parent of this header is determined by specifying it's ID with:
 ``
 rather than by the number of `=` signs of this header.
 
-This means that you don't need to worry about counting header anymore!
+This means that you don't need to worry about counting equal signs anymore!
 
 And it is much easier to move large chunks of headers around! You only need to change the `{parent=}` of the toplevel one.
 

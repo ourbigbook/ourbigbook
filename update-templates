@@ -26,6 +26,6 @@ update-template() (
 )
 
 # TODO https://github.com/cirosantilli/cirodown/issues/160
-#update-template subdir cirodown-template-subdir docs
+update-template subdir cirodown-template-subdir docs
 update-template min cirodown-template-min
 update-template default cirodown-template

@@ -233,6 +233,9 @@ The difference is mostly that Cirodown is completely and entirely focused on mak
 * amazing header/ToC/ID features including proper error reports: never have a internal broken link or duplicate ID again
 * \x[mathematics][server side pre-rendered maths with KaTeX]: all divs and spans are ready, browser only applies CSS, no JavaScript gets executed
 * \x[publish]: we take care of website publishing for you out-of-the-box, no need to integrate into an external project like Jekyll
+* \x[split-headers]:
+** https://github.com/asciidoctor/asciidoctor/issues/626 feature request
+** https://github.com/owenh000/asciidoctor-multipage third party plugin that does it
 and we feel that some of those features have required specialized code that could not be easily implemented as a standalone macro.
 
 Another advantage over Asciidoctor is that the reference implementation of Cirodown is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with https://github.com/opal/opal[Opal], but who wants to deal with that layer of complexity?

@@ -3850,9 +3850,9 @@ Generate one of the template repositories locally:
 * `cirodown --generate default`: a good starter template that illustrates many key Cirodown features
   * https://github.com/cirosantilli/cirodown-template
   * https://cirosantilli.com/cirodown-template
-* `cirodown --generate simple`: a minimal template that is still sane
-  * https://github.com/cirosantilli/cirodown-template-simple
-  * https://cirosantilli.com/cirodown-template-simple
+* `cirodown --generate min`: a minimal template that is still sane
+  * https://github.com/cirosantilli/cirodown-template-min
+  * https://cirosantilli.com/cirodown-template-min
 * `cirodown --generate subdir`: a template in which Cirodown source is located a subdirectory `docs/`:
   * https://github.com/cirosantilli/cirodown-template-subdir
   * https://cirosantilli.com/cirodown-template-subdir

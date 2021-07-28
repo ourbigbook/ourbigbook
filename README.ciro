@@ -3847,15 +3847,18 @@ Keep in mind that certain things can never be embedded, e.g.:
 {parent=cirodown-executable-options}
 
 Generate one of the template repositories locally:
-* `cirodown --generate default`:
+* `cirodown --generate default`: a good starter template that illustrates many key Cirodown features
   * https://github.com/cirosantilli/cirodown-template
   * https://cirosantilli.com/cirodown-template
-* `cirodown --generate simple`:
+* `cirodown --generate simple`: a minimal template that is still sane
   * https://github.com/cirosantilli/cirodown-template-simple
   * https://cirosantilli.com/cirodown-template-simple
-* `cirodown --generate subdir`: TODO https://github.com/cirosantilli/cirodown/issues/160
+* `cirodown --generate subdir`: a template in which Cirodown source is located a subdirectory `docs/`:
   * https://github.com/cirosantilli/cirodown-template-subdir
   * https://cirosantilli.com/cirodown-template-subdir
+  This template illustrates that everything works exactly as if Cirodown source were in the git repository toplevel.
+
+  This is a convenient setup for programming projects that want to use Cirodown for their documentation without polluting their toplevel.
 
 End users almost never want this, because it means that to have a sane setup you need to:
 * install Cirodown globally with `npm install -g cirodown`

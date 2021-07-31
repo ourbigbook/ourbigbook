@@ -479,7 +479,7 @@ function convert_path_to_file(base_path, input_path, options, convert_input_opti
     }
   } else {
     let output_name = input_path_parse.name;
-    let output_path_noext = path.join(input_path_parse.dir, output_name);
+    let output_path_noext = path.join(base_path, input_path_parse.dir, output_name);
     if (options.outfile === undefined) {
       output_path_noext = path.join(convert_input_options.outdir, output_path_noext);
     } else {
@@ -800,9 +800,8 @@ if (commander.helpMacros) {
       curdir = path.dirname(curdir)
     }
     if (cirodown_json_dir === undefined) {
-      // No cirodown.json found. So just fake one based on the input path,
-      // to resolve scopes in subdirectories.
-      cirodown_json_dir = initial_dir;
+      // No cirodown.json found. So just use cwd.
+      cirodown_json_dir = process.cwd();
     }
   }
   let split_headers;

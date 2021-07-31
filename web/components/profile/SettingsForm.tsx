@@ -64,7 +64,6 @@ const SettingsForm = () => {
       <form onSubmit={submitForm}>
         <Label label="Profile picture">
           <input
-            className="form-control"
             type="text"
             placeholder="URL of profile picture"
             value={userInfo.image}
@@ -73,7 +72,6 @@ const SettingsForm = () => {
         </Label>
         <Label label="Username">
           <input
-            className="form-control form-control-lg"
             type="text"
             placeholder="Username"
             value={userInfo.username}
@@ -82,7 +80,6 @@ const SettingsForm = () => {
         </Label>
         <Label label="Bio">
           <textarea
-            className="form-control form-control-lg"
             rows={8}
             placeholder="Short bio about you"
             value={userInfo.bio}
@@ -91,7 +88,6 @@ const SettingsForm = () => {
         </Label>
         <Label label="Email">
           <input
-            className="form-control form-control-lg"
             type="email"
             placeholder="Email"
             value={userInfo.email}
@@ -100,7 +96,6 @@ const SettingsForm = () => {
         </Label>
         <Label label="Password">
           <input
-            className="form-control form-control-lg"
             type="password"
             placeholder="New Password"
             value={userInfo.password}

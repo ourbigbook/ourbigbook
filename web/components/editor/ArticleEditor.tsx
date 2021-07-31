@@ -90,7 +90,6 @@ export default function makeArticleEditor(isnew: boolean = false) {
         <ListErrors errors={errors} />
         <form>
           <input
-            className="form-control form-control-lg"
             type="text"
             placeholder="Article Title"
             value={posting.title}

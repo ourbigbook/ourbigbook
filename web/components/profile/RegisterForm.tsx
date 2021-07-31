@@ -53,7 +53,6 @@ const RegisterForm = () => {
       <form onSubmit={handleSubmit}>
         <Label label="Username">
           <input
-            className="form-control form-control-lg"
             type="text"
             placeholder="Username"
             value={username}
@@ -62,7 +61,6 @@ const RegisterForm = () => {
         </Label>
         <Label label="Email">
           <input
-            className="form-control form-control-lg"
             type="email"
             placeholder="Email"
             value={email}
@@ -71,7 +69,6 @@ const RegisterForm = () => {
         </Label>
         <Label label="Password">
           <input
-            className="form-control form-control-lg"
             type="password"
             placeholder="Password"
             value={password}

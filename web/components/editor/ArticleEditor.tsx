@@ -96,7 +96,6 @@ export default function makeArticleEditor(isnew: boolean = false) {
             onChange={handleTitle}
           />
           <textarea
-            className="form-control"
             rows={8}
             placeholder="Write your article in Cirodown"
             value={posting.body}

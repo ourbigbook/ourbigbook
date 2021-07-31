@@ -4,6 +4,7 @@
 <meta charset=utf-8>
 <title>Cirodown editor demo</title>
 <link rel="stylesheet" href="dist/cirodown.css">
+<link rel="stylesheet" href="editor.css">
 <style>
 html, body {
   height: 100%;
@@ -11,39 +12,16 @@ html, body {
   padding: 0;
   background-color: black;
 }
-#container {
-  align-items: center;
-  display: flex;
-  /* https://stackoverflow.com/questions/12989931/body-height-100-displaying-vertical-scrollbar/46847795#46847795
-   * 20 == 2x 10px padding (top + bottom). */
-  height: calc(100% - 20px);
-  padding: 10px;
-}
 #example {
   display: none;
-}
-#input {
-  border: 1px black solid;
-  flex-grow: 1;
-  height: 100%;
-  margin: 0 5px 0 0;
-  overflow: hidden;
-  width: 50%;
-}
-#output {
-  border: 1px black solid;
-  flex-grow: 1;
-  height: 100%;
-  margin: 0 0 0 5px;
-  overflow: auto;
-  width: 50%;
 }
 </style>
 </head>
 <body>
-<div id="container">
-<div id="input"></div>
-<div id="output" class="cirodown"></div>
+<div class="editor-page">
+<div class="input"></div>
+<div class="output cirodown"></div>
+</div>
 <div id="example">= Cirodown hello world
 
 Welcome to Cirodown! Here's the table of contents:
@@ -211,185 +189,180 @@ my nice code
 ``
 {{title=Nice code}}
 </div>
-</div>
 <script src="dist/cirodown.js"></script>
 <script src="dist/cirodown_runtime.js"></script>
-<script>
-// Otherwise the monaco-editor loader messes up with browserify and cirodown is not visible...
-const my_cirodown = cirodown;
-</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/loader.min.js"></script>
 <script>
 const example_elem = document.getElementById('example');
-const input_elem = document.getElementById('input');
-const output_elem = document.getElementById('output');
+const input_elem = document.getElementsByClassName('input')[0];
+const output_elem = document.getElementsByClassName('output')[0];
+function cirodown_editor(input_elem, output_elem, initial_content) {
+  require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs' }});
+  window.MonacoEnvironment = { getWorkerUrl: () => proxy };
+  const proxy = URL.createObjectURL(new Blob([`
+    self.MonacoEnvironment = {
+      baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min'
+    };
+    importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/base/worker/workerMain.min.js');
+  `], { type: 'text/javascript' }));
+  require(["vs/editor/editor.main"], () => {
+    monaco.languages.register({ id: 'cirodown' });
+    // TODO replace with our own tokenizer output:
+    // https://github.com/cirosantilli/cirodown/issues/106
+    monaco.languages.setMonarchTokensProvider('cirodown', {
+      macroName: /[a-zA-Z0-9_]+/,
+      tokenizer: {
+        root: [
+          [/\\@macroName/, 'macro'],
+          [/\\./, 'escape'],
 
-require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs' }});
-window.MonacoEnvironment = { getWorkerUrl: () => proxy };
-const proxy = URL.createObjectURL(new Blob([`
-  self.MonacoEnvironment = {
-    baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min'
-  };
-  importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.20.0/min/vs/base/worker/workerMain.min.js');
-`], { type: 'text/javascript' }));
-require(["vs/editor/editor.main"], function () {
-  monaco.languages.register({
-    id: 'cirodown'
-  });
-  // TODO replace with our own tokenizer output:
-  // https://github.com/cirosantilli/cirodown/issues/106
-  monaco.languages.setMonarchTokensProvider('cirodown', {
-    macroName: /[a-zA-Z0-9_]+/,
-    tokenizer: {
-      root: [
-        [/\\@macroName/, 'macro'],
-        [/\\./, 'escape'],
+          // Positional arguments.
+          [/\[\[\[/, 'literalStart', 'argumentDelimLiteral2'],
+          [/\[\[/, 'literalStart', 'argumentDelimLiteral'],
+          [/[[\]}]/, 'argumentDelim'],
 
-        // Positional arguments.
-        [/\[\[\[/, 'literalStart', 'argumentDelimLiteral2'],
-        [/\[\[/, 'literalStart', 'argumentDelimLiteral'],
-        [/[[\]}]/, 'argumentDelim'],
+          // Named arguments.
+          [/{{/, 'argumentDelim', 'argumentNameLiteral'],
+          [/{/, 'argumentDelim', 'argumentName'],
 
-        // Named arguments.
-        [/{{/, 'argumentDelim', 'argumentNameLiteral'],
-        [/{/, 'argumentDelim', 'argumentName'],
+          [/\$\$\$/, 'literalStart', 'insaneMath3'],
+          [/\$\$/, 'literalStart', 'insaneMath2'],
+          [/\$/, 'literalStart', 'insaneMath'],
 
-        [/\$\$\$/, 'literalStart', 'insaneMath3'],
-        [/\$\$/, 'literalStart', 'insaneMath2'],
-        [/\$/, 'literalStart', 'insaneMath'],
+          [/````/, 'literalStart', 'insaneCode4'],
+          [/```/, 'literalStart', 'insaneCode3'],
+          [/``/, 'literalStart', 'insaneCode2'],
+          [/`/, 'literalStart', 'insaneCode'],
 
-        [/````/, 'literalStart', 'insaneCode4'],
-        [/```/, 'literalStart', 'insaneCode3'],
-        [/``/, 'literalStart', 'insaneCode2'],
-        [/`/, 'literalStart', 'insaneCode'],
+          [/^=+ .*/, 'insaneHeader'],
 
-        [/^=+ .*/, 'insaneHeader'],
-
-        // Insane list.
-        [/^(  )*\*( |$)/, 'argumentDelim'],
-        // Insane table.
-        [/^(  )*\|\|( |$)/, 'argumentDelim'],
-        [/^(  )*\|( |$)/, 'argumentDelim'],
-      ],
-      argumentDelimLiteral: [
-        [/\]\]/, 'literalStart', '@pop'],
-        [/./, 'literalInside'],
-      ],
-      argumentDelimLiteral2: [
-        [/\]\]\]/, 'literalStart', '@pop'],
-        [/./, 'literalInside'],
-      ],
-      argumentName: [
-        [/@macroName/, 'argumentName'],
-        [/=/, 'argumentDelim', '@pop'],
-        [/}/, 'argumentDelim', '@pop'],
-      ],
-      // TODO find a way to make content literalInside.
-      argumentNameLiteral: [
-        [/@macroName/, 'argumentName'],
-        [/=/, 'argumentDelim', '@pop'],
-        [/}}/, 'argumentDelim', '@pop'],
-      ],
-      insaneCode: [
-        [/`/, 'literalStart', '@pop'],
-        [/./, 'literalInside'],
-      ],
-      insaneCode2: [
-        [/``/, 'literalStart', '@pop'],
-        [/./, 'literalInside'],
-      ],
-      insaneCode3: [
-        [/```/, 'literalStart', '@pop'],
-        [/./, 'literalInside'],
-      ],
-      insaneCode4: [
-        [/````/, 'literalStart', '@pop'],
-        [/./, 'literalInside'],
-      ],
-      insaneMath: [
-        [/\$/, 'literalStart', '@pop'],
-        [/./, 'literalInside'],
-      ],
-      insaneMath2: [
-        [/\$\$/, 'literalStart', '@pop'],
-        [/./, 'literalInside'],
-      ],
-      insaneMath3: [
-        [/\$\$\$/, 'literalStart', '@pop'],
-        [/./, 'literalInside'],
-      ],
-     }
-  });
-  monaco.editor.defineTheme('vs-dark-cirodown', {
-    base: 'vs-dark',
-    inherit: true,
-    rules: [
-      { token: 'argumentDelim', foreground: 'FFFFFF', fontStyle: 'bold' },
-      { token: 'argumentName', foreground: 'FFAAFF', fontStyle: 'bold'},
-      { token: 'insaneHeader', foreground: 'FFFF00', fontStyle: 'bold' },
-      { token: 'literalStart', foreground: 'FFFF00', fontStyle: 'bold' },
-      { token: 'literalInside', foreground: 'FFFF88' },
-      { token: 'macro', foreground: 'FF8800', fontStyle: 'bold' },
-    ]
-  });
-  const editor = monaco.editor.create(
-    input_elem,
-    {
-      // https://stackoverflow.com/questions/47017753/monaco-editor-dynamically-resizable
-      automaticLayout: true,
-      folding: false,
-      language: 'cirodown',
-      minimap: {enabled: false},
-      scrollBeyondLastLine: false,
-      theme: 'vs-dark-cirodown',
-      wordWrap: 'on',
-      value: example_elem.textContent,
+          // Insane list.
+          [/^(  )*\*( |$)/, 'argumentDelim'],
+          // Insane table.
+          [/^(  )*\|\|( |$)/, 'argumentDelim'],
+          [/^(  )*\|( |$)/, 'argumentDelim'],
+        ],
+        argumentDelimLiteral: [
+          [/\]\]/, 'literalStart', '@pop'],
+          [/./, 'literalInside'],
+        ],
+        argumentDelimLiteral2: [
+          [/\]\]\]/, 'literalStart', '@pop'],
+          [/./, 'literalInside'],
+        ],
+        argumentName: [
+          [/@macroName/, 'argumentName'],
+          [/=/, 'argumentDelim', '@pop'],
+          [/}/, 'argumentDelim', '@pop'],
+        ],
+        // TODO find a way to make content literalInside.
+        argumentNameLiteral: [
+          [/@macroName/, 'argumentName'],
+          [/=/, 'argumentDelim', '@pop'],
+          [/}}/, 'argumentDelim', '@pop'],
+        ],
+        insaneCode: [
+          [/`/, 'literalStart', '@pop'],
+          [/./, 'literalInside'],
+        ],
+        insaneCode2: [
+          [/``/, 'literalStart', '@pop'],
+          [/./, 'literalInside'],
+        ],
+        insaneCode3: [
+          [/```/, 'literalStart', '@pop'],
+          [/./, 'literalInside'],
+        ],
+        insaneCode4: [
+          [/````/, 'literalStart', '@pop'],
+          [/./, 'literalInside'],
+        ],
+        insaneMath: [
+          [/\$/, 'literalStart', '@pop'],
+          [/./, 'literalInside'],
+        ],
+        insaneMath2: [
+          [/\$\$/, 'literalStart', '@pop'],
+          [/./, 'literalInside'],
+        ],
+        insaneMath3: [
+          [/\$\$\$/, 'literalStart', '@pop'],
+          [/./, 'literalInside'],
+        ],
+      }
+    });
+    monaco.editor.defineTheme('vs-dark-cirodown', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'argumentDelim', foreground: 'FFFFFF', fontStyle: 'bold' },
+        { token: 'argumentName', foreground: 'FFAAFF', fontStyle: 'bold'},
+        { token: 'insaneHeader', foreground: 'FFFF00', fontStyle: 'bold' },
+        { token: 'literalStart', foreground: 'FFFF00', fontStyle: 'bold' },
+        { token: 'literalInside', foreground: 'FFFF88' },
+        { token: 'macro', foreground: 'FF8800', fontStyle: 'bold' },
+      ]
+    });
+    const editor = monaco.editor.create(
+      input_elem,
+      {
+        // https://stackoverflow.com/questions/47017753/monaco-editor-dynamically-resizable
+        automaticLayout: true,
+        folding: false,
+        language: 'cirodown',
+        minimap: {enabled: false},
+        scrollBeyondLastLine: false,
+        theme: 'vs-dark-cirodown',
+        wordWrap: 'on',
+        value: initial_content,
+      }
+    );
+    editor.onDidChangeModelContent(e => {
+      convert_input();
+    });
+    editor.onDidScrollChange(e => {
+      const range = editor.getVisibleRanges()[0];
+      scroll_preview_to_source_line(range.startLineNumber, 'start');
+    });
+    editor.onDidChangeCursorPosition(e => {
+      scroll_preview_to_source_line(e.position.lineNumber, 'center');
+    });
+    let line_to_id;
+    function convert_input() {
+      let extra_returns = {};
+      output_elem.innerHTML = cirodown.convert(
+        editor.getValue(),
+        {'body_only': true},
+        extra_returns
+      );
+      // Rebind to newly generated elements.
+      cirodown_runtime.cirodown_runtime(output_elem);
+      line_to_id = extra_returns.context.line_to_id;
     }
-  );
-  editor.onDidChangeModelContent(function (e) {
+    function scroll_preview_to_source_line(line_number, block) {
+      if (block === undefined) {
+        block = 'center';
+      }
+      const id = line_to_id(line_number);
+      if (
+        // Possible on empty document.
+        id !== undefined
+      ) {
+        // TODO this would be awesome to make the element being targeted red,
+        // but it loses editor focus  on new paragraphs (e.g. double newline,
+        // making it unusable.
+        // window.location.hash = id;
+        document.getElementById(id).scrollIntoView({
+          behavior: 'smooth',
+          block: block,
+        });
+      };
+    }
     convert_input();
   });
-  editor.onDidScrollChange(function (e) {
-    const range = editor.getVisibleRanges()[0];
-    scroll_preview_to_source_line(range.startLineNumber, 'start');
-  });
-  editor.onDidChangeCursorPosition(function (e) {
-    scroll_preview_to_source_line(e.position.lineNumber, 'center');
-  });
-  let line_to_id;
-  function convert_input() {
-    let extra_returns = {};
-    output_elem.innerHTML = my_cirodown.convert(
-      editor.getValue(),
-      {'body_only': true},
-      extra_returns
-    );
-    // Rebind to newly generated elements.
-    cirodown_runtime.cirodown_runtime(output_elem);
-    line_to_id = extra_returns.context.line_to_id;
-  }
-  function scroll_preview_to_source_line(line_number, block) {
-    if (block === undefined) {
-      block = 'center';
-    }
-    const id = line_to_id(line_number);
-    if (
-      // Possible on empty document.
-      id !== undefined
-    ) {
-      // TODO this would be awesome to make the element being targeted red,
-      // but it loses editor focus  on new paragraphs (e.g. double newline,
-      // making it unusable.
-      // window.location.hash = id;
-      document.getElementById(id).scrollIntoView({
-        behavior: 'smooth',
-        block: block,
-      });
-    };
-  }
-  convert_input();
-});
-cirodown_runtime.cirodown_runtime(output_elem)
+  cirodown_runtime.cirodown_runtime(output_elem)
+}
+cirodown_editor(input_elem, output_elem, example_elem.textContent)
 </script>
 </body>
 </html>

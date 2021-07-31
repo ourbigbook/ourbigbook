@@ -28,12 +28,26 @@ while ((dirent = dir.readSync()) !== null) {
 dir.closeSync()
 
 fs.mkdirSync(cirodown_nodejs.DIST_PATH, {recursive: true})
-const scss_input = fs.readFileSync(path.join(
-  __dirname, cirodown_nodejs.PACKAGE_SASS_BASENAME)).toString();
+
 let result;
+let scss_input;
+
+// cirodown.scss
+scss_input = fs.readFileSync(path.join(
+  __dirname, cirodown_nodejs.PACKAGE_SASS_BASENAME)).toString();
 result = sass.renderSync({
   data: scss_input,
   outputStyle: 'compressed',
   includePaths: [cirodown_nodejs.PACKAGE_NODE_MODULES_PATH],
 });
 fs.writeFileSync(cirodown_nodejs.DIST_CSS_PATH, result.css);
+
+// editor.scss
+scss_input = fs.readFileSync(path.join(
+  __dirname, 'editor.scss')).toString();
+result = sass.renderSync({
+  data: scss_input,
+  outputStyle: 'compressed',
+  includePaths: [cirodown_nodejs.PACKAGE_NODE_MODULES_PATH],
+});
+fs.writeFileSync(path.join(__dirname, 'editor.css'), result.css);

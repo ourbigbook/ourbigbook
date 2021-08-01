@@ -5,6 +5,9 @@ import ListErrors from "components/common/ListErrors";
 import ArticleAPI from "lib/api/article";
 import { SERVER_BASE_URL } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
+import * as monaco from 'monaco-editor';
+
+import 'cirodown/editor.scss'
 
 function editorReducer(state, action) {
   switch (action.type) {
@@ -95,12 +98,8 @@ export default function makeArticleEditor(isnew: boolean = false) {
             value={posting.title}
             onChange={handleTitle}
           />
-          <textarea
-            rows={8}
-            placeholder="Write your article in Cirodown"
-            value={posting.body}
-            onChange={handleBody}
-          />
+          <div className="input"></div>
+          <div className="output cirodown"></div>
           <button
             className="btn btn-lg pull-xs-right btn-primary"
             type="button"

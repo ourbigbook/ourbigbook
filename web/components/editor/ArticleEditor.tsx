@@ -6,8 +6,8 @@ import ArticleAPI from "lib/api/article";
 import { SERVER_BASE_URL } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 import * as monaco from 'monaco-editor';
-
-import 'cirodown/editor.scss'
+import { cirodown } from 'cirodown/dist/cirodown.js';
+import { cirodown_runtime } from 'cirodown/dist/cirodown_runtime.js';
 
 function editorReducer(state, action) {
   switch (action.type) {
@@ -35,6 +35,14 @@ function editorReducer(state, action) {
       throw new Error("Unhandled action");
   }
 };
+
+function getEditorRefCallback(initialContent) {
+  return (elem) => {
+    if (elem) {
+      cirodown_editor(elem, initialContent, monaco, cirodown, cirodown_runtime)
+    }
+  }
+}
 
 export default function makeArticleEditor(isnew: boolean = false) {
   return ({ article: initialArticle }) => {
@@ -98,7 +106,11 @@ export default function makeArticleEditor(isnew: boolean = false) {
             value={posting.title}
             onChange={handleTitle}
           />
-          <div className="input"></div>
+          <div
+            className="cirodown-editor"
+            ref={getEditorRefCallback(posting.body)}
+          >
+          </div>
           <div className="output cirodown"></div>
           <button
             className="btn btn-lg pull-xs-right btn-primary"

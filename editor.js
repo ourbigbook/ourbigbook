@@ -5,6 +5,7 @@ function cirodown_editor(root_elem, initial_content, monaco, cirodown, cirodown_
   const output_elem = document.createElement('div');
   output_elem.classList.add('output');
   output_elem.classList.add('cirodown');
+  root_elem.innerHTML = '';
   root_elem.appendChild(input_elem);
   root_elem.appendChild(output_elem);
 
@@ -138,7 +139,7 @@ function cirodown_editor(root_elem, initial_content, monaco, cirodown, cirodown_
       extra_returns
     );
     // Rebind to newly generated elements.
-    cirodown_runtime.cirodown_runtime(output_elem);
+    cirodown_runtime(output_elem);
     line_to_id = extra_returns.context.line_to_id;
   }
   function scroll_preview_to_source_line(line_number, block) {
@@ -161,5 +162,10 @@ function cirodown_editor(root_elem, initial_content, monaco, cirodown, cirodown_
     };
   }
   convert_input();
-  cirodown_runtime.cirodown_runtime(output_elem)
+  cirodown_runtime(output_elem)
+}
+
+
+if (typeof exports !== 'undefined') {
+  exports.cirodown_editor = cirodown_editor;
 }

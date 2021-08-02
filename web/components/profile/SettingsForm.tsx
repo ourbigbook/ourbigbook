@@ -84,6 +84,7 @@ const SettingsForm = () => {
             placeholder="Short bio about you"
             value={userInfo.bio}
             onChange={updateState("bio")}
+            className="not-monaco"
           />
         </Label>
         <Label label="Email">

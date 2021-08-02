@@ -1,36 +1,4 @@
 #!/usr/bin/env bash
-
-# Hax.
-# https://github.com/cirosantilli/cirodown/issues/156
-
 set -eux
-sed -ri "/\"(\
-better-sqlite3|\
-chokidar|\
-commander|\
-fs-extra|\
-git-url-parse|\
-is-installed-globally|\
-mocha|\
-mocha-list-tests|\
-parse5|\
-webpack-dev-server|\
-xmldom|\
-xmlserializer\
-)\"/d" package.json
-# xpath\ should be the last. But it breaks JSON which cannot have trailing commas.
-# I love my life. And npm install always reorders things alphabetically, so it
-# just keeps breaking.
-
-# npm link is broken on Heroku. I don't care why.
-# What we do is to rely on a direct symlink instead.
-# This is needed notably by ./build-sass, which
-# does require('cirodown/nodejs').
-sed -ri "/\"(\
-postinstall|\
-mocha|\
-newman|\
-nodemon|\
-sqlite3\
-)\"/d" web/package.json
+./heroku-prebuild.js
 cd web && npm install

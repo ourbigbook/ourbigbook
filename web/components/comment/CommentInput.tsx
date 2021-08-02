@@ -77,7 +77,7 @@ const CommentInput = () => {
             alt="author profile image"
           />
           {' '}
-          <button className="btn btn-sm btn-primary" type="submit">
+          <button className="btn" type="submit">
             Post Comment
           </button>
         </div>

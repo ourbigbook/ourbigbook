@@ -64,7 +64,7 @@ const LoginForm = () => {
           />
         </Label>
         <button
-          className="btn btn-lg btn-primary pull-xs-right"
+          className="btn"
           type="submit"
           disabled={isLoading}
         >

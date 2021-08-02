@@ -46,7 +46,7 @@ function getEditorRefCallback(initialContent) {
 }
 
 export default function makeArticleEditor(isnew: boolean = false) {
-  return ({ article: initialArticle }) => {
+  const editor = ({ article: initialArticle }) => {
     let initialState
     if (initialArticle) {
       initialState = {
@@ -97,32 +97,52 @@ export default function makeArticleEditor(isnew: boolean = false) {
       }
       Router.push(`/article/${data.article.slug}`);
     };
+    const handleCancel = async (e) => {
+      if (isnew) {
+        Router.push(`/`);
+      } else {
+        Router.push(`/article/${initialArticle.slug}`);
+      }
+    }
     return (
       <div className="editor-page content-not-cirodown">
-        <ListErrors errors={errors} />
+        { /* <ListErrors errors={errors} /> */ }
         <form className="editor-form">
-          <input
-            type="text"
-            placeholder="Article Title"
-            value={posting.title}
-            onChange={handleTitle}
-          />
+          <div className="title-and-actions">
+            <input
+              type="text"
+              className="title"
+              placeholder="Article Title"
+              value={posting.title}
+              onChange={handleTitle}
+            />
+            <div className="actions">
+              <button
+                className="btn"
+                type="button"
+                onClick={handleCancel}
+              >
+                <i className="ion-close" />&nbsp;Cancel
+              </button>
+              <button
+                className="btn"
+                type="button"
+                disabled={isLoading}
+                onClick={handleSubmit}
+              >
+                <i className="ion-checkmark" />&nbsp;{isnew ? 'Create' : 'Submit'}
+              </button>
+            </div>
+          </div>
           <div
             className="cirodown-editor"
             ref={getEditorRefCallback(posting.body)}
           >
           </div>
-          <div className="output cirodown"></div>
-          <button
-            className="btn btn-lg pull-xs-right btn-primary"
-            type="button"
-            disabled={isLoading}
-            onClick={handleSubmit}
-          >
-            {isnew ? 'Publish' : 'Update'} Article
-          </button>
         </form>
       </div>
     );
   };
+  editor.isEditor = true;
+  return editor;
 }

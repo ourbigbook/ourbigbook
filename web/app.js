@@ -16,7 +16,6 @@ const session = require('express-session')
 
 const models = require('./models')
 const config = require('./config')
-const configShared = require('./config/shared')
 
 function doStart(app) {
   const sequelize = models(__dirname);
@@ -50,7 +49,7 @@ function doStart(app) {
   app.use(require('method-override')())
 
   // Next handles anythiung outside of /api.
-  app.get(new RegExp('^(?!' + configShared.apiPath + '(/|$))'), function (req, res) {
+  app.get(new RegExp('^(?!' + config.apiPath + '(/|$))'), function (req, res) {
     return nextHandle(req, res);
   });
   app.use(session({ secret: 'conduit', cookie: { maxAge: 60000 }, resave: false, saveUninitialized: false }))

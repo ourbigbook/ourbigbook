@@ -1,6 +1,7 @@
 import { GetStaticProps, GetStaticPaths } from 'next'
+
+import { revalidate } from "config";
 import sequelize from "lib/db";
-const configShared = require('../config/shared')
 
 export const getStaticPathsProfile: GetStaticPaths = async () => {
   return {
@@ -19,7 +20,7 @@ export const getStaticPropsProfile: GetStaticProps = async ({ params: { pid } })
     }
   }
   return {
-    revalidate: configShared.revalidate,
+    revalidate,
     props: { profile: await user.toProfileJSONFor() },
   }
 }

@@ -1,7 +1,7 @@
 import axios from "axios";
 
-import { SERVER_BASE_URL } from "../utils/constant";
-import { getQuery } from "../utils/getQuery";
+import { SERVER_BASE_URL } from "lib/utils/constant";
+import { getQuery } from "lib/utils/getQuery";
 
 const ArticleAPI = {
   all: (page, limit = 10) =>

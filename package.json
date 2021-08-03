@@ -65,7 +65,7 @@
     "build": "cd web && npm run build",
     "build-assets": "npm run sass && npm run webpack",
     "build-dev": "cd web && npm run build-dev",
-    "deploy": "git push -f heroku master",
+    "deploy": "cd web && npm run deploy",
     "dev": "cd web && npm run dev",
     "heroku-prebuild": "./heroku-prebuild",
     "link": "npm link && npm link cirodown",

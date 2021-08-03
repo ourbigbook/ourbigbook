@@ -9,7 +9,7 @@
     "build-dev": "NODE_ENV_OVERRIDE=development npm run build",
     "build-nodeps": "next build",
     "build-dev-nodeps": "NODE_ENV_OVERRIDE=development npm run build-nodeps",
-    "deploy": "git push heroku-next next:master",
+    "deploy": "git push -f heroku master",
     "dev": "nodemon -w app.js -w ../index.js ./app.js",
     "postinstall": "cd .. && npm link cirodown",
     "start": "node --unhandled-rejections=strict ./app.js",

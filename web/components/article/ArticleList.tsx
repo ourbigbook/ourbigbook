@@ -77,7 +77,29 @@ const ArticleList = (props) => {
   if (error) return <ErrorMessage message="Cannot load recent articles..." />;
   if (!data) return <div className="article-preview">Loading articles...</div>;
   if (articles?.length === 0) {
-    return (<div className="article-preview">No articles are here... yet.</div>);
+    let message;
+    switch (props.what) {
+      case 'favorites':
+        message = "Favorite some articles to see them here"
+        break
+      case 'my-posts':
+        message = "You articles will appear here"
+        break
+      case 'tag':
+        message = `There are no articles with the tag: ${props.tag}`
+        break
+      case 'feed':
+        message = 'Follow some users to see their articles here'
+        break
+      case 'global':
+        message = 'There are no articles on this website yet'
+        break
+      default:
+        message = 'There are no articles matching this search'
+    }
+    return (<div className="article-preview">
+      {message}.
+    </div>);
   }
   return (
     <>

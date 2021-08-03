@@ -56,15 +56,13 @@ const ProfileHoc = (tab) => {
           </div>
           <div className="tab-list">
               <CustomLink
-                href="/profile/[pid]"
-                as={`/profile/${encodeURIComponent(username)}`}
+                href={`/profile/${encodeURIComponent(username)}`}
                 className={`tab-item${tab === 'my-posts' ? ' active' : ''}`}
               >
                 All Articles
               </CustomLink>
               <CustomLink
-                href="/profile/[pid]/favorites"
-                as={`/profile/${encodeURIComponent(username)}/favorites`}
+                href={`/profile/${encodeURIComponent(username)}/favorites`}
                 className={`tab-item${tab === 'favorites' ? ' active' : ''}`}
               >
                 Favorited Articles

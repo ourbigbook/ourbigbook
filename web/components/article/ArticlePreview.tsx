@@ -3,9 +3,10 @@ import React from "react";
 
 import CustomLink from "components/common/CustomLink";
 import FavoriteArticleButton from "components/common/FavoriteArticleButton";
+import UserLinkWithImage from "components/common/UserLinkWithImage";
 import { usePageDispatch } from "lib/context/PageContext";
 import { formatDate } from "lib/utils/date";
-import UserLinkWithImage from "components/common/UserLinkWithImage";
+import routes from "routes";
 
 const ArticlePreview = ({ article }) => {
   const setPage = usePageDispatch();
@@ -26,7 +27,7 @@ const ArticlePreview = ({ article }) => {
       </td>
       <td className="expand title">
         <CustomLink
-          href={`/article/${preview.slug}`}
+          href={routes.articleView(preview.slug)}
           className="preview-link"
         >
           {preview.title}

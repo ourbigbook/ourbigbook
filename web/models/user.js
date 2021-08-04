@@ -1,17 +1,19 @@
 const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
 
-const secret = require('../config').secret
+const config = require('../config')
 
 const Sequelize = require('sequelize')
 const { DataTypes, Op } = Sequelize
+
+sampleUsername = ', here is a good example: my-good-username-123'
 
 module.exports = (sequelize) => {
   let User = sequelize.define(
     'User',
     {
       username: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(config.usernameMaxLength),
         set(v) {
           this.setDataValue('username', v.toLowerCase())
         },
@@ -20,18 +22,28 @@ module.exports = (sequelize) => {
           message: 'Username must be unique.'
         },
         validate: {
-          min: {
-            args: 3,
-            msg: 'Username must start with a letter, have no spaces, and be at least 3 characters.'
-          },
-          max: {
-            args: 40,
-            msg: 'Username must start with a letter, have no spaces, and be at less than 40 characters.'
+          len: [config.usernameMinLength, config.usernameMaxLength],
+          not: {
+            args: /[^a-z0-9-]/,
+            msg: 'Usernames can only contain lowercase letters (a-z), numbers (0-9) and dashes (-)' + sampleUsername
           },
           is: {
-            args: /^[A-Za-z][A-Za-z0-9-_]+$/i, // must start with letter and only have letters, numbers, dashes
-            msg: 'Username must start with a letter, have no spaces, and be 3 - 40 characters.'
-          }
+            args: /^[a-z]/,
+            msg: 'Usernames must start with a letter lowercase letter (a-z)' + sampleUsername
+          },
+          not: {
+            args: /--/,
+            msg: 'Usernames cannot contain a double dash (-)' + sampleUsername
+          },
+          not: {
+            args: /-$/,
+            msg: 'Usernames cannot end in a dash (-)' + sampleUsername
+          },
+          isNotReserved(value) {
+            if (value in config.reservedUsernames) {
+              throw new Error(`This username is reserved: ${value}`);
+            }
+          },
         }
       },
       email: {
@@ -41,16 +53,14 @@ module.exports = (sequelize) => {
         },
         unique: {
           args: true,
-          msg: 'Oops. Looks like you already have an account with this email address. Please try to login.'
+          msg: 'This email has already been registered'
         },
         validate: {
           isEmail: {
             args: true,
-            msg: 'The email you entered is invalid or is already in our system.'
           },
           max: {
             args: 254,
-            msg: 'The email you entered is invalid or longer than 254 characters.'
           }
         }
       },
@@ -68,14 +78,13 @@ module.exports = (sequelize) => {
     let today = new Date()
     let exp = new Date(today)
     exp.setDate(today.getDate() + 60)
-
     return jwt.sign(
       {
         id: this.id,
         username: this.username,
         exp: parseInt(exp.getTime() / 1000)
       },
-      secret
+      config.secret
     )
   }
 

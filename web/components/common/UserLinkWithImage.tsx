@@ -3,12 +3,13 @@
 import CustomLink from "components/common/CustomLink";
 import CustomImage from "components/common/CustomImage";
 import { Author } from "lib/types/articleType";
+import routes from "routes";
 
 const UserLinkWithImage = ({ user }: { user: Author }) => {
   if (!user) return null;
   return (
     <CustomLink
-      href={`/profile/${encodeURIComponent(user.username)}`}
+      href={routes.userView(user.username)}
       className="author username"
     >
       <CustomImage

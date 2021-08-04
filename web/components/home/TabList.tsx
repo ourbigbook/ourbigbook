@@ -4,6 +4,7 @@ import React from "react";
 import CustomLink from "components/common/CustomLink";
 import Maybe from "components/common/Maybe";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
+import routes from "routes";
 
 const TabList = ({tab, setTab, tag}) => {
   const loggedInUser = getLoggedInUser()
@@ -12,7 +13,7 @@ const TabList = ({tab, setTab, tag}) => {
       <Maybe test={loggedInUser}>
         <CustomLink
           className={`tab-item${tab === 'feed' ? ' active' : ''}`}
-          href="/"
+          href={routes.home()}
           onClick={() => {setTab('feed')}}
           shallow
         >
@@ -21,17 +22,17 @@ const TabList = ({tab, setTab, tag}) => {
       </Maybe>
       <CustomLink
         className={`tab-item${tab === 'global' ? ' active' : ''}`}
-        href="/"
+        href={routes.home()}
         shallow
         onClick={() => {
           setTab('global')
         }}
       >
-        Global Feed
+        All Articles
       </CustomLink>
       <Maybe test={tab == 'tag'}>
         <CustomLink
-          href={`/`}
+          href={routes.home()}
           className="tab-item active"
           shallow
         >

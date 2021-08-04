@@ -17,7 +17,6 @@ import { FollowUserButtonContext } from "components/profile/FollowUserButton";
 import ArticleAPI from "lib/api/article";
 import { ArticleType } from "lib/types/articleType";
 import { CommentType } from "lib/types/commentType";
-import { SERVER_BASE_URL } from "lib/utils/constant";
 import fetcher from "lib/utils/fetcher";
 
 interface ArticlePageProps {
@@ -37,13 +36,13 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
 
   // Fetch user-specific data.
   // Article determines if the curent user favorited the article or not
-  const { data: articleApi, error } = useSWR(`${SERVER_BASE_URL}/articles/${article?.slug}`, fetcher(router.isFallback));
+  const { data: articleApi, error } = useSWR(ArticleAPI.articleUrl(article?.slug), fetcher(router.isFallback));
   if (articleApi !== undefined) {
     article = articleApi.article
   }
   // We fetch comments so that the new posted comment will appear immediately after posted.
   // Note that we cannot calculate the exact new coment element because we need the server datetime.
-  const { data: commentApi, error: commentError } = useSWR(`${SERVER_BASE_URL}/articles/${article?.slug}/comments`, fetcher(router.isFallback));
+  const { data: commentApi, error: commentError } = useSWR(ArticleAPI.commentsUrl(article?.slug), fetcher(router.isFallback));
   if (commentApi !== undefined) {
     comments = commentApi.comments
   }

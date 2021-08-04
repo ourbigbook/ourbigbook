@@ -1,12 +1,12 @@
-import axios from "axios";
 import { useRouter } from "next/router";
 import React from "react";
 import { trigger } from "swr";
 
 import CustomImage from "components/common/CustomImage";
 import CustomLink from "components/common/CustomLink";
-import { SERVER_BASE_URL } from "lib/utils/constant";
+import CommentAPI from "lib/api/comment"
 import getLoggedInUser from "lib/utils/getLoggedInUser";
+import routes from "routes";
 
 const CommentInput = () => {
   const loggedInUser = getLoggedInUser()
@@ -14,41 +14,28 @@ const CommentInput = () => {
   const {
     query: { pid },
   } = router;
-  const [content, setContent] = React.useState("");
+  const [body, setBody] = React.useState("");
   const [isLoading, setLoading] = React.useState(false);
   const handleChange = React.useCallback((e) => {
-    setContent(e.target.value);
+    setBody(e.target.value);
   }, []);
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await axios.post(
-      `${SERVER_BASE_URL}/articles/${encodeURIComponent(String(pid))}/comments`,
-      JSON.stringify({
-        comment: {
-          body: content,
-        },
-      }),
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Token ${encodeURIComponent(loggedInUser?.token)}`,
-        },
-      }
-    );
+    await CommentAPI.create({ body }, loggedInUser?.token)
     setLoading(false);
-    setContent("");
-    trigger(`${SERVER_BASE_URL}/articles/${pid}/comments`);
+    setBody("");
+    trigger(CommentAPI.forArticle(pid));
   };
 
   if (!loggedInUser) {
     return (
       <>
-        <CustomLink href="/user/login">
+        <CustomLink href={routes.userLogin()}>
           Sign in
         </CustomLink>
         {' '}or{' '}
-        <CustomLink href="/user/register">
+        <CustomLink href={routes.userNew()}>
           sign up
         </CustomLink>
         {' '}to add comments on this article.
@@ -65,7 +52,7 @@ const CommentInput = () => {
           <textarea
             rows={5}
             placeholder="Write a comment..."
-            value={content}
+            value={body}
             onChange={handleChange}
             disabled={isLoading}
             className="not-monaco"

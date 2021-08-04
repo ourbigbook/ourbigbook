@@ -9,9 +9,9 @@ export const getStaticPathsArticle: GetStaticPaths = async () => {
 }
 
 export function getStaticPropsArticle(revalidate?, addComments?) {
-  return async ({ params: { pid } }) => {
+  return async ({ params: { slug } }) => {
     const article = await sequelize.models.Article.findOne({
-      where: { slug: pid },
+      where: { slug: slug.join('/') },
       include: [{ model: sequelize.models.User, as: 'author' }],
     })
     if (!article) {

@@ -1,15 +1,15 @@
 // Shared between front and backend.
 
-//function modifyEditorInput(title, body) {
-//  return '= ' + this.title + '\n\n' + this.body
-//}
-//exports.modifyEditorInput = modifyEditorInput
-
 const cirodown = require('cirodown')
 
 function modifyEditorInput(title, body) {
-  let ret = '= ' + title
-  if (body && body[0] !== '{') {
+  let ret = cirodown.INSANE_HEADER_CHAR + ' ' + title
+  // Append title to body. Add a newline if the body doesn's start
+  // with a header argument like `{c}` in:
+  //
+  // = h1
+  // {c}
+  if (body && body[0] !== cirodown.START_NAMED_ARGUMENT_CHAR) {
     ret += '\n\n' + body
   }
   return ret;

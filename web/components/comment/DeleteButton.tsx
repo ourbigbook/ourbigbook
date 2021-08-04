@@ -1,8 +1,7 @@
-import axios from "axios";
 import { useRouter } from "next/router";
 import { trigger } from "swr";
 
-import { SERVER_BASE_URL } from "lib/utils/constant";
+import CommentAPI from "lib/api/comment"
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 
 const DeleteButton = ({ commentId }) => {
@@ -12,15 +11,8 @@ const DeleteButton = ({ commentId }) => {
     query: { pid },
   } = router;
   const handleDelete = async (commentId) => {
-    await axios.delete(
-      `${SERVER_BASE_URL}/articles/${pid}/comments/${commentId}`,
-      {
-        headers: {
-          Authorization: `Token ${loggedInUser?.token}`,
-        },
-      }
-    );
-    trigger(`${SERVER_BASE_URL}/articles/${pid}/comments`);
+    await CommentAPI.delete(pid, commentId, loggedInUser?.token)
+    trigger(CommentAPI.forArticle(pid));
   };
   return (
     <button

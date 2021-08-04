@@ -1,7 +1,9 @@
-const cirodown = require('cirodown')
 const router = require('express').Router()
-const auth = require('../auth')
 const Op = require('sequelize').Op
+
+const cirodown = require('cirodown')
+
+const auth = require('../auth')
 
 async function setArticleTags(req, article, tagList) {
   return req.app.get('sequelize').models.Tag.bulkCreate(
@@ -153,7 +155,7 @@ router.post('/', auth.required, async function(req, res, next) {
 })
 
 // return a article
-router.get('/:article', auth.optional, async function(req, res, next) {
+router.get('/:article(*)', auth.optional, async function(req, res, next) {
   try {
     const results = await Promise.all([
       req.payload ? req.app.get('sequelize').models.User.findByPk(req.payload.id) : null,
@@ -167,7 +169,7 @@ router.get('/:article', auth.optional, async function(req, res, next) {
 })
 
 // update article
-router.put('/:article', auth.required, async function(req, res, next) {
+router.put('/:article(*)', auth.required, async function(req, res, next) {
   try {
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
     if (req.article.authorId.toString() === req.payload.id.toString()) {
@@ -198,7 +200,7 @@ router.put('/:article', auth.required, async function(req, res, next) {
 })
 
 // delete article
-router.delete('/:article', auth.required, function(req, res, next) {
+router.delete('/:article(*)', auth.required, function(req, res, next) {
   req.app.get('sequelize').models.User.findByPk(req.payload.id)
     .then(function(user) {
       if (!user) {
@@ -217,7 +219,7 @@ router.delete('/:article', auth.required, function(req, res, next) {
 })
 
 // Favorite an article
-router.post('/:article/favorite', auth.required, async function(req, res, next) {
+router.post('/favorite/:article(*)', auth.required, async function(req, res, next) {
   try {
     const articleId = req.article.id
     const [user, article] = await Promise.all([
@@ -238,7 +240,7 @@ router.post('/:article/favorite', auth.required, async function(req, res, next) 
 })
 
 // Unfavorite an article
-router.delete('/:article/favorite', auth.required, async function(req, res, next) {
+router.delete('/favorite/:article(*)', auth.required, async function(req, res, next) {
   try {
     const articleId = req.article.id
     const [user, article] = await Promise.all([
@@ -259,7 +261,8 @@ router.delete('/:article/favorite', auth.required, async function(req, res, next
 })
 
 // return an article's comments
-router.get('/:article/comments', auth.optional, async function(req, res, next) {
+router.get('/comments/:article(*)', auth.optional, async function(req, res, next) {
+  console.error('asdf');
   try {
     let user;
     if (req.payload) {
@@ -279,38 +282,6 @@ router.get('/:article/comments', auth.optional, async function(req, res, next) {
   } catch(error) {
     next(error);
   }
-})
-
-// create a new comment
-router.post('/:article/comments', auth.required, async function(req, res, next) {
-  try {
-    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-    if (!user) {
-      return res.sendStatus(401)
-    }
-    const comment = await req.app.get('sequelize').models.Comment.create(
-      Object.assign({}, req.body.comment, { articleId: req.article.id, authorId: user.id })
-    )
-    comment.author = user
-    res.json({ comment: await comment.toJSONFor(user) })
-  } catch(error) {
-    next(error);
-  }
-})
-
-router.delete('/:article/comments/:comment', auth.required, function(req, res, next) {
-  return req.comment
-    .getAuthor()
-    .then(function(author) {
-      if (author.id.toString() === req.payload.id.toString()) {
-        return req.comment.destroy().then(function() {
-          res.sendStatus(204)
-        })
-      } else {
-        res.sendStatus(403)
-      }
-    })
-    .catch(next)
 })
 
 module.exports = router

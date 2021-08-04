@@ -8,7 +8,6 @@ import { CirodownEditor } from 'cirodown/editor.js';
 
 import ListErrors from "components/common/ListErrors";
 import ArticleAPI from "lib/api/article";
-import { SERVER_BASE_URL } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 import { modifyEditorInput } from "lib/shared";
 import routes from "routes";

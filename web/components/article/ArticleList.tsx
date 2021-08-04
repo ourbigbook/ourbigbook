@@ -83,7 +83,7 @@ const ArticleList = (props) => {
         message = "Favorite some articles to see them here"
         break
       case 'my-posts':
-        message = "You articles will appear here"
+        message = "Your articles will appear here"
         break
       case 'tag':
         message = `There are no articles with the tag: ${props.tag}`

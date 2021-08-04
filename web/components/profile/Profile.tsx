@@ -14,6 +14,7 @@ import FollowUserButton, { FollowUserButtonContext } from "components/profile/Fo
 import { SERVER_BASE_URL } from "lib/utils/constant";
 import fetcher from "lib/utils/fetcher";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
+import routes from "routes";
 
 const ProfileHoc = (tab) => {
   return ({ profile }) => {
@@ -56,13 +57,13 @@ const ProfileHoc = (tab) => {
           </div>
           <div className="tab-list">
               <CustomLink
-                href={`/profile/${encodeURIComponent(username)}`}
+                href={routes.userView(username)}
                 className={`tab-item${tab === 'my-posts' ? ' active' : ''}`}
               >
-                All Articles
+                Authored Articles
               </CustomLink>
               <CustomLink
-                href={`/profile/${encodeURIComponent(username)}/favorites`}
+                href={routes.userViewFavorites(username)}
                 className={`tab-item${tab === 'favorites' ? ' active' : ''}`}
               >
                 Favorited Articles

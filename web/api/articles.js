@@ -20,21 +20,17 @@ async function setArticleTags(req, article, tagList) {
   })
 }
 
-// Preload article objects on routes with ':article'
-router.param('article', function(req, res, next, slug) {
-  req.app.get('sequelize').models.Article.findOne({
-    where: { slug: slug },
-    include: [{ model: req.app.get('sequelize').models.User, as: 'author' }]
-  })
-    .then(function(article) {
-      if (!article) {
-        return res.sendStatus(404)
-      }
-      req.article = article
-      return next()
+async function getArticle(req, res) {
+  if (req.query.id) {
+    const article = await req.app.get('sequelize').models.Article.findOne({
+      where: { slug: req.query.id },
+      include: [{ model: req.app.get('sequelize').models.User, as: 'author' }]
     })
-    .catch(next)
-})
+    if (article)
+        res.status(404)
+    return article
+  }
+}
 
 router.param('comment', function(req, res, next, id) {
   req.app.get('sequelize').models.Comment.findOne({
@@ -149,20 +145,6 @@ router.post('/', auth.required, async function(req, res, next) {
     ])
     article.author = user
     return res.json({ article: await article.toJSONFor(user) })
-  } catch(error) {
-    next(error);
-  }
-})
-
-// return a article
-router.get('/:article(*)', auth.optional, async function(req, res, next) {
-  try {
-    const results = await Promise.all([
-      req.payload ? req.app.get('sequelize').models.User.findByPk(req.payload.id) : null,
-      req.article.getAuthor()
-    ]);
-    const [user, author] = results
-    return res.json({ article: await req.article.toJSONFor(user) })
   } catch(error) {
     next(error);
   }

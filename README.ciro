@@ -390,6 +390,9 @@ If given, this \x[boolean-named-argument] forces a given link to be a \x[relativ
 
 Otherwise, the link is automatically guessed based on the address given as explained below.
 
+= Relative link
+{parent=a-relative-argument}
+
 A relative link is a link that points to a resource that will be present a final URL relative to the input `.ciro` file.
 
 For example, it is often the case in computer programming tutorials that we want to refer to source files in the current directory.
@@ -4557,7 +4560,7 @@ This setup creates some conflict between what we want for Cirodown command line 
 
 Notably, Cirodown command line users will want SQLite, and Heroku never, and SQLite installation is quite slow.
 
-Since we were unable to find any way to make things more flexible on the `package.json` with some kind of optional depenency, for now we are just hacking out any dependencies that we don't want Heroku to install at all from \a[package.json] and \x[web/package.json] with `sed` rom \a[heroku-prebuild].
+Since we were unable to find any way to make things more flexible on the `package.json` with some kind of optional depenency, for now we are just hacking out any dependencies that we don't want Heroku to install at all from \a[package.json] and \a[web/package.json] with `sed` rom \a[heroku-prebuild].
 
 Further discussion at: https://github.com/cirosantilli/cirodown/issues/156
 

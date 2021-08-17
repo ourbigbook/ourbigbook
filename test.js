@@ -4042,8 +4042,6 @@ assert_executable(
       'myproject/not-readme.ciro': `= Not readme
 `,
       'myproject/scss.scss': `body { color: red }`,
-      'myproject/cirodown.json': `{}
-`,
       'myproject/subdir/index.ciro': `= Subdir
 `,
       'myproject/subdir/notindex.ciro': `= Subdir Notindex
@@ -4052,7 +4050,6 @@ assert_executable(
     expect_exists: [
       'myproject/out',
       'myproject/scss.css',
-      'myproject/cirodown.json',
     ],
     expect_filesystem_xpath: {
       'myproject/index.html': [

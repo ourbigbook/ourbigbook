@@ -80,9 +80,6 @@ export default function makeArticleEditor(isnew: boolean = false) {
     }, [])
     const loggedInUser = getLoggedInUser()
     const router = useRouter();
-    const {
-      query: { pid },
-    } = router;
     const handleTitle = (e) =>
       articleDispatch({ type: "SET_TITLE", text: e.target.value, cirodownEditorElem });
     const handleSubmit = async (e) => {
@@ -98,7 +95,7 @@ export default function makeArticleEditor(isnew: boolean = false) {
       } else {
         ({ data, status } = await ArticleAPI.update(
           article,
-          router.query.pid,
+          router.query.slug.join(cirodown.Macro.HEADER_SCOPE_SEPARATOR),
           loggedInUser?.token
         ));
       }

@@ -243,6 +243,14 @@ div.tab-list {
   }
 }
 
+.profile-page {
+  .user-img {
+    $size: 256px;
+    height: $size;
+    width: $size;
+  }
+}
+
 .profile-thumb {
   height: 26px;
   vertical-align: middle;

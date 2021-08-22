@@ -15,6 +15,7 @@ import { FavoriteArticleButtonContext } from "components/common/FavoriteArticleB
 import LoadingSpinner from "components/common/LoadingSpinner";
 import { FollowUserButtonContext } from "components/profile/FollowUserButton";
 import ArticleAPI from "lib/api/article";
+import CommentAPI from "lib/api/comment";
 import { ArticleType } from "lib/types/articleType";
 import { CommentType } from "lib/types/commentType";
 import fetcher from "lib/utils/fetcher";
@@ -36,13 +37,13 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
 
   // Fetch user-specific data.
   // Article determines if the curent user favorited the article or not
-  const { data: articleApi, error } = useSWR(ArticleAPI.articleUrl(article?.slug), fetcher(router.isFallback));
+  const { data: articleApi, error } = useSWR(ArticleAPI.url(article?.slug), fetcher(router.isFallback));
   if (articleApi !== undefined) {
     article = articleApi.article
   }
   // We fetch comments so that the new posted comment will appear immediately after posted.
   // Note that we cannot calculate the exact new coment element because we need the server datetime.
-  const { data: commentApi, error: commentError } = useSWR(ArticleAPI.commentsUrl(article?.slug), fetcher(router.isFallback));
+  const { data: commentApi, error: commentError } = useSWR(CommentAPI.url(article?.slug), fetcher(router.isFallback));
   if (commentApi !== undefined) {
     comments = commentApi.comments
   }

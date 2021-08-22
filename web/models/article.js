@@ -34,8 +34,6 @@ module.exports = (sequelize) => {
     {
       hooks: {
         beforeValidate: async (article, options) => {
-          console.error('beforeValidate');
-          console.error(article.body);
           let extra_returns = {};
           article.render = cirodown.convert(
             modifyEditorInput(article.title, article.body),
@@ -44,9 +42,11 @@ module.exports = (sequelize) => {
             },
             extra_returns,
           )
+          // https://github.com/sequelize/sequelize/issues/8586#issuecomment-422877555
+          options.fields.push('render');
           const id = extra_returns.context.header_graph.children[0].value.id
-          const author = await article.getAuthor()
           if (!article.slug) {
+            const author = await article.getAuthor()
             article.slug = Article.makeSlug(author.username, id)
           }
         }

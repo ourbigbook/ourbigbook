@@ -108,7 +108,14 @@ div.article-meta {
   div.article-info {
     margin-bottom: 10px;
   }
+  div.article-info-2 {
+    font-weight: bold;
+    i {
+      font-size: 1.5em;
+    }
+  }
   div.article-actions {
+    margin-bottom: 10px;
     button, a.btn {
       margin-right: 3px;
     }

@@ -7,6 +7,7 @@ module.exports = (sequelize) => {
   const Article = sequelize.define(
     'Article',
     {
+      // E.g. `johnsmith/mathematics`.
       slug: {
         type: DataTypes.STRING,
         unique: {
@@ -18,8 +19,9 @@ module.exports = (sequelize) => {
         },
         allowNull: false,
       },
+      // E.g. for `johnsmith/mathematics` this is just the `mathematics`.
       // Can't be called just `id`, sequelize complains that it is not a primary key with that name.
-      articleId: {
+      topicId: {
         type: DataTypes.STRING,
         allowNull: false,
       },
@@ -50,8 +52,8 @@ module.exports = (sequelize) => {
           // https://github.com/sequelize/sequelize/issues/8586#issuecomment-422877555
           options.fields.push('render');
           const id = extra_returns.context.header_graph.children[0].value.id
-          article.articleId = id
-          options.fields.push('articleId')
+          article.topicId = id
+          options.fields.push('topicId')
           if (!article.slug) {
             const author = await article.getAuthor()
             article.slug = Article.makeSlug(author.username, id)
@@ -83,7 +85,7 @@ module.exports = (sequelize) => {
     ])
     return {
       slug: this.slug,
-      articleId: this.articleId,
+      topicId: this.topicId,
       title: this.title,
       body: this.body,
       createdAt: this.createdAt.toISOString(),

@@ -5,63 +5,50 @@ import useSWR  from "swr";
 
 import ArticleList from "components/article/ArticleList";
 import CustomLink from "components/common/CustomLink";
-import CustomImage from "components/common/CustomImage";
 import LoadingSpinner from "components/common/LoadingSpinner";
 import LogoutButton from "components/common/LogoutButton";
 import Maybe from "components/common/Maybe";
+import { slugFromArray} from "lib";
 import { SERVER_BASE_URL } from "lib/utils/constant";
 import fetcher from "lib/utils/fetcher";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 import routes from "routes";
 
-const TopicHoc = (tab) => {
+export const TopicHoc = (tab) => {
   return ({ }) => {
     const router = useRouter();
     const loggedInUser = getLoggedInUser()
-    const isCurrentUser = loggedInUser && username === loggedInUser?.username
+    if (router.isFallback) { return <LoadingSpinner />; }
+    const topicId = slugFromArray(router.query.id)
     return (
       <>
         <Head>
-          <title>{username}</title>
+          <title>{topicId}</title>
         </Head>
         <div className="topic-page content-not-cirodown">
           <div className="user-info">
-            <h1>{username}</h1>
-            <CustomImage
-              src={image}
-              alt="User's profile image"
-              className="user-img"
-            />
-            <p>{bio}</p>
-            {isCurrentUser &&
-              <LogoutButton />
-            }
-            <EditProfileButton isCurrentUser={isCurrentUser} />
-            <FollowUserButtonContext.Provider value={{following, setFollowing}}>
-              <FollowUserButton profile={profile} />
-            </FollowUserButtonContext.Provider>
+            <h1>{topicId}</h1>
           </div>
           <div className="tab-list">
             <CustomLink
-              href={routes.topicArticlesView(username)}
+              href={routes.topicArticlesView(topicId)}
               className={`tab-item${tab === 'articles' ? ' active' : ''}`}
             >
-              Authored Articles
+              Top Articles
             </CustomLink>
             <CustomLink
-              href={routes.topicUsersView(username)}
+              href={routes.topicUsersView(topicId)}
               className={`tab-item${tab === 'users' ? ' active' : ''}`}
             >
-              Favorited Articles
+              Top Authors (TODO implement)
             </CustomLink>
           </div>
-          <ArticleList what={tab} />
+          <ArticleList what={'topic-' + tab} topicId={topicId}/>
         </div>
       </>
     );
   };
-}
-export default TopicHoc;
+};
 
 import { GetStaticProps, GetStaticPaths } from 'next'
 
@@ -86,6 +73,6 @@ export const getStaticPropsTopic: GetStaticProps = async ({ params: { id } }) =>
   //}
   return {
     revalidate,
-    //props: { profile: await user.toProfileJSONFor() },
+    props: { articles: [] },
   }
 }

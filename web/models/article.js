@@ -18,6 +18,11 @@ module.exports = (sequelize) => {
         },
         allowNull: false,
       },
+      // Can't be called just `id`, sequelize complains that it is not a primary key with that name.
+      articleId: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
       title: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -45,9 +50,12 @@ module.exports = (sequelize) => {
           // https://github.com/sequelize/sequelize/issues/8586#issuecomment-422877555
           options.fields.push('render');
           const id = extra_returns.context.header_graph.children[0].value.id
+          article.articleId = id
+          options.fields.push('articleId')
           if (!article.slug) {
             const author = await article.getAuthor()
             article.slug = Article.makeSlug(author.username, id)
+            options.fields.push('slug')
           }
         }
       },

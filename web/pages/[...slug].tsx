@@ -1,29 +1,34 @@
 import { useRouter } from 'next/router'
 import Head from "next/head";
 import React from "react";
-import useSWR  from "swr";
+import useSWR, { trigger } from "swr";
 
 // This also worked. But using the packaged one reduces the need to replicate
 // or factor out the webpack setup of the cirodown package.
 //import { cirodown_runtime } from 'cirodown/cirodown_runtime.js';
 import { cirodown_runtime } from 'cirodown/dist/cirodown_runtime.js';
 
-import ArticleMeta from "components/article/ArticleMeta";
+import ArticleActions from "components/article/ArticleActions";
 import Comment from "components/comment/Comment";
 import CommentInput from "components/comment/CommentInput";
-import { FavoriteArticleButtonContext } from "components/common/FavoriteArticleButton";
+import CustomLink from "components/common/CustomLink";
+import FavoriteArticleButton, { FavoriteArticleButtonContext } from "components/common/FavoriteArticleButton";
 import LoadingSpinner from "components/common/LoadingSpinner";
-import { FollowUserButtonContext } from "components/profile/FollowUserButton";
+import Maybe from "components/common/Maybe";
+import UserLinkWithImage from "components/common/UserLinkWithImage";
+import FollowUserButton, { FollowUserButtonContext } from "components/profile/FollowUserButton";
 import ArticleAPI from "lib/api/article";
 import CommentAPI from "lib/api/comment";
+import { formatDate } from "lib/utils/date";
 import { ArticleType } from "lib/types/articleType";
 import { CommentType } from "lib/types/commentType";
 import fetcher from "lib/utils/fetcher";
+import getLoggedInUser from "lib/utils/getLoggedInUser";
+import routes from "routes";
 
 interface ArticlePageProps {
   article: ArticleType;
   comments: CommentType[];
-  pid: string;
 }
 
 function renderRefCallback(elem) {
@@ -33,6 +38,7 @@ function renderRefCallback(elem) {
 }
 
 const ArticlePage = ({ article, comments }: ArticlePageProps) => {
+  const loggedInUser = getLoggedInUser()
   const router = useRouter();
 
   // Fetch user-specific data.
@@ -63,6 +69,17 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
     setFavoritesCount(article?.favoritesCount)
   }, [article?.favorited, article?.favoritesCount])
 
+  const handleDelete = async () => {
+    if (!loggedInUser) return;
+    const result = window.confirm("Do you really want to delete it?");
+    if (!result) return;
+    await ArticleAPI.delete(slug, loggedInUser?.token);
+    trigger(ArticleAPI.url(slug));
+    Router.push(`/`);
+  };
+  const canModify =
+    loggedInUser && loggedInUser?.username === article?.author?.username;
+
   if (router.isFallback) { return <LoadingSpinner />; }
   const markup = { __html: article.render };
   return (
@@ -78,7 +95,44 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
             <FollowUserButtonContext.Provider value={{
               following, setFollowing
             }}>
-              <ArticleMeta article={article}/>
+              <div className="article-meta">
+                <div className="article-info">
+                  <UserLinkWithImage user={article.author} />
+                  {' '}
+                  {formatDate(article.createdAt)}
+                  {article.createdAt !== article.updatedAt &&
+                    <>
+                      {' '}
+                      Updated: {formatDate(article.updatedAt)}
+                    </>
+                  }
+                </div>
+                <div className="article-actions">
+                  <FavoriteArticleButton
+                    favorited={article.favorited}
+                    favoritesCount={article.favoritesCount}
+                    slug={article.slug}
+                    showText={false}
+                  />
+                  <Maybe test={canModify}>
+                    <span>
+                      <CustomLink
+                        href={routes.articleEdit(article.slug)}
+                        className="btn"
+                      >
+                        <i className="ion-edit" /> Edit
+                      </CustomLink>
+                      <button
+                        className="btn"
+                        onClick={handleDelete}
+                      >
+                        <i className="ion-trash-a" /> Delete
+                      </button>
+                    </span>
+                  </Maybe>
+                  <FollowUserButton profile={article.author} />
+                </div>
+              </div>
             </FollowUserButtonContext.Provider>
           </FavoriteArticleButtonContext.Provider>
         </div>
@@ -111,4 +165,4 @@ import { getStaticPathsArticle, getStaticPropsArticle } from "lib/article";
 import { revalidate } from "config";
 
 export const getStaticPaths = getStaticPathsArticle;
-export const getStaticProps = getStaticPropsArticle(revalidate, true);
+export const getStaticProps = getStaticPropsArticle(revalidate, true);;

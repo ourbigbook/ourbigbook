@@ -17,6 +17,16 @@ class MyDocument extends Document<IProps> {
     return (
       <Html lang="en">
         <Head>
+          <script async src="https://www.googletagmanager.com/gtag/js?id=UA-47867706-4"></script>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'UA-47867706-4');
+`,
+            }}
+          />
         </Head>
         <body>
           <Main />

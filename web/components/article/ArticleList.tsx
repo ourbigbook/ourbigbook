@@ -2,7 +2,6 @@ import { useRouter } from "next/router";
 import React from "react";
 import useSWR from "swr";
 
-import ArticlePreview from "components/article/ArticlePreview";
 import CustomLink from "components/common/CustomLink";
 import ErrorMessage from "components/common/ErrorMessage";
 import FavoriteArticleButton, { FavoriteArticleButtonContext } from "components/common/FavoriteArticleButton";

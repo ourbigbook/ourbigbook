@@ -12,7 +12,7 @@ const DeleteButton = ({ commentId }) => {
   } = router;
   const handleDelete = async (commentId) => {
     await CommentAPI.delete(pid, commentId, loggedInUser?.token)
-    trigger(CommentAPI.forArticle(pid));
+    trigger(CommentAPI.url(pid));
   };
   return (
     <button

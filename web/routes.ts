@@ -9,7 +9,7 @@ export const apiRoutes = {
 export default {
   home: () => `/`,
   articleEdit: (slug) => `/${ESCAPE_USERNAME}/edit/${slug}`,
-  articleNew: (slug) => `/${ESCAPE_USERNAME}/new`,
+  articleNew: () => `/${ESCAPE_USERNAME}/new`,
   articleView: (slug) => `/${slug}`,
   userEdit: () => `/${ESCAPE_USERNAME}/settings`,
   userLogin: () => `/${ESCAPE_USERNAME}/login`,

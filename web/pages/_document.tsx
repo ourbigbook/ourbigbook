@@ -1,5 +1,6 @@
 import Document, { Html, Head, Main, NextScript } from "next/document";
 import React from "react";
+import { googleAnalyticsId, isProduction } from "config";
 
 interface IProps {
   css: any;
@@ -17,16 +18,20 @@ class MyDocument extends Document<IProps> {
     return (
       <Html lang="en">
         <Head>
-          <script async src="https://www.googletagmanager.com/gtag/js?id=UA-47867706-4"></script>
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', 'UA-47867706-4');
-`,
-            }}
-          />
+          {isProduction &&
+            <>
+              <script async src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}></script>
+              <script
+                dangerouslySetInnerHTML={{
+                  __html: `window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', '${googleAnalyticsId}', { page_path: window.location.pathname });
+  `,
+                }}
+              />
+            </>
+          }
         </Head>
         <body>
           <Main />

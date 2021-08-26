@@ -62,11 +62,17 @@ module.exports = (sequelize) => {
         }
       },
       // TODO for sorting by latest.
-      //indexes: [
-      //  {
-      //    fields: ['createdAt'],
-      //  },
-      //],
+      indexes: [
+        {
+          fields: ['createdAt'],
+        },
+        {
+          fields: ['topicId'],
+        },
+        {
+          fields: ['slug'],
+        },
+      ],
     }
   )
 

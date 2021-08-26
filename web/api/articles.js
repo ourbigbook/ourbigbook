@@ -73,10 +73,24 @@ router.get('/', auth.optional, async function(req, res, next) {
           where: {name: req.query.tag},
         })
       }
+
+      // order
+      let order;
+      let sort = req.query.sort;
+      if (sort) {
+        if (sort === 'createdAt' || sort === 'score') {
+          order = sort
+        } else {
+          return res.sendStatus(422)
+        }
+      } else {
+        order = 'createdAt'
+      }
+
       const [{count: articlesCount, rows: articles}, user] = await Promise.all([
         req.app.get('sequelize').models.Article.findAndCountAll({
           where: where,
-          order: [['createdAt', 'DESC']],
+          order: [[order, 'DESC']],
           limit: Number(limit),
           offset: Number(offset),
           include: include,
@@ -217,8 +231,14 @@ router.post('/favorite', auth.required, async function(req, res, next) {
       if (!article) {
         return res.sendStatus(404)
       }
-      await user.addFavorite(article.id)
-      return res.json({ article: await article.toJSONFor(user) })
+      await req.app.get('sequelize').transaction(async t => {
+        await Promise.all([
+          user.addFavorite(article.id, { transaction: t }),
+          article.increment('score', { transaction: t }),
+        ])
+      })
+      const newArticle = await getArticle(req, res)
+      return res.json({ article: await newArticle.toJSONFor(user) })
     }
   } catch(error) {
     next(error);
@@ -237,8 +257,14 @@ router.delete('/favorite', auth.required, async function(req, res, next) {
       if (!article) {
         return res.sendStatus(404)
       }
-      await user.removeFavorite(article.id)
-      return res.json({ article: await article.toJSONFor(user) })
+      await req.app.get('sequelize').transaction(async t => {
+        await Promise.all([
+          user.removeFavorite(article.id, { transaction: t }),
+          article.decrement('score', { transaction: t }),
+        ])
+      })
+      const newArticle = await getArticle(req, res)
+      return res.json({ article: await newArticle.toJSONFor(user) })
     }
   } catch(error) {
     next(error);

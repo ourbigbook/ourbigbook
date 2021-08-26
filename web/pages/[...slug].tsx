@@ -64,11 +64,11 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
     setFollowing(article?.author.following)
   }, [article?.author.following])
   const [favorited, setFavorited] = React.useState(false);
-  const [favoritesCount, setFavoritesCount] = React.useState(article?.favoritesCount);
+  const [score, setScore] = React.useState(article?.score);
   React.useEffect(() => {
     setFavorited(article?.favorited);
-    setFavoritesCount(article?.favoritesCount)
-  }, [article?.favorited, article?.favoritesCount])
+    setScore(article?.score)
+  }, [article?.favorited, article?.score])
 
   const handleDelete = async () => {
     if (!loggedInUser) return;
@@ -89,7 +89,7 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
       <div className="article-page">
         <div className="banner content-not-cirodown">
           <FavoriteArticleButtonContext.Provider value={{
-            favorited, setFavorited, favoritesCount, setFavoritesCount
+            favorited, setFavorited, score, setScore
           }}>
             <FollowUserButtonContext.Provider value={{
               following, setFollowing
@@ -116,7 +116,7 @@ const ArticlePage = ({ article, comments }: ArticlePageProps) => {
                 <div className="article-actions">
                   <FavoriteArticleButton
                     favorited={article.favorited}
-                    favoritesCount={article.favoritesCount}
+                    score={article.score}
                     slug={article.slug}
                     showText={false}
                   />

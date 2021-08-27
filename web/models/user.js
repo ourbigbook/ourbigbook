@@ -67,7 +67,17 @@ module.exports = (sequelize) => {
       bio: DataTypes.STRING,
       image: DataTypes.STRING,
       hash: DataTypes.STRING(1024),
-      salt: DataTypes.STRING
+      salt: DataTypes.STRING,
+      articleScoreSum: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      followerCount: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+        defaultValue: 0,
+      },
     },
     {
       indexes: [{ fields: ['username'] }, { fields: ['email'] }]
@@ -86,26 +96,30 @@ module.exports = (sequelize) => {
       },
       config.secret
     )
-  }
+  },
 
-  User.prototype.toAuthJSON = function() {
-    return {
-      username: this.username,
-      email: this.email,
-      token: this.generateJWT(),
-      bio: this.bio === undefined ? '' : this.bio,
-      image: this.image === undefined ? '' : this.image,
-    };
-  }
-
-  User.prototype.toProfileJSONFor = async function(user) {
-    let data = {
+  User.prototype.toJson = async function(loggedInUser) {
+    const ret = {
       username: this.username,
       bio: this.bio === undefined ? '' : this.bio,
-      image: this.image || 'https://static.productionready.io/images/smiley-cyrus.jpg',
-      following: user ? (await user.hasFollow(this.id)) : false
+      image: this.image,
+      effectiveImage: this.image || 'https://static.productionready.io/images/smiley-cyrus.jpg',
+      followerCount: this.followerCount,
+      articleScoreSum: this.articleScoreSum,
     }
-    return data
+    if (loggedInUser) {
+      ret.following = await loggedInUser.hasFollow(this.id)
+      // Private data.
+      if (this.username === loggedInUser.username) {
+        ret.email = this.email
+        if (loggedInUser.token) {
+          ret.token = loggedInUser.token
+        }
+      }
+    } else {
+      ret.following = false
+    }
+    return ret
   }
 
   User.prototype.findAndCountArticlesByFollowed = async function(offset, limit) {

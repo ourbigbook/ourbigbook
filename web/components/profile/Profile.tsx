@@ -11,7 +11,7 @@ import LogoutButton from "components/common/LogoutButton";
 import Maybe from "components/common/Maybe";
 import EditProfileButton from "components/profile/EditProfileButton";
 import FollowUserButton, { FollowUserButtonContext } from "components/profile/FollowUserButton";
-import { SERVER_BASE_URL } from "lib/utils/constant";
+import UserAPI from "lib/api/user";
 import fetcher from "lib/utils/fetcher";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 import routes from "routes";
@@ -19,13 +19,13 @@ import routes from "routes";
 const ProfileHoc = (tab) => {
   return ({ profile }) => {
     const router = useRouter();
-    const { data: profileApi, error } = useSWR(`${SERVER_BASE_URL}/profiles/${profile?.username}`, fetcher(router.isFallback));
+    const { data: profileApi, error } = useSWR(UserAPI.url(profile?.username), fetcher(router.isFallback));
     if (profileApi !== undefined) {
-      profile = profileApi.profile
+      profile = profileApi.user
     }
     const username = profile?.username
     const bio = profile?.bio
-    const image = profile?.image
+    const image = profile?.effectiveImage
     const loggedInUser = getLoggedInUser()
     const isCurrentUser = loggedInUser && username === loggedInUser?.username
     const [following, setFollowing] = React.useState(false)

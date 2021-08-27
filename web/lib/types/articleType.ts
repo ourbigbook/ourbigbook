@@ -1,3 +1,5 @@
+import { User } from './userType'
+
 export interface ArticleList {
   articles: ArticleType[];
 }
@@ -9,7 +11,7 @@ export interface Article {
 export type ArticleType = {
   tagList: string[];
   createdAt: number;
-  author: Author;
+  author: User;
   title: string;
   body: string;
   slug: string;
@@ -18,11 +20,4 @@ export type ArticleType = {
   score: number;
   favorited: boolean;
   render: string;
-};
-
-export type Author = {
-  username: string;
-  bio: string;
-  image: string;
-  following: boolean;
 };

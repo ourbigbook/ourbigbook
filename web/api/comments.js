@@ -20,7 +20,7 @@ router.get('/', auth.optional, async function(req, res, next) {
       })
       return res.json({
         comments: await Promise.all(comments.map(function(comment) {
-          return comment.toJSONFor(user)
+          return comment.toJson(user)
         }))
       })
     }
@@ -42,7 +42,7 @@ router.post('/', auth.required, async function(req, res, next) {
         Object.assign({}, req.body.comment, { articleId: article.id, authorId: user.id })
       )
       comment.author = user
-      res.json({ comment: await comment.toJSONFor(user) })
+      res.json({ comment: await comment.toJson(user) })
     }
   } catch(error) {
     next(error);

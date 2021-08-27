@@ -6,8 +6,8 @@ import { mutate } from "swr";
 import Label from "components/common/Label";
 import ListErrors from "components/common/ListErrors";
 import UserAPI from "lib/api/user";
-import { SERVER_BASE_URL } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
+import storage from "lib/utils/storage";
 import routes from "routes";
 
 const SettingsForm = () => {
@@ -37,26 +37,13 @@ const SettingsForm = () => {
     if (!user.password) {
       delete user.password;
     }
-    const { data, status } = await axios.put(
-      `${SERVER_BASE_URL}/user`,
-      JSON.stringify({ user }),
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Token ${loggedInUser?.token}`,
-        },
-      }
-    );
+    const { data, status } = await UserAPI.update(user, loggedInUser?.token)
     setLoading(false);
     if (status !== 200) {
       setErrors(data.errors.body);
     }
     if (data?.user) {
-      const { data: profileData, status: profileStatus } = await UserAPI.get(data.user.username);
-      if (profileStatus !== 200) {
-        setErrors(profileData.errors);
-      }
-      data.user.effectiveImage = profileData.profile.image;
+      data.user.token = (await storage('user')).token
       window.localStorage.setItem("user", JSON.stringify(data.user));
       mutate("user", data.user);
       Router.push(routes.userView(user.username));

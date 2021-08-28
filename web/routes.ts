@@ -16,6 +16,7 @@ export default {
   userNew: () => `/${ESCAPE_USERNAME}/register`,
   userView: (uid) => `/${uid}`,
   userViewFavorites: (uid) => `/${ESCAPE_USERNAME}/user/favorites/${uid}`,
+  userViewLatest: (uid) => `/${ESCAPE_USERNAME}/user/latest/${uid}`,
   topicArticlesView: (id) => `/${ESCAPE_USERNAME}/topic/${id}`,
   topicUsersView: (id) => `/${ESCAPE_USERNAME}/topic-users/${id}`,
 }

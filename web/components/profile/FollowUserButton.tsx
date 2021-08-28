@@ -11,6 +11,7 @@ export const FollowUserButtonContext = React.createContext(undefined);
 
 const FollowUserButton = ({
   profile,
+  showUsername,
 }) => {
   const loggedInUser = getLoggedInUser()
   const {following, setFollowing} = React.useContext(FollowUserButtonContext);
@@ -36,7 +37,9 @@ const FollowUserButton = ({
     >
       <i className="ion-plus-round" />
       {" "}
-      {following ? "Unfollow" : "Follow"} {username}
+      {following ? "Unfollow" : "Follow"}{showUsername ? ` ${username}` : ''}
+      {" "}
+      ({ profile.followerCount })
     </button>
   );
 };

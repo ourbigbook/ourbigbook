@@ -563,6 +563,16 @@ ff
 
 hh
 `;
+  } else if (input_path === 'include-two-levels-parent') {
+    return `= Include two levels parent
+
+h1 content
+
+= Include two levels parent h2
+{parent=include-two-levels-parent}
+
+h2 content
+`;
   } else if (input_path === 'include-two-levels-subdir/index') {
     return `= Include two levels subdir h1
 
@@ -2680,6 +2690,42 @@ assert_error('include parent argument to old ID fails gracefully',
 `,
   7, 30, undefined, include_opts,
 );
+assert_convert_ast('include simple without parent in the include with embed',
+  `= aa
+
+bb
+
+\\Include[include-two-levels]
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('P', [t('bb')]),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('ee')]}),
+    a('P', [t('ff')]),
+    a('H', undefined, {level: [t('3')], title: [t('gg')]}),
+    a('P', [t('hh')]),
+  ],
+  include_opts
+);
+assert_convert_ast('include simple with parent in the include with embed',
+  `= aa
+
+bb
+
+\\Include[include-two-levels-parent]
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('P', [t('bb')]),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('Include two levels parent')]}),
+    a('P', [t('h1 content')]),
+    a('H', undefined, {level: [t('3')], title: [t('Include two levels parent h2')]}),
+    a('P', [t('h2 content')]),
+  ],
+  include_opts
+);
 assert_convert_ast('include simple with paragraph with no embed',
   `= aa
 
@@ -2703,7 +2749,6 @@ bb
   {
     convert_before: ['include-two-levels'],
   },
-  include_opts,
 );
 assert_convert_ast('cross reference to embed include header',
   `= aa

@@ -17,7 +17,7 @@ const LogoutButton = () => {
     Router.push(`/`).then(() => trigger("user"));
   };
   return (
-    <button className="btn" onClick={handleLogout}>Logout</button>
+    <button className="btn" onClick={handleLogout}><i className="ion-log-out"></i> Logout</button>
   );
 };
 

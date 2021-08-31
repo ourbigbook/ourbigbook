@@ -2,8 +2,18 @@
 // which would break non-Mocha requirers.
 
 const path = require('path')
+const perf_hooks = require('perf_hooks')
 
 const models = require('./models')
+
+const now = perf_hooks.performance.now
+
+let printTimeNow;
+function printTime() {
+  const newNow = now()
+  console.error((newNow - printTimeNow)/1000.0)
+  printTimeNow = newNow
+}
 
 // https://stackoverflow.com/questions/563406/add-days-to-javascript-date
 function addDays(oldDate, days) {
@@ -29,7 +39,8 @@ async function generateDemoData(params) {
   const sequelize = models(directory, basename);
   await sequelize.sync({force: true})
 
-  // Users
+  printTimeNow = now()
+  console.error(`User`);
   const userArgs = [];
   for (let i = 0; i < nUsers; i++) {
     const userArg = {
@@ -43,22 +54,32 @@ async function generateDemoData(params) {
     userArgs.push(userArg)
   }
   const users = await sequelize.models.User.bulkCreate(userArgs)
+  printTime()
 
-  // Follows
-  const followArgs = []
+  console.error('UserFollowUser');
   for (let i = 0; i < nUsers; i++) {
-    const userId = users[i].id
     let nFollowsPerUserEffective = nUsers < nFollowsPerUser ? nUsers : nFollowsPerUser
     for (var j = 0; j < nFollowsPerUserEffective; j++) {
-      followArgs.push({
-        userId: userId,
-        followId: users[(i + 1 + j) % nUsers].id,
-      })
+      await (users[i].addFollowSideEffects(users[(i + 1 + j) % nUsers]))
     }
   }
-  await sequelize.models.UserFollowUser.bulkCreate(followArgs)
 
-  // Articles
+  //const followArgs = []
+  //for (let i = 0; i < nUsers; i++) {
+  //  const userId = users[i].id
+  //  let nFollowsPerUserEffective = nUsers < nFollowsPerUser ? nUsers : nFollowsPerUser
+  //  for (var j = 0; j < nFollowsPerUserEffective; j++) {
+  //    followArgs.push({
+  //      userId: userId,
+  //      followId: users[(i + 1 + j) % nUsers].id,
+  //    })
+  //  }
+  //}
+  //await sequelize.models.UserFollowUser.bulkCreate(followArgs)
+
+  printTime()
+
+  console.error('Article');
   const articleArgs = [];
   for (let userIdx = 0; userIdx < nUsers; userIdx++) {
     for (let i = 0; i < nArticlesPerUser; i++) {
@@ -140,30 +161,42 @@ Table:
       individualHooks: true,
     }
   )
+  printTime()
 
-  // Favorites
+  console.error('Favorite');
   let articleIdx = 0
-  const favoriteArgs = []
   for (let i = 0; i < nUsers; i++) {
-    const userId = users[i].id
     for (var j = 0; j < nFavoritesPerUser; j++) {
-      favoriteArgs.push({
-        userId: userId,
-        articleId: articles[articleIdx % nArticles].id,
-      })
+      await users[i].addFavoriteSideEffects(articles[articleIdx % nArticles])
       articleIdx += 1
     }
   }
-  await sequelize.models.UserFavoriteArticle.bulkCreate(favoriteArgs)
 
-  // Tags
+  // 0.5s faster than the addFavoriteSideEffects version, total run 7s.
+  //let articleIdx = 0
+  //const favoriteArgs = []
+  //for (let i = 0; i < nUsers; i++) {
+  //  const userId = users[i].id
+  //  for (var j = 0; j < nFavoritesPerUser; j++) {
+  //    favoriteArgs.push({
+  //      userId: userId,
+  //      articleId: articles[articleIdx % nArticles].id,
+  //    })
+  //    articleIdx += 1
+  //  }
+  //}
+  //await sequelize.models.UserFavoriteArticle.bulkCreate(favoriteArgs)
+  printTime()
+
+  console.error('Tag');
   const tagArgs = []
   for (let i = 0; i < nTags; i++) {
     tagArgs.push({name: `tag${i}`})
   }
   const tags = await sequelize.models.Tag.bulkCreate(tagArgs)
+  printTime()
 
-  // ArticleTags
+  console.error('ArticleTag');
   let tagIdx = 0
   const articleTagArgs = []
   for (let i = 0; i < nArticles; i++) {
@@ -177,8 +210,9 @@ Table:
     }
   }
   await sequelize.models.ArticleTag.bulkCreate(articleTagArgs)
+  printTime()
 
-  // Comments
+  console.error('Comment');
   const commentArgs = [];
   let commentIdx = 0;
   for (let i = 0; i < nArticles; i++) {
@@ -193,6 +227,7 @@ Table:
     }
   }
   const comments = await sequelize.models.Comment.bulkCreate(commentArgs)
+  printTime()
 
   return sequelize
 }

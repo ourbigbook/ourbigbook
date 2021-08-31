@@ -35,7 +35,7 @@ const FollowUserButton = ({
       className={following ? BUTTON_ACTIVE_CLASS : ''}
       onClick={handleClick}
     >
-      <i className="ion-plus-round" />
+      <i className={ "ion-eye" + (following ? '-disabled' : '') } />
       {" "}
       {following ? "Unfollow" : "Follow"}{showUsername ? ` ${username}` : ''}
       {" "}

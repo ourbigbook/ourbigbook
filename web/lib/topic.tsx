@@ -3,11 +3,11 @@ import { useRouter } from "next/router";
 import React from "react";
 import useSWR  from "swr";
 
-import ArticleList from "components/article/ArticleList";
-import CustomLink from "components/common/CustomLink";
-import LoadingSpinner from "components/common/LoadingSpinner";
-import LogoutButton from "components/common/LogoutButton";
-import Maybe from "components/common/Maybe";
+import ArticleList from "components/ArticleList";
+import CustomLink from "components/CustomLink";
+import LoadingSpinner from "components/LoadingSpinner";
+import LogoutButton from "components/LogoutButton";
+import Maybe from "components/Maybe";
 import { slugFromArray} from "lib";
 import { SERVER_BASE_URL } from "lib/utils/constant";
 import fetcher from "lib/utils/fetcher";

@@ -1,8 +1,8 @@
 import Head from "next/head";
-import Label from "components/common/Label";
+import Label from "components/Label";
 
-import CustomLink from "components/common/CustomLink";
-import LoginForm from "components/profile/LoginForm";
+import CustomLink from "components/CustomLink";
+import LoginForm from "components/LoginForm";
 import routes from "routes";
 
 const makeLoginPage = ({ register = false }) => {

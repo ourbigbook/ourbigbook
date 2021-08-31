@@ -2,8 +2,8 @@ import Router from "next/router";
 import React from "react";
 import { trigger } from "swr";
 
-import LogoutButton from "components/common/LogoutButton";
-import SettingsForm from "components/profile/SettingsForm";
+import LogoutButton from "components/LogoutButton";
+import SettingsForm from "components/SettingsForm";
 import checkLogin from "lib/utils/checkLogin";
 import storage from "lib/utils/storage";
 

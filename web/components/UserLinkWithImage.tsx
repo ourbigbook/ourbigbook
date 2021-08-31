@@ -1,9 +1,10 @@
 /* A link to a user profile that includes a small profile picture. */
 
-import CustomLink from "components/common/CustomLink";
-import CustomImage from "components/common/CustomImage";
+import CustomLink from "components/CustomLink";
+import CustomImage from "components/CustomImage";
 import { User } from "lib/types/userType";
 import routes from "routes";
+import { DEFAULT_USER_SCORE_TITLE } from "lib/utils/constant"
 
 const UserLinkWithImage = ({ user }: { user: User }) => {
   if (!user) return null;
@@ -20,7 +21,7 @@ const UserLinkWithImage = ({ user }: { user: User }) => {
       {' '}
       {user.username}
       {' '}
-      (<span title="sum of scores for all articles">{user.articleScoreSum}</span>)
+      (<span title={DEFAULT_USER_SCORE_TITLE}>{user.articleScoreSum}</span>)
     </CustomLink>
   )
 }

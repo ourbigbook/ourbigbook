@@ -277,7 +277,15 @@ i.ion-heart {
 .pagination {
   .page-item {
     &.active {
+      a {
+        color: $tab-bar-active-color;
+      }
       font-weight: bold;
+    }
+    &:hover {
+      a {
+        color: $tab-bar-active-color;
+      }
     }
   }
 }

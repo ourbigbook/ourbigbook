@@ -35,11 +35,11 @@ const ArticleList = (props) => {
         return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&favorited=${encodeURIComponent(
           String(uid)
         )}&offset=${page * DEFAULT_LIMIT}`
-      case 'my-articles-top':
+      case 'user-articles-top':
         return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&author=${encodeURIComponent(
           String(uid)
         )}&offset=${page * DEFAULT_LIMIT}&sort=score`;
-      case 'my-articles-latest':
+      case 'user-articles-latest':
         return `${SERVER_BASE_URL}/articles?limit=${DEFAULT_LIMIT}&author=${encodeURIComponent(
           String(uid)
         )}&offset=${page * DEFAULT_LIMIT}`;
@@ -99,8 +99,13 @@ const ArticleList = (props) => {
       case 'favorites':
         message = "This user has not favorited any articles yet"
         break
-      case 'my-posts':
+      case 'user-articles-top':
+      case 'user-articles-latest':
         message = "This user does not have any articles yet"
+        break
+      case 'followed-latest':
+      case 'followed-top':
+        message = "This user does not follow anybody"
         break
       case 'tag':
         message = `There are no articles with the tag: ${props.tag}`
@@ -118,6 +123,12 @@ const ArticleList = (props) => {
       {message}.
     </div>);
   }
+  let showAuthor;
+  if (props.what === 'user-articles-top' || props.what === 'user-articles-latest') {
+    showAuthor = false
+  } else {
+    showAuthor = true
+  }
   return (
     <>
       <div className="article-list-container">
@@ -125,7 +136,9 @@ const ArticleList = (props) => {
           <thead>
             <tr>
               <th className="shrink">Score</th>
-              <th className="shrink">Author</th>
+              {showAuthor &&
+                <th className="shrink">Author</th>
+              }
               <th className="expand">Title</th>
               <th className="shrink">Created</th>
               <th className="shrink">Updated</th>
@@ -142,15 +155,16 @@ const ArticleList = (props) => {
                     setScore: setScore[i],
                   }}>
                     <FavoriteArticleButton
-                      favorited={article.favorited}
-                      score={article.score}
                       slug={article.slug}
+                      showText={false}
                     />
                   </FavoriteArticleButtonContext.Provider>
                 </td>
-                <td className="shrink">
-                  <UserLinkWithImage user={article.author} />
-                </td>
+                {showAuthor &&
+                  <td className="shrink">
+                    <UserLinkWithImage user={article.author} />
+                  </td>
+                }
                 <td className="expand title">
                   <CustomLink
                     href={routes.articleView(article.slug)}

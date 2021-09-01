@@ -44,7 +44,7 @@ const ProfileHoc = (tab) => {
         </Head>
         <div className="profile-page content-not-cirodown">
           <div className="user-info">
-            <h1>{username} <span title={DEFAULT_USER_SCORE_TITLE}>({profile.articleScoreSum})</span>
+            <h1>{username} <span title={DEFAULT_USER_SCORE_TITLE}>({profile.articleScoreSum}<i className="ion-heart"></i>)</span>
             </h1>
             <p>
               <FollowUserButtonContext.Provider value={{following, setFollowing, followerCount, setFollowerCount}}>
@@ -66,13 +66,13 @@ const ProfileHoc = (tab) => {
           <div className="tab-list">
             <CustomLink
               href={routes.userView(username)}
-              className={`tab-item${tab === 'my-articles-top' ? ' active' : ''}`}
+              className={`tab-item${tab === 'user-articles-top' ? ' active' : ''}`}
             >
               Top
             </CustomLink>
             <CustomLink
               href={routes.userViewLatest(username)}
-              className={`tab-item${tab === 'my-articles-latest' ? ' active' : ''}`}
+              className={`tab-item${tab === 'user-articles-latest' ? ' active' : ''}`}
             >
               Latest
             </CustomLink>

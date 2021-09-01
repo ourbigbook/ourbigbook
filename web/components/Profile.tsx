@@ -50,10 +50,10 @@ const ProfileHoc = (tab) => {
               <FollowUserButtonContext.Provider value={{following, setFollowing, followerCount, setFollowerCount}}>
                 <FollowUserButton profile={profile} showUsername={false}/>
               </FollowUserButtonContext.Provider>
+              <EditProfileButton isCurrentUser={isCurrentUser} />
               {isCurrentUser &&
                 <LogoutButton />
               }
-              <EditProfileButton isCurrentUser={isCurrentUser} />
             </p>
             <CustomImage
               src={profile.effectiveImage}

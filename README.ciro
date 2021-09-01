@@ -4520,11 +4520,10 @@ For when you really need to debug some deployment stuff locally
 
 Setup:
 ``
-createdb node_express_sequelize_realworld
-psql -c "CREATE ROLE node_express_sequelize_realworld_user with login password 'a'"
-psql -c 'GRANT ALL PRIVILEGES ON DATABASE node_express_sequelize_realworld TO node_express_sequelize_realworld_user'
+createdb cirodown
+psql -c "CREATE ROLE cirodown_user with login password 'a'"
+psql -c 'GRANT ALL PRIVILEGES ON DATABASE cirodown TO cirodown_user'
 echo "SECRET=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)" >> .env
-./bin/generate-demo-data.js
 npm run build
 ``
 
@@ -4538,13 +4537,13 @@ then visit the running website at: http://localhost:3000/
 
 To optionally nuke the database and create the demo data:
 ``
-NODE_ENV=production DATABASE_URL='postgres://node_express_sequelize_realworld_user:a@localhost:5432/node_express_sequelize_realworld' ./bin/generate-demo-data.js --force-production
+NODE_ENV=production ./bin/generate-demo-data.js --force-production
 ``
 or alternatively to start from a clean database:
 ``
-psql -c "DROP DATABASE node_express_sequelize_realworld"
-createdb node_express_sequelize_realworld
-psql -c 'GRANT ALL PRIVILEGES ON DATABASE node_express_sequelize_realworld TO node_express_sequelize_realworld_user'
+psql -c "DROP DATABASE cirodown"
+createdb cirodown
+psql -c 'GRANT ALL PRIVILEGES ON DATABASE cirodown TO cirodown_user'
 ``
 
 = Local development run with PostgreSQL
@@ -4552,7 +4551,7 @@ psql -c 'GRANT ALL PRIVILEGES ON DATABASE node_express_sequelize_realworld TO no
 
 If you have determined that a bug is PostgreSQL specific, and it is easier to debug it interactively:
 ``
-CIRODOWN_POSTGRES=true DATABASE_URL='postgres://node_express_sequelize_realworld_user:a@localhost:5432/node_express_sequelize_realworld' npmd
+CIRODOWN_POSTGRES=true npmd
 ``
 
 = Heroku deployment

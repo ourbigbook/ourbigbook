@@ -69,12 +69,12 @@ module.exports = (sequelize) => {
       hash: DataTypes.STRING(1024),
       salt: DataTypes.STRING,
       articleScoreSum: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0,
       },
       followerCount: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0,
       },

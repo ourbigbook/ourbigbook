@@ -16,17 +16,18 @@ module.exports = {
   ESCAPE_USERNAME,
   databaseUrl: process.env.DATABASE_URL || '',
   googleAnalyticsId: 'UA-47867706-4',
-  revalidate: 10,
   isProduction: isProduction,
   isProductionNext: process.env.NODE_ENV_NEXT === undefined ?
     (isProduction) :
     (process.env.NODE_ENV_NEXT === 'production'),
   secret: isProduction ? process.env.SECRET : 'secret',
   port: process.env.PORT || 3000,
+  postgres: process.env.CIRODOWN_POSTGRES === 'true',
   reservedUsernames: new Set([
     API_PATH_COMPONENT,
     ESCAPE_USERNAME,
   ]),
+  revalidate: 10,
   usernameMinLength: 3,
   usernameMaxLength: 40,
   verbose: process.env.VERBOSE

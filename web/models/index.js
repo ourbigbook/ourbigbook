@@ -12,7 +12,7 @@ module.exports = (toplevelDir, toplevelBasename) => {
     },
   };
   let sequelize;
-  if (config.isProduction) {
+  if (config.isProduction || config.postgres) {
     sequelizeParams.dialect = 'postgres';
     sequelizeParams.dialectOptions = {
       // https://stackoverflow.com/questions/27687546/cant-connect-to-heroku-postgresql-database-from-local-node-app-with-sequelize

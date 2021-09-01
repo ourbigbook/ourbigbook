@@ -9,24 +9,27 @@ import routes from "routes";
 export const FavoriteArticleButtonContext = React.createContext(undefined);
 
 const FavoriteArticleButton = ({
+  article,
   showText,
-  slug,
 }) => {
   const loggedInUser = getLoggedInUser()
+  const currentUserIsAuthor = article?.author.username === loggedInUser?.username
   const { favorited, setFavorited, score, setScore } = React.useContext(FavoriteArticleButtonContext);
   let buttonText;
+  let buttonTextMaybe;
+  if (favorited) {
+    buttonTextMaybe = 'Unfavorite'
+  } else {
+    buttonTextMaybe = 'Favorite'
+  }
   if (showText) {
-    if (favorited) {
-      buttonText = 'Unfavorite'
-    } else {
-      buttonText = 'Favorite'
-    }
-    buttonText = ' ' + buttonText + ' Article '
+    buttonText = ' ' + buttonTextMaybe + ' Article '
   } else {
     buttonText = ''
   }
   const handleClickFavorite = async (e) => {
     e.preventDefault();
+    if (currentUserIsAuthor) return
     if (!loggedInUser) {
       Router.push(routes.userLogin());
       return;
@@ -35,9 +38,9 @@ const FavoriteArticleButton = ({
     setScore(score + (favorited ? - 1 : 1))
     try {
       if (favorited) {
-        await ArticleAPI.unfavorite(slug, loggedInUser?.token)
+        await ArticleAPI.unfavorite(article.slug, loggedInUser?.token)
       } else {
-        await ArticleAPI.favorite(slug, loggedInUser?.token)
+        await ArticleAPI.favorite(article.slug, loggedInUser?.token)
       }
     } catch (error) {
       setFavorited(!favorited)
@@ -48,10 +51,20 @@ const FavoriteArticleButton = ({
   if (showText) {
     count = (<span className="counter">({count})</span>)
   }
+  let buttonClassName;
+  let title;
+  if (currentUserIsAuthor) {
+    buttonClassName = 'disabled'
+    title = 'You cannot favorite your own articles'
+  } else {
+    buttonClassName = favorited ? BUTTON_ACTIVE_CLASS : ''
+    title = buttonTextMaybe + ' this article'
+  }
   return (
     <button
-      className={favorited ? BUTTON_ACTIVE_CLASS : ''}
+      className={buttonClassName}
       onClick={handleClickFavorite}
+      title={title}
     >
       <i className="ion-heart" />{showText ? ' ' : ''}{buttonText}
       {' '}{count}

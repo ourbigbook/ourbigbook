@@ -219,18 +219,19 @@ router.delete('/', auth.required, async function(req, res, next) {
   }
 })
 
+function likeValidation(req, res, user, article, likeUnlike) {
+  if (!user) { return res.status(401).send('Login required') }
+  if (!article) { return res.status(404).send('Article not found') }
+  if (article.author.id === user.id) { return res.status(401).send(`A user cannot ${likeUnlike} their own article`) }
+}
+
 // Favorite an article
 router.post('/favorite', auth.required, async function(req, res, next) {
   try {
     const article = await getArticle(req, res)
     if (article) {
       const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-      if (!user) {
-        return res.sendStatus(401)
-      }
-      if (!article) {
-        return res.sendStatus(404)
-      }
+      if (likeValidation(req, res, user, article, 'like')) return
       await user.addFavoriteSideEffects(article)
       const newArticle = await getArticle(req, res)
       return res.json({ article: await newArticle.toJson(user) })
@@ -246,12 +247,7 @@ router.delete('/favorite', auth.required, async function(req, res, next) {
     const article = await getArticle(req, res)
     if (article) {
       const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
-      if (!user) {
-        return res.sendStatus(401)
-      }
-      if (!article) {
-        return res.sendStatus(404)
-      }
+      if (likeValidation(req, res, user, article, 'like')) return
       await user.removeFavoriteSideEffects(article)
       const newArticle = await getArticle(req, res)
       return res.json({ article: await newArticle.toJson(user) })

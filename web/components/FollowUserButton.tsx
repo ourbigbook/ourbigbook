@@ -14,7 +14,7 @@ const FollowUserButton = ({
   showUsername,
 }) => {
   const loggedInUser = getLoggedInUser()
-  const {following, setFollowing} = React.useContext(FollowUserButtonContext);
+  const { following, setFollowing, followerCount, setFollowerCount } = React.useContext(FollowUserButtonContext);
   const { username } = profile;
   const isCurrentUser = loggedInUser && username === loggedInUser?.username;
   const handleClick = (e) => {
@@ -23,12 +23,18 @@ const FollowUserButton = ({
       Router.push(routes.userLogin());
       return;
     }
-    if (following) {
-      UserAPI.unfollow(username);
-    } else {
-      UserAPI.follow(username);
-    }
     setFollowing(!following)
+    setFollowerCount(followerCount + (following ? - 1 : 1))
+    try {
+      if (following) {
+        UserAPI.unfollow(username);
+      } else {
+        UserAPI.follow(username);
+      }
+    } catch (error) {
+      setFollowing(!following)
+      setFollowerCount(followerCount + (following ? 1 : -1))
+    }
   };
   return (
     <button
@@ -39,7 +45,7 @@ const FollowUserButton = ({
       {" "}
       {following ? "Unfollow" : "Follow"}{showUsername ? ` ${username}` : ''}
       {" "}
-      ({ profile.followerCount })
+      ({ followerCount })
     </button>
   );
 };

@@ -8,11 +8,14 @@ import routes from "routes";
 
 export const FavoriteArticleButtonContext = React.createContext(undefined);
 
-const FavoriteArticleButton = (props) => {
+const FavoriteArticleButton = ({
+  showText,
+  slug,
+}) => {
   const loggedInUser = getLoggedInUser()
-  const {favorited, setFavorited, score, setScore} = React.useContext(FavoriteArticleButtonContext);
+  const { favorited, setFavorited, score, setScore } = React.useContext(FavoriteArticleButtonContext);
   let buttonText;
-  if (props.showText) {
+  if (showText) {
     if (favorited) {
       buttonText = 'Unfavorite'
     } else {
@@ -22,7 +25,8 @@ const FavoriteArticleButton = (props) => {
   } else {
     buttonText = ''
   }
-  const handleClickFavorite = async () => {
+  const handleClickFavorite = async (e) => {
+    e.preventDefault();
     if (!loggedInUser) {
       Router.push(routes.userLogin());
       return;
@@ -31,9 +35,9 @@ const FavoriteArticleButton = (props) => {
     setScore(score + (favorited ? - 1 : 1))
     try {
       if (favorited) {
-        await ArticleAPI.unfavorite(props.slug, loggedInUser?.token)
+        await ArticleAPI.unfavorite(slug, loggedInUser?.token)
       } else {
-        await ArticleAPI.favorite(props.slug, loggedInUser?.token)
+        await ArticleAPI.favorite(slug, loggedInUser?.token)
       }
     } catch (error) {
       setFavorited(!favorited)
@@ -41,15 +45,15 @@ const FavoriteArticleButton = (props) => {
     }
   };
   let count = score;
-  if (props.showText) {
+  if (showText) {
     count = (<span className="counter">({count})</span>)
   }
   return (
     <button
       className={favorited ? BUTTON_ACTIVE_CLASS : ''}
-      onClick={() => handleClickFavorite()}
+      onClick={handleClickFavorite}
     >
-      <i className="ion-heart" />{props.showText ? ' ' : ''}{buttonText}
+      <i className="ion-heart" />{showText ? ' ' : ''}{buttonText}
       {' '}{count}
     </button>
   )

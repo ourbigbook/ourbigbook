@@ -30,7 +30,7 @@ async function generateDemoData(params) {
   const nMaxCommentsPerArticle = params.nMaxCommentsPerArticle === undefined ? 3 : params.nMaxCommentsPerArticle
   const nMaxTagsPerArticle = params.nMaxTagsPerArticle === undefined ? 3 : params.nMaxTagsPerArticle
   const nFollowsPerUser = params.nFollowsPerUser === undefined ? 2 : params.nFollowsPerUser
-  const nFavoritesPerUser = params.nFavoritesPerUser === undefined ? 5 : params.nFavoritesPerUser
+  const nFavoritesPerUser = params.nFavoritesPerUser === undefined ? 20 : params.nFavoritesPerUser
   const nTags = params.nTags === undefined ? 10 : params.nTags
   const directory = params.directory
   const basename = params.basename
@@ -154,6 +154,21 @@ Table:
       articleArgs.push(articleArg)
     }
   }
+  // Sort first by topic id, and then by user id to mix up votes a little:
+  // otherwise user0 gets all votes, then user1, and so on.
+  articleArgs.sort((a, b) => {
+    if (a.title < b.title) {
+      return -1
+    } else if(a.title > b.title) {
+      return 1
+    } else if(a.authorId < b.authorIdtitle) {
+      return -1
+    } else if(a.authorId > b.authorIdtitle) {
+      return 1
+    } else {
+      return 0;
+    }
+  })
   const articles = await sequelize.models.Article.bulkCreate(
     articleArgs,
     {
@@ -166,9 +181,12 @@ Table:
   console.error('Favorite');
   let articleIdx = 0
   for (let i = 0; i < nUsers; i++) {
-    for (var j = 0; j < nFavoritesPerUser; j++) {
-      await users[i].addFavoriteSideEffects(articles[articleIdx % nArticles])
-      articleIdx += 1
+    const user = users[i]
+    for (let j = 0; j < nFavoritesPerUser; j++) {
+      const article = articles[(i * j) % nArticles];
+      if (article.authorId !== user.id) {
+        await user.addFavoriteSideEffects(article)
+      }
     }
   }
 

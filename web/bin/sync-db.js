@@ -10,4 +10,3 @@ const models = require('../models')
 const sequelize = models(path.dirname(__dirname));
 await sequelize.sync()
 })()
-

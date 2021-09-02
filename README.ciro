@@ -4469,13 +4469,15 @@ It was originally forked from the following starter boilerplate: https://github.
 {parent=dynamic-website}
 
 ``
+npm run build-assets
 cd web/
 npm install
 npm run dev
 ``
 
-We also offer shortcuts on toplevel:
+We also offer shortcuts on toplevel for the `npm install` and `npm run dev` commands:
 ``
+npm run build-assets
 npm install
 npm run dev
 ``

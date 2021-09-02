@@ -173,20 +173,20 @@ module.exports = (sequelize) => {
     })).dataValues.count
   }
 
-  User.prototype.addFavoriteSideEffects = async function(article) {
+  User.prototype.addLikeSideEffects = async function(article) {
     await sequelize.transaction(async t => {
       await Promise.all([
-        this.addFavorite(article.id, { transaction: t }),
+        this.addLike(article.id, { transaction: t }),
         article.getAuthor().then(author => author.increment('articleScoreSum', { transaction: t })),
         article.increment('score', { transaction: t }),
       ])
     })
   }
 
-  User.prototype.removeFavoriteSideEffects = async function(article) {
+  User.prototype.removeLikeSideEffects = async function(article) {
     await sequelize.transaction(async t => {
       await Promise.all([
-        this.removeFavorite(article.id, { transaction: t }),
+        this.removeLike(article.id, { transaction: t }),
         article.getAuthor().then(author => author.decrement('articleScoreSum', { transaction: t })),
         article.decrement('score', { transaction: t }),
       ])

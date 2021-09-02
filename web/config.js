@@ -14,7 +14,6 @@ module.exports = {
   API_PATH_COMPONENT,
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   ESCAPE_USERNAME,
-  databaseUrl: process.env.DATABASE_URL || 'postgres://cirodown_user:a@localhost:5432/cirodown',
   googleAnalyticsId: 'UA-47867706-4',
   isProduction: isProduction,
   isProductionNext: process.env.NODE_ENV_NEXT === undefined ?
@@ -30,5 +29,24 @@ module.exports = {
   revalidate: 10,
   usernameMinLength: 3,
   usernameMaxLength: 40,
-  verbose: process.env.VERBOSE
+  verbose: process.env.VERBOSE,
+
+  // Used by sequelize-cli as well as our source code.
+  development: {
+    dialect: 'sqlite',
+    storage: 'db.sqlite3',
+  },
+  production: {
+    url: process.env.DATABASE_URL || 'postgres://cirodown_user:a@localhost:5432/cirodown',
+    dialect: 'postgres',
+    dialectOptions: {
+      // https://stackoverflow.com/questions/27687546/cant-connect-to-heroku-postgresql-database-from-local-node-app-with-sequelize
+      // https://devcenter.heroku.com/articles/heroku-postgresql#connecting-in-node-js
+      // https://stackoverflow.com/questions/58965011/sequelizeconnectionerror-self-signed-certificate
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      }
+    },
+  }
 }

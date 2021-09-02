@@ -6,45 +6,45 @@ import { BUTTON_ACTIVE_CLASS } from "lib/utils/constant";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 import routes from "routes";
 
-export const FavoriteArticleButtonContext = React.createContext(undefined);
+export const LikeArticleButtonContext = React.createContext(undefined);
 
-const FavoriteArticleButton = ({
+const LikeArticleButton = ({
   article,
   showText,
 }) => {
   const loggedInUser = getLoggedInUser()
   const currentUserIsAuthor = article?.author.username === loggedInUser?.username
-  const { favorited, setFavorited, score, setScore } = React.useContext(FavoriteArticleButtonContext);
+  const { liked, setLiked, score, setScore } = React.useContext(LikeArticleButtonContext);
   let buttonText;
   let buttonTextMaybe;
-  if (favorited) {
-    buttonTextMaybe = 'Unfavorite'
+  if (liked) {
+    buttonTextMaybe = 'Unlike'
   } else {
-    buttonTextMaybe = 'Favorite'
+    buttonTextMaybe = 'Like'
   }
   if (showText) {
     buttonText = ' ' + buttonTextMaybe + ' Article '
   } else {
     buttonText = ''
   }
-  const handleClickFavorite = async (e) => {
+  const handleClickLike = async (e) => {
     e.preventDefault();
     if (currentUserIsAuthor) return
     if (!loggedInUser) {
       Router.push(routes.userLogin());
       return;
     }
-    setFavorited(!favorited)
-    setScore(score + (favorited ? - 1 : 1))
+    setLiked(!liked)
+    setScore(score + (liked ? - 1 : 1))
     try {
-      if (favorited) {
-        await ArticleAPI.unfavorite(article.slug, loggedInUser?.token)
+      if (liked) {
+        await ArticleAPI.unlike(article.slug, loggedInUser?.token)
       } else {
-        await ArticleAPI.favorite(article.slug, loggedInUser?.token)
+        await ArticleAPI.like(article.slug, loggedInUser?.token)
       }
     } catch (error) {
-      setFavorited(!favorited)
-      setScore(score + (favorited ? 1 : -1))
+      setLiked(!liked)
+      setScore(score + (liked ? 1 : -1))
     }
   };
   let count = score;
@@ -55,15 +55,15 @@ const FavoriteArticleButton = ({
   let title;
   if (currentUserIsAuthor) {
     buttonClassName = 'disabled'
-    title = 'You cannot favorite your own articles'
+    title = 'You cannot like your own articles'
   } else {
-    buttonClassName = favorited ? BUTTON_ACTIVE_CLASS : ''
+    buttonClassName = liked ? BUTTON_ACTIVE_CLASS : ''
     title = buttonTextMaybe + ' this article'
   }
   return (
     <button
       className={buttonClassName}
-      onClick={handleClickFavorite}
+      onClick={handleClickLike}
       title={title}
     >
       <i className="ion-heart" />{showText ? ' ' : ''}{buttonText}
@@ -72,4 +72,4 @@ const FavoriteArticleButton = ({
   )
 }
 
-export default FavoriteArticleButton;
+export default LikeArticleButton;

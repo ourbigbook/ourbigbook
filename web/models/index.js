@@ -1,10 +1,11 @@
 const path = require('path')
+const fs = require('fs')
 
 const { Sequelize, DataTypes } = require('sequelize')
 
 const config = require('../config')
 
-module.exports = (toplevelDir, toplevelBasename) => {
+function getSequelize(toplevelDir, toplevelBasename) {
   const sequelizeParams = {
     logging: config.verbose ? console.log : false,
     define: {
@@ -33,6 +34,7 @@ module.exports = (toplevelDir, toplevelBasename) => {
   const Article = require('./article')(sequelize)
   const Comment = require('./comment')(sequelize)
   const User = require('./user')(sequelize)
+  const SequelizeMeta = require('./sequelize_meta')(sequelize)
   const Tag = require('./tag')(sequelize)
 
   // Associations.
@@ -101,4 +103,18 @@ module.exports = (toplevelDir, toplevelBasename) => {
   Tag.belongsToMany(Article, { through: 'ArticleTag', as: 'taggedArticles', foreignKey: 'tagId', otherKey: 'articleId' });
 
   return sequelize;
+}
+
+async function sync(sequelize) {
+  await sequelize.sync({force: true})
+  await sequelize.models.SequelizeMeta.bulkCreate(
+    fs.readdirSync(path.join(path.dirname(__dirname), 'migrations')).map(
+      basename => { return { name: basename } }
+    )
+  )
+}
+
+module.exports = {
+  getSequelize,
+  sync,
 }

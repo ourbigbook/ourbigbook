@@ -4,7 +4,7 @@ export NODE_OPTIONS='--unhandled-rejections=strict'
 cd ../
 mkdir -p my_node_modules
 ln -s .. my_node_modules/cirodown
-NODE_PATH=\"$NODE_PATH:my_node_modules\" npm run build-assets
+NODE_PATH="${NODE_PATH}:my_node_modules" npm run build-assets
 rm -rf my_node_modules
 cd -
 ./bin/sync-db.js

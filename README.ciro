@@ -4468,38 +4468,50 @@ It was originally forked from the following starter boilerplate: https://github.
 = Local development server
 {parent=dynamic-website}
 
+First time setup:
 ``
 npm run build-assets
 cd web/
 npm install
+./bin/generate-demo-data.js
+``
+where:
+* `npm run build-assets` needs to be re-run if any assets (e.g. CSS or Js file mentioned at \x[overview-of-files-in-this-repository]) on the `./cirodown/` toplevel are modified, outside of `web/`.
+* \a[web/bin/generate-demo-data.js] also creates the database and is not optional. If you want to start with an empty database instead of the demo one, you can run instead \a[web/bin/sync-db.js]:
+  ``
+  ./bin/sync-db.js
+  ``
+
+After this initial setup, run the development server:
+``
 npm run dev
 ``
 
-We also offer shortcuts on toplevel for the `npm install` and `npm run dev` commands:
+And the website is now running at http://localhost:3000[]. If you created the demo data, you can login with:
+* email: `user0@mail.com`, `user1@mail.com`, etc.
+* password: `asdf`
+
+We also offer shortcuts on toplevel for the `npm install` and `npm run dev` commands so you can skip the `cd web` for those:
 ``
-npm run build-assets
 npm install
 npm run dev
 ``
-
-You might also want to nuke the current database and create a demo database:
-``
-./bin/generate-demo-data.js
-``
-
-The browser automatically pops the development front-end server at http://localhost:4101[] which makes requests to the backend server that runs at http://localhost:3000[].
 
 = Local optimized frontend
 {parent=dynamic-website}
 
+First run the first time setup from \x[local-development-server].
+
+Then, also run:
 ``
-cd web
-npm install
 npm run build-dev
+``
+to create optimized assets.
+
+Finally, start the server each time with:
+``
 npm start
 ``
-
-The website can now be seen at: http://localhost:3000
 
 This is the type of setup that will run in production, with a single server. Running it locally might help debug some front-end deployment issues. But otherwise you will just normally use the \x[local-run-as-identical-to-deployment-as-possible] setup instead for development.
 

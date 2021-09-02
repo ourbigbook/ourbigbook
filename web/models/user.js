@@ -122,13 +122,16 @@ module.exports = (sequelize) => {
     return ret
   }
 
-  User.prototype.findAndCountArticlesByFollowed = async function(offset, limit) {
+  User.prototype.findAndCountArticlesByFollowed = async function(offset, limit, order) {
+    if (!order) {
+      order = 'createdAt'
+    }
     return sequelize.models.Article.findAndCountAll({
       offset: offset,
       limit: limit,
       subQuery: false,
       order: [[
-        'createdAt',
+        order,
         'DESC'
       ]],
       include: [

@@ -66,7 +66,6 @@ async function generateDemoData(params) {
   const userArgs = [];
   for (let i = 0; i < nUsers; i++) {
     const [displayName, image] = userData[i % userData.length]
-    console.error(displayName);
     const userArg = {
       username: `user${i}`,
       displayName,

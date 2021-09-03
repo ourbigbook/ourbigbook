@@ -12,6 +12,7 @@
     "deploy": "git push -f heroku master",
     "dev": "NODE_OPTIONS='--unhandled-rejections=strict' nodemon -w . -w ../index.js ./app.js",
     "postinstall": "cd .. && npm link cirodown",
+    "migrate": "sequelize-cli db:migrate",
     "start": "node --unhandled-rejections=strict ./app.js",
     "start-dev": "NODE_ENV_OVERRIDE=development NODE_ENV_NEXT=production node --unhandled-rejections=strict ./app.js",
     "start-prod": "env $(cat .env | xargs) NODE_ENV=production npm start",

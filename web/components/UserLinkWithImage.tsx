@@ -4,7 +4,7 @@ import CustomLink from "components/CustomLink";
 import CustomImage from "components/CustomImage";
 import { User } from "lib/types/userType";
 import routes from "routes";
-import { DEFAULT_USER_SCORE_TITLE } from "lib/utils/constant"
+import { DisplayAndUserName } from "front/user"
 
 const UserLinkWithImage = ({ user }: { user: User }) => {
   if (!user) return null;
@@ -19,9 +19,7 @@ const UserLinkWithImage = ({ user }: { user: User }) => {
         alt="author profile image"
       />
       {' '}
-      {user.username}
-      {' '}
-      (<span title={DEFAULT_USER_SCORE_TITLE}>{user.articleScoreSum}<i className="ion-heart"></i></span>)
+      <DisplayAndUserName user={user}></DisplayAndUserName>
     </CustomLink>
   )
 }

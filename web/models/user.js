@@ -69,7 +69,7 @@ module.exports = (sequelize) => {
         }
       },
       bio: DataTypes.STRING,
-      image: DataTypes.STRING,
+      image: DataTypes.STRING(2048),
       hash: DataTypes.STRING(1024),
       salt: DataTypes.STRING,
       articleScoreSum: {

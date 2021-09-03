@@ -34,6 +34,7 @@ module.exports = {
   // Used by sequelize-cli as well as our source code.
   development: {
     dialect: 'sqlite',
+    logging: true,
     storage: 'db.sqlite3',
   },
   production: {
@@ -48,5 +49,6 @@ module.exports = {
         rejectUnauthorized: false,
       }
     },
+    logging: true,
   }
 }

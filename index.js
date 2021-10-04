@@ -1785,10 +1785,10 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
         new_context.id_conversion_for_header = is_header;
         new_context.extra_returns.id_conversion_header_title_no_id_xref = false;
         new_context.extra_returns.id_conversion_non_header_no_id_xref_non_header = false;
-        id_text += title_to_id(convert_arg_noescape(title_arg, new_context));
+        id_text += title_to_id(convert_arg_noescape(title_arg, new_context), new_context.options.cirodown_json['id']);
         const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
         if (disambiguate_arg !== undefined) {
-          id_text += ID_SEPARATOR + title_to_id(convert_arg_noescape(disambiguate_arg, new_context));
+          id_text += ID_SEPARATOR + title_to_id(convert_arg_noescape(disambiguate_arg, new_context), new_context.options.cirodown_json['id']);
         }
         let message;
         if (new_context.extra_returns.id_conversion_header_title_no_id_xref) {
@@ -2379,6 +2379,11 @@ function convert_init_context(options={}, extra_returns={}) {
         if (!('lint' in cirodown_json)) { cirodown_json.lint = {}; }
         const lint = cirodown_json.lint
         if (!('h-parent' in lint)) { lint['h-parent'] = undefined; }
+      }
+      {
+        if (!('id' in cirodown_json)) { cirodown_json.id = {}; }
+        const id = cirodown_json.id
+        if (!('normalize' in id)) { id['normalize'] = true; }
       }
     }
   if (!('embed_includes' in options)) { options.embed_includes = false; }
@@ -4475,10 +4480,21 @@ function symbol_to_string(symbol) {
   return symbol.toString().slice(7, -1);
 }
 
+// https://cirosantilli.com/cirodown#ascii-normalization
+function normalize_ascii_character(c) {
+  return lodash.deburr(c)
+}
+
 /** TODO correct unicode aware algorithm. */
-function title_to_id(title) {
+function title_to_id(title, options) {
+  if (options === undefined) {
+    options = {}
+  }
   const new_chars = [];
   for (let c of title) {
+    if (options.normalize) {
+      c = normalize_ascii_character(c)
+    }
     c = c.toLowerCase();
     if (!is_ascii(c) || /[a-z0-9-]/.test(c)) {
       new_chars.push(c);

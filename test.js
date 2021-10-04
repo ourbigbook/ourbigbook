@@ -2984,29 +2984,29 @@ assert_convert_ast('id autogeneration nested',
   ],
 );
 assert_convert_ast('id autogeneration unicode normalize',
-  `= 0A.你ÉŁŒz
+  `= 0A.你ÉŁŒy++z
 
-\\x[0a-你eloez]
+\\x[0a-你eloey-plus-plus-z]
 `,
   [
-    a('H', undefined, {title: [t('0A.你ÉŁŒz')]}, {id: '0a-你eloez'}),
+    a('H', undefined, {title: [t('0A.你ÉŁŒy++z')]}, {id: '0a-你eloey-plus-plus-z'}),
     a('P', [
-      a('x', undefined, {href: [t('0a-你eloez')]})
+      a('x', undefined, {href: [t('0a-你eloey-plus-plus-z')]})
     ])
   ],
 );
 assert_convert_ast('id autogeneration unicode no normalize',
-  `= 0A.你ÉŁŒz
+  `= 0A.你ÉŁŒy++z
 
-\\x[0a-你éłœz]
+\\x[0a-你éłœy-z]
 `,
   [
-    a('H', undefined, {title: [t('0A.你ÉŁŒz')]}, {id: '0a-你éłœz'}),
+    a('H', undefined, {title: [t('0A.你ÉŁŒy++z')]}, {id: '0a-你éłœy-z'}),
     a('P', [
-      a('x', undefined, {href: [t('0a-你éłœz')]})
+      a('x', undefined, {href: [t('0a-你éłœy-z')]})
     ])
   ],
-  { extra_convert_opts: { cirodown_json: { id: { 'normalize': false, } } } }
+  { extra_convert_opts: { cirodown_json: { id: { normalize: { latin: false, punctuation: false } } } } }
 );
 assert_convert_ast('id autogeneration with disambiguate',
   `= ab

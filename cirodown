@@ -589,6 +589,7 @@ function generate_redirect(options, redirect_src_id, redirect_target_id, outdir)
   if (redirect_href === undefined) {
     cli_error(`redirection target ID "${redirect_target_id}" not found`);
   }
+  fs.mkdirSync(path.dirname(outpath), {recursive: true})
   // https://stackoverflow.com/questions/10178304/what-is-the-best-approach-for-redirection-of-old-pages-in-jekyll-and-github-page/36848440#36848440
   fs.writeFileSync(outpath,
 `<!DOCTYPE html>

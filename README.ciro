@@ -3967,6 +3967,7 @@ Values not documented in other sections:
 * `ast-inside`: print the AST from inside the `cirodown.convert` call before it returns.
 
   This is useful to debug the program if `cirodown.convert` blows up on the next stages before returning.
+* `db`: show database transactions done by Cirodown, to help debug stuff like \x[internal-cross-file-reference]{p}
 * `parse`: parsing steps
 * `tokenize`: tokenization steps
 * `tokens`: final parsed token stream

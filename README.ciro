@@ -4439,7 +4439,7 @@ Dashes are added around the signs if needed, e.g.:
 Dictionary of lint options to enable. Cirodown tries to be strict about forcing specific styles by default, e.g. forbids triple newline paragraph. But sometimes we just can't bear it :-)
 
 = `cirodown.json` `lint` `h-parent`
-{parent=cirodown-json-schema}
+{parent=cirodown-json-lint}
 
 Possible values:
 * `parent`: forces headers to use \x[h-parent-argument] to specify their level

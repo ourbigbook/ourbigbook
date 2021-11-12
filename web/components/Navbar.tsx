@@ -19,6 +19,7 @@ const Navbar = () => {
       <CustomLink href={routes.home()} onClick={handleClick} className="navbar-brand">
         {APP_NAME}
       </CustomLink>
+      <a href="https://cirosantilli.com/ourbigbook-com">About this website</a>
       <div className="navbar-list">
         <Maybe test={loggedInUser}>
           <NavLink href={routes.articleNew()}>

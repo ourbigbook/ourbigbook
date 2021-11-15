@@ -234,8 +234,8 @@ The difference is mostly that Cirodown is completely and entirely focused on mak
 * \x[mathematics][server side pre-rendered maths with KaTeX]: all divs and spans are ready, browser only applies CSS, no JavaScript gets executed
 * \x[publish]: we take care of website publishing for you out-of-the-box, no need to integrate into an external project like Jekyll
 * \x[split-headers]:
-** https://github.com/asciidoctor/asciidoctor/issues/626 feature request
-** https://github.com/owenh000/asciidoctor-multipage third party plugin that does it
+  * https://github.com/asciidoctor/asciidoctor/issues/626 feature request
+  * https://github.com/owenh000/asciidoctor-multipage third party plugin that does it
 and we feel that some of those features have required specialized code that could not be easily implemented as a standalone macro.
 
 Another advantage over Asciidoctor is that the reference implementation of Cirodown is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with https://github.com/opal/opal[Opal], but who wants to deal with that layer of complexity?
@@ -446,6 +446,7 @@ and the following are:
 Implemented at: https://github.com/cirosantilli/cirodown/issues/87[].
 
 = URL with protocol
+{c}
 {parent=relative-link}
 
 A URL with protocol is a URL that matches the regular expression `^[a-zA-Z]+://`. The following are examples of URLs with protocol:
@@ -590,6 +591,8 @@ Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello He
     HelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHello
 Hello
 ``
+
+And nos a very long inline code: `Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello`
 
 \Comment[[[[
 TODO implement.
@@ -4658,7 +4661,7 @@ CIRODOWN_POSTGRES=true npmd
 {c}
 {parent=dynamic-website}
 
-Got it running perfectly at as of April 2021 https://cirodown.herokuapp.com/ with the following steps.
+Got it running perfectly at as of April 2021 https://ourbigbook.com with the following steps.
 
 Initial setup:
 ``
@@ -4679,6 +4682,19 @@ Nuke the database and generate a demo database:
 ``
 # heroku run web/bin/generate-demo-data.js --force-production
 ``
+
+The domain was leased from: https://porkbun.com/[]. Unfortunatly, HTTPS on Heroku with a custom domain requires using a paying tier, so we upgraded from the free tier to the cheapest paid tier, "Hobby Project", to start with: https://stackoverflow.com/questions/52185560/heroku-set-ssl-certificates-on-free-plan
+
+On the Porkbun web UI, we added a DNS record of type :
+``
+ALIAS ourbigbook.com <heroku-id>.herokudns.com
+``
+where `heroku-id` was obtained from:
+``
+heroku domains:add ourbigbook.com
+heroku domains
+``
+and we removed all other `ALIAS`/`CNAME` records from Porkbun.
 
 = Dependency organization
 {parent=heroku-deployment}
@@ -5241,6 +5257,11 @@ You then need to explicitly include that `main.css` file in your \x[template]. F
 <link rel="stylesheet" type="text/css" href="{{ root_relpath }}main.css">
 ``
 where `root_relpath` is explained under \x[template]{full}.
+
+= Mobile guidelines
+{parent=css}
+
+The main design goal on narrow screens is that there should never be horizontal scrolling enabled for the hole document, only on a per element basis.
 
 = Formal grammar
 {parent=developing-cirodown}

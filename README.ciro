@@ -93,7 +93,7 @@ If one of the input files starts getting too large, usually the toplevel `README
 npx cirodown README.ciro
 npx cirodown not-readme.ciro
 ``
-Note however that  when `README.ciro` has a \x[internal-cross-file-reference] to something defined in `not-readme.ciro`, e.g. via `\x[h2-in-not-the-README]`, then you must first do a first pass once with `npx cirodown .` to parse all files and extract all necessary IDs to the \x[id-database].
+Note however that  when `README.ciro` has a \x[internal-cross-file-reference] to something defined in `not-readme.ciro`, e.g. via `\x[h2-in-not-the-readme]`, then you must first do a first pass once with `npx cirodown .` to parse all files and extract all necessary IDs to the \x[id-database].
 
 When dealing with large files, you might also be interested in the following amazing options:
 * \x[split-headers]
@@ -981,6 +981,118 @@ Besides disambiguating headers, the `disambiguate` argument has a second related
 Note that unlike for headers, `disambiguate` does not appear on the title of images at all. It serves only to create an unique ID that can be later referred to. Headers are actually the only case where `disambiguate` shows up on the visible rendered output.
 
 This use case is even more useful when `title-from-src` is enable by default for the \x[cirodown-json/media-providers] entry, so you don't have to repeat titles several times over and over.
+
+= `\H` `numbered` argument
+{c}
+{parent=h-arguments}
+
+This \x[boolean-named-argument] determines whether renderings of a header will have section numbers or not. This affects all of:
+* \x[header]{p} themselves
+* \x[table-of-contents] links
+* \x[internal-cross-reference]{p} with the \x[x-full-argument]
+This option can be set by default for all files with:
+
+By default, headers are numbered as in a book, e.g.:
+``
+= h1
+
+== h2
+
+=== h3
+
+==== h4
+``
+renders something like:
+``
+= h1
+
+Table of contents
+* 1. h2
+  * 1.1. h3
+    * 1.1.1. h4
+
+== 1. h2
+
+=== 1.1. h3
+
+==== 1.1.1. h4
+``
+
+However, for documents with a very large number of sections, or \x[unlimited-header-levels][deeply nested headers] those numbers start to be more noise than anything else, especially in the table of contents and you are better off just referring to IDs. E.g. imagine:
+``
+1.3.1.4.5.1345.3.2.1. Some deep level
+``
+
+When documents reach this type of scope, you can disable numbering with the `numbered` option.
+
+This option can be set on any header, and it is inherited by all descendants.
+
+The option only affects descendants.
+
+E.g., if in the above example turn numbering off at `h2`:
+``
+= h1
+
+== h2
+{numbered=0}
+
+=== h3
+
+==== h4
+``
+then it renders something like:
+``
+= h1
+
+Table of contents
+* 1. h2
+  * h3
+    * h4
+
+== 1. h2
+
+=== h3
+
+==== h4
+``
+
+The more common usage pattern to disable it on toplevel and enable it only for specific "tutorial-like sections". An example can be seen at:
+* https://cirosantilli.com/[]: huge toplevel wiki, for which we don't want numbers
+* https://cirosantilli.com/x86-paging[]: a specific tutorial, for which we want numbers
+which is something like:
+``
+= Huge toplevel wiki
+{numbered=0}
+
+== h2
+
+=== A specific tutorial
+{numbered}
+{scope}
+
+==== h4
+
+===== h5
+``
+then it renders something like:
+``
+= Huge toplevel wiki
+
+Table of contents
+* h2
+  * A specific tutorial
+    * 1. h4
+      * 1.1.  h5
+
+== h2
+
+=== A specific tutorial
+
+==== 1. h4
+
+===== 1.1. h5
+``
+Note how in this case the number for `h4` is just `1.` rather than `1.1.1.`. We only show numberings relative to the first non-numbered header, because the `1.1.` wouldn't be very meaningful otherwise.
 
 = `\H` `parent` argument
 {c}
@@ -3231,7 +3343,8 @@ The style recommendation is: use the insane version which is shorter, unless you
 * \x[list]{child}{full}: `* ` and indentation
 * \x[table]{child}{full}: `|| `, `| ` and indentation
 
-==== Insane code and math shortcuts
+= Insane code and math shortcuts
+{parent=macros-with-insane-shortcut}
 
 The insane code and math shortcuts work very analogously and are therefore described together in this section.
 
@@ -3265,7 +3378,8 @@ b c
 d
 ``
 
-==== Insane macro shortcut extra arguments
+= Insane macro shortcut extra arguments
+{parent=macros-with-insane-shortcut}
 
 Insane arguments always work by abbreviating:
 * the macro name
@@ -3289,7 +3403,8 @@ a {id=ef}`b c` g
 
 This restriction things easy to parse for humans and machines alike.
 
-==== Escapes in insane macro shortcuts
+= Escapes in insane macro shortcuts
+{parent=macros-with-insane-shortcut}
 
 Literal backticks and dollar signs can be produced witha backslash escape as in:
 \CirodownExample[[
@@ -4489,6 +4604,13 @@ Direct children of media-providers and subproperties that are valid only for the
 * `youtube`: YouTube \x[video]{p}
 
 See also: https://github.com/cirosantilli/cirodown/issues/40
+
+= `numbered`
+{parent=cirodown-json-schema}
+
+Sets the default \x[h-numbered-argument] argument of the toplevel headers of each file.
+
+Note that since the option is inherited by descendants, this also affects every other header.
 
 = `prepublish`
 {parent=cirodown-json-schema}

@@ -1225,7 +1225,7 @@ class Tokenizer {
         let source_location = this.source_location.clone();
         // Tokenize past the last open char.
         let open_length = this.tokenize_func(
-          (c)=>{return c === START_NAMED_ARGUMENT_CHAR}
+          c => c === START_NAMED_ARGUMENT_CHAR
         ).length;
         this.push_token(TokenType.NAMED_ARGUMENT_START,
           START_NAMED_ARGUMENT_CHAR.repeat(open_length), source_location);
@@ -1260,7 +1260,7 @@ class Tokenizer {
         let source_location = this.source_location.clone();
         // Tokenize past the last open char.
         let open_length = this.tokenize_func(
-          (c)=>{return c === START_POSITIONAL_ARGUMENT_CHAR}
+          c => c === START_POSITIONAL_ARGUMENT_CHAR
         ).length;
         this.push_token(TokenType.POSITIONAL_ARGUMENT_START,
           START_POSITIONAL_ARGUMENT_CHAR.repeat(open_length), source_location);
@@ -1283,9 +1283,7 @@ class Tokenizer {
       } else if (this.cur_c in MAGIC_CHAR_ARGS) {
         // Insane shortcuts e.g. $$ math and `` code.
         let open_char = this.cur_c;
-        let open_length = this.tokenize_func(
-          (c)=>{return c === open_char}
-        ).length;
+        let open_length = this.tokenize_func(c => c === open_char).length;
         let close_string = open_char.repeat(open_length);
         let macro_name = MAGIC_CHAR_ARGS[open_char];
         if (open_length > 1) {
@@ -1293,7 +1291,7 @@ class Tokenizer {
         }
         this.push_token(TokenType.MACRO_NAME, macro_name);
         this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
-        if (!this.tokenize_literal(open_char, close_string)) {
+        if (!this.tokenize_literal(open_char, close_string, true)) {
           unterminated_literal = true;
         }
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
@@ -1504,7 +1502,7 @@ class Tokenizer {
    *
    * @return {boolean} - true if OK, false if unexpected EOF
    */
-  tokenize_literal(open_char, close_string) {
+  tokenize_literal(open_char, close_string, openEqualsClose = false) {
     this.log_debug('tokenize_literal');
     this.log_debug(`this.i: ${this.i}`);
     this.log_debug(`open_char: ${open_char}`);
@@ -1521,7 +1519,7 @@ class Tokenizer {
       if (this.is_end())
         return false;
     }
-    if (this.chars[i] === open_char) {
+    if (this.chars[i] === open_char && !openEqualsClose) {
       // Skip one of the escape chars if they are followed by an open.
       if (!this.consume())
         return false;

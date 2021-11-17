@@ -275,14 +275,15 @@ ol, ul {
     list-style-type: none;
     li {
       // https://github.com/cirosantilli/cirodown/issues/68
-      margin-bottom: 4px;
-      margin-top: 4px;
+      $toc-sep: 0.3em;
+      margin-bottom: $toc-sep;
+      margin-top: $toc-sep;
       @media only screen and (min-width: $max-mobile-width + 1) {
-        div:hover span.hover-metadata {
+        div:hover span.not-arrow span.hover-metadata {
           @include visible;
         }
       }
-      div:target span.hover-metadata {
+      div:target span.not-arrow span.hover-metadata {
         @include visible;
       }
 
@@ -312,8 +313,11 @@ ol, ul {
         }
       }
       div {
-        span.hover-metadata {
-          @include hidden;
+        display: flex;
+        span.not-arrow {
+          span.hover-metadata {
+            @include hidden;
+          }
         }
         // Take up space on LIs that don't have an arrow.
         &.arrow {

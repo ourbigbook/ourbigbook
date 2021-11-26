@@ -8,7 +8,9 @@ const util = require('util');
 const cirodown = require('cirodown')
 const cirodown_nodejs = require('cirodown/nodejs');
 
+// Common default convert options for the tests.
 const convert_opts = {
+  add_test_instrumentation: true,
   body_only: true,
   split_headers: false,
 
@@ -4427,7 +4429,7 @@ assert_executable(
 assert_executable(
   'executable: incoming links and other children',
   {
-    args: ['-S', '.'],
+    args: ['--add-test-instrumentation', '-S', '.'],
     filesystem: {
       'README.ciro': `= Index
 
@@ -4435,15 +4437,21 @@ assert_executable(
 
 \\x[h2]
 
+\\x[notindex]
+
 == h2
 
-=== h3
+\\x[index]
 
-== h2 2
+\\x[notindex]
 
 == No incoming
 `,
       'notindex.ciro': `= Notindex
+
+\\x[index]
+
+\\x[h2]
 
 == Notindex h2
 
@@ -4452,15 +4460,27 @@ assert_executable(
     },
     expect_filesystem_xpath: {
       'index.html': [
-        `//x:h2[@id='incoming-links']`,
+        // Would like to do this, but it doesn't seem implemented in this crappy xpath implementation.
+        // So we revert to instrumentation instead then.
+        //`//x:h2[@id='incoming-links']/following:://x:a[@href='#h2']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='#h2']`,
+        // TODO https://github.com/cirosantilli/cirodown/issues/155
+        //`//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
       ],
       'h2.html': [
-        `//x:h2[@id='incoming-links']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
+        // TODO https://github.com/cirosantilli/cirodown/issues/155
+        //`//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
+      ],
+      'notindex.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html#h2']`,
       ],
     },
     expect_filesystem_not_xpath: {
       'no-incoming.html': [
-        `//x:h2[@id='incoming-links']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']`,
       ],
     },
   }

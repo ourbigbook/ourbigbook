@@ -1566,13 +1566,25 @@ assert_convert_ast('link with multiple paragraphs',
 );
 
 // Internal cross references \x
-assert_no_error('cross reference simple',
+assert_convert_ast('cross reference simple',
   `= My header
 
 \\x[my-header][link body]
-`
+`,
+  [
+    a('H', undefined, {
+      level: [t('1')],
+      title: [t('My header')],
+    }),
+    a('P', [
+      a('x', undefined, {
+        content: [t('link body')],
+        href: [t('my-header')],
+      }),
+    ]),
+  ],
 );
-assert_no_error('cross reference full boolean style without value',
+assert_convert_ast('cross reference full boolean style without value',
   `= My header
 
 \\x[my-header]{full}
@@ -1580,12 +1592,12 @@ assert_no_error('cross reference full boolean style without value',
   [
     a('H', undefined, {
       level: [t('1')],
-      title: [t('abc')],
+      title: [t('My header')],
     }),
     a('P', [
       a('x', undefined, {
         full: [],
-        href: [t('abc')],
+        href: [t('my-header')],
       }),
     ]),
   ]
@@ -4412,3 +4424,45 @@ assert_executable(
     }
   }
 );
+assert_executable(
+  'executable: incoming links and other children',
+  {
+    args: ['-S', '.'],
+    filesystem: {
+      'README.ciro': `= Index
+
+\\x[index]
+
+\\x[h2]
+
+== h2
+
+=== h3
+
+== h2 2
+
+== No incoming
+`,
+      'notindex.ciro': `= Notindex
+
+== Notindex h2
+
+=== Notindex h3
+`,
+    },
+    expect_filesystem_xpath: {
+      'index.html': [
+        `//x:h2[@id='incoming-links']`,
+      ],
+      'h2.html': [
+        `//x:h2[@id='incoming-links']`,
+      ],
+    },
+    expect_filesystem_not_xpath: {
+      'no-incoming.html': [
+        `//x:h2[@id='incoming-links']`,
+      ],
+    },
+  }
+);
+

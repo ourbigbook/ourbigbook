@@ -1657,6 +1657,48 @@ which looks like:
 {parent=h-wiki-argument}
 {wiki=Tiananmen_Square#History}
 
+= Header metadata sections
+{parent=header}
+
+Cirodown adds some header metadata to the toplevel header at the bottom of each page. this section describes this metadata.
+
+Although the \x[table-of-contents]{child} has a macro to specify its placement, it is also automatically placed at the bottom of the page, and could be considered a header metadata section.
+
+= Incoming links
+{parent=header-metadata-sections}
+
+Lists other sections that link to the current section.
+
+E.g. in:
+``
+= tmp
+
+== tmp 1
+
+=== tmp 1 1
+
+=== tmp 1 2
+
+\x[tmp-1]
+
+== tmp 2
+
+\x[tmp-1]
+``
+the page `tmp-1.html` would contain a list of incoming links as:
+* `tmp-1-2`
+* `tmp-2`
+since those pages link to the `tmp-1` ID.
+
+= Other children
+{parent=header-metadata-sections}
+
+Lists sections that are \x[secondary-children] of the current section.
+
+The header hierarchy descendants already show under the \x[table-of-contents].
+
+TODO: list all descendants rather than just direct children, just like the table of contents. Possibly add "Other children" to the bottom of the table of contents.
+
 = Image
 {parent=macro}
 {title2=`\Image` and `\image`}
@@ -3179,38 +3221,38 @@ This allows a section to have multiple parents, e.g. to include it into multiple
 
 == Mammal
 
-=== Dog
+=== Bat
 
 === Cat
 
-== Cute animal
+== Flying animal
 
-These animals are cute:
-* \x[dog]{child} because they play with you
+These animals fly:
+* \x[bat]{child}
 
-These animals aren't cute however:
+These animals don't fly:
 * \x[cat]
 ``
 would render something like:
 ``
-h1 Animal
+= Animal
 
-h2 Mammal
+== Mammal
 
-h3 Dog (parent section: Mammal)
-(other parent sections: Cute animal)
+=== Bat (Parent section: Mammal)
+(Tags: Flying animal)
 
-h3 Cat (parent section: Mammal)
+=== Cat (Parent section: Mammal)
 
-== Cute animal
+== Flying animal (Parent section: Animal)
 
-These animals are cute:
-* \x[dog]
+These animals fly:
+* \x[bat]
 
-These animals aren't cute however:
+These animals don't fly:
 * \x[cat]
 ``
-so note how "Dog" has a list of extra parents including "Cute animal", but Cat does not, due to the `child`.
+so note how "Bat" has a list of tags including "Flying animal", but Cat does not, due to the `child`.
 
 This property does not affect how the \x[table-of-contents][`\Toc`] is rendered. We could insert elements sections there multiple times, but it has the downside that browser Ctrl + F searches would hit the same thing multiple times on the table of contents, which might make finding things harder.
 ``
@@ -3234,6 +3276,13 @@ Read this \x[my-id][My title].
 
 A live demo can be seen at: \x[x-child-argument-demo].
 
+= Secondary children
+{parent=x-child-argument}
+
+The term "secondary" children refers to sections that have a parent/child relationship via the \x[x-child-argument] or the \x[x-parent-argument] rather than via the usual \x[header] hierarchy.
+
+Secondary children show up for example on the \x[other-children] metadata section.
+
 = `\x` `child` argument demo
 {parent=x-child-argument}
 {scope}
@@ -3241,21 +3290,29 @@ A live demo can be seen at: \x[x-child-argument-demo].
 = Animal
 {parent=x-child-argument-demo}
 
+= Ant
+{parent=animal}
+
+= Cow
+{parent=animal}
+
+Oh, and cows are also \x[mammal]{parent}{p}.
+
 = Mammal
 {parent=animal}
 
-= Dog
+= Bat
 {parent=mammal}
 
 = Cat
 {parent=mammal}
 
-= Cute animal
+= Flying animal
 {parent=animal}
 
-Cute animal:
-* \x[dog]{child}
-* \x[cat]
+\x[bat]{child}{c}{p} can fly.
+
+But \x[cat]{p} can't.
 
 = `\x` `parent` argument
 {parent=x-child-argument}

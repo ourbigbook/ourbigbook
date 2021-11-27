@@ -4439,13 +4439,36 @@ assert_executable(
 
 \\x[notindex]
 
+\\x[h2-2]{child}
+
+\\x[scope/scope-1]
+
 == h2
 
 \\x[index]
 
 \\x[notindex]
 
+\\x[h2-2]{child}
+
+\\x[scope/scope-2]{child}
+
+== h2 2
+
 == No incoming
+
+== Scope
+{scope}
+
+=== Scope 1
+
+=== Scope 2
+
+\\x[scope-1]
+
+\\x[scope-3]{child}
+
+=== Scope 3
 `,
       'notindex.ciro': `= Notindex
 
@@ -4460,18 +4483,34 @@ assert_executable(
     },
     expect_filesystem_xpath: {
       'index.html': [
-        // Would like to do this, but it doesn't seem implemented in this crappy xpath implementation.
+        // Would like to test like this, but it doesn't seem implemented in this crappy xpath implementation.
         // So we revert to instrumentation instead then.
         //`//x:h2[@id='incoming-links']/following:://x:a[@href='#h2']`,
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='']`,
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='#h2']`,
-        // TODO https://github.com/cirosantilli/cirodown/issues/155
-        //`//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
+        // https://github.com/cirosantilli/cirodown/issues/155
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='#h2-2']`,
       ],
       'h2.html': [
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
-        // TODO https://github.com/cirosantilli/cirodown/issues/155
-        //`//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
+        // https://github.com/cirosantilli/cirodown/issues/155
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='index.html#h2-2']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='index.html#scope/scope-2']`,
+      ],
+      'h2-2.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html#h2']`,
+      ],
+      'scope/scope-1.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html']`,
+        // TODO https://github.com/cirosantilli/cirodown/issues/173
+        //`//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html#scope/scope-2.html']`,
+      ],
+      'scope/scope-2.html': [
+        // TODO https://github.com/cirosantilli/cirodown/issues/173
+        //`//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='other-children']//x:a[@href='../index.html#scope/scope-3']`,
       ],
       'notindex.html': [
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,

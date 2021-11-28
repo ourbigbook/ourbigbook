@@ -3206,18 +3206,10 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
         // The name is split.html or nosplit.html.
         basename_ret = '';
       }
-
-      // dirname_ret
-      if (dirname === '') {
-        dirname_ret = dirname;
-      } else {
-        // Not a https://cirosantilli.com/cirodown#the-toplevel-index-file
-        dirname_ret = path_join(id_dirname, id_basename, context.options.path_sep);
-      }
     } else {
-      dirname_ret = dirname;
       basename_ret = renamed_basename_noext;
     }
+    dirname_ret = dirname;
   } else {
     if (to_split_headers) {
       // Non-toplevel elements in split header mode are simple,

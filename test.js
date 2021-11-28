@@ -2467,6 +2467,20 @@ assert_error('header child argument to id that does not exist gives an error',
 `,
   3, 1
 );
+// This almost worked, but "Other children" links were not showing.
+// Either we support it fully, or it blows up clearly, this immediately
+// confused me a bit on cirosantilli.com.
+assert_error('header child and synonym arguments are incompatible',
+  `= 1
+
+= 1 2
+{synonym}
+{child=2}
+
+== 2
+`,
+  5, 1
+);
 const header_id_new_line_expect =
   [a('H', undefined, {level: [t('1')], title: [t('aa')], id: [t('bb')]})];
 assert_convert_ast('header id new line sane',

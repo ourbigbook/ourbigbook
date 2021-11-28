@@ -163,7 +163,7 @@ Cirodown aims to be the ultimate \x[latex-output-format][LaTeX] "killer", allowi
 * advanced header/ID related features:
   * \x[scope]{p}
   * \x[synonym]{p}
-  * tags are regular headers: \x[x-child-argument]
+  * tags are regular headers: \x[h-child-argument], \x[x-child-argument]
   * \x[unlimited-header-levels]
   * \x[id-based-header-levels]
 * is written in JavaScript and therefore runs natively on the browser to allow live previews
@@ -3332,9 +3332,15 @@ Generally, a better alternative to this argument is to use \x[h-child-argument].
 = Secondary children
 {parent=x-child-argument}
 
-The term "secondary" children refers to sections that have a parent/child relationship via the \x[x-child-argument] or the \x[x-parent-argument] rather than via the usual \x[header] hierarchy.
+The term refers to sections that have a parent/child relationship via either of the:
+* \x[x-child-argument]
+* \x[x-parent-argument]
+* \x[h-child-argument]
+rather than via the usual \x[header] hierarchy.
 
-Secondary children show up for example on the \x[other-children] metadata section.
+Secondary children show up for example on the \x[other-children] metadata section, but not on the \x[table-of-contents], which is what the header hierarchy already shows.
+
+Secondary children are normally basically used as "tags": a header such as `Bat` can be a direct child of `Mammal`, and a secondary child of `Flying animal`, or vice versa. Both `Mammal` and `Flying animal` are then basically ancestors. But we have to chose one main ancestor as "the parent", and other secondary ancestors will be seen as tags.
 
 = `\x` `child` argument demo
 {parent=x-child-argument}

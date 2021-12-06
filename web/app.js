@@ -32,7 +32,6 @@ function doStart(app) {
             if (!user || !sequelize.models.User.validPassword(user, password)) {
               return done(null, false, { errors: { 'email or password': 'is invalid' } })
             }
-
             return done(null, user)
           })
           .catch(done)
@@ -75,6 +74,10 @@ function doStart(app) {
       res.status(500).send('error: 500 Internal Server Error')
     });
   } else {
+    // Return errors with full stacks to caller.
+    app.use(function(err, req, res, next) {
+      return next(err)
+    });
     app.use(errorhandler())
   }
 

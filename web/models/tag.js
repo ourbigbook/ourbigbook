@@ -7,7 +7,6 @@ module.exports = (sequelize) => {
       name: {
         type: DataTypes.STRING,
         unique: {
-          args: true,
           message: 'Tag name must be unique.'
         },
       },

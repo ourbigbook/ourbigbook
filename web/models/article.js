@@ -11,8 +11,7 @@ module.exports = (sequelize) => {
       slug: {
         type: DataTypes.STRING,
         unique: {
-          args: true,
-          message: 'Slug must be unique.'
+          message: 'The article ID must be unique.'
         },
         set(v) {
           this.setDataValue('slug', v.toLowerCase())

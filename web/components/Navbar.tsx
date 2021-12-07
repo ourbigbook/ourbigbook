@@ -5,6 +5,7 @@ import CustomImage from "components/CustomImage";
 import CustomLink from "components/CustomLink";
 import Maybe from "components/Maybe";
 import NavLink from "components/NavLink";
+import { LOGIN_ACTION, REGISTER_ACTION } from "lib"
 import { APP_NAME } from "lib/utils/constant";
 import { usePageDispatch } from "lib/context/PageContext";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
@@ -41,10 +42,10 @@ const Navbar = () => {
         </Maybe>
         <Maybe test={!loggedInUser}>
           <NavLink href={routes.userLogin()}>
-            Sign in
+            {LOGIN_ACTION}
           </NavLink>
           <NavLink href={routes.userNew()}>
-            Sign up
+            {REGISTER_ACTION}
           </NavLink>
         </Maybe>
       </div>

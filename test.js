@@ -3403,7 +3403,9 @@ assert_split_header_output_keys(
 // Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception, or worse, not blowing up at all!
 assert_error('backslash without macro', '\\ a', 1, 1);
-assert_error('unknown macro', '\\reserved_undefined', 1, 1);
+assert_error('unknown macro without args', '\\reserved_undefined', 1, 1);
+assert_error('unknown macro with positional arg', '\\reserved_undefined[aa]', 1, 1);
+assert_error('unknown macro with named arg', '\\reserved_undefined{aa=bb}', 1, 1);
 assert_error('too many positional arguments', '\\P[ab][cd]', 1, 7);
 assert_error('unknown named macro argument', '\\c{reserved_undefined=abc}[]', 1, 4);
 assert_error('missing mandatory positional argument href of a', '\\a', 1, 1);

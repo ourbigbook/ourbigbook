@@ -5023,6 +5023,17 @@ We also have a custom setup where, if the database is not initialized, we first:
 * manually fill in the `SequelizeMeta` migration tracking table with all available migrations to tell sequelize that all migrations have been done up to this point
 This is something that should be merged into sequelize itself, or at least asked on Stack Overflow, but lazy now.
 
+= Step debug the dynamic website
+{parent=dynamic-website}
+
+Put a `debugger` statment where you want to break and run:
+``
+npm run devi
+``
+where `i` stands for `inspect` as in `node inspect`.
+
+This pauses at the start of execution. So just run `c` and normal execution resumes until the `debugger;` statement is reached.
+
 = Editor support
 {parent=tooling}
 

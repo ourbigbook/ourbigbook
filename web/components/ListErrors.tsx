@@ -5,7 +5,7 @@ const ListErrors = ({ errors }) => (
     {Object.keys(errors).map((key) => {
       return (
         <li key={key}>
-          {key} {errors[key]}
+          {errors[key]}
         </li>
       );
     })}

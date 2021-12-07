@@ -21,7 +21,10 @@ module.exports = (sequelize) => {
           msg: 'This username is taken.'
         },
         validate: {
-          len: [config.usernameMinLength, config.usernameMaxLength],
+          len: {
+            args: [config.usernameMinLength, config.usernameMaxLength],
+            msg: `Usernames must be between ${config.usernameMinLength} and ${config.usernameMaxLength} characters`
+          },
           not: {
             args: /[^a-z0-9-]/,
             msg: 'Usernames can only contain lowercase letters (a-z), numbers (0-9) and dashes (-)' + sampleUsername

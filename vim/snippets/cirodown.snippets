@@ -5,6 +5,8 @@ snippet {c
 	{child=`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`}
 snippet {p
 	{parent=`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`}
+snippet {t
+	{tag=`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`}
 snippet \x
 	\\x[`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`]
 

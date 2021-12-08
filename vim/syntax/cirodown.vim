@@ -10,6 +10,7 @@ syntax match cirodownDelimiter '[{}]' nextgroup=cirodownArgumentName
 syntax match cirodownArgumentName '[a-zA-Z0-9_]\+' contained nextgroup=cirodownArgumentNameEquals contains=@NoSpell
 syntax match cirodownArgumentName 'child' contained nextgroup=cirodownArgumentNameEqualsParent contains=@NoSpell
 syntax match cirodownArgumentName 'parent' contained nextgroup=cirodownArgumentNameEqualsParent contains=@NoSpell
+syntax match cirodownArgumentName 'tag' contained nextgroup=cirodownArgumentNameEqualsParent contains=@NoSpell
 syntax match cirodownArgumentNameEquals '=' contained nextgroup=cirodownArgumentNameEquals
 syntax match cirodownArgumentNameEqualsParent '=' contained nextgroup=cirodownArgumentParent
 highlight cirodownDelimiter          gui=bold cterm=bold term=bold

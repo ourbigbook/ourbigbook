@@ -4,7 +4,7 @@ const Op = require('sequelize').Op
 const cirodown = require('cirodown')
 
 const auth = require('../auth')
-const { getArticle } = require('./lib')
+const lib = require('./lib')
 
 async function setArticleTags(req, article, tagList) {
   return req.app.get('sequelize').models.Tag.bulkCreate(
@@ -55,14 +55,8 @@ router.get('/', auth.optional, async function(req, res, next) {
   try {
     if (req.query.id === undefined) {
       let where = {}
-      let limit = 20
-      let offset = 0
-      if (typeof req.query.limit !== 'undefined') {
-        limit = req.query.limit
-      }
-      if (typeof req.query.offset !== 'undefined') {
-        offset = req.query.offset
-      }
+      const limit = lib.validateParam(req.query, 'limit', lib.validatePositiveInteger, 20)
+      const offset = lib.validateParam(req.query, 'offset', lib.validatePositiveInteger, 0)
       const authorInclude = {
         model: req.app.get('sequelize').models.User,
         as: 'author',
@@ -107,7 +101,7 @@ router.get('/', auth.optional, async function(req, res, next) {
         articlesCount: articlesCount
       })
     } else {
-      const article = await getArticle(req, res)
+      const article = await lib.getArticle(req, res)
       if (article) {
         const user = req.payload ? await req.app.get('sequelize').models.User.findByPk(req.payload.id) : null
         return res.json({ article: await article.toJson(user) })
@@ -172,7 +166,7 @@ router.post('/', auth.required, async function(req, res, next) {
 // update article
 router.put('/', auth.required, async function(req, res, next) {
   try {
-    const article = await getArticle(req, res)
+    const article = await lib.getArticle(req, res)
     if (article) {
       const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
       if (article.authorId.toString() === req.payload.id.toString()) {
@@ -205,7 +199,7 @@ router.put('/', auth.required, async function(req, res, next) {
 // delete article
 router.delete('/', auth.required, async function(req, res, next) {
   try {
-    const article = await getArticle(req, res)
+    const article = await lib.getArticle(req, res)
     if (article) {
       const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
       if (!user) {
@@ -233,12 +227,12 @@ function likeValidation(req, res, user, article, likeUnlike) {
 // Like an article
 router.post('/like', auth.required, async function(req, res, next) {
   try {
-    const article = await getArticle(req, res)
+    const article = await lib.getArticle(req, res)
     if (article) {
       const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
       if (likeValidation(req, res, user, article, 'like')) return
       await user.addLikeSideEffects(article)
-      const newArticle = await getArticle(req, res)
+      const newArticle = await lib.getArticle(req, res)
       return res.json({ article: await newArticle.toJson(user) })
     }
   } catch(error) {
@@ -249,12 +243,12 @@ router.post('/like', auth.required, async function(req, res, next) {
 // Unlike an article
 router.delete('/like', auth.required, async function(req, res, next) {
   try {
-    const article = await getArticle(req, res)
+    const article = await lib.getArticle(req, res)
     if (article) {
       const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
       if (likeValidation(req, res, user, article, 'like')) return
       await user.removeLikeSideEffects(article)
-      const newArticle = await getArticle(req, res)
+      const newArticle = await lib.getArticle(req, res)
       return res.json({ article: await newArticle.toJson(user) })
     }
   } catch(error) {

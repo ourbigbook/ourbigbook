@@ -35,7 +35,6 @@
     "cirodown": "..",
     "commander": "6.2.1",
     "cors": "2.7.1",
-    "errorhandler": "1.4.3",
     "express": "4.13.4",
     "express-jwt": "3.3.0",
     "express-session": "1.13.0",

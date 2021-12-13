@@ -72,6 +72,7 @@
     "publish": "cirodown --publish --unsafe-ace",
     "sass": "./build-sass",
     "start": "cd web && npm start",
+    "start-dev": "cd web && npm run start-dev",
     "test": "mocha test --ignore-leaks",
     "webpack": "webpack"
   }

@@ -16,6 +16,8 @@ import LoadingSpinner from "components/LoadingSpinner";
 import Maybe from "components/Maybe";
 import UserLinkWithImage from "components/UserLinkWithImage";
 import FollowUserButton, { FollowUserButtonContext } from "components/FollowUserButton";
+import { displayAndUsernameText } from "front/user"
+import { AppContext } from 'lib'
 import ArticleAPI from "lib/api/article";
 import CommentAPI from "lib/api/comment";
 import { formatDate } from "lib/utils/date";
@@ -91,11 +93,12 @@ const ArticlePage = ({
 
   if (router.isFallback) { return <LoadingSpinner />; }
   const markup = { __html: article.render };
+  const { setTitle } = React.useContext(AppContext)
+  React.useEffect(() =>
+    setTitle(`${article.title} by ${displayAndUsernameText(article?.author)}`)
+  )
   return (
     <>
-      <Head>
-        <title>{article.title}</title>
-      </Head>
       <div className="article-page">
         <div className="banner content-not-cirodown">
           <div className="article-meta">

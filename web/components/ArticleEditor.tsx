@@ -12,6 +12,7 @@ import ArticleAPI from "lib/api/article";
 import getLoggedInUser from "lib/utils/getLoggedInUser";
 import { modifyEditorInput } from "lib/shared";
 import routes from "routes";
+import { AppContext } from 'lib'
 
 function editorReducer(state, action) {
   switch (action.type) {
@@ -120,6 +121,10 @@ export default function makeArticleEditor(isnew: boolean = false) {
         Router.push(routes.articleView(initialArticle.slug));
       }
     }
+    const { setTitle } = React.useContext(AppContext)
+    React.useEffect(() => {
+      setTitle(isnew ? 'New article' : `Editing: ${initialArticle?.title}`)
+    }, [isnew, initialArticle?.title])
     return (
       <div className="editor-page content-not-cirodown">
         { /* <ListErrors errors={errors} /> */ }

@@ -14,6 +14,7 @@ const path = require('path')
 const session = require('express-session')
 
 const api = require('./api')
+const apilib = require('./api/lib')
 const models = require('./models')
 const config = require('./config')
 
@@ -76,6 +77,10 @@ function doStart(app) {
       }
       return res.status(422).json({
         errors: err.errors.map(errItem => errItem.message)
+      })
+    } else if (err instanceof apilib.ValidationError) {
+      return res.status(err.status).json({
+        errors: err.errors,
       })
     }
     return next(err)

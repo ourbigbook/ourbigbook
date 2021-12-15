@@ -9,11 +9,7 @@ import LoadingSpinner from "components/LoadingSpinner";
 import Maybe from "components/Maybe";
 import Pagination from "components/Pagination";
 import UserLinkWithImage from "components/UserLinkWithImage";
-import { usePageDispatch, usePageState } from "lib/context/PageContext";
-import {
-  usePageCountState,
-  usePageCountDispatch,
-} from "lib/context/PageCountContext";
+import { AppContext } from "lib";
 import { SERVER_BASE_URL, DEFAULT_LIMIT } from "lib/utils/constant";
 import { formatDate } from "lib/utils/date";
 import fetcher from "lib/utils/fetcher";
@@ -21,13 +17,8 @@ import getLoggedInUser from "lib/utils/getLoggedInUser";
 import routes from "routes";
 
 const ArticleList = (props) => {
+  const [page, setPage] = React.useState(0)
   const loggedInUser = getLoggedInUser()
-  const page = usePageState();
-  const pageCount = usePageCountState();
-  const setPage = usePageDispatch();
-  const setPageCount = usePageCountDispatch();
-  const lastIndex =
-    pageCount > 480 ? Math.ceil(pageCount / DEFAULT_LIMIT) : Math.ceil(pageCount / DEFAULT_LIMIT) - 1;
   const router = useRouter();
   const { asPath, pathname, query } = router;
   const { like, follow, tag, uid } = query;
@@ -73,9 +64,6 @@ const ArticleList = (props) => {
     articles: [],
     articlesCount: 0,
   };
-  React.useEffect(() => {
-    setPageCount(articlesCount);
-  }, [articlesCount]);
 
   // Like article button state.
   const liked = []
@@ -98,8 +86,6 @@ const ArticleList = (props) => {
   if (articles?.length === 0) {
     let message;
     let voice;
-    console.error(uid);
-    console.error(loggedInUser.username);
     if (loggedInUser.username === uid) {
       voice = "You have not"
     } else {
@@ -189,11 +175,11 @@ const ArticleList = (props) => {
         </table>
         <Maybe test={articlesCount && articlesCount > 20}>
           <Pagination
-            total={pageCount}
-            limit={DEFAULT_LIMIT}
-            pageCount={10}
+            articlesCount={articlesCount}
+            articlesPerPage={DEFAULT_LIMIT}
+            showPagesMax={10}
             currentPage={page}
-            lastIndex={lastIndex}
+            setCurrentPage={setPage}
             fetchURL={fetchURL}
           />
         </Maybe>

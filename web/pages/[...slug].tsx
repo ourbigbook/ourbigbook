@@ -1,5 +1,4 @@
 import Router, { useRouter } from 'next/router'
-import Head from "next/head";
 import React from "react";
 import useSWR, { trigger } from "swr";
 
@@ -51,13 +50,13 @@ const ArticlePage = ({
 
   // Fetch user-specific data.
   // Article determines if the curent user liked the article or not
-  const { data: articleApi, error } = useSWR(ArticleAPI.url(article?.slug), fetcher(router.isFallback));
+  const { data: articleApi, error } = useSWR(ArticleAPI.url(article?.slug), fetcher(!router.isFallback));
   if (articleApi !== undefined) {
     article = articleApi.article
   }
   // We fetch comments so that the new posted comment will appear immediately after posted.
   // Note that we cannot calculate the exact new coment element because we need the server datetime.
-  const { data: commentApi, error: commentError } = useSWR(CommentAPI.url(article?.slug), fetcher(router.isFallback));
+  const { data: commentApi, error: commentError } = useSWR(CommentAPI.url(article?.slug), fetcher(!router.isFallback));
   if (commentApi !== undefined) {
     comments = commentApi.comments
   }
@@ -108,7 +107,7 @@ const ArticlePage = ({
               <FollowUserButtonContext.Provider value={{
                 following, setFollowing, followerCount, setFollowerCount
               }}>
-                <FollowUserButton profile={article.author} showUsername={false} />
+                <FollowUserButton user={article.author} showUsername={false} />
               </FollowUserButtonContext.Provider>
               <Maybe test={canModify}>
                 <span>
@@ -130,7 +129,7 @@ const ArticlePage = ({
             <div className="article-info article-info-2">
               {topicArticleCount > 1 &&
                 <CustomLink
-                  href={routes.topicArticlesView(article.topicId)}
+                  href={routes.topicArticlesTop(article.topicId)}
                 >
                   <i className="ion-ios-people" /> Top articles by other authors about the same topic ({topicArticleCount})
                 </CustomLink>

@@ -76,15 +76,10 @@ module.exports = (sequelize) => {
   )
 
   Article.prototype.toJson = async function(user) {
-    let authorPromise;
-    if (this.authorPromise === undefined) {
-      authorPromise = this.getAuthor()
-    } else {
-      authorPromise = new Promise(resolve => {resolve(this.author)})
-    }
+    const authorPromise = this.author ? this.author : this.getAuthor()
     const [liked, author] = await Promise.all([
       user ? user.hasLike(this.id) : false,
-      authorPromise.then(author => author.toJson(user)),
+      (await authorPromise).toJson(user),
     ])
     return {
       id: this.id,

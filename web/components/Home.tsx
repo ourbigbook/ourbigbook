@@ -18,7 +18,7 @@ const Home = ({ articles, articlesCount, page, what }) => {
     { articleIds: articles.map(article => article.id) },
     { articles }
   )
-  let requiredLogin = false
+  let loginRequired = false
   let paginationUrlFunc
   switch (what) {
     case 'top':
@@ -26,14 +26,14 @@ const Home = ({ articles, articlesCount, page, what }) => {
       break
     case 'top-followed':
       paginationUrlFunc = routes.articlesTopFollowed
-      requiredLogin = true
+      loginRequired = true
       break
     case 'latest':
       paginationUrlFunc = routes.articlesLatest
       break
     case 'latest-followed':
       paginationUrlFunc = routes.articlesLatestFollowed
-      requiredLogin = true
+      loginRequired = true
       break
   }
   const fetchUrl = (() => {
@@ -47,7 +47,7 @@ const Home = ({ articles, articlesCount, page, what }) => {
           page * DEFAULT_LIMIT
         }&sort=score`;
       default:
-        if (requiredLogin) {
+        if (loginRequired) {
           throw new Error(`Unknown search: ${what}`)
         }
     }
@@ -59,14 +59,16 @@ const Home = ({ articles, articlesCount, page, what }) => {
       }
       return fetchUrl
     },
-    fetcher(requiredLogin),
+    fetcher(loginRequired),
   );
-  ;({ articles, articlesCount } = data || {
-    articles: [],
-    articlesCount: 0,
-  })
+  if (loginRequired) {
+    ;({ articles, articlesCount } = data || {
+      articles: [],
+      articlesCount: 0,
+    })
+  }
   let articleList
-  if (!requiredLogin || loggedInUser) {
+  if (!loginRequired || loggedInUser) {
     articleList = <ArticleList {...{
       articles,
       articlesCount,
@@ -74,7 +76,7 @@ const Home = ({ articles, articlesCount, page, what }) => {
       showAuthor: true,
       what,
     }}/>
-    if (requiredLogin) {
+    if (loginRequired) {
       if (error) {
         articleList = <ErrorMessage message="Cannot load recent articles..." />;
       } else if (!data) {

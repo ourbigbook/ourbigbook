@@ -119,6 +119,9 @@ router.post('/', auth.required, async function(req, res, next) {
     if (!user) {
       return res.sendStatus(401)
     }
+    if (!req.body.article) {
+      return res.status(422).json({ errors: { article: "can't be blank" } })
+    }
     let article = new (req.app.get('sequelize').models.Article)(req.body.article)
     article.authorId = user.id
     const tagList = req.body.article.tagList
@@ -140,23 +143,25 @@ router.put('/', auth.required, async function(req, res, next) {
   try {
     const article = await lib.getArticle(req, res)
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
-    if (article.authorId.toString() === req.payload.id.toString()) {
-      if (typeof req.body.article.title !== 'undefined') {
-        article.title = req.body.article.title
+    if (article.authorId.toString() === req.payload.id.toString(){
+      if (req.body.article) {
+        if (typeof req.body.article.title !== 'undefined') {
+          article.title = req.body.article.title
+        }
+        if (typeof req.body.article.description !== 'undefined') {
+          article.description = req.body.article.description
+        }
+        if (typeof req.body.article.body !== 'undefined') {
+          article.body = req.body.article.body
+        }
+        const tagList = req.body.article.tagList
+        await Promise.all([
+          (typeof tagList === 'undefined')
+            ? null
+            : setArticleTags(req, article, tagList),
+          article.save()
+        ])
       }
-      if (typeof req.body.article.description !== 'undefined') {
-        article.description = req.body.article.description
-      }
-      if (typeof req.body.article.body !== 'undefined') {
-        article.body = req.body.article.body
-      }
-      const tagList = req.body.article.tagList
-      await Promise.all([
-        (typeof tagList === 'undefined')
-          ? null
-          : setArticleTags(req, article, tagList),
-        article.save()
-      ])
       return res.json({ article: await article.toJson(user) })
     } else {
       return res.sendStatus(403)

@@ -31,13 +31,13 @@ function validatePositiveInteger(s) {
 }
 exports.validatePositiveInteger = validatePositiveInteger
 
-function validate(inputString, validator, msg='') {
+function validate(inputString, validator, prop) {
   let [val, ok] = validator(inputString)
   if (ok) {
     return val
   } else {
     throw new ValidationError(
-      [`validator ${validator.name} failed on ${msg}"${param}"`],
+      { [prop]: [`validator ${validator.name} failed on ${msg}"${param}"`] },
       422,
     )
   }
@@ -49,7 +49,7 @@ function validateParam(obj, prop, validator, defaultValue) {
   if (typeof param === 'undefined') {
     return defaultValue
   } else {
-    return validate(param, validator, `${prop} = `)
+    return validate(param, validator, prop)
   }
 }
 exports.validateParam = validateParam

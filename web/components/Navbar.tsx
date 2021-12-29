@@ -1,13 +1,13 @@
-import Link from "next/link";
-import { useRouter } from "next/router";
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 
-import CustomImage from "components/CustomImage";
-import CustomLink from "components/CustomLink";
-import Maybe from "components/Maybe";
-import { LOGIN_ACTION, REGISTER_ACTION } from "lib"
-import { APP_NAME, ABOUT_HREF } from "lib/utils/constant";
-import getLoggedInUser from "lib/utils/getLoggedInUser";
-import routes from "routes";
+import CustomImage from 'components/CustomImage'
+import CustomLink from 'components/CustomLink'
+import Maybe from 'components/Maybe'
+import { LOGIN_ACTION, REGISTER_ACTION } from 'lib'
+import { APP_NAME, ABOUT_HREF } from 'lib/utils/constant'
+import getLoggedInUser from 'lib/utils/getLoggedInUser'
+import routes from 'routes'
 
 interface NavLinkProps {
   href: string;

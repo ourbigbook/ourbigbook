@@ -143,7 +143,7 @@ router.put('/', auth.required, async function(req, res, next) {
   try {
     const article = await lib.getArticle(req, res)
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
-    if (article.authorId.toString() === req.payload.id.toString(){
+    if (article.authorId.toString() === req.payload.id.toString()) {
       if (req.body.article) {
         if (typeof req.body.article.title !== 'undefined') {
           article.title = req.body.article.title

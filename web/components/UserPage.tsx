@@ -1,23 +1,23 @@
-import Head from "next/head";
-import { useRouter } from "next/router";
-import React from "react";
-import useSWR  from "swr";
+import Head from 'next/head'
+import { useRouter } from 'next/router'
+import React from 'react'
+import useSWR  from 'swr'
 
-import ArticleList from "components/ArticleList";
-import CustomLink from "components/CustomLink";
-import CustomImage from "components/CustomImage";
-import LoadingSpinner from "components/LoadingSpinner";
-import LogoutButton from "components/LogoutButton";
-import Maybe from "components/Maybe";
-import EditProfileButton from "components/EditProfileButton";
-import FollowUserButton, { FollowUserButtonContext } from "components/FollowUserButton";
-import UserAPI from "lib/api/user";
-import { DisplayAndUsername, displayAndUsernameText } from "front/user"
-import { DEFAULT_USER_SCORE_TITLE } from "lib/utils/constant"
-import getLoggedInUser from "lib/utils/getLoggedInUser";
-import routes from "routes";
+import ArticleList from 'components/ArticleList'
+import CustomLink from 'components/CustomLink'
+import CustomImage from 'components/CustomImage'
+import LoadingSpinner from 'components/LoadingSpinner'
+import LogoutButton from 'components/LogoutButton'
+import Maybe from 'components/Maybe'
+import EditProfileButton from 'components/EditProfileButton'
+import FollowUserButton, { FollowUserButtonContext } from 'components/FollowUserButton'
+import UserAPI from 'lib/api/user'
+import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
+import { DEFAULT_USER_SCORE_TITLE } from 'lib/utils/constant'
+import getLoggedInUser from 'lib/utils/getLoggedInUser'
+import routes from 'routes'
 import { AppContext } from 'lib'
-import useMin from "front/api/useMin";
+import useMin from 'front/api/useMin'
 
 
 export default function UserPage({

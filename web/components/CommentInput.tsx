@@ -1,13 +1,13 @@
-import { useRouter } from "next/router";
-import React from "react";
-import { trigger } from "swr";
+import { useRouter } from 'next/router'
+import React from 'react'
+import { trigger } from 'swr'
 
-import CustomImage from "components/CustomImage";
-import CustomLink from "components/CustomLink";
-import { slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, decapitalize } from "lib"
-import CommentAPI from "lib/api/comment"
-import getLoggedInUser from "lib/utils/getLoggedInUser";
-import routes from "routes";
+import CustomImage from 'components/CustomImage'
+import CustomLink from 'components/CustomLink'
+import { slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, decapitalize } from 'lib'
+import CommentAPI from 'lib/api/comment'
+import getLoggedInUser from 'lib/utils/getLoggedInUser'
+import routes from 'routes'
 
 const CommentInput = () => {
   const loggedInUser = getLoggedInUser()

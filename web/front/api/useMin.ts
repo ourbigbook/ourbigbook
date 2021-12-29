@@ -1,12 +1,12 @@
 // Helper for the min route. Is this Nirvana?
 
 import { useRouter } from 'next/router'
-import useSWR from "swr";
+import useSWR from 'swr'
 
-import fetcher from "lib/utils/fetcher";
-import { SERVER_BASE_URL } from "lib/utils/constant";
-import { minPath } from "shared";
-import getLoggedInUser from "lib/utils/getLoggedInUser";
+import fetcher from 'lib/utils/fetcher'
+import { SERVER_BASE_URL } from 'lib/utils/constant'
+import { minPath } from 'shared'
+import getLoggedInUser from 'lib/utils/getLoggedInUser'
 
 export default function useMin(query, assign) {
   const router = useRouter();

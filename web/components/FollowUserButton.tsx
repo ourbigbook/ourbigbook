@@ -1,11 +1,11 @@
-import React from "react";
-import { mutate } from "swr";
-import Router from "next/router";
+import React from 'react'
+import { mutate } from 'swr'
+import Router from 'next/router'
 
-import UserAPI from "lib/api/user";
-import { BUTTON_ACTIVE_CLASS } from "lib/utils/constant";
-import getLoggedInUser from "lib/utils/getLoggedInUser";
-import routes from "routes";
+import UserAPI from 'lib/api/user'
+import { BUTTON_ACTIVE_CLASS } from 'lib/utils/constant'
+import getLoggedInUser from 'lib/utils/getLoggedInUser'
+import routes from 'routes'
 
 export const FollowUserButtonContext = React.createContext(undefined);
 

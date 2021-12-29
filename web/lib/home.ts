@@ -1,7 +1,7 @@
 import { GetStaticProps } from 'next'
-import sequelize from "lib/db";
-import { fallback, revalidate } from "config";
-import { DEFAULT_LIMIT  } from "lib/utils/constant";
+import sequelize from 'lib/db'
+import { fallback, revalidate } from 'config'
+import { DEFAULT_LIMIT  } from 'lib/utils/constant'
 
 export const getStaticPathsHome = () => {
   return {

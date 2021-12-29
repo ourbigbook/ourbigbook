@@ -1,10 +1,10 @@
-import makeArticleEditor from "components/ArticleEditor";
+import makeArticleEditor from 'components/ArticleEditor'
 
-import { getStaticPropsArticle } from "lib/article";
+import { getStaticPropsArticle } from 'lib/article'
 
 // Backend only.
 
-import sequelize from "lib/db";
+import sequelize from 'lib/db'
 
 export const getServerSideProps = getStaticPropsArticle();
 

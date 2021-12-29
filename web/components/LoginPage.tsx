@@ -1,11 +1,11 @@
-import Head from "next/head";
-import Label from "components/Label";
-import React from "react";
+import Head from 'next/head'
+import Label from 'components/Label'
+import React from 'react'
 
-import CustomLink from "components/CustomLink";
-import LoginForm from "components/LoginForm";
-import routes from "routes";
-import { LOGIN_ACTION, REGISTER_ACTION } from "lib";
+import CustomLink from 'components/CustomLink'
+import LoginForm from 'components/LoginForm'
+import routes from 'routes'
+import { LOGIN_ACTION, REGISTER_ACTION } from 'lib'
 import { AppContext } from 'lib'
 
 const makeLoginPage = ({ register = false }) => {

@@ -1,8 +1,8 @@
-import useSWR from "swr";
-import React from "react";
+import useSWR from 'swr'
+import React from 'react'
 
-import checkLogin from "lib/utils/checkLogin";
-import storage from "lib/utils/storage";
+import checkLogin from 'lib/utils/checkLogin'
+import storage from 'lib/utils/storage'
 
 export default function getLoggedInUser() {
     React.useEffect(() => {})

@@ -1,16 +1,16 @@
-import Head from "next/head";
-import React from "react";
-import useSWR  from "swr";
-import { useRouter } from "next/router";
+import Head from 'next/head'
+import React from 'react'
+import useSWR  from 'swr'
+import { useRouter } from 'next/router'
 
-import ArticleList from "components/ArticleList";
-import CustomLink from "components/CustomLink";
-import LoadingSpinner from "components/LoadingSpinner";
-import LogoutButton from "components/LogoutButton";
-import Maybe from "components/Maybe";
-import routes from "routes";
-import useMin from "front/api/useMin";
-import { AppContext, slugFromArray} from "lib";
+import ArticleList from 'components/ArticleList'
+import CustomLink from 'components/CustomLink'
+import LoadingSpinner from 'components/LoadingSpinner'
+import LogoutButton from 'components/LogoutButton'
+import Maybe from 'components/Maybe'
+import routes from 'routes'
+import useMin from 'front/api/useMin'
+import { AppContext, slugFromArray} from 'lib'
 
 export const TopicPage = ({articles, articlesCount, what}) => {
   const router = useRouter();

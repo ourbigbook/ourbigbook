@@ -1113,7 +1113,7 @@ if (commander.helpMacros) {
         generate_redirects(convert_input_options, cirodown_json, outdir);
       }
       const watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES})
-      const convert = (subpath) => convert_path_to_file(path.join(input_dir, path), options, convert_input_options)
+      const convert = (subpath) => convert_path_to_file(path.join(input_dir, subpath), options, convert_input_options)
       watcher.on('change', convert).on('add', convert)
     } else {
       if (input_path_is_file) {

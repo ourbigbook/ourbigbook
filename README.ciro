@@ -4852,6 +4852,8 @@ Advantages:
 Disadvantages:
 * you have to type more to open each output file on the terminal
 
+Generally we recommend starting out without this option, and enabling it as the project grows and you feel like the `.html` floating around in-tree are starting to annoy you too much.
+
 This option is always forced to `false` when \x[outdir] is given.
 
 Implemented at: https://github.com/cirosantilli/cirodown/issues/163

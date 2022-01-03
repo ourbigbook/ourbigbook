@@ -63,7 +63,7 @@
   ],
   "scripts": {
     "build": "cd web && npm run build",
-    "build-assets": "npm run sass && npm run webpack",
+    "build-assets": "cp .gitignore gitignore && npm run sass && npm run webpack",
     "build-dev": "cd web && npm run build-dev",
     "deploy": "cd web && npm run deploy",
     "dev": "cd web && npm run dev",

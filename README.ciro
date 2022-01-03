@@ -5103,13 +5103,13 @@ Any pending migrations are done automatically during deployment as part of `npm 
 
 We also have a custom setup where, if the database is not initialized, we first:
 * just creates the database from the latest model descriptions
-* manually fill in the `SequelizeMeta` migration tracking table with all available migrations to tell sequelize that all migrations have been done up to this point
-This is something that should be merged into sequelize itself, or at least asked on Stack Overflow, but lazy now.
+* manually fill in the `SequelizeMeta` migration tracking table with all available migrations to tell Sequelize that all migrations have been done up to this point
+This is something that should be merged into Sequelize itself, or at least asked on Stack Overflow, but lazy now.
 
 = Dynamic website directory structure
 {parent=dynamic-website}
 
-* \a[web/app.js]: server executable entry point, can also be used programatically from Node.js
+* \a[web/app.js]: server executable entry point, can also be used programmatically from Node.js
 * \a[web/models]: Sequelize database models. Most changes in this folder require the creation of a corresponding \a[web/migrations]
 * \a[web/migrations]: database migrations
 * \a[web/pages]: Next.js pages URL entry points

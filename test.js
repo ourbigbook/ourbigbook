@@ -4240,6 +4240,25 @@ assert_executable(
   }
 );
 assert_executable(
+  'executable: --generate min in subdir does not alter toplevel',
+  {
+    args: ['.'],
+    filesystem: {
+      'cirodown.json': `{}`
+    },
+    cwd: 'subdir',
+    pre_exec: [
+      ['cirodown', ['--generate', 'min']],
+    ],
+    expect_exists: [
+      'subdir/README.ciro',
+    ],
+    expect_not_exists: [
+      'README.ciro',
+    ],
+  }
+);
+assert_executable(
   'executable: --generate default followed by conversion does not blow up',
   {
     args: ['.'],

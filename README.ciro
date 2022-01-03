@@ -5339,6 +5339,8 @@ so you can now run the `cirodown` command from any directory in your computer, f
 ``
 cirodown .
 ``
+Note that this repository uses \x[cirodown-json/outputoutoftree], and so the output will be present at `out/html/index.html` rather than `index.html`.
+
 We also have a shortcut for `npm link` and `npm link cirodown`:
 ``
 npm run link

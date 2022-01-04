@@ -273,13 +273,13 @@ class AstNode {
       } else {
         output_format = context.options.output_format;
       }
-      const convert_function = await macro.convert_funcs[output_format];
+      const convert_function = macro.convert_funcs[output_format];
       if (convert_function === undefined) {
         const message = `output format ${context.options.output_format} not defined for macro ${this.macro_name}`;
         render_error(context, message, this.source_location);
         out = error_message_in_output(message, context);
       } else {
-        out = convert_function(this, context);
+        out = await convert_function(this, context);
       }
     } else {
       render_error(
@@ -2139,11 +2139,11 @@ async function convert(
           id = context.toplevel_id;
         }
         if (id !== undefined) {
-          outpath = await output_path(
+          outpath = (await output_path(
             context.options.input_path,
             id,
             clone_and_set(context, 'to_split_headers', false)
-          )[0];
+          ))[0];
         }
       }
       context.toplevel_output_path = outpath;

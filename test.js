@@ -45,7 +45,7 @@ class MockIdProvider extends cirodown.IdProvider {
     this.includes_table = {};
   }
 
-  get_includes_entries(to_id) {
+  async get_includes_entries(to_id) {
     const ret = this.includes_table[to_id];
     if (ret === undefined) {
       return [];
@@ -60,7 +60,7 @@ class MockIdProvider extends cirodown.IdProvider {
     return new Set();
   }
 
-  get_noscope_entry(id) {
+  async get_noscope_entry(id) {
     return this.ids_table[id];
   }
 
@@ -97,11 +97,11 @@ class MockFileProvider extends cirodown.FileProvider {
     this.id_index = {};
   }
 
-  get_id(id) {
+  async get_id(id) {
     return this.id_index[id];
   }
 
-  get_path_entry(path) {
+  async get_path_entry(path) {
     return this.path_index[path];
   }
 
@@ -137,7 +137,7 @@ function assert_convert_ast(
   expected_ast_output_subset,
   options={}
 ) {
-  it(description, ()=>{
+  it(description, async ()=>{
     options = Object.assign({}, options);
     if (!('assert_xpath_matches' in options)) {
       // Not ideal, but sometimes there's no other easy way
@@ -219,7 +219,7 @@ function assert_convert_ast(
       const dependency_convert_opts = Object.assign({}, new_convert_opts);
       dependency_convert_opts.input_path = input_path;
       dependency_convert_opts.toplevel_id = input_path_noext;
-      cirodown.convert(input_string, dependency_convert_opts, extra_returns);
+      await cirodown.convert(input_string, dependency_convert_opts, extra_returns);
       new_convert_opts.id_provider.update(extra_returns);
       new_convert_opts.file_provider.update(input_path, extra_returns);
     }
@@ -228,7 +228,7 @@ function assert_convert_ast(
       new_convert_opts.toplevel_id = options.input_path_noext;
     }
     const extra_returns = {};
-    const output = cirodown.convert(input_string, new_convert_opts, extra_returns);
+    const output = await cirodown.convert(input_string, new_convert_opts, extra_returns);
     const has_subset_extra_returns = {fail_reason: ''};
     let is_subset;
     let content;

@@ -7,7 +7,7 @@ if (!china_dictatorship.get_data().includes("Tiannmen Square protests")) throw 0
 const fs = require('fs');
 const path = require('path');
 const { PerformanceObserver, performance } = require('perf_hooks');
-const { Op } = require('sequelize')
+const { Op, Sequelize } = require('sequelize')
 
 const chokidar = require('chokidar');
 // This library is terrible, too much magic, hard to understand interface,
@@ -62,21 +62,14 @@ class SqliteIdProvider extends cirodown.IdProvider {
   constructor(sequelize) {
     super();
     this.sequelize = sequelize
-
-    this.get_id_stmt = convert_input_options.sequelize.prepare(
-      `SELECT path,ast_json FROM ${convert_input_options.ids_table_name} WHERE id = ?`);
-    this.get_includes_stmt = convert_input_options.sequelize.prepare(
-      `SELECT from_id FROM ${convert_input_options.includes_table_name} WHERE to_id = ? AND type = ?`);
-    this.get_includes_stmt_from = convert_input_options.sequelize.prepare(
-      `SELECT from_id FROM ${convert_input_options.includes_table_name} WHERE from_id = ? AND type = ?`);
   }
 
-  clear(input_path) {
-    this.sequelize.models.Id.destroy({ where: { path: input_path } })
-    this.sequelize.models.Include.destroy({ where: { from_path: input_path } })
+  async clear(input_path) {
+    await this.sequelize.models.Id.destroy({ where: { path: input_path } })
+    await this.sequelize.models.Include.destroy({ where: { from_path: input_path } })
   }
 
-  clear_prefix(prefix) {
+  async clear_prefix(prefix) {
     let prefix_literal;
     if (prefix) {
       prefix_literal = prefix + cirodown.Macro.HEADER_SCOPE_SEPARATOR + '%'
@@ -84,44 +77,44 @@ class SqliteIdProvider extends cirodown.IdProvider {
       // Toplevel dir, delete all IDs.
       prefix_literal = '%'
     }
-    this.sequelize.models.Id.destroy({ where: { path: { Op.like: prefix_literal } } })
-    this.sequelize.models.Includes.destroy({ where: { from_path: { Op.like: prefix_literal } } })
+    await this.sequelize.models.Id.destroy({ where: { path: { [Op.like]: prefix_literal } } })
+    await this.sequelize.models.Includes.destroy({ where: { from_path: { [Op.like]: prefix_literal } } })
   }
 
-  get_noscope_entry(id) {
-    return this.get_id_stmt.get(id);
+  async get_noscope_entry(id) {
+    return this.sequelize.models.Id.findByPk(id)
   }
 
-  get_includes_entries(to_id) {
-    return this.get_includes_stmt.all(to_id, INCLUDES_TABLE_NAMES_TYPES['INCLUDE']);
+  async get_includes_entries(to_id) {
+    return this.sequelize.models.Include.findAll({ where: {
+      to_id, type: INCLUDES_TABLE_NAMES_TYPES['INCLUDE'] } })
   }
 
-  get_from_header_ids_of_xrefs_to(type, to_id, reversed=false) {
-    const ret = new Set();
-    let stmt = reversed ? this.get_includes_stmt_from : this.get_includes_stmt;
-    for (const entry of stmt.all(to_id, INCLUDES_TABLE_NAMES_TYPES[type])) {
-      ret.add(entry.from_id);
+  async get_from_header_ids_of_xrefs_to(type, to_id, reversed=false) {
+    let to_id_key;
+    if (reversed) {
+      to_id_key = 'from_id'
+    } else {
+      to_id_key = 'to_id'
     }
-    return ret;
+    const entries = await this.sequelize.models.Include.findAll({ where: {
+      [to_id_key]: to_id, type: INCLUDES_TABLE_NAMES_TYPES['INCLUDE'] } })
+    return new Set(entries.map(entry => entry.from_id))
   }
 }
 
 class SqliteFileProvider extends cirodown.FileProvider {
   constructor(sequelize) {
     super();
-    this.sequelize = sequelize
-    this.get_file_stmt = convert_input_options.sequelize.prepare(
-      `SELECT * FROM ${convert_input_options.files_table_name} WHERE path = ?`);
-    this.get_file_by_id_stmt = convert_input_options.sequelize.prepare(
-      `SELECT * FROM ${convert_input_options.files_table_name} WHERE toplevel_id = ?`);
+    this.sequelize = sequelize;
   }
 
-  get_id(id) {
-    return this.get_file_by_id_stmt.get(id);
+  async get_id(id) {
+    return this.sequelize.models.File.findAll({ where: { toplevel_id: id } })
   }
 
-  get_path_entry(path) {
-    return this.get_file_stmt.get(path);
+  async get_path_entry(path) {
+    return this.sequelize.models.File.findAll({ where: { path } })
   }
 }
 
@@ -168,7 +161,7 @@ function cmd_get_stdout(cmd, args=[], options={}) {
 /**
  * @param {String} input_path - path to a directory to convert files in
  */
-function convert_directory(input_path, options, convert_input_options) {
+async function convert_directory(input_path, options, convert_input_options) {
   const ignore_fullpaths = new Set();
   for (const ignore of options.cirodown_json.ignore) {
     ignore_fullpaths.add(path.join(convert_input_options.cirodown_json_dir, ignore));
@@ -178,7 +171,7 @@ function convert_directory(input_path, options, convert_input_options) {
     DEFAULT_IGNORE_BASENAMES_SET,
     ignore_fullpaths,
   )) {
-    convert_path_to_file(
+    await convert_path_to_file(
       one_path,
       options,
       convert_input_options,
@@ -190,8 +183,8 @@ function convert_directory(input_path, options, convert_input_options) {
 }
 
 /** Extract IDs from all input files into the ID database, without fully converting. */
-function convert_directory_extract_ids(input_path, options, convert_input_options) {
-  convert_directory(
+async function convert_directory_extract_ids(input_path, options, convert_input_options) {
+  await convert_directory(
     input_path,
     cirodown.clone_and_set(options, 'render', false),
     convert_input_options
@@ -210,7 +203,7 @@ function convert_directory_extract_ids(input_path, options, convert_input_option
  *                 - {Object} extra_returns
  * @return {String}
  */
-function convert_input(input, options, convert_input_options={}) {
+async function convert_input(input, options, convert_input_options={}) {
   const new_options = Object.assign({}, options);
   if ('input_path' in convert_input_options) {
     new_options.input_path = convert_input_options.input_path;
@@ -288,7 +281,7 @@ function convert_input(input, options, convert_input_options={}) {
     new_options.template_scripts_relative = template_scripts_relative;
   }
   // Finally, do the conversion!
-  const output = cirodown.convert(input, new_options, new_options.extra_returns);
+  const output = await cirodown.convert(input, new_options, new_options.extra_returns);
   for (const id in new_options.extra_returns.rendered_outputs) {
     const output_path = path.join(convert_input_options.outdir, id);
     fs.mkdirSync(path.dirname(output_path), {recursive: true});
@@ -298,7 +291,7 @@ function convert_input(input, options, convert_input_options={}) {
     for (const header_ast of new_options.extra_returns.context.synonym_headers) {
       let new_options_redir = Object.assign({}, new_options);
       new_options_redir.id_provider = new_options_redir.extra_returns.context.id_provider;
-      generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, convert_input_options.outdir);
+      await generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, convert_input_options.outdir);
     }
   }
   if (convert_input_options.log.tokens) {
@@ -344,7 +337,7 @@ function convert_input(input, options, convert_input_options={}) {
  *
  * @return {String}
  */
-function convert_path(input_path, options, convert_input_options) {
+async function convert_path(input_path, options, convert_input_options) {
   let full_path = path.resolve(input_path);
   let new_options = Object.assign({}, options);
   let new_convert_input_options = Object.assign({}, convert_input_options);
@@ -358,7 +351,7 @@ function convert_path(input_path, options, convert_input_options) {
     input_path_relative_to_cirodown_json = path.join(path_relative_to_cirodown_json, input_path_parse.base);
   }
   new_convert_input_options.input_path = input_path_relative_to_cirodown_json;
-  let output = convert_input(input, new_options, new_convert_input_options);
+  let output = await convert_input(input, new_options, new_convert_input_options);
   const context = new_convert_input_options.extra_returns.context;
   if (convert_input_options.log.headers) {
     console.error(context.header_graph.toString());
@@ -466,7 +459,7 @@ function convert_path(input_path, options, convert_input_options) {
  *
  * The output file name is derived from the input file name with the output extension.
  */
-function convert_path_to_file(input_path, options, convert_input_options={}) {
+async function convert_path_to_file(input_path, options, convert_input_options={}) {
   let output;
   let input_path_parse = path.parse(input_path);
   if (input_path_parse.ext === cirodown.CIRODOWN_EXT) {
@@ -480,7 +473,7 @@ function convert_path_to_file(input_path, options, convert_input_options={}) {
     console.log(message);
     const new_convert_input_options = Object.assign({}, convert_input_options);
     let t0 = performance.now();
-    output = convert_path(input_path, options, new_convert_input_options);
+    output = await convert_path(input_path, options, new_convert_input_options);
     let t1 = performance.now();
     console.log(`${message} finished in ${t1 - t0} ms`);
     if (new_convert_input_options.had_error) {
@@ -540,12 +533,12 @@ async function create_db(convert_input_options) {
   convert_input_options.id_provider = new SqliteIdProvider(sequelize);
 }
 
-function generate_redirect(options, redirect_src_id, redirect_target_id, outdir) {
+async function generate_redirect(options, redirect_src_id, redirect_target_id, outdir) {
   options = Object.assign({}, options);
   options.input_path = redirect_src_id;
   const outpath = path.join(outdir, redirect_src_id + '.' + cirodown.HTML_EXT);
   options.outfile = outpath;
-  const redirect_href = cirodown.convert_x_href(redirect_target_id, options);
+  const redirect_href = await cirodown.convert_x_href(redirect_target_id, options);
   if (redirect_href === undefined) {
     cli_error(`redirection target ID "${redirect_target_id}" not found`);
   }
@@ -569,14 +562,14 @@ function generate_redirect(options, redirect_src_id, redirect_target_id, outdir)
 `);
 }
 
-function generate_redirects(
+async function generate_redirects(
   options,
   cirodown_json,
   outdir
 ) {
   for (let redirect_src_id in cirodown_json.redirects) {
     const redirect_target_id = cirodown_json.redirects[redirect_src_id];
-    generate_redirect(options, redirect_src_id, redirect_target_id, outdir);
+    await generate_redirect(options, redirect_src_id, redirect_target_id, outdir);
   }
 }
 
@@ -1012,7 +1005,7 @@ if (commander.helpMacros) {
     // Input from stdin.
     title = 'stdin';
     input = fs.readFileSync(0, cirodown_nodejs.ENCODING);
-    output = convert_input(input, options, convert_input_options);
+    output = await convert_input(input, options, convert_input_options);
   } else {
     if (!fs.existsSync(inputPath)) {
       cli_error(`input_path does not exist: "${inputPath}"`);
@@ -1069,7 +1062,7 @@ if (commander.helpMacros) {
       convert_input_options.db_options.storage = ':memory:'
     }
     if (commander.generateRedirects) {
-      generate_redirects(convert_input_options, cirodown_json, outdir);
+      await generate_redirects(convert_input_options, cirodown_json, outdir);
       process.exit(0);
     }
     if (commander.watch) {
@@ -1078,11 +1071,11 @@ if (commander.helpMacros) {
       }
       await create_db(convert_input_options);
       if (!input_path_is_file) {
-        convert_directory_extract_ids(inputPath, options, convert_input_options);
-        generate_redirects(convert_input_options, cirodown_json, outdir);
+        await convert_directory_extract_ids(inputPath, options, convert_input_options);
+        await generate_redirects(convert_input_options, cirodown_json, outdir);
       }
       const watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES})
-      const convert = (subpath) => convert_path_to_file(path.join(input_dir, subpath), options, convert_input_options)
+      const convert = async (subpath) => convert_path_to_file(path.join(input_dir, subpath), options, convert_input_options)
       watcher.on('change', convert).on('add', convert)
     } else {
       if (input_path_is_file) {
@@ -1163,12 +1156,12 @@ if (commander.helpMacros) {
         // Remove IDs and other metadata from files that might have been removed from disk.
         // https://github.com/cirosantilli/cirodown/issues/125
         const dir_relpath = path.relative(convert_input_options.cirodown_json_dir, inputPath);
-        convert_input_options.id_provider.clear_prefix(dir_relpath);
+        await convert_input_options.id_provider.clear_prefix(dir_relpath);
 
         // Do the actual conversion.
-        convert_directory_extract_ids(actual_input_dir, options, convert_input_options);
-        convert_directory(actual_input_dir, options, convert_input_options);
-        generate_redirects(convert_input_options, cirodown_json, publish_out_publish_dir);
+        await convert_directory_extract_ids(actual_input_dir, options, convert_input_options);
+        await convert_directory(actual_input_dir, options, convert_input_options);
+        await generate_redirects(convert_input_options, cirodown_json, publish_out_publish_dir);
 
         // Publish the converted output if build succeeded.
         if (publish && !convert_input_options.had_error) {

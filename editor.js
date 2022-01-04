@@ -136,9 +136,9 @@ class CirodownEditor {
       }
     );
     this.editor = editor
-    editor.onDidChangeModelContent(e => {
+    editor.onDidChangeModelContent(async (e) => {
       options.onDidChangeModelContentCallback(editor)
-      this.convertInput();
+      await this.convertInput();
     });
     editor.onDidScrollChange(e => {
       const range = editor.getVisibleRanges()[0];
@@ -155,9 +155,9 @@ class CirodownEditor {
     this.cirodown_runtime(this.output_elem)
   }
 
-  convertInput() {
+  async convertInput() {
     let extra_returns = {};
-    this.output_elem.innerHTML = this.cirodown.convert(
+    this.output_elem.innerHTML = await this.cirodown.convert(
       this.modifyEditorInput(this.editor.getValue()),
       {'body_only': true},
       extra_returns
@@ -193,9 +193,9 @@ class CirodownEditor {
     };
   }
 
-  setModifyEditorInput(modifyEditorInput) {
+  async setModifyEditorInput(modifyEditorInput) {
     this.modifyEditorInput = modifyEditorInput
-    this.convertInput()
+    await this.convertInput()
   }
 }
 

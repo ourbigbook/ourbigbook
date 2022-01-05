@@ -24,12 +24,6 @@ const cirodown = require('cirodown');
 const cirodown_nodejs = require('cirodown/nodejs');
 const models = require('cirodown/models')
 
-// Enum stored in Sqlite DB to represent different types of links.
-const INCLUDES_TABLE_NAMES_TYPES = {
-  'INCLUDE': 0,
-  [cirodown.INCLUDES_TABLE_NAME_X]: 1,
-  [cirodown.INCLUDES_TABLE_NAME_X_CHILD]: 2,
-};
 const CIRODOWN_JSON_BASENAME = 'cirodown.json';
 const CIRODOWN_TEX_BASENAME = 'cirodown.tex';
 const LOG_OPTIONS = new Set([
@@ -67,7 +61,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
   async clear(input_path) {
     return Promise.all([
       this.sequelize.models.Id.destroy({ where: { path: input_path } }),
-      this.sequelize.models.Include.destroy({ where: { from_path: input_path } }),
+      this.sequelize.models.Ref.destroy({ where: { from_path: input_path } }),
     ])
   }
 
@@ -81,7 +75,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
     }
     return Promise.all([
       this.sequelize.models.Id.destroy({ where: { path: { [Op.like]: prefix_literal } } }),
-      this.sequelize.models.Include.destroy({ where: { from_path: { [Op.like]: prefix_literal } } }),
+      this.sequelize.models.Ref.destroy({ where: { from_path: { [Op.like]: prefix_literal } } }),
     ])
   }
 
@@ -90,8 +84,8 @@ class SqliteIdProvider extends cirodown.IdProvider {
   }
 
   async get_includes_entries(to_id) {
-    return this.sequelize.models.Include.findAll({ where: {
-      to_id, type: INCLUDES_TABLE_NAMES_TYPES['INCLUDE'] } })
+    return this.sequelize.models.Ref.findAll({ where: {
+      to_id, type: this.sequelize.models.Ref.Types.INCLUDE } })
   }
 
   async get_from_header_ids_of_xrefs_to(type, to_id, reversed=false) {
@@ -101,8 +95,8 @@ class SqliteIdProvider extends cirodown.IdProvider {
     } else {
       to_id_key = 'to_id'
     }
-    const entries = await this.sequelize.models.Include.findAll({ where: {
-      [to_id_key]: to_id, type: INCLUDES_TABLE_NAMES_TYPES['INCLUDE'] } })
+    const entries = await this.sequelize.models.Ref.findAll({ where: {
+      [to_id_key]: to_id, type: this.sequelize.models.Ref.Types[type] } })
     return new Set(entries.map(entry => entry.from_id))
   }
 }
@@ -400,7 +394,7 @@ async function convert_path(input_path, options, convert_input_options) {
             from_id: header_ast.id,
             from_path: header_ast.source_location.path,
             to_id: include,
-            type: INCLUDES_TABLE_NAMES_TYPES['INCLUDE']
+            type: convert_input_options.sequelize.models.Ref.Types.INCLUDE
           })
         }
       }
@@ -424,7 +418,7 @@ async function convert_path(input_path, options, convert_input_options) {
                   from_id,
                   from_path: from_header.source_location.path,
                   to_id,
-                  type: INCLUDES_TABLE_NAMES_TYPES[type]
+                  type: convert_input_options.sequelize.models.Ref.Types[type]
                 })
               }
             }
@@ -433,7 +427,7 @@ async function convert_path(input_path, options, convert_input_options) {
       }
       await Promise.all([
         convert_input_options.sequelize.models.Id.bulkCreate(create_ids, { transaction }),
-        convert_input_options.sequelize.models.Include.bulkCreate(includes, { transaction }),
+        convert_input_options.sequelize.models.Ref.bulkCreate(includes, { transaction }),
         convert_input_options.sequelize.models.File.create(
           {
             path: input_path_relative_to_cirodown_json,

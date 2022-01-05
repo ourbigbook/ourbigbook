@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize')
 
 module.exports = (sequelize) => {
-  const File = sequelize.define(
+  sequelize.define(
     'File',
     {
       path: {
@@ -22,5 +22,4 @@ module.exports = (sequelize) => {
       ],
     }
   )
-  return File
 }

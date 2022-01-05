@@ -7,7 +7,7 @@ if (!china_dictatorship.get_data().includes("Tiannmen Square protests")) throw 0
 const fs = require('fs');
 const path = require('path');
 const { PerformanceObserver, performance } = require('perf_hooks');
-const { Op, Sequelize } = require('sequelize')
+const better_sqlite3 = require('better-sqlite3');
 
 const chokidar = require('chokidar');
 // This library is terrible, too much magic, hard to understand interface,
@@ -22,8 +22,12 @@ const sass = require('sass');
 
 const cirodown = require('cirodown');
 const cirodown_nodejs = require('cirodown/nodejs');
-const models = require('cirodown/models')
 
+const INCLUDES_TABLE_NAMES_TYPES = {
+  'INCLUDE': 0,
+  [cirodown.REFS_TABLE_X]: 1,
+  [cirodown.REFS_TABLE_X_CHILD]: 2,
+};
 const CIRODOWN_JSON_BASENAME = 'cirodown.json';
 const CIRODOWN_TEX_BASENAME = 'cirodown.tex';
 const LOG_OPTIONS = new Set([
@@ -53,16 +57,27 @@ class IdProviderDbAdapter {
 }
 
 class SqliteIdProvider extends cirodown.IdProvider {
-  constructor(sequelize) {
+  constructor(convert_input_options) {
     super();
-    this.sequelize = sequelize
+    this.delete_ids_stmt = convert_input_options.db.prepare(
+      `DELETE FROM '${convert_input_options.ids_table_name}' WHERE path = ?`);
+    this.delete_includes_stmt = convert_input_options.db.prepare(
+      `DELETE FROM '${convert_input_options.includes_table_name}' WHERE from_path = ?`);
+    this.delete_prefix_ids_stmt = convert_input_options.db.prepare(
+      `DELETE FROM '${convert_input_options.ids_table_name}' WHERE path LIKE ?`);
+    this.delete_prefix_includes_stmt = convert_input_options.db.prepare(
+      `DELETE FROM '${convert_input_options.includes_table_name}' WHERE from_path LIKE ?`);
+    this.get_id_stmt = convert_input_options.db.prepare(
+      `SELECT path,ast_json FROM ${convert_input_options.ids_table_name} WHERE id = ?`);
+    this.get_includes_stmt = convert_input_options.db.prepare(
+      `SELECT from_id FROM ${convert_input_options.includes_table_name} WHERE to_id = ? AND type = ?`);
+    this.get_includes_stmt_from = convert_input_options.db.prepare(
+      `SELECT from_id FROM ${convert_input_options.includes_table_name} WHERE from_id = ? AND type = ?`);
   }
 
   async clear(input_path) {
-    return Promise.all([
-      this.sequelize.models.Id.destroy({ where: { path: input_path } }),
-      this.sequelize.models.Ref.destroy({ where: { from_path: input_path } }),
-    ])
+    await this.delete_ids_stmt.run(input_path);
+    await this.delete_includes_stmt.run(input_path);
   }
 
   async clear_prefix(prefix) {
@@ -73,46 +88,43 @@ class SqliteIdProvider extends cirodown.IdProvider {
       // Toplevel dir, delete all IDs.
       prefix_literal = '%'
     }
-    return Promise.all([
-      this.sequelize.models.Id.destroy({ where: { path: { [Op.like]: prefix_literal } } }),
-      this.sequelize.models.Ref.destroy({ where: { from_path: { [Op.like]: prefix_literal } } }),
-    ])
+    await this.delete_prefix_ids_stmt.run(prefix_literal);
+    await this.delete_prefix_includes_stmt.run(prefix_literal);
   }
 
   async get_noscope_entry(id) {
-    return this.sequelize.models.Id.findOne({ where: { idid: id } })
+    return this.get_id_stmt.get(id);
   }
 
   async get_includes_entries(to_id) {
-    return this.sequelize.models.Ref.findAll({ where: {
-      to_id, type: this.sequelize.models.Ref.Types.INCLUDE } })
+    return this.get_includes_stmt.all(to_id, INCLUDES_TABLE_NAMES_TYPES['INCLUDE']);
   }
 
   async get_from_header_ids_of_xrefs_to(type, to_id, reversed=false) {
-    let to_id_key;
-    if (reversed) {
-      to_id_key = 'from_id'
-    } else {
-      to_id_key = 'to_id'
+    const ret = new Set();
+    let stmt = reversed ? this.get_includes_stmt_from : this.get_includes_stmt;
+    for (const entry of stmt.all(to_id, INCLUDES_TABLE_NAMES_TYPES[type])) {
+      ret.add(entry.from_id);
     }
-    const entries = await this.sequelize.models.Ref.findAll({ where: {
-      [to_id_key]: to_id, type: this.sequelize.models.Ref.Types[type] } })
-    return new Set(entries.map(entry => entry.from_id))
+    return ret;
   }
 }
 
 class SqliteFileProvider extends cirodown.FileProvider {
-  constructor(sequelize) {
+  constructor(convert_input_options) {
     super();
-    this.sequelize = sequelize;
+    this.get_file_stmt = convert_input_options.db.prepare(
+      `SELECT * FROM ${convert_input_options.files_table_name} WHERE path = ?`);
+    this.get_file_by_id_stmt = convert_input_options.db.prepare(
+      `SELECT * FROM ${convert_input_options.files_table_name} WHERE toplevel_id = ?`);
   }
 
   async get_id(id) {
-    return this.sequelize.models.File.findOne({ where: { toplevel_id: id } })
+    return this.get_file_by_id_stmt.get(id);
   }
 
   async get_path_entry(path) {
-    return this.sequelize.models.File.findOne({ where: { path } })
+    return this.get_file_stmt.get(path);
   }
 }
 
@@ -206,7 +218,7 @@ async function convert_input(input, options, convert_input_options={}) {
   if ('input_path' in convert_input_options) {
     new_options.input_path = convert_input_options.input_path;
   }
-  if ('sequelize' in convert_input_options) {
+  if ('db' in convert_input_options) {
     new_options.id_provider = convert_input_options.id_provider;
     new_options.file_provider = convert_input_options.file_provider;
   }
@@ -358,43 +370,38 @@ async function convert_path(input_path, options, convert_input_options) {
   if (convert_input_options.commander.debugPerf) {
     console.error(`perf convert_path_pre_sqlite ${performance.now()}`);
   }
-  if ('sequelize' in convert_input_options) {
-    // Calculate create_ids
+  if ('db' in convert_input_options) {
     const ids = new_convert_input_options.extra_returns.ids;
-    const create_ids = []
-    for (const id in ids) {
-      const ast = ids[id];
-      create_ids.push({
-        idid: id,
-        path: ast.source_location.path,
-        ast_json: JSON.stringify(ast),
-      })
-    }
-
+    const insert_id_stmt = convert_input_options.db.prepare(
+      `INSERT INTO '${convert_input_options.ids_table_name}'
+      (id, path, ast_json) VALUES (?, ?, ?);`
+    );
+    const insert_include_stmt = convert_input_options.db.prepare(
+      `INSERT INTO '${convert_input_options.includes_table_name}'
+      (from_id, from_path, to_id, type) VALUES (?, ?, ?, ?);`
+    );
+    const insert_file_stmt = convert_input_options.db.prepare(
+      `INSERT OR REPLACE INTO '${convert_input_options.files_table_name}' ` +
+      `(path, toplevel_id) VALUES (?, ?);`
+    );
     if (convert_input_options.commander.debugPerf) {
       console.error(`perf convert_path_pre_sqlite_transaction ${performance.now()}`);
     }
-    let toplevel_id;
-    if (context.toplevel_ast !== undefined) {
-      toplevel_id = context.toplevel_ast.id;
-    }
-
     // This was the 80% bottleneck at Cirodown f8fc9eacfa794b95c1d9982a04b62603e6d0bb83
     // before being converted to a single transaction!
-    // Likely would not have been a bottleneck if we new more about databases/had more patience
-    // and instead of doing INSERT one by one we would do a single insert with a bunch of data.
-    // The move to Sequelize made that easier with bulkCreate. But keeping the transaction just in case
-    await convert_input_options.sequelize.transaction(async (transaction) => {
-      // Calculate includes.
-      const includes = []
+    convert_input_options.db.transaction(async () => {
+      for (const id in ids) {
+        const ast = ids[id];
+        insert_id_stmt.run(id, ast.source_location.path, JSON.stringify(ast));
+      }
       for (const header_ast of context.headers_with_include) {
         for (const include of header_ast.includes) {
-          includes.push({
-            from_id: header_ast.id,
-            from_path: header_ast.source_location.path,
-            to_id: include,
-            type: convert_input_options.sequelize.models.Ref.Types.INCLUDE
-          })
+          insert_include_stmt.run(
+            header_ast.id,
+            header_ast.source_location.path,
+            include,
+            INCLUDES_TABLE_NAMES_TYPES['INCLUDE']
+          );
         }
       }
       for (const to_id in context.xref_from_to_dict[false]) {
@@ -413,32 +420,30 @@ async function convert_path(input_path, options, convert_input_options) {
                 // leading to ID not being present.
                 from_header !== undefined
               ) {
-                includes.push({
+                if (await context.id_provider.get(from_id) === undefined){
+                  console.error(from_id);
+                  throw new Error(from_id);
+                }
+                insert_include_stmt.run(
                   from_id,
-                  from_path: from_header.source_location.path,
+                  from_header.source_location.path,
                   to_id,
-                  type: convert_input_options.sequelize.models.Ref.Types[type]
-                })
+                  INCLUDES_TABLE_NAMES_TYPES[type]
+                );
               }
             }
           }
         }
       }
-      await Promise.all([
-        convert_input_options.sequelize.models.Id.bulkCreate(create_ids, { transaction }),
-        convert_input_options.sequelize.models.Ref.bulkCreate(includes, { transaction }),
-        convert_input_options.sequelize.models.File.create(
-          {
-            path: input_path_relative_to_cirodown_json,
-            toplevel_id,
-          },
-          {
-            ignoreDuplicates: true,
-            transaction
-          },
-        )
-      ])
-    });
+      let toplevel_id;
+      if (context.toplevel_ast !== undefined) {
+        toplevel_id = context.toplevel_ast.id;
+      }
+      insert_file_stmt.run(
+        input_path_relative_to_cirodown_json,
+        toplevel_id
+      );
+    })();
     if (convert_input_options.commander.debugPerf) {
       console.error(`perf convert_path_post_sqlite_transaction ${performance.now()}`);
     }
@@ -524,17 +529,63 @@ async function convert_path_to_file(input_path, options, convert_input_options={
   return output;
 }
 
-async function create_db(convert_input_options) {
-  const db_dir = path.dirname(convert_input_options.db_options.storage);
+function create_db(convert_input_options) {
+  const db_dir = path.dirname(convert_input_options.db_path);
   if (!fs.existsSync(db_dir)) {
     fs.mkdirSync(db_dir, {recursive: true});
   }
-  const sequelize = new Sequelize(convert_input_options.db_options)
-  models.addModels(sequelize)
-  await sequelize.sync()
-  convert_input_options.sequelize = sequelize;
-  convert_input_options.file_provider = new SqliteFileProvider(sequelize);
-  convert_input_options.id_provider = new SqliteIdProvider(sequelize);
+  const db = new better_sqlite3(convert_input_options.db_path, convert_input_options.db_options);
+  if (
+    db.prepare(`SELECT name
+    FROM sqlite_master
+    WHERE type='table' AND name='${convert_input_options.ids_table_name}'
+    `).get() === undefined
+  ) {
+    db.prepare(`
+      CREATE TABLE '${convert_input_options.ids_table_name}' (
+        id TEXT PRIMARY KEY,
+        path TEXT,
+        ast_json TEXT
+      )`
+    ).run();
+  }
+  if (
+    db.prepare(`SELECT name
+    FROM sqlite_master
+    WHERE type='table' AND name='${convert_input_options.includes_table_name}'
+    `).get() === undefined
+  ) {
+    db.prepare(`
+      CREATE TABLE '${convert_input_options.includes_table_name}' (
+        from_id TEXT,
+        from_path TEXT,
+        to_id TEXT,
+        type TINYINT
+      )`
+    ).run();
+    db.prepare(`CREATE INDEX ${convert_input_options.includes_table_name}_from_path
+      ON ${convert_input_options.includes_table_name}(from_path)`
+    ).run();
+    db.prepare(`CREATE INDEX ${convert_input_options.includes_table_name}_from_id_type
+      ON ${convert_input_options.includes_table_name}(from_id, type)`
+    ).run();
+  }
+  if (
+    db.prepare(`SELECT name
+    FROM sqlite_master
+    WHERE type='table' AND name='${convert_input_options.files_table_name}'
+    `).get() === undefined
+  ) {
+    db.prepare(`
+      CREATE TABLE '${convert_input_options.files_table_name}' (
+        path TEXT PRIMARY KEY,
+        toplevel_id TEXT UNIQUE
+      )`
+    ).run();
+  }
+  convert_input_options.db = db;
+  convert_input_options.file_provider = new SqliteFileProvider(convert_input_options);
+  convert_input_options.id_provider = new SqliteIdProvider(convert_input_options);
 }
 
 async function generate_redirect(options, redirect_src_id, redirect_target_id, outdir) {
@@ -989,10 +1040,7 @@ if (commander.helpMacros) {
   let convert_input_options = {
     cirodown_json_dir,
     commander,
-    db_options: {
-      dialect: 'sqlite',
-      define: { timestamps: false },
-    },
+    db_options: {},
     encoding: cirodown_nodejs.ENCODING,
     external_css_and_js: false,
     had_error: false,
@@ -1002,9 +1050,8 @@ if (commander.helpMacros) {
     outdir,
     publish,
   };
-  if (!convert_input_options_log.db) {
-    // They do not like true, has to be false or function.
-    convert_input_options.db_options.logging = false
+  if (convert_input_options_log.db) {
+    convert_input_options.db_options.verbose = console.log;
   }
   let input_git_toplevel;
   let subdir_relpath;
@@ -1063,11 +1110,13 @@ if (commander.helpMacros) {
     }
     options.katex_macros = katex_macros;
 
+
     // Setup the ID database.
     if (commander.db) {
-      convert_input_options.db_options.storage = path.join(publish_tmpdir, 'db.sqlite3');
-    } else {
-      convert_input_options.db_options.storage = ':memory:'
+      convert_input_options.db_path = path.join(publish_tmpdir, 'db.sqlite3');
+      convert_input_options.ids_table_name = 'ids';
+      convert_input_options.includes_table_name = 'includes';
+      convert_input_options.files_table_name = 'files';
     }
     if (commander.generateRedirects) {
       await generate_redirects(convert_input_options, cirodown_json, outdir);

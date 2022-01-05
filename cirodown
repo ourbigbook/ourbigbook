@@ -65,8 +65,10 @@ class SqliteIdProvider extends cirodown.IdProvider {
   }
 
   async clear(input_path) {
-    await this.sequelize.models.Id.destroy({ where: { path: input_path } })
-    await this.sequelize.models.Include.destroy({ where: { from_path: input_path } })
+    return Promise.all([
+      this.sequelize.models.Id.destroy({ where: { path: input_path } }),
+      this.sequelize.models.Include.destroy({ where: { from_path: input_path } }),
+    ])
   }
 
   async clear_prefix(prefix) {
@@ -77,8 +79,10 @@ class SqliteIdProvider extends cirodown.IdProvider {
       // Toplevel dir, delete all IDs.
       prefix_literal = '%'
     }
-    await this.sequelize.models.Id.destroy({ where: { path: { [Op.like]: prefix_literal } } })
-    await this.sequelize.models.Includes.destroy({ where: { from_path: { [Op.like]: prefix_literal } } })
+    return Promise.all([
+      this.sequelize.models.Id.destroy({ where: { path: { [Op.like]: prefix_literal } } }),
+      this.sequelize.models.Include.destroy({ where: { from_path: { [Op.like]: prefix_literal } } }),
+    ])
   }
 
   async get_noscope_entry(id) {
@@ -208,7 +212,7 @@ async function convert_input(input, options, convert_input_options={}) {
   if ('input_path' in convert_input_options) {
     new_options.input_path = convert_input_options.input_path;
   }
-  if ('db' in convert_input_options) {
+  if ('sequelize' in convert_input_options) {
     new_options.id_provider = convert_input_options.id_provider;
     new_options.file_provider = convert_input_options.file_provider;
   }
@@ -361,80 +365,86 @@ async function convert_path(input_path, options, convert_input_options) {
   if (convert_input_options.commander.debugPerf) {
     console.error(`perf convert_path_pre_sqlite ${performance.now()}`);
   }
-  if ('db' in convert_input_options) {
+  if ('sequelize' in convert_input_options) {
+    // Calculate create_ids
     const ids = new_convert_input_options.extra_returns.ids;
-    const insert_id_stmt = convert_input_options.sequelize.prepare(
-      `INSERT INTO '${convert_input_options.ids_table_name}'
-      (id, path, ast_json) VALUES (?, ?, ?);`
-    );
-    const insert_include_stmt = convert_input_options.sequelize.prepare(
-      `INSERT INTO '${convert_input_options.includes_table_name}'
-      (from_id, from_path, to_id, type) VALUES (?, ?, ?, ?);`
-    );
-    const insert_file_stmt = convert_input_options.sequelize.prepare(
-      `INSERT OR REPLACE INTO '${convert_input_options.files_table_name}' ` +
-      `(path, toplevel_id) VALUES (?, ?);`
-    );
+    const create_ids = []
+    for (const id in ids) {
+      const ast = ids[id];
+      create_ids.push({
+        id,
+        path: ast.source_location.path,
+        ast_json: JSON.stringify(ast),
+      })
+    }
+
     if (convert_input_options.commander.debugPerf) {
       console.error(`perf convert_path_pre_sqlite_transaction ${performance.now()}`);
     }
-    // This was the 80% bottleneck at Cirodown f8fc9eacfa794b95c1d9982a04b62603e6d0bb83
-    // before being converted to a single transaction!
-    convert_input_options.sequelize.transaction(() => {
-      for (const id in ids) {
-        const ast = ids[id];
-        insert_id_stmt.run(id, ast.source_location.path, JSON.stringify(ast));
+    let toplevel_id;
+    if (context.toplevel_ast !== undefined) {
+      toplevel_id = context.toplevel_ast.id;
+    }
+
+    // Calculate includes.
+    const includes = []
+    for (const header_ast of context.headers_with_include) {
+      for (const include of header_ast.includes) {
+        includes.push({
+          from_id: header_ast.id,
+          from_path: header_ast.source_location.path,
+          to_id: include,
+          type: INCLUDES_TABLE_NAMES_TYPES['INCLUDE']
+        })
       }
-      for (const header_ast of context.headers_with_include) {
-        for (const include of header_ast.includes) {
-          insert_include_stmt.run(
-            header_ast.id,
-            header_ast.source_location.path,
-            include,
-            INCLUDES_TABLE_NAMES_TYPES['INCLUDE']
-          );
-        }
-      }
-      for (const to_id in context.xref_from_to_dict[false]) {
-        const types = context.xref_from_to_dict[false][to_id];
-        for (const type in types) {
-          const from_ids = types[type];
-          for (const from_id of from_ids) {
+    }
+    for (const to_id in context.xref_from_to_dict[false]) {
+      const types = context.xref_from_to_dict[false][to_id];
+      for (const type in types) {
+        const from_ids = types[type];
+        for (const from_id of from_ids) {
+          if (
+            // TODO happens on CirodownExample, likely also include,
+            // need to fix and remove this if.
+            from_id !== undefined
+          ) {
+            const from_header = context.id_provider.get(from_id);
             if (
-              // TODO happens on CirodownExample, likely also include,
-              // need to fix and remove this if.
-              from_id !== undefined
+              // Can happen when the database is not yet populated,
+              // leading to ID not being present.
+              from_header !== undefined
             ) {
-              const from_header = context.id_provider.get(from_id);
-              if (
-                // Can happen when the database is not yet populated,
-                // leading to ID not being present.
-                from_header !== undefined
-              ) {
-                if (context.id_provider.get(from_id) === undefined){
-                  console.error(from_id);
-                  throw new Error(from_id);
-                }
-                insert_include_stmt.run(
-                  from_id,
-                  from_header.source_location.path,
-                  to_id,
-                  INCLUDES_TABLE_NAMES_TYPES[type]
-                );
+              if (context.id_provider.get(from_id) === undefined){
+                console.error(from_id);
+                throw new Error(from_id);
               }
+              includes.push({
+                from_id,
+                from_path: from_header.source_location.path,
+                to_id,
+                type: INCLUDES_TABLE_NAMES_TYPES[type]
+              })
             }
           }
         }
       }
-      let toplevel_id;
-      if (context.toplevel_ast !== undefined) {
-        toplevel_id = context.toplevel_ast.id;
-      }
-      insert_file_stmt.run(
-        input_path_relative_to_cirodown_json,
-        toplevel_id
-      );
-    })();
+    }
+
+    // This was the 80% bottleneck at Cirodown f8fc9eacfa794b95c1d9982a04b62603e6d0bb83
+    // before being converted to a single transaction!
+    // Likely would not have been a bottleneck if we new more about databases/had more patience
+    // and instead of doing INSERT one by one we would do a single insert with a bunch of data.
+    // The move to Sequelize made that easier with bulkCreate. But keeping the transaction just in case
+    await convert_input_options.sequelize.transaction(async (transaction) => {
+      await Promise.all([
+        convert_input_options.sequelize.Id.bulkCreate(create_ids),
+        convert_input_options.sequelize.Include.bulkCreate(includes),
+        convert_input_options.sequelize.File.create({
+          path: input_path_relative_to_cirodown_json,
+          toplevel_id,
+        })
+      ])
+    });
     if (convert_input_options.commander.debugPerf) {
       console.error(`perf convert_path_post_sqlite_transaction ${performance.now()}`);
     }
@@ -987,7 +997,7 @@ if (commander.helpMacros) {
     commander,
     db_options: {
       dialect: 'sqlite',
-      logging: convert_input_options_log.db,
+      logging: convert_input_options_log.sequelize,
     },
     encoding: cirodown_nodejs.ENCODING,
     external_css_and_js: false,
@@ -1075,7 +1085,7 @@ if (commander.helpMacros) {
         await generate_redirects(convert_input_options, cirodown_json, outdir);
       }
       const watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES})
-      const convert = async (subpath) => await convert_path_to_file(path.join(input_dir, subpath), options, convert_input_options)
+      const convert = async (subpath) => convert_path_to_file(path.join(input_dir, subpath), options, convert_input_options)
       watcher.on('change', convert).on('add', convert)
     } else {
       if (input_path_is_file) {

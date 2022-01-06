@@ -2048,7 +2048,7 @@ async function convert(
   // Tokenize.
   let sub_extra_returns;
   sub_extra_returns = {};
-  extra_returns.debug_perf.tokenize_pre = globals.performance.now();
+  perf_print(context, 'tokenize_pre')
   let tokens = (new Tokenizer(
     input_string,
     sub_extra_returns,
@@ -2056,7 +2056,7 @@ async function convert(
     context.options.start_line,
     context.options.input_path,
   )).tokenize();
-  extra_returns.debug_perf.tokenize_post = globals.performance.now();
+  perf_print(context, 'tokenize_post')
   if (context.options.log['tokens-inside']) {
     console.error('tokens:');
     for (let i = 0; i < tokens.length; i++) {
@@ -2155,14 +2155,14 @@ async function convert(
 
     // First render.
     context.extra_returns.rendered_outputs = {};
-    extra_returns.debug_perf.render_pre = globals.performance.now();
+    perf_print(context, 'render_pre')
     output = await ast.convert(context);
     context.katex_macros = Object.assign({}, context.options.katex_macros);
     if (context.toplevel_output_path !== undefined) {
       context.extra_returns.rendered_outputs[context.toplevel_output_path] = output;
     }
 
-    extra_returns.debug_perf.split_render_pre = globals.performance.now();
+  perf_print(context, 'split_render_pre')
     // Split header conversion.
     if (context.options.split_headers) {
       const content = ast.args.content;
@@ -2191,7 +2191,7 @@ async function convert(
       await convert_header(cur_arg_list, context);
       // Because the following conversion would redefine them.
     }
-    extra_returns.debug_perf.render_post = globals.performance.now();
+    perf_print(context, 'render_post')
     extra_returns.errors.push(...context.errors);
   }
   // Sort errors that might have been produced on different conversion
@@ -2221,7 +2221,7 @@ async function convert(
       output += '\n';
     }
   }
-  extra_returns.debug_perf.end_convert = globals.performance.now();
+  perf_print(context, 'end_convert')
   return output;
 }
 exports.convert = convert;
@@ -2331,7 +2331,7 @@ async function convert_header(cur_arg_list, context, has_toc) {
  *        - {Number} start_line
  *        - {Array} errors
  * @return {AstArgument}*/
-async function convert_include(
+async function parse_include(
   input_string,
   convert_options,
   cur_header_level,
@@ -2366,8 +2366,6 @@ async function convert_include(
 }
 
 function convert_init_context(options={}, extra_returns={}) {
-  extra_returns.debug_perf = {};
-  extra_returns.debug_perf.start_convert = globals.performance.now();
   options = Object.assign({}, options);
   if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
   if (!('body_only' in options)) { options.body_only = false; }
@@ -2532,7 +2530,9 @@ function convert_init_context(options={}, extra_returns={}) {
     }
   }
   extra_returns.errors = [];
-  let context = {
+  extra_returns.debug_perf = {};
+  const context = {
+    perf_prev: 0,
     katex_macros: Object.assign({}, options.katex_macros),
     in_split_headers: false,
     errors: [],
@@ -2547,7 +2547,7 @@ function convert_init_context(options={}, extra_returns={}) {
     // Gets modified by split headers to point to the split header output path of each split header.
     toplevel_output_path: options.outfile,
   };
-
+  perf_print(context, 'start_convert')
   return context;
 }
 
@@ -3251,8 +3251,7 @@ exports.output_path_parts = output_path_parts;
  * @return {AstNode}
  */
 async function parse(tokens, options, context, extra_returns={}) {
-  extra_returns.debug_perf = {};
-  extra_returns.debug_perf.parse_start = globals.performance.now();
+  perf_print(context, 'parse_start')
   extra_returns.errors = [];
   let state = {
     extra_returns: extra_returns,
@@ -3301,7 +3300,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   // but let's not complicate that further either, shall we?
   context.headers_with_include = [];
   context.header_graph = new HeaderTreeNode();
-  extra_returns.debug_perf.post_process_start = globals.performance.now();
+  perf_print(context, 'post_process_start')
   let prev_header;
   let cur_header_level;
   let first_header_level;
@@ -3419,7 +3418,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         } else {
           let new_child_nodes;
           if (options.embed_includes) {
-            new_child_nodes = await convert_include(
+            new_child_nodes = await parse_include(
               include_content,
               include_options,
               parent_ast_header_level,
@@ -3587,7 +3586,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           AstType.MACRO,
           'Q',
           {
-            'content': await convert_include(
+            'content': await parse_include(
               await convert_arg_noescape(ast.args.content, context),
               clone_and_set(options, 'from_cirodown_example', true),
               0,
@@ -4297,7 +4296,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     return line_to_id_array[index][1];
   };
 
-  extra_returns.debug_perf.post_process_end = globals.performance.now();
+  perf_print(context, 'post_process_end')
   return ast_toplevel;
 }
 
@@ -4640,6 +4639,23 @@ function render_error(context, message, source_location, severity=1) {
     context.errors.push(new ErrorMessage(message, source_location, severity));
   }
 }
+
+function perf_print(context, name) {
+  // Includes and CirodowExample also call convert to parse.
+  // For now we are ignoring those recursions. A more correct approach
+  // would be to track the time intervals of those subconverts, and add
+  // them up to the corresponding toplevel convert.
+  if (!context.options.from_include) {
+    const now = globals.performance.now();
+    const delta = now - context.perf_prev
+    context.extra_returns.debug_perf[name] = now
+    context.perf_prev = now
+    if (context.options.debug_perf) {
+      console.error(`perf ${name} t=${now} dt=${delta}`);
+    }
+  }
+}
+exports.perf_print = perf_print
 
 // Fuck JavaScript? Can't find a built-in way to get the symbol string without the "Symbol(" part.
 // https://stackoverflow.com/questions/30301728/get-the-description-of-a-es6-symbol

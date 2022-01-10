@@ -709,7 +709,7 @@ class DictIdProvider extends IdProvider {
       if (from_ids_type !== undefined) {
         const from_ids = from_ids_type[type];
         if (from_ids !== undefined) {
-          return from_ids;
+          return new Set(Object.keys(from_ids));
         }
       }
     }
@@ -3344,8 +3344,8 @@ async function parse(tokens, options, context, extra_returns={}) {
     include_options.is_first_global_header = true;
   }
   // Format:
-  // from_ids = xref_from_to_dict[false][to_id][type]
-  // to_ids = xref_from_to_dict[to][from_id][type]
+  // Set defined_ats  = xref_from_to_dict[false][to_id][type][from_ids]
+  // Set to_ids = xref_from_to_dict[true][from_id][type][to_ids]
   context.xref_from_to_dict = {
     false: {},
     true: {},
@@ -4811,10 +4811,15 @@ function x_child_db_add_from_id_or_to(reverse, toid, context, fromid, relation_t
   if (relation_type in from_ids) {
     from_ids_relation_type = from_ids[relation_type]
   } else {
-    from_ids_relation_type = new Set()
+    from_ids_relation_type = {}
     from_ids[relation_type] = from_ids_relation_type
   }
-  from_ids_relation_type.add(fromid);
+  let from_ids_relation_type_fromid = from_ids_relation_type[fromid]
+  if (from_ids_relation_type_fromid === undefined) {
+    from_ids_relation_type_fromid = new Set()
+    from_ids[relation_type] = from_ids_relation_type
+  }
+  from_ids_relation_type_fromid.add(context.options.input_path)
 }
 
 async function x_child_db_effective_id(target_id, context, ast) {

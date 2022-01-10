@@ -38,7 +38,7 @@ class MockIdProvider extends cirodown.IdProvider {
       }
     }
     for (let key in this.includes_table) {
-      if (this.includes_table[key].from_path === input_path) {
+      if (this.includes_table[key].defined_at === input_path) {
         delete this.includes_table[key];
       }
     }
@@ -82,7 +82,7 @@ class MockIdProvider extends cirodown.IdProvider {
         }
         this.includes_table[to_id].push({
           from_id: header_ast.id,
-          from_path: header_ast.source_location.path,
+          defined_at: header_ast.source_location.path,
           to_id: include,
         });
       }
@@ -4701,6 +4701,7 @@ assert_executable(
       'h2-2.html': [
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html#h2']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html#h2']`,
       ],
       'scope/scope-1.html': [
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='../index.html']`,

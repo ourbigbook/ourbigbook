@@ -4281,7 +4281,10 @@ Give multiple times to enable a list of certain types of logs to stderr help deb
 ``
 ./cirodown --log ast tokens -- README.ciro
 ``
-Note that this follows https://github.com/tj/commander.js/tree/e0e723810357e915210af38ccf5098ffe1fb8e65#variadic-option[commander.js' insane variadic arguments], and thus the `--` is required above.
+Note that this follows https://github.com/tj/commander.js/tree/e0e723810357e915210af38ccf5098ffe1fb8e65#variadic-option[commander.js' insane variadic argumentso syntax], and thus the `--` is required above. If you want to omit it for a single value you have to add the `=` sign as in:
+```
+./cirodown --log=ast README.ciro
+```
 
 Values not documented in other sections:
 * `ast`: the final parsed \x[abstract-syntax-tree]

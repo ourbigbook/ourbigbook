@@ -48,7 +48,7 @@ const DEFAULT_IGNORE_BASENAMES = [
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
 
 class IdProviderDbAdapter {
-  constructor(convert_input_options) {
+  constructor(non_cirodown_options) {
   }
 }
 
@@ -159,10 +159,10 @@ function cmd_get_stdout(cmd, args=[], options={}) {
 /**
  * @param {String} input_path - path to a directory to convert files in
  */
-async function convert_directory(input_path, options, convert_input_options) {
+async function convert_directory(input_path, cirodown_options, non_cirodown_options) {
   const ignore_fullpaths = new Set();
-  for (const ignore of options.cirodown_json.ignore) {
-    ignore_fullpaths.add(path.join(convert_input_options.cirodown_json_dir, ignore));
+  for (const ignore of cirodown_options.cirodown_json.ignore) {
+    ignore_fullpaths.add(path.join(non_cirodown_options.cirodown_json_dir, ignore));
   }
   for (const one_path of walk_files_recursively(
     input_path,
@@ -171,21 +171,21 @@ async function convert_directory(input_path, options, convert_input_options) {
   )) {
     await convert_path_to_file(
       one_path,
-      options,
-      convert_input_options,
+      cirodown_options,
+      non_cirodown_options,
     );
-    if (convert_input_options.had_error) {
+    if (non_cirodown_options.had_error) {
       break;
     }
   }
 }
 
 /** Extract IDs from all input files into the ID database, without fully converting. */
-async function convert_directory_extract_ids(input_path, options, convert_input_options) {
+async function convert_directory_extract_ids(input_path, cirodown_options, non_cirodown_options) {
   await convert_directory(
     input_path,
-    cirodown.clone_and_set(options, 'render', false),
-    convert_input_options
+    cirodown.clone_and_set(cirodown_options, 'render', false),
+    non_cirodown_options
   );
 }
 
@@ -195,29 +195,29 @@ async function convert_directory_extract_ids(input_path, options, convert_input_
  *
  * @param {String} input
  * @param {Object} options - options to be passed to cirodown.convert
- * @param {Object} convert_input_options - control options for this function,
+ * @param {Object} non_cirodown_options - control options for this function,
  *                 not passed to cirodown.convert. Also contains some returns:
  *                 - {bool} had_error
  *                 - {Object} extra_returns
  * @return {String}
  */
-async function convert_input(input, options, convert_input_options={}) {
-  const new_options = Object.assign({}, options);
-  if ('input_path' in convert_input_options) {
-    new_options.input_path = convert_input_options.input_path;
+async function convert_input(input, cirodown_options, non_cirodown_options={}) {
+  const new_options = Object.assign({}, cirodown_options);
+  if ('input_path' in non_cirodown_options) {
+    new_options.input_path = non_cirodown_options.input_path;
   }
-  if ('sequelize' in convert_input_options) {
-    new_options.id_provider = convert_input_options.id_provider;
-    new_options.file_provider = convert_input_options.file_provider;
+  if ('sequelize' in non_cirodown_options) {
+    new_options.id_provider = non_cirodown_options.id_provider;
+    new_options.file_provider = non_cirodown_options.file_provider;
   }
-  if ('title' in convert_input_options) {
-    new_options.title = convert_input_options.title;
+  if ('title' in non_cirodown_options) {
+    new_options.title = non_cirodown_options.title;
   }
   new_options.extra_returns = {};
   // If we don't where the output will go (the case for stdout) or
   // the user did not explicitly request full embedding, inline all CSS.
   // Otherwise, include and external CSS to make each page lighter.
-  if (convert_input_options.commander.embedResources) {
+  if (non_cirodown_options.commander.embedResources) {
     new_options.template_vars.style = fs.readFileSync(
       cirodown_nodejs.DIST_CSS_PATH,
       cirodown_nodejs.ENCODING
@@ -234,32 +234,32 @@ async function convert_input(input, options, convert_input_options={}) {
     let scripts_local = [];
     let template_includes_relative = [];
     let template_scripts_relative = [];
-    if (convert_input_options.publish) {
+    if (non_cirodown_options.publish) {
       template_includes_relative.push(
         path.relative(
-          convert_input_options.outdir,
-          convert_input_options.out_css_path
+          non_cirodown_options.outdir,
+          non_cirodown_options.out_css_path
         )
       );
       template_scripts_relative.push(
         path.relative(
-          convert_input_options.outdir,
-          convert_input_options.out_js_path
+          non_cirodown_options.outdir,
+          non_cirodown_options.out_js_path
         )
       );
     } else {
-      includes_local.push(convert_input_options.out_css_path);
-      scripts_local.push(convert_input_options.out_js_path);
+      includes_local.push(non_cirodown_options.out_css_path);
+      scripts_local.push(non_cirodown_options.out_js_path);
     }
     if (
-      options.outfile !== undefined &&
+      cirodown_options.outfile !== undefined &&
       !is_installed_globally
     ) {
       for (const include of includes_local) {
-        includes.push(path.relative(path.dirname(options.outfile), include));
+        includes.push(path.relative(path.dirname(cirodown_options.outfile), include));
       }
       for (const script of scripts_local) {
-        scripts.push(path.relative(path.dirname(options.outfile), script));
+        scripts.push(path.relative(path.dirname(cirodown_options.outfile), script));
       }
     } else {
       includes.push(...includes_local);
@@ -281,7 +281,7 @@ async function convert_input(input, options, convert_input_options={}) {
   // Finally, do the conversion!
   const output = await cirodown.convert(input, new_options, new_options.extra_returns);
   for (const id in new_options.extra_returns.rendered_outputs) {
-    const output_path = path.join(convert_input_options.outdir, id);
+    const output_path = path.join(non_cirodown_options.outdir, id);
     fs.mkdirSync(path.dirname(output_path), {recursive: true});
     fs.writeFileSync(output_path, new_options.extra_returns.rendered_outputs[id]);
   }
@@ -289,15 +289,15 @@ async function convert_input(input, options, convert_input_options={}) {
     for (const header_ast of new_options.extra_returns.context.synonym_headers) {
       let new_options_redir = Object.assign({}, new_options);
       new_options_redir.id_provider = new_options_redir.extra_returns.context.id_provider;
-      await generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, convert_input_options.outdir);
+      await generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, non_cirodown_options.outdir);
     }
   }
-  if (convert_input_options.log.tokens) {
+  if (non_cirodown_options.log.tokens) {
     console.error('tokens:');
     console.error(JSON.stringify(new_options.extra_returns.tokens, null, 2));
     console.error();
   }
-  if (convert_input_options.log.ast) {
+  if (non_cirodown_options.log.ast) {
     console.error('ast:');
     console.error(JSON.stringify(new_options.extra_returns.ast, null, 2));
     console.error();
@@ -308,9 +308,9 @@ async function convert_input(input, options, convert_input_options={}) {
   for (const error_string of remove_duplicates_sorted_array(new_options.extra_returns.errors.map(e => e.toString()))) {
     console.error(error_string);
   }
-  convert_input_options.extra_returns = new_options.extra_returns;
+  non_cirodown_options.extra_returns = new_options.extra_returns;
   if (new_options.extra_returns.errors.length > 0) {
-    convert_input_options.had_error = true;
+    non_cirodown_options.had_error = true;
   }
   cirodown.perf_print(new_options.extra_returns.context, 'convert_input_end')
   return output;
@@ -320,31 +320,31 @@ async function convert_input(input, options, convert_input_options={}) {
  *
  * @return {String}
  */
-async function convert_path(input_path, options, convert_input_options) {
+async function convert_path(input_path, cirodown_options, non_cirodown_options) {
   let full_path = path.resolve(input_path);
-  let new_options = Object.assign({}, options);
-  let new_convert_input_options = Object.assign({}, convert_input_options);
-  let input = fs.readFileSync(full_path, new_convert_input_options.encoding);
+  let new_options = Object.assign({}, cirodown_options);
+  let new_non_cirodown_options = Object.assign({}, non_cirodown_options);
+  let input = fs.readFileSync(full_path, new_non_cirodown_options.encoding);
   let input_path_parse = path.parse(full_path);
   let input_path_basename_noext = input_path_parse.name;
   let path_relative_to_cirodown_json;
   let input_path_relative_to_cirodown_json;
-  if (convert_input_options.cirodown_json_dir !== undefined) {
-    path_relative_to_cirodown_json = path.relative(convert_input_options.cirodown_json_dir, input_path_parse.dir);
+  if (non_cirodown_options.cirodown_json_dir !== undefined) {
+    path_relative_to_cirodown_json = path.relative(non_cirodown_options.cirodown_json_dir, input_path_parse.dir);
     input_path_relative_to_cirodown_json = path.join(path_relative_to_cirodown_json, input_path_parse.base);
   }
-  new_convert_input_options.input_path = input_path_relative_to_cirodown_json;
-  let output = await convert_input(input, new_options, new_convert_input_options);
-  const context = new_convert_input_options.extra_returns.context;
-  if (convert_input_options.log.headers) {
+  new_non_cirodown_options.input_path = input_path_relative_to_cirodown_json;
+  let output = await convert_input(input, new_options, new_non_cirodown_options);
+  const context = new_non_cirodown_options.extra_returns.context;
+  if (non_cirodown_options.log.headers) {
     console.error(context.header_graph.toString());
   }
 
   // Update the Sqlite databse with results from the conversion.
   cirodown.perf_print(context, 'convert_path_pre_sqlite')
-  if ('sequelize' in convert_input_options) {
+  if ('sequelize' in non_cirodown_options) {
     // Calculate create_ids
-    const ids = new_convert_input_options.extra_returns.ids;
+    const ids = new_non_cirodown_options.extra_returns.ids;
     const create_ids = []
     for (const id in ids) {
       const ast = ids[id];
@@ -366,7 +366,7 @@ async function convert_path(input_path, options, convert_input_options) {
     // Likely would not have been a bottleneck if we new more about databases/had more patience
     // and instead of doing INSERT one by one we would do a single insert with a bunch of data.
     // The move to Sequelize made that easier with bulkCreate. But keeping the transaction just in case
-    await convert_input_options.sequelize.transaction(async (transaction) => {
+    await non_cirodown_options.sequelize.transaction(async (transaction) => {
       // Calculate includes.
       const includes = []
       for (const header_ast of context.headers_with_include) {
@@ -375,7 +375,7 @@ async function convert_path(input_path, options, convert_input_options) {
             from_id: header_ast.id,
             from_path: header_ast.source_location.path,
             to_id: include,
-            type: convert_input_options.sequelize.models.Ref.Types.INCLUDE
+            type: non_cirodown_options.sequelize.models.Ref.Types.INCLUDE
           })
         }
       }
@@ -399,7 +399,7 @@ async function convert_path(input_path, options, convert_input_options) {
                   from_id,
                   from_path: from_header.source_location.path,
                   to_id,
-                  type: convert_input_options.sequelize.models.Ref.Types[type]
+                  type: non_cirodown_options.sequelize.models.Ref.Types[type]
                 })
               }
             }
@@ -407,9 +407,9 @@ async function convert_path(input_path, options, convert_input_options) {
         }
       }
       await Promise.all([
-        convert_input_options.sequelize.models.Id.bulkCreate(create_ids, { transaction }),
-        convert_input_options.sequelize.models.Ref.bulkCreate(includes, { transaction }),
-        convert_input_options.sequelize.models.File.create(
+        non_cirodown_options.sequelize.models.Id.bulkCreate(create_ids, { transaction }),
+        non_cirodown_options.sequelize.models.Ref.bulkCreate(includes, { transaction }),
+        non_cirodown_options.sequelize.models.File.create(
           {
             path: input_path_relative_to_cirodown_json,
             toplevel_id,
@@ -424,8 +424,8 @@ async function convert_path(input_path, options, convert_input_options) {
     cirodown.perf_print(context, 'convert_path_post_sqlite_transaction')
   }
 
-  if (new_convert_input_options.had_error) {
-    convert_input_options.had_error = true;
+  if (new_non_cirodown_options.had_error) {
+    non_cirodown_options.had_error = true;
   }
   cirodown.perf_print(context, 'convert_path_end')
   return output;
@@ -441,45 +441,45 @@ async function convert_path(input_path, options, convert_input_options) {
  *
  * The output file name is derived from the input file name with the output extension.
  */
-async function convert_path_to_file(input_path, options, convert_input_options={}) {
+async function convert_path_to_file(input_path, cirodown_options, non_cirodown_options={}) {
   let output;
   let input_path_parse = path.parse(input_path);
   if (input_path_parse.ext === cirodown.CIRODOWN_EXT) {
     let message_prefix;
-    if (options.render) {
+    if (cirodown_options.render) {
       message_prefix = 'convert';
     } else {
       message_prefix = 'extract_ids';
     }
     let message = `${message_prefix} ${input_path}`;
     console.log(message);
-    const new_convert_input_options = Object.assign({}, convert_input_options);
+    const new_non_cirodown_options = Object.assign({}, non_cirodown_options);
     let t0 = performance.now();
-    output = await convert_path(input_path, options, new_convert_input_options);
+    output = await convert_path(input_path, cirodown_options, new_non_cirodown_options);
     let t1 = performance.now();
     console.log(`${message} finished in ${t1 - t0} ms`);
-    if (new_convert_input_options.had_error) {
-      convert_input_options.had_error = true;
+    if (new_non_cirodown_options.had_error) {
+      non_cirodown_options.had_error = true;
     }
   } else {
     let output_name = input_path_parse.name;
     let output_path_noext = path.join(
-      path.relative(convert_input_options.cirodown_json_dir, input_path_parse.dir),
+      path.relative(non_cirodown_options.cirodown_json_dir, input_path_parse.dir),
       output_name
     );
-    if (options.outfile === undefined) {
-      output_path_noext = path.join(convert_input_options.outdir, output_path_noext);
+    if (cirodown_options.outfile === undefined) {
+      output_path_noext = path.join(non_cirodown_options.outdir, output_path_noext);
     } else {
-      output_path_noext = options.outfile;
+      output_path_noext = cirodown_options.outfile;
     }
     fs.mkdirSync(path.dirname(output_path_noext), {recursive: true});
-    if (options.render) {
+    if (cirodown_options.render) {
       if (input_path_parse.ext === SASS_EXT) {
         console.log(`sass ${input_path}`);
         fs.writeFileSync(
           output_path_noext + '.css',
           sass.renderSync({
-            data: fs.readFileSync(path.join(input_path), convert_input_options.encoding),
+            data: fs.readFileSync(path.join(input_path), non_cirodown_options.encoding),
             outputStyle: 'compressed',
             includePaths: [
               path.dirname(cirodown_nodejs.PACKAGE_PATH),
@@ -496,31 +496,31 @@ async function convert_path_to_file(input_path, options, convert_input_options={
       }
     }
   }
-  if (convert_input_options.commander.debugPerf) {
+  if (non_cirodown_options.commander.debugPerf) {
     console.error(`perf convert_path_to_file_end ${performance.now()}`);
   }
   return output;
 }
 
-async function create_db(convert_input_options) {
-  const db_dir = path.dirname(convert_input_options.db_options.storage);
+async function create_db(non_cirodown_options) {
+  const db_dir = path.dirname(non_cirodown_options.db_options.storage);
   if (!fs.existsSync(db_dir)) {
     fs.mkdirSync(db_dir, {recursive: true});
   }
-  const sequelize = new Sequelize(convert_input_options.db_options)
+  const sequelize = new Sequelize(non_cirodown_options.db_options)
   models.addModels(sequelize)
   await sequelize.sync()
-  convert_input_options.sequelize = sequelize;
-  convert_input_options.file_provider = new SqliteFileProvider(sequelize);
-  convert_input_options.id_provider = new SqliteIdProvider(sequelize);
+  non_cirodown_options.sequelize = sequelize;
+  non_cirodown_options.file_provider = new SqliteFileProvider(sequelize);
+  non_cirodown_options.id_provider = new SqliteIdProvider(sequelize);
 }
 
-async function generate_redirect(options, redirect_src_id, redirect_target_id, outdir) {
-  options = Object.assign({}, options);
-  options.input_path = redirect_src_id;
+async function generate_redirect(cirodown_options, redirect_src_id, redirect_target_id, outdir) {
+  cirodown_options = Object.assign({}, cirodown_options);
+  cirodown_options.input_path = redirect_src_id;
   const outpath = path.join(outdir, redirect_src_id + '.' + cirodown.HTML_EXT);
-  options.outfile = outpath;
-  const redirect_href = await cirodown.convert_x_href(redirect_target_id, options);
+  cirodown_options.outfile = outpath;
+  const redirect_href = await cirodown.convert_x_href(redirect_target_id, cirodown_options);
   if (redirect_href === undefined) {
     cli_error(`redirection target ID "${redirect_target_id}" not found`);
   }
@@ -545,13 +545,13 @@ async function generate_redirect(options, redirect_src_id, redirect_target_id, o
 }
 
 async function generate_redirects(
-  options,
+  cirodown_options,
   cirodown_json,
   outdir
 ) {
   for (let redirect_src_id in cirodown_json.redirects) {
     const redirect_target_id = cirodown_json.redirects[redirect_src_id];
-    await generate_redirect(options, redirect_src_id, redirect_target_id, outdir);
+    await generate_redirect(cirodown_options, redirect_src_id, redirect_target_id, outdir);
   }
 }
 
@@ -676,14 +676,13 @@ function* walk_files_recursively(file_or_dir, skip_basenames, ignore_paths) {
 commander.option('--add-test-instrumentation', 'For testing only', false);
 commander.option('--body-only', 'output only the content inside the HTLM body element', false);
 commander.option('--china', 'https://cirosantilli.com/cirodown#china', false);
-commander.option('--debug-perf', 'https://cirosantilli.com/cirodown#debug-perf', false);
 commander.option('--dry-run', "don't run most external commands https://github.com/cirosantilli/cirodown#dry-run", false);
 commander.option('--dry-run-push', "don't run git push commands https://github.com/cirosantilli/cirodown#dry-run-push", false);
 commander.option('--embed-includes', 'http://cirosantilli.com/cirodown#embed-include', false);
 commander.option('--embed-resources', 'http://cirosantilli.com/cirodown#embed-resources', false);
 commander.option('--generate <name>', 'http://cirosantilli.com/cirodown#generate', false);
 commander.option('--generate-redirects', 'http://cirosantilli.com/cirodown#redirects', false);
-commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown/#', false);
+commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://cirosantilli.com/cirodown#help-macros', false);
 commander.option('-l, --log <log...>', 'http://cirosantilli.com/cirodown#log');
 commander.option('--no-html-x-extension', 'http://cirosantilli.com/cirodown#no-html-x-extension');
 commander.option('--no-db', 'ignore the ID database, mostly for testing https://cirosantilli.com/cirosantilli#internal-cross-file-references-internals');
@@ -721,7 +720,6 @@ if (commander.helpMacros) {
   let output;
   let publish = commander.publish || commander.publishCommit !== undefined;
   let html_x_extension;
-  let cirodown_json = {};
   let input_dir;
   if (inputPath === undefined) {
     if (publish || commander.watch || commander.generate) {
@@ -751,7 +749,9 @@ if (commander.helpMacros) {
     }
   }
 
+  // Initialize cirodown.json and directories determined from it if present.
   let cirodown_json_dir;
+  const cirodown_json = {};
   if (inputPath !== undefined) {
     let curdir = path.resolve(inputPath);
     let initial_dir;
@@ -785,6 +785,11 @@ if (commander.helpMacros) {
       }
     }
   }
+  let ignore;
+  if (!('ignore' in cirodown_json)) {
+    cirodown_json.ignore = [];
+  }
+
   let split_headers;
   if (publish) {
     // GitHub pages target is the only one for now.
@@ -795,12 +800,11 @@ if (commander.helpMacros) {
     split_headers = commander.splitHeaders;
   }
 
-  // Options that will be passed directly to cirodown.convert.
-  const options = {
+  // Options that will be passed directly to cirodown.convert().
+  const cirodown_options = {
     add_test_instrumentation: commander.addTestInstrumentation,
     body_only: commander.bodyOnly,
     cirodown_json: cirodown_json,
-    debug_perf: commander.debugPerf,
     embed_includes: commander.embedIncludes,
     fs_exists_sync: (my_path) => fs.existsSync(path.join(cirodown_json_dir, my_path)),
     html_x_extension: html_x_extension,
@@ -842,20 +846,14 @@ if (commander.helpMacros) {
     unsafe_xss: commander.unsafeXss,
   };
 
-  // ignore
-  let ignore;
-  if (!('ignore' in cirodown_json)) {
-    cirodown_json.ignore = [];
-  }
-
-  options.log = {};
-  const convert_input_options_log = {};
+  cirodown_options.log = {};
+  const non_cirodown_options_log = {};
   if (commander.log !== undefined) {
     for (const log of commander.log) {
       if (cirodown.LOG_OPTIONS.has(log)) {
-        options.log[log] = true;
+        cirodown_options.log[log] = true;
       } else if (LOG_OPTIONS.has(log)) {
-        convert_input_options_log[log] = true;
+        non_cirodown_options_log[log] = true;
       } else {
         cli_error('unknown --log option: ' + log);
       }
@@ -869,14 +867,14 @@ if (commander.helpMacros) {
     template_path = path.join(cirodown_json_dir, cirodown_json.template);
   }
   if (template_path === undefined) {
-    options.template = undefined;
+    cirodown_options.template = undefined;
   } else {
-    options.template = fs.readFileSync(template_path).toString();
+    cirodown_options.template = fs.readFileSync(template_path).toString();
   }
 
   if (inputPath !== undefined) {
     try {
-      options.template_vars.git_sha = git_sha(input_dir);
+      cirodown_options.template_vars.git_sha = git_sha(input_dir);
     } catch(error) {
       // Not in a git repo.
     }
@@ -967,7 +965,7 @@ if (commander.helpMacros) {
   }
   // Options that are not directly passed to cirodown.convert
   // but rather used only by this cirodown executable.
-  const convert_input_options = {
+  const non_cirodown_options = {
     cirodown_json_dir,
     commander,
     db_options: {
@@ -977,15 +975,15 @@ if (commander.helpMacros) {
     encoding: cirodown_nodejs.ENCODING,
     external_css_and_js: false,
     had_error: false,
-    log: convert_input_options_log,
+    log: non_cirodown_options_log,
     out_css_path: cirodown_nodejs.DIST_CSS_PATH,
     out_js_path: cirodown_nodejs.DIST_JS_PATH,
     outdir,
     publish,
   };
-  if (!convert_input_options_log.db) {
+  if (!non_cirodown_options_log.db) {
     // They do not like true, has to be false or function.
-    convert_input_options.db_options.logging = false
+    non_cirodown_options.db_options.logging = false
   }
   let input_git_toplevel;
   let subdir_relpath;
@@ -994,7 +992,7 @@ if (commander.helpMacros) {
     // Input from stdin.
     title = 'stdin';
     input = fs.readFileSync(0, cirodown_nodejs.ENCODING);
-    output = await convert_input(input, options, convert_input_options);
+    output = await convert_input(input, cirodown_options, non_cirodown_options);
   } else {
     if (!fs.existsSync(inputPath)) {
       cli_error(`input_path does not exist: "${inputPath}"`);
@@ -1042,37 +1040,37 @@ if (commander.helpMacros) {
         }
       );
     }
-    options.katex_macros = katex_macros;
+    cirodown_options.katex_macros = katex_macros;
 
     // Setup the ID database.
     if (commander.db) {
-      convert_input_options.db_options.storage = path.join(publish_tmpdir, 'db.sqlite3');
+      non_cirodown_options.db_options.storage = path.join(publish_tmpdir, 'db.sqlite3');
     } else {
-      convert_input_options.db_options.storage = ':memory:'
+      non_cirodown_options.db_options.storage = ':memory:'
     }
     if (commander.generateRedirects) {
-      await generate_redirects(convert_input_options, cirodown_json, outdir);
+      await generate_redirects(non_cirodown_options, cirodown_json, outdir);
       process.exit(0);
     }
     if (commander.watch) {
       if (publish) {
         cli_error('--publish and --watch are incompatible');
       }
-      await create_db(convert_input_options);
+      await create_db(non_cirodown_options);
       if (!input_path_is_file) {
-        await convert_directory_extract_ids(inputPath, options, convert_input_options);
-        await generate_redirects(convert_input_options, cirodown_json, outdir);
+        await convert_directory_extract_ids(inputPath, cirodown_options, non_cirodown_options);
+        await generate_redirects(non_cirodown_options, cirodown_json, outdir);
       }
       const watcher = chokidar.watch(inputPath, {ignored: DEFAULT_IGNORE_BASENAMES})
-      const convert = async (subpath) => convert_path_to_file(path.join(input_dir, subpath), options, convert_input_options)
+      const convert = async (subpath) => convert_path_to_file(path.join(input_dir, subpath), cirodown_options, non_cirodown_options)
       watcher.on('change', convert).on('add', convert)
     } else {
       if (input_path_is_file) {
         if (publish) {
           cli_error('--publish must take a directory as input, not a file');
         }
-        await create_db(convert_input_options);
-        output = await convert_path_to_file(inputPath, options, convert_input_options);
+        await create_db(non_cirodown_options);
+        output = await convert_path_to_file(inputPath, cirodown_options, non_cirodown_options);
       } else {
         let actual_input_dir;
         let publish_branch;
@@ -1120,11 +1118,11 @@ if (commander.helpMacros) {
 
           // Set some variables especially for publishing.
           actual_input_dir = path.join(publish_dir, subdir_relpath);
-          convert_input_options.cirodown_json_dir = actual_input_dir;
+          non_cirodown_options.cirodown_json_dir = actual_input_dir;
           publish_out_publish_dir = path.join(publish_tmpdir, 'publish');
-          convert_input_options.out_css_path = path.join(publish_out_publish_dir, cirodown_nodejs.DIST_CSS_BASENAME);
-          convert_input_options.out_js_path = path.join(publish_out_publish_dir, cirodown_nodejs.DIST_JS_BASENAME);
-          convert_input_options.external_css_and_js = true;
+          non_cirodown_options.out_css_path = path.join(publish_out_publish_dir, cirodown_nodejs.DIST_CSS_BASENAME);
+          non_cirodown_options.out_js_path = path.join(publish_out_publish_dir, cirodown_nodejs.DIST_JS_BASENAME);
+          non_cirodown_options.external_css_and_js = true;
           // Remove all files from the gh-pages repository in case some were removed from the original source.
           if (
             fs.existsSync(path.join(publish_out_publish_dir, '.git'))
@@ -1139,21 +1137,21 @@ if (commander.helpMacros) {
           actual_input_dir = inputPath;
           publish_out_publish_dir = outdir;
         }
-        convert_input_options.outdir = publish_out_publish_dir;
-        await create_db(convert_input_options);
+        non_cirodown_options.outdir = publish_out_publish_dir;
+        await create_db(non_cirodown_options);
 
         // Remove IDs and other metadata from files that might have been removed from disk.
         // https://github.com/cirosantilli/cirodown/issues/125
-        const dir_relpath = path.relative(convert_input_options.cirodown_json_dir, inputPath);
-        await convert_input_options.id_provider.clear_prefix(dir_relpath);
+        const dir_relpath = path.relative(non_cirodown_options.cirodown_json_dir, inputPath);
+        await non_cirodown_options.id_provider.clear_prefix(dir_relpath);
 
         // Do the actual conversion.
-        await convert_directory_extract_ids(actual_input_dir, options, convert_input_options);
-        await convert_directory(actual_input_dir, options, convert_input_options);
-        await generate_redirects(convert_input_options, cirodown_json, publish_out_publish_dir);
+        await convert_directory_extract_ids(actual_input_dir, cirodown_options, non_cirodown_options);
+        await convert_directory(actual_input_dir, cirodown_options, non_cirodown_options);
+        await generate_redirects(non_cirodown_options, cirodown_json, publish_out_publish_dir);
 
         // Publish the converted output if build succeeded.
-        if (publish && !convert_input_options.had_error) {
+        if (publish && !non_cirodown_options.had_error) {
           // Push the original source.
           if (!commander.dryRunPush) {
             cmd_get_stdout('git', ['-C', inputPath, 'push'], cmd_options);
@@ -1228,7 +1226,7 @@ if (commander.helpMacros) {
     process.stdout.write(output);
   }
   if (!commander.watch) {
-    process.exit(convert_input_options.had_error);
+    process.exit(non_cirodown_options.had_error);
   }
 }
 })()

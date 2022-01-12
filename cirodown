@@ -7,7 +7,6 @@ if (!china_dictatorship.get_data().includes("Tiannmen Square protests")) throw 0
 const fs = require('fs');
 const path = require('path');
 const { PerformanceObserver, performance } = require('perf_hooks');
-const { Op, Sequelize } = require('sequelize')
 
 const chokidar = require('chokidar');
 // This library is terrible, too much magic, hard to understand interface,
@@ -22,7 +21,6 @@ const sass = require('sass');
 
 const cirodown = require('cirodown');
 const cirodown_nodejs = require('cirodown/nodejs');
-const models = require('cirodown/models')
 
 const CIRODOWN_JSON_BASENAME = 'cirodown.json';
 const CIRODOWN_TEX_BASENAME = 'cirodown.tex';
@@ -48,76 +46,6 @@ const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
 
 class IdProviderDbAdapter {
   constructor(non_cirodown_options) {
-  }
-}
-
-class SqliteIdProvider extends cirodown.IdProviderWithIgnorePath {
-  constructor(sequelize) {
-    super();
-    this.sequelize = sequelize
-  }
-
-  async clear(input_paths) {
-    return Promise.all([
-      this.sequelize.models.Id.destroy({ where: { path: input_paths } }),
-      this.sequelize.models.Ref.destroy({ where: { defined_at: input_paths } }),
-    ])
-  }
-
-  async clear_prefix(prefix) {
-    let prefix_literal;
-    if (prefix) {
-      prefix_literal = prefix + cirodown.Macro.HEADER_SCOPE_SEPARATOR + '%'
-    } else {
-      // Toplevel dir, delete all IDs.
-      prefix_literal = '%'
-    }
-    return Promise.all([
-      this.sequelize.models.Id.destroy({ where: { path: { [Op.like]: prefix_literal } } }),
-      this.sequelize.models.Ref.destroy({ where: { defined_at: { [Op.like]: prefix_literal } } }),
-    ])
-  }
-
-  async get_noscope_entry(id) {
-    const ret = await this.sequelize.models.Id.findOne({
-      where: {
-        idid: id,
-        path: { [Op.not]: this.ignore_path },
-      }
-    })
-    if (ret) {
-      const ast = cirodown.AstNode.fromJSON(ret.ast_json)
-      ast.input_path = ret.path
-      ast.id = id
-      return ast
-    } else {
-      return undefined
-    }
-  }
-
-  async get_includes_entries(to_id) {
-    return this.sequelize.models.Ref.findAll({ where: {
-      to_id, type: this.sequelize.models.Ref.Types.INCLUDE } })
-  }
-
-  async get_refs_to(type, to_id, reversed=false) {
-    let to_id_key, other_key;
-    if (reversed) {
-      to_id_key = 'from_id'
-      other_key = 'to_id'
-    } else {
-      to_id_key = 'to_id'
-      other_key = 'from_id'
-    }
-    return this.sequelize.models.Ref.findAll({
-      where: {
-        [to_id_key]: to_id, type: this.sequelize.models.Ref.Types[type]
-      },
-      attributes: [
-        [other_key, 'id'],
-        'defined_at',
-      ]
-    })
   }
 }
 
@@ -379,54 +307,11 @@ async function convert_path(input_path, cirodown_options, non_cirodown_options) 
   // Update the Sqlite databse with results from the conversion.
   cirodown.perf_print(context, 'convert_path_pre_sqlite')
   if ('sequelize' in non_cirodown_options) {
-    // Calculate create_ids
-    const ids = new_non_cirodown_options.extra_returns.ids;
-    const create_ids = []
-    for (const id in ids) {
-      const ast = ids[id];
-      create_ids.push({
-        idid: id,
-        path: ast.source_location.path,
-        ast_json: JSON.stringify(ast),
-      })
-    }
 
     cirodown.perf_print(context, 'convert_path_pre_sqlite_transaction')
     let toplevel_id;
     if (context.toplevel_ast !== undefined) {
       toplevel_id = context.toplevel_ast.id;
-    }
-
-    // Remove all IDs from the converted files to ensure that removed IDs won't be
-    // left over hanging in the database.
-    await non_cirodown_options.id_provider.clear(Array.from(context.include_path_set));
-
-    // calculate refs
-    const refs = []
-    // We only need to inspect the false because the information is redundant with the true,
-    // it is only a primitive indexing mechanism.
-    for (const to_id in context.refs_to[false]) {
-      const types = context.refs_to[false][to_id];
-      for (const type in types) {
-        const from_ids = types[type];
-        for (const from_id in from_ids) {
-          if (
-            // TODO happens on CirodownExample, likely also include,
-            // need to fix and remove this if.
-            from_id !== undefined
-          ) {
-            const defined_ats = from_ids[from_id];
-            for (const defined_at of defined_ats) {
-              refs.push({
-                from_id,
-                defined_at,
-                to_id,
-                type: non_cirodown_options.sequelize.models.Ref.Types[type]
-              })
-            }
-          }
-        }
-      }
     }
 
     // This was the 80% bottleneck at Cirodown f8fc9eacfa794b95c1d9982a04b62603e6d0bb83
@@ -436,8 +321,11 @@ async function convert_path(input_path, cirodown_options, non_cirodown_options) 
     // The move to Sequelize made that easier with bulkCreate. But keeping the transaction just in case
     await non_cirodown_options.sequelize.transaction(async (transaction) => {
       await Promise.all([
-        non_cirodown_options.sequelize.models.Id.bulkCreate(create_ids, { transaction }),
-        non_cirodown_options.sequelize.models.Ref.bulkCreate(refs, { transaction }),
+        non_cirodown_options.id_provider.update(
+          new_non_cirodown_options.extra_returns,
+          non_cirodown_options.sequelize,
+          transaction,
+        ),
         non_cirodown_options.sequelize.models.File.create(
           {
             path: input_path_relative_to_cirodown_json,
@@ -536,12 +424,10 @@ async function create_db(non_cirodown_options) {
   if (!fs.existsSync(db_dir)) {
     fs.mkdirSync(db_dir, {recursive: true});
   }
-  const sequelize = new Sequelize(non_cirodown_options.db_options)
-  models.addModels(sequelize)
-  await sequelize.sync()
+  const sequelize = await cirodown_nodejs.create_sequelize(non_cirodown_options.db_options)
   non_cirodown_options.sequelize = sequelize;
   non_cirodown_options.file_provider = new SqliteFileProvider(sequelize);
-  non_cirodown_options.id_provider = new SqliteIdProvider(sequelize);
+  non_cirodown_options.id_provider = new cirodown_nodejs.SqliteIdProvider(sequelize);
 }
 
 async function generate_redirect(cirodown_options, redirect_src_id, redirect_target_id, outdir) {
@@ -1004,10 +890,7 @@ if (commander.helpMacros) {
   const non_cirodown_options = {
     cirodown_json_dir,
     commander,
-    db_options: {
-      dialect: 'sqlite',
-      define: { timestamps: false },
-    },
+    db_options: {},
     encoding: cirodown_nodejs.ENCODING,
     external_css_and_js: false,
     had_error: false,
@@ -1019,7 +902,8 @@ if (commander.helpMacros) {
   };
   if (!non_cirodown_options_log.db) {
     // They do not like true, has to be false or function.
-    non_cirodown_options.db_options.logging = false
+    // And setting undefined is also considered true.
+    non_cirodown_options.db_options.logging = false;
   }
   let input_git_toplevel;
   let subdir_relpath;

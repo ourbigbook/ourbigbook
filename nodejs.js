@@ -1,7 +1,11 @@
 // Contains exports that should only be visible from Node.js but not browser.
 
-const cirodown = require('cirodown');
 const path = require('path');
+
+const { Op, Sequelize } = require('sequelize')
+
+const cirodown = require('cirodown');
+const models = require('cirodown/models')
 
 const ENCODING = 'utf8';
 exports.ENCODING = ENCODING;
@@ -47,3 +51,141 @@ class ZeroFileProvider extends cirodown.FileProvider {
   get(path) { return {toplevel_scope_cut_length: 0}; }
 }
 exports.ZeroFileProvider = ZeroFileProvider;
+
+class SqliteIdProvider extends cirodown.IdProviderWithIgnorePath {
+  constructor(sequelize) {
+    super();
+    this.sequelize = sequelize
+  }
+
+  async clear(input_paths, transaction) {
+    return Promise.all([
+      this.sequelize.models.Id.destroy({ where: { path: input_paths }, transaction }),
+      this.sequelize.models.Ref.destroy({ where: { defined_at: input_paths }, transaction }),
+    ])
+  }
+
+  async clear_prefix(prefix) {
+    let prefix_literal;
+    if (prefix) {
+      prefix_literal = prefix + cirodown.Macro.HEADER_SCOPE_SEPARATOR + '%'
+    } else {
+      // Toplevel dir, delete all IDs.
+      prefix_literal = '%'
+    }
+    return Promise.all([
+      this.sequelize.models.Id.destroy({ where: { path: { [Op.like]: prefix_literal } } }),
+      this.sequelize.models.Ref.destroy({ where: { defined_at: { [Op.like]: prefix_literal } } }),
+    ])
+  }
+
+  async get_noscope_entry(id) {
+    const where = {
+      idid: id,
+    }
+    if (this.ignore_path !== undefined) {
+      where.path = { [Op.not]: this.ignore_path }
+    }
+    const ret = await this.sequelize.models.Id.findOne({ where })
+    if (ret) {
+      const ast = cirodown.AstNode.fromJSON(ret.ast_json)
+      ast.input_path = ret.path
+      ast.id = id
+      return ast
+    } else {
+      return undefined
+    }
+  }
+
+  async get_includes_entries(to_id) {
+    return this.sequelize.models.Ref.findAll({ where: {
+      to_id, type: this.sequelize.models.Ref.Types.INCLUDE } })
+  }
+
+  async get_refs_to(type, to_id, reversed=false) {
+    let to_id_key, other_key;
+    if (reversed) {
+      to_id_key = 'from_id'
+      other_key = 'to_id'
+    } else {
+      to_id_key = 'to_id'
+      other_key = 'from_id'
+    }
+    return this.sequelize.models.Ref.findAll({
+      where: {
+        [to_id_key]: to_id, type: this.sequelize.models.Ref.Types[type]
+      },
+      attributes: [
+        [other_key, 'id'],
+        'defined_at',
+      ]
+    })
+  }
+
+  // Update the databases based on the output of the Cirodown conversion.
+  async update(cirodown_extra_returns, sequelize, transaction) {
+    const context = cirodown_extra_returns.context
+    // Remove all IDs from the converted files to ensure that removed IDs won't be
+    // left over hanging in the database.
+    await this.clear(Array.from(context.include_path_set), transaction);
+
+    // Calculate create_ids
+    const ids = cirodown_extra_returns.ids;
+    const create_ids = []
+    for (const id in ids) {
+      const ast = ids[id];
+      create_ids.push({
+        idid: id,
+        path: ast.source_location.path,
+        ast_json: JSON.stringify(ast),
+      })
+    }
+
+    // calculate refs
+    const refs = []
+    // We only need to inspect the false because the information is redundant with the true,
+    // it is only a primitive indexing mechanism.
+    for (const to_id in context.refs_to[false]) {
+      const types = context.refs_to[false][to_id];
+      for (const type in types) {
+        const from_ids = types[type];
+        for (const from_id in from_ids) {
+          if (
+            // TODO happens on CirodownExample, likely also include,
+            // need to fix and remove this if.
+            from_id !== undefined
+          ) {
+            const defined_ats = from_ids[from_id];
+            for (const defined_at of defined_ats) {
+              refs.push({
+                from_id,
+                defined_at,
+                to_id,
+                type: sequelize.models.Ref.Types[type]
+              })
+            }
+          }
+        }
+      }
+    }
+
+    return Promise.all([
+      sequelize.models.Id.bulkCreate(create_ids, { transaction }),
+      sequelize.models.Ref.bulkCreate(refs, { transaction }),
+    ])
+  }
+}
+exports.SqliteIdProvider = SqliteIdProvider;
+
+async function create_sequelize(db_options) {
+  const default_options = {
+    dialect: 'sqlite',
+    define: { timestamps: false },
+  }
+  const new_db_options = Object.assign({}, default_options, db_options)
+  const sequelize = new Sequelize(new_db_options)
+  models.addModels(sequelize)
+  await sequelize.sync()
+  return sequelize
+}
+exports.create_sequelize = create_sequelize;

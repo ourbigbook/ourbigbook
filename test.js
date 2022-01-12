@@ -3860,9 +3860,9 @@ assert_executable(
   'included-by-index.ciro': `= Included by index
 `,
     },
-    expect_filesystem_jpath: {
+    expect_filesystem_not_xpath: {
       'included-by-index.html': [
-        `//x:h2[id='incoming-links']`,
+        `//x:h2[@id='incoming-links']`,
       ],
     }
   }

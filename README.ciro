@@ -5463,7 +5463,7 @@ Note however that this does not work for tests that run the `cirodown` executabl
 ``
 but not working, related: https://stackoverflow.com/questions/23612087/gulp-target-to-debug-mocha-tests So for now, we are just printing the command being run as in:
 ``
-cmd: cd /home/ciro/cirodown/out/test/iyLn7v && cirodown --split-headers .
+cmd: cd out/test/iyLn7v && cirodown --split-headers .
 ``
 so you can just re-run it manually with `node inspect` as in:
 ``

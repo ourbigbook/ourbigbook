@@ -12,30 +12,32 @@ module.exports = {
   entry: {
     cirodown: ['./index.js'],
     cirodown_runtime: ['./cirodown_runtime.js'],
-    // Couldn't get the Katex working this way.
-    // https://github.com/KaTeX/KaTeX/discussions/3115
-    // cirodown: ['./cirodown.scss'],
+    cirodown: ['./cirodown.scss'],
+    editor: ['./editor.scss'],
   },
   mode: 'production',
   module: {
     rules: [
-      // Separate .css attempt.
-      //{
-      //  test: /\.(scss|css)$/,
-      //  use: [
-      //    MiniCssExtractPlugin.loader,
-      //    'style-loader',
-      //    'css-loader',
-      //    {
-      //      loader: "sass-loader",
-      //      options: {
-      //        sassOptions: {
-      //          includePaths: [nodeModulesPath],
-      //        },
-      //      },
-      //    },
-      //  ],
-      //},
+      {
+        test: /\.(scss|css)$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          // This finds and pulls Katex fonts for us.
+          'resolve-url-loader',
+          {
+            loader: "sass-loader",
+            options: {
+              // This is needed for resolve-url-loader to work:
+              // https://github.com/bholloway/resolve-url-loader/issues/212#issuecomment-1011630220
+              sourceMap: true,
+              sassOptions: {
+                includePaths: [nodeModulesPath],
+              },
+            },
+          },
+        ],
+      },
       // Working CSS in Js version.
       //{
       //  test: /\.(scss|css)$/,

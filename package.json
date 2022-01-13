@@ -35,6 +35,7 @@
     "node-polyfill-webpack-plugin": "1.1.4",
     "normalize.css": "8.0.1",
     "parse5": "6.0.1",
+    "resolve-url-loader": "4.0.0",
     "sass-loader": "11.0.1",
     "style-loader": "2.0.0",
     "tablesort": "5.2.1",
@@ -65,17 +66,17 @@
   ],
   "scripts": {
     "build": "cd web && npm run build",
-    "build-assets": "cp .gitignore gitignore && npm run sass && npm run webpack",
+    "build-assets": "cp .gitignore gitignore && npm run webpack",
     "build-dev": "cd web && npm run build-dev",
     "deploy": "cd web && npm run deploy",
     "dev": "cd web && npm run dev",
     "heroku-prebuild": "./heroku-prebuild",
     "link": "npm link && npm link cirodown",
     "publish": "cirodown --publish --unsafe-ace",
-    "sass": "./build-sass",
     "start": "cd web && npm start",
     "start-dev": "cd web && npm run start-dev",
     "test": "mocha test --ignore-leaks",
-    "webpack": "webpack"
+    "webpack": "webpack",
+    "webpack-dev": "webpack serve"
   }
 }

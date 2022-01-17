@@ -5883,7 +5883,7 @@ const DEFAULT_MACRO_LIST = [
     async function(ast, context) {
       let [href, content] = await link_get_href_content(ast, context);
       if (ast.validation_output.ref.boolean) {
-        content = '*';
+        content = '<sup class="ref">[ref]</sup>';
       }
       const check = ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined
       const relative = ast.validation_output.relative.given ? ast.validation_output.relative.boolean : undefined

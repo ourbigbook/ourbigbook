@@ -4408,6 +4408,7 @@ Note that this follows https://github.com/tj/commander.js/tree/e0e723810357e9152
 Values not documented in other sections:
 * `ast`: the full final parsed \x[abstract-syntax-tree] as JSON
 * `ast-simple`: a simplified view of the \x[abstract-syntax-tree] with one AstNode or AstArgument per line and showing only the most important fields
+* `ast-pp-simple`: view snapshots of the various \x[abstract-syntax-tree] post process stages, more info at: \x[conversion-process-overview]
 * `ast-inside`: print the AST from inside the `cirodown.convert` call before it returns.
 
   This is useful to debug the program if `cirodown.convert` blows up on the next stages before returning.
@@ -5674,7 +5675,16 @@ Conversion follows the following steps:
 * parser. Reads the list of tokens and converts it into an \x[abstract-syntax-tree]. Parse can be called multiple times recursively when doing things like:
   * \x[cirodownexample]
   * \x[embed-includes]:
-* post processing: takes abstract syntax tree that comes out of the parser output, and modifies the it tree to achieve various different functionalities. E.g. this is where insane paragraphs are implemented.
+* ast post process: takes abstract syntax tree that comes out of the parser output, and modifies the it tree to achieve various different functionalities.
+
+  E.g. this is where insane paragraphs are implemented.
+
+  We may need iterate the tree multiple times to achieve all desired effects, at the time of writing it was done twice. Each iteration is called pass.
+
+  You can view snapshots of the tree after each pass with the \x[log] option:
+  ``
+  cirodown --log=ast-pp-simple input.ciro
+  ``
 * render, which converts our AST tree into a output string. This is run once for the toplevel, and once for every header of the document if \x[split-headers] are enabled. We need to do this because header renders are different from their toplevel counterparts, e.g. their first paragraph has id `p-1` and not `p-283`. All of those renders are done from the same parsed tree however, parsing happens only once.
 
 = Abstract syntax tree

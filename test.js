@@ -651,6 +651,28 @@ assert_convert_ast('sane quote without inner paragraph',
   [a('Q', [t('aa')])],
 );
 assert_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
+assert_convert_ast('both quotes and paragraphs get the on-hover link',
+  `= tmp
+
+aa
+
+\\Q[bb]`,
+  [
+    a('H', undefined, {
+      level: [t('1')],
+      title: [t('tmp')],
+    }),
+    a('P', [t('aa')]),
+    a('Q', [t('bb')]),
+  ],
+  {
+    assert_xpath_matches: [
+      "//x:span[@class='hide-hover']//x:a[@href='#p-1']",
+      "//x:span[@class='hide-hover']//x:a[@href='#q-1']",
+    ],
+  }
+);
+assert_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
 
 // List.
 const l_with_explicit_ul_expect = [

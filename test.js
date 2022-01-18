@@ -668,8 +668,8 @@ aa
       level: [t('1')],
       title: [t('tmp')],
     }),
-    a('P', [t('aa')]),
-    a('Q', [t('bb')]),
+    a('P', [t('aa')], {}, {id: 'p-1'}),
+    a('Q', [t('bb')], {}, {id: 'q-1'}),
   ],
   {
     assert_xpath_matches: [
@@ -3393,7 +3393,7 @@ assert_error('include circular dependency 1 -> 2 <-> 3',
 
 // ID auto-gneration.
 // https://cirosantilli.com/cirodown/automatic-id-from-title
-assert_convert_ast('id autogeneration simple',
+assert_convert_ast('id autogeneration without title',
   '\\P[aa]\n',
   [a('P', [t('aa')], {}, {id: 'p-1'})],
 );

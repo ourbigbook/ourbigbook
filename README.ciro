@@ -5591,7 +5591,14 @@ Run just one test by name:
 ``
 npm test -- -g 'one paragraph'
 ``
-as per: https://stackoverflow.com/questions/10832031/how-to-run-a-single-test-with-mocha TODO: what if the test name is a substring?
+as per: https://stackoverflow.com/questions/10832031/how-to-run-a-single-test-with-mocha todo: what if the test name is a substring? You will want this Bash alias:
+``
+npmtg() ( npm test -- -g "$*" )
+``
+which allos you to just:
+``
+npmtg one paragraph
+``
 
 Run all tests that don't start with `executable:`:
 ``
@@ -5728,10 +5735,8 @@ produces with `--log=ast-simple` the following output:
 ``
 ast Toplevel
   arg content
-    ast H
+    ast H id="tmp"
       arg c
-      arg file
-        ast plaintext "0"
       arg level
         ast plaintext "1"
       arg numbered
@@ -5744,7 +5749,7 @@ ast Toplevel
         ast plaintext "0"
       arg title
         ast plaintext "My title"
-    ast P
+    ast P id="p-1"
       arg content
         ast plaintext "A link to "
         ast x
@@ -5761,11 +5766,9 @@ ast Toplevel
           arg ref
             ast plaintext "0"
         ast plaintext " and more text."
-    ast Toc
-    ast H
+    ast Toc id="toc"
+    ast H id="another-title"
       arg c
-        ast plaintext "0"
-      arg file
         ast plaintext "0"
       arg level
         ast plaintext "2"

@@ -124,6 +124,8 @@ class AstNode {
     this.is_first_header_in_input_file = options.is_first_header_in_input_file;
     // This is the Nth macro of this type that appears in the document.
     this.macro_count = undefined;
+    // A unique global index for this macro.
+    this.macro_count_global = undefined;
     // This is the Nth macro of this type that is visible,
     // and therefore increments counts such as Figure 1), Figure 2), etc.
     // All indexed IDs (those that can be linked to) are also visible, but
@@ -1899,7 +1901,7 @@ function binary_search_line_to_id_array_fn(elem0, elem1) {
 
 /** Calculate node ID and add it to the ID index. */
 async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
-  macro_counts, macro_counts_visible, state, is_header, line_to_id_array
+  macro_counts, macro_count_global, macro_counts_visible, state, is_header, line_to_id_array
 ) {
   const macro_name = ast.macro_name;
   if (macro_name === Macro.TOC_MACRO_NAME) {
@@ -1928,10 +1930,12 @@ async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
     const macro_id_arg = ast.args[Macro.ID_ARGUMENT_NAME];
     if (macro_id_arg === undefined) {
       let id_text = '';
-      const id_prefix = context.macros[ast.macro_name].id_prefix;
-      if (id_prefix !== '') {
-        id_text += id_prefix + ID_SEPARATOR
-      }
+      // IDs of type p-1, p-2, q-1, q-2, etc.
+      //const id_prefix = context.macros[ast.macro_name].id_prefix;
+      //if (id_prefix !== '') {
+      //  id_text += id_prefix + ID_SEPARATOR
+      //}
+      id_text += '_'
       const title_arg = await macro.options.get_title_arg(ast, context);
       if (title_arg !== undefined) {
         const new_context = clone_and_set(context, 'id_conversion', true);
@@ -1981,12 +1985,16 @@ async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
       }
 
       if (ast.id === undefined && !macro.options.phrasing) {
+        id_text += macro_count_global;
+        macro_count_global++
+        ast.id = id_text;
         // ID from element count.
-        if (ast.macro_count !== undefined) {
-          id_text += ast.macro_count;
-          index_id = false;
-          ast.id = id_text;
-        }
+        // p-1, p-2, q-1, q-2 style.
+        //if (ast.macro_count !== undefined) {
+        //  id_text += ast.macro_count;
+        //  index_id = false;
+        //  ast.id = id_text;
+        //}
       }
     } else {
       ast.id = await render_arg_noescape(macro_id_arg, context);
@@ -2045,7 +2053,7 @@ async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
     binary_search_insert(line_to_id_array,
       [ast.source_location.line, ast.id], binary_search_line_to_id_array_fn);
   }
-  return { title_text }
+  return { title_text, macro_count_global }
 }
 
 // Return the full scope of a given node. This includes the concatenation of both:
@@ -3522,7 +3530,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     parse_error(state, `unexpected tokens at the end of input`);
   }
   if (context.options.log['ast-pp-simple']) {
-    console.error('After parse');
+    console.error('ast-pp-simple: after parse');
     console.error(ast_toplevel.toString());
     console.error();
   }
@@ -3550,6 +3558,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   let todo_visit = [[toplevel_parent_arg, ast_toplevel]];
   // IDs that are indexed: you can link to those.
   const line_to_id_array = [];
+  let macro_count_global = 0
   const macro_counts = {};
   const macro_counts_visible = {};
   let cur_header_graph_node;
@@ -4061,8 +4070,8 @@ async function parse(tokens, options, context, extra_returns={}) {
 
         // Must come after the header tree step is mostly done, because scopes influence ID,
         // and they also depend on the parent node.
-        const { title_text } = await calculate_id(ast, context, include_options.non_indexed_ids, include_options.indexed_ids,
-          macro_counts, macro_counts_visible, state, true, line_to_id_array);
+        ({ macro_count_global } = await calculate_id(ast, context, include_options.non_indexed_ids, include_options.indexed_ids,
+          macro_counts, macro_count_global, macro_counts_visible, state, true, line_to_id_array));
 
         // Now stuff that must come after calculate_id.
 
@@ -4186,7 +4195,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     ast_toplevel.args.content.push(header_file_preview_ast_next)
   }
   if (context.options.log['ast-pp-simple']) {
-    console.error('After pass 1');
+    console.error('ast-pp-simple: after pass 1');
     console.error(ast_toplevel.toString());
     console.error();
   }
@@ -4556,8 +4565,8 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
 
           // Header IDs already previously calculated for parent= so we don't redo it in that case.
-          await calculate_id(ast, context, include_options.non_indexed_ids, include_options.indexed_ids, macro_counts,
-            macro_counts_visible, state, false, line_to_id_array);
+          ({ macro_count_global } = await calculate_id(ast, context, include_options.non_indexed_ids, include_options.indexed_ids, macro_counts,
+            macro_count_global, macro_counts_visible, state, false, line_to_id_array));
 
           if (macro_name === Macro.X_MACRO_NAME) {
             const target_id_effective = await x_child_db_effective_id(
@@ -4616,7 +4625,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     first_toplevel_child.first_toplevel_child = true;
   }
   if (context.options.log['ast-pp-simple']) {
-    console.error('After pass 2');
+    console.error('ast-pp-simple: after pass 2');
     console.error(ast_toplevel.toString());
     console.error();
   }

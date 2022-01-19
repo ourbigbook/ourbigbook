@@ -27,7 +27,7 @@ export function cirodown_runtime(toplevel) {
   const CLOSE_CLASS = 'close';
   const TOC_CONTAINER_CLASS = 'toc-container';
   const toc_arrows = toplevel.querySelectorAll(`.${TOC_CONTAINER_CLASS} div.arrow`);
-  for(const toc_arrow of toc_arrows) {
+  for (const toc_arrow of toc_arrows) {
     toc_arrow.addEventListener('click', () => {
       // https://cirosantilli.com/cirodown#table-of-contents-javascript-open-close-interaction
       const parent_li = toc_arrow.parentElement.parentElement;
@@ -37,7 +37,7 @@ export function cirodown_runtime(toplevel) {
       if (parent_li.classList.contains(CLOSE_CLASS)) {
         was_open = false;
         // Open self.
-        parent_li.classList.toggle(CLOSE_CLASS);
+        parent_li.classList.remove(CLOSE_CLASS);
       } else {
         was_open = true;
         // Check if all children are closed.
@@ -55,22 +55,14 @@ export function cirodown_runtime(toplevel) {
           }
         }
       }
-      // Open or close all children.
-      if (!was_open) {
-        parent_li.classList.remove(CLOSE_CLASS);
-      } else {
-        if (all_children_closed && !parent_li.classList.contains('toplevel')) {
-          parent_li.classList.add(CLOSE_CLASS);
-        }
-        for (const toc_arrow_child of parent_li.childNodes) {
-          if (toc_arrow_child.tagName === 'UL') {
-            for (const toc_arrow_child_2 of toc_arrow_child.childNodes) {
-              if (toc_arrow_child_2.tagName === 'LI') {
-                if (all_children_closed) {
-                  toc_arrow_child_2.classList.remove(CLOSE_CLASS);
-                } else {
-                  toc_arrow_child_2.classList.add(CLOSE_CLASS);
-                }
+      for (const toc_arrow_child of parent_li.childNodes) {
+        if (toc_arrow_child.tagName === 'UL') {
+          for (const toc_arrow_child_2 of toc_arrow_child.childNodes) {
+            if (toc_arrow_child_2.tagName === 'LI') {
+              if (!was_open || (was_open && !all_children_closed)) {
+                toc_arrow_child_2.classList.add(CLOSE_CLASS);
+              } else {
+                toc_arrow_child_2.classList.remove(CLOSE_CLASS);
               }
             }
           }

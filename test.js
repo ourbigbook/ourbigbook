@@ -195,7 +195,8 @@ function assert_convert_ast(
     const expect_error_precise =
       options.error_line !== undefined ||
       options.error_column !== undefined ||
-      options.error_path !== undefined;
+      options.error_path !== undefined ||
+      options.error_message !== undefined;
     const expect_error = expect_error_precise || options.has_error;
     if (
       !is_subset ||
@@ -244,6 +245,9 @@ function assert_convert_ast(
             options.error_path
           )
         );
+        if (options.error_message) {
+          assert.strictEqual(error.message, options.error_message)
+        }
       }
     }
     for (const xpath_expr of options.assert_xpath_matches) {
@@ -289,7 +293,6 @@ function assert_error(description, input, line, column, path, options={}) {
   new_convert_opts.error_line = line;
   new_convert_opts.error_column = column;
   new_convert_opts.error_path = path;
-  new_convert_opts.error_message = '';
   assert_convert_ast(
     description,
     input,
@@ -3799,16 +3802,21 @@ assert_error('id conflict with previous id on the same file',
 
 == tmp
 `,
-  4, 1
+  4, 1, 'index.ciro',
+  {
+    error_message: cirodown.duplicate_id_error_message('tmp', 'index.ciro', 1, 1),
+    input_path_noext: 'index',
+  },
 );
 assert_error('id conflict with previous id on another file',
-  `= tmp
+  `= index
 
 == notindex h2
 `,
   3, 1, 'index.ciro',
   {
     convert_before: ['notindex.ciro'],
+    error_message: cirodown.duplicate_id_error_message('notindex-h2', 'notindex.ciro', 3, 1),
     filesystem: {
      'notindex.ciro': `= notindex
 

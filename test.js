@@ -158,8 +158,8 @@ function assert_convert_ast(
     new_convert_opts.file_provider = new MockFileProvider();
     for (const input_path_noext of options.convert_before) {
       const extra_returns = {};
-      const input_string = options.filesystem[input_path_noext];
       const input_path = input_path_noext + cirodown.CIRODOWN_EXT;
+      const input_string = options.filesystem[input_path_noext];
       options.convert_before = [];
       const dependency_convert_opts = Object.assign({}, new_convert_opts);
       dependency_convert_opts.input_path = input_path;
@@ -3790,6 +3790,33 @@ assert_convert_ast('id autogeneration with nested elements does an id conversion
       a('x', undefined, { href: [t('ab-cd-ef')]}),
     ]),
   ]
+);
+
+// ID conflicts.
+assert_error('id conflict with previous id on the same file',
+  `= tmp
+{id=tmp}
+
+== tmp
+`,
+  4, 1
+);
+assert_error('id conflict with previous id on another file',
+  `= tmp
+
+== notindex h2
+`,
+  3, 1, 'index.ciro',
+  {
+    convert_before: ['notindex'],
+    filesystem: {
+     'notindex': `= notindex
+
+== notindex h2
+`,
+    },
+    input_path_noext: 'index'
+  }
 );
 
 // title_to_id

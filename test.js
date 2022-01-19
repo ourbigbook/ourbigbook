@@ -205,12 +205,13 @@ function assert_convert_ast(
         extra_returns.errors.length !== 0
       )
     ) {
-      console.error('tokens:');
-      console.error(JSON.stringify(extra_returns.tokens, null, 2));
-      console.error();
-      console.error('ast output:');
-      console.error(JSON.stringify(content, null, 2));
-      console.error();
+      // Too verbose to show by default.
+      //console.error('tokens:');
+      //console.error(JSON.stringify(extra_returns.tokens, null, 2));
+      //console.error();
+      //console.error('ast output:');
+      //console.error(JSON.stringify(content, null, 2));
+      //console.error();
       console.error('ast output toString:');
       console.error(content_array.map(c => c.toString()).join('\n'));
       console.error();

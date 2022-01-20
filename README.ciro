@@ -2803,7 +2803,7 @@ To pass further arguments to an implicit table such as `title` or `id`, you need
 | 2 2
 ]
 ]]
-The rules of when the caption shows up or not are the same as described for \x[image]{p}.
+We would like to remove that explicit toplevel requirement as per: https://github.com/cirosantilli/cirodown/issues/186[] The rules of when the caption shows up or not similar to those of \x[image]{p} as mentioned at \x[image-ids-and-captions]{full} but with one difference: if the table has neither ID, nor title nor description then it does not get a caption.
 
 Multiple source lines, including paragraphs, can be added to a single cell with insane syntax by indenting the cell with exactly two spaces just as for \x[list]{p}, e.g.:
 \CirodownExample[[

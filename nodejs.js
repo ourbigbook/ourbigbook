@@ -56,6 +56,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
   constructor(sequelize) {
     super();
     this.sequelize = sequelize
+    this.id_cache = {}
   }
 
   async clear(input_paths, transaction) {
@@ -79,22 +80,44 @@ class SqliteIdProvider extends cirodown.IdProvider {
     ])
   }
 
-  async get_noscope_entries(ids, ignore_paths) {
-    const where = {
-      idid: ids,
+  async get_noscope_entries(ids, ignore_paths_set) {
+    const cached_asts = []
+    const non_cached_ids = []
+    for (const id of ids) {
+      let cached = false
+      if (id in this.id_cache) {
+        const ast = this.id_cache[id]
+        if (
+          ignore_paths_set === undefined ||
+          !ignore_paths_set.has(ast.input_path)
+        ) {
+          cached_asts.push(ast)
+          cached = true
+        }
+      }
+      if (!cached) {
+        non_cached_ids.push(id)
+      }
     }
-    if (ignore_paths !== undefined) {
+    const where = {
+      idid: non_cached_ids,
+    }
+    if (ignore_paths_set !== undefined) {
+      const ignore_paths = Array.from(ignore_paths_set).filter(x => x !== undefined)
       where.path = { [Op.not]: ignore_paths }
     }
-    const rows = await this.sequelize.models.Id.findAll({ where })
-    const asts = []
-    for (const row of rows) {
-      const ast = cirodown.AstNode.fromJSON(row.ast_json)
-      ast.input_path = row.path
-      ast.id = row.idid
-      asts.push(ast)
+    const non_cached_asts = []
+    if (non_cached_ids.length) {
+      const rows = await this.sequelize.models.Id.findAll({ where })
+      for (const row of rows) {
+        const ast = cirodown.AstNode.fromJSON(row.ast_json)
+        ast.input_path = row.path
+        ast.id = row.idid
+        non_cached_asts.push(ast)
+        this.id_cache[ast.id] = ast
+      }
     }
-    return asts
+    return cached_asts.concat(non_cached_asts)
   }
 
   async get_includes_entries(to_id) {

@@ -3646,6 +3646,8 @@ async function parse(tokens, options, context, extra_returns={}) {
   context.id_provider = id_provider;
   context.include_path_set.add(options.input_path);
   let header_file_preview_ast, header_file_preview_ast_next
+  const add_refs_to_h = []
+  const add_refs_to_x = []
   const header_ids = []
   while (todo_visit.length > 0) {
     const [parent_arg, ast] = todo_visit.pop();
@@ -4574,23 +4576,13 @@ async function parse(tokens, options, context, extra_returns={}) {
           const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
           if (children !== undefined) {
             for (let child of children) {
-              const target_id_effective = await x_child_db_effective_id(
-                await render_arg_noescape(child.args.content, context),
-                context,
-                ast
-              )
-              add_to_refs_to(target_id_effective, context, ast.id, REFS_TABLE_X_CHILD);
+              add_refs_to_h.push({ ast, child: true, content: child.args.content, type: REFS_TABLE_X_CHILD })
             }
           }
           const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
           if (tags !== undefined) {
             for (let tag of tags) {
-              const target_id_effective = await x_child_db_effective_id(
-                await render_arg_noescape(tag.args.content, context),
-                context,
-                ast
-              )
-              add_to_refs_to(ast.id, context, target_id_effective, REFS_TABLE_X_CHILD);
+              add_refs_to_h.push({ ast, child: false, content: tag.args.content, type: REFS_TABLE_X_CHILD })
             }
           }
         } else {
@@ -4613,40 +4605,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           macro_count_global = ret.macro_count_global
 
           if (macro_name === Macro.X_MACRO_NAME) {
-            const target_id_effective = await x_child_db_effective_id(
-              await render_arg_noescape(ast.args.href, context),
-              context,
-              ast
-            )
-            const parent_id = await ast.get_header_parent_id();
-            if (
-              // Happens on some special elements e.g. the ToC.
-              parent_id !== undefined
-            ) {
-              // TODO add test and enable this possible fix.
-              if (
-                // We don't want the "This section is present in another page" to count as a link.
-                !ast.from_include
-              ) {
-                // Update xref database for incoming links.
-                const from_ids = add_to_refs_to(target_id_effective, context, parent_id, REFS_TABLE_X);
-              }
-
-              // Update xref database for child/parent relationships.
-              {
-                let toid, fromid;
-                if (ast.validation_output.child.boolean) {
-                  fromid = parent_id;
-                  toid = target_id_effective;
-                } else if (ast.validation_output.parent.boolean) {
-                  toid = parent_id;
-                  fromid = target_id_effective;
-                }
-                if (toid !== undefined) {
-                  add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD);
-                }
-              }
-            }
+            add_refs_to_x.push(ast)
           }
         }
 
@@ -4691,6 +4650,58 @@ async function parse(tokens, options, context, extra_returns={}) {
   };
 
   perf_print(context, 'db_queries')
+
+  // Setup refs DB. Delegated here from second pass because it does DB queries.
+  for (const ref of add_refs_to_h) {
+    const target_id_effective = await x_child_db_effective_id(
+      await render_arg_noescape(ref.content, context),
+      context,
+      ref.ast
+    )
+    if (ref.child) {
+      add_to_refs_to(target_id_effective, context, ref.ast.id, ref.type);
+    } else {
+      add_to_refs_to(ref.ast.id, context, target_id_effective, ref.type);
+    }
+  }
+
+  for (const ast of add_refs_to_x) {
+    const target_id_effective = await x_child_db_effective_id(
+      await render_arg_noescape(ast.args.href, context),
+      context,
+      ast
+    )
+    const parent_id = await ast.get_header_parent_id();
+    if (
+      // Happens on some special elements e.g. the ToC.
+      parent_id !== undefined
+    ) {
+      // TODO add test and enable this possible fix.
+      if (
+        // We don't want the "This section is present in another page" to count as a link.
+        !ast.from_include
+      ) {
+        // Update xref database for incoming links.
+        const from_ids = add_to_refs_to(target_id_effective, context, parent_id, REFS_TABLE_X);
+      }
+
+      // Update xref database for child/parent relationships.
+      {
+        let toid, fromid;
+        if (ast.validation_output.child.boolean) {
+          fromid = parent_id;
+          toid = target_id_effective;
+        } else if (ast.validation_output.parent.boolean) {
+          toid = parent_id;
+          fromid = target_id_effective;
+        }
+        if (toid !== undefined) {
+          add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD);
+        }
+      }
+    }
+  }
+
   if (options.id_provider !== undefined) {
     const prefetch_ids = new Set(header_ids)
 

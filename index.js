@@ -937,6 +937,9 @@ class Macro {
     }
     this.auto_parent = options.auto_parent;
     this.auto_parent_skip = options.auto_parent_skip;
+    // This produces incredibly superior render backtraces as you can immediately spot which
+    // type of macro is being rendered without entering the line numbers.
+    Object.defineProperty(html_convert_func, 'name', { value: 'html_convert_func_' + name  })
     this.convert_funcs = {
       html: html_convert_func
     }
@@ -3644,6 +3647,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   context.id_provider = id_provider;
   context.include_path_set.add(options.input_path);
   let header_file_preview_ast, header_file_preview_ast_next
+  const header_ids = []
   while (todo_visit.length > 0) {
     const [parent_arg, ast] = todo_visit.pop();
     let parent_arg_push_after = []
@@ -4112,6 +4116,8 @@ async function parse(tokens, options, context, extra_returns={}) {
 
         // Now stuff that must come after calculate_id.
 
+        header_ids.push(ast.id)
+
         // https://github.com/cirosantilli/cirodown/issues/100
         if (parent_tree_node_error) {
           const message = HEADER_PARENT_ERROR_MESSAGE + parent_id;
@@ -4129,6 +4135,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           include_options.header_graph_id_stack.set(cur_header_graph_node.value.id, cur_header_graph_node);
         }
 
+        // Handle the H file argument previews.
         header_file_preview_ast = header_file_preview_ast_next
         header_file_preview_ast_next = undefined
         if (ast.file) {
@@ -4686,6 +4693,25 @@ async function parse(tokens, options, context, extra_returns={}) {
 
   // Check for ID conflicts.
   if (options.id_provider !== undefined) {
+    // Prefetch all the data that will be needed for rendering the headers.
+    await options.id_provider.get_refs_to_warm_cache(
+      [
+        REFS_TABLE_INCLUDE,
+        REFS_TABLE_X,
+        REFS_TABLE_X_CHILD,
+      ],
+      header_ids,
+    )
+
+    // This is needed to generate the "tagged" at the end of each output file.
+    await options.id_provider.get_refs_to_warm_cache(
+      [
+        REFS_TABLE_X_CHILD,
+      ],
+      header_ids,
+      true
+    )
+
     const ids = Object.keys(include_options.indexed_ids)
     if (ids.length) {
       const id_conflict_asts = await options.id_provider.get_noscope_entries(

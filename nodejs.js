@@ -57,6 +57,10 @@ class SqliteIdProvider extends cirodown.IdProvider {
     super();
     this.sequelize = sequelize
     this.id_cache = {}
+    this.ref_cache = {
+      from_id: {},
+      to_id: {},
+    }
   }
 
   async clear(input_paths, transaction) {
@@ -120,12 +124,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
     return cached_asts.concat(non_cached_asts)
   }
 
-  async get_includes_entries(to_id) {
-    return this.sequelize.models.Ref.findAll({ where: {
-      to_id, type: this.sequelize.models.Ref.Types.INCLUDE } })
-  }
-
-  async get_refs_to(type, to_id, reversed=false) {
+  async get_refs_to_warm_cache(types, to_ids, reversed=false) {
     let to_id_key, other_key;
     if (reversed) {
       to_id_key = 'from_id'
@@ -134,15 +133,53 @@ class SqliteIdProvider extends cirodown.IdProvider {
       to_id_key = 'to_id'
       other_key = 'from_id'
     }
-    return this.sequelize.models.Ref.findAll({
+    const rows = await this.sequelize.models.Ref.findAll({
       where: {
-        [to_id_key]: to_id, type: this.sequelize.models.Ref.Types[type]
+        [to_id_key]: to_ids,
+        type: types.map(type => this.sequelize.models.Ref.Types[type]),
       },
       attributes: [
         [other_key, 'id'],
         'defined_at',
+        to_id_key,
+        'type',
       ]
     })
+    for (const row of rows) {
+      let to_id_key_dict = this.ref_cache[to_id_key][row[to_id_key]]
+      if (to_id_key_dict === undefined) {
+        to_id_key_dict = {}
+        this.ref_cache[to_id_key][row[to_id_key]] = to_id_key_dict
+      }
+      let to_id_key_dict_type = to_id_key_dict[row.type]
+      if (to_id_key_dict_type === undefined) {
+        to_id_key_dict_type = []
+        to_id_key_dict[row.type] = to_id_key_dict_type
+      }
+      to_id_key_dict_type.push(row)
+    }
+  }
+
+  get_refs_to(type, to_id, reversed=false) {
+    let to_id_key, other_key;
+    if (reversed) {
+      to_id_key = 'from_id'
+      other_key = 'to_id'
+    } else {
+      to_id_key = 'to_id'
+      other_key = 'from_id'
+    }
+    // We don't even query the DB here to ensure that the warm is getting everything,
+    // as part of our effort to centralize all querries at a single poin.
+    const ref_cache_to_id = this.ref_cache[to_id_key][to_id]
+    if (ref_cache_to_id === undefined) {
+      return []
+    }
+    const ret = ref_cache_to_id[this.sequelize.models.Ref.Types[type]]
+    if (ret === undefined) {
+      return []
+    }
+    return ret
   }
 
   // Update the databases based on the output of the Cirodown conversion.

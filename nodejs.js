@@ -124,54 +124,59 @@ class SqliteIdProvider extends cirodown.IdProvider {
     return cached_asts.concat(non_cached_asts)
   }
 
-  async get_refs_to_warm_cache(types, to_ids, reversed=false) {
-    let to_id_key, other_key;
-    if (reversed) {
-      to_id_key = 'from_id'
-      other_key = 'to_id'
-    } else {
-      to_id_key = 'to_id'
-      other_key = 'from_id'
-    }
-    const rows = await this.sequelize.models.Ref.findAll({
-      where: {
-        [to_id_key]: to_ids,
+  async get_refs_to_warm_cache(ids, types) {
+    //let searched_key, other_key;
+    //if (reversed) {
+    //  searched_key = 'from_id'
+    //  other_key = 'to_id'
+    //} else {
+    //  searched_key = 'to_id'
+    //  other_key = 'from_id'
+    //}
+    const op_or_list = []
+    for (const search_key in types) {
+      op_or_list.push(
+        [search_key]: ids,
         type: types.map(type => this.sequelize.models.Ref.Types[type]),
-      },
-      attributes: [
-        [other_key, 'id'],
-        'defined_at',
-        to_id_key,
-        'type',
-      ]
-    })
+      )
+    }
+    const where = { [Op.or]: op_or_list }
+    const rows = await this.sequelize.models.Ref.findAll({ where })
+    const search_key_type_sets = {}
+    for (const search_key of types) {
+      search_key_type_sets[search_key] = new Set(types[search_key])
+    }
     for (const row of rows) {
-      let to_id_key_dict = this.ref_cache[to_id_key][row[to_id_key]]
-      if (to_id_key_dict === undefined) {
-        to_id_key_dict = {}
-        this.ref_cache[to_id_key][row[to_id_key]] = to_id_key_dict
+      for (const searched_key in search_key_type_sets) {
+        if ()
+
+        let searched_key_dict = this.ref_cache[searched_key][row[searched_key]]
+        if (searched_key_dict === undefined) {
+          searched_key_dict = {}
+          this.ref_cache[searched_key][row[searched_key]] = searched_key_dict
+        }
+        let searched_key_dict_type = searched_key_dict[row.type]
+        if (searched_key_dict_type === undefined) {
+          searched_key_dict_type = []
+          searched_key_dict[row.type] = searched_key_dict_type
+        }
+        searched_key_dict_type.push(row)
       }
-      let to_id_key_dict_type = to_id_key_dict[row.type]
-      if (to_id_key_dict_type === undefined) {
-        to_id_key_dict_type = []
-        to_id_key_dict[row.type] = to_id_key_dict_type
-      }
-      to_id_key_dict_type.push(row)
     }
   }
 
   get_refs_to(type, to_id, reversed=false) {
-    let to_id_key, other_key;
+    let searched_key, other_key;
     if (reversed) {
-      to_id_key = 'from_id'
+      searched_key = 'from_id'
       other_key = 'to_id'
     } else {
-      to_id_key = 'to_id'
+      searched_key = 'to_id'
       other_key = 'from_id'
     }
     // We don't even query the DB here to ensure that the warm is getting everything,
     // as part of our effort to centralize all querries at a single poin.
-    const ref_cache_to_id = this.ref_cache[to_id_key][to_id]
+    const ref_cache_to_id = this.ref_cache[searched_key][to_id]
     if (ref_cache_to_id === undefined) {
       return []
     }

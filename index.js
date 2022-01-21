@@ -4693,23 +4693,22 @@ async function parse(tokens, options, context, extra_returns={}) {
 
   // Check for ID conflicts.
   if (options.id_provider !== undefined) {
-    // Prefetch all the data that will be needed for rendering the headers.
     await options.id_provider.get_refs_to_warm_cache(
-      [
-        REFS_TABLE_INCLUDE,
-        REFS_TABLE_X,
-        REFS_TABLE_X_CHILD,
-      ],
       header_ids,
-    )
-
-    // This is needed to generate the "tagged" at the end of each output file.
-    await options.id_provider.get_refs_to_warm_cache(
-      [
-        REFS_TABLE_X_CHILD,
-      ],
-      header_ids,
-      true
+      {
+        // These are needed to render every header.
+        to_id: [
+          // Shows on parents list.
+          REFS_TABLE_INCLUDE,
+          REFS_TABLE_X,
+          // Shows on tags list.
+          REFS_TABLE_X_CHILD,
+        ],
+        // This is needed to generate the "tagged" at the end of each output file.
+        from_id: [
+          REFS_TABLE_X_CHILD,
+        ]
+      }
     )
 
     const ids = Object.keys(include_options.indexed_ids)

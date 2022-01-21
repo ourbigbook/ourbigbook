@@ -84,7 +84,11 @@ class SqliteIdProvider extends cirodown.IdProvider {
     ])
   }
 
-  async get_noscope_entries(ids, ignore_paths_set) {
+  async get_noscope_entries(ids, ignore_paths_set, options={}) {
+    if (!('use_db' in options)) {
+      // TODO set to false.
+      options.use_db = true
+    }
     const cached_asts = []
     const non_cached_ids = []
     for (const id of ids) {
@@ -111,14 +115,16 @@ class SqliteIdProvider extends cirodown.IdProvider {
       where.path = { [Op.not]: ignore_paths }
     }
     const non_cached_asts = []
-    if (non_cached_ids.length) {
-      const rows = await this.sequelize.models.Id.findAll({ where })
-      for (const row of rows) {
-        const ast = cirodown.AstNode.fromJSON(row.ast_json)
-        ast.input_path = row.path
-        ast.id = row.idid
-        non_cached_asts.push(ast)
-        this.id_cache[ast.id] = ast
+    if (options.use_db) {
+      if (non_cached_ids.length) {
+        const rows = await this.sequelize.models.Id.findAll({ where })
+        for (const row of rows) {
+          const ast = cirodown.AstNode.fromJSON(row.ast_json)
+          ast.input_path = row.path
+          ast.id = row.idid
+          non_cached_asts.push(ast)
+          this.id_cache[ast.id] = ast
+        }
       }
     }
     return cached_asts.concat(non_cached_asts)

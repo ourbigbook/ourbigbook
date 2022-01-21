@@ -1827,7 +1827,6 @@ function add_to_refs_to_one_way(reverse, toid, context, fromid, relation_type) {
     from_ids_relation_type = {}
     from_ids[relation_type] = from_ids_relation_type
   }
-  context.options.input_path
   let from_ids_relation_type_fromid = from_ids_relation_type[fromid]
   if (from_ids_relation_type_fromid === undefined) {
     from_ids_relation_type_fromid = new Set()
@@ -3625,8 +3624,8 @@ async function parse(tokens, options, context, extra_returns={}) {
     include_options.is_first_global_header = true;
   }
   // Format:
-  // from_ids = refs_to[false][to_id][type]
-  // to_ids = refs_to[to][from_id][type]
+  // refs_to[false][to_id][type]{from_id: Set[defined_at]}
+  // refs_to[to][from_id][type]{to_id: Set[defined_at]}
   context.refs_to = {
     false: {},
     true: {},
@@ -4693,19 +4692,42 @@ async function parse(tokens, options, context, extra_returns={}) {
 
   perf_print(context, 'db_queries')
   if (options.id_provider !== undefined) {
+    const prefetch_ids = new Set(header_ids)
+
+    // Prefetch File queries.
+    // We go over every single \x link, and then we fetch the File
+    // entry that it targets. This is used by \x rendering to decide
+    // if the target is the toplevel or not, since for the toplevel
+    // the fragment becomes empty.
+    const prefetch_file_ids = new Set()
+    const refs_to_true = context.refs_to[true]
+    for (const from_id in refs_to_true) {
+      let refs_to_true_from_id_x = refs_to_true[from_id][REFS_TABLE_X]
+      if (refs_to_true_from_id_x !== undefined) {
+        for (const to_id in refs_to_true_from_id_x) {
+          prefetch_file_ids.add(to_id)
+          prefetch_ids.add(to_id)
+        }
+      }
+    }
+
     // Check for ID conflicts.
     const ids = Object.keys(include_options.indexed_ids)
     let id_conflict_asts_promise
     if (ids.length) {
       id_conflict_asts_promise = options.id_provider.get_noscope_entries(
         ids,
-        context.include_path_set
+        context.include_path_set,
+        { use_db: true },
       )
     } else {
       id_conflict_asts_promise = true
     }
 
-    const [,,id_conflict_asts] = await Promise.all([
+    const prefetch_ids_arr = Array.from(prefetch_ids)
+    const [id_conflict_asts,,] = await Promise.all([
+      id_conflict_asts_promise,
+
       // TODO merge these two into one single DB query. Lazy now.
       // Started prototype at: https://github.com/cirosantilli/cirodown/tree/merge-ref-cache
       // The annoying part is deciding what needs to go in which direction of the cache.
@@ -4720,27 +4742,20 @@ async function parse(tokens, options, context, extra_returns={}) {
           // This is needed for the Incoming links at the bottom of each output file.
           REFS_TABLE_X,
         ],
-        header_ids,
+        prefetch_ids_arr,
       ),
       // This is needed to generate the "tagged" at the end of each output file.
       options.id_provider.get_refs_to_warm_cache(
         [
           REFS_TABLE_X_CHILD,
         ],
-        header_ids,
+        prefetch_ids_arr,
         true
       ),
-
-      id_conflict_asts_promise,
     ])
 
     // Check for ID conflicts.
     if (ids.length) {
-      const id_conflict_asts = await
-        options.id_provider.get_noscope_entries(
-        ids,
-        context.include_path_set
-      );
       for (const other_ast of id_conflict_asts) {
         const message = duplicate_id_error_message(
           other_ast.id,
@@ -4750,6 +4765,21 @@ async function parse(tokens, options, context, extra_returns={}) {
         )
         parse_error(state, message, include_options.indexed_ids[other_ast.id].source_location);
       }
+    }
+
+    // TODO some missing because of \x[] from inside \CirodownExample[]
+    const prefetch_files = new Set()
+    for (const prefetch_file_id of prefetch_file_ids) {
+      const prefetch_ast = await context.id_provider.get_noscope(prefetch_file_id, context)
+      if (
+        // Possible in some error cases.
+        prefetch_ast !== undefined
+      ) {
+        prefetch_files.add(prefetch_ast.source_location.path)
+      }
+    }
+    if (prefetch_files.size) {
+      await context.options.file_provider.get_path_entry_warm_cache(Array.from(prefetch_files))
     }
   }
 

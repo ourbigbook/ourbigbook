@@ -3732,11 +3732,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               // Don't do an error if we are not going to render, because this is how
               // we extract IDs on the first pass of ./cirodown .
               if (options.render) {
-                parse_error(
-                  state,
-                  message,
-                  ast.source_location,
-                );
+                parse_error(state, message);
               }
             } else {
               const x_text_options = {
@@ -3754,22 +3750,16 @@ async function parse(tokens, options, context, extra_returns={}) {
                   [
                     new PlaintextAstNode(
                       (parent_ast_header_level + 1).toString(),
-                      ast.source_location
                     )
                   ],
-                  ast.source_location
                 ),
                 [Macro.TITLE_ARGUMENT_NAME]: new AstArgument(
                   [
-                    new PlaintextAstNode(
-                      header_node_title,
-                      ast.source_location,
-                    )
+                    new PlaintextAstNode(header_node_title)
                   ],
-                  ast.source_location
                 ),
               },
-              ast.source_location,
+              undefined,
               {
                 force_no_index: true,
                 from_include,
@@ -3788,9 +3778,6 @@ async function parse(tokens, options, context, extra_returns={}) {
               header_ast,
               new AstNode(
                 AstType.PARAGRAPH,
-                undefined,
-                undefined,
-                ast.source_location,
               ),
               new AstNode(
                 AstType.MACRO,
@@ -3804,40 +3791,31 @@ async function parse(tokens, options, context, extra_returns={}) {
                         {
                           'href': new AstArgument(
                             [
-                              new PlaintextAstNode(
-                                href,
-                                ast.source_location,
-                              )
+                              new PlaintextAstNode(href)
                             ],
-                            ast.source_location
                           ),
                           'content': new AstArgument(
                             [
                               new PlaintextAstNode(
                                 'This section is present in another page, follow this link to view it.',
-                                ast.source_location,
                               )
                             ],
-                            ast.source_location
                           ),
                         },
-                        ast.source_location,
+                        undefined,
                         { from_include },
                       ),
                     ],
-                    ast.source_location
                   ),
                 },
-                ast.source_location,
+                undefined,
                 { from_include },
               ),
-              new AstNode(
-                AstType.PARAGRAPH,
-                undefined,
-                undefined,
-                ast.source_location,
-              ),
+              new AstNode(AstType.PARAGRAPH),
             ];
+            for (const child_node of new_child_nodes) {
+              child_node.set_source_location(ast.source_location)
+            }
           }
           // Push all included nodes, but don't recurse because:
           // - all child includes will be resolved on the sub-render call
@@ -4605,7 +4583,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           macro_count_global = ret.macro_count_global
 
           if (macro_name === Macro.X_MACRO_NAME) {
-            add_refs_to_x.push(ast)
+            add_refs_to_x.push({ ast })
           }
         }
 
@@ -4651,59 +4629,21 @@ async function parse(tokens, options, context, extra_returns={}) {
 
   perf_print(context, 'db_queries')
 
-  // Setup refs DB. Delegated here from second pass because it does DB queries.
-  for (const ref of add_refs_to_h) {
-    const target_id_effective = await x_child_db_effective_id(
-      await render_arg_noescape(ref.content, context),
-      context,
-      ref.ast
-    )
-    if (ref.child) {
-      add_to_refs_to(target_id_effective, context, ref.ast.id, ref.type);
-    } else {
-      add_to_refs_to(ref.ast.id, context, target_id_effective, ref.type);
-    }
-  }
-
-  for (const ast of add_refs_to_x) {
-    const target_id_effective = await x_child_db_effective_id(
-      await render_arg_noescape(ast.args.href, context),
-      context,
-      ast
-    )
-    const parent_id = await ast.get_header_parent_id();
-    if (
-      // Happens on some special elements e.g. the ToC.
-      parent_id !== undefined
-    ) {
-      // TODO add test and enable this possible fix.
-      if (
-        // We don't want the "This section is present in another page" to count as a link.
-        !ast.from_include
-      ) {
-        // Update xref database for incoming links.
-        const from_ids = add_to_refs_to(target_id_effective, context, parent_id, REFS_TABLE_X);
-      }
-
-      // Update xref database for child/parent relationships.
-      {
-        let toid, fromid;
-        if (ast.validation_output.child.boolean) {
-          fromid = parent_id;
-          toid = target_id_effective;
-        } else if (ast.validation_output.parent.boolean) {
-          toid = parent_id;
-          fromid = target_id_effective;
-        }
-        if (toid !== undefined) {
-          add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD);
-        }
-      }
-    }
-  }
-
   if (options.id_provider !== undefined) {
     const prefetch_ids = new Set(header_ids)
+
+    // Prefetch IDs for setup refs DB.
+    const prefetch_ids_ref_dbs = new Set()
+    for (const ref of add_refs_to_h) {
+      const id = await render_arg_noescape(ref.content, context)
+      prefetch_ids_ref_dbs.add(id)
+      ref.target_id = id
+    }
+    for (const ref of add_refs_to_x) {
+      const id = await render_arg_noescape(ref.ast.args.href, context)
+      prefetch_ids_ref_dbs.add(id)
+      ref.target_id = id
+    }
 
     // Prefetch File queries.
     // We go over every single \x link, and then we fetch the File
@@ -4736,8 +4676,13 @@ async function parse(tokens, options, context, extra_returns={}) {
     }
 
     const prefetch_ids_arr = Array.from(prefetch_ids)
-    const [id_conflict_asts,,] = await Promise.all([
+    const [id_conflict_asts,,,] = await Promise.all([
       id_conflict_asts_promise,
+      options.id_provider.get_noscope_entries(
+        prefetch_ids_ref_dbs,
+        undefined,
+        { use_db: true },
+      ),
 
       // TODO merge these two into one single DB query. Lazy now.
       // Started prototype at: https://github.com/cirosantilli/cirodown/tree/merge-ref-cache
@@ -4764,6 +4709,57 @@ async function parse(tokens, options, context, extra_returns={}) {
         true
       ),
     ])
+
+    // Setup refs DB. At this point, it shouldn't do any DB queries, as they should all have been prefetched.
+    for (const ref of add_refs_to_h) {
+      const target_id_effective = await x_child_db_effective_id(
+        ref.target_id,
+        context,
+        ref.ast
+      )
+      if (ref.child) {
+        add_to_refs_to(target_id_effective, context, ref.ast.id, ref.type);
+      } else {
+        add_to_refs_to(ref.ast.id, context, target_id_effective, ref.type);
+      }
+    }
+    for (const ref of add_refs_to_x) {
+      const ast = ref.ast
+      const target_id_effective = await x_child_db_effective_id(
+        ref.target_id,
+        context,
+        ast
+      )
+      const parent_id = await ast.get_header_parent_id();
+      if (
+        // Happens on some special elements e.g. the ToC.
+        parent_id !== undefined
+      ) {
+        // TODO add test and enable this possible fix.
+        if (
+          // We don't want the "This section is present in another page" to count as a link.
+          !ast.from_include
+        ) {
+          // Update xref database for incoming links.
+          const from_ids = add_to_refs_to(target_id_effective, context, parent_id, REFS_TABLE_X);
+        }
+
+        // Update xref database for child/parent relationships.
+        {
+          let toid, fromid;
+          if (ast.validation_output.child.boolean) {
+            fromid = parent_id;
+            toid = target_id_effective;
+          } else if (ast.validation_output.parent.boolean) {
+            toid = parent_id;
+            fromid = target_id_effective;
+          }
+          if (toid !== undefined) {
+            add_to_refs_to(toid, context, fromid, REFS_TABLE_X_CHILD);
+          }
+        }
+      }
+    }
 
     // Check for ID conflicts.
     if (ids.length) {

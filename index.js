@@ -4693,28 +4693,49 @@ async function parse(tokens, options, context, extra_returns={}) {
 
   // Check for ID conflicts.
   if (options.id_provider !== undefined) {
-    // Prefetch all the data that will be needed for rendering the headers.
-    await options.id_provider.get_refs_to_warm_cache(
-      [
-        REFS_TABLE_INCLUDE,
-        REFS_TABLE_X,
-        REFS_TABLE_X_CHILD,
-      ],
-      header_ids,
-    )
-
-    // This is needed to generate the "tagged" at the end of each output file.
-    await options.id_provider.get_refs_to_warm_cache(
-      [
-        REFS_TABLE_X_CHILD,
-      ],
-      header_ids,
-      true
-    )
-
     const ids = Object.keys(include_options.indexed_ids)
+    let id_conflict_asts_promise
     if (ids.length) {
-      const id_conflict_asts = await options.id_provider.get_noscope_entries(
+      id_conflict_asts_promise = options.id_provider.get_noscope_entries(
+        ids,
+        context.include_path_set
+      )
+    } else {
+      id_conflict_asts_promise = true
+    }
+
+    const [,,id_conflict_asts] = await Promise.all([
+      // TODO merge these two into one single DB query. Lazy now.
+      // Started prototype at: https://github.com/cirosantilli/cirodown/tree/merge-ref-cache
+      // The annoying part is deciding what needs to go in which direction of the cache.
+      options.id_provider.get_refs_to_warm_cache(
+        [
+          // These are needed to render each header.
+          // Shows on parents.
+          REFS_TABLE_INCLUDE,
+          // Shows on tags.
+          REFS_TABLE_X_CHILD,
+
+          // This is needed for the Incoming links at the bottom of each output file.
+          REFS_TABLE_X,
+        ],
+        header_ids,
+      ),
+      // This is needed to generate the "tagged" at the end of each output file.
+      options.id_provider.get_refs_to_warm_cache(
+        [
+          REFS_TABLE_X_CHILD,
+        ],
+        header_ids,
+        true
+      ),
+
+      id_conflict_asts_promise,
+    ])
+
+    if (ids.length) {
+      const id_conflict_asts = await
+        options.id_provider.get_noscope_entries(
         ids,
         context.include_path_set
       );

@@ -5798,12 +5798,12 @@ Overview of files it contains:
 
 Conversion follows the following steps:
 * tokenizer. Reads the input and converts it to a linear list of tokens.
-* parser. Reads the list of tokens and converts it into an \x[abstract-syntax-tree]. Parse can be called multiple times recursively when doing things like:
-  * \x[cirodownexample]
-  * \x[embed-includes]:
+* parser. Reads the list of tokens and converts it into an \x[abstract-syntax-tree]. Parse can be called multiple times recursively when doing things like.
 * ast post process: takes abstract syntax tree that comes out of the parser output, and modifies the it tree to achieve various different functionalities.
 
-  E.g. this is where insane paragraphs are implemented.
+  E.g. this is where the following functionality are implemented:
+  * insane paragraphs
+  * \x[cirodownexample] and \x[embed-includes]: they are stitched into the main AST
 
   We may need iterate the tree multiple times to achieve all desired effects, at the time of writing it was done twice. Each iteration is called pass.
 
@@ -5811,6 +5811,22 @@ Conversion follows the following steps:
   ``
   cirodown --log=ast-pp-simple input.ciro
   ``
+* DB queries: every single database query must be done at this point, after pots processing and before render.
+
+  Keeping all queries together is fundamental for performance reasons, especially of \x[browser-editor-with-preview] in the \x[dynamic-website]: imagine doing 100 scattered server queries:
+  ``
+  SELECT * from Ids WHERE id = '0'
+  SELECT * from Ids WHERE id = '1'
+  ...
+  SELECT * from Ids WHERE id = '100'
+  ``
+  vs grouping them together:
+  ``
+  SELECT * from Ids WHERE id IN ('0', '1', ..., '100')
+  ``
+  It also has the benefit of allowing us to remove `async`/`await` from almost every single function in the code, which considerably slows down the CPU-bound execution path.
+
+  As an added bonus, it also allows us to clearly see the impact of database queries when using \x[log-perf].
 * render, which converts our AST tree into a output string. This is run once for the toplevel, and once for every header of the document if \x[split-headers] are enabled. We need to do this because header renders are different from their toplevel counterparts, e.g. their first paragraph has id `p-1` and not `p-283`. All of those renders are done from the same parsed tree however, parsing happens only once.
 
 = Abstract syntax tree

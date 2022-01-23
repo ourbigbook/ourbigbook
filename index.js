@@ -212,7 +212,7 @@ class AstNode {
    * @param {Object} context
    * @return {String}
    */
-  async render(context) {
+  render(context) {
     if (context === undefined) {
       context = {};
     }
@@ -269,7 +269,7 @@ class AstNode {
       }
     }
     if (context.validate_ast) {
-      await validate_ast(this, context);
+      validate_ast(this, context);
     }
     const macro = context.macros[this.macro_name];
     let out;
@@ -286,7 +286,7 @@ class AstNode {
         render_error(context, message, this.source_location);
         out = error_message_in_output(message, context);
       } else {
-        out = await convert_function(this, context);
+        out = convert_function(this, context);
       }
     } else {
       render_error(
@@ -330,7 +330,7 @@ class AstNode {
   }
 
   /* Like get_header_parent_id, but returns the parent AST. */
-  async get_header_parent(context) {
+  get_header_parent(context) {
     const header_parent_id = this.get_header_parent_id();
     if (header_parent_id === undefined) {
       return undefined;
@@ -340,10 +340,10 @@ class AstNode {
   }
 
   /* Return split_default, if not in a HEADER, inherit from the parent header. */
-  async get_split_default(context) {
+  get_split_default(context) {
     let ast;
     if (this.macro_name !== Macro.HEADER_MACRO_NAME) {
-      ast = await this.get_header_parent(context)
+      ast = this.get_header_parent(context)
     }
     if (ast === undefined) {
       ast = this;
@@ -351,11 +351,11 @@ class AstNode {
     return ast.split_default;
   }
 
-  async is_header_descendant(other, context) {
+  is_header_descendant(other, context) {
     let cur_ast = this;
     const other_id = other.id;
     while (true) {
-      cur_ast = await cur_ast.get_header_parent(context);
+      cur_ast = cur_ast.get_header_parent(context);
       if (cur_ast === undefined) {
         return false;
       }
@@ -606,11 +606,11 @@ class FileProvider {
    *        - path {String}: source path
    *        - toplevel_id {String}
    */
-  async get(path) {
+  get(path) {
     return this.get_path_entry(path);
   }
 
-  async get_path_entry(path) { throw new Error('unimplemented'); }
+  get_path_entry(path) { throw new Error('unimplemented'); }
 
   async get_path_entry_fetch(path) { throw new Error('unimplemented'); }
 }
@@ -639,7 +639,7 @@ class IdProvider {
    *         undefined: ID not found
    *         Otherwise, the ast node for the given ID
    */
-  async get(id, context, header_graph_node) {
+  get(id, context, header_graph_node) {
     if (id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
       return this.get_noscope(id.substr(1), context);
     } else {
@@ -650,14 +650,14 @@ class IdProvider {
       ) {
         let parent_scope_id = calculate_scope(header_graph_node.parent_node.value, context);
         if (parent_scope_id !== undefined) {
-          let resolved_scope_id = await this.get_noscope(
+          let resolved_scope_id = this.get_noscope(
             parent_scope_id + Macro.HEADER_SCOPE_SEPARATOR + id, context);
           if (resolved_scope_id !== undefined) {
             return resolved_scope_id;
           }
           for (let i = parent_scope_id.length - 1; i > 0; i--) {
             if (parent_scope_id[i] === Macro.HEADER_SCOPE_SEPARATOR) {
-              let resolved_scope_id = await this.get_noscope(
+              let resolved_scope_id = this.get_noscope(
                 parent_scope_id.substring(0, i + 1) + id, context);
               if (resolved_scope_id !== undefined) {
                 return resolved_scope_id;
@@ -672,28 +672,28 @@ class IdProvider {
   }
 
   /** Like get, but do not resolve scope. */
-  async get_noscope(id, context) {
-    const ast = await this.get_noscope_base(id);
+  get_noscope(id, context) {
+    const ast = this.get_noscope_base(id);
     if (ast === undefined) {
       return undefined;
     } else {
       if (context !== undefined) {
-        await validate_ast(ast, context);
+        validate_ast(ast, context);
       }
       return ast;
     }
   }
 
-  async get_noscope_raw(ids) { throw new Error('unimplemented'); }
+  get_noscope_raw(ids) { throw new Error('unimplemented'); }
 
-  async get_noscope_base(id) {
-    return (await this.get_noscopes_base(new Set([id])))[0]
+  get_noscope_base(id) {
+    return this.get_noscopes_base(new Set([id]))[0]
   }
 
-  async get_noscopes_base(ids, ignore_paths_set) { throw new Error('unimplemented'); }
+  get_noscopes_base(ids, ignore_paths_set) { throw new Error('unimplemented'); }
 
   /** Array[{id: String, defined_at: String}] */
-  async get_refs_to(type, to_id, reversed=false) { throw new Error('unimplemented'); }
+  get_refs_to(type, to_id, reversed=false) { throw new Error('unimplemented'); }
 
   /**
    * TODO this should be done as single JOIN.
@@ -702,11 +702,11 @@ class IdProvider {
    * @return {Array[AstNode]}: all header nodes that have the given ID
    *                           as a parent includer.
    */
-  async get_refs_to_as_asts(type, to_id, context, reversed=false) {
-    let ref_ids = await this.get_refs_to_as_ids(type, to_id, reversed)
+  get_refs_to_as_asts(type, to_id, context, reversed=false) {
+    let ref_ids = this.get_refs_to_as_ids(type, to_id, reversed)
     let ret = [];
     for (const ref_id of ref_ids) {
-      const from_ast = await this.get(ref_id, context);
+      const from_ast = this.get(ref_id, context);
       if (from_ast === undefined) {
         throw new Error(`could not find reference in database: ${ref_id}`);
       } else {
@@ -717,9 +717,9 @@ class IdProvider {
   }
 
   /** @return Set[string] the IDs that reference the given AST .*/
-  async get_refs_to_as_ids(type, to_id, reversed=false) {
+  get_refs_to_as_ids(type, to_id, reversed=false) {
     let other_key
-    const entries = await this.get_refs_to(type, to_id, reversed)
+    const entries = this.get_refs_to(type, to_id, reversed)
     return new Set(entries.map(e => e.id))
   }
 }
@@ -737,24 +737,21 @@ class ChainedIdProvider extends IdProvider {
     this.id_provider_2 = id_provider_2;
   }
 
-  async get_noscope_base(id) {
-    let ret = await this.id_provider_1.get_noscope_base(id);
+  get_noscope_base(id) {
+    let ret = this.id_provider_1.get_noscope_base(id);
     if (ret !== undefined) {
       return ret;
     }
-    ret = await this.id_provider_2.get_noscope_base(id);
+    ret = this.id_provider_2.get_noscope_base(id);
     if (ret !== undefined) {
       return ret;
     }
     return undefined;
   }
 
-  async get_refs_to(type, to_id, reverse=false) {
-    const arrs = await Promise.all([
-      this.id_provider_1.get_refs_to(type, to_id, reverse),
-      this.id_provider_2.get_refs_to(type, to_id, reverse),
-    ])
-    return (arrs[0]).concat(arrs[1])
+  get_refs_to(type, to_id, reverse=false) {
+    return this.id_provider_1.get_refs_to(type, to_id, reverse).concat(
+      this.id_provider_2.get_refs_to(type, to_id, reverse))
   }
 }
 
@@ -769,11 +766,11 @@ class DictIdProvider extends IdProvider {
     this.refs_to = refs_to;
   }
 
-  async get_noscope_base(id) {
+  get_noscope_base(id) {
     return this.dict[id];
   }
 
-  async get_refs_to(type, to_id, reverse=false) {
+  get_refs_to(type, to_id, reverse=false) {
     const ret = []
     const from_ids_reverse = this.refs_to[reverse]
     if (from_ids_reverse !== undefined) {
@@ -1895,7 +1892,7 @@ function binary_search_line_to_id_array_fn(elem0, elem1) {
 }
 
 /** Calculate node ID and add it to the ID index. */
-async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
+function calculate_id(ast, context, non_indexed_ids, indexed_ids,
   macro_counts, macro_count_global, macro_counts_visible, state, is_header, line_to_id_array
 ) {
   let title_text
@@ -1925,7 +1922,7 @@ async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
       if (macro_id_arg === undefined) {
         let id_text = '';
         const id_prefix = context.macros[ast.macro_name].id_prefix;
-        const title_arg = await macro.options.get_title_arg(ast, context);
+        const title_arg = macro.options.get_title_arg(ast, context);
         if (title_arg !== undefined) {
           if (id_prefix !== '') {
             id_text += id_prefix + ID_SEPARATOR
@@ -1934,13 +1931,13 @@ async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
           new_context.id_conversion_for_header = is_header;
           new_context.extra_returns.id_conversion_header_title_no_id_xref = false;
           new_context.extra_returns.id_conversion_non_header_no_id_xref_non_header = false;
-          title_text = await render_arg_noescape(title_arg, new_context)
+          title_text = render_arg_noescape(title_arg, new_context)
           if (
             ast.macro_name === Macro.HEADER_MACRO_NAME &&
             ast.validation_output.file.given
           ) {
             let id_text_append
-            const file_render = await render_arg(ast.args.file, new_context)
+            const file_render = render_arg(ast.args.file, new_context)
             if (file_render) {
               id_text_append = file_render
             } else {
@@ -1953,7 +1950,7 @@ async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
           }
           const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
           if (disambiguate_arg !== undefined) {
-            id_text += ID_SEPARATOR + title_to_id(await render_arg_noescape(disambiguate_arg, new_context), new_context.options.cirodown_json['id']);
+            id_text += ID_SEPARATOR + title_to_id(render_arg_noescape(disambiguate_arg, new_context), new_context.options.cirodown_json['id']);
           }
           let message;
           if (new_context.extra_returns.id_conversion_header_title_no_id_xref) {
@@ -1990,7 +1987,7 @@ async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
           //}
         }
       } else {
-        ast.id = await render_arg_noescape(macro_id_arg, context);
+        ast.id = render_arg_noescape(macro_id_arg, context);
       }
       if (Macro.RESERVED_IDS.has(ast.id)) {
         let message = `reserved ID "${ast.id}"`;
@@ -2023,7 +2020,7 @@ async function calculate_id(ast, context, non_indexed_ids, indexed_ids,
         )
         parse_error(state, message, ast.source_location);
       }
-      if (await caption_number_visible(ast, context)) {
+      if (caption_number_visible(ast, context)) {
         if (!(macro_name in macro_counts_visible)) {
           macro_counts_visible[macro_name] = 0;
         }
@@ -2095,7 +2092,7 @@ function capitalize_first_letter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-async function caption_number_visible(ast, context) {
+function caption_number_visible(ast, context) {
   return ast.index_id || context.macros[ast.macro_name].options.caption_number_visible(ast, context);
 }
 
@@ -2271,7 +2268,7 @@ async function convert(
           id = context.toplevel_id;
         }
         if (id !== undefined) {
-          outpath = (await output_path(
+          outpath = (output_path(
             context.options.input_path,
             id,
             clone_and_set(context, 'to_split_headers', false)
@@ -2284,7 +2281,7 @@ async function convert(
     // First render.
     context.extra_returns.rendered_outputs = {};
     perf_print(context, 'render_pre')
-    output = await ast.render(context);
+    output = ast.render(context);
     context.katex_macros = Object.assign({}, context.options.katex_macros);
     if (context.toplevel_output_path !== undefined) {
       context.extra_returns.rendered_outputs[context.toplevel_output_path] = output;
@@ -2310,13 +2307,13 @@ async function convert(
           !child_ast.from_include &&
           !child_ast.validation_output.synonym.boolean
         ) {
-          await convert_header(cur_arg_list, context, has_toc);
+          convert_header(cur_arg_list, context, has_toc);
           cur_arg_list = [];
           has_toc = false;
         }
         cur_arg_list.push(child_ast);
       }
-      await convert_header(cur_arg_list, context);
+      convert_header(cur_arg_list, context);
       // Because the following conversion would redefine them.
     }
     perf_print(context, 'render_post')
@@ -2362,11 +2359,11 @@ exports.convert = convert;
  * @param {AstArgument} arg
  * @return {String} empty string if arg is undefined
  */
-async function render_arg(arg, context) {
+function render_arg(arg, context) {
   let converted_arg = '';
   if (arg !== undefined) {
     for (const ast of arg) {
-      converted_arg += await ast.render(context);
+      converted_arg += ast.render(context);
     }
   }
   return converted_arg;
@@ -2380,13 +2377,13 @@ async function render_arg(arg, context) {
  * @param {AstArgument} arg
  * @return {String}
  */
-async function render_arg_noescape(arg, context={}) {
+function render_arg_noescape(arg, context={}) {
   return render_arg(arg, clone_and_set(context, 'html_escape', false));
 }
 
 /* Convert one header (or content before the first header)
  * in --split-headers mode. */
-async function convert_header(cur_arg_list, context, has_toc) {
+function convert_header(cur_arg_list, context, has_toc) {
   if (
     // Can fail if:
     // * the first thing in the document is a header
@@ -2427,7 +2424,7 @@ async function convert_header(cur_arg_list, context, has_toc) {
     first_ast.header_graph_node = clone_object(first_ast.header_graph_node);
     context.header_graph.add_child(first_ast.header_graph_node);
     context.header_graph_top_level = first_ast.header_graph_node.get_level();
-    const output_path = (await output_path_from_ast(
+    const output_path = (output_path_from_ast(
       first_ast,
       clone_and_set(context, 'to_split_headers', true)
     ))[0];
@@ -2450,7 +2447,7 @@ async function convert_header(cur_arg_list, context, has_toc) {
 
     // Do the conversion.
     context.extra_returns.rendered_outputs[output_path] =
-      await ast_toplevel.render(context);
+      ast_toplevel.render(context);
   }
 }
 
@@ -2687,10 +2684,10 @@ function convert_init_context(options={}, extra_returns={}) {
 
 /* Like x_href, but called with options as convert,
  * so that we don't have to fake a complex context. */
-async function convert_x_href(target_id, options) {
+function convert_x_href(target_id, options) {
   const context = convert_init_context(options);
   context.id_provider = options.id_provider;
-  const target_id_ast = await context.id_provider.get(target_id, context);
+  const target_id_ast = context.id_provider.get(target_id, context);
   if (target_id_ast === undefined) {
     return undefined
   } else {
@@ -2851,8 +2848,8 @@ function check_and_update_local_link({
 }
 
 // Get description and other closely related attributes.
-async function get_description(description_arg, context) {
-  let description = await render_arg(description_arg, context);
+function get_description(description_arg, context) {
+  let description = render_arg(description_arg, context);
   let force_separator
   if (description === '') {
     force_separator = false
@@ -2880,7 +2877,7 @@ async function get_description(description_arg, context) {
   return { description, force_separator, multiline_caption }
 }
 
-async function get_link_html({
+function get_link_html({
   attrs,
   check,
   content,
@@ -2909,16 +2906,16 @@ async function get_link_html({
 }
 
 /** Get the AST from the parent argument of headers or includes. */
-async function get_parent_argument_ast(ast, context, prev_header, include_options) {
+function get_parent_argument_ast(ast, context, prev_header, include_options) {
   let parent_id;
   let parent_ast;
-  parent_id = await render_arg_noescape(ast.args.parent, context);
+  parent_id = render_arg_noescape(ast.args.parent, context);
   if (
     // Happens for the first header
     prev_header !== undefined
   ) {
     if (parent_id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
-      parent_ast = await context.id_provider.get_noscope(parent_id.substr(1), context);
+      parent_ast = context.id_provider.get_noscope(parent_id.substr(1), context);
     } else {
       // We can't use context.id_provider.get here because we don't know who
       // the parent node is, because scope can affect that choice.
@@ -2955,7 +2952,7 @@ function html_attr(key, value) {
  * @param {Object} context
  * @return {String}
  */
-async function html_attr_value(arg, context) {
+function html_attr_value(arg, context) {
   return render_arg(arg, clone_and_set(context, 'html_is_attr', true));
 }
 
@@ -2978,7 +2975,7 @@ function html_code(content, attrs) {
  * @param {Object[String, AstNode]} custom_args - attributes that were not just passed in
  *        directly from the input text, but may rather have been calculated from the node.
  */
-async function html_render_attrs(
+function html_render_attrs(
   ast, context, arg_names=[], custom_args={}
 ) {
   // Determine the arguments.
@@ -2996,7 +2993,7 @@ async function html_render_attrs(
   let ret = '';
   for (const name_arg_pair of args) {
     const [arg_name, arg] = name_arg_pair;
-    ret += html_attr(arg_name, await html_attr_value(arg, context));
+    ret += html_attr(arg_name, html_attr_value(arg, context));
   }
   return ret;
 }
@@ -3005,7 +3002,7 @@ async function html_render_attrs(
  * Same interface as html_render_attrs, but automatically add the ID to the list
  * of arguments.
  */
-async function html_render_attrs_id(
+function html_render_attrs_id(
   ast, context, arg_names=[], custom_args={}
 ) {
   let id = ast.id;
@@ -3049,14 +3046,14 @@ function html_render_simple_elem(elem_name, options={}) {
   } else {
     newline_after_close_str = '';
   }
-  return async function(ast, context) {
-    let attrs = await html_render_attrs_id(ast, context);
+  return function(ast, context) {
+    let attrs = html_render_attrs_id(ast, context);
     let extra_attrs_string = '';
     for (const key in options.attrs) {
       extra_attrs_string += html_attr(key, options.attrs[key]);
     }
     let content_ast = ast.args.content;
-    let content = await render_arg(content_ast, context);
+    let content = render_arg(content_ast, context);
 
     // testData
     let test_data_arg = ast.args[Macro.TEST_DATA_ARGUMENT_NAME]
@@ -3064,7 +3061,7 @@ function html_render_simple_elem(elem_name, options={}) {
     if (test_data_arg === undefined) {
       test_data_attr = ''
     } else {
-      test_data_attr = html_attr(Macro.TEST_DATA_HTML_PROP, await render_arg(test_data_arg, context))
+      test_data_attr = html_attr(Macro.TEST_DATA_HTML_PROP, render_arg(test_data_arg, context))
     }
 
     let res = `<${elem_name}${extra_attrs_string}${attrs}${test_data_attr}>${newline_after_open_str}${content}</${elem_name}>${newline_after_close_str}`;
@@ -3146,10 +3143,10 @@ function html_is_whitespace(string) {
   return true;
 }
 
-async function html_katex_convert(ast, context) {
+function html_katex_convert(ast, context) {
   try {
     return katex.renderToString(
-      await render_arg(ast.args.content, clone_and_set(context, 'html_escape', false)),
+      render_arg(ast.args.content, clone_and_set(context, 'html_escape', false)),
       {
         globalGroup: true,
         macros: context.katex_macros,
@@ -3172,7 +3169,7 @@ async function html_katex_convert(ast, context) {
   }
 }
 
-async function html_self_link(ast, context) {
+function html_self_link(ast, context) {
   return x_href_attr(
     ast,
     clone_and_set(context, 'to_split_headers', context.in_split_headers)
@@ -3185,8 +3182,8 @@ function is_ascii(str) {
 }
 
 function id_convert_simple_elem() {
-  return async function(ast, context) {
-    let ret = await render_arg(ast.args.content, context);
+  return function(ast, context) {
+    let ret = render_arg(ast.args.content, context);
     if (!context.macros[ast.macro_name].options.phrasing) {
       ret += '\n';
     }
@@ -3214,18 +3211,18 @@ function id_is_suffix(suffix, full) {
 }
 
 // @return [href: string, content: string ], both XSS safe.
-async function link_get_href_content(ast, context) {
-  const href = await render_arg(ast.args.href, clone_and_set(context, 'html_is_attr', true))
-  let content = await render_arg(ast.args.content, context);
+function link_get_href_content(ast, context) {
+  const href = render_arg(ast.args.href, clone_and_set(context, 'html_is_attr', true))
+  let content = render_arg(ast.args.content, context);
   if (content === '') {
-    content = await render_arg(ast.args.href, context);
+    content = render_arg(ast.args.href, context);
   }
   return [href, content];
 }
 
 // If in split header mode, link to the nosplit version.
 // If in the nosplit mode, link to the split version.
-async function link_to_split_opposite(ast, context) {
+function link_to_split_opposite(ast, context) {
   let content;
   let title;
   if (context.in_split_headers) {
@@ -3236,7 +3233,7 @@ async function link_to_split_opposite(ast, context) {
     title = 'view one header per page';
   }
   let other_context = clone_and_set(context, 'to_split_headers', !context.in_split_headers);
-  let other_href = await x_href_attr(ast, other_context);
+  let other_href = x_href_attr(ast, other_context);
   return `<a${html_attr('title', title)}${other_href}>${content}</a>`;
 }
 
@@ -3275,10 +3272,10 @@ const macro_image_video_block_convert_function_wikimedia_source_url = 'https://c
 const macro_image_video_block_convert_function_wikimedia_source_image_re = new RegExp('^\\d+px-');
 const macro_image_video_block_convert_function_wikimedia_source_video_re = new RegExp('^([^.]+\.[^.]+).*');
 
-async function macro_image_video_block_convert_function(ast, context) {
-  let rendered_attrs = await html_render_attrs(ast, context, ['height', 'width']);
-  let figure_attrs = await html_render_attrs_id(ast, context);
-  let { description, force_separator, multiline_caption } = await get_description(ast.args.description, context)
+function macro_image_video_block_convert_function(ast, context) {
+  let rendered_attrs = html_render_attrs(ast, context, ['height', 'width']);
+  let figure_attrs = html_render_attrs_id(ast, context);
+  let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
   let figure_class
   if (multiline_caption) {
     figure_class = html_attr('class', multiline_caption.slice(1))
@@ -3288,12 +3285,12 @@ async function macro_image_video_block_convert_function(ast, context) {
   let ret = `<figure${figure_attrs}${figure_class}>\n`
   let href_prefix;
   if (ast.id !== undefined) {
-    href_prefix = await html_self_link(ast, context);
+    href_prefix = html_self_link(ast, context);
   } else {
     href_prefix = undefined;
   }
   let {error_message, media_provider_type, source, src, is_url}
-    = await macro_image_video_resolve_params_with_source(ast, context);
+    = macro_image_video_resolve_params_with_source(ast, context);
   if (error_message !== undefined) {
     return error_message;
   }
@@ -3302,7 +3299,7 @@ async function macro_image_video_block_convert_function(ast, context) {
     source = ` <a${html_attr('href', source)}>Source</a>.`;
   }
   let alt_val;
-  const has_caption = (ast.id !== undefined) && await caption_number_visible(ast, context);
+  const has_caption = (ast.id !== undefined) && caption_number_visible(ast, context);
   if (ast.args.alt === undefined) {
     if (has_caption) {
       alt_val = undefined;
@@ -3310,7 +3307,7 @@ async function macro_image_video_block_convert_function(ast, context) {
       alt_val = src;
     }
   } else {
-    alt_val = await render_arg(ast.args.alt, context);
+    alt_val = render_arg(ast.args.alt, context);
   }
   let alt;
   if (alt_val === undefined) {
@@ -3321,7 +3318,7 @@ async function macro_image_video_block_convert_function(ast, context) {
   ret += context.macros[ast.macro_name].options.image_video_content_func(
     ast, context, src, rendered_attrs, alt, media_provider_type, is_url);
   if (has_caption) {
-    ret += `<figcaption>${await x_text(ast, context, {href_prefix:
+    ret += `<figcaption>${x_text(ast, context, {href_prefix:
       href_prefix, force_separator})}${source}${description}</figcaption>\n`;
   }
   ret += '</figure>\n';
@@ -3392,8 +3389,8 @@ function object_subset(source_object, keys) {
  *   !split_headers -> subdir/index.html
  * subdir/subdir-h2
  */
-async function output_path(input_path, id, context={}, split_suffix=undefined) {
-  const [dirname, basename] = await output_path_parts(input_path, id, context, split_suffix);
+function output_path(input_path, id, context={}, split_suffix=undefined) {
+  const [dirname, basename] = output_path_parts(input_path, id, context, split_suffix);
   return [
     path_join(dirname, basename + '.' + HTML_EXT, context.options.path_sep),
     dirname,
@@ -3402,10 +3399,10 @@ async function output_path(input_path, id, context={}, split_suffix=undefined) {
 }
 
 /** Helper for when we have an actual AstNode. */
-async function output_path_from_ast(ast, context) {
+function output_path_from_ast(ast, context) {
   let split_suffix;
   if (ast.args.splitSuffix !== undefined) {
-    split_suffix = await render_arg(ast.args.splitSuffix, context);
+    split_suffix = render_arg(ast.args.splitSuffix, context);
   }
   return output_path(ast.source_location.path, ast.id, context, split_suffix);
 }
@@ -3423,12 +3420,12 @@ async function output_path_from_ast(ast, context) {
  *
  * Return an array [dirname, basename without extension] of the
  * path to where an AST gets rendered to. */
-async function output_path_parts(input_path, id, context, split_suffix=undefined) {
+function output_path_parts(input_path, id, context, split_suffix=undefined) {
   let ret = '';
   let custom_split_suffix;
   const [dirname, basename] = path_split(input_path, context.options.path_sep);
   const renamed_basename_noext = rename_basename(noext(basename));
-  const ast = await context.id_provider.get(id, context);
+  const ast = context.id_provider.get(id, context);
 
   // We are the first header, or something that comes before it.
   let first_header_or_before = false;
@@ -3439,7 +3436,7 @@ async function output_path_parts(input_path, id, context, split_suffix=undefined
     if (ast.macro_name === Macro.HEADER_MACRO_NAME) {
       header_ast = ast;
     } else {
-      header_ast = await ast.get_header_parent(context);
+      header_ast = ast.get_header_parent(context);
     }
     if (header_ast.is_first_header_in_input_file) {
       first_header_or_before = true;
@@ -3451,7 +3448,7 @@ async function output_path_parts(input_path, id, context, split_suffix=undefined
   let dirname_ret;
   let basename_ret;
   const [id_dirname, id_basename] = path_split(id, URL_SEP);
-  const to_split_headers = await is_to_split_headers(header_ast, context);
+  const to_split_headers = is_to_split_headers(header_ast, context);
   if (
     first_header_or_before ||
     (
@@ -3662,14 +3659,14 @@ async function parse(tokens, options, context, extra_returns={}) {
       if (peek_ast.node_type === AstType.PLAINTEXT && peek_ast.text === '\n') {
         todo_visit.pop();
       }
-      const href = await render_arg_noescape(ast.args.href, context);
+      const href = render_arg_noescape(ast.args.href, context);
 
       // \Include parent argument handling.
       let parent_ast;
       let parent_id;
-      await validate_ast(ast, context);
+      validate_ast(ast, context);
       if (ast.validation_output.parent.given) {
-        [parent_id, parent_ast] = await get_parent_argument_ast(ast, context, prev_header, include_options)
+        [parent_id, parent_ast] = get_parent_argument_ast(ast, context, prev_header, include_options)
         if (parent_ast === undefined) {
           const message = Macro.INCLUDE_MACRO_NAME + ' ' + HEADER_PARENT_ERROR_MESSAGE + parent_id;
           const error_ast = new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location);
@@ -3833,7 +3830,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           'Q',
           {
             'content': await parse_include(
-              await render_arg_noescape(ast.args.content, context),
+              render_arg_noescape(ast.args.content, context),
               clone_and_set(options, 'from_cirodown_example', true),
               0,
               options.input_path,
@@ -3851,11 +3848,11 @@ async function parse(tokens, options, context, extra_returns={}) {
       // Not CirodownExample.
       if (macro_name === Macro.HEADER_MACRO_NAME) {
         // Required by calculate_id.
-        await validate_ast(ast, context);
+        validate_ast(ast, context);
 
         const is_synonym = ast.validation_output.synonym.boolean;
         const header_level = parseInt(
-          await render_arg_noescape(ast.args.level, context)
+          render_arg_noescape(ast.args.level, context)
         )
 
         // splitDefault propagation to children.
@@ -3904,7 +3901,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             );
             parse_error(state, message, ast.args.level.source_location);
           }
-          [parent_id, parent_ast] = await get_parent_argument_ast(ast, context, prev_header, include_options);
+          [parent_id, parent_ast] = get_parent_argument_ast(ast, context, prev_header, include_options);
           let parent_tree_node;
           if (parent_ast !== undefined) {
             parent_tree_node = include_options.header_graph_id_stack.get(parent_ast.id);
@@ -4067,7 +4064,7 @@ async function parse(tokens, options, context, extra_returns={}) {
 
         // Must come after the header tree step is mostly done, because scopes influence ID,
         // and they also depend on the parent node.
-        ;({ macro_count_global } = await calculate_id(ast, context, include_options.non_indexed_ids, include_options.indexed_ids,
+        ;({ macro_count_global } = calculate_id(ast, context, include_options.non_indexed_ids, include_options.indexed_ids,
           macro_counts, macro_count_global, macro_counts_visible, state, true, line_to_id_array));
 
         // Now stuff that must come after calculate_id.
@@ -4129,7 +4126,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             //   files that would be downloaded like .yml are also downloaded from the iframe.
             //const protocol = protocol_get(ast.file)
             //if (protocol === null || protocol === 'file') {
-            //  const content = await context.options.read_file(ast.file, context)
+            //  const content = context.options.read_file(ast.file, context)
             //  console.error({content});
             //  console.error(/[\x00-\x10]/.test(content));
             //  if (
@@ -4286,7 +4283,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             context.has_toc = true;
           }
         } else {
-          await validate_ast(ast, context);
+          validate_ast(ast, context);
         }
 
         // Push this node into the parent argument list.
@@ -4555,7 +4552,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
 
           // Header IDs already previously calculated for parent= so we don't redo it in that case.
-          let ret = await calculate_id(ast, context, include_options.non_indexed_ids, include_options.indexed_ids, macro_counts,
+          let ret = calculate_id(ast, context, include_options.non_indexed_ids, include_options.indexed_ids, macro_counts,
             macro_count_global, macro_counts_visible, state, false, line_to_id_array);
           macro_count_global = ret.macro_count_global
 
@@ -4610,12 +4607,12 @@ async function parse(tokens, options, context, extra_returns={}) {
 
     const prefetch_ids = new Set()
     for (const ref of add_refs_to_h) {
-      const id = await render_arg_noescape(ref.content, context)
+      const id = render_arg_noescape(ref.content, context)
       ref.target_id = id
     }
     const prefetch_file_ids = new Set()
     for (const ref of add_refs_to_x) {
-      const id = await render_arg_noescape(ref.ast.args.href, context)
+      const id = render_arg_noescape(ref.ast.args.href, context)
       // We need the target IDs of any x to render it.
       prefetch_ids.add(id)
       prefetch_file_ids.add(id)
@@ -4627,25 +4624,6 @@ async function parse(tokens, options, context, extra_returns={}) {
       prefetch_ids.add(id)
     }
     const prefetch_refs_ids = new Set()
-
-    // TODO remove most likely, this became useless when we moved th
-    // x_child_db_effective_id down.
-    //// Prefetch File queries.
-    //// We go over every single \x link, and then we fetch the File
-    //// entry that it targets. This is used by \x rendering to decide
-    //// if the target is the toplevel or not, since for the toplevel
-    //// the fragment becomes empty.
-    //const prefetch_file_ids = new Set()
-    //const refs_to_true = context.refs_to[true]
-    //for (const from_id in refs_to_true) {
-    //  let refs_to_true_from_id_x = refs_to_true[from_id][REFS_TABLE_X]
-    //  if (refs_to_true_from_id_x !== undefined) {
-    //    for (const to_id in refs_to_true_from_id_x) {
-    //      prefetch_file_ids.add(to_id)
-    //      prefetch_refs_ids.add(to_id)
-    //    }
-    //  }
-    //}
 
     // Check for ID conflicts.
     const ids = Object.keys(include_options.indexed_ids)
@@ -4693,7 +4671,7 @@ async function parse(tokens, options, context, extra_returns={}) {
 
     // Setup refs DB. At this point, it shouldn't do any DB queries, as they should all have been prefetched.
     for (const ref of add_refs_to_h) {
-      const target_id_effective = await x_child_db_effective_id(
+      const target_id_effective = x_child_db_effective_id(
         ref.target_id,
         context,
         ref.ast
@@ -4706,12 +4684,12 @@ async function parse(tokens, options, context, extra_returns={}) {
     }
     for (const ref of add_refs_to_x) {
       const ast = ref.ast
-      const target_id_effective = await x_child_db_effective_id(
+      const target_id_effective = x_child_db_effective_id(
         ref.target_id,
         context,
         ast
       )
-      const parent_id = await ast.get_header_parent_id();
+      const parent_id = ast.get_header_parent_id();
       if (
         // Happens on some special elements e.g. the ToC.
         parent_id !== undefined
@@ -4755,10 +4733,9 @@ async function parse(tokens, options, context, extra_returns={}) {
       }
     }
 
-    // TODO some missing because of \x[] from inside \CirodownExample[]
     const prefetch_files = new Set()
     for (const prefetch_file_id of prefetch_file_ids) {
-      const prefetch_ast = await context.id_provider.get_noscope(prefetch_file_id, context)
+      const prefetch_ast = context.id_provider.get_noscope(prefetch_file_id, context)
       if (
         // Possible in some error cases.
         prefetch_ast !== undefined
@@ -4767,7 +4744,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       }
     }
     if (prefetch_files.size) {
-      await context.options.file_provider.get_path_entry_fetch(Array.from(prefetch_files))
+      context.options.file_provider.get_path_entry_fetch(Array.from(prefetch_files))
     }
   }
 
@@ -4775,7 +4752,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   // Deferred here after ID cache warming to group all DB queries.
   for (const href in include_hrefs) {
     const header_ast = include_hrefs[href]
-    const target_id_ast = await context.id_provider.get(href, context);
+    const target_id_ast = context.id_provider.get(href, context);
     let header_node_title;
     if (target_id_ast === undefined) {
       let message = `ID in include not found on database: "${href}", ` +
@@ -4791,14 +4768,14 @@ async function parse(tokens, options, context, extra_returns={}) {
         show_caption_prefix: false,
         style_full: false,
       };
-      header_node_title = await x_text(target_id_ast, context, x_text_options);
+      header_node_title = x_text(target_id_ast, context, x_text_options);
     }
     header_ast.args[Macro.TITLE_ARGUMENT_NAME][0].text = header_node_title
     // This is a bit nasty and duplicates the below header processing code,
     // but it is a bit hard to factor them out since this is a magic include header,
     // and all includes and headers must be parsed concurrently since includes get
     // injected under the last header.
-    await validate_ast(header_ast, context);
+    validate_ast(header_ast, context);
   }
 
   perf_print(context, 'post_process_end')
@@ -5227,7 +5204,7 @@ function url_basename(str) {
 }
 
 // Do some error checking. If no errors are found, convert normally. Save output on out.
-async function validate_ast(ast, context) {
+function validate_ast(ast, context) {
   const macro_name = ast.macro_name;
   const macro = context.macros[macro_name];
   const name_to_arg = macro.name_to_arg;
@@ -5261,7 +5238,7 @@ async function validate_ast(ast, context) {
       if (macro_arg.boolean) {
         let arg_string;
         if (arg.length > 0) {
-          arg_string = await render_arg_noescape(arg, context);
+          arg_string = render_arg_noescape(arg, context);
         } else {
           arg_string = '1';
         }
@@ -5279,7 +5256,7 @@ async function validate_ast(ast, context) {
         }
       }
       if (macro_arg.positive_nonzero_integer) {
-        const arg_string = await render_arg_noescape(arg, context);
+        const arg_string = render_arg_noescape(arg, context);
         const int_value = parseInt(arg_string);
         ast.validation_output[argname]['positive_nonzero_integer'] = int_value;
         if (!Number.isInteger(int_value) || !(int_value > 0)) {
@@ -5300,8 +5277,8 @@ async function validate_ast(ast, context) {
   }
 }
 
-async function x_child_db_effective_id(target_id, context, ast) {
-  const target_id_ast = await context.id_provider.get(target_id, context, ast.header_graph_node);
+function x_child_db_effective_id(target_id, context, ast) {
+  const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);
   if (
     // Can happen if it is in another files that was not extracted yet.
     target_id_ast === undefined
@@ -5317,15 +5294,15 @@ async function x_child_db_effective_id(target_id, context, ast) {
 /**
  * @return {[String, String]} [href, content] pair for the x node.
  */
-async function x_get_href_content(ast, context) {
-  const target_id = await render_arg_noescape(ast.args.href, context);
+function x_get_href_content(ast, context) {
+  const target_id = render_arg_noescape(ast.args.href, context);
   if (target_id[0] === AT_MENTION_CHAR) {
     return [html_attr('href', WEBSITE_URL + target_id.substr(1)), target_id];
   }
   if (target_id[0] === HASHTAG_CHAR) {
     return [html_attr('href', WEBSITE_URL + 'go/topic/' + target_id.substr(1)), target_id];
   }
-  const target_id_ast = await context.id_provider.get(target_id, context, ast.header_graph_node);
+  const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);
 
   // href
   let href;
@@ -5334,7 +5311,7 @@ async function x_get_href_content(ast, context) {
     render_error(context, message, ast.args.href.source_location, 2);
     return [href, error_message_in_output(message, context)];
   } else {
-    href = await x_href_attr(target_id_ast, context);
+    href = x_href_attr(target_id_ast, context);
   }
 
   // content
@@ -5374,7 +5351,7 @@ async function x_get_href_content(ast, context) {
     }
     const x_parents_new = new Set(context.x_parents);
     x_parents_new.add(ast);
-    content = await x_text(target_id_ast, clone_and_set(context, 'x_parents', x_parents_new), x_text_options);
+    content = x_text(target_id_ast, clone_and_set(context, 'x_parents', x_parents_new), x_text_options);
     if (content === ``) {
       let message = `empty cross reference body: "${target_id}"`;
       render_error(context, message, ast.source_location);
@@ -5382,7 +5359,7 @@ async function x_get_href_content(ast, context) {
     }
   } else {
     // Explicit content given, just use it then.
-    content = await render_arg(content_arg, context);
+    content = render_arg(content_arg, context);
   }
   return [href, content, target_id_ast];
 }
@@ -5395,8 +5372,8 @@ async function x_get_href_content(ast, context) {
  * @param {AstNode} target_id_ast
  * @return {String} the value of href (no quotes) that an \x cross reference to the given target_id_ast
  */
-async function x_href(target_id_ast, context) {
-  const [href_path, fragment] = await x_href_parts(target_id_ast, context);
+function x_href(target_id_ast, context) {
+  const [href_path, fragment] = x_href_parts(target_id_ast, context);
   let ret = href_path;
   if (fragment !== '')
     ret += '#' + fragment;
@@ -5424,8 +5401,8 @@ async function x_href(target_id_ast, context) {
 // id='subdir/subdir-h2'     -> ['subdir', 'subdir-h2']
 // id='subdir/notindex'      -> ['subdir', 'notindex']
 // id='subdir/notindex-h2'   -> ['subdir', 'notindex-h2']
-async function is_to_split_headers(ast, context) {
-  return (context.to_split_headers === undefined && await ast.get_split_default(context)) ||
+function is_to_split_headers(ast, context) {
+  return (context.to_split_headers === undefined && ast.get_split_default(context)) ||
          (context.to_split_headers !== undefined && context.to_split_headers);
 }
 
@@ -5437,7 +5414,7 @@ async function is_to_split_headers(ast, context) {
  *
  * @param {AstNode} target_id_ast
  */
-async function x_href_parts(target_id_ast, context) {
+function x_href_parts(target_id_ast, context) {
   if (target_id_ast.macro_name === Macro.TOC_MACRO_NAME) {
     // Otherwise, split header ToCs would link to the toplevel source ToC,
     // since split header ToCs are not really properly registered.
@@ -5449,7 +5426,7 @@ async function x_href_parts(target_id_ast, context) {
   } else {
     target_id_ast_effective_id = target_id_ast.id
   }
-  let to_split_headers = await is_to_split_headers(target_id_ast, context);
+  let to_split_headers = is_to_split_headers(target_id_ast, context);
   // Linking to the toplevel of the current output path.
   let to_current_toplevel =
       // Linkting to the current output file.
@@ -5491,7 +5468,7 @@ async function x_href_parts(target_id_ast, context) {
       full_output_path,
       target_output_path_dirname,
       target_output_path_basename
-    ] = await output_path_from_ast(
+    ] = output_path_from_ast(
       target_id_ast,
       context,
     );
@@ -5555,7 +5532,7 @@ async function x_href_parts(target_id_ast, context) {
     let toplevel_ast;
     if (to_split_headers) {
       // We know not a header target, as that would have been caught previously.
-      toplevel_ast = await target_id_ast.get_header_parent(context);
+      toplevel_ast = target_id_ast.get_header_parent(context);
     } else if (
       // The header was included inline into the current file.
       context.include_path_set.has(target_input_path) && !context.in_split_headers // ||
@@ -5564,9 +5541,9 @@ async function x_href_parts(target_id_ast, context) {
     ) {
       toplevel_ast = context.toplevel_ast;
     } else {
-      const file_provider_ret = await context.options.file_provider.get(target_input_path);
+      const file_provider_ret = context.options.file_provider.get(target_input_path);
       if (file_provider_ret) {
-        toplevel_ast = await context.id_provider.get(file_provider_ret.toplevel_id, context);
+        toplevel_ast = context.id_provider.get(file_provider_ret.toplevel_id, context);
       } else {
         // The only way this can happen is if we are in the current file, and it hasn't
         // been added to the file db yet.
@@ -5581,8 +5558,8 @@ async function x_href_parts(target_id_ast, context) {
 }
 
 /* href="" that links to a given node. */
-async function x_href_attr(target_id_ast, context) {
-  return html_attr('href', await x_href(target_id_ast, context));
+function x_href_attr(target_id_ast, context) {
+  return html_attr('href', x_href(target_id_ast, context));
 }
 
 /**
@@ -5597,7 +5574,7 @@ async function x_href_attr(target_id_ast, context) {
  *   part of a link to self to be applied e.g. to <>Figure 1<>, of undefined
  *   if this link should not be given.
  */
-async function x_text(ast, context, options={}) {
+function x_text(ast, context, options={}) {
   if (!('caption_prefix_span' in options)) {
     options.caption_prefix_span = true;
   }
@@ -5658,7 +5635,7 @@ async function x_text(ast, context, options={}) {
         (
           // Possible in case of broken header parent=.
           context.toplevel_ast !== undefined &&
-          await ast.is_header_descendant(context.toplevel_ast, context)
+          ast.is_header_descendant(context.toplevel_ast, context)
         )
       )
     ) {
@@ -5674,7 +5651,7 @@ async function x_text(ast, context, options={}) {
       ret += `</a>`
     }
   }
-  let title_arg = await macro.options.get_title_arg(ast, context);
+  let title_arg = macro.options.get_title_arg(ast, context);
   if (
     (
       (title_arg !== undefined && style_full) ||
@@ -5726,7 +5703,7 @@ async function x_text(ast, context, options={}) {
         title_arg[title_arg.length - 1].text = pluralize(last_ast.text, options.pluralize ? 2 : 1);
       }
     }
-    ret += await render_arg(title_arg, context);
+    ret += render_arg(title_arg, context);
     if (style_full) {
       const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
       const title2_arg = ast.args[Macro.TITLE2_ARGUMENT_NAME];
@@ -5739,13 +5716,13 @@ async function x_text(ast, context, options={}) {
         ret += ' (';
         const title2_renders = [];
         if (show_disambiguate) {
-          title2_renders.push(await render_arg(disambiguate_arg, context));
+          title2_renders.push(render_arg(disambiguate_arg, context));
         }
         if (title2_arg !== undefined) {
-          title2_renders.push(await render_arg(title2_arg, context));
+          title2_renders.push(render_arg(title2_arg, context));
         }
         for (const title2ast of ast.title2s) {
-          title2_renders.push(await render_arg(title2ast.args.title, context));
+          title2_renders.push(render_arg(title2ast.args.title, context));
         }
         ret += title2_renders.join(', ');
         ret += ')';
@@ -5915,15 +5892,15 @@ const MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS = IMAGE_INLINE_BLOCK_COMMON_NAMED_ARGUME
  * @return {Object}
  *         MediaProviderType {MediaProviderType} , e.g. type, src, source.
  */
-async function macro_image_video_resolve_params(ast, context) {
+function macro_image_video_resolve_params(ast, context) {
   let error_message;
   let media_provider_type;
-  let src = await render_arg_noescape(ast.args.src, context);
+  let src = render_arg_noescape(ast.args.src, context);
   let is_url;
 
   // Provider explicitly given by user on macro.
   if (ast.validation_output.provider.given) {
-    const provider_name = await render_arg_noescape(ast.args.provider, context);
+    const provider_name = render_arg_noescape(ast.args.provider, context);
     if (MEDIA_PROVIDER_TYPES.has(provider_name)) {
       media_provider_type = provider_name;
     } else {
@@ -5979,26 +5956,26 @@ async function macro_image_video_resolve_params(ast, context) {
   }
 }
 
-async function macro_image_video_resolve_params_with_source(ast, context) {
-  const ret = await macro_image_video_resolve_params(ast, context);
-  ret.source = await context.macros[ast.macro_name].options.source_func(
+function macro_image_video_resolve_params_with_source(ast, context) {
+  const ret = macro_image_video_resolve_params(ast, context);
+  ret.source = context.macros[ast.macro_name].options.source_func(
     ast, context, ret.src, ret.media_provider_type, ret.is_url);
   return ret;
 }
 
 const MACRO_IMAGE_VIDEO_OPTIONS = {
-  caption_number_visible: async function (ast, context) {
+  caption_number_visible: function (ast, context) {
     return 'description' in ast.args ||
-      await macro_image_video_resolve_params_with_source(ast, context).source !== '';
+      macro_image_video_resolve_params_with_source(ast, context).source !== '';
   },
-  get_title_arg: async function(ast, context) {
+  get_title_arg: function(ast, context) {
     // Title given explicitly.
     if (ast.validation_output[Macro.TITLE_ARGUMENT_NAME].given) {
       return ast.args[Macro.TITLE_ARGUMENT_NAME];
     }
 
     // Title from src.
-    const media_provider_type = (await macro_image_video_resolve_params(ast, context)).media_provider_type;
+    const media_provider_type = (macro_image_video_resolve_params(ast, context)).media_provider_type;
     if (
       ast.validation_output.titleFromSrc.boolean ||
       (
@@ -6007,7 +5984,7 @@ const MACRO_IMAGE_VIDEO_OPTIONS = {
       )
     ) {
       let basename_str;
-      let src = await render_arg(ast.args.src, context);
+      let src = render_arg(ast.args.src, context);
       if (media_provider_type === 'local') {
         basename_str = url_basename(src);
       } else if (media_provider_type === 'wikimedia') {
@@ -6057,14 +6034,14 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    async function(ast, context) {
-      let [href, content] = await link_get_href_content(ast, context);
+    function(ast, context) {
+      let [href, content] = link_get_href_content(ast, context);
       if (ast.validation_output.ref.boolean) {
         content = '<sup class="ref">[ref]</sup>';
       }
       const check = ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined
       const relative = ast.validation_output.relative.given ? ast.validation_output.relative.boolean : undefined
-      const attrs = await html_render_attrs_id(ast, context);
+      const attrs = html_render_attrs_id(ast, context);
       return get_link_html({
         attrs,
         check,
@@ -6116,15 +6093,15 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    async function(ast, context) {
-      let attrs = await html_render_attrs_id(ast, context);
-      let content = await render_arg(ast.args.content, context);
-      let { description, force_separator, multiline_caption } = await get_description(ast.args.description, context)
+    function(ast, context) {
+      let attrs = html_render_attrs_id(ast, context);
+      let content = render_arg(ast.args.content, context);
+      let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
       let ret = `<div class="code${multiline_caption}"${attrs}>\n`;
       if (ast.index_id || ast.validation_output.description.given) {
         ret += `\n<div class="caption">${
-          await x_text(ast, context, {
-            href_prefix: await html_self_link(ast, context),
+          x_text(ast, context, {
+            href_prefix: html_self_link(ast, context),
             force_separator
           })}${description}</div>\n`;
       }
@@ -6133,7 +6110,7 @@ const DEFAULT_MACRO_LIST = [
       return ret;
     },
     {
-      caption_number_visible: async function (ast, context) {
+      caption_number_visible: function (ast, context) {
         return 'description' in ast.args
       },
       caption_prefix: 'Code',
@@ -6213,7 +6190,7 @@ const DEFAULT_MACRO_LIST = [
         name: Macro.TITLE_ARGUMENT_NAME,
       }),
     ],
-    async function(ast, context) {
+    function(ast, context) {
       const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
       const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
       if (ast.validation_output.synonym.boolean) {
@@ -6245,18 +6222,18 @@ const DEFAULT_MACRO_LIST = [
         custom_args = {};
         level_int_capped = level_int_output;
       }
-      let attrs = await html_render_attrs(ast, context, [], custom_args);
-      let id_attr = await html_render_attrs_id(ast, context);
+      let attrs = html_render_attrs(ast, context, [], custom_args);
+      let id_attr = html_render_attrs_id(ast, context);
       let ret = '';
       // Div that contains h + on hover span.
       ret += `<div class="h"${id_attr}>`;
-      ret += `<h${level_int_capped}${attrs}><a${await html_self_link(ast, context)} title="link to this element">`;
+      ret += `<h${level_int_capped}${attrs}><a${html_self_link(ast, context)} title="link to this element">`;
       let x_text_options = {
         show_caption_prefix: false,
         show_number: !is_top_level,
         style_full: true,
       };
-      ret += await x_text(ast, context, x_text_options);
+      ret += x_text(ast, context, x_text_options);
       ret += `</a>`;
       ret += `</h${level_int_capped}>\n`;
 
@@ -6266,7 +6243,7 @@ const DEFAULT_MACRO_LIST = [
       {
         ret += `<span class="hover-meta"> `;
         if (context.options.split_headers) {
-          link_to_split = await link_to_split_opposite(ast, context);
+          link_to_split = link_to_split_opposite(ast, context);
           ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
         }
         let toc_href;
@@ -6286,12 +6263,12 @@ const DEFAULT_MACRO_LIST = [
         ) {
           parent_asts.push(parent_tree_node.value);
         }
-        parent_asts.push(...(await context.id_provider.get_refs_to_as_asts(
+        parent_asts.push(...(context.id_provider.get_refs_to_as_asts(
           REFS_TABLE_INCLUDE, ast.id, context)));
         parent_links = [];
         for (const parent_ast of parent_asts) {
-          let parent_href = await x_href_attr(parent_ast, context);
-          let parent_body = await render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+          let parent_href = x_href_attr(parent_ast, context);
+          let parent_body = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
           parent_links.push(`<a${parent_href}${html_attr('title', 'parent header')}>${PARENT_MARKER} "${parent_body}"</a>`);
         }
         parent_links = parent_links.join(HEADER_MENU_ITEM_SEP);
@@ -6310,11 +6287,11 @@ const DEFAULT_MACRO_LIST = [
       // Metadata that shows on separate lines below toplevel header.
       let wiki_link;
       if (ast.validation_output.wiki.given) {
-        let wiki = await render_arg(ast.args.wiki, context);
+        let wiki = render_arg(ast.args.wiki, context);
         if (wiki === '') {
-          wiki = (await render_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context)).replace(/ /g, '_');
+          wiki = (render_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context)).replace(/ /g, '_');
           if (ast.validation_output[Macro.DISAMBIGUATE_ARGUMENT_NAME].given) {
-            wiki += '_(' + (await render_arg(ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME], context)).replace(/ /g, '_')  + ')'
+            wiki += '_(' + (render_arg(ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME], context)).replace(/ /g, '_')  + ')'
           }
         }
         wiki_link = `<a href="https://en.wikipedia.org/wiki/${html_escape_attr(wiki)}">Wikipedia</a>`;
@@ -6323,7 +6300,7 @@ const DEFAULT_MACRO_LIST = [
       // Calculate file_link_html
       let file_link_html
       if (ast.file) {
-        file_link_html = await get_link_html({
+        file_link_html = get_link_html({
           content: 'View file',
           context,
           href: ast.file,
@@ -6333,7 +6310,7 @@ const DEFAULT_MACRO_LIST = [
       }
 
       // Calculate tag_ids_html
-      const tag_ids = await context.id_provider.get_refs_to_as_ids(
+      const tag_ids = context.id_provider.get_refs_to_as_ids(
         REFS_TABLE_X_CHILD, ast.id);
       const new_context = clone_and_set(context, 'validate_ast', true);
       new_context.source_location = ast.source_location;
@@ -6356,7 +6333,7 @@ const DEFAULT_MACRO_LIST = [
             'c': new AstArgument(),
           },
         );
-        tag_ids_html_array.push(await x_ast.render(new_context));
+        tag_ids_html_array.push(x_ast.render(new_context));
       }
       const tag_ids_html = 'Tags: ' + tag_ids_html_array.join(', ');
 
@@ -6415,8 +6392,8 @@ const DEFAULT_MACRO_LIST = [
         childrenAndTags.push(...tags)
       }
       for (let child of childrenAndTags) {
-        const target_id = await render_arg_noescape(child.args.content, context)
-        const target_id_ast = await context.id_provider.get(target_id, context, ast.header_graph_node)
+        const target_id = render_arg_noescape(child.args.content, context)
+        const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node)
         if (target_id_ast === undefined) {
           let message = `unknown child id: "${target_id}"`
           render_error(context, message, child.source_location)
@@ -6492,8 +6469,8 @@ const DEFAULT_MACRO_LIST = [
         name: 'src',
       }),
     ],
-    async function(ast, context) {
-      const attrs = await html_render_attrs_id(ast, context, ['src']);
+    function(ast, context) {
+      const attrs = html_render_attrs_id(ast, context, ['src']);
       return `<iframe${attrs}></iframe>`
     },
   ),
@@ -6536,16 +6513,16 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    async function(ast, context) {
-      let attrs = await html_render_attrs_id(ast, context);
-      let katex_output = await html_katex_convert(ast, context);
+    function(ast, context) {
+      let attrs = html_render_attrs_id(ast, context);
+      let katex_output = html_katex_convert(ast, context);
       let ret = ``;
       if (ast.validation_output.show.boolean) {
         let href = html_attr('href', '#' + html_escape_attr(ast.id));
         ret += `<div class="math-container"${attrs}>`;
         if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
           ret += `<div class="math-caption-container">\n`;
-          ret += `<span class="math-caption">${await x_text(ast, context, {href_prefix: href})}</span>`;
+          ret += `<span class="math-caption">${x_text(ast, context, {href_prefix: href})}</span>`;
           ret += `</div>\n`;
         }
         ret += `<div class="math-equation">\n`
@@ -6587,7 +6564,7 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    async function(ast, context) {
+    function(ast, context) {
       // KaTeX already adds a <span> for us.
       return html_katex_convert(ast, context);
     },
@@ -6621,7 +6598,7 @@ const DEFAULT_MACRO_LIST = [
           return `<a${html_attr('href', src)}>${img_html}</a>\n`;
         },
         named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS,
-        source_func: async function (ast, context, src, media_provider_type, is_url) {
+        source_func: function (ast, context, src, media_provider_type, is_url) {
           if ('source' in ast.args) {
             return render_arg(ast.args.source, context);
           } else if (media_provider_type == 'wikimedia') {
@@ -6646,16 +6623,16 @@ const DEFAULT_MACRO_LIST = [
   new Macro(
     'image',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
-    async function(ast, context) {
+    function(ast, context) {
       let alt_arg;
       if (ast.args.alt === undefined) {
         alt_arg = ast.args.src;
       } else {
         alt_arg = ast.args.alt;
       }
-      let alt = html_attr('alt', html_escape_attr(await render_arg(alt_arg, context)));
-      let rendered_attrs = await html_render_attrs_id(ast, context, ['height', 'width']);
-      let { error_message, src } = await macro_image_video_resolve_params(ast, context);
+      let alt = html_attr('alt', html_escape_attr(render_arg(alt_arg, context)));
+      let rendered_attrs = html_render_attrs_id(ast, context, ['height', 'width']);
+      let { error_message, src } = macro_image_video_resolve_params(ast, context);
       let ret = html_img({ alt, ast, context, rendered_attrs, src })
       if (error_message) {
         ret += error_message_in_output(error_message, context)
@@ -6675,9 +6652,9 @@ const DEFAULT_MACRO_LIST = [
         mandatory: true,
       }),
     ],
-    async function(ast, context) {
+    function(ast, context) {
       return html_code(
-        await render_arg(ast.args.content, context),
+        render_arg(ast.args.content, context),
         {'class': 'cirodown-js-canvas-demo'}
       );
     },
@@ -6730,7 +6707,7 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    async function(ast, context) {
+    function(ast, context) {
       return render_arg_noescape(ast.args.content, context);
     },
     {
@@ -6788,11 +6765,11 @@ const DEFAULT_MACRO_LIST = [
         remove_whitespace_children: true,
       }),
     ],
-    async function(ast, context) {
-      let attrs = await html_render_attrs_id(ast, context);
-      let content = await render_arg(ast.args.content, context);
+    function(ast, context) {
+      let attrs = html_render_attrs_id(ast, context);
+      let content = render_arg(ast.args.content, context);
       let ret = ``;
-      let { description, force_separator, multiline_caption } = await get_description(ast.args.description, context)
+      let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
       ret += `<div class="table${multiline_caption}"${attrs}>\n`;
       // TODO not using caption because I don't know how to allow the caption to be wider than the table.
       // I don't want the caption to wrap to a small table size.
@@ -6807,7 +6784,7 @@ const DEFAULT_MACRO_LIST = [
       //Caption on top as per: https://tex.stackexchange.com/questions/3243/why-should-a-table-caption-be-placed-above-the-table */
       let href = html_attr('href', '#' + html_escape_attr(ast.id));
       if (ast.index_id || ast.validation_output.description.given) {
-        ret += `<div class="caption">${await x_text(ast, context, {
+        ret += `<div class="caption">${x_text(ast, context, {
           href_prefix: href,
           force_separator,
         })}${description}</div>`;
@@ -6817,7 +6794,7 @@ const DEFAULT_MACRO_LIST = [
       return ret;
     },
     {
-      caption_number_visible: async function (ast, context) {
+      caption_number_visible: function (ast, context) {
         return 'description' in ast.args
       },
       named_args: [
@@ -6845,8 +6822,8 @@ const DEFAULT_MACRO_LIST = [
   new Macro(
     Macro.TOC_MACRO_NAME,
     [],
-    async function(ast, context) {
-      let attrs = await html_render_attrs_id(ast, context);
+    function(ast, context) {
+      let attrs = html_render_attrs_id(ast, context);
       let todo_visit = [];
       let top_level = 0;
       let root_node = context.header_graph;
@@ -6855,7 +6832,7 @@ const DEFAULT_MACRO_LIST = [
         root_node = root_node.children[0];
       }
       let descendant_count_html = get_descendant_count_html_sep(root_node, false);
-      ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title"${await x_href_attr(ast, context)}>Table of contents</a><span class="hover-metadata">${descendant_count_html}</span></span></div>\n`;
+      ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title"${x_href_attr(ast, context)}>Table of contents</a><span class="hover-metadata">${descendant_count_html}</span></span></div>\n`;
       for (let i = root_node.children.length - 1; i >= 0; i--) {
         todo_visit.push([root_node.children[i], 1]);
       }
@@ -6872,7 +6849,7 @@ const DEFAULT_MACRO_LIST = [
         } else {
           ret += `</li>\n`;
         }
-        let target_id_ast = await context.id_provider.get(tree_node.value.id, context);
+        let target_id_ast = context.id_provider.get(tree_node.value.id, context);
         if (target_id_ast === undefined) {
           // Can happen in error case 'cross reference from header title without ID to previous header is not allowed'
           // Maybe there is a better solution, but can't be bothered right now, this prevents blowouts for now.
@@ -6889,8 +6866,8 @@ const DEFAULT_MACRO_LIST = [
           cur_context = context;
         }
 
-        let content = await x_text(target_id_ast, cur_context, {style_full: true, show_caption_prefix: false});
-        let href = await x_href_attr(target_id_ast, cur_context);
+        let content = x_text(target_id_ast, cur_context, {style_full: true, show_caption_prefix: false});
+        let href = x_href_attr(target_id_ast, cur_context);
         const my_toc_id = toc_id(target_id_ast, cur_context);
         let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, my_toc_id);
         ret += '<li';
@@ -6906,9 +6883,9 @@ const DEFAULT_MACRO_LIST = [
         let toc_href = html_attr('href', '#' + my_toc_id);
         ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
         if (cur_context.options.split_headers) {
-          ret += `${HEADER_MENU_ITEM_SEP}${await link_to_split_opposite(target_id_ast, cur_context)}`;
+          ret += `${HEADER_MENU_ITEM_SEP}${link_to_split_opposite(target_id_ast, cur_context)}`;
         }
-        let parent_ast = await target_id_ast.get_header_parent(cur_context);
+        let parent_ast = target_id_ast.get_header_parent(cur_context);
         if (
           // Possible on broken h1 level.
           parent_ast !== undefined
@@ -6923,7 +6900,7 @@ const DEFAULT_MACRO_LIST = [
             parent_href_target = toc_id(parent_ast, cur_context);
           }
           let parent_href = html_attr('href', '#' + parent_href_target);
-          let parent_body = await render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+          let parent_body = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
           ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${html_attr('title', 'parent ToC entry')}>${PARENT_MARKER} "${parent_body}"</a>`;
         }
         ret += `</span></span></div>`;
@@ -6949,14 +6926,14 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    async function(ast, context) {
+    function(ast, context) {
       let title = ast.args[Macro.TITLE_ARGUMENT_NAME];
       if (title === undefined) {
         let text_title;
         if (Macro.TITLE_ARGUMENT_NAME in context.options) {
           text_title = context.options[Macro.TITLE_ARGUMENT_NAME];
         } else if (context.header_graph.children.length > 0) {
-          text_title = await render_arg(
+          text_title = render_arg(
             context.header_graph.children[0].value.args[Macro.TITLE_ARGUMENT_NAME],
             clone_and_set(context, 'id_conversion', true)
           );
@@ -6970,7 +6947,7 @@ const DEFAULT_MACRO_LIST = [
         );
       }
       let ret;
-      let body = await render_arg(ast.args.content, context);
+      let body = render_arg(ast.args.content, context);
       if (context.options.body_only) {
         ret = body;
       } else {
@@ -6997,9 +6974,9 @@ const DEFAULT_MACRO_LIST = [
         // Footer metadata.
         if (context.toplevel_ast !== undefined) {
           {
-            const target_ids = await context.id_provider.get_refs_to_as_ids(
+            const target_ids = context.id_provider.get_refs_to_as_ids(
               REFS_TABLE_X_CHILD, context.toplevel_ast.id, true);
-            body += await create_link_list(context, ast, 'tagged', 'Tagged', target_ids)
+            body += create_link_list(context, ast, 'tagged', 'Tagged', target_ids)
           }
 
           // Ancestors
@@ -7007,9 +6984,9 @@ const DEFAULT_MACRO_LIST = [
             const ancestors = [];
             let cur_ast = context.toplevel_ast;
             while (true) {
-              let parent_ast = await cur_ast.get_header_parent(context);
+              let parent_ast = cur_ast.get_header_parent(context);
               if (parent_ast === undefined) {
-                const include_asts = await context.id_provider.get_refs_to_as_asts(REFS_TABLE_INCLUDE, cur_ast.id);
+                const include_asts = context.id_provider.get_refs_to_as_asts(REFS_TABLE_INCLUDE, cur_ast.id);
                 if (include_asts.length === 0) {
                   break;
                 } {
@@ -7078,13 +7055,13 @@ const DEFAULT_MACRO_LIST = [
               );
               const new_context = clone_and_set(context, 'validate_ast', true);
               new_context.source_location = ast.source_location;
-              body += await incoming_ul_ast.render(new_context);
+              body += incoming_ul_ast.render(new_context);
             }
           }
 
           {
-            const target_ids = await context.id_provider.get_refs_to_as_ids(REFS_TABLE_X, context.toplevel_ast.id);
-            body += await create_link_list(context, ast, 'incoming-links', 'Incoming links', target_ids)
+            const target_ids = context.id_provider.get_refs_to_as_ids(REFS_TABLE_X, context.toplevel_ast.id);
+            body += create_link_list(context, ast, 'incoming-links', 'Incoming links', target_ids)
           }
         }
 
@@ -7106,7 +7083,7 @@ const DEFAULT_MACRO_LIST = [
         const render_env = {
           body: body,
           root_page: root_page,
-          title: await render_arg(title, context),
+          title: render_arg(title, context),
         };
         Object.assign(render_env, context.options.template_vars);
 
@@ -7159,9 +7136,9 @@ const DEFAULT_MACRO_LIST = [
         remove_whitespace_children: true,
       }),
     ],
-    async function(ast, context) {
+    function(ast, context) {
       let content_ast = ast.args.content;
-      let content = await render_arg(content_ast, context);
+      let content = render_arg(content_ast, context);
       let res = '';
       if (ast.args.content[0].macro_name === Macro.TH_MACRO_NAME) {
         if (
@@ -7179,7 +7156,7 @@ const DEFAULT_MACRO_LIST = [
           res += `<tbody>\n`;
         }
       }
-      res += `<tr${await html_render_attrs_id(ast, context)}>\n${content}</tr>\n`;
+      res += `<tr${html_render_attrs_id(ast, context)}>\n${content}</tr>\n`;
       if (ast.args.content[0].macro_name === Macro.TH_MACRO_NAME) {
         if (
           ast.parent_argument_index === ast.parent_argument.length - 1 ||
@@ -7226,8 +7203,8 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    async function(ast, context) {
-      let [href, content, target_ast] = await x_get_href_content(ast, context);
+    function(ast, context) {
+      let [href, content, target_ast] = x_get_href_content(ast, context);
       if (
         ast.validation_output.full.given &&
         ast.validation_output.ref.given
@@ -7255,7 +7232,7 @@ const DEFAULT_MACRO_LIST = [
           }
           counts_str = `\nword count: ${counts[0]}\ndescendant word count: ${counts[2]}\ndescendant count: ${counts[1]}`;
         }
-        const attrs = await html_render_attrs_id(ast, context);
+        const attrs = html_render_attrs_id(ast, context);
         return `<a${href}${attrs}${html_attr('title', 'internal link' + counts_str)}>${content}</a>`;
       } else {
         return content;
@@ -7368,7 +7345,7 @@ const DEFAULT_MACRO_LIST = [
             positive_nonzero_integer: true,
           }),
         ),
-        source_func: async function (ast, context, src, media_provider_type, is_url) {
+        source_func: function (ast, context, src, media_provider_type, is_url) {
           if ('source' in ast.args) {
             return render_arg(ast.args.source, context);
           } else if (media_provider_type === 'youtube') {
@@ -7390,14 +7367,14 @@ const DEFAULT_MACRO_LIST = [
   ),
 ];
 
-async function create_link_list(context, ast, id, title, target_ids, body) {
+function create_link_list(context, ast, id, title, target_ids, body) {
   let ret = '';
   if (target_ids.size !== 0) {
     // TODO factor this out more with real headers.
     const target_id_asts = [];
     ret += `<div>${html_hide_hover_link('#' + id)}<h2 id="${id}"><a href="#${id}">${title}</a></h2></div>\n`;
     for (const target_id of Array.from(target_ids).sort()) {
-      let target_ast = await context.id_provider.get(target_id, context);
+      let target_ast = context.id_provider.get(target_id, context);
       if (
         // Possible when user sets an invalid ID on \x with child \x[invalid]{child}.
         // The error is caught elsewhere.
@@ -7457,23 +7434,23 @@ async function create_link_list(context, ast, id, title, target_ids, body) {
     const incoming_ul_ast = new AstNode(AstType.MACRO, 'Ul', ulArgs)
     const new_context = clone_and_set(context, 'validate_ast', true);
     new_context.source_location = ast.source_location;
-    ret += await incoming_ul_ast.render(new_context);
+    ret += incoming_ul_ast.render(new_context);
   }
   return ret
 }
 
-async function cirodown_convert_simple_elem(ast, context) {
+function cirodown_convert_simple_elem(ast, context) {
   return ESCAPE_CHAR +
     ast.macro_name +
     START_POSITIONAL_ARGUMENT_CHAR +
-    await render_arg(ast.args.content, context) +
+    render_arg(ast.args.content, context) +
     END_POSITIONAL_ARGUMENT_CHAR;
 }
 
 const MACRO_CONVERT_FUNCIONS = {
   [OUTPUT_FORMAT_CIRODOWN]: {
-    [Macro.LINK_MACRO_NAME]: async function(ast, context) {
-      const [href, content] = await link_get_href_content(ast, context);
+    [Macro.LINK_MACRO_NAME]: function(ast, context) {
+      const [href, content] = link_get_href_content(ast, context);
       return content;
     },
     'b': cirodown_convert_simple_elem,
@@ -7503,15 +7480,15 @@ const MACRO_CONVERT_FUNCIONS = {
     [Macro.TH_MACRO_NAME]: id_convert_simple_elem(),
     [Macro.TR_MACRO_NAME]: id_convert_simple_elem(),
     'Ul': id_convert_simple_elem(),
-    [Macro.X_MACRO_NAME]: async function(ast, context) {
-      const [href, content, target_ast] = await x_get_href_content(ast, context);
+    [Macro.X_MACRO_NAME]: function(ast, context) {
+      const [href, content, target_ast] = x_get_href_content(ast, context);
       return content;
     },
     'Video': macro_image_video_block_convert_function,
   },
   [OUTPUT_FORMAT_ID]: {
-    [Macro.LINK_MACRO_NAME]: async function(ast, context) {
-      const [href, content] = await link_get_href_content(ast, context);
+    [Macro.LINK_MACRO_NAME]: function(ast, context) {
+      const [href, content] = link_get_href_content(ast, context);
       return content;
     },
     'b': id_convert_simple_elem(),
@@ -7541,8 +7518,8 @@ const MACRO_CONVERT_FUNCIONS = {
     [Macro.TH_MACRO_NAME]: id_convert_simple_elem(),
     [Macro.TR_MACRO_NAME]: id_convert_simple_elem(),
     'Ul': id_convert_simple_elem(),
-    [Macro.X_MACRO_NAME]: async function(ast, context) {
-      const [href, content, target_ast] = await x_get_href_content(ast, context);
+    [Macro.X_MACRO_NAME]: function(ast, context) {
+      const [href, content, target_ast] = x_get_href_content(ast, context);
       return content;
     },
     'Video': macro_image_video_block_convert_function,
@@ -7552,8 +7529,8 @@ const TOPLEVEL_CHILD_MODIFIER = {
   [OUTPUT_FORMAT_CIRODOWN]: function(ast, context, out) {
     return out;
   },
-  [OUTPUT_FORMAT_HTML]: async function(ast, context, out) {
-    return `<div>${html_hide_hover_link(await x_href(ast, context))}${out}</div>`;
+  [OUTPUT_FORMAT_HTML]: function(ast, context, out) {
+    return `<div>${html_hide_hover_link(x_href(ast, context))}${out}</div>`;
   },
   [OUTPUT_FORMAT_ID]: function(ast, context, out) {
     return out;

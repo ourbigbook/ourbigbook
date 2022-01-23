@@ -65,7 +65,7 @@ class SqliteFileProvider extends cirodown.FileProvider {
     }
   }
 
-  async get_path_entry(path) {
+  get_path_entry(path) {
     return this.get_path_entry_cache[path]
   }
 }

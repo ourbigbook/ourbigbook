@@ -58,17 +58,6 @@ class SqliteFileProvider extends cirodown.FileProvider {
     this.get_path_entry_cache = {}
   }
 
-  async get_id(id) {
-    let cached_file = this.get_id_cache[id]
-    if (cached_file) {
-      return cached_file
-    } else {
-      cached_file = this.sequelize.models.File.findOne({ where: { toplevel_id: id } })
-      this.get_id_cache[id] = cached_file
-      return cached_file
-    }
-  }
-
   async get_path_entry_fetch(path) {
     const rows = await this.sequelize.models.File.findAll({ where: { path } })
     for (const row of rows) {
@@ -77,14 +66,7 @@ class SqliteFileProvider extends cirodown.FileProvider {
   }
 
   async get_path_entry(path) {
-    let cached_file = this.get_path_entry_cache[path]
-    if (cached_file) {
-      return cached_file
-    } else {
-      cached_file = this.sequelize.models.File.findOne({ where: { path } })
-      this.get_path_entry_cache[path] = cached_file
-      return cached_file
-    }
+    return this.get_path_entry_cache[path]
   }
 }
 

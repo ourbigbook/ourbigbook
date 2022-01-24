@@ -2603,6 +2603,38 @@ function convert_init_context(options={}, extra_returns={}) {
     if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
     if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
 
+  // Internalish options that may get modified by sub-includes/CirodownExample in order
+  // to forward state back up. Maybe we should move them to a subdict to make this clearer
+  // (moving to extra_returns feels bad because they are also input), but lazy.
+  //
+  // Non-indexed-ids: auto-generated numeric ID's like p-1, p-2, etc.
+  // It is not possible to link to them from inside the document, since links
+  // break across versions.
+  if (options.non_indexed_ids === undefined) {
+    options.non_indexed_ids = {};
+  }
+  if (options.indexed_ids === undefined) {
+    options.indexed_ids = {};
+  }
+  if (options.header_graph_stack === undefined) {
+    options.header_graph_stack = new Map();
+  }
+  if (options.header_graph_id_stack === undefined) {
+    options.header_graph_id_stack = new Map();
+  }
+  if (options.is_first_global_header === undefined) {
+    options.is_first_global_header = true;
+  }
+  if (options.add_refs_to_h === undefined) {
+    options.add_refs_to_h = [];
+  }
+  if (options.add_refs_to_x === undefined) {
+    options.add_refs_to_x = [];
+  }
+  if (options.include_hrefs === undefined) {
+    options.include_hrefs = {};
+  }
+
   // Handle scope and IDs that are based on the input path:
   //
   // - toplevel_has_scope
@@ -3614,36 +3646,8 @@ async function parse(tokens, options, context, extra_returns={}) {
   const macro_counts = {};
   const macro_counts_visible = {};
   let cur_header_graph_node;
-  options.include_path_set = context.include_path_set;
-  // Non-indexed-ids: auto-generated numeric ID's like p-1, p-2, etc.
-  // It is not possible to link to them from inside the document, since links
-  // break across versions.
-  if (options.non_indexed_ids === undefined) {
-    options.non_indexed_ids = {};
-  }
-  if (options.indexed_ids === undefined) {
-    options.indexed_ids = {};
-  }
-  extra_returns.ids = options.indexed_ids;
-  if (options.header_graph_stack === undefined) {
-    options.header_graph_stack = new Map();
-  }
-  if (options.header_graph_id_stack === undefined) {
-    options.header_graph_id_stack = new Map();
-  }
   let is_first_header = true;
-  if (options.is_first_global_header === undefined) {
-    options.is_first_global_header = true;
-  }
-  if (options.add_refs_to_h === undefined) {
-    options.add_refs_to_h = [];
-  }
-  if (options.add_refs_to_x === undefined) {
-    options.add_refs_to_x = [];
-  }
-  if (options.include_hrefs === undefined) {
-    options.include_hrefs = {};
-  }
+  extra_returns.ids = options.indexed_ids;
 
   // Format:
   // refs_to[false][to_id][type]{from_id: Set[defined_at]}

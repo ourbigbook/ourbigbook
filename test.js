@@ -211,13 +211,15 @@ function assert_convert_ast(
       //console.error('ast output:');
       //console.error(JSON.stringify(content, null, 2));
       //console.error();
-      console.error('ast output toString:');
-      console.error(content_array.map(c => c.toString()).join('\n'));
-      console.error();
-      console.error('ast expect:');
-      console.error(JSON.stringify(expected_ast_output_subset, null, 2));
-      console.error();
-      console.error('errors:');
+      if (expected_ast_output_subset !== undefined) {
+        console.error('ast output toString:');
+        console.error(content_array.map(c => c.toString()).join('\n'));
+        console.error();
+        console.error('ast expect:');
+        console.error(JSON.stringify(expected_ast_output_subset, null, 2));
+        console.error();
+        console.error('errors:');
+      }
       for (const error of extra_returns.errors) {
         console.error(error);
       }
@@ -1470,6 +1472,19 @@ assert_convert_ast('image without id, title, description nor source does not inc
     ],
   },
 )
+assert_convert_ast('image title with x to header in another file',
+  `\\Image[aa]{title=My \\x[notindex]}{check=0}`,
+  [
+    a('Image', undefined, { src: [t('aa')], }, {}, { id: 'my-notindex-h1' }),
+  ],
+  {
+    convert_before: ['notindex.ciro'],
+    filesystem: {
+     'notindex.ciro': `= notindex h1
+`,
+    },
+  }
+);
 
 // Escapes.
 assert_convert_ast('escape backslash',            'a\\\\b\n', [a('P', [t('a\\b')])]);

@@ -6083,6 +6083,16 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
+    'br',
+    [],
+    function(ast, context) {
+      return '<br>'
+    },
+    {
+      phrasing: true,
+    }
+  ),
+  new Macro(
     // Block code.
     Macro.CODE_MACRO_NAME.toUpperCase(),
     [

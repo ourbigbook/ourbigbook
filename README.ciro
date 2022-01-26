@@ -552,6 +552,19 @@ This magic can be observed with \x[help-macros] by seeing that the `href` argume
 Some \b[bold] text.
 ]]
 
+= Line break
+{parent=macro}
+{title2=`\br`}
+
+There is basically one application for this: poetry, which would be too ugly with \x[code-block] due to fixed width font:
+\CirodownExample[[
+Paragraph 1 Line 1\br
+Paragraph 1 Line 2\br
+
+Paragraph 2 Line 1\br
+Paragraph 2 Line 2\br
+]]
+
 = Code block
 {parent=macro}
 {title2=\c[[``]], \c[[`]], `\C`, `\c`}

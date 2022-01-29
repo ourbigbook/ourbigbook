@@ -5192,10 +5192,8 @@ function toc_id(target_id_ast, context) {
   return Macro.TOC_PREFIX + target_id_ast.id;
 }
 
-function unconvertible() {
-  return function(ast, context) {
-    throw new Error(`programmer error, macro "${ast.macro_name}" must never render`);
-  };
+function unconvertible(ast, context) {
+  throw new Error(`programmer error, macro "${ast.macro_name}" must never render`);
 }
 
 function url_basename(str) {
@@ -6152,7 +6150,7 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    unconvertible(),
+    unconvertible,
     {
       macro_counts_ignore: function(ast) { return true; }
     }
@@ -6489,7 +6487,7 @@ const DEFAULT_MACRO_LIST = [
         mandatory: true,
       }),
     ],
-    unconvertible(),
+    unconvertible,
     {
       macro_counts_ignore: function(ast) { return true; },
       named_args: [
@@ -7463,7 +7461,7 @@ const MACRO_CONVERT_FUNCIONS = {
     'b': cirodown_convert_simple_elem,
     [Macro.CODE_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
     [Macro.CODE_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.CIRODOWN_EXAMPLE_MACRO_NAME]: unconvertible(),
+    [Macro.CIRODOWN_EXAMPLE_MACRO_NAME]: unconvertible,
     'Comment': cirodown_convert_simple_elem,
     'comment': cirodown_convert_simple_elem,
     [Macro.HEADER_MACRO_NAME]: id_convert_simple_elem(),
@@ -7501,11 +7499,11 @@ const MACRO_CONVERT_FUNCIONS = {
     'b': id_convert_simple_elem(),
     [Macro.CODE_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
     [Macro.CODE_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.CIRODOWN_EXAMPLE_MACRO_NAME]: unconvertible(),
+    [Macro.CIRODOWN_EXAMPLE_MACRO_NAME]: unconvertible,
     'Comment': function(ast, context) { return ''; },
     'comment': function(ast, context) { return ''; },
     [Macro.HEADER_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.INCLUDE_MACRO_NAME]: unconvertible(),
+    [Macro.INCLUDE_MACRO_NAME]: unconvertible,
     [Macro.LIST_MACRO_NAME]: id_convert_simple_elem(),
     [Macro.MATH_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
     [Macro.MATH_MACRO_NAME]: id_convert_simple_elem(),

@@ -3325,6 +3325,54 @@ bb
     a('H', undefined, {level: [t('2')], title: [t('cc')]}),
 ]
 );
+// https://github.com/cirosantilli/cirodown/issues/143
+assert_convert_ast('header with insane paragraph in the content does not blow up',
+  `\\H[1][a
+
+b]
+`,
+  [
+    a('H', undefined, {
+      level: [t('1')],
+      title: [
+        a('P', [t('a')]),
+        a('P', [t('b')]),
+      ]
+    },
+      { id: 'a-b' }
+    )
+  ]
+);
+assert_convert_ast('explicit toc after implicit toc is removed',
+  `= aa
+
+bb
+
+== cc
+
+\\Toc
+
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
+    a('P', [t('bb')]),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
+]
+);
+assert_convert_ast('xss: H id',
+  `= tmp
+{id=&<>"'}
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//x:div[@class=\"h\" and @id=concat('&<>\"', \"'\")]",
+    ]
+  }
+);
+
+// Table of contents
 assert_convert_ast('split headers have correct table of contents',
   `= h1
 
@@ -3409,52 +3457,6 @@ assert_error('toc is a reserved id',
 == toc
 `,
   3, 1);
-// https://github.com/cirosantilli/cirodown/issues/143
-assert_convert_ast('header with insane paragraph in the content does not blow up',
-  `\\H[1][a
-
-b]
-`,
-  [
-    a('H', undefined, {
-      level: [t('1')],
-      title: [
-        a('P', [t('a')]),
-        a('P', [t('b')]),
-      ]
-    },
-      { id: 'a-b' }
-    )
-  ]
-);
-assert_convert_ast('explicit toc after implicit toc is removed',
-  `= aa
-
-bb
-
-== cc
-
-\\Toc
-
-`,
-  [
-    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
-    a('P', [t('bb')]),
-    a('Toc'),
-    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
-]
-);
-assert_convert_ast('xss: H id',
-  `= tmp
-{id=&<>"'}
-`,
-  undefined,
-  {
-    assert_xpath_matches: [
-      "//x:div[@class=\"h\" and @id=concat('&<>\"', \"'\")]",
-    ]
-  }
-);
 
 // Math. Minimal testing since this is mostly factored out with code tests.
 assert_convert_ast('math inline sane',
@@ -4422,6 +4424,7 @@ assert_executable(
   }
 );
 assert_executable(
+  // https://github.com/cirosantilli/cirodown/issues/123
   'executable: includer should show as a parent of the includee',
   {
     args: ['--split-headers', '.'],

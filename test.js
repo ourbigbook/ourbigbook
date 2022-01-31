@@ -4425,11 +4425,15 @@ assert_executable(
 );
 assert_executable(
   // https://github.com/cirosantilli/cirodown/issues/123
-  'executable: includer should show as a parent of the includee',
+  'executable: includers should show as a parents of the includee',
   {
     args: ['--split-headers', '.'],
     filesystem: {
       'README.ciro': `= Index
+
+\\Include[included-by-index]
+`,
+      'not-readme.ciro': `= Not readme
 
 \\Include[included-by-index]
 `,
@@ -4439,6 +4443,7 @@ assert_executable(
     expect_filesystem_xpath: {
       'included-by-index.html': [
         xpath_header_parent(1, 'included-by-index', 'index.html', 'Index'),
+        xpath_header_parent(1, 'included-by-index', 'not-readme.html', 'Not readme'),
       ],
     }
   }

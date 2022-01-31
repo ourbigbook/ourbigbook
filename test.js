@@ -3410,19 +3410,23 @@ assert_error('toc is a reserved id',
 `,
   3, 1);
 // https://github.com/cirosantilli/cirodown/issues/143
-// TODO
-//assert_convert_ast('header with insane paragraph in the content',
-//  `\\H[1][a
-//
-//b]
-//`,
-//  [
-//    a('H', undefined, {level: [t('1')], title: [
-//      a('P', [t('a')]),
-//      a('P', [t('b')]),
-//    ]})
-//  ]
-//);
+assert_convert_ast('header with insane paragraph in the content does not blow up',
+  `\\H[1][a
+
+b]
+`,
+  [
+    a('H', undefined, {
+      level: [t('1')],
+      title: [
+        a('P', [t('a')]),
+        a('P', [t('b')]),
+      ]
+    },
+      { id: 'a-b' }
+    )
+  ]
+);
 assert_convert_ast('explicit toc after implicit toc is removed',
   `= aa
 

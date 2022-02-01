@@ -322,21 +322,30 @@ class AstNode {
     return out;
   }
 
-  /** Works with both actual this.header_graph_node and
-   * this.header_graph_node_parent_id when coming from a database. */
-  get_header_parent_ids(context) {
+  get_header_parent_ids_and_idxs(context) {
     const ret = []
     if (
       this.header_graph_node !== undefined &&
       this.header_graph_node.parent_node !== undefined &&
       this.header_graph_node.parent_node.value !== undefined
     ) {
-      ret.push(this.header_graph_node.parent_node.value.id);
+      ret.push({
+        id: this.header_graph_node.parent_node.value.id,
+        idx: this.header_graph_node.index,
+      });
     } else if (this.header_graph_node_parent_id !== undefined) {
-      ret.push(this.header_graph_node_parent_id);
+      ret.push({
+        id: this.header_graph_node_parent_id
+      });
     }
-    ret.push(...Array.from(context.id_provider.get_refs_to_as_ids(REFS_TABLE_INCLUDE, this.id)));
+    ret.push(...Array.from(context.id_provider.get_refs_to_as_ids(REFS_TABLE_INCLUDE, this.id)).map(id => { return { id } }));
     return ret
+  }
+
+  /** Works with both actual this.header_graph_node and
+   * this.header_graph_node_parent_id when coming from a database. */
+  get_header_parent_ids(context) {
+    return this.get_header_parent_ids_and_idxs(context).map(e => e.id)
   }
 
   /* Like get_header_parent_ids, but returns the parent AST. */

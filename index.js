@@ -2304,9 +2304,13 @@ async function convert(
     perf_print(context, 'render_pre')
     output = ast.render(context);
     context.katex_macros = Object.assign({}, context.options.katex_macros);
-    if (context.toplevel_output_path !== undefined) {
-      context.extra_returns.rendered_outputs[context.toplevel_output_path] = output;
+    let toplevel_output_path
+    if (context.toplevel_output_path === undefined) {
+      toplevel_output_path = INDEX_BASENAME_NOEXT + '.' + HTML_EXT
+    } else {
+      toplevel_output_path = context.toplevel_output_path
     }
+    context.extra_returns.rendered_outputs[toplevel_output_path] = output;
 
     perf_print(context, 'split_render_pre')
     // Split header conversion.

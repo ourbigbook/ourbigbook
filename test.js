@@ -4427,7 +4427,7 @@ assert_executable(
   // https://github.com/cirosantilli/cirodown/issues/123
   'executable: includers should show as a parents of the includee',
   {
-    args: ['--split-headers', '.'],
+    args: ['.'],
     filesystem: {
       'README.ciro': `= Index
 

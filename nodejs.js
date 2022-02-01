@@ -84,6 +84,16 @@ class SqliteIdProvider extends cirodown.IdProvider {
       const ast = cirodown.AstNode.fromJSON(row.ast_json)
       ast.input_path = row.path
       ast.id = row.idid
+      if (
+        // Possible on reference to ID that does not exist and some other
+        // non error cases I didn't bother to investigate.
+        row.to !== undefined
+      ) {
+        ast.header_parent_ids = row.to.map(to => to.from_id)
+      }
+      if (row.from !== undefined) {
+        ast.header_child_ids = row.from.map(from => from.to_id)
+      }
       this.id_cache[ast.id] = ast
       return ast
     }
@@ -99,7 +109,23 @@ class SqliteIdProvider extends cirodown.IdProvider {
         const ignore_paths = Array.from(ignore_paths_set).filter(x => x !== undefined)
         where.path = { [Op.not]: ignore_paths }
       }
-      const rows = await this.sequelize.models.Id.findAll({ where })
+      const rows = await this.sequelize.models.Id.findAll({
+        where,
+        include: [
+          {
+            model: this.sequelize.models.Ref,
+            as: 'to',
+            where: { type: this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_PARENT] },
+            required: false,
+          },
+          {
+            model: this.sequelize.models.Ref,
+            as: 'from',
+            where: { type: this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_PARENT] },
+            required: false,
+          }
+        ],
+      })
       for (const row of rows) {
         asts.push(this.add_row_to_id_cache(row))
       }
@@ -123,7 +149,10 @@ class SqliteIdProvider extends cirodown.IdProvider {
     return cached_asts
   }
 
-  async get_refs_to_fetch(types, to_ids, reversed=false) {
+  async get_refs_to_fetch(types, to_ids, { reversed, ignore_paths_set }) {
+    if (reversed === undefined) {
+      reversed = false
+    }
     if (to_ids.length) {
       let to_id_key, other_key;
       if (reversed) {
@@ -134,11 +163,16 @@ class SqliteIdProvider extends cirodown.IdProvider {
         other_key = 'from_id'
       }
       const include_key = other_key.split('_')[0]
+      const where = {
+        [to_id_key]: to_ids,
+        type: types.map(type => this.sequelize.models.Ref.Types[type]),
+      }
+      if (ignore_paths_set !== undefined) {
+        const ignore_paths = Array.from(ignore_paths_set).filter(x => x !== undefined)
+        where.defined_at = { [Op.not]: ignore_paths }
+      }
       const rows = await this.sequelize.models.Ref.findAll({
-        where: {
-          [to_id_key]: to_ids,
-          type: types.map(type => this.sequelize.models.Ref.Types[type]),
-        },
+        where,
         attributes: [
           [other_key, 'id'],
           'defined_at',

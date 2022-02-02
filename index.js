@@ -6923,7 +6923,7 @@ const DEFAULT_MACRO_LIST = [
         // - outter div: takes up space to make clicking easy
         // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
         let descendant_count_html = get_descendant_count_html_sep(tree_node, false);
-        ret += `><div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}>${content}</a><span class="hover-metadata">${descendant_count_html}`;
+        ret += `><div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}>${content}</a><span class="hover-metadata">`;
 
         let toc_href = html_attr('href', '#' + my_toc_id);
         ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
@@ -6948,7 +6948,7 @@ const DEFAULT_MACRO_LIST = [
           let parent_body = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
           ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${html_attr('title', 'parent ToC entry')}>${PARENT_MARKER} "${parent_body}"</a>`;
         }
-        ret += `</span></span></div>`;
+        ret += `${descendant_count_html}</span></span></div>`;
         if (tree_node.children.length > 0) {
           for (let i = tree_node.children.length - 1; i >= 0; i--) {
             todo_visit.push([tree_node.children[i], level + 1]);

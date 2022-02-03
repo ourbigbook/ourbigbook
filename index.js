@@ -812,7 +812,7 @@ class DictIdProvider extends IdProvider {
         const from_ids = from_ids_type[type];
         if (from_ids !== undefined) {
           for (const from_id in from_ids) {
-            const defined_ats = from_ids[from_id]
+            const defined_ats = from_ids[from_id].defined_at
             for (const defined_at of defined_ats) {
               ret.push({ id: from_id, defined_at })
             }
@@ -1835,12 +1835,12 @@ class HeaderTreeNode {
 
 /** Add an entry to the data structures that keep the map of incoming
  * and outgoing \x and \x {child} links. */
-function add_to_refs_to(toid, context, fromid, relation_type) {
-  add_to_refs_to_one_way(false, toid,   context, fromid, relation_type)
-  add_to_refs_to_one_way(true,  fromid, context, toid,   relation_type)
+function add_to_refs_to(toid, context, fromid, relation_type, child_index) {
+  add_to_refs_to_one_way(false, toid,   context, fromid, relation_type, child_index)
+  add_to_refs_to_one_way(true,  fromid, context, toid,   relation_type, child_index)
 }
 
-function add_to_refs_to_one_way(reverse, toid, context, fromid, relation_type) {
+function add_to_refs_to_one_way(reverse, toid, context, fromid, relation_type, child_index) {
   let from_to_dict_false = context.refs_to[reverse];
   let from_ids;
   if (toid in from_to_dict_false) {
@@ -1858,10 +1858,12 @@ function add_to_refs_to_one_way(reverse, toid, context, fromid, relation_type) {
   }
   let from_ids_relation_type_fromid = from_ids_relation_type[fromid]
   if (from_ids_relation_type_fromid === undefined) {
-    from_ids_relation_type_fromid = new Set()
+    from_ids_relation_type_fromid = { defined_at: new Set(), child_index }
     from_ids_relation_type[fromid] = from_ids_relation_type_fromid
   }
-  from_ids_relation_type_fromid.add(context.options.input_path)
+  from_ids_relation_type_fromid.defined_at.add(
+    context.options.input_path
+  )
 }
 
 /**
@@ -2048,7 +2050,13 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
             ast.header_graph_node.parent_node !== undefined &&
             ast.header_graph_node.parent_node.value !== undefined
           ) {
-            add_to_refs_to(ast.id, context, ast.header_graph_node.parent_node.value.id, REFS_TABLE_PARENT);
+            add_to_refs_to(
+              ast.id,
+              context,
+              ast.header_graph_node.parent_node.value.id,
+              REFS_TABLE_PARENT,
+              ast.header_graph_node.index,
+            );
           }
         }
       } else {
@@ -3702,8 +3710,8 @@ async function parse(tokens, options, context, extra_returns={}) {
   extra_returns.ids = options.indexed_ids;
 
   // Format:
-  // refs_to[false][to_id][type]{from_id: Set[defined_at]}
-  // refs_to[to][from_id][type]{to_id: Set[defined_at]}
+  // refs_to[false][to_id][type]{from_id: { defined_at: Set[defined_at], child_index: Number }
+  // refs_to[to][from_id][type]{to_id: { defined_at: Set[defined_at], child_index: Number }
   context.refs_to = {
     false: {},
     true: {},
@@ -3760,7 +3768,13 @@ async function parse(tokens, options, context, extra_returns={}) {
       const parent_ast_header_graph_node = parent_ast.header_graph_node;
       const parent_ast_header_level = parent_ast_header_graph_node.get_level();
 
-      add_to_refs_to(href, context, parent_ast.id, REFS_TABLE_PARENT);
+      add_to_refs_to(
+        href,
+        context,
+        parent_ast.id,
+        REFS_TABLE_PARENT,
+        parent_ast_header_graph_node.children.length
+      );
       parent_ast.includes.push(href);
       const read_include_ret = options.read_include(href);
       if (read_include_ret === undefined) {
@@ -4114,14 +4128,11 @@ async function parse(tokens, options, context, extra_returns={}) {
           options.header_graph_stack.set(cur_header_level, cur_header_graph_node);
           if (
             // Possible on the first insert of a level.
-            old_graph_node !== undefined
+            old_graph_node !== undefined &&
+            // Possible if the level is not an integer.
+            old_graph_node.value !== undefined
           ) {
-            if (
-              // Possible if the level is not an integer.
-              old_graph_node.value !== undefined
-            ) {
-              options.header_graph_id_stack.delete(old_graph_node.value.id);
-            }
+            options.header_graph_id_stack.delete(old_graph_node.value.id);
           }
           header_graph_last_level = cur_header_level;
 

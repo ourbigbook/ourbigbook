@@ -329,18 +329,27 @@ class AstNode {
     return out;
   }
 
-  get_header_parent_ids_and_idxs(context) {
-    const ret = []
-    // Refs defined in the current .ciro file + include_path_set
+  /* Get parent ID, but only consider IDs that are present on the currently parsed
+   * include_path_set, and not anything coming from the database. */
+  get_local_header_parent_id() {
     if (
       this.header_graph_node !== undefined &&
       this.header_graph_node.parent_node !== undefined &&
       this.header_graph_node.parent_node.value !== undefined
     ) {
-      ret.push({
-        id: this.header_graph_node.parent_node.value.id,
-        idx: this.header_graph_node.index,
-      });
+      return this.header_graph_node.parent_node.value.id
+    }
+    return undefined
+  }
+
+  /** Works with both actual this.header_graph_node and
+   * this.header_parent_ids when coming from a database. */
+  get_header_parent_ids(context) {
+    const ret = new Set()
+    const local_parent_id = this.get_local_header_parent_id()
+    // Refs defined in the current .ciro file + include_path_set
+    if (local_parent_id !== undefined) {
+      ret.add(local_parent_id)
     }
 
     // Refs not defined from outside in the current .ciro file + include_path_set
@@ -351,21 +360,19 @@ class AstNode {
         REFS_TABLE_PARENT,
         this.id,
       )
-      ret.push(...Array.from(parents_from_db).map(id => { return { id } }));
+      for (const parent_from_db of parents_from_db) {
+        ret.add(parent_from_db)
+      }
     }
 
     // Refs not defined from outside in the current .ciro file + include_path_set,
     // but which were automatically fetched by JOIN our fetch all IDs query:
     // we fetch all parent and children via JOIN for every ID we fetch.
     // This is needed notably for toplevel scope removal.
-    ret.push(...this.header_parent_ids.map(id => { return { id } }))
+    for (const header_parent_id of this.header_parent_ids) {
+      ret.add(header_parent_id)
+    }
     return ret
-  }
-
-  /** Works with both actual this.header_graph_node and
-   * this.header_parent_ids when coming from a database. */
-  get_header_parent_ids(context) {
-    return this.get_header_parent_ids_and_idxs(context).map(e => e.id)
   }
 
   /* Like get_header_parent_ids, but returns the parent AST. */
@@ -2045,15 +2052,12 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
         non_indexed_ids[ast.id] = ast;
         if (index_id) {
           indexed_ids[ast.id] = ast;
-          if (
-            ast.header_graph_node &&
-            ast.header_graph_node.parent_node !== undefined &&
-            ast.header_graph_node.parent_node.value !== undefined
-          ) {
+          const local_id = ast.get_local_header_parent_id()
+          if (local_id !== undefined) {
             add_to_refs_to(
               ast.id,
               context,
-              ast.header_graph_node.parent_node.value.id,
+              local_id,
               REFS_TABLE_PARENT,
               ast.header_graph_node.index,
             );
@@ -4814,7 +4818,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         context,
         ast
       )
-      const parent_id = ast.get_header_parent_ids(context)[0];
+      const parent_id = ast.get_local_header_parent_id();
       if (
         // Happens on some special elements e.g. the ToC.
         parent_id !== undefined
@@ -5378,6 +5382,11 @@ function x_get_href_content(ast, context) {
     return [html_attr('href', WEBSITE_URL + 'go/topic/' + target_id.substr(1)), target_id];
   }
   const target_id_ast = context.id_provider.get(target_id, context, ast.header_graph_node);
+  //console.error('target_id_ast');
+  //console.error(target_id_ast.id);
+  //console.error(target_id_ast.header_parent_ids);
+  //console.trace();
+  //console.error();
 
   // href
   let href;
@@ -5531,7 +5540,7 @@ function x_href_parts(target_id_ast, context) {
       // Split header link to image in current header.
       context.in_split_headers &&
       target_id_ast.macro_name !== Macro.HEADER_MACRO_NAME &&
-      target_id_ast.get_header_parent_ids(context)[0] === context.toplevel_id
+      target_id_ast.get_header_parent_ids(context).has(context.toplevel_id)
     ) ||
     to_current_toplevel
   ) {
@@ -5675,9 +5684,6 @@ function x_text(ast, context, options={}) {
   if (!('show_caption_prefix' in options)) {
     options.show_caption_prefix = true;
   }
-  if (!('show_number' in options)) {
-    options.show_number = true;
-  }
   const macro = context.macros[ast.macro_name];
   let style_full;
   if ('style_full' in options) {
@@ -5698,7 +5704,6 @@ function x_text(ast, context, options={}) {
       ret += `${macro.options.caption_prefix} `;
     }
     if (
-      options.show_number &&
       ast.numbered &&
       (
         // When in split headers, numbers are only added to headers that
@@ -6313,7 +6318,6 @@ const DEFAULT_MACRO_LIST = [
       ret += `<h${level_int_capped}${attrs}><a${html_self_link(ast, context)} title="link to this element">`;
       let x_text_options = {
         show_caption_prefix: false,
-        show_number: !is_top_level,
         style_full: true,
       };
       ret += x_text(ast, context, x_text_options);

@@ -293,7 +293,6 @@ ON "Ids".idid = "RecRefs"."to_id"
     const create_ids = []
     for (const id in ids) {
       const ast = ids[id];
-      const id_idx = ast.get_header_parent_ids_and_idxs(context)[0]
       create_ids.push({
         idid: id,
         path: ast.source_location.path,

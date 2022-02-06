@@ -111,7 +111,28 @@ Static wiki generator and lightweight markup language to write complex structure
       ``
       in any .ciro file of the project.
     * \x[cirodown-json]: per repository configuration options
-  * \x[table-of-contents] that crosses input files (TODO https://github.com/cirosantilli/cirodown/issues/126[])
+  * \x[table-of-contents] that crosses input files via includes. E.g. in:
+
+    README.ciro
+    ``
+    = My website
+
+    == h2
+
+    \Include[not-readme]
+    ``
+    not-readme.ciro
+    ``
+    = Not readme
+
+    == Not readme h2
+    ``
+    the table of contents for `index.html` also contains the headers for `not-readme.ciro` producing:
+    * My website
+      * h2
+        * Not readme
+          * Not readme h2
+    This means that you can split large \x[h-splitdefault-argument][splitDefault] input files if rendering starts to slow you down, and things will still render exactly the same.
   * check that local files and images linked to actually exist: \x[a-check-argument]. E.g.:
     ``
     \a[i-don-exist.txt]

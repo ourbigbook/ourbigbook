@@ -81,18 +81,13 @@ class SqliteIdProvider extends cirodown.IdProvider {
 
   add_row_to_id_cache(row) {
     if (row !== null) {
-      const ast = cirodown.AstNode.fromJSON(row.ast_json)
-      ast.input_path = row.path
-      ast.id = row.idid
+      const ast = this.row_to_ast(row)
       if (
         // Possible on reference to ID that does not exist and some other
         // non error cases I didn't bother to investigate.
         row.to !== undefined
       ) {
         ast.header_parent_ids = row.to.map(to => to.from_id)
-      }
-      if (row.from !== undefined) {
-        ast.header_child_ids = row.from.map(from => from.to_id)
       }
       this.id_cache[ast.id] = ast
       return ast
@@ -225,7 +220,24 @@ class SqliteIdProvider extends cirodown.IdProvider {
     return ret
   }
 
-  async fetch_header_tree_ids(starting_points) {
+  // We have a separate function from fetch_header_tree_ids to defer after that call,
+  // because we want to first fetch everything
+  // and populate the ID cache with the include entry points that have proper header_graph_node.
+  // Only then are we ready for linking up the rest of the tree.
+  build_header_tree(starting_ids_to_asts, fetch_header_tree_ids_rows) {
+    const asts = []
+    for (const row of fetch_header_tree_ids_rows) {
+      const ast = this.row_to_ast(row)
+      const parent_id = row.from_id
+      const parent_ast = this.id_cache[parent_id]
+      const parent_ast_header_graph_node = parent_ast.header_graph_node
+      ast.header_graph_node = new cirodown.HeaderTreeNode(ast, parent_ast_header_graph_node);
+      parent_ast_header_graph_node.add_child(ast.header_graph_node);
+      this.id_cache[ast.id] = ast
+    }
+  }
+
+  async fetch_header_tree_ids(starting_ids_to_asts) {
     // Fetch all data recursively.
     //
     // Going for WITH RECURSIVE:
@@ -248,7 +260,7 @@ WITH RECURSIVE
       from_id,
       to_id_index
     FROM "Refs"
-    WHERE from_id IN (:starting_ids)
+    WHERE from_id IN (:starting_ids) AND type = :type
 
     UNION ALL
 
@@ -258,39 +270,27 @@ WITH RECURSIVE
       ts.to_id,
       t.to_id_index
     FROM "Refs" t, tree_search ts
-    WHERE t.from_id = ts.to_id
+    WHERE t.from_id = ts.to_id AND type = :type
   )
   SELECT * FROM tree_search
   ORDER BY level, from_id, to_id_index
 ) AS "RecRefs"
 ON "Ids".idid = "RecRefs"."to_id"
-
 `,
-    { replacements: { starting_ids: Object.keys(starting_points) } }
-  )
-    const asts = []
-    for (const row of rows) {
-      asts.push(this.add_row_to_id_cache(row))
-    }
-
-    // Add starting points to the ID cache, so that they will have the header_graph_node.
-    // This is needed to walk up the parent tree and determine if a header is a descendant of
-    // a \x{full}, which determines if it gets a number or not.
-    //
-    // Yes, this would omit other parent IDs from other includes, but we don't have a use
-    // case for this right now, so let's keep it simple for now.
-    //for (const id in starting_points) {
-    //  const ast = starting_points[id]
-    //  this.id_cache[id] = ast
-    //}
-    //console.error({rows});
-
-    // Patch up the HeaderTreeNode of the entry points and their descendants
-    // to math the data we've just fetched.
-    //for (const starting_point_id of starting_points) {
-    //}
+      { replacements: {
+        starting_ids: Object.keys(starting_ids_to_asts),
+        type: this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_PARENT],
+      } }
+    )
+    return rows
   }
 
+  row_to_ast(row) {
+    const ast = cirodown.AstNode.fromJSON(row.ast_json)
+    ast.input_path = row.path
+    ast.id = row.idid
+    return ast
+  }
 
   // Update the databases based on the output of the Cirodown conversion.
   async update(cirodown_extra_returns, sequelize, transaction) {

@@ -3277,6 +3277,79 @@ assert_no_error('lint h-tag child pass',
   { extra_convert_opts: { cirodown_json: { lint: { 'h-tag': 'tag', } } } }
 );
 
+// Word counts.
+assert_convert_ast('word count simple',
+  `= h1
+
+11 22 33
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//*[contains(@class, 'h-nav')]//*[contains(@class, 'word-count') and text()='3']",
+    ],
+  }
+);
+assert_convert_ast('word count x',
+  `= h1
+
+I like \\x[my-h2]
+
+== My h2
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      // TODO the desired value is 4. 2 is not terrible though, better than 3 if we were considering the href.
+      "//*[contains(@class, 'h-nav')]//*[@class='word-count' and text()='2']",
+    ],
+  }
+);
+assert_convert_ast('word count descendant in source',
+  `= h1
+
+11 22 33
+
+== h2
+
+44 55
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//*[contains(@class, 'h-nav')]//*[contains(@class, 'word-count') and text()='3']",
+      "//*[contains(@class, 'h-nav')]//*[contains(@class, 'word-count-descendant') and text()='5']",
+    ],
+    assert_xpath_split_headers: {
+      'h2.html': [
+        "//*[contains(@class, 'h-nav')]//*[contains(@class, 'word-count') and text()='2']",
+      ]
+    }
+  }
+);
+assert_convert_ast('word count descendant from include without embed includes',
+  `= h1
+
+11 22 33
+
+\\Include[notindex]
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//*[contains(@class, 'h-nav')]//*[contains(@class, 'word-count') and text()='3']",
+      "//*[contains(@class, 'h-nav')]//*[contains(@class, 'word-count-descendant') and text()='5']",
+    ],
+    convert_before: ['notindex.ciro'],
+    filesystem: {
+      'notindex.ciro': `= Notindex
+
+44 55
+`
+    }
+  }
+);
+
 // Toc
 assert_convert_ast('second explicit toc is removed',
   `a

@@ -3843,6 +3843,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             header_ast.header_graph_node = new HeaderTreeNode(header_ast, parent_ast_header_graph_node);
             parent_ast_header_graph_node.add_child(header_ast.header_graph_node);
             new_child_nodes = [
+              header_ast,
               new AstNode(
                 AstType.PARAGRAPH,
               ),
@@ -3883,10 +3884,6 @@ async function parse(tokens, options, context, extra_returns={}) {
             for (const child_node of new_child_nodes) {
               child_node.set_source_location(ast.source_location)
             }
-            // Don't set the source location for this: it must be set to the external file
-            // in order to calculate link hrefs IDs correctly to it to the external file,
-            // and not the placeholder in the current file.
-            new_child_nodes.unshift(header_ast)
           }
           // Push all included nodes, but don't recurse because:
           // - all child includes will be resolved on the sub-render call
@@ -4762,33 +4759,31 @@ async function parse(tokens, options, context, extra_returns={}) {
     // Deferred here after ID cache warming to group all DB queries.
     for (const href in options.include_hrefs) {
       const target_id_ast = context.id_provider.get(href, context);
-      if (target_id_ast) {
-        const header_ast = options.include_hrefs[href]
-        let header_node_title;
-        if (target_id_ast === undefined) {
-          let message = `ID in include not found on database: "${href}", ` +
-            `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
-          header_node_title = error_message_in_output(message);
-          // Don't do an error if we are not going to render, because this is how
-          // we extract IDs on the first pass of ./cirodown .
-          if (options.render) {
-            parse_error(state, message);
-          }
-        } else {
-          const x_text_options = {
-            show_caption_prefix: false,
-            style_full: false,
-          };
-          header_node_title = x_text(target_id_ast, context, x_text_options);
+      const header_ast = options.include_hrefs[href]
+      let header_node_title;
+      if (target_id_ast === undefined) {
+        let message = `ID in include not found on database: "${href}", ` +
+          `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
+        header_node_title = error_message_in_output(message);
+        if (options.render) {
+          parse_error(state, message, header_ast.source_location);
         }
+      } else {
+        const x_text_options = {
+          show_caption_prefix: false,
+          style_full: false,
+        };
+        header_node_title = x_text(target_id_ast, context, x_text_options);
         header_ast.set_source_location(target_id_ast.source_location)
-        header_ast.args[Macro.TITLE_ARGUMENT_NAME][0].text = header_node_title
-        // This is a bit nasty and duplicates the below header processing code,
-        // but it is a bit hard to factor them out since this is a magic include header,
-        // and all includes and headers must be parsed concurrently since includes get
-        // injected under the last header.
-        validate_ast(header_ast, context);
+      }
+      header_ast.args[Macro.TITLE_ARGUMENT_NAME][0].text = header_node_title
+      // This is a bit nasty and duplicates the below header processing code,
+      // but it is a bit hard to factor them out since this is a magic include header,
+      // and all includes and headers must be parsed concurrently since includes get
+      // injected under the last header.
+      validate_ast(header_ast, context);
 
+      if (target_id_ast !== undefined) {
         // We modify the cache here to ensure that the header ID has the full header_graph_node, which
         // then gets feched from \x{full} (notably ToC) in order to show the link number there.
         //
@@ -6923,61 +6918,63 @@ const DEFAULT_MACRO_LIST = [
         } else {
           ret += `</li>\n`;
         }
-        let target_id_ast = context.id_provider.get(tree_node.value.id, context);
-        if (target_id_ast === undefined) {
-          // Can happen in error case 'cross reference from header title without ID to previous header is not allowed'
-          // Maybe there is a better solution, but can't be bothered right now, this prevents blowouts for now.
-          target_id_ast = tree_node.value;
-        }
-
-        // ToC entries always link to the same split/nosplit type, except for included sources.
-        // This might be handled more generally through: https://github.com/cirosantilli/cirodown/issues/146
-        // but for now we are just taking care of this specific and important ToC subcase.
-        let cur_context;
-        if (ast.source_location.path === target_id_ast.source_location.path) {
-          cur_context = clone_and_set(context, 'to_split_headers', context.in_split_headers);
-        } else {
-          cur_context = context;
-        }
-
-        let content = x_text(target_id_ast, cur_context, {style_full: true, show_caption_prefix: false});
-        let href = x_href_attr(target_id_ast, cur_context);
-        const my_toc_id = toc_id(target_id_ast, cur_context);
-        let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, my_toc_id);
         ret += '<li';
         if (tree_node.children.length > 0) {
           ret += html_class_attr([TOC_HAS_CHILD_CLASS]);
         }
-        // The inner <div></div> inside arrow is so that:
-        // - outter div: takes up space to make clicking easy
-        // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
-        let descendant_count_html = get_descendant_count_html_sep(tree_node, false);
-        ret += `><div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}>${content}</a><span class="hover-metadata">`;
-
-        let toc_href = html_attr('href', '#' + my_toc_id);
-        ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
-        if (cur_context.options.split_headers) {
-          ret += `${HEADER_MENU_ITEM_SEP}${link_to_split_opposite(target_id_ast, cur_context)}`;
-        }
-        let parent_ast = target_id_ast.get_header_parent_asts(cur_context)[0];
+        ret += '>'
+        let target_id_ast = context.id_provider.get(tree_node.value.id, context);
         if (
-          // Possible on broken h1 level.
-          parent_ast !== undefined
+          // Can happen in test error cases:
+          // - cross reference from header title without ID to previous header is not allowed
+          // - include to file that does exists without embed includes before extracting IDs fails gracefully
+          target_id_ast !== undefined
         ) {
-          let parent_href_target;
-          if (
-            parent_ast.header_graph_node !== undefined &&
-            parent_ast.header_graph_node.get_level() === cur_context.header_graph_top_level
-          ) {
-            parent_href_target = Macro.TOC_ID;
+          // ToC entries always link to the same split/nosplit type, except for included sources.
+          // This might be handled more generally through: https://github.com/cirosantilli/cirodown/issues/146
+          // but for now we are just taking care of this specific and important ToC subcase.
+          let cur_context;
+          if (ast.source_location.path === target_id_ast.source_location.path) {
+            cur_context = clone_and_set(context, 'to_split_headers', context.in_split_headers);
           } else {
-            parent_href_target = toc_id(parent_ast, cur_context);
+            cur_context = context;
           }
-          let parent_href = html_attr('href', '#' + parent_href_target);
-          let parent_body = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-          ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${html_attr('title', 'parent ToC entry')}>${PARENT_MARKER} "${parent_body}"</a>`;
+
+          let content = x_text(target_id_ast, cur_context, {style_full: true, show_caption_prefix: false});
+          let href = x_href_attr(target_id_ast, cur_context);
+          const my_toc_id = toc_id(target_id_ast, cur_context);
+          let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, my_toc_id);
+          // The inner <div></div> inside arrow is so that:
+          // - outter div: takes up space to make clicking easy
+          // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
+          let descendant_count_html = get_descendant_count_html_sep(tree_node, false);
+          ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}>${content}</a><span class="hover-metadata">`;
+
+          let toc_href = html_attr('href', '#' + my_toc_id);
+          ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
+          if (cur_context.options.split_headers) {
+            ret += `${HEADER_MENU_ITEM_SEP}${link_to_split_opposite(target_id_ast, cur_context)}`;
+          }
+          let parent_ast = target_id_ast.get_header_parent_asts(cur_context)[0];
+          if (
+            // Possible on broken h1 level.
+            parent_ast !== undefined
+          ) {
+            let parent_href_target;
+            if (
+              parent_ast.header_graph_node !== undefined &&
+              parent_ast.header_graph_node.get_level() === cur_context.header_graph_top_level
+            ) {
+              parent_href_target = Macro.TOC_ID;
+            } else {
+              parent_href_target = toc_id(parent_ast, cur_context);
+            }
+            let parent_href = html_attr('href', '#' + parent_href_target);
+            let parent_body = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+            ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${html_attr('title', 'parent ToC entry')}>${PARENT_MARKER} "${parent_body}"</a>`;
+          }
+          ret += `${descendant_count_html}</span></span></div>`;
         }
-        ret += `${descendant_count_html}</span></span></div>`;
         if (tree_node.children.length > 0) {
           for (let i = tree_node.children.length - 1; i >= 0; i--) {
             todo_visit.push([tree_node.children[i], level + 1]);

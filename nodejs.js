@@ -79,7 +79,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
     ])
   }
 
-  add_row_to_id_cache(row) {
+  add_row_to_id_cache(row, context) {
     if (row !== null) {
       const ast = this.row_to_ast(row)
       if (
@@ -89,12 +89,13 @@ class SqliteIdProvider extends cirodown.IdProvider {
       ) {
         ast.header_parent_ids = row.to.map(to => to.from_id)
       }
+      cirodown.validate_ast(ast, context)
       this.id_cache[ast.id] = ast
       return ast
     }
   }
 
-  async get_noscopes_base_fetch(ids, ignore_paths_set) {
+  async get_noscopes_base_fetch(ids, ignore_paths_set, context) {
     const asts = []
     if (ids.length) {
       const where = {
@@ -122,7 +123,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
         ],
       })
       for (const row of rows) {
-        asts.push(this.add_row_to_id_cache(row))
+        asts.push(this.add_row_to_id_cache(row, context))
       }
     }
     return asts
@@ -144,7 +145,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
     return cached_asts
   }
 
-  async get_refs_to_fetch(types, to_ids, { reversed, ignore_paths_set }) {
+  async get_refs_to_fetch(types, to_ids, { reversed, ignore_paths_set, context }) {
     if (reversed === undefined) {
       reversed = false
     }
@@ -193,7 +194,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
           to_id_key_dict[row.type] = to_id_key_dict_type
         }
         to_id_key_dict_type.push(row)
-        this.add_row_to_id_cache(row[include_key])
+        this.add_row_to_id_cache(row[include_key], context)
       }
     }
   }

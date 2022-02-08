@@ -56,14 +56,14 @@ class SqliteFileProvider extends cirodown.FileProvider {
     this.id_provider = undefined
   }
 
-  async get_path_entry_fetch(path) {
+  async get_path_entry_fetch(path, context) {
     const rows = await this.sequelize.models.File.findAll({
       where: { path },
       include: this.sequelize.models.Id,
     })
     for (const row of rows) {
       this.get_path_entry_cache[row.path] = row
-      this.id_provider.add_row_to_id_cache(row.Id)
+      this.id_provider.add_row_to_id_cache(row.Id, context)
     }
   }
 

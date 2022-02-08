@@ -76,6 +76,7 @@
     "start": "cd web && npm start",
     "start-dev": "cd web && npm run start-dev",
     "test": "NODE_OPTIONS='--unhandled-rejections=strict' mocha test --ignore-leaks",
+    "testi": "NODE_OPTIONS='--unhandled-rejections=strict' node inspect ./node_modules/.bin/mocha test --ignore-leaks",
     "webpack": "webpack",
     "webpack-dev": "webpack serve"
   }

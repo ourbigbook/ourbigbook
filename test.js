@@ -140,6 +140,10 @@ function assert_convert_ast(
     if (!('input_path_noext' in options) && options.extra_convert_opts.split_headers) {
       options.input_path_noext = cirodown.INDEX_BASENAME_NOEXT;
     }
+    const main_input_path = options.input_path_noext + cirodown.CIRODOWN_EXT
+    assert(!(main_input_path in options.filesystem))
+    const filesystem = Object.assign({}, options.filesystem)
+    filesystem[main_input_path] = input_string
 
     // Convenience parameter that sets both input_path_noext and toplevel_id.
     // options.input_path_noext
@@ -161,7 +165,7 @@ function assert_convert_ast(
     new_convert_opts.file_provider = new MockFileProvider();
     for (const input_path of options.convert_before) {
       const extra_returns = {};
-      const input_string = options.filesystem[input_path];
+      const input_string = filesystem[input_path];
       options.convert_before = [];
       const dependency_convert_opts = Object.assign({}, new_convert_opts);
       dependency_convert_opts.input_path = input_path;
@@ -2069,6 +2073,8 @@ assert_convert_ast('cross reference to non-included ids in another file',
 
 \\x[bb]
 
+\\Q[\\x[bb]{full}]
+
 \\x[include-two-levels]
 
 \\x[gg]
@@ -2089,6 +2095,7 @@ assert_convert_ast('cross reference to non-included ids in another file',
     a('H', undefined, {level: [t('1')], title: [t('Notindex')]}),
     a('P', [a('x', undefined, {href: [t('notindex')]})]),
     a('P', [a('x', undefined, {href: [t('bb')]})]),
+    a('Q', [a('x', undefined, {href: [t('bb')]})]),
     a('P', [a('x', undefined, {href: [t('include-two-levels')]})]),
     a('P', [a('x', undefined, {href: [t('gg')]})]),
     a('P', [a('x', [t('image bb 1')], {href: [t('image-bb')]})]),
@@ -2122,6 +2129,7 @@ assert_convert_ast('cross reference to non-included ids in another file',
       // https://stackoverflow.com/questions/5637969/is-an-empty-href-valid
       "//x:div[@class='p']//x:a[@href='' and text()='notindex']",
       "//x:a[@href='#bb' and text()='bb']",
+      "//x:blockquote//x:a[@href='#bb' and text()='Section 1. \"bb\"']",
       // https://github.com/cirosantilli/cirodown/issues/94
       "//x:a[@href='include-two-levels.html' and text()='ee']",
       "//x:a[@href='include-two-levels.html#gg' and text()='gg']",
@@ -2137,6 +2145,8 @@ assert_convert_ast('cross reference to non-included ids in another file',
         "//x:a[@href='include-two-levels.html' and text()='ee']",
         "//x:a[@href='include-two-levels.html#gg' and text()='gg']",
         "//x:a[@href='notindex.html#bb' and text()='bb']",
+        // https://github.com/cirosantilli/cirodown/issues/130
+        "//x:blockquote//x:a[@href='notindex.html#bb' and text()='Section 1. \"bb\"']",
         // Link to the split version.
         xpath_header_split(1, 'notindex', 'notindex.html', cirodown.NOSPLIT_MARKER),
         // Internal cross reference inside split header.
@@ -3565,6 +3575,8 @@ assert_error('toc is a reserved id',
 assert_convert_ast('table of contents contains included headers numbered without embed includes',
   `= Notindex
 
+\\Q[\\x[notindex2]{full}]
+
 \\Include[notindex2]
 
 == Notindex h2
@@ -3572,6 +3584,7 @@ assert_convert_ast('table of contents contains included headers numbered without
   undefined,
   {
     assert_xpath_matches: [
+      "//x:blockquote//x:a[@href='notindex2.html' and text()='Section 1. \"Notindex2\"']",
       "//*[@id='toc']//x:a[@href='notindex2.html' and text()='1. Notindex2']",
       "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='1.1. Notindex2 h2']",
       "//*[@id='toc']//x:a[@href='notindex3.html' and text()='1.1.1. Notindex3']",
@@ -3599,6 +3612,63 @@ assert_convert_ast('table of contents contains included headers numbered without
       'notindex3.ciro': `= Notindex3
 
 == Notindex3 h2
+`,
+    },
+    input_path_noext: 'notindex',
+  },
+);
+assert_convert_ast('table of contents respects numbered=0 of included headers',
+  `= Notindex
+
+\\Include[notindex2]
+
+== Notindex h2
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//*[@id='toc']//x:a[@href='notindex2.html' and text()='1. Notindex2']",
+      "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='Notindex2 h2']",
+      "//*[@id='toc']//x:a[@href='#notindex-h2' and text()='2. Notindex h2']",
+    ],
+    convert_before: [
+      'notindex2.ciro',
+    ],
+    filesystem: {
+      'notindex2.ciro': `= Notindex2
+{numbered=0}
+
+== Notindex2 h2
+`,
+    },
+    input_path_noext: 'notindex',
+  },
+);
+assert_convert_ast('table of contents include placeholder header has no number when under numbered=0',
+  `= Notindex
+{numbered=0}
+
+\\Q[\\x[notindex2]{full}]
+
+\\Include[notindex2]
+
+== Notindex h2
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//x:blockquote//x:a[@href='notindex2.html' and text()='Section \"Notindex2\"']",
+      "//*[@id='toc']//x:a[@href='notindex2.html' and text()='Notindex2']",
+      "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='1. Notindex2 h2']",
+      "//*[@id='toc']//x:a[@href='#notindex-h2' and text()='Notindex h2']",
+    ],
+    convert_before: [
+      'notindex2.ciro',
+    ],
+    filesystem: {
+      'notindex2.ciro': `= Notindex2
+
+== Notindex2 h2
 `,
     },
     input_path_noext: 'notindex',

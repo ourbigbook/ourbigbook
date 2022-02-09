@@ -1,5 +1,6 @@
 // Contains exports that should only be visible from Node.js but not browser.
 
+const fs = require('fs');
 const path = require('path');
 
 const { Op, Sequelize } = require('sequelize')
@@ -354,6 +355,7 @@ ON "Ids".idid = "RecRefs"."to_id"
 exports.SqliteIdProvider = SqliteIdProvider;
 
 async function create_sequelize(db_options) {
+  const db_path = db_options.storage
   const default_options = {
     dialect: 'sqlite',
     define: { timestamps: false },
@@ -361,7 +363,9 @@ async function create_sequelize(db_options) {
   const new_db_options = Object.assign({}, default_options, db_options)
   const sequelize = new Sequelize(new_db_options)
   models.addModels(sequelize)
-  await sequelize.sync()
+  if (db_path === cirodown.SQLITE_MAGIC_MEMORY_NAME && db_path || !fs.existsSync(db_path)) {
+    await sequelize.sync()
+  }
   return sequelize
 }
 exports.create_sequelize = create_sequelize;

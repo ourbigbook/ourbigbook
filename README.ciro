@@ -6121,7 +6121,9 @@ Conversion follows the following steps:
   As an added bonus, it also allows us to clearly see the impact of database queries when using \x[log-perf].
 * ast post process pass 2: we now do every other post process operation that was not done in pass 1, e.g.:
   * \x[insane] paragraphs, lists and tables
+* ast post process pass 3: this does some minimal tree hierarchy linking between parents and children. TODO could it be merged into 2? Feels likely
 * render, which converts our AST tree into a output string. This is run once for the toplevel, and once for every header of the document if \x[split-headers] are enabled. We need to do this because header renders are different from their toplevel counterparts, e.g. their first paragraph has id `p-1` and not `p-283`. All of those renders are done from the same parsed tree however, parsing happens only once.
+* and after rendering is finally done, we then save the database changes back to the DB so that the conversion of other files will pick them up. Just like for the SELECT, we do a single query per database to reduce the roundrips.
 
 = Abstract syntax tree
 {parent=conversion-process-overview}

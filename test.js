@@ -470,15 +470,15 @@ function assert_xpath_matches(xpath_expr, string, options={}) {
  * @return {Bool} true iff ast_subset is a subset of this node
  */
 function ast_arg_has_subset(arg, subset, extra_returns) {
-  if (arg.length !== subset.length) {
-    extra_returns.fail_reason = `arg.length !== subset.length ${arg.length} ${subset.length}
-arg: ${arg}
+  if (arg.length() !== subset.length) {
+    extra_returns.fail_reason = `arg.length !== subset.length ${arg.length()} ${subset.length}
+arg: ${JSON.stringify(arg, null, 2)}
 subset: ${JSON.stringify(subset, null, 2)}
 `;
     return false;
   }
-  for (let i = 0; i < arg.length; i++) {
-    if (!ast_has_subset(arg[i], subset[i], extra_returns))
+  for (let i = 0; i < arg.length(); i++) {
+    if (!ast_has_subset(arg.get(i), subset[i], extra_returns))
       return false;
   }
   return true;

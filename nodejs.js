@@ -223,7 +223,7 @@ class SqliteIdProvider extends cirodown.IdProvider {
 
   // We have a separate function from fetch_header_tree_ids to defer after that call,
   // because we want to first fetch everything
-  // and populate the ID cache with the include entry points that have proper header_graph_node.
+  // and populate the ID cache with the include entry points that have proper header_dag_node.
   // Only then are we ready for linking up the rest of the tree.
   build_header_tree(starting_ids_to_asts, fetch_header_tree_ids_rows, { context }) {
     const asts = []
@@ -231,12 +231,12 @@ class SqliteIdProvider extends cirodown.IdProvider {
       const ast = this.row_to_ast(row, context)
       const parent_id = row.from_id
       const parent_ast = this.id_cache[parent_id]
-      const parent_ast_header_graph_node = parent_ast.header_graph_node
-      ast.header_graph_node = new cirodown.HeaderTreeNode(ast, parent_ast_header_graph_node);
+      const parent_ast_header_dag_node = parent_ast.header_dag_node
+      ast.header_dag_node = new cirodown.HeaderTreeNode(ast, parent_ast_header_dag_node);
       // I love it when you get potential features like this for free.
       // Only noticed when Figures showed up on ToC.
       if (ast.macro_name === cirodown.Macro.HEADER_MACRO_NAME) {
-        parent_ast_header_graph_node.add_child(ast.header_graph_node);
+        parent_ast_header_dag_node.add_child(ast.header_dag_node);
       }
       cirodown.propagate_numbered(ast, context)
       this.id_cache[ast.id] = ast

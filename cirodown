@@ -304,7 +304,7 @@ async function convert_path(input_path, cirodown_options, non_cirodown_options) 
 
   const context = extra_returns.context;
   if (non_cirodown_options.log.headers) {
-    console.error(context.header_graph.toString());
+    console.error(context.header_tree.toString());
   }
 
   // Update the Sqlite databse with results from the conversion.

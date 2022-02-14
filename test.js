@@ -2174,32 +2174,32 @@ assert_convert_ast('cross reference to non-included ids in another file',
     input_path_noext: 'notindex',
   },
 );
-//assert_convert_ast('cross reference to non-included image in another file',
-//  // https://github.com/cirosantilli/cirodown/issues/199
-//  `= Notindex
-//
-//\\x[image-bb]
-//`,
-//  undefined,
-//  {
-//    assert_xpath_matches: [
-//      "//x:div[@class='p']//x:a[@href='notindex2.html#image-aa' and text()='aa']",
-//    ],
-//    convert_before: [
-//      'notindex2.ciro',
-//    ],
-//    filesystem: {
-//      'notindex2.ciro': `= Notindex2
-//
-//== Notindex2 2
-//
-//\\Image[aa]{check=0}
-//{title=bb}
-//`
-//    },
-//    input_path_noext: 'notindex',
-//  },
-//);
+assert_convert_ast('cross reference to non-included image in another file',
+  // https://github.com/cirosantilli/cirodown/issues/199
+  `= Notindex
+
+\\x[image-bb]
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//x:div[@class='p']//x:a[@href='notindex2.html#image-bb' and text()='Figure \"bb\"']",
+    ],
+    convert_before: [
+      'notindex2.ciro',
+    ],
+    filesystem: {
+      'notindex2.ciro': `= Notindex2
+
+== Notindex2 2
+
+\\Image[aa]{check=0}
+{title=bb}
+`
+    },
+    input_path_noext: 'notindex',
+  },
+);
 // TODO was working, but lazy now, will have to worry about
 // mock ID provider or modify index.js. Edit: there is no more mock
 // ID provider. Just lazy now.

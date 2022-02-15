@@ -759,30 +759,25 @@ class IdProvider {
 
   /**
    * @param {String} id
-   * @param {HeaderTreeNode} header_tree_node
+   * @param {String} current_scope: scope node of the location
+   *         from which ID get is being done. This affects the final
+   *         ID obtained due to scope resolution.
    * @return {Union[AstNode,undefined]}.
    *         undefined: ID not found
    *         Otherwise, the ast node for the given ID
    */
-  get(id, context, header_tree_node) {
+  get(id, context, current_scope) {
     if (id[0] === Macro.HEADER_SCOPE_SEPARATOR) {
       return this.get_noscope(id.substr(1), context);
     } else {
-      if (
-        header_tree_node !== undefined &&
-        header_tree_node.parent_node !== undefined &&
-        header_tree_node.parent_node.ast !== undefined
-      ) {
-        let parent_scope_id = calculate_scope(header_tree_node.parent_node.ast);
-        if (parent_scope_id !== undefined) {
-          parent_scope_id += Macro.HEADER_SCOPE_SEPARATOR
-          for (let i = parent_scope_id.length - 1; i > 0; i--) {
-            if (parent_scope_id[i] === Macro.HEADER_SCOPE_SEPARATOR) {
-              let resolved_scope_id = this.get_noscope(
-                parent_scope_id.substring(0, i + 1) + id, context);
-              if (resolved_scope_id !== undefined) {
-                return resolved_scope_id;
-              }
+      if (current_scope !== undefined) {
+        current_scope += Macro.HEADER_SCOPE_SEPARATOR
+        for (let i = current_scope.length - 1; i > 0; i--) {
+          if (current_scope[i] === Macro.HEADER_SCOPE_SEPARATOR) {
+            let resolved_scope_id = this.get_noscope(
+              current_scope.substring(0, i + 1) + id, context);
+            if (resolved_scope_id !== undefined) {
+              return resolved_scope_id;
             }
           }
         }
@@ -5538,7 +5533,7 @@ ${ast.toString()}`)
 exports.validate_ast = validate_ast
 
 function x_child_db_effective_id(target_id, context, ast) {
-  const target_id_ast = context.id_provider.get(target_id, context, ast.header_tree_node);
+  const target_id_ast = context.id_provider.get(target_id, context, ast.scope);
   if (
     // Can happen if it is in another files that was not extracted yet.
     target_id_ast === undefined
@@ -5562,7 +5557,7 @@ function x_get_href_content(ast, context) {
   if (target_id[0] === HASHTAG_CHAR) {
     return [html_attr('href', WEBSITE_URL + 'go/topic/' + target_id.substr(1)), target_id];
   }
-  const target_id_ast = context.id_provider.get(target_id, context, ast.header_tree_node);
+  const target_id_ast = context.id_provider.get(target_id, context, ast.scope);
 
   // href
   let href;

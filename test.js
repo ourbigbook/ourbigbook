@@ -2696,6 +2696,38 @@ assert_convert_ast('x leading slash to escape scopes works across files',
     },
   }
 );
+// This test can only work after:
+// https://github.com/cirosantilli/cirodown/issues/188
+// There is no other way to test this currently, as we can't have scopes
+// across source files, and since scope is a boolean, and therefore can only
+// match the header's ID itself. The functionality has in theory been implemented
+// in the commit that adds this commented out test.
+//assert_convert_ast('scopes hierarchy resolution works across files',
+//  `= Index
+//
+//== Index scope
+//{scope}
+//
+//\\Include[notindex]
+//
+//== Index scope 2
+//{scope}
+//
+//\\x[notindex-h2][index scope 2 to notindex h2]`,
+//  undefined,
+//  {
+//    convert_before: ['notindex.ciro'],
+//    filesystem: {
+//     'notindex.ciro': `= Notindex
+//
+//== Notindex h2
+//`,
+//    },
+//    assert_xpath_matches: [
+//      "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='index scope 2 to notindex h2']",
+//    ]
+//  }
+//);
 
 // Headers.
 assert_convert_ast('header simple',

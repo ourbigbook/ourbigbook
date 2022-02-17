@@ -3963,13 +3963,11 @@ async function parse(tokens, options, context, extra_returns={}) {
                           ),
                         },
                         undefined,
-                        { from_include },
                       ),
                     ],
                   ),
                 },
                 undefined,
-                { from_include },
               ),
               new AstNode(AstType.PARAGRAPH),
             ];

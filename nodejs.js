@@ -292,10 +292,9 @@ ON "Ids".idid = "RecRefs"."to_id"
   }
 
   row_to_ast(row, context) {
-    const ast = cirodown.AstNode.fromJSON(row.ast_json)
+    const ast = cirodown.AstNode.fromJSON(row.ast_json, context)
     ast.input_path = row.path
     ast.id = row.idid
-    cirodown.validate_ast(ast, context)
     return ast
   }
 

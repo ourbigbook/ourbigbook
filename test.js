@@ -4383,7 +4383,7 @@ assert_error('id conflict with previous id on the same file',
     input_path_noext: 'index',
   },
 );
-assert_error('id conflict with previous id on another file',
+assert_error('id conflict with previous id on another file simple',
   // https://github.com/cirosantilli/cirodown/issues/201
   `= index
 
@@ -4400,6 +4400,26 @@ assert_error('id conflict with previous id on another file',
 `,
     },
     input_path_noext: 'index'
+  }
+);
+assert_error('id conflict with previous id on another file where conflict header has a child heder',
+  // Bug introduced at ef9e2445654300c4ac41e1d06d3d2a1889dd0554
+  `= tmp
+
+== aa
+`,
+  3, 1, 'tmp.ciro',
+  {
+    convert_before: ['tmp2.ciro'],
+    filesystem: {
+     'tmp2.ciro': `= tmp2
+
+== aa
+
+=== bb
+`,
+    },
+    input_path_noext: 'tmp'
   }
 );
 

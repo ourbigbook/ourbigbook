@@ -276,7 +276,9 @@ class SqliteIdProvider extends cirodown.IdProvider {
       }
       cirodown.propagate_numbered(ast, context)
       this.id_cache[ast.id] = ast
+      asts.push(ast)
     }
+    return asts
   }
 
   async fetch_header_tree_ids(starting_ids_to_asts) {

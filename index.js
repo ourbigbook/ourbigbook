@@ -484,7 +484,7 @@ class AstNode {
       } else {
         for (const arg_name in ast_json.args) {
           const arg_json = ast_json.args[arg_name];
-          for (const ast_child_json of arg_json.asts.reverse()) {
+          for (const ast_child_json of arg_json.asts.slice().reverse()) {
             todo_visit.push([arg_json.asts, ast_child_json]);
           }
           arg_json.asts.length = 0
@@ -1929,7 +1929,7 @@ class HeaderTreeNode {
       const cur_node = todo_visit.pop();
       const level = cur_node.get_level();
       ret.push(`${INSANE_HEADER_CHAR.repeat(level)} h${level} ${cur_node.get_nested_number(1)} ${cur_node.ast.id}`);
-      todo_visit.push(...cur_node.children.reverse());
+      todo_visit.push(...cur_node.children.slice().reverse());
     }
     return ret.join('\n');
   }

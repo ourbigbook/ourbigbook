@@ -3124,7 +3124,7 @@ function get_parent_argument_ast(ast, context, prev_header, include_options) {
   return [parent_id, parent_ast];
 }
 
-// Ensure that all children and tg targets exist. This is for error checking only.
+// Ensure that all children and tag targets exist. This is for error checking only.
 // https://cirosantilli.com/cirodown#h-child-argment
 function header_check_child_tag_exists(ast, context, childrenOrTags, type) {
   let ret = ''
@@ -3137,6 +3137,7 @@ function header_check_child_tag_exists(ast, context, childrenOrTags, type) {
       ret += error_message_in_output(message, context)
     }
   }
+  return ret
 }
 
 /** Convert a key value already fully HTML escaped strings

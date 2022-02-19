@@ -171,6 +171,7 @@ function assert_convert_ast(
     new_convert_opts.file_provider = new MockFileProvider();
     const rendered_outputs = {}
     for (const input_path of options.convert_before) {
+      //console.error({input_path});
       const extra_returns = {};
       const input_string = filesystem[input_path];
       options.convert_before = [];
@@ -185,6 +186,7 @@ function assert_convert_ast(
         new_convert_opts.file_provider.update(input_path, extra_returns),
       ])
     }
+    //console.error('main');
     if (options.input_path_noext !== undefined) {
       new_convert_opts.input_path = options.input_path_noext + cirodown.CIRODOWN_EXT;
       new_convert_opts.toplevel_id = options.input_path_noext;
@@ -3164,6 +3166,28 @@ assert_convert_ast('header numbered=0 in cirodown.json works across source files
 == Notindex h2
 `,
     },
+  },
+);
+assert_convert_ast('split header with an include and no headers has a single table of contents',
+  // At 074bacbdd3dc9d3fa8dafec74200043f42779bec was getting two.
+  `= Index
+
+\\Include[notindex]
+`,
+  undefined,
+  {
+    assert_xpath_split_headers: {
+      'split.html': [
+        "//*[@id='toc']",
+      ],
+    },
+    convert_before: ['notindex.ciro'],
+    extra_convert_opts: { cirodown_json: { numbered: false } },
+    filesystem: {
+      'notindex.ciro': `= Notindex
+`,
+    },
+    input_path_noext: 'index',
   },
 );
 assert_convert_ast('header file argument works',

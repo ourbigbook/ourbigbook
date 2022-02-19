@@ -2473,7 +2473,7 @@ async function convert(
         }
         cur_arg_list.push(child_ast);
       }
-      convert_header(cur_arg_list, context);
+      convert_header(cur_arg_list, context, has_toc);
       // Because the following conversion would redefine them.
     }
     perf_print(context, 'render_post')

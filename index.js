@@ -7207,6 +7207,7 @@ const DEFAULT_MACRO_LIST = [
         // Empty ToC. Don't render. Initial common case: leaf split header nodes.
         return '';
       }
+      let linear_count = 0
       while (todo_visit.length > 0) {
         const [tree_node, level] = todo_visit.pop();
         if (level > top_level) {
@@ -7246,7 +7247,13 @@ const DEFAULT_MACRO_LIST = [
           // - outter div: takes up space to make clicking easy
           // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
           let descendant_count_html = get_descendant_count_html_sep(tree_node, false);
-          ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}>${content}</a><span class="hover-metadata">`;
+          let linear_count_str
+          if (context.options.add_test_instrumentation) {
+            linear_count_str = html_attr('data-test', linear_count)
+          } else {
+            linear_count_str = ''
+          }
+          ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
 
           let toc_href = html_attr('href', '#' + my_toc_id);
           ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
@@ -7272,6 +7279,7 @@ const DEFAULT_MACRO_LIST = [
             ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${html_attr('title', 'parent ToC entry')}>${PARENT_MARKER} "${parent_body}"</a>`;
           }
           ret += `${descendant_count_html}</span></span></div>`;
+          linear_count++
         }
         if (tree_node.children.length > 0) {
           for (let i = tree_node.children.length - 1; i >= 0; i--) {

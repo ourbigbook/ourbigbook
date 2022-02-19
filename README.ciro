@@ -5393,9 +5393,11 @@ See also: https://github.com/cirosantilli/cirodown/issues/40
 = `numbered`
 {parent=cirodown-json}
 
-Sets the default \x[h-numbered-argument] argument of the toplevel headers of each file.
+Sets the default \x[h-numbered-argument] argument of the toplevel headers of each source file.
 
-Note that since the option is inherited by descendants, this also affects every other header.
+Note that since the option is inherited by descendants, this can also affect the rendering of ancestors.
+
+https://github.com/cirosantilli/cirodown/issues/188 contains a proposal to instead inherit this property across \x[include]{p}.
 
 = `outputOutOfTree`
 {parent=cirodown-json}

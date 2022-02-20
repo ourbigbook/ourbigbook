@@ -3135,7 +3135,35 @@ assert_convert_ast('header numbered cirodown.json',
         "//*[@id='toc']//x:a[@href='tmp-8.html' and text()='1. tmp 8']",
       ],
     },
-    extra_convert_opts: { cirodown_json: { numbered: false } }
+    extra_convert_opts: { cirodown_json: { h: { numbered: false } } }
+  },
+);
+assert_convert_ast('header splitDefault on cirodown.json',
+  `= Index
+
+\\Include[notindex]
+
+== h2
+`,
+  undefined,
+  {
+    assert_xpath_matches: [
+      "//*[@id='toc']//x:a[@href='notindex.html' and text()='1. Notindex']",
+      "//*[@id='toc']//x:a[@href='notindex-h2.html' and text()='1.1. Notindex h2']",
+    ],
+    assert_xpath_split_headers: {
+      'notindex.html': [
+        "//*[@id='toc']//x:a[@href='notindex-h2.html' and text()='1. Notindex h2']",
+      ],
+    },
+    convert_before: ['notindex.ciro'],
+    extra_convert_opts: { cirodown_json: { h: { splitDefault: true } } },
+    filesystem: {
+      'notindex.ciro': `= Notindex
+
+== Notindex h2
+`
+    }
   },
 );
 assert_convert_ast('header file argument works',
@@ -3856,7 +3884,7 @@ assert_convert_ast('header numbered=0 in cirodown.json works across source files
     },
 
     convert_before: ['notindex.ciro'],
-    extra_convert_opts: { cirodown_json: { numbered: false } },
+    extra_convert_opts: { cirodown_json: { h: { numbered: false } } },
     filesystem: {
       'notindex.ciro': `= Notindex
 
@@ -3879,7 +3907,7 @@ assert_convert_ast('split header with an include and no headers has a single tab
       ],
     },
     convert_before: ['notindex.ciro'],
-    extra_convert_opts: { cirodown_json: { numbered: false } },
+    extra_convert_opts: { cirodown_json: { h: { numbered: false } } },
     filesystem: {
       'notindex.ciro': `= Notindex
 `,

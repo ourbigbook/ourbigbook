@@ -63,9 +63,15 @@ class SqliteFileProvider extends cirodown.FileProvider {
     })
     for (const row of rows) {
       this.get_path_entry_cache[row.path] = row
-      // We have to do this if here because otherwise it would overwrite the reconciled header
-      // we have stiched into the tree with Include.
-      if (!this.id_provider.id_cache[row.Id.idid]) {
+      if (
+        // Happens on some unminimized condition when converting
+        // cirosantilli.github.io @ 04f0f5bc03b9071f82b706b3481c09d616d44d7b + 1
+        // twice with cirodown -S ., no patience to minimize and test now.
+        row.Id !== null &&
+        // We have to do this if here because otherwise it would overwrite the reconciled header
+        // we have stiched into the tree with Include.
+        !this.id_provider.id_cache[row.Id.idid]
+      ) {
         this.id_provider.add_row_to_id_cache(row.Id, context)
       }
     }

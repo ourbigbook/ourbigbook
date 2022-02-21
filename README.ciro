@@ -4904,6 +4904,83 @@ This option is automatically implied when publishing to targets that remove the 
 
 Only extract IDs to fill the \x[id-database], don't render. This saves time if you only want to render a single file which has references to other files without getting any errors.
 
+= `--no-render-timestamp`
+{parent=cirodown-executable-options}
+
+Cirodown stores the timestamp of the last sucessful:
+* \x[conversion-process-overview][ID extraction]
+* \x[conversion-process-overview][render]
+for each file.
+
+For ID extraction, we always skip the extraction if the filesystem timestamp of a source file is older than the last sucessful extraction.
+
+For render:
+* we also skip rendering by default when you invoke cirodown on a directory, e.g. `cirodown .`, as this greatly speeds up the interactive error fixing turnaround time
+* we always re-render fully when you specify a single file, e.g. `cirodown path/to/README.ciro`
+
+However, note that skipping renders, unlike for ID extraction, can lead to some outdated pages.
+
+This option disables the timestamp skip for rendering, so ensure that you will get a fully clean updated render.
+
+E.g. consider if you had two files:
+
+file1.ciro
+
+``
+= File 1
+
+== File 1 1
+``
+
+file2.ciro
+
+``
+= File 2
+
+== File 2 1
+
+\x[file-1-1]
+``
+
+We then do the initial convertion:
+``
+cirodown .
+``
+we see output like:
+``
+extract_ids file1.ciro
+extract_ids file1.ciro finished in 45.61287499964237 ms
+extract_ids file2.ciro
+extract_ids file2.ciro finished in 15.163879998028278 ms
+render file1.ciro
+render file1.ciro finished in 23.21016100049019 ms
+render file2.ciro
+render file2.ciro finished in 25.92908499762416 ms
+``
+indicating full conversion without skips.
+
+But then if we just modify fil1.ciro as:
+``
+= File 1
+
+== File 1 1 hacked
+{id=file-1-1}
+``
+the following conversion with `cirodown .` would look like:
+``
+extract_ids file1.ciro
+extract_ids file1.ciro finished in 45.61287499964237 ms
+extract_ids file2.ciro
+extract_ids file2.ciro skipped by timestamp
+render file1.ciro
+render file1.ciro finished in 41.026930000633 ms
+render file2.ciro
+render file2.ciro skipped by timestamp
+``
+and because we skipped `file2.ciro` render, it will still have the outdated "File 1 1" instead of "File 1 1 hacked".
+
+We could in principle solve this problem by figuring out exactly which files need to be changed when a given ID changes, and we already \x[conversion-process-overview][have to solve a similar problem due to query bundling]. Also, this will need to be done sonner or later for the \x[dynamic-website]. But lazy now: https://github.com/cirosantilli/cirodown/issues/207[], this is hard stuff.
+
 = `--outdir <outdir>`
 {id=outdir}
 {parent=cirodown-executable-options}
@@ -6146,6 +6223,8 @@ Conversion follows the following steps:
   It also has the benefit of allowing us to remove `async`/`await` from almost every single function in the code, which considerably slows down the CPU-bound execution path.
 
   As an added bonus, it also allows us to clearly see the impact of database queries when using \x[log-perf].
+
+  We call this joining up of small querries into big ones "query bundling".
 * ast post process pass 2: we now do every other post process operation that was not done in pass 1, e.g.:
   * \x[insane] paragraphs, lists and tables
 * ast post process pass 3: this does some minimal tree hierarchy linking between parents and children. TODO could it be merged into 2? Feels likely

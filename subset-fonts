@@ -1,0 +1,50 @@
+#!/usr/bin/env node
+
+const fs = require('fs');
+const path = require('path');
+
+const cirodown_nodejs = require('./nodejs')
+
+const EXT = '.woff2'
+
+const glyphs = {
+  'fa-solid-900': [
+    '\u{f03a}',
+    '\u{f042}',
+    '\u{f062}',
+    '\u{f0c1}',
+    '\u{f111}',
+    '\u{f02c}',
+  ],
+  'fa-regular-400': [
+    '\u{f075}',
+  ],
+  'fa-brands-400': [
+    '\u{f266}',
+  ],
+}
+
+for (const fontname in glyphs) {
+  const font_basename = fontname + EXT
+  fs.copyFileSync(
+    path.resolve(path.join(cirodown_nodejs.PACKAGE_NODE_MODULES_PATH, 'fontawesome-free', 'webfonts', font_basename)),
+    path.resolve(path.join(cirodown_nodejs.DIST_PATH, font_basename))
+  )
+}
+
+if (false) {
+// Couldn't get it to work:
+// https://stackoverflow.com/questions/62395038/how-can-i-export-only-one-character-from-ttf-woff-file-to-avoid-load-unnecessa/71197892#71197892
+
+const fontkit = require('fontkit');
+
+for (const fontname in glyphs) {
+  const font_basename = fontname + EXT
+  const font = fontkit.openSync(path.join(cirodown_nodejs.PACKAGE_NODE_MODULES_PATH, 'fontawesome-free', 'webfonts', font_basename));
+  const subset = font.createSubset();
+  for (const glyph of font.glyphsForString(glyphs[fontname].join(''))) {
+    subset.includeGlyph(glyph);
+  }
+  subset.encodeStream().pipe(fs.createWriteStream(path.join(cirodown_nodejs.DIST_PATH, font_basename)));
+}
+}

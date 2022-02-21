@@ -5709,7 +5709,13 @@ function x_get_href_content(ast, context) {
   let href;
   if (target_id_ast === undefined) {
     let message = `cross reference to unknown id: "${target_id}"`;
-    render_error(context, message, ast.args.href.source_location, 2);
+    let source_location
+    if (ast.args.href) {
+      source_location = ast.args.href.source_location
+    } else {
+      source_location = ast.source_location
+    }
+    render_error(context, message, source_location, 2);
     return [href, error_message_in_output(message, context)];
   } else {
     href = x_href_attr(target_id_ast, context);

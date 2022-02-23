@@ -2757,6 +2757,9 @@ function convert_init_context(options={}, extra_returns={}) {
     // to `options.template_vars.style`.
     options.template_styles_relative = [];
   }
+  if (!('template_fonts_relative' in options)) {
+    options.template_fonts_relative = [];
+  }
   if ('template_vars' in options) {
     options.template_vars = Object.assign({}, options.template_vars);
   } else {
@@ -7525,6 +7528,10 @@ const DEFAULT_MACRO_LIST = [
         let relative_styles = [];
         for (const style of context.options.template_styles_relative) {
           relative_styles.push(`@import "${context.options.template_vars.root_relpath}${style}";\n`);
+        }
+        for (const font of context.options.template_fonts_relative) {
+          const font_name = path_splitext(path_split(font, context.options.path_sep)[1])[0]
+          relative_styles.push(`@font-face { font-family: ${font_name}; src: url(${context.options.template_vars.root_relpath}${font}); }\n`);
         }
         render_env.style = relative_styles.join('') + render_env.style;
 

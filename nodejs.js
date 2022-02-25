@@ -265,18 +265,20 @@ class SqliteIdProvider extends cirodown.IdProvider {
     const asts = []
     for (const row of fetch_header_tree_ids_rows) {
       const ast = this.row_to_ast(row, context)
-      const parent_id = row.from_id
-      const parent_ast = this.id_cache[parent_id]
-      const parent_ast_header_tree_node = parent_ast.header_tree_node
-      ast.header_tree_node = new cirodown.HeaderTreeNode(ast, parent_ast_header_tree_node);
-      // I love it when you get potential features like this for free.
-      // Only noticed when Figures showed up on ToC.
-      if (ast.macro_name === cirodown.Macro.HEADER_MACRO_NAME) {
-        parent_ast_header_tree_node.add_child(ast.header_tree_node);
+      if (ast.synonym === undefined) {
+        const parent_id = row.from_id
+        const parent_ast = this.id_cache[parent_id]
+        const parent_ast_header_tree_node = parent_ast.header_tree_node
+        ast.header_tree_node = new cirodown.HeaderTreeNode(ast, parent_ast_header_tree_node);
+        // I love it when you get potential features like this for free.
+        // Only noticed when Figures showed up on ToC.
+        if (ast.macro_name === cirodown.Macro.HEADER_MACRO_NAME) {
+          parent_ast_header_tree_node.add_child(ast.header_tree_node);
+        }
+        cirodown.propagate_numbered(ast, context)
+        this.id_cache[ast.id] = ast
+        asts.push(ast)
       }
-      cirodown.propagate_numbered(ast, context)
-      this.id_cache[ast.id] = ast
-      asts.push(ast)
     }
     return asts
   }

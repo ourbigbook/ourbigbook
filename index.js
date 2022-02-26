@@ -21,16 +21,16 @@ const pluralize = require('pluralize');
 
 // consts used by classes.
 const HEADER_MENU_ITEM_SEP = '<span class="sep"></span>';
-const UNICODE_LINK = '<span class="fa-solid-900">\u{f0c1}</span>';
+const UNICODE_LINK = '<i class="fas fa-link"></i>';
 const NOSPLIT_MARKER_TEXT = 'nosplit'
 exports.NOSPLIT_MARKER_TEXT = NOSPLIT_MARKER_TEXT;
-const NOSPLIT_MARKER = `<span class="fa-solid-900">\u{f111}</span> ${NOSPLIT_MARKER_TEXT}`;
+const NOSPLIT_MARKER = `<i class="fa-solid fa-circle"></i> ${NOSPLIT_MARKER_TEXT}`;
 const SPLIT_MARKER_TEXT = 'split'
 exports.SPLIT_MARKER_TEXT = SPLIT_MARKER_TEXT;
-const SPLIT_MARKER = `<span class="fa-solid-900">\u{f042}</span> ${SPLIT_MARKER_TEXT}`;
-const PARENT_MARKER = '<span class="fa-solid-900">\u{f062}</span>';
+const SPLIT_MARKER = `<i class="fas fa-circle-half-stroke"></i> ${SPLIT_MARKER_TEXT}`;
+const PARENT_MARKER = '<i class="fas fa-arrow-up"></i>';
 exports.PARENT_MARKER = PARENT_MARKER;
-const TOC_MARKER = '<span class="fa-solid-900">\u{f03a}</span> toc'
+const TOC_MARKER = '<i class="fas fa-list"></i> toc'
 
 class AstNode {
   /**
@@ -2956,7 +2956,7 @@ function get_descendant_count_html(context, tree_node, options) {
   const [descendant_count, word_count, descendant_word_count] = get_descendant_count(tree_node);
   let ret;
   let word_count_html = ''
-  const icon = '<span class="fa-regular-400">\u{f075}</span>'
+  const icon = '<i class="far fa-comment"></i>'
   const words_str = options.long_style ? `words: ` : ''
   if (descendant_word_count > 0 && (context.options.add_test_instrumentation || options.show_descendant_count)) {
     word_count_html += `<span title="word count for this node + all descendants">${icon} ${words_str}<span class="word-count-descendant">${format_number_approx(descendant_word_count)}</span></span>`
@@ -6678,7 +6678,7 @@ const DEFAULT_MACRO_LIST = [
             wiki += '_(' + (render_arg(ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME], context)).replace(/ /g, '_')  + ')'
           }
         }
-        wiki_link = `<a href="https://en.wikipedia.org/wiki/${html_escape_attr(wiki)}"><span class="fa-brands-400" title="Wikipedia">\u{f266}</span> wiki</a>`;
+        wiki_link = `<a href="https://en.wikipedia.org/wiki/${html_escape_attr(wiki)}"><i class="fab fa-wikipedia-w" title="Wikipedia"></i> wiki</a>`;
       }
 
       // Calculate file_link_html
@@ -6719,7 +6719,7 @@ const DEFAULT_MACRO_LIST = [
         );
         tag_ids_html_array.push(x_ast.render(new_context));
       }
-      const tag_ids_html = `<span title="tags" class="fa-solid-900">\u{f02c}</span> tags: ` + tag_ids_html_array.join(', ');
+      const tag_ids_html = `<i title="tags" class="fas fa-tags"></i> tags: ` + tag_ids_html_array.join(', ');
 
       // Calculate header_meta and header_meta2
       let header_meta = [];

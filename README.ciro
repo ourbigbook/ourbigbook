@@ -6180,7 +6180,7 @@ Generated files:
   ``
   npm run webpack
   ``
-  , which is called from `npm run build-assets`. If you are developing just one of those files interactively, e.g. just the CSS or just the JavaScript;, you could speed thing up a bit by using watch mode, which only recompiles what is needed:
+  , which is called from `npm run build-assets`. If you are developing just one of those files interactively, e.g. just the CSS or just the JavaScript, you could speed thing up a bit by using watch mode, which only recompiles what is needed:
   ``
   npm run webpack -- -w
   ``

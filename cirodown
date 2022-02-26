@@ -275,11 +275,12 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
     let template_includes_relative = [];
     let template_scripts_relative = [];
     let template_fonts_relative = [];
-    const fonts_dist_basename = [
-      'fa-brands-400',
-      'fa-regular-400',
-      'fa-solid-900',
-    ].map(f => f + '.woff2')
+    const fonts_dist_basename = []
+    //const fonts_dist_basename = [
+    //  'fa-brands-400',
+    //  'fa-regular-400',
+    //  'fa-solid-900',
+    //].map(f => f + '.woff2')
     const fonts_dist = fonts_dist_basename.map(f => path.join(cirodown_nodejs.DIST_PATH, f))
     if (non_cirodown_options.publish) {
       template_includes_relative.push(

@@ -1,8 +1,7 @@
-const { DataTypes, Op } = require('sequelize')
-
 const cirodown = require('cirodown')
 
 module.exports = (sequelize) => {
+  const { DataTypes, Op } = sequelize.Sequelize
   const Id = sequelize.define(
     'Id',
     {

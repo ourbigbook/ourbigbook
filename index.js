@@ -5515,7 +5515,6 @@ function symbol_to_string(symbol) {
   return symbol.toString().slice(7, -1);
 }
 
-/** TODO correct unicode aware algorithm. */
 function title_to_id(title, options) {
   if (options === undefined) {
     options = {}

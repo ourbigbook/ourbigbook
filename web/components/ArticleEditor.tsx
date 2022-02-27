@@ -5,6 +5,7 @@ import Router, { useRouter } from 'next/router'
 import cirodown from 'cirodown/dist/cirodown.js';
 import { cirodown_runtime } from 'cirodown/dist/cirodown_runtime.js';
 import { CirodownEditor } from 'cirodown/editor.js';
+import { isProduction } from 'config';
 
 import ListErrors from 'components/ListErrors'
 import { slugFromRouter } from 'lib'
@@ -46,7 +47,8 @@ export default function makeArticleEditor(isnew: boolean = false) {
             cirodown,
             cirodown_runtime,
             {
-              modifyEditorInput: (oldInput) => modifyEditorInput(article.title, oldInput)
+              modifyEditorInput: (oldInput) => modifyEditorInput(article.title, oldInput),
+              production: isProduction,
             }
           )
           cirodownEditorElem.current.cirodownEditor = editor

@@ -13,7 +13,10 @@ exports.PACKAGE_NAME = PACKAGE_NAME;
 const PACKAGE_PATH = path.dirname(require.resolve(path.join(PACKAGE_NAME, 'package.json')));
 exports.PACKAGE_PATH = PACKAGE_PATH;
 
-const DIST_PATH = path.join(PACKAGE_PATH, 'dist');
+const DIST_BASENAME = 'dist'
+exports.DIST_BASENAME = DIST_BASENAME;
+
+const DIST_PATH = path.join(PACKAGE_PATH, DIST_BASENAME);
 exports.DIST_PATH = DIST_PATH;
 
 const DIST_CSS_BASENAME = PACKAGE_NAME + '.css';

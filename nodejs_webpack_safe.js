@@ -373,6 +373,41 @@ ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
   }
 }
 
+class SqliteFileProvider extends cirodown.FileProvider {
+  constructor(sequelize, id_provider) {
+    super();
+    this.sequelize = sequelize;
+    this.id_provider = id_provider
+    this.get_path_entry_cache = {}
+  }
+
+  async get_path_entry_fetch(path, context) {
+    const rows = await this.sequelize.models.File.findAll({
+      where: { path },
+      // We need to fetch these for toplevel scope removal.
+      include: this.sequelize.models.Id,
+    })
+    for (const row of rows) {
+      this.get_path_entry_cache[row.path] = row
+      if (
+        // Happens on some unminimized condition when converting
+        // cirosantilli.github.io @ 04f0f5bc03b9071f82b706b3481c09d616d44d7b + 1
+        // twice with cirodown -S ., no patience to minimize and test now.
+        row.Id !== null &&
+        // We have to do this if here because otherwise it would overwrite the reconciled header
+        // we have stiched into the tree with Include.
+        !this.id_provider.id_cache[row.Id.idid]
+      ) {
+        this.id_provider.add_row_to_id_cache(row.Id, context)
+      }
+    }
+  }
+
+  get_path_entry(path) {
+    return this.get_path_entry_cache[path]
+  }
+}
+
 async function create_sequelize(db_options, Sequelize) {
   const db_path = db_options.storage
   const default_options = {
@@ -454,6 +489,7 @@ function remove_duplicates_sorted_array(arr) {
 }
 
 module.exports = {
+  SqliteFileProvider,
   SqliteIdProvider,
   create_sequelize,
   db_options,

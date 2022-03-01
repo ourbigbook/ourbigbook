@@ -28,37 +28,6 @@ const convert_opts = {
   }
 };
 
-class MockFileProvider extends cirodown.FileProvider {
-  constructor() {
-    super();
-    this.path_index = {};
-    this.id_index = {};
-  }
-
-  get_path_entry(path) {
-    return this.path_index[path];
-  }
-
-  async get_path_entry_fetch() {
-  }
-
-  update(input_path, extra_returns) {
-    const context = extra_returns.context;
-    let toplevel_id
-    if (context.toplevel_ast !== undefined) {
-      toplevel_id = context.toplevel_ast.id
-    }
-    const entry = {
-      path: input_path,
-      toplevel_id,
-    };
-    this.path_index[input_path] = entry;
-    if (toplevel_id !== undefined) {
-      this.id_index[toplevel_id] = entry;
-    }
-  }
-}
-
 /** THE ASSERT EVERYTING ENTRYPOINT.
  *
  * This is named after the most common use case, which is asserting a
@@ -178,12 +147,15 @@ function assert_convert_ast(
       },
       Sequelize,
     )
-    new_convert_opts.id_provider = new cirodown_nodejs_webpack_safe.SqliteIdProvider(sequelize);
-    new_convert_opts.file_provider = new MockFileProvider();
+    const id_provider = new cirodown_nodejs_webpack_safe.SqliteIdProvider(sequelize);
+    new_convert_opts.id_provider = id_provider
+    new_convert_opts.file_provider = new cirodown_nodejs_webpack_safe.SqliteFileProvider(
+      sequelize, id_provider);
     const rendered_outputs = {}
     for (const input_path of options.convert_before) {
       //console.error({input_path});
       const extra_returns = {};
+      assert(input_path in filesystem)
       const input_string = filesystem[input_path];
       options.convert_before = [];
       const dependency_convert_opts = Object.assign({}, new_convert_opts);
@@ -192,10 +164,13 @@ function assert_convert_ast(
       await cirodown.convert(input_string, dependency_convert_opts, extra_returns);
       Object.assign(rendered_outputs, extra_returns.rendered_outputs)
       assert.strictEqual(extra_returns.errors.length, 0)
-      await Promise.all([
-        new_convert_opts.id_provider.update(extra_returns, sequelize),
-        new_convert_opts.file_provider.update(input_path, extra_returns),
-      ])
+      await cirodown_nodejs_webpack_safe.update_database_after_convert({
+        extra_returns,
+        id_provider,
+        sequelize,
+        path: input_path,
+        render: true,
+      })
     }
     //console.error('main');
     if (options.input_path_noext !== undefined) {
@@ -206,8 +181,13 @@ function assert_convert_ast(
     const output = await cirodown.convert(input_string, new_convert_opts, extra_returns);
     Object.assign(rendered_outputs, extra_returns.rendered_outputs)
     if (new_convert_opts.input_path !== undefined) {
-      await new_convert_opts.id_provider.update(extra_returns, sequelize)
-      await new_convert_opts.file_provider.update(new_convert_opts.input_path, extra_returns)
+      await cirodown_nodejs_webpack_safe.update_database_after_convert({
+        extra_returns,
+        id_provider,
+        sequelize,
+        path: new_convert_opts.input_path,
+        render: true,
+      })
     }
 
     // Post conversion checks.
@@ -215,9 +195,6 @@ function assert_convert_ast(
       await sequelize.models.Id.findDuplicates(),
       await sequelize.models.Id.findInvalidTitleTitle(),
     ])
-    assert_db_checks(duplicate_rows, options.duplicate_ids)
-    assert_db_checks(invalid_title_title_rows, options.invalid_title_titles)
-
     const has_subset_extra_returns = {fail_reason: ''};
     let is_subset;
     let content;
@@ -2866,6 +2843,28 @@ assert_convert_ast('x leading slash to escape scopes works across files',
 //    ]
 //  }
 //);
+assert_convert_ast('scopes hierarchy resolution works across files with directories',
+  `= Notindex
+
+\\x[notindex2-h2][index to notindex2 h2]
+`,
+  undefined,
+  {
+    assert_xpath_split_headers: {
+      'subdir/notindex.html': [
+        "//x:div[@class='p']//x:a[@href='notindex2.html#notindex2-h2' and text()='index to notindex2 h2']",
+      ]
+    },
+    convert_before: ['subdir/notindex2.ciro'],
+    filesystem: {
+     'subdir/notindex2.ciro': `= Notindex2
+
+== Notindex2 h2
+`,
+    },
+    input_path_noext: 'subdir/notindex',
+  }
+);
 
 // Headers.
 assert_convert_ast('header simple',
@@ -4759,87 +4758,6 @@ assert_convert_ast('one paragraph implicit split headers',
     input_path_noext: 'notindex',
   }
 );
-function assert_split_header_output_keys(description, options, keys_expect) {
-  it(description, async ()=>{
-    const input_string = `= h1
-
-== h1 1
-
-== h1 1 1
-
-== h1 1 2
-
-== h1 2
-
-== h1 2 1
-
-== h1 2 2
-`
-    const new_options = Object.assign({
-      split_headers: true,
-      file_provider: new MockFileProvider(),
-    }, options);
-    const extra_returns = {};
-    await cirodown.convert(
-      input_string,
-      new_options,
-      extra_returns
-    );
-    assert.deepStrictEqual(
-      Object.keys(extra_returns.rendered_outputs),
-      keys_expect
-    )
-  });
-}
-assert_split_header_output_keys(
-  'split headers returns the expected header to output keys with input_path and no toplevel_id on notindex',
-  {
-    input_path: 'notindex' + cirodown.CIRODOWN_EXT
-  },
-  [
-    'notindex.html',
-    'notindex-split.html',
-    'h1-1.html',
-    'h1-1-1.html',
-    'h1-1-2.html',
-    'h1-2.html',
-    'h1-2-1.html',
-    'h1-2-2.html',
-  ]
-)
-assert_split_header_output_keys(
-  'split headers returns the expected header to output keys with input_path and toplevel_id on notindex',
-  {
-    input_path: 'notindex' + cirodown.CIRODOWN_EXT,
-    toplevel_id: 'notindex'
-  },
-  [
-    'notindex.html',
-    'notindex-split.html',
-    'h1-1.html',
-    'h1-1-1.html',
-    'h1-1-2.html',
-    'h1-2.html',
-    'h1-2-1.html',
-    'h1-2-2.html',
-  ]
-)
-assert_split_header_output_keys(
-  'split headers returns the expected header to output keys with input_path and no toplevel_id on index',
-  {
-    input_path: cirodown.INDEX_BASENAME_NOEXT + cirodown.CIRODOWN_EXT
-  },
-  [
-    cirodown.INDEX_BASENAME_NOEXT + '.html',
-    'split.html',
-    'h1-1.html',
-    'h1-1-1.html',
-    'h1-1-2.html',
-    'h1-2.html',
-    'h1-2-1.html',
-    'h1-2-2.html',
-  ]
-)
 
 // Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception, or worse, not blowing up at all!

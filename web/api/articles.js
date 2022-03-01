@@ -107,6 +107,9 @@ router.post('/', auth.required, async function(req, res, next) {
     if (!req.body.article) {
       return res.status(422).json({ errors: { article: "can't be blank" } })
     }
+    if (!req.body.article.title) {
+      throw new lib.ValidationError('title cannot be empty')
+    }
     let article = new (req.app.get('sequelize').models.Article)(req.body.article)
     article.authorId = user.id
     await article.save()
@@ -125,10 +128,10 @@ router.put('/', auth.required, async function(req, res, next) {
     if (article.authorId.toString() === req.payload.id.toString()) {
       if (req.body.article) {
         if (typeof req.body.article.title !== 'undefined') {
+          if (!req.body.article.title) {
+            throw new lib.ValidationError('title cannot be empty')
+          }
           article.title = req.body.article.title
-        }
-        if (typeof req.body.article.description !== 'undefined') {
-          article.description = req.body.article.description
         }
         if (typeof req.body.article.body !== 'undefined') {
           article.body = req.body.article.body
@@ -164,7 +167,7 @@ router.delete('/', auth.required, async function(req, res, next) {
   }
 })
 
-// Lies.
+// Likes.
 
 async function validateLike(req, res, user, article, isLike) {
   if (!user) {

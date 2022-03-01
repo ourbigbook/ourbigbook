@@ -9,7 +9,6 @@ import CustomImage from 'components/CustomImage'
 import LoadingSpinner from 'components/LoadingSpinner'
 import LogoutButton from 'components/LogoutButton'
 import Maybe from 'components/Maybe'
-import EditProfileButton from 'components/EditProfileButton'
 import FollowUserButton, { FollowUserButtonContext } from 'components/FollowUserButton'
 import UserAPI from 'lib/api/user'
 import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
@@ -18,7 +17,6 @@ import getLoggedInUser from 'lib/utils/getLoggedInUser'
 import routes from 'routes'
 import { AppContext } from 'lib'
 import useMin from 'front/api/useMin'
-
 
 export default function UserPage({
   articles,
@@ -77,20 +75,29 @@ export default function UserPage({
     <div className="profile-page content-not-cirodown">
       <div className="user-info">
         <h1><DisplayAndUsername user={user}></DisplayAndUsername></h1>
-        <p>
-          <FollowUserButtonContext.Provider value={{following, setFollowing, followerCount, setFollowerCount}}>
-            <FollowUserButton user={user} showUsername={false}/>
-          </FollowUserButtonContext.Provider>
-          <EditProfileButton isCurrentUser={isCurrentUser} />
-          {isCurrentUser &&
-            <LogoutButton />
-          }
-        </p>
         <CustomImage
           src={user.effectiveImage}
           alt="User's profile image"
           className="user-img"
         />
+        <p>
+          <FollowUserButtonContext.Provider value={{
+            following, setFollowing, followerCount, setFollowerCount
+          }}>
+            <FollowUserButton user={user} showUsername={false}/>
+          </FollowUserButtonContext.Provider>
+          <Maybe test={isCurrentUser}>
+            <CustomLink
+              href={routes.userEdit()}
+              className="btn btn-sm btn-outline-secondary action-btn"
+            >
+              <i className="ion-gear-a" /> Settings
+            </CustomLink>
+          </Maybe>
+          {isCurrentUser &&
+            <LogoutButton />
+          }
+        </p>
         <p>{user.bio}</p>
       </div>
       <h2>Articles ({authoredArticleCount})</h2>
